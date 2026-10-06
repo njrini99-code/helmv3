@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "compilerVersion": "course-terrain-v4",
+  "geometryHash": "5d85c02ac6f5c120e433932c368f5615539b26b939790bc09857d5b8f160b845",
+  "sourceManifestHash": "322adf9d27103d969b1d18e409c513b32be2e6d26cbcd5818dcd09947a5fc26e",
+  "sourceIdentity": "ae9605b314adad5603cefb754cf259fc062f040ec9ee95c5f87d75351e41bbb7",
+  "holes": {
+    "forsyth-country-club-01": {
+      "ordinal": 1,
+      "fileName": "forsyth-country-club-01-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 502887,
+      "uncompressedBytes": 2443269,
+      "sha256": "fe41a7546846fb75c7ac836cd61e3dc868cd6af8ed27a37d5224bf763acf6fa6",
+      "uncompressedSha256": "24074b847bd8bcadb55d35b41e8d0d3a17a10ae57cea76bd6ce801abea63f073",
+      "contentHash": "11487afbdb609c4fbae6ca9c7fd97e1c3e1f340003a3cdd2f1fc6280fc2bcb15"
+    },
+    "forsyth-country-club-02": {
+      "ordinal": 2,
+      "fileName": "forsyth-country-club-02-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 520296,
+      "uncompressedBytes": 2410742,
+      "sha256": "6c079bdda73caa5c793c48a17fff72285a2dc019e6a6646cb0b5892b7296302a",
+      "uncompressedSha256": "6e5d45a4a31850bb77194b64808e162506409c032bf353f119edea04a1b0030a",
+      "contentHash": "640ecf5b78940c4287d9ba11cb3efe50eb4b3d4fd9c256d8965e16cbb290f4c9"
+    },
+    "forsyth-country-club-03": {
+      "ordinal": 3,
+      "fileName": "forsyth-country-club-03-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 384989,
+      "uncompressedBytes": 1753538,
+      "sha256": "7420577191f80e069a3295e8bd97dd98d00ee23629f328b208d0ea3ddd5e655c",
+      "uncompressedSha256": "302b5a66e1529a1d2964f7a5b717b11bb521a792f86f000f8513686dbf9d7a57",
+      "contentHash": "07aa1ece56d824f18832ec6f7ec0c268cfb46024866d2f9207b9dc0a9b9957ea"
+    },
+    "forsyth-country-club-04": {
+      "ordinal": 4,
+      "fileName": "forsyth-country-club-04-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 579042,
+      "uncompressedBytes": 2623282,
+      "sha256": "b73e8adbc17c100e30fa9c23bd8951c42b9c5a49b778a490876473075116020c",
+      "uncompressedSha256": "43aa821e6473cc0f6df605b8933784dc8a01938435573d3f75c4cda7b455f7ef",
+      "contentHash": "8301b404ceec47216bf609c323d1a4a2ebbc3b821522120cd71722e9d49d9cdd"
+    },
+    "forsyth-country-club-05": {
+      "ordinal": 5,
+      "fileName": "forsyth-country-club-05-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 615718,
+      "uncompressedBytes": 2870092,
+      "sha256": "b2aa2787b5145f89b974db0cbdc2ad7b37d334ba761e631de95defabb9bb0e86",
+      "uncompressedSha256": "01505d0d2be2b7f789db5b43998ea843ce79001fa604585bcb2e2ccca02750e3",
+      "contentHash": "3ecd336e14a0eeef13d950b5578437aa54751bf07d98cd157715644d21fa03c8"
+    },
+    "forsyth-country-club-06": {
+      "ordinal": 6,
+      "fileName": "forsyth-country-club-06-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 679840,
+      "uncompressedBytes": 3105949,
+      "sha256": "fc63b96c7c125cd8897510d22d22849a27371e37f6b5d25ed73f9fa7cf24d5f8",
+      "uncompressedSha256": "51a29b6f2f0e6ed7c2426e062be3bc35f5345f7b0f9f58178386d81ac21381a4",
+      "contentHash": "1fd4800c2dd0e1ccd9b1137887012658637df0420a60f8e52010810df5e1ce05"
+    },
+    "forsyth-country-club-07": {
+      "ordinal": 7,
+      "fileName": "forsyth-country-club-07-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 375225,
+      "uncompressedBytes": 1707666,
+      "sha256": "ad9309e7d8681ed94d86548aac86dac3163dc707609f95ef9a1ba0285745aae8",
+      "uncompressedSha256": "f2cc4d5c1ba626bbe8dc28fe5e739f0467481e3b5e6b5db42df7cfcdb57bc21b",
+      "contentHash": "03f4cef6604ecad0f15ac4fca29196e6924a92b70fdafbae1726e6a1bc0062f3"
+    },
+    "forsyth-country-club-08": {
+      "ordinal": 8,
+      "fileName": "forsyth-country-club-08-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 609629,
+      "uncompressedBytes": 2778170,
+      "sha256": "a4c0ef8c122b7b39e60fb189e6518017b6c5fe4e9dbade50b071283c7571ebae",
+      "uncompressedSha256": "6da1c6631e65f3fc74368a38fa13c34979feea98ce2b793fe4c959e596b4c417",
+      "contentHash": "0c0a76f55722c00e78f37e83cb40214d5bfc2778b856ca1e7a580a0b9e6f7fc5"
+    },
+    "forsyth-country-club-09": {
+      "ordinal": 9,
+      "fileName": "forsyth-country-club-09-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 623554,
+      "uncompressedBytes": 2846704,
+      "sha256": "16f074fea424f887e16f7c207cc1debd73b22a457e707cd33e399c96af1d376e",
+      "uncompressedSha256": "34e3618245bcfc61a97ded44dd7a81a07ddb13ff3112e7ef8350bafc3423bd37",
+      "contentHash": "2a05675009f6a5a06afb8e25b680b89d1cd5a5d2f856c1df4387988d06f1d976"
+    },
+    "forsyth-country-club-10": {
+      "ordinal": 10,
+      "fileName": "forsyth-country-club-10-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 529690,
+      "uncompressedBytes": 2557720,
+      "sha256": "b9f4268e89bcd76fb53c5246db8363bbf47b60db61c0e7163f883cf142c54036",
+      "uncompressedSha256": "e3b9e41c2c3db10534312bfa6188bc9b9586de9ebf89979aa482f37c1cf5c1cb",
+      "contentHash": "74795acc1d03a422dd2720ba2090658b88c65826905b83a47a833a787c5d7907"
+    },
+    "forsyth-country-club-11": {
+      "ordinal": 11,
+      "fileName": "forsyth-country-club-11-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 390779,
+      "uncompressedBytes": 1945031,
+      "sha256": "dd3c2dea537baf9dfb82b9854e5ab19d5034f03748d6e00598824e606ac8b1ac",
+      "uncompressedSha256": "6c563b82d895c731af0c47cf4416397bd243988b8c8ad321c5bac92559255736",
+      "contentHash": "a50b8f6c31ec02988f5ae5f535b8d435e03ae67b650d511bfd51d96b33b31451"
+    },
+    "forsyth-country-club-12": {
+      "ordinal": 12,
+      "fileName": "forsyth-country-club-12-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 621888,
+      "uncompressedBytes": 3067588,
+      "sha256": "b295c318627a960a2db56bc90244ac7f2afc8e3c4e69b7530ad914b22a0beca2",
+      "uncompressedSha256": "17c1f33eb3e9319b53691dd0420df9c68f0b8f9fdcfcf0cf73d44bf8a5aa0b85",
+      "contentHash": "e42675b307e2ef2a9511761de69e18370ee8c7c0da97fd51a21bc3da1aa503e8"
+    },
+    "forsyth-country-club-13": {
+      "ordinal": 13,
+      "fileName": "forsyth-country-club-13-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 663392,
+      "uncompressedBytes": 3231156,
+      "sha256": "b57c799a79b20a65c64deee7e4de36fd23fafc87939b8949e942516bed21cda3",
+      "uncompressedSha256": "ed63ad90760058860cc16bdbf2f1c1cbf1df763a46b0f3d30cad683f996a1770",
+      "contentHash": "e86c8020e6aac3da2fd78c043fe62ba70b341d55033a4693f301b4c19ee06494"
+    },
+    "forsyth-country-club-14": {
+      "ordinal": 14,
+      "fileName": "forsyth-country-club-14-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 367292,
+      "uncompressedBytes": 1778826,
+      "sha256": "93b118f884ed13870d5ca5111e871ed7268da5fc5ce04b041872eccceb8098ee",
+      "uncompressedSha256": "f6ae57516f04f9a92396906c668dea945aba3de2b74d3a5c46357569f26a7e79",
+      "contentHash": "60b40eab27d034b976abaf3d02e5c258f04c93d56a1ddaf7f812652f24dfb410"
+    },
+    "forsyth-country-club-15": {
+      "ordinal": 15,
+      "fileName": "forsyth-country-club-15-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 642477,
+      "uncompressedBytes": 3345655,
+      "sha256": "15dec77e73fc4eadaf6e0948274584f5438999923a6d0eb70e0ab4ade8dcb7a5",
+      "uncompressedSha256": "042c00c3184628dacad9b5e48775e52f2497f88e193c5a997d747d702c4edf19",
+      "contentHash": "d9d5aa37943dcaa54120b40379259a7eb9f798f5bb5fe3eb2b2af42a88e3c9cc"
+    },
+    "forsyth-country-club-16": {
+      "ordinal": 16,
+      "fileName": "forsyth-country-club-16-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 735285,
+      "uncompressedBytes": 3830778,
+      "sha256": "25ff5bb5eaea4fd17aacfa2787cf22c1c4e94f24fcc843b92a341431d7117810",
+      "uncompressedSha256": "308303d23e0460011919af617c3008d749dc408724a825948cc3bf5a9a9a05fa",
+      "contentHash": "c4281f6d8e13272cf7e819a367d7327c0a8891d3a185ee31dc709a42dee94f4b"
+    },
+    "forsyth-country-club-17": {
+      "ordinal": 17,
+      "fileName": "forsyth-country-club-17-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 657187,
+      "uncompressedBytes": 3403818,
+      "sha256": "8d80811f66fac023d09de77db6b6c63a1e826d867df8453479aa00604bb0ddf7",
+      "uncompressedSha256": "5d78091e0b354dd167751a9368d171db087512abeef8ec782356ef5d71df0d85",
+      "contentHash": "e2d9a79b86d9504aa5f2270728bd193c43da73404352f8e60bc5d37b14f1f06a"
+    },
+    "forsyth-country-club-18": {
+      "ordinal": 18,
+      "fileName": "forsyth-country-club-18-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 642565,
+      "uncompressedBytes": 3386039,
+      "sha256": "084781af773d28d165065a40da8d2479f8ad5d6b7f2fafa01ab2b294dcb1e7a9",
+      "uncompressedSha256": "9bb2038c5f34d288dbea8fdc9178c2845f64c9c53dac1bd5b7f9502c0e7b9d5a",
+      "contentHash": "f61bfb8ea3af2a98b6a28f663b88d282ca8546548bc1ce54831889976cc274a3"
+    }
+  }
+}

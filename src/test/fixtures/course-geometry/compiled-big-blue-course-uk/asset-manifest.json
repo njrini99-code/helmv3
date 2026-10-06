@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "compilerVersion": "course-terrain-v4",
+  "geometryHash": "619ddb8ba30d5fcb6ba1d8faa696576201a569217d3f6f397e45b8540ec0af0b",
+  "sourceManifestHash": "e1701e8c44736e027dd1adb3d42b3b3a342c102b90a11070385e4e5789f21c5e",
+  "sourceIdentity": "ff428bf748c87eed53f3e09a47a351f6ec1889dd51176c9cd17b0c588b6c858e",
+  "holes": {
+    "big-blue-course-uk-01": {
+      "ordinal": 1,
+      "fileName": "big-blue-course-uk-01-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 734227,
+      "uncompressedBytes": 3672411,
+      "sha256": "2296e37552ccb5ec302e696d5946afd5f1224dfaff410874e8688a63244f7d44",
+      "uncompressedSha256": "053f295e457d52d57719bca1bb7933b534507d3e94a17f27df5ea14e85a713d5",
+      "contentHash": "db74767509197de80008dd9620742b2bf10528591b2ead023c7baf67bda5ace4"
+    },
+    "big-blue-course-uk-02": {
+      "ordinal": 2,
+      "fileName": "big-blue-course-uk-02-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 801495,
+      "uncompressedBytes": 3966481,
+      "sha256": "6955d43dfd6b60b1cbb44f1f47ce0ee490f38891f465fe09e45be49fbdeb71e1",
+      "uncompressedSha256": "3d5ea7718cef88e36ebb1c7ac2b2b1c9d26ac961402c6a48c85df6a769411647",
+      "contentHash": "336c56106cf513832ecf5da1cb4864872ff1d012984c593f6c4fd572e5a60bdd"
+    },
+    "big-blue-course-uk-03": {
+      "ordinal": 3,
+      "fileName": "big-blue-course-uk-03-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 476163,
+      "uncompressedBytes": 2456211,
+      "sha256": "bd0c60e4e04455385d8bcec95053fea50de34ed212ef74601c1284ee4faf3eba",
+      "uncompressedSha256": "c82541125e2968efce172199c145ee73d3b51a7824265d8e576145daf2409133",
+      "contentHash": "599831e9472f692bcc20566903be3ddbc3cd97524bdea67fa22242abd8e00d06"
+    },
+    "big-blue-course-uk-04": {
+      "ordinal": 4,
+      "fileName": "big-blue-course-uk-04-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 781356,
+      "uncompressedBytes": 3827993,
+      "sha256": "11d9e1ef9615126e16c10efd33061f4f06995da43093b798579fe9519357ce2c",
+      "uncompressedSha256": "6c22ccb2d2aed54cc4537effd4ed78e00731d7b101b4ef131fdeee6df343d619",
+      "contentHash": "80265458c5f4cdb6c5abdc728334fd0041039269a4bf3bdfa45aab52cee5bcf5"
+    },
+    "big-blue-course-uk-05": {
+      "ordinal": 5,
+      "fileName": "big-blue-course-uk-05-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 826673,
+      "uncompressedBytes": 4068380,
+      "sha256": "c0c2a4b57aedae7d61c73df2aabe7a5d219e45346770599bdbff79b896672567",
+      "uncompressedSha256": "00dcde8e59e87d5f2b66c02d7a6b6b7d7bda6e8a99cc46678c4954dede919004",
+      "contentHash": "7d76d1c0e9eaff3871eb6f6102b8b571bf522e16c1e5e599787940593824bd46"
+    },
+    "big-blue-course-uk-06": {
+      "ordinal": 6,
+      "fileName": "big-blue-course-uk-06-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 740966,
+      "uncompressedBytes": 3663974,
+      "sha256": "8aa71ef59d1e3da99dfa9e38522c019e2a71a70a53b27b0409a29e7125eaac45",
+      "uncompressedSha256": "7300207e7025bf2bc1db026b7f49cda56caff74c32c8ae08a3991db986683f3c",
+      "contentHash": "7fc047256fcf03104a8060e8e496439cc1d4bd87d573af7196e08b6448f599e6"
+    },
+    "big-blue-course-uk-07": {
+      "ordinal": 7,
+      "fileName": "big-blue-course-uk-07-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 870582,
+      "uncompressedBytes": 4271471,
+      "sha256": "41e5e83cba818dbbf7256359346521a415a438160d442d5559b214db70c0b7f7",
+      "uncompressedSha256": "7f64ace0f0fad9c161a690d9bffc001a5424e44a0ac67c6ee6f5c6457f993062",
+      "contentHash": "9b3aae194b3509387d679d0032c7c0533fd2cbb523241e6f0d9a54da65b3a0dd"
+    },
+    "big-blue-course-uk-08": {
+      "ordinal": 8,
+      "fileName": "big-blue-course-uk-08-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 541099,
+      "uncompressedBytes": 2758604,
+      "sha256": "2902373f5c84755f64f285959d48b7395214ea577c9246f70692359d29fb4565",
+      "uncompressedSha256": "2772612b3ef4ed27c0a20d69416997350fc71ca250841e41b0a1aee399ed45fb",
+      "contentHash": "62a984aca070509ac0dd302fc45229974f7e7d12171c34fdf22219bcf1e614e3"
+    },
+    "big-blue-course-uk-09": {
+      "ordinal": 9,
+      "fileName": "big-blue-course-uk-09-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 656440,
+      "uncompressedBytes": 3412945,
+      "sha256": "261b15897ce3e0685a77763938e1f943cf4d31cc5d95cdfcd958052fc5b1a668",
+      "uncompressedSha256": "da109e4a0a932fb1093b44e6b0e994f5db1335b780a8eee2a97574855023d0bf",
+      "contentHash": "9bf897adf373863c931ed36b947a15554b99b1f129384539a79402e162c7d31e"
+    },
+    "big-blue-course-uk-10": {
+      "ordinal": 10,
+      "fileName": "big-blue-course-uk-10-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 597195,
+      "uncompressedBytes": 3082656,
+      "sha256": "8d90ad574e7eeed2ce395a4413adcc9d1547577a197b62d021bb5cf185e09e83",
+      "uncompressedSha256": "4fe07e0e28ddf1d330ae96fc3ddabd00616e85cd7f4df0204542a31d99dc5b25",
+      "contentHash": "4d5f6304e6ede134dda1e6d5fdf58da9904e769f6088bf99a6c60b60aec4231b"
+    },
+    "big-blue-course-uk-11": {
+      "ordinal": 11,
+      "fileName": "big-blue-course-uk-11-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 650513,
+      "uncompressedBytes": 3281140,
+      "sha256": "b1b408a17d12272c3a780caad3ba31cd9c13d0d7ad278dc1d4ef2c34de95c0cc",
+      "uncompressedSha256": "bf8ac6e119945f9a8a3e84a83b0897a4d69168764493583bed098747a4e662ac",
+      "contentHash": "2d0c135f869a1f1a8a770ababcc06a8f714d15870a0593bb03c486cfcf9280e2"
+    },
+    "big-blue-course-uk-12": {
+      "ordinal": 12,
+      "fileName": "big-blue-course-uk-12-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 477812,
+      "uncompressedBytes": 2321840,
+      "sha256": "93edf6b97455ca8f43285d32a2a35c726d6df6465a01b94a7276722350b37462",
+      "uncompressedSha256": "01fa5139cd800ae4d0f66e5b21e75ba38821aac18b42a33d7488a43d185e59cb",
+      "contentHash": "e77ea9932abb31bc8327b7554489337fa44a4815a492ff84ffb869618b5a0531"
+    },
+    "big-blue-course-uk-13": {
+      "ordinal": 13,
+      "fileName": "big-blue-course-uk-13-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 737367,
+      "uncompressedBytes": 3632672,
+      "sha256": "8d7ad425ac5de9a5a1d9e4e13f7103bd57f09ae6c932a1fb77475c8f11c490cf",
+      "uncompressedSha256": "db13d8951f68398e3635da24428dc761945669e39f551e079b5dec896b26677b",
+      "contentHash": "4820439abeb9f45d3043f6df24736101559fe375f912617164ad6cc204ad9ecd"
+    },
+    "big-blue-course-uk-14": {
+      "ordinal": 14,
+      "fileName": "big-blue-course-uk-14-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 835428,
+      "uncompressedBytes": 4106644,
+      "sha256": "4bf9877ed715befd9e477809edfe46c24cdc71e4e4bbedadca4db0cb635f3524",
+      "uncompressedSha256": "76a9a315a66ebe1cfeb856c86b6895cabbfe5cc2552afafde587fa885eaa3a59",
+      "contentHash": "cc4c222bc01326341303d59641671dc3b3966183ea862a7d8cdca47601641c8c"
+    },
+    "big-blue-course-uk-15": {
+      "ordinal": 15,
+      "fileName": "big-blue-course-uk-15-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 708316,
+      "uncompressedBytes": 3461206,
+      "sha256": "6e939b0c8b3b57ce177582c350e2bdefba47ae4f9af8a8323d6a729c5a1aff13",
+      "uncompressedSha256": "f8110a6450dcfbf786a704299fac401d038f3c6d459970d5de502e2a453d0bff",
+      "contentHash": "c67b8b63cb3c15553e085aa37c7bd5448ad9dc1d53fdeff90ed3af9b320cbfa3"
+    },
+    "big-blue-course-uk-16": {
+      "ordinal": 16,
+      "fileName": "big-blue-course-uk-16-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 805874,
+      "uncompressedBytes": 3970113,
+      "sha256": "78830a49d2ef5bee936d0891f9259bf839df31bb28487f6106f8d94284e84512",
+      "uncompressedSha256": "8a46b68a9edca5aea5bebb14cbd8810016121cfa896ed2059d90e7f2c2e3e970",
+      "contentHash": "70f605058b139323c173f95d142235359ab1c023d0c0039017c7187650e22787"
+    },
+    "big-blue-course-uk-17": {
+      "ordinal": 17,
+      "fileName": "big-blue-course-uk-17-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 441886,
+      "uncompressedBytes": 2261098,
+      "sha256": "741941d882b3c4935694663d8feb50b0a75379d468e4b7e8dfcccc59b6ae4646",
+      "uncompressedSha256": "a21c85ab17ae27359f23b4c228a7cf3c1836bb6b56a1a8a4c55f51dd8e8a4e97",
+      "contentHash": "16cddc4a14a141e9384b759ae168cca5737e2f99d702344d8fe8c70a4a2507c0"
+    },
+    "big-blue-course-uk-18": {
+      "ordinal": 18,
+      "fileName": "big-blue-course-uk-18-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 690643,
+      "uncompressedBytes": 3467987,
+      "sha256": "9691ab9fc99aacbb85246fe5cda57a29b0dffd70fa388ffbdaa536b9422ae56c",
+      "uncompressedSha256": "eb39666292bd39a53f5532aced53c091faa016d434a66db2c952621b4664c085",
+      "contentHash": "37c08455ddd2cb0512bdcf25e36f24d2d8a65d7080d85749db62caf33c64fecc"
+    }
+  }
+}

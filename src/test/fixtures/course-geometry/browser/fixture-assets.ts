@@ -3,6 +3,22 @@ import cacaponManifest from '../compiled-cacapon/asset-manifest.json';
 import peekManifest from '../compiled-peek-n-peak-upper/asset-manifest.json';
 import peekData from '../peek-n-peak-upper.json';
 import peekContext from '../peek-n-peak-upper-context.json';
+// TEMPORARY (uncommitted): factory-built courses for owner screenshots.
+import winchesterCcManifest from '../compiled-winchester-cc/asset-manifest.json';
+import winchesterCcData from '../winchester-cc.json';
+import winchesterCcContext from '../winchester-cc-context.json';
+import forsythManifest from '../compiled-forsyth-country-club/asset-manifest.json';
+import forsythData from '../forsyth-country-club.json';
+import forsythContext from '../forsyth-country-club-context.json';
+import grandeDunesManifest from '../compiled-grande-dunes-resort-club/asset-manifest.json';
+import grandeDunesData from '../grande-dunes-resort-club.json';
+import grandeDunesContext from '../grande-dunes-resort-club-context.json';
+import cacaponFactoryManifest from '../compiled-cacapon-factory/asset-manifest.json';
+import cacaponFactoryData from '../cacapon-factory.json';
+import cacaponFactoryContext from '../cacapon-factory-context.json';
+import bigBlueManifest from '../compiled-big-blue-course-uk/asset-manifest.json';
+import bigBlueData from '../big-blue-course-uk.json';
+import bigBlueContext from '../big-blue-course-uk-context.json';
 import { parseContextLayer, type ContextLayer } from '@/lib/golf/course-geometry/context-layer';
 import { parseTerrainMesh } from '@/lib/golf/course-geometry/terrain';
 import { parseGeometryPackage } from '@/lib/golf/course-geometry/schema';
@@ -18,11 +34,21 @@ export const compiledCourses = {
     url: (name: string) => new URL(`../compiled-cacapon/${name}`, import.meta.url) },
   'peek-n-peak-upper': { pkg: parseGeometryPackage(peekData), holes: peekManifest.holes as Record<string, ManifestEntry>,
     url: (name: string) => new URL(`../compiled-peek-n-peak-upper/${name}`, import.meta.url) },
+  'winchester-cc': { pkg: parseGeometryPackage(winchesterCcData), holes: winchesterCcManifest.holes as Record<string, ManifestEntry>,
+    url: (name: string) => new URL(`../compiled-winchester-cc/${name}`, import.meta.url) },
+  'forsyth-country-club': { pkg: parseGeometryPackage(forsythData), holes: forsythManifest.holes as Record<string, ManifestEntry>,
+    url: (name: string) => new URL(`../compiled-forsyth-country-club/${name}`, import.meta.url) },
+  'grande-dunes-resort-club': { pkg: parseGeometryPackage(grandeDunesData), holes: grandeDunesManifest.holes as Record<string, ManifestEntry>,
+    url: (name: string) => new URL(`../compiled-grande-dunes-resort-club/${name}`, import.meta.url) },
+  'cacapon-factory': { pkg: parseGeometryPackage(cacaponFactoryData), holes: cacaponFactoryManifest.holes as Record<string, ManifestEntry>,
+    url: (name: string) => new URL(`../compiled-cacapon-factory/${name}`, import.meta.url) },
+  'big-blue-course-uk': { pkg: parseGeometryPackage(bigBlueData), holes: bigBlueManifest.holes as Record<string, ManifestEntry>,
+    url: (name: string) => new URL(`../compiled-big-blue-course-uk/${name}`, import.meta.url) },
 };
 export type CompiledCourse = keyof typeof compiledCourses;
 /** Outside-world context layers retained beside the packages (player-view
  * spec §8). Parsed once per course; a layer for another package is refused. */
-const contextSources: Partial<Record<CompiledCourse, unknown>> = { 'peek-n-peak-upper': peekContext };
+const contextSources: Partial<Record<CompiledCourse, unknown>> = { 'peek-n-peak-upper': peekContext, 'winchester-cc': winchesterCcContext, 'forsyth-country-club': forsythContext, 'grande-dunes-resort-club': grandeDunesContext, 'cacapon-factory': cacaponFactoryContext, 'big-blue-course-uk': bigBlueContext };
 const contextCache = new Map<CompiledCourse, ContextLayer | null>();
 export function contextLayerFor(course: CompiledCourse): ContextLayer | null {
   if (!contextCache.has(course)) {

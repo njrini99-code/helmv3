@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "compilerVersion": "course-terrain-v4",
+  "geometryHash": "8df7f5aa84cc86c4652ae35c8a006d8466d52f2e391dbaccdaf7ebde1113995e",
+  "sourceManifestHash": "d30393fd9adb468589d65ecd3d09fa6af1f90baebcdb832e17ae2a304454f1f5",
+  "sourceIdentity": "82ff668bf4139baf0075136265893030f568657f2418e1bd0e7305956a4d71eb",
+  "holes": {
+    "grande-dunes-resort-club-01": {
+      "ordinal": 1,
+      "fileName": "grande-dunes-resort-club-01-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 590590,
+      "uncompressedBytes": 2890029,
+      "sha256": "3dd9e36a1d406cfc14487c64091b07d42db2bb894b50415ace204ecbdaa6f46a",
+      "uncompressedSha256": "7784f524f5200103140adbbcb535e31893905f1a6acd1bea47c509ac33d15648",
+      "contentHash": "7aa3832aa8c6e4d0f7eef98356ed35de5a549f1118f236d35e7ddef7041d993d"
+    },
+    "grande-dunes-resort-club-02": {
+      "ordinal": 2,
+      "fileName": "grande-dunes-resort-club-02-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 332939,
+      "uncompressedBytes": 1684377,
+      "sha256": "89af9f663dccd842a712f6e5346e505d61dacaf4917b1974253a156f3de9cd94",
+      "uncompressedSha256": "7fdb7ea318bf6a8fd5f7183144b2104f44b877c04b63d0a8fa5f66b6e607830e",
+      "contentHash": "669908810ec2c9ab6cad397344441ff9911465c77a9fc6de2844e4575b9c2dff"
+    },
+    "grande-dunes-resort-club-03": {
+      "ordinal": 3,
+      "fileName": "grande-dunes-resort-club-03-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 467456,
+      "uncompressedBytes": 2210292,
+      "sha256": "6d9c1dbff8ce5938ba67344ee0768d26a5fd235284de0de6507dbbcb41d76cf7",
+      "uncompressedSha256": "672387d4a18e2a9c5ac908138f9c4e0775549f7ec241118290f6295b2c371b90",
+      "contentHash": "18ea077f29c9b0f15b0421feb22afd8b9f3f5c73212bf27368ad9b85f2852b2d"
+    },
+    "grande-dunes-resort-club-04": {
+      "ordinal": 4,
+      "fileName": "grande-dunes-resort-club-04-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 536985,
+      "uncompressedBytes": 2570721,
+      "sha256": "12901048589fc11a7c6ac5ee7de6a1f5850a133e7371ebe53395781d0c70de26",
+      "uncompressedSha256": "f35913bd026ee8699dfe585da5ec8ec9a60e0bfcd83d7f056aec3ee7ef6b6d62",
+      "contentHash": "b046ef0bf6ba7d02542f0f7be8ab13428485dc8ef0808cb96ac212f7aa9bb85a"
+    },
+    "grande-dunes-resort-club-05": {
+      "ordinal": 5,
+      "fileName": "grande-dunes-resort-club-05-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 463235,
+      "uncompressedBytes": 2162233,
+      "sha256": "90d0f876a0c5cf40b28bb0063325d80f66bda309d567311299bdc117ec7e56af",
+      "uncompressedSha256": "cb71dcedffb1d4f876e72a63d9f8eccc2d9ed3e09b3a8a9907b6eaab9fd378ae",
+      "contentHash": "06d4aa267bec3c638aea0816af3a96a46324d48bd94b934b876bb2d5c1feb86b"
+    },
+    "grande-dunes-resort-club-06": {
+      "ordinal": 6,
+      "fileName": "grande-dunes-resort-club-06-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 550120,
+      "uncompressedBytes": 2722126,
+      "sha256": "f2294bef81d4996c8fce6d3975056abcc64078a25a92e90e2da2fedff203e15b",
+      "uncompressedSha256": "5ef42653b27e5ccc9a9f03fcca7085aec935f97fa68c955aaa7c392c41e09cff",
+      "contentHash": "8673d37d471fb35ba3f7593ecf35e1accda533a462205a0d3e4cf1d54caa216d"
+    },
+    "grande-dunes-resort-club-07": {
+      "ordinal": 7,
+      "fileName": "grande-dunes-resort-club-07-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 627730,
+      "uncompressedBytes": 2957369,
+      "sha256": "6db9a91e8081ccf47da7dd242f360ddf0271329528e376d115834cfc0d033aa7",
+      "uncompressedSha256": "5dde2d5324b9e716fe09e4ac60e005e0c7f2850d5097f72451291fe93cfde904",
+      "contentHash": "6d6d10f5e633ff679bfb37461a41272a291a9bd5389661cf7e595947d1133766"
+    },
+    "grande-dunes-resort-club-08": {
+      "ordinal": 8,
+      "fileName": "grande-dunes-resort-club-08-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 450468,
+      "uncompressedBytes": 2140148,
+      "sha256": "c33927e6d328507818409dc9d165c8b3d3446c56dce69e13d72de412fdacd502",
+      "uncompressedSha256": "1abb13fcba4fd8086e99d4836b2f279a6ad496efed3c6a54fa9c6c50146f95c7",
+      "contentHash": "aa52016607de975fa34f7d0737c463ebb1127eb6e0015b3e3d9cfc6e4520e82c"
+    },
+    "grande-dunes-resort-club-09": {
+      "ordinal": 9,
+      "fileName": "grande-dunes-resort-club-09-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 520436,
+      "uncompressedBytes": 2675987,
+      "sha256": "2344566ea92922934e5f28d4e38bb3d19fab2bff0578f772a10052277c1b60f9",
+      "uncompressedSha256": "93478ba4a380a17e7e4d8186262246c595dc05199379067741de533abfda695e",
+      "contentHash": "f29365c19ce89ee26d604cab8912c8ac98aba70dc30b3070aacf758701bb9349"
+    },
+    "grande-dunes-resort-club-10": {
+      "ordinal": 10,
+      "fileName": "grande-dunes-resort-club-10-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 624627,
+      "uncompressedBytes": 3150851,
+      "sha256": "51a0ce5984e583191c53248a758e60507f85e3730f851bf07f3a2bc0c18a299b",
+      "uncompressedSha256": "5026f0628168bade9f277a057c7bcc1c54fb8605f54576f8fb408deff2516bd2",
+      "contentHash": "68128806e03f912f250ffb86bed5c70e8bfa15267429d2da1c42165d7e2504b7"
+    },
+    "grande-dunes-resort-club-11": {
+      "ordinal": 11,
+      "fileName": "grande-dunes-resort-club-11-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 381699,
+      "uncompressedBytes": 2088042,
+      "sha256": "1e681ed6cf5f4c934abbe5ca2fd8c5aee693bf186f2bc08fe425399e98826576",
+      "uncompressedSha256": "8055583d9f30ebafd47a4e228eb245c00c0807471e76b10a9cf84ec2ed4f5f79",
+      "contentHash": "4348cc1e1ed9a647165044597ca63885e3dd0df00daad0f880438185170a199b"
+    },
+    "grande-dunes-resort-club-12": {
+      "ordinal": 12,
+      "fileName": "grande-dunes-resort-club-12-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 501439,
+      "uncompressedBytes": 2653182,
+      "sha256": "d4430f98f1fa32d72f0a28107c68f5689827db8db936c7bcc6300d400afddd1d",
+      "uncompressedSha256": "80bd9e662a190d027955a61d70a06bbe808b4c3b0468803b107802433c0c8c23",
+      "contentHash": "869178d8b5f92183b39fcdabd90bc43d740ef9f6ea4a8c59a3b51c5ac1bf7eab"
+    },
+    "grande-dunes-resort-club-13": {
+      "ordinal": 13,
+      "fileName": "grande-dunes-resort-club-13-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 785859,
+      "uncompressedBytes": 4046520,
+      "sha256": "7bd2baae4859e23473d9334b0ea80453fccb4a9cbdb73e97e0268af052299b65",
+      "uncompressedSha256": "efa13b298b9ad5a15ac1d64b542880b4e7e1e93b9e69fa7faa1bbcb9faa7947c",
+      "contentHash": "24cb88b9e2e0dad134190839842f08ad7cebed0cc216d5076f26b3fa31455c1f"
+    },
+    "grande-dunes-resort-club-14": {
+      "ordinal": 14,
+      "fileName": "grande-dunes-resort-club-14-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 292142,
+      "uncompressedBytes": 1489250,
+      "sha256": "c3de96e513c0c980b3c51e423121a14b500917a5022035410c6d6dc9da84eb8f",
+      "uncompressedSha256": "83bc4cbde0d348de5308cb9fd7d5cc9104f11a120efbaf0c64165167c94c57cf",
+      "contentHash": "fbea218cbb2e79d2769646876398d471b824b1dbc18867e544ce0bc37a6cb7e1"
+    },
+    "grande-dunes-resort-club-15": {
+      "ordinal": 15,
+      "fileName": "grande-dunes-resort-club-15-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 452517,
+      "uncompressedBytes": 2313445,
+      "sha256": "6e628ddd81e29df0cc57e5be45d7c3ae4de55d0da219ee2c47541571b270054b",
+      "uncompressedSha256": "586bfa9620823823cb11acee4e3b5f54e7f6aa257b5b355a30452507112fcfbb",
+      "contentHash": "23ec8b14b040c27c52e38f95c95e549296aacdfba0c9b88050c295000af230f0"
+    },
+    "grande-dunes-resort-club-16": {
+      "ordinal": 16,
+      "fileName": "grande-dunes-resort-club-16-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 506263,
+      "uncompressedBytes": 2569078,
+      "sha256": "2dbaf3e0518e29af1e181405bd608b1129779884d5c39dedfeae770f465d5b82",
+      "uncompressedSha256": "2e9e4fd72d26f4ac9e5ca00f374e85e4b7003e34453f834fa3ab980b6fa39278",
+      "contentHash": "174e90536e016563fdfe446a36a4a514375d5959488d3ed51a97366bef08b8e9"
+    },
+    "grande-dunes-resort-club-17": {
+      "ordinal": 17,
+      "fileName": "grande-dunes-resort-club-17-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 649856,
+      "uncompressedBytes": 3234676,
+      "sha256": "3e649e8408ecdc0590bb5f1002dc2cb687b4d9290150c81b133f84fb8486d452",
+      "uncompressedSha256": "e01951e26ad89141dcb6dd5da553c578124c6251a9f5ce8515a2e240e117fb62",
+      "contentHash": "31f6fb1c3c75c18c883a3249238445f6d0ce8e6d28406c5cacb216e96c9ba6e4"
+    },
+    "grande-dunes-resort-club-18": {
+      "ordinal": 18,
+      "fileName": "grande-dunes-resort-club-18-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 516364,
+      "uncompressedBytes": 2589095,
+      "sha256": "72fbda3d5a3262e737d6e3eb1bb533e8f8ed65fbe9ffa6a29e22fe3018c2cb49",
+      "uncompressedSha256": "b4fc40126b5268f6c3bdb41f0ae8012af8cca251db7b142e46722ce363e52f21",
+      "contentHash": "ad9f8bb1cb01040768ca409d7e5ec9b896f843366422e055feefcf60de719721"
+    }
+  }
+}

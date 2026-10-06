@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "compilerVersion": "course-terrain-v4",
+  "geometryHash": "376092b3cc517e7110bfee88291b8c6c28c833f76d6fa8f156c7a58f64167de5",
+  "sourceManifestHash": "21c70d8322f3c88422e5434b6cc88563e1a1f835fdc349e17c1298737f8e0335",
+  "sourceIdentity": "73478eb54ecbff120cf666016f3f1a688338bba8b58b95664bdd944bb018d093",
+  "holes": {
+    "winchester-cc-01": {
+      "ordinal": 1,
+      "fileName": "winchester-cc-01-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 544229,
+      "uncompressedBytes": 2722513,
+      "sha256": "cff4172d40940d17df3484c8b708e5ee9d49794acdf730c32c87ce3aa1e42689",
+      "uncompressedSha256": "fffab3fe033e3d36a4b86f827bb2a607b91da475685c16f326172726fa1916e1",
+      "contentHash": "693115cf546ff806e6d80f493f297daef059db870927dfef58f26f1e3e8aa8e6"
+    },
+    "winchester-cc-02": {
+      "ordinal": 2,
+      "fileName": "winchester-cc-02-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 788185,
+      "uncompressedBytes": 3757189,
+      "sha256": "c36edcb71fe3ef2069b7276cb07ed3ea5d85f14fb04d51727834d82f3cdb8fa4",
+      "uncompressedSha256": "ab9aebc8f29cab3efce78ea1f0c803beaa55464676a2e5a61650b1ed15f6ce21",
+      "contentHash": "34b6a3491a2d01398bb88da41bcb5c4dcf9903bccfb9a3a2a772029c81197c67"
+    },
+    "winchester-cc-03": {
+      "ordinal": 3,
+      "fileName": "winchester-cc-03-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 652641,
+      "uncompressedBytes": 3152303,
+      "sha256": "9849ad31cd619e176088469193745b92cb116c2e859c5e2b0e64797b4c6c5db8",
+      "uncompressedSha256": "d0635fd2a1cba3cfc7ed2a8d4b40a3f215dcac562e759ab9feed5868589e8984",
+      "contentHash": "69aab856c9110de903d5d696477d936454d0efaa8e290d9233e1e4c5a8844cf4"
+    },
+    "winchester-cc-04": {
+      "ordinal": 4,
+      "fileName": "winchester-cc-04-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 423826,
+      "uncompressedBytes": 2157171,
+      "sha256": "683d90eaad53b420b6265382a6b5515f3e8d97c50b79668b01c2d6c162bc887a",
+      "uncompressedSha256": "3bd79ad80a74070f54abc7190fc4bb56ba18cc286a27b3b24ebe446ebbdab2fd",
+      "contentHash": "62d0bc2e0cc7be033168261f02651695fc90052d17db49b54e57d840f378c798"
+    },
+    "winchester-cc-05": {
+      "ordinal": 5,
+      "fileName": "winchester-cc-05-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 613319,
+      "uncompressedBytes": 3054874,
+      "sha256": "0b8c210ef50b32fc67024c098df8a64e137f1fd5f3af49f3bf1c1bab1a6aefcb",
+      "uncompressedSha256": "15ee9043c368e0047f0c71e6c3e2bbe829506a8c26fe6f1658253d47406f062f",
+      "contentHash": "3ac601c24ea1a9c5508c90dfb882e616715d83ea0746d1580abe418066a8fa31"
+    },
+    "winchester-cc-06": {
+      "ordinal": 6,
+      "fileName": "winchester-cc-06-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 531083,
+      "uncompressedBytes": 2631714,
+      "sha256": "29d5e9324e1aad149bc2a640a289429ad24768c740b432fcf0f2ff15375820fc",
+      "uncompressedSha256": "b46cd0760a5c1d94faf8960e8d65c47645757442dc6b437c7cfa2202158350df",
+      "contentHash": "942d8f11dee9afc3b85214f9237f5fe3bf20088e59f632e523a50dfc78159533"
+    },
+    "winchester-cc-07": {
+      "ordinal": 7,
+      "fileName": "winchester-cc-07-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 554806,
+      "uncompressedBytes": 2636229,
+      "sha256": "ccf9a7519a3829178a32285832c11aac74dbc5bec962ef1be794787b54dd7b25",
+      "uncompressedSha256": "7500fc5f5ea32cc0829de6272789848d444fe401a71ef4438951238f37f7ea10",
+      "contentHash": "9cbe4003f52caddd7af6bc28d5aca4c197a85c2a5e3e2257919b4edcb91e4fbf"
+    },
+    "winchester-cc-08": {
+      "ordinal": 8,
+      "fileName": "winchester-cc-08-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 398911,
+      "uncompressedBytes": 2011481,
+      "sha256": "7e48bf44f6106df88d92c3c09b162e2e0651bc9d21e7b8b45a4a57768f3114ab",
+      "uncompressedSha256": "4617fb0a185b65ddee2f73f1a954c1f6e7c1f797881712af932eec4cdf74dce0",
+      "contentHash": "8ea5227861b2e4310009688e9819377076d264e7c3982b33013b935c083259d7"
+    },
+    "winchester-cc-09": {
+      "ordinal": 9,
+      "fileName": "winchester-cc-09-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 651816,
+      "uncompressedBytes": 3183688,
+      "sha256": "dc70ce3fb14106fde4870e996bf84217bfc0052c25348e38c841fb8820e0a5c8",
+      "uncompressedSha256": "1d6abe0e2c0e0f8de65e224aef7f4ff0c5a73835b8d3c0d2f25d6b77c5ba807c",
+      "contentHash": "33da8fb9c586914381c6f7e5e13c002e1f3b17617ef40c5a5f68d50bf6c6b4ca"
+    },
+    "winchester-cc-10": {
+      "ordinal": 10,
+      "fileName": "winchester-cc-10-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 526730,
+      "uncompressedBytes": 2536246,
+      "sha256": "b82f2a37803981aed5fbea4913ae256ebe2a0563f27c2a46da2b23b4a7891030",
+      "uncompressedSha256": "02fd56e62a0d19a11201a5ce6b3e65a276f5a6368f4beefcb3256fd521989ded",
+      "contentHash": "2d9001921019a5bcc27a7869974096196c1982dbdc5242f19624dac20869de7e"
+    },
+    "winchester-cc-11": {
+      "ordinal": 11,
+      "fileName": "winchester-cc-11-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 570017,
+      "uncompressedBytes": 2741441,
+      "sha256": "e36827602939b3ec10eadbd71a634d4c4efa4d471cd29d23f80116e9b0025a3b",
+      "uncompressedSha256": "f7bba21fc74e8cd0fd34afcd67059f839921bf5145b2e1ec7008eebdc8a7e2ad",
+      "contentHash": "7676a6b02fa8fadaae40225aee3832e0e03a72b5d6e209199a719ab3e0227eef"
+    },
+    "winchester-cc-12": {
+      "ordinal": 12,
+      "fileName": "winchester-cc-12-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 383395,
+      "uncompressedBytes": 1866145,
+      "sha256": "231c1b6e99740b16e5bdd467867eb057037875fff76863e00bc55089d2d577fc",
+      "uncompressedSha256": "b62b3bdb8f89b052aab896f5a2927818a8fb04fcb4035e4a065bb37c78aebab8",
+      "contentHash": "79761a427053f9b5f28b353e047e441117f1769bd981519953c4827c09fc21c4"
+    },
+    "winchester-cc-13": {
+      "ordinal": 13,
+      "fileName": "winchester-cc-13-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 596026,
+      "uncompressedBytes": 2854448,
+      "sha256": "7bbf33e0e79a171ac88445d0bb97f91a0f6247e47e05dc190aaf8876bb09678c",
+      "uncompressedSha256": "712c5772068f9f0d9d0cf87c66a6635f674ac64c57598dc8568d713cbff2bc9c",
+      "contentHash": "a4ec1bca3a8aa1c5656f63cbc352d6cffce076634f3496b82bcb7d7bb619fb2b"
+    },
+    "winchester-cc-14": {
+      "ordinal": 14,
+      "fileName": "winchester-cc-14-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 406278,
+      "uncompressedBytes": 1968479,
+      "sha256": "aafe82d16b11fd153bb24af7bd8b545e513e2bcea9a7ad7a27593c837596427a",
+      "uncompressedSha256": "cff94fcc76e5c8249ee7f14542b53b80da346adf9870de15f44ca285fcbf6a0c",
+      "contentHash": "582387652a3381cb0bea12e61b67d0d371be1d507d869be67477e0ff3df0cd9d"
+    },
+    "winchester-cc-15": {
+      "ordinal": 15,
+      "fileName": "winchester-cc-15-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 861662,
+      "uncompressedBytes": 4092761,
+      "sha256": "2668b507b840fecc2c090c0c94b28b71eec36b2e1b30c5258f2bf0c7eddd8b52",
+      "uncompressedSha256": "f62f710f1b58fd8f073f1c68fdf5a8c5cfbc630d5dd6091f8a465c182362d120",
+      "contentHash": "51990a7805dda14450869e8a7d0304cdf9f3f727b17b44a9edac710c1fcd93a2"
+    },
+    "winchester-cc-16": {
+      "ordinal": 16,
+      "fileName": "winchester-cc-16-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 640924,
+      "uncompressedBytes": 2913808,
+      "sha256": "6fe312f7a8adf6d3304450781c736484a5d5026707a1e24f4efbfc9c0f83d7c3",
+      "uncompressedSha256": "734bcbb9d2cdba051f74e76c6e9fe8dd527c701ab34b3cc3dbb8da0e65ba4436",
+      "contentHash": "af1f62e187a6e42dadd19234179a14dfb229ffb902bcdc2f2ad91ba9a0cd6490"
+    },
+    "winchester-cc-17": {
+      "ordinal": 17,
+      "fileName": "winchester-cc-17-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 570016,
+      "uncompressedBytes": 2705911,
+      "sha256": "01739736c1d5d49f047385df458df492541aa41646d3199def912844fff3b761",
+      "uncompressedSha256": "9295ff030e83816784b5c58fd5e74add4109270b196dcbe30ed96ebba9613727",
+      "contentHash": "9b2357109fd1d2f84b8d475a7c040fa51e7366ed0022dcfb35e92606f8fec8ba"
+    },
+    "winchester-cc-18": {
+      "ordinal": 18,
+      "fileName": "winchester-cc-18-terrain.json.gz",
+      "encoding": "gzip",
+      "compressedBytes": 669529,
+      "uncompressedBytes": 3127247,
+      "sha256": "7176726a5da560edf1d7a573ca9e2f4fb490b2abb2127ec7c507860eb6bc14d0",
+      "uncompressedSha256": "02bdbcf57236c326a8d2a362e167f601906343a6412af21e21db2d82abffd41f",
+      "contentHash": "79c2683c7f46da9e86f4abcaacc45975515ffb91b92bf698f4db7da21d790647"
+    }
+  }
+}

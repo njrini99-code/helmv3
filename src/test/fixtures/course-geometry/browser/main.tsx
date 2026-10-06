@@ -35,7 +35,7 @@ const winchester = courseParam === 'winchester';
 // illustrative preview trajectories.
 const compiledCourse = isCompiledCourse(courseParam) ? courseParam : winchester ? null : 'cacapon';
 const currentPackage = compiledCourse ? compiledCourses[compiledCourse].pkg : parseGeometryPackage(winchesterData);
-const terrain = compiledCourse === 'peek-n-peak-upper' ? null : parseTerrainMesh(winchester ? winchesterTerrainData : terrainData, currentPackage);
+const terrain = compiledCourse && compiledCourse !== 'cacapon' ? null : parseTerrainMesh(winchester ? winchesterTerrainData : terrainData, currentPackage);
 const geometry: TrackingGeometry = { package: currentPackage, holeKeys: currentPackage.holes.map(h => h.key), terrainByHole: terrain ? { [terrain.physicalHoleKey]: terrain } : {},
   ...(compiledCourse === 'cacapon' ? { decorateScene: addInteractivePreviewTrajectories } : {}) };
 const currentHoleKey = currentPackage.holes[6]!.key;
