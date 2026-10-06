@@ -30,7 +30,8 @@ name: Database types regen
 # ci.yml's `Supabase lint + RLS tests` job (squawk, declarative schema,
 # schema invariants, pgTAP), which is the check that belongs to the PR.
 
-on:
+# zizmor: workflow_run listens only to db-apply, which is workflow_dispatch-only (owner-run); the job checks out the default branch, never a PR ref.
+on:  # zizmor: ignore[dangerous-triggers]
   schedule:
     - cron: '17 */3 * * *'
   workflow_dispatch:

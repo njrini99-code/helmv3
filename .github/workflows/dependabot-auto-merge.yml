@@ -24,7 +24,8 @@ name: Dependabot auto-merge
 # job goes red — it does not silently no-op, and nothing in this repo
 # re-enables the setting on the workflow's behalf.
 
-on:
+# zizmor: pull_request_target is gated to dependabot[bot] PRs in this repo and never checks out PR code; it only calls the merge API.
+on:  # zizmor: ignore[dangerous-triggers]
   pull_request_target:
 
 permissions:

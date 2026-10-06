@@ -2,8 +2,7 @@
 
 import { forwardRef } from 'react';
 import { MapPin, GripVertical } from 'lucide-react';
-import { useDraggable, type DraggableAttributes } from '@dnd-kit/core';
-import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import { useDraggable, type DraggableAttributes, type DraggableSyntheticListeners } from '@dnd-kit/core';
 import { cn } from '@/lib/utils';
 import type { EventType } from '@/lib/types/calendar';
 import { getEventTypeConfig, formatTime } from '@/lib/calendar/event-styles';
@@ -28,7 +27,7 @@ const EventCardInner = forwardRef<
   EventCardProps & {
     isDragging?: boolean;
     dragAttributes?: DraggableAttributes;
-    dragListeners?: SyntheticListenerMap;
+    dragListeners?: DraggableSyntheticListeners;
   }
 >(function EventCardInner(
   {

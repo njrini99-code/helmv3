@@ -335,6 +335,8 @@ export default defineConfig({
             // D4 (db-tooling-drift): pure tally/regression helpers behind
             // the weekly Supabase advisor ratchet.
             'scripts/__tests__/advisor-ratchet.test.mjs',
+            'scripts/__tests__/local-db-checks.test.mjs',
+            'scripts/__tests__/config-drift.test.mjs',
             // Migration filename version prefixes are unique and
             // well-formed (the #220 duplicate-version hazard class).
             'scripts/__tests__/check-migration-versions.test.mjs',
@@ -374,6 +376,10 @@ export default defineConfig({
             // names, process.env in edge functions, service-role leaks)
             // against real src/ plus the synthetic positive fixture.
             'scripts/__tests__/review-gate-rules.test.mjs',
+            // `npm run gates:review` (scripts/review-gate-local.mjs) exits 2
+            // INCOMPLETE, not "green", when a scanner was skipped for a
+            // missing tool, unless --allow-missing.
+            'scripts/__tests__/review-gate-local.test.mjs',
             // Wave W2E header consolidation: canonical PageHeader still
             // ships its four variants, and the six sibling header modules
             // stay deleted or thinned to shims.

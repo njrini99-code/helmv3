@@ -30,7 +30,7 @@ inputs:
   cli-version:
     description: Supabase CLI version. Keep in step with the `supabase` job in ci.yml.
     required: false
-    default: 2.114.0
+    default: 2.119.0
   github-token:
     description: >-
       Token to authenticate ghcr.io pulls with (pass the caller job's
