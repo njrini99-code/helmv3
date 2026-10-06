@@ -62,7 +62,7 @@
     "src/app/**/sitemap.ts",
     "src/app/**/robots.ts",
     "src/app/**/manifest.ts",
-    "src/middleware.{ts,tsx}",
+    "src/proxy.{ts,tsx}",
     "src/instrumentation.{ts,tsx}",
     "src/instrumentation-client.{ts,tsx}",
     "next.config.mjs",
