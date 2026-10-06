@@ -31,7 +31,7 @@ describe('FairwayNewQualifier — form control accessible names (P192)', () => {
     expect(rosterCheckboxes).toHaveLength(players.length);
     expect(
       screen.getByRole('checkbox', {
-        name: 'This qualifier intentionally allows one 18-hole round',
+        name: 'This qualifier intentionally allows one 18-hole round.',
       }),
     ).toBeTruthy();
 
