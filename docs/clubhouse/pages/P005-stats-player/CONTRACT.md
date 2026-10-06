@@ -365,3 +365,9 @@ From the shell (P001): 12401 TESTS_NAME_CONTRACTS.
 ## 25 — Helm Bridge action
 
 Status: N/A — the Bridge is wired later (owner, D-68). Every contract above already has its Bridge ID; the commands (change the window, open a tab, propose a focus area) are defined when the Bridge is.
+
+## October 6 premium interaction corrections
+
+Desktop Game detail section navigation observes both OS reduced motion and
+the live Clubhouse Animations preference. The selected section and phone
+selection/persistence contracts remain unchanged.

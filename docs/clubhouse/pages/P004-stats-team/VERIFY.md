@@ -276,6 +276,10 @@ before, after, baseline or evidence.
 | `P004__filter-sheet__coach__375__date-field-targets__after__83b9990.png` | after | 83b9990 | filter-sheet (coach), 375px, date-field-targets |
 | `P004__filter-sheet__coach__375__date-field-targets__before__83b9990.png` | before | 83b9990 | filter-sheet (coach), 375px, date-field-targets |
 | `P004__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
+| `P004__premium-audit__coach__1280__case-003-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-003-webkit-reduce; /clubhouse-preview/stats; synthetic preview |
+| `P004__premium-audit__coach__1280__case-019-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-019-chromium-normal; /clubhouse-preview/stats; synthetic preview |
+| `P004__premium-audit__coach__390__case-003-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-003-webkit-reduce; /clubhouse-preview/stats; synthetic preview |
+| `P004__premium-audit__coach__390__case-019-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-019-chromium-normal; /clubhouse-preview/stats; synthetic preview |
 
 ## 2026-10-02 — Mobile design fidelity verification
 
@@ -342,3 +346,11 @@ Shared motion and thread regressions pass within the 3,100-test Clubhouse/
 appearance run; full typecheck and mapped travel checks pass. See the global
 [repair acceptance](../../SMOOTHNESS_AUDIT.md#repair-acceptance--2026-10-06)
 for timing, screenshots and the physical-device limits.
+
+## Premium audit matrix — 2026-10-06
+
+26 synthetic captures are recorded for this page family. The table above
+keeps representative viewport/browser evidence; the complete state/opener
+ledger and review limitations are in the
+[premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
+Captured states are not all visually approved.

@@ -6,5 +6,8 @@ export default {
     'declaration-block-no-duplicate-custom-properties': true,
     'property-no-unknown': [true, { checkPrefixed: false }],
     'block-no-empty': true,
+    'color-no-invalid-hex': true,
+    'function-calc-no-unspaced-operator': true,
+    'keyframe-declaration-no-important': true,
   },
 };

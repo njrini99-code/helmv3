@@ -1095,3 +1095,10 @@ it cannot inspect HEAD and leaves the snapshot file alone. It exits 0; the
 real worktree tsconfig is unchanged. Existing Sentry/Tailwind deprecation and
 class-ambiguity warnings remain outside this repair. Build success is not
 production navigation/frame profiling or physical-device certification.
+
+## Premium follow-up, October 6
+
+[PREMIUM_AUDIT.md](PREMIUM_AUDIT.md) extends this inventory with the owner’s
+material/composition rubric, independent visual and deterministic assessments,
+383 current development-fixture renders and focused keyboard/motion repairs.
+Automated coverage and visual approval remain separate; no release gate moved.

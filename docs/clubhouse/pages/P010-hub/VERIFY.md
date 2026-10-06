@@ -142,6 +142,10 @@ before, after, baseline or evidence.
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
 | `P010__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
+| `P010__premium-audit__coach__1280__case-015-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-015-webkit-reduce; /clubhouse-preview/hub; synthetic preview |
+| `P010__premium-audit__coach__1280__case-109-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-109-chromium-normal; /clubhouse-preview/hub; synthetic preview |
+| `P010__premium-audit__coach__390__case-015-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-015-webkit-reduce; /clubhouse-preview/hub; synthetic preview |
+| `P010__premium-audit__coach__390__case-109-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-109-chromium-normal; /clubhouse-preview/hub; synthetic preview |
 
 ## 2026-10-02 — Mobile design fidelity verification
 
@@ -207,3 +211,11 @@ pending feedback and disabled controls. Releasing both writes settles the
 pending states; document overflow remains zero at 390px. The initial local
 row-gate implementation reproduced loss of pending state on return; the
 Hub-lifetime gate fixes it. This does not establish cross-route idempotency.
+
+## Premium audit matrix — 2026-10-06
+
+20 synthetic captures are recorded for this page family. The table above
+keeps representative viewport/browser evidence; the complete state/opener
+ledger and review limitations are in the
+[premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
+Captured states are not all visually approved.

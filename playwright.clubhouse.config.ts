@@ -13,7 +13,7 @@ if (visual && !process.env.CH_VISUAL_BASELINES) {
 }
 export default defineConfig({
   testDir: './e2e',
-  testMatch: 'clubhouse-quality.spec.ts',
+  testMatch: ['clubhouse-quality.spec.ts', 'clubhouse-playground.spec.ts'],
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,

@@ -305,6 +305,13 @@
   align-items: center;
   gap: 6px;
 }
+/* Keyboard-only actions take their own line; message content remains unobscured. */
+.ch-ms-msg__line:has(> .ch-sr-only--focusable:focus-visible) {
+  flex-wrap: wrap;
+}
+.ch-ms-msg__line > .ch-sr-only--focusable:focus-visible {
+  flex-basis: 100%;
+}
 .ch-ms-msg.is-mine .ch-ms-msg__line {
   flex-direction: row-reverse;
 }

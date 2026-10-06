@@ -1151,6 +1151,19 @@
     -webkit-user-select: none;
     -webkit-touch-callout: none;
   }
+  /* Exposed keyboard alternatives expand the row rather than covering its priority. */
+  .ch-setm-rank__i:has(> .ch-sr-only--focusable :focus-visible) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) 44px;
+    height: auto;
+    min-height: 56px;
+    padding-block: 8px;
+  }
+  .ch-setm-rank__i > .ch-sr-only--focusable:has(:focus-visible) {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .ch-setm-rank__i ~ .ch-setm-rank__i::before {
     content: '';
     position: absolute;

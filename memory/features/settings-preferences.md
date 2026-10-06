@@ -114,3 +114,10 @@ Behind the flag, `/golf/dashboard/settings` renders the Clubhouse Settings (`src
 - `push_announcements` is now accepted and defaulted on by `updateNotificationPreferences` / `getNotificationPreferences` (it was stripped by the schema, so the switch saved nothing).
 - The philosophy row mapping moved to `src/lib/coachhelm/philosophy-map.ts` (shared by the hook and the loader).
 - Shown preferences are only those Clubhouse honours: animations (every Clubhouse transition) and haptics. Checklist: `docs/clubhouse/screens/settings.md`; decisions D-18, D-19 in `docs/clubhouse/PROGRESS.md`.
+
+## Clubhouse keyboard alternatives, October 6
+
+Phone priority reordering preserves its visible arrow-key handle and the
+Move up/down alternatives. Those alternatives reveal on keyboard focus instead
+of remaining inside a clipped one-pixel wrapper. Ordinary assistive labels and
+live-region hints remain hidden. See `docs/clubhouse/PREMIUM_AUDIT.md`.

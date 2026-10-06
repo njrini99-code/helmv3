@@ -198,6 +198,10 @@ before, after, baseline or evidence.
 | `P009__shiro-mobile-overview__coach__390__populated__after__cca081c.png` | after | cca081c | shiro-mobile-overview (coach), 390px, populated; /clubhouse-preview/qualifiers, synthetic preview fixture |
 | `P009__shiro-mobile-overview__coach__390__populated__before__cca081c.png` | before | cca081c | shiro-mobile-overview (coach), 390px, populated; /clubhouse-preview/qualifiers, synthetic preview fixture |
 | `P009__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
+| `P009__premium-audit__coach__1280__case-010-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-010-webkit-reduce; /clubhouse-preview/qualifiers; synthetic preview |
+| `P009__premium-audit__coach__1280__case-081-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-081-chromium-normal; /clubhouse-preview/qualifiers; synthetic preview |
+| `P009__premium-audit__coach__390__case-010-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-010-webkit-reduce; /clubhouse-preview/qualifiers; synthetic preview |
+| `P009__premium-audit__coach__390__case-081-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-081-chromium-normal; /clubhouse-preview/qualifiers; synthetic preview |
 
 ## Historical verification gaps
 
@@ -295,3 +299,11 @@ before, after, baseline or evidence.
   built is new and listens to `golf_rounds` only. The checklist row now says so;
   whether an entry or pick change
   should also refresh the page is open.
+
+## Premium audit matrix — 2026-10-06
+
+63 synthetic captures are recorded for this page family. The table above
+keeps representative viewport/browser evidence; the complete state/opener
+ledger and review limitations are in the
+[premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
+Captured states are not all visually approved.

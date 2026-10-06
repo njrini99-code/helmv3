@@ -162,3 +162,74 @@ The console reported two source-map loading errors, font preload warnings
 and development instrumentation/Fast Refresh messages. No physical iPhone
 appeared in Safari's device inspection list. Authenticated production-build
 journeys, iPhone keyboard/safe-area behavior and VoiceOver remain unverified.
+
+## Component playground
+
+With the development server running, open `/clubhouse-preview/components`.
+This workspace renders the real shared Clubhouse components inside isolated
+original/candidate galleries. Select an actual 390, 430, 768 or 1280px frame
+width and short, standard or tall height. Large frames scroll inside the
+workspace instead of pretending that a scaled phone is a desktop viewport.
+Use long-text stress, keyboard focus, pressed controls, disabled/loading/error
+fixtures and nested menus inside the shared Modal/phone sheet.
+
+Body size, content spacing, corners and reading shadows can be tuned locally.
+Motion duration changes only the replay sample; it respects reduced motion and
+does not rewrite production CSS timings or JavaScript motion constants. Until
+adjusted, each control preserves the original live styles. Reset removes every
+override. Download/copy exports a reviewable CSS proposal, including explicit
+Surface mappings where that component still owns literal styles. Nothing is
+persisted, saved to team data or applied to production tokens.
+
+Both routes return 404 in production. Development allows only the exact gallery
+route in same-origin frames; all other routes and production keep their existing
+frame protection. This is component inspection, not coverage of every page,
+authenticated flow or physical-device performance. The dedicated browser lane
+includes proposal isolation, reset, exports and nested-overlay keyboard checks
+for Chromium/WebKit with normal/reduced motion.
+
+## Reference priorities
+
+Use these three repositories when reviewing shared component quality:
+
+| Reference | Inspect | Apply to Clubhouse |
+| --- | --- | --- |
+| [Open Props](https://github.com/argyleink/open-props) | Spacing, typography, radii, easing and shadow scales; strength/color separation | Compare the existing semantic `--ch-*` vocabulary and document gaps; propose changes in the playground |
+| [GUI Challenges](https://github.com/argyleink/gui-challenges) | Dialogs, switches, menus, toasts and transitions with adaptive/browser behavior | Review keyboard, focus return, scrolling, pointer behavior and reduced motion against real shared primitives |
+| [Radix Themes](https://github.com/radix-ui/themes) | Component CSS owners, base/variant/size separation and its playground | Keep one owner per component and exercise state × size × viewport combinations |
+
+These are references for implementation review. The existing Clubhouse tokens,
+plain CSS, native dialog behavior and owner-approved designs remain the runtime
+system. Introducing an upstream theme or reset requires a separate reviewed
+migration. Reference quality does not certify Clubhouse's release.
+
+Stylelint 16.25.0 is installed. `npm run clubhouse:css` uses it with PostCSS
+checks
+and runs in the presentation CI lane. The scoped rules reject duplicate
+properties/tokens, unknown properties, empty blocks, invalid hex colors,
+unspaced `calc()` operators and ineffective `!important` in keyframes. AST
+checks also reject `transition: all`, layout keyframes/new layout transitions
+and new outer shadows that bypass or reference absent depth tokens. See the
+[Stylelint rule reference](https://stylelint.io/user-guide/rules/).
+
+Lint catches CSS defects and enforceable conventions. Pair it with browser
+accessibility, keyboard, responsive and screenshot checks, plus real traces for
+smoothness; it cannot judge visual taste or prove frame pacing.
+
+## Full component and premium audit coverage
+
+The component playground now indexes all 253 non-test TSX modules, all 32
+stylesheets and 35 contextual preview routes. Every shared UI module is linked
+to direct examples or its provider/error/phone context; indexed coverage is
+not executed state coverage. Closed catalog disclosures do not mount token
+tables. `clubhouse:catalog -- --check` is enforced in presentation CI.
+
+`clubhouse:materials` emits CSS/inline declaration ownership and review
+classification; it does not treat illustration, scoring marks or focus rings
+as cosmetic defects. `scripts/clubhouse/premium-capture.mjs --sha <7hex>`
+repeats the full local synthetic state/axe and WebKit resting evidence matrix.
+Use `--resume` only to resume unchanged source; captures retain source labels.
+
+[PREMIUM_AUDIT.md](PREMIUM_AUDIT.md) records 383 completed cases, the partial
+visual rubric and release limits. Physical iPhone, complete manual states and
+authenticated production-build latency remain separate.

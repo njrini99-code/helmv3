@@ -9,6 +9,12 @@ test('Stylelint parses CSS and catches duplicates and unknown properties', async
   assert(findings.some((finding) => finding.rule === 'property-no-unknown'));
   assert((await lintCSS('.ch-card{color:red')).some((finding) => finding.rule === 'CssSyntaxError'));
 });
+test('Stylelint catches malformed colors, broken calc and ineffective keyframe priority', async () => {
+  const findings = await lintCSS('.ch-card{color:#ggg;width:calc(100% -2px)} @keyframes ch-test{to{opacity:0!important}}');
+  for (const rule of ['color-no-invalid-hex', 'function-calc-no-unspaced-operator', 'keyframe-declaration-no-important'])
+    assert(findings.some(finding => finding.rule === rule), rule);
+  assert.deepEqual(await lintCSS('.ch-card{color:#abc;width:calc(100% - 2px)} @keyframes ch-test{to{opacity:0}}'), []);
+});
 test('AST ignores comments and catches all, implicit all and layout keyframes', () => {
   const findings = inspectCSS('/* transition: all */ .ch-card{transition:opacity 1s, all 1s} .ch-other{transition:1s} @keyframes ch-bad{from{height:0}to{height:40px}}');
   assert.equal(findings.filter((finding) => finding.rule === 'clubhouse/no-transition-all').length, 2);

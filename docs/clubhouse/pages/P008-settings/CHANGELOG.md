@@ -1,5 +1,21 @@
 # P008 — Settings: changelog
 
+## 2026-10-06 — Premium interaction corrections
+
+```text
+PR/commit:      #2155, codex/clubhouse-smoothness-audit
+Design package: existing Clubhouse focus and motion owners
+Contract IDs:   existing keyboard and reduced-motion behavior
+Data impact:    none
+Held items:     physical iPhone and complete manual release acceptance
+```
+
+Keyboard Move up/down alternatives reveal in their own row on focus.
+Ordinary assistive descriptions remain hidden; the visible reorder handle and
+its arrow-key path remain available.
+
+See [premium audit](../../PREMIUM_AUDIT.md) for focused evidence and limits.
+
 ## 2026-10-06 — Phone popup sizing corrections
 
 Form/list sheets initially focus their labelled heading. Reading destinations do not draw a green control box; buttons retain keyboard focus indicators.

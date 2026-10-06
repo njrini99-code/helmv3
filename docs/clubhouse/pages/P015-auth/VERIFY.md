@@ -86,6 +86,10 @@ before, after, baseline or evidence.
 | `P015__welcome__player__390x664__mid-animation__after__cbc1c0d.png` | after | `cbc1c0d` | After:1.6s into welcome, the ball lands at the visible hole. |
 | `P015__signin__none__390x664__javascript-disabled__evidence__cbc1c0d.png` | evidence | `cbc1c0d` | Server paint: form and actual course still with JavaScript disabled. |
 | `P015__release-audit__none__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (none), 430x844px, ready |
+| `P015__premium-audit__none__1280__case-025-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (none), 1280px, case-025-webkit-reduce; /clubhouse-preview/auth; synthetic preview |
+| `P015__premium-audit__none__1280__case-165-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (none), 1280px, case-165-chromium-normal; /clubhouse-preview/auth; synthetic preview |
+| `P015__premium-audit__none__390__case-025-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (none), 390px, case-025-webkit-reduce; /clubhouse-preview/auth; synthetic preview |
+| `P015__premium-audit__none__390__case-165-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (none), 390px, case-165-chromium-normal; /clubhouse-preview/auth; synthetic preview |
 
 ## Historical verification gaps
 
@@ -116,3 +120,11 @@ and night at 390px. The heading has no blur and the document has no horizontal
 overflow. The updated veil and floating updates card were visually inspected.
 The focused auth suites passed 90 tests. These are local browser checks;
 physical iPhone Safari and real account authentication remain separate checks.
+
+## Premium audit matrix — 2026-10-06
+
+30 synthetic captures are recorded for this page family. The table above
+keeps representative viewport/browser evidence; the complete state/opener
+ledger and review limitations are in the
+[premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
+Captured states are not all visually approved.

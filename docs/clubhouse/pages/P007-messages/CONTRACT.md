@@ -399,3 +399,9 @@ Status: N/A — the Bridge is wired later (owner, D-68). Every contract above
 
 already has its Bridge ID; the commands (focus the composer, open New message,
 retry the last send) are defined when the Bridge is.
+
+## October 6 premium interaction corrections
+
+Keyboard-only Message actions reveal visibly on focus without covering the
+message. Quoted-message scrolling observes OS reduced motion and the live
+Clubhouse Animations preference; disabled animation means an immediate jump.

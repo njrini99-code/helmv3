@@ -65,3 +65,12 @@ The plugin-managed auditor and the project baselines were not modified. WebKit
 observed themed native scrolling, automatic forced-color defaults and an
 unchanged outer body. These scoped observations do not prove every application
 control or physical Safari interaction.
+
+## Complete source catalog
+
+The development-only `/clubhouse-preview/components` indexes every non-test
+Clubhouse TSX module and stylesheet, with source export/class/import hints and
+contextual fixture links. `npm run clubhouse:catalog` regenerates it; the
+`--check` form detects drift in CI. Hints are not authoritative runtime
+ownership or proof of audited states. Material declarations and role candidates
+are separately inspectable through `npm run clubhouse:materials`.

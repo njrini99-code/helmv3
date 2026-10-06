@@ -124,6 +124,40 @@
   white-space: nowrap;
 }
 
+/* Opt in only for hidden interactive alternatives; descriptive labels stay hidden. */
+.ch-sr-only--focusable:focus-visible,
+.ch-sr-only--focusable:has(:focus-visible) {
+  position: static;
+  width: auto;
+  height: auto;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 12px;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--ch-raised-bg);
+  color: var(--ch-text-primary);
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  box-shadow: var(--ch-elevation-control);
+  font: var(--ch-type-body-s);
+}
+.ch-sr-only--focusable > button {
+  flex: 1;
+  min-height: 44px;
+  padding: 8px;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  font: inherit;
+}
+
 /* Depth vocabulary */
 .ch-well {
   background: var(--ch-well-bg);

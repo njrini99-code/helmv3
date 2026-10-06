@@ -127,7 +127,7 @@ export function Reorder({ order, onCommit }: { order: PriorityKey[]; onCommit: (
               <button type="button" className="ch-setm-rank__h" aria-label={`Reorder ${PRIORITY_LABEL[k].label}`} aria-describedby={hintId} onKeyDown={(e) => onKey(e, k)}>
                 <Icon icon={Menu} size={20} />
               </button>
-              <span className="ch-sr-only">
+              <span className="ch-sr-only ch-sr-only--focusable">
                 <button type="button" disabled={i === 0} onClick={() => step(k, -1)}>
                   Move {PRIORITY_LABEL[k].label} up
                 </button>

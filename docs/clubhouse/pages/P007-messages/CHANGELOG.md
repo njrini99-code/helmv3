@@ -1,5 +1,21 @@
 # P007 — Messages: changelog
 
+## 2026-10-06 — Premium interaction corrections
+
+```text
+PR/commit:      #2155, codex/clubhouse-smoothness-audit
+Design package: existing Clubhouse focus and motion owners
+Contract IDs:   existing keyboard and reduced-motion behavior
+Data impact:    none
+Held items:     physical iPhone and complete manual release acceptance
+```
+
+Keyboard-only Message actions reveal visibly on focus without covering the
+message. Quoted-message scrolling observes OS reduced motion and the live
+Clubhouse Animations preference; disabled animation means an immediate jump.
+
+See [premium audit](../../PREMIUM_AUDIT.md) for focused evidence and limits.
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Whole-app release audit
 

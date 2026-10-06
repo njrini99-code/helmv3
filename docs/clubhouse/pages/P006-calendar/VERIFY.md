@@ -201,6 +201,10 @@ before, after, baseline or evidence.
 | `P006__people-popover__coach__1280x400__popup-audit__before__43a146a.png` | before | 43a146a | people-popover (coach), 1280x400px, popup-audit; local synthetic preview; 43a146a baseline |
 | `P006__event-menu__coach__390x844__popup-audit__after__43a146a.png` | after | 43a146a | event-menu (coach), 390x844px, popup-audit; synthetic preview; 43a146a plus working-tree repairs |
 | `P006__event-menu__coach__390x844__popup-audit__before__43a146a.png` | before | 43a146a | event-menu (coach), 390x844px, popup-audit; synthetic preview; 43a146a baseline |
+| `P006__premium-audit__coach__1280__case-005-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-005-webkit-reduce; /clubhouse-preview/calendar; synthetic preview |
+| `P006__premium-audit__coach__1280__case-048-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-048-chromium-normal; /clubhouse-preview/calendar; synthetic preview |
+| `P006__premium-audit__coach__390__case-005-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-005-webkit-reduce; /clubhouse-preview/calendar; synthetic preview |
+| `P006__premium-audit__coach__390__case-048-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-048-chromium-normal; /clubhouse-preview/calendar; synthetic preview |
 
 ## Historical verification gaps
 
@@ -222,3 +226,11 @@ before, after, baseline or evidence.
   (CONTRACT.md 06).
 - v2 draws a whole-page first-run state for a team that has never scheduled
   anything (D-71); it is not built.
+
+## Premium audit matrix — 2026-10-06
+
+24 synthetic captures are recorded for this page family. The table above
+keeps representative viewport/browser evidence; the complete state/opener
+ledger and review limitations are in the
+[premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
+Captured states are not all visually approved.

@@ -240,6 +240,10 @@ before, after, baseline or evidence.
 | `P014__form-stress__coach__320x568__popup-audit__before__43a146a.png` | before | 43a146a | form-stress (coach), 320x568px, popup-audit; local synthetic preview; 43a146a baseline |
 | `P014__prospect__coach__390x844__popup-audit__after__43a146a.png` | after | 43a146a | prospect (coach), 390x844px, popup-audit; local synthetic preview; 43a146a plus working-tree popup and depth repairs |
 | `P014__prospect__coach__390x844__popup-audit__before__43a146a.png` | before | 43a146a | prospect (coach), 390x844px, popup-audit; local synthetic preview; 43a146a baseline |
+| `P014__premium-audit__coach__1280__case-024-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-024-webkit-reduce; /clubhouse-preview/recruiting; synthetic preview |
+| `P014__premium-audit__coach__1280__case-151-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-151-chromium-normal; /clubhouse-preview/recruiting; synthetic preview |
+| `P014__premium-audit__coach__390__case-024-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-024-webkit-reduce; /clubhouse-preview/recruiting; synthetic preview |
+| `P014__premium-audit__coach__390__case-151-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-151-chromium-normal; /clubhouse-preview/recruiting; synthetic preview |
 
 ## Historical verification gaps
 
@@ -349,3 +353,11 @@ before, after, baseline or evidence.
   resolved before final proof; development/HMR timings are not product timings.
   No production/customer writes or physical-iPhone keyboard, edge-gesture or
   frame-pacing claim. Root owns combined typecheck/build/release verification.
+
+## Premium audit matrix — 2026-10-06
+
+28 synthetic captures are recorded for this page family. The table above
+keeps representative viewport/browser evidence; the complete state/opener
+ledger and review limitations are in the
+[premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
+Captured states are not all visually approved.

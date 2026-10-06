@@ -181,6 +181,10 @@ before, after, baseline or evidence.
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
 | `P012__release-audit__player__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (player), 430x844px, ready |
+| `P012__premium-audit__coach__1280__case-021-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-021-webkit-reduce; /clubhouse-preview/classes; synthetic preview |
+| `P012__premium-audit__coach__1280__case-135-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-135-chromium-normal; /clubhouse-preview/classes; synthetic preview |
+| `P012__premium-audit__coach__390__case-021-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-021-webkit-reduce; /clubhouse-preview/classes; synthetic preview |
+| `P012__premium-audit__coach__390__case-135-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-135-chromium-normal; /clubhouse-preview/classes; synthetic preview |
 
 ## Historical verification gaps
 
@@ -251,3 +255,11 @@ button's feel, the sheet, the warning
 haptic); that a Retry after a really lost answer finds the rows gone (forced
 with fakes, not with a dropped
 connection). Not in `a11y.mjs` and `native.mjs` yet.
+
+## Premium audit matrix — 2026-10-06
+
+14 synthetic captures are recorded for this page family. The table above
+keeps representative viewport/browser evidence; the complete state/opener
+ledger and review limitations are in the
+[premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
+Captured states are not all visually approved.

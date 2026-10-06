@@ -183,5 +183,16 @@
     "note": "tooling implemented; reviewed baselines, authenticated performance and physical-device release evidence remain separate",
     "allPages": true,
     "pages": []
+  },
+  {
+    "file": "PREMIUM_AUDIT.md",
+    "title": "Premium UI/UX audit and design brief",
+    "kind": "audit",
+    "date": "2026-10-06",
+    "scope": "All 15 families: semantic materials, critical visual hierarchy, complete source catalog, rendered state evidence, focused accessibility/motion repairs and unresolved release risks.",
+    "status": "in_progress",
+    "note": "383 local Chromium/WebKit cases; partial visual rubric; physical iPhone, authenticated performance and full manual state acceptance remain open",
+    "allPages": true,
+    "pages": []
   }
 ]

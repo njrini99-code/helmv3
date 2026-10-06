@@ -1,5 +1,15 @@
 # Clubhouse changelog
 
+## 2026-10-06 — Shared component playground
+
+Added a development-only workspace for original/candidate shared components,
+real phone/desktop frame sizes, long-content stress, local visual tuning and
+CSS proposal export. Modal/menu keyboard behavior and reduced-motion samples
+remain shared. No production tokens or page designs are changed. The gallery
+can be framed only by the same origin in development. Open Props, GUI Challenges
+and Radix Themes are documented as the three reference priorities. Stylelint
+adds invalid-color, calc-operator and keyframe-priority checks.
+
 ## 2026-10-06 — Quality tooling and scoped agent guidance
 
 Clubhouse agents now follow its own tokens and exemplars. The premium profile
@@ -251,3 +261,14 @@ ALL_PAGE_AUDIT.md records the 305 state cases, 60 WebKit base renders,
 24 onboarding renders and measured Settings reduced-motion mismatch.
 The screenshot log now ignores generated galleries; its regression first
 failed and then passed. Production settings and approved handoffs are intact.
+
+## 2026-10-06 — Premium audit, complete catalog and focus repair
+
+Added the complete component/style catalog, a repeatable material declaration
+inventory and the read-only clubhouse-design-reviewer. Recorded all 15 page
+families and 383 local synthetic renders in
+[PREMIUM_AUDIT.md](PREMIUM_AUDIT.md).
+Shared opt-in keyboard alternatives now reveal in document flow; ordinary
+screen-reader labels remain hidden. Message quotes and desktop Game detail
+observe live Animations off as well as OS reduced motion. No production flag,
+database or deployment changed.

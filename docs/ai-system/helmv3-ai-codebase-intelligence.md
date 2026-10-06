@@ -38,6 +38,12 @@ uses an isolated temporary profile with usage statistics and CrUX lookups
 disabled; it adds browser trace, network and rendering diagnostics alongside
 Next's framework diagnostics. Client reload is required after local setup.
 
+The development-only Clubhouse component playground is mapped to platform
+agent tooling in the registry. It compares real components in isolated frames,
+keeps tuning in memory and exports a CSS proposal for review. Its exact gallery
+route permits same-origin framing only in development; production protection
+remains unchanged. See QUALITY_TOOLING for the commands and evidence limits.
+
 ## Source Of Truth
 
 Use `memory/` as the repo intelligence source. Do not create a parallel `/knowledge` tree unless the repo explicitly migrates there later.
@@ -153,3 +159,11 @@ Worktrees share canonical ignored environment files, Claude local preferences,
 and Vercel project identity through live links. The creator uses canonical MCP
 definitions, and never fabricates an empty local-only environment. Source
 branches remain independent; tool access and credentials are shared.
+
+### Clubhouse premium review evidence
+
+`clubhouse-design-reviewer` is read-only and uses the owner’s semantic depth
+map, coach/player ergonomics and 15-category rubric. It keeps source, rendered
+fixtures, physical devices and owner acceptance distinct. The complete
+component catalog and material inventory are reproducible tooling, not blanket
+visual approval. See `docs/clubhouse/PREMIUM_AUDIT.md`.

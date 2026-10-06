@@ -1,10 +1,12 @@
 import os from 'node:os';
+import process from 'node:process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import bundleAnalyzer from '@next/bundle-analyzer';
 import { withSentryConfig } from '@sentry/nextjs';
 import { imageRemotePatterns } from './src/lib/security/image-remote-patterns.mjs';
 import { localSupabaseConnectSrc } from './src/lib/security/local-supabase-csp.mjs';
+import { clubhousePreviewHeaders } from './src/lib/security/clubhouse-preview-headers.mjs';
 import { buildSentryBuildOptions } from './src/lib/sentry-build-options.mjs';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
@@ -421,7 +423,7 @@ const nextConfig = {
 
   // Headers for caching and security
   async headers() {
-    return [
+    return clubhousePreviewHeaders([
       // Security headers for all routes
       {
         source: '/:path*',
@@ -534,7 +536,7 @@ const nextConfig = {
           },
         ],
       },
-    ];
+    ], process.env.NODE_ENV);
   },
 };
 

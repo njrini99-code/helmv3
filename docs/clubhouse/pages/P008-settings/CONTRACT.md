@@ -406,3 +406,9 @@ From the shell (P001): 12401 TESTS_NAME_CONTRACTS.
 ## 25 — Helm Bridge action
 
 Status: N/A — the Bridge is wired later (owner, D-68). Every contract above already has its Bridge ID; the commands (open a section, save the open card) are defined when the Bridge is.
+
+## October 6 premium interaction corrections
+
+Keyboard Move up/down alternatives reveal in their own row on focus.
+Ordinary assistive descriptions remain hidden; the visible reorder handle and
+its arrow-key path remain available.

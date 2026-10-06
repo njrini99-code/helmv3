@@ -35,15 +35,15 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Category | Files | Routed | Claims authority | Dead refs |
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 6 | 0 |
-| `AGENT_SKILL` | 132 | 0 | 7 | 0 |
-| `CURRENT_FEATURE` | 27 | 27 | 13 | 0 |
+| `AGENT_SKILL` | 133 | 0 | 7 | 0 |
+| `CURRENT_FEATURE` | 27 | 27 | 14 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
 | `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 44 | 5 | 18 | 74 |
-| `AUDIT_SNAPSHOT` | 66 | 6 | 34 | 25 |
+| `AUDIT_SNAPSHOT` | 67 | 6 | 35 | 25 |
 | `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 49 | 15 | 2 | 2 |
@@ -82,6 +82,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | Dead |
 | --- | --- | --- | --- | --- | --- |
+| `.claude/agents/clubhouse-design-reviewer.md` | current | - | - | - | - |
 | `.claude/agents/clubhouse-polish-reviewer.md` | current | - | - | - | - |
 | `.claude/agents/code-reviewer.md` | current | - | - | - | - |
 | `.claude/agents/db-migration-reviewer.md` | current | - | - | yes | - |
@@ -244,7 +245,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/shot-tracking.md` | current | yes | - | yes | - |
 | `memory/features/stats-analytics.md` | current | yes | - | yes | - |
 | `memory/features/team-access-control.md` | current | yes | - | - | - |
-| `memory/features/team-communications.md` | current | yes | - | - | - |
+| `memory/features/team-communications.md` | current | yes | - | yes | - |
 | `memory/features/team-operations.md` | current | yes | - | - | - |
 
 ### `REFERENCE`
@@ -484,6 +485,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/HIGH_FIDELITY_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/INTUITIVE_SECONDARY_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/POPUP_AUDIT.md` | current | - | - | - | - |
+| `docs/clubhouse/PREMIUM_AUDIT.md` | current | - | - | yes | - |
 | `docs/clubhouse/SMOOTHNESS_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/SWAP_AUDIT.md` | current | - | - | yes | - |
 | `docs/clubhouse/foundation-v2/01_REPO_AUDIT_AND_RECOMMENDATION.md` | current | - | - | yes | - |

@@ -1,5 +1,21 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-06 — Premium interaction corrections
+
+```text
+PR/commit:      #2155, codex/clubhouse-smoothness-audit
+Design package: existing Clubhouse focus and motion owners
+Contract IDs:   existing keyboard and reduced-motion behavior
+Data impact:    none
+Held items:     physical iPhone and complete manual release acceptance
+```
+
+Desktop Game detail section navigation observes both OS reduced motion and
+the live Clubhouse Animations preference. The selected section and phone
+selection/persistence contracts remain unchanged.
+
+See [premium audit](../../PREMIUM_AUDIT.md) for focused evidence and limits.
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
 

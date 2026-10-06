@@ -101,3 +101,10 @@ real test (not exercised).
 wide, at 2x, before and after (local only). Resting appearance only; motion,
 keyboard on a device, Safari traces, text enlargement and a real iPhone are
 not exercised.
+
+## Current premium composition review
+
+[PREMIUM_AUDIT.md](PREMIUM_AUDIT.md) applies the October 6 quiet-depth revision
+to all 15 families. Its material inventory distinguishes semantic references,
+focus/scoring/spatial exceptions and review candidates. The owner’s supplied
+older 44/52px ambient examples are historical hypotheses, not current values.

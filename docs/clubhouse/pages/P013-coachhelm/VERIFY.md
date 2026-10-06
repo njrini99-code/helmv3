@@ -273,6 +273,10 @@ before, after, baseline or evidence.
 | `P013__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
 | `P013__ask__coach__390x844__reduced-motion__before__ee0bab8.png` | before | ee0bab8 | ask (coach), 390x844px, reduced-motion |
 | `P013__ask__coach__390x844__reduced-motion__after__ee0bab8.png` | after | ee0bab8 | ask (coach), 390x844px, reduced-motion |
+| `P013__premium-audit__coach__1280__case-022-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-022-webkit-reduce; /clubhouse-preview/coachhelm; synthetic preview |
+| `P013__premium-audit__coach__1280__case-141-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-141-chromium-normal; /clubhouse-preview/coachhelm; synthetic preview |
+| `P013__premium-audit__coach__390__case-022-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-022-webkit-reduce; /clubhouse-preview/coachhelm; synthetic preview |
+| `P013__premium-audit__coach__390__case-141-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-141-chromium-normal; /clubhouse-preview/coachhelm; synthetic preview |
 
 ## Historical verification gaps
 
@@ -519,3 +523,11 @@ Shared motion and thread regressions pass within the 3,100-test Clubhouse/
 appearance run; full typecheck and mapped travel checks pass. See the global
 [repair acceptance](../../SMOOTHNESS_AUDIT.md#repair-acceptance--2026-10-06)
 for timing, screenshots and the physical-device limits.
+
+## Premium audit matrix — 2026-10-06
+
+24 synthetic captures are recorded for this page family. The table above
+keeps representative viewport/browser evidence; the complete state/opener
+ledger and review limitations are in the
+[premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
+Captured states are not all visually approved.

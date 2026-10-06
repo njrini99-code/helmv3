@@ -154,3 +154,32 @@ for (const size of sizes) {
     });
   });
 }
+
+test('keyboard alternatives reveal without covering their message or priority label', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/clubhouse-preview/messages');
+  const thread = page.locator('.ch-msp-thread');
+  await expect(thread).toBeInViewport();
+  await expect.poll(() => thread.evaluate(element => Math.round(element.getBoundingClientRect().left))).toBe(0);
+  const action = thread.locator('button.ch-sr-only--focusable').first();
+  await page.keyboard.press('Tab');
+  await action.focus();
+  await expect(action).toBeFocused();
+  expect(await action.evaluate(element => ({ clip: getComputedStyle(element).clip, position: getComputedStyle(element).position }))).toEqual({ clip: 'auto', position: 'static' });
+  const message = action.locator('..').locator('.ch-ms-msg__stack');
+  const messageBox = await message.boundingBox();
+  const actionBox = await action.boundingBox();
+  expect(actionBox!.y).toBeGreaterThanOrEqual(messageBox!.y + messageBox!.height - 1);
+
+  await page.goto('/clubhouse-preview/settings?section=coachhelm');
+  const move = page.locator('.ch-setm-rank__i .ch-sr-only--focusable button:not(:disabled)').first();
+  await page.keyboard.press('Tab');
+  await move.focus();
+  await expect(move).toBeFocused();
+  const wrapper = move.locator('..');
+  expect(await wrapper.evaluate(element => getComputedStyle(element).clip)).toBe('auto');
+  const label = wrapper.locator('..').locator('.ch-setm-rank__txt');
+  const labelBox = await label.boundingBox();
+  const moveBox = await move.boundingBox();
+  expect(moveBox!.y).toBeGreaterThanOrEqual(labelBox!.y + labelBox!.height - 1);
+});

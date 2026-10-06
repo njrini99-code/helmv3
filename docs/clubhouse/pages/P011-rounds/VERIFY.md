@@ -405,6 +405,10 @@ before, after, baseline or evidence.
 | `P011__shiro-mobile-overview__player__390__populated__after__cca081c.png` | after | cca081c | shiro-mobile-overview (player), 390px, populated; /clubhouse-preview/rounds, synthetic preview fixture |
 | `P011__shiro-mobile-overview__player__390__populated__before__cca081c.png` | before | cca081c | shiro-mobile-overview (player), 390px, populated; /clubhouse-preview/rounds, synthetic preview fixture |
 | `P011__release-audit__player__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (player), 430x844px, ready |
+| `P011__premium-audit__coach__1280__case-017-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-017-webkit-reduce; /clubhouse-preview/rounds; synthetic preview |
+| `P011__premium-audit__coach__1280__case-117-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-117-chromium-normal; /clubhouse-preview/rounds; synthetic preview |
+| `P011__premium-audit__coach__390__case-017-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-017-webkit-reduce; /clubhouse-preview/rounds; synthetic preview |
+| `P011__premium-audit__coach__390__case-117-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-117-chromium-normal; /clubhouse-preview/rounds; synthetic preview |
 
 ## 2026-10-02 — Narrow setup layout and course selection
 
@@ -481,3 +485,11 @@ Further browser checks paused when the shared dev server ran out of disk.
     CH-11510 and CH-11511 (and other sheets that are not
     destructive) sit in category 11 by the confirm-kind default.
   - Q-72 is open; the page is built on its recommendations.
+
+## Premium audit matrix — 2026-10-06
+
+44 synthetic captures are recorded for this page family. The table above
+keeps representative viewport/browser evidence; the complete state/opener
+ledger and review limitations are in the
+[premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
+Captured states are not all visually approved.

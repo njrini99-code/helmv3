@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LazyMotion, domAnimation } from 'framer-motion';
+import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -1279,6 +1280,37 @@ describe('Stats player · what the coach chose comes back (PAGE_PERFORMANCE.md r
     again.unmount();
     at('/golf/dashboard/stats\u0000t2');
     expect(selected()).toBe('Overview');
+  });
+
+  it('desktop game-section jumps respond to Animations off and on without remounting', async () => {
+    function AnimationPreference() {
+      const { showAnimations, updatePreferences } = useAppearancePreferences();
+      return <button type="button" onClick={() => updatePreferences({ showAnimations: !showAnimations })}>
+        {showAnimations ? 'Switch animations off' : 'Switch animations on'}
+      </button>;
+    }
+    const user = userEvent.setup();
+    render(<AnimationPreference />);
+    show(player());
+    await openTab(user, /Game detail/);
+    const section = document.getElementById('gm-putting')!;
+    const previousScroll = section.scrollIntoView;
+    const scroll = vi.fn();
+    section.scrollIntoView = scroll;
+    try {
+      await user.click(screen.getByRole('button', { name: 'Putting' }));
+      expect(scroll).toHaveBeenLastCalledWith({ block: 'start', behavior: 'smooth' });
+      await user.click(screen.getByRole('button', { name: 'Switch animations off' }));
+      await user.click(screen.getByRole('button', { name: 'Putting' }));
+      expect(scroll).toHaveBeenLastCalledWith({ block: 'start', behavior: 'instant' });
+      await user.click(screen.getByRole('button', { name: 'Switch animations on' }));
+      await user.click(screen.getByRole('button', { name: 'Putting' }));
+      expect(scroll).toHaveBeenLastCalledWith({ block: 'start', behavior: 'smooth' });
+    } finally {
+      section.scrollIntoView = previousScroll;
+      const restore = screen.queryByRole('button', { name: 'Switch animations on' });
+      if (restore) await user.click(restore);
+    }
   });
 
   it('51404 on the phone the game section chosen comes back; on desktop the section only follows the scroll and is not kept', async () => {
