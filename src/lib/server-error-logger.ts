@@ -292,7 +292,7 @@ function enrichTraceContext(message: string, rawContext: RoundErrorContext): Rou
   // surface that predates this field (getActiveSpan undefined on the mock).
   // Observability must never be able to throw inside a logging call itself —
   // same rule as withSupabaseTracing.
-  let ambientTraceId: string | null = null;
+  let ambientTraceId: string | null;
   try {
     ambientTraceId = Sentry.getActiveSpan()?.spanContext().traceId ?? null;
   } catch {

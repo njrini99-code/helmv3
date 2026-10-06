@@ -630,8 +630,8 @@ async function getInsightsForPlayerImpl(
       return query.range(from, to);
     }, undefined, { table: 'golf_coach_insights', action: 'getInsightsForPlayer', feature: 'coachhelm_ai_engine', sport: 'golf' });
 
-  let data: unknown = null;
-  let error: { message: string } | null = null;
+  let data: unknown;
+  let error: { message: string } | null;
   try {
     const result = await runQuery();
     data = result.data;
@@ -829,8 +829,8 @@ async function getInsightsForCoachWithMetaImpl(
   // rows per player, a few hundred per team — so a normal fetch is still ONE
   // round trip and ranking in memory stays cheap.
 
-  let data: unknown = null;
-  let error: { message: string } | null = null;
+  let data: unknown;
+  let error: { message: string } | null;
 
   if (opts.player_id) {
     // PER-PLAYER path — full visible set for one player.
@@ -1026,8 +1026,8 @@ async function getTopInsightsForPlayersImpl(
       { table: 'golf_coach_insights', action: 'getTopInsightsForPlayers', feature: 'coachhelm_ai_engine', sport: 'golf' },
     );
 
-  let data: unknown = null;
-  let error: { message: string } | null = null;
+  let data: unknown;
+  let error: { message: string } | null;
   try {
     const result = await runQuery();
     data = result.data;
@@ -1492,8 +1492,8 @@ async function assembleForPlayer(
       .order('created_at', { ascending: false })
       .limit(THEMES_FETCH_CAP);
 
-  let data: unknown = null;
-  let error: { message: string } | null = null;
+  let data: unknown;
+  let error: { message: string } | null;
   try {
     const result = await runQuery();
     data = result.data;
@@ -1526,7 +1526,7 @@ async function assembleForPlayer(
   // (+ the 1000-row PostgREST limit), so it could disagree with the standing SG
   // shown on the same page for high-volume players. The cache averages over ALL
   // completed rounds.
-  let sgByCategory: Partial<Record<InsightCategory, number | null>> = {};
+  let sgByCategory: Partial<Record<InsightCategory, number | null>>;
   try {
     const { data: sgRow } = await supabase
       .from('golf_player_stats_cache')

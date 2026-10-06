@@ -42,7 +42,7 @@ export default async function GolfDashboardLayout({
   if (!session) redirect('/golf/login');
 
   let { coach, player } = session;
-  let declaredRole: 'coach' | 'player' | null = null;
+  let declaredRole: 'coach' | 'player' | null;
 
   if (coach?.onboarding_completed || player?.onboarding_completed) {
     // Fast path (>99% of requests) — onboarded user, derive role from profiles.

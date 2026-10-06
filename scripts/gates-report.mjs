@@ -31,7 +31,7 @@ function parseArgs(argv) {
 }
 
 function readRows(ledgerPath) {
-  let text = '';
+  let text;
   try {
     text = readFileSync(ledgerPath, 'utf8');
   } catch {

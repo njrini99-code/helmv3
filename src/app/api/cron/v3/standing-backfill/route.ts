@@ -75,7 +75,7 @@ async function handle(): Promise<NextResponse> {
   //    so an unpaginated select silently drops every team past the first page.
   //    fetchAllRowsResult pages through the whole table and keeps the same
   //    { data, error } destructure/branches below.
-  let teamIds: string[] = [];
+  let teamIds: string[];
   try {
     const { data, error } = await fetchAllRowsResult<{ id: string }>((from, to) =>
       supabase

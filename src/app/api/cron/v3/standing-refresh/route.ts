@@ -123,7 +123,7 @@ async function handle(): Promise<NextResponse> {
   // balancing "stalest N" selection the cron always promised — created_at ASC
   // (the old proxy) starved every team past the first-created N (PERF-2). Falls
   // back to created_at ASC if the RPC isn't deployed yet.
-  let teamIds: string[] = [];
+  let teamIds: string[];
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const stalest = await (supabase as any).rpc('select_stalest_teams', {
@@ -290,7 +290,7 @@ async function handle(): Promise<NextResponse> {
   // supabase/migrations/20260524210100_v3_refresh_player_standing_function.sql
   // and owns the per-metric upsert SQL.
   type RpcRow = { metric_id: string; rows_upserted: number };
-  let rpcRows: RpcRow[] = [];
+  let rpcRows: RpcRow[];
 
   try {
     // refresh_player_standing isn't in the generated Database types

@@ -217,7 +217,7 @@ export async function asyncMerge({ repo, prNumber, headSha, run, sleep, now = Da
     await sleep(pollMs);
     const r = run(['api', `${path}/${start.uuid}`]);
     if (!r.ok) continue; // a transient read error: poll again until the deadline
-    let body = null;
+    let body;
     try {
       body = JSON.parse(r.stdout);
     } catch {
@@ -357,7 +357,7 @@ async function main(argv) {
   // The async merge API pins the squash to the head whose checks were just read; a host without it falls back to `gh pr merge`.
   const repo = ghJson(['repo', 'view', '--json', 'nameWithOwner'], canonicalRoot)?.nameWithOwner;
   let mergedVia = 'async merge API (squash, pinned to the checked head)';
-  let merge = { ok: false, stdout: '', stderr: 'repository name unavailable' };
+  let merge;
   if (repo && pr.headRefOid) {
     const r = await asyncMerge({
       repo,

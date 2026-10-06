@@ -113,12 +113,12 @@ function loadJson(path, label) {
   try {
     raw = readFileSync(path, 'utf-8');
   } catch (err) {
-    throw new Error(`${label} at ${path} could not be read: ${err.message}`);
+    throw new Error(`${label} at ${path} could not be read: ${err.message}`, { cause: err });
   }
   try {
     return JSON.parse(raw);
   } catch (err) {
-    throw new Error(`${label} at ${path} is not valid JSON: ${err.message}`);
+    throw new Error(`${label} at ${path} is not valid JSON: ${err.message}`, { cause: err });
   }
 }
 

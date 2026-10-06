@@ -213,9 +213,9 @@ async function extractTextFromPdf(file: File): Promise<string> {
     return full;
   } catch (err) {
     if (err instanceof Error && err.message === PDFJS_LOAD_ERROR) {
-      throw new Error('PDF import is unavailable right now: the PDF reader could not be loaded, which can happen offline or on a restricted network. Use a TXT file or paste the text instead.');
+      throw new Error('PDF import is unavailable right now: the PDF reader could not be loaded, which can happen offline or on a restricted network. Use a TXT file or paste the text instead.', { cause: err });
     }
-    throw new Error('That PDF could not be read. It may be a scan with no text. Try a screenshot or paste the text instead.');
+    throw new Error('That PDF could not be read. It may be a scan with no text. Try a screenshot or paste the text instead.', { cause: err });
   }
 }
 

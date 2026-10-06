@@ -1923,8 +1923,8 @@ function aggregateRoundStats(rounds: Array<{
     '20_30': { fairway: [], rough: [], sand: [] },
   };
 
-  let currentBirdieStreak = 0;
-  let currentParStreak = 0;
+  let currentBirdieStreak: number;
+  let currentParStreak: number;
   let current3PuttStreak = 0;
   // Denominator for puttsPerRound (#917) — holes that actually carry a
   // recorded putts value, NOT every hole played (stats.holesPlayed). Dividing

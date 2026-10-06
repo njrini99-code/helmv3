@@ -37,7 +37,7 @@ function main() {
     return;
   }
 
-  let inGitRepo = false;
+  let inGitRepo;
   try {
     inGitRepo = run(['rev-parse', '--is-inside-work-tree']) === 'true';
   } catch {
@@ -50,7 +50,7 @@ function main() {
   }
 
   const hooksPath = join(dirname(run(['rev-parse', '--path-format=absolute', '--git-common-dir'])), '.githooks');
-  let current = '';
+  let current;
   try {
     current = run(['config', '--get', 'core.hooksPath']);
   } catch {

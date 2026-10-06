@@ -620,7 +620,7 @@ async function fetchTeamThread(admin: AdminClient, teamId: string): Promise<Enti
   // `as any` cast (banned house rule).
   type RosterRow = { id: string; joined_at: string | null; created_at: string | null; name: string | null };
   sources.roster = async () => {
-    let rows: RosterRow[] = [];
+    let rows: RosterRow[];
     if (sport === 'golf') {
       const { data, error } = await admin
         .from('golf_team_members')

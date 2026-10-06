@@ -370,7 +370,7 @@ async function main() {
   const retiredCache = new Map();
   const retiredLookup = (path) => {
     if (retiredCache.has(path)) return retiredCache.get(path);
-    let head = null;
+    let head;
     try {
       head = readFileSync(resolve(ROOT, path), 'utf8').slice(0, 1500);
     } catch {

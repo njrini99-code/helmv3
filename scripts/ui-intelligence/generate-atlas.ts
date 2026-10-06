@@ -406,7 +406,7 @@ const crosscut = safeReadJson<Record<string, unknown>>(CROSSCUT_PATH, {});
 function readPartsDir(dir: string, source: "v2" | "v1"): Map<string, Analysis[]> {
   const byBase = new Map<string, Analysis[]>();
   if (!existsSync(dir)) return byBase;
-  let files: string[] = [];
+  let files: string[];
   try {
     files = readdirSync(dir).filter((f) => f.endsWith(".json") && !f.startsWith("_"));
   } catch (err) {
@@ -546,7 +546,7 @@ let remediationEntries = 0;
 let flowFilesLoaded = 0;
 (function loadRemediation(): void {
   if (!existsSync(PARTS_REMEDIATION_DIR)) return;
-  let files: string[] = [];
+  let files: string[];
   try {
     files = readdirSync(PARTS_REMEDIATION_DIR).filter((f) => f.endsWith(".json"));
   } catch (err) {
@@ -738,7 +738,7 @@ const PLAYER_TAB_CONSTS = ["PLAYER_TEAM_TABS"] as const;
 
 function parseSidebarNav(): { coach: NavItem[]; player: NavItem[] } {
   const empty = { coach: [] as NavItem[], player: [] as NavItem[] };
-  let src = "";
+  let src: string;
   try {
     src = readFileSync(SIDEBAR_PATH, "utf8");
   } catch {
@@ -1992,7 +1992,7 @@ function cardHtml(p: Page, sharedFolders?: SharedPage["folders"]): string {
   ].join(" ");
 
   // thumbnail(s)
-  let thumb = "";
+  let thumb: string;
   if (sharedFolders && sharedFolders.length > 1) {
     thumb = sharedFolders
       .map(

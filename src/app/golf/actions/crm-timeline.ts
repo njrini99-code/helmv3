@@ -255,7 +255,7 @@ export async function getCoachTimeline(
   // Wrapped in its own try/catch so a misconfigured service-role env var
   // degrades to "demo sessions missing" rather than throwing past the admin
   // check and blanking the whole timeline.
-  let demoSessionsRes: { data: DemoSessionTimelineRow[] | null; error: unknown } = { data: [], error: null };
+  let demoSessionsRes: { data: DemoSessionTimelineRow[] | null; error: unknown };
   try {
     const admin = createAdminClient();
     const coachEmail = (coachEmailRes?.data as CoachEmailRow | null)?.email ?? null;

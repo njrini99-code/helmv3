@@ -614,7 +614,7 @@ export async function markMessagesAsRead({
   // this degrades gracefully: the call errors, is logged as non-fatal below
   // (same as any other messagesError), and last_read_at (committed above)
   // still clears the group-chat badge.
-  let messagesError: { message: string } | null = null;
+  let messagesError: { message: string } | null;
   if (sport === 'golf') {
     const { error } = await (supabase as any).rpc('mark_golf_messages_read', {
       p_conversation_id: conversationId,

@@ -369,7 +369,7 @@ export const materializeWeightCheckInRequests = withLiftingAction(
     }
 
     // Resolve the athlete list for this schedule's assignment scope.
-    let athleteIds: string[] = [];
+    let athleteIds: string[];
 
     if (schedule.assignment_type === 'athlete' && schedule.athlete_id) {
       athleteIds = [schedule.athlete_id];

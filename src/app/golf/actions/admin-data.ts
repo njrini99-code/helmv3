@@ -1223,7 +1223,7 @@ async function resolveDashboardIncidentImpl(input: {
 
   // If caller provided event IDs directly (e.g. from tracer incidents which
   // already know the exact events), resolve them without re-fetching + key matching.
-  let matchingIds: string[] = [];
+  let matchingIds: string[];
   if (input.eventIds && input.eventIds.length > 0) {
     matchingIds = input.eventIds;
   } else {
@@ -1887,7 +1887,7 @@ async function getAdminDashboardDataImpl(): Promise<AdminDashboardData> {
   } catch (e) {
     // W15: inline logServerError removed here — withAdminObserved now
     // captures this throw at the export boundary (no more double-log).
-    throw new Error(`assembleAdminDashboardData failed: ${describeError(e)}`);
+    throw new Error(`assembleAdminDashboardData failed: ${describeError(e)}`, { cause: e });
   }
 }
 

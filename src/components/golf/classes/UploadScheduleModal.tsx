@@ -283,9 +283,10 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
       if (err instanceof Error && err.message === PDFJS_LOAD_ERROR) {
         throw new Error(
           'PDF import is unavailable right now (the PDF reader could not be loaded — this can happen offline or on a restricted network). Please use a TXT file or paste your schedule text instead.',
+          { cause: err },
         );
       }
-      throw new Error('Failed to read this PDF. It may be a scanned/image-only file. Try using TXT or paste text instead.');
+      throw new Error('Failed to read this PDF. It may be a scanned/image-only file. Try using TXT or paste text instead.', { cause: err });
     }
   };
 

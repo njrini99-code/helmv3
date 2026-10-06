@@ -411,15 +411,15 @@ export function pageShots(root, pageId) {
   const pages = loadPages(root);
   const dir = join(storeDir(root), pageDir(pages, pageId));
   const shots = [];
-  let days = [];
+  let days;
   try {
     days = readdirSync(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && validDate(d.name)).map((d) => d.name);
   } catch {
     return shots;
   }
   for (const day of days) {
-    let entries = [];
-    let present = new Set();
+    let entries;
+    let present;
     try {
       present = new Set(readdirSync(join(dir, day)));
       entries = JSON.parse(readFileSync(join(dir, day, 'manifest.json'), 'utf8'));

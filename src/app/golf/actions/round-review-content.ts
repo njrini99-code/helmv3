@@ -531,7 +531,7 @@ export function generateReviewContent(
   const { grade: overallGrade, basis: gradeBasis } = determineGrade(scoreToPar * to18, girPct, fairwayPct, totalPutts * to18, playerAvgs);
 
   // ===== SUMMARY =====
-  let summary = '';
+  let summary: string;
   if (scoreToPar <= -3) {
     summary = `Outstanding ${totalScore} at ${round.course_name || 'the course'}. `;
   } else if (scoreToPar <= -1) {

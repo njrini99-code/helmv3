@@ -434,7 +434,7 @@ export function MessageComposer({
     // never blocks typing — which means `message` can grow underneath us.
     const sentRaw = message;
 
-    let success = false;
+    let success: boolean;
     if (hasAttachments) {
       // G-21 — FAIL CLOSED. This used to be `if (hasAttachments &&
       // onSendWithAttachments) { … } else { onSend(text) }`, so a missing

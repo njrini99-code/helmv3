@@ -213,7 +213,7 @@ async function loginActionImpl(
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);
 
-  let redirectTo = '/baseball/dashboard';
+  let redirectTo: string;
 
   // Check admin allowlist (note: user_role enum only has 'coach' | 'player', no 'admin')
   if (adminAllowlist.includes(normalizedEmail)) {

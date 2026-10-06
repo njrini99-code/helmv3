@@ -323,7 +323,7 @@ export default async function PlayerCoachHelmPage({ searchParams }: { searchPara
       fairway_pct: null,
       gir_pct: null,
     };
-    let developmentLoadError = false;
+    let developmentLoadError: boolean;
     let goals: FairwayGoalCardData[] = [];
     let achievedGoals: FairwayGoalCardData[] = [];
     let suggestions: GoalSuggestionView[] = [];
@@ -583,13 +583,13 @@ export default async function PlayerCoachHelmPage({ searchParams }: { searchPara
   // are the canonical source for the hero-card layout; `getPlayerCoachHelmDashboard`
   // still provides focus areas, prediction, and recent-round metadata.
   let dashboardResult: Awaited<ReturnType<typeof getPlayerCoachHelmDashboard>>;
-  let topInsight: Awaited<ReturnType<typeof getTopInsightForPlayer>> = null;
-  let secondaryInsights: Awaited<ReturnType<typeof getInsightsForPlayer>> = [];
+  let topInsight: Awaited<ReturnType<typeof getTopInsightForPlayer>>;
+  let secondaryInsights: Awaited<ReturnType<typeof getInsightsForPlayer>>;
   // Hierarchical THEME scaffold (flag-gated read; only consumed in the redesign
   // fork below). A failed/rejected themes fetch MUST degrade to `[]` themes and
   // NEVER error the page, so it joins the parallel fetch via a swallow-to-null
   // wrapper rather than the fail-the-page Promise.all alongside it.
-  let themesRes: Awaited<ReturnType<typeof getThemesForPlayer>> | null = null;
+  let themesRes: Awaited<ReturnType<typeof getThemesForPlayer>> | null;
   try {
     [dashboardResult, topInsight, secondaryInsights, themesRes] =
       await Promise.all([

@@ -33,7 +33,7 @@ const BASELINE_PATH = resolve(ROOT, '.healthy-on-error-baseline.json');
 const RULE = 'helm/no-healthy-value-on-error';
 const UPDATE = process.argv.includes('--update');
 
-let raw = '';
+let raw;
 try {
   raw = execFileSync(
     'npx',

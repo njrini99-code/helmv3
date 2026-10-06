@@ -73,7 +73,7 @@ export default async function StatsUploadPage() {
 
   const players = await getRosterForImportMatching(supabase, teamId);
 
-  let legacyUploads: BaseballStatUpload[] = [];
+  let legacyUploads: BaseballStatUpload[];
   try {
     const legacy = await getRecentUploads(teamId, 20);
     legacyUploads = legacy.data ?? [];

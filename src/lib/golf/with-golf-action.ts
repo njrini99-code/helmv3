@@ -429,7 +429,7 @@ export function withGolfAction<TArgs extends unknown[], TResult>(
         data: { feature, featureArea },
       });
 
-      let extra: GolfActionExtraContext = {};
+      let extra: GolfActionExtraContext;
       try {
         extra = contextFrom?.(...args) ?? {};
       } catch {

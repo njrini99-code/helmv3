@@ -72,11 +72,11 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
   // Supabase client for team/event data lookups only
   const supabase = await createClient();
 
-  let teamId: string | null = null;
+  let teamId: string | null;
 
-  let coachList: { id: string; full_name: string | null; avatar_url: string | null }[] = [];
+  let coachList: { id: string; full_name: string | null; avatar_url: string | null }[];
   /** DB error from the membership read — checked after the try/catch, not inside it. */
-  let playerTeamError: { message?: string; code?: string } | null = null;
+  let playerTeamError: { message?: string; code?: string } | null;
   try {
     const [coachTeamId, playerTeamResult, coachListResult] = await Promise.all([
       orgId
@@ -114,7 +114,7 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
     // Catches the NETWORK-layer exceptions supabase-js does throw (fetch
     // failure, aborted request) and anything resolveCoachTeamIdWithCookie
     // raises. It does NOT catch database errors — see below.
-    throw new Error('Failed to load your team for the calendar. Please try again.');
+    throw new Error('Failed to load your team for the calendar. Please try again.', { cause: error });
   }
 
   // The `error` is READ.
@@ -206,7 +206,7 @@ export async function CalendarEventsSection({
   playerId,
   initialEventId,
 }: CalendarEventsSectionProps) {
-  let events: CalendarEvent[] = [];
+  let events: CalendarEvent[];
   let teamMembers: {
     id: string;
     first_name: string;

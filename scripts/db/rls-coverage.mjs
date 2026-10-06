@@ -58,7 +58,7 @@ function buildConnectionString() {
 
 function readRlsTestFileContents() {
   const dir = resolvePath(REPO_ROOT, 'supabase', 'tests', 'rls');
-  let entries = [];
+  let entries;
   try {
     entries = readdirSync(dir).filter((f) => f.endsWith('.sql'));
   } catch {

@@ -280,6 +280,7 @@ async function findBackChip(stage: HTMLElement): Promise<HTMLElement> {
         `Stage headings: ${headings.length ? headings.join(' | ') : '(none)'}\n` +
         `Buttons in stage (${buttons.length}): ${buttons.join(' | ') || '(none)'}\n` +
         `Original: ${err instanceof Error ? err.message : String(err)}`,
+      { cause: err },
     );
   }
 }
