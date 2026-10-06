@@ -100,4 +100,3 @@ export interface DataTableStateProps {
   action?: ReactNode;
   className?: string;
 }
-
