@@ -85,7 +85,10 @@ that break the naming convention and are easy to miss:
 - `src/app/api/crm/google-calendar/{auth,callback,sync}/route.ts`
 - `src/app/api/crm/unsubscribe/route.ts` — RFC 8058 one-click unsubscribe
 - `src/app/api/webhooks/resend/route.ts` — outbound events, svix-verified
-- `src/app/api/webhooks/resend-inbound/route.ts` — inbound replies
+- `src/app/api/webhooks/resend-inbound/route.ts` — inbound replies, svix-verified
+  (both: bad/stale signature → 401; signed body that is not a JSON object →
+  400. svix 2 `verify()` returns nothing, so the routes parse the verified raw
+  body; contract test `resend/__tests__/signature-verification.test.ts`)
 - `src/app/api/cron/{process-sequences,ingest-gmail-replies,refresh-engagement}/route.ts`
   — all `Bearer ${CRON_SECRET}` via `requireCronAuth`
 
