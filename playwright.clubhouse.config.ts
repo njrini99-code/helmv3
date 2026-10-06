@@ -39,7 +39,7 @@ export default defineConfig({
     })),
   ),
   webServer: process.env.CH_BASE ? undefined : {
-    command: './node_modules/.bin/next dev --hostname 127.0.0.1 --port 3100',
+    command: './node_modules/.bin/next dev --webpack --hostname 127.0.0.1 --port 3100',
     url: `${baseURL}/clubhouse-preview/popup-lab`,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
