@@ -86,18 +86,17 @@ fi
 # TWO SOURCES, and the hook says which one it used.
 #
 #   LIVE    scripts/release-status.mjs reads the served bundle and finds the
-#           stamped commit — the same check deploy-prod.sh runs after a
-#           promote. Bounded (--timeout-ms, default 5000, below this hook's
+#           stamped commit — the check every production deploy ends with. Bounded (--timeout-ms, default 5000, below this hook's
 #           10 s budget in settings.json) and never a git fetch (--no-fetch),
 #           so a dead network degrades to the marker, not to a hung hook.
 #           Skip it with HELM_SESSION_OFFLINE=1.
 #   MARKER  .claude/session-state/last-verified-release, `<sha> <date>`,
-#           written by deploy-prod.sh only after it verified the bundle. It is
+#           written after a deploy's release:status check passed. It is
 #           machine state and it goes stale: a deploy from a worktree left the
 #           canonical copy at 53ae81a4c while production served fb425aa2b, and
 #           this hook opened sessions claiming 16 unreleased commits against a
 #           real figure of 1. So the marker is read from the CANONICAL checkout
-#           (deploy-prod.sh now writes it there), and when it is all we have
+#           (AGENTS.md "Production" writes it there), and when it is all we have
 #           the context says "marker" and its date, never "verified".
 #
 # This block used to say a session-start hook must never make a network call.

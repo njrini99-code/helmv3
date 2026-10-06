@@ -495,7 +495,7 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
           : {
               mechanism: 'NONE',
               where: '—',
-              observed: 'UNENFORCED, BY OWNER GRANT — e5ec5e7b8 (2026-09-01) removed these rules so scripts/deploy-prod.sh is the one sanctioned promote path; AGENTS.md still forbids a production action the user did not ask for',
+              observed: 'UNENFORCED, BY OWNER GRANT — e5ec5e7b8 (2026-09-01) removed these rules; deploys are manual and happen only when the owner says to deploy main (AGENTS.md "Production")',
             };
       },
     },

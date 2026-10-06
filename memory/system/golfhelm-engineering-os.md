@@ -83,8 +83,8 @@ main → `release:budget` → `release:prepare` → `release:check -- --sha <sha
 → **owner approval** → one deploy → post-deploy verification →
 `memory/ledgers/deployments.md` + release-queue state updates. Until then,
 merging to `main` does not deploy (`vercel.json` disables Git deployments):
-production changes only when the owner says to deploy and runs
-`scripts/deploy-prod.sh` from a clean, current `main` — see
+production changes only when the owner says to deploy `main`, and the
+agent then deploys it per AGENTS.md "Production" — see
 `memory/ledgers/deployments.md` for history. A release is not live until
 `npm run release:status` shows its SHA. If the budget is spent and a P0
 lands, prepare everything and present it — the owner decides on any
