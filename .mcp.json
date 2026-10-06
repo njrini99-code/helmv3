@@ -11,7 +11,10 @@
     "next-devtools": {
       "type": "stdio",
       "command": "npx",
-      "args": ["--no-install", "next-devtools-mcp"]
+      "args": [
+        "--no-install",
+        "next-devtools-mcp"
+      ]
     },
     "playwright": {
       "type": "stdio",
@@ -19,6 +22,17 @@
       "args": [
         "-y",
         "@playwright/mcp@0.0.82"
+      ]
+    },
+    "chrome-devtools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "--no-install",
+        "chrome-devtools-mcp",
+        "--isolated",
+        "--no-usage-statistics",
+        "--no-performance-crux"
       ]
     }
   }

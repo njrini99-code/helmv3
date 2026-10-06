@@ -30,10 +30,13 @@ Clubhouse-specific policy is in `src/clubhouse/AGENTS.md`; it overrides the
 general Fairway design guidance only for Clubhouse surfaces. Its optional
 Claude polish reviewer follows that authority. The premium profile maps every
 Clubhouse manifest family. `docs/clubhouse/QUALITY_TOOLING.md` defines the
-checks and evidence limits. Next DevTools MCP is pinned in project MCP config;
+checks and evidence limits. Next and Chrome DevTools MCP are pinned in project MCP config;
 `npm run clubhouse:tools:setup` creates the ignored repository Codex config
 from a portable template without replacing unrelated MCP settings. React
-DevTools includes its explicitly allowed Electron runtime.
+DevTools includes its explicitly allowed Electron runtime. Chrome DevTools
+uses an isolated temporary profile with usage statistics and CrUX lookups
+disabled; it adds browser trace, network and rendering diagnostics alongside
+Next's framework diagnostics. Client reload is required after local setup.
 
 ## Source Of Truth
 

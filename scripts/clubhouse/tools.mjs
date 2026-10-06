@@ -6,20 +6,20 @@ import { fileURLToPath } from 'node:url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const require = createRequire(resolve(ROOT, 'package.json'));
 
-/** Replace only this tool's section; retain unrelated settings and credentials. */
-export function mergeNextDevtools(source, section) {
+/** Replace the two managed DevTools sections; retain unrelated settings. */
+export function mergeDevtools(source, section) {
   const lines = source.split('\n');
   const kept = [];
   let replacing = false;
   for (const line of lines) {
-    if (/^\s*\[/.test(line)) replacing = /^\s*\[mcp_servers\.next-devtools\]\s*(?:#.*)?$/.test(line);
+    if (/^\s*\[/.test(line)) replacing = /^\s*\[mcp_servers\.(?:next-devtools|chrome-devtools)(?:\.[^\]]+)?\]\s*(?:#.*)?$/.test(line);
     if (!replacing) kept.push(line);
   }
   return `${kept.join('\n').trimEnd()}\n\n${section.trim()}\n`.trimStart();
 }
 
 /** Read without a check/use gap, then replace atomically with a private file. */
-export function configureNextDevtools(target, template) {
+export function configureDevtools(target, template) {
   let previous = '';
   try {
     previous = readFileSync(target, 'utf8');
@@ -30,7 +30,7 @@ export function configureNextDevtools(target, template) {
   const temporary = mkdtempSync(resolve(dirname(target), '.next-devtools-'));
   try {
     const file = resolve(temporary, 'config.toml');
-    writeFileSync(file, mergeNextDevtools(previous, template), { mode: 0o600, flag: 'wx' });
+    writeFileSync(file, mergeDevtools(previous, template), { mode: 0o600, flag: 'wx' });
     renameSync(file, target);
   } finally {
     rmSync(temporary, { recursive: true, force: true });
@@ -40,7 +40,7 @@ export function configureNextDevtools(target, template) {
 function inspectTools() {
   const manifest = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8'));
   let failures = 0;
-  for (const name of ['next-devtools-mcp', 'stylelint', 'react-devtools']) {
+  for (const name of ['next-devtools-mcp', 'chrome-devtools-mcp', 'stylelint', 'react-devtools']) {
     const file = resolve(ROOT, 'node_modules', name, 'package.json');
     const installed = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')).version : null;
     const expected = manifest.devDependencies[name];
@@ -56,7 +56,7 @@ function inspectTools() {
     console.log('missing React DevTools desktop runtime: npm rebuild electron');
   }
   const config = resolve(ROOT, '.codex/config.toml');
-  const configured = existsSync(config) && readFileSync(config, 'utf8').includes('[mcp_servers.next-devtools]');
+  const configured = existsSync(config) && ['next-devtools', 'chrome-devtools'].every(name => readFileSync(config, 'utf8').includes(`[mcp_servers.${name}]`));
   console.log(`${configured ? 'configured' : 'not configured'} repository Codex MCP (reload the client to expose tools)`);
   if (!configured) failures++;
   return failures;
@@ -67,8 +67,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     if (process.argv.includes('--setup')) {
       const target = resolve(ROOT, '.codex/config.toml');
       const template = readFileSync(resolve(ROOT, 'config/clubhouse/codex-mcp.toml'), 'utf8');
-      configureNextDevtools(target, template);
-      console.log('Configured repository-local Next DevTools MCP; unrelated sections retained.');
+      configureDevtools(target, template);
+      console.log('Configured repository-local Next and Chrome DevTools MCP; unrelated sections retained.');
     }
     process.exitCode = inspectTools() ? 1 : 0;
   } catch (error) {

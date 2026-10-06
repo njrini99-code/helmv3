@@ -34,6 +34,27 @@ Setup reads the existing config directly and atomically replaces it with a
 private file. It does not write through a config-file symlink; unrelated
 settings from the existing file are retained.
 
+Chrome DevTools MCP 1.10.1 is also pinned in development dependencies and
+configured in `.mcp.json` and the portable Codex template. The setup command
+updates both DevTools server sections and their nested settings, retaining
+other servers. Reload the MCP client after setup. Chrome launches with an
+isolated temporary profile; usage statistics and performance CrUX URL lookups
+are disabled. It does not attach to your everyday Chrome profile.
+
+Use Chrome's trace start/stop and insight tools for rendering/interaction
+investigation, network/console tools for runtime failures, and CSS/snapshot/
+screenshot tools for presentation evidence. Save raw traces alongside the
+existing ignored audit artifacts. Next DevTools covers framework diagnostics;
+Chrome DevTools covers the browser. Chrome traces do not replace physical
+Safari/iPhone checks or prove smoothness across the whole app. See the
+[official tool reference](https://github.com/ChromeDevTools/chrome-devtools-mcp/blob/main/docs/tool-reference.md).
+
+Local setup/doctor and the Chrome MCP initialization handshake passed on
+2026-10-06. The server reported version 1.10.1 and 30 tools, including trace
+start/stop/insights, CSS, console, network and screenshots. All 89 tooling
+tests passed. This validates installation and tool discovery; a connected
+browser audit requires the client reload and a subsequent profiling session.
+
 React DevTools is pinned with its Electron desktop runtime. The profile
 command launches the standalone application; a browser/app connection is a
 separate step. Use the React DevTools browser extension for a connected React
