@@ -51,8 +51,9 @@ CH_ENGINES=chromium,webkit CH_MOTION=no-preference,reduce \
 
 The dedicated Playwright suite runs Chromium and WebKit with normal and
 reduced motion. Smoke mode contains 20 popup/menu cases on a short phone
-viewport; full mode contains 160 cases across four viewport sizes and all
-popup variants. Checks cover bounds, scrolling, keyboard dismissal, focus
+viewport; full mode contains 132 applicable cases across four viewport sizes. All phone
+sheets are tested at three sizes below the 820px boundary; desktop checks use
+Modal and menus, matching production owners. Checks cover bounds, scrolling, keyboard dismissal, focus
 restoration and axe accessibility. The existing page/state accessibility
 catalog accepts explicit engine, motion and viewport selections and rejects
 unknown page names. All these checks use development presentation fixtures.

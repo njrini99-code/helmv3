@@ -12,7 +12,7 @@ const sizes = full ? [
   { width: 390, height: 480 }, { width: 430, height: 932 },
   { width: 768, height: 600 }, { width: 1280, height: 800 },
 ] : [{ width: 390, height: 480 }];
-const kinds = full ? ['Modal', 'FormSheet', 'ListSheet', 'PickerSheet', 'ActionSheet', 'RecFormSheet', 'RecPickSheet', 'RecActionSheet'] : ['Modal', 'FormSheet', 'RecPickSheet'];
+const phoneKinds = full ? ['Modal', 'FormSheet', 'ListSheet', 'PickerSheet', 'ActionSheet', 'RecFormSheet', 'RecPickSheet', 'RecActionSheet'] : ['Modal', 'FormSheet', 'RecPickSheet'];
 
 async function fixture(page: Page) {
   const response = await page.goto('/clubhouse-preview/popup-lab');
@@ -56,6 +56,10 @@ async function capture(page: Page, info: TestInfo, name: string) {
 }
 
 for (const size of sizes) {
+  // Settings/Recruiting phone sheets have styles and route owners only at
+  // <=820px. Desktop production uses Modal (see POPUP_AUDIT and ProspectForm).
+  // Exercise every phone primitive at supported sizes and Modal/menus on desktop.
+  const kinds = size.width <= 820 ? phoneKinds : ['Modal'];
   test.describe(`${size.width}x${size.height}`, () => {
     test.use({ viewport: size });
     for (const kind of kinds) {
