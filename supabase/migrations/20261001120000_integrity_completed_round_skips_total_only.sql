@@ -19,7 +19,8 @@
 -- Expected after apply: the check passes (0) on today's data (14 flagged,
 -- 14 posted as a total, 0 without a total; read-only 2026-10-01).
 -- VERIFY:
--- VERIFY:   select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+-- VERIFY:   select 1 from pg_proc p join pg_namespace n on n.oid =
+-- VERIFY:     p.pronamespace
 -- VERIFY:   where n.nspname = 'public' and p.proname = 'run_integrity_checks'
 -- VERIFY:   and p.prosrc like '%r.front_nine IS NULL AND r.back_nine IS NULL%';
 --

@@ -60,7 +60,8 @@
 --   Storage API first if they should go.)
 --
 -- VERIFY: select 1 from storage.buckets where id = 'recruit-documents' and
--- VERIFY:   file_size_limit = 104857600 and allowed_mime_types @> array['video/mp4',
+-- VERIFY:   file_size_limit = 104857600 and allowed_mime_types @>
+-- VERIFY:     array['video/mp4',
 -- VERIFY:   'video/quicktime', 'video/x-m4v', 'application/pdf'];
 
 update storage.buckets

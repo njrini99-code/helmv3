@@ -36,7 +36,8 @@
 -- the refresh above.
 -- VERIFY: select 1 from pg_proc p
 -- VERIFY:   join pg_namespace n on n.oid = p.pronamespace
--- VERIFY:   where n.nspname = 'public' and p.proname = 'update_player_putt_make_pct'
+-- VERIFY:   where n.nspname = 'public' and p.proname =
+-- VERIFY:     'update_player_putt_make_pct'
 -- VERIFY:   and p.prosrc like '%is_test = false%'
 -- VERIFY:   and p.prosrc like '%golf_round_is_countable%';
 
