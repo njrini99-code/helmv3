@@ -18,7 +18,7 @@ import { useReportDirty } from '../parts';
 
 /** Opens and closes a <dialog> with `open`, follows the finger down (CH-1611), and sends Esc and the backdrop the same way. */
 function useSheetDialog(open: boolean, onClose: () => void, guard?: { busy?: boolean; dirty?: boolean; ask: () => void }) {
-  const { ref, reduced, retainContent } = useDialogLifetime(open, { surfaceSelector: '.ch-setm-sheet' });
+  const { ref, reduced, retainContent } = useDialogLifetime(open, { surfaceSelector: '.ch-setm-sheet', focusSelector: 'h2' });
   // A drag that is refused (unsaved changes, a save in flight) must not leave the sheet half way down.
   const springBack = () => {
     const d = ref.current;
@@ -109,7 +109,7 @@ export function FormSheet({
               <button type="button" className="ch-setm-bar__b" onClick={requestClose}>
                 Cancel
               </button>
-              <h2 id={titleId} className="ch-setm-bar__t">
+              <h2 id={titleId} className="ch-setm-bar__t" tabIndex={-1}>
                 {title}
               </h2>
               <button
@@ -174,7 +174,7 @@ export function ListSheet({
           <div className="ch-setm-grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
           <header className="ch-setm-lbar" onPointerDown={drag.onPointerDown}>
             <div className="ch-setm-lbar__t">
-              <h2 id={titleId}>{title}</h2>
+              <h2 id={titleId} tabIndex={-1}>{title}</h2>
               {subtitle && <span>{subtitle}</span>}
             </div>
             <button type="button" className="ch-setm-bar__b is-action" onClick={onClose}>

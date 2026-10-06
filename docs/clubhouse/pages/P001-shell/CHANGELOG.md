@@ -1,5 +1,14 @@
 # P001 — Shell: changelog
 
+## 2026-10-06 — Popup geometry and focus styling
+
+Native-dialog menus use their dialog's top layer and reserve keyboard space.
+Tall menus and desktop team listboxes scroll within their available height.
+Reading-destination headings retain accessible focus without a control outline;
+shared buttons retain their existing rounded focus ring without a second box.
+Settings form/list sheets initially focus their labelled heading. Source,
+regression and local browser evidence is in [POPUP_AUDIT](../../POPUP_AUDIT.md).
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
 

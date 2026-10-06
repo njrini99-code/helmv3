@@ -91,7 +91,10 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
-          fetch-depth: 0
+          # The PR merge ref and both parents are enough for the two-dot
+          # base/head tree diff below. Full branch/tag history hit the 5m
+          # checkout timeout on PR #2155 before classification could start.
+          fetch-depth: 2
 
       # Only meaningful on `pull_request` — dorny/paths-filter diffs the PR's
       # base against its head. `continue-on-error` so a filter failure falls

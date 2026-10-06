@@ -193,6 +193,14 @@ before, after, baseline or evidence.
 | `P006__mobile-overview__coach__390__safari-populated__before__cbc1c0d.png` | before | cbc1c0d (working tree) | Mobile overview (coach), 390px, WebKit iPhone 13; /clubhouse-preview/calendar, synthetic preview fixture; shared materials in progress |
 | `P006__mobile-overview__coach__390__safari-populated__after__cbc1c0d.png` | after | cbc1c0d (working tree) | Mobile overview (coach), 390px, WebKit iPhone 13; /clubhouse-preview/calendar, synthetic preview fixture; shared materials in progress |
 | `P006__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
+| `P006__date-popover__coach__1280x400__popup-audit__after__43a146a.png` | after | 43a146a | date-popover (coach), 1280x400px, popup-audit; local synthetic preview; 43a146a plus working-tree popup and depth repairs |
+| `P006__date-popover__coach__1280x400__popup-audit__before__43a146a.png` | before | 43a146a | date-popover (coach), 1280x400px, popup-audit; local synthetic preview; 43a146a baseline |
+| `P006__new-event__coach__390x844__popup-audit__after__43a146a.png` | after | 43a146a | new-event (coach), 390x844px, popup-audit; local synthetic preview; 43a146a plus working-tree popup and depth repairs |
+| `P006__new-event__coach__390x844__popup-audit__before__43a146a.png` | before | 43a146a | new-event (coach), 390x844px, popup-audit; local synthetic preview; 43a146a baseline |
+| `P006__people-popover__coach__1280x400__popup-audit__after__43a146a.png` | after | 43a146a | people-popover (coach), 1280x400px, popup-audit; local synthetic preview; 43a146a plus working-tree popup and depth repairs |
+| `P006__people-popover__coach__1280x400__popup-audit__before__43a146a.png` | before | 43a146a | people-popover (coach), 1280x400px, popup-audit; local synthetic preview; 43a146a baseline |
+| `P006__event-menu__coach__390x844__popup-audit__after__43a146a.png` | after | 43a146a | event-menu (coach), 390x844px, popup-audit; synthetic preview; 43a146a plus working-tree repairs |
+| `P006__event-menu__coach__390x844__popup-audit__before__43a146a.png` | before | 43a146a | event-menu (coach), 390x844px, popup-audit; synthetic preview; 43a146a baseline |
 
 ## Historical verification gaps
 

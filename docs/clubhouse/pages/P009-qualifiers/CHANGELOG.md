@@ -1,5 +1,11 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-06 — Course-picker loading accessibility
+
+Course and tee loading containers now use status semantics, making their
+accessible labels valid while the popup is waiting. Catalog IDs and course
+selection behavior are unchanged. See [popup evidence](../../POPUP_AUDIT.md).
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Whole-app release audit
 

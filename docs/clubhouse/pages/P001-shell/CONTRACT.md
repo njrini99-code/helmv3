@@ -1,5 +1,9 @@
 # P001 — Shell: page contract
 
+Popup sizing, native top-layer placement and description association follow the
+[popup audit](../../POPUP_AUDIT.md). Long content remains scrollable within the
+available viewport; source/browser checks do not grant physical-device acceptance.
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
 

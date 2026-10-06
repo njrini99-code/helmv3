@@ -204,6 +204,8 @@ before, after, baseline or evidence.
 | `P002__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
 | `P002__latest-round__player__1280x844__reduced-motion__before__ee0bab8.png` | before | ee0bab8 | latest-round (player), 1280x844px, reduced-motion |
 | `P002__latest-round__player__1280x844__reduced-motion__after__ee0bab8.png` | after | ee0bab8 | latest-round (player), 1280x844px, reduced-motion |
+| `P002__cards__coach__390x844__popup-audit__after__43a146a.png` | after | 43a146a | cards (coach), 390x844px, popup-audit; local synthetic preview; 43a146a plus working-tree popup and depth repairs |
+| `P002__cards__coach__390x844__popup-audit__before__43a146a.png` | before | 43a146a | cards (coach), 390x844px, popup-audit; local synthetic preview; 43a146a baseline |
 
 ## Historical verification gaps
 

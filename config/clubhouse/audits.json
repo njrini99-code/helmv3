@@ -161,5 +161,16 @@
     "note": "305 state cases, 60 WebKit page renders and 24 onboarding renders; physical-device and authenticated release checks open",
     "allPages": true,
     "pages": []
+  },
+  {
+    "file": "POPUP_AUDIT.md",
+    "title": "Popup layout and interaction audit",
+    "kind": "audit",
+    "date": "2026-10-06",
+    "scope": "Complete popup call-site inventory, native-layer menu repairs, narrow/short viewport stress and keyboard/accessibility evidence.",
+    "status": "in_progress",
+    "note": "source and local browser repairs; physical device acceptance remains open",
+    "allPages": true,
+    "pages": []
   }
 ]

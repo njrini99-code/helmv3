@@ -1,5 +1,9 @@
 # P013 — CoachHelm: page contract
 
+Ask's desktop roster suggestions expose one option per clickable row and
+aria-activedescendant on the composing field. Phone uses the existing modal
+roster picker. See [popup audit](../../POPUP_AUDIT.md).
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
 

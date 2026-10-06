@@ -1,5 +1,31 @@
 # Clubhouse changelog
 
+## 2026-10-06 — Owner rejects excessive card depth
+
+The owner described the large stacked shadows as looking poor and artificially
+styled. The shared depth ladder now uses quiet contact shadows for reading
+cards, shallow controls, a small floating lift and stronger separation only for
+menus/sheets. Settings form groups have no drop shadow. Home and Recruiting
+card overrides use the same reading token, including Home’s hero and nested
+next-event card. Broad 44/52px reading-card shadows
+and stacked bubble shadows are removed. Existing layout, colors, typography,
+focus indication and data behavior remain intact. This updates the October 2
+depth direction; earlier audit entries below record that prior review.
+
+Before/after normal-content captures are in page VERIFY logs. Physical-device
+and owner visual acceptance remain open in [POPUP_AUDIT](POPUP_AUDIT.md).
+
+## 2026-10-06 — Popup layout and native-layer repairs
+
+Reading-destination headings no longer wear the global control outline; shared buttons use their existing rounded focus treatment. Settings form/list sheets initially focus their heading. Calendar custom popovers and the desktop team listbox are height-bounded. These changes preserve keyboard access.
+
+Menus inside native dialogs now receive pointer input in the same top layer.
+Tall menus are bounded and scroll above keyboard space. Modal descriptions are
+announced, long headings/descriptions wrap and scroll without hiding footers,
+and Settings/Recruiting phone bars reserve space for their actions. Tall action
+sheets remain reachable on short screens. Full source inventory and browser
+evidence are in [POPUP_AUDIT](POPUP_AUDIT.md).
+
 Every Clubhouse change with the issue it fixed, newest first. Each page's own
 changelog (`docs/clubhouse/pages/<page>/CHANGELOG.md`) has the detail; decisions
 and the full verification log are in `docs/clubhouse/PROGRESS.md`. Nothing here

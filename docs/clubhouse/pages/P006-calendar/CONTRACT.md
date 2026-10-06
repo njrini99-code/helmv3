@@ -1,5 +1,8 @@
 # P006 — Calendar: page contract
 
+Date-jump and people popovers remain beside their anchors, choose available
+viewport space and scroll their long content. See the [popup audit](../../POPUP_AUDIT.md).
+
 <!-- clubhouse:release-audit:start -->
 ## Current contract audit — 2026-10-06
 

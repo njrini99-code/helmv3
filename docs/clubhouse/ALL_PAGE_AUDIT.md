@@ -1,5 +1,8 @@
 # Clubhouse all-page release audit — 2026-10-06
 
+The follow-up [popup audit](POPUP_AUDIT.md) inventories every concrete overlay
+call site and records sizing, native-layer, keyboard and accessibility repairs.
+
 Source baseline: main fbec48746; audit branch codex/clubhouse-smoothness-audit
 includes appearance-store repair 8ee40606. This is the current implementation
 behind golf_clubhouse_ui and golf_clubhouse_front_door: production defaults are

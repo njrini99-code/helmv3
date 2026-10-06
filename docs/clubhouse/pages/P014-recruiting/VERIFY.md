@@ -234,6 +234,12 @@ before, after, baseline or evidence.
 | `P014__prospect-sheet__coach__390__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | prospect-sheet (coach), 390px, keyboard-viewport; /clubhouse-preview/recruiting?state=add |
 | `P014__prospect-sheet__coach__430__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | prospect-sheet (coach), 430px, keyboard-viewport; /clubhouse-preview/recruiting?state=add |
 | `P014__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
+| `P014__delete-prospect__coach__390x844__popup-audit__after__43a146a.png` | after | 43a146a | delete-prospect (coach), 390x844px, popup-audit; local synthetic preview; 43a146a plus working-tree popup and depth repairs |
+| `P014__delete-prospect__coach__390x844__popup-audit__before__43a146a.png` | before | 43a146a | delete-prospect (coach), 390x844px, popup-audit; local synthetic preview; 43a146a baseline |
+| `P014__form-stress__coach__320x568__popup-audit__after__43a146a.png` | after | 43a146a | form-stress (coach), 320x568px, popup-audit; local synthetic preview; 43a146a plus working-tree popup and depth repairs |
+| `P014__form-stress__coach__320x568__popup-audit__before__43a146a.png` | before | 43a146a | form-stress (coach), 320x568px, popup-audit; local synthetic preview; 43a146a baseline |
+| `P014__prospect__coach__390x844__popup-audit__after__43a146a.png` | after | 43a146a | prospect (coach), 390x844px, popup-audit; local synthetic preview; 43a146a plus working-tree popup and depth repairs |
+| `P014__prospect__coach__390x844__popup-audit__before__43a146a.png` | before | 43a146a | prospect (coach), 390x844px, popup-audit; local synthetic preview; 43a146a baseline |
 
 ## Historical verification gaps
 

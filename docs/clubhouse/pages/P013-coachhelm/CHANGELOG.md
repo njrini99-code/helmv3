@@ -1,5 +1,14 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-06 — Mention picker accessibility
+
+The desktop Ask mention list gives the option role to each clickable row,
+without a nested interactive button under another option. The text field
+identifies the active option while arrow keys move through the roster.
+Mention insertion and sending remain unchanged. Verified with the existing
+mention interaction tests and the popup browser audit on PR #2155.
+Physical VoiceOver acceptance remains open.
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
 

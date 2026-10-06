@@ -1,5 +1,20 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-06 — Popup text and height corrections
+
+```text
+PR/commit:      #2155, codex/clubhouse-smoothness-audit
+Design package: approved phone bars and action-sheet layout
+Contract IDs:   existing CH-14501, CH-14914 and shell overlay contracts
+Data impact:    none; CSS sizing and accessible message association
+Held items:     physical iPhone, VoiceOver, keyboard and gesture acceptance
+```
+
+Form/picker bars wrap long titles without displacing Cancel/Save/Done. Stage
+notes and deletion copy wrap unbroken imported names. The deletion sheet
+scrolls at short viewport heights and announces its description. Busy guards,
+stage actions and writes are preserved. See [popup evidence](../../POPUP_AUDIT.md).
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Whole-app release audit
 

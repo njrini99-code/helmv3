@@ -36,7 +36,7 @@ export function Menu({
   const id = useId();
   const reduced = useChReducedMotion();
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ left: number; top?: number; bottom?: number } | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; maxHeight: number } | null>(null);
   const btn = useRef<HTMLButtonElement | null>(null);
   const list = useRef<HTMLDivElement | null>(null);
 
@@ -49,20 +49,36 @@ export function Menu({
     if (!open || !btn.current) return;
     const place = () => {
       const r = btn.current!.getBoundingClientRect();
-      const h = list.current?.offsetHeight ?? 200;
+      const keyboard = document.body.classList.contains('keyboard-open')
+        ? Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--keyboard-height')) || 0 : 0;
+      const viewport = window.visualViewport;
+      const bottom = Math.min(window.innerHeight - keyboard, viewport ? viewport.offsetTop + viewport.height : window.innerHeight);
+      const h = list.current?.scrollHeight || list.current?.offsetHeight || 200;
       let left = align === 'end' ? r.right - W : r.left;
       left = Math.max(8, Math.min(left, window.innerWidth - W - 8));
-      const up = r.bottom + 6 + h > window.innerHeight - 8;
-      setPos(up ? { left, bottom: window.innerHeight - r.top + 6 } : { left, top: r.bottom + 6 });
+      const above = Math.max(0, Math.min(r.top, bottom - 8) - 14);
+      const below = Math.max(0, bottom - Math.max(8, r.bottom) - 14);
+      const up = h > below && above > below;
+      const maxHeight = up ? above : below;
+      const top = Math.max(8, Math.min(up ? r.top - Math.min(h, maxHeight) - 6 : r.bottom + 6, bottom - 8 - Math.min(h, maxHeight)));
+      setPos({ left, top, maxHeight });
     };
     place();
     const onScroll = (e: Event) => {
+      // Native fields may horizontally scroll their text on blur without moving the anchor.
+      if (e.target instanceof HTMLElement && e.target.matches('input, textarea, select')) return;
       if (list.current && e.target instanceof Node && list.current.contains(e.target)) return;
       close(false);
     };
+    const keyboardChanges = new MutationObserver(place);
+    keyboardChanges.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    keyboardChanges.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+    window.visualViewport?.addEventListener('resize', place);
     window.addEventListener('resize', place);
     document.addEventListener('scroll', onScroll, true);
     return () => {
+      keyboardChanges.disconnect();
+      window.visualViewport?.removeEventListener('resize', place);
       window.removeEventListener('resize', place);
       document.removeEventListener('scroll', onScroll, true);
     };
@@ -75,8 +91,11 @@ export function Menu({
       if (!list.current?.contains(t) && !btn.current?.contains(t)) close(false);
     };
     document.addEventListener('mousedown', onDown);
-    requestAnimationFrame(() => list.current?.querySelector<HTMLElement>('[role="menuitem"],[role="menuitemradio"]')?.focus());
-    return () => document.removeEventListener('mousedown', onDown);
+    const frame = requestAnimationFrame(() => list.current?.querySelector<HTMLElement>('[role="menuitem"],[role="menuitemradio"]')?.focus({ preventScroll: true }));
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener('mousedown', onDown);
+    };
   }, [open, close]);
 
   const onKey = (e: React.KeyboardEvent) => {
@@ -118,7 +137,7 @@ export function Menu({
                 aria-label={label}
                 className="ch-menu ch-popover"
                 data-ui="clubhouse"
-                style={{ left: pos?.left ?? -9999, top: pos?.top, bottom: pos?.bottom, width: W }}
+                style={{ left: pos?.left ?? -9999, top: pos?.top, maxHeight: pos?.maxHeight, width: W }}
                 initial={reduced ? { opacity: 0 } : CH_POP.initial}
                 animate={reduced ? { opacity: 1 } : CH_POP.animate}
                 exit={reduced ? { opacity: 0 } : CH_POP.exit}
@@ -137,7 +156,7 @@ export function Menu({
                   const role = it.checked !== undefined ? 'menuitemradio' : 'menuitem';
                   if (it.href) {
                     return (
-                      <Link key={it.label} href={it.href} role={role} className={cls} tabIndex={-1} onClick={() => close(false)}>
+                      <Link key={it.label} href={it.href} role={role} aria-checked={it.checked} className={cls} tabIndex={i === items.findIndex((item) => item.kind !== 'separator') ? 0 : -1} onClick={() => close(false)}>
                         {content}
                       </Link>
                     );
@@ -149,7 +168,7 @@ export function Menu({
                       role={role}
                       aria-checked={it.checked}
                       className={cls}
-                      tabIndex={-1}
+                      tabIndex={i === items.findIndex((item) => item.kind !== 'separator') ? 0 : -1}
                       onClick={() => {
                         haptic('select');
                         close();
@@ -163,7 +182,7 @@ export function Menu({
               </m.div>
             )}
           </AnimatePresence>,
-          document.querySelector('.ch-root') ?? document.body,
+          btn.current?.closest('dialog[open]') ?? document.querySelector('.ch-root') ?? document.body,
         )}
     </>
   );

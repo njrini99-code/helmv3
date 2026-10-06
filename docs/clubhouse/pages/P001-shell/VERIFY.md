@@ -164,6 +164,8 @@ before, after, baseline or evidence.
 | `P001__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
 | `P001__more__coach__390x844__reduced-motion__before__ee0bab8.png` | before | ee0bab8 | more (coach), 390x844px, reduced-motion |
 | `P001__more__coach__390x844__reduced-motion__after__ee0bab8.png` | after | ee0bab8 | more (coach), 390x844px, reduced-motion |
+| `P001__modal-stress__coach__320x568__popup-audit__after__43a146a.png` | after | 43a146a | modal-stress (coach), 320x568px, popup-audit; local synthetic preview; 43a146a plus working-tree popup and depth repairs |
+| `P001__modal-stress__coach__320x568__popup-audit__before__43a146a.png` | before | 43a146a | modal-stress (coach), 320x568px, popup-audit; local synthetic preview; 43a146a baseline |
 
 ## Historical verification gaps
 

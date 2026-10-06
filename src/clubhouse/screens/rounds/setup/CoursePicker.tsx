@@ -78,7 +78,7 @@ function CourseList({ ports, onCourse, onAddCourse }: { ports: Pick<ChSetupPorts
       </label>
       {load.state === 'loading' && (
         // CH-11403: the list is on its way, in the shape of its rows.
-        <div className="ch-rsu-plist" aria-busy="true" aria-label="Loading courses" data-ch-code="CH-11403">
+        <div className="ch-rsu-plist" role="status" aria-busy="true" aria-label="Loading courses" data-ch-code="CH-11403">
           {[0, 1, 2, 3].map((i) => (
             <span key={i} className="ch-rsu-crs is-skel ch-skel" />
           ))}
@@ -149,7 +149,7 @@ function TeeList({ course, ports, onBack, onPick }: { course: ChSetupCourse; por
       </button>
       <h4 className="ch-rsu-teek">Choose your tees</h4>
       {load.state === 'loading' && (
-        <div className="ch-rsu-tees" aria-busy="true" aria-label="Loading tees" data-ch-code="CH-11404">
+        <div className="ch-rsu-tees" role="status" aria-busy="true" aria-label="Loading tees" data-ch-code="CH-11404">
           {[0, 1, 2].map((i) => (
             <span key={i} className="ch-rsu-tee is-skel ch-skel" />
           ))}

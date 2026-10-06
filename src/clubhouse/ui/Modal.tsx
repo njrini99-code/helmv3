@@ -38,6 +38,7 @@ export function Modal({
   children?: ReactNode;
 }) {
   const titleId = useId();
+  const descriptionId = useId();
   const phone = useChPhone();
   const { ref, reduced, retainContent } = useDialogLifetime(open, {
     direction: phone ? 'bottom' : 'center', surfaceSelector: '.ch-modal__panel',
@@ -53,6 +54,7 @@ export function Modal({
       data-ch-code={code}
       style={{ ['--ch-modal-w' as string]: `${width}px` }}
       aria-labelledby={titleId}
+      aria-describedby={description ? descriptionId : undefined}
       onCancel={(e) => {
         e.preventDefault();
         onClose();
@@ -72,7 +74,7 @@ export function Modal({
             )}
             <div className="ch-modal__titles">
               <h2 id={titleId}>{title}</h2>
-              {description && <p>{description}</p>}
+              {description && <p id={descriptionId}>{description}</p>}
             </div>
             <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label="Close" onClick={onClose}>
               <Icon icon={X} size={15} />

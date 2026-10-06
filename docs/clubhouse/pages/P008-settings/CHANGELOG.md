@@ -1,5 +1,22 @@
 # P008 — Settings: changelog
 
+## 2026-10-06 — Phone popup sizing corrections
+
+Form/list sheets initially focus their labelled heading. Reading destinations do not draw a green control box; buttons retain keyboard focus indicators.
+
+```text
+PR/commit:      #2155, codex/clubhouse-smoothness-audit
+Design package: approved phone bars and action-sheet layout
+Contract IDs:   existing phone form/list/action-sheet contracts
+Data impact:    none; CSS overflow and sizing only
+Held items:     physical Safari/iPhone keyboard and VoiceOver acceptance
+```
+
+Form bars reserve Cancel/Save space and wrap long titles. List/picker titles
+wrap within the panel. Tall action-sheet descriptions scroll on short screens
+without compressing the actions. Dirty/busy guards and preference behavior are
+preserved. See [popup evidence](../../POPUP_AUDIT.md).
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
 

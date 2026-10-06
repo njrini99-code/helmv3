@@ -9,6 +9,27 @@ with their status and the pages they touch: [`AUDITS.md`](AUDITS.md).
 Nothing in `src/clubhouse/` imports or styles through Fairway. Shared non-UI
 plumbing (session, Supabase loaders, the Capacitor haptics bridge) is allowed.
 
+## 2026-10-06 — Popup and card-depth follow-up
+
+The source audit inventories 117 popup/pushed-screen call sites in 59 files.
+Repairs cover native-dialog nested menus, keyboard/viewport placement, long
+sheet titles and descriptions, action reachability, loading-region semantics,
+and Ask player-option accessibility. Reading titles retain accessible focus
+without the unwanted green control outline. Shared card depth is quieter;
+Settings form groups are flat and Home's broad/nested green shadows are removed.
+Existing layout, motion preferences, dirty/busy guards and writes are preserved.
+
+See [POPUP_AUDIT](POPUP_AUDIT.md), [DEPTH_AUDIT](DEPTH_AUDIT.md), and the
+page VERIFY screenshot logs. Browser evidence covers 150 distinct popup cases,
+25 primitive stress cases, three long-description cases and five emulated
+keyboard/menu families. Physical Safari/iPhone, VoiceOver and authenticated
+persistence remain open; six qualifier E2E cases skip without seeded auth.
+
+Final local verification: 3,133 tests/120 files, full TypeScript, scoped ESLint
+and the isolated production build pass. Clubhouse check (67 tooling tests),
+screenshot conventions, generated inventories/knowledge and documentation drift
+checks pass. No production flags, migrations or deployment changed.
+
 ## 2026-10-06 — Motion and streaming repairs
 
 Settings replaces the sequential exit/entrance with immediate outgoing removal

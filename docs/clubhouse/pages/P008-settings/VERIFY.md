@@ -238,6 +238,12 @@ before, after, baseline or evidence.
 | `P008__settings-notifications-normal__coach__390x844__normal__after__ee0bab8.png` | after | ee0bab8 | settings-notifications-normal (coach), 390x844px, normal |
 | `P008__settings-notifications-off__coach__390x844__off__after__ee0bab8.png` | after | ee0bab8 | settings-notifications-off (coach), 390x844px, off |
 | `P008__settings-notifications-os-reduce__coach__390x844__os-reduce__after__ee0bab8.png` | after | ee0bab8 | settings-notifications-os-reduce (coach), 390x844px, os-reduce |
+| `P008__cards__coach__390x844__popup-audit__after__43a146a.png` | after | 43a146a | cards (coach), 390x844px, popup-audit; local synthetic preview; 43a146a plus working-tree popup and depth repairs |
+| `P008__cards__coach__390x844__popup-audit__before__43a146a.png` | before | 43a146a | cards (coach), 390x844px, popup-audit; local synthetic preview; 43a146a baseline |
+| `P008__form-stress__coach__320x568__popup-audit__after__43a146a.png` | after | 43a146a | form-stress (coach), 320x568px, popup-audit; local synthetic preview; 43a146a plus working-tree popup and depth repairs |
+| `P008__form-stress__coach__320x568__popup-audit__before__43a146a.png` | before | 43a146a | form-stress (coach), 320x568px, popup-audit; local synthetic preview; 43a146a baseline |
+| `P008__profile__coach__390x844__popup-audit__after__43a146a.png` | after | 43a146a | profile (coach), 390x844px, popup-audit; local synthetic preview; 43a146a plus working-tree popup and depth repairs |
+| `P008__profile__coach__390x844__popup-audit__before__43a146a.png` | before | 43a146a | profile (coach), 390x844px, popup-audit; local synthetic preview; 43a146a baseline |
 
 ## Historical verification gaps
 

@@ -1,5 +1,11 @@
 # Feature: Settings And Preferences
 
+## Clubhouse popup layout — 2026-10-06
+
+Phone form/list sheets initially focus their labelled heading for reading; this noninteractive heading has no control outline. Keyboard focus indicators on interactive controls remain available.
+
+Clubhouse phone form/list/picker bars wrap long titles while retaining action space. Long action-sheet copy scrolls within the available viewport. These sizing repairs preserve dirty/busy dismissal guards and preference writes. See [popup audit](../../docs/clubhouse/POPUP_AUDIT.md).
+
 ## Clubhouse motion repair — 2026-10-06
 
 Desktop and phone Settings mount the requested section without waiting for an

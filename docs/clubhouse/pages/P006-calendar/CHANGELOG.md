@@ -1,5 +1,28 @@
 # P006 — Calendar: changelog
 
+## 2026-10-06 — Short-screen popup and hover verification
+
+Full-page WebKit Axe checks pass with either date/people popover open and with
+both closed at 1280×400. The date-button year now uses secondary text so its
+hover background retains adequate contrast. The prior target-size warnings
+disappeared once the people popover fit inside the viewport.
+
+## 2026-10-06 — Popovers fit short desktop viewports
+
+```text
+PR/commit:      #2155, codex/clubhouse-smoothness-audit
+Design package: approved date-jump and people popover layouts
+Contract IDs:   existing calendar picker and shell overlay contracts
+Data impact:    none; client placement and overflow only
+Held items:     physical Safari/iPhone acceptance
+```
+
+Date-jump and people popovers choose available space beside their anchors,
+clamp horizontally and scroll within the viewport. At 1280×400 they previously
+ended at y=416/694; both now end at y=392. Their scoped axe scans are clean.
+The event action menu also receives clicks inside its native dialog top layer.
+See [popup evidence](../../POPUP_AUDIT.md).
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Whole-app release audit
 
