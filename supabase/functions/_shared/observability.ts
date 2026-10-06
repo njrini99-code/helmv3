@@ -6,7 +6,18 @@
 // Supabase guide (https://supabase.com/docs/guides/functions/examples/sentry-monitoring),
 // not recalled: `import * as Sentry from 'npm:@sentry/deno@^8'`, and
 // `Sentry.init({ dsn, defaultIntegrations: false, tracesSampleRate,
-// profilesSampleRate })`. `defaultIntegrations: false` is REQUIRED, not
+// profilesSampleRate })`.
+//
+// SDK MAJOR: ^10, NOT ^11 (bumped from the guide's ^8 on 2026-10-05).
+// @sentry/deno v11 requires Deno >= 2.8.3 (sentry-javascript MIGRATION.md,
+// "Upgrading from 10.x to 11.x") and the Supabase Edge Runtime (v1.77.x)
+// embeds Deno 2.1.4; v9/v10 require Deno >= 2.0.0. Every API used below
+// (init, withScope, captureException, flush, defaultIntegrations) is
+// unchanged across 8 -> 9 -> 10. v10 gates user-IP inference on
+// `sendDefaultPii`; it is set to `false` explicitly so the privacy posture is
+// stated in code rather than inherited from a default. Before moving to v11,
+// note v11 REPLACES `sendDefaultPii` with a more permissive `dataCollection`
+// default — the restrictive baseline must then be spelled out explicitly. `defaultIntegrations: false` is REQUIRED, not
 // optional — that same page, quoted verbatim: "Sentry Deno SDK currently do
 // not support Deno.serve instrumentation, which means that there is no scope
 // separation between requests" — with default integrations on, breadcrumbs
@@ -28,7 +39,7 @@
 // (`traceparent`/`sentry-trace`/`baggage`) are propagation metadata, not
 // payload; captured as tags for correlation. Full distributed trace
 // CONTINUATION via `Sentry.continueTrace` is NOT VERIFIED against the
-// pinned `@sentry/deno@^8` release in this pass — see
+// pinned `@sentry/deno` release in this pass — see
 // `docs/observability/SUPABASE_SERVICE_OBSERVABILITY.md` — so this file only
 // tags the incoming headers rather than asserting a trace-linking behavior
 // nobody has confirmed against the live SDK.
@@ -36,7 +47,7 @@
 // DEPLOYMENT IS AN OWNER ACTION. This file, and the three functions wrapped
 // with it, are NOT deployed by this change. `supabase functions deploy`
 // requires the owner's Supabase CLI session; see the B7 doc.
-import * as Sentry from 'npm:@sentry/deno@^8';
+import * as Sentry from 'npm:@sentry/deno@^10';
 
 let sentryInitialized = false;
 let sentryConfigured = false;
@@ -60,6 +71,9 @@ function ensureSentryInit(): void {
       dsn,
       // REQUIRED — see file header. Do not remove.
       defaultIntegrations: false,
+      // No IP inference / default PII (v10 gates it on this flag). Explicit,
+      // not defaulted — see file header.
+      sendDefaultPii: false,
       tracesSampleRate: Number(Deno.env.get('SENTRY_TRACES_SAMPLE_RATE') ?? '0.1') || 0,
       environment: Deno.env.get('SUPABASE_ENV') ?? 'production',
       release: resolveRelease(),
