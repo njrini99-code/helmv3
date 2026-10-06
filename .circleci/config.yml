@@ -29,11 +29,11 @@ parameters:
 executors:
   node:
     docker:
-      - image: cimg/node:22.13
+      - image: cimg/node:24.21
     resource_class: medium
   node-large:
     docker:
-      - image: cimg/node:22.13
+      - image: cimg/node:24.21
     resource_class: large
   python:
     docker:
@@ -208,7 +208,7 @@ jobs:
       - checkout
       - run: pip install --quiet sqlfluff
       - node/install:
-          node-version: "22.13"
+          node-version: "24.21"
       - run:
           name: SQL lint ratchet (full repo)
           command: node scripts/sql-lint-ratchet.mjs
@@ -263,7 +263,7 @@ jobs:
     steps:
       - checkout
       - node/install:
-          node-version: "22.13"
+          node-version: "24.21"
       - install-node-deps
       - run:
           name: Build web bundle (for Capacitor sync)
@@ -324,7 +324,7 @@ jobs:
     steps:
       - checkout
       - node/install:
-          node-version: "22.13"
+          node-version: "24.21"
       - install-node-deps
       # NO `npm run build` here, deliberately — unlike the iOS job.
       #
