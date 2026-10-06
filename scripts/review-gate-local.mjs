@@ -41,7 +41,8 @@ for (const [jobId, job] of Object.entries(wf.jobs)) {
   if (jobId === 'all') continue;
   for (const s of job.steps ?? []) {
     if (s.uses && /checkout|setup-/.test(s.uses)) continue;
-    if (!s.id && /^Install |aggregate/i.test(s.name ?? '')) continue; // CI-only plumbing (tool installs)
+    const name = s.name ?? '';
+    if (!s.id && (/^Install /i.test(name) || /aggregate/i.test(name))) continue; // CI-only plumbing (tool installs)
     if (s.run || s.uses) steps.push({ ...s, id: s.id ?? jobId });
   }
 }
