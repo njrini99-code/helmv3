@@ -6,15 +6,20 @@ import Stripe from 'stripe';
  *
  * - Uses STRIPE_SECRET_KEY. Prefer a RESTRICTED API key (`rk_...`) scoped to
  *   Customers + Invoices + Tax over a full secret key (`sk_...`).
- * - apiVersion is pinned to the version the installed SDK (stripe@22.x) is
- *   generated against, so request/response types always match at compile time.
- *   Bump this only alongside an SDK upgrade (see the `upgrade-stripe` skill).
+ * - apiVersion is pinned to the version the installed SDK (stripe@23.x) is
+ *   generated against (`Stripe.LatestApiVersion`, `2026-09-30.endive`), so
+ *   request/response types always match at compile time. Bump this only
+ *   alongside an SDK upgrade (see the `upgrade-stripe` skill). The `satisfies`
+ *   below fails typecheck if the SDK and this pin ever drift apart.
+ * - This pins the version THIS CLIENT sends per request. It is independent of
+ *   the API version configured on the Stripe dashboard webhook endpoint, which
+ *   decides the shape of webhook payloads — the two are changed separately.
  * - Lazy-initialised: importing this module never throws. The key is only
  *   required the first time `getStripe()` runs, which keeps `next build` and
  *   any import of this file working in environments without Stripe configured.
  */
 
-const STRIPE_API_VERSION = '2026-07-29.dahlia' satisfies Stripe.LatestApiVersion;
+const STRIPE_API_VERSION = '2026-09-30.endive' satisfies Stripe.LatestApiVersion;
 
 let client: Stripe | null = null;
 
