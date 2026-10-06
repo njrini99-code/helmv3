@@ -71,6 +71,23 @@ updates:
         patterns:
           - "*"
 
+  # The composite action's own `uses:` pins. Dependabot's "/" entry reads
+  # only .github/workflows/, never .github/actions/*/action.yml.
+  - package-ecosystem: "github-actions"
+    rebase-strategy: "disabled"
+    directory: "/.github/actions/local-supabase-stack"
+    schedule:
+      interval: "monthly"
+    cooldown:
+      default-days: 7
+    labels:
+      - "dependencies"
+      - "ci"
+    groups:
+      local-supabase-stack-actions:
+        patterns:
+          - "*"
+
   # ── Nested npm projects (kept out of the root manifest) ───────────────────
   - package-ecosystem: "npm"
     # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
@@ -118,6 +135,27 @@ updates:
         # unmergeable and unreviewable at once (2026-09-02: #1744 carried
         # four majors and failed lint on "typescript-eslint does not
         # support TS 7.0"; #1745 carried 30 updates).
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "npm"
+    # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
+    # so every rebase push triggered a billed (and failing) preview build.
+    rebase-strategy: "disabled"
+    directory: "/.claude/skills/golfhelm-creative-engine/tools"
+    schedule:
+      interval: "monthly"
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 2
+    labels:
+      - "dependencies"
+    groups:
+      golfhelm-creative-engine:
+        patterns:
+          - "*"
+        # Minor and patch only; a major rides alone as its own PR.
         update-types:
           - "minor"
           - "patch"
