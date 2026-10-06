@@ -206,7 +206,9 @@ jobs:
     executor: python
     steps:
       - checkout
-      - run: pip install --quiet sqlfluff
+      # Same hash-locked versions as review-gate.yml (.github/requirements-lint.txt),
+      # so the weekly backstop measures the ratchet with the same SQLFluff.
+      - run: pip install --quiet --require-hashes -r .github/requirements-lint.txt
       - node/install:
           node-version: "24.21"
       - run:
