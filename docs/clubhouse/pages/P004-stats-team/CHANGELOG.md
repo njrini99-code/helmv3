@@ -1,5 +1,21 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-06 — Motion import path moves to `motion/react`
+
+```text
+PR/commit:      agent/deps-ui-upgrade (chore(deps): motion 14, Base UI 1.8, TanStack Table 9)
+Design package: none; no visual or behavior change
+Contract IDs:   none
+Data impact:    none
+Held items:     none
+```
+
+Dependency upgrade only. `framer-motion` 13 is replaced by the `motion` 14
+package, so this page's animation imports change from `framer-motion` to
+`motion/react`. The animation API, durations, curves and reduced-motion gating
+are unchanged; Motion 14 only removed internal compatibility APIs this tree
+never used.
+
 ## 2026-10-02 — Keep charts steady when the period changes
 
 The measured phone Season switch moved the charts up by 64px: the comparison

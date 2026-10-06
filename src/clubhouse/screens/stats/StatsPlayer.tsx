@@ -2,7 +2,7 @@
 
 import { CalendarPlus, Check, ChevronLeft, ChevronRight, Info, MessageSquare, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
 import { useEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';

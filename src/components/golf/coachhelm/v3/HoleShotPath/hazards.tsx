@@ -44,7 +44,7 @@
 
 'use client';
 
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
 import { useId } from 'react';
 import type { PlottedHazard } from './geometry';
 import type { HoleShotPathProps } from './types';

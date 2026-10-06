@@ -54,7 +54,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import { Button, IconButton } from './button';

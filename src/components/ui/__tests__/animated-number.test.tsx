@@ -17,7 +17,7 @@ import { act, render, screen } from '@testing-library/react';
 
 const state = vi.hoisted(() => ({ reduced: false }));
 
-vi.mock('framer-motion', () => ({
+vi.mock('motion/react', () => ({
   useReducedMotion: () => state.reduced,
 }));
 

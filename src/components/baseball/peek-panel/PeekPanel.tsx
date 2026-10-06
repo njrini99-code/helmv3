@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence, type Variants, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, type Variants, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { usePeekPanelStore } from '@/stores/peek-panel-store';
 import { useFocusTrap } from '@/hooks/use-focus-trap';

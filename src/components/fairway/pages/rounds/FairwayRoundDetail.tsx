@@ -45,7 +45,7 @@
 import { useMemo, useState } from 'react';
 import { cleanCourseName } from '@/lib/golf/course-name';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { useDeferredRoundRecap } from './use-deferred-round-recap';
 

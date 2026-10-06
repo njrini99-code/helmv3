@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { processTeamInvitation, joinTeamByCode } from '@/app/baseball/actions/teams';
 import Image from 'next/image';
-import { m, useReducedMotion } from 'framer-motion';
+import { m, useReducedMotion } from 'motion/react';
 import { IconCheck, IconUsers, IconUser, IconArrowLeft } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { InlineNotice } from '@/components/fairway';

@@ -1,7 +1,7 @@
 'use client';
 
 import { BarChart3, Check, ChevronRight, Clock, Copy, Ellipsis, UserMinus, UserPlus, Users } from 'lucide-react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useChSessionState } from '../../lib/session-state';

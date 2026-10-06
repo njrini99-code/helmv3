@@ -20,7 +20,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // ── framer-motion — strip animation props, render plain elements ──
-vi.mock('framer-motion', async () => {
+vi.mock('motion/react', async () => {
   const React = await import('react');
   return {
     useReducedMotion: () => true,

@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatePresence, m } from 'framer-motion';
+import { AnimatePresence, m } from 'motion/react';
 import { Bell, Flag, Settings2, Sparkles, UserRound, Users, type LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '../../ui/Button';

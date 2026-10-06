@@ -16,7 +16,7 @@
  * <600ms motion budget (4 × 70ms + 280ms duration ≈ 560ms).
  * ========================================================================== */
 
-import { LazyMotion, m } from 'framer-motion';
+import { LazyMotion, m } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { cn } from '@/lib/utils';
 import { EASE_CINEMATIC, DURATION, stagger, useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';

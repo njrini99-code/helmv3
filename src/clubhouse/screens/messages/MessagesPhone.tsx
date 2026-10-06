@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "motion/react";
 import {
   ArrowUp,
   Bell,

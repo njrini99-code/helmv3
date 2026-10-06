@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useCallback } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { createPortal } from 'react-dom';
 import { IconX } from '@/components/icons';
 import { cn } from '@/lib/utils';

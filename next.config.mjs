@@ -193,7 +193,7 @@ const nextConfig = {
     optimizePackageImports: [
       'recharts',
       'date-fns',
-      'framer-motion',
+      'motion',
       '@supabase/supabase-js',
       'lucide-react',
       'zod',

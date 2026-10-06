@@ -16,7 +16,7 @@
 // =============================================================================
 
 import { useState, useTransition, useCallback } from 'react';
-import { LazyMotion, m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence, useReducedMotion } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 
 import { Button } from '@/components/ui/button';

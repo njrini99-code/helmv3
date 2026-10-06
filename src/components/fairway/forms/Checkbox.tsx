@@ -14,8 +14,8 @@
  * ========================================================================== */
 
 import * as React from "react";
-import { Checkbox as BaseCheckbox } from "@base-ui-components/react/checkbox";
-import { CheckboxGroup as BaseCheckboxGroup } from "@base-ui-components/react/checkbox-group";
+import { Checkbox as BaseCheckbox } from "@base-ui/react/checkbox";
+import { CheckboxGroup as BaseCheckboxGroup } from "@base-ui/react/checkbox-group";
 import { cn } from "@/lib/utils";
 import { fwHaptic } from "@/lib/fairway/haptics";
 

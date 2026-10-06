@@ -20,7 +20,7 @@
  *      header and body cell — a name column can still ellipsize past it, but
  *      the auto-layout table can never crush it thinner than the floor.
  * ========================================================================== */
-import { render } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { DataTable } from './data-table';
 import type { ColumnDef } from './types';
@@ -148,5 +148,59 @@ describe('DataTable — mobileCard render path', () => {
     // The mobile skeleton renders shape-matched shimmer blocks, not <tr>s.
     const mobileBlock = container.querySelector('.sm\\:hidden');
     expect(mobileBlock?.querySelectorAll('tr').length ?? 0).toBe(0);
+  });
+});
+
+/**
+ * ============================================================================
+ * DataTable — sorting + row selection wiring (TanStack Table v9)
+ * ----------------------------------------------------------------------------
+ * v9 only provides the state, APIs and row models a table registers in its
+ * feature set (./features). These lock that the registered sorting (with the
+ * auto sort functions v8 resolved) and row selection still drive the grid.
+ * ========================================================================== */
+describe('DataTable — sorting and selection', () => {
+  const rows: RowT[] = [
+    { id: 'a', name: 'Charlie', score: 71 },
+    { id: 'b', name: 'alice', score: 74 },
+    { id: 'c', name: 'Bravo', score: 68 },
+  ];
+
+  const bodyNames = (container: HTMLElement) =>
+    Array.from(container.querySelectorAll('tbody tr')).map(
+      (tr) => tr.querySelectorAll('td')[0]?.textContent,
+    );
+
+  it('sorts a text column ascending first, then descending', () => {
+    const { container, getByRole } = render(
+      <DataTable<RowT> data={rows} columns={columns} getRowId={(r) => r.id} />,
+    );
+    expect(bodyNames(container)).toEqual(['Charlie', 'alice', 'Bravo']);
+
+    fireEvent.click(getByRole('button', { name: /Player/ }));
+    expect(bodyNames(container)).toEqual(['alice', 'Bravo', 'Charlie']);
+    expect(container.querySelectorAll('th')[0]?.getAttribute('aria-sort')).toBe('ascending');
+
+    fireEvent.click(getByRole('button', { name: /Player/ }));
+    expect(bodyNames(container)).toEqual(['Charlie', 'Bravo', 'alice']);
+  });
+
+  it('sorts a numeric column descending first', () => {
+    const { container, getByRole } = render(
+      <DataTable<RowT> data={rows} columns={columns} getRowId={(r) => r.id} />,
+    );
+    fireEvent.click(getByRole('button', { name: /Score/ }));
+    expect(bodyNames(container)).toEqual(['alice', 'Charlie', 'Bravo']);
+  });
+
+  it('selects every row from the header checkbox', () => {
+    const { getByRole, getAllByRole } = render(
+      <DataTable<RowT> data={rows} columns={columns} getRowId={(r) => r.id} enableRowSelection />,
+    );
+    fireEvent.click(getByRole('checkbox', { name: 'Select all rows' }));
+    const boxes = getAllByRole('checkbox') as HTMLInputElement[];
+    expect(boxes).toHaveLength(4);
+    expect(boxes.every((b) => b.checked)).toBe(true);
+    expect(getByRole('checkbox', { name: 'Deselect all rows' })).toBeTruthy();
   });
 });

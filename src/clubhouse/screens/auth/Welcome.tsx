@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowRight, CalendarDays, CircleAlert, CircleCheck, ClipboardCheck, Eye, Megaphone, MessageSquare, Sparkles, Users, type LucideIcon } from 'lucide-react';
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NotificationCategoryId } from '@/app/golf/actions/unified-notifications-model';

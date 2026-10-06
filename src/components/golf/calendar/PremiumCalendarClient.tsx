@@ -31,7 +31,7 @@ import '@/styles/calendar-tokens.css';
 import { usePlayerEventRSVP, useEventRSVP } from '@/hooks/useRSVP';
 import { useCalendarRangeEvents } from '@/hooks/golf/use-calendar-range-events';
 import { useCalendarKeyboard } from '@/hooks/golf/use-calendar-keyboard';
-import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, m, useReducedMotion } from 'motion/react';
 import { calendarSpring } from '@/lib/coachhelm/v3/motion';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { Button } from '@/components/ui/button';

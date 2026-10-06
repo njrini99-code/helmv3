@@ -61,7 +61,7 @@ import {
   eachDayOfInterval,
 } from 'date-fns';
 import { AlertTriangle, ArrowRight, Plus, RefreshCw } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Sheet, Button as FwButton, IconButton, PressTarget, fairwayToast } from '@/components/fairway';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { fwHaptic } from '@/lib/fairway/haptics';

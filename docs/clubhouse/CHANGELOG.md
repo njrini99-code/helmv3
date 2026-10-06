@@ -5,6 +5,14 @@ changelog (`docs/clubhouse/pages/<page>/CHANGELOG.md`) has the detail; decisions
 and the full verification log are in `docs/clubhouse/PROGRESS.md`. Nothing here
 is in production: Clubhouse is behind a flag that is off.
 
+## 2026-10-06 — Motion import path moves to `motion/react`
+
+Dependency upgrade (`framer-motion` 13 to `motion` 14). The shared pieces that
+animate (`lib/motion.ts`, `ui/Menu.tsx`, `ui/Segmented.tsx`, `ui/Toast.tsx`)
+import from `motion/react` instead of `framer-motion`. The API is the same, so
+durations, curves, the press and reduced-motion gating are unchanged, and
+nothing renders differently.
+
 ## 2026-10-02 — Floating cards and stationary overlay backgrounds
 
 The owner rejected striped, outlined cards and unstable pull-up screens. Shared

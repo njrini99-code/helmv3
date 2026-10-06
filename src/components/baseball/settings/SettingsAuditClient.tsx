@@ -30,7 +30,7 @@
 // =============================================================================
 
 import { useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { IconFilter } from '@/components/icons';

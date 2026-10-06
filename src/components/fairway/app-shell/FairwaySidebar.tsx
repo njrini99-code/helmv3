@@ -22,7 +22,7 @@
  * ========================================================================== */
 
 import { createContext, forwardRef, memo, useCallback, useContext, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { NavPendingDot } from './NavPending';
 import { IconChevronLeft, IconChevronRight } from '@/components/icons';

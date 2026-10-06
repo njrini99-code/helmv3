@@ -29,7 +29,7 @@
 
 import { Suspense, useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useReducedMotion } from 'framer-motion';
+import { useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import {

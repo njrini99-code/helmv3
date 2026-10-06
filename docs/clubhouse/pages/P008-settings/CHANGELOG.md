@@ -2,6 +2,22 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-06 — Motion import path moves to `motion/react`
+
+```text
+PR/commit:      agent/deps-ui-upgrade (chore(deps): motion 14, Base UI 1.8, TanStack Table 9)
+Design package: none; no visual or behavior change
+Contract IDs:   none
+Data impact:    none
+Held items:     none
+```
+
+Dependency upgrade only. `framer-motion` 13 is replaced by the `motion` 14
+package, so this page's animation imports change from `framer-motion` to
+`motion/react`. The animation API, durations, curves and reduced-motion gating
+are unchanged; Motion 14 only removed internal compatibility APIs this tree
+never used.
+
 ## 2026-10-02 — End obsolete autosave feedback
 
 Instant settings and queued CoachHelm saves use the shared request-lifetime

@@ -26,7 +26,7 @@
  *
  * `prefers-reduced-motion` → rule renders drawn, numeral set, no pulse.
  */
-import { m, useReducedMotion } from 'framer-motion';
+import { m, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { StatReadout } from './StatReadout';
 import { inkSettles, rulesDraw } from './motion';

@@ -29,8 +29,8 @@
  *     (Scale on a card looks cheap; lift looks architectural.)
  */
 
-import type { Transition, Variants, TargetAndTransition } from 'framer-motion';
-import { useReducedMotion } from 'framer-motion';
+import type { Transition, Variants, TargetAndTransition } from 'motion/react';
+import { useReducedMotion } from 'motion/react';
 
 // -----------------------------------------------------------------------------
 // Easing curves

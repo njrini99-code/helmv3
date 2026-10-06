@@ -5,13 +5,19 @@
  * Local types for the Fairway DataTable primitive group. Self-contained so the
  * group never reaches for a top-level shared file other agents might also touch.
  *
- * Built on @tanstack/react-table v8. Consumers pass standard TanStack
- * `ColumnDef`s and (optionally) a `meta` block on each column to opt into
+ * Built on @tanstack/react-table v9. Consumers pass standard TanStack
+ * `ColumnDef`s (bound to the DataTable feature set in ./features) and (optionally) a `meta` block on each column to opt into
  * Fairway-specific affordances (alignment, numeric/tabular rendering).
  * ========================================================================== */
 
-import type { ColumnDef, Row, RowData } from '@tanstack/react-table';
+import type {
+  CellData,
+  ColumnDef as TanStackColumnDef,
+  Row as TanStackRow,
+  RowData,
+} from '@tanstack/react-table';
 import type { ReactNode } from 'react';
+import type { DataTableFeatures } from './features';
 
 /** Vertical density presets — controls row height + cell padding. */
 export type DataTableDensity = 'comfortable' | 'cozy' | 'compact';
@@ -22,7 +28,8 @@ export type DataTableDensity = 'comfortable' | 'cozy' | 'compact';
  *
  *   { accessorKey: 'score', header: 'Score', meta: { align: 'right', numeric: true } }
  *
- * Augments TanStack's `ColumnMeta` so `column.columnDef.meta` is typed.
+ * Registered as the `columnMeta` slot of the v9 feature set (./features), so
+ * `column.columnDef.meta` is typed.
  */
 export interface FairwayColumnMeta {
   /** Horizontal alignment of the header + cells. Default `left`. */
@@ -51,18 +58,20 @@ export interface FairwayColumnMeta {
   headerClassName?: string;
 }
 
-// Make `meta` on a ColumnDef strongly typed with FairwayColumnMeta.
-declare module '@tanstack/react-table' {
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unused-vars
-  interface ColumnMeta<TData extends RowData, TValue> extends FairwayColumnMeta {}
-}
+/**
+ * TanStack v9 column def / row bound to the DataTable feature set, so callers
+ * keep writing `ColumnDef<MyRow, unknown>` and `Row<MyRow>` as they did on v8.
+ */
+export type ColumnDef<TData extends RowData, TValue extends CellData = CellData> =
+  TanStackColumnDef<DataTableFeatures, TData, TValue>;
+export type Row<TData extends RowData> = TanStackRow<DataTableFeatures, TData>;
 
 /**
  * An inline row action surfaced in the trailing actions cell. Rendered as a
  * quiet IconButton-style control; reveals on row hover / focus-within and is
  * always present for keyboard users.
  */
-export interface DataTableRowAction<TData> {
+export interface DataTableRowAction<TData extends RowData> {
   /** Stable id (used as React key). */
   id: string;
   /** Accessible label (also the tooltip / aria-label). */
@@ -92,5 +101,3 @@ export interface DataTableStateProps {
   className?: string;
 }
 
-/** Re-export for convenience so consumers can `import type { ColumnDef }`. */
-export type { ColumnDef, Row };
