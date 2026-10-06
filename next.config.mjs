@@ -483,13 +483,13 @@ const nextConfig = {
           //     surveys bundles (entrypoints/external-scripts-loader.js), then
           //     falls back to a plain GET of /array/<token>/config from the
           //     same host when the script yields no config (remote-config.js).
-          //   browser-intake-datadoghq.com (connect) — @datadog/browser-core
-          //     buildEndpointHost() for the default site datadoghq.com; RUM,
-          //     Logs and Session Replay all post to this one bare host. NO
-          //     wildcard: the SDK reaches a SUBDOMAIN of it only under
-          //     usePciIntake, internalAnalyticsSubdomain or
-          //     remoteConfigurationId, none of which src/lib/datadog/index.ts
-          //     sets. Set one and add its host by name.
+          //   browser-intake-datadoghq.com (connect) — @datadog/js-core
+          //     buildEndpointUrl() (SDK v7) for the default site datadoghq.com;
+          //     RUM, Logs and Session Replay all post to this one bare host. NO
+          //     wildcard: the SDK reaches a SUBDOMAIN of it only for
+          //     remoteConfigurationId or profiling (profilingSampleRate > 0),
+          //     neither of which src/lib/datadog/index.ts sets. Set one and
+          //     add its host by name.
           //
           // A non-default NEXT_PUBLIC_POSTHOG_HOST or NEXT_PUBLIC_DD_SITE needs
           // its host added here too, or it is blocked the same way.

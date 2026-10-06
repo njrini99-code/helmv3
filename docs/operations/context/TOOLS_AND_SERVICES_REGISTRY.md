@@ -46,7 +46,7 @@ These feed the Mission Control **Telemetry / App Health** space in Huly.
 |------|---------|-----------|------------------|------------------|-------|
 | **Sentry** | Error tracking + Session Replay + profiling | Paid | `@sentry/nextjs ^10.56`, `@sentry/profiling-node`; `src/instrumentation-client.ts`; org via `SENTRY_ORG` env in `next.config.mjs` | Summaries only (via Huly) | Org name **unverified (memory)** (read from `SENTRY_ORG`, not hardcoded). Replay: 100% on errors, 10% session in prod, 0% dev, `maskAllText` on |
 | **PostHog** | Product analytics / event capture | Free / paid | `posthog-js ^1.257`, `posthog-node ^4.18` | Summaries only | — |
-| **Datadog** | Browser logs + Real User Monitoring (RUM) | Paid | `@datadog/browser-logs`, `@datadog/browser-rum ^6.25`; `datadog/` (README only) | No | — |
+| **Datadog** | Browser logs + Real User Monitoring (RUM) | Paid | `@datadog/browser-logs`, `@datadog/browser-rum ^7.15`; `datadog/` (README only) | No | — |
 | **Vercel Analytics + Speed Insights** | Traffic + Core Web Vitals | Included w/ Vercel | `@vercel/analytics ^2.0`, `@vercel/speed-insights ^2.0` | No | — |
 | **Lighthouse CI** | Performance / a11y / CLS budgets | Open-source | `@lhci/cli ^0.15`; `lighthouserc.cjs`; `npm run lighthouse` | No | a11y + CLS are hard errors, perf is a warning; manual only — no CI job runs it, `lighthouse-preview` never existed in `.circleci/config.yml` |
 
@@ -85,7 +85,7 @@ Two AI reviewers run in parallel on every PR, plus a local gate that mirrors the
 
 | Tool | Purpose | Tier/plan | Where configured | Partner-visible? | Notes |
 |------|---------|-----------|------------------|------------------|-------|
-| **Resend** | Transactional + branded email; inbound webhooks | Paid | `resend ^6.7`; `docs/setup/RESEND_SETUP.md`; `src/app/api/webhooks/resend/route.ts` | Recipients see emails | Inbound/webhook signatures verified via **Svix** (`svix ^1.86`) |
+| **Resend** | Transactional + branded email; inbound webhooks | Paid | `resend ^6.7`; `docs/setup/RESEND_SETUP.md`; `src/app/api/webhooks/resend/route.ts` | Recipients see emails | Inbound/webhook signatures verified via **Svix** (`svix ^2.6`) |
 | **Gmail API (Workspace domain-wide delegation)** | Cold CRM sending from a Workspace mailbox | Paid (Workspace) | `src/lib/crm/gmail-send.ts`; `docs/setup/GMAIL_SEND_SETUP.md`; `.env.example` | No | **Gated on `GMAIL_SA_*` env — inert until configured** (needs all three of `GMAIL_SA_CLIENT_EMAIL` + `GMAIL_SA_PRIVATE_KEY` + `GMAIL_SEND_AS`) |
 | **Apollo.io** | Lead gen + contact/company enrichment | Paid | Used via the Apollo MCP connector | No | Plan **unverified (memory)**; not a package.json dep |
 | **NCAA coach CRM** | In-house prospect DB of college coaches | In-house | `crm_coaches` table (Supabase); CRM components + `docs/setup/RESEND_SETUP.md` | No | Table verified; the row count ("~1,889 D1–JUCO") is **unverified (memory)** — treat as approximate |
