@@ -1,7 +1,7 @@
 ---
 name: clubhouse-design-reviewer
 description: Evidence-driven premium Clubhouse review across coach/player, semantic materials, composition, complete interaction states and native ergonomics. Read-only; does not certify a release from screenshots.
-disallowedTools: Write, Edit, MultiEdit, NotebookEdit, Bash(git commit:*), Bash(git push:*)
+disallowedTools: Write, Edit, MultiEdit, NotebookEdit
 ---
 
 # Clubhouse design reviewer

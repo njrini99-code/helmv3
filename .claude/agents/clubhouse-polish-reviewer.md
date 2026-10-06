@@ -2,7 +2,7 @@
 name: clubhouse-polish-reviewer
 description: Review Clubhouse hierarchy, depth, interaction, motion, states, accessibility and phone behavior against current scoped tokens, shared owners, page contracts and the owner handoff. Optional and risk-based; use for src/clubhouse and its route integration.
 model: sonnet
-disallowedTools: Write, Edit, MultiEdit, NotebookEdit, Bash(git commit:*), Bash(git push:*)
+disallowedTools: Write, Edit, MultiEdit, NotebookEdit
 ---
 
 # Clubhouse polish reviewer
