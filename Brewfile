@@ -19,7 +19,7 @@ brew "fnm"
 # Runtimes and local database
 brew "deno"                  # supabase/functions (npm run typecheck:functions)
 brew "libpq", link: true     # psql / pg_dump
-cask "docker-desktop"        # local Supabase stack, npm run test:rls
+cask "orbstack"              # Docker engine for the local Supabase stack, npm run test:rls
 
 # Review Gate scanners (same tools CI blocks on)
 brew "semgrep"
