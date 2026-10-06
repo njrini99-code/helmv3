@@ -167,6 +167,9 @@ playwright/.auth/
 # .ts/.tsx source. The .js were deleted; ignore so a stray compile can't dirty
 # the tree again. Canonical source is always the .ts/.tsx.
 /vitest.config.js
+# Vitest 5 writes HTML reports and test attachments to .vitest/ by default
+# (previously the project root / .vitest-attachments/).
+/.vitest/
 /tailwind.config.js
 /playwright.config.js
 /capacitor.config.js
