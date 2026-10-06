@@ -1,0 +1,8 @@
+# actionlint configuration (auto-discovered at .github/actionlint.yaml).
+self-hosted-runner:
+  labels:
+    # GitHub-hosted Ubuntu 26.04 runner, GA 2026-09-17. actionlint 1.7.12 does
+    # not know this label yet and reports it as unknown. Used only by
+    # .github/workflows/ubuntu-26-canary.yml. Remove once the pinned actionlint
+    # knows the label.
+    - ubuntu-26.04

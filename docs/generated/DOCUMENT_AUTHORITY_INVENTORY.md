@@ -48,7 +48,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 49 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
-| `INDEX` | 24 | 1 | 8 | 5 |
+| `INDEX` | 25 | 1 | 8 | 5 |
 | `UNKNOWN` | 319 | 12 | 56 | 81 |
 
 ## Files
@@ -608,6 +608,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `supabase/functions/README.md` | current | - | - | - | - |
 | `supabase/rollbacks/README.md` | current | - | - | - | - |
 | `tools/README.md` | current | - | - | yes | - |
+| `tools/baseballhelm-command-center/vendor/README.md` | current | - | - | - | - |
 | `tools/continuous-improvement/README.md` | current | - | - | - | 2 |
 
 ### `UNKNOWN`

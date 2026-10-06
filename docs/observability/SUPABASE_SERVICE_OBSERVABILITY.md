@@ -31,7 +31,7 @@ explicitly rather than silently filled in.
 **Not fetched / not independently verified in this pass:** whether
 `Sentry.continueTrace` (full distributed-trace continuation from the
 incoming `sentry-trace`/`baggage` headers) is supported and behaves as
-expected against the pinned `@sentry/deno@^8` release — the Deno guide
+expected against the pinned `@sentry/deno@^10` release — the Deno guide
 fetch did not surface a `continueTrace` example, and no live Edge Function
 invocation was made to observe it. `withObservedRequest` tags the incoming
 headers (correlation) rather than asserting trace linkage. **NOT VERIFIED —
