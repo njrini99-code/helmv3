@@ -24,6 +24,12 @@ import path from 'path';
 const sharedTestConfig = {
   environment: 'jsdom' as const,
   globals: true,
+  // Vitest 5 flipped this default to `true` (vi.clearAllMocks() before every
+  // test). Pinned to the Vitest 4 behaviour so the upgrade does not change
+  // what any existing test observes: suites that record mock calls in
+  // beforeAll/module scope, or count calls across tests, keep that history.
+  // Turning it on is a separate, deliberate change, not a dependency bump.
+  clearMocks: false,
   setupFiles: ['./src/test/setup.tsx'],
   coverage: {
     provider: 'v8' as const,
