@@ -21,7 +21,16 @@ Next.js 16 (App Router) · TypeScript (strict) · Supabase (Postgres + Auth
 
 ## Getting started
 
-Humans setting this up locally: see
+Humans setting this up locally (macOS):
+
+```bash
+brew bundle               # every CLI tool the repo calls (see Brewfile)
+fnm install && fnm use    # Node version from .nvmrc
+npm ci                    # app deps, plus repo-pinned Supabase/Vercel CLIs
+npm run doctor            # confirms Node, CLIs, Docker and tools
+```
+
+Running database audits from your machine:
 [`docs/setup/RUN_ON_YOUR_MACHINE.md`](docs/setup/RUN_ON_YOUR_MACHINE.md).
 
 AI agents working in this repo: [`AGENTS.md`](AGENTS.md) is the operating

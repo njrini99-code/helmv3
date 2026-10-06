@@ -72,8 +72,8 @@ export class UIReviewAgent extends BaseAgent {
           timeout: 30000,
         });
 
-        // Wait for any animations
-        await page.waitForTimeout(500);
+        // Wait for any animations. page.waitForTimeout() was removed in Puppeteer 22.
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
         const screenshot = await page.screenshot({
           encoding: 'base64',

@@ -10,7 +10,8 @@
 # immediately.
 #
 # Not covered here (extend if/when needed):
-#   - iOS native deps (CocoaPods/Podfile under the Capacitor app)
+#   - Edge Function `npm:` specifiers under supabase/functions (Deno; no
+#     manifest Dependabot can read)
 version: 2
 updates:
   # ── npm (repo root) ───────────────────────────────────────────────────────
@@ -75,56 +76,6 @@ updates:
     # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
     # so every rebase push triggered a billed (and failing) preview build.
     rebase-strategy: "disabled"
-    directory: "/helm-website-ui"
-    schedule:
-      interval: "monthly"
-    cooldown:
-      default-days: 7
-    open-pull-requests-limit: 2
-    labels:
-      - "dependencies"
-    groups:
-      helm-website-ui:
-        patterns:
-          - "*"
-        # Minor and patch only. A major rides alone as its own PR, so a
-        # typescript 5→7 or jsdom 28→30 cannot make a 12-package group
-        # unmergeable and unreviewable at once (2026-09-02: #1744 carried
-        # four majors and failed lint on "typescript-eslint does not
-        # support TS 7.0"; #1745 carried 30 updates).
-        update-types:
-          - "minor"
-          - "patch"
-
-  - package-ecosystem: "npm"
-    # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
-    # so every rebase push triggered a billed (and failing) preview build.
-    rebase-strategy: "disabled"
-    directory: "/helm-intelligence/typescript"
-    schedule:
-      interval: "monthly"
-    cooldown:
-      default-days: 7
-    open-pull-requests-limit: 2
-    labels:
-      - "dependencies"
-    groups:
-      helm-intelligence:
-        patterns:
-          - "*"
-        # Minor and patch only. A major rides alone as its own PR, so a
-        # typescript 5→7 or jsdom 28→30 cannot make a 12-package group
-        # unmergeable and unreviewable at once (2026-09-02: #1744 carried
-        # four majors and failed lint on "typescript-eslint does not
-        # support TS 7.0"; #1745 carried 30 updates).
-        update-types:
-          - "minor"
-          - "patch"
-
-  - package-ecosystem: "npm"
-    # Stop auto-rebase pushes: old branches carry pre-gating vercel.json,
-    # so every rebase push triggered a billed (and failing) preview build.
-    rebase-strategy: "disabled"
     directory: "/tools/ultra-agent-audit"
     schedule:
       interval: "monthly"
@@ -185,3 +136,30 @@ updates:
     labels:
       - "dependencies"
       - "mobile"
+
+  # ── Android native (Gradle under the Capacitor app) ───────────────────────
+  # AGP / Gradle / androidx versions must stay inside what the installed
+  # @capacitor/android major supports (its android-template), so majors are
+  # ignored here and moved together with a Capacitor upgrade instead.
+  - package-ecosystem: "gradle"
+    rebase-strategy: "disabled"
+    directory: "/android"
+    schedule:
+      interval: "monthly"
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 2
+    labels:
+      - "dependencies"
+      - "mobile"
+    groups:
+      android-gradle:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"

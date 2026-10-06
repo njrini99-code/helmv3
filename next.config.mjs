@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import bundleAnalyzer from '@next/bundle-analyzer';
 import { withSentryConfig } from '@sentry/nextjs';
+import { imageRemotePatterns } from './src/lib/security/image-remote-patterns.mjs';
 import { localSupabaseConnectSrc } from './src/lib/security/local-supabase-csp.mjs';
 import { buildSentryBuildOptions } from './src/lib/sentry-build-options.mjs';
 
@@ -81,27 +82,12 @@ const nextConfig = {
     NEXT_PUBLIC_SENTRY_RELEASE: sentryRelease || '',
   },
 
-  // Allow images from Supabase storage
+  // Allow images from this project's Supabase public storage only (plus a
+  // loopback stack, only when NEXT_PUBLIC_SUPABASE_URL is loopback). No
+  // `**.supabase.co` wildcard: see src/lib/security/image-remote-patterns.mjs
+  // (GHSA-cjq9-62q9-8jv4, image-optimizer SSRF).
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**.supabase.co',
-        pathname: '/storage/v1/object/public/**',
-      },
-      {
-        protocol: 'http',
-        hostname: '127.0.0.1',
-        port: '54321',
-        pathname: '/storage/v1/object/public/**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '54321',
-        pathname: '/storage/v1/object/public/**',
-      },
-    ],
+    remotePatterns: imageRemotePatterns(),
     formats: ['image/avif', 'image/webp'], // Enable modern image formats
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840], // Responsive image sizes
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384], // Smaller image sizes
