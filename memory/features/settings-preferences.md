@@ -12,6 +12,14 @@ The per-category notification page is the player-scoped V3 notification authorit
 
 Some preferences are saved locally and not yet consumed globally, so agents should distinguish persisted UI preferences from behavior that is actually applied.
 
+The shared appearance store hydrates from localStorage after its first client
+mount, preserving the default server snapshot. Later consumers reuse that
+snapshot without invalidating existing consumers. Same-tab updates and changed
+localStorage events publish new preferences; clearing localStorage restores
+defaults. Events with unchanged values retain the existing snapshot identity.
+Clubhouse's reduced-motion hook consumes this store, so redundant notifications
+would otherwise affect controls throughout the Clubhouse tree.
+
 ## Primary Entry Points
 
 ### Routes

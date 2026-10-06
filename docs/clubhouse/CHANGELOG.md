@@ -5,6 +5,20 @@ changelog (`docs/clubhouse/pages/<page>/CHANGELOG.md`) has the detail; decisions
 and the full verification log are in `docs/clubhouse/PROGRESS.md`. Nothing here
 is in production: Clubhouse is behind a flag that is off.
 
+## 2026-10-06 — Smoothness source audit and stable appearance subscriptions
+
+The audit targets the current Clubhouse source on main, selected by the
+Clubhouse flags in preview/development. The older agent/clubhouse checkout
+still contains navigation and dismissal behavior repaired in the October 1–2
+passes. SMOOTHNESS_AUDIT.md separates these versions and inventories all
+15 page families using their existing contracts, catalogs and runtime owners.
+
+The shared appearance store now hydrates once and compares stored values before
+notifying. Mounting another consumer no longer rerenders unchanged subscribers;
+same-tab updates and cross-tab changes still propagate, and a storage clear
+restores defaults. This changes no appearance, motion timing or server data.
+Focused regression evidence and remaining runtime checks are in the audit.
+
 ## 2026-10-02 — Floating cards and stationary overlay backgrounds
 
 The owner rejected striped, outlined cards and unstable pull-up screens. Shared

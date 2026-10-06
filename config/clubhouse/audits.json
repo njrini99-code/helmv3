@@ -139,5 +139,16 @@
     "note": "custom overlays, narrow controls, scoped feedback and measured phone Stats correction verified locally; physical Safari and intended-user validation remain open",
     "allPages": true,
     "pages": []
+  },
+  {
+    "file": "SMOOTHNESS_AUDIT.md",
+    "title": "Clubhouse smoothness source audit",
+    "kind": "audit",
+    "date": "2026-10-06",
+    "scope": "All-page overlay/control inventory, current-source motion findings, stable appearance subscriptions and remaining Safari/iPhone profiling checks.",
+    "status": "in_progress",
+    "note": "source inventory and reproduced store defect; browser and physical-device measurements remain open",
+    "allPages": true,
+    "pages": []
   }
 ]

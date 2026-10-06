@@ -1432,6 +1432,7 @@ features:
       components:
         - src/components/golf/settings/**
         - src/components/golf/coachhelm/settings/**
+        - src/clubhouse/screens/settings/**
       api:
         - src/components/fairway/pages/settings/**
       actions:
@@ -1441,6 +1442,7 @@ features:
         - src/app/golf/actions/whats-new.ts
       services:
         - src/lib/coachhelm/v3/foundation/generator-toggles.ts
+        - src/hooks/golf/use-appearance-preferences.ts
       db:
         - supabase/migrations/*settings*.sql
         - supabase/migrations/*notification*.sql
@@ -1451,6 +1453,7 @@ features:
         - supabase/migrations/*avatars*.sql
       tests:
         - src/test/coachhelm/v3/notifications.test.ts
+        - src/hooks/golf/__tests__/use-appearance-preferences.test.tsx
     integrations:
       - supabase
       - notifications

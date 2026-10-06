@@ -79,7 +79,8 @@ never observed is not verified (08_CI_PROGRESS_AND_VERIFICATION.md).
 ## Accessibility
 
 ```text
-Keyboard:       Enter sends and Shift+Enter adds a line (messages.test 72001); Esc closes a sheet (shell.test).
+Keyboard:       Desktop Enter sends and Shift+Enter adds a line; phone Return adds a line and Send sends.
+                Current source: MessagesView.tsx Composer (CH-7802); Esc closes a sheet (shell.test).
                 Not tested: that a sheet keeps Tab inside it. A full keyboard walk at 1280 and 390 is open.
 VoiceOver:      the long press has a Message actions button (CH-7804); not tried on a device.
 Focus:          a pushed screen takes focus on its title (CH-1809).
