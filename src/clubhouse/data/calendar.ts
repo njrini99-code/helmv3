@@ -307,7 +307,7 @@ export async function loadCalendar(input: {
       busyError = true;
     }
     for (const b of blocks ?? []) {
-      let rule = null;
+      let rule: ReturnType<typeof parseRecurrenceRule>;
       try {
         rule = parseRecurrenceRule(b.recurrence_rule);
       } catch {

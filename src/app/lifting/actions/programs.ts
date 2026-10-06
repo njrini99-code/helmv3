@@ -330,7 +330,7 @@ export const publishProgram = withLiftingAction(
     if (prog.status === 'archived') throw new LiftingActionError('Cannot publish an archived program.');
 
     // Resolve athlete target.
-    let athleteIds: string[] = [];
+    let athleteIds: string[];
 
     if (targetAthleteId) {
       athleteIds = [targetAthleteId];

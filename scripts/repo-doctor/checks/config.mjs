@@ -54,7 +54,7 @@ export async function run(ctx) {
   );
 
   const vjPath = join(repoRoot, 'vercel.json');
-  let vj = null;
+  let vj;
   if (!existsSync(vjPath)) {
     out.push(check('config.vercel-json', Status.FAIL, 'vercel.json is missing'));
   } else {

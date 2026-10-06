@@ -157,7 +157,7 @@ interface SentryMetricLike {
  * what it carries.
  */
 export function enforceMetricAttributeAllowlist<T extends SentryMetricLike>(metric: T): T {
-  let attributes: MetricAttributes = {};
+  let attributes: MetricAttributes;
   try {
     attributes = sanitizeMetricAttributes((metric.attributes ?? {}) as Record<string, unknown>);
   } catch {

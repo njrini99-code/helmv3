@@ -40,7 +40,7 @@ export async function resolveCoachTeamIdWithCookie(
   // `cookies()` throws outside a request scope (e.g. unit tests exercising a
   // server action directly, or background jobs). Degrade to "no cookie" — the
   // resolver then falls back to the coach's staffed/default team.
-  let cookieTeamId: string | null = null;
+  let cookieTeamId: string | null;
   try {
     const cookieStore = await cookies();
     cookieTeamId = cookieStore.get(ACTIVE_TEAM_COOKIE)?.value ?? null;

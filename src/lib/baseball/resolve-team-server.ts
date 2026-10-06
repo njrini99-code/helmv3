@@ -15,7 +15,7 @@ export async function resolveCoachTeamIdWithCookie(
   organizationId: string | null | undefined,
   coachId: string | null | undefined,
 ): Promise<string | null> {
-  let cookieTeamId: string | null = null;
+  let cookieTeamId: string | null;
   try {
     const cookieStore = await cookies();
     cookieTeamId = cookieStore.get(ACTIVE_BASEBALL_TEAM_COOKIE)?.value ?? null;

@@ -61,7 +61,7 @@ const sentAt = new Date().toISOString();
 console.log(`\nInngest health probe  ${probeId}\n`);
 
 // ---- HALF 1: does Inngest ACCEPT an event from us? (INNGEST_EVENT_KEY) -----
-let accepted = false;
+let accepted;
 try {
   const res = await fetch(`https://inn.gs/e/${EVENT_KEY}`, {
     method: 'POST',

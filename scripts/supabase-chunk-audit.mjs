@@ -29,7 +29,7 @@ const BASELINE_PATH = resolve(ROOT, '.supabase-chunk-baseline.json');
 const RULE = 'helm/no-unchunked-in-filter';
 const UPDATE = process.argv.includes('--update');
 
-let raw = '';
+let raw;
 try {
   raw = execFileSync(
     'npx',

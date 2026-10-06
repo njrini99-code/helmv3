@@ -885,7 +885,7 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
     const sentence = sentences[sentenceIndex] as Span;
     const clause = playerClauses[spanIndexAt(playerClauses, t.start)] as Span;
 
-    let players: Set<string> | null = null;
+    let players: Set<string> | null;
     const inClause = names.filter((n) => within(clause, n));
     if (inClause.length > 0) {
       players = union(inClause);

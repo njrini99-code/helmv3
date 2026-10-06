@@ -330,7 +330,7 @@ export async function fetchTeamDetailExtras(input: {
   const admin = createAdminClient();
   const degraded: string[] = [];
 
-  let qualifiers: TeamQualifiersSummary = EMPTY_QUALIFIERS_SUMMARY;
+  let qualifiers: TeamQualifiersSummary;
   try {
     const { data: qData, error: qError } = await admin
       .from('golf_qualifiers')
@@ -363,7 +363,7 @@ export async function fetchTeamDetailExtras(input: {
     qualifiers = EMPTY_QUALIFIERS_SUMMARY;
   }
 
-  let inFlight: TeamInFlightSummary = EMPTY_IN_FLIGHT_SUMMARY;
+  let inFlight: TeamInFlightSummary;
   try {
     const { data: rData, error: rError } = await admin
       .from('golf_rounds')
