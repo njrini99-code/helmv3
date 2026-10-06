@@ -1,6 +1,79 @@
 # Clubhouse changelog
 
-Every Clubhouse change with the issue it fixed, newest first. Each page's own changelog (`docs/clubhouse/pages/<page>/CHANGELOG.md`) has the detail; decisions and the full verification log are in `docs/clubhouse/PROGRESS.md`. Nothing here is in production: Clubhouse is behind a flag that is off.
+Every Clubhouse change with the issue it fixed, newest first. Each page's own
+changelog (`docs/clubhouse/pages/<page>/CHANGELOG.md`) has the detail; decisions
+and the full verification log are in `docs/clubhouse/PROGRESS.md`. Nothing here
+is in production: Clubhouse is behind a flag that is off.
+
+## 2026-10-02 — Floating cards and stationary overlay backgrounds
+
+The owner rejected striped, outlined cards and unstable pull-up screens. Shared
+surfaces now use stronger soft elevation, with decorative rails and frame rings
+removed across Messages, Hub, Stats, Roster, Classes, Qualifiers and CoachHelm.
+Focus outlines and meaningful selected/chart states remain.
+
+Nested and exiting overlays hold one reference-counted scroll lock, preserving
+the underlying page position and returning focus without scrolling. Modal close
+animation runs before the native dialog releases its lock. Drag events follow
+one primary pointer and cancel cleanly; nested dialogs have unique title IDs.
+The welcome also protects its text from background trees and removes blur.
+
+## 2026-10-02 — Installed plugins find concrete flow and data gaps
+
+The owner requested Apple Messages display and behavior with the existing
+green/ivory palette. Phone threads now group their bubbles, use direct-chat
+width, insert a newline with Return, and preserve selected-message context.
+Quoted replies carry the existing parent relationship through send, optimistic
+state and Retry; the server validates conversation access. The Supabase plugin
+guides this existing-schema integration; no migration is added.
+
+Frontend Design Premium and Shiro preserve the supplied visual direction while
+checking shared ownership, phone geometry and feedback. Intuitive Software
+Design reviews Roster, Stats and Hub tasks; Codebase Design reviews Home's read
+seam. Root DESIGN.md and UI_OWNERSHIP.md point to existing handoffs and runtime
+owners. They do not replace the page contracts or generate a second CSS system.
+The plugin auditor's scope is declared in premium-ui.json.
+
+Corrections: repeated Sign in sends one request, failed attempts can retry,
+round controls reach 44px, qualifier names wrap, stats filters reach 44px and
+roster profile spacing/material follows its list. Hub exposes per-object saves,
+allows independent writes, retains a post until acknowledgment confirms, and
+rolls back to the last confirmed state. Home uses the team clock and avoids
+invented par, sand-save and incomplete attendance figures. Shared scrollbars
+retain native scrolling and restore defaults under forced colors.
+
+The scoped static plugin auditor cannot resolve custom React Button/Form
+semantics or inherited CSS. Its remaining detections are reviewed against the
+canonical owners and browser evidence; strict automated compliance is not
+claimed. Local fixture behavior, layout and regression tests provide bounded
+evidence. Physical iPhone frame rate, human usability and live-account
+persistence remain unverified. No merge, production deploy or flag change.
+
+## 2026-10-01 — Safari design fidelity and restored surface depth
+
+Branch: `codex/clubhouse-design-fidelity`. Owner reference: Coach home dashboard
+redesign (5)/(6), existing auth handoff, and the supplied Safari photo. The
+current feedback supersedes the darker flat phone treatment and clubhouse-only
+phone camera. Shared sheets, content wells and Messages bubbles regain graded
+ivory/green faces, upper highlights, contact shadows and restrained ambient
+depth. The mobile canvas remains warm ivory with the existing readable type
+floors. The Home header uses the compact GolfHelm mark on a 32px medallion.
+Named page snapshots use a simultaneous 180ms crossfade without the old arrival
+delay, including browsers without transition-class selectors. Browser edges read
+current tokens and create a missing theme-color tag, replacing a stale darker
+beige.
+
+Home, Auth and eight secondary page passes are logged in their page changelogs.
+Shared CSS and several secondary page styles remain outside the semantic
+knowledge map; page manifests and their design/verification documents cover
+them. Home and Auth behavior paths are now mapped to their existing features.
+Physical iPhone frame rate and the owner's deployed preview are unverified;
+local WebKit evidence is filed under `.helm/screenshots/clubhouse/`.
+
+Verification: targeted component/data suites, scoped ESLint, TypeScript,
+Clubhouse contracts, knowledge checks, screenshot validation and Markdown
+ratchet pass. The full production build exits 0: compiled successfully,
+TypeScript completed, all 181 static pages generated and route table emitted.
 
 ## 2026-10-01 (aesthetic audit)
 

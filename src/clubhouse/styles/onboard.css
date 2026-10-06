@@ -193,7 +193,7 @@
   background: var(--ch-ox-grain), linear-gradient(170deg, rgb(250 248 241 / 0.93), rgb(245 241 231 / 0.9) 55%, rgb(241 236 223 / 0.92));
   backdrop-filter: blur(22px) saturate(130%);
   -webkit-backdrop-filter: blur(22px) saturate(130%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 0 0 1px rgb(120 96 52 / 0.28), 0 0 0 5px rgb(247 244 236 / 0.5), 0 0 0 6px rgb(176 149 96 / 0.3), 0 60px 110px -50px rgb(8 30 18 / 0.75), 0 18px 36px -22px rgb(8 30 18 / 0.4);
+  box-shadow: var(--ch-elevation-overlay);
   animation: chOxPane var(--ch-ox-t-pane) var(--ch-ox-ease) both;
 }
 .ch-ox-stage::before,
@@ -205,12 +205,12 @@
 .ch-ox-stage::before {
   inset: 12px;
   border-radius: 14px;
-  box-shadow: inset 0 0 0 1px rgb(120 96 52 / 0.3);
+  box-shadow: none;
 }
 .ch-ox-stage::after {
   inset: 16px;
   border-radius: 11px;
-  box-shadow: inset 0 0 0 1px rgb(120 96 52 / 0.13);
+  box-shadow: none;
 }
 .ch-ox-col {
   position: relative;
@@ -432,7 +432,7 @@
   border-radius: 16px;
   color: var(--ch-ox-ivory);
   background: radial-gradient(110% 120% at 88% -10%, rgb(255 255 255 / 0.1), transparent 55%), var(--ch-ox-grain), linear-gradient(162deg, #165c3b, var(--ch-ox-felt) 68%, #093220);
-  box-shadow: 0 0 0 1px #072a1a, inset 0 1px 0 rgb(255 255 255 / 0.12), 0 20px 36px -22px rgb(8 30 18 / 0.8);
+  box-shadow: var(--ch-elevation-reading-accent);
   transition: transform var(--ch-ox-t-hover) var(--ch-ox-ease), box-shadow var(--ch-ox-t-hover);
 }
 .ch-ox-card::before {
@@ -441,22 +441,23 @@
   inset: 6px;
   border-radius: 11px;
   pointer-events: none;
-  box-shadow: inset 0 0 0 1px rgb(220 205 166 / 0.24);
+  box-shadow: none;
   transition: box-shadow var(--ch-ox-t-hover);
 }
 .ch-ox-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 0 1px #072a1a, inset 0 1px 0 rgb(255 255 255 / 0.12), 0 28px 44px -24px rgb(8 30 18 / 0.9);
+  box-shadow: var(--ch-elevation-reading-accent);
 }
 .ch-ox-card:hover::before {
-  box-shadow: inset 0 0 0 1px rgb(220 205 166 / 0.5);
+  box-shadow: none;
 }
 .ch-ox-card:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 3px;
 }
 .ch-ox-card[aria-checked='true'] {
-  box-shadow: 0 0 0 2px #b09560, 0 20px 36px -22px rgb(8 30 18 / 0.8);
+  background: var(--ch-green-raised-bg);
+  box-shadow: var(--ch-elevation-reading-accent);
 }
 .ch-ox-card b {
   margin-top: 4px;
@@ -761,7 +762,7 @@
 }
 .ch-ox-tile[aria-checked='true'] {
   background: linear-gradient(162deg, #165c3b, var(--ch-ox-felt));
-  box-shadow: 0 0 0 1px #072a1a, 0 12px 22px -14px rgb(8 30 18 / 0.75);
+  box-shadow: var(--ch-elevation-reading-accent);
 }
 .ch-ox-tile[aria-checked='true'] b {
   color: #f7f3e8;
@@ -1271,7 +1272,7 @@
   border-radius: 10px;
   color: var(--ch-ox-felt);
   background: var(--ch-ox-grain), radial-gradient(120% 90% at 30% 20%, #fbf7ec, #f2ebd8 70%, #eae1ca);
-  box-shadow: 0 0 0 1px rgb(90 70 30 / 0.3), 0 22px 40px -20px rgb(0 0 0 / 0.65), 0 3px 6px rgb(0 0 0 / 0.18), inset 0 1px 0 rgb(255 255 255 / 0.8);
+  box-shadow: var(--ch-elevation-overlay);
 }
 .ch-ox-mc::before {
   content: '';
@@ -1279,7 +1280,7 @@
   inset: 9px 9px 43px;
   border-radius: 6px;
   pointer-events: none;
-  box-shadow: inset 0 0 0 1px rgb(11 58 37 / 0.75), inset 0 0 0 3px #f4eedd, inset 0 0 0 4px rgb(11 58 37 / 0.35);
+  box-shadow: none;
 }
 .ch-ox-mc__wm {
   position: absolute;
@@ -1600,7 +1601,7 @@
     padding: 24px 20px 32px;
     border-radius: 24px;
     background: linear-gradient(165deg, rgb(252 251 247 / 0.92), rgb(248 246 240 / 0.9));
-    box-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgb(176 149 96 / 0.24), 0 30px 60px -30px rgb(11 38 22 / 0.6);
+    box-shadow: var(--ch-elevation-overlay);
   }
   .ch-ox-stage::before,
   .ch-ox-stage::after {

@@ -14,19 +14,20 @@ function Bar({ height, children }: { height: number; children: ReactNode }) {
   return <span style={{ display: 'flex', alignItems: 'center', height }}>{children}</span>;
 }
 
-/** `height`: the loaded panel's (the trend 204, the legs 250 on Team stats; the strokes gained 250 and the next 175 on a profile). */
-function Panel({ rows, chart = false, height }: { rows: number; chart?: boolean; height: number }) {
+/** The trend uses the loaded chart aspect ratio; other panels retain their measured minimum. */
+function Panel({ rows, chart = false, height, title }: { rows: number; chart?: boolean; height: number; title: string }) {
   return (
     <section className="ch-stm-panel" aria-hidden="true" style={{ minHeight: height }}>
       <div className="ch-stm-panel__h">
-        <Skeleton width={120} height={16} />
-        <Skeleton width={84} height={12} />
+        <h2>{title}</h2>
+        <Bar height={18.2}><Skeleton width={106} height={12} /></Bar>
       </div>
       {chart ? (
-        <Skeleton width="100%" height={110} radius={10} />
+        <div className="ch-stm-chart-hold"><Skeleton width="100%" height={60} radius={10} /></div>
       ) : (
         Array.from({ length: rows }, (_, i) => <Skeleton key={i} width="100%" height={14} />)
       )}
+      {chart && <p className="ch-stm-note"><Bar height={18.85}><Skeleton width={180} height={12} /></Bar></p>}
     </section>
   );
 }
@@ -34,14 +35,14 @@ function Panel({ rows, chart = false, height }: { rows: number; chart?: boolean;
 /** The strip's second line (a change or a caption) is in the loaded strip on Last 10, the window a page opens on. */
 function Figures({ count }: { count: number }) {
   return (
-    <dl className={'ch-stm-figs' + (count === 3 ? ' is-three' : '')} aria-hidden="true" style={count === 3 ? { minHeight: 125 } : undefined}>
+    <dl className={'ch-stm-figs' + (count === 3 ? ' is-three' : '')} aria-hidden="true">
       {Array.from({ length: count }, (_, i) => (
         <div key={i}>
           <dt>
-            <Skeleton width={52} height={11} />
+            <Bar height={16.2}><Skeleton width={52} height={11} /></Bar>
           </dt>
-          <dd>
-            <Skeleton width={44} height={20} radius={6} />
+          <dd className={count === 3 && i === 2 ? 'is-words' : undefined}>
+            <Skeleton width={44} height={count === 3 && i === 2 ? 15 : 20} radius={6} />
           </dd>
           <dd>
             <Skeleton width={36} height={11} />
@@ -56,19 +57,20 @@ export function StatsTeamPhoneSkeleton() {
   return (
     <main className="ch-stm" aria-busy="true" aria-label="Loading stats" data-ch-code="CH-4401">
       <header className="ch-stm-head" aria-hidden="true">
-        <Bar height={17}>
+        <Bar height={18.2}>
           <Skeleton width={230} height={12} />
         </Bar>
-        <Bar height={31}>
+        <Bar height={30.8}>
           <Skeleton width={150} height={28} radius={8} />
         </Bar>
       </header>
       <div className="ch-stm-controls" aria-hidden="true">
-        <Skeleton width="100%" height={40} radius={12} />
+        <Skeleton width="100%" height={44} radius={12} />
       </div>
       <Figures count={4} />
-      <Panel rows={0} chart height={204} />
-      <Panel rows={4} height={250} />
+      <p className="ch-stm-cover" aria-hidden="true"><Skeleton width={180} height={12} /></p>
+      <Panel rows={0} chart height={0} title="Scoring trend" />
+      <Panel rows={5} height={266} title="Strokes gained by leg" />
     </main>
   );
 }
@@ -85,11 +87,17 @@ export function StatsPlayerPhoneSkeleton() {
       </header>
       {/* As on the loaded page: the header, the window and filter row, then the figures. */}
       <div className="ch-stm-controls" aria-hidden="true">
-        <Skeleton width="100%" height={40} radius={12} />
+        <Skeleton width="100%" height={44} radius={12} />
       </div>
-      <Figures count={3} />
-      <Panel rows={4} height={250} />
-      <Panel rows={4} height={175} />
+      <div className="ch-stm-overview" aria-hidden="true">
+        <Figures count={3} />
+        <div className="ch-stm-overview__meta">
+          <Bar height={20.3}><Skeleton width={180} height={12} /></Bar>
+          <Bar height={20.3}><Skeleton width={140} height={12} /></Bar>
+        </div>
+      </div>
+      <Panel rows={5} height={266} title="Strokes gained" />
+      <Panel rows={4} height={175} title="Game detail" />
     </main>
   );
 }

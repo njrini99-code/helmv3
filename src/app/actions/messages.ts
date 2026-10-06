@@ -20,6 +20,7 @@ import { getCoachTeamSwitchContext } from '@/lib/golf/resolve-team';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 import { assertGolfConversationAudience } from '@/lib/golf/conversation-audience';
+import { validateGolfReplyTarget } from '@/lib/golf/message-replies';
 
 type Sport = 'baseball' | 'golf';
 
@@ -46,6 +47,8 @@ interface SendMessageOptions {
    * useGolfMessages is an exact match instead of a heuristic guess.
    */
   clientMessageId?: string;
+  /** Golf's existing same-conversation reply link; omitted for ordinary messages. */
+  replyToId?: string | null;
 }
 
 /**
@@ -94,6 +97,7 @@ export async function sendMessage({
   sport = 'baseball',
   createNotifications = true,
   clientMessageId,
+  replyToId,
 }: SendMessageOptions) {
   try {
     const supabase = await createClient();
@@ -132,6 +136,14 @@ export async function sendMessage({
       throw new Error('Not a participant in this conversation');
     }
 
+    let validatedReplyId: string | null = null;
+    if (replyToId != null) {
+      if (sport !== 'golf') throw new Error('Quoted replies are not available for this conversation');
+      const reply = await validateGolfReplyTarget(supabase, validatedData.conversation_id, replyToId);
+      if (!reply.success) throw new Error(reply.error);
+      validatedReplyId = reply.replyToId;
+    }
+
     // Log security event
     await logSecurityEvent({
       event: 'message_sent',
@@ -150,6 +162,7 @@ export async function sendMessage({
         sender_id: user.id,
         content: sanitizedContent,
         read: false,
+        ...(validatedReplyId ? { reply_to_id: validatedReplyId } : {}),
       })
       .select()
       .single();
@@ -186,7 +199,7 @@ export async function sendMessage({
         // closed is the right direction, and the caller retains the message.
         const { data: existing, error: existingError } = await (supabase
           .from(messagesTable as any) as any)
-          .select('id, conversation_id, sender_id, content')
+          .select(sport === 'golf' ? 'id, conversation_id, sender_id, content, reply_to_id' : 'id, conversation_id, sender_id, content')
           .eq('id', validatedData.client_message_id)
           .maybeSingle();
 
@@ -195,7 +208,8 @@ export async function sendMessage({
           !!existing &&
           existing.conversation_id === validatedData.conversation_id &&
           existing.sender_id === user.id &&
-          existing.content === sanitizedContent;
+          existing.content === sanitizedContent &&
+          (sport !== 'golf' || (existing.reply_to_id ?? null) === validatedReplyId);
 
         if (alreadySentByThisUser) {
           return { success: true };
@@ -652,8 +666,8 @@ export async function markBaseballMessagesAsRead(conversationId: string) {
 
 // Golf-specific exports (maintain existing function signatures)
 // SEMGREP-ALLOW: realtime-subscribed messages + notifications UI; revalidate would cause reload loop
-async function sendGolfMessageImpl(conversationId: string, content: string, clientMessageId?: string) {
-  const result = await sendMessage({ conversationId, content, sport: 'golf', createNotifications: false, clientMessageId });
+async function sendGolfMessageImpl(conversationId: string, content: string, clientMessageId?: string, replyToId?: string | null) {
+  const result = await sendMessage({ conversationId, content, sport: 'golf', createNotifications: false, clientMessageId, replyToId });
 
   if (result.success) {
     const supabase = await createClient();
@@ -674,8 +688,8 @@ const observedSendGolfMessage = withAdminObserved(
   sendGolfMessageImpl,
 );
 
-export async function sendGolfMessage(conversationId: string, content: string, clientMessageId?: string) {
-  return observedSendGolfMessage(conversationId, content, clientMessageId);
+export async function sendGolfMessage(conversationId: string, content: string, clientMessageId?: string, replyToId?: string | null) {
+  return observedSendGolfMessage(conversationId, content, clientMessageId, replyToId);
 }
 
 async function createGolfConversationImpl(participantUserIds: string[], teamId?: string) {

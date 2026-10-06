@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readWaves } from './read-waves';
 
 /**
@@ -41,6 +41,13 @@ function base(events: unknown[] = [todayEvent()]): import('./supabase-fake').ChF
     golf_coaches: { data: [{ id: 'c1', user_id: 'u1' }] },
   };
 }
+
+// The fixture adds an hour to "now" and calls it today's practice. Near team
+// midnight that is tomorrow, so this read-depth contract needs a fixed clock.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-10-01T16:00:00Z'));
+});
 
 afterEach(() => {
   tables.current = {};

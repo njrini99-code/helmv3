@@ -406,6 +406,43 @@ describe('Roster · loading, haptics, accessibility', () => {
     expect(within(panel).getByRole('link', { name: 'Schedule 1:1' }).getAttribute('href')).toBe(`/golf/dashboard/calendar?new=1&with=${theo.id}`);
   });
 
+  it('desktop player Message keeps the selected player target, including keyboard activation', async () => {
+    const user = userEvent.setup();
+    wrap(roster());
+    const targets: string[] = [];
+    for (const p of [theo, PREVIEW_ROSTER.players[3]!]) {
+      await openPeek(user, p.name);
+      const panel = await screen.findByRole('complementary', { name: p.name });
+      const message = within(panel).getByRole('link', { name: /^Message$/ });
+      const expected = `/golf/dashboard/messages?player=${encodeURIComponent(p.id)}`;
+      expect(message.getAttribute('href')).toBe(expected);
+      message.addEventListener('click', (event) => {
+        event.preventDefault();
+        targets.push(message.getAttribute('href')!);
+      });
+      message.focus();
+      await user.keyboard('{Enter}');
+      expect(targets.at(-1)).toBe(expected);
+      await user.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByRole('complementary', { name: p.name })).toBeNull());
+    }
+    expect(new Set(targets).size).toBe(2);
+  });
+
+  it('desktop row Message menu keeps each row target when opened with the keyboard', async () => {
+    const user = userEvent.setup();
+    wrap(roster());
+    await toList(user);
+    for (const p of [theo, PREVIEW_ROSTER.players[3]!]) {
+      screen.getByRole('button', { name: `Actions for ${p.name}` }).focus();
+      await user.keyboard('{Enter}');
+      const message = await screen.findByRole('menuitem', { name: /^Message$/ });
+      expect(message.getAttribute('href')).toBe(`/golf/dashboard/messages?player=${encodeURIComponent(p.id)}`);
+      await user.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
+    }
+  });
+
   it('CH-3803 Esc closes the player panel, but not while typing a note', async () => {
     const user = userEvent.setup();
     wrap(roster());

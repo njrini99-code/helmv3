@@ -14,6 +14,7 @@ import { chReport } from '../lib/track';
 import { haptic } from '../lib/haptics';
 import { chTween } from '../lib/motion';
 import { useSheetDrag } from '../lib/sheet-drag';
+import { OverlayScrollLock } from '../lib/overlay-scroll';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import type { ChShellData } from '../data/shell';
 import { activeNavItem, phoneTabsFor, type ChRole } from './nav';
@@ -83,7 +84,7 @@ export function TabBar({
     if (!moreOpen) return;
     const trigger = moreBtn.current;
     // The sheet mounts in the same commit, so it can take focus right away.
-    sheet.current?.querySelector<HTMLElement>('a, button')?.focus();
+    sheet.current?.querySelector<HTMLElement>('a, button')?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') return setMoreOpen(false);
       if (e.key !== 'Tab' || !sheet.current) return;
@@ -170,7 +171,7 @@ export function TabBar({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={chTween('base')}
+              transition={reduced ? { duration: 0 } : chTween('base')}
               onClick={() => setMoreOpen(false)}
             />
             <m.div
@@ -185,10 +186,11 @@ export function TabBar({
               aria-label="More"
               className="ch-more"
               initial={reduced ? { opacity: 0 } : { y: '100%' }}
-              animate={reduced ? { opacity: 1 } : { y: 0 }}
-              exit={reduced ? { opacity: 0 } : { y: '100%' }}
-              transition={chTween('base')}
+              animate={{ y: 0, opacity: 1 }}
+              exit={reduced ? { y: 0, opacity: 0 } : { y: '100%' }}
+              transition={reduced ? { duration: 0 } : chTween('base')}
             >
+              <OverlayScrollLock />
               <div className="ch-more__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
               <div className="ch-more__head" onPointerDown={drag.onPointerDown}>
                 <span>More</span>

@@ -1,3 +1,4 @@
+import './dialog-polyfill';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -309,6 +310,29 @@ describe('Stats team · network', () => {
     online.mockRestore();
   });
 
+  it('CH-4902 shown slow feedback ends on settlement and replacement', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const view = wrap(stats({ window: 'last10' }));
+      await user.click(screen.getByRole('radio', { name: 'Season' }));
+      act(() => vi.advanceTimersByTime(5001));
+      await expectCode('CH-4902', /Still loading the season/);
+      view.rerender(tree(stats({ window: 'season' })));
+      await waitFor(() => expect(code('CH-4902')).toBeNull());
+      await user.click(screen.getByRole('radio', { name: 'Qualifiers' }));
+      act(() => vi.advanceTimersByTime(5001));
+      await expectCode('CH-4902', /Still loading qualifier rounds/);
+      await user.click(screen.getByRole('radio', { name: 'Last 10' }));
+      await waitFor(() => expect(code('CH-4902')).toBeNull());
+      act(() => vi.advanceTimersByTime(5001));
+      await expectCode('CH-4902', /Still loading the last 10 rounds/);
+      expect(document.querySelectorAll('[data-ch-code="CH-4902"]')).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('CH-4902 a slow window change says so once; a quick one says nothing', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
@@ -495,6 +519,32 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     wrap(stats());
     await user.click(screen.getByRole('radio', { name: /Season/ }));
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?window=season', { scroll: false });
+  });
+
+  it('phone period changes clear unavailable comparisons and coverage without inventing zero changes', () => {
+    const data = stats({ holeRoundCount: PREVIEW_TEAM_STATS.roundCount - 1 });
+    const view = wrap(data);
+    expect(document.querySelector('.ch-stm-cover')?.textContent).toMatch(/Hole stats from/);
+    const next = stats({
+      window: 'season',
+      holeRoundCount: data.roundCount,
+      figures: data.figures.map((figure) => ({ ...figure, delta: null })),
+    });
+    view.rerender(tree(next));
+    const slots = [...document.querySelectorAll('.ch-stm-figs dd:last-of-type')];
+    expect(slots).toHaveLength(4);
+    for (const slot of slots) {
+      expect(slot.textContent).toBe('');
+      expect(slot.getAttribute('aria-hidden')).toBe('true');
+    }
+    const coverage = document.querySelector('.ch-stm-cover')!;
+    expect(coverage.textContent).toBe('');
+    expect(coverage.getAttribute('aria-hidden')).toBe('true');
+    expect([...document.querySelectorAll('.ch-stm-figs dd:first-of-type')].map((value) => value.textContent)).toEqual(['73.6', '61%', '30.4', '52%']);
+    view.rerender(tree(data));
+    expect(document.querySelector('.ch-stm-cover')?.textContent).toMatch(/Hole stats from/);
+    expect(document.querySelector('.ch-stm-cover')?.getAttribute('aria-hidden')).toBeNull();
+    expect(document.querySelector('.ch-stm-figs dd:last-of-type')?.textContent).toBe('−0.9');
   });
 
   it('CH-4201 rounds do not load: the notice, never an empty team, and no count of active players', () => {

@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 /** The painted course's mount (P015): it may fail without taking the form with it. */
 
@@ -25,7 +26,13 @@ afterEach(() => {
 });
 
 describe('CH-15908 a crash in the course leaves the form alone and is reported', () => {
-  it('draws nothing in its place and reports it to Sentry, low severity, tagged auth.scene', () => {
+  it('ships the painted course before JavaScript or the viewer clock is available', () => {
+    const html = renderToStaticMarkup(<SceneMount />);
+    expect(html).toContain('/clubhouse/auth/course-arrival.jpg');
+    expect(html).toContain('650 0 760 1000');
+    expect(html).not.toContain('data-testid="course"');
+  });
+  it('keeps the course poster and reports the animation crash to Sentry, low severity, tagged auth.scene', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     render(
       <FixedClock.Provider value={new Date(2025, 9, 14, 9, 0)}>
@@ -34,6 +41,7 @@ describe('CH-15908 a crash in the course leaves the form alone and is reported',
       </FixedClock.Provider>,
     );
     expect(screen.queryByTestId('course')).toBeNull();
+    expect(document.querySelector('.ch-au-poster')).toBeInTheDocument();
     expect(screen.getByRole('form', { name: 'Sign in to GolfHelm' })).toBeInTheDocument();
     expect(report).toHaveBeenCalledWith(expect.any(Error), { surface: 'auth.scene', severity: 'low' });
   });

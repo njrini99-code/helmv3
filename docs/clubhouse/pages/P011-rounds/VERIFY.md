@@ -1,8 +1,9 @@
 # P011 — Rounds: verification
 
-Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate checklist is
-`docs/clubhouse/screens/rounds.md` (it still reads "This covers the library" and its boxes are not brought current
-for Review, Setup and Tracking; see the gaps below).
+Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
+checklist is `docs/clubhouse/screens/rounds.md` (it still reads "This covers the
+library" and its boxes are not brought current for Review, Setup and Tracking;
+see the gaps below).
 
 ## What is live, and what is preview only
 
@@ -283,7 +284,11 @@ assertions).
 
 ## Screenshots
 
-Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
+committed) and travel in the PR description; this table is the committed record
+of them. One row per file; the label is the file's basename, named by `npm run
+clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is
+before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
@@ -331,6 +336,43 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 | `P011__track__player__390__putt__before__d3a6483.png` | before | d3a6483 | track (player), 390px, putt; /clubhouse-preview/track?state=putt, synthetic preview fixture |
 | `P011__track__player__390__submit-failed__after__d4367ee.png` | after | d4367ee | track (player), 390px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
 | `P011__track__player__390__submit-failed__before__d3a6483.png` | before | d3a6483 | track (player), 390px, submit-failed; /clubhouse-preview/track?state=submitfail, synthetic preview fixture |
+| `P011__mobile-overview__player__390__safari-populated__before__cbc1c0d.png` | before | cbc1c0d (working tree) | Mobile overview (player), 390px, WebKit iPhone 13; /clubhouse-preview/rounds, synthetic preview fixture; shared materials in progress |
+| `P011__mobile-overview__player__390__safari-populated__after__cbc1c0d.png` | after | cbc1c0d (working tree) | Mobile overview (player), 390px, WebKit iPhone 13; /clubhouse-preview/rounds, synthetic preview fixture; shared materials in progress |
+| `P011__shiro-mobile-overview__player__390__populated__after__cca081c.png` | after | cca081c | shiro-mobile-overview (player), 390px, populated; /clubhouse-preview/rounds, synthetic preview fixture |
+| `P011__shiro-mobile-overview__player__390__populated__before__cca081c.png` | before | cca081c | shiro-mobile-overview (player), 390px, populated; /clubhouse-preview/rounds, synthetic preview fixture |
+
+## 2026-10-02 — Narrow setup layout and course selection
+
+Working tree after `c1e81e0fe`; WebKit, isolated `mobile-flow-audit` CLI
+session,
+synthetic `/clubhouse-preview/setup` ports on local development server 3120.
+This pass changed only `styles/rounds-setup.css`.
+
+- Before: at 320px the document was 334px wide; the course card was 240px wide
+  and clipped Browse courses at its right edge. Browse ended at x331.17 while
+  the card ended at x280. The round-type strip scrolled 274px within 200px.
+- After: document and body widths equal the viewport at 320/375/390/430/820px.
+  Course cards measure 296/351/366/406/796px, with matching client and scroll
+  widths. Round-type strips also have matching client and scroll widths.
+- Browse stays within the course card at every width. Its phone row is 44px
+  tall at 320/375/390/430px. At 820px the wide row retains its 36px visual
+  button and the shared 44px expanded touch target.
+- At each width with a 480px-high viewport, scrolling Browse to the center
+  makes its actual center hit reachable. The sticky Start dock ends at y472
+  on the narrow widths and y464 at 820px. The long form requires scrolling;
+  these assertions do not claim every section fits above the dock at once.
+- Actual 390px interactions opened Browse, searched Finley, selected Finley
+  GC and Blue tees, and enabled Start. The dock showed
+  `Finley GC · Blue · 18 holes · Par 72`. Start was not pressed.
+- `git diff --check` passed. No TSX, engine, server or test source changed.
+  CSS mapping remains absent; reported to the parent for its mapping decision.
+
+Evidence is local in `/tmp/helm-clubhouse-mobile-flow-audit/`: five
+`setup-before-*`, five `setup-after-*`, five `setup-short-after-*` captures,
+plus the course-search and selected-course captures. Screenshot UI includes
+the development-only Next indicator. Real Safari browser chrome, software
+keyboard, text zoom, live persistence and routed accounts were not tested.
+Further browser checks paused when the shared dev server ran out of disk.
 
 ## Open verification gaps
 

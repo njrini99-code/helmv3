@@ -25,7 +25,7 @@ is a second thing to keep true.
 **Feature Awareness System** · active · criticality high · owner platform
 
 - **Behaviour:** `docs/ai-system/helmv3-ai-codebase-intelligence.md`
-- **Code:** `scripts/knowledge/**`, `scripts/contracts/**`, `memory/journeys/**`, `.devin/wiki.json`, `.github/workflows/feature-awareness.yml`, `package.json` … and 28 more in the registry
+- **Code:** `scripts/knowledge/**`, `scripts/contracts/**`, `memory/journeys/**`, `.devin/wiki.json`, `.github/workflows/feature-awareness.yml`, `package.json` … and 29 more in the registry
 - **Telemetry:** none. Agent tooling, not a product surface. Nothing here writes admin_events.feature, and no FeatureKey should exist for it.
 - **Incidents:** `memory/incidents/feature_awareness_system/INC-2026-08-16-parallel-agents-shared-tree.md`, `memory/incidents/feature_awareness_system/INC-2026-08-18-worktrees-inside-repo-duplicate-tree.md`, `memory/incidents/feature_awareness_system/INC-2026-08-19-codeql-matrix-rename-phantom-checks.md`, `memory/incidents/feature_awareness_system/INC-2026-08-29-disk-exhaustion-from-six-worktrees.md`, `memory/incidents/feature_awareness_system/INC-2026-08-30-worktree-removed-without-owner-consent.md`, `memory/incidents/feature_awareness_system/INC-2026-08-30-zsh-history-modifier-broke-pushes.md`, `memory/incidents/feature_awareness_system/INC-2026-08-31-vercel-upload-cap-vercelignore-fix.md`, `memory/incidents/feature_awareness_system/INC-2026-08-31-worktree-report-missed-remote-branches.md`, `memory/incidents/feature_awareness_system/INC-2026-09-02-ci-runner-slot-starvation-consolidation.md`, `memory/incidents/feature_awareness_system/INC-2026-09-02-vercel-cli-pipe-close-abort.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-automemory-user-scope-drift.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-golf-e2e-env-injection-skip.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-mcp-namespace-policy-contradiction.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-sandboxed-dev-server-false-ready.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-surface-registry-miscategorized-as-generated.md`, `memory/incidents/feature_awareness_system/INC-2026-09-26-ledger-vs-catalog-false-drift.md`
 - **Repair units:** none in the queue
@@ -61,7 +61,7 @@ is a second thing to keep true.
 - **Code:** `src/app/golf/(dashboard)/dashboard/coachhelm/**`, `src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**`, `src/components/golf/coachhelm/**`, `src/app/api/coachhelm/**`, `src/app/api/cron/coachhelm-calibration/**`, `src/app/api/cron/coachhelm-insight-lifecycle/**` … and 21 more in the registry
 - **Telemetry:** `coachhelm_ai_engine` (coachhelm, high), `insights_management` (coachhelm, med), `coachhelm_analytics` (coachhelm, low), `round_review_ai` (coachhelm, med)
 - **Incidents:** `memory/incidents/coachhelm_ai/INC-2026-09-26-safety-net-coverage-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-26-validation-cron-rounds-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-27-calibration-load-stampede.md`, `memory/incidents/coachhelm_ai/INC-2026-09-27-exposure-returned-fetch-failure.md`, `memory/incidents/coachhelm_ai/INC-2026-09-28-coachhelm-read-writes-causal.md`, `memory/incidents/coachhelm_ai/INC-2026-09-28-roster-cohort-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-28-roster-exposure-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-30-best-effort-budget-abort-triage-loop.md`
-- **Repair units:** `coachhelm-safety-net-anon-client-2026-08-27` (triaging), `validation-rounds-prefetch-2026-09-26` (verified), `safety-net-coverage-prefetch-2026-09-26` (verified), `calibration-load-dedupe-2026-09-27` (verified), `exposure-returned-transient-retry-2026-09-27` (verified), `roster-cohort-batch-2026-09-28` (verified), `roster-exposure-batch-2026-09-28` (verified), `best-effort-budget-abort-2026-09-30` (verified)
+- **Repair units:** `coachhelm-safety-net-anon-client-2026-08-27` (triaging), `validation-rounds-prefetch-2026-09-26` (verified), `safety-net-coverage-prefetch-2026-09-26` (verified), `calibration-load-dedupe-2026-09-27` (verified), `exposure-returned-transient-retry-2026-09-27` (verified), `roster-cohort-batch-2026-09-28` (verified), `roster-exposure-batch-2026-09-28` (verified), `best-effort-budget-abort-2026-09-30` (verified_in_production), `pattern-miner-starvation-info-2026-10-01` (verified), `safety-net-wake-reads-batched-2026-10-03` (verified)
 - **History:** `memory/ledgers/changes/coachhelm_ai.md`, `memory/ledgers/tests/coachhelm_ai.md`
 
 ## `baseball_core`
@@ -126,8 +126,8 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/stats-analytics.md`
 - **Code:** `src/app/golf/(dashboard)/dashboard/stats/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/components/golf/stats/**`, `src/app/golf/actions/stats.ts`, `src/app/golf/actions/stats-data.ts`, `src/app/golf/actions/stats-data-types.ts` … and 27 more in the registry
 - **Telemetry:** `stats_analytics` (golfhelm, high), `my_game_profile` (golfhelm, low)
-- **Incidents:** none recorded
-- **Repair units:** none in the queue
+- **Incidents:** `memory/incidents/stats_analytics/INC-2026-10-05-worst-hole-read-statement-timeout.md`
+- **Repair units:** `worst-hole-indexed-read-2026-10-05` (verified)
 - **History:** `memory/ledgers/changes/stats_analytics.md`, `memory/ledgers/tests/stats_analytics.md`
 
 ## `calendar_events`
@@ -168,10 +168,10 @@ is a second thing to keep true.
 **Team Communications** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/team-communications.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/components/golf/announcements/**`, `src/components/fairway/pages/messages/**`, `src/components/fairway/pages/announcements/**` … and 31 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/clubhouse/screens/messages/**`, `src/components/golf/announcements/**`, `src/components/fairway/pages/messages/**` … and 41 more in the registry
 - **Telemetry:** `messaging` (golfhelm, high), `announcements` (golfhelm, med), `notifications` (golfhelm, med)
 - **Incidents:** `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md`, `memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md`
-- **Repair units:** `reactions-anon-42501-after-session-drop-2026-09-27` (verified), `reactions-client-deadline-abort-2026-09-28` (verified)
+- **Repair units:** `reactions-anon-42501-after-session-drop-2026-09-27` (verified), `reactions-client-deadline-abort-2026-09-28` (verified), `reactions-save-deadline-abort-2026-10-05` (verified)
 - **History:** `memory/ledgers/changes/team_communications.md`, `memory/ledgers/tests/team_communications.md`
 
 ## `team_operations`
@@ -179,7 +179,7 @@ is a second thing to keep true.
 **Team Operations** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/team-operations.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/tasks/**`, `src/app/golf/(dashboard)/dashboard/documents/**`, `src/app/golf/(dashboard)/dashboard/travel/**`, `src/app/golf/(dashboard)/dashboard/hub/**`, `src/app/golf/(dashboard)/dashboard/team-hub/**`, `src/components/fairway/pages/tasks/**` … and 20 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/tasks/**`, `src/app/golf/(dashboard)/dashboard/documents/**`, `src/app/golf/(dashboard)/dashboard/travel/**`, `src/app/golf/(dashboard)/dashboard/hub/**`, `src/app/golf/(dashboard)/dashboard/team-hub/**`, `src/components/fairway/pages/tasks/**` … and 27 more in the registry
 - **Telemetry:** `task_management` (golfhelm, med), `documents` (golfhelm, low), `travel` (golfhelm, low), `coach_dashboard` (golfhelm, high)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -212,7 +212,7 @@ is a second thing to keep true.
 **Auth Onboarding And Join** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/auth-onboarding-join.md`
-- **Code:** `src/app/golf/(auth)/**`, `src/app/golf/(onboarding)/**`, `src/app/golf/join/**`, `src/components/golf/onboarding/**`, `src/components/golf/settings/JoinTeamSection.tsx`, `src/app/api/golf/auth/**` … and 15 more in the registry
+- **Code:** `src/app/golf/(auth)/**`, `src/app/golf/(onboarding)/**`, `src/app/golf/join/**`, `src/components/golf/onboarding/**`, `src/components/golf/settings/JoinTeamSection.tsx`, `src/clubhouse/screens/auth/**` … and 18 more in the registry
 - **Telemetry:** `auth_onboarding` (golfhelm, med), `join_team_flow` (golfhelm, med)
 - **Incidents:** `memory/incidents/auth_onboarding_join/INC-2026-09-27-presence-webkit-abort-noise.md`
 - **Repair units:** `presence-webkit-abort-2026-09-27` (verified)
@@ -292,7 +292,7 @@ is a second thing to keep true.
 - **Code:** `src/app/api/cron/selfheal-triage/**`, `src/app/api/cron/log-retention/**`, `src/app/admin/actions/triage.ts`, `src/lib/admin/selfheal-*.ts`, `src/lib/admin/rca*.ts`, `src/lib/admin/triage-*.ts` … and 8 more in the registry
 - **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — heartbeats into background_job_logs (selfheal-triage/log-retention) and SELFHEAL_STAGES, not admin_events.
 - **Incidents:** `memory/incidents/admin_selfheal/INC-2026-09-27-retired-triage-runner-paints-loop-red.md`
-- **Repair units:** `retired-runner-heartbeat-2026-09-27` (verified), `retired-runner-key-heartbeat-2026-09-30` (verified)
+- **Repair units:** `retired-runner-heartbeat-2026-09-27` (verified), `retired-runner-key-heartbeat-2026-09-30` (verified), `retired-runner-prefix-heartbeat-2026-10-01` (verified)
 - **History:** `memory/ledgers/changes/admin_selfheal.md`
 
 ## `admin_replay_lab`

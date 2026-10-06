@@ -3,11 +3,108 @@
 The from-scratch GolfHelm UI. Code: `src/clubhouse/`. Spec: `design/handoff/`
 (desktop, owner-approved). Flag: `golf_clubhouse_ui` (production off). Rules:
 `.claude/rules/clubhouse.md`. Adding a new design: `README.md`. Enforcement:
-`npm run clubhouse:check`, which also validates this file.
-Audits and plans, with their status and the pages they touch: [`AUDITS.md`](AUDITS.md).
+`npm run clubhouse:check`, which also validates this file. Audits and plans,
+with their status and the pages they touch: [`AUDITS.md`](AUDITS.md).
 
 Nothing in `src/clubhouse/` imports or styles through Fairway. Shared non-UI
 plumbing (session, Supabase loaders, the Capacitor haptics bridge) is allowed.
+
+## October 2 whole-app smoothness follow-up
+
+[UX_OPTIMIZATION.md](UX_OPTIMIZATION.md) records the custom overlay repairs,
+narrow controls, task continuity, request feedback and measured performance.
+The optimized a32c933e0 baseline completed 44 cases / 132 trials with 4x CPU
+throttling at 390/1280px, without blank flashes or recorded runtime problems.
+It exposed phone Stats period-change movement; the corrected source keeps
+comparison/caption space and sample caveats inside the existing cards.
+WebKit confirms stable period anchors at 320/375/390px and matched 390px team
+loading geometry. The optimized e8a103c2a follow-up passed nine phone cases /
+27 trials; worst raw period-change shift fell from 0.1116 to 0.0015. All nine
+cases recorded zero median total blocking time. The full build passed in
+282 seconds. Slow feedback now follows its request and team scope, with
+21 focused regressions passing. Physical Safari remains unverified.
+Messages scrolling and composer growth retained the reader's position with
+200 of 254 disposable local messages rendered. The stress check does not
+establish access to older history or physical iPhone keyboard/frame pacing.
+Production remains unchanged; this is candidate verification.
+
+## October 2 production preparation
+
+[RELEASE_CANDIDATE.md](RELEASE_CANDIDATE.md) records PR #2121, the release
+conditions and verified boundaries. A disposable local Supabase/WebKit flow
+passed coach and player sign-in, the animated golf hole, dashboard, Messages,
+quoted reply/photo, participant read-back and private photo download.
+Fault injection lost two responses after an attachment committed; same-tab
+reload and explicit Retry retained the original IDs, with exactly one message
+and attachment. Messages now follows composer resizing only for a reader at
+the newest messages. Partial attachment refusal preserves unsaved files without
+duplicating delivered text. Forty-one screenshots are in the local store.
+
+Production remains unchanged and both Clubhouse flags remain off. The routine
+weekly deployment budget was 2/2 used when checked. Existing held database
+work, rollout scope and physical iPhone acceptance remain owner release
+conditions; this preparation does not discharge them. Final candidate build
+and CI evidence is attached to the PR.
+
+## October 2 installed-plugin repair pass
+
+Frontend Design Premium, Shiro, Intuitive Software Design, Codebase Design
+and Supabase were applied to the current owner feedback. The existing page designs remain
+the reference; root DESIGN.md and UI_OWNERSHIP.md index the runtime owners.
+The secondary flow evidence is registered in AUDITS.md.
+
+The owner requested Apple Messages display and behavior with the existing
+green/ivory palette. Phone threads group bubbles with terminal tails, keep
+direct-chat width, use Return for a newline, and offer contextual actions,
+swipe-right Reply and swipe-left timestamps. Quotes use the existing parent
+field; loaded quotes jump to their real parent. Missing or deleted parents
+remain labeled. Pending sends lock the reply selection; failure and Retry
+preserve the original target. The backend reply suites pass 62 distinct tests.
+Supabase read-only metadata confirms the nullable UUID parent field and its
+foreign key in the existing project; no schema change is required.
+
+The pass fixes duplicate Sign in, undersized round/stats controls, clipped
+qualifier names, inconsistent profile spacing, Hub pending/concurrent/recovery
+behavior and Home's partial-data/timezone claims. Local WebKit checks cover
+375/390/430px and the reduced-motion camera. Native scrolling and forced-color
+fallback were observed in WebKit. Thirty-eight screenshots are in the local
+store; verification screenshots remain uncommitted. Auth suites pass 64 tests,
+Home data/consumer suites 132, Hub 144 and Qualifiers 164.
+Messages and its audit pass 82 tests; reduced-motion quote jumping also passes
+its focused regression. Home/Hub accessibility
+checks pass 13 phone states; a separate WebKit Axe scan passes Sign in with
+keyboard/credential geometry checked. TypeScript, scoped ESLint, contracts,
+knowledge/world-model checks and Markdown ratchet pass. WebKit follow-up
+confirms task/event pending state survives tab remounts,
+settles when both fixture writes answer and passes the Hub Axe scan. The final
+production build passes with exit 0: compiled in 117 seconds, TypeScript in
+13.3 seconds, all 181 static pages generated and the route table emitted.
+This is a local build, not a production deployment.
+
+The literal static plugin auditor has unresolved component/CSS detections;
+manual adjudication is in UI_OWNERSHIP.md. It has no unresolved ownership
+choice.
+Physical Safari performance, intended-user research and live durable writes
+remain outside the verified evidence. This pass does not enable the flag.
+
+## October 1 Safari repair pass
+
+`codex/clubhouse-design-fidelity` restores the supplied design's layered cards
+and message bubbles, relieves cramped secondary phone layouts, frames the
+welcome on the golf hole, and renders course artwork before the animation loads.
+Home shows an event date for all-day starts, reads every event page, preserves
+all-day calendar dates and includes ongoing multi-day events. A neutral
+strokes-gained result no longer claims a loss. These repairs do not fill figures
+that lack a real source, such as weather and season-week counts.
+
+Local WebKit checks cover 375, 390 and 430px, short sign-in viewports, populated
+secondary screens and their recorded empty/error states. Twenty-four screenshots
+are indexed in the local gallery and page VERIFY logs. TypeScript, scoped ESLint
+and the targeted component/data suites pass. Physical iPhone frame rate, a
+real-account sign-in and the owner's deployed preview remain unverified. This
+pass does not advance those gates or enable the flag. The production build exits
+0 after compilation, TypeScript and all 181 static pages; the route table is
+emitted.
 
 ## How a screen moves
 
@@ -1975,8 +2072,9 @@ shows the options as they were put.
 
 - Home: the prototype's weather and "Week 7 of 12" have no source (golf teams
   have no season start or end dates). They are omitted until one exists.
-- Home: the prototype's "Open recap" needs a single-round screen, which isn't
-  rebuilt. The link opens the player's stats and says so.
+- Home: "Open recap" now opens the rebuilt round review for persisted round IDs.
+  Preview-only rounds without persisted IDs open the player's stats. The old
+  recap data gap is resolved; see `screens/home/player-links.ts`.
 - Shell: the top-bar search (⌘K) needs its own spec. It is not rendered until
   then, so there is no dead control.
 - Shell: Practice and Events are in the design's navigation but have no route.
@@ -2029,8 +2127,9 @@ shows the options as they were put.
   (light only until the dark theme). The current app's controls keep working
   with the flag off.
 - Settings: the comparison weights stay hidden, as in the current app.
-- Messages: threaded replies and a shared-files list in details have no backend.
-  They are not shown.
+- Messages: quoted replies use the existing message parent field, with
+  same-conversation validation and truthful unavailable/deleted parent previews.
+  The shared-files list in details remains hidden; it has no loader.
 - Messages: the thread header's search icon is not built; message search is
   team-wide (`searchGolfMessages` takes no conversation) and lives in the rail.
   The typing indicator shows an avatar in direct threads only, because the

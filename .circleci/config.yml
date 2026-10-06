@@ -12,7 +12,7 @@
 version: 2.1
 
 orbs:
-  node: circleci/node@5.2.0
+  node: circleci/node@7.2.1
 
 # ---------------------------------------------------------------------------
 # Parameters — toggled by Scheduled Pipelines (Project Settings > Triggers)
@@ -29,15 +29,15 @@ parameters:
 executors:
   node:
     docker:
-      - image: cimg/node:22.13
+      - image: cimg/node:24.21
     resource_class: medium
   node-large:
     docker:
-      - image: cimg/node:22.13
+      - image: cimg/node:24.21
     resource_class: large
   python:
     docker:
-      - image: cimg/python:3.12
+      - image: cimg/python:3.14
     resource_class: small
   ios:
     macos:
@@ -55,7 +55,7 @@ executors:
   # (circleci/path-filtering orb) for that path if it's ever wanted.
   android:
     docker:
-      - image: cimg/android:2025.04
+      - image: cimg/android:2026.08.1
     # `large` (8GB), not `medium`. Two separate OOMs got us here:
     #   1. `large` + `npm run build` -> exit 137. The Next build's
     #      --max-old-space-size=8192 heap against an 8GB container.
@@ -71,7 +71,7 @@ executors:
 # ---------------------------------------------------------------------------
 commands:
   install-node-deps:
-    description: "npm ci with CircleCI cache"
+    description: "npm ci via the node orb (orb >=6.1 skips the dependency cache for plain npm ci)"
     steps:
       - node/install-packages:
           pkg-manager: npm
@@ -208,7 +208,7 @@ jobs:
       - checkout
       - run: pip install --quiet sqlfluff
       - node/install:
-          node-version: "22.13"
+          node-version: "24.21"
       - run:
           name: SQL lint ratchet (full repo)
           command: node scripts/sql-lint-ratchet.mjs
@@ -263,7 +263,7 @@ jobs:
     steps:
       - checkout
       - node/install:
-          node-version: "22.13"
+          node-version: "24.21"
       - install-node-deps
       - run:
           name: Build web bundle (for Capacitor sync)
@@ -324,7 +324,7 @@ jobs:
     steps:
       - checkout
       - node/install:
-          node-version: "22.13"
+          node-version: "24.21"
       - install-node-deps
       # NO `npm run build` here, deliberately — unlike the iOS job.
       #

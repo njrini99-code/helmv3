@@ -16,6 +16,7 @@ export function useThreadAnchor(
   { convId, count, lastMine, typing }: { convId: string; count: number; lastMine: boolean; typing: boolean },
 ) {
   const nearEnd = useRef(true);
+  const viewportHeight = useRef<number | null>(null);
   const seen = useRef({ convId, count });
   const [unseen, setUnseen] = useState(0);
 
@@ -30,12 +31,31 @@ export function useThreadAnchor(
     const s = scroller.current;
     if (!s) return;
     const onScroll = () => {
+      // A keyboard/composer resize can emit scroll before ResizeObserver runs.
+      // Preserve the reader's previous intent until that new geometry is anchored.
+      if (viewportHeight.current !== null && viewportHeight.current > 0 && s.clientHeight !== viewportHeight.current) return;
       nearEnd.current = s.scrollHeight - s.scrollTop - s.clientHeight <= NEAR_END_PX;
       if (nearEnd.current) setUnseen(0);
     };
     s.addEventListener('scroll', onScroll, { passive: true });
     return () => s.removeEventListener('scroll', onScroll);
   }, [scroller, convId]);
+
+  // Quote previews, multiline input and the keyboard resize the viewport without
+  // changing message count. Follow those changes only for a reader already at the end.
+  useLayoutEffect(() => {
+    const s = scroller.current;
+    if (!s || typeof ResizeObserver === 'undefined') return;
+    viewportHeight.current = s.clientHeight;
+    const observer = new ResizeObserver(() => {
+      viewportHeight.current = s.clientHeight;
+      if (nearEnd.current) toEnd();
+    });
+    observer.observe(s);
+    // Loaded attachments can grow the content while the viewport stays unchanged.
+    if (s.firstElementChild) observer.observe(s.firstElementChild);
+    return () => observer.disconnect();
+  }, [scroller, convId, toEnd]);
 
   useLayoutEffect(() => {
     const was = seen.current;

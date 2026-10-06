@@ -2922,19 +2922,18 @@ describe('Qualifiers · every write', () => {
     }
   });
 
-  it('91501 a write that lands has the server read the page again (a create opens the new qualifier instead), and one that fails re-reads nothing', async () => {
-    for (const sc of scenarios) {
-      clearNav();
-      const landed = await drive(sc);
-      await waitFor(() => expect(sc.reads ? router.refresh : navigated(sc)).toHaveBeenCalled());
-      expect([sc.name, router.refresh.mock.calls.length > 0]).toEqual([sc.name, sc.reads]);
-      landed.view.unmount();
-      clearNav();
-      const refused = await drive(sc, refuse);
-      await screen.findByText(sc.failed);
-      expect([sc.name, router.refresh.mock.calls.length, router.push.mock.calls.length, router.replace.mock.calls.length]).toEqual([sc.name, 0, 0, 0]);
-      refused.view.unmount();
-    }
+  // Each user journey has its own timeout and cleanup; the whole write matrix must not share one 5-second CI budget.
+  it.each(scenarios)('91501 $name: a write that lands re-reads the page or opens the qualifier; a refused write re-reads nothing', async (sc) => {
+    clearNav();
+    const landed = await drive(sc);
+    await waitFor(() => expect(sc.reads ? router.refresh : navigated(sc)).toHaveBeenCalled());
+    expect([sc.name, router.refresh.mock.calls.length > 0]).toEqual([sc.name, sc.reads]);
+    landed.view.unmount();
+    clearNav();
+    const refused = await drive(sc, refuse);
+    await screen.findByText(sc.failed);
+    expect([sc.name, router.refresh.mock.calls.length, router.push.mock.calls.length, router.replace.mock.calls.length]).toEqual([sc.name, 0, 0, 0]);
+    refused.view.unmount();
   });
 
   it('91401 Retry in a failure toast runs the same write again with the same arguments, and everything a landed write does follows this time too', async () => {

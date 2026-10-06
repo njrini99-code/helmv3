@@ -2496,6 +2496,9 @@ export async function getCourseBreakdown(playerId: string): Promise<CourseBreakd
 
 // HoleAnalysis, WorstHoleResponse — see stats-data-types.ts
 
+/** Round ids per golf_holes `in.(...)` read; bounds the request URL. */
+const WORST_HOLE_ROUND_CHUNK = 100;
+
 /**
  * Get worst hole analysis
  */
@@ -2507,37 +2510,65 @@ async function getWorstHoleAnalysisImpl(playerId: string): Promise<WorstHoleResp
     return { holes: [], worstHoles: [], bestHoles: [], par3Average: null, par4Average: null, par5Average: null, closingHolesAverage: null };
   }
 
-  // Get all holes with their scores
-  const { data: holesData, error: holesError } = await fetchAllRowsResult((from, to) => supabase
-    .from('golf_holes')
-    .select(`
-      id,
-      round_id,
-      hole_number,
-      par,
-      score,
-      golf_rounds!inner (
-        player_id,
-        status,
-        round_date,
-        is_test
-      )
-    `)
-    .eq('golf_rounds.player_id', playerId)
-    // Test rounds (QA/demo data, OD-03) never feed a player's worst/best holes.
-    .eq('golf_rounds.is_test', false)
-    .eq('golf_rounds.status', 'completed')
-    .not('score', 'is', null)
-    .order('round_id')
-    .order('hole_number')
+  // Two indexed reads instead of one embedded join. The old read embedded
+  // `golf_rounds!inner(...)` and filtered on it. PostgREST renders that embed as
+  // a LATERAL subquery carrying its own LIMIT/OFFSET, which Postgres cannot
+  // flatten — so the planner walked EVERY golf_holes row on the platform in
+  // (round_id, hole_number) order, ran the golf_holes RLS EXISTS per row, and
+  // only then probed golf_rounds for this player. Measured 2026-10-05 against
+  // production as a player reading their own stats: 2,049 ms with 12,310 RLS
+  // probes for 234 returned holes, vs 142 ms for the same rows read through
+  // the player's round ids. Under dashboard concurrency it hit the 8 s
+  // `authenticated` statement_timeout (57014; Bridge b99a5da6, Sentry Z0/XP),
+  // and it grew with every hole any team recorded.
+  //
+  // Step 1: this player's countable rounds. Test rounds (QA/demo data, OD-03)
+  // never feed a player's worst/best holes.
+  const { data: roundRows, error: roundsError } = await fetchAllRowsResult<{ id: string; round_date: string | null }>((from, to) => supabase
+    .from('golf_rounds')
+    .select('id, round_date')
+    .eq('player_id', playerId)
+    .eq('is_test', false)
+    .eq('status', 'completed')
     .order('id', { ascending: true })
-    .range(from, to), undefined, { table: 'golf_holes', action: 'getWorstHoleAnalysis', feature: 'stats_analytics', sport: 'golf' }); // paginate past PostgREST 1000-row cap
+    .range(from, to), undefined, { table: 'golf_rounds', action: 'getWorstHoleAnalysis', feature: 'stats_analytics', sport: 'golf' });
 
-  // The `error` is READ. Discarded, a failed hole read fell through to an empty
-  // analysis — and the catch below returns that SAME empty shape — so the screen
-  // told a player they have no worst holes, i.e. nothing to work on.
-  if (holesError) {
-    throw new Error(`worst-hole read failed for player ${playerId}: ${holesError.message}`);
+  if (roundsError) {
+    throw new Error(`worst-hole round read failed for player ${playerId}: ${roundsError.message}`);
+  }
+
+  const roundDateById = new Map<string, string | null>();
+  for (const r of roundRows ?? []) roundDateById.set(r.id, r.round_date);
+  // Sorted so the chunked reads below concatenate in the same (round_id,
+  // hole_number, id) order the single read returned — the per-hole trend
+  // compares the first five plays against the last five in this order.
+  const roundIds = [...roundDateById.keys()].sort();
+
+  // Step 2: those rounds' holes, through the (round_id, hole_number) index.
+  // Chunked so a long career cannot build an unbounded `in.(...)` URL.
+  const holesData: Array<{ id: string; round_id: string; hole_number: number; par: number; score: number | null; golf_rounds: { round_date?: string } }> = [];
+  for (let i = 0; i < roundIds.length; i += WORST_HOLE_ROUND_CHUNK) {
+    const chunk = roundIds.slice(i, i + WORST_HOLE_ROUND_CHUNK);
+    const { data: chunkHoles, error: holesError } = await fetchAllRowsResult<{ id: string; round_id: string; hole_number: number; par: number; score: number | null }>((from, to) => supabase
+      .from('golf_holes')
+      .select('id, round_id, hole_number, par, score')
+      .in('round_id', chunk)
+      .not('score', 'is', null)
+      .order('round_id')
+      .order('hole_number')
+      .order('id', { ascending: true })
+      .range(from, to), undefined, { table: 'golf_holes', action: 'getWorstHoleAnalysis', feature: 'stats_analytics', sport: 'golf' }); // paginate past PostgREST 1000-row cap
+
+    // The `error` is READ. Discarded, a failed hole read fell through to an empty
+    // analysis — and the catch below returns that SAME empty shape — so the screen
+    // told a player they have no worst holes, i.e. nothing to work on.
+    if (holesError) {
+      throw new Error(`worst-hole read failed for player ${playerId}: ${holesError.message}`);
+    }
+    for (const h of chunkHoles ?? []) {
+      const roundDate = roundDateById.get(h.round_id);
+      holesData.push({ ...h, golf_rounds: roundDate ? { round_date: roundDate } : {} });
+    }
   }
 
   if (!holesData || holesData.length === 0) {

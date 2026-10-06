@@ -29,7 +29,10 @@ The welcome draws its frame and the painted course at once and streams the greet
 
 Status: DEFINED
 
-A sign-in in flight: the button says "Signing in…", is off and is `aria-busy`, and stays so while the page navigates away (CH-15402).
+A sign-in in flight: the button says "Signing in…", is off and is `aria-busy`,
+and stays so while the page navigates away (CH-15402). Repeated submissions send
+one request even before the busy button commits; failure permits another
+attempt.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

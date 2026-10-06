@@ -1,14 +1,21 @@
 # Home catalog (2xxx)
 
-Route `/golf/dashboard` (coach and player) · code `src/clubhouse/screens/home/`, loaders
-`src/clubhouse/data/home.ts` (coach) and `src/clubhouse/data/player-home.ts` (player) · tests
+Route `/golf/dashboard` (coach and player) · code `src/clubhouse/screens/home/`,
+loaders `src/clubhouse/data/home.ts` (coach) and
+`src/clubhouse/data/player-home.ts` (player) · tests
 `src/clubhouse/__tests__/home.test.tsx` and `player-home.test.tsx` · preview
-`/clubhouse-preview/home` (`?state=empty|failed|loading|error`) and `/clubhouse-preview/home-player`
-(`?state=empty|noevents|failed|loading`).
+`/clubhouse-preview/home` (`?state=empty|failed|loading|error`) and
+`/clubhouse-preview/home-player` (`?state=empty|noevents|failed|loading`).
 
 Home only reads. It has no saves, so no error toasts (20xx), validation (21xx)
 or confirmations (25xx). Offline, slow and full-page errors are the shell's
 (1xxx). Each section fails on its own: the rest of Home keeps working.
+
+Player Up next: all-day events show the event date and All day, without a
+countdown to midnight. Timed events keep the four-part countdown, with space
+reserved before the browser clock is known. All-day dates and ongoing multi-day
+events follow Calendar's date-span rules. Owner decision: Safari review,
+2026-10-01.
 
 ## 22xx Didn't load (inline notice with Try again; a failed read is never shown as empty)
 

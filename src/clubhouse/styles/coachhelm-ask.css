@@ -551,11 +551,11 @@
   padding: 18px 18px 12px;
   border-radius: 24px;
   background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 1px var(--ch-border-subtle), 0 12px 32px -14px rgb(28 25 18 / 0.22);
+  box-shadow: var(--ch-elevation-floating);
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ask-cmp__box:focus-within {
-  box-shadow: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo), 0 12px 32px -14px rgb(28 25 18 / 0.22);
+  box-shadow: var(--ch-elevation-floating-focus);
 }
 .ch-ask-cmp__label {
   position: absolute;
@@ -804,6 +804,9 @@
   padding: calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 16px);
   box-shadow: 8px 0 30px rgb(0 0 0 / 0.18);
   touch-action: pan-y;
+}
+body.keyboard-open .ch-ask-hist.is-drawer {
+  height: calc(100dvh - var(--keyboard-height, 0px));
 }
 .ch-ask-drawer[open] .ch-ask-hist.is-drawer {
   animation: ch-ask-drawer-in var(--ch-dur-base) var(--ch-ease);

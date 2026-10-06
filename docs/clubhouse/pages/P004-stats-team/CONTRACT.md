@@ -111,7 +111,16 @@ Each failed read is handled on its own. The rounds or roster (40602), the round 
 
 Status: DEFINED
 
-Changing the window while offline is refused before anything is requested: the switch stays where it was and the toast names both windows (40701). A change that takes longer than 5 seconds says so once (40702). The export is local and works offline. The offline banner (10701) and Try again while offline (10704) are the shell's.
+Changing the window while offline is refused before anything is requested:
+the switch stays where it was and the toast names both windows (40701). A
+window or filter change that takes longer than 5 seconds says so once (40702).
+That notice ends when the request settles, is replaced, or its screen leaves.
+Changing team scope also ends the notice and its pending timer; callbacks from
+an earlier scope cannot revive it, even after returning to the same team.
+Each notice has its own lifetime, so old cleanup preserves newer feedback.
+This cancels feedback only, never a request or write. Default confirmations
+remain 4 seconds and errors 8 seconds. The export is local and works offline.
+The offline banner (10701) and Try again while offline (10704) are the shell's.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

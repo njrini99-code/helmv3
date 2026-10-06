@@ -35,7 +35,7 @@ export function PlayerGame({ data, phone = false }: { data: ChPlayerHome; phone?
 /** The par every round in the window was played to, or null when they differ (a par line would be wrong for some). */
 function commonPar(points: ChScoringPoint[]): number | null {
   const pars = points.map((p) => p.par).filter((v): v is number => v != null);
-  return pars.length && pars.every((v) => v === pars[0]) ? pars[0]! : null;
+  return pars.length > 0 && pars.length === points.length && pars.every((v) => v === pars[0]) ? pars[0]! : null;
 }
 
 function Scoring({ data, phone }: { data: ChPlayerHome; phone: boolean }) {
@@ -47,12 +47,13 @@ function Scoring({ data, phone }: { data: ChPlayerHome; phone: boolean }) {
   const mean = shown.length ? shown.reduce((a, p) => a + p.score, 0) / shown.length : null;
   const prevMean = before.length >= Math.min(n, 3) && before.length ? before.reduce((a, p) => a + p.score, 0) / before.length : null;
   const delta = mean != null && prevMean != null ? mean - prevMean : null;
-  const under = shown.filter((p) => p.par != null && p.score < p.par).length;
+  const withPar = shown.filter((p): p is ChScoringPoint & { par: number } => p.par != null);
+  const under = withPar.filter((p) => p.score < p.par).length;
   const figs: Array<[string, string, string, string]> = [
     ['Scoring avg', formatFixed(mean), delta == null ? `Last ${shown.length}` : `${formatSigned(delta)} vs previous ${before.length}`, changeTone(delta, true)],
     ['Strokes gained', data.sgPerRound == null ? NO_DATA : formatSigned(data.sgPerRound), data.sgPerRound == null ? 'After three rounds' : `Season, per round ${sgBaseline(data.tour).vs}`, changeTone(data.sgPerRound, false)],
     ['Handicap', formatHcp(data.handicap), 'Index', ''],
-    ['Under par', shown.length ? `${under} of ${shown.length}` : NO_DATA, 'Rounds in this window', ''],
+    ['Under par', withPar.length ? `${under} of ${withPar.length}` : NO_DATA, withPar.length < shown.length ? 'Rounds with par recorded' : 'Rounds in this window', ''],
   ];
   const par = commonPar(shown);
   // The phone's card always offers all three windows, as the board's does; the desktop's only the ones with rounds to fill them.
@@ -174,7 +175,7 @@ function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolea
   const T = phone ? 24 : 44;
   const B = phone ? 26 : 30;
   const scores = points.map((p) => p.score);
-  // The par line only when every round with a par agrees on it; each round is still marked against its own par.
+  // The par line requires a known, identical par for every round; each known round is still marked against its own par.
   const par = commonPar(points);
   const lo = Math.min(...scores, par ?? Infinity) - 1;
   const hi = Math.max(...scores, par ?? -Infinity) + 1;

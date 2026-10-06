@@ -440,10 +440,12 @@
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-sgm:hover {
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.12), 0 6px 16px -10px rgb(28 25 18 / 0.25);
+  box-shadow: var(--ch-elevation-reading-hover);
 }
 .ch-sgm[aria-pressed='true'] {
-  box-shadow: 0 0 0 1.5px var(--ch-green-600), 0 6px 16px -10px rgb(11 58 37 / 0.3);
+  background: var(--ch-green-50);
+  color: var(--ch-green-800);
+  box-shadow: var(--ch-elevation-reading-hover);
 }
 .ch-sgm__top {
   display: flex;
@@ -567,7 +569,7 @@ a.ch-lg__r:focus-visible {
   border-radius: 14px;
   background: var(--ch-chart-paper);
   color: var(--ch-ink-900);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.06), 0 1px 2px rgb(28 25 18 / 0.03);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-yb__head {
   display: flex;
@@ -706,7 +708,7 @@ a.ch-lg__r:focus-visible {
 }
 /* Team view: the handoff's putting page keeps the design system's YardagePage depth. */
 .ch-st-grid2 .ch-yb {
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.09), 0 1px 2px rgb(28 25 18 / 0.04), 0 10px 24px -16px rgb(28 25 18 / 0.22);
+  box-shadow: var(--ch-elevation-reading);
 }
 /* Beats `.ch-yb svg`: the rings are a fixed-size figure (360px), left-aligned like the handoff. */
 .ch-yb .ch-pg {
@@ -880,7 +882,7 @@ a.ch-lg__r:focus-visible {
   padding: 6px;
   border-radius: 14px;
   background: rgb(253 252 248 / 0.92);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07), 0 8px 20px -12px rgb(28 25 18 / 0.3), inset 0 1px 0 #fff;
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-pf-hero__figs div {
   display: flex;
@@ -1706,8 +1708,8 @@ a.ch-lg__r:focus-visible {
   .ch-stm {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 14px 14px 24px;
+    gap: 16px;
+    padding: 16px 16px 28px;
   }
   .ch-stm-head {
     display: flex;
@@ -1731,25 +1733,25 @@ a.ch-lg__r:focus-visible {
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
     margin: 0;
-    padding: 12px 0;
-    border-radius: 14px;
-    background: var(--ch-bg-surface);
-    box-shadow: var(--ch-elevation-reading);
+    padding: 16px 0;
+    border-radius: 16px;
+    background: var(--ch-sheet-bg);
+    box-shadow: var(--ch-sheet-shadow);
   }
   .ch-stm-figs > div {
     display: flex;
     flex-direction: column;
     gap: 5px;
     min-width: 0;
-    padding: 0 12px;
+    padding: 0 10px;
   }
   .ch-stm-figs > div + div {
     border-left: 1px solid var(--ch-border-hairline);
   }
   .ch-stm-figs dt {
-    font: 500 11.5px/1.1 var(--ch-font-sans);
+    font: 500 11.5px/1.35 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
   .ch-stm-figs dd {
     margin: 0;
@@ -1762,16 +1764,25 @@ a.ch-lg__r:focus-visible {
   }
   .ch-stm-figs dd + dd {
     min-height: 1em;
-    font: 500 11.5px/1 var(--ch-font-sans);
+    font: 500 11.5px/1.4 var(--ch-font-sans);
+  }
+  .ch-stm-figs:not(.is-three) dd + dd {
+    min-height: 1.4em;
+  }
+  .ch-stm-cover {
+    min-height: 1.4em;
+    margin: 8px 2px 0;
+    font: var(--ch-type-caption);
+    color: var(--ch-text-tertiary);
   }
   .ch-stm-panel {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 14px;
-    border-radius: 16px;
-    background: var(--ch-bg-surface);
-    box-shadow: var(--ch-elevation-reading);
+    gap: 12px;
+    padding: 16px;
+    border-radius: 18px;
+    background: var(--ch-sheet-bg);
+    box-shadow: var(--ch-sheet-shadow);
   }
   .ch-stm-panel__h {
     display: flex;
@@ -2028,7 +2039,7 @@ a.ch-lg__r:focus-visible {
     border-radius: 50%;
     background: var(--ch-bg-surface);
     color: var(--ch-green-700);
-    box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-shadow-sm);
+    box-shadow: var(--ch-elevation-control);
     touch-action: manipulation;
   }
   .ch-spm-round {
@@ -2617,6 +2628,9 @@ a.ch-lg__r:focus-visible {
   .ch-sf-range {
     grid-template-columns: minmax(0, 1fr);
   }
+  .ch-sf-range .ch-input {
+    min-height: 44px;
+  }
   .ch-sf-list .ch-check {
     min-height: 44px;
   }
@@ -2635,8 +2649,8 @@ a.ch-lg__r:focus-visible {
     min-width: 0;
   }
   .ch-stm-controls .ch-sf.is-phone .ch-sf__open {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     padding: 0;
     justify-content: center;
     border-radius: 12px;
@@ -2665,8 +2679,8 @@ a.ch-lg__r:focus-visible {
     letter-spacing: -0.01em;
   }
   .ch-gd.is-phone .ch-gm {
-    background: var(--ch-bg-surface);
-    box-shadow: 0 0 0 1px rgb(28 25 18 / 0.12), 0 1px 3px rgb(28 25 18 / 0.08);
+    background: var(--ch-sheet-bg);
+    box-shadow: var(--ch-sheet-shadow);
   }
   .ch-gd.is-phone .ch-gm__head {
     grid-template-columns: minmax(0, 1fr);
@@ -2712,7 +2726,7 @@ a.ch-lg__r:focus-visible {
   .ch-gd.is-phone .ch-gm-p {
     gap: 12px;
     padding: 14px 16px 16px;
-    background: var(--ch-bg-surface);
+    background: transparent;
   }
   .ch-gd.is-phone .ch-gm-p__t {
     font: 600 14.5px/1.25 var(--ch-font-sans);
@@ -2722,8 +2736,43 @@ a.ch-lg__r:focus-visible {
   }
 }
 
-/* The SG figure's caption: the baseline, then the change on its own short line (F-54). */
+/* Phone overview: figure baselines and a shared sample/comparison footer. */
 @media (max-width: 820px) {
+  .ch-stm-overview {
+    border-radius: 16px;
+    background: var(--ch-sheet-bg);
+    box-shadow: var(--ch-sheet-shadow);
+  }
+  .ch-stm-overview .ch-stm-figs {
+    padding-bottom: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-stm-overview .ch-stm-figs dd + dd {
+    min-height: 2.8em;
+  }
+  .ch-stm-overview__meta {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    min-height: calc(3 * 1.45em + 28px);
+    padding: 12px 10px 16px;
+    font: var(--ch-type-body-s);
+    color: var(--ch-text-secondary);
+  }
+  .ch-stm-overview__meta > [role='note'] {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .ch-stm-overview__meta > [role='note'] svg {
+    flex: none;
+    margin-top: 3px;
+  }
+  .ch-stm-panel.ch-stm-panel--sg {
+    min-height: 266px;
+  }
   .ch-stm-figs dd.ch-stm-sgsub {
     display: flex;
     flex-direction: column;
@@ -2902,6 +2951,21 @@ a.ch-lg__r:focus-visible {
 .ch-brow__v.is-none {
   font: 500 13px/1.2 var(--ch-font-sans);
   color: var(--ch-text-secondary);
+}
+
+/* Give the four team figures readable columns on the narrowest phones. */
+@media (max-width: 360px) {
+  .ch-stm-figs:not(.is-three) {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 20px;
+  }
+  .ch-stm-figs:not(.is-three) > div:nth-child(odd) {
+    border-left: 0;
+  }
+  .ch-stm-overview__meta {
+    min-height: calc(4 * 1.45em + 28px);
+  }
 }
 
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn

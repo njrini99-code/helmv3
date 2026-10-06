@@ -34,6 +34,9 @@ The route skeleton (CH-10405) is the Clubhouse one inside the shell and the Fair
 | 100205 | CH-10405 | `TEAM_HUB_IS_LOADING` | Team Hub is loading |
 | 100206 | CH-10406 | `AN_EDIT_IS_BEING_SAVED` | An edit is being saved |
 | 100207 | CH-10407 | `PLAN_A_TRIP_THE_TRAVELERS_CLASSES_ARE` | Plan a trip: the travelers' classes are being checked |
+| 100208 | CH-10408 | `A_PLAYERS_EVENT_REPLY_IS_BEING_SENT` | A player's event reply is being sent |
+| 100209 | CH-10409 | `A_PLAYERS_ACKNOWLEDGMENT_IS_BEING_SENT` | A player's acknowledgment is being sent |
+| 100210 | CH-10410 | `A_PLAYERS_TASK_COMPLETION_OR_REOPENING_IS` | A player's task completion or reopening is being saved |
 
 ## 03 — Background loading / refresh
 
@@ -187,7 +190,19 @@ A post, trip or task that fails keeps every field as typed and the sheet open; C
 
 Status: DEFINED
 
-A reply, Got it and a task check show at once and go back to the last answer the server confirmed when the write is refused or throws (101301, CH-10001 to CH-10003). Everything else waits for the write: posting, planning a trip, assigning, uploading and deleting. The change and its undo live inside the action, so Retry shows the change again.
+A reply and a task check show at once with object-specific pending feedback, and
+go back to the last answer the server confirmed when the write is refused or
+throws (101301, CH-10001 to CH-10003). Got it says Acknowledging until its write
+confirms; Home retains that post while pending and a refusal restores the last
+confirmed acknowledgment. The Hub owns per-object pending state and ref gates
+for its whole mounted lifetime: tab changes and older toast Retries cannot
+unlock the same event, post or task. Completing and reopening share one task
+gate; different objects can save independently. A duplicate Retry during an
+existing write is a quiet no-op, without another optimistic change or failure
+outcome. Home and Announcements show the same acknowledgment state.
+Everything else waits for the write: posting, planning a trip, assigning,
+uploading and deleting. The change and its undo live inside the action, so Retry
+shows the change again.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

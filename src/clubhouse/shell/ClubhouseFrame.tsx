@@ -109,10 +109,6 @@ function FrameRoot({ motionOff, children }: { motionOff: boolean; children: Reac
 }
 
 
-/** Phone page colours, as hex: the green hero (--ch-green-800) and the darker phone ivory (--ch-bg-page). */
-const EDGE_HERO = '#0b3a25';
-const EDGE_PAGE = '#e2dccd';
-
 /**
  * The phone's top and bottom edges carry the app's colour (F-49): green under the status bar on the
  * hero Home, the phone ivory elsewhere. theme-color tints the browser chrome; the html background
@@ -120,20 +116,44 @@ const EDGE_PAGE = '#e2dccd';
  */
 function usePhoneEdges(hero: boolean) {
   useEffect(() => {
-    if (!window.matchMedia('(max-width: 820px)').matches) return;
     const html = document.documentElement;
-    const meta = document.head.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-    const before = meta?.content;
     const body = document.body;
-    const was = { html: html.style.backgroundColor, body: body.style.backgroundColor };
-    // Inline, not a global stylesheet rule: Clubhouse CSS stays scoped to .ch-root (clubhouse:check).
-    html.style.backgroundColor = hero ? EDGE_HERO : EDGE_PAGE;
-    body.style.backgroundColor = EDGE_PAGE;
-    if (meta) meta.content = hero ? EDGE_HERO : EDGE_PAGE;
+    const phone = window.matchMedia('(max-width: 820px)');
+    let restore: (() => void) | undefined;
+    const sync = () => {
+      restore?.();
+      restore = undefined;
+      if (!phone.matches) return;
+      const root = document.querySelector('.ch-root[data-ui="clubhouse"]');
+      if (!root) return;
+      const css = getComputedStyle(root);
+      const page = css.getPropertyValue('--ch-bg-page').trim();
+      const green = css.getPropertyValue('--ch-green-800').trim();
+      let meta = document.head.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+      const created = !meta;
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = 'theme-color';
+        document.head.appendChild(meta);
+      }
+      const before = meta.content;
+      const was = { html: html.style.backgroundColor, body: body.style.backgroundColor };
+      html.style.backgroundColor = hero ? green : page;
+      body.style.backgroundColor = page;
+      meta.content = hero ? green : page;
+      const tag = meta;
+      restore = () => {
+        html.style.backgroundColor = was.html;
+        body.style.backgroundColor = was.body;
+        if (created) tag.remove();
+        else tag.content = before;
+      };
+    };
+    sync();
+    phone.addEventListener('change', sync);
     return () => {
-      html.style.backgroundColor = was.html;
-      body.style.backgroundColor = was.body;
-      if (meta && before !== undefined) meta.content = before;
+      phone.removeEventListener('change', sync);
+      restore?.();
     };
   }, [hero]);
 }

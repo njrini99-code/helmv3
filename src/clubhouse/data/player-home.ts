@@ -232,7 +232,7 @@ export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, ben
   const sand = window.reduce(
     (a, r) => {
       const c = cache.get(r.id);
-      return c?.sand_attempts ? { saves: a.saves + (c.sand_saves ?? 0), att: a.att + c.sand_attempts } : a;
+      return c?.sand_attempts && c.sand_saves != null ? { saves: a.saves + c.sand_saves, att: a.att + c.sand_attempts } : a;
     },
     { saves: 0, att: 0 },
   );
@@ -295,5 +295,5 @@ export function briefFor(full: ChRound[], legs: ChPlayerLeg[]): string | null {
   if (!best) return first;
   if (best.sg > 0.05) return `${first} ${best.label} is gaining you ${best.sg.toFixed(1)} strokes a round.`;
   const worst = withSg[withSg.length - 1]!;
-  return `${first} ${worst.label} is costing the most, ${Math.abs(worst.sg).toFixed(1)} strokes a round.`;
+  return worst.sg < -0.05 ? `${first} ${worst.label} is costing the most, ${Math.abs(worst.sg).toFixed(1)} strokes a round.` : first;
 }

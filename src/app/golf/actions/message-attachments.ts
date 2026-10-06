@@ -2,17 +2,21 @@
 
 import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { validateGolfReplyTarget } from '@/lib/golf/message-replies';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { notifyGolfMessageRecipients } from '@/lib/notifications/golf-message-fanout';
 import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { isClubhouseFor } from '@/clubhouse/gate';
+import { CommonSchemas } from '@/lib/validation/server-action-validator';
 
 /**
  * Attachment data from upload
  */
 export interface AttachmentUploadData {
+  /** Stable across retries of this attachment send; existing attachment PK. */
+  id?: string;
   fileName: string;
   fileType: 'image' | 'video' | 'document' | 'audio';
   mimeType: string;
@@ -22,6 +26,28 @@ export interface AttachmentUploadData {
   height?: number;
   durationSeconds?: number;
 }
+
+export interface AttachmentSendResult {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+  attachmentsFailed?: boolean;
+  sendOutcome?: 'refused' | 'unknown';
+}
+
+function definiteDatabaseRefusal(error: unknown): boolean {
+  const code = (error as { code?: string } | null)?.code;
+  // Deadlocks, serialization failures, cancellations and resource failures
+  // can race another exact attempt still committing; they are not proof that
+  // this logical send failed. Only stable input/constraint/auth refusals qualify.
+  return typeof code === 'string' && code !== '23505' &&
+    (/^(22|23)[0-9A-Z]{3}$/.test(code) || code === '42501');
+}
+
+const unknownSend = (messageId?: string): AttachmentSendResult => ({
+  success: false, messageId, sendOutcome: 'unknown',
+  error: 'Could not confirm this attachment send. Check the thread or retry this same send.',
+});
 
 /**
  * Attachment-aware notification preview: prefer the message text when the
@@ -59,8 +85,12 @@ function buildAttachmentPreview(content: string, attachments: AttachmentUploadDa
 async function sendGolfMessageWithAttachmentsImpl(
   conversationId: string,
   content: string,
-  attachments: AttachmentUploadData[]
-): Promise<{ success: boolean; messageId?: string; error?: string; attachmentsFailed?: boolean }> {
+  attachments: AttachmentUploadData[],
+  replyToId?: string | null,
+  clientMessageId?: string,
+  expectedSenderId?: string,
+): Promise<AttachmentSendResult> {
+  let writesStarted = false;
   try {
     const supabase = await createClient();
 
@@ -70,6 +100,9 @@ async function sendGolfMessageWithAttachmentsImpl(
     } = await supabase.auth.getUser();
     if (!user) {
       return { success: false, error: 'Unauthorized' };
+    }
+    if (expectedSenderId != null && expectedSenderId !== user.id) {
+      return { success: false, sendOutcome: 'refused', error: 'The signed-in account changed before this send' };
     }
 
     // Verify user is a participant in this conversation
@@ -84,6 +117,15 @@ async function sendGolfMessageWithAttachmentsImpl(
       return { success: false, error: 'Not a participant in this conversation' };
     }
 
+    if (clientMessageId != null && (!CommonSchemas.uuid.safeParse(clientMessageId).success ||
+      attachments.some((attachment) => !CommonSchemas.uuid.safeParse(attachment.id).success) ||
+      new Set(attachments.map((attachment) => attachment.id)).size !== attachments.length)) {
+      return { success: false, sendOutcome: 'refused', error: 'Invalid attachment send identity' };
+    }
+
+    const reply = await validateGolfReplyTarget(supabase, conversationId, replyToId);
+    if (!reply.success) return { success: false, error: reply.error };
+
     // Determine if message has attachments
     const hasAttachments = attachments && attachments.length > 0;
     // Set when the attachment rows fail but the message text survives, so the
@@ -92,26 +134,57 @@ async function sendGolfMessageWithAttachmentsImpl(
     let attachmentsFailed = false;
 
     // Insert the message
-    const { data: message, error: messageError } = await supabase
+    writesStarted = true;
+    const { data: insertedMessage, error: messageError } = await supabase
       .from('golf_messages')
       .insert({ // nosemgrep: helmv3-action-missing-revalidate -- realtime-subscribed messages UI; revalidate would cause reload loop
+        ...(clientMessageId ? { id: clientMessageId } : {}),
         conversation_id: conversationId,
         sender_id: user.id,
         content: content || '', // Allow empty content if there are attachments
         read: false,
         has_attachments: hasAttachments,
+        ...(reply.replyToId ? { reply_to_id: reply.replyToId } : {}),
       })
       .select('id')
       .single();
 
-    if (messageError || !message) {
+    let message = insertedMessage;
+    let replayedMessage = false;
+    if ((messageError || !message) && clientMessageId) {
+      // A lost INSERT response and a concurrent replay are the same question:
+      // is this exact sender/conversation/payload already stored under our ID?
+      const { data: existing, error: lookupError } = await supabase.from('golf_messages')
+        .select('id, conversation_id, sender_id, content, reply_to_id, has_attachments')
+        .eq('id', clientMessageId).eq('conversation_id', conversationId).maybeSingle();
+      if (lookupError) return unknownSend(clientMessageId);
+      if (existing) {
+        if (existing.sender_id !== user.id || existing.conversation_id !== conversationId ||
+          existing.content !== (content || '') || (existing.reply_to_id ?? null) !== reply.replyToId) {
+          return { success: false, sendOutcome: 'refused', error: 'This send identity belongs to another message' };
+        }
+        if (hasAttachments && !existing.has_attachments) {
+          return { success: true, messageId: existing.id, attachmentsFailed: true,
+            error: 'Your message was sent, but the attachments could not be saved.' };
+        }
+        message = { id: existing.id };
+        replayedMessage = true;
+      } else if (!definiteDatabaseRefusal(messageError)) {
+        return unknownSend(clientMessageId);
+      }
+    }
+
+    if (!message) {
       await logServerError(`[Attachments] Failed to insert message: ${describeError(messageError)}`, { action: 'message_attachments.sendGolfMessageWithAttachments' });
-      return { success: false, error: 'Failed to send message' };
+      return definiteDatabaseRefusal(messageError)
+        ? { success: false, sendOutcome: 'refused', error: 'Failed to send message' }
+        : unknownSend(clientMessageId);
     }
 
     // Insert attachment records
     if (hasAttachments) {
       const attachmentInserts = attachments.map((att) => ({
+        ...(clientMessageId ? { id: att.id } : {}),
         message_id: message.id,
         file_name: att.fileName,
         file_type: att.fileType,
@@ -128,54 +201,81 @@ async function sendGolfMessageWithAttachmentsImpl(
         .insert(attachmentInserts);
 
       if (attachmentError) {
-        await logServerError(`[Attachments] Failed to insert attachments: ${describeError(attachmentError)}`, { action: 'message_attachments.sendGolfMessageWithAttachments' });
-
-        // COMPENSATE, don't swallow. The `golf_messages` row already committed
-        // with `has_attachments: true`, and leaving it that way is what strands
-        // the bubble permanently: the reader treats "flagged, but no attachment
-        // rows" as the rows not having committed YET (see MessageThreadPane's
-        // SUCCESSFUL-BUT-EMPTY branch) and offers a retry. That reasoning is
-        // correct for the commit race it was written for and wrong here — this
-        // failure is permanent, so the retry can never succeed and the bubble
-        // stays dead for the rest of the session. Returning success on top of
-        // that told the sender their photo had been delivered.
-        //
-        // Both compensations below are permitted for the sender by RLS:
-        // golf_messages_update_v2 and golf_messages_delete are each
-        // `sender_id = auth.uid()`.
-        const storagePaths = attachments.map((att) => att.storagePath).filter(Boolean);
-        if (storagePaths.length > 0) {
-          // These objects were uploaded client-side and nothing references them
-          // now. The uploader owns them (golf_attachments_owner_delete), and
-          // this action runs as that same user.
-          const { error: cleanupError } = await supabase.storage
-            .from('golf-attachments')
-            .remove(storagePaths);
-          if (cleanupError) {
-            await logServerError(`[Attachments] Failed to clean up orphaned objects: ${describeError(cleanupError)}`, { action: 'message_attachments.sendGolfMessageWithAttachments' });
+        let metadataConfirmed = false;
+        if (clientMessageId) {
+          const { data: stored, error: readError } = await supabase.from('golf_message_attachments')
+            .select('id, message_id, file_name, file_type, mime_type, file_size, storage_path, width, height, duration_seconds')
+            .eq('message_id', message.id);
+          if (readError) return unknownSend(message.id);
+          const same = stored?.length === attachmentInserts.length && attachmentInserts.every((wanted) =>
+            (stored ?? []).some((row) => Object.entries(wanted).every(([key, value]) => row[key as keyof typeof row] === value)));
+          if (same) {
+            if (replayedMessage) return { success: true, messageId: message.id };
+            metadataConfirmed = true;
           }
+          // No compensation when a response was lost or another replay may
+          // still be completing the exact same PK-protected metadata batch.
+          if (!metadataConfirmed && (replayedMessage || !definiteDatabaseRefusal(attachmentError) || stored?.length)) {
+            return unknownSend(message.id);
+          }
+        } else if (!definiteDatabaseRefusal(attachmentError)) {
+          return unknownSend(message.id);
         }
+        if (!metadataConfirmed) {
+          await logServerError(`[Attachments] Failed to insert attachments: ${describeError(attachmentError)}`, { action: 'message_attachments.sendGolfMessageWithAttachments' });
 
-        const trimmedContent = content?.trim() ?? '';
-        if (!trimmedContent) {
-          // Nothing survives — no text, no attachments. An empty bubble is
-          // worse than no bubble, so remove it and report the failure, which
-          // lets the composer retain the draft for a real retry.
-          await supabase.from('golf_messages').delete().eq('id', message.id);
-          return { success: false, error: 'Attachments could not be saved. Nothing was sent.' };
+          // COMPENSATE, don't swallow. The `golf_messages` row already committed
+          // with `has_attachments: true`, and leaving it that way is what strands
+          // the bubble permanently: the reader treats "flagged, but no attachment
+          // rows" as the rows not having committed YET (see MessageThreadPane's
+          // SUCCESSFUL-BUT-EMPTY branch) and offers a retry. That reasoning is
+          // correct for the commit race it was written for and wrong here — this
+          // failure is permanent, so the retry can never succeed and the bubble
+          // stays dead for the rest of the session. Returning success on top of
+          // that told the sender their photo had been delivered.
+          //
+          // Both compensations below are permitted for the sender by RLS:
+          // golf_messages_update_v2 and golf_messages_delete are each
+          // `sender_id = auth.uid()`.
+          const storagePaths = attachments.map((att) => att.storagePath).filter(Boolean);
+          const cleanupUploads = async () => {
+            if (!storagePaths.length) return;
+            // These objects were uploaded client-side and nothing references them
+            // now. The uploader owns them (golf_attachments_owner_delete), and
+            // this action runs as that same user.
+            const { error: cleanupError } = await supabase.storage
+              .from('golf-attachments')
+              .remove(storagePaths);
+            if (cleanupError) {
+              await logServerError(`[Attachments] Failed to clean up orphaned objects: ${describeError(cleanupError)}`, { action: 'message_attachments.sendGolfMessageWithAttachments' });
+            }
+          };
+
+          const trimmedContent = content?.trim() ?? '';
+          if (!trimmedContent) {
+            // Nothing survives — no text, no attachments. An empty bubble is
+            // worse than no bubble, so remove it and report the failure, which
+            // lets the composer retain the draft for a real retry.
+            const { error: compensationError } = await supabase.from('golf_messages').delete().eq('id', message.id);
+            if (compensationError) return unknownSend(message.id);
+            await cleanupUploads();
+            return { success: false, error: 'Attachments could not be saved. Nothing was sent.' };
+          }
+
+          // The text is real and already delivered. Downgrade the row to
+          // text-only so it renders as what it actually is, then fall through:
+          // the conversation timestamp and the recipient fan-out below still
+          // owe this message, and returning here would deliver it silently.
+          // buildAttachmentPreview prefers the text, so the notification body is
+          // already correct for a message that no longer has attachments.
+          const { error: compensationError } = await supabase
+            .from('golf_messages')
+            .update({ has_attachments: false }) // nosemgrep: helmv3-action-missing-revalidate -- realtime-subscribed messages UI
+            .eq('id', message.id);
+          if (compensationError) return unknownSend(message.id);
+          await cleanupUploads();
+          attachmentsFailed = true;
         }
-
-        // The text is real and already delivered. Downgrade the row to
-        // text-only so it renders as what it actually is, then fall through:
-        // the conversation timestamp and the recipient fan-out below still
-        // owe this message, and returning here would deliver it silently.
-        // buildAttachmentPreview prefers the text, so the notification body is
-        // already correct for a message that no longer has attachments.
-        await supabase
-          .from('golf_messages')
-          .update({ has_attachments: false }) // nosemgrep: helmv3-action-missing-revalidate -- realtime-subscribed messages UI
-          .eq('id', message.id);
-        attachmentsFailed = true;
       }
     }
 
@@ -216,8 +316,10 @@ async function sendGolfMessageWithAttachmentsImpl(
     return { success: true, messageId: message.id };
   } catch (err) {
     await logServerError(`[Attachments] Unexpected error: ${describeError(err)}`, { action: 'message_attachments.sendGolfMessageWithAttachments' });
+    if (writesStarted) return unknownSend(clientMessageId);
     return {
       success: false,
+      sendOutcome: 'refused',
       error: err instanceof Error ? err.message : 'Unknown error',
     };
   }
@@ -232,9 +334,12 @@ const observedSendGolfMessageWithAttachments = withAdminObserved(
 export async function sendGolfMessageWithAttachments(
   conversationId: string,
   content: string,
-  attachments: AttachmentUploadData[]
-): Promise<{ success: boolean; messageId?: string; error?: string; attachmentsFailed?: boolean }> {
-  return observedSendGolfMessageWithAttachments(conversationId, content, attachments);
+  attachments: AttachmentUploadData[],
+  replyToId?: string | null,
+  clientMessageId?: string,
+  expectedSenderId?: string,
+): Promise<AttachmentSendResult> {
+  return observedSendGolfMessageWithAttachments(conversationId, content, attachments, replyToId, clientMessageId, expectedSenderId);
 }
 
 /**

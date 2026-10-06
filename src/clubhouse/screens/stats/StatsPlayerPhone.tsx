@@ -2,7 +2,7 @@
 
 import { Info, MessageSquare, Plus, Share } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import type { ChWindow } from '../../data/stats-common';
 import { basisWords, clearFilters, hasRange, isFiltered, per18, type ChFilter } from '../../data/stats-filter';
@@ -83,6 +83,19 @@ export function StatsPlayerPhone({
   const noShots = !failed && !early && !emptyFilter && w.effSgRounds < 3;
   const showFilter = !data.roundsError && (data.filterOptions.total > 0 || filtered);
 
+  const readCaveat = early ? (
+    <span role="note" data-ch-code="CH-5305">
+      <Icon icon={Info} size={15} />
+      Early read. {coach ? `${first} has` : 'You have'} {countWords(w.rounds, w.effRounds)} in this window, so averages and trends will move a lot. Strokes gained shows once
+      there are three.
+    </span>
+  ) : noShots ? (
+    <span role="note" data-ch-code="CH-5308">
+      <Icon icon={Info} size={15} />
+      Strokes gained needs three rounds posted with shots. {coach ? `${first} has` : 'You have'} {shotsWords(w.sgRounds, w.rounds, w.effSgRounds)} in this window, so strokes gained shows a dash until there are three.
+    </span>
+  ) : null;
+
   const share = async () => {
     haptic('press');
     const url = `${window.location.origin}${playerHref}`;
@@ -140,19 +153,6 @@ export function StatsPlayerPhone({
       </div>
 
       {!filtered && w.rounds === 0 && !data.roundsError && <NineHint code="CH-5324" filter={data.filter} options={data.filterOptions} who={coach ? `${first} has` : 'You have'} />}
-      {early && (
-        <div className="ch-pf-early" role="note" data-ch-code="CH-5305">
-          <Icon icon={Info} size={15} />
-          Early read. {coach ? `${first} has` : 'You have'} {countWords(w.rounds, w.effRounds)} in this window, so averages and trends will move a lot. Strokes gained shows once
-          there are three.
-        </div>
-      )}
-      {noShots && (
-        <div className="ch-pf-early" role="note" data-ch-code="CH-5308">
-          <Icon icon={Info} size={15} />
-          Strokes gained needs three rounds posted with shots. {coach ? `${first} has` : 'You have'} {shotsWords(w.sgRounds, w.rounds, w.effSgRounds)} in this window, so strokes gained shows a dash until there are three.
-        </div>
-      )}
       {failed && <InlineNotice code="CH-5201" title="Rounds didn't load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they're hidden. Try again; the error has been reported." onRetry={onRetry} />}
 
       {emptyFilter && <FilterEmpty code="CH-5320" onClear={() => onFilter(clearFilters(data.filter))} />}
@@ -161,7 +161,7 @@ export function StatsPlayerPhone({
         <>
       <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
         {data.cacheError && <InlineNotice code="CH-5213" title={CACHE_ERROR.title} body={CACHE_ERROR.body} onRetry={onRetry} />}
-        <Figures data={data} />
+        <Figures data={data} readCaveat={readCaveat} />
       </SectionBoundary>
 
       <SectionBoundary surface="stats.player.strokesGained" label="Strokes gained" code="CH-5204">
@@ -205,9 +205,9 @@ export function StatsPlayerPhone({
 
 /**
  * The board's three figures (m-stats.jsx Player, m.css .m-figs): scoring average, strokes gained a round in green or
- * amber, and the trend in words ("down 1.4", lower scores are better). One caption line each, never a stack (F-54).
+ * amber, and the trend in words ("down 1.4", lower scores are better). The shared metadata footer holds the sample caveat or comparison without moving the figures.
  */
-function Figures({ data }: { data: ChPlayerProfile }) {
+function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: ReactNode }) {
   const w = data.win;
   const sgTone = w.sgPerRound == null ? '' : w.sgPerRound >= 0 ? ' ch-gain' : ' ch-loss';
   const form = w.formChange;
@@ -215,27 +215,36 @@ function Figures({ data }: { data: ChPlayerProfile }) {
   const formTone = form == null || flat ? '' : form < 0 ? ' ch-gain' : ' ch-loss';
   const d = data.sgChange.delta;
   return (
-    <dl className="ch-stm-figs is-three">
-      <div>
-        <dt>Scoring avg</dt>
-        <dd className="ch-num">{formatFixed(w.avg)}</dd>
-        <dd className="ch-num">{data.viewer === 'coach' && data.teamAvg != null ? `Team ${data.teamAvg.toFixed(1)}` : `${w.rounds} ${w.rounds === 1 ? 'round' : 'rounds'}`}</dd>
+    <div className="ch-stm-overview">
+      <dl className="ch-stm-figs is-three">
+        <div>
+          <dt>Scoring avg</dt>
+          <dd className="ch-num">{formatFixed(w.avg)}</dd>
+          <dd className="ch-num">{data.viewer === 'coach' && data.teamAvg != null ? `Team ${data.teamAvg.toFixed(1)}` : `${w.rounds} ${w.rounds === 1 ? 'round' : 'rounds'}`}</dd>
+        </div>
+        <div>
+          <dt>SG / round</dt>
+          <dd className={'ch-num' + sgTone}>{w.sgPerRound == null ? NO_DATA : formatSigned(w.sgPerRound)}</dd>
+          {/* The baseline is always named (ST-16); the change chip only when there is a change. "No earlier rounds" was filler. */}
+          <dd className="ch-stm-sgsub">
+            {w.sgPerRound == null ? 'After three rounds' : sgBaseline(data.tour).vs}
+          </dd>
+        </div>
+        <div>
+          <dt>Trend</dt>
+          <dd className={'ch-num is-words' + formTone}>{form == null ? NO_DATA : flat ? 'level' : `${form < 0 ? 'down' : 'up'} ${Math.abs(form).toFixed(1)}`}</dd>
+          <dd>{form == null ? 'After three rounds' : 'Newer rounds'}</dd>
+        </div>
+      </dl>
+      <div className="ch-stm-overview__meta">
+        {readCaveat ?? (
+          <>
+            <span className="ch-num">{countWords(w.rounds, w.effRounds)} in this window.</span>
+            {w.sgPerRound != null && d != null && <SgChangeChip change={data.sgChange} code="CH-5310" />}
+          </>
+        )}
       </div>
-      <div>
-        <dt>SG / round</dt>
-        <dd className={'ch-num' + sgTone}>{w.sgPerRound == null ? NO_DATA : formatSigned(w.sgPerRound)}</dd>
-        {/* The baseline is always named (ST-16); the change chip only when there is a change. "No earlier rounds" was filler. */}
-        <dd className="ch-stm-sgsub">
-          {w.sgPerRound == null ? 'After three rounds' : sgBaseline(data.tour).vs}
-          {w.sgPerRound != null && d != null && <SgChangeChip change={data.sgChange} code="CH-5310" />}
-        </dd>
-      </div>
-      <div>
-        <dt>Trend</dt>
-        <dd className={'ch-num is-words' + formTone}>{form == null ? NO_DATA : flat ? 'level' : `${form < 0 ? 'down' : 'up'} ${Math.abs(form).toFixed(1)}`}</dd>
-        <dd>{form == null ? 'After three rounds' : 'Newer rounds'}</dd>
-      </div>
-    </dl>
+    </div>
   );
 }
 
@@ -252,7 +261,7 @@ function StrokesGained({ data }: { data: ChPlayerProfile }) {
   const known = legs.filter((l): l is { label: string; value: number } => l.value != null);
   if (!known.length && w.sgPerRound == null)
     return (
-      <section className="ch-stm-panel ch-stm-panel--bars" aria-labelledby="ch-spm-sg">
+      <section className="ch-stm-panel ch-stm-panel--bars ch-stm-panel--sg" aria-labelledby="ch-spm-sg">
         <div className="ch-stm-panel__h">
           <h2 id="ch-spm-sg">Strokes gained</h2>
         </div>
@@ -268,7 +277,7 @@ function StrokesGained({ data }: { data: ChPlayerProfile }) {
         ? `${losing[0]!.label} is the only leg losing strokes, ${Math.abs(losing[0]!.value).toFixed(1)} a round.`
         : `${losing.length} legs are losing strokes: ${losing.map((l) => l.label).join(', ')}.`;
   return (
-    <section className="ch-stm-panel" aria-labelledby="ch-spm-sg">
+    <section className="ch-stm-panel ch-stm-panel--sg" aria-labelledby="ch-spm-sg">
       <div className="ch-stm-panel__h">
         <h2 id="ch-spm-sg">Strokes gained</h2>
         <span>Per round · {baseline.vs}</span>

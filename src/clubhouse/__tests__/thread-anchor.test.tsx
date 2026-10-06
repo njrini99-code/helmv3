@@ -1,6 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
 import { useRef } from 'react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NEAR_END_PX, useThreadAnchor } from '../screens/messages/use-thread-anchor';
 
 /** High-fidelity audit §6.6, T25: a new message never pulls a reader away from older messages. */
@@ -74,5 +74,52 @@ describe('useThreadAnchor', () => {
     expect(el.scrollTop).toBe(900);
     expect(screen.queryByRole('button')).toBeNull();
     expect(NEAR_END_PX).toBeGreaterThan(0);
+  });
+});
+
+
+describe('useThreadAnchor · layout changes', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const resizeHarness = () => {
+    let resized!: () => void;
+    const disconnect = vi.fn();
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(callback: () => void) { resized = callback; }
+      observe() {}
+      disconnect = disconnect;
+    });
+    return { resize: () => act(() => resized()), disconnect };
+  };
+
+  it('composer/quote/keyboard shrink and expansion keep the newest end visible', () => {
+    const { resize, disconnect } = resizeHarness();
+    const view = render(<Thread convId="a" count={10} />);
+    geometry(2000, 1600);
+    resize(); // The browser delivers the initial observed viewport before later resizing.
+    geometry(2000, 1600);
+    Object.defineProperty(el, 'clientHeight', { configurable: true, value: 220 });
+    // Safari can emit its resize-induced scroll event before the observer.
+    act(() => void el.dispatchEvent(new Event('scroll')));
+    resize();
+    expect(el.scrollTop).toBe(2000);
+    Object.defineProperty(el, 'clientHeight', { configurable: true, value: 500 });
+    resize();
+    expect(el.scrollTop).toBe(2000);
+    view.unmount();
+    expect(disconnect).toHaveBeenCalledOnce();
+  });
+
+  it('older-message readers keep their position across viewport and loaded-content resizing', () => {
+    const { resize } = resizeHarness();
+    render(<Thread convId="a" count={10} />);
+    geometry(2000, 300);
+    Object.defineProperty(el, 'clientHeight', { configurable: true, value: 220 });
+    resize();
+    expect(el.scrollTop).toBe(300);
+    Object.defineProperty(el, 'scrollHeight', { configurable: true, value: 2300 });
+    Object.defineProperty(el, 'clientHeight', { configurable: true, value: 500 });
+    resize();
+    expect(el.scrollTop).toBe(300);
+    expect(screen.queryByRole('button')).toBeNull();
   });
 });

@@ -1,15 +1,22 @@
 # P007 — Messages: verification
 
-Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate checklist is
-`docs/clubhouse/screens/messages.md`.
+Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
+checklist is `docs/clubhouse/screens/messages.md`.
 
 ## Current verification status
 
 ```text
 Status:     partial
-Commit/PR:  agent/clubhouse (local; draft PR #2102 is behind it)
-Date:       2026-09-29
+Commit/PR:  codex/clubhouse-design-fidelity (repair pass)
+Date:       2026-10-01
 ```
+
+October 1 repair checks: settled WebKit thread at 390x664 has graded incoming
+ivory and sent green faces, visible upper highlights and layered contact/ambient
+shadows. The page fills the viewport without document overflow. Capture waits
+for the thread panel to finish sliding; the after image is not an intermediate
+transition frame. Message behavior tests pass with the combined repair tests.
+Physical iPhone scrolling and keyboard performance remain unverified.
 
 ## Static checks
 
@@ -65,7 +72,8 @@ Result:       built to the approved spec; the iPhone pass is open
 | Destructive | 71101, 71102 | tests | confirm first, warning haptic |
 | Optimistic rollback | 71301, 70613 | test (a refused send stays marked with Retry) | bubble marked Not sent, never removed |
 
-Not forced yet against a live session: send, edit, delete and leave failures (the merge pass). A state
+Not forced yet against a live session: send, edit, delete and leave failures
+(the merge pass). A state
 never observed is not verified (08_CI_PROGRESS_AND_VERIFICATION.md).
 
 ## Accessibility
@@ -93,7 +101,11 @@ Notes:             first-load JS and LCP after the v2 reveal are open (CH-1954)
 
 ## Screenshots
 
-Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
+committed) and travel in the PR description; this table is the committed record
+of them. One row per file; the label is the file's basename, named by `npm run
+clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is
+before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
@@ -131,6 +143,144 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 | `P007__thread__coach__430__thread-open__before__ba75b0a.png` | before | ba75b0a | thread (coach), 430px, thread-open; /clubhouse-preview/messages, synthetic preview fixture |
 | `P007__list__coach__1440__default__after__d4367ee.png` | after | d4367ee | list (coach), 1440px, default; /clubhouse-preview/messages, synthetic preview fixture |
 | `P007__list__coach__1440__default__before__d3a6483.png` | before | d3a6483 | list (coach), 1440px, default; /clubhouse-preview/messages, synthetic preview fixture |
+| `P007__thread__coach__390x664__ready__before__cbc1c0d.png` | before | `cbc1c0d` | Before: flat incoming and sent bubble fills. |
+| `P007__thread__coach__390x664__ready__after__cbc1c0d.png` | after | `cbc1c0d` | After: graded surfaces, highlights and grounded bubble shadows; thread settled at0x0. |
+| `P007__apple-thread__coach__390x664__group__after__cca081c.png` | after | cca081c | apple-thread (coach), 390x664px, group |
+| `P007__apple-thread__coach__390x664__group__before__cca081c.png` | before | cca081c | apple-thread (coach), 390x664px, group |
+| `P007__apple-thread__coach__390x664__long-press__after__cca081c.png` | after | cca081c | apple-thread (coach), 390x664px, long-press |
+| `P007__apple-thread__coach__390x664__reply-multiline__after__cca081c.png` | after | cca081c | apple-thread (coach), 390x664px, reply-multiline |
+| `P007__composer-resize__coach__390x664__quote-six-lines__after__ae6447d.png` | after | ae6447d | composer-resize (coach), 390x664px, quote-six-lines |
+| `P007__composer-resize__coach__390x664__quote-six-lines__before__ae6447d.png` | before | ae6447d | composer-resize (coach), 390x664px, quote-six-lines |
+| `P007__recovery-geometry__coach__390x664__unbroken-filename__after__ae6447d.png` | after | ae6447d | recovery-geometry (coach), 390x664px, unbroken-filename; populated preview; temporary DOM pending notice/quote/filename content |
+
+## 2026-10-02 — Apple Messages phone interaction pass
+
+- Messages 74/74 + audit 8/8: 82 passed, one worker, 11.61 seconds, real exit 0.
+  Includes multiline Return/explicit Send; real parent send ID and Cancel;
+  vertical
+  scroll/back-edge gesture guards; loaded/deleted/unavailable quote
+  truthfulness;
+  pending text target lock; deferred attachment refusal restoration;
+  phone-thread
+  departure clearing reply while preserving text; intermediate timestamp reveal
+  and loaded-parent scrolling. Hook/server Retry checks are recorded by their
+  owner.
+- After the full suite, the reduced-motion parent jump was repaired and its
+  existing timestamp/quote-scroll test ran again: 1/1 selected passed (281ms,
+  1.74 seconds overall), checking smooth normally and instant under reduced motion.
+- Final scoped Messages source/test ESLint exit 0; `git diff --check` exit 0.
+- WebKit iPhone13 emulation, local synthetic populated fixture at port 3120:
+  scrollWidth equals viewport at 375/390/430 pixels. At 390, a held native
+  pointer opened the
+  selected-message sheet, a 70px rightward pointer gesture on a visible bubble
+  selected Reply, Return produced `First line\nSecond line`, input retained
+  focus
+  and `enterkeyhint=enter`. The action sheet showed actual 2:31 PM and selected
+  text.
+- Axe WCAG 2 A/AA and 2.1 AA scan of the active thread: zero violations.
+  Physical touch,
+  Safari keyboard chrome, frame timing and production persistence were not
+  measured
+  by this emulator pass. Four shots show settled group, reply multiline, and
+  action
+  context; the Next development indicator in the lower-left is not product UI.
+
+Combined final production build: exit 0. Compiled in 117 seconds, TypeScript
+finished in 13.3 seconds, all 181 static pages generated and the route table
+emitted. This verifies the built source, not a deployed real-account write.
+
+## 2026-10-02 — Release repair evidence
+
+WebKit iPhone13, local populated preview at port 3120: quote plus six lines
+changed
+bottom gap 0 to 180px before repair. After repair gap 0, last message bottom
+407.55px
+and composer top 424.33px. Older-reader scrollTop 200 remained 200 when
+multiline
+input reduced the viewport. Simulated keyboard 180px padding opened/closed at
+gap 0
+(scrollTop 725 then 545). These manipulate the shared keyboard contract, not a
+physical Safari keyboard. Two local before/after shots are recorded below the
+existing screenshot table. The owned browser and dev server were closed
+afterward.
+
+UI regressions cover files-only partial retry (no delivered-text duplicate),
+unknown-payload text/file/reply locks, exact File-object retry, recovery across
+thread reopening, queued later edits restoration, resize observer ordering and
+older-reader position. The final scoped UI run passed **92/92** (78 Messages, 8
+audit, 6 anchor) in 12.03s with one worker. It also pins persisted-recovery
+reload
+summary, offline Retry locks, a failed recovery-read gate, and the queued
+ordinary
+draft remaining durable during a deferred recovery Retry.
+
+Local authenticated WebKit iPhone13 QA used two after-commit response aborts,
+then reloaded the same context: original caption, stored filenames and quote
+returned locked; Retry resolved the original identity with one message and one
+attachment. Recipient RLS readback returned 25,327 photo bytes; browser errors
+were empty. Evidence: `/tmp/helm-clubhouse-local-recovery/`. This is controlled
+local authenticated evidence, not production or physical-device verification.
+Settled 390px WebKit fixture geometry stayed within the viewport: document
+clientWidth/scrollWidth 390/390, thread x0/width390, notice/quote/pending
+filenames
+x10/width370/right380 and Send right380. The immediate authenticated QA
+screenshot
+was taken during thread entry, so its transformed edge did not establish settled
+overflow. A separate 150-character unbroken filename did expose chip text
+overflow
+(scrollWidth1388/composer1398); the scoped recovery-chip wrap rule reduced both
+to
+370/390. Geometry used temporary DOM content with the production CSS, not a
+second
+backend persistence test. Snapshot:
+`/tmp/helm-messages-recovery-geometry-settled.png`.
+
+Backend action/hook identity evidence is recorded by its owner. Source changes
+after the preceding production build require a fresh build; root owns that
+check.
+
+## 2026-10-02 — Final mobile editor visual check
+
+Fresh local WebKit captures at 375, 390 and 430px reproduced the six-line
+editor's internal clipping: its 132px border box had 126px client height for
+138px content. The mobile cap is now 144px and sizing includes its borders;
+desktop retains its 132px cap. At each width in a 480px viewport, the settled
+editor ends at y472 and its six lines have equal 138px client/scroll heights.
+Eight lines remain scrollable (178px content, scrollTop40), with the caret at
+the final character. Document width matches the viewport. The focused sizing
+regression passed 1/1; browser assertions checked the actual geometry.
+
+Selected-message actions retain 44px reaction buttons and an effective 44px
+Close target around its 30px visual button. Evidence lives in
+`/tmp/helm-clubhouse-visual-messages/`, including before/after small-viewport
+captures. These checks simulate available keyboard space; physical iPhone
+Safari keyboard and animation frame pacing remain owner checks.
+
+## 2026-10-02 — Owner's stripe-free Messages correction
+
+Messages and Messages-audit suites passed 87/87 with one worker. No message
+behavior or transport source changed. Fresh settled WebKit captures at 375,
+390 and 430px show border-free quote cards using floating material. Six lines
+retain their 144px editor with client/scroll height138; the editor bottom is
+732px at a 740px viewport and 472px at a 480px viewport. Document width equals
+each viewport. Long-press actions opened and Close restored the thread at all
+three widths. A desktop capture confirms selected conversations retain tint
+and stronger titles without an inset stripe.
+
+A separate DOM layout fixture uses the real recovery notice/chip CSS with an
+unbroken filename. At390px, notice and chip span x10..380, editor ends at732,
+and document width stays390. This fixture establishes material/wrapping only;
+the real partial/unknown/reload behavior remains covered by the 87 UI tests
+and the earlier authenticated verification, not by a synthetic Retry action.
+
+Evidence: `/tmp/helm-clubhouse-message-material/` (11 PNGs and scoped report).
+The comparison reference is the earlier striped quote capture in
+`/tmp/helm-clubhouse-visual-messages/reply-small-390-fixed.png`. Development
+HMR reset early capture drafts; those attempts are not layout passes. The
+final quote captures ran after source settled. Physical Safari remains
+unverified. The premium static auditor still exits1 with the same25 literal
+detections and0 unresolved owners documented in UI_OWNERSHIP; its JSON is
+preserved with the visual evidence and is not a compliance pass.
 
 ## Open verification gaps
 

@@ -67,6 +67,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
   const [tab, setTab] = useState<ChHubTab>(initialTab ?? 'home');
   const [replies, setReplies] = useState(() => new Map<string, ChRsvp>());
   const [acked, setAcked] = useState(() => new Set<string>());
+  const [pendingWrites, setPendingWrites] = useState(() => new Set<string>());
   const [done, setDone] = useState(() => new Set<string>());
   // Tasks the player unticked this visit, over what the page loaded as completed.
   const [undone, setUndone] = useState(() => new Set<string>());
@@ -93,65 +94,66 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
   // The reply the server last confirmed, per event: the way back after a refusal. A toast's Retry runs an earlier
   // render's action, so the way back can't be read from that render's state.
   const confirmedReply = useRef(new Map<string, ChRsvp>());
-  const reply = useAction(
-    'hub.reply',
-    (r: ChHubRsvp, s: Exclude<ChRsvp, 'pending'>) =>
-      optimistic(
-        () => setReplies((m) => new Map(m).set(r.eventId, s)),
-        () =>
-          setReplies((m) => {
-            const next = new Map(m);
-            const was = confirmedReply.current.get(r.eventId);
-            if (was) next.set(r.eventId, was);
-            else next.delete(r.eventId);
-            return next;
-          }),
-        async () => {
-          const res = await writes.reply(r.eventId, s);
-          if (normalise(res).success) confirmedReply.current.set(r.eventId, s);
-          return res;
-        },
-      ),
-    (r, s) => ({
-      done: s === 'accepted' ? `You're going to ${r.title}` : s === 'tentative' ? `Marked maybe for ${r.title}` : `Your coach knows you can't make ${r.title}`,
-      failed: `Couldn't send your reply for ${r.title}`,
-      code: 'CH-10001',
-    }),
-  );
-  const ack = useAction(
-    'hub.acknowledge',
-    (a: ChHubAnnouncement) =>
-      optimistic(
-        () => setAcked(withId(a.id)),
-        () => setAcked(withoutId(a.id)),
-        () => writes.acknowledge(a.id),
-      ),
-    (a) => ({ done: '', failed: `Couldn't acknowledge "${a.title}"`, code: 'CH-10002' }),
-  );
-  const complete = useAction(
-    'hub.completeTask',
-    (t: ChHubTask) =>
-      optimistic(
-        () => {
-          setDone(withId(t.id));
-          setUndone(withoutId(t.id));
-        },
-        () => setDone(withoutId(t.id)),
-        () => writes.completeTask(t.id),
-      ),
-    (t) => ({ done: `${t.title} done`, failed: `Couldn't mark ${t.title} done`, code: 'CH-10003' }),
-  );
-  const uncomplete = useAction(
-    'hub.uncompleteTask',
-    (t: ChHubTask) =>
-      optimistic(
-        // `undone` wins over `done` and the loaded status, so taking it back off restores exactly what was there.
-        () => setUndone(withId(t.id)),
-        () => setUndone(withoutId(t.id)),
-        () => writes.uncompleteTask(t.id),
-      ),
-    (t) => ({ done: `${t.title} is open again`, failed: `Couldn't reopen ${t.title}`, code: 'CH-10011' }),
-  );
+  // Gates live with the Hub, rather than a tab's rows: remounts and older toast Retries share the same lock.
+  const inFlight = useRef(new Set<string>());
+  const guarded = async (key: string, write: () => Promise<ServerResult>): Promise<ServerResult> => {
+    if (inFlight.current.has(key)) return { success: false, error: 'busy' };
+    inFlight.current.add(key);
+    setPendingWrites(withId(key));
+    try {
+      return await write();
+    } finally {
+      inFlight.current.delete(key);
+      setPendingWrites(withoutId(key));
+    }
+  };
+  const replyPending = (r: ChHubRsvp) => pendingWrites.has(`reply:${r.eventId}`);
+  const ackPending = (a: ChHubAnnouncement) => pendingWrites.has(`ack:${a.id}`);
+  const taskPending = (t: ChHubTask) => pendingWrites.has(`task:${t.id}`);
+  const reply = (r: ChHubRsvp, answer: Exclude<ChRsvp, 'pending'>) =>
+    guarded(`reply:${r.eventId}`, () => optimistic(
+      () => setReplies((m) => new Map(m).set(r.eventId, answer)),
+      () => setReplies((m) => {
+        const next = new Map(m);
+        const was = confirmedReply.current.get(r.eventId);
+        if (was) next.set(r.eventId, was);
+        else next.delete(r.eventId);
+        return next;
+      }),
+      async () => {
+        const res = await writes.reply(r.eventId, answer);
+        if (normalise(res).success) confirmedReply.current.set(r.eventId, answer);
+        return res;
+      },
+    ));
+  const confirmedAck = useRef(new Set<string>());
+  const ack = (a: ChHubAnnouncement) => guarded(`ack:${a.id}`, () => optimistic(
+    () => setAcked(withId(a.id)),
+    () => setAcked(confirmedAck.current.has(a.id) ? withId(a.id) : withoutId(a.id)),
+    async () => {
+      const res = await writes.acknowledge(a.id);
+      if (normalise(res).success) confirmedAck.current.add(a.id);
+      return res;
+    },
+  ));
+  const confirmedTask = useRef(new Map<string, boolean>());
+  const toggle = (t: ChHubTask, nextDone: boolean) => guarded(`task:${t.id}`, () => optimistic(
+    () => {
+      setDone(nextDone ? withId(t.id) : withoutId(t.id));
+      setUndone(nextDone ? withoutId(t.id) : withId(t.id));
+    },
+    () => {
+      // Restore the last confirmed state, including a task reopened earlier in this visit.
+      const wasDone = confirmedTask.current.get(t.id) ?? t.status === 'completed';
+      setDone(wasDone ? withId(t.id) : withoutId(t.id));
+      setUndone(wasDone ? withoutId(t.id) : withId(t.id));
+    },
+    async () => {
+      const res = await (nextDone ? writes.completeTask(t.id) : writes.uncompleteTask(t.id));
+      if (normalise(res).success) confirmedTask.current.set(t.id, nextDone);
+      return res;
+    },
+  ));
   // The next trip whose travelers are known: the "<trip> travelers" audience in New announcement.
   // A trip deleted this visit leaves at once; the page's read follows.
   const tripRows = useMemo(() => data.trips.rows.filter((t) => !gone.has(t.id)), [data.trips.rows, gone]);
@@ -217,13 +219,9 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
     },
   );
 
-  const onReply = (r: ChHubRsvp, s: Exclude<ChRsvp, 'pending'>) => {
-    haptic('select');
-    void reply.run(r, s);
-  };
-  const onAck = (a: ChHubAnnouncement) => void ack.run(a);
-  // A tick marks it done; a tick on a done task (an accidental one) opens it again.
-  const onToggle = (t: ChHubTask) => void (taskDone(t) ? uncomplete.run(t) : complete.run(t));
+  const onReply = reply;
+  const onAck = ack;
+  const onToggle = toggle;
   const onOpen = (f: ChHubFile) => void open.run(f);
   const onUpload = async (files: File[]) => {
     setUploading(true);
@@ -253,7 +251,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
   const docs = useMemo(() => ({ ...data.documents, folders: data.documents.folders.map((f) => ({ ...f, files: f.files.filter((d) => !gone.has(d.id)) })).filter((f) => f.files.length) }), [data.documents, gone]);
   const isAcked = (a: ChHubAnnouncement) => a.acked || acked.has(a.id);
   // The Home card: the newest post still waiting on this player, else the newest (no pinned posts yet, Q-70).
-  const featured = anns.find((a) => !coach && a.needAck && !isAcked(a)) ?? anns[0] ?? null;
+  const featured = anns.find((a) => !coach && a.needAck && (ackPending(a) || !isAcked(a))) ?? anns[0] ?? null;
   const upcoming = tripRows.filter((t) => t.upcoming);
   const nextTrip = upcoming[0] ?? null;
   // The page is empty only when every read answered and every one was empty: a failed read (updates included) shows its
@@ -363,13 +361,13 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
             <div className="ch-hb-home">
               <div className="ch-hb-col">
                 <SectionBoundary surface="hub.rsvps" label="RSVPs" code="CH-10205">
-                  <Rsvps role={data.role} data={data.rsvps} replies={replies} onReply={onReply} compact={phone} />
+                  <Rsvps role={data.role} data={data.rsvps} replies={replies} isPending={replyPending} onReply={onReply} compact={phone} />
                 </SectionBoundary>
                 <SectionBoundary surface="hub.announcement" label="The latest announcement" code="CH-10205">
                   {data.announcements.error ? (
                     <RefreshNotice code="CH-10206" title="Announcements didn't load." body="Nothing was lost. Try again; the error has been reported." />
                   ) : featured ? (
-                    <Announcement a={featured} role={data.role} featured acked={isAcked(featured)} onAck={onAck} onEdit={setEditing} onDelete={(a) => askDelete({ kind: 'ann', a })} />
+                    <Announcement key={featured.id} a={featured} role={data.role} featured acked={isAcked(featured)} pending={ackPending(featured)} onAck={onAck} onEdit={setEditing} onDelete={(a) => askDelete({ kind: 'ann', a })} />
                   ) : null}
                 </SectionBoundary>
                 <SectionBoundary surface="hub.trip" label="The next trip" code="CH-10205">
@@ -386,7 +384,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
                 </SectionBoundary>
                 {!coach && (
                   <SectionBoundary surface="hub.tasks" label="Your tasks" code="CH-10205">
-                    <Tasks role={data.role} data={tasks} isDone={taskDone} onToggle={onToggle} />
+                    <Tasks role={data.role} data={tasks} isDone={taskDone} isPending={taskPending} onToggle={onToggle} />
                   </SectionBoundary>
                 )}
               </div>
@@ -404,7 +402,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
                   <EmptyState compact code="CH-10307" icon={Megaphone} title="No announcements yet." body={coach ? 'Post one and see who has read it.' : 'Posts from your coaches show here.'} />
                 </div>
               ) : (
-                anns.map((a) => <Announcement key={a.id} a={a} role={data.role} acked={isAcked(a)} onAck={onAck} onEdit={setEditing} onDelete={(x) => askDelete({ kind: 'ann', a: x })} />)
+                anns.map((a) => <Announcement key={a.id} a={a} role={data.role} acked={isAcked(a)} pending={ackPending(a)} onAck={onAck} onEdit={setEditing} onDelete={(x) => askDelete({ kind: 'ann', a: x })} />)
               )}
             </div>
           </SectionBoundary>
@@ -447,7 +445,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
         {tab === 'tasks' && coach && (
           <SectionBoundary surface="hub.tasks" label="Tasks" code="CH-10205">
             <div className="ch-hb-list">
-              <Tasks role={data.role} data={tasks} isDone={taskDone} onToggle={onToggle} onAssign={() => setAssign(true)} onDelete={(t) => askDelete({ kind: 'task', t })} />
+              <Tasks role={data.role} data={tasks} isDone={taskDone} isPending={taskPending} onToggle={onToggle} onAssign={() => setAssign(true)} onDelete={(t) => askDelete({ kind: 'task', t })} />
             </div>
           </SectionBoundary>
         )}

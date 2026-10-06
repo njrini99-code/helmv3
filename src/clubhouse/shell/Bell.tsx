@@ -28,6 +28,7 @@ import { haptic } from '../lib/haptics';
 import { CH_POP, chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { useSheetDrag } from '../lib/sheet-drag';
+import { OverlayScrollLock } from '../lib/overlay-scroll';
 import { useChPhone } from '../lib/use-phone';
 import { chReport, chTrail } from '../lib/track';
 import { useAction, type ServerResult } from '../lib/use-action';
@@ -118,7 +119,7 @@ export function Bell() {
 
   const close = useCallback((focus = true) => {
     setOpen(false);
-    if (focus) btn.current?.focus();
+    if (focus) btn.current?.focus({ preventScroll: true });
   }, []);
   const closeSheet = useCallback(() => close(), [close]);
   const drag = useSheetDrag(panel, closeSheet, { enabled: phone && !reduced });
@@ -184,8 +185,9 @@ export function Bell() {
     };
     document.addEventListener('mousedown', onDown);
     document.addEventListener('keydown', onKey);
-    requestAnimationFrame(() => panel.current?.focus());
+    const frame = requestAnimationFrame(() => panel.current?.focus({ preventScroll: true }));
     return () => {
+      cancelAnimationFrame(frame);
       document.removeEventListener('mousedown', onDown);
       document.removeEventListener('keydown', onKey);
     };
@@ -340,7 +342,7 @@ export function Bell() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={chTween('base')}
+                transition={reduced ? { duration: 0 } : chTween('base')}
                 onClick={() => close()}
               />
             )}
@@ -359,10 +361,11 @@ export function Bell() {
                 className="ch-bellp ch-bellp--sheet"
                 data-ui="clubhouse"
                 initial={reduced ? { opacity: 0 } : { y: '100%' }}
-                animate={reduced ? { opacity: 1 } : { y: 0 }}
-                exit={reduced ? { opacity: 0 } : { y: '100%' }}
-                transition={chTween('base')}
+                animate={{ y: 0, opacity: 1 }}
+                exit={reduced ? { y: 0, opacity: 0 } : { y: '100%' }}
+                transition={reduced ? { duration: 0 } : chTween('base')}
               >
+                <OverlayScrollLock />
                 <div className="ch-bellp__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
                 <div className="ch-bellp__shead" onPointerDown={drag.onPointerDown}>
                   <span className="ch-bellp__stitle">

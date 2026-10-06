@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
-import { getValidTimezone } from '@/lib/calendar/timezone';
+import { eventDaySpan, getValidTimezone } from '@/lib/calendar/timezone';
 import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
 import { chLogServer } from '../lib/track-server';
@@ -92,6 +92,8 @@ export interface ChHomeEvent {
   type: 'practice' | 'qualifier' | 'tournament' | 'meeting' | 'travel' | 'other';
   /** Team-local date, YYYY-MM-DD. */
   date: string;
+  /** Team clock for relative day labels. Server reads always set it; old fixtures use the product default. */
+  timezone?: string;
   startIso: string;
   endIso: string | null;
   allDay: boolean;
@@ -102,7 +104,7 @@ export interface ChHomeEvent {
   location: string | null;
   /** Invitees' names, in roster order; null when replies didn't load (CH-2209). */
   invitees: string[] | null;
-  /** Accepted replies; null when replies didn't load. */
+  /** Accepted replies; null when replies or the identities needed for the paired count didn't load. */
   going: number | null;
   /** Overlaps another of today's timed events. */
   conflict: boolean;
@@ -392,29 +394,46 @@ export async function loadHomeWeek(
   // and cut to the exact window below. The window used to wait for the timezone read, which put a round trip in front of the events
   // and the replies after them.
   const wide = wideEventWindow(now);
-  const eventsRead = Promise.resolve(
+  const eventsRead = fetchAllRowsResult((from, to) =>
     supabase
       .from('golf_events')
       .select('id, title, event_type, start_time, end_time, all_day, location')
       .eq('team_id', input.teamId)
       .neq('event_type', CLASS_EVENT_TYPE)
       .is('cancelled_at', null)
-      .gte('start_time', wide.from)
+      // A tournament that began before this window can still run this week.
+      .or(`start_time.gte.${wide.from},end_time.gte.${wide.from}`)
       .lt('start_time', wide.to)
       .order('start_time', { ascending: true })
-      .limit(500),
+      .order('id', { ascending: true })
+      .range(from, to),
   );
   const [tz, wideRes] = await Promise.all([input.tz, eventsRead]);
   const today = ymd(now, tz);
   const { weekStart, weekEnd, from, to } = weekWindow(today);
-  const eventsRes = wideRes.error ? wideRes : { ...wideRes, data: (wideRes.data ?? []).filter((e) => new Date(e.start_time).getTime() >= from && new Date(e.start_time).getTime() < to) };
+  const eventsRes = wideRes.error ? wideRes : {
+    ...wideRes,
+    data: (wideRes.data ?? []).filter((e) => {
+      const start = Date.parse(e.start_time);
+      const end = Date.parse(e.end_time ?? e.start_time);
+      return start < to && Math.max(start, Number.isFinite(end) ? end : start) >= from;
+    }),
+  };
 
   // ── Week ──
   if (eventsRes.error) log('events', eventsRes.error);
-  const events = (eventsRes.error ? [] : (eventsRes.data ?? [])).map((e) => ({ ...e, localDate: ymd(new Date(e.start_time), tz) }));
+  // The shared calendar contract preserves UTC-midnight all-day dates and
+  // treats their end day as inclusive. Cache each span once for the week.
+  const calendarDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const events = (eventsRes.error ? [] : (eventsRes.data ?? [])).flatMap((e) => {
+    const span = eventDaySpan(e, tz);
+    return span ? [{ ...e, localDate: calendarDate(span.first), lastDate: calendarDate(span.last) }] : [];
+  });
+  const runsOn = (e: (typeof events)[number], date: string) => e.localDate <= date && e.lastDate >= date;
+  const notOver = (e: (typeof events)[number]) => e.all_day ? e.lastDate >= today : new Date(e.end_time ?? e.start_time) > now;
   const days: ChHomeDay[] = WEEKDAYS.map((weekday, i) => {
     const date = addDays(weekStart, i);
-    const dayEvents = events.filter((e) => e.localDate === date);
+    const dayEvents = events.filter((e) => runsOn(e, date));
     return {
       date,
       weekday,
@@ -427,11 +446,11 @@ export async function loadHomeWeek(
 
   const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true });
   const clock = (iso: string) => timeFmt.format(new Date(iso)).replace(/\s?[AP]M$/, '');
-  const todays = events.filter((e) => e.localDate === today);
+  const todays = events.filter((e) => runsOn(e, today));
   const later = events.filter((e) => e.localDate > today && e.localDate <= weekEnd && COMPETITION_TYPES.has(e.event_type));
-  const nextId = todays.find((e) => new Date(e.end_time ?? e.start_time) > now)?.id;
+  const nextId = todays.find(notOver)?.id;
   // The phone's Up next: the first event not over yet, today or after (the window runs a day past the week).
-  const upcoming = events.find((e) => e.localDate >= today && new Date(e.end_time ?? e.start_time) > now) ?? null;
+  const upcoming = events.find((e) => e.lastDate >= today && notOver(e)) ?? null;
 
   // Who is invited, and who has said yes, for the rows shown. A failed read
   // drops the counts and names, never shows "0 players".
@@ -483,8 +502,10 @@ export async function loadHomeWeek(
       when: 'later' as const,
     })),
   ];
-  const nextComp = [...todays, ...later].find((e) => COMPETITION_TYPES.has(e.event_type) && new Date(e.end_time ?? e.start_time) > now);
-  const longDay = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'long' });
+  const nextComp = [...todays, ...later].find((e) => COMPETITION_TYPES.has(e.event_type) && notOver(e));
+  // These are calendar dates already in the team's zone; don't zone them twice.
+  const longDay = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'long' });
+  const weekdayOf = (date: string) => longDay.format(new Date(`${date}T12:00:00Z`));
 
   // ── Phone: Up next and Today ──
   const clockAmPm = (iso: string) => timeFmt.format(new Date(iso));
@@ -493,20 +514,24 @@ export async function loadHomeWeek(
     !e.all_day && !!e.end_time && timed.some((o) => o.id !== e.id && new Date(o.start_time) < new Date(e.end_time!) && new Date(e.start_time) < new Date(o.end_time!));
   const toPhone = (e: (typeof events)[number]): ChHomeEvent => {
     const ids = inviteesOf(e.id);
+    const invitees = ids ? ids.map((id) => names.get(id)).filter((n): n is string => !!n) : null;
     return {
       id: e.id,
       title: e.title,
       type: HOME_TYPES.has(e.event_type) ? (e.event_type as ChHomeEvent['type']) : 'other',
       date: e.localDate,
+      timezone: tz,
       startIso: e.start_time,
       endIso: e.end_time,
       allDay: !!e.all_day,
       startLabel: e.all_day ? 'All day' : clockAmPm(e.start_time),
       rangeLabel: e.all_day ? 'All day' : e.end_time ? `${clock(e.start_time)} – ${clockAmPm(e.end_time)}` : clockAmPm(e.start_time),
       location: e.location,
-      invitees: ids ? ids.map((id) => names.get(id)).filter((n): n is string => !!n) : null,
-      going: ids ? (accepted.get(e.id) ?? 0) : null,
-      conflict: e.localDate === today && overlaps(e),
+      invitees,
+      // The card pairs this number with the rendered names' count. Partial
+      // identities cannot turn "3 of 4" actual replies into "3 of 2 going".
+      going: ids && invitees?.length === ids.length ? (accepted.get(e.id) ?? 0) : null,
+      conflict: runsOn(e, today) && overlaps(e),
     };
   };
   const firstLater = later.find((e) => e.localDate > today);
@@ -516,10 +541,10 @@ export async function loadHomeWeek(
     weekStart,
     weekEnd,
     week: { days, agenda, error: !!eventsRes.error },
-    nextCompetition: nextComp ? { title: nextComp.title, when: nextComp.localDate === today ? 'today' : longDay.format(new Date(nextComp.start_time)) } : null,
+    nextCompetition: nextComp ? { title: nextComp.title, when: runsOn(nextComp, today) ? 'today' : weekdayOf(nextComp.localDate) } : null,
     next: eventsRes.error || !upcoming ? null : toPhone(upcoming),
     todayEvents: eventsRes.error ? [] : todays.map(toPhone),
-    weekNote: firstLater ? { weekday: longDay.format(new Date(firstLater.start_time)), title: firstLater.title } : null,
+    weekNote: firstLater ? { weekday: weekdayOf(firstLater.localDate), title: firstLater.title } : null,
   };
 
 }

@@ -25,6 +25,8 @@ export interface ToastInput {
   body?: string;
   action?: ToastItem['action'];
   code?: string;
+  /** Ends only this notice's lifetime; aborting never cancels the work it describes. */
+  signal?: AbortSignal;
 }
 
 type ShowToast = (toast: ToastInput) => void;
@@ -33,6 +35,36 @@ const ToastContext = createContext<ShowToast>(() => {});
 
 export function useToast(): ShowToast {
   return useContext(ToastContext);
+}
+
+/** A request's delayed feedback ends on settlement, replacement or unmount, independently of its write. */
+export function useDelayedToast() {
+  const toast = useToast();
+  const currentToast = useRef(toast);
+  currentToast.current = toast;
+  // Separate collections let new-scope layout effects schedule before the old passive cleanup runs.
+  const lifetime = useMemo(() => ({ toast, live: true, cancellations: new Set<() => void>() }), [toast]);
+  useEffect(() => {
+    lifetime.live = true;
+    return () => {
+      lifetime.live = false;
+      for (const cancel of lifetime.cancellations) cancel();
+      lifetime.cancellations.clear();
+    };
+  }, [lifetime]);
+  return useCallback((input: Omit<ToastInput, 'signal'>, delay: number): (() => void) => {
+    // A queued save may still finish after its screen leaves; it must not raise old progress over the next screen.
+    if (!lifetime.live || lifetime.toast !== currentToast.current) return () => {};
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => lifetime.toast({ ...input, signal: controller.signal }), delay);
+    const cancel = () => {
+      window.clearTimeout(timer);
+      lifetime.cancellations.delete(cancel);
+      controller.abort();
+    };
+    lifetime.cancellations.add(cancel);
+    return cancel;
+  }, [lifetime]);
 }
 
 const DISMISS_MS = { done: 4000, error: 8000 } as const;
@@ -80,29 +112,45 @@ export function ToastProvider({ children, scope = '' }: { children: ReactNode; s
     setToasts([]);
   }
   const nextId = useRef(1);
-  const timers = useRef(new Set<number>());
+  const scoped = useMemo(() => ({ scope, lifetimes: new Map<number, () => void>() }), [scope]);
+  const currentScope = useRef(scoped);
+  currentScope.current = scoped;
+  const lifetimes = scoped.lifetimes;
   const reduced = useChReducedMotion();
-  // A toast's dismiss timer must not fire after the provider unmounts (a route change, a test teardown).
+  // Release timers and abort listeners on team changes as well as provider unmount.
   useEffect(() => {
-    const live = timers.current;
     return () => {
-      for (const t of live) window.clearTimeout(t);
-      live.clear();
+      for (const release of lifetimes.values()) release();
+      lifetimes.clear();
     };
-  }, []);
+  }, [lifetimes]);
 
-  const dismiss = useCallback((id: number) => setToasts((t) => t.filter((x) => x.id !== id)), []);
+  const release = useCallback((id: number) => {
+    const cleanup = lifetimes.get(id);
+    lifetimes.delete(id);
+    cleanup?.();
+  }, [lifetimes]);
+  const dismiss = useCallback((id: number) => {
+    release(id);
+    setToasts((t) => t.filter((x) => x.id !== id));
+  }, [release]);
   const show = useCallback<ShowToast>(
-    ({ title, tone = 'done', body, action, code }) => {
+    ({ title, tone = 'done', body, action, code, signal }) => {
+      // Async feedback from a prior team never repopulates the new team's stack.
+      if (scoped !== currentScope.current || signal?.aborted) return;
+      // The stack holds at most three notices; an evicted notice owns no future timer/listener.
+      if (lifetimes.size >= 3) release(lifetimes.keys().next().value!);
       const id = nextId.current++;
+      const abort = () => dismiss(id);
+      const timer = window.setTimeout(() => dismiss(id), DISMISS_MS[tone]);
+      signal?.addEventListener('abort', abort, { once: true });
+      lifetimes.set(id, () => {
+        window.clearTimeout(timer);
+        signal?.removeEventListener('abort', abort);
+      });
       setToasts((t) => [...t.slice(-2), { id, title, tone, body, action, code }]);
-      const timer = window.setTimeout(() => {
-        timers.current.delete(timer);
-        dismiss(id);
-      }, DISMISS_MS[tone]);
-      timers.current.add(timer);
     },
-    [dismiss],
+    [dismiss, release, scoped, lifetimes],
   );
   const value = useMemo(() => show, [show]);
   const host = useToastHost(toasts.length > 0);

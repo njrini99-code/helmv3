@@ -184,6 +184,7 @@ supabase/.temp/
 # for edge functions the Vercel build never compiles.
 .dev-assets/
 .dev-screenshots/
+.helm/
 .codex/
 .design-sync/
 .ultracode/

@@ -33,6 +33,13 @@ This doc was written 2026-08-30. Until then the registry routed this feature to
 recruiting section at all: the mapped current-state doc did not describe the
 feature.
 
+The Clubhouse phone prospect sheets reuse the native dialog lifecycle shared
+with
+Modal: selected content and the background scroll lock persist through exit;
+rapid reopen cancels an old completion and focus returns without scrolling. A
+save/delete in flight still refuses dismissal. This client repair does not
+change prospect writes, stage choices, or unsaved-draft dismissal policy.
+
 ## Primary Entry Points
 
 ### Routes

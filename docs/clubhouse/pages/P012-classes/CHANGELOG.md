@@ -2,6 +2,13 @@
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
+## 2026-10-02 — Floating class cards
+
+The owner’s material correction removes the decorative left accent from class
+cards and uses shared soft elevation instead of local outline/shadow overrides.
+Class content and actions are unchanged. The stylesheet parses; WebKit desktop
+layout was inspected without horizontal overflow. Physical Safari is unverified.
+
 ## 2026-10-01 — Phone: today first, one heading, the term in a line (iPhone brief)
 
 From the owner's "GolfHelm iPhone Layout and Native Experience Repair" brief, §10.
