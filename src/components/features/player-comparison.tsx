@@ -13,8 +13,6 @@ import dynamic from 'next/dynamic';
 import { SaveComparisonModal } from './save-comparison-modal';
 import { saveComparison } from '@/app/baseball/(dashboard)/dashboard/compare/actions';
 import { toast } from '@/components/ui/sonner';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 const RadarChart = dynamic(() => import('recharts').then((mod) => mod.RadarChart), { ssr: false });
 const PolarGrid = dynamic(() => import('recharts').then((mod) => mod.PolarGrid), { ssr: false });
@@ -242,6 +240,27 @@ export function PlayerComparison({
     setExporting(true);
 
     try {
+      // html2canvas and jsPDF are only needed for this one action, so they
+      // load on demand instead of riding in the compare page's bundle. The
+      // button stays disabled ("Exporting...") while they load; a failed
+      // chunk load (offline, stale deploy) gets its own message.
+      let html2canvas: typeof import('html2canvas').default;
+      let jsPDF: typeof import('jspdf').default;
+      try {
+        const [html2canvasModule, jsPDFModule] = await Promise.all([
+          import('html2canvas'),
+          import('jspdf'),
+        ]);
+        html2canvas = html2canvasModule.default;
+        jsPDF = jsPDFModule.default;
+      } catch (loadError) {
+        toast.error('Could not load the PDF exporter. Check your connection and try again.');
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Export module load error:', describeError(loadError));
+        }
+        return;
+      }
+
       // Wait a tick for any pending renders
       await new Promise(resolve => setTimeout(resolve, 100));
 

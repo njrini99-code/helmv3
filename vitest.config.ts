@@ -376,6 +376,10 @@ export default defineConfig({
             // names, process.env in edge functions, service-role leaks)
             // against real src/ plus the synthetic positive fixture.
             'scripts/__tests__/review-gate-rules.test.mjs',
+            // `npm run gates:review` (scripts/review-gate-local.mjs) exits 2
+            // INCOMPLETE, not "green", when a scanner was skipped for a
+            // missing tool, unless --allow-missing.
+            'scripts/__tests__/review-gate-local.test.mjs',
             // Wave W2E header consolidation: canonical PageHeader still
             // ships its four variants, and the six sibling header modules
             // stay deleted or thinned to shims.

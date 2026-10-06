@@ -85,11 +85,23 @@ jobs:
           tools="$(mktemp -d)"
           cd "$tools"
 
-          # ast-grep: pinned release.
-          curl -fsSL https://github.com/ast-grep/ast-grep/releases/download/0.44.0/app-x86_64-unknown-linux-gnu.zip -o ast-grep.zip
-          unzip -q ast-grep.zip
+          # ast-grep: exact release zip, checksum-verified. ast-grep ships no
+          # checksum file, so the SHA-256 below is the digest GitHub publishes
+          # for app-x86_64-unknown-linux-gnu.zip on the 0.45.3 release page
+          # (confirmed against a local download). The binary must report the
+          # version we asked for.
+          ast_grep_version=0.45.3
+          ast_grep_sha256=f8ac830881339d1edee6b2652f54798c0f4da5a827f2db38a08ee31117783ce8
+          curl -fsSL "https://github.com/ast-grep/ast-grep/releases/download/${ast_grep_version}/app-x86_64-unknown-linux-gnu.zip" -o ast-grep.zip
+          echo "${ast_grep_sha256}  ast-grep.zip" | sha256sum -c -
+          unzip -q ast-grep.zip ast-grep
           sudo mv ast-grep /usr/local/bin/sg
-          sg --version
+          ast_grep_reported="$(sg --version)"
+          if [ "$ast_grep_reported" != "ast-grep ${ast_grep_version}" ]; then
+            echo "::error::sg reports '$ast_grep_reported', expected 'ast-grep ${ast_grep_version}'"
+            exit 1
+          fi
+          echo "$ast_grep_reported"
 
           # actionlint: exact release tarball, checksum-verified. This was a
           # piped download-actionlint.bash from the v1.7.12 tag, but that
@@ -136,6 +148,37 @@ jobs:
           # MD049s between two tool versions with zero doc edits. The
           # baseline is only meaningful under the version that wrote it.
           npm install -g markdownlint-cli2@0.23.2
+
+      # shellcheck: exact release binary, checksum-verified, in its own step.
+      # The apt shellcheck from "Install linters" is still installed but is
+      # shadowed by this binary (see the PATH check at the end of the step).
+      # apt's shellcheck tracks the runner image: Ubuntu 26.04 moves it from
+      # 0.9 to 0.11, which would change what the two shellcheck steps below
+      # report with no diff in this repo. 0.11.0 is lint-clean on scripts/*.sh
+      # and .claude/hooks/*.sh at --severity=warning (checked 2026-10-06). The
+      # SHA-256 is GitHub's published digest for the v0.11.0 asset (shellcheck
+      # ships no checksum file), confirmed against a local download.
+      # /usr/local/bin precedes /usr/bin on PATH, and the check below proves
+      # the pinned binary is the one the later steps run.
+      - name: Install pinned shellcheck
+        run: |
+          set -euo pipefail
+          tools="$(mktemp -d)"
+          cd "$tools"
+          shellcheck_version=0.11.0
+          shellcheck_sha256=8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198
+          shellcheck_txz="shellcheck-v${shellcheck_version}.linux.x86_64.tar.xz"
+          curl -fsSLO "https://github.com/koalaman/shellcheck/releases/download/v${shellcheck_version}/${shellcheck_txz}"
+          echo "${shellcheck_sha256}  ${shellcheck_txz}" | sha256sum -c -
+          tar -xJf "$shellcheck_txz"
+          sudo install -m 0755 "shellcheck-v${shellcheck_version}/shellcheck" /usr/local/bin/shellcheck
+          hash -r
+          if [ "$(command -v shellcheck)" != /usr/local/bin/shellcheck ]; then
+            echo "::error::shellcheck resolves to $(command -v shellcheck), expected /usr/local/bin/shellcheck"
+            exit 1
+          fi
+          shellcheck --version
+          shellcheck --version | grep -qx "version: ${shellcheck_version}"
 
       - name: ast-grep (project rules)
         id: ast_grep
@@ -372,9 +415,25 @@ jobs:
         run: |
           mapfile -t files < <(bash .github/scripts/changed-files.sh | grep -E '(^|/)Dockerfile[^/]*$' || true)
           if [ "${#files[@]}" -gt 0 ]; then
-            curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-linux-x86_64 -o /tmp/hadolint
-            chmod +x /tmp/hadolint
-            /tmp/hadolint "${files[@]}"
+            # Exact release binary, checksum-verified. The SHA-256 is pinned
+            # here AND must match the release's own checksums.sha256, and the
+            # binary must report the version we asked for.
+            # scripts/review-gate-local.mjs swaps everything from the comment
+            # above through the `hadolint=` line for a locally installed
+            # hadolint; keep that line's shape if you edit this block.
+            set -euo pipefail
+            hadolint_version=2.15.1
+            hadolint_sha256=c7187db94eeeeca956519a6af171adc31453941a1e777961f6e680f697c8c507
+            hadolint_base="https://github.com/hadolint/hadolint/releases/download/v${hadolint_version}"
+            hadolint_dir="$(mktemp -d)"
+            curl -fsSL "${hadolint_base}/hadolint-linux-x86_64" -o "${hadolint_dir}/hadolint-linux-x86_64"
+            curl -fsSL "${hadolint_base}/checksums.sha256" -o "${hadolint_dir}/checksums.sha256"
+            grep -qx "${hadolint_sha256} \*hadolint-linux-x86_64" "${hadolint_dir}/checksums.sha256"
+            echo "${hadolint_sha256}  ${hadolint_dir}/hadolint-linux-x86_64" | sha256sum -c -
+            chmod +x "${hadolint_dir}/hadolint-linux-x86_64"
+            hadolint="${hadolint_dir}/hadolint-linux-x86_64"
+            "$hadolint" --version | grep -q " ${hadolint_version}$"
+            "$hadolint" "${files[@]}"
           else
             echo "No changed Dockerfiles for hadolint."
           fi
@@ -414,7 +473,10 @@ jobs:
     # helmv3-server-action-missing-auth-check and helmv3-destructive-write-pattern.
     # Use the modern `semgrep/semgrep` image and pin to a known-good tag.
     # See docs/operations/2026-05-28-coderabbit-fails-investigation.md.
-    container: semgrep/semgrep:1.157.0
+    # 1.178.0 (pushed 2026-09-23) is the newest tag older than the repo's
+    # 7-day freshness window; the digest pins the exact multi-arch index so a
+    # re-pushed tag cannot change what runs.
+    container: semgrep/semgrep:1.178.0@sha256:32e459968daabe7ab86968184a29109b9564aa00392401156f9788452b42786b
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:

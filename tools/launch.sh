@@ -52,8 +52,8 @@ echo "✅ Python 3 found"
 # Check claude-agent-sdk
 if ! python3 -c "import claude_agent_sdk" 2>/dev/null; then
     echo "⚠️  claude-agent-sdk not installed"
-    echo "   Installing now..."
-    pip install claude-agent-sdk anyio
+    echo "   Installing now (hash-locked: tools/launch-requirements.txt)..."
+    python3 -m pip install --require-hashes -r "$(dirname "${BASH_SOURCE[0]}")/launch-requirements.txt"
 fi
 
 echo "✅ claude-agent-sdk installed"
