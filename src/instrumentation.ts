@@ -9,7 +9,11 @@
 // own registration, which is exactly the "once per runtime" placement supabase
 // documents. Both runtimes have a Sentry OpenTelemetry propagator for it to
 // read from (@sentry/node sdk/initOtel.js; @sentry/vercel-edge
-// `propagation.setGlobalPropagator(new SentryPropagator())`).
+// `propagation.setGlobalPropagator(new SentryPropagator())`). In
+// @sentry/nextjs v11 that propagator exists only because the Next.js SDK
+// defaults `enableOpenTelemetrySetup` to true (plain @sentry/node v11 defaults
+// it to false) — do not set it to false here, or supabase-js loses its trace
+// headers.
 //
 // The BROWSER is deliberately not covered here: @sentry/browser registers no
 // OpenTelemetry propagator, so there would be nothing to extract. The browser
@@ -26,6 +30,7 @@ import { resolveServerEnvironment } from '@/lib/sentry-environment';
 import { enforceMetricAttributeAllowlist } from '@/lib/observability/metrics';
 import { enforceLogAttributeAllowlist } from '@/lib/observability/structured-log';
 import { fingerprintSupabaseAutoCapture } from '@/lib/observability/supabase-error-grouping';
+import { SENTRY_V10_PARITY_OPTIONS } from '@/lib/observability/sentry-v10-parity';
 
 const release = process.env.NEXT_PUBLIC_SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA;
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN?.trim() || process.env.SENTRY_DSN?.trim();
@@ -387,21 +392,17 @@ export async function register() {
         Sentry.captureConsoleIntegration({ levels: ['error'] }),
       ],
 
-      // Enable Sentry SDK structured logs (separate from error events).
-      enableLogs: true,
+      // Structured logs and metrics need no init flag in @sentry/nextjs v11:
+      // `enableLogs`/`enableMetrics` were REMOVED (MIGRATION.md "The
+      // `enableLogs` option was removed", "Removed APIs"). Logs ship because
+      // consoleLoggingIntegration above and helmLog's Sentry.logger.* calls
+      // use the logging API; metrics ship because metrics.ts calls
+      // Sentry.metrics.*. Both still pass through the beforeSend* allowlists
+      // below.
 
-      // Sentry Metrics (Sentry.metrics.count/gauge/distribution — Phase C's
-      // helm.workflow.*/helm.ai.*/helm.job.* catalogue, metrics.ts). Set
-      // explicitly rather than relying on the installed SDK's own default:
-      // read live from node_modules/@sentry/core/build/cjs/metrics/internal.js
-      // (`metricsEnabled = enableMetrics ?? _experiments?.enableMetrics ??
-      // true`) and confirmed by an actual captured envelope, metrics already
-      // send with this option absent — contradicting
-      // docs/observability/SENTRY_SDK_API_VERIFICATION.md's claim that they
-      // "would currently be dropped" unset. Kept explicit anyway so the
-      // intent survives a future SDK default change, same reasoning as
-      // `sourcemaps.deleteSourcemapsAfterUpload` in sentry-build-options.mjs.
-      enableMetrics: true,
+      // traceLifecycle / attachStacktrace / dataCollection pinned to the v10
+      // behavior — see sentry-v10-parity.ts for each one.
+      ...SENTRY_V10_PARITY_OPTIONS,
 
       // Page loads stay sampled; db.* spans are kept at 1.0 — see makeTracesSampler.
       tracesSampler: makeTracesSampler(isDev),
@@ -472,11 +473,8 @@ export async function register() {
         Sentry.consoleLoggingIntegration({ levels: ['log', 'warn', 'error'] }),
         Sentry.captureConsoleIntegration({ levels: ['error'] }),
       ],
-      enableLogs: true,
-      // Same rationale as the Node block above — kept identical on both
-      // runtimes since a metric call could in principle originate from
-      // Edge/proxy code.
-      enableMetrics: true,
+      // Same v10 parity pins as the Node block above.
+      ...SENTRY_V10_PARITY_OPTIONS,
       tracesSampler: makeTracesSampler(isDev),
       beforeSend: scrubPii,
       beforeSendMetric: enforceMetricAttributeAllowlist,

@@ -18,6 +18,7 @@
  */
 
 import { resolveClientEnvironment, type EnvironmentInput } from '@/lib/sentry-environment';
+import { SENTRY_V10_PARITY_OPTIONS } from '@/lib/observability/sentry-v10-parity';
 
 export interface ClientSentryOptionsEnv extends EnvironmentInput {
   NEXT_PUBLIC_SENTRY_DSN?: string | undefined;
@@ -52,13 +53,22 @@ export interface ClientSentryOptions {
    * 20% production / 10% development.
    */
   tracesSampleRate: number;
-  enableLogs: true;
+  /**
+   * v10-parity pins for @sentry/nextjs v11 (transaction model, no synthetic
+   * stacks on messages, the restrictive v10 data-collection baseline). See
+   * src/lib/observability/sentry-v10-parity.ts. `enableLogs` is gone: v11
+   * removed the option and ships logs whenever a logging API or
+   * `consoleLoggingIntegration` is used.
+   */
+  traceLifecycle: typeof SENTRY_V10_PARITY_OPTIONS.traceLifecycle;
+  attachStacktrace: typeof SENTRY_V10_PARITY_OPTIONS.attachStacktrace;
+  dataCollection: typeof SENTRY_V10_PARITY_OPTIONS.dataCollection;
   /** UNCHANGED — 100% of sessions with an error are always captured. */
   replaysOnErrorSampleRate: number;
   replaysSessionSampleRate: number;
   /**
-   * Browser UI profiling. `profilesSampleRate` is DEPRECATED in the
-   * installed SDK (@sentry/nextjs 10.71.0 / @sentry/browser's
+   * Browser UI profiling. `profilesSampleRate` was DEPRECATED in
+   * @sentry/nextjs 10.71.0 (@sentry/browser's
    * `BrowserClientProfilingOptions`,
    * node_modules/@sentry/core/build/types/types/browseroptions.d.ts) AND,
    * confirmed by reading the shipped `UIProfiler`/`shouldProfileSession`
@@ -233,7 +243,7 @@ export function buildClientSentryOptions(
       ...(supabaseTraceTarget ? [supabaseTraceTarget] : []),
     ],
     tracesSampleRate: isDev ? 0.1 : 0.2,
-    enableLogs: true,
+    ...SENTRY_V10_PARITY_OPTIONS,
     replaysOnErrorSampleRate: 1.0,
     replaysSessionSampleRate: parseSampleRateEnv(
       env.NEXT_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE,

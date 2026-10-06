@@ -154,6 +154,7 @@ export async function proxy(request: NextRequest) {
  * - Images (_next/image)
  * - Favicon
  * - Common image formats
+ * - The Sentry tunnel route (/monitoring)
  */
 export const config = {
   matcher: [
@@ -162,8 +163,14 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - monitoring — the Sentry `tunnelRoute` (src/lib/sentry-build-options.mjs).
+     *   @sentry/nextjs v10's middleware wrapper short-circuited tunnel POSTs
+     *   before this proxy ran; v11 removed that, so without this exclusion
+     *   every browser error/replay envelope would pay a Supabase
+     *   updateSession round-trip. Must stay a fixed string matching
+     *   `tunnelRoute`.
      * - public files with common image extensions
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|monitoring(?:/|$)|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

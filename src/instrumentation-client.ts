@@ -98,7 +98,15 @@ Sentry.init({
       blockAllMedia: false,
       mask: ['[data-sentry-mask]'],
     })] : []),
-    Sentry.browserTracingIntegration(),
+    // `instrumentBfcacheRestore: false` — new in @sentry/nextjs v11 (default
+    // true): starts an extra navigation span whenever a page is restored from
+    // the back/forward cache. v10 had no such span; kept off so navigation
+    // counts and trace boundaries stay what dashboards were built against.
+    Sentry.browserTracingIntegration({ instrumentBfcacheRestore: false }),
+    // v11 moved `performance.mark()`/`performance.measure()` span capture
+    // out of browserTracingIntegration into this integration; v10 captured
+    // them by default, so it is added back explicitly.
+    Sentry.userTimingIntegration(),
     // Browser UI (JS Self-Profiling) — sampled at
     // clientOptions.profileSessionSampleRate / profileLifecycle: 'trace'
     // (see src/lib/sentry-client-options.ts for why `profilesSampleRate`
@@ -108,8 +116,10 @@ Sentry.init({
     // regardless of sample rate; that is a platform limit, not a bug here.
     Sentry.browserProfilingIntegration(),
     // Release health (crash-free session rate) — a session starts on load
-    // and on every navigation (`lifecycle: 'route'`, the default).
-    Sentry.browserSessionIntegration(),
+    // and on every navigation. `lifecycle: 'route'` was the v10 default;
+    // @sentry/nextjs v11 changed the default to 'page' (one session per page
+    // load), so it is pinned explicitly to keep session counts comparable.
+    Sentry.browserSessionIntegration({ lifecycle: 'route' }),
     // Auto-captures failed fetch/XHR calls (default: 5xx only, see
     // node_modules/@sentry/browser/build/npm/types/integrations/
     // httpclient.d.ts) as breadcrumbs/events. No request/response body or
@@ -148,8 +158,8 @@ Sentry.init({
     // A comment here previously said `Sentry.feedbackIntegration` "moved out
     // of @sentry/nextjs in v10.x" into `@sentry-internal/feedback` and would
     // crash the SDK if called. Re-verified at RUNTIME (not just against
-    // .d.ts files, which is what missed it the first time) against the
-    // installed @sentry/nextjs 10.71.0: `node -e "import('@sentry/nextjs')..."`
+    // .d.ts files, which is what missed it the first time) against
+    // @sentry/nextjs 10.71.0 (still exported the same way in 11.4.0): `node -e "import('@sentry/nextjs')..."`
     // resolves `feedbackIntegration` as a real function all the way through
     // the actual export chain this file uses — @sentry/nextjs's
     // `index.client.js` (`export * from '@sentry/react'`) -> @sentry/react's

@@ -140,7 +140,10 @@ interface SentryMetricLike {
   name: string;
   value: number;
   type: 'counter' | 'gauge' | 'distribution';
-  unit?: string;
+  // `unknown`, not `string`: @sentry/core 11's `MetricUnit` is a
+  // `LiteralUnion` whose open branch is an object type, so `Metric` would no
+  // longer be assignable here. This hook only passes `unit` through untouched.
+  unit?: unknown;
   attributes?: Record<string, unknown>;
 }
 

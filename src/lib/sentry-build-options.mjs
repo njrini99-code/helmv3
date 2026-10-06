@@ -2,9 +2,10 @@
  * sentry-build-options.mjs — the single `sentryBuildOptions` object
  * `withSentryConfig(nextConfig, sentryBuildOptions)` actually reads.
  *
- * WHY THIS EXISTS. The installed `@sentry/nextjs@10.71.0`'s `withSentryConfig`
- * has exactly two parameters (confirmed against both the `.d.ts` and the
- * runtime source in
+ * WHY THIS EXISTS. `withSentryConfig` (imported from `@sentry/nextjs/config`
+ * since v11; `@sentry/nextjs@10.71.0` exported it from the package root) has
+ * exactly two parameters (confirmed for 10.71.0 against both the `.d.ts` and
+ * the runtime source in
  * `node_modules/@sentry/nextjs/build/cjs/config/withSentryConfig/index.js:6`):
  *
  *   function withSentryConfig(nextConfig, sentryBuildOptions = {})
@@ -117,15 +118,25 @@ export function buildSentryBuildOptions({ org, project, authToken, release, appl
     // intent survives a future default change).
     sourcemaps: { deleteSourcemapsAfterUpload: true },
 
-    // Tree-shake Sentry logger statements
-    disableLogger: true,
+    // Webpack-only options. @sentry/nextjs v11 REMOVED the top-level
+    // `disableLogger` and `automaticVercelMonitors` (deprecated since 10.30.0);
+    // a removed key only logs a build warning and is otherwise ignored, so
+    // leaving them at the top level would silently drop both settings. This
+    // repo builds with `next build --webpack` (package.json), so the webpack
+    // block is the one that applies.
+    webpack: {
+      treeshake: {
+        // Tree-shake Sentry SDK debug-logger statements (was `disableLogger`).
+        removeDebugLogging: true,
+      },
+      // Deliberately false — src/lib/observability/cron-monitors.ts is the
+      // single Cron Monitor authority. See this file's header comment and
+      // docs/observability/SENTRY_CRON_MONITORS.md §2 for why.
+      automaticVercelMonitors: false,
+    },
 
-    // Deliberately false — src/lib/observability/cron-monitors.ts is the
-    // single Cron Monitor authority. See this file's header comment and
-    // docs/observability/SENTRY_CRON_MONITORS.md §2 for why.
-    automaticVercelMonitors: false,
-
-    // React component annotations make stack traces show JSX component names
+    // React component annotations make stack traces show JSX component names.
+    // Top-level again in v11 (applies to webpack and Turbopack builds).
     reactComponentAnnotation: { enabled: true },
 
     // Identifies this app's own bundle to `thirdPartyErrorFilterIntegration`

@@ -15,9 +15,12 @@ import { buildSentryBuildOptions } from '../sentry-build-options.mjs';
  * argument to anything. See docs/observability/SENTRY_PHASE_A_FINDINGS.md §(h).
  *
  * THE INVARIANT WORTH GUARDING: every option that used to live in the
- * discarded third argument must now be a top-level key of the single object
+ * discarded third argument must now be read by the SDK from the single object
  * this module returns — and `hideSourceMaps` (not a real 10.71.0 option at
  * all) must be gone, replaced by `sourcemaps.deleteSourcemapsAfterUpload`.
+ * Since @sentry/nextjs v11, `disableLogger` and `automaticVercelMonitors`
+ * live under `webpack` (as `treeshake.removeDebugLogging` and
+ * `automaticVercelMonitors`); the old top-level keys are ignored.
  */
 
 const asFn = buildSentryBuildOptions as (params: {
@@ -47,11 +50,34 @@ describe('buildSentryBuildOptions — a single merged options object', () => {
     const opts = asFn(baseParams);
     expect(opts.widenClientFileUpload).toBe(true);
     expect(opts.tunnelRoute).toBe('/monitoring');
-    expect(opts.disableLogger).toBe(true);
     expect(opts.reactComponentAnnotation).toEqual({ enabled: true });
   });
 
-  it('sets automaticVercelMonitors to false — cron-monitors.ts is the single Cron Monitor authority', () => {
+  it('tree-shakes SDK debug logging via webpack.treeshake.removeDebugLogging (v11 home of disableLogger)', () => {
+    const opts = asFn(baseParams);
+    expect(opts.webpack).toMatchObject({ treeshake: { removeDebugLogging: true } });
+  });
+
+  // @sentry/nextjs v11 REMOVED these top-level keys (MIGRATION.md, "Removed
+  // APIs" > @sentry/nextjs). A removed key only logs a build-time warning and
+  // is otherwise ignored, so one left at the top level is a setting that
+  // silently stopped applying — the same failure shape as the discarded
+  // third argument this module exists to prevent.
+  it.each([
+    'autoInstrumentServerFunctions',
+    'autoInstrumentMiddleware',
+    'autoInstrumentAppDirectory',
+    'automaticVercelMonitors',
+    'excludeServerRoutes',
+    'unstable_sentryWebpackPluginOptions',
+    'disableSentryWebpackConfig',
+    'disableLogger',
+    'disableManifestInjection',
+  ])('does not set the removed top-level v10 option %s', (key) => {
+    expect(asFn(baseParams)).not.toHaveProperty(key);
+  });
+
+  it('sets webpack.automaticVercelMonitors to false — cron-monitors.ts is the single Cron Monitor authority', () => {
     // Deliberately false, not a leftover default: the installed SDK's own
     // build-time source (vercelCronsMonitoring.js /
     // getFinalConfigObjectUtils.js) shows `true` here would build-time-inject
@@ -62,7 +88,7 @@ describe('buildSentryBuildOptions — a single merged options object', () => {
     // (#4-#6) exist to eliminate, not recreate. See this module's own header
     // comment and docs/observability/SENTRY_CRON_MONITORS.md §2.
     const opts = asFn(baseParams);
-    expect(opts.automaticVercelMonitors).toBe(false);
+    expect(opts.webpack).toMatchObject({ automaticVercelMonitors: false });
   });
 
   it('does NOT set hideSourceMaps — not a real 10.71.0 option', () => {

@@ -6,6 +6,7 @@ import {
   CLIENT_IGNORE_ERRORS,
   type ClientSentryOptionsEnv,
 } from '@/lib/sentry-client-options';
+import { SENTRY_V10_DATA_COLLECTION } from '@/lib/observability/sentry-v10-parity';
 
 const PROD_ENV: ClientSentryOptionsEnv = {
   NODE_ENV: 'production',
@@ -225,9 +226,25 @@ describe('buildClientSentryOptions — static options untouched by this task', (
     expect(buildClientSentryOptions(PROD_ENV).propagateTraceparent).toBe(true);
   });
 
-  it('enableLogs is always true', () => {
-    expect(buildClientSentryOptions(PROD_ENV).enableLogs).toBe(true);
+  // @sentry/nextjs v11 removed `enableLogs` (logs ship whenever
+  // consoleLoggingIntegration / Sentry.logger is used), so the key must not
+  // linger as dead config that reads like a switch.
+  it('does not carry the removed v10 enableLogs flag', () => {
+    expect(buildClientSentryOptions(PROD_ENV)).not.toHaveProperty('enableLogs');
   });
+
+  // v11 changed these defaults; each is pinned back to its v10 behavior. See
+  // src/lib/observability/sentry-v10-parity.ts.
+  it.each([PROD_ENV, DEV_ENV])(
+    'pins the v10 transaction model, attachStacktrace, and data-collection baseline',
+    (env) => {
+      const opts = buildClientSentryOptions(env);
+      expect(opts.traceLifecycle).toBe('static');
+      expect(opts.attachStacktrace).toBe(false);
+      expect(opts.dataCollection).toBe(SENTRY_V10_DATA_COLLECTION);
+      expect(opts).not.toHaveProperty('sendDefaultPii');
+    },
+  );
 
   it('carries the full, unmodified ignoreErrors list', () => {
     expect(buildClientSentryOptions(PROD_ENV).ignoreErrors).toBe(CLIENT_IGNORE_ERRORS);

@@ -46,6 +46,7 @@ vi.mock('@/lib/server-error-logger', () => ({
 import { register, onRequestError } from '@/instrumentation';
 import { markBridgeLogged } from '@/lib/bridge-logged-marker';
 import { enforceMetricAttributeAllowlist } from '@/lib/observability/metrics';
+import { SENTRY_V10_DATA_COLLECTION } from '@/lib/observability/sentry-v10-parity';
 
 const baseRequest = { path: '/golf/dashboard', method: 'GET', headers: {} };
 const baseErrorContext = {
@@ -209,23 +210,51 @@ describe('Sentry.init — metrics enabled, second-line PII defence wired', () =>
     mocks.init.mockClear();
   });
 
-  it('enables metrics and wires beforeSendMetric on the Node runtime', async () => {
+  // @sentry/nextjs v11 REMOVED `enableMetrics`/`enableLogs`: metrics and logs
+  // ship whenever their APIs are used. A leftover key would be dead config
+  // that reads as a switch, so these pin that it is gone and that the
+  // allowlist hook (the part that actually guards the data) is still wired.
+  it('wires beforeSendMetric on the Node runtime, with no removed v10 flags', async () => {
     vi.stubEnv('NEXT_RUNTIME', 'nodejs');
     await register();
     const opts = mocks.init.mock.calls[0]![0];
-    expect(opts.enableMetrics).toBe(true);
+    expect(opts).not.toHaveProperty('enableMetrics');
+    expect(opts).not.toHaveProperty('enableLogs');
     expect(opts.beforeSendMetric).toBe(enforceMetricAttributeAllowlist);
     vi.unstubAllEnvs();
   });
 
-  it('enables metrics and wires beforeSendMetric on the Edge runtime too', async () => {
+  it('wires beforeSendMetric on the Edge runtime too, with no removed v10 flags', async () => {
     vi.stubEnv('NEXT_RUNTIME', 'edge');
     await register();
     const opts = mocks.init.mock.calls[0]![0];
-    expect(opts.enableMetrics).toBe(true);
+    expect(opts).not.toHaveProperty('enableMetrics');
+    expect(opts).not.toHaveProperty('enableLogs');
     expect(opts.beforeSendMetric).toBe(enforceMetricAttributeAllowlist);
     vi.unstubAllEnvs();
   });
+});
+
+describe('Sentry.init — v10 behavior pinned under @sentry/nextjs v11', () => {
+  beforeEach(() => {
+    mocks.init.mockClear();
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it.each(['nodejs', 'edge'])(
+    'keeps the transaction model, no synthetic stacks, and the restrictive v10 data-collection baseline (%s)',
+    async (runtime) => {
+      vi.stubEnv('NEXT_RUNTIME', runtime);
+      await register();
+      const opts = mocks.init.mock.calls[0]![0];
+      expect(opts.traceLifecycle).toBe('static');
+      expect(opts.attachStacktrace).toBe(false);
+      expect(opts.dataCollection).toBe(SENTRY_V10_DATA_COLLECTION);
+      expect(opts).not.toHaveProperty('sendDefaultPii');
+    },
+  );
 });
 
 /**

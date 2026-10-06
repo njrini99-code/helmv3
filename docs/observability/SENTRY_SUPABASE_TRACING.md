@@ -35,7 +35,7 @@ runtimes. This single fact drives the whole design:
 
 | Runtime | Sentry OTel propagator | So propagation comes from | supabase-js `tracePropagation` |
 | --- | --- | --- | --- |
-| Node (server actions, RSC, routes) | Yes — `@sentry/node` `sdk/initOtel.js` | Sentry propagator, read by supabase-js | **Enabled** |
+| Node (server actions, RSC, routes) | Yes — `@sentry/node` `sdk/initOtel.js` (in v11 only because `@sentry/nextjs` defaults `enableOpenTelemetrySetup` to `true`; never set it `false`) | Sentry propagator, read by supabase-js | **Enabled** |
 | Middleware/proxy (`src/proxy.ts`) — runs as Node.js on Vercel, confirmed via live runtime logs, not the legacy Edge runtime | Yes — `@sentry/node` `sdk/initOtel.js` | Sentry propagator, read by supabase-js | **Enabled — confirmed same runtime as everything else, see below** |
 | Browser | **No** — `@sentry/browser` 10.68.0 contains zero OpenTelemetry references | Sentry's own fetch/XHR instrumentation | **Deliberately off** |
 
@@ -154,8 +154,11 @@ switched off.
    absent while every later request in the same warm instance gets one. Treat
    "some RPC spans, not all" as this lazy-patch behavior, not intermittent
    breakage.
-4. **Span attributes** to read: `db.table`, `db.operation`, `db.system`,
-   `db.url`, `db.sdk`. There will be no `db.query` or `db.body` — by design.
+4. **Span attributes** to read: `db.table`, `db.operation.name`,
+   `db.system.name`, `db.url`, `db.sdk` (`@sentry/core` 11 renamed
+   `db.operation`/`db.system` to the semantic-convention names; saved searches
+   on the old keys stop matching). There will be no `db.query` or `db.body` —
+   by design.
 5. **Replay**: on a browser-origin issue, the Replay is linked from the issue
    page. DOM text stays masked (`maskAllText: true`, unchanged).
 6. **Profile**: attached to the server trace when sampled

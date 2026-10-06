@@ -129,3 +129,42 @@ describe('src/proxy.ts — native user agent: marketing redirect vs app-shell re
     },
   );
 });
+
+describe('src/proxy.ts — matcher', () => {
+  // Compiled with Next's own matcher pipeline (the same functions the build
+  // uses to turn `config.matcher` into the middleware manifest regex), so this
+  // asserts what Next will actually run, not a hand-rolled approximation.
+  async function compileMatcher() {
+    const { config } = await import('@/proxy');
+    const { getMiddlewareRouteMatcher } = await import(
+      'next/dist/shared/lib/router/utils/middleware-route-matcher'
+    );
+    // Runtime export that Next's .d.ts does not declare.
+    const { getMiddlewareMatchers } = (await import(
+      'next/dist/build/analysis/get-page-static-info'
+    )) as unknown as {
+      getMiddlewareMatchers: (matcher: unknown, nextConfig: unknown) => Parameters<
+        typeof getMiddlewareRouteMatcher
+      >[0];
+    };
+    const matchers = getMiddlewareMatchers(config.matcher, {});
+    const match = getMiddlewareRouteMatcher(matchers);
+    return (pathname: string) => match(pathname, { headers: {}, cookies: {} } as never, {});
+  }
+
+  // @sentry/nextjs v11 no longer short-circuits tunnel requests inside its
+  // middleware wrapper, so the matcher itself must keep the tunnel out of
+  // updateSession (one Supabase auth round-trip per Sentry envelope otherwise).
+  it.each(['/monitoring', '/monitoring/'])('does not run on the Sentry tunnel route %s', async (path) => {
+    const runs = await compileMatcher();
+    expect(runs(path)).toBe(false);
+  });
+
+  it.each(['/', '/golf/dashboard', '/baseball/dashboard', '/api/monitoring', '/monitoringx'])(
+    'still runs on %s',
+    async (path) => {
+      const runs = await compileMatcher();
+      expect(runs(path)).toBe(true);
+    },
+  );
+});

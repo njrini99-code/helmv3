@@ -13,7 +13,9 @@ logging (`src/instrumentation.ts`, `src/lib/observability/spans.ts` /
 `metrics.ts` / `structured-log.ts`) are a separate build on a sibling
 branch — this doc does not cover them.
 
-SDK: `@sentry/nextjs` `10.71.0`. Every export named below was verified two
+SDK: written against `@sentry/nextjs` `10.71.0`; now on 11.x (see
+`memory/features/observability-sentry.md`, "SDK version and v10-parity
+pins", for the v11 defaults pinned back). Every export named below was verified two
 ways before use, not just against `.d.ts` files: statically, by tracing the
 package's `exports` map (`@sentry/nextjs`'s `browser` condition ->
 `build/esm/index.client.js` -> `export * from '@sentry/react'` ->
@@ -232,8 +234,12 @@ control flow, only observes it).
 Added alongside the above, standard low-risk SDK integrations with no PII
 surface of their own:
 
-- `Sentry.browserSessionIntegration()` — release health / crash-free
-  session rate. Default `lifecycle: 'route'` (new session per navigation).
+- `Sentry.browserSessionIntegration({ lifecycle: 'route' })` — release
+  health / crash-free session rate, new session per navigation. `'route'`
+  was the v10 default; v11 defaults to `'page'`, so it is pinned explicitly.
+  v11 also records sessions hit by an uncaught error as `unhandled` instead
+  of `crashed` (not configurable), so the crash-free rate can shift at the
+  upgrade.
 - `Sentry.httpClientIntegration()` — auto-captures failed `fetch`/XHR calls
   (default: `5xx` only) as breadcrumbs/events. No request/response body or
   header capture option exists on this integration at all

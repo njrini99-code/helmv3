@@ -103,6 +103,48 @@ Sentry-trace-id <-> Helm-trace-id correlation model). `docs/observability/
 SENTRY_SUPABASE_TRACING.md` covers the request-tracing layer this sits
 alongside (not duplicated here).
 
+### SDK version and v10-parity pins (`@sentry/nextjs` 11.x)
+
+`@sentry/nextjs` / `@sentry/profiling-node` are on 11.x. v11 changed several
+defaults that TypeScript does not catch, so every `Sentry.init` (Node + Edge
+in `instrumentation.ts`, browser via `buildClientSentryOptions`) spreads
+`SENTRY_V10_PARITY_OPTIONS` from
+`src/lib/observability/sentry-v10-parity.ts`:
+
+- `traceLifecycle: 'static'` — keeps the v10 transaction model. v11's default
+  span streaming would stop applying scope tags (`sport`, `feature`, ...) to
+  spans, rename spans to low-cardinality forms, and change web-vitals
+  reporting. Moving to streaming is an owner decision (span quota,
+  dashboards), not a dependency bump.
+- `attachStacktrace: false` — v11 defaults to `true` (synthetic stacks on
+  `captureMessage` / console-origin events: regrouping + errored sessions).
+- `dataCollection` — the exact v10 `sendDefaultPii`-unset baseline (no user
+  IP, no bodies, PII-header denylist, no DB query values, no AI
+  inputs/outputs, no queue args). Leaving it unset in v11 collects all of
+  those.
+
+Browser-only pins in `instrumentation-client.ts`:
+`browserSessionIntegration({ lifecycle: 'route' })` (v11 default is
+`'page'`), `browserTracingIntegration({ instrumentBfcacheRestore: false })`
+(new v11 span), and `userTimingIntegration()` (v11 moved
+`performance.mark()` / `performance.measure()` capture out of browser tracing). `enableLogs` /
+`enableMetrics` were removed in v11; logs and metrics ship because their APIs
+are used, still filtered by `beforeSendLog` / `beforeSendMetric`.
+
+Build side: `withSentryConfig` comes from `@sentry/nextjs/config`;
+`disableLogger` / `automaticVercelMonitors` live under `webpack`
+(`treeshake.removeDebugLogging`, `automaticVercelMonitors`) in
+`src/lib/sentry-build-options.mjs`. v11 no longer skips `src/proxy.ts` for
+tunnel requests, so the proxy `matcher` excludes `/monitoring` (must match
+`tunnelRoute`).
+
+Not pinnable, SDK-wide in v11: Supabase span attributes `db.system` /
+`db.operation` are now `db.system.name` / `db.operation.name`; browser
+sessions hit by an uncaught error are recorded `unhandled` rather than
+`crashed`; `DOMException.code` is no longer a tag. Supabase Edge Functions
+stay on `npm:@sentry/deno@^10` (v11 needs Deno >= 2.8.3; the Edge Runtime
+embeds 2.1.4) — see `supabase/functions/_shared/observability.ts`.
+
 ## Primary Entry Points
 
 ### Client experience code
@@ -225,6 +267,9 @@ alongside (not duplicated here).
 
 - Never capture request/response bodies or auth headers in Replay —
   `networkDetailAllowUrls` stays unset.
+- Every `Sentry.init` spreads `SENTRY_V10_PARITY_OPTIONS`; never leave
+  `dataCollection` unset (the v11 default is permissive). Changing
+  `traceLifecycle` to `'stream'` is an owner decision.
 - Breadcrumb `data` is allow-listed; never an id, name, or email.
 - `tracesSampleRate` is out of scope for the client-experience surface —
   do not change it there; it is owned by the broader Sentry rollout

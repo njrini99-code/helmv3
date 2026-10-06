@@ -2,7 +2,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import bundleAnalyzer from '@next/bundle-analyzer';
-import { withSentryConfig } from '@sentry/nextjs';
+// @sentry/nextjs v11 moved withSentryConfig to the `/config` entry point.
+import { withSentryConfig } from '@sentry/nextjs/config';
 import { imageRemotePatterns } from './src/lib/security/image-remote-patterns.mjs';
 import { localSupabaseConnectSrc } from './src/lib/security/local-supabase-csp.mjs';
 import { buildSentryBuildOptions } from './src/lib/sentry-build-options.mjs';
@@ -542,8 +543,8 @@ const nextConfig = {
 // Sentry still works in dev via instrumentation.ts, just without source map uploads
 const isDev = process.env.NODE_ENV === 'development';
 
-// The installed @sentry/nextjs (10.71.0) withSentryConfig has exactly two
-// parameters — (nextConfig, sentryBuildOptions) — confirmed against both the
+// withSentryConfig has exactly two parameters — (nextConfig,
+// sentryBuildOptions) — confirmed for @sentry/nextjs 10.71.0 against both the
 // type declaration and the runtime source
 // (node_modules/@sentry/nextjs/build/cjs/config/withSentryConfig/index.js:6).
 // This used to be called with three positional arguments; the third was
