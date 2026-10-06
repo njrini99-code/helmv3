@@ -180,3 +180,12 @@ The changelog gate now holds a shared piece (a file under `src/clubhouse/ui`, `l
 | CoachHelm | **Assign as focus on a strength (Clickables gap 12).** Assign was hidden on a strength, though the board draws it on Theo's card; contract 130806 had been written from the code, not the board. | CoachHelm offers Assign as focus on a strength (a keep-doing focus); 130806 is reworded (Q-80, kept by the owner). |
 
 Earlier changes (2026-09-28 to 2026-09-30: the page builds, the contract passes and their fixes) are listed in each page's changelog.
+
+## 2026-10-06 — Complete page documentation and fixture audit
+
+Updated all 15 page families and their catalogs, phone specs and checklists
+with source ownership, current evidence and explicit device/release gaps.
+ALL_PAGE_AUDIT.md records the 305 state cases, 60 WebKit base renders,
+24 onboarding renders and measured Settings reduced-motion mismatch.
+The screenshot log now ignores generated galleries; its regression first
+failed and then passed. Production settings and approved handoffs are intact.

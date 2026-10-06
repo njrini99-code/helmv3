@@ -1,9 +1,36 @@
 # P010 — Team Hub: verification
 
+<!-- clubhouse:release-audit:start -->
+## Current release evidence — 2026-10-06
+
+Hub tabs, compose, assignment, trip, document and confirmation sheets.
+
+Check pending operations across tab remounts, partial data, audience pickers
+and dialog-hosted Retry.
+
+Fresh WebKit 26.6: `/clubhouse-preview/hub` at
+375, 430 and 1280px; zero Axe A/AA violations and no horizontal document
+overflow in these three fixture renders. The 430px full-page screenshot
+was inspected and recorded below. This does not exercise every popup.
+Clubhouse runtime suites: 117 files / 3,092 tests pass on this branch.
+External action suites listed in WIRING are outside that count.
+
+Additional WebKit base check: 320px also fits without horizontal overflow
+and reports zero Axe violations. The state/opener inventory completes 16
+cases for this page at applicable 1280/390px widths with zero Axe
+violations or document overflow.
+
+Current browser/test results: [all-page
+audit](../../ALL_PAGE_AUDIT.md#p010-hub). Current status remains partial.
+Physical Safari/iPhone, VoiceOver and durable authenticated writes remain
+separate acceptance checks. Earlier verification status and gap sections below
+are historical observations; use the current audit for release scope.
+<!-- clubhouse:release-audit:end -->
+
 Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
 checklist is `docs/clubhouse/screens/team-hub.md`.
 
-## Current verification status
+## Historical verification status
 
 ```text
 Status:     partial
@@ -31,10 +58,14 @@ Date:       2026-09-30
 | `src/clubhouse/__tests__/hub.test.tsx` (Q-82, Q-83, Q-84 additions, 129/129 cases in the file) | CH-10012, CH-10110, CH-10212, CH-10314, CH-10315, CH-10407 | pass: `npm run test:file -- src/clubhouse/__tests__/hub.test.tsx` exit 0; 45 of 45 mutations of the new code caught (the equivalent survivors are named in the report) |
 | `src/test/golf/actions/announcement-attachments.test.ts`, `src/test/golf/actions/travel-class-conflicts.test.ts` | the actions behind Q-82 and Q-84: scope (coach staffed on the team, travelers on its roster, only the chosen asked about), the window in the team's zone, what leaves the server | pass: `npm run test:file -- src/test/golf/actions/announcement-attachments.test.ts src/test/golf/actions/travel-class-conflicts.test.ts` exit 0, 2/2 and 16/16; 3 of 3 and 12 of 13 mutations caught (the survivor is equivalent) |
 
-What the suite forces, beyond the catalog: for each of the ten writes (twelve cases: a post, a task and a
-file each delete separately) it presses the control once and lands, presses it again with a refusal and
-then Retry, and presses it offline; it throws from a reply's write; it loads a player's and a coach's data
-through the loader with a fake database and checks what a player is sent; and it checks the loading route
+What the suite forces, beyond the catalog: for each of the ten writes (twelve
+cases: a post, a task and a
+file each delete separately) it presses the control once and lands, presses it
+again with a refusal and
+then Retry, and presses it offline; it throws from a reply's write; it loads a
+player's and a coach's data
+through the loader with a fake database and checks what a player is sent; and it
+checks the loading route
 inside and outside the shell.
 
 ## Visual verification
@@ -110,13 +141,22 @@ before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+| `P010__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
 
 ## 2026-10-02 — Mobile design fidelity verification
 
-- WebKit iPhone 13 previews at 375, 390 and 430 CSS pixels: populated page has no horizontal document overflow; roster status notes and stats figure labels remain inside their columns.
-- Before/after captures at 390 show the shared sheet gradient, inset highlight and layered shadow. The captures use deterministic preview fixtures, not a live customer session.
-- At 390, empty and failed coach states retain their explanatory copy and controls. Roster player populated/empty, Team Hub player populated and Player Stats early-read states were checked where applicable.
-- Physical iPhone Safari performance and real account data remain unverified. Failed fixtures also logged AdminLoggerClient event-send failures in the local development browser; no production data was changed.
+- WebKit iPhone 13 previews at 375, 390 and 430 CSS pixels: populated page has
+  no horizontal document overflow; roster status notes and stats figure labels
+  remain inside their columns.
+- Before/after captures at 390 show the shared sheet gradient, inset highlight
+  and layered shadow. The captures use deterministic preview fixtures, not a
+  live customer session.
+- At 390, empty and failed coach states retain their explanatory copy and
+  controls. Roster player populated/empty, Team Hub player populated and Player
+  Stats early-read states were checked where applicable.
+- Physical iPhone Safari performance and real account data remain unverified.
+  Failed fixtures also logged AdminLoggerClient event-send failures in the local
+  development browser; no production data was changed.
 
 ## 2026-10-02 — Intuitive improvement verification
 
@@ -128,7 +168,8 @@ before, after, baseline or evidence.
   Home and Announcements, a retained Retry silently blocked by the remounted
   event gate, and stale acknowledgment Retry refusal after a later success.
   Final run: exit 0, 37.46 s. Scoped ESLint for the two Hub components and test
-  file passed; full type/build verification is recorded by the integrating agent.
+  file passed; full type/build verification is recorded by the integrating
+  agent.
 - WebKit fixture clock held the pending reply for capture: its group was busy
   with all three choices disabled, another event remained enabled, two
   independent pending writes coexisted, and both settled with zero pending
@@ -138,19 +179,27 @@ before, after, baseline or evidence.
   intended-user discoverability, physical iPhone performance or durable
   live-data outcomes.
 
-## Open verification gaps
+## Historical verification gaps
 
-- The iPhone pass through `npm run ios:dev`, and a browser pass with a real coach and a real player account
+- The iPhone pass through `npm run ios:dev`, and a browser pass with a real
+  coach and a real player account
   (owner or merge pass).
 - `clubhouse:a11y` for Team Hub and its states, at 1280 and 390.
-- Every write and every failure against a live session; the loading skeleton in a browser.
-- The toast's Retry inside a real modal dialog: the tests run the shell's dialog-hosted toast (CH-1812)
+- Every write and every failure against a live session; the loading skeleton in
+  a browser.
+- The toast's Retry inside a real modal dialog: the tests run the shell's
+  dialog-hosted toast (CH-1812)
   in jsdom, which has no top layer.
-- Found and not fixed (see the report to the parent): a failed roster read leaves a coach's audience and
-  assignee pickers empty with no notice; a second reply tapped while the first is saving is ignored without a
-  message (`useAction` keeps one busy flag per action); `deleteGolfDocument` and `uploadGolfDocument` do not
-  check for a coach (100804); validation does not move focus; a tablist without arrow keys.
-- Q-70 and Q-71 are open owner questions; the page is built on their recommendations.
+- Found and not fixed (see the report to the parent): a failed roster read
+  leaves a coach's audience and
+  assignee pickers empty with no notice; a second reply tapped while the first
+  is saving is ignored without a
+  message (`useAction` keeps one busy flag per action); `deleteGolfDocument` and
+  `uploadGolfDocument` do not
+  check for a coach (100804); validation does not move focus; a tablist without
+  arrow keys.
+- Q-70 and Q-71 are open owner questions; the page is built on their
+  recommendations.
 
 WebKit follow-up holds two fixture writes unresolved, switches the task through
 Announcements/Home and the event through Travel/Home, then verifies both keep

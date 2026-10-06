@@ -1,5 +1,18 @@
 # Settings catalog (8xxx)
 
+<!-- clubhouse:release-audit:start -->
+## Catalog audit — 2026-10-06
+
+Desktop section swaps, phone pushes, settings sheets and reorder list. Check
+the 260ms exit plus 260ms entry sequence; audit reduced-motion duration,
+drag/scroll conflicts and pending saves.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p008-settings). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Route `/golf/dashboard/settings` · code `src/clubhouse/screens/settings/` (the phone screen: `phone/`) · tests
 `src/clubhouse/__tests__/settings.test.tsx` (each test is named by its number) · preview
 `/clubhouse-preview/settings` (`?state=failed|partial|failwrites|player|noteam|assistant|loading`).

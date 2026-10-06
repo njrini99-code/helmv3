@@ -1,5 +1,15 @@
 # P005 — Stats (player): changelog
 
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Whole-app release audit
+
+Reconciled page purpose, design acceptance, contract status, wiring and
+verification against the current flagged implementation. Indexed 6 mapped
+actions and 4 overlay/control call sites in the [all-page
+audit](../../ALL_PAGE_AUDIT.md#p005-stats-player). Approved handoffs and
+contract IDs are preserved; runtime gaps stay explicit.
+<!-- clubhouse:release-audit:end -->
+
 ## 2026-10-02 — Stable phone overview across periods
 
 The measured Season switch removed 47px of overview caption height, while

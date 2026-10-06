@@ -1,5 +1,14 @@
 # Clubhouse UI ownership
 
+## October 6 current audit
+
+[ALL_PAGE_AUDIT.md](ALL_PAGE_AUDIT.md) inventories the current flagged
+implementation across all 15 page families and links current test/browser
+evidence. [SMOOTHNESS_AUDIT.md](SMOOTHNESS_AUDIT.md) records the reproduced
+appearance-store repair and remaining motion/profiling findings. Older
+measurements below retain their original source and device scope; release
+acceptance remains partial. No production flag or deployment changed.
+
 This is an index of existing owners for plugin-assisted review. The page
 CONTRACT, DESIGN and WIRING files remain the detailed sources. Native popup
 behavior is preserved where the current shared control delegates to the OS;

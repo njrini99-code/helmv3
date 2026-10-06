@@ -1,5 +1,18 @@
 # P004 — Stats (team): wiring map
 
+<!-- clubhouse:release-audit:start -->
+## Current ownership audit — 2026-10-06
+
+Root: `src/clubhouse/screens/stats`. The AST inventory found 21 source files,
+4 overlay/control sites and 1 motion nodes. Team Stats periods, comparisons,
+filters and focus-area sheets.
+
+Exact call sites, direct package imports, responsive styles and mapped tests
+are in the [all-page audit](../../ALL_PAGE_AUDIT.md#p004-stats-team). Shared
+Modal/Menu/PhoneScreen owners and shell behavior are audited once there;
+counts include wrappers rather than unique popups.
+<!-- clubhouse:release-audit:end -->
+
 ## Entry point
 
 ```text

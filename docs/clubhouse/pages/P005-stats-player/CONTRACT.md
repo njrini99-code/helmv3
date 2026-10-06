@@ -1,5 +1,18 @@
 # P005 — Stats (player): page contract
 
+<!-- clubhouse:release-audit:start -->
+## Current contract audit — 2026-10-06
+
+The manifest reports complete contract coverage and 6 mapped actions. Existing
+Bridge IDs, catalog rows and generated contract tables remain authoritative.
+Check player context, chart resizing, proposal responses, keyboard filters and
+loading geometry.
+
+The [all-page audit](../../ALL_PAGE_AUDIT.md#p005-stats-player) distinguishes
+implemented/tested behavior from open runtime acceptance; this pass does not
+reserve new IDs or mark manual contracts verified.
+<!-- clubhouse:release-audit:end -->
+
 Every behaviour a player profile promises, by the 25 V2 categories (D-69). A contract's number is its Bridge ID (D-68: namespace 5, category, item); `Code` is the catalog code on the element and in the test (`docs/clubhouse/catalog/stats-player.md`). Rows without a code are behaviours with no single element, recorded in `config/clubhouse/bridge-contracts.json` by hand. The shell's contracts (P001, namespace 1) apply here too and are named where they carry a category. The team's numbers are Stats (team), P004, with its own contracts. `clubhouse:check` holds this file to the registry.
 
 ## 01 — Default / core UI

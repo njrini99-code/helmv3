@@ -9,6 +9,32 @@ with their status and the pages they touch: [`AUDITS.md`](AUDITS.md).
 Nothing in `src/clubhouse/` imports or styles through Fairway. Shared non-UI
 plumbing (session, Supabase loaders, the Capacitor haptics bridge) is allowed.
 
+## October 6 all-page audit
+
+[ALL_PAGE_AUDIT.md](ALL_PAGE_AUDIT.md) records the current main-based source,
+166 mapped actions, overlay/motion call sites, page test owners and fresh
+fixture verification. All 15 families' six docs, catalogs, checklists and
+phone specs link current evidence; old verification gaps are explicitly dated
+as historical. Route documentation now describes the navigation crossfade.
+
+Clubhouse suites pass 3,092 tests in 117 files. The full fixture inventory
+completes 305 applicable state/opener cases at 1280/390px. WebKit completes
+60 base renders across 320/375/430/1280px and 24 onboarding renders; all
+report zero Axe violations and no horizontal document overflow. Three overlay
+checks restore focus and scroll after Escape. Fifteen inspected screenshots
+are filed and logged; this is preview evidence, not physical-device proof.
+
+Settings settles in 550–562ms normally and 497–531ms with OS reduced motion
+in three desktop fixture trials each. The retained fade violates CH-1608's
+instant contract (SM-03). Other source/profiling findings and the reproduced
+appearance-subscription repair are in SMOOTHNESS_AUDIT.md. The screenshot
+log's gallery-directory bug is fixed with a failing-then-passing regression.
+
+Safari control is blocked by the locked Mac. Physical iPhone keyboard,
+VoiceOver, device frame pacing, authenticated durable writes and a current
+production-build measurement remain open. This audit neither certifies the
+release nor changes production flags, held migrations or deployment.
+
 ## October 2 whole-app smoothness follow-up
 
 [UX_OPTIMIZATION.md](UX_OPTIMIZATION.md) records the custom overlay repairs,

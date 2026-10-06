@@ -1,5 +1,17 @@
 # P013 — CoachHelm: design handoff
 
+<!-- clubhouse:release-audit:start -->
+## Current implementation audit — 2026-10-06
+
+Profile render and scroll work during streaming; check drawer focus, player
+context and proposal feedback.
+
+The approved boards and phone specification remain the design authority.
+[all-page audit](../../ALL_PAGE_AUDIT.md#p013-coachhelm) records current
+implementation owners; source token durations do not certify smoothness,
+visual fidelity or device behavior.
+<!-- clubhouse:release-audit:end -->
+
 ## Package
 
 ```text

@@ -1,5 +1,18 @@
 # P001 — Shell: page contract
 
+<!-- clubhouse:release-audit:start -->
+## Current contract audit — 2026-10-06
+
+The manifest reports complete contract coverage and 8 mapped actions. Existing
+Bridge IDs, catalog rows and generated contract tables remain authoritative.
+Nested overlays must retain scroll and restore focus; check keyboard dismissal
+and VoiceOver isolation.
+
+The [all-page audit](../../ALL_PAGE_AUDIT.md#p001-shell) distinguishes
+implemented/tested behavior from open runtime acceptance; this pass does not
+reserve new IDs or mark manual contracts verified.
+<!-- clubhouse:release-audit:end -->
+
 Everything the Clubhouse frame promises on every page, by the 25 V2 categories (D-69): the sidebar,
 the top bar and bell, the phone tab bar and More sheet, the offline banner, the toasts, the route
 error views and the not-rebuilt notice. A contract's number is its Bridge ID (D-68: namespace 1,

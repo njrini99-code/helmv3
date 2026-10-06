@@ -1,5 +1,14 @@
 # Clubhouse: adding a new design
 
+## October 6 current audit
+
+[ALL_PAGE_AUDIT.md](ALL_PAGE_AUDIT.md) inventories the current flagged
+implementation across all 15 page families and links current test/browser
+evidence. [SMOOTHNESS_AUDIT.md](SMOOTHNESS_AUDIT.md) records the reproduced
+appearance-store repair and remaining motion/profiling findings. Older
+measurements below retain their original source and device scope; release
+acceptance remains partial. No production flag or deployment changed.
+
 How a page goes from a design in `design/handoff/` to a verified page behind
 the `golf_clubhouse_ui` flag. This is the Foundation V2 process (D-60 to
 D-69; the owner's plan is in `foundation-v2/`). The rules that hold
@@ -163,3 +172,11 @@ and a visible change gets before and after screenshots, named and filed by
 `npm run clubhouse:shots`, listed in the page's VERIFY.md `## Screenshots` table
 and attached to the PR description, never committed. The steps and the naming
 are in `.claude/rules/clubhouse.md`. Each page's PAGE.md links its manifest, docs, code and audits in a generated "Related" block, and [`AUDITS.md`](AUDITS.md) indexes every audit and plan.
+
+## Screenshot log tooling repair — October 6
+
+The screenshot log reads dated directories and ignores generated gallery
+files. The regression imports a screenshot, generates its gallery and then
+reads the log; this previously failed with ENOTDIR. The tooling is governed
+by the Clubhouse docs; knowledge mapping reports no semantic feature owner
+for scripts/clubhouse/shots.mjs.

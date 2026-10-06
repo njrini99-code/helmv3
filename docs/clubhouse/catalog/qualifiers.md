@@ -1,5 +1,18 @@
 # Qualifiers catalog (09xxx)
 
+<!-- clubhouse:release-audit:start -->
+## Catalog audit — 2026-10-06
+
+Qualifier list/detail/create/edit, selections and live standings. Check
+streamed placeholder geometry, round-course pickers, standings updates and
+Back/Forward scroll restoration.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p009-qualifiers).
+Existing checklist ticks and catalog identifiers retain their recorded scope.
+Automated browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Routes:
 - `/golf/dashboard/qualifiers` with `/new`, `/[id]`, `/[id]/edit` and `/[id]/selection` (Manage selections)
 - `/golf/dashboard/my-qualifiers`

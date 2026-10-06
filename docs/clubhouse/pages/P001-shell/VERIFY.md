@@ -1,5 +1,33 @@
 # P001 — Shell: verification
 
+<!-- clubhouse:release-audit:start -->
+## Current release evidence — 2026-10-06
+
+Navigation crossfade, Back/Forward scroll restoration, Bell, More and team
+switch.
+
+Nested overlays must retain scroll and restore focus; check keyboard dismissal
+and VoiceOver isolation.
+
+Fresh WebKit 26.6: `/clubhouse-preview/settings` at
+375, 430 and 1280px; zero Axe A/AA violations and no horizontal document
+overflow in these three fixture renders. The 430px full-page screenshot
+was inspected and recorded below. This does not exercise every popup.
+Clubhouse runtime suites: 117 files / 3,092 tests pass on this branch.
+External action suites listed in WIRING are outside that count.
+
+Additional WebKit base check: 320px also fits without horizontal overflow
+and reports zero Axe violations. The state/opener inventory completes 5
+cases for this page at applicable 1280/390px widths with zero Axe
+violations or document overflow.
+
+Current browser/test results: [all-page
+audit](../../ALL_PAGE_AUDIT.md#p001-shell). Current status remains partial.
+Physical Safari/iPhone, VoiceOver and durable authenticated writes remain
+separate acceptance checks. Earlier verification status and gap sections below
+are historical observations; use the current audit for release scope.
+<!-- clubhouse:release-audit:end -->
+
 Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md` (row
 "Foundation"); the per-gate checklist is `docs/clubhouse/screens/foundation.md`.
 
@@ -24,7 +52,7 @@ Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md` (row
   scope repair passed, exit 0. Diff check passed, exit 0. This entry claims no
   subsequent optimized-build, browser, physical-device or production result.
 
-## Current verification status
+## Historical verification status
 
 ```text
 Status:     partial
@@ -124,8 +152,9 @@ before, after, baseline or evidence.
 | `P001__more-stable__coach__390__overlay-lifecycle__evidence__72fa726.png` | evidence | 72fa726 | more-stable (coach), 390px, overlay-lifecycle |
 | `P001__nested-details__coach__390__overlay-lifecycle__evidence__72fa726.png` | evidence | 72fa726 | nested-details (coach), 390px, overlay-lifecycle |
 | `P001__filter-sheet__coach__1440__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | filter-sheet (coach), 1440px, keyboard-viewport; /clubhouse-preview/stats |
+| `P001__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
 
-## Open verification gaps
+## Historical verification gaps
 
 - The iPhone pass (owner).
 - `clubhouse:a11y` rerun after the v2 changes.

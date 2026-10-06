@@ -1,5 +1,17 @@
 # P010 — Team Hub: design handoff
 
+<!-- clubhouse:release-audit:start -->
+## Current implementation audit — 2026-10-06
+
+Check pending operations across tab remounts, partial data, audience pickers
+and dialog-hosted Retry.
+
+The approved boards and phone specification remain the design authority.
+[all-page audit](../../ALL_PAGE_AUDIT.md#p010-hub) records current
+implementation owners; source token durations do not certify smoothness,
+visual fidelity or device behavior.
+<!-- clubhouse:release-audit:end -->
+
 ## Package
 
 ```text

@@ -1,5 +1,18 @@
 # Rounds checklist
 
+<!-- clubhouse:release-audit:start -->
+## Release checklist audit — 2026-10-06
+
+Round library/setup/tracking/review, scorecard and recovery/discard sheets.
+Check narrow shot controls, nested sheets, keyboard entry, offline
+checkpoints, save/continue and lost-response recovery.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p011-rounds). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Reference: `design/handoff/Player - Rounds.html`, `Player - Rounds - Mobile.html` (`rounds-flow.jsx`, `rounds-flow.css`, `rounds-data.js`); spec `docs/clubhouse/phone/rounds.md`; plan `docs/clubhouse/ROUNDS_PLAN.md`
 Route: `/golf/dashboard/rounds` (player)   Surface tag: `rounds` (Sentry `surface=rounds.<section>`)
 

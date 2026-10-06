@@ -58,9 +58,10 @@ Regression owner:
 Owner: SettingsView.tsx, phone/SettingsPhone.tsx.
 
 Both section switches use AnimatePresence wait mode, with a 260 ms exit followed
-by a 260 ms entrance. The configured sequence is 520 ms. Film rapid section
-changes and measure when the new section becomes usable before changing the
-approved choreography.
+by a 260 ms entrance. The configured sequence is 520 ms. Fresh desktop WebKit
+fixture trials mount the new section at 281–290 ms and settle at 550–562 ms
+(three normal-motion trials). This is observable sequential delay, not a
+physical-device frame-rate measurement.
 
 ### SM-03 — P1 / confirmed contract mismatch
 
@@ -70,8 +71,10 @@ OfflineBanner.
 Reduced motion removes translations in several components, but their Framer
 Motion transition duration remains 260 ms. Settings feedback also retains its
 180 ms fade. CSS duration tokens do not control the JavaScript transition
-objects. Verify both OS reduced motion and Settings Animations off against the
-documented instant-motion contract, then make duration zero where required.
+objects. Three fresh OS reduced-motion WebKit trials of the desktop Settings
+switch still mount at 277–308 ms and settle at 497–531 ms. This confirms the
+instant-transition contract is not met in that path. Settings Animations off
+and the other named paths still need their own runtime check before repair.
 
 ### SM-04 — P1 / profiling target
 
@@ -95,11 +98,11 @@ materials unless the trace identifies them as the cause.
 
 Owner: Messages VERIFY.md, PAGE_PERFORMANCE.md, page VERIFY files.
 
-Some evidence predates later changes. Messages' keyboard summary does not
-distinguish desktop Enter-to-send from phone Return-to-newline. It still records
-open focus, text-scaling, reduced-motion and device checks. Reconcile each item
-with current code and dated evidence rather than treating docs current as
-verification complete.
+The initial pass found stale Messages keyboard wording and historical gaps
+listed as current. The all-page follow-up corrects desktop Enter versus phone
+Return and dates old verification sections. All page docs now link current
+source/browser evidence. Physical keyboard, text scaling, VoiceOver and device
+frame pacing remain open; docs current does not mean release verified.
 
 Motion's [AnimatePresence documentation](https://motion.dev/docs/react-animate-presence)
 confirms that wait mode delays the entrance until exit completes. The 520 ms
@@ -286,7 +289,7 @@ clubhouse:shots. The perf harness requires a local Supabase stack, seeded team
 and committed production-build snapshot. Do not substitute preview fixture
 timings or development-server timings for authenticated release performance.
 
-## Verification from this pass
+## Initial source-pass verification (before the all-page browser follow-up)
 
 - Before repair: the appearance regression suite failed 3 of 4 cases:
   redundant mount update, unchanged storage event, and storage-clear reset.
@@ -309,3 +312,10 @@ timings or development-server timings for authenticated release performance.
 The reproduced store defect is one concrete source of avoidable rendering.
 The user's overall choppiness still needs correlation with their exact screen,
 running build and device trace; SM-02 through SM-06 define the next checks.
+
+## October 6 all-page follow-up
+
+[ALL_PAGE_AUDIT.md](ALL_PAGE_AUDIT.md) lists exact per-page overlay and motion
+call sites, current package/style owners, fresh browser results and release
+gaps. All six page docs, catalogs, checklists and phone specs now link that
+evidence. Earlier measurements retain their original commit and scope.

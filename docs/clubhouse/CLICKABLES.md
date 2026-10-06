@@ -1,5 +1,15 @@
 # Clubhouse clickable inventory: the v2 boards against the built Clubhouse
 
+## October 6 release evidence
+
+The board comparison below is a September source snapshot. Its line numbers
+and works/GAP judgments retain that baseline; current runtime owners and
+action mappings are in the October audit.
+
+[ALL_PAGE_AUDIT.md](ALL_PAGE_AUDIT.md) covers all 15 page families;
+[SMOOTHNESS_AUDIT.md](SMOOTHNESS_AUDIT.md) records confirmed motion findings.
+Physical Safari/iPhone acceptance and production-build profiling remain open.
+
 Compiled 2026-09-30 on branch `agent/clubhouse` at `96445d13a`, from a read of the working tree.
 The owner's rule for this list: "if a button in the design UI leads to nothing, then build it."
 

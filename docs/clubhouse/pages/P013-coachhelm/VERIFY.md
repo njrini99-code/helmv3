@@ -1,11 +1,39 @@
 # P013 — CoachHelm: verification
 
+<!-- clubhouse:release-audit:start -->
+## Current release evidence — 2026-10-06
+
+Coach/player boards, streaming Ask, history drawer and proposed focus.
+
+Profile render and scroll work during streaming; check drawer focus, player
+context and proposal feedback.
+
+Fresh WebKit 26.6: `/clubhouse-preview/coachhelm` at
+375, 430 and 1280px; zero Axe A/AA violations and no horizontal document
+overflow in these three fixture renders. The 430px full-page screenshot
+was inspected and recorded below. This does not exercise every popup.
+Clubhouse runtime suites: 117 files / 3,092 tests pass on this branch.
+External action suites listed in WIRING are outside that count.
+
+Additional WebKit base check: 320px also fits without horizontal overflow
+and reports zero Axe violations. The state/opener inventory completes 20
+cases for this page at applicable 1280/390px widths with zero Axe
+violations or document overflow.
+
+Current browser/test results: [all-page
+audit](../../ALL_PAGE_AUDIT.md#p013-coachhelm). Current status remains
+partial. Physical Safari/iPhone, VoiceOver and durable authenticated writes
+remain separate acceptance checks. Earlier verification status and gap
+sections below are historical observations; use the current audit for release
+scope.
+<!-- clubhouse:release-audit:end -->
+
 Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
 checklist is `docs/clubhouse/screens/coachhelm.md`. Results marked "as reported
 by the lead" are the lead's entry in `PROGRESS.md` (2026-09-30), not something
 re-run when this file was written.
 
-## Current verification status
+## Historical verification status
 
 ```text
 Status:     partial
@@ -232,8 +260,9 @@ before, after, baseline or evidence.
 | `P013__history-drawer__coach__375__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | history-drawer (coach), 375px, keyboard-viewport; /clubhouse-preview/coachhelm-ask?state=history |
 | `P013__history-drawer__coach__390__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | history-drawer (coach), 390px, keyboard-viewport; /clubhouse-preview/coachhelm-ask?state=history |
 | `P013__history-drawer__coach__430__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | history-drawer (coach), 430px, keyboard-viewport; /clubhouse-preview/coachhelm-ask?state=history |
+| `P013__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
 
-## Open verification gaps
+## Historical verification gaps
 
 - The iPhone pass through `npm run ios:dev`, and a browser pass with a real
   coach and a real player account (owner or merge pass).

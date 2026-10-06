@@ -1,5 +1,18 @@
 # Classes catalog (12xxx)
 
+<!-- clubhouse:release-audit:start -->
+## Catalog audit — 2026-10-06
+
+Classes list, class editor, import review and schedule synchronization. Check
+narrow day/time controls, long class names, import warnings, partial imports
+and calendar-sync refusal.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p012-classes). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Route: `/golf/dashboard/classes` (players). Coaches keep the Fairway page there; the page gives a Clubhouse player the new screen and everyone else the current one. Spec: `docs/clubhouse/phone/classes.md`. Boards: `design/handoff/Player - Classes.html` and `Player - Classes - Mobile.html`.
 
 The player's class schedule by term: the term at a glance, every class as a card, this week's overlaps with the team's events, and the sheets to add, edit, import and remove, and Delete all classes. A class is a row of `golf_player_classes`, put on the team calendar by `syncClassToCalendar` and taken off it by `removeClassFromCalendar` (the same tables and actions the current page uses).

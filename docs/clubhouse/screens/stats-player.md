@@ -1,5 +1,17 @@
 # Stats (player) checklist
 
+<!-- clubhouse:release-audit:start -->
+## Release checklist audit — 2026-10-06
+
+Player Stats periods, development proposals and filters. Check player context,
+chart resizing, proposal responses, keyboard filters and loading geometry.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p005-stats-player).
+Existing checklist ticks and catalog identifiers retain their recorded scope.
+Automated browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Reference: design/handoff/Stats.html, stats.jsx, stats-game.jsx, stats-game.css, stats-sheet.jsx, screenshots/stats-player-01..14
 Route: /golf/dashboard/stats?player=<id> (coach) and /golf/dashboard/stats (player, own profile)
 Surface tag: `stats.player.<overview|game|rounds|development|focus>`

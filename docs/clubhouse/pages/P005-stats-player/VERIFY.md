@@ -1,5 +1,33 @@
 # P005 — Stats (player): verification
 
+<!-- clubhouse:release-audit:start -->
+## Current release evidence — 2026-10-06
+
+Player Stats periods, development proposals and filters.
+
+Check player context, chart resizing, proposal responses, keyboard filters and
+loading geometry.
+
+Fresh WebKit 26.6: `/clubhouse-preview/player` at
+375, 430 and 1280px; zero Axe A/AA violations and no horizontal document
+overflow in these three fixture renders. The 430px full-page screenshot
+was inspected and recorded below. This does not exercise every popup.
+Clubhouse runtime suites: 117 files / 3,092 tests pass on this branch.
+External action suites listed in WIRING are outside that count.
+
+Additional WebKit base check: 320px also fits without horizontal overflow
+and reports zero Axe violations. The state/opener inventory completes 26
+cases for this page at applicable 1280/390px widths with zero Axe
+violations or document overflow.
+
+Current browser/test results: [all-page
+audit](../../ALL_PAGE_AUDIT.md#p005-stats-player). Current status remains
+partial. Physical Safari/iPhone, VoiceOver and durable authenticated writes
+remain separate acceptance checks. Earlier verification status and gap
+sections below are historical observations; use the current audit for release
+scope.
+<!-- clubhouse:release-audit:end -->
+
 Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
 checklist is `docs/clubhouse/screens/stats-player.md`.
 
@@ -75,7 +103,7 @@ lingering local slow-request toast. Earlier chained switches could retain
 a prior request's toast; its lifetime was not measured. Both browser
 sessions closed. Optimized measurement and physical Safari remain separate.
 
-## Current verification status
+## Historical verification status
 
 ```text
 Status:     partial
@@ -102,16 +130,26 @@ Date:       2026-09-30
 | `src/clubhouse/__tests__/stats-player.test.tsx` (53 cases, each named by the codes it forces) | every catalog row that names it (CH-4309, 5001 to 5307, 5401, 5402, 5701, 5801 to 5803, 5807, 5901, 5902) and all 19 hand contracts | pass (`npx vitest run src/clubhouse/__tests__/stats-player.test.tsx`, 53/53, 2026-09-30) |
 | `src/clubhouse/__tests__/stats-team.test.tsx` | the routes' team side (40801, 40802) and the shared charts | pass (42/42, 2026-09-30) |
 
-The route and the loader are tested directly: `ClubhouseStatsRoute` is called with the session and the team
-mocked and the loaders' call arguments are read, and `loadPlayerProfile` runs for real on a fake Supabase
-client with the shot-level read faked. Each test added in this pass was mutation-checked: the code it guards
-was broken, the test failed, and the code was restored. Checked: 50803 (`?player=` trusted for a player, the
-viewer changed, the roster read for a player), 50804 (the status filter, the shape check), 50611 (the throw),
-CH-5208 (the tour guess), 50805 (the empty detail read as zeros; the wrong id), 50103 (the wrap), 52101 (an
-extra read), 50104 (the bare Message link), CH-5901 and CH-5902 (the offline guard, the slow timer, the
-breadcrumb, the phone's switch), CH-1903 (a write that skips `useAction`), CH-5402 (never busy), 50901 (the
-status, the refresh), 51202 (a tab reset), 50101 and 50102 (the hero figure, the window parse), 52001 (the form's
-submit, a roving tab), 50806 (the coach flag) and 52401 (a catalog row no test names). 28 checks.
+The route and the loader are tested directly: `ClubhouseStatsRoute` is called
+with the session and the team
+mocked and the loaders' call arguments are read, and `loadPlayerProfile` runs
+for real on a fake Supabase
+client with the shot-level read faked. Each test added in this pass was
+mutation-checked: the code it guards
+was broken, the test failed, and the code was restored. Checked: 50803
+(`?player=` trusted for a player, the
+viewer changed, the roster read for a player), 50804 (the status filter, the
+shape check), 50611 (the throw),
+CH-5208 (the tour guess), 50805 (the empty detail read as zeros; the wrong id),
+50103 (the wrap), 52101 (an
+extra read), 50104 (the bare Message link), CH-5901 and CH-5902 (the offline
+guard, the slow timer, the
+breadcrumb, the phone's switch), CH-1903 (a write that skips `useAction`),
+CH-5402 (never busy), 50901 (the
+status, the refresh), 51202 (a tab reset), 50101 and 50102 (the hero figure, the
+window parse), 52001 (the form's
+submit, a roving tab), 50806 (the coach flag) and 52401 (a catalog row no test
+names). 28 checks.
 
 ## Visual verification
 
@@ -152,16 +190,24 @@ Result:       built to the approved spec; the browser pass at 390 and 430 and th
 | Destructive | none | N/A: nothing is deleted | |
 | Optimistic rollback | none | N/A: nothing is optimistic | |
 
-Permission, as observed in tests: a player's address with `?player=` of someone else, of nobody, or of junk
-loads the player's own id in the player view and never the team; a coach's `?player=` loads against the
-session's team; another team's player, a junk id, and a pending or removed member give "That player isn't on
-your team" (the junk id without any read); a player with no team gives "You aren't on a team yet"; a failed
-player or membership read raises the route error view; a refused shot-level read shows "didn't load".
+Permission, as observed in tests: a player's address with `?player=` of someone
+else, of nobody, or of junk
+loads the player's own id in the player view and never the team; a coach's
+`?player=` loads against the
+session's team; another team's player, a junk id, and a pending or removed
+member give "That player isn't on
+your team" (the junk id without any read); a player with no team gives "You
+aren't on a team yet"; a failed
+player or membership read raises the route error view; a refused shot-level read
+shows "didn't load".
 
-Not forced against a live session: every state above was forced against a fake Supabase client and rendered
-in jsdom, or in the preview, never against a live session (Q-4, the owner's live pass).
+Not forced against a live session: every state above was forced against a fake
+Supabase client and rendered
+in jsdom, or in the preview, never against a live session (Q-4, the owner's live
+pass).
 
-Not tested: the server action `createFocusArea` refusing a caller who is not a coach (read from the action;
+Not tested: the server action `createFocusArea` refusing a caller who is not a
+coach (read from the action;
 it is shared and has its own tests elsewhere).
 
 ## Accessibility
@@ -238,13 +284,22 @@ before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+| `P005__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
 
 ## 2026-10-02 — Mobile design fidelity verification
 
-- WebKit iPhone 13 previews at 375, 390 and 430 CSS pixels: populated page has no horizontal document overflow; roster status notes and stats figure labels remain inside their columns.
-- Before/after captures at 390 show the shared sheet gradient, inset highlight and layered shadow. The captures use deterministic preview fixtures, not a live customer session.
-- At 390, empty and failed coach states retain their explanatory copy and controls. Roster player populated/empty, Team Hub player populated and Player Stats early-read states were checked where applicable.
-- Physical iPhone Safari performance and real account data remain unverified. Failed fixtures also logged AdminLoggerClient event-send failures in the local development browser; no production data was changed.
+- WebKit iPhone 13 previews at 375, 390 and 430 CSS pixels: populated page has
+  no horizontal document overflow; roster status notes and stats figure labels
+  remain inside their columns.
+- Before/after captures at 390 show the shared sheet gradient, inset highlight
+  and layered shadow. The captures use deterministic preview fixtures, not a
+  live customer session.
+- At 390, empty and failed coach states retain their explanatory copy and
+  controls. Roster player populated/empty, Team Hub player populated and Player
+  Stats early-read states were checked where applicable.
+- Physical iPhone Safari performance and real account data remain unverified.
+  Failed fixtures also logged AdminLoggerClient event-send failures in the local
+  development browser; no production data was changed.
 
 ## 2026-10-02 — Intuitive improvement verification
 
@@ -254,18 +309,27 @@ before, after, baseline or evidence.
   intended-user discoverability, physical iPhone performance or durable
   live-data outcomes.
 
-## Open verification gaps
+## Historical verification gaps
 
-- The iPhone pass through `npm run ios:dev` (owner), and a browser pass at 390 and 430.
-- A browser pass with a real coach account and a real player account (owner, Q-4).
+- The iPhone pass through `npm run ios:dev` (owner), and a browser pass at 390
+  and 430.
+- A browser pass with a real coach account and a real player account (owner,
+  Q-4).
 - `clubhouse:a11y` rerun for the phone profile and every state.
-- Forced states against a live session; the shot-level refusal against a real other-team coach.
-- Layout shift for the profile, and a profile-shaped loading state (a loading.tsx cannot read the address).
-- Found and fixed 2026-09-30: a failed player or membership read showed "That player isn't on your team"; a
-  pending or removed member opened as Active; the Message button opened the bare inbox; the window switch
-  was not refused offline; a junk `?player=` reached the database; an unknown tour graded a women's team
-  against the men's D1. Each has a test that fails with the fix taken out (checked).
-- v2 draws Stats with no rounds ever as a whole-page empty, "No stats yet" (D-71); not built, owner decision.
+- Forced states against a live session; the shot-level refusal against a real
+  other-team coach.
+- Layout shift for the profile, and a profile-shaped loading state (a
+  loading.tsx cannot read the address).
+- Found and fixed 2026-09-30: a failed player or membership read showed "That
+  player isn't on your team"; a
+  pending or removed member opened as Active; the Message button opened the bare
+  inbox; the window switch
+  was not refused offline; a junk `?player=` reached the database; an unknown
+  tour graded a women's team
+  against the men's D1. Each has a test that fails with the fix taken out
+  (checked).
+- v2 draws Stats with no rounds ever as a whole-page empty, "No stats yet"
+  (D-71); not built, owner decision.
 
 ## 2026-10-02 — Settled WebKit filter-sheet targets
 

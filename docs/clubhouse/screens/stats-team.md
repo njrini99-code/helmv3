@@ -1,5 +1,18 @@
 # Stats (team) checklist
 
+<!-- clubhouse:release-audit:start -->
+## Release checklist audit — 2026-10-06
+
+Team Stats periods, comparisons, filters and focus-area sheets. Check
+period-change layout stability, filter date controls, long course names and
+empty/error/loading geometry.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p004-stats-team).
+Existing checklist ticks and catalog identifiers retain their recorded scope.
+Automated browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Reference: design/handoff/Stats.html, stats.jsx, stats.css, stats-sg.jsx, screenshots/stats-team-01..05
 Route: /golf/dashboard/stats (coach)   Surface tag: `stats.team.<figures|trend|legs|putting|bests|export>`
 Window: `?window=last10|season|qualifiers` (last 10 per player by default)

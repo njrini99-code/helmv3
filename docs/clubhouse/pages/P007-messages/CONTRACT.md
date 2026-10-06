@@ -1,5 +1,18 @@
 # P007 — Messages: page contract
 
+<!-- clubhouse:release-audit:start -->
+## Current contract audit — 2026-10-06
+
+The manifest reports complete contract coverage and 18 mapped actions.
+Existing Bridge IDs, catalog rows and generated contract tables remain
+authoritative. Check reader-position preservation, Return/newline versus
+desktop Enter, keyboard height, long messages and draft retention.
+
+The [all-page audit](../../ALL_PAGE_AUDIT.md#p007-messages) distinguishes
+implemented/tested behavior from open runtime acceptance; this pass does not
+reserve new IDs or mark manual contracts verified.
+<!-- clubhouse:release-audit:end -->
+
 Every behaviour Messages promises, by the 25 V2 categories (D-69). A contract's
 number is its Bridge ID (D-68: namespace 7, category, item); `Code` is the
 catalog code on the element and in the test

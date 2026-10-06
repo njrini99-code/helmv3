@@ -1,5 +1,18 @@
 # Design: Rounds (player, desktop and phone)
 
+<!-- clubhouse:release-audit:start -->
+## Phone acceptance audit — 2026-10-06
+
+Round library/setup/tracking/review, scorecard and recovery/discard sheets.
+Check narrow shot controls, nested sheets, keyboard entry, offline
+checkpoints, save/continue and lost-response recovery.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p011-rounds). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Status: approved. The owner's v2 boards are the spec (D-22): `design/handoff/Player - Rounds.html` and `Player - Rounds - Mobile.html` (`rounds-flow.jsx`, `rounds-course.jsx`, `rounds-track.jsx`, `rounds-review.jsx`, `rounds-flow.css`, `rounds-track.css`, `rounds-data.js`). The whole project, its order and its engine seam are in `docs/clubhouse/ROUNDS_PLAN.md`. Gaps are Q-72.
 
 This file covers the library, a round's review and the shot screen (Tracking), built in `src/clubhouse/screens/rounds/` (Tracking in `track/`) and a new round's setup (`setup/`).

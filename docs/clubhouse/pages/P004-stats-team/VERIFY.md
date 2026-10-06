@@ -1,5 +1,33 @@
 # P004 — Stats (team): verification
 
+<!-- clubhouse:release-audit:start -->
+## Current release evidence — 2026-10-06
+
+Team Stats periods, comparisons, filters and focus-area sheets.
+
+Check period-change layout stability, filter date controls, long course names
+and empty/error/loading geometry.
+
+Fresh WebKit 26.6: `/clubhouse-preview/stats` at
+375, 430 and 1280px; zero Axe A/AA violations and no horizontal document
+overflow in these three fixture renders. The 430px full-page screenshot
+was inspected and recorded below. This does not exercise every popup.
+Clubhouse runtime suites: 117 files / 3,092 tests pass on this branch.
+External action suites listed in WIRING are outside that count.
+
+Additional WebKit base check: 320px also fits without horizontal overflow
+and reports zero Axe violations. The state/opener inventory completes 24
+cases for this page at applicable 1280/390px widths with zero Axe
+violations or document overflow.
+
+Current browser/test results: [all-page
+audit](../../ALL_PAGE_AUDIT.md#p004-stats-team). Current status remains
+partial. Physical Safari/iPhone, VoiceOver and durable authenticated writes
+remain separate acceptance checks. Earlier verification status and gap
+sections below are historical observations; use the current audit for release
+scope.
+<!-- clubhouse:release-audit:end -->
+
 Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
 checklist is `docs/clubhouse/screens/stats-team.md`.
 
@@ -77,7 +105,7 @@ Four local captures are in `/tmp/helm-clubhouse-mobile-flow-audit/`:
 `stats-after-375.png`. Browser closed after verification. Physical Safari,
 software keyboard, text zoom and live authenticated data were not tested.
 
-## Current verification status
+## Historical verification status
 
 ```text
 Status:     partial
@@ -239,6 +267,7 @@ before, after, baseline or evidence.
 | --- | --- | --- | --- |
 | `P004__filter-sheet__coach__375__date-field-targets__after__83b9990.png` | after | 83b9990 | filter-sheet (coach), 375px, date-field-targets |
 | `P004__filter-sheet__coach__375__date-field-targets__before__83b9990.png` | before | 83b9990 | filter-sheet (coach), 375px, date-field-targets |
+| `P004__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
 
 ## 2026-10-02 — Mobile design fidelity verification
 
@@ -248,8 +277,12 @@ before, after, baseline or evidence.
 - Before/after captures at 390 show the shared sheet gradient, inset highlight
   and layered shadow. The captures use deterministic preview fixtures, not a
   live customer session.
-- At 390, empty and failed coach states retain their explanatory copy and controls. Roster player populated/empty, Team Hub player populated and Player Stats early-read states were checked where applicable.
-- Physical iPhone Safari performance and real account data remain unverified. Failed fixtures also logged AdminLoggerClient event-send failures in the local development browser; no production data was changed.
+- At 390, empty and failed coach states retain their explanatory copy and
+  controls. Roster player populated/empty, Team Hub player populated and Player
+  Stats early-read states were checked where applicable.
+- Physical iPhone Safari performance and real account data remain unverified.
+  Failed fixtures also logged AdminLoggerClient event-send failures in the local
+  development browser; no production data was changed.
 
 ## 2026-10-02 — Intuitive improvement verification
 
@@ -259,17 +292,23 @@ before, after, baseline or evidence.
   intended-user discoverability, physical iPhone performance or durable
   live-data outcomes.
 
-## Open verification gaps
+## Historical verification gaps
 
-- The iPhone pass through `npm run ios:dev` (owner), and a browser pass at 390 and 430.
+- The iPhone pass through `npm run ios:dev` (owner), and a browser pass at 390
+  and 430.
 - A browser pass with a real coach account (owner, Q-4).
-- `clubhouse:a11y` rerun for the phone view and every state; a keyboard walk on the phone.
+- `clubhouse:a11y` rerun for the phone view and every state; a keyboard walk on
+  the phone.
 - Forced states against a live session.
 - LCP, layout shift on the phone, and first-load JS (the merge pass, D-27).
-- The redirect of a non-coach from /golf/dashboard/stats/team (Fairway page, not tested).
-- Found and fixed 2026-09-30: the CSV export wrote a name that starts with = + - or @ as a formula. It is
-  written as text now (40501), and the test fails with the fix taken out (checked).
-- v2 draws Stats with no rounds ever as a whole-page empty, "No stats yet" (D-71); not built, owner decision.
+- The redirect of a non-coach from /golf/dashboard/stats/team (Fairway page, not
+  tested).
+- Found and fixed 2026-09-30: the CSV export wrote a name that starts with = + -
+  or @ as a formula. It is
+  written as text now (40501), and the test fails with the fix taken out
+  (checked).
+- v2 draws Stats with no rounds ever as a whole-page empty, "No stats yet"
+  (D-71); not built, owner decision.
 
 ## 2026-10-02 — Settled WebKit filter-sheet targets
 

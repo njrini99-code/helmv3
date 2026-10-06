@@ -1,5 +1,17 @@
 # P002 — Home: design handoff
 
+<!-- clubhouse:release-audit:start -->
+## Current implementation audit — 2026-10-06
+
+Check loading-to-content geometry, long names, team-timezone day labels and
+latest-round expansion under reduced motion.
+
+The approved boards and phone specification remain the design authority.
+[all-page audit](../../ALL_PAGE_AUDIT.md#p002-home) records current
+implementation owners; source token durations do not certify smoothness,
+visual fidelity or device behavior.
+<!-- clubhouse:release-audit:end -->
+
 ## Package
 
 ```text

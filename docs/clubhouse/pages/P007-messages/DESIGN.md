@@ -1,5 +1,17 @@
 # P007 — Messages: design handoff
 
+<!-- clubhouse:release-audit:start -->
+## Current implementation audit — 2026-10-06
+
+Check reader-position preservation, Return/newline versus desktop Enter,
+keyboard height, long messages and draft retention.
+
+The approved boards and phone specification remain the design authority.
+[all-page audit](../../ALL_PAGE_AUDIT.md#p007-messages) records current
+implementation owners; source token durations do not certify smoothness,
+visual fidelity or device behavior.
+<!-- clubhouse:release-audit:end -->
+
 ## Owner direction — 2026-10-02
 
 Apple Messages is the phone layout and interaction benchmark. The owner

@@ -1,5 +1,17 @@
 # P003 — Roster: design handoff
 
+<!-- clubhouse:release-audit:start -->
+## Current implementation audit — 2026-10-06
+
+Check profile push/pop, note blur save, approve/decline feedback and roster
+refresh without losing scroll.
+
+The approved boards and phone specification remain the design authority.
+[all-page audit](../../ALL_PAGE_AUDIT.md#p003-roster) records current
+implementation owners; source token durations do not certify smoothness,
+visual fidelity or device behavior.
+<!-- clubhouse:release-audit:end -->
+
 ## Package
 
 ```text

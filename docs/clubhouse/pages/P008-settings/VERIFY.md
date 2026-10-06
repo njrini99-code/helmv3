@@ -1,6 +1,34 @@
 # P008 — Settings: verification
 
-Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate checklist is
+<!-- clubhouse:release-audit:start -->
+## Current release evidence — 2026-10-06
+
+Desktop section swaps, phone pushes, settings sheets and reorder list.
+
+Check the 260ms exit plus 260ms entry sequence; audit reduced-motion duration,
+drag/scroll conflicts and pending saves.
+
+Fresh WebKit 26.6: `/clubhouse-preview/settings` at
+375, 430 and 1280px; zero Axe A/AA violations and no horizontal document
+overflow in these three fixture renders. The 430px full-page screenshot
+was inspected and recorded below. This does not exercise every popup.
+Clubhouse runtime suites: 117 files / 3,092 tests pass on this branch.
+External action suites listed in WIRING are outside that count.
+
+Additional WebKit base check: 320px also fits without horizontal overflow
+and reports zero Axe violations. The state/opener inventory completes 16
+cases for this page at applicable 1280/390px widths with zero Axe
+violations or document overflow.
+
+Current browser/test results: [all-page
+audit](../../ALL_PAGE_AUDIT.md#p008-settings). Current status remains partial.
+Physical Safari/iPhone, VoiceOver and durable authenticated writes remain
+separate acceptance checks. Earlier verification status and gap sections below
+are historical observations; use the current audit for release scope.
+<!-- clubhouse:release-audit:end -->
+
+Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
+checklist is
 `docs/clubhouse/screens/settings.md`.
 
 ## 2026-10-02 — Narrow desktop section visibility
@@ -27,7 +55,7 @@ element cannot scroll the rail later. Resizing also reveals the current section.
 - Local fixture navigation only: physical Safari, VoiceOver and account
   persistence were not exercised by this desktop rail check.
 
-## Current verification status
+## Historical verification status
 
 ```text
 Status:     partial
@@ -55,32 +83,56 @@ Date:       2026-09-30
 | `npx vitest run src/clubhouse` | everything above and the other pages as they stood | 553/553 |
 | `dashboard/settings/notifications` page test (3 cases) | the Fairway page for the old link | pass |
 
-Phone tests ("Settings · phone", 56 cases, each titled 81901): the coach and player lists and their summaries; a row
-pushing its section, Back and the edge swipe popping it, and a section named in the URL; a kind's summary and its
-sheet's one-write switches, a failed switch flipping back, the reads that failed, the weekly email and blocked push,
-quiet mode; the priority ranker (hold and drag with a tick per step and one save on drop, a scroll that does not lift,
-the arrow keys, a failed save going back); the profile sheet (Save off until changed, the discard question by Cancel and
-by a swipe, a swipe that is refused springing back, Save closing it, a failed save, the photo, saving, offline);
-Change email, Change password, golf details; each destructive action sheet (delete with its typed follow-up, leave a
-team, a new invite code, turn off CoachHelm) with Cancel leaving everything alone; scoring pickers (one save at a time),
-team details, reminders and CH-8111; Share and copy; every CoachHelm control; the head-coach lock; join a team; the
-phone skeleton, a crashing section, Preferences, Sign out and Report a problem; an old address (`/settings/notifications`)
-opening its section; and the unsaved-changes guard while a sheet holds edits (CH-8506, CH-8508).
+Phone tests ("Settings · phone", 56 cases, each titled 81901): the coach and
+player lists and their summaries; a row
+pushing its section, Back and the edge swipe popping it, and a section named in
+the URL; a kind's summary and its
+sheet's one-write switches, a failed switch flipping back, the reads that
+failed, the weekly email and blocked push,
+quiet mode; the priority ranker (hold and drag with a tick per step and one save
+on drop, a scroll that does not lift,
+the arrow keys, a failed save going back); the profile sheet (Save off until
+changed, the discard question by Cancel and
+by a swipe, a swipe that is refused springing back, Save closing it, a failed
+save, the photo, saving, offline);
+Change email, Change password, golf details; each destructive action sheet
+(delete with its typed follow-up, leave a
+team, a new invite code, turn off CoachHelm) with Cancel leaving everything
+alone; scoring pickers (one save at a time),
+team details, reminders and CH-8111; Share and copy; every CoachHelm control;
+the head-coach lock; join a team; the
+phone skeleton, a crashing section, Preferences, Sign out and Report a problem;
+an old address (`/settings/notifications`)
+opening its section; and the unsaved-changes guard while a sheet holds edits
+(CH-8506, CH-8508).
 
-Mutation checks (phone, 2026-09-30): the 56 phone tests were each checked against a broken copy of the code they guard.
-67 mutations were applied in groups, one group at a time (baseline first; every group's failing tests were compared with
-the ones it should break; the two that share a test were each rerun alone), and all 67 made their test fail: for example, a swipe that no longer springs back fails the discard test; a
-pick that sends the state from before fails the scoring test; a switch that drops `busy` fails CH-8403; skipping the
-action sheet before Delete fails the delete flow. Two more (a failed write's callback, the props a saved value comes
-back through) changed nothing observable and were replaced by mutations that do: `useSaveAction` running its callback
+Mutation checks (phone, 2026-09-30): the 56 phone tests were each checked
+against a broken copy of the code they guard.
+67 mutations were applied in groups, one group at a time (baseline first; every
+group's failing tests were compared with
+the ones it should break; the two that share a test were each rerun alone), and
+all 67 made their test fail: for example, a swipe that no longer springs back
+fails the discard test; a
+pick that sends the state from before fails the scoring test; a switch that
+drops `busy` fails CH-8403; skipping the
+action sheet before Delete fails the delete flow. Two more (a failed write's
+callback, the props a saved value comes
+back through) changed nothing observable and were replaced by mutations that do:
+`useSaveAction` running its callback
 on failure, and the busy guard on the scoring pickers.
 
-Mutation checks (desktop, earlier pass): every test added or retitled in this pass was checked against a broken copy of the code it guards.
-107 mutations were applied one at a time in an isolated copy of the tree (baseline 157/157 first), and all 107 made a
-test fail (for example, `keepSaved` removed from `SettingsView` fails the four 81204 cases; the old whole-object
-rollback fails 81302; the Fairway skeleton back in the two loading files fails CH-8401; rethrowing the team CoachHelm
-action's failure fails 82101; dropping the row count from any of the four updates fails 80808; not replacing the
-page's copy on a fresh read fails 81204 and 81401; resetting the draft on save fails 81205).
+Mutation checks (desktop, earlier pass): every test added or retitled in this
+pass was checked against a broken copy of the code it guards.
+107 mutations were applied one at a time in an isolated copy of the tree
+(baseline 157/157 first), and all 107 made a
+test fail (for example, `keepSaved` removed from `SettingsView` fails the four
+81204 cases; the old whole-object
+rollback fails 81302; the Fairway skeleton back in the two loading files fails
+CH-8401; rethrowing the team CoachHelm
+action's failure fails 82101; dropping the row count from any of the four
+updates fails 80808; not replacing the
+page's copy on a fresh read fails 81204 and 81401; resetting the draft on save
+fails 81205).
 
 ## Visual verification
 
@@ -120,10 +172,14 @@ Result:       the phone gate is open until the browser pass and the device pass
 | State preservation | 81201 to 81206 | tests | saved values kept, a failed save keeps its edits, Discard drops a draft |
 | Retry | 81401, 81402 | tests | Try again reads the page; Retry finishes the save |
 
-Not forced against a live session: every write against the real database (including an assistant coach's write
-being refused by a policy, and that PostgREST answers a policy-hidden update with a count of 0, which 80808 relies on:
-the tests answer from a fake client), the push subscription, the photo upload, the email and password flows against Supabase
-Auth, and the account delete. A state never observed is not verified (08_CI_PROGRESS_AND_VERIFICATION.md).
+Not forced against a live session: every write against the real database
+(including an assistant coach's write
+being refused by a policy, and that PostgREST answers a policy-hidden update
+with a count of 0, which 80808 relies on:
+the tests answer from a fake client), the push subscription, the photo upload,
+the email and password flows against Supabase
+Auth, and the account delete. A state never observed is not verified
+(08_CI_PROGRESS_AND_VERIFICATION.md).
 
 ## Accessibility
 
@@ -151,7 +207,11 @@ Notes:             first-load JS and LCP are open (CH-1954)
 
 ## Screenshots
 
-Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
+committed) and travel in the PR description; this table is the committed record
+of them. One row per file; the label is the file's basename, named by `npm run
+clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is
+before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
@@ -160,33 +220,54 @@ Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed
 | `P008__profile-sheet__coach__375__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | profile-sheet (coach), 375px, keyboard-viewport; /clubhouse-preview/settings?section=account |
 | `P008__profile-sheet__coach__390__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | profile-sheet (coach), 390px, keyboard-viewport; /clubhouse-preview/settings?section=account |
 | `P008__profile-sheet__coach__430__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | profile-sheet (coach), 430px, keyboard-viewport; /clubhouse-preview/settings?section=account |
+| `P008__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
 
-## Open verification gaps
+## Historical verification gaps
 
-- Owner review of the built desktop screen; the browser pass of the phone at 390px (every screen and sheet against the
-  mockups) and the iPhone pass; a check that the reorder drag does not scroll the page under the finger on iOS.
-- The phone's `clubhouse:a11y` run (axe) and a VoiceOver pass of the sheets and the reorder list.
-- A browser pass with a real coach account (head and assistant) and a real player account, forcing the live writes.
-- `clubhouse:a11y` rerun after the v2 changes; the keyboard walk; LCP and layout shift.
-- Fixed 2026-09-30 (each has a test that fails without the fix): saved values snapped back after leaving a section
-  (81204); a failed CoachHelm dashboards switch put back another switch (81302); Retry on a failed save left the card
-  unfinished (81402); a slider moved just before leaving was dropped (81206); the two old links showed the Fairway
-  skeleton in Clubhouse (CH-8401); a throwing team CoachHelm action failed the whole page and a missing profile or team
-  row was not logged (82101); Discard was silent (81708); the handicap messages used a hyphen for the minus sign; a
-  profile, team, golf or coaching-settings save that a policy hides the row from could say Saved while nothing
-  changed (80808; how the database answers is not observed live); a failed team CoachHelm access check made a head
-  coach see the switch disabled with "Only the head coach can change this." (80804).
+- Owner review of the built desktop screen; the browser pass of the phone at
+  390px (every screen and sheet against the
+  mockups) and the iPhone pass; a check that the reorder drag does not scroll
+  the page under the finger on iOS.
+- The phone's `clubhouse:a11y` run (axe) and a VoiceOver pass of the sheets and
+  the reorder list.
+- A browser pass with a real coach account (head and assistant) and a real
+  player account, forcing the live writes.
+- `clubhouse:a11y` rerun after the v2 changes; the keyboard walk; LCP and layout
+  shift.
+- Fixed 2026-09-30 (each has a test that fails without the fix): saved values
+  snapped back after leaving a section
+  (81204); a failed CoachHelm dashboards switch put back another switch (81302);
+  Retry on a failed save left the card
+  unfinished (81402); a slider moved just before leaving was dropped (81206);
+  the two old links showed the Fairway
+  skeleton in Clubhouse (CH-8401); a throwing team CoachHelm action failed the
+  whole page and a missing profile or team
+  row was not logged (82101); Discard was silent (81708); the handicap messages
+  used a hyphen for the minus sign; a
+  profile, team, golf or coaching-settings save that a policy hides the row from
+  could say Saved while nothing
+  changed (80808; how the database answers is not observed live); a failed team
+  CoachHelm access check made a head
+  coach see the switch disabled with "Only the head coach can change this."
+  (80804).
 - Found and not fixed:
-  - Phone: the browser's Back or the iOS edge swipe while a section-level sheet (Team details, Golf details, a reminder
-    time, Join a team) holds edits pops the section behind it and drops the sheet without the discard question. The page
-    guard (CH-8508, CH-8506) covers closing the tab and links, not history entries; the sheets are not history entries.
-  - A refused instant save (a switch or CoachHelm autosave) always says "Check your connection", because it never shows
-    the server's reason; a refusal that arrives as an error (an upsert against a policy, "violates row-level
+  - Phone: the browser's Back or the iOS edge swipe while a section-level sheet
+    (Team details, Golf details, a reminder
+    time, Join a team) holds edits pops the section behind it and drops the
+    sheet without the discard question. The page
+    guard (CH-8508, CH-8506) covers closing the tab and links, not history
+    entries; the sheets are not history entries.
+  - A refused instant save (a switch or CoachHelm autosave) always says "Check
+    your connection", because it never shows
+    the server's reason; a refusal that arrives as an error (an upsert against a
+    policy, "violates row-level
     security") reads the same way on a form save.
-  - Two CoachHelm priority moves in a row: if the first save fails and the second lands, the screen shows the order
+  - Two CoachHelm priority moves in a row: if the first save fails and the
+    second lands, the screen shows the order
     from before the first move while the server has both moves.
   - The loader reads `golf_coach_philosophy` and `golf_teams` twice each.
-  - Leave team, Make a new invite code, Reset CoachHelm updates and Turn off CoachHelm open their confirm without the
+  - Leave team, Make a new invite code, Reset CoachHelm updates and Turn off
+    CoachHelm open their confirm without the
     warning haptic (an owner decision under D-70).
 
 ## 2026-10-02 — Custom native overlay lifetime

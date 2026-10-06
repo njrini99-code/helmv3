@@ -1,5 +1,18 @@
 # Phone design: Home (coach)
 
+<!-- clubhouse:release-audit:start -->
+## Phone acceptance audit — 2026-10-06
+
+Coach/player Home, latest-round expansion, round sheet and partial-data cards.
+Check loading-to-content geometry, long names, team-timezone day labels and
+latest-round expansion under reduced motion.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p002-home). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Status: approved. The owner's v2 phone board is the spec (D-22): `design/handoff/Coach - Home - Mobile.html`, `m-home.jsx`, `m-home.css`, on the v2 shell (`m-shell.jsx`, `gh-nav.js`). It replaces the earlier draft in this file. Built 2026-09-30 as `src/clubhouse/screens/home/HomePhone.tsx` (the iPhone pass is open).
 
 The boards: practice day, competition day, quiet day, no events, and a round's scorecard, then the loading and empty phones (`GHBoards`).

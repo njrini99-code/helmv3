@@ -1,5 +1,14 @@
 # Clubhouse mobile and desktop UX optimization
 
+## October 6 current audit
+
+[ALL_PAGE_AUDIT.md](ALL_PAGE_AUDIT.md) inventories the current flagged
+implementation across all 15 page families and links current test/browser
+evidence. [SMOOTHNESS_AUDIT.md](SMOOTHNESS_AUDIT.md) records the reproduced
+appearance-store repair and remaining motion/profiling findings. Older
+measurements below retain their original source and device scope; release
+acceptance remains partial. No production flag or deployment changed.
+
 Owner request, October 2: verify popup repairs, improve the mobile and desktop
 experience, and focus on how smoothly the whole app feels. This review preserves
 the supplied designs,

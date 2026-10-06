@@ -1,5 +1,17 @@
 # P001 — Shell: design handoff
 
+<!-- clubhouse:release-audit:start -->
+## Current implementation audit — 2026-10-06
+
+Nested overlays must retain scroll and restore focus; check keyboard dismissal
+and VoiceOver isolation.
+
+The approved boards and phone specification remain the design authority.
+[all-page audit](../../ALL_PAGE_AUDIT.md#p001-shell) records current
+implementation owners; source token durations do not certify smoothness,
+visual fidelity or device behavior.
+<!-- clubhouse:release-audit:end -->
+
 ## Package
 
 ```text
@@ -48,7 +60,7 @@ link), then the tab bar.
 
 `ClubhouseShell` (the providers), `ClubhouseFrame` (the UI), `Sidebar`,
 `TopBar`, `Bell`, `TabBar` with the More sheet, `OfflineBanner`, `RouteFrame`
-(the reveal and the press), `NotRebuilt`, `NextEventCard`, `PhoneScreen` and
+(the navigation crossfade and the press), `NotRebuilt`, `NextEventCard`, `PhoneScreen` and
 `phone-chrome` (pushed screens, the page top), `crumbs`, `ClubhouseSwitch`,
 `TeamSwitch` (the team switcher: `BrandTeamSwitch` in the sidebar,
 `MoreTeamSwitch` in the More sheet) with `team-switch` (the gate and the
@@ -71,9 +83,11 @@ All 25 (CONTRACT.md). 05, 10, 11, 12 and 15 are N/A for the frame, with reasons.
 ## Motion intent
 
 v2 (D-64): press 110ms (about 6px), quick 180ms, base 260ms, release 280ms,
-reveal 520ms with a 55ms step on first paint only. The ease-out, in-out and
-spring curves. The skeleton appears after 150ms, with a 1.9s shimmer. Reduced
-motion, or Animations off in Settings, turns all of it off.
+the historical reveal token is 520ms. The first-paint stagger was retired
+on October 1 (F01); RouteFrame now crossfades navigation only. The skeleton
+appears after 150ms, with a 1.9s shimmer. Reduced motion or Animations off
+removes the route transition and press. Some Framer fades still retain their
+duration: this CH-1608 mismatch is SM-03 in SMOOTHNESS_AUDIT.md.
 
 ## Haptic intent
 

@@ -142,12 +142,23 @@
   },
   {
     "file": "SMOOTHNESS_AUDIT.md",
-    "title": "Clubhouse smoothness source audit",
+    "title": "Clubhouse smoothness audit",
     "kind": "audit",
     "date": "2026-10-06",
     "scope": "All-page overlay/control inventory, current-source motion findings, stable appearance subscriptions and remaining Safari/iPhone profiling checks.",
     "status": "in_progress",
-    "note": "source inventory and reproduced store defect; browser and physical-device measurements remain open",
+    "note": "appearance defect reproduced/repaired; Settings reduced-motion delay measured; physical-device profiling open",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "ALL_PAGE_AUDIT.md",
+    "title": "All-page release audit and UI ownership inventory",
+    "kind": "audit",
+    "date": "2026-10-06",
+    "scope": "All 15 page families: overlay and motion call sites, package/style owners, action/test mapping and current source/browser evidence.",
+    "status": "in_progress",
+    "note": "305 state cases, 60 WebKit page renders and 24 onboarding renders; physical-device and authenticated release checks open",
     "allPages": true,
     "pages": []
   }

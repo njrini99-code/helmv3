@@ -1,5 +1,32 @@
 # P003 — Roster: verification
 
+<!-- clubhouse:release-audit:start -->
+## Current release evidence — 2026-10-06
+
+Roster cards/list, player peek, invite, requests and read-only player view.
+
+Check profile push/pop, note blur save, approve/decline feedback and roster
+refresh without losing scroll.
+
+Fresh WebKit 26.6: `/clubhouse-preview/roster` at
+375, 430 and 1280px; zero Axe A/AA violations and no horizontal document
+overflow in these three fixture renders. The 430px full-page screenshot
+was inspected and recorded below. This does not exercise every popup.
+Clubhouse runtime suites: 117 files / 3,092 tests pass on this branch.
+External action suites listed in WIRING are outside that count.
+
+Additional WebKit base check: 320px also fits without horizontal overflow
+and reports zero Axe violations. The state/opener inventory completes 15
+cases for this page at applicable 1280/390px widths with zero Axe
+violations or document overflow.
+
+Current browser/test results: [all-page
+audit](../../ALL_PAGE_AUDIT.md#p003-roster). Current status remains partial.
+Physical Safari/iPhone, VoiceOver and durable authenticated writes remain
+separate acceptance checks. Earlier verification status and gap sections below
+are historical observations; use the current audit for release scope.
+<!-- clubhouse:release-audit:end -->
+
 Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
 checklist is `docs/clubhouse/screens/roster.md`.
 
@@ -22,7 +49,7 @@ checklist is `docs/clubhouse/screens/roster.md`.
 - This verifies the destination link and keyboard access. Real-account thread
   resolution or message delivery was not exercised in this pass.
 
-## Current verification status
+## Historical verification status
 
 ```text
 Status:     partial
@@ -141,6 +168,7 @@ before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+| `P003__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
 
 ## 2026-10-02 — Mobile design fidelity verification
 
@@ -166,7 +194,7 @@ before, after, baseline or evidence.
   intended-user discoverability, physical iPhone performance or durable
   live-data outcomes.
 
-## Open verification gaps
+## Historical verification gaps
 
 - The iPhone pass through `npm run ios:dev` (owner); 430px and toasts over
   content (merge pass).

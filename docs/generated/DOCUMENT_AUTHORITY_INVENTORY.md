@@ -43,13 +43,13 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 43 | 5 | 18 | 74 |
-| `AUDIT_SNAPSHOT` | 63 | 6 | 34 | 25 |
+| `AUDIT_SNAPSHOT` | 65 | 6 | 34 | 25 |
 | `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 49 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 25 | 1 | 8 | 5 |
-| `UNKNOWN` | 319 | 12 | 56 | 81 |
+| `UNKNOWN` | 319 | 12 | 70 | 81 |
 
 ## Files
 
@@ -477,9 +477,11 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/audits/UNREACHABLE_CAPABILITY_2026-08-15.md` | current | - | - | yes | - |
 | `docs/audits/coaching_universe_audit.md` | current | - | - | - | - |
 | `docs/clubhouse/AESTHETIC_AUDIT.md` | current | - | - | yes | - |
+| `docs/clubhouse/ALL_PAGE_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/DEPTH_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/HIGH_FIDELITY_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/INTUITIVE_SECONDARY_AUDIT.md` | current | - | - | - | - |
+| `docs/clubhouse/SMOOTHNESS_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/SWAP_AUDIT.md` | current | - | - | yes | - |
 | `docs/clubhouse/foundation-v2/01_REPO_AUDIT_AND_RECOMMENDATION.md` | current | - | - | yes | - |
 | `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 3 |
@@ -790,53 +792,53 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/held/features/conversation-files.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/qualifier-squad-and-entrants.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P001-shell/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P001-shell/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/WIRING.md` | current | - | - | - | 2 |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P003-roster/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P004-stats-team/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P004-stats-team/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P005-stats-player/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P005-stats-player/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/PARITY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P006-calendar/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P006-calendar/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | - |
-| `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P008-settings/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P009-qualifiers/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P009-qualifiers/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P010-hub/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P010-hub/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/WIRING.md` | current | - | - | - | - |
@@ -846,22 +848,22 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/pages/P011-rounds/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P012-classes/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P012-classes/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P012-classes/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | yes | - |
-| `docs/clubhouse/pages/P013-coachhelm/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P015-auth/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P015-auth/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P015-auth/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/WIRING.md` | current | - | - | - | - |

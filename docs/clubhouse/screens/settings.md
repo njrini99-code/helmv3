@@ -1,5 +1,18 @@
 # Settings checklist
 
+<!-- clubhouse:release-audit:start -->
+## Release checklist audit — 2026-10-06
+
+Desktop section swaps, phone pushes, settings sheets and reorder list. Check
+the 260ms exit plus 260ms entry sequence; audit reduced-motion duration,
+drag/scroll conflicts and pending saves.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p008-settings). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Reference: no Settings screen exists in the handoff. The page is built from the handoff design system
 (`design/handoff/design-system/components`): Surface (cards), Inset, PopoverPanel, FormField, Input,
 Select, Switch and Segmented, plus the layout the owner chose on 2026-09-29 (one page, a section rail;

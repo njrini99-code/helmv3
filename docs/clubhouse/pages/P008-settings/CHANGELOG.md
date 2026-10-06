@@ -1,5 +1,15 @@
 # P008 — Settings: changelog
 
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Whole-app release audit
+
+Reconciled page purpose, design acceptance, contract status, wiring and
+verification against the current flagged implementation. Indexed 29 mapped
+actions and 33 overlay/control call sites in the [all-page
+audit](../../ALL_PAGE_AUDIT.md#p008-settings). Approved handoffs and contract
+IDs are preserved; runtime gaps stay explicit.
+<!-- clubhouse:release-audit:end -->
+
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
 ## 2026-10-02 — End obsolete autosave feedback

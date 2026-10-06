@@ -1,5 +1,18 @@
 # Phone: Auth (sign in, welcome, sign up, onboarding)
 
+<!-- clubhouse:release-audit:start -->
+## Phone acceptance audit — 2026-10-06
+
+Sign-in course scene, welcome, onboarding and dashboard handoff. Check
+shortest phone heights, credential zoom/autocomplete, reduced-motion camera
+and no blank handoff frames.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p015-auth). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Status: approved. The owner's mobile boards are the spec: `Sign in - Mobile.html` (ten phones: sign in, four errors, three welcomes, two empty welcomes) and `Sign up - Mobile.html` (twenty phones: every step, the errors and the empty states) in `design/handoff/auth/`, with `screenshots/mobile/`, handed off with the desktop design and answered by Q-96. The boards win over any prose here. Sign up and onboarding are phase 2; this file covers what is built.
 
 The phone layout is `@media (max-width: 820px)`, the same breakpoint as `useChPhone`, in the same stylesheet as desktop (`styles/auth.css`): the screens are one structure, and CSS turns the right-hand panel into a sheet under the course.

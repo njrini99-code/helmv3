@@ -1,5 +1,17 @@
 # P008 — Settings: design handoff
 
+<!-- clubhouse:release-audit:start -->
+## Current implementation audit — 2026-10-06
+
+Check the 260ms exit plus 260ms entry sequence; audit reduced-motion duration,
+drag/scroll conflicts and pending saves.
+
+The approved boards and phone specification remain the design authority.
+[all-page audit](../../ALL_PAGE_AUDIT.md#p008-settings) records current
+implementation owners; source token durations do not certify smoothness,
+visual fidelity or device behavior.
+<!-- clubhouse:release-audit:end -->
+
 ## Package
 
 ```text

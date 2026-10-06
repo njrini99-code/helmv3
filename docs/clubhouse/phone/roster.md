@@ -1,5 +1,18 @@
 # Phone design: Roster (coach)
 
+<!-- clubhouse:release-audit:start -->
+## Phone acceptance audit — 2026-10-06
+
+Roster cards/list, player peek, invite, requests and read-only player view.
+Check profile push/pop, note blur save, approve/decline feedback and roster
+refresh without losing scroll.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p003-roster). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Status: approved (owner design, design/handoff/mobile/Roster Mobile.html,
 m-roster.jsx)
 

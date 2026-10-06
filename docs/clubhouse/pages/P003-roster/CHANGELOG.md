@@ -1,5 +1,15 @@
 # P003 — Roster: changelog
 
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Whole-app release audit
+
+Reconciled page purpose, design acceptance, contract status, wiring and
+verification against the current flagged implementation. Indexed 14 mapped
+actions and 8 overlay/control call sites in the [all-page
+audit](../../ALL_PAGE_AUDIT.md#p003-roster). Approved handoffs and contract
+IDs are preserved; runtime gaps stay explicit.
+<!-- clubhouse:release-audit:end -->
+
 ## 2026-10-02 — Keep the player when opening desktop Messages
 
 ```text
