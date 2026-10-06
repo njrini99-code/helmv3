@@ -51,13 +51,14 @@ CH_ENGINES=chromium,webkit CH_MOTION=no-preference,reduce \
 
 The dedicated Playwright suite runs Chromium and WebKit with normal and
 reduced motion. Smoke mode contains 20 popup/menu cases on a short phone
-viewport; full mode contains 132 applicable cases across four viewport sizes. All phone
-sheets are tested at three sizes below the 820px boundary; desktop checks use
-Modal and menus, matching production owners. Checks cover bounds, scrolling, keyboard dismissal, focus
-restoration and axe accessibility. The existing page/state accessibility
-catalog accepts explicit engine, motion and viewport selections and rejects
-unknown page names. All these checks use development presentation fixtures.
-They do not certify authenticated writes, production performance or devices.
+viewport; full mode contains 132 applicable cases across four viewport sizes.
+All phone sheets are tested at three sizes below the 820px boundary; desktop
+checks use Modal and menus, matching production owners. Checks cover bounds,
+scrolling, keyboard dismissal, focus restoration and axe accessibility. The
+existing page/state accessibility catalog accepts explicit engine, motion and
+viewport selections and rejects unknown page names. All these checks use
+development presentation fixtures. They do not certify authenticated writes,
+production performance or devices.
 
 The PR workflow runs smoke checks and the CSS guard. Manual runs can select
 full coverage or visual comparison. Diagnostic PNGs and traces are uploaded
@@ -95,6 +96,16 @@ Qualifiers and Rounds journeys. No live performance capture was available for
 this tooling change. Parser tests verify enforcement, not product smoothness.
 Lighthouse remains a Chromium navigation lab check: it no longer advertises
 a Safari user agent or an INP assertion without measured interactions.
+
+## Tooling verification — 2026-10-06
+
+All 132 applicable presentation cases passed locally in Chromium and WebKit,
+with normal/reduced motion at 390×480, 430×932, 768×600 and 1280×800 (exit 0).
+All 86 Clubhouse tooling tests passed. The CSS guard reported zero findings;
+scoped lint/TypeScript, Markdown and knowledge/authority checks passed. The
+missing-baseline path failed explicitly without creating a baseline. The tool
+doctor and Next MCP handshake passed. These results certify the tooling and
+observed presentation fixtures, not production performance or release approval.
 
 ## Release evidence still required
 
