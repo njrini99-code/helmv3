@@ -89,7 +89,7 @@ jobs:
       - install-node-deps
       - run:
           name: Install Knip
-          command: npm install --no-save knip
+          command: npm install --no-save "knip@$(node -p "require('./package.json').devDependencies.knip")"
       - run:
           name: Knip — unused exports, files, deps
           # `|| true` used to swallow EVERY exit code, including 2 (bad config).

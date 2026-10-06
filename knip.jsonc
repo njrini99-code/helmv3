@@ -44,7 +44,7 @@
 // not the code, which is the tell that the config was wrong rather than the code
 // being dead.
 {
-  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
     "src/app/**/page.{ts,tsx}",
     "src/app/**/layout.{ts,tsx}",
