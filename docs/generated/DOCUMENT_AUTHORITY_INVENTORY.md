@@ -35,7 +35,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Category | Files | Routed | Claims authority | Dead refs |
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 6 | 0 |
-| `AGENT_SKILL` | 131 | 0 | 7 | 17 |
+| `AGENT_SKILL` | 131 | 0 | 7 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 13 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
 | `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
@@ -208,11 +208,11 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/skills/supabase-postgres-best-practices/references/security-privileges.md` | current | - | - | - | - |
 | `.claude/skills/supabase-postgres-best-practices/references/security-rls-basics.md` | current | - | - | - | - |
 | `.claude/skills/supabase-postgres-best-practices/references/security-rls-performance.md` | current | - | - | - | - |
-| `.claude/skills/supabase-server/SKILL.md` | current | - | - | - | 16 |
+| `.claude/skills/supabase-server/SKILL.md` | current | - | - | - | - |
 | `.claude/skills/supabase/CHANGELOG.md` | current | - | - | - | - |
 | `.claude/skills/supabase/SKILL.md` | current | - | - | - | - |
 | `.claude/skills/supabase/assets/feedback-issue-template.md` | current | - | - | - | - |
-| `.claude/skills/supabase/references/skill-feedback.md` | current | - | - | - | 1 |
+| `.claude/skills/supabase/references/skill-feedback.md` | current | - | - | - | - |
 
 ### `CURRENT_FEATURE`
 

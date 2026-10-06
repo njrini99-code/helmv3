@@ -27,6 +27,6 @@ test('newFindings returns only keys missing from the baseline, de-duplicated', (
 test('isLocalUrl accepts only loopback hosts', () => {
   assert.equal(isLocalUrl('postgresql://postgres:postgres@127.0.0.1:54322/postgres'), true);
   assert.equal(isLocalUrl('postgresql://u:p@localhost:5432/db'), true);
-  assert.equal(isLocalUrl('postgresql://u:p@db.qmnssrrolpinvwjjnufo.supabase.co:5432/postgres'), false);
+  assert.equal(isLocalUrl('postgresql://u:p@db.abcdefghijklmnopqrst.supabase.co:5432/postgres'), false);
   assert.equal(isLocalUrl('not a url'), false);
 });
