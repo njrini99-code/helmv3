@@ -6,7 +6,7 @@ log and decisions).
 ## 2026-10-06 — Motion import path moves to `motion/react`
 
 ```text
-PR/commit:      agent/deps-ui-upgrade (chore(deps): motion 14, Base UI 1.8, TanStack Table 9)
+PR/commit:      #2153 (agent/deps-ui-upgrade)
 Design package: none; no visual or behavior change
 Contract IDs:   none
 Data impact:    none
