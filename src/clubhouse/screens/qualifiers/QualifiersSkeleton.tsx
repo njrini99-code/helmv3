@@ -6,11 +6,11 @@ import '../../styles/qualifiers.css';
 /** Route loading for the Qualifiers list: head, tools, the hero and a row of cards in their final slots. */
 export function QualifiersSkeleton() {
   return (
-    <main className="ch-qf ch-qf--list" aria-busy="true" aria-label="Loading qualifiers" data-ch-code="CH-09401">
-      <header className="ch-qf-head">
+    <main className="ch-qf ch-qf--list" aria-busy="true" aria-label="Loading qualifiers" data-ch-code="CH-09401" data-canopy="">
+      <header className="ch-qf-head" data-canopy-head="">
         <div>
-          <Skeleton width={200} height={14} />
-          <Skeleton width={300} height={34} radius={10} />
+          <Skeleton width={200} height={11} />
+          <Skeleton width={300} height={38} radius={10} />
           <Skeleton width={380} height={16} />
         </div>
         <Skeleton width={160} height={38} radius={10} />

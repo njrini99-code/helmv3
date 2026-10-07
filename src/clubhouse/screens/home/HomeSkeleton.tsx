@@ -11,7 +11,7 @@ function Line({ height, children }: { height: number; children: ReactNode }) {
 /** Route loading for Home: the same frame as the page, so nothing shifts when data lands. */
 export function HomeSkeleton() {
   return (
-    // Desktop draws the loading page on the canopy, as the loaded page is, so the green doesn't arrive with the data.
+    // Desktop draws the loading page with the framed head, as the loaded page is, so nothing moves when the data lands.
     <main className="ch-h-main" aria-busy="true" aria-label="Loading Home" data-ch-code="CH-2401" data-canopy="">
       <SkeletonHeroBar />
       {/* Phone: the page's own shape (green hero, then the Today and form cards), so the hand-off changes nothing but the words (F-37). */}
@@ -33,11 +33,11 @@ export function HomeSkeleton() {
         <Line height={14}>
           <Skeleton width={140} height={13} />
         </Line>
-        {/* The serif greeting's line on the canopy (58px type), 71px with its margins (WebKit 1440, 2026-10-07). */}
-        <Line height={71}>
-          <Skeleton width={420} height={54} radius={10} />
+        {/* The sans greeting's line in the framed head (44px type, 47.5px line; WebKit 1440, 2026-10-07). */}
+        <Line height={47.5}>
+          <Skeleton width={400} height={38} radius={10} />
         </Line>
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, height: 48 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, height: 49.6 }}>
           <Skeleton width="90%" height={14} />
           <Skeleton width="60%" height={14} />
         </div>

@@ -1476,3 +1476,12 @@
     }
   }
 }
+
+/* Loading in the framed page head (desktop): the settings head holds the loaded head's measured height (WebKit 1440 and 1100,
+   2026-10-07: 144px), so nothing under it moves on load. */
+@media (min-width: 821px) {
+  .ch-set[aria-busy='true'][data-canopy] .ch-set-head {
+    box-sizing: border-box;
+    min-height: 144px;
+  }
+}

@@ -4,9 +4,9 @@ import '../../styles/recruiting.css';
 /** Route loading for Recruiting: the header, the pipeline, the table rows and the panel in their final slots; on a phone, the list's rows (switched in CSS, since this renders on the server). */
 export function RecruitingSkeleton() {
   return (
-    <main className="ch-rec" aria-busy="true" aria-label="Loading recruiting" data-ch-code="CH-14401">
+    <main className="ch-rec" data-canopy="" aria-busy="true" aria-label="Loading recruiting" data-ch-code="CH-14401">
       <div className="ch-rec-skel-desk">
-        <header className="ch-rec-head">
+        <header className="ch-rec-head" data-canopy-head="">
           <div>
             <Skeleton width={170} height={30} radius={15} />
             <Skeleton width={420} height={15} />

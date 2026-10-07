@@ -1668,3 +1668,12 @@
 .ch-scoreboard .ch-qf-line::after {
   border-top-color: rgb(159 224 182 / 0.45);
 }
+
+/* Loading in the framed page head (desktop): the head holds the loaded head's measured height (WebKit 1440 and 1100,
+   2026-10-07: 171px with the eyebrow, the sans title and the line), so the tools and the hero don't move on load. */
+@media (min-width: 821px) {
+  .ch-qf[aria-busy='true'][data-canopy] > .ch-qf-head {
+    box-sizing: border-box;
+    min-height: 171px;
+  }
+}

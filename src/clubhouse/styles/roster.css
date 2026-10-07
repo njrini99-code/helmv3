@@ -1453,3 +1453,12 @@
     font-size: 12px;
   }
 }
+
+/* Loading in the framed page head (desktop): the roster head holds the loaded head's measured height (WebKit 1440 and 1100,
+   2026-10-07: 187px), so nothing under it moves on load. */
+@media (min-width: 821px) {
+  .ch-rs[aria-busy='true'][data-canopy] .ch-rs-head {
+    box-sizing: border-box;
+    min-height: 187px;
+  }
+}

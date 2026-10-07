@@ -2098,3 +2098,12 @@
     font-size: 12px;
   }
 }
+
+/* Loading in the framed page head (desktop): the masthead holds the loaded one's measured height (WebKit 1440 and
+   1100, 2026-10-07: 136px with the sans range title and the line), so the toolbar and the week don't move on load. */
+@media (min-width: 821px) {
+  .ch-cal--skel[data-canopy] > .ch-cal-mast {
+    box-sizing: border-box;
+    min-height: 136px;
+  }
+}

@@ -48,11 +48,6 @@
   padding-top: 6px;
   row-gap: 4px;
 }
-@media (min-width: 821px) {
-  main[data-canopy] .ch-hl-role {
-    color: var(--ch-hero-mint);
-  }
-}
 
 .ch-hl-h h1 {
   font: 400 52px/1.02 var(--ch-font-serif);
@@ -778,11 +773,11 @@
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-reading);
 }
-/* Desktop loading holds the loaded page's measured heights (WebKit, 1440 and 1000, 2026-10-07): the canopy title block
-   194px with its serif title and live line, the pulse card 258px with its serif title and reserved rows (CH-13405). */
+/* Desktop loading holds the loaded page's measured heights (WebKit, 1440 and 1000, 2026-10-07): the framed page head
+   159px with its sans title and live line, the pulse card 258px with its serif title and reserved rows (CH-13405). */
 @media (min-width: 821px) {
   .ch-hl[aria-busy='true'][data-canopy] > .ch-hl-h {
-    min-height: 194px;
+    min-height: 159px;
   }
   .ch-hl-sk__pulse {
     min-height: 258px;

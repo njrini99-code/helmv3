@@ -100,12 +100,15 @@ export function StatsProfileSkeleton({ coach = false }: { coach?: boolean }) {
 export function StatsSkeleton() {
   return (
     <main className="ch-st" aria-busy="true" aria-label="Loading stats" data-ch-code="CH-4401" data-canopy="">
-      {/* The hero in place (PageHero): the serif title's line and the one line under it, the window switch on the right. */}
+      {/* The framed page head in place (PageHero): the section line, the sans title's line and the line under it, the window switch on the right. */}
       <header className="ch-hero" data-canopy-head="" aria-hidden="true">
-        <Line height={53}>
-          <Skeleton width={260} height={46} radius={10} />
+        <Line height={14.3}>
+          <Skeleton width={150} height={11} />
         </Line>
-        <Line height={24}>
+        <Line height={47.5}>
+          <Skeleton width={240} height={38} radius={10} />
+        </Line>
+        <Line height={24.8}>
           <Skeleton width={300} height={14} />
         </Line>
         <div className="ch-hero__actions">

@@ -4,8 +4,8 @@ import '../../styles/calendar.css';
 /** Route loading for Calendar: masthead, toolbar, the week grid and the panel, in place. */
 export function CalendarSkeleton() {
   return (
-    <main className="ch-cal ch-cal--skel" aria-busy="true" aria-label="Loading the calendar" data-ch-code="CH-6401">
-      <header className="ch-cal-mast">
+    <main className="ch-cal ch-cal--skel" aria-busy="true" aria-label="Loading the calendar" data-ch-code="CH-6401" data-canopy="">
+      <header className="ch-cal-mast" data-canopy-head="">
         <div>
           <Skeleton width={260} height={38} radius={10} />
           <div style={{ height: 10 }} />

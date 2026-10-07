@@ -7,8 +7,8 @@ import '../../styles/hub.css';
  */
 export function HubSkeleton() {
   return (
-    <main className="ch-hb" aria-busy="true" aria-label="Loading Team Hub" data-ch-code="CH-10405">
-      <header className="ch-hb-h">
+    <main className="ch-hb" data-canopy="" aria-busy="true" aria-label="Loading Team Hub" data-ch-code="CH-10405">
+      <header className="ch-hb-h" data-canopy-head="">
         <div>
           <Skeleton width={96} height={24} radius={12} />
           <div style={{ height: 14 }} />

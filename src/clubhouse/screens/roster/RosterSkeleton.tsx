@@ -4,9 +4,9 @@ import '../../styles/roster.css';
 /** Route loading for Roster: header, toolbar and six face cards in their final slots; on a phone, the list's rows (switched in CSS, since this renders on the server). */
 export function RosterSkeleton() {
   return (
-    <main className="ch-rs" aria-busy="true" aria-label="Loading roster" data-ch-code="CH-3401">
+    <main className="ch-rs" data-canopy="" aria-busy="true" aria-label="Loading roster" data-ch-code="CH-3401">
       <div className="ch-rs-skel-desk">
-        <header className="ch-rs-head">
+        <header className="ch-rs-head" data-canopy-head="">
           <div>
             <Skeleton width={180} height={30} radius={15} />
             <Skeleton width={280} height={40} radius={10} />
