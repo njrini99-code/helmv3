@@ -198,7 +198,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
                 {rest.length > 0 && (
                   <section className="ch-qf-sec" aria-labelledby="ch-qf-active">
                     <h2 id="ch-qf-active">Active</h2>
-                    <div className="ch-qf-grid">
+                    <div className="ch-qf-grid is-ledger">
                       {rest.map((i) => (
                         <Card key={i.id} item={i} standingsError={data.standingsError} />
                       ))}
@@ -209,7 +209,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
                   <section className="ch-qf-sec" aria-labelledby="ch-qf-concluded">
                     <h2 id="ch-qf-concluded">Concluded</h2>
                     {concluded.length ? (
-                      <div className="ch-qf-grid">
+                      <div className="ch-qf-grid is-ledger">
                         {concluded.map((i) => (
                           <Card key={i.id} item={i} standingsError={data.standingsError} />
                         ))}
@@ -257,7 +257,7 @@ function Hero({ item, standingsError }: { item: ChQListItem; standingsError: boo
         </span>
       </div>
       {live && (
-        <div className="ch-qf-lead ch-well-soft">
+        <div className="ch-qf-lead ch-scoreboard">
           <div className="ch-qf-lead__h ch-num">
             <span>Leaders</span>
             <span>

@@ -1,5 +1,12 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-06 — Leaders on the scoreboard, ledger lists, serif titles
+
+The live qualifier's leaders sit on the green scoreboard, a tournament board, with ivory names, red under par and the
+top-score line in mint. Active and concluded qualifiers are no longer grids of cards: each is a ledger row on the page
+between gilt rules, separated by seams, with a tinted hover. The page title and the live qualifier's name are set in
+the display serif.
+
 ## 2026-10-06 — Display type relaxed
 
 The owner found the display type too compact. Display headings on this page widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on every Clubhouse page. Layout and content are unchanged.
