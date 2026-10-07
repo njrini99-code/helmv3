@@ -11,7 +11,7 @@
  *
  * Reduced motion → rule drawn, pips set, no fade.
  */
-import { m, useReducedMotion } from 'framer-motion';
+import { m, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { rulesDraw, EASE_GLIDE } from './motion';
 

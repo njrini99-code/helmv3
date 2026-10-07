@@ -1,6 +1,6 @@
 'use client';
 
-import { LazyMotion } from 'framer-motion';
+import { LazyMotion } from 'motion/react';
 import { loadMaxFeatures } from '@/lib/motion/load-features';
 import { useEffect, type ReactNode } from 'react';
 import type { GolfUserData } from '@/contexts/golf-user-context';

@@ -5,7 +5,7 @@
  * Reduced motion renders the destination immediately. */
 
 import { forwardRef, useMemo } from 'react';
-import { motion, type Transition } from 'framer-motion';
+import { motion, type Transition } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 

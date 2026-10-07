@@ -103,12 +103,12 @@ All verified in `package.json`.
 | **Sonner** | Toast notifications | Open-source | `sonner ^2.0`; Toaster in `src/app/layout.tsx` | Yes | — |
 | **cmdk** | Command palette | Open-source | `cmdk ^1.1`; `src/components/CommandPalette.tsx`, `src/components/golf/CommandPalette.tsx` | Yes | — |
 | **Number Flow** | Animated stat numbers | Open-source | `@number-flow/react ^0.6`; `src/components/ui/animated-number.tsx` | Yes | — |
-| **framer-motion** | Animations / motion | Open-source | `framer-motion ^12.40` | Yes | — |
+| **Motion** (formerly framer-motion) | Animations / motion, imported from `motion/react` | Open-source | `motion ^14.0` | Yes | — |
 | **Recharts + visx** | Charts / data-viz | Open-source | `recharts ^3.8`, `@visx/visx ^3.12` | Yes | — |
 | **react-day-picker** | Date/calendar picker | Open-source | `react-day-picker ^10.0` | Yes | — |
 | **dnd-kit** | Drag-and-drop | Open-source | `@dnd-kit/core`, `/sortable`, `/utilities` | Yes | — |
 | **Radix UI** | Accessible headless primitives (dialog, dropdown, popover, tabs, tooltip, toggle-group, etc.) | Open-source | `@radix-ui/react-*` | Yes | — |
-| **Base UI** | Additional headless UI primitives | Open-source | `@base-ui-components/react ^1.0.0-rc` | Yes | — |
+| **Base UI** | Additional headless UI primitives | Open-source | `@base-ui/react ^1.8` | Yes | — |
 | **Also present** (verified): `lucide-react` (icons), `geist` (font), `vaul` (drawer), `lenis` (smooth scroll), `@tanstack/react-table`, `html2canvas`, `jspdf`, `zustand` (state), `zod` (validation) | Supporting UI/util libs | Open-source | package.json | Yes/No (mixed) | Listed for completeness |
 
 ---

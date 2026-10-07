@@ -54,7 +54,7 @@ import {
   AnimatePresence,
   motion,
   type Variants,
-} from 'framer-motion';
+} from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';

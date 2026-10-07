@@ -20,7 +20,7 @@
  * ========================================================================== */
 
 import * as React from "react";
-import { Field } from "@base-ui-components/react/field";
+import { Field } from "@base-ui/react/field";
 import { cn } from "@/lib/utils";
 import {
   labelClasses,

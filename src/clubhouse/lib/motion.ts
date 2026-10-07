@@ -1,4 +1,4 @@
-import type { Transition } from 'framer-motion';
+import type { Transition } from 'motion/react';
 
 /**
  * Clubhouse motion (D-64, the v2 design's gh-polish.css and gh-core.js),

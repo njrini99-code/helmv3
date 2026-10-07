@@ -24,7 +24,7 @@
  */
 
 import * as React from 'react';
-import { m, useReducedMotion } from 'framer-motion';
+import { m, useReducedMotion } from 'motion/react';
 import { DURATION, EASE_CINEMATIC, STAGGER_STEP } from '@/lib/coachhelm/v3/motion';
 
 type RevealProps = Omit<

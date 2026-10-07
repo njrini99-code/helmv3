@@ -20,7 +20,7 @@
 // =============================================================================
 
 import { useMemo, useState, useCallback, type KeyboardEvent } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 

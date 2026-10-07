@@ -27,7 +27,7 @@
  * ========================================================================== */
 
 import { forwardRef, isValidElement } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Inbox, SearchX, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { revealVariants } from './motion';

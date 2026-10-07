@@ -32,7 +32,7 @@ vi.mock('next/link', () => ({
 // assertable instead of relying on framer-motion internals.
 const motionState = vi.hoisted(() => ({ reducedMotion: false as boolean }));
 
-vi.mock('framer-motion', async () => {
+vi.mock('motion/react', async () => {
   const React = await import('react');
   return {
     useReducedMotion: () => motionState.reducedMotion,

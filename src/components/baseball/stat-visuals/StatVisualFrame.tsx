@@ -33,7 +33,7 @@
 // =============================================================================
 
 import * as React from 'react';
-import { type HTMLMotionProps, LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { type HTMLMotionProps, LazyMotion, m, useReducedMotion } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';

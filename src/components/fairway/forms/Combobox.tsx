@@ -17,7 +17,7 @@
  * ========================================================================== */
 
 import * as React from "react";
-import { Combobox as BaseCombobox } from "@base-ui-components/react/combobox";
+import { Combobox as BaseCombobox } from "@base-ui/react/combobox";
 import { cn } from "@/lib/utils";
 import { useModalPortalContainer } from "@/components/fairway/overlays/_shared";
 import { popupClasses, popupPositionerClasses, optionClasses, type FieldSize } from "./styles";

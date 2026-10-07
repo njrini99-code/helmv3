@@ -12,7 +12,7 @@
  *   RE-P6 — a tee list prefetched on pointer-down renders with no skeleton.
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/coachhelm/v3/motion', () => ({ useReducedMotionGuard: () => false }));

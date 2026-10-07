@@ -30,7 +30,7 @@
 
 import * as React from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -181,7 +181,7 @@ function ModalShellRoot({
   //
   // Base UI stamps `data-popup-open` on a popup's trigger/input element (the
   // Select trigger, the Combobox input, …) for exactly as long as that
-  // popup is open — see @base-ui-components/react's CommonTriggerDataAttributes.
+  // popup is open — see @base-ui/react's CommonTriggerDataAttributes.
   // We use it as a live, DOM-truth signal: if any such element inside this
   // dialog currently has an open popup, this Escape press was meant for the
   // popup, not the dialog — `preventDefault()` so DismissableLayer's own

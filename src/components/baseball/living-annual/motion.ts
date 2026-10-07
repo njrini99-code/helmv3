@@ -13,12 +13,12 @@
  *     motion).
  *   • GPU transform / opacity / SVG pathLength only — no layout-thrashing props.
  *
- * Import `m` / `useReducedMotion` from 'framer-motion' in the consuming
+ * Import `m` / `useReducedMotion` from 'motion/react' in the consuming
  * components (as the golf HeroInsightCard exemplar does); this module only
  * produces the variants + one convenience hook.
  */
-import { useReducedMotion } from 'framer-motion';
-import type { Variants } from 'framer-motion';
+import { useReducedMotion } from 'motion/react';
+import type { Variants } from 'motion/react';
 
 /** Cinematic settle — the house curve (mirrors --fw-ease-glide). */
 export const EASE_GLIDE: [number, number, number, number] = [0.16, 1, 0.3, 1];

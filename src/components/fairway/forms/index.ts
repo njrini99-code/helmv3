@@ -3,7 +3,7 @@
  * Fairway · forms — public surface
  * ----------------------------------------------------------------------------
  * Warm, calm, trustworthy form primitives for the Fairway design system, built
- * on @base-ui-components/react for behavior + ARIA. Inline validation that
+ * on @base-ui/react for behavior + ARIA. Inline validation that
  * never shifts layout; visible labels always; full hover / focus-visible /
  * active states; reduced-motion + reduced-transparency safe.
  *

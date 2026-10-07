@@ -24,7 +24,7 @@
  * ========================================================================== */
 
 import { useState, useSyncExternalStore, type Dispatch, type SetStateAction } from 'react';
-import { m, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { MapPin, Check, BarChart3, Trophy, Search, ChevronLeft } from 'lucide-react';
 

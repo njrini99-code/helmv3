@@ -11,7 +11,7 @@
  * `AdminMotionProvider` to load framer-motion's `domMax` feature set, or does
  * it work under `domAnimation` (what `AdminMotionProvider` actually loads)?
  *
- * `motion.*` (imported directly from `'framer-motion'`, as `segmented.tsx`
+ * `motion.*` (imported directly from `'motion/react'`, as `segmented.tsx`
  * does) is NOT the lazy `m.*` family `LazyMotion`/`domAnimation`/`domMax`
  * gate. `render/components/motion/proxy.mjs` builds `motion` via
  * `createMotionProxy(featureBundle, ...)`, where `featureBundle`

@@ -32,7 +32,7 @@
  * ========================================================================== */
 
 import { memo } from 'react';
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { cn } from '@/lib/utils';
 import { NavPendingDot } from './NavPending';

@@ -237,6 +237,7 @@ export default tseslint.config(
         {
           paths: [
             { name: "framer-motion", importNames: ["useReducedMotion"], message: "Use useChReducedMotion() from '@/clubhouse/lib/reduced-motion'." },
+            { name: "motion/react", importNames: ["useReducedMotion"], message: "Use useChReducedMotion() from '@/clubhouse/lib/reduced-motion'." },
             { name: "@/lib/utils/capacitor", importNames: ["triggerHaptic", "triggerSelectionHaptic"], message: "Use haptic() from '@/clubhouse/lib/haptics'." },
           ],
           patterns: [

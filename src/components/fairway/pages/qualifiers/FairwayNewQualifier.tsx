@@ -328,7 +328,6 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
                 >
                   <Checkbox
                     value="confirmed"
-                    aria-label="This qualifier intentionally allows one 18-hole round"
                     label="This qualifier intentionally allows one 18-hole round."
                     description="Players who finish it cannot enter another qualifier round unless you raise the cap."
                   />
