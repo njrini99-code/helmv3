@@ -615,7 +615,7 @@ since both change behaviour the first pass shipped.
   present (`src/lib/observability/vercel-wait-until.ts`) and await under
   `BRIDGE_PROCESS_WRITE_TIMEOUT_MS`.
 - **A missing/malformed Inngest credential in production is a Bridge error
-  row** (`src/lib/inngest/credentials.ts`,
+  row** (the Inngest credentials module (removed 2026-10-06),
   `provider_inngest_missing_credential`, feature `integrations`) from process
   start, from every `isInngestConfigured() === false`, and from every signed
   inbound request to `/api/inngest` (the SDK answers 500 there, never the 401
@@ -1737,7 +1737,7 @@ the full description of each module; summarized here for the change record.
   reads (not invented) — e.g. the 2026-08-25 CoachHelm recap-persist
   permission-denied incident, the 2026-09-02 command-palette missing-column
   incident, `src/lib/notifications/push.ts`'s Apple dead-token handling,
-  `src/app/api/inngest/route.ts`'s signature-failure messages.
+  the Inngest route handler (removed 2026-10-06)'s signature-failure messages.
 - **`aliases.ts`** — `classifyMergeConfidence` / `groupIntoRootIncidents`:
   a SECOND pass above `correlate.ts`'s existing exact-signature join,
   grouping already-built incident-shaped facts into root incidents via

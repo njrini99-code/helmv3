@@ -89,8 +89,8 @@
   `src/lib/observability/__tests__/register-process-error-handlers.test.ts` (7),
   `src/lib/admin/__tests__/observed-action-scheduling.test.ts` (3),
   `src/test/lib/admin/integration-health-scheduling.test.ts` (2),
-  `src/lib/inngest/__tests__/credentials.test.ts` (9),
-  `src/lib/inngest/__tests__/is-inngest-configured.test.ts` (4),
+  the Inngest credentials test (removed 2026-10-06) (9),
+  the isInngestConfigured test (removed 2026-10-06) (4),
   `src/lib/admin/__tests__/feature-aliases.test.ts` (17),
   `src/lib/admin/__tests__/credential-shape.test.ts` (26),
   `src/test/scripts/check-helm-bridge-env.test.ts` (5 — spawns the real

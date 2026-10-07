@@ -62,11 +62,6 @@ vi.mock('@/lib/coachhelm/v2/post-round-trigger', () => ({
   postRoundTrigger: vi.fn(async () => ({ success: true })),
 }));
 
-vi.mock('@/lib/inngest/client', () => ({
-  inngest: { send: vi.fn(async () => ({ ids: ['fake-event-id'] })) },
-  isInngestConfigured: vi.fn(() => false),
-}));
-
 const enqueueJobMock = vi.fn(
   async (
     _queue: string,
@@ -178,7 +173,7 @@ function seed() {
       golf_rounds: [
         // Seeded 'in_progress' so resubmission stays reachable across both
         // calls in the same test, mirroring
-        // golf-round-submit-inngest-routing.test.ts's dedup test.
+        // golf-round-submit-post-round-routing.test.ts's resubmission test.
         { id: ROUND_ID, player_id: 'player-1', status: 'in_progress', draft_data: null },
       ],
     },

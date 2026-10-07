@@ -3936,33 +3936,6 @@
     ],
     "jobs": [
       {
-        "id": "inngest:coachhelm-round-submitted",
-        "kind": "inngest",
-        "trigger": {
-          "type": "event",
-          "value": "coachhelm/round.submitted"
-        },
-        "definedIn": "src/lib/inngest/functions.ts"
-      },
-      {
-        "id": "inngest:inngest-health-probe",
-        "kind": "inngest",
-        "trigger": {
-          "type": "event",
-          "value": "helm/health.ping"
-        },
-        "definedIn": "src/lib/inngest/functions.ts"
-      },
-      {
-        "id": "inngest:weekly-health-ping",
-        "kind": "inngest",
-        "trigger": {
-          "type": "cron",
-          "value": "0 14 * * 1"
-        },
-        "definedIn": "src/lib/inngest/functions.ts"
-      },
-      {
         "id": "vercel_cron:/api/cron/admin-digest",
         "kind": "vercel_cron",
         "path": "/api/cron/admin-digest",
@@ -15812,11 +15785,6 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
-          "anchor": "src/lib/admin/provider-fault"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/golf.ts",
           "anchor": "src/lib/supabase/admin"
         },
         {
@@ -23468,7 +23436,7 @@
   ],
   "notes": {
     "journeys": null,
-    "unmapped": "Probed files with no registry owner (a real gap this graph surfaces, not fixed here): src/lib/inngest/functions.ts.",
+    "unmapped": null,
     "tableAttribution": "A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer."
   }
 }
