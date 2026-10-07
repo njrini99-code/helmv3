@@ -1,5 +1,13 @@
 # Clubhouse changelog
 
+## 2026-10-07 — Digits in serif headings, phone text floor
+
+Display-serif headings that come from data set their digits in the sans (`SerifText`, `.ch-serif-num`): the serif's
+1 has no flag, so 11 read as ll. This covers CoachHelm's insight and deep-dive titles, Team Hub's announcement and
+trip names, and the live qualifier's name. The Standing and Deep dive counts inside serif headlines use the same sans
+figures. New captions under 12px (the Rounds range ends and date day, the Roster figure labels) are raised to 12px,
+the phone text floor.
+
 ## 2026-10-06 — More contrast
 
 The owner said there wasn't a lot of contrast. The desktop's secondary and tertiary inks move one step darker, to the

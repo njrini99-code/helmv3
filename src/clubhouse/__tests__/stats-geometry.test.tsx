@@ -83,7 +83,7 @@ describe('Team stats hold their geometry across windows', () => {
     // The trend's list keeps its top when it shortens, and a tab's count is two digits wide at least.
     expect(css).toMatch(/\.ch-sgt__ends\s*{[^}]*align-self: start/);
     expect(css).toMatch(/\.ch-tab-t__n\s*{[^}]*min-width: 2ch/);
-    // 196 six across with one-line labels, 213 where they wrap (a canvas of 901 to 1116px), 155 two across; the skeleton's card and the held card share it.
+    // 200 six across with one-line labels, 217 where they wrap (a canvas of 901 to 1116px), 159 two across (re-measured 2026-10-07); the skeleton's card and the held card share it.
     expect(css).toMatch(/\.ch-fg\s*{\s*--ch-fg-h: 200px/);
     expect(css).toMatch(/min-width: 901px\) and \(max-width: 1116px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 217px/);
     expect(css).toMatch(/min-width: 901px\) and \(max-width: 940px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 233px/);

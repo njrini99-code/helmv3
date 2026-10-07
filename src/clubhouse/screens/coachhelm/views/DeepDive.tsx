@@ -23,6 +23,7 @@ import { BoardPartial, Evidence } from '../parts';
 import { coachHelmLinks } from '../PlayerBoard';
 import { useHydrated } from '../use-hydrated';
 import { HelmOff, PlayerHelmFrame } from './Frame';
+import { SerifText } from '../../../ui/SerifText';
 
 const LINE = 'Every read CoachHelm has made on your game: what it measured, the rounds behind it, how it has moved, and where it goes in your plan.';
 
@@ -264,7 +265,9 @@ function Dossier({ i, d }: { i: ChDeepInsight; d: ChDeepDive }) {
           <span>{b.category}</span>
           <span className={'ch-hl-pri is-' + i.stance.cls}>{i.stance.word}</span>
         </div>
-        <h2 id={`${b.id}-t`}>{b.title}</h2>
+        <h2 id={`${b.id}-t`}>
+          <SerifText text={b.title} />
+        </h2>
         {b.lede && <p className="ch-hl-lede">{b.lede}</p>}
         {/* A read from before the newest round is never drawn as current (CH-13903). */}
         {b.stale && (

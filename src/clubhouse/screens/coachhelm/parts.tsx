@@ -6,6 +6,7 @@ import { stanceOf, type ChBoardMissing, type ChHelmAssigned, type ChHelmEvidence
 import { haptic } from '../../lib/haptics';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
+import { SerifText } from '../../ui/SerifText';
 
 /**
  * The stance pill: amber for a Priority, and a word, so priority never rests on colour alone (CH-13806). A strength reads Working,
@@ -115,7 +116,9 @@ export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: Ch
         <span>{who ? `${who} · ${ins.category}` : ins.category}</span>
         <PriPill ins={ins} assigned={assigned} />
       </div>
-      <h2 id={`${id}-t`}>{ins.title}</h2>
+      <h2 id={`${id}-t`}>
+        <SerifText text={ins.title} />
+      </h2>
       {ins.lede && <p className="ch-hl-lede">{ins.lede}</p>}
       {/* CH-13903: a read from before the newest round is never drawn as current. */}
       {ins.stale && (

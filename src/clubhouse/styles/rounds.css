@@ -321,7 +321,7 @@
 .ch-rd-range__ends {
   display: flex;
   justify-content: space-between;
-  font: 600 11px/1 var(--ch-font-sans);
+  font: 600 12px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 /* Putts: a bar against two putts a green (36), ticked. */
@@ -632,7 +632,7 @@ a.ch-rd-sc:focus-visible {
   letter-spacing: -0.02em;
 }
 .ch-rd-sc__date em {
-  font: 600 11px/1 var(--ch-font-sans);
+  font: 600 12px/1 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }

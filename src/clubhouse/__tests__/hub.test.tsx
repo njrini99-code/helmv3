@@ -1223,12 +1223,12 @@ const scenarios: Scenario[] = [
     },
     notYet: () => {
       expect(dialogOpen()).toBe(true);
-      expect(screen.getByText(SHORT_GAME)).toBeTruthy();
+      expect(screen.getByRole('heading', { level: 3, name: SHORT_GAME })).toBeTruthy();
       expect(router.refresh).not.toHaveBeenCalled();
     },
     landed: async () => {
       await waitFor(() => expect(dialogOpen()).toBe(false));
-      expect(screen.queryByText(SHORT_GAME)).toBeNull();
+      expect(screen.queryByRole('heading', { level: 3, name: SHORT_GAME })).toBeNull();
       await refreshed();
     },
   },

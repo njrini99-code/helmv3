@@ -1,5 +1,9 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-07 — Digits in serif titles
+
+Data-fed serif titles set their digits in the sans (shared `SerifText`; see the cross-page log), so a name or title with figures reads cleanly.
+
 ## 2026-10-06 — Leaders on the scoreboard, ledger lists, serif titles
 
 The live qualifier's leaders sit on the green scoreboard, a tournament board, with ivory names, red under par and the

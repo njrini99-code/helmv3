@@ -20,6 +20,7 @@ import { ctaLabel } from './model';
 import { Meta, StatusPill, ToPar } from './parts';
 import { isPlainClick, noteOpenedFromList } from './return-state';
 import '../../styles/qualifiers.css';
+import { SerifText } from '../../ui/SerifText';
 
 type Filter = 'all' | 'active' | 'concluded';
 const isActive = (i: ChQListItem) => i.status !== 'completed';
@@ -247,7 +248,9 @@ function Hero({ item, standingsError }: { item: ChQListItem; standingsError: boo
     <Link href={detailHref(item.id)} className="ch-qf-hero" onClick={opened(item.id, 'hero')}>
       <div className="ch-qf-hero__main">
         <StatusPill status={item.status} />
-        <h2>{item.name}</h2>
+        <h2>
+          <SerifText text={item.name} />
+        </h2>
         {item.description && <p>{item.description}</p>}
         <Meta startDate={item.startDate} endDate={item.endDate} squad={item.squad} course={item.course} />
         {!standingsError && <Mine item={item} />}

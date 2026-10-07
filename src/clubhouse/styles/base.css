@@ -267,3 +267,13 @@
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Digits inside a display-serif heading (SerifText): the sans, a step smaller so its figures sit on the serif's x-height. */
+.ch-serif-num {
+  font-family: var(--ch-font-sans);
+  font-size: 0.84em;
+  font-style: normal;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
