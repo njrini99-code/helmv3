@@ -18,6 +18,7 @@ export function Swap({
   kind = 'settle',
   dir = 1,
   className,
+  inline = false,
   children,
 }: {
   swapKey: string | number;
@@ -25,13 +26,17 @@ export function Swap({
   /** `slide` only: 1 when moving forward (the next round, the next hole), -1 when moving back. */
   dir?: 1 | -1;
   className?: string;
+  /** A figure inside a line of text (a stat's value): spans, laid out inline. */
+  inline?: boolean;
   children: ReactNode;
 }) {
   const reduced = useChReducedMotion();
+  const Frame = inline ? 'span' : 'div';
+  const Item = inline ? m.span : m.div;
   return (
-    <div className={'ch-swap' + (className ? ` ${className}` : '')}>
+    <Frame className={'ch-swap' + (inline ? ' ch-swap--inline' : '') + (className ? ` ${className}` : '')}>
       <AnimatePresence mode="popLayout" initial={false} custom={dir}>
-        <m.div
+        <Item
           key={swapKey}
           className="ch-swap__item"
           custom={dir}
@@ -40,20 +45,21 @@ export function Swap({
           animate="shown"
           exit="leave"
         >
-          <Leaving>{children}</Leaving>
-        </m.div>
+          <Leaving inline={inline}>{children}</Leaving>
+        </Item>
       </AnimatePresence>
-    </div>
+    </Frame>
   );
 }
 
 /** The leaving copy keeps its pixels for the fade but drops out of the accessibility tree and focus order at once. */
-function Leaving({ children }: { children: ReactNode }) {
+function Leaving({ inline, children }: { inline: boolean; children: ReactNode }) {
   const present = useIsPresent();
+  const Body = inline ? 'span' : 'div';
   return (
-    <div className="ch-swap__body" aria-hidden={present ? undefined : true} inert={!present}>
+    <Body className="ch-swap__body" aria-hidden={present ? undefined : true} inert={!present}>
       {children}
-    </div>
+    </Body>
   );
 }
 

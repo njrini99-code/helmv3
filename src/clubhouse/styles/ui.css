@@ -639,3 +639,11 @@
 .ch-swap__body {
   min-width: 0;
 }
+
+.ch-swap--inline,
+.ch-swap--inline .ch-swap__item,
+.ch-swap--inline .ch-swap__body {
+  display: inline-flex;
+  align-items: baseline;
+  gap: inherit;
+}

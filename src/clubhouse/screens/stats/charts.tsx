@@ -7,6 +7,7 @@ import { SerifText } from '../../ui/SerifText';
 import { monotonePath } from '../../lib/chart';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { sgScale, sgShare } from '../../lib/sg';
+import { Swap } from '../../ui/Swap';
 
 /**
  * The yardage book: charts drawn the way a caddie's book reads, numbers where
@@ -97,8 +98,11 @@ function FigureCard({ it, lead = false }: { it: FigureItem; lead?: boolean }) {
     <div className={'ch-fg__c' + (lead ? ' ch-fg__c--lead' : '')} data-ch-code={it.code}>
       <span className="ch-fg__l">{it.label}</span>
       <span className={'ch-fg__v ch-num' + (it.tone ? ` ch-${it.tone}` : '')}>
-        {it.value}
-        {it.unit && it.value !== NO_DATA && <small>{it.unit}</small>}
+        {/* A new window's figure crossfades in where the old one was (CH-5604, CH-4604). */}
+        <Swap swapKey={`${it.value}${it.unit ?? ''}`} inline>
+          {it.value}
+          {it.unit && it.value !== NO_DATA && <small>{it.unit}</small>}
+        </Swap>
       </span>
       <span className="ch-fg__d">
         {d != null && (
