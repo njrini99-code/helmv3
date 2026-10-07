@@ -39,7 +39,7 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 - Design: approved
 - Implementation: in_progress
 - Contract: complete; 19 of 25 categories have catalog contracts
-- Bridge: reserved; 63 IDs, 52 on an element or in code, 11 reserved
+- Bridge: reserved; 64 IDs, 53 on an element or in code, 11 reserved
 - Data: existing; 0 held plan(s)
 - Verification: partial
 - Docs: current
@@ -49,7 +49,7 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 - Design: approved
 - Implementation: in_progress
 - Contract: complete; 20 of 25 categories have catalog contracts
-- Bridge: reserved; 84 IDs, 71 on an element or in code, 13 reserved
+- Bridge: reserved; 85 IDs, 72 on an element or in code, 13 reserved
 - Data: existing; 0 held plan(s)
 - Verification: partial
 - Docs: current

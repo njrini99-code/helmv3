@@ -6,6 +6,9 @@ Switching the trend between Strokes gained and Scoring now crossfades the plot
 with a 6px rise (CH-4603, the shared `Swap`), where it used to swap in one
 frame. With reduced motion it is instant.
 
+A window change also moves the figure line (CH-4604). Each changed figure
+crossfades to its new value, and each gauge's fill moves to its new length.
+
 ## 2026-10-07 — Team stats on the Ledger
 
 On desktop, the strokes gained chart, the leg trends, the player grid, team

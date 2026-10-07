@@ -9,6 +9,11 @@ through the shared `Swap` (CH-5603): the new panel fades in with a 6px rise
 while the old one fades out, hidden from assistive tech. With reduced motion
 the swap is instant, and it never runs on first paint.
 
+Changing the window (Last 10, Season, Qualifiers) now moves the figures too
+(CH-5604). Each figure that changed crossfades to its new value, and each
+gauge's fill moves to its new length, where both used to jump. Nothing counts
+up.
+
 ## 2026-10-07 — The profile takes the page head
 
 On desktop, the profile's striped banner card is now the framed page head:

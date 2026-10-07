@@ -214,13 +214,14 @@ Status: N/A — Team stats has no live data and no write to reconcile: every fig
 
 Status: DEFINED
 
-Team stats' own motion is the trend focus, the leg choice and the trend's measure swap (41601, 41602, 41603), and the busy dim of a window change (40301). Everything else is the shell's: v2 press, reveal, sheets and pushes (11601 to 11612, D-64).
+Team stats' own motion is the trend focus, the leg choice, the trend's measure swap and a new window's figures (41601, 41602, 41603, 41604), and the busy dim of a window change (40301). Everything else is the shell's: v2 press, reveal, sheets and pushes (11601 to 11612, D-64).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 41601 | CH-4601 | `FOCUSING_A_PLAYER_ON_THE_TREND` | Focusing a player on the trend |
 | 41602 | CH-4602 | `CHOOSING_A_LEG` | Choosing a leg |
 | 41603 | CH-4603 | `CHANGING_THE_TRENDS_MEASURE` | Changing the trend's measure |
+| 41604 | CH-4604 | `A_NEW_WINDOWS_FIGURES_ARRIVE` | A new window's figures arrive |
 
 From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
 

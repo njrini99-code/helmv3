@@ -101,8 +101,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P001 | 3 | 1 | 1 | 5 |  | 11 | 4 | 3 | 1 |  |  |  | 1 | 2 |  | 12 | 7 | 14 | 1 | 1 | 1 | 3 | 1 | 1 |  | 73 |
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
 | P003 | 2 | 1 | 3 | 8 | 2 | 18 | 1 | 6 | 1 |  | 1 | 3 | 1 | 3 |  | 2 | 4 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 68 |
-| P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 3 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 63 |
-| P005 | 4 | 2 | 2 | 22 | 2 | 18 | 3 | 6 | 1 |  |  | 2 |  | 1 | 1 | 3 | 3 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 84 |
+| P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
+| P005 | 4 | 2 | 2 | 22 | 2 | 18 | 3 | 6 | 1 |  |  | 2 |  | 1 | 1 | 4 | 3 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 85 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 27 | 1 | 8 | 1 | 2 | 4 | 3 | 2 | 2 | 1 | 3 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 91 |
 | P007 | 2 | 10 | 1 | 9 | 5 | 35 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 94 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 40 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 127 |
@@ -382,6 +382,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 41601 | CH-4601 | 16 Micro animation | `FOCUSING_A_PLAYER_ON_THE_TREND` | reserved | Focusing a player on the trend |
 | 41602 | CH-4602 | 16 Micro animation | `CHOOSING_A_LEG` | reserved | Choosing a leg |
 | 41603 | CH-4603 | 16 Micro animation | `CHANGING_THE_TRENDS_MEASURE` | reserved | Changing the trend's measure |
+| 41604 | CH-4604 | 16 Micro animation | `A_NEW_WINDOWS_FIGURES_ARRIVE` | implemented | A new window's figures arrive |
 | 41701 | CH-4701 | 17 Haptic | `CHOOSING_A_LEG_FOCUSING_A_PLAYER_CHANGING` | reserved | Choosing a leg, focusing a player, changing the window or lens |
 | 41702 | CH-4702 | 17 Haptic | `AN_EXPORT_LANDS_FAILS` | reserved | An export lands / fails |
 | 41703 | CH-4703 | 17 Haptic | `SORTING_THE_PHONES_PLAYERS_BY_AVG_OR` | implemented | Sorting the phone's players by Avg or SG |
@@ -469,6 +470,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 51601 | CH-5601 | 16 Micro animation | `CHANGING_TABS` | reserved | Changing tabs |
 | 51602 | CH-5602 | 16 Micro animation | `OPENING_ADD_FOCUS_AREA` | reserved | Opening Add focus area |
 | 51603 | CH-5603 | 16 Micro animation | `THE_TABS_PANEL_SWAPS` | reserved | The tab's panel swaps |
+| 51604 | CH-5604 | 16 Micro animation | `A_NEW_WINDOWS_FIGURES_ARRIVE` | implemented | A new window's figures arrive |
 | 51701 | CH-5701 | 17 Haptic | `CHANGING_TABS_THE_WINDOW_OR_PAGING_PLAYERS` | reserved | Changing tabs, the window, or paging players; choosing a Game detail leg |
 | 51702 | CH-5702 | 17 Haptic | `PROPOSING_A_FOCUS_AREA_WITH_NO_NAME` | reserved | Proposing a focus area with no name |
 | 51703 | CH-5703 | 17 Haptic | `CHOOSING_A_ROUND_TYPE_A_LENGTH_A` | reserved | Choosing a round type, a length (18 holes, 9 holes, Both), a course or a round in the filter sheet, choosing a window or a pick mode there, or removing a chip / Clear |
