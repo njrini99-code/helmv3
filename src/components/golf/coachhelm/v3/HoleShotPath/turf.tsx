@@ -78,6 +78,7 @@ import { useId, type ReactNode } from 'react';
 import { VB, GREEN_INSET_VB, type YardageTick, type PlottedGreenInset } from './geometry';
 import type { HoleShotPathProps } from './types';
 import { EASE_CINEMATIC, useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import { COURSE_SCENE } from '@/lib/golf/course-illustration-palette';
 
 // `types.ts` is a read-only shared contract this redesign doesn't touch, so
 // the new `review` size variant (see index.tsx's `SizeKey`) is added HERE,
@@ -225,20 +226,20 @@ export function Turf({ size = 'card', showPinFlag = true, ticks, totalYardage }:
       <defs>
         {/* Field — the flat "out of bounds" canvas beyond the corridor. */}
         <linearGradient id={fieldGrad} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#12241b" />
-          <stop offset="100%" stopColor="#0e1c15" />
+          <stop offset="0%" stopColor={COURSE_SCENE.fieldTop} />
+          <stop offset="100%" stopColor={COURSE_SCENE.fieldBottom} />
         </linearGradient>
 
         {/* Fairway corridor — one flat fill, a subtle vertical gradient. */}
         <linearGradient id={fairwayGrad} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#2c6248" />
-          <stop offset="100%" stopColor="#245139" />
+          <stop offset="0%" stopColor={COURSE_SCENE.fairwayTop} />
+          <stop offset="100%" stopColor={COURSE_SCENE.fairwayBottom} />
         </linearGradient>
 
         {/* Green — a subtle radial sheen toward the top-left light source. */}
         <radialGradient id={greenGrad} cx="35%" cy="30%" r="70%">
-          <stop offset="0%" stopColor="#4fa676" />
-          <stop offset="100%" stopColor="#3d8a63" />
+          <stop offset="0%" stopColor={COURSE_SCENE.greenLight} />
+          <stop offset="100%" stopColor={COURSE_SCENE.greenShade} />
         </radialGradient>
       </defs>
 
@@ -252,11 +253,11 @@ export function Turf({ size = 'card', showPinFlag = true, ticks, totalYardage }:
       {/* 3. Green — crisp ellipse with a radial sheen, ringed by a clean
           concentric fringe line (drawn first so the green's own edge sits
           crisply on top of it, not the other way around). */}
-      <ellipse cx={GREEN_CX} cy={GREEN_CY} rx={FRINGE_RX} ry={FRINGE_RY} fill="none" stroke="#2f6b4f" strokeWidth="1" />
+      <ellipse cx={GREEN_CX} cy={GREEN_CY} rx={FRINGE_RX} ry={FRINGE_RY} fill="none" stroke={COURSE_SCENE.fringeEdge} strokeWidth="1" />
       <ellipse cx={GREEN_CX} cy={GREEN_CY} rx={GREEN_RX} ry={GREEN_RY} fill={`url(#${greenGrad})`} />
 
       {/* 4. Tee — a small, understated marker. */}
-      <rect x={TEE_X} y={TEE_Y} width={TEE_W} height={TEE_H} rx="1.4" fill="#6f5a3f" />
+      <rect x={TEE_X} y={TEE_Y} width={TEE_W} height={TEE_H} rx="1.4" fill={COURSE_SCENE.teeBox} />
 
       {/* 5. Yardage axis — the true-to-scale accuracy cue. Hidden entirely
           at `strip` (no room for legible marks); emphasis-only (50/100/150)
@@ -283,7 +284,7 @@ export function Turf({ size = 'card', showPinFlag = true, ticks, totalYardage }:
                 y={guideSpan.y1 - 4.4}
                 fontSize={ruler!.fontSize * 0.8}
                 fontWeight={600}
-                fill="#f4ecd8"
+                fill={COURSE_SCENE.cream}
                 fillOpacity="0.5"
                 fontFamily="ui-monospace, 'SF Mono', Menlo, Consolas, monospace"
                 style={{ pointerEvents: 'none', userSelect: 'none', letterSpacing: '0.05em' }}
@@ -327,18 +328,18 @@ export function Turf({ size = 'card', showPinFlag = true, ticks, totalYardage }:
                   y1={t.y}
                   x2={ruler!.x + len}
                   y2={t.y}
-                  stroke="#f4ecd8"
+                  stroke={COURSE_SCENE.cream}
                   strokeOpacity={strong ? 0.6 : 0.32}
                   strokeWidth="0.5"
                   strokeLinecap="round"
                 />
-                {strong && <circle cx={ruler!.x - 1.1} cy={t.y} r="0.6" fill="#f4ecd8" opacity="0.6" />}
+                {strong && <circle cx={ruler!.x - 1.1} cy={t.y} r="0.6" fill={COURSE_SCENE.cream} opacity="0.6" />}
                 <text
                   x={ruler!.x + len + 1.2}
                   y={t.y + ruler!.fontSize * 0.32}
                   fontSize={ruler!.fontSize}
                   fontWeight={strong ? 700 : 500}
-                  fill="#f4ecd8"
+                  fill={COURSE_SCENE.cream}
                   fillOpacity={strong ? 0.82 : 0.45}
                   fontFamily="ui-monospace, 'SF Mono', Menlo, Consolas, monospace"
                   style={{ pointerEvents: 'none', userSelect: 'none' }}
@@ -353,13 +354,13 @@ export function Turf({ size = 'card', showPinFlag = true, ticks, totalYardage }:
 
       {/* 6. Pin — mast + animated flag triangle. Cup sits exactly on
           geometry.ts's PIN (50,14), so a holed putt's dot lands on it. */}
-      <circle cx={PIN_X} cy={PIN_BASE_Y} r="1.3" fill="#0d1f17" />
+      <circle cx={PIN_X} cy={PIN_BASE_Y} r="1.3" fill={COURSE_SCENE.pinShadow} />
       <line
         x1={PIN_X}
         y1={PIN_BASE_Y}
         x2={PIN_X}
         y2={PIN_TOP_Y}
-        stroke="#f4ecd8"
+        stroke={COURSE_SCENE.cream}
         strokeWidth="0.4"
         strokeLinecap="round"
       />
@@ -371,11 +372,11 @@ export function Turf({ size = 'card', showPinFlag = true, ticks, totalYardage }:
         >
           <path
             d={`M ${PIN_X} ${PIN_TOP_Y} L ${PIN_X + 7} ${PIN_TOP_Y + 1.6} L ${PIN_X} ${PIN_TOP_Y + 3.2} Z`}
-            fill="#e3543b"
+            fill={COURSE_SCENE.flag}
           />
           <path
             d={`M ${PIN_X} ${PIN_TOP_Y} L ${PIN_X + 7} ${PIN_TOP_Y + 1.6} L ${PIN_X} ${PIN_TOP_Y + 1.6} Z`}
-            fill="#f8f2dd"
+            fill={COURSE_SCENE.creamBright}
             opacity="0.18"
           />
         </m.g>
@@ -453,23 +454,23 @@ export function GreenInsetScenery({
     <m.g aria-hidden="true" initial={panelInitial} animate={{ opacity: 1, scale: 1 }} transition={panelTransition} style={{ transformOrigin: `${cx}px ${cy}px` }}>
       <defs>
         <radialGradient id={insetGreenGrad} cx="45%" cy="40%" r="72%">
-          <stop offset="0%" stopColor="#8fcda3" />
-          <stop offset="60%" stopColor="#5fa87e" />
-          <stop offset="100%" stopColor="#3d7d5c" />
+          <stop offset="0%" stopColor={COURSE_SCENE.insetGreenLight} />
+          <stop offset="60%" stopColor={COURSE_SCENE.insetGreenMid} />
+          <stop offset="100%" stopColor={COURSE_SCENE.insetGreenShade} />
         </radialGradient>
         <filter id={insetShadow} x="-30%" y="-30%" width="160%" height="160%">
-          <feDropShadow dx="0" dy="0.8" stdDeviation="1" floodColor="#07140f" floodOpacity="0.42" />
+          <feDropShadow dx="0" dy="0.8" stdDeviation="1" floodColor={COURSE_SCENE.insetShadow} floodOpacity="0.42" />
         </filter>
       </defs>
 
       {/* Lens ring at the real pin position, + a leader line to the panel —
           the "this is what's zoomed" cue that ties the two coordinate
           systems together visually. */}
-      <circle cx={anchor.x} cy={anchor.y} r="4.2" fill="none" stroke="#f4ecd8" strokeOpacity="0.38" strokeWidth="0.4" strokeDasharray="1.1 1.3" />
+      <circle cx={anchor.x} cy={anchor.y} r="4.2" fill="none" stroke={COURSE_SCENE.cream} strokeOpacity="0.38" strokeWidth="0.4" strokeDasharray="1.1 1.3" />
       <path
         d={`M ${fmt(anchor.x)} ${fmt(anchor.y)} Q ${fmt((anchor.x + nearCorner.x) / 2)} ${fmt(anchor.y + (nearCorner.y - anchor.y) * 0.72)} ${fmt(nearCorner.x)} ${fmt(nearCorner.y)}`}
         fill="none"
-        stroke="#f4ecd8"
+        stroke={COURSE_SCENE.cream}
         strokeOpacity="0.26"
         strokeWidth="0.35"
         strokeDasharray="1.4 1.6"
@@ -477,7 +478,7 @@ export function GreenInsetScenery({
 
       {/* Panel backing — reads as a floating "card" over the corridor. */}
       <g filter={`url(#${insetShadow})`}>
-        <circle cx={cx} cy={cy} r={panelR} fill="#122720" fillOpacity="0.84" stroke="#f4ecd8" strokeOpacity="0.16" strokeWidth="0.5" />
+        <circle cx={cx} cy={cy} r={panelR} fill={COURSE_SCENE.panelInk} fillOpacity="0.84" stroke={COURSE_SCENE.cream} strokeOpacity="0.16" strokeWidth="0.5" />
       </g>
 
       {/* The zoomed detail — its own 100×100 viewport. Children plot in
@@ -498,7 +499,7 @@ export function GreenInsetScenery({
             cy={greenInset.pin.y}
             r={r}
             fill="none"
-            stroke="#0d1f17"
+            stroke={COURSE_SCENE.pinShadow}
             strokeOpacity="0.22"
             strokeWidth="0.5"
             strokeDasharray="1.6 1.4"
@@ -506,19 +507,19 @@ export function GreenInsetScenery({
         ))}
 
         {/* Hole + a small flag, echoing the corridor pin at inset scale. */}
-        <circle cx={greenInset.pin.x} cy={greenInset.pin.y} r="2.1" fill="#0a1a13" />
+        <circle cx={greenInset.pin.x} cy={greenInset.pin.y} r="2.1" fill={COURSE_SCENE.cup} />
         <line
           x1={greenInset.pin.x}
           y1={greenInset.pin.y}
           x2={greenInset.pin.x}
           y2={greenInset.pin.y - 9}
-          stroke="#f4ecd8"
+          stroke={COURSE_SCENE.cream}
           strokeWidth="0.6"
           strokeLinecap="round"
         />
         <m.path
           d={`M ${greenInset.pin.x} ${greenInset.pin.y - 9} L ${greenInset.pin.x + 6.5} ${greenInset.pin.y - 7.6} L ${greenInset.pin.x} ${greenInset.pin.y - 6.2} Z`}
-          fill="#e3543b"
+          fill={COURSE_SCENE.flag}
           animate={{ skewX: [0, -3, 0, 3, 0] }}
           transition={prefersReducedMotion ? { duration: 0 } : { duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           style={{ transformOrigin: `${greenInset.pin.x}px ${greenInset.pin.y - 8}px` }}
@@ -534,7 +535,7 @@ export function GreenInsetScenery({
         cy={cy - box.size * 0.22}
         rx={box.size * 0.34}
         ry={box.size * 0.18}
-        fill="#f8f2dd"
+        fill={COURSE_SCENE.creamBright}
         opacity="0.05"
       />
     </m.g>

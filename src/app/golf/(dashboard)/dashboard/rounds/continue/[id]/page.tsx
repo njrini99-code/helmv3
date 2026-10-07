@@ -14,7 +14,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { RoundTypeEditor } from '@/components/fairway/pages/rounds/RoundTypeEditor';
 
 export const metadata: Metadata = {
-  title: 'Continue Round | GolfHelm',
+  title: 'Continue Round',
   description: 'Resume tracking your in-progress golf round shot by shot.',
 };
 

@@ -82,7 +82,7 @@ export function ReviewBreakdown({
           <Eyebrow as="h3">Putting</Eyebrow>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <div className="min-w-0 space-y-2">
-              <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">By distance</p>
+              <p className="font-fw-sans text-caption text-text-tertiary">By distance</p>
               <div className="overflow-x-auto">
                 <RampMatrix cols={puttingRamp.cols} rows={[{ label: 'Makes', cells: puttingRamp.cells }]} />
               </div>
@@ -132,7 +132,7 @@ export function ReviewBreakdown({
 function BreakdownMetric({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 rounded-fw-sm bg-surface px-2.5 py-2">
-      <p className="truncate font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">{label}</p>
+      <p className="truncate font-fw-sans text-caption text-text-tertiary">{label}</p>
       <p style={TABULAR_NUMS} className="mt-0.5 font-fw-mono text-body-sm font-semibold tabular-nums text-text-primary">{value}</p>
     </div>
   );

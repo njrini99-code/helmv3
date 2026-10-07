@@ -97,6 +97,7 @@ async function getPlayerProfileStatsImpl(
         holes_played
       `)
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .not('total_score', 'is', null)
       .order('round_date', { ascending: false });
@@ -368,6 +369,7 @@ async function getPlayerQuickSummaryImpl(playerId: string): Promise<QuickSummary
       holes_played
     `)
     .eq('player_id', playerId)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .not('total_score', 'is', null);
 

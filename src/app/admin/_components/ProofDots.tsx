@@ -186,7 +186,7 @@ export function ProofGapList({ gaps }: { gaps: readonly ProofGap[] }) {
             {gap.ageMs !== null ? (
               <>
                 {' · '}
-                <RelativeTime sinceMs={Date.now() - gap.ageMs} className="text-warm-400" />
+                <RelativeTime sinceMs={Date.now() - gap.ageMs} className="text-warm-500" />
               </>
             ) : null}
           </span>

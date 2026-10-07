@@ -11,33 +11,13 @@ paths:
   - "memory/registry.yml"
 ---
 
-# GolfHelm Engineering OS — path-scoped rule
+# GolfHelm Engineering OS
 
-Full contract: `memory/system/golfhelm-engineering-os.md`. This file exists so
-the contract loads automatically on the paths it governs; edit the contract,
-not this pointer.
+Golf reliability contract: `memory/system/golfhelm-engineering-os.md`. The
+feature-doc rule (map with `npm run knowledge:map`, read the doc the registry
+names, update it when its contract changes) is in AGENTS.md "Context".
 
-Before meaningful mutation of a file under the paths above:
-
-1. Map it through `memory/registry.yml` (`npm run knowledge:map -- --files
-   <paths>`) to a `feature_id`.
-2. Read `memory/features/<feature_id>.md` — the canonical current-state doc —
-   before changing behavior, not after.
-3. Verify names/columns/paths against generated or live truth, not against
-   memory prose alone.
-
-After meaningful behavioral mutation:
-
-- Update `memory/features/<feature_id>.md` if current truth changed.
-- Append to `memory/ledgers/changes/<feature_id>.md` (what/why/sha) and
-  `memory/ledgers/tests/<feature_id>.md` when test guarantees changed.
-- Record an incident (`memory/incidents/<feature_id>/INC-*.md`) or a decision
-  (`memory/decisions/ADR-*.md`) when the change is incident- or
-  architecture-driven.
-- A non-behavioral change records a structured reason instead of a bare
-  "not needed" — see the contract's valid-reason list.
-
-Daily reliability operations on these paths never deploy, promote, roll back,
-or mutate production — see `config/release-policy.yml`. For a shared or
-production schema change, use `db-migration-reviewer` when the risk warrants an
-independent review; local-only changes need not invoke a reviewer agent.
+Record an incident (`memory/incidents/<feature_id>/INC-*.md`) or a decision
+(`memory/decisions/ADR-*.md`) when a change is incident- or
+architecture-driven. Scheduled reliability routines never deploy, promote,
+roll back, or mutate production (`config/release-policy.yml`).

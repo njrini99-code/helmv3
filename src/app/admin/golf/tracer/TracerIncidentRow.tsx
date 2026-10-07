@@ -17,27 +17,27 @@ export function TracerIncidentRow({ incident }: { incident: TracerIncident }) {
     <li>
       <details className="group py-2">
         <summary
-          className="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 text-sm [&::-webkit-details-marker]:hidden"
+          className="flex min-h-11 cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 text-sm [&::-webkit-details-marker]:hidden"
         >
           <StatusPill tone={TRACER_SEVERITY_TONE[incident.severity]} dot size="sm">
             {incident.severity}
           </StatusPill>
-          <span className="min-w-0 flex-1 basis-full truncate text-warm-900 sm:basis-auto">
+          <span className="min-w-0 flex-1 basis-full break-words text-warm-900 [overflow-wrap:anywhere] sm:basis-auto">
             {incident.title}
           </span>
-          <span className="font-fw-mono text-xs tabular-nums text-warm-600">
+          <span className="whitespace-nowrap font-fw-mono text-xs tabular-nums text-warm-600">
             {incident.occurrences} occurrence{incident.occurrences === 1 ? '' : 's'}
           </span>
-          <span className="font-fw-mono text-xs tabular-nums text-warm-500">
+          <span className="whitespace-nowrap font-fw-mono text-xs tabular-nums text-warm-500">
             {new Date(incident.lastSeen).toLocaleDateString()}
           </span>
           <ChevronDown
             size={14}
-            className="shrink-0 text-warm-400 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none"
+            className="ml-auto shrink-0 text-warm-500 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none"
             aria-hidden
           />
         </summary>
-        <div className="mt-2 space-y-1.5 rounded-lg bg-surface-sunken p-3 text-xs leading-5 text-warm-700">
+        <div className="mt-2 space-y-1.5 break-words rounded-lg bg-surface-sunken p-3 text-xs leading-5 text-warm-700 [overflow-wrap:anywhere]">
           <p><span className="font-semibold text-warm-900">What happened — </span>{incident.summary}</p>
           <p><span className="font-semibold text-warm-900">Why — </span>{incident.whyItHappened}</p>
           <p><span className="font-semibold text-warm-900">How to fix — </span>{incident.howToFix}</p>

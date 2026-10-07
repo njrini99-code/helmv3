@@ -51,6 +51,9 @@ vi.mock('framer-motion', async () => {
   };
 });
 
+const haptics = vi.hoisted(() => ({ fwHaptic: vi.fn() }));
+vi.mock('@/lib/fairway/haptics', () => ({ fwHaptic: haptics.fwHaptic }));
+
 function hrefFor(view: TriageView) {
   return `/golf/dashboard/intelligence?view=${view}`;
 }
@@ -84,6 +87,26 @@ describe('ViewSwitch', () => {
     expect(onSelect).toHaveBeenCalledWith('players');
     // jsdom's fireEvent.click return value is `false` when preventDefault() was called.
     expect(event).toBe(false);
+  });
+
+  it('fires one selection haptic on a real view change, none when re-tapping the active view', () => {
+    haptics.fwHaptic.mockReset();
+    const onSelect = vi.fn();
+    render(<ViewSwitch view="signals" hrefFor={hrefFor} onSelect={onSelect} />);
+
+    fireEvent.click(screen.getByRole('link', { name: 'Signals' }), { button: 0 });
+    expect(haptics.fwHaptic).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('link', { name: 'Players' }), { button: 0 });
+    expect(haptics.fwHaptic).toHaveBeenCalledTimes(1);
+    expect(haptics.fwHaptic).toHaveBeenCalledWith('selection');
+  });
+
+  it('fires no haptic on a modified (new-tab) click', () => {
+    haptics.fwHaptic.mockReset();
+    render(<ViewSwitch view="signals" hrefFor={hrefFor} onSelect={vi.fn()} />);
+    fireEvent.click(screen.getByRole('link', { name: 'Players' }), { button: 0, metaKey: true });
+    expect(haptics.fwHaptic).not.toHaveBeenCalled();
   });
 
   // Regression pin: a modified click must NOT call onSelect, so the browser's

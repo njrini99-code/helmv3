@@ -31,8 +31,8 @@
  * being off the bar.
  * ========================================================================== */
 
-import { memo, useId } from 'react';
-import { LayoutGroup, m } from 'framer-motion';
+import { memo } from 'react';
+import { m } from 'framer-motion';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { cn } from '@/lib/utils';
 import { NavPendingDot } from './NavPending';
@@ -75,6 +75,10 @@ export interface FairwayBottomNavProps {
    *  caller already holds this as the same bridged `mobileOpen` state it
    *  passes to `AppShell`. */
   moreOpen?: boolean;
+  /** Opt-in: the active label sits under its icon (11px) instead of beside
+   *  it. With five equal-width slots on a 390pt phone a slot is ~70pt, and
+   *  icon + gap + label side by side cut "Home" to "H…". */
+  stackLabel?: boolean;
 }
 
 const DefaultLink: ShellLinkComponent = ({ href, children, ...rest }) => (
@@ -97,46 +101,54 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
   moreLabel = 'More',
   moreIcon,
   moreOpen,
+  stackLabel = false,
 }: FairwayBottomNavProps) {
   const Link = linkComponent ?? DefaultLink;
   const MoreIcon = moreIcon ?? IconLayoutGrid;
-  const layoutId = useId();
   const reduced = useMediaQuery('(prefers-reduced-motion: reduce)');
   const moreSelected = Boolean(moreOpen || moreActive);
-  const spring = reduced ? { duration: 0 } : { type: 'spring' as const, stiffness: 420, damping: 36, mass: 0.8 };
+  // The selection is a static pill in the active slot. It used to glide
+  // between slots on a shared `layoutId` spring; a native tab bar just
+  // switches (MOT-15).
   const pill = (active: boolean) => active && (
-    <m.span aria-hidden data-slot="nav-active-pill" layoutId={`${layoutId}-selection`}
-      className="pointer-events-none absolute inset-0 rounded-full fw-nav-selection border shadow-soft"
-      transition={spring} />
+    <span aria-hidden data-slot="nav-active-pill"
+      className="pointer-events-none absolute inset-0 rounded-full fw-nav-selection border shadow-soft" />
   );
   const badge = (count: number | undefined, cap = 99) => Boolean(count && count > 0) && (
-    <span className="absolute -right-2 -top-1.5 min-w-[16px] rounded-full bg-accent-600 px-1 text-center font-fw-mono text-eyebrow font-semibold leading-4 tabular-nums text-text-on-accent">
+    <span className="absolute -right-2 -top-1.5 min-w-[16px] rounded-full bg-accent-fill px-1 text-center ring-1 ring-surface font-fw-mono text-eyebrow font-semibold leading-4 tabular-nums text-text-on-accent-fill">
       {count! > cap ? `${cap}+` : count}
     </span>
   );
-  const control = 'group relative m-0 flex h-12 min-h-[44px] w-full min-w-0 items-center justify-center gap-1.5 rounded-full px-2 outline-none transition-colors motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus';
+  const control = cn('group relative m-0 flex h-12 min-h-[44px] w-full min-w-0 items-center justify-center rounded-full outline-none transition-colors motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus', stackLabel ? 'flex-col gap-0.5 px-1' : 'gap-1.5 px-2');
+  const labelClass = stackLabel
+    ? // px-1 + tight tracking: at 390px a five-item bar leaves ~65px per
+      // item, and "CoachHelm" was cut to "CoachH…" with px-2. The label may
+      // also run into the control's own px-1 (-mx-1): still truncates, but
+      // only past the item's full width.
+      '-mx-1 relative z-10 min-w-0 max-w-[calc(100%+0.5rem)] truncate font-fw-sans text-microlabel font-semibold tracking-[-0.01em]'
+    : 'relative z-10 min-w-0 max-w-full truncate font-fw-sans text-caption font-semibold';
 
   return (
     <nav data-slot="fw-bottom-nav" aria-label="Primary"
       className={cn('pointer-events-none fixed inset-x-0 bottom-0 z-[var(--fw-z-nav)] px-3 pt-2 pb-[max(8px,env(safe-area-inset-bottom,0px))] md:hidden', className)}>
-      <LayoutGroup id={layoutId}>
         <ul className="pointer-events-auto relative flex h-14 items-stretch gap-0.5 rounded-full fw-glass-chrome border p-1 shadow-raise">
           {items.map((item) => {
             const routeActive = item.active ?? (item.activeMatch && pathname ? item.activeMatch(pathname) : matchActive(item.href, pathname));
             const active = Boolean(routeActive && !moreSelected);
             const Icon = item.icon;
             return (
-              <m.li key={item.href} layout={reduced ? false : 'position'} transition={spring} whileTap={reduced ? undefined : { scale: 0.97 }}
-                className={active ? 'min-w-max' : 'min-w-[44px]'} style={{ flex: active ? '1 0 auto' : '1 1 0' }}>
+              // Every slot is the same width whichever tab is active (MOT-15).
+              <m.li key={item.href} whileTap={reduced ? undefined : { scale: 0.97 }}
+                className="min-w-[44px] flex-1 basis-0">
                 <Link href={item.href} aria-current={routeActive ? 'page' : undefined} aria-label={item.label}
                   onClick={() => fwHaptic('selection')}
-                  className={cn(control, active ? 'text-text-on-accent' : 'text-text-tertiary hover:text-text-secondary')}>
+                  className={cn(control, active ? 'text-text-on-accent-fill' : 'text-nav-icon hover:text-text-secondary')}>
                   {pill(active)}
-                  <m.span layout={reduced ? false : 'position'} transition={spring} className="relative z-10 inline-flex shrink-0 motion-reduce:transition-none">
+                  <span className="relative z-10 inline-flex shrink-0">
                     <Icon size={21} aria-hidden className="flex-shrink-0" />
                     {badge(item.badge)}
-                  </m.span>
-                  <span className={cn('relative z-10 min-w-0 max-w-full truncate font-fw-sans text-caption font-semibold', !active && 'sr-only')}>
+                  </span>
+                  <span className={cn(labelClass, !active && 'sr-only')}>
                     {item.shortLabel ?? item.label}
                   </span>
                   <span className="absolute right-1 top-1"><NavPendingDot className="ml-0" /></span>
@@ -145,21 +157,20 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
             );
           })}
           {onMoreOpen && (
-            <m.li layout={reduced ? false : 'position'} transition={spring} whileTap={reduced ? undefined : { scale: 0.97 }} className={moreSelected ? 'min-w-max' : 'min-w-[44px]'} style={{ flex: moreSelected ? '1 0 auto' : '1 1 0' }}>
+            <m.li whileTap={reduced ? undefined : { scale: 0.97 }} className="min-w-[44px] flex-1 basis-0">
               <Button type="button" variant="ghost" haptic="light" aria-haspopup="dialog" aria-expanded={moreOpen ?? false}
                 aria-label={moreLabel} onClick={onMoreOpen}
-                className={cn(control, 'bg-transparent hover:bg-transparent', moreSelected ? 'text-text-on-accent' : 'text-text-tertiary')}>
+                className={cn(control, 'bg-transparent hover:bg-transparent', moreSelected ? 'text-text-on-accent-fill' : 'text-nav-icon')}>
                 {pill(moreSelected)}
-                <m.span layout={reduced ? false : 'position'} transition={spring} className="relative z-10 inline-flex shrink-0">
+                <span className="relative z-10 inline-flex shrink-0">
                   <MoreIcon size={21} aria-hidden className="flex-shrink-0" />
                   {badge(moreBadge, 9)}
-                </m.span>
-                <span className={cn('relative z-10 min-w-0 max-w-full truncate font-fw-sans text-caption font-semibold', !moreSelected && 'sr-only')}>{moreLabel}</span>
+                </span>
+                <span className={cn(labelClass, !moreSelected && 'sr-only')}>{moreLabel}</span>
               </Button>
             </m.li>
           )}
         </ul>
-      </LayoutGroup>
     </nav>
   );
 });

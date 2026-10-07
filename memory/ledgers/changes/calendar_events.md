@@ -33,3 +33,14 @@
   route skeleton covered both — the repo's own `NavPending.tsx` cites calendar
   as the slowest destination. The sheet is hand-rolled rather than built on the
   keyboard-aware `Sheet` primitive, which is why it never inherited #1739.
+
+## 2026-09-23 — the event editor stopped offering org coaches as invitees
+
+- SHA: `ea1b36dd5` (app-health routine PR, branch `agent/health-20260923-1847`).
+- Change: `FairwayEventEditor` drops `role === 'coach'` rows from
+  `availablePlayers`; `editor/types.ts` `TeamPlayer` gains the optional `role`
+  the page already sends.
+- Why: the conflict check's shared-team gate denied every check that carried
+  the org's second coach, which the picker offered (Bridge `0bef9c32`,
+  14 denials for one head coach on 2026-09-23). Incident:
+  `memory/incidents/calendar_events/INC-2026-09-23-coach-invitees-deny-conflict-check.md`.

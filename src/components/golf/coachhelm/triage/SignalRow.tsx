@@ -88,6 +88,9 @@ export const SignalRow = forwardRef<HTMLAnchorElement, SignalRowProps>(function 
         'flex w-full items-start gap-2.5 rounded-fw-sm px-3 py-2.5 text-left',
         'border transition-colors [transition-duration:150ms]',
         selected ? 'border-accent-200 bg-accent-50' : 'border-transparent hover:bg-surface-sunken',
+        // MOT-19: the row the coach just came back from holds a wash, then
+        // fades out over 700ms (SignalQueue clears the attribute).
+        'data-[returned=true]:bg-accent-wash data-[returned=true]:[transition-duration:0ms] motion-safe:[transition-duration:700ms]',
       )}
     >
       <span

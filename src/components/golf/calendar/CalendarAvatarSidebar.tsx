@@ -138,7 +138,7 @@ export function CalendarAvatarSidebar({
             className="absolute left-0 top-3 z-30 w-6 h-10 bg-glass backdrop-blur-sm border border-warm-200/55 rounded-r-xl flex items-center justify-center hover:bg-cream-100 hover:scale-105 shadow-sm transition-all duration-200"
             aria-label="Expand player filter"
           >
-            <ChevronLeft className="w-3.5 h-3.5 text-warm-500 rotate-180" />
+            <ChevronLeft className="w-3.5 h-3.5 text-text-tertiary rotate-180" />
           </IconButton>
         </Tooltip>
       </div>
@@ -156,7 +156,7 @@ export function CalendarAvatarSidebar({
       <IconButton variant="default"
         onClick={() => setIsCollapsed(true)}
         aria-label="Collapse player filter"
-        className="absolute -right-3 top-4 w-6 h-12 bg-cream-50/92 border border-warm-200/55 rounded-r-xl flex items-center justify-center text-warm-400 cursor-pointer shadow-sm"
+        className="absolute -right-3 top-4 w-6 h-12 bg-cream-50/92 border border-warm-200/55 rounded-r-xl flex items-center justify-center text-text-tertiary cursor-pointer shadow-sm"
       >
         <ChevronLeft className="w-4 h-4" />
       </IconButton>
@@ -171,7 +171,7 @@ export function CalendarAvatarSidebar({
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
             isAllSelected
               ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-[0_2px_8px_rgba(22,163,74,0.3)]'
-              : 'bg-warm-100/80 text-warm-500 hover:bg-warm-200/90 hover:text-warm-700'
+              : 'bg-warm-100/80 text-text-tertiary hover:bg-warm-200/90 hover:text-warm-700'
           )}
         >
           ALL
@@ -186,7 +186,7 @@ export function CalendarAvatarSidebar({
         {/* Top scroll fade indicator */}
         {canScrollUp && (
           <div aria-hidden="true" className="absolute top-0 left-0 right-0 h-7 bg-gradient-to-b from-white/95 to-transparent z-base pointer-events-none flex items-start justify-center pt-0.5 rounded-t-lg">
-            <ChevronUp className="w-3 h-3 text-warm-400 pointer-events-none" />
+            <ChevronUp className="w-3 h-3 text-text-tertiary pointer-events-none" />
           </div>
         )}
 
@@ -204,11 +204,11 @@ export function CalendarAvatarSidebar({
           {teamMembers.length === 0 ? (
             <div className="py-6 text-center">
               <div className="w-12 h-12 rounded-lg bg-warm-100/60 flex items-center justify-center mx-auto mb-2">
-                <svg className="w-5 h-5 text-warm-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-5 h-5 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
-              <p className="text-eyebrow text-warm-500 leading-tight">
+              <p className="text-eyebrow text-text-tertiary leading-tight">
                 No team<br />members
               </p>
             </div>
@@ -274,7 +274,7 @@ export function CalendarAvatarSidebar({
         {/* Bottom scroll fade indicator */}
         {canScrollDown && (
           <div aria-hidden="true" className="absolute bottom-0 left-0 right-0 h-7 bg-gradient-to-t from-white/95 to-transparent z-base pointer-events-none flex items-end justify-center pb-0.5 rounded-b-lg">
-            <ChevronDown className="w-3 h-3 text-warm-400 pointer-events-none" />
+            <ChevronDown className="w-3 h-3 text-text-tertiary pointer-events-none" />
           </div>
         )}
       </div>
@@ -283,10 +283,10 @@ export function CalendarAvatarSidebar({
       {selectedPlayers.length > 0 && (
         <div className="w-full px-1 py-2 border-t border-warm-300/40 flex-shrink-0">
           <div className="flex items-center justify-center gap-1 mb-1.5">
-            <span className="text-eyebrow font-medium text-warm-400 uppercase tracking-[0.1em]">
+            <span className="text-eyebrow font-medium text-text-tertiary uppercase tracking-[0.1em]">
               Legend
             </span>
-            <span className="text-eyebrow font-medium text-warm-400 tabular-nums">
+            <span className="text-eyebrow font-medium text-text-tertiary tabular-nums">
               · {selectedPlayers.length}
             </span>
           </div>
@@ -322,7 +322,7 @@ export function CalendarAvatarSidebar({
         <Tooltip content="Manage feeds" side="right">
           <IconButton variant="default"
             onClick={() => onSyncSettings?.()}
-            className="w-12 h-12 rounded-lg flex items-center justify-center bg-warm-100/60 text-warm-400 cursor-pointer transition-all duration-200 border-none flex-shrink-0 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200"
+            className="w-12 h-12 rounded-lg flex items-center justify-center bg-warm-100/60 text-text-tertiary cursor-pointer transition-all duration-200 border-none flex-shrink-0 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200"
             aria-label="Manage feeds"
           >
             <Settings2 className="w-5 h-5" />

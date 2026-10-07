@@ -185,6 +185,29 @@ describe('computeTargetValue', () => {
   it('works downwards (lower_better case still numerically correct)', () => {
     expect(computeTargetValue({ playerValue: 0.8, pgaValue: 0.3 })).toBeCloseTo(0.55, 6);
   });
+  // NUM-36: 5% sand scrambling vs a ~51% Tour figure produced a 28% target.
+  it('caps the move at the catalog improveStep (sand: +5 points)', () => {
+    expect(computeTargetValue({ playerValue: 5, pgaValue: 51, metricId: 'scrambling_pct_sand' })).toBe(10);
+  });
+  it('caps lower_better moves downward (par 4 average: -0.1)', () => {
+    expect(computeTargetValue({ playerValue: 4.6, pgaValue: 4.0, metricId: 'scoring_par_4' })).toBeCloseTo(4.5, 6);
+  });
+  it('keeps the midpoint when it is already inside the step', () => {
+    expect(computeTargetValue({ playerValue: 46, pgaValue: 50, metricId: 'scrambling_pct_sand' })).toBe(48);
+  });
+  it('keeps the plain midpoint for metrics with no catalog step', () => {
+    expect(computeTargetValue({ playerValue: -1, pgaValue: 0, metricId: 'sg_total' })).toBeCloseTo(-0.5, 6);
+  });
+  it('selectSuggestionsForPlayer writes the capped target', () => {
+    const drafts = selectSuggestionsForPlayer({
+      player_id: 'p1',
+      standings: [{ player_id: 'p1', metric_id: 'scrambling_pct_sand', player_value: 5, pga_value: 51, pga_delta: -46, direction: 'higher_better' }],
+      metricsWithDrillCoverage: new Set(['scrambling_pct_sand']),
+      activeGoalMetrics: new Set(),
+      pendingSuggestionMetrics: new Set(),
+    });
+    expect(drafts[0]?.suggested_target_value).toBe(10);
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -65,10 +65,10 @@ export default function NewRoundLoading() {
         <div className="flex flex-col gap-6">
           {/* Cockpit band — on-dark, matches bg-nav-bg exactly so the real
               band doesn't "pop in" a different color once it hydrates. The
-              back row is a fixed 44px tap target (CockpitBand's onBack
-              UIButton, :282-293) reserved above the eyebrow line. */}
+              back row is a fixed 44px pill (CockpitBand's onBack UIButton,
+              "‹ Dashboard") reserved above the eyebrow line. */}
           <div className="on-dark relative overflow-hidden rounded-card bg-nav-bg p-7 shadow-soft md:p-8">
-            <Skeleton className="mb-3 h-11 w-24 bg-nav-text-dim/20" />
+            <Skeleton className="mb-3 h-11 w-28 rounded-full bg-nav-text-dim/20" />
             <Skeleton className="h-3 w-32 bg-nav-text-dim/20" />
             <Skeleton className="mt-3 h-7 w-64 max-w-full bg-nav-text-dim/20" />
             <Skeleton className="mt-2 h-3.5 w-72 max-w-full bg-nav-text-dim/20" />

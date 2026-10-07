@@ -28,11 +28,12 @@ import type { Json } from '@/lib/types/database';
 import { buildIncidentSignature, type IncidentSeverity } from '@/lib/admin/incident-grouping';
 import { classifyTraceSurface } from '@/lib/error-trace-classification';
 import { markBridgeLogged } from '@/lib/bridge-logged-marker';
-import { getRequestId } from '@/lib/admin/request-context';
+import { getRequestId, getRequestUserId, isRequestUserIdUnverified } from '@/lib/admin/request-context';
 import { collapseEmbeddedHtml, collapseEmbeddedRawJsonDump, describeError } from '@/lib/utils/describe-error';
 import { redactSensitiveUrl } from '@/lib/security/redact-url';
 import { resolveFeatureKey } from '@/lib/admin/feature-registry';
 import { absorbIntoRecentEvent } from '@/lib/admin/durable-collapse';
+import { drainCollapsedCount, releaseEmit, shouldEmit } from '@/lib/admin/emit-throttle';
 
 export type ServerTraceSeverity = 'info' | 'warning' | 'error' | 'critical';
 export type ServerTraceSource =
@@ -226,6 +227,37 @@ function resolveDbFingerprint(
 }
 
 /** Whether this trace should be absorbed into an open row rather than inserted. */
+/**
+ * Database-saturation signals: the database (or PostgREST's pool in front of
+ * it) is overloaded, so every caller that touches it fails the same way at
+ * once. 57014 = statement timeout, PGRST003 = timed out acquiring a pool
+ * connection, PGRST002 = could not load the schema cache, 53300 = too many
+ * connections. Most call sites log only the message, so the message shapes
+ * are matched too.
+ */
+const DB_SATURATION_CODES = new Set(['57014', 'PGRST003', 'PGRST002', '53300']);
+const DB_SATURATION_MESSAGE =
+  /canceling statement due to statement timeout|could not query the database for the schema cache|timed out acquiring connection from connection pool|too many connections/i;
+
+/**
+ * Per-process window for identical database-saturation rows. During the
+ * 2026-09-24 pool-exhaustion brownout every failing read also wrote an
+ * error_logs row and an admin_events row, so the logger itself added load to
+ * the saturated database it was reporting on. Within this window a repeat of
+ * the SAME fingerprint writes nothing; the next row that does get written
+ * carries the suppressed count in `metadata.collapsed_count`, which the
+ * Bridge already reads (Noise Charter N4, emit-throttle.ts). Sentry capture
+ * is unaffected.
+ */
+export const DB_SATURATION_WRITE_WINDOW_MS = 60_000;
+
+function isDbSaturationTrace(message: string, context: RoundErrorContext): boolean {
+  const extraCode = (context.extra as { errorCode?: unknown } | undefined)?.errorCode;
+  const codes = [context.errorCode, typeof extraCode === 'string' ? extraCode : null];
+  if (codes.some((code) => code != null && DB_SATURATION_CODES.has(code))) return true;
+  return DB_SATURATION_MESSAGE.test(message);
+}
+
 function shouldCollapseDurably(context: RoundErrorContext): boolean {
   return context.durableCollapse ?? Boolean(context.errorCode?.startsWith('provider_'));
 }
@@ -270,10 +302,40 @@ function enrichTraceContext(message: string, rawContext: RoundErrorContext): Rou
     rawContext.requestId || !ambientRequestId
       ? rawContext
       : { ...rawContext, requestId: ambientRequestId };
-  const context: RoundErrorContext =
+  const withTraceId: RoundErrorContext =
     withRequestId.traceId || !ambientTraceId
       ? withRequestId
       : { ...withRequestId, traceId: ambientTraceId };
+
+  // Same defaulting shape, same reasoning, as requestId and traceId above —
+  // and the same measured failure. `userId` was plumbed to both Bridge tables,
+  // the Sentry scope and the /admin/errors detail view, but only 38% of
+  // production error rows carried one (server actions: 39%), because it
+  // depended on ~583 auth call sites each remembering to pass it. The ambient
+  // value is written once by createClient()'s auth wrapper. An explicitly
+  // supplied userId always wins.
+  //
+  // ATTRIBUTION ONLY. `userIdUnverified` is surfaced so an operator can see
+  // that a subject came from a session GoTrue rejected — which is the normal
+  // case for "session expired mid-round" — rather than silently presenting it
+  // as a confirmed identity.
+  //
+  // `user_id_unverified` means "getUser() did not return this id", NOT "this
+  // session is bad". It also fires when the auth check itself failed in
+  // transit (the `isTransientAuthCheckFailure` case), where the user's session
+  // is very likely fine. Read it as a confidence marker on the ATTRIBUTION,
+  // never as evidence about the user's auth state.
+  const ambientUserId = getRequestUserId();
+  const context: RoundErrorContext =
+    withTraceId.userId || !ambientUserId
+      ? withTraceId
+      : {
+          ...withTraceId,
+          userId: ambientUserId,
+          ...(isRequestUserIdUnverified()
+            ? { tags: { ...(withTraceId.tags ?? {}), user_id_unverified: 'true' } }
+            : {}),
+        };
 
   const sport = inferSport(message, context);
   if (!sport) return context;
@@ -430,18 +492,40 @@ async function writeAdminTables(
   const errorLogId = crypto.randomUUID();
   const adminEventId = crypto.randomUUID();
 
+  const dbFingerprint = resolveDbFingerprint(message, context, severity);
+
+  // Database-saturation write throttle (see DB_SATURATION_WRITE_WINDOW_MS).
+  // `throttleKey` stays null for every other trace, which writes as before.
+  let throttleKey: string | null = null;
+  let throttledCount = 0;
+  if (isDbSaturationTrace(message, context)) {
+    throttleKey = `db-saturation::${dbFingerprint}`;
+    if (!shouldEmit(throttleKey, DB_SATURATION_WRITE_WINDOW_MS)) return;
+    throttledCount = drainCollapsedCount(throttleKey);
+    if (throttledCount > 0) {
+      const meta = (normalizedContext.metadata ?? {}) as Record<string, unknown>;
+      const prior = typeof meta.collapsed_count === 'number' && Number.isFinite(meta.collapsed_count)
+        ? meta.collapsed_count
+        : 0;
+      normalizedContext.metadata = { ...meta, collapsed_count: prior + throttledCount };
+    }
+  }
+
   const writeErrorLog = () => admin.from('error_logs').upsert({
     id: errorLogId,
     message: message.slice(0, 2000),
     severity,
     stack,
     context: normalizedContext as Json,
-    user_id: context.userId ?? null,
+    // `enriched`, not `context` — so both Bridge writers read one value.
+    // Not a live bug: the sole caller already passes an enriched context and
+    // enrichment is idempotent, so `context.userId` matched today. It matched
+    // only by that coincidence, and userId is now centrally defaulted, so pin
+    // the two writers to the same source rather than to the caller's habit.
+    user_id: enriched.userId ?? null,
     url,
     timestamp,
   }, { onConflict: 'id' });
-
-  const dbFingerprint = resolveDbFingerprint(message, context, severity);
 
   // Durable flood collapse. The per-process throttle at the call sites
   // collapses repeats within ONE lambda; this absorbs the occurrence into the
@@ -451,7 +535,7 @@ async function writeAdminTables(
   if (shouldCollapseDurably(context)) {
     const throttled = context.metadata?.collapsed_count;
     const by = 1 + (typeof throttled === 'number' && Number.isFinite(throttled) ? throttled : 0);
-    const outcome = await absorbIntoRecentEvent(admin, { fingerprint: dbFingerprint, by });
+    const outcome = await absorbIntoRecentEvent(admin, { fingerprint: dbFingerprint, by: by + throttledCount });
     if (outcome.collapsed) return;
   }
 
@@ -478,6 +562,13 @@ async function writeAdminTables(
     retryTransientBridgeWrite(writeErrorLog),
     retryTransientBridgeWrite(writeAdminEvent),
   ]);
+
+  // A throttled saturation row that did not land must not silence the next
+  // one for a whole window: give the window (and the count it carried) back.
+  if (throttleKey) {
+    const adminEventLanded = adminEventResult.status === 'fulfilled' && !adminEventResult.value?.error;
+    if (!adminEventLanded) releaseEmit(throttleKey, throttledCount);
+  }
 
   // The Bridge's own persistence must never depend on itself to notice it's
   // failing — this only ever falls through to console + Sentry, never back
@@ -571,9 +662,16 @@ function captureSentryTrace(
     }
 
     if (context.userId || context.userEmail) {
+      // `user_id_unverified` (set above via context.tags, same source as the
+      // admin_events/error_logs rows) is a tag — it doesn't appear on
+      // Sentry's User panel, only in the Tags list, so an operator glancing
+      // at "User: <id>" would otherwise see no difference from a verified
+      // getUser() attribution. `username` IS rendered on the User panel, so
+      // mirror the marker there rather than relying on the tag alone.
       scope.setUser({
         id: context.userId ?? undefined,
         email: context.userEmail ?? undefined,
+        username: context.tags?.user_id_unverified === 'true' ? 'unverified' : undefined,
       });
     }
 

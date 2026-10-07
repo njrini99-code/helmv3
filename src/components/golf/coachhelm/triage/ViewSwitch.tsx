@@ -39,6 +39,7 @@ import {
   TRACK_SUNKEN_SHADOW,
 } from '@/components/fairway/controls/segmented';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import type { TriageView } from './buildTriageViewModel';
 
 export interface ViewSwitchProps {
@@ -97,6 +98,9 @@ export function ViewSwitch({ view, hrefFor, onSelect }: ViewSwitchProps) {
                 return;
               }
               event.preventDefault();
+              // The iOS segment "tick" `Segmented` gives its other call sites
+              // (no-op off native) — only for a real change of view.
+              if (option.value !== view) fwHaptic('selection');
               onSelect(option.value);
             }}
             aria-current={selected ? 'page' : undefined}

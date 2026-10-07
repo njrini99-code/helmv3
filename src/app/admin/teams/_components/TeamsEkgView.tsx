@@ -7,6 +7,7 @@ import { ActivityThreadsPanel } from '@/components/admin/lenses/ActivityThreadsP
 import { Surface, InlineNotice } from '@/components/fairway';
 import { PanelNoData } from '../../_components/PanelStates';
 import { SectionLabel } from '../../_components/SectionLabel';
+import { DetailsDisclosure } from '../../_components/TabHeader';
 
 export async function TeamsEkgView() {
   const [ekg, adoption, threads] = await Promise.all([
@@ -17,15 +18,16 @@ export async function TeamsEkgView() {
 
   return (
     <div className="space-y-6">
-      <Surface padding="sm">
-        <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Teams lens</p>
-        <h2 className="mt-2 text-h3 font-semibold tracking-normal text-warm-900 md:text-2xl">Team EKG Grid</h2>
-        <p className="mt-2 hidden max-w-3xl text-sm leading-6 text-warm-600 md:block">
-          {ekg.windowDays}-day activity/error strip per team, plus two separately-windowed overlays: release impact
-          (error/critical events since the current live release) and unresolved incidents (in the same {ekg.windowDays}-day
-          window as the strip, not since the release). {ekg.liveReleaseSha ? `Live release ${ekg.liveReleaseSha.slice(0, 8)}.` : 'No live release identified.'}
-        </p>
-      </Surface>
+      <div className="min-w-0">
+        <SectionLabel>Team EKG Grid</SectionLabel>
+        <DetailsDisclosure className="mt-1">
+          <p>
+            {ekg.windowDays}-day activity/error strip per team, plus two separately-windowed overlays: release impact
+            (error/critical events since the current live release) and unresolved incidents (in the same {ekg.windowDays}-day
+            window as the strip, not since the release). {ekg.liveReleaseSha ? `Live release ${ekg.liveReleaseSha.slice(0, 8)}.` : 'No live release identified.'}
+          </p>
+        </DetailsDisclosure>
+      </div>
 
       {ekg.degradedNote && (
         <InlineNotice tone="warning" title="Some team reads degraded">

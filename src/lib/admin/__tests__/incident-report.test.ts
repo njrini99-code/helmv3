@@ -8,6 +8,7 @@ import {
   extractRoute,
   extractRoundId,
   extractCollapsedCount,
+  extractUserIdUnverified,
   extractErrorHint,
   extractRequestId,
   extractHelmTraceId,
@@ -131,6 +132,19 @@ describe('buildIncidentReport', () => {
       occurrences: [{ timestamp: '2026-07-02T00:00:00.000Z', metadata: { code: '42501' } }],
     });
     expect(report).toContain('metadata={"code":"42501"}');
+  });
+
+  it('marks an occurrence user id as unverified when userIdUnverified is true, and leaves a verified one unmarked', () => {
+    const report = buildIncidentReport({
+      ...minimal,
+      occurrences: [
+        { timestamp: '2026-07-02T00:00:00.000Z', userId: 'user-unverified', userIdUnverified: true },
+        { timestamp: '2026-07-02T00:01:00.000Z', userId: 'user-verified', userIdUnverified: false },
+      ],
+    });
+    expect(report).toContain('user=user-unverified (unverified)');
+    expect(report).toContain('user=user-verified');
+    expect(report).not.toContain('user=user-verified (unverified)');
   });
 
   it('renders deploy markers with and without a sha', () => {
@@ -365,6 +379,23 @@ describe('extractActionName / extractRoute / extractCollapsedCount', () => {
     expect(extractRoute({})).toBeNull();
     expect(extractCollapsedCount({})).toBe(0);
     expect(extractCollapsedCount({ metadata: { collapsed_count: 'nope' } })).toBe(0);
+  });
+});
+
+describe('extractUserIdUnverified', () => {
+  it('reads true from a normalizeContext-shaped metadata blob carrying the tag', () => {
+    const metadata = { action: 'savePartialRound', tags: { user_id_unverified: 'true' } };
+    expect(extractUserIdUnverified(metadata)).toBe(true);
+  });
+
+  it('is false when the tag is absent, present-but-not-"true", or metadata is malformed', () => {
+    expect(extractUserIdUnverified({ action: 'x' })).toBe(false);
+    expect(extractUserIdUnverified({ tags: {} })).toBe(false);
+    expect(extractUserIdUnverified({ tags: { user_id_unverified: true } })).toBe(false);
+    expect(extractUserIdUnverified({ tags: null })).toBe(false);
+    expect(extractUserIdUnverified(null)).toBe(false);
+    expect(extractUserIdUnverified(undefined)).toBe(false);
+    expect(extractUserIdUnverified('not an object')).toBe(false);
   });
 });
 

@@ -3,7 +3,9 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import {
+  isUserSchema,
   parseCreatedObjects,
+  parseRemovedObjects,
   reconcileLedgerToCatalog,
   reconcileUnexplainedTables,
 } from '../db/check-ledger-vs-catalog.mjs';
@@ -80,4 +82,93 @@ test('reconcileUnexplainedTables: a table explained by a supabase/schemas/** fil
     schemaFileTableNames: ['golf_widgets'],
   });
   assert.equal(unexplained.length, 0);
+});
+
+// ---------------------------------------------------------------------------
+// Issue #1897: the nightly production drift job reported 258 "missing"
+// objects, and all but two of them were present or legitimately gone. Three
+// causes, one test each, plus the guard that a truly missing object still
+// FAILs.
+// ---------------------------------------------------------------------------
+
+test('parseCreatedObjects skips format() placeholders from DO-block dynamic SQL', () => {
+  // A migration that builds policies per table with EXECUTE format(...) —
+  // `%1$s_coach_select_team` and `%I` are templates, not object names.
+  const sql = `
+    do $$ begin
+      execute format('create policy "%1$s_coach_select_team" on public.%1$s for select using (true)', t);
+      execute format('create policy %I on public.golf_rounds for select using (true)', p);
+    end $$;
+    create policy "real_policy" on golf_widgets for select using (true);
+  `;
+  assert.deepEqual(parseCreatedObjects(sql).policies, ['real_policy']);
+});
+
+test('parseRemovedObjects finds schema-qualified, IF EXISTS, list and rename removals', () => {
+  const sql = `
+    DROP FUNCTION IF EXISTS helm_private.prevent_active_round_stranding();
+    drop function if exists public.update_player_stats_cache(uuid), public.update_round_stats_cache_with_sg(uuid, numeric(10,2));
+    drop table if exists public.golf_old_a, golf_old_b cascade;
+    drop policy if exists "golf_shots_select_own" on public.golf_shots;
+    alter table public.golf_before rename to golf_after;
+    alter policy "p_before" on public.golf_widgets rename to "p_after";
+  `;
+  const removed = parseRemovedObjects(sql);
+  assert.deepEqual(removed.functions.sort(), [
+    'prevent_active_round_stranding',
+    'update_player_stats_cache',
+    'update_round_stats_cache_with_sg',
+  ]);
+  assert.deepEqual(removed.tables.sort(), ['golf_before', 'golf_old_a', 'golf_old_b']);
+  assert.deepEqual(removed.policies.sort(), ['golf_shots_select_own', 'p_before']);
+});
+
+test('reconcileLedgerToCatalog: an object a LATER applied migration drops is not missing', () => {
+  const missing = reconcileLedgerToCatalog({
+    ledgerRows: [{ version: '20260101000000' }, { version: '20260201000000' }],
+    localFilesByVersion: new Map([
+      ['20260101000000', '20260101000000_create.sql'],
+      ['20260201000000', '20260201000000_drop.sql'],
+    ]),
+    fileContents: new Map([
+      ['20260101000000_create.sql', 'create or replace function helm_private.old_guard() returns trigger as $$ $$ language plpgsql;'],
+      ['20260201000000_drop.sql', 'DROP FUNCTION IF EXISTS helm_private.old_guard();'],
+    ]),
+    catalogTables: new Set(),
+    catalogFunctions: new Set(),
+    catalogPolicies: new Set(),
+  });
+  assert.deepEqual(missing, []);
+});
+
+test('reconcileLedgerToCatalog: a drop that is EARLIER than the create, or never applied, excuses nothing', () => {
+  const missing = reconcileLedgerToCatalog({
+    // 20260301 is a local file the ledger has not applied.
+    ledgerRows: [{ version: '20260101000000' }, { version: '20260201000000' }],
+    localFilesByVersion: new Map([
+      ['20260101000000', '20260101000000_drop_first.sql'],
+      ['20260201000000', '20260201000000_create.sql'],
+      ['20260301000000', '20260301000000_unapplied_drop.sql'],
+    ]),
+    fileContents: new Map([
+      ['20260101000000_drop_first.sql', 'drop function if exists public.baseball_log_staff_change();'],
+      ['20260201000000_create.sql', 'create or replace function public.baseball_log_staff_change() returns trigger as $$ $$ language plpgsql;'],
+      ['20260301000000_unapplied_drop.sql', 'drop function if exists public.baseball_log_staff_change();'],
+    ]),
+    catalogTables: new Set(),
+    catalogFunctions: new Set(),
+    catalogPolicies: new Set(),
+  });
+  assert.deepEqual(missing, [
+    { version: '20260201000000', file: '20260201000000_create.sql', kind: 'function', name: 'baseball_log_staff_change' },
+  ]);
+});
+
+test('isUserSchema: objects in helm_debug, helm_jobs, helm_private, graveyard and storage count; system schemas do not', () => {
+  for (const s of ['public', 'helm_debug', 'helm_jobs', 'helm_private', 'graveyard', 'storage']) {
+    assert.equal(isUserSchema(s), true, s);
+  }
+  for (const s of ['pg_catalog', 'information_schema', 'pg_toast', 'pg_temp_3']) {
+    assert.equal(isUserSchema(s), false, s);
+  }
 });

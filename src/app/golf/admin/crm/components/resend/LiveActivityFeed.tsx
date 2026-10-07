@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { IconRefresh, IconActivity } from '@/components/icons';
@@ -11,6 +11,7 @@ import { EVENT_CONFIG, formatRelative, formatFullTimestamp } from './shared';
 import { useVisibilityAwareInterval } from '@/hooks/useVisibilityAwareInterval';
 import { Button, IconButton } from '@/components/ui/button';
 import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 interface LiveActivityFeedProps {
   initialLimit?: number;
@@ -21,7 +22,7 @@ export function LiveActivityFeed({
   initialLimit = 50,
   onSelectMessage,
 }: LiveActivityFeedProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const [events, setEvents] = useState<EmailEventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [liveCount, setLiveCount] = useState(0);
@@ -187,7 +188,7 @@ function FeedRow({
   isNew: boolean;
   onSelect?: (id: string) => void;
 }) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const cfg = EVENT_CONFIG[event.event_type] ?? {
     label: event.event_type,
     color: 'text-text-secondary',
@@ -241,7 +242,7 @@ function FeedRow({
             </span>
           )}
           {event.contact_log_id && (
-            <span className="text-eyebrow font-medium px-1.5 py-0.5 rounded bg-surface-sunken text-text-secondary uppercase tracking-wide">
+            <span className="text-caption font-medium px-1.5 py-0.5 rounded bg-surface-sunken text-text-secondary">
               CRM
             </span>
           )}
@@ -255,7 +256,7 @@ function FeedRow({
         )}
 
         <p
-          className="text-eyebrow text-text-tertiary mt-0.5 tabular-nums"
+          className="text-caption text-text-tertiary mt-0.5 tabular-nums"
           title={formatFullTimestamp(event.occurred_at)}
         >
           {formatRelative(event.occurred_at)} · {event.resend_message_id.slice(0, 8)}

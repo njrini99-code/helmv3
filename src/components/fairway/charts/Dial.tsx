@@ -20,11 +20,12 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { InstrumentPanel } from '../instrument/InstrumentPanel';
 import { VIZ_COLOR, VIZ_EASE, VIZ_REVEAL_MS, formatPercent } from './theme';
 import type { GoodDirection } from './TrendChip';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface DialProps {
   /** Sparse instrument label (shown under the dial, or as the panel header). */
@@ -83,7 +84,7 @@ export function Dial({
   panel = false,
   className,
 }: DialProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard() ?? false;
 
   const hasValue = typeof value === 'number' && Number.isFinite(value);
   const thin = typeof samples === 'number' && samples < minSamples;
@@ -206,7 +207,7 @@ export function Dial({
 
       <span
         className={cn(
-          'mt-1.5 font-fw-sans text-eyebrow uppercase',
+          'mt-1.5 font-fw-sans text-caption',
           isCalibrating ? 'text-text-tertiary' : 'text-text-secondary',
         )}
       >

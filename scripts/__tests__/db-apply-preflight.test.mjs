@@ -215,7 +215,49 @@ describe('extractVerifyQueries', () => {
     expect(extractVerifyQueries(text)).toEqual(['select 1 from a;']);
   });
 
-  it('parses every staged migration into semicolon-terminated queries', () => {
+  it('starts a new query at each top-level select, even without a terminator', () => {
+    // Run 35930285975: two noqa-tagged lines with no `;` swallowed the next
+    // query too, and three `select 1 from ...` went out as one invalid query.
+    const text = [
+      "-- VERIFY: select 1 from pg_attribute where attname='a' and not attisdropped -- noqa: LT05",
+      "-- VERIFY: select 1 from pg_attribute where attname='b' and not attisdropped -- noqa: LT05",
+      '-- VERIFY: select 1 from information_schema.columns where table_schema =',
+      "-- VERIFY: 'public' and column_name = 'c';",
+    ].join('\n');
+    expect(extractVerifyQueries(text)).toEqual([
+      "select 1 from pg_attribute where attname='a' and not attisdropped",
+      "select 1 from pg_attribute where attname='b' and not attisdropped",
+      "select 1 from information_schema.columns where table_schema = 'public' and column_name = 'c';",
+    ]);
+  });
+
+  it('keeps a subquery, a set-operator arm, or a split literal with its query', () => {
+    const subquery = '-- VERIFY: select 1 where not exists (\n-- VERIFY:   select 1 from t where x is null);';
+    expect(extractVerifyQueries(subquery)).toEqual(['select 1 where not exists ( select 1 from t where x is null);']);
+
+    const union = '-- VERIFY: select 1 from a union all\n-- VERIFY: select 1 from b;';
+    expect(extractVerifyQueries(union)).toEqual(['select 1 from a union all select 1 from b;']);
+
+    const literal = "-- VERIFY: select 1 where data_type = 'timestamp\n-- VERIFY: with time zone';";
+    expect(extractVerifyQueries(literal)).toHaveLength(1);
+  });
+
+  it('starts a new query at a top-level CTE', () => {
+    const text = '-- VERIFY: select 1 from a\n-- VERIFY: with x as (select 1) select * from x;';
+    expect(extractVerifyQueries(text)).toEqual(['select 1 from a', 'with x as (select 1) select * from x;']);
+  });
+
+  it('splits the three migrations whose db-apply runs reported FAIL into their real queries', () => {
+    const count = (name) =>
+      extractVerifyQueries(readFileSync(join(REPO_ROOT, 'supabase/migrations', name), 'utf-8'));
+    const camp = count('20260905090000_baseball_camp_registrations_lifecycle_timestamps.sql');
+    expect(camp).toHaveLength(6);
+    for (const q of camp) expect(q.match(/\bselect 1 from pg_attribute\b/g)?.length ?? 0).toBeLessThanOrEqual(1);
+    expect(count('20260922120000_v3_standing_shot_metrics_all_shot_proximity.sql')).toHaveLength(5);
+    expect(count('20260923180000_helm_jobs_dedupe_keys_enable_rls.sql')).toHaveLength(1);
+  });
+
+  it('parses every staged migration into single statements', () => {
     const approvedToApply = [
       ...NOW_APPROVED,
       '20260923000000_baseball_timeline_event_acks_contract_repair.sql',
@@ -225,7 +267,14 @@ describe('extractVerifyQueries', () => {
       const sql = readFileSync(join(REPO_ROOT, 'supabase/migrations', name), 'utf-8');
       const queries = extractVerifyQueries(sql);
       expect(queries.length).toBeGreaterThan(0);
-      for (const q of queries) expect(q.endsWith(';')).toBe(true);
+      // `;` is optional on the last statement, but a `;` anywhere else, or a
+      // second statement start, means two VERIFY rows were glued together.
+      // (20260905090000/092000 end some single-line rows without one.)
+      for (const q of queries) {
+        expect(q, name).toMatch(/^(select|with)\b/i);
+        expect(q.replace(/;$/, ''), name).not.toContain(';');
+        expect(q.match(/(^|[^(]\s)select 1 from\b/gi)?.length ?? 0, `${name}: ${q}`).toBeLessThanOrEqual(1);
+      }
     }
   });
 });

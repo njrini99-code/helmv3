@@ -8,8 +8,9 @@ export const meta = {
   ],
 }
 
-// args: an array of PR numbers, e.g. [1867, 1866]. A single number is accepted too.
-const prs = Array.isArray(args) ? args : (args != null ? [args] : [])
+// args: PR numbers as an array, a single number, or the slash-command string "1867 1866".
+const prs = (Array.isArray(args) ? args : String(args ?? '').split(/[\s,]+/))
+  .map(Number).filter(Number.isInteger)
 if (!prs.length) throw new Error('helm-fix-ci needs PR numbers as args, e.g. args: [1867, 1866]')
 
 const DIAGNOSIS = {
@@ -18,7 +19,7 @@ const DIAGNOSIS = {
   properties: {
     pr: { type: 'integer' },
     branch: { type: 'string' },
-    worktree: { type: 'string', description: 'absolute path under /Users/ricknini/worktrees/helmv3, or "" if none' },
+    worktree: { type: 'string', description: 'absolute path from `git worktree list` for this branch, or "" if none' },
     failures: {
       type: 'array',
       description: 'real failures only — each one a check the PR\'s own diff can fix',
@@ -51,14 +52,23 @@ const NON_ACTIONABLE =
 const out = await pipeline(
   prs,
   (pr) => agent(
+<<<<<<< HEAD
     `PR #${pr} in njrini99-code/helmv3 has red checks. gh needs the Bash sandbox disabled in this environment (TLS errors otherwise); use that only for gh commands. ` +
     `Find the head SHA (gh pr view ${pr} --json headRefName,headRefOid,isDraft), list check runs (gh api repos/njrini99-code/helmv3/commits/<sha>/check-runs?per_page=100), ` +
     'and for each failing job read `gh run view <run> --job <job> --log-failed`. Identify the exact failing step and its cause from the log, not from memory of past failures. ' +
     NON_ACTIONABLE + ' ' +
+=======
+    `PR #${pr} in njrini99-code/helmv3 has red checks. ` +
+    `Find the head SHA (gh pr view ${pr} --json headRefName,headRefOid), list failing check runs (gh api repos/njrini99-code/helmv3/commits/<sha>/check-runs?per_page=100), ` +
+    'and for each failing job read `gh run view <run> --job <job> --log-failed`. Identify the exact failing step and its cause. ' +
+    'Common causes: stale generated docs (docs/generated/DOCUMENT_AUTHORITY_INVENTORY.md via npm run knowledge:doc-inventory, the world model via npm run knowledge:world-model, ' +
+    'the feature map via npm run knowledge:feature-map, docs/TOOL_AUTHORITY_MATRIX.md), markdown or sqlfluff ratchet growth, yamllint line length. ' +
+>>>>>>> ca15f4ce6c4559e02af41f49db27b15b668f2de5
     'Locate the branch\'s worktree with `git worktree list` from /Users/ricknini/Downloads/helmv3. Report only; never edit.',
     { label: `diagnose:${pr}`, phase: 'Diagnose', agentType: 'helm-reader', schema: DIAGNOSIS },
   ),
   (diag, pr) => {
+<<<<<<< HEAD
     if (!diag || !diag.failures.length) {
       log(`#${pr}: no actionable failures${diag?.nonActionable?.length ? ` (non-actionable: ${diag.nonActionable.join('; ')})` : ''}`)
       return { pr, fixed: false, note: 'no actionable failures', nonActionable: diag?.nonActionable ?? [] }
@@ -80,6 +90,18 @@ const out = await pipeline(
       'Do not merge. Final text: the new head SHA (or "not pushed"), the preflight result and wall time, one line per fix, and anything left unresolved.',
       { label: `fix:${pr}`, phase: 'Fix', agentType: 'helm-worker' },
     ).then((text) => ({ pr, fixed: true, report: text, nonActionable: diag.nonActionable ?? [] }))
+=======
+    if (!diag || !diag.failures.length) { log(`#${pr}: nothing red`); return { pr, fixed: false, note: 'no failures found' } }
+    if (!diag.worktree) { log(`#${pr}: no worktree for ${diag.branch}; skipping (reattach one with scripts/new-worktree.sh <task> --reattach)`); return { pr, fixed: false, note: 'no worktree' } }
+    return agent(
+      `Worktree: ${diag.worktree}, branch ${diag.branch}, PR #${pr}. Confirm the branch first. Fix ONLY these CI failures, never the PR's intent, never raise a baseline:\n` +
+      diag.failures.map((f) => `- ${f.check} / ${f.step}: ${f.cause}. Reproduce locally with: ${f.localCommand}`).join('\n') +
+      '\nRun each local command, captured to a file, and check the exit code. Regenerate generated docs only when the diagnosis names them, then run `npm run docs:check`. ' +
+      'Commit with explicit `git add` and push the branch. ' +
+      'Do not merge. No test suite, no build. Final text: the new head SHA and one line per fix.',
+      { label: `fix:${pr}`, phase: 'Fix', agentType: 'helm-worker' },
+    ).then((text) => ({ pr, fixed: text != null, report: text }))
+>>>>>>> ca15f4ce6c4559e02af41f49db27b15b668f2de5
   },
 )
 

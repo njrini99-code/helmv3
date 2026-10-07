@@ -97,7 +97,7 @@ export function ChartTooltip({ heading, rows, footnote, className }: ChartToolti
         ))}
       </ul>
       {footnote ? (
-        <div className="mt-1.5 border-t border-border-subtle pt-1.5 font-fw-sans text-eyebrow normal-case tracking-normal text-text-tertiary">
+        <div className="mt-1.5 border-t border-border-subtle pt-1.5 font-fw-sans text-caption normal-case tracking-normal text-text-tertiary">
           {footnote}
         </div>
       ) : null}

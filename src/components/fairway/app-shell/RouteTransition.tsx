@@ -5,8 +5,9 @@
  * Reduced motion renders the destination immediately. */
 
 import { forwardRef, useMemo } from 'react';
-import { motion, useReducedMotion, type Transition } from 'framer-motion';
+import { motion, type Transition } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface RouteTransitionProps {
   /**
@@ -25,7 +26,7 @@ export const RouteTransition = forwardRef<HTMLDivElement, RouteTransitionProps>(
   { routeKey, children, className },
   ref,
 ) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotionGuard();
 
   const { initial, animate, transition } = useMemo(() => {
     if (reduceMotion) {

@@ -251,7 +251,7 @@ function rgbString({ r, g, b }: RGB): string {
 /** Pick legible text color for a cell fill (relative luminance threshold). */
 function textOn(fill: RGB, darkText: string): string {
   const lum = (0.2126 * fill.r + 0.7152 * fill.g + 0.0722 * fill.b) / 255;
-  return lum > 0.6 ? darkText : '#FFFEFA';
+  return lum > 0.6 ? darkText : '#F7F5F2';
 }
 
 function roundRect(

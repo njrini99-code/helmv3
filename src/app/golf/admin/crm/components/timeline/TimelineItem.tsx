@@ -119,7 +119,7 @@ export function TimelineItem({ item }: TimelineItemProps) {
         )}
 
         {(metaBits.length > 0 || meetingUrl) && (
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-eyebrow text-text-tertiary">
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-caption text-text-tertiary">
             {metaBits.map((bit, i) => (
               <span key={i}>{bit}</span>
             ))}

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  LayoutDashboard,
+  House,
   Activity,
   AlertTriangle,
   KeyRound,
@@ -130,7 +130,10 @@ function computeBreadcrumbs(pathname: string): readonly Breadcrumb[] {
 const NAV_SECTION_ORDER = [...new Set(ADMIN_NAV.map((entry) => entry.section))];
 
 const NAV_ICON_BY_HREF = {
-  '/admin': LayoutDashboard,
+  // House, not LayoutDashboard: the bottom bar's 5th column (More) is a
+  // 2×2 grid glyph, and LayoutDashboard is a grid too — on a phone the first
+  // and last tabs read as the same button.
+  '/admin': House,
   '/admin/activity': Activity,
   '/admin/errors': AlertTriangle,
   '/admin/traces': GitBranch,
@@ -264,8 +267,10 @@ function useBridgeSignOut() {
 /**
  * Helm Bridge chrome: Fairway AppShell (warm-black rail + cream canvas) as
  * the neutral ops shell. Sport inks appear ONLY inside sport-scoped panes.
- * Keyboard: 1-9 then 0 jump the 10 tabs (see admin-nav.ts), R refreshes,
- * ⌘K opens the command menu — preserving the old admin's muscle memory.
+ * Keyboard: 1-9 then 0 jump the first ten tabs, Shift+letter jumps the rest
+ * (see admin-nav.ts — ADMIN_NAV has grown past ten tabs since this comment
+ * was first written), R refreshes, ⌘K opens the command menu — preserving
+ * the old admin's muscle memory.
  *
  * M1 (bridge-chrome, docs/MOBILE_DOCTRINE.md rule 6/10): on phone, the rail
  * is replaced by a persistent bottom-tab bar (Overview/Errors/Health/Users —

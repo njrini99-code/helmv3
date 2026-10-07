@@ -40,6 +40,7 @@ import {
   fairwayToast,
 } from '@/components/fairway';
 import type { StaffInviteRole } from '@/lib/golf/staff-invite';
+import { distinctStaffTitle, staffRoleLabel } from './staff-title';
 import {
   IconCopy,
   IconCheck,
@@ -62,7 +63,7 @@ import {
   type PendingAssistantCoach,
 } from '@/app/golf/actions/teams';
 import { setActiveTeam } from '@/app/golf/actions/team-switcher';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+import { haptic } from '@/lib/haptics';
 
 /* ---------------------------------------------------------------------------
  * Props — mirror the legacy TeamSettingsClient loader output EXACTLY
@@ -80,6 +81,9 @@ export interface FairwayTeamSettingsTeam {
    * chip when this is a recognised value. (P365)
    */
   gender?: string | null;
+  /** `golf_teams.timezone`. Pins the "Established" date so the server render
+   *  and hydration print the same day (audit HYD-03). */
+  timezone?: string | null;
 }
 
 export interface FairwayTeamSettingsCoach {
@@ -182,7 +186,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
     startAddTeamTransition(async () => {
       const result = await addSecondTeam(secondTeamName.trim(), secondTeamGender);
       if (result.success) {
-        void triggerHaptic('success');
+        void haptic('success');
         fairwayToast.success('Second team created successfully');
         setShowAddTeam(false);
         setSecondTeamName('');
@@ -193,7 +197,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
         }
         router.refresh();
       } else {
-        void triggerHaptic('error');
+        void haptic('error');
         fairwayToast.error(result.error || 'Failed to create team');
       }
     });
@@ -204,12 +208,12 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
     startSwitchTransition(async () => {
       const result = await setActiveTeam(createdTeam.id);
       if (result.success) {
-        void triggerHaptic('success');
+        void haptic('success');
         fairwayToast.success(`Switched to ${createdTeam.name}`);
         setCreatedTeam(null);
         router.refresh();
       } else {
-        void triggerHaptic('error');
+        void haptic('error');
         fairwayToast.error('Could not switch teams. Use the team switcher in the top bar.');
       }
     });
@@ -224,11 +228,11 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
     startTransition(async () => {
       const result = await createTeam(teamName, season, firstTeamGender);
       if (result.success) {
-        void triggerHaptic('success');
+        void haptic('success');
         fairwayToast.success('Team created');
         router.refresh();
       } else {
-        void triggerHaptic('error');
+        void haptic('error');
         fairwayToast.error(result.error || 'Failed to create team');
       }
     });
@@ -242,7 +246,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
     // guard here before mutating — a blank name would otherwise persist and
     // render verbatim across the app.
     if (!teamName.trim()) {
-      void triggerHaptic('error');
+      void haptic('error');
       fairwayToast.error('Team name is required');
       return;
     }
@@ -252,11 +256,11 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
         season,
       });
       if (result.success) {
-        void triggerHaptic('success');
+        void haptic('success');
         fairwayToast.success('Team updated');
         router.refresh();
       } else {
-        void triggerHaptic('error');
+        void haptic('error');
         fairwayToast.error(result.error || 'Failed to update team');
       }
     });
@@ -271,7 +275,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
     try {
       const inviteUrl = `${window.location.origin}/golf/join/${team.join_code}`;
       await navigator.clipboard.writeText(inviteUrl);
-      void triggerHaptic('light');
+      void haptic('commit');
       setCopied(true);
       fairwayToast.success('Invite link copied');
       setTimeout(() => setCopied(false), 2000);
@@ -296,7 +300,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
     }
     try {
       await navigator.clipboard.writeText(team.join_code);
-      void triggerHaptic('light');
+      void haptic('commit');
       setCodeCopied(true);
       fairwayToast.success('Team code copied');
       setTimeout(() => setCodeCopied(false), 2000);
@@ -318,7 +322,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
     }
     try {
       await navigator.clipboard.writeText(pt.join_code);
-      void triggerHaptic('light');
+      void haptic('commit');
       setCopiedTeamId(pt.id);
       fairwayToast.success(`${squadLabel(pt.gender) ?? pt.name} code copied`);
       setTimeout(() => setCopiedTeamId((cur) => (cur === pt.id ? null : cur)), 2000);
@@ -336,7 +340,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
     }
     try {
       await navigator.clipboard.writeText(`${origin}/golf/join/${pt.join_code}`);
-      void triggerHaptic('light');
+      void haptic('commit');
       setCopiedLinkTeamId(pt.id);
       fairwayToast.success(`${squadLabel(pt.gender) ?? pt.name} invite link copied`);
       setTimeout(() => setCopiedLinkTeamId((cur) => (cur === pt.id ? null : cur)), 2000);
@@ -347,15 +351,15 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
 
   const handleRegenerateInviteCode = () => {
     if (!team) return;
-    void triggerHaptic('warning');
+    void haptic('warning');
     startTransition(async () => {
       const result = await regenerateJoinCode(team.id);
       if (result.success) {
-        void triggerHaptic('success');
+        void haptic('success');
         fairwayToast.success('Invite code regenerated');
         router.refresh();
       } else {
-        void triggerHaptic('error');
+        void haptic('error');
         fairwayToast.error(result.error || 'Failed to regenerate invite code');
       }
     });
@@ -447,10 +451,13 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
     ? `${origin}/golf/join/${team.join_code}`
     : '';
   const established = team.created_at
-    ? new Date(team.created_at).toLocaleDateString(undefined, {
+    ? new Date(team.created_at).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
+        // Explicit locale + zone: `undefined` meant Node's on the server and
+        // the browser's on the client, which disagree near midnight (HYD-03).
+        timeZone: team.timezone || 'America/New_York',
       })
     : EM_DASH;
 
@@ -536,7 +543,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
                    now, each with its own copy button, so what you copy is never
                    ambiguous. */
                 <div className="flex flex-col gap-3">
-                  <span className="block font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
+                  <span className="block font-fw-sans text-caption font-medium text-text-tertiary">
                     Team codes
                   </span>
                   {programTeams!.map((pt) => {
@@ -614,7 +621,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
                     this team automatically. The copyable link below is for
                     anyone who can paste instead. */
                 <div className="flex flex-col gap-1.5">
-                  <span className="block font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
+                  <span className="block font-fw-sans text-caption font-medium text-text-tertiary">
                     Team code
                   </span>
                   <div className="flex items-center gap-3">
@@ -634,7 +641,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
                     </Button>
                   </div>
                   <p className="font-fw-sans text-caption text-text-secondary">
-                    Players enter this when they sign up — it joins them to this team automatically.
+                    Players enter this when they sign up. It joins them to this team automatically.
                   </p>
                 </div>
               )}
@@ -643,7 +650,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="fw-team-invite-link"
-                  className="block font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary"
+                  className="block font-fw-sans text-caption font-medium text-text-tertiary"
                 >
                   Invite link
                 </label>
@@ -738,7 +745,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
             {genderLabel && (
               <FormField
                 label="Program"
-                help="Set when the team is created — can't be changed."
+                help="Set when the team is created and can't be changed."
               >
                 <div className="flex min-h-[2.5rem] items-center">
                   <Badge tone="accent" size="md">
@@ -970,33 +977,39 @@ function CoachingStaffSection({ teamId }: { teamId: string | null }) {
           </p>
         </div>
         <ul className="flex flex-col gap-2">
-          {staff.map((member) => (
-            <li
-              key={member.coachId}
-              className="flex items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface px-3 py-2.5"
-            >
-              <div className="min-w-0">
-                <p className="truncate font-fw-sans text-body text-text-primary">
-                  {member.fullName || EM_DASH}
-                </p>
-                {member.title ? (
-                  <p className="truncate font-fw-sans text-caption text-text-tertiary">
-                    {member.title}
-                  </p>
-                ) : null}
-              </div>
-              <span
-                className={cn(
-                  'shrink-0 rounded-full px-2.5 py-1 font-fw-sans text-caption font-medium',
-                  member.role === 'head_coach'
-                    ? 'bg-accent-subtle text-text-primary'
-                    : 'bg-surface-sunken text-text-secondary',
-                )}
+          {staff.map((member) => {
+            // The pill names the role; a stored title that only repeats it
+            // ("Head Coach" beside "Head coach") is dropped (staff-title.ts).
+            const roleLabel = staffRoleLabel(member.role);
+            const title = distinctStaffTitle(member.title, roleLabel);
+            return (
+              <li
+                key={member.coachId}
+                className="flex items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface px-3 py-2.5"
               >
-                {member.role === 'head_coach' ? 'Head coach' : 'Assistant coach'}
-              </span>
-            </li>
-          ))}
+                <div className="min-w-0">
+                  <p className="truncate font-fw-sans text-body text-text-primary">
+                    {member.fullName || EM_DASH}
+                  </p>
+                  {title ? (
+                    <p className="truncate font-fw-sans text-caption text-text-tertiary">
+                      {title}
+                    </p>
+                  ) : null}
+                </div>
+                <span
+                  className={cn(
+                    'shrink-0 rounded-full px-2.5 py-1 font-fw-sans text-caption font-medium',
+                    member.role === 'head_coach'
+                      ? 'bg-accent-subtle text-text-primary'
+                      : 'bg-surface-sunken text-text-secondary',
+                  )}
+                >
+                  {roleLabel}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       </Surface>
     </section>
@@ -1193,7 +1206,7 @@ function StaffInviteSection({ teamId }: { teamId: string | null }) {
         {code && (
           <div className="flex flex-col gap-2">
             <p className="font-fw-sans text-body-sm text-text-secondary">
-              They can enter this code on the sign-up screen — it already carries
+              They can enter this code on the sign-up screen. It already carries
               the role, so there is nothing for them to pick.
             </p>
             <code className="rounded-card border border-border-subtle bg-surface p-3 text-center font-fw-mono text-h3 tracking-[0.2em] text-text-primary">

@@ -47,7 +47,7 @@ export function Bento({ children, className, separated = false }: BentoProps) {
       className={cn(
         'grid grid-flow-dense grid-cols-1 sm:grid-cols-2',
         separated
-          ? 'gap-3 overflow-visible bg-transparent [&>[data-slot="bento-cell"]]:rounded-card [&>[data-slot="bento-cell"]]:border [&>[data-slot="bento-cell"]]:border-border-subtle [&>[data-slot="bento-cell"]]:shadow-soft [&>[data-slot="bento-cell"]]:transition-[transform,box-shadow,border-color] [&>[data-slot="bento-cell"]]:duration-200 [&>[data-slot="bento-cell"]]:hover:-translate-y-1 [&>[data-slot="bento-cell"]]:hover:shadow-raise [&>[data-slot="bento-cell"]]:motion-reduce:transform-none'
+          ? 'gap-3 overflow-visible bg-transparent [&>[data-slot="bento-cell"]]:rounded-card [&>[data-slot="bento-cell"]]:border [&>[data-slot="bento-cell"]]:border-border-subtle [&>[data-slot="bento-cell"]]:shadow-soft [&>[data-slot="bento-cell"]]:transition-[transform,box-shadow,border-color] [&>[data-slot="bento-cell"]]:duration-200 [&>[data-slot="bento-cell"]]:hover:shadow-raise'
           : 'gap-px overflow-hidden rounded-card border border-border-subtle bg-border-subtle [box-shadow:var(--fw-shadow-card)]',
         'auto-rows-[minmax(7.375rem,auto)]',
         'min-[940px]:grid-cols-4',

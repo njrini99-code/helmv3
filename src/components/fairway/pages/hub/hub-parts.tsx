@@ -264,7 +264,7 @@ export function TripRow({
 function DetailField({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div>
-      <p className="font-fw-sans text-eyebrow uppercase tracking-[0.08em] text-text-tertiary">
+      <p className="font-fw-sans text-caption text-text-tertiary">
         {label}
       </p>
       <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">{value}</p>
@@ -295,7 +295,7 @@ export function TripDetailSheet({
         {/* Schedule */}
         <div className="grid grid-cols-2 gap-3">
           <Inset padding="sm">
-            <p className="font-fw-sans text-eyebrow uppercase tracking-[0.08em] text-text-tertiary">
+            <p className="font-fw-sans text-caption text-text-tertiary">
               Depart
             </p>
             <p className="mt-1 font-fw-sans text-body-sm font-medium text-text-primary tabular-nums">
@@ -314,7 +314,7 @@ export function TripDetailSheet({
           </Inset>
           {trip.return_date ? (
             <Inset padding="sm">
-              <p className="font-fw-sans text-eyebrow uppercase tracking-[0.08em] text-text-tertiary">
+              <p className="font-fw-sans text-caption text-text-tertiary">
                 Return
               </p>
               <p className="mt-1 font-fw-sans text-body-sm font-medium text-text-primary tabular-nums">
@@ -331,7 +331,7 @@ export function TripDetailSheet({
 
         {trip.hotel_name ? (
           <Inset padding="sm">
-            <p className="font-fw-sans text-eyebrow uppercase tracking-[0.08em] text-text-tertiary">
+            <p className="font-fw-sans text-caption text-text-tertiary">
               Lodging
             </p>
             <p className="mt-1 font-fw-sans text-body-sm font-medium text-text-primary">
@@ -422,7 +422,7 @@ export function TaskRow({
             'grid h-7 w-7 place-items-center rounded-fw-md border',
             'transition-[background-color,border-color] duration-base',
             isCompleted
-              ? 'border-transparent bg-accent-650 text-text-on-accent'
+              ? 'border-transparent bg-accent-fill text-text-on-accent-fill'
               : 'border-border-strong bg-surface text-transparent group-hover:border-accent-500 group-hover:bg-accent-50',
             completing && 'animate-pulse',
           )}
@@ -570,7 +570,7 @@ export function AnnouncementsList({
           }
         >
           Something went wrong fetching your team&rsquo;s announcements. This is a
-          temporary hiccup — retry to load them again.
+          temporary hiccup. Retry to load them again.
         </InlineNotice>
       </section>
     );
@@ -675,7 +675,7 @@ export function NoUpcomingTrips() {
         variant="subtle"
         icon={Plane}
         title="No upcoming trips"
-        description="Your last trip has wrapped — new itineraries from your coach will show up here."
+        description="Your last trip has wrapped. New itineraries from your coach will show up here."
       />
     </Surface>
   );
@@ -690,7 +690,7 @@ export function NoTasks() {
         variant="subtle"
         icon={ClipboardList}
         title="No tasks assigned"
-        description="You're clear — assigned tasks will show up here."
+        description="You're clear. Assigned tasks will show up here."
       />
     </Surface>
   );

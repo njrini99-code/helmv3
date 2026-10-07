@@ -45,7 +45,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Check, X, Target, MessageCircleQuestion } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Surface, Inset } from '../surfaces/surface';
@@ -58,6 +58,7 @@ import { InsufficientData } from '../feedback/InsufficientData';
 // InsightCard's docstring) — shared here for the same "must look identical
 // scanned vs read" reason.
 import { PRIORITY, ICON_TONE, type InsightPriority, type InsightIconTone } from './InsightCard';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export type InsightPanelMode = 'auto' | 'sheet' | 'docked';
 
@@ -258,7 +259,7 @@ function PanelBody({
 
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
             {overline ? (
-              <span className="font-fw-sans text-eyebrow uppercase text-text-tertiary">
+              <span className="font-fw-sans text-caption text-text-tertiary">
                 {overline}
               </span>
             ) : null}
@@ -301,7 +302,7 @@ function PanelBody({
           {evidence ? (
             <div className="flex flex-col gap-2">
               {evidenceLabel ? (
-                <span className="font-fw-sans text-eyebrow uppercase text-text-tertiary">
+                <span className="font-fw-sans text-caption text-text-tertiary">
                   {evidenceLabel}
                 </span>
               ) : null}
@@ -370,7 +371,7 @@ export const InsightPanel = forwardRef<HTMLDivElement, InsightPanelProps>(
     },
     ref,
   ) {
-    const prefersReduced = useReducedMotion();
+    const prefersReduced = useReducedMotionGuard();
     const isWide = useIsWide();
     const titleId = useId();
     const tone = PRIORITY[priority];

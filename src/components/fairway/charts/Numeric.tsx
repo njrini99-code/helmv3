@@ -86,7 +86,7 @@ export const Numeric = React.forwardRef<HTMLDivElement, NumericProps>(function N
         {delta ? <DeltaChip {...delta} /> : null}
       </div>
       {label ? (
-        <span className="font-fw-sans text-eyebrow uppercase text-text-tertiary">{label}</span>
+        <span className="font-fw-sans text-caption text-text-tertiary">{label}</span>
       ) : null}
     </div>
   );
@@ -129,7 +129,7 @@ export function DeltaChip({ value, direction, format, percent, className }: Delt
       style={TABULAR_NUMS}
       className={cn(
         'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5',
-        'font-fw-sans text-eyebrow font-semibold leading-none tracking-normal normal-case',
+        'font-fw-sans text-caption font-semibold leading-none tracking-normal normal-case',
         dir === 'up' && 'bg-fw-success-bg text-fw-success-ink',
         dir === 'down' && 'bg-fw-warning-bg text-fw-warning-ink',
         dir === 'flat' && 'bg-inset text-text-tertiary',

@@ -38,12 +38,15 @@ export function RecentTimelines({ teams }: { teams: PulseTeamRow[] }) {
           />
         </div>
       ) : (
-        <div className="mt-2 flex flex-wrap gap-2">
+        // One scrolling row on a phone, wrapping from `sm` up: six wrapped
+        // pills were a screenful of chrome above the team list on a 375px
+        // screen. Each pill already clears 44px (`min-h-11`).
+        <div className="-mx-1 mt-2 flex min-w-0 gap-2 overflow-x-auto px-1 py-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
           {recent.map((team) => (
             <Link
               key={team.teamId}
               href={team.threadHref}
-              className="flex min-h-11 items-center gap-2 rounded-full border border-warm-200 bg-surface-sunken px-3 py-2 text-sm text-warm-800 transition-colors hover:bg-surface"
+              className="flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-warm-200 bg-surface-sunken px-3 py-2 text-sm text-warm-800 transition-colors hover:bg-surface"
             >
               <SportBadge sport={team.sport} />
               <span className="max-w-[10rem] truncate font-medium">{team.name}</span>

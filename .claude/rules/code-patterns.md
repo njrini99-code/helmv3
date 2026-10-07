@@ -3,6 +3,8 @@ paths:
   - "src/app/**/*.ts"
   - "src/app/**/*.tsx"
   - "src/lib/**/*.ts"
+  - "src/components/**/*.tsx"
+  - "src/hooks/**/*.ts"
 ---
 
 ## Code Patterns

@@ -4,6 +4,7 @@ paths:
   - "src/lib/baseball/**"
   - "src/lib/recruiting/**"
   - "src/components/baseball/**"
+  - "src/components/recruiting/**"
   - "src/app/api/baseball/**"
 ---
 
@@ -31,9 +32,7 @@ subsystem is under active rework, trust DB enums/RLS over route detail):
 - **Pipeline stage consistency** — `baseball_pipeline_stage` has EXACTLY 5
   values (`watchlist, high_priority, offer_extended, committed, uninterested`).
   Any sixth value is rejected by Postgres. `src/lib/recruiting/stages.ts`
-  previously declared `contacted` / `campus_visit`, which the UI surfaced and
-  the server silently rejected; **that was fixed — they are removed, and a NOTE
-  in the file records why.** Do not re-add them.
+  must not declare `contacted` / `campus_visit` (the server rejects them).
 - **Team data isolation** — every read model/action resolves the active team
   server-side; staff-only reads return `authorized:false` + zero rows for
   non-members. Never trust a client-supplied teamId/coachId/playerId.
@@ -70,3 +69,10 @@ subsystem is under active rework, trust DB enums/RLS over route detail):
 - Player-facing mobile clarity (a recruit/player understanding their status at a
   glance).
 
+## User types and roles
+- **Coaches:** College (recruiting suite, no team management), High School
+  (team management, facilitates recruiting), JUCO (toggles recruit/team mode),
+  Showcase (multi-team travel orgs).
+- **Players:** High School, Showcase, and JUCO opt in to recruiting; College
+  never can. Before activation a coach's view is anonymous ("A D1 coach viewed
+  your profile"); after it, identified.

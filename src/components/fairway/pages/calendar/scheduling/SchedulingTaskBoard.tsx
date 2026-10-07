@@ -109,7 +109,7 @@ export function SchedulingTaskBoard({
           aria-hidden
           className={cn(
             'mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full',
-            tone === 'accept' && 'bg-accent-650 text-text-on-accent',
+            tone === 'accept' && 'bg-accent-fill text-text-on-accent-fill',
             tone === 'warn' && 'bg-fw-warning-bg text-fw-warning-ink',
             tone === 'block' && 'bg-fw-danger-bg text-fw-danger-ink',
           )}

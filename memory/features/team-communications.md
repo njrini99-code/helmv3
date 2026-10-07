@@ -26,6 +26,14 @@ The mobile inbox has one Messages header with working All, Unread and Groups
 filters. Short conversations settle near the composer; longer histories retain
 the existing scroll anchoring.
 
+On a phone the coach's conversation list keeps the Team hub tab row
+(Messages · Announcements · Tasks · Documents) under the shared top bar, as
+the other three tabs do; the list's height subtracts it through
+`--fw-hub-subnav-offset` (0px for players, who have no tab row). An open
+thread drops the row with the rest of the shell chrome (`data-fw-immersive`),
+and from `md` the route-scoped rule keeps hiding it beside the two-pane
+workspace's own header.
+
 On desktop and tablet the inbox fills the app content window beside the left
 navigation, with a compact fixed-width rail and an uncapped thread panel.
 Route-scoped `data-fw-messages` CSS removes the duplicate shell header and its
@@ -679,6 +687,21 @@ like the late images and font swaps the observer already existed to handle.
 The tell that this was two bugs and not one: switching conversations always
 worked, because that DOES change the id. Only the auto-selected first open broke.
 A test that renders with `loading: false` from the start cannot see either half.
+
+## Hydration and read receipts (UI/UX audit W4, 2026-09-23)
+
+- **HYD-01.** The warm-cache reads in `useGolfMessages`/`useGolfConversations`
+  are gated on `useSyncExternalStore` (server snapshot `false`), so hydration
+  renders the same empty state the server did (no #418). A client-only
+  navigation still warm-starts on first render, and a hydrated mount repaints
+  from cache in an effect. Test: `use-golf-messages.hydration.test.tsx` (SSR plus
+  `hydrateRoot`).
+- **DATA-01.** A thread that desktop FairwayMessages auto-selects is NOT
+  marked read just by opening. `useGolfMessages(id, viewer, { deferMarkRead })`
+  skips both the load-time mark and the on-arrival mark, and returns `markRead()`.
+  FairwayMessages calls it on the first pointerdown or focus inside the thread
+  pane, or when the user picks that thread in the rail. A thread the user
+  chose marks read as before. Test: `use-golf-messages.defer-mark-read.test.tsx`.
 
 ## Known Risk Areas
 

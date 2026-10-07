@@ -27,6 +27,8 @@ import type { CoachChatContext } from './context';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 import { formatDateOnlyShort } from '@/lib/golf/date-only';
 import { todayIsoInZone } from '@/lib/golf/timezone';
+import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import { isCountableRound } from '@/lib/golf/round-countable';
 
 type Sb = SupabaseClient<Database>;
 
@@ -194,11 +196,11 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
   const now = Date.now();
   const items: PulseItem[] = [];
 
-  const [rounds, events, attendance, tasks, focus, signals, signalCount] = await Promise.all([
+  const [completedRounds, events, attendance, tasks, focus, signals, signalCount] = await Promise.all([
     safeRows(
       sb
         .from('golf_rounds')
-        .select('player_id, round_date, score_to_par')
+        .select('player_id, round_date, score_to_par, holes_played, total_score, front_nine, back_nine, total_putts')
         .in('player_id', playerIds)
         .eq('status', 'completed')
         .order('round_date', { ascending: false })
@@ -264,8 +266,13 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
   ]);
 
   // ── Data freshness + coverage ───────────────────────────────────────────
+  // "Latest round" and the performance movement read COUNTABLE rounds only
+  // (src/lib/golf/round-countable.ts, canonical hole-sum totals), so a
+  // 37-stroke 18-hole round is not "the most recent round on the team".
+  // Coverage ("has no recorded rounds") still counts every completed round.
+  const rounds = completedRounds.map((r) => withCanonicalRoundTotal(r)).filter(isCountableRound);
   const latestRoundAt = rounds[0]?.round_date ?? null;
-  const withRounds = new Set(rounds.map((r) => r.player_id));
+  const withRounds = new Set(completedRounds.map((r) => r.player_id));
   const withoutRounds = ctx.roster.filter((p) => !withRounds.has(p.id));
 
   if (withoutRounds.length > 0) {
@@ -407,7 +414,7 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
       headline: `${stalled.length} active focus area${stalled.length === 1 ? '' : 's'} ${stalled.length === 1 ? 'has' : 'have'} no recent progress`,
       evidence: stalled
         .slice(0, 3)
-        .map((f) => `${nameById.get(f.player_id) ?? 'Player'} — ${f.title}`)
+        .map((f) => `${nameById.get(f.player_id) ?? 'Player'}: ${f.title}`)
         .join(' · '),
       tone: 'attention',
       weight: 65,
@@ -501,7 +508,7 @@ export function coverageLine(pulse: ProgramPulse): string | null {
   if (withRounds === pulse.active_roster) {
     return `All ${pulse.active_roster} players have recorded rounds.`;
   }
-  return `${withRounds} of ${pulse.active_roster} players have recorded rounds — answers cover those ${withRounds}.`;
+  return `${withRounds} of ${pulse.active_roster} players have recorded rounds. Answers cover those ${withRounds}.`;
 }
 
 /**

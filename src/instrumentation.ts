@@ -18,13 +18,14 @@
 // src/instrumentation-client.ts.
 import '@supabase/supabase-js/tracing';
 import * as Sentry from '@sentry/nextjs';
-import '@supabase/supabase-js/tracing';
 import { redactEventPii } from '@/lib/observability/redact-pii';
 import { getAppBaseUrl } from '@/lib/app-base-url';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
+import { observedUserFromHeaders } from '@/lib/observability/observed-user-from-request';
 import { resolveServerEnvironment } from '@/lib/sentry-environment';
 import { enforceMetricAttributeAllowlist } from '@/lib/observability/metrics';
 import { enforceLogAttributeAllowlist } from '@/lib/observability/structured-log';
+import { fingerprintSupabaseAutoCapture } from '@/lib/observability/supabase-error-grouping';
 
 const release = process.env.NEXT_PUBLIC_SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA;
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN?.trim() || process.env.SENTRY_DSN?.trim();
@@ -273,7 +274,7 @@ function fingerprintSupabaseKeyError(event: Sentry.ErrorEvent): Sentry.ErrorEven
   return event;
 }
 
-const scrubPii: Sentry.NodeOptions['beforeSend'] = (event) => {
+const scrubPii: Sentry.NodeOptions['beforeSend'] = (event, hint) => {
   if (event.request) {
     delete event.request.cookies;
     if (event.request.headers) {
@@ -318,8 +319,13 @@ const scrubPii: Sentry.NodeOptions['beforeSend'] = (event) => {
   // be scrubbed. Supabase-key runs first: it bails immediately when the text
   // doesn't match, and fingerprintByPostgresCode's own "never override a
   // deliberate fingerprint" guard means whichever rule matches first wins —
-  // the two are not expected to co-occur on the same event.
-  return fingerprintByPostgresCode(fingerprintSupabaseKeyError(redactEventPii(event)));
+  // the two are not expected to co-occur on the same event. Supabase
+  // integration auto-captures sit between them: they carry their code only on
+  // `hint.originalException`, which fingerprintByPostgresCode cannot see (see
+  // supabase-error-grouping.ts).
+  return fingerprintByPostgresCode(
+    fingerprintSupabaseAutoCapture(fingerprintSupabaseKeyError(redactEventPii(event)), hint),
+  );
 };
 
 export async function register() {
@@ -616,6 +622,19 @@ export async function onRequestError(
     const route = errorContext.routePath || request.path;
     const source = mapRouteTypeToSource(errorContext.routeType);
 
+    // WHO. This hook is the capture path for every server-render and
+    // route-handler failure and it passed no identity at all, so every
+    // `source='server_component'` row landed with `user_id NULL` — 79 of the
+    // ~151 error rows visible in a 72h window on 2026-09-08, including the top
+    // three incidents by volume, none of which could name a single affected
+    // person. `cookies()` from `next/headers` is unavailable here (the render
+    // has already unwound) and the ambient RequestContext is opened only by
+    // wrapped admin actions, so the request's own headers are the one identity
+    // signal this frame has. Attribution only — never authorization; see the
+    // helper's header. Resolves to nulls on any failure, which is exactly what
+    // was passed before, so the Bridge write can only gain a field.
+    const observed = await observedUserFromHeaders(request.headers);
+
     if (process.env.NEXT_RUNTIME === 'nodejs' && logServerException) {
       await logServerException(
         error,
@@ -626,6 +645,8 @@ export async function onRequestError(
           handled: false,
           statusCode: 500,
           runtime: 'nodejs',
+          userId: observed.userId,
+          userEmail: observed.userEmail,
           // Sentry.captureRequestError already captured this exception above
           // — logServerException's own internal Sentry.captureException call
           // would otherwise produce a second, differently-fingerprinted
@@ -656,6 +677,11 @@ export async function onRequestError(
           routeType: errorContext.routeType,
           routerKind: errorContext.routerKind,
           method: request.method,
+          // Same identity the nodejs branch attaches directly. The edge
+          // runtime cannot reach `@/lib/supabase/admin`, so the Bridge write
+          // happens behind this internal route — it has to be told who.
+          userId: observed.userId,
+          userEmail: observed.userEmail,
         }),
       }).catch(() => {});
     }

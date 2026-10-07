@@ -24,9 +24,9 @@ export function NoTeamBanner() {
   if (role !== 'player' || teamId || dismissed) return null;
 
   return (
-    <div className="mx-4 mt-4 md:mx-6 md:mt-6 rounded-xl border border-amber-200 bg-amber-50/80 backdrop-blur-sm px-4 py-3 flex items-center gap-3">
-      <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
-        <IconUsers size={18} className="text-amber-600" />
+    <div className="mx-4 mt-4 md:mx-6 md:mt-6 rounded-card border border-amber-200 bg-amber-50/80 backdrop-blur-sm px-4 py-3 flex items-center gap-3">
+      <div className="flex-shrink-0 w-8 h-8 rounded-fw-sm bg-amber-100 flex items-center justify-center">
+        <IconUsers size={18} className="text-fw-warning-text" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm text-amber-900">
@@ -36,7 +36,7 @@ export function NoTeamBanner() {
       </div>
       <Link
         href="/golf/join"
-        className="flex-shrink-0 px-3 py-1.5 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors"
+        className="flex-shrink-0 px-3 py-1.5 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-fw-sm transition-colors"
       >
         Join Team
       </Link>
@@ -45,7 +45,7 @@ export function NoTeamBanner() {
           sessionStorage.setItem(DISMISS_KEY, '1');
           setDismissed(true);
         }}
-        className="flex-shrink-0 p-1 rounded-md text-amber-400 hover:text-amber-600 hover:bg-amber-100 transition-colors"
+        className="flex-shrink-0 p-1 rounded-fw-sm text-amber-400 hover:text-fw-warning-text hover:bg-amber-100 transition-colors"
         aria-label="Dismiss banner"
       >
         <IconX size={16} />

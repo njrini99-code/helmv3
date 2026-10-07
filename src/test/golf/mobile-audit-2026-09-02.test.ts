@@ -63,8 +63,10 @@ describe('mobile audit 2026-09-02', () => {
 
   it('UI-11: the save-failed chip always says so in words', () => {
     const src = read('src/components/fairway/pages/rounds-tracking/FairwayScorecardHeader.tsx');
-    expect(src).not.toContain("{!compact && 'Save failed'}");
-    expect(src).toMatch(/status === 'error' && \([\s\S]*?Save failed[\s\S]*?\)/);
+    expect(src).not.toContain("{!compact && 'Not synced");
+    // RE-F18 (2026-09-24): the words say the round is still retrying, not a
+    // dead-end "Save failed".
+    expect(src).toMatch(/status === 'error' && \([\s\S]*?Not synced · retrying[\s\S]*?\)/);
   });
 
   it('copy: no desktop-only "Hover" verb in the round-review hint', () => {

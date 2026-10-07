@@ -108,7 +108,7 @@ export function FairwayGolfClassesSkeleton() {
               4 cards, matching FairwayGolfClasses.tsx:520
               (`Array.from({ length: 4 })`), not 5. */}
           <section className="flex flex-col gap-3">
-            <div className="grid gap-2.5 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
               {Array.from({ length: ROSTER_CARD_COUNT }).map((_, i) => (
                 <div
                   key={i}

@@ -42,7 +42,10 @@ describe('ADMIN_NAV', () => {
 
   it('groups by the question being asked, not by subsystem', () => {
     const sections = [...new Set(ADMIN_NAV.map((e) => e.section))];
-    expect(sections).toEqual(['Triage', 'Customers', 'Apps', 'Platform']);
+    // 'More' (added for Engineering OS, OWNER DECISION bridge-tab-audit-p0p1)
+    // is a deliberate deprioritized group, not a subsystem — it trails the
+    // question-shaped sections rather than sitting among them.
+    expect(sections).toEqual(['Triage', 'Customers', 'Apps', 'Platform', 'More']);
   });
 
   it('maps shortcut keys to hrefs', () => {

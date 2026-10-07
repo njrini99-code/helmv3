@@ -10,7 +10,7 @@ npm run knowledge:map -- --files <paths...>
 npm run knowledge:context -- --files <paths...> --task "<task>"
 ```
 
-Then Read every `memory/features/*.md` doc the map step names before making
+Then read every doc the map step names (not all live under `memory/features/`) before making
 or reviewing any change to those paths. If a path maps to nothing in
 `memory/registry.yml`, say so explicitly instead of proceeding silently —
 that is a registry gap, not a green light to skip context.

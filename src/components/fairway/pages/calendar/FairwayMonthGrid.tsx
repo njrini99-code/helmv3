@@ -186,7 +186,7 @@ export function FairwayMonthGrid({
         {WEEKDAYS.map((d) => (
           <div
             key={d}
-            className="px-2 py-2.5 text-center font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.08em] text-text-tertiary"
+            className="px-2 py-2.5 text-center font-fw-sans text-caption font-semibold text-text-tertiary"
           >
             <span className="hidden sm:inline">{d}</span>
             <span className="sm:hidden">{d.charAt(0)}</span>
@@ -274,7 +274,7 @@ export function FairwayMonthGrid({
                     // today is selected the fill wins.
                     'flex h-6 w-6 items-center justify-center rounded-full font-fw-sans text-caption font-semibold tabular-nums transition-colors',
                     isSelected
-                      ? 'bg-accent-650 text-text-on-accent'
+                      ? 'bg-accent-fill text-text-on-accent-fill'
                       : isToday
                         ? 'ring-1 ring-inset ring-accent-650 text-accent-700'
                         : inMonth
@@ -291,7 +291,7 @@ export function FairwayMonthGrid({
                 className={cn(
                   'pointer-events-none flex h-6 w-6 items-center justify-center rounded-full font-fw-sans text-caption font-semibold tabular-nums sm:hidden',
                   isSelected
-                    ? 'bg-accent-650 text-text-on-accent'
+                    ? 'bg-accent-fill text-text-on-accent-fill'
                     : isToday
                       ? 'ring-1 ring-inset ring-accent-650 text-accent-700'
                       : inMonth
@@ -316,7 +316,7 @@ export function FairwayMonthGrid({
                       <span
                         key={o.id}
                         title={`${o.playerName} · ${o.title}`}
-                        className="flex min-w-0 items-center gap-1 rounded-sm px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium leading-tight text-text-primary"
+                        className="flex min-w-0 items-center gap-1 rounded-fw-sm px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium leading-tight text-text-primary"
                         style={{ backgroundColor: o.color.light }}
                       >
                         <span
@@ -369,7 +369,7 @@ export function FairwayMonthGrid({
                         // overflow:hidden kicked in (finding #86). Giving the
                         // row an explicit flex layout and letting ONLY the
                         // title span shrink/truncate fixes it.
-                        'flex h-auto min-h-0 w-full min-w-0 items-center gap-1 rounded-sm px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium leading-tight transition-colors',
+                        'flex h-auto min-h-0 w-full min-w-0 items-center gap-1 rounded-fw-sm px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium leading-tight transition-colors',
                         isCancelled ? TONE_CHIP.danger : ownerTint ? undefined : TONE_CHIP[tone],
                         isCancelled && 'line-through decoration-2',
                       )}

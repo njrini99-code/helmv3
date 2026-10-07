@@ -231,7 +231,7 @@ describe('CategoryInsightsPanel — cause card progressive disclosure', () => {
     });
     render(<CategoryInsightsPanel themes={[theme]} />);
     fireEvent.click(screen.getByRole('button', { name: /Weak wedge distance control/i }));
-    expect(screen.getByText('No drill yet — talk to your coach.')).toBeInTheDocument();
+    expect(screen.getByText('No drill yet. Talk to your coach.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Make it a plan' })).not.toBeInTheDocument();
   });
 });

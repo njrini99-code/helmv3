@@ -7,6 +7,7 @@ import { Surface, StatusPill, InlineNotice, StatStrip } from '@/components/fairw
 import { PanelNoData } from '../../_components/PanelStates';
 import { KpiTile } from '../../_components/KpiTile';
 import { SectionLabel } from '../../_components/SectionLabel';
+import { DetailsDisclosure } from '../../_components/TabHeader';
 
 export async function LiftingFlowView() {
   const [journey, lift, errors] = await Promise.all([
@@ -17,16 +18,15 @@ export async function LiftingFlowView() {
 
   return (
     <div className="space-y-6">
-      <Surface padding="sm">
-        <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Lift Lab lens</p>
-        <h2 className="mt-2 text-h3 font-semibold tracking-normal text-warm-900 md:text-2xl">
-          Program Execution Flow
-        </h2>
-        <p className="mt-2 hidden max-w-3xl text-sm leading-6 text-warm-600 md:block">
-          Program assigned → Session opened → Readiness → Sets logged → Completed → Progress updated — cross-sport,
-          fully durable end to end (every stage is backed by a real helm_lifting_* row).
-        </p>
-      </Surface>
+      <div className="min-w-0">
+        <SectionLabel>Program Execution Flow</SectionLabel>
+        <DetailsDisclosure className="mt-1">
+          <p>
+            Program assigned → Session opened → Readiness → Sets logged → Completed → Progress updated — cross-sport,
+            fully durable end to end (every stage is backed by a real helm_lifting_* row).
+          </p>
+        </DetailsDisclosure>
+      </div>
 
       {lift.allSessionsAreDemoOrgs && (
         <InlineNotice tone="warning" title="Every session below is seed/demo data">
@@ -54,16 +54,16 @@ export async function LiftingFlowView() {
 
       <Surface padding="sm">
         <SectionLabel>Cross-sport incidents (7d)</SectionLabel>
-        <div className="mt-3 flex items-center gap-4">
+        <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
           <p className="font-fw-mono text-2xl font-bold tabular-nums text-warm-900">{errors.counts.actionableGroups}</p>
-          <p className="text-sm text-warm-500">actionable · {errors.counts.affectedUsers} users affected</p>
+          <p className="min-w-0 text-sm text-warm-500">actionable · {errors.counts.affectedUsers} users affected</p>
         </div>
         <div className="mt-3 divide-y divide-warm-200/60">
           {errors.incidents.slice(0, 3).map((inc) => (
             <div key={inc.key} className="flex items-center justify-between gap-3 py-2">
-              <p className="truncate text-sm text-warm-800">{inc.title}</p>
+              <p className="min-w-0 flex-1 truncate text-sm text-warm-800">{inc.title}</p>
               {inc.sport && (
-                <StatusPill tone="neutral" size="sm">
+                <StatusPill tone="neutral" size="sm" className="shrink-0">
                   {inc.sport}
                 </StatusPill>
               )}
@@ -71,7 +71,7 @@ export async function LiftingFlowView() {
           ))}
           {errors.incidents.length === 0 && <PanelNoData label="No Lift Lab incidents in the last 7 days" description="" />}
         </div>
-        <Link href="/admin/errors?feature=baseball_lifting" className="mt-3 inline-block text-xs font-medium text-accent-700 hover:underline">
+        <Link href="/admin/errors?feature=baseball_lifting" className="mt-1 inline-flex min-h-11 items-center text-xs font-medium text-accent-700 hover:underline">
           Open Incidents →
         </Link>
       </Surface>

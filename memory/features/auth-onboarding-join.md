@@ -33,6 +33,9 @@ Coach and player onboarding are separate routes. Join-code links can redirect us
 - `src/app/golf/actions/roster.ts`
 - `src/lib/auth/**`
 - `src/lib/supabase/**`
+- `src/hooks/use-presence.ts` — authenticated, best-effort presence heartbeat.
+  It validates the current session before its RPC, serializes overlapping ticks,
+  and does not turn its own request deadline into a product error.
 - `src/lib/observability/golf-login-outcome.ts` — `recordLoginOutcome`,
   called from every `loginActionImpl` return branch (Sentry
   `helm.auth.*` + a structured log line). Lives in its own module rather
@@ -97,6 +100,25 @@ Join code
   These routes legitimately still use the legacy
   `GenericPageSkeleton`/`FormPageSkeleton` family, which carries no
   `role="status"`/`aria-busy` of its own — the call site supplies them.
+
+- `/golf/reset-password` renders on `AuthCanvas` (`src/components/auth/golf-auth-canvas.tsx`),
+  the same flat treatment as login and forgot-password (AUTH-02, 2026-09-23).
+  `GolfAuthShell` no longer has an importer. The recovery-session logic
+  (`exchangeCodeForSession` / `verifyOtp`, with no `updateUser` until it is `ready`)
+  is unchanged.
+- `/golf/join` (the invite-code entry page) renders on `AuthCanvas` too
+  (2026-09-27). Its "Home" back link goes to `/golf`, not `/`: the in-app links
+  to it (NoTeamBanner, player onboarding, travel, classes) come from signed-in
+  players, and `/golf` routes by session (dashboard, or sign-in when signed
+  out). It is also an app route, so it works in the native shell, where the
+  proxy bounces `/` to login. `/golf/join/[code]` still uses the older
+  orb/glass styling.
+- Onboarding (player and coach): the submit-failure banner is `role="alert"`
+  and is referenced by the "Complete Setup" button's `aria-describedby`. A user
+  step change moves focus to the new step's `<h1>` (`tabIndex={-1}`). The
+  first paint and a restored coach draft do not. The coach completion screen's
+  primary action is **Invite players**, which goes to `/golf/dashboard/roster`
+  (join code and invite flow). "Go to dashboard" is the secondary action.
 
 ## Known Risk Areas
 

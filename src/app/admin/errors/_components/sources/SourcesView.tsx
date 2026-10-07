@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ExternalLink } from 'lucide-react';
+import { ChevronRight, ExternalLink } from 'lucide-react';
 import { fetchReliabilitySnapshot, queryRelAnalyses, type ReliabilityRunRow } from '@/lib/admin/data/reliability';
 import { RcaAnalysisView } from '../RcaAnalysisView';
 import type { RcaAnalysis } from '@/lib/admin/rca';
@@ -98,8 +98,11 @@ function EvidenceLinks({ signal }: { signal: CorrelatedSignal }) {
         // The source comes from the PAIR, never from `sources[i]`: those two
         // lists dedupe on different keys and their indices do not correspond.
         const target = evidenceTarget(ref, source);
+        // 44px tall on a phone (these are the row's only links out to the
+        // evidence), and allowed to break: a raw ref is a long unspaced id
+        // that otherwise pushed the chip — and the card — past the edge.
         const chip =
-          'inline-flex items-center gap-1 rounded-md border border-warm-200/70 px-2 py-0.5 text-xs';
+          'inline-flex max-w-full items-center gap-1 break-all rounded-md border border-warm-200/70 px-2 py-0.5 text-xs [@media(pointer:coarse)]:min-h-11';
 
         if (target.kind === 'external') {
           return (
@@ -208,13 +211,24 @@ function SignalRow({
       {/* The root-cause analysis the nightly triage wrote for this signal.
           These live in admin_events under fingerprint `rel:<signature>` and
           had no surface at all before 2026-08-28 — this is where they show. */}
+      {/* Behind a disclosure: a full analysis (cause, suspect files, fix) is
+          a screenful on a phone, and printed open under every row it turned
+          a list of signals into a wall of prose. The title still links to
+          the incident, where the same analysis renders in full. */}
       {analysis ? (
-        <div className="mt-3 rounded-fw-md border border-warm-200 bg-surface-sunken/40 p-3">
-          <p className="mb-2 text-caption uppercase tracking-widest text-warm-500">
+        <details className="group mt-3 rounded-fw-md border border-warm-200 bg-surface-sunken/40">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 px-3 text-caption uppercase tracking-widest text-warm-600 [&::-webkit-details-marker]:hidden">
+            <ChevronRight
+              size={14}
+              aria-hidden
+              className="shrink-0 transition-transform group-open:rotate-90 motion-reduce:transition-none"
+            />
             Root-cause analysis
-          </p>
-          <RcaAnalysisView analysis={analysis} />
-        </div>
+          </summary>
+          <div className="border-t border-warm-200 p-3">
+            <RcaAnalysisView analysis={analysis} />
+          </div>
+        </details>
       ) : null}
     </RailRow>
   );
@@ -226,42 +240,40 @@ function SignalRow({
 
 function SourceHealthPanel({ run }: { run: NonNullable<ReliabilityRunRow['run']> }) {
   return (
-    <Surface>
-      <Inset>
-        <Eyebrow as="p">Source health</Eyebrow>
-        <p className="mt-1 text-xs text-warm-500">
-          What each arm could read this run. A blind arm contributes no signals —
-          which is not the same as contributing zero.
-        </p>
-        <div className="mt-3 space-y-2">
-          {run.sources.map((source) => (
-            <div
-              key={source.source}
-              className={cn(
-                'flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-3 py-2.5',
-                source.status === 'blind'
-                  ? 'border-fw-danger/40 bg-fw-danger/[0.03]'
-                  : 'border-warm-200/60',
-              )}
-            >
-              <StatusPill tone={SOURCE_TONE[source.status]} dot>
-                {SOURCE_LABEL[source.status]}
-              </StatusPill>
-              <span className="text-sm font-medium text-warm-900">{source.source}</span>
-              <span className="text-xs text-warm-500">
-                {SOURCE_ROLE[source.source] ?? ''}
-              </span>
-              <span className="ml-auto font-mono text-xs tabular-nums text-warm-500">
-                {source.durationMs}ms
-                {source.bounded && ' · bounded'}
-              </span>
-              {source.reason && (
-                <p className="w-full text-xs text-warm-600">{source.reason}</p>
-              )}
-            </div>
-          ))}
-        </div>
-      </Inset>
+    <Surface padding="sm" className="min-w-0">
+      <Eyebrow as="p">Source health</Eyebrow>
+      <p className="mt-1 text-xs text-warm-500">
+        What each arm could read this run. A blind arm contributes no signals —
+        which is not the same as contributing zero.
+      </p>
+      <div className="mt-3 space-y-2">
+        {run.sources.map((source) => (
+          <div
+            key={source.source}
+            className={cn(
+              'flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-3 py-2.5',
+              source.status === 'blind'
+                ? 'border-fw-danger/40 bg-fw-danger/[0.03]'
+                : 'border-warm-200/60',
+            )}
+          >
+            <StatusPill tone={SOURCE_TONE[source.status]} dot>
+              {SOURCE_LABEL[source.status]}
+            </StatusPill>
+            <span className="text-sm font-medium text-warm-900">{source.source}</span>
+            <span className="text-xs text-warm-500">
+              {SOURCE_ROLE[source.source] ?? ''}
+            </span>
+            <span className="ml-auto font-mono text-xs tabular-nums text-warm-500">
+              {source.durationMs}ms
+              {source.bounded && ' · bounded'}
+            </span>
+            {source.reason && (
+              <p className="w-full break-words text-xs text-warm-600 [overflow-wrap:anywhere]">{source.reason}</p>
+            )}
+          </div>
+        ))}
+      </div>
     </Surface>
   );
 }
@@ -269,27 +281,25 @@ function SourceHealthPanel({ run }: { run: NonNullable<ReliabilityRunRow['run']>
 function SeverityMixPanel({ run }: { run: NonNullable<ReliabilityRunRow['run']> }) {
   const counts = severityCounts(run.signals);
   return (
-    <Surface>
-      <Inset>
-        <SegmentBar
-          overline="This window"
-          title="Severity mix"
-          takeaway={`${run.signals.length} correlated signals`}
-          awaiting={run.signals.length === 0}
-          parts={[
-            { label: 'Critical', value: counts.critical, tone: 'caution' },
-            { label: 'Error', value: counts.error, tone: 'caution' },
-            { label: 'Warning', value: counts.warning, tone: 'neutral' },
-            { label: 'Info', value: counts.info, tone: 'good' },
-          ]}
-          // Index 0 (Critical), NOT the default `'good'`. The default auto-picks
-          // the first good-toned part — Info — so a window holding 1 critical
-          // and 39 info would headline a reassuring "97%" on a page whose only
-          // job is answering what is broken. The critical share is the honest
-          // headline, and "0%" is a genuinely good reading when it is earned.
-          primary={0}
-        />
-      </Inset>
+    <Surface padding="sm" className="min-w-0">
+      <SegmentBar
+        overline="This window"
+        title="Severity mix"
+        takeaway={`${run.signals.length} correlated signals`}
+        awaiting={run.signals.length === 0}
+        parts={[
+          { label: 'Critical', value: counts.critical, tone: 'caution' },
+          { label: 'Error', value: counts.error, tone: 'caution' },
+          { label: 'Warning', value: counts.warning, tone: 'neutral' },
+          { label: 'Info', value: counts.info, tone: 'good' },
+        ]}
+        // Index 0 (Critical), NOT the default `'good'`. The default auto-picks
+        // the first good-toned part — Info — so a window holding 1 critical
+        // and 39 info would headline a reassuring "97%" on a page whose only
+        // job is answering what is broken. The critical share is the honest
+        // headline, and "0%" is a genuinely good reading when it is earned.
+        primary={0}
+      />
     </Surface>
   );
 }
@@ -315,48 +325,46 @@ const COVERAGE_CELL: Readonly<Record<CoverageCell, { className: string; label: s
  */
 function CoveragePanel({ coverage }: { coverage: ReturnType<typeof buildCoverageMatrix> }) {
   return (
-    <Surface>
-      <Inset>
-        <div className="flex items-baseline justify-between gap-2">
-          <Eyebrow as="h2">Coverage history</Eyebrow>
-          <span className="font-mono text-xs tabular-nums text-warm-500">
-            {coverage[0]?.totalRuns ?? 0} runs
-          </span>
-        </div>
-        <p className="mt-0.5 text-caption text-warm-500">Oldest left, newest right.</p>
-        {/* The grid scrolls in its own axis; the PAGE never pans sideways. */}
-        <div className="mt-3 overflow-x-auto">
-          <ul className="min-w-max space-y-1.5">
-            {coverage.map((row) => (
-              <li key={row.source} className="flex items-center gap-2">
-                <span className="w-20 shrink-0 font-fw-mono text-caption uppercase text-warm-500">
-                  {row.source}
-                </span>
-                <span className="flex gap-0.5" aria-hidden>
-                  {row.cells.map((cell, i) => (
-                    <span
-                      key={`${row.source}-${i}`}
-                      title={COVERAGE_CELL[cell].label}
-                      className={cn('h-3.5 w-3.5 rounded-sm', COVERAGE_CELL[cell].className)}
-                    />
-                  ))}
-                </span>
-                {/* The chart is never the only explanation — the same fact in
-                    words, for assistive tech and for anyone reading in
-                    greyscale. */}
-                <span className="font-fw-mono text-caption tabular-nums text-warm-500">
-                  {row.readingRuns}/{row.totalRuns} reading
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        {coverage.length === 0 ? (
-          <p className="mt-2 text-caption text-warm-500">
-            No run history yet — the collector has not written a readable row.
-          </p>
-        ) : null}
-      </Inset>
+    <Surface padding="sm" className="min-w-0">
+      <div className="flex items-baseline justify-between gap-2">
+        <Eyebrow as="h2">Coverage history</Eyebrow>
+        <span className="font-mono text-xs tabular-nums text-warm-500">
+          {coverage[0]?.totalRuns ?? 0} runs
+        </span>
+      </div>
+      <p className="mt-0.5 text-caption text-warm-500">Oldest left, newest right.</p>
+      {/* The grid scrolls in its own axis; the PAGE never pans sideways. */}
+      <div className="mt-3 overflow-x-auto">
+        <ul className="min-w-max space-y-1.5">
+          {coverage.map((row) => (
+            <li key={row.source} className="flex items-center gap-2">
+              <span className="w-20 shrink-0 font-fw-mono text-caption uppercase text-warm-500">
+                {row.source}
+              </span>
+              <span className="flex gap-0.5" aria-hidden>
+                {row.cells.map((cell, i) => (
+                  <span
+                    key={`${row.source}-${i}`}
+                    title={COVERAGE_CELL[cell].label}
+                    className={cn('h-3.5 w-3.5 rounded-sm', COVERAGE_CELL[cell].className)}
+                  />
+                ))}
+              </span>
+              {/* The chart is never the only explanation — the same fact in
+                  words, for assistive tech and for anyone reading in
+                  greyscale. */}
+              <span className="font-fw-mono text-caption tabular-nums text-warm-500">
+                {row.readingRuns}/{row.totalRuns} reading
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {coverage.length === 0 ? (
+        <p className="mt-2 text-caption text-warm-500">
+          No run history yet — the collector has not written a readable row.
+        </p>
+      ) : null}
     </Surface>
   );
 }
@@ -404,7 +412,7 @@ function RunPanel({
           remaining {readingCount(run.sources)} saw.
           <ul className="mt-2 space-y-1">
             {blind.map((s) => (
-              <li key={s.source} className="text-xs">
+              <li key={s.source} className="break-words text-xs [overflow-wrap:anywhere]">
                 <span className="font-medium">{s.source}</span> ({SOURCE_ROLE[s.source]}):{' '}
                 {s.reason ?? 'unreadable'}
               </li>
@@ -532,39 +540,39 @@ function RunPanel({
 
 function HistoryPanel({ history }: { history: readonly ReliabilityRunRow[] }) {
   return (
-    <Surface>
-      <Inset>
-        <Eyebrow as="h2">Recent runs</Eyebrow>
-        <p className="mt-1 text-xs text-warm-500">
-          Cadence is every 3 hours. A gap means a run did not happen — Vercel cron
-          scheduling is best-effort, so an occasional miss is expected and a
-          sustained one is not.
-        </p>
-        <ul className="mt-3 space-y-1">
-          {history.map((row) => (
-            <li
-              key={row.id}
-              className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-warm-200/50 py-2 text-xs first:border-t-0"
-            >
-              <StatusPill tone={row.status === 'failed' ? 'danger' : 'success'} dot>
-                {row.status}
-              </StatusPill>
-              <span className="text-warm-600">
-                {row.startedAt ? <LocalTime iso={row.startedAt} /> : '—'}
+    <Surface padding="sm" className="min-w-0">
+      <Eyebrow as="h2">Recent runs</Eyebrow>
+      <p className="mt-1 text-xs text-warm-500">
+        Cadence is every 3 hours. A gap means a run did not happen — Vercel cron
+        scheduling is best-effort, so an occasional miss is expected and a
+        sustained one is not.
+      </p>
+      <ul className="mt-3 space-y-1">
+        {history.map((row) => (
+          <li
+            key={row.id}
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-warm-200/50 py-2 text-xs first:border-t-0"
+          >
+            <StatusPill tone={row.status === 'failed' ? 'danger' : 'success'} dot>
+              {row.status}
+            </StatusPill>
+            <span className="text-warm-600">
+              {row.startedAt ? <LocalTime iso={row.startedAt} /> : '—'}
+            </span>
+            <span className="font-mono tabular-nums text-warm-500">
+              {row.run ? `${row.run.signals.length} signals` : 'unreadable payload'}
+            </span>
+            {row.durationMs !== null && (
+              <span className="font-mono tabular-nums text-warm-500">{row.durationMs}ms</span>
+            )}
+            {row.errorMessage && (
+              <span className="min-w-0 basis-full break-words text-warm-600 [overflow-wrap:anywhere]">
+                {row.errorMessage}
               </span>
-              <span className="font-mono tabular-nums text-warm-500">
-                {row.run ? `${row.run.signals.length} signals` : 'unreadable payload'}
-              </span>
-              {row.durationMs !== null && (
-                <span className="font-mono tabular-nums text-warm-500">{row.durationMs}ms</span>
-              )}
-              {row.errorMessage && (
-                <span className="text-warm-600">{row.errorMessage}</span>
-              )}
-            </li>
-          ))}
-        </ul>
-      </Inset>
+            )}
+          </li>
+        ))}
+      </ul>
     </Surface>
   );
 }
@@ -750,36 +758,32 @@ export async function SourcesView({
       {/* Matches the collection cadence closely enough to stay current without
           hammering the table — the data only changes every 3 hours. */}
       <AutoRefresh intervalMs={180_000} />
-      <Surface>
-        <Inset>
-          <Eyebrow as="h2">Feature constellation</Eyebrow>
-          <p className="mt-1 text-xs text-warm-500">
-            Every feature, sized by occurrence volume among its own top signatures, coloured by posture. Select one
-            to see its evidence braid below.
-          </p>
-          <div className="mt-3">
-            <PanelBoundary title="Feature constellation" skeleton={<PanelPageSkeleton rows={4} />}>
-              <FeatureConstellationSection selectedKey={selectedKey} hrefForKey={hrefForFeature} />
-            </PanelBoundary>
-          </div>
-        </Inset>
+      <Surface padding="sm" className="min-w-0">
+        <Eyebrow as="h2">Feature constellation</Eyebrow>
+        <p className="mt-1 text-xs text-warm-500">
+          Every feature, sized by occurrence volume among its own top signatures, coloured by posture. Select one
+          to see its evidence braid below.
+        </p>
+        <div className="mt-3">
+          <PanelBoundary title="Feature constellation" skeleton={<PanelPageSkeleton rows={4} />}>
+            <FeatureConstellationSection selectedKey={selectedKey} hrefForKey={hrefForFeature} />
+          </PanelBoundary>
+        </div>
       </Surface>
       <PanelBoundary title="Reliability" skeleton={<PanelPageSkeleton />}>
         <ReliabilityPanel />
       </PanelBoundary>
-      <Surface>
-        <Inset>
-          <Eyebrow as="h2">Capture quality</Eyebrow>
-          <p className="mt-1 text-xs text-warm-500">
-            How completely errors arrived, not how healthy production is. A low number is a
-            backlog item for the call site.
-          </p>
-          <div className="mt-3">
-            <PanelBoundary title="Capture quality" skeleton={<PanelPageSkeleton rows={4} />}>
-              <CaptureQualitySection />
-            </PanelBoundary>
-          </div>
-        </Inset>
+      <Surface padding="sm" className="min-w-0">
+        <Eyebrow as="h2">Capture quality</Eyebrow>
+        <p className="mt-1 text-xs text-warm-500">
+          How completely errors arrived, not how healthy production is. A low number is a
+          backlog item for the call site.
+        </p>
+        <div className="mt-3">
+          <PanelBoundary title="Capture quality" skeleton={<PanelPageSkeleton rows={4} />}>
+            <CaptureQualitySection />
+          </PanelBoundary>
+        </div>
       </Surface>
     </div>
   );

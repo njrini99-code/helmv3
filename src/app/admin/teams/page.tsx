@@ -12,6 +12,7 @@ import { TeamsSortChips } from './TeamsSortChips';
 import { RecentTimelines } from './RecentTimelines';
 import { parseView } from '@/lib/admin/views';
 import { ViewRail } from '../_components/ViewRail';
+import { TabHeader } from '../_components/TabHeader';
 import { TeamsEkgView } from './_components/TeamsEkgView';
 
 export const dynamic = 'force-dynamic';
@@ -43,7 +44,12 @@ function TeamRow({ team }: { team: PulseTeamRow }) {
     >
       <div className="min-w-0 flex-1 basis-[45%]">
         <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-medium text-warm-900">{team.name}</p>
+          {/* Two lines, then clamp: on a phone the sparkline takes a third of
+              the row, and a one-line truncate cut most team names to a
+              handful of letters. */}
+          <p className="line-clamp-2 min-w-0 break-words text-sm font-medium text-warm-900 [overflow-wrap:anywhere]">
+            {team.name}
+          </p>
           <StatusPill tone={HALO_TONE[team.halo]} dot size="sm" className="shrink-0">
             {HALO_LABEL[team.halo]}
           </StatusPill>
@@ -56,7 +62,7 @@ function TeamRow({ team }: { team: PulseTeamRow }) {
             'no activity in 30d'
           )}
           {team.errors30d > 0 ? (
-            <span className={cn('ml-2 font-semibold', team.criticalErrors30d > 0 ? 'text-fw-danger-ink' : 'text-warm-700')}>
+            <span className={cn('ml-2 whitespace-nowrap font-semibold', team.criticalErrors30d > 0 ? 'text-fw-danger-ink' : 'text-warm-700')}>
               {team.errors30d} errors
             </span>
           ) : null}
@@ -79,26 +85,33 @@ async function Body({ sort }: { sort: PulseSort }) {
 
   return (
     <div className="space-y-4">
-      <RecentTimelines teams={grid.teams} />
+      {/* Headline numbers first, then the one-row timeline rail, then the full
+          list — on a phone the six timeline pills used to wrap into a
+          screenful of chrome above the three numbers the page leads with. */}
       <Surface padding="sm">
         <div className="grid grid-cols-3 gap-3">
-          <div>
+          <div className="min-w-0">
             <p className="text-eyebrow uppercase text-warm-500">teams</p>
             <p className="font-fw-mono text-h2 tabular-nums text-warm-900">{grid.teams.length}</p>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-eyebrow uppercase text-warm-500">silent 14d+</p>
             <p className="font-fw-mono text-h2 tabular-nums text-warm-900">{silentCount}</p>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-eyebrow uppercase text-warm-500">critical errors</p>
             <p className={cn('font-fw-mono text-h2 tabular-nums', criticalCount > 0 ? 'text-fw-danger-ink' : 'text-warm-900')}>
               {criticalCount}
             </p>
           </div>
         </div>
+        {/* Stays visible, never folded into a disclosure: when a source fails
+            this same string carries the "INCOMPLETE THIS RUN" warning, and it
+            cannot be split from the methodology sentence at this layer. */}
         <p className="mt-3 border-t border-warm-200 pt-3 text-caption text-warm-500">{grid.degradedNote}</p>
       </Surface>
+
+      <RecentTimelines teams={grid.teams} />
 
       <Surface padding="sm">
         {grid.teams.length === 0 ? (
@@ -128,27 +141,9 @@ export default async function TeamsPulsePage({
   return (
     <div className="space-y-4">
       <AutoRefresh intervalMs={60_000} />
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-h3 font-semibold text-warm-900">Teams</h1>
-          <p className="text-body-sm text-warm-500">
-            Every team, one 30-day heartbeat — quiet and spiking teams float to the top. Click a row for its full Thread.
-          </p>
-        </div>
-        {/* The sort chips belong to the Pulse view only — the EKG view has its
-            own ordering. Rendering them under EKG would offer a control that
-            changes nothing, which is worse than offering none. */}
-        {view === 'pulse' ? (
-          <TeamsSortChips
-            chips={PULSE_SORTS.map((s) => ({
-              key: s,
-              label: SORT_LABEL[s],
-              href: sortHref(s),
-              selected: sort === s,
-            }))}
-          />
-        ) : null}
-      </div>
+      {/* Title only: the view rail's own line already says what each view
+          holds, so a second paragraph here was the same sentence twice. */}
+      <TabHeader title="Teams" />
       <ViewRail
         host="/admin/teams"
         active={view}
@@ -160,6 +155,21 @@ export default async function TeamsPulsePage({
           ekg: '30-day strip per team, with release impact and unresolved incidents.',
         }}
       />
+      {/* The sort chips belong to the Pulse view only — the EKG view has its
+          own ordering. Rendering them under EKG would offer a control that
+          changes nothing, which is worse than offering none. Below the view
+          rail, not beside the title: a view's controls read after the view is
+          chosen, and beside the title they wrapped into their own block. */}
+      {view === 'pulse' ? (
+        <TeamsSortChips
+          chips={PULSE_SORTS.map((s) => ({
+            key: s,
+            label: SORT_LABEL[s],
+            href: sortHref(s),
+            selected: sort === s,
+          }))}
+        />
+      ) : null}
       <PanelBoundary title="Teams" skeleton={<PanelPageSkeleton stats={3} rows={8} />}>
         {view === 'pulse' ? <Body sort={sort} /> : <TeamsEkgView />}
       </PanelBoundary>

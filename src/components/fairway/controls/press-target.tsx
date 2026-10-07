@@ -14,7 +14,7 @@
  *   · a green focus-visible ring that survives cream + green grounds
  *   · `motion-reduce:transition-none` safety for consumers' transitions
  *   · disabled → `opacity-50` + pointer-events guard
- *   · the shared surface press response + a selection haptic on commit
+ *   · the shared surface press response (haptic opt-in via `haptic`, MOT-03)
  *
  * The press response and haptic live HERE rather than in each caller because
  * this primitive is the entire vocabulary of "tap a whole surface" in the app —
@@ -35,20 +35,22 @@
 
 import { type ButtonHTMLAttributes, type MouseEvent, forwardRef, useCallback } from 'react';
 import { fwPressSurface, fwTransition } from './_internal';
-import { fwHaptic } from '@/lib/fairway/haptics';
+import { fireControlHaptic, type ControlHaptic } from '@/lib/haptics';
 import { cn } from '@/lib/utils';
 
 export type PressTargetProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  /** Opt out of the selection haptic — for a target that fires its own
-   *  outcome haptic (a commit/reject sequence) and would otherwise double-tick. */
-  haptic?: boolean;
+  /** Haptic on commit. OFF by default (audit MOT-03): a press target is
+   *  usually navigation, and navigating fires nothing. Pass a semantic event
+   *  (`'select'`, `'commit'`) for a target that changes a value; `true` is the
+   *  legacy spelling of `'select'`. */
+  haptic?: boolean | ControlHaptic;
 };
 
 export const PressTarget = forwardRef<HTMLButtonElement, PressTargetProps>(
-  function PressTarget({ className, type = 'button', haptic = true, onClick, ...props }, ref) {
+  function PressTarget({ className, type = 'button', haptic = false, onClick, ...props }, ref) {
     const handleClick = useCallback(
       (event: MouseEvent<HTMLButtonElement>) => {
-        if (haptic) fwHaptic('selection');
+        fireControlHaptic(haptic === true ? 'select' : haptic);
         onClick?.(event);
       },
       [haptic, onClick],

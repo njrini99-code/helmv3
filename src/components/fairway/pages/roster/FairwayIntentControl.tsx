@@ -212,7 +212,7 @@ export function FairwayIntentControl({
               'inline-flex items-center gap-1.5 rounded-full border border-dashed border-border-strong',
               'bg-surface-sunken font-fw-sans font-medium text-text-tertiary whitespace-nowrap',
               'transition-colors group-hover:border-accent-300 group-hover:text-text-secondary',
-              size === 'md' ? 'h-6 px-2.5 text-caption' : 'h-5 px-2 text-eyebrow',
+              size === 'md' ? 'h-6 px-2.5 text-caption' : 'h-5 px-2 text-caption',
             )}
           >
             <span aria-hidden="true" className="text-[1.1em] leading-none">
@@ -334,7 +334,7 @@ function IntentSheet({
         {/* Narrative goal */}
         <FormField
           label="Narrative goal"
-          help="The story this season — drives how CoachHelm frames this player."
+          help="The story this season. It drives how CoachHelm frames this player."
         >
           <RadioGroup
             value={narrativeGoal}
@@ -385,7 +385,7 @@ function IntentSheet({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
-            placeholder="What's the story this season — e.g. 'rebuilding stroke after injury'."
+            placeholder="What's the story this season, e.g. 'rebuilding stroke after injury'."
           />
         </FormField>
 

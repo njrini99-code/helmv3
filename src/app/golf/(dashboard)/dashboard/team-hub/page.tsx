@@ -14,8 +14,8 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
 export const metadata: Metadata = {
-  title: 'Team Hub | Helm Golf',
-  description: 'Your team at a glance — tasks, announcements, travel, classes, and teammates.',
+  title: 'Team Hub',
+  description: 'Your team at a glance: tasks, announcements, travel, classes, and teammates.',
 };
 
 interface RawAssignment {

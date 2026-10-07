@@ -1,0 +1,29 @@
+schema_version: 1
+replay_id: retired-runner-heartbeat-2026-09-27
+incident_id: memory/incidents/admin_selfheal/INC-2026-09-27-retired-triage-runner-paints-loop-red.md
+feature_id: admin_selfheal
+title: >-
+  The self-heal board classified Diagnose from its newest heartbeat, so a
+  retired cloud runner's daily failed row painted the loop red;
+  selectStageHeartbeat skips retired runners.
+bad_version: 17343f1a6b8a137e27f3612e816d4f8d528af686
+fixed_version: 2bb8e2202a5e631adf7caf3bc860de3148478abb
+fixture:
+  - source: selfheal-registry.test.ts
+    target: src/lib/admin/__tests__/selfheal-registry.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/lib/admin/__tests__/selfheal-registry.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: missing-export
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic heartbeat rows (timestamps, method strings and counts); no
+    production rows, IDs, PII, tokens or logs.
+source_incident_status: fixed
+created_at: "2026-09-27"
+notes: >-
+  On bad_version the 4 selectStageHeartbeat tests fail with
+  "selectStageHeartbeat is not a function" (new export).

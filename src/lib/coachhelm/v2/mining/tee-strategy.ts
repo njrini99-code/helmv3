@@ -337,7 +337,7 @@ async function emitComparison(
           driver.fwPct * 100,
         )}% of fairways on ${driver.attempts} driver attempts vs ` +
         `${Math.round(nonDriver.fwPct * 100)}% on ${nonDriver.attempts} non-driver ` +
-        `tees — a ${Math.abs(Math.round(fwGap * 100))}-point accuracy gap for only ` +
+        `tees, a ${Math.abs(Math.round(fwGap * 100))}-point accuracy gap for only ` +
         `${Math.round(distGap)} extra yards. On tight holes where par is already ` +
         `comfortable, the layback profile scores better.`)
       : (`Over the last ${WINDOW_DAYS} days you hit ${Math.round(
@@ -346,7 +346,7 @@ async function emitComparison(
         `${Math.abs(Math.round(fwGap * 100))} points of your non-driver clubs ` +
         `(${Math.round(nonDriver.fwPct * 100)}% on ${nonDriver.attempts} tees) ` +
         `while averaging ${Math.round(distGap)} more yards. Keep the driver in ` +
-        `hand — you don't give up accuracy for the distance you gain.`);
+        `hand: you don't give up accuracy for the distance you gain.`);
 
   const drillTags = ['course_management', 'tee_strategy', 'risk_reward'];
 

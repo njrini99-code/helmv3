@@ -214,7 +214,7 @@ export function CRMDashboard({
             <Button variant="primary"
               onClick={() => handleResearchNext(10)}
               disabled={processing === 'research'}
-              className="w-full sm:w-auto px-5 py-2.5 bg-accent-650 text-text-on-accent rounded-fw-md font-medium hover:bg-accent-750 transition-all duration-200 text-sm shadow-soft disabled:opacity-50 hover:shadow-soft"
+              className="w-full sm:w-auto px-5 py-2.5 bg-accent-650 text-text-on-accent rounded-fw-md font-medium hover:bg-accent-750 transition duration-200 text-sm shadow-soft disabled:opacity-50 hover:shadow-soft"
             >
               <span className="flex items-center justify-center gap-2">
                 <IconArrowRight size={16} />
@@ -224,7 +224,7 @@ export function CRMDashboard({
             <Button variant="ghost"
               onClick={() => handleResearchNext(25)}
               disabled={processing === 'research'}
-              className="w-full sm:w-auto px-5 py-2.5 bg-canvas border border-border-subtle text-text-secondary rounded-fw-md font-medium hover:bg-surface-sunken active:bg-surface-sunken transition-all duration-200 text-sm disabled:opacity-50"
+              className="w-full sm:w-auto px-5 py-2.5 bg-canvas border border-border-subtle text-text-secondary rounded-fw-md font-medium hover:bg-surface-sunken active:bg-surface-sunken transition duration-200 text-sm disabled:opacity-50"
             >
               <span className="flex items-center justify-center gap-2">
                 <IconArrowRight size={16} />
@@ -233,7 +233,7 @@ export function CRMDashboard({
             </Button>
             <Button variant="ghost"
               onClick={() => onNavigate('list', 'board')}
-              className="w-full sm:w-auto px-5 py-2.5 text-text-tertiary hover:text-text-secondary rounded-fw-md font-medium transition-all duration-200 text-sm"
+              className="w-full sm:w-auto px-5 py-2.5 text-text-tertiary hover:text-text-secondary rounded-fw-md font-medium transition duration-200 text-sm"
             >
               View All <IconArrowRight size={12} className="inline" />
             </Button>
@@ -290,7 +290,7 @@ export function CRMDashboard({
                     </div>
                     <div className="absolute inset-0 flex items-center justify-end pr-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                       {widthPct <= 15 && stage.count > 0 && (
-                        <span className="text-label font-semibold text-text-secondary bg-surface rounded px-1.5 py-0.5">{stage.pct}%</span>
+                        <span className="text-microlabel font-semibold text-text-secondary bg-surface rounded px-1.5 py-0.5">{stage.pct}%</span>
                       )}
                     </div>
                   </div>
@@ -428,13 +428,13 @@ export function CRMDashboard({
                 <Button variant="primary"
                   onClick={() => handleResearchNext(10)}
                   disabled={processing === 'research' || (stats.byStatus.new_lead || 0) === 0}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-fw-md font-medium text-sm bg-accent-650 text-text-on-accent hover:bg-accent-750 transition-all duration-200 shadow-soft disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-soft flex-1 sm:flex-initial"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-fw-md font-medium text-sm bg-accent-650 text-text-on-accent hover:bg-accent-750 transition duration-200 shadow-soft disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-soft flex-1 sm:flex-initial"
                 >
                   <IconArrowRight size={16} /> Move to Pipeline
                 </Button>
                 <Button variant="ghost"
                   onClick={() => onNavigate('list', 'board')}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-canvas border border-border-subtle text-text-secondary rounded-fw-md font-medium hover:bg-surface-sunken active:bg-surface-sunken transition-all duration-200 text-sm hover:-translate-y-0.5 flex-1 sm:flex-initial"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-canvas border border-border-subtle text-text-secondary rounded-fw-md font-medium hover:bg-surface-sunken active:bg-surface-sunken transition duration-200 text-sm hover:-translate-y-0.5 flex-1 sm:flex-initial"
                 >
                   <IconChartBar size={16} /> Open Coaches
                 </Button>
@@ -550,7 +550,7 @@ function CoachRow({
       aria-label={`Open ${coach.name} at ${coach.school}`}
     >
       <span className={cn(
-        'text-micro font-bold px-1.5 py-0.5 rounded flex-shrink-0',
+        'text-microlabel font-bold px-1.5 py-0.5 rounded flex-shrink-0',
         'bg-surface-tint text-text-secondary ring-1 ring-border-subtle'
       )}>
         {coach.division}
@@ -560,10 +560,10 @@ function CoachRow({
           {statusColor && <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', statusColor.dot)} />}
           <p className="text-sm font-medium text-text-primary truncate">{coach.name}</p>
         </div>
-        <p className="text-label text-text-tertiary truncate">{coach.school} · {coach.conference}</p>
+        <p className="text-microlabel text-text-tertiary truncate">{coach.school} · {coach.conference}</p>
       </div>
       {badge && (
-        <span className={cn('text-micro font-medium flex-shrink-0 tabular-nums', badgeColor || 'text-text-tertiary')}>
+        <span className={cn('text-microlabel font-medium flex-shrink-0 tabular-nums', badgeColor || 'text-text-tertiary')}>
           {badge}
         </span>
       )}

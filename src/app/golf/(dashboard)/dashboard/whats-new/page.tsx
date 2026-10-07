@@ -10,7 +10,7 @@ import { FeatureUnavailable } from '@/components/fairway';
 // ============================================================================
 
 export const metadata = {
-  title: "What's New | CoachHelm",
+  title: "What's New",
   description: 'Lifecycle activity across your team in the past 7 days',
 };
 

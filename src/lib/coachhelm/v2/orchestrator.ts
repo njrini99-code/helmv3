@@ -75,6 +75,7 @@ import type {
   ReasoningResult,
 } from './types';
 import { describeError, toDbErrorMetadata } from '@/lib/utils/describe-error';
+import { runTier1Generators } from './tier1-runner';
 
 interface RoundReviewShotRow {
   hole_number: number;
@@ -355,6 +356,7 @@ class CoachHelmIntelligence {
       includeShotPatterns = true,
       includeLieAnalysis = true,
       persistPatterns = true,
+      runInsightGenerators = true,
       depth = 'standard',
       verbosity,
     } = options;
@@ -392,7 +394,15 @@ class CoachHelmIntelligence {
     //     directions (left, right) vs 4 (high/low/left/right). The
     //     missing buckets/directions are less actionable and will be
     //     added when the v3 metric IDs align with cache columns.
-    const tier1Generators: Array<{ name: string; fn: () => Promise<unknown> }> = [
+    //
+    // 2026-09-24: `runInsightGenerators: false` (a READ-ONLY caller — the
+    // player CoachHelm page load) runs none of these and skips the composite
+    // synthesis below. Every one of them reads raw shot/cache rows and
+    // upserts `golf_coach_insights`; fanned out per page view they saturated
+    // Postgres on 2026-09-24 (see the option's doc in ../types.ts). The
+    // writers — post-round trigger, safety-net and roster-sweep crons, the
+    // explicit analyze/generate actions — omit the option and are unchanged.
+    const tier1Generators: Array<{ name: string; fn: () => Promise<unknown> }> = !runInsightGenerators ? [] : [
       // v3 — putt distance (5 buckets: short/mid make-% + 2 lag buckets).
       // Lag (15-25 / 25+) is the domain's #1 3-putt driver; standings landed
       // 2026-06-05 via the cache 15_20 / 20_plus columns.
@@ -445,8 +455,12 @@ class CoachHelmIntelligence {
     // 2026-05-24 Wave 8 — runWithGate now returns metrics. The gated-out
     // count is stashed on `tier1GateMetrics` so it can be returned from
     // analyzePlayer alongside `generatorSummary` for caller-side logging.
-    const runTier1 = () =>
-      Promise.allSettled(tier1Generators.map((g) => g.fn()));
+    //
+    // 2026-09-24 (#2061): at most TIER1_GENERATOR_CONCURRENCY in flight
+    // instead of all ~21 at once, each retried ONCE on a transient database
+    // fault — see tier1-runner.ts. Same settled-array contract as the
+    // Promise.allSettled it replaces.
+    const runTier1 = () => runTier1Generators(tier1Generators);
     let tier1Settled: PromiseSettledResult<unknown>[];
     let tier1GateMetrics: { gatedCount: number } | null = null;
     if (options.philosophyGate) {
@@ -524,13 +538,17 @@ class CoachHelmIntelligence {
 
     // W28: composite synthesis. Runs after the Tier-1 batch so rules
     // can read this round's freshly-written insights. Failure-isolated.
-    const compositeSummary = await synthesizeForPlayer(playerId).catch((err) => {
-      void logServerError(
-        `composite synthesis failed for ${playerId}: ${describeError(err)}`,
-        { action: 'analyzePlayer.composite', metadata: { dbError: toDbErrorMetadata(err) } },
-      );
-      return { player_id: playerId, rule_matches: 0, rule_suppressed: 0, rule_emitted: 0, errors: 1, refusals: 0 };
-    });
+    // Skipped with the generators on a read-only call: it writes composite
+    // insights from the rows the Tier-1 batch just wrote, and a read wrote none.
+    const compositeSummary = !runInsightGenerators
+      ? null
+      : await synthesizeForPlayer(playerId).catch((err) => {
+          void logServerError(
+            `composite synthesis failed for ${playerId}: ${describeError(err)}`,
+            { action: 'analyzePlayer.composite', metadata: { dbError: toDbErrorMetadata(err) } },
+          );
+          return { player_id: playerId, rule_matches: 0, rule_suppressed: 0, rule_emitted: 0, errors: 1, refusals: 0 };
+        });
     void compositeSummary;
 
     // Extract features for the legacy pipeline
@@ -1738,7 +1756,7 @@ class CoachHelmIntelligence {
     return {
       headline: 'Round Damage Pattern: missed greens kept turning into bogeys',
       body: `${scrambleFails.length} of ${missedGreens.length} missed greens became bogey or worse in this round.`,
-      callToAction: 'Check where the recovery shots finished on those holes — the leave, not the miss, is what to look at first. Recommended: treat the first recovery shot as a scoring save: leave uphill and favor center green.',
+      callToAction: 'Check where the recovery shots finished on those holes. The leave, not the miss, is what to look at first. Recommended: treat the first recovery shot as a scoring save: leave uphill and favor center green.',
       tone: 'cautionary',
       confidence: Math.min(0.86, 0.55 + missedGreens.length * 0.04),
       // fail share × 2: a ranking heuristic, not strokes.
@@ -2369,9 +2387,9 @@ class CoachHelmIntelligence {
         const numValue = parseFloat(String(metric.value).replace(/[^0-9.-]/g, ''));
         const gap = !isNaN(numValue) ? numValue - Number(metric.benchmark) : 0;
         conclusion = gap < 0
-          ? `${Math.abs(gap).toFixed(1)} below benchmark — area for improvement`
+          ? `${Math.abs(gap).toFixed(1)} below benchmark: area for improvement`
           : gap > 0
-            ? `${gap.toFixed(1)} above benchmark — performing well`
+            ? `${gap.toFixed(1)} above benchmark: performing well`
             : `At benchmark level`;
       } else {
         conclusion = `Data point from ${insight.category} analysis`;
@@ -2397,7 +2415,7 @@ class CoachHelmIntelligence {
         type: 'deductive' as ReasoningType,
         premise: `Estimated stroke impact: ${insight.strokeImpact.toFixed(1)} strokes per round`,
         inference: insight.strokeImpact >= 1.0
-          ? 'This is a major area for improvement — fixing this changes scores'
+          ? 'This is a major area for improvement: fixing this changes scores'
           : insight.strokeImpact >= 0.5
             ? 'This is a significant area for improvement'
             : 'Addressing this would provide incremental gains',

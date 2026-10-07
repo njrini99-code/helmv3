@@ -298,14 +298,14 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
           {/* Fixed-height row + single-line caption so the sparkline sits at the
               exact same spot on every card (even across the grid). */}
           <div className="mt-2 flex h-5 items-center justify-between gap-3">
-            <p className="min-w-0 flex-1 truncate font-fw-sans text-eyebrow text-text-tertiary">
+            <p className="min-w-0 flex-1 truncate font-fw-sans text-caption text-text-tertiary">
               {achievedAt ? (
                 <span className="inline-flex items-center gap-1 font-medium text-fw-success-ink">
                   <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   Hit {achievedAt} · validated on rounds
                 </span>
               ) : notStarted ? (
-                'Not started — baseline captured'
+                'Not started. Baseline captured'
               ) : (
                 <>
                   {pct}% to target
@@ -351,8 +351,8 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
             show_cohort_text={false}
           />
           {windowed ? (
-            <p className="mt-1.5 font-fw-sans text-eyebrow text-text-tertiary">
-              Career average vs team &amp; Tour — your progress above tracks rounds since you set this goal.
+            <p className="mt-1.5 font-fw-sans text-caption text-text-tertiary">
+              Career average vs team &amp; Tour. Your progress above tracks rounds since you set this goal.
             </p>
           ) : null}
         </div>
@@ -360,7 +360,7 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
 
       {/* Footer — provenance + coach controls */}
       <div className="mt-4 flex items-center justify-between gap-3">
-        <p className="min-w-0 truncate font-fw-sans text-eyebrow text-text-tertiary">
+        <p className="min-w-0 truncate font-fw-sans text-caption text-text-tertiary">
           {role === 'coach' && playerName ? `${playerName} · ` : ''}
           {provenanceLabel(goal)}
           {goal.shared_with_coach && goal.creator_role === 'player' && ' · shared with coach'}
@@ -373,7 +373,7 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
               size="sm"
               busy={isPending}
               disabled={isPending}
-              onClick={() => runTransition(() => pauseGoal(goal.id), 'Goal paused')}
+              onClick={() => runTransition(() => pauseGoal(goal.id), 'Focus area paused')}
             >
               Pause
             </Button>
@@ -382,7 +382,7 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
               size="sm"
               busy={isPending}
               disabled={isPending}
-              onClick={() => runTransition(() => abandonGoal(goal.id), 'Goal abandoned')}
+              onClick={() => runTransition(() => abandonGoal(goal.id), 'Focus area dropped')}
             >
               Abandon
             </Button>

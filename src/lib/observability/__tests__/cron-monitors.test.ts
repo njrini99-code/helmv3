@@ -9,9 +9,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  */
 const mocks = vi.hoisted(() => ({
   captureCheckIn: vi.fn(() => 'checkin-id-123'),
+  flush: vi.fn(async (_timeout?: number) => true),
 }));
 vi.mock('@sentry/nextjs', () => ({
   captureCheckIn: mocks.captureCheckIn,
+  flush: mocks.flush,
 }));
 
 import {
@@ -20,7 +22,30 @@ import {
   resolveCronMonitorConfig,
   startCronCheckIn,
   finishCronCheckIn,
+  flushCronCheckIn,
 } from '@/lib/observability/cron-monitors';
+
+describe('flushCronCheckIn — the terminal check-in must leave before the function freezes (#1918)', () => {
+  beforeEach(() => {
+    mocks.flush.mockClear();
+  });
+
+  it('flushes the SDK transport for a real check-in id', async () => {
+    await flushCronCheckIn('checkin-id-123');
+    expect(mocks.flush).toHaveBeenCalledTimes(1);
+    expect(mocks.flush).toHaveBeenCalledWith(2000);
+  });
+
+  it('is a no-op for a null id (gated off / start failed)', async () => {
+    await flushCronCheckIn(null);
+    expect(mocks.flush).not.toHaveBeenCalled();
+  });
+
+  it('never throws when the transport rejects', async () => {
+    mocks.flush.mockRejectedValueOnce(new Error('sentry down'));
+    await expect(flushCronCheckIn('checkin-id-123')).resolves.toBeUndefined();
+  });
+});
 
 describe('shouldEmitCronCheckIns — gated off outside a real Vercel deployment', () => {
   afterEach(() => {

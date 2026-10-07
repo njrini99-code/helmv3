@@ -98,13 +98,13 @@ export function TasksDueWidget({
           </span>
           <h3 className="text-sm font-semibold text-text-primary">Tasks due today</h3>
           {!loading && tasks.length > 0 && (
-            <span className="text-eyebrow text-text-tertiary tabular-nums">
+            <span className="text-caption text-text-tertiary tabular-nums">
               {tasks.length}
             </span>
           )}
         </div>
         {buckets.overdue.length > 0 && (
-          <span className="inline-flex items-center gap-1 text-eyebrow font-semibold px-1.5 py-0.5 rounded-full bg-fw-danger-bg text-fw-danger-ink border border-fw-danger/25">
+          <span className="inline-flex items-center gap-1 text-caption font-semibold px-1.5 py-0.5 rounded-full bg-fw-danger-bg text-fw-danger-ink border border-fw-danger/25">
             <IconWarning size={9} />
             {buckets.overdue.length} overdue
           </span>
@@ -129,7 +129,7 @@ export function TasksDueWidget({
         {!loading && !error && tasks.length === 0 && (
           <div className="py-8 text-center">
             <div className="w-10 h-10 rounded-fw-md bg-surface-sunken flex items-center justify-center mx-auto mb-2">
-              <IconCheck size={18} className="text-accent-600" />
+              <IconCheck size={18} className="text-accent-ink" />
             </div>
             <p className="text-sm font-medium text-text-secondary">All caught up</p>
             <p className="text-xs text-text-tertiary mt-1">
@@ -219,7 +219,7 @@ function DueRow({ task, onComplete, onClick }: DueRowProps) {
         {dueLabel && (
           <p
             className={cn(
-              'text-eyebrow inline-flex items-center gap-1 mt-0.5',
+              'text-caption inline-flex items-center gap-1 mt-0.5',
               overdue ? 'text-fw-danger-ink' : 'text-text-tertiary',
             )}
           >

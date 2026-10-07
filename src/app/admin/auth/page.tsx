@@ -21,6 +21,7 @@ import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelAllClear, PanelNoData } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
+import { TabHeader } from '../_components/TabHeader';
 import { LocalTime } from '../_components/LocalTime';
 import { AuthFilterChips, type AuthFilterChip } from './AuthFilterChips';
 import { ActivationRunway } from './ActivationRunway';
@@ -108,6 +109,7 @@ async function AuthBody({ filters }: { filters: AuthTabFilters }) {
           suffix="%"
           decimals={1}
           tone="neutral"
+          footnote="Proxy: any activity in any sport within 7d of signup — not a precise per-user funnel"
         />
       </StatStrip>
 
@@ -124,7 +126,7 @@ async function AuthBody({ filters }: { filters: AuthTabFilters }) {
         <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
           Lockouts &amp; failed attempts
           {tab.lockoutsTotal > tab.lockouts.length ? (
-            <span className="ml-2 normal-case tracking-normal text-warm-400">
+            <span className="ml-2 normal-case tracking-normal text-warm-500">
               (showing latest {tab.lockouts.length} of {tab.lockoutsTotal})
             </span>
           ) : null}
@@ -140,19 +142,24 @@ async function AuthBody({ filters }: { filters: AuthTabFilters }) {
               {tab.lockouts.map((l) => {
                 const lockedUntilDate = l.locked_until ? new Date(l.locked_until) : null;
                 const isLocked = Boolean(lockedUntilDate && lockedUntilDate > new Date());
+                // A couple of failed typos isn't a lockout signal — only an
+                // actually-locked account, or one with 5+ failures, earns
+                // the warning tone. Lower counts still list (this panel is
+                // "Lockouts & failed attempts"), just neutrally.
+                const isNotable = isLocked || l.failed_attempts >= 5;
                 return (
                   <li key={l.email} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
-                    <StatusPill tone={isLocked ? 'danger' : 'warning'} dot size="sm">
+                    <StatusPill tone={isLocked ? 'danger' : isNotable ? 'warning' : 'neutral'} dot size="sm">
                       {isLocked ? 'locked' : 'failed'}
                     </StatusPill>
                     <span className="min-w-0 flex-1 basis-full break-words text-warm-900 [overflow-wrap:anywhere] sm:basis-auto">
                       <UserLink userId={l.user_id}>{l.email}</UserLink>
                     </span>
-                    <span className="font-fw-mono text-xs tabular-nums text-warm-500">
+                    <span className="whitespace-nowrap font-fw-mono text-xs tabular-nums text-warm-500">
                       {l.failed_attempts} failed
                     </span>
                     {isLocked && lockedUntilDate ? (
-                      <span className="font-fw-mono text-xs tabular-nums text-fw-danger-ink">
+                      <span className="whitespace-nowrap font-fw-mono text-xs tabular-nums text-fw-danger-ink">
                         until <LocalTime iso={lockedUntilDate.toISOString()} variant="time" />
                       </span>
                     ) : null}
@@ -168,7 +175,7 @@ async function AuthBody({ filters }: { filters: AuthTabFilters }) {
         <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
           Sign-in &amp; auth feed (7d)
           {tab.feedTotal > tab.feed.length ? (
-            <span className="ml-2 normal-case tracking-normal text-warm-400">
+            <span className="ml-2 normal-case tracking-normal text-warm-500">
               (showing latest {tab.feed.length} of {tab.feedTotal})
             </span>
           ) : null}
@@ -186,7 +193,7 @@ async function AuthBody({ filters }: { filters: AuthTabFilters }) {
                   <StatusPill tone={SEVERITY_TONE[row.severity] ?? 'neutral'} dot size="sm">
                     {row.severity}
                   </StatusPill>
-                  <span className="w-16 shrink-0 font-fw-mono text-eyebrow uppercase text-warm-500">
+                  <span className="shrink-0 font-fw-mono text-caption uppercase text-warm-500">
                     {row.event_type}
                   </span>
                   <span className="min-w-0 flex-1 basis-full break-words text-warm-900 [overflow-wrap:anywhere] sm:basis-auto">
@@ -199,7 +206,7 @@ async function AuthBody({ filters }: { filters: AuthTabFilters }) {
                     ) : null}
                   </span>
                   <SportBadge sport={(row.sport as BridgeSport) ?? null} />
-                  <span className="font-fw-mono text-xs tabular-nums text-warm-500">
+                  <span className="whitespace-nowrap font-fw-mono text-xs tabular-nums text-warm-500">
                     <LocalTime iso={row.created_at} variant="datetime" />
                   </span>
                 </li>
@@ -227,11 +234,16 @@ async function Runway() {
 }
 
 async function Sessions() {
-  const sessions = await fetchActiveSessions();
+  const { sessions, truncated } = await fetchActiveSessions();
   return (
     <Surface padding="md">
       <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
         Active sessions ({sessions.length})
+        {truncated ? (
+          <span className="ml-2 normal-case tracking-normal text-warm-500">
+            (showing the 500 most recent)
+          </span>
+        ) : null}
       </h2>
       <div className="mt-3">
         {sessions.length === 0 ? (
@@ -278,6 +290,7 @@ export default async function AuthPage({
   return (
     <div className="space-y-6">
       <AutoRefresh />
+      <TabHeader title="Auth & Sign-ins" />
 
       <div className="space-y-3">
         <form method="get" className="flex flex-wrap items-center gap-2">

@@ -91,3 +91,30 @@ describe('immersive surface — the hub sub-nav goes with the top bar', () => {
     expect(page).toContain('useImmersiveSurface(mobileShowChat)');
   });
 });
+
+// 390px screen baseline (2026-09-27): coach Messages is the first tab of the
+// Team hub, yet its phone conversation list showed no tab row, while
+// Announcements, Tasks and Documents all did. The route-scoped hide now
+// applies only from `md`, where the two-pane workspace draws its own header.
+describe('coach Messages — the Team hub tab row stays on the phone list', () => {
+  it('hides the tab row for the messages route only inside a min-width: 768px block', () => {
+    const selector = "body:has([data-fw-messages]) [data-slot='fairway-hub-subnav']";
+    const at = css.indexOf(selector);
+    expect(at).toBeGreaterThan(-1);
+    expect(css.indexOf(selector, at + 1), 'one messages-scoped tab-row rule').toBe(-1);
+
+    const mediaStart = css.lastIndexOf('@media', at);
+    const blockOpen = css.indexOf('{', mediaStart);
+    expect(css.slice(mediaStart, blockOpen)).toContain('(min-width: 768px)');
+    // Directly inside that block: nothing closes between its brace and the rule.
+    expect(css.slice(blockOpen + 1, at)).not.toContain('}');
+  });
+
+  it('sizes the phone list below the tab row when the shell mounts one', () => {
+    const page = readFileSync(
+      join(process.cwd(), 'src/components/fairway/pages/messages/FairwayMessages.tsx'),
+      'utf8',
+    );
+    expect(page).toContain('-var(--fw-hub-subnav-offset,0px))]');
+  });
+});

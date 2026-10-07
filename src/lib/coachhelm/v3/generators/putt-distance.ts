@@ -42,7 +42,7 @@ import {
   type CohortGender,
 } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
-import { attemptGate, lifetimeSpanDays, staleDataSuffix, ATTEMPT_FLOOR } from '@/lib/coachhelm/v3/engine/window-honesty';
+import { attemptGate, lifetimeSpanDays, dataThroughSuffix, ATTEMPT_FLOOR } from '@/lib/coachhelm/v3/engine/window-honesty';
 
 type PuttBucketKey = '3_5ft' | '5_10ft' | '10_15ft' | '15_25ft' | '25_plus_ft';
 
@@ -218,7 +218,7 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     let verdict: string;
     let composedPriority: InsightPriority;
     if (gapPp <= 0) {
-      verdict = ` You're at or above the Tour rate here — a strength, leave it alone.`;
+      verdict = ` You're at or above the Tour rate here, a strength, leave it alone.`;
       composedPriority = 'low';
     } else if (bandClass === 'makeable') {
       // Makeable distance below Tour = the highest-leverage, fastest-to-fix leak.
@@ -227,7 +227,7 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
         : `Worth tightening:`;
       verdict =
         ` ${lead} ${label} is makeable distance and you're ${Math.round(gapPp)} points below Tour. ` +
-        `The fix is a gate drill (two tees a ball-width apart) plus a daily short-putt ladder — ` +
+        `The fix is a gate drill (two tees a ball-width apart) plus a daily short-putt ladder: ` +
         `pure-strike reps, not green-reading.`;
       composedPriority = gapPp >= MAKEABLE_BIG_GAP_PP ? 'medium' : 'low';
     } else {
@@ -236,12 +236,13 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
       verdict =
         ` From ${label} make% is mostly lag: the driver is speed control and how far your ` +
         `approach/chip leaves you, not your stroke. Work distance-control lags to a 3-ft ` +
-        `circle and tighter approach proximity — don't drill the stroke.`;
+        `circle and tighter approach proximity. Don't drill the stroke.`;
       composedPriority = 'low';
     }
 
     const title = `${label} putting: ${valueDisp}`;
-    const content = base + verdict + staleDataSuffix(agg.last_round_date);
+    // NUM-12: always date the window, since this text is frozen at generation.
+    const content = base + verdict + dataThroughSuffix(agg.last_round_date);
 
     return {
       title,

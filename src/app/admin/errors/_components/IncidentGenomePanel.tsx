@@ -74,7 +74,7 @@ export function IncidentGenomePanel({ genome }: { genome: IncidentGenome }) {
               const provenance = aliasGroup.aliases.find((a) => a.id === (symptomIsRoot ? incidentId : symptom.id));
               return (
                 <li key={symptom.id} className="rounded-fw-md bg-surface-sunken p-2.5">
-                  <p className="text-body-sm font-medium text-warm-900">
+                  <p className="break-words text-body-sm font-medium text-warm-900 [overflow-wrap:anywhere]">
                     {symptomIsRoot ? (
                       <span className="mr-1.5 text-caption font-semibold uppercase text-accent-700">Root ·</span>
                     ) : null}
@@ -86,7 +86,7 @@ export function IncidentGenomePanel({ genome }: { genome: IncidentGenome }) {
                       symptom.description
                     )}
                   </p>
-                  <p className="mt-0.5 text-caption text-warm-600">
+                  <p className="mt-0.5 break-words text-caption text-warm-600 [overflow-wrap:anywhere]">
                     {provenance ? (
                       <>
                         <span className="font-medium uppercase text-accent-700">{provenance.tier}</span> confidence — {provenance.reason}

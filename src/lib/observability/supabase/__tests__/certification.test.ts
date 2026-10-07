@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   REQUIRED_SCENARIO_IDS,
   runCertification,
@@ -167,6 +167,11 @@ describe('certification matrix - the discriminating outcomes', () => {
 describe('certification matrix - Realtime capture, exercised rather than read', () => {
   beforeEach(() => {
     vi.resetModules();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('actually captures to Sentry on CHANNEL_ERROR, once per channel class', async () => {
@@ -180,7 +185,8 @@ describe('certification matrix - Realtime capture, exercised rather than read', 
       addBreadcrumb: vi.fn(),
       withScope: vi.fn(),
     }));
-    const { observeRealtimeChannel, __resetRealtimeCaptureDedupeForTests } = await import('../realtime');
+    const { observeRealtimeChannel, __resetRealtimeCaptureDedupeForTests, REALTIME_RECOVERY_GRACE_MS } =
+      await import('../realtime');
     __resetRealtimeCaptureDedupeForTests();
 
     let emit: ((status: string) => void) | null = null;
@@ -201,6 +207,11 @@ describe('certification matrix - Realtime capture, exercised rather than read', 
 
     emit!('CHANNEL_ERROR');
     emit!('CHANNEL_ERROR');
+
+    // Capture waits out the recovery grace window: a channel that re-joins
+    // on its own inside it is not a Sentry issue.
+    expect(captureMessage).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(REALTIME_RECOVERY_GRACE_MS + 1);
 
     expect(captureMessage).toHaveBeenCalledTimes(1);
     expect(captureMessage.mock.calls[0]![0]).toContain('CHANNEL_ERROR');

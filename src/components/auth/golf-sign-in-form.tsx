@@ -1,21 +1,35 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { haptic } from '@/lib/haptics';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { loginAction } from '@/app/golf/actions/auth';
 import { logError } from '@/lib/error-logging';
-import { Input } from '@/components/ui/input';
-import { AlertCircle, Loader2 } from 'lucide-react';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+import { Eye, EyeOff } from 'lucide-react';
+
 import { fwHapticSequence } from '@/lib/fairway/haptics';
 import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
-import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/fairway/controls/button';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import {
+  AuthFieldError,
+  AuthSubmitButton,
+  GroupedFieldRow,
+  GroupedFields,
+  authTextLinkClass,
+} from '@/components/auth/golf-auth-canvas';
+
+type InvalidField = 'email' | 'password' | 'both' | null;
+
+const CREDENTIALS_MESSAGE = 'Incorrect email or password. Please check your credentials and try again.';
+
+const ERROR_ID = 'golf-signin-error';
 
 function getErrorMessage(error: string): string {
   const lower = error.toLowerCase();
   if (lower.includes('invalid login') || lower.includes('invalid credentials')) {
-    return 'Incorrect email or password. Please check your credentials and try again.';
+    return CREDENTIALS_MESSAGE;
   }
   if (lower.includes('email not confirmed')) {
     return 'Please verify your email address before signing in. Check your inbox for the confirmation link.';
@@ -60,6 +74,16 @@ export function GolfSignInForm() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Presentation only: which field(s) the current error is about, so they get
+  // aria-invalid and focus moves to the first one. Doesn't affect what is sent.
+  const [invalidField, setInvalidField] = useState<InvalidField>(null);
+  // Bumped on every failed attempt so a repeated identical error still moves focus.
+  const [errorNonce, setErrorNonce] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const submitRef = useRef<HTMLButtonElement>(null);
+  const prefersReducedMotion = useReducedMotionGuard();
   // False until the client has mounted; gates submit so a pre-hydration tap
   // cannot fire the action with React's empty initial state (#1245).
   const [hydrated, setHydrated] = useState(false);
@@ -101,13 +125,36 @@ export function GolfSignInForm() {
    * Reading the live DOM values once on mount closes the window instead of
    * papering over it, and fixes pre-hydration autofill as a side effect.
    */
-  useEffect(() => {
+  const adoptDomValues = useCallback(() => {
     const emailEl = document.getElementById('golf-signin-email') as HTMLInputElement | null;
     const passwordEl = document.getElementById('golf-signin-password') as HTMLInputElement | null;
     if (emailEl?.value) setEmail((cur) => cur || emailEl.value);
     if (passwordEl?.value) setPassword((cur) => cur || passwordEl.value);
-    setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    adoptDomValues();
+    setHydrated(true);
+  }, [adoptDomValues]);
+
+  // Move focus to the first invalid field after a failed attempt. role="alert"
+  // on the message covers the announcement.
+  useEffect(() => {
+    if (errorNonce === 0 || !invalidField) return;
+    const target = invalidField === 'password' ? passwordRef.current : emailRef.current;
+    target?.focus();
+  }, [errorNonce, invalidField]);
+
+  // Keyboard: once a field has focus and the keyboard has animated in, bring
+  // the submit button into view so it isn't hidden under the keyboard.
+  function revealSubmit() {
+    window.setTimeout(() => {
+      submitRef.current?.scrollIntoView({
+        block: 'nearest',
+        behavior: prefersReducedMotion ? 'auto' : 'smooth',
+      });
+    }, 320);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -119,13 +166,16 @@ export function GolfSignInForm() {
     const trimmedEmail = email.trim();
     if (!trimmedEmail || !password) {
       setError('Enter your email and password to sign in.');
+      setInvalidField(!trimmedEmail ? 'email' : 'password');
+      setErrorNonce((n) => n + 1);
       return;
     }
 
     setIsLoading(true);
     setError(null);
+    setInvalidField(null);
     // Light haptic when the user taps Sign In — matches native iOS button feel.
-    void triggerHaptic('light');
+    void haptic('commit');
 
     try {
       // Read ref from sessionStorage (set on mount from URL param, persists through any redirect cycle)
@@ -133,8 +183,13 @@ export function GolfSignInForm() {
       const result = await loginAction(trimmedEmail, password, storedRef);
 
       if (!result.success) {
-        void triggerHaptic('error');
-        setError(getErrorMessage(result.error || 'Login failed'));
+        void haptic('error');
+        const message = getErrorMessage(result.error || 'Login failed');
+        setError(message);
+        // A credentials rejection is about both fields. Other failures
+        // (rate limit, network) aren't about field content.
+        setInvalidField(message === CREDENTIALS_MESSAGE ? 'both' : null);
+        setErrorNonce((n) => n + 1);
         setIsLoading(false);
         return;
       }
@@ -257,93 +312,102 @@ export function GolfSignInForm() {
     // we're navigating away and want to keep the loading state
   }
 
+  const canSubmit = hydrated && email.trim().length > 0 && password.length > 0;
+  const emailInvalid = invalidField === 'email' || invalidField === 'both';
+  const passwordInvalid = invalidField === 'password' || invalidField === 'both';
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5" noValidate aria-label="Sign in to GolfHelm">
-      {/* Error message */}
-      {error && (
-        <div
-          className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl flex items-start gap-2.5"
-          role="alert"
-        >
-          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      {/* Email — uses the shared Input which auto-applies iOS email keyboard defaults */}
-      <Input
-        id="golf-signin-email"
-        label="Email"
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="you@example.com"
-        required
-        enterKeyHint="next"
-      />
-
-      {/* Password */}
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          {/* This label is hand-rolled rather than passed to <Input label=…>
-              so the "Forgot password?" link can sit on the same row. That is
-              also how it lost the required marker the shared component adds
-              automatically: the field was `required` and `aria-required` all
-              along, but rendered as plain "Password" next to "Email*", so the
-              form showed one required field and one that read as optional.
-              Marker markup is copied verbatim from `ui/input.tsx:139` — if that
-              changes, change it here too. */}
-          <label htmlFor="golf-signin-password" className="text-sm font-medium text-warm-700">
-            Password
-            <span className="text-red-500 ml-0.5">*</span>
-          </label>
-          <Link
-            href="/golf/forgot-password"
-            className="text-xs text-primary-600 hover:text-primary-700 transition-colors"
-          >
-            Forgot password?
-          </Link>
-        </div>
-        <Input
+    <form
+      onSubmit={handleSubmit}
+      // A password manager can fill fields without firing React's onChange,
+      // which would leave a visibly filled form behind a disabled button.
+      // Re-adopt the live DOM values on any interaction (same sync as on mount).
+      onFocus={adoptDomValues}
+      onPointerDown={adoptDomValues}
+      noValidate
+      aria-label="Sign in to GolfHelm"
+    >
+      <GroupedFields>
+        <GroupedFieldRow
+          ref={emailRef}
+          id="golf-signin-email"
+          label="Email"
+          placeholder="Email"
+          type="email"
+          inputMode="email"
+          autoComplete="username"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          enterKeyHint="next"
+          required
+          aria-required="true"
+          aria-invalid={emailInvalid || undefined}
+          aria-describedby={error ? ERROR_ID : undefined}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onFocus={revealSubmit}
+          onKeyDown={(e) => {
+            // "next" on the keyboard moves to the password row instead of
+            // attempting an implicit submit.
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              passwordRef.current?.focus();
+            }
+          }}
+        />
+        <GroupedFieldRow
+          ref={passwordRef}
           id="golf-signin-password"
-          type="password"
+          label="Password"
+          placeholder="Password"
+          type={showPassword ? 'text' : 'password'}
+          autoComplete="current-password"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          enterKeyHint="go"
+          required
+          aria-required="true"
+          aria-invalid={passwordInvalid || undefined}
+          aria-describedby={error ? ERROR_ID : undefined}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Enter your password"
-          required
-          autoComplete="current-password"
-          enterKeyHint="go"
+          onFocus={revealSubmit}
+          trailing={
+            <IconButton
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-pressed={showPassword}
+              aria-controls="golf-signin-password"
+              onClick={() => setShowPassword((v) => !v)}
+              className="text-text-tertiary"
+            >
+              {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+            </IconButton>
+          }
         />
-      </div>
+      </GroupedFields>
 
-      {/* Submit button — inline spinner, iOS ease, tactile press */}
-      <Button variant="primary"
-        type="submit"
-        disabled={isLoading || !hydrated}
-        aria-busy={isLoading}
-        className="
-          w-full min-h-[50px] py-3
-          bg-primary-700
-          font-semibold text-body text-white tracking-[-0.01em]
-          rounded-xl
-          shadow-lg shadow-primary-700/25
-          transition-all duration-200 ease-ios
-          hover:bg-primary-800 hover:shadow-primary-700/30
-          active:scale-[0.97] active:duration-75
-          disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100
-          flex items-center justify-center gap-2
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2
-        "
+      {error && <AuthFieldError id={ERROR_ID}>{error}</AuthFieldError>}
+
+      <AuthSubmitButton
+        ref={submitRef}
+        className="mt-6"
+        disabled={!canSubmit}
+        pending={isLoading}
+        pendingLabel="Signing in…"
       >
-        {isLoading ? (
-          <>
-            <Loader2 className="w-[18px] h-[18px] animate-spin" aria-hidden="true" />
-            <span>Signing in…</span>
-          </>
-        ) : (
-          'Sign in'
-        )}
-      </Button>
+        Sign in
+      </AuthSubmitButton>
+
+      <div className="mt-3 flex justify-center">
+        <Link href="/golf/forgot-password" className={authTextLinkClass}>
+          Forgot password?
+        </Link>
+      </div>
     </form>
   );
 }

@@ -1,11 +1,12 @@
 'use client';
 
+import { haptic } from '@/lib/haptics';
 import { useRef, useCallback, useState } from 'react';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Button } from '@/components/fairway/controls/button';
 import { cn } from '@/lib/utils';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+
 import { fairwayToast } from '@/components/fairway';
 import { logError } from '@/lib/error-logging';
 import { IconButton } from '@/components/ui/button';
@@ -31,6 +32,7 @@ import {
   formatFileSize,
   validateFile,
 } from '@/lib/storage/attachments';
+import { fwPress } from '@/components/fairway/controls';
 
 interface AttachmentButtonProps {
   onFilesSelected: (files: File[]) => void;
@@ -55,13 +57,13 @@ export function AttachmentButton({
 
   const handleSimpleClick = () => {
     if (disabled) return;
-    void triggerHaptic('light');
+    void haptic('commit');
     inputRef.current?.click();
   };
 
   const handleSelectType = (type: 'all' | 'image' | 'video' | 'document' | 'audio' | 'camera') => {
     if (disabled) return;
-    void triggerHaptic('light');
+    void haptic('commit');
 
     setSheetOpen(false);
     if (type === 'camera' && cameraInputRef.current) {
@@ -167,7 +169,8 @@ export function AttachmentButton({
       // now the same accent-600 ring every other control uses.
       className={cn(
         'w-11 h-11 flex items-center justify-center rounded-fw-md',
-        'text-text-tertiary hover:text-text-primary hover:bg-surface-sunken active:bg-surface-sunken active:scale-95 motion-reduce:active:scale-100',
+        'text-text-tertiary hover:text-text-primary hover:bg-surface-sunken active:bg-surface-sunken',
+        fwPress,
         'transition-[color,background-color,transform] duration-150',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
         'data-[state=open]:bg-surface-sunken data-[state=open]:text-text-primary',

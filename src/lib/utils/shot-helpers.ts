@@ -3,6 +3,7 @@
  * and golf.ts server actions.
  */
 import type { ShotRecord, HoleStats, RoundHole } from '@/lib/types/golf';
+import { deriveHoleCounts } from '@/lib/golf/round-entry-validation';
 
 /**
  * Derive the lie_after value from a shot result.
@@ -167,14 +168,10 @@ type StatsHole = Pick<RoundHole, 'number' | 'par' | 'yardage'>;
  */
 export function calculateHoleStats(shots: ShotRecord[], hole: StatsHole): HoleStats {
   const nonPenaltyShots = shots.filter(s => !s.isPenalty);
-  const penaltyRecords = shots.filter(s => s.isPenalty).length;
-  // Safety: if a shot has result='penalty' without a corresponding isPenalty record,
-  // the penalty stroke is missing from shots.length — add it back
-  const penaltyResults = shots.filter(s => s.result === 'penalty' && !s.isPenalty).length;
-  const missingPenalties = Math.max(0, penaltyResults - penaltyRecords);
-  const score = shots.length + missingPenalties;
-  const putts = shots.filter(s => s.shotType === 'putting').length;
-  const penalties = penaltyRecords + missingPenalties;
+  // One definition of score/putts/penalties, shared with the submit gate
+  // (RE-V4): a `result: 'penalty'` shot without its own penalty record still
+  // costs a stroke, and that stroke is added back.
+  const { score, putts, penalties } = deriveHoleCounts(shots);
 
   // DRIVING STATS (Par 4/5 only)
   let fairwayHit: boolean | null = null;

@@ -71,13 +71,16 @@ describe('repair-contract — the worktree authority', () => {
     expect(commands).not.toMatch(/ln\s+-s\S*\s+\S*\.env\.local/);
   });
 
-  it('reads production from the process environment, never from a file it copied or pointed at', () => {
-    // The secret is used BY the process without becoming a file in the
-    // workspace. That invariant survived #1658 as `--env-file=<canonical>/.env.local`;
-    // since 2026-09-05 the contract runs on GitHub-hosted runners with the
-    // credentials in the job's env, so the active command must read
-    // process.env and must not point at, copy or print any .env file.
-    expect(commands).toContain('process.env.SUPABASE_SERVICE_ROLE_KEY');
+  it('reads production through the Supabase MCP, never from a file it copied or pointed at', () => {
+    // The secret must never become a file in the workspace. That invariant
+    // survived #1658 as `--env-file=<canonical>/.env.local`. From 2026-09-05
+    // the GHA runner read process.env; since 2026-09-23 the desktop health
+    // routine reads production through the Supabase MCP connector, so no
+    // active command touches a service-role key at all. What stays pinned is
+    // the negative: no command points at, copies or prints any .env file.
+    expect(text).toContain('mcp__Supabase__execute_sql');
+    expect(text).toMatch(/Never read `\.env\.local`/);
+    expect(commands).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
     expect(commands).not.toContain('--env-file');
     expect(commands).not.toMatch(/\b(cp|cat|source|\.)\s+\S*\.env(\.local)?\b/);
   });

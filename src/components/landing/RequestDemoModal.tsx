@@ -129,7 +129,7 @@ export function RequestDemoModal({ open, onClose }: RequestDemoModalProps) {
       role="presentation"
       onClick={onOverlayClick}
       onKeyDown={onKeyDown}
-      className="fixed inset-0 z-[300] flex items-center justify-center bg-[oklch(0.15_0.01_60/0.42)] p-5 backdrop-blur-[6px]"
+      className="fixed inset-0 z-[300] flex items-center justify-center bg-[oklch(0.15_0.01_60/0.42)] p-5"
     >
       <div
         ref={dialogRef}

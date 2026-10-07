@@ -44,8 +44,9 @@ use dependencies matching their checkout.
 The creator links canonical ignored environment files (`.env`, `.env.local`,
 and environment-specific local files), `.vercel/project.json`, and
 `.claude/settings.local.json`. Updates to canonical credentials and tool
-preferences are visible through the links. It also takes `.mcp.json` from
-canonical so an older branch gets the current project tool definitions.
+preferences are visible through the links. It copies canonical's `.mcp.json`
+only into a branch that predates the tracked file; overwriting the tracked
+copy used to leave every worktree dirty and unparkable.
 Branch isolation applies to source changes, not runtime or tool access.
 The workspace launcher and Git hook installer resolve canonical tooling via
 Git's common directory, so old branches use the same creator and local hooks.
@@ -75,9 +76,27 @@ enforced. Nested locations and missing markers have separate diagnostics;
 SessionStart stamps the active workspace automatically. Read live results
 instead of treating an older machine snapshot as current.
 
-Claude's own worktree-removal prompt is a separate cleanup mechanism. The
-repository's `parkPolicy` applies to its lifecycle script, so use that script
-when relying on its preservation checks.
+Three cleanup paths share `scripts/lib/worktree-lifecycle.mjs`:
+
+- **WorktreeRemove hook** (`.claude/hooks/worktree-remove.mjs` →
+  `scripts/lib/remove-workspace.mjs`). Claude Code calls it when it removes a
+  worktree it created: a finished isolated subagent or workflow step, or a
+  `--worktree` session. It refuses uncommitted work, commits that are neither
+  pushed nor in a merged PR, and `parkPolicy: KEEP`. It deletes the branch
+  when the tip is already in main, or when its PR is proven merged (archive
+  tag first). It keeps a pushed branch. It never uses `--force`.
+- **`pr:land`** runs `--retire --branch <head>` for the PR it just merged,
+  then the usual repo-wide `--retire`. It reports whether that PR's checkout
+  and branch are gone. A live session in the checkout keeps it.
+- **`npm run worktrees:retire`**, the sweep, for everything else.
+
+Two cases that used to keep checkouts forever are now resolved. A `.mcp.json`
+whose content matches canonical's copy, or a version main has held, is a
+stale copy rather than work. The sweep and the hook restore it before
+removal, and any other `.mcp.json` edit still counts as dirty. A branch whose
+PR merged at a different tip, such as a squash or merge-train residue, is
+`DELETE_MERGED_CONTENT` when `git merge-tree` proves main already has every
+change. Otherwise it stays `KEEP_DIVERGED_AFTER_PR`.
 
 ## Check timing
 
@@ -90,6 +109,8 @@ parallelism; creating a checkout does not itself mean a test is running.
 
 ```bash
 npx vitest run --project unit scripts/__tests__/create-workspace.test.ts
+npx vitest run --project unit src/test/scripts/worktree-lifecycle.test.ts \
+  src/test/scripts/worktree-remove-hook.test.ts src/test/scripts/pr-land.test.ts
 ```
 
 Fixtures cover existing-name refusals, advisory default counts, enforced
@@ -103,15 +124,17 @@ worktree. Other Supabase temporary files and local stack state stay separate.
 ## Claude across older branches
 
 The `helm` and `h` shell functions run canonical `scripts/claude.mjs`. Inside
-a Helm worktree they preserve the working directory; elsewhere they open
-canonical Helm. The launcher selects user and shared local settings, passes
-current canonical project settings and MCP configuration explicitly, and
-loads canonical agent definitions and operating policy. Hook commands resolve
-to canonical scripts. It leaves other installed connectors available and does
-not rewrite tracked source files or create automatic Git commits.
+a Helm checkout they open Claude in that checkout's top level; elsewhere they
+open canonical Helm. Claude then loads the checkout's own CLAUDE.md (which
+imports AGENTS.md), rules, skills, commands, agents, hooks, settings and
+`.mcp.json` — the same as a direct `claude` launch. User-supplied CLI flags
+pass through unchanged.
 
-Claude merges permission lists, so adding a local allow cannot cancel an old
-project deny. Selecting the current profile at launch avoids that merge.
-Launching `claude` directly still loads the checked-out branch's settings; use
-`helm` when working on historical source. User-supplied CLI flags remain
-available for deliberate per-session customization.
+Before launching, the launcher compares the agent configuration (`AGENTS.md`,
+`CLAUDE.md`, `.claude/`, `.mcp.json`, the launcher itself) with `origin/main`
+and warns when the branch carries a stale copy: a file the branch never changed
+but main has since. Claude merges permission lists across scopes, so an old
+branch's settings can bring back retired rules; the fix is to merge or rebase
+on `origin/main`, not to overlay canonical settings (excluding the project
+source also drops CLAUDE.md, rules, skills and commands). The launcher never
+fetches and never changes the checkout.

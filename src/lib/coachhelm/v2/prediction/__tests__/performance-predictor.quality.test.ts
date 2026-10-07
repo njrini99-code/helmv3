@@ -65,6 +65,12 @@ describe('describeFactor — names the actual driver', () => {
     const d = describeFactor('restRust', 0.4, features);
     expect(d.explanation).toContain('9');
   });
+  it('NUM-07: stroke deltas always carry their sign and never say "form score"', () => {
+    const better = describeFactor('recentForm', -1.2, features);
+    expect(better.explanation).toContain('\u22121.2 strokes');
+    expect(better.explanation).not.toMatch(/form score/i);
+    expect(describeFactor('somethingElse', 0.4, features).explanation).toContain('+0.4 strokes');
+  });
   it('never returns the generic "Contributing factor" string', () => {
     const d = describeFactor('patterns', 0.6, features);
     expect(d.explanation).not.toBe('Contributing factor');

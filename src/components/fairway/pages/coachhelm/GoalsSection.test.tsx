@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 /**
  * ============================================================================
- * GoalsSection — "Goals in flight" coherence + 44px touch targets (audit fix)
+ * GoalsSection — "Tracked focus areas" coherence + 44px touch targets (audit fix)
  * ----------------------------------------------------------------------------
  * Bugs fixed (round 2, mustFix on wf/fix-player-my-development):
- *   #118/#125 — the "Goals in flight" InstrumentPanel rendered its accent hero
+ *   #118/#125 — the "Tracked focus areas" InstrumentPanel rendered its accent hero
  *     header even at zero active goals, directly beneath (and contradicting)
  *     the honest "No active goals yet" EmptyState rendered right below it —
  *     a header CLAIMING goals are "in flight" over a caption reading "None
@@ -86,8 +86,8 @@ function makeSuggestion(): GoalSuggestionView {
   };
 }
 
-describe('GoalsSection — "Goals in flight" never contradicts the empty state', () => {
-  it('renders ONLY the honest EmptyState (no "Goals in flight" hero) when there are zero active goals', () => {
+describe('GoalsSection — "Tracked focus areas" never contradicts the empty state', () => {
+  it('renders ONLY the honest EmptyState (no "Tracked focus areas" hero) when there are zero active goals', () => {
     render(
       <GoalsSection
         // eslint-disable-next-line jsx-a11y/aria-role -- domain prop, not ARIA
@@ -97,11 +97,11 @@ describe('GoalsSection — "Goals in flight" never contradicts the empty state',
         suggestions={[]}
       />,
     );
-    expect(screen.queryByText('Goals in flight')).toBeNull();
-    expect(screen.getByText('No active goals yet')).not.toBeNull();
+    expect(screen.queryByText('Tracked focus areas')).toBeNull();
+    expect(screen.getByText('No targets yet')).not.toBeNull();
   });
 
-  it('renders the real "Goals in flight" count for the coach view when active goals exist (coach never gets the "one thing" hero)', () => {
+  it('renders the real "Tracked focus areas" count for the coach view when active goals exist (coach never gets the "one thing" hero)', () => {
     render(
       <GoalsSection
         // eslint-disable-next-line jsx-a11y/aria-role -- domain prop, not ARIA
@@ -110,13 +110,13 @@ describe('GoalsSection — "Goals in flight" never contradicts the empty state',
         suggestions={[]}
       />,
     );
-    expect(screen.getByText('Goals in flight')).not.toBeNull();
+    expect(screen.getByText('Tracked focus areas')).not.toBeNull();
     // The real, non-zero count — never a stray dash next to a "none" caption.
     expect(screen.getByText('2')).not.toBeNull();
     expect(screen.queryByText('None assigned')).toBeNull();
   });
 
-  it('renders the honest EmptyState (not "Goals in flight") for the coach view with zero goals', () => {
+  it('renders the honest EmptyState (not "Tracked focus areas") for the coach view with zero goals', () => {
     render(
       <GoalsSection
         // eslint-disable-next-line jsx-a11y/aria-role -- domain prop, not ARIA
@@ -125,8 +125,8 @@ describe('GoalsSection — "Goals in flight" never contradicts the empty state',
         suggestions={[]}
       />,
     );
-    expect(screen.queryByText('Goals in flight')).toBeNull();
-    expect(screen.getByText('No goals assigned yet')).not.toBeNull();
+    expect(screen.queryByText('Tracked focus areas')).toBeNull();
+    expect(screen.getByText('No targets yet')).not.toBeNull();
   });
 });
 
@@ -148,7 +148,7 @@ describe('GoalsSection — 44px touch targets', () => {
     }
   });
 
-  it('renders "Set a goal" (empty state) at the 44px md size', () => {
+  it('renders "Set a target" (empty state) at the 44px md size', () => {
     render(
       <GoalsSection
         // eslint-disable-next-line jsx-a11y/aria-role -- domain prop, not ARIA
@@ -158,7 +158,7 @@ describe('GoalsSection — 44px touch targets', () => {
         suggestions={[]}
       />,
     );
-    const setGoal = screen.getByRole('button', { name: /set a goal/i });
+    const setGoal = screen.getByRole('button', { name: /set a target/i });
     expect(setGoal.className).toMatch(/min-h-\[44px\]/);
   });
 

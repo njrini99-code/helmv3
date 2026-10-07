@@ -605,7 +605,7 @@ export function generateReviewContent(
 
   if (highlights.length === 0) {
     if (parHoles.length >= 10) {
-      highlights.push({ title: `${parHoles.length} Pars`, description: 'Solid consistency — the foundation for lower scores.' });
+      highlights.push({ title: `${parHoles.length} Pars`, description: 'Solid consistency. The foundation for lower scores.' });
     } else {
       highlights.push({ title: 'Round Logged', description: 'Tracking your rounds is the first step to improvement.' });
     }

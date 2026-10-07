@@ -32,11 +32,12 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { fwFocusRing, fwTransition } from '@/components/fairway/controls/_internal';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import type { GolfSubTab } from '@/lib/golf/nav-registry';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface FairwayHubSubNavProps {
   /** The tabs for this hub, in visual order (from a GolfHubDef). */
@@ -86,7 +87,7 @@ function resolveActiveTabId(pathname: string | null, tabs: readonly GolfSubTab[]
 }
 
 export function FairwayHubSubNav({ tabs, ariaLabel, className }: FairwayHubSubNavProps) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotionGuard();
   const pathname = usePathname();
   const reactId = React.useId();
   const underlineLayoutId = `fw-hub-subnav-underline-${reactId}`;
@@ -106,6 +107,22 @@ export function FairwayHubSubNav({ tabs, ariaLabel, className }: FairwayHubSubNa
   // Roving tabindex: only the active tab is in the tab order; arrows move focus.
   const itemRefs = React.useRef<Array<HTMLAnchorElement | null>>([]);
   const activeIndex = Math.max(0, tabs.findIndex((t) => t.id === resolved));
+
+  // Bring the active tab into view. On a 390px phone the player Team hub's
+  // 4th tab (the one you are ON) rendered clipped as "Te…" past the right
+  // edge. Horizontal only: scrollIntoView would also scroll the page.
+  React.useLayoutEffect(() => {
+    const item = itemRefs.current[activeIndex];
+    const list = item?.closest('ul');
+    if (!item || !list) return;
+    const listBox = list.getBoundingClientRect();
+    const itemBox = item.getBoundingClientRect();
+    if (itemBox.right > listBox.right) {
+      list.scrollLeft += itemBox.right - listBox.right + 16;
+    } else if (itemBox.left < listBox.left) {
+      list.scrollLeft -= listBox.left - itemBox.left + 16;
+    }
+  }, [activeIndex, pathname]);
 
   const onKeyDown = React.useCallback(
     (e: React.KeyboardEvent) => {
@@ -196,7 +213,7 @@ export function FairwayHubSubNav({ tabs, ariaLabel, className }: FairwayHubSubNa
                     aria-hidden="true"
                     className={cn(
                       'flex-shrink-0 transition-colors duration-150',
-                      isActive ? 'text-accent-600' : 'text-text-tertiary group-hover:text-text-secondary',
+                      isActive ? 'text-accent-ink' : 'text-text-tertiary group-hover:text-text-secondary',
                     )}
                   />
                 ) : null}

@@ -60,9 +60,9 @@ describe('route-prompt door hints', () => {
     expect(matchDoorHints('there is a production error in Sentry')).toContain('helm-sentry skill');
   });
 
-  it('maps a Supabase/migration prompt to the supabase skill', () => {
+  it('maps a Supabase/migration prompt to the helm-supabase skill', () => {
     expect(matchDoorHints('write a new supabase migration for golf_rounds')).toContain(
-      'supabase:supabase skill',
+      'helm-supabase skill',
     );
   });
 

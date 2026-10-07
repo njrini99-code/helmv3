@@ -1,5 +1,6 @@
 'use client';
 
+import { parseTaskDueDate } from '@/lib/golf/task-overdue';
 import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -245,7 +246,9 @@ export function useTaskRealtime(
           .map((row) => {
             const task = row.task!;
             const status: TaskStatus = row.status || 'pending';
-            const dueDate = task.due_date ? new Date(task.due_date) : null;
+            // Same calendar-day parse as the task cards (HYD-06): a bare
+            // YYYY-MM-DD is LOCAL midnight, not UTC midnight.
+            const dueDate = task.due_date ? parseTaskDueDate(task.due_date) : null;
             const isOverdue = !!dueDate && dueDate < now && status !== 'completed';
             return {
               id: task.id,
@@ -342,7 +345,7 @@ export function useTaskRealtime(
           // OR (no assignees / team-wide) when the task's own status says so.
           const allDone = total > 0 && completed === total;
           const status: TaskStatus = allDone ? 'completed' : task.status || 'pending';
-          const dueDate = task.due_date ? new Date(task.due_date) : null;
+          const dueDate = task.due_date ? parseTaskDueDate(task.due_date) : null;
           const isOverdue = !!dueDate && dueDate < now && status !== 'completed';
           return {
             id: task.id,

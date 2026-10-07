@@ -470,7 +470,7 @@ async function emitDominantLieInsight(
     `last ${WINDOW_DAYS} days, ${Math.round(dominant.pct * 100)}% ended up in ` +
     `${LIE_LABEL[dominant.lie]}. If the misses were distributed evenly across the ` +
     `four surfaces you'd expect ~25% in each. This is a direction-and-shape ` +
-    `pattern, not a contact pattern — investigate alignment and shot shape from ` +
+    `pattern, not a contact pattern. Investigate alignment and shot shape from ` +
     `that range.`;
 
   const drillTags = ['approach', stats.bucket, dominant.lie, 'direction_bias'];

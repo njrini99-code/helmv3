@@ -34,7 +34,7 @@ const fieldCls =
   'w-full rounded-fw-md border border-border-subtle bg-surface-sunken px-3 py-2 font-fw-sans text-body-sm text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus:border-accent-500 focus:bg-surface focus:ring-2 focus:ring-accent-500/25 disabled:opacity-50';
 const labelCls = 'mb-1.5 block font-fw-sans text-caption font-medium text-text-secondary';
 const sectionTitleCls =
-  'flex items-center gap-1.5 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary';
+  'flex items-center gap-1.5 font-fw-sans text-body-sm font-semibold text-text-primary';
 
 /* ── the form shape — IDENTICAL to the legacy TravelClient formData, plus the
  * optional event_id link (createGolfTravelItinerary already accepts it). ───── */
@@ -415,9 +415,9 @@ export function FairwayItineraryModal({
 
         {/* Lodging */}
         <div className="flex flex-col gap-3 border-t border-border-subtle pt-5">
-          <p className={sectionTitleCls}>
+          <h3 className={sectionTitleCls}>
             <Hotel className="h-3.5 w-3.5 text-accent-700" /> Lodging
-          </p>
+          </h3>
           <div>
             <label htmlFor="trip-hotel-name" className={labelCls}>Hotel name</label>
             <Input
@@ -470,9 +470,9 @@ export function FairwayItineraryModal({
 
         {/* Logistics */}
         <div className="flex flex-col gap-3 border-t border-border-subtle pt-5">
-          <p className={sectionTitleCls}>
+          <h3 className={sectionTitleCls}>
             <Package className="h-3.5 w-3.5 text-accent-700" /> Logistics
-          </p>
+          </h3>
           <div>
             <label htmlFor="trip-rooms" className={labelCls}>Room assignments</label>
             <TextArea
@@ -481,7 +481,7 @@ export function FairwayItineraryModal({
               onChange={(e) => set('room_assignments', e.target.value)}
               disabled={saving}
               rows={2}
-              placeholder="e.g. Room 201 — A. Lopez & J. Chen…"
+              placeholder="e.g. Room 201, A. Lopez & J. Chen…"
               className={cn(fieldCls, 'resize-none')}
             />
           </div>

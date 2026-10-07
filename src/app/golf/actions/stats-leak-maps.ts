@@ -31,6 +31,7 @@
  *   the average isn't dragged. `distance_to_hole_before` is uniformly yards.
  * ========================================================================== */
 
+import { isCountableRound, type CountableRoundInput } from '@/lib/golf/round-countable';
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getGolfSessionProfile } from '@/lib/auth/session';
@@ -84,7 +85,7 @@ const PUTT_BANDS: ReadonlyArray<{
   label: string;
   metric_id: string | null;
   min: number;
-  /** exclusive upper edge; null = open-ended (25+). */
+  /** upper edge, INCLUSIVE for putts (see `puttBandFor`); null = open-ended (25+). */
   max: number | null;
 }> = [
   { bucket_id: '0_3', label: '0-3 ft', metric_id: null, min: 0, max: 3 },
@@ -169,6 +170,22 @@ function bandFor<T extends { min: number; max: number | null }>(
 }
 
 /**
+ * Putt band for a distance in feet, UPPER-inclusive: "3-5 ft" is (3, 5], and
+ * 0-3 ft takes everything up to 3. Same edges as the cache writer
+ * (`putt_make_pct_3_5ft`: feet > 3 AND feet <= 5) and the calculator's
+ * `getPuttDistanceBucket`, which feed the Putting-by-distance table beside
+ * this chart. Putts are entered in whole feet, so `bandFor`'s [min, max)
+ * edges moved every 3-ft putt into "3-5 ft" (chart 78% vs table 47% on the
+ * same 18 rounds).
+ */
+function puttBandFor(feet: number): (typeof PUTT_BANDS)[number] | null {
+  for (const band of PUTT_BANDS) {
+    if (band.max === null || feet <= band.max) return band;
+  }
+  return null;
+}
+
+/**
  * Pull reference rows for a set of metric ids, gender-routed.
  *
  * Women's teams get LPGA rows (tour='lpga') first; any metric not covered by
@@ -241,23 +258,32 @@ async function resolvePlayerTeamGender(
   return team?.gender ?? null;
 }
 
+/** The countable completed rounds a leak map reads, with their date span. */
+interface CompletedRoundSet {
+  ids: string[];
+  /** Oldest / newest `round_date` (ISO date-only) in `ids`; null when empty. */
+  windowFrom: string | null;
+  windowTo: string | null;
+}
+
 /**
- * Resolve completed-round ids for a set of player ids. Self-contained so the
- * loader doesn't depend on the calling page recomputing the round window.
+ * Resolve the countable completed rounds for a set of player ids. Self-contained
+ * so the loader doesn't depend on the calling page recomputing the round window.
  */
-async function completedRoundIds(
+async function completedRoundSet(
   supabase: Awaited<ReturnType<typeof createClient>>,
   playerIds: string[],
-): Promise<string[]> {
-  if (playerIds.length === 0) return [];
+): Promise<CompletedRoundSet> {
+  if (playerIds.length === 0) return { ids: [], windowFrom: null, windowTo: null };
   // Paginated: PostgREST caps each response at 1000 rows, so a roster's
   // season can silently truncate an unpaginated id fetch (rounds beyond the
   // first 1000 would vanish from every leak map).
   const { data, error } = await fetchAllRowsResult((from, to) =>
     supabase
       .from('golf_rounds')
-      .select('id')
+      .select('id, round_date, holes_played, total_score, front_nine, back_nine, total_putts')
       .in('player_id', playerIds)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .order('id', { ascending: true })
       .range(from, to),
@@ -269,9 +295,30 @@ async function completedRoundIds(
   if (error) {
     throw new Error(`completed-round id read failed: ${error.message}`);
   }
-  return (data ?? [])
-    .map((r) => (r as { id: string }).id)
-    .filter((id): id is string => typeof id === 'string');
+  // Countable rounds only (src/lib/golf/round-countable.ts): a partial,
+  // hole-less or implausible round must not feed the leak maps or the
+  // "rounds included" count shown above them.
+  type Row = CountableRoundInput & { id: string; round_date?: string | null };
+  const rows = ((data ?? []) as Row[])
+    .filter(isCountableRound)
+    .filter((r) => typeof r.id === 'string');
+  // round_date is a DATE column, so ISO strings order lexically.
+  const dates = rows
+    .map((r) => r.round_date)
+    .filter((d): d is string => typeof d === 'string' && d.length > 0)
+    .sort();
+  return {
+    ids: rows.map((r) => r.id),
+    windowFrom: dates[0] ?? null,
+    windowTo: dates[dates.length - 1] ?? null,
+  };
+}
+
+async function completedRoundIds(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  playerIds: string[],
+): Promise<string[]> {
+  return (await completedRoundSet(supabase, playerIds)).ids;
 }
 
 // ============================================================================
@@ -314,7 +361,7 @@ async function buildPuttBuckets(
     for (const row of data ?? []) {
       const ft = row.putt_distance_feet;
       if (ft === null || Number.isNaN(ft)) continue;
-      const band = bandFor(PUTT_BANDS, ft);
+      const band = puttBandFor(ft);
       if (!band) continue;
       // Only rows with a known outcome count toward make% (null = ungraded).
       if (row.putt_made === null) continue;
@@ -591,17 +638,27 @@ async function getPlayerLeakMapsImpl(
     if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
       return { success: false, error: 'Unauthorized' };
     }
-    const [roundIds, teamGender] = await Promise.all([
-      completedRoundIds(supabase, [playerId]),
+    const [rounds, teamGender] = await Promise.all([
+      completedRoundSet(supabase, [playerId]),
       resolvePlayerTeamGender(supabase, playerId),
     ]);
+    const roundIds = rounds.ids;
     const [putting, approach] = await Promise.all([
       buildPuttBuckets(supabase, roundIds, teamGender),
       buildApproachBuckets(supabase, roundIds, teamGender),
     ]);
     return {
       success: true,
-      data: { playerId, putting, approach, roundsIncluded: roundIds.length },
+      data: {
+        playerId,
+        putting,
+        approach,
+        roundsIncluded: roundIds.length,
+        windowFrom: rounds.windowFrom,
+        windowTo: rounds.windowTo,
+        // Same routing loadPgaRefs applied to the references above.
+        tour: teamGender === 'womens' ? 'lpga' : 'pga',
+      },
     };
   } catch (error) {
     await logServerError(`[LeakMaps] getPlayerLeakMaps: ${describeError(error)}`, {

@@ -7,8 +7,8 @@
  * A cockpit trend readout that mounts into the signature `instrument`
  * InstrumentPanel: a thick green AREA ribbon with a vertical gradient fill
  * fading to transparent, a crisp bright top stroke (the trace), and an optional
- * dashed benchmark baseline. The ribbon DRAWS ON left-to-right on mount (a
- * clip-rect wipe via framer-motion) and snaps under reduced-motion.
+ * dashed benchmark baseline. The ribbon renders final on mount (MOT-07) and
+ * wipes left-to-right only when its data changes; it snaps under reduced motion.
  *
  * It's expressive HERO art, not a sparkline — sized to anchor a flanking panel.
  * The accessible path pairs the existing ChartCrosshair (keyboard ← → traverse
@@ -20,7 +20,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { InstrumentPanel } from '../instrument/InstrumentPanel';
 import { Readout } from '../instrument/Readout';
@@ -36,6 +36,7 @@ import {
   VIZ_REVEAL_MS,
   chartAriaLabel,
 } from './theme';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface RibbonPoint {
   /** x label (date / round number / category). */
@@ -122,7 +123,7 @@ export function Ribbon({
   readoutLabels,
   className,
 }: RibbonProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard() ?? false;
   const uid = React.useId();
   const gradId = `fw-ribbon-grad-${uid}`;
   const clipId = `fw-ribbon-clip-${uid}`;
@@ -329,13 +330,13 @@ export function Ribbon({
                   <stop offset="55%" stopColor={VIZ_COLOR.accent} stopOpacity={0.16} />
                   <stop offset="100%" stopColor={VIZ_COLOR.accent} stopOpacity={0.02} />
                 </linearGradient>
-                {/* draw-on wipe: a clip-rect that grows L→R on mount */}
+                {/* change wipe: a clip-rect that grows L→R when the data changes (final on mount) */}
                 <clipPath id={clipId}>
                   <motion.rect
                     x={0}
                     y={0}
                     height={height}
-                    initial={reduced ? false : { width: 0 }}
+                    initial={false}
                     animate={{ width: VIEW_W }}
                     transition={
                       reduced ? { duration: 0 } : { duration: VIZ_REVEAL_MS / 1000, ease: VIZ_EASE }

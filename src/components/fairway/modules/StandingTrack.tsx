@@ -10,10 +10,17 @@
  * `Spine` between two hairlines, but is exported standalone so surface
  * compositions can mount it outside the spine shell too.
  *
- * On-dark translucent overlays (rail track, benchmark ticks) have no
- * `bg-surface-*` equivalent — they are inline `oklch(1 0 0 / N)` values,
- * matching the approved mockup exactly (never `bg-white/N`, which the
- * `no-arbitrary-bg-white` lint rule bans in className).
+ * TWO TONES (`tone` prop):
+ *   - `light` — what `Spine`'s frosted card passes (owner redesign 2026-09):
+ *     a neutral `bg-border-subtle` rail, a solid `bg-accent-fill` progress
+ *     fill, `border-border-control` benchmark ticks (the emphasised one in
+ *     `text-primary` ink), a `bg-surface` pin with an accent ring, and
+ *     secondary/primary text labels. All tokens, so it follows the theme.
+ *   - `dark` (default, unchanged) — for a caller that still mounts the track
+ *     on a deep-green surface (StandingDrill's SG instrument). Its on-dark
+ *     translucent overlays have no `bg-surface-*` equivalent, so they stay
+ *     inline `oklch(1 0 0 / N)` values (never `bg-white/N`, which the
+ *     `no-arbitrary-bg-white` lint rule bans in className).
  *
  * THE LABEL ROW ("where this sits", fixed): the pin and benchmark ticks above
  * ARE positioned by real value (`left:${pct}%`), but the text-label row used
@@ -127,32 +134,66 @@ export function layoutTrackLabels(
   return ordered;
 }
 
+export type StandingTrackTone = 'light' | 'dark';
+
 export function StandingTrack({
   pct,
   benchmarks,
   subjectLabel,
   edgeMarginPct = STANDING_TRACK_EDGE_MARGIN_PCT,
   minGapPct = STANDING_TRACK_MIN_GAP_PCT,
+  tone = 'dark',
   className,
-}: StandingTrackProps & { className?: string }) {
+}: StandingTrackProps & {
+  /** Surface the track sits on — `light` for a light/frosted card (Spine),
+   *  `dark` (default) for a deep-green surface. See the module header. */
+  tone?: StandingTrackTone;
+  className?: string;
+}) {
   const you = clampPct(pct);
+  const light = tone === 'light';
 
+  // The subject's label sits ABOVE the rail, directly over its pin, and the
+  // benchmark labels sit below. Sharing one row used to nudge "You" away from
+  // a nearby benchmark (Team), leaving it floating with no mark under it.
   const labelPositions = layoutTrackLabels(
-    [
-      { key: STANDING_TRACK_SUBJECT_KEY, pct: you },
-      ...benchmarks.map((b) => ({ key: b.label, pct: clampPct(b.pct) })),
-    ],
+    benchmarks.map((b) => ({ key: b.label, pct: clampPct(b.pct) })),
     minGapPct,
     edgeMarginPct,
   );
+  const subjectPct = Math.min(100 - edgeMarginPct, Math.max(edgeMarginPct, you));
 
   return (
-    <div data-slot="standing-track" className={cn('w-full', className)}>
-      <div className="relative h-[7px] rounded-full" style={{ background: RAIL_BG }}>
+    <div data-slot="standing-track" data-tone={tone} className={cn('w-full', className)}>
+      <div
+        className={cn(
+          'relative mb-[7px] overflow-clip font-fw-sans text-caption font-semibold',
+          light ? 'h-[18px]' : 'h-[15px]',
+        )}
+      >
+        <span
+          data-slot="standing-track-subject-label"
+          className={cn(
+            'absolute top-0 -translate-x-1/2 whitespace-nowrap',
+            light ? 'text-text-primary' : 'text-text-on-accent',
+          )}
+          style={{ left: `${subjectPct}%` }}
+        >
+          {subjectLabel}
+        </span>
+      </div>
+      <div
+        data-slot="standing-track-rail"
+        className={cn('relative h-[7px] rounded-full', light && 'bg-border-subtle')}
+        style={light ? undefined : { background: RAIL_BG }}
+      >
         <div
           data-slot="standing-track-fill"
           aria-hidden="true"
-          className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-accent-400 to-accent-300"
+          className={cn(
+            'absolute inset-y-0 left-0 rounded-full',
+            light ? 'bg-accent-fill' : 'bg-gradient-to-r from-accent-400 to-accent-300',
+          )}
           style={{ width: `${you}%` }}
         />
         {benchmarks.map((benchmark) => (
@@ -160,17 +201,23 @@ export function StandingTrack({
             key={benchmark.label}
             aria-hidden="true"
             data-slot="standing-track-bench"
-            className="absolute -top-[3px] -bottom-[3px] w-[2px]"
+            className={cn(
+              'absolute -top-[3px] -bottom-[3px] w-[2px] rounded-full',
+              light && (benchmark.emphasis ? 'bg-text-primary' : 'bg-border-control'),
+            )}
             style={{
               left: `${clampPct(benchmark.pct)}%`,
-              background: benchmark.emphasis ? BENCH_EMPHASIS : BENCH_DIM,
+              ...(light ? {} : { background: benchmark.emphasis ? BENCH_EMPHASIS : BENCH_DIM }),
             }}
           />
         ))}
         <div
           aria-hidden="true"
           data-slot="standing-track-pin"
-          className="absolute top-1/2 h-[13px] w-[13px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-accent-400 bg-text-on-accent"
+          className={cn(
+            'absolute top-1/2 h-[13px] w-[13px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px]',
+            light ? 'border-accent-fill bg-surface shadow-soft' : 'border-accent-400 bg-text-on-accent',
+          )}
           style={{ left: `${you}%` }}
         />
       </div>
@@ -183,29 +230,27 @@ export function StandingTrack({
           unusually long label at an extreme narrow width, the label text
           clips at THIS row's own bounds (same width as the rail above)
           rather than escaping into whatever ancestor mounts StandingTrack
-          (Spine's dark aside, the SG instrument card — neither of which
+          (Spine's frosted card, the SG instrument card — neither of which
           this component controls). The edge-margin fix above is the real,
           legible-content fix; this is the last-resort net. */}
       <div
         data-slot="standing-track-labels"
-        className="relative mt-[7px] h-[15px] overflow-clip font-fw-sans text-caption text-ink-on-deep-soft"
+        className={cn(
+          'relative mt-[7px] overflow-clip font-fw-sans text-caption',
+          light ? 'h-[18px]' : 'h-[15px]',
+          light ? 'text-text-secondary' : 'text-ink-on-deep-soft',
+        )}
       >
-        {labelPositions.map((pos) => {
-          const isSubject = pos.key === STANDING_TRACK_SUBJECT_KEY;
-          return (
-            <span
-              key={pos.key}
-              data-slot={isSubject ? 'standing-track-subject-label' : 'standing-track-bench-label'}
-              className={cn(
-                'absolute top-0 -translate-x-1/2 whitespace-nowrap',
-                isSubject && 'font-semibold text-text-on-accent',
-              )}
-              style={{ left: `${pos.pct}%` }}
-            >
-              {isSubject ? subjectLabel : pos.key}
-            </span>
-          );
-        })}
+        {labelPositions.map((pos) => (
+          <span
+            key={pos.key}
+            data-slot="standing-track-bench-label"
+            className="absolute top-0 -translate-x-1/2 whitespace-nowrap"
+            style={{ left: `${pos.pct}%` }}
+          >
+            {pos.key}
+          </span>
+        ))}
       </div>
     </div>
   );

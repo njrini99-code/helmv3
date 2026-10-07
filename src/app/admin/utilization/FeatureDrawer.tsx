@@ -61,7 +61,7 @@ export function FeatureDrawer({
           <p className="text-body-sm text-warm-700">{feature.healthSignal}</p>
 
           {feature.primaryTable ? (
-            <p className="font-fw-mono text-caption text-warm-500">table: {feature.primaryTable}</p>
+            <p className="break-all font-fw-mono text-caption text-warm-500">table: {feature.primaryTable}</p>
           ) : null}
 
           <div className="grid grid-cols-3 gap-3 rounded-fw-md bg-surface-sunken p-3">
@@ -89,8 +89,13 @@ export function FeatureDrawer({
               <ul className="mt-1 divide-y divide-warm-200/60">
                 {feature.topPowerUsers.map((u) => (
                   <li key={u.userId} className="flex items-center justify-between gap-2 py-1.5">
-                    <Link href={`/admin/users/${u.userId}`} className="min-w-0 truncate text-body-sm text-accent-700 underline-offset-2 hover:underline">
+                    <Link
+                      href={`/admin/users/${u.userId}`}
+                      className="flex min-w-0 items-center text-body-sm text-accent-700 underline-offset-2 hover:underline [@media(pointer:coarse)]:min-h-11"
+                    >
+                      <span className="truncate">
                       {u.userEmail ?? u.userId}
+                      </span>
                     </Link>
                     <span className="font-fw-mono text-caption tabular-nums text-warm-500">{u.eventCount30d}×</span>
                   </li>
@@ -106,7 +111,7 @@ export function FeatureDrawer({
                 {feature.recentEvents.map((e, i) => (
                   <li key={`${e.occurredAt}-${i}`} className="flex items-center justify-between gap-2 text-caption text-warm-600">
                     <span className="min-w-0 truncate font-fw-mono">{e.eventType}</span>
-                    <span className="shrink-0 text-warm-400">
+                    <span className="shrink-0 whitespace-nowrap text-warm-500">
                       <LocalTime iso={e.occurredAt} variant="datetime" />
                     </span>
                   </li>
@@ -128,7 +133,7 @@ export function FeatureDrawer({
 
           <Link
             href={`/admin/errors?feature=${feature.key}`}
-            className="inline-flex items-center text-body-sm text-accent-700 underline-offset-2 hover:underline"
+            className="inline-flex items-center text-body-sm text-accent-700 underline-offset-2 hover:underline [@media(pointer:coarse)]:min-h-11"
           >
             View error trace for this feature →
           </Link>

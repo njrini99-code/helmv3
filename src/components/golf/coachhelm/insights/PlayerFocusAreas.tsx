@@ -1,5 +1,7 @@
 'use client';
 
+import { cn } from '@/lib/utils';
+import { useSkeletonSwap } from '@/hooks/golf/use-skeleton-swap';
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { FocusAreaCard } from './FocusAreaCard';
@@ -12,6 +14,12 @@ import type { PlayerFocusArea } from '@/lib/coachhelm/insight-types';
 
 interface PlayerFocusAreasProps {
   playerId: string;
+  /**
+   * PERF-03: focus areas already read on the server for this player. When
+   * given, the list renders at first paint and the post-hydration server
+   * action (queued behind every other action on the page) is skipped.
+   */
+  initialFocusAreas?: PlayerFocusArea[] | null;
 }
 
 // Bug #75: `getPlayerFocusAreas` has no server-side cap — every `active` row
@@ -23,20 +31,24 @@ interface PlayerFocusAreasProps {
 // destination every card's `onClick` already sends them to).
 const VISIBLE_CAP = 3;
 
-export function PlayerFocusAreas({ playerId }: PlayerFocusAreasProps) {
+export function PlayerFocusAreas({ playerId, initialFocusAreas }: PlayerFocusAreasProps) {
   const router = useRouter();
-  const [focusAreas, setFocusAreas] = useState<PlayerFocusArea[]>([]);
-  const [loading, setLoading] = useState(true);
+  const seeded = initialFocusAreas != null;
+  const [focusAreas, setFocusAreas] = useState<PlayerFocusArea[]>(initialFocusAreas ?? []);
+  const [loading, setLoading] = useState(!seeded);
   const [error, setError] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
+    if (seeded) return;
+    let cancelled = false;
     const loadFocusAreas = async () => {
       setLoading(true);
       setError(null);
       setShowAll(false);
 
       const result = await getPlayerFocusAreas(playerId);
+      if (cancelled) return;
 
       if (result.success) {
         setFocusAreas(result.focus_areas as PlayerFocusArea[]);
@@ -48,13 +60,17 @@ export function PlayerFocusAreas({ playerId }: PlayerFocusAreasProps) {
     };
 
     loadFocusAreas();
-  }, [playerId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [playerId, seeded]);
 
   const visibleAreas = useMemo(
     () => (showAll ? focusAreas : focusAreas.slice(0, VISIBLE_CAP)),
     [focusAreas, showAll],
   );
   const hiddenCount = focusAreas.length - visibleAreas.length;
+  const reveal = useSkeletonSwap(loading);
 
   if (loading) {
     return <SkeletonList rows={VISIBLE_CAP} label="Loading focus areas" />;
@@ -75,7 +91,7 @@ export function PlayerFocusAreas({ playerId }: PlayerFocusAreasProps) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className={cn('space-y-3', reveal.className)}>
       {visibleAreas.map((area, i) => (
         // conn-golf-player Finding 2: these cards were a dead-end duplicate of
         // My Development (no onClick at all). My Development is the SAME
@@ -90,7 +106,10 @@ export function PlayerFocusAreas({ playerId }: PlayerFocusAreasProps) {
           key={area.id}
           focusArea={area}
           index={i}
-          onClick={() => router.push('/golf/dashboard/coachhelm?view=development')}
+          // DASH-02: number by position in the priority-ordered list. The raw
+          // `priority` column is not unique, so two cards both read "1".
+          rank={i + 1}
+          onClick={() => router.push(`/golf/dashboard/coachhelm?view=development&focus=${area.id}`)}
         />
       ))}
       {hiddenCount > 0 ? (

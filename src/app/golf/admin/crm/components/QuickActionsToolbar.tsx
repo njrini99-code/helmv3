@@ -123,7 +123,7 @@ export function QuickActionsToolbar({
           onClick={() => handleMoveToPipeline(10)}
           disabled={processing === 'research'}
           className={cn(
-            'flex items-center gap-3 p-4 rounded-fw-md transition-all text-left',
+            'flex items-center gap-3 p-4 rounded-fw-md transition text-left',
             'bg-surface border border-border-subtle shadow-flat',
             'hover:shadow-soft hover:-translate-y-0.5',
             'disabled:opacity-50 disabled:cursor-not-allowed'
@@ -143,7 +143,7 @@ export function QuickActionsToolbar({
           onClick={() => handleMoveToPipeline(25)}
           disabled={processing === 'research'}
           className={cn(
-            'flex items-center gap-3 p-4 rounded-fw-md transition-all text-left',
+            'flex items-center gap-3 p-4 rounded-fw-md transition text-left',
             'bg-surface border border-border-subtle shadow-flat',
             'hover:shadow-soft hover:-translate-y-0.5',
             'disabled:opacity-50 disabled:cursor-not-allowed'
@@ -274,7 +274,7 @@ function SingleCoachQuickAction({
                 key={type.value}
                 onClick={() => setLogForm(f => ({ ...f, type: type.value }))}
                 className={cn(
-                  'px-3 py-1.5 rounded-fw-md text-sm font-medium transition-all flex items-center gap-1.5',
+                  'px-3 py-1.5 rounded-fw-md text-sm font-medium transition flex items-center gap-1.5',
                   logForm.type === type.value
                     ? 'bg-accent-650 text-text-on-accent shadow-flat'
                     : 'bg-surface border border-border-subtle text-text-secondary hover:bg-surface-sunken'

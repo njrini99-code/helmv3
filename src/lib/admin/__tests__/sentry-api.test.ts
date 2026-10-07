@@ -156,6 +156,28 @@ describe('fetchSentryIssues', () => {
     expect(url).toContain('query=is%3Aunresolved');
   });
 
+  it('scopes the pull to the requested environments via the environment URL param', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify([issuePayload('1')]), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    }));
+    await fetchSentryIssues({ environment: ['production'] });
+    const url = new URL(String(fetchMock.mock.calls[0]![0]));
+    // The URL param, not an `environment:` query token: with it Sentry scopes
+    // each issue's lastSeen and 24h stats to that environment, so a mixed
+    // issue is not kept "in window" by a local dev hit.
+    expect(url.searchParams.getAll('environment')).toEqual(['production']);
+    expect(url.searchParams.get('query')).toBe('is:unresolved');
+  });
+
+  it('sends no environment filter when none is asked for (Bridge callers unchanged)', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify([issuePayload('1')]), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    }));
+    await fetchSentryIssues();
+    const url = new URL(String(fetchMock.mock.calls[0]![0]));
+    expect(url.searchParams.has('environment')).toBe(false);
+  });
+
   it('follows the Link cursor up to the bounded 20-page ceiling and flags truncation', async () => {
     const linked = (results: string) => new Response(JSON.stringify([issuePayload(results)]), {
       status: 200,

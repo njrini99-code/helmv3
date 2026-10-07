@@ -275,10 +275,10 @@ half of the file).
 
 ### Where CI runs this, and against which database
 
-**The required per-PR gate needs no secrets and never touches production.**
-`.github/workflows/ci.yml`'s `baseball-auth-smoke` job stands up a throwaway
-Supabase stack on the runner (`.github/actions/local-supabase-stack`), seeds
-*that*, and runs the smoke against it. Two things follow:
+**The baseball smoke needs no secrets and never touches production.**
+`.github/workflows/nightly.yml`'s `baseball-auth-smoke` job stands up a
+throwaway Supabase stack on the runner (`.github/actions/local-supabase-stack`),
+seeds *that*, and runs the smoke against it. Two things follow:
 
 - **It runs on every PR, including forks and Dependabot.** The old fork skip
   existed only because external PRs receive no repo secrets; with no secrets
@@ -398,7 +398,7 @@ Each role's results are written to
 `test-results/baseball-route-crawler-{coach,player}-report.json` and
 uploaded as the `baseball-route-crawler-report` CI artifact.
 
-**Not** wired into the #372 hard PR gate (`ci.yml`'s `baseball-auth-smoke`
+**Not** wired into the #372 hard PR gate (`nightly.yml`'s `baseball-auth-smoke`
 job): DOM-driven discovery and the stuck-spinner/near-blank heuristics are
 new, unproven surface area, so it runs as its own step inside
 `playwright.yml`'s advisory `e2e` job for now — promote once it's proven

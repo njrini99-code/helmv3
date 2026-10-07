@@ -43,15 +43,15 @@ function RankedList({
 }) {
   return (
     <div className="flex flex-col gap-3">
-      <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-wide text-text-tertiary">{title}</p>
+      <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">{title}</h3>
       {items.length === 0 ? (
         <p className="font-fw-sans text-body-sm text-text-tertiary">Not enough recorded outcomes yet.</p>
       ) : (
         <ol className="flex flex-col gap-2">
           {items.map((item, i) => (
             <li key={item.insightType} className="flex items-center gap-2.5">
-              <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
-                {String(i + 1).padStart(2, '0')}
+              <span className="text-caption tabular-nums text-text-tertiary">
+                {i + 1}
               </span>
               <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm text-text-primary">
                 {formatCategoryLabel(item.insightType)}
@@ -88,7 +88,13 @@ export function EffectivenessScoreboard({
   const working = topInsightTypes(initialEffectiveness?.byType, 'best');
   const notWorking = topInsightTypes(initialEffectiveness?.byType, 'worst');
   const calibration = summarizeCalibration(initialPerformance);
-  const trendPoints = (initialPerformance?.accuracyOverTime ?? []).map((p) => ({ x: p.date, y: p.accuracyRate }));
+  // Only snapshots with validated predictions carry an accuracy. The action
+  // coerces a missing rate to 0, so unvalidated windows drew a line crashing
+  // to "0% ▼−100%" beside "Not enough resolved outcomes yet". Same filter as
+  // FairwayEffectiveness.
+  const trendPoints = (initialPerformance?.accuracyOverTime ?? [])
+    .filter((p) => p.predictionsValidated > 0)
+    .map((p) => ({ x: p.date, y: p.accuracyRate }));
 
   // The Working / Not-working / calibration line each independently render an
   // honest "no data yet" — fine when only one is starved (its siblings carry
@@ -105,7 +111,7 @@ export function EffectivenessScoreboard({
     // row-mate and center-float in the resulting empty middle.
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
       <Surface padding="md" className="flex flex-col gap-3">
-        <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-wide text-text-tertiary">Adoption</p>
+        <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">Adoption</h3>
         <div className="flex items-center gap-3">
           <RingGauge value={adoption.pct} size={48} />
           <p className="font-fw-sans text-body-sm text-text-secondary">
@@ -116,6 +122,8 @@ export function EffectivenessScoreboard({
         </div>
       </Surface>
 
+      {/* Hidden while starved: the consolidated empty state below covers it. */}
+      {!(showConsolidatedEmptyState && trendPoints.length < 2) && (
       <Surface padding="md">
         <Ribbon
           title="Prediction accuracy"
@@ -127,13 +135,14 @@ export function EffectivenessScoreboard({
           height={140}
         />
       </Surface>
+      )}
 
       {showConsolidatedEmptyState ? (
         <Surface padding="md" className="lg:col-span-2">
           <EmptyState
             variant="subtle"
             title="Not enough resolved outcomes yet"
-            description="Working / not-working rankings and prediction calibration fill in together once insights get acted on and predictions resolve."
+            description="Working / not-working rankings, prediction accuracy and calibration fill in together once insights get acted on and predictions resolve."
           />
         </Surface>
       ) : (

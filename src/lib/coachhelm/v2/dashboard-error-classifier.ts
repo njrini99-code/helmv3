@@ -17,48 +17,29 @@
  * this couldn't be exported directly from insights.ts anyway.
  * ========================================================================== */
 
+import { isTransientDbError } from '@/lib/supabase/bounded-query';
+
 export type DashboardFailureCode = 'TRANSIENT_FAILURE' | 'UNKNOWN';
 
-/** Postgres SQLSTATE codes worth an automatic retry. */
-const RETRYABLE_PG_CODES = new Set([
-  '40P01', // deadlock_detected
-  '57014', // query_canceled (statement timeout)
-  '55P03', // lock_not_available
-  '08000', // connection_exception
-  '08001', // sqlclient_unable_to_establish_sqlconnection
-  '08003', // connection_does_not_exist
-  '08004', // sqlserver_rejected_establishment_of_sqlconnection
-  '08006', // connection_failure
-]);
-
-/**
- * Fallback substring match for when the retryable Postgres code didn't
- * survive re-throwing (e.g. `ShotPatternMiner.savePatterns` wraps the pg
+/*
+ * Which faults count as retryable lives in ONE place,
+ * `isTransientDbError` (src/lib/supabase/bounded-query.ts): the SQLSTATE
+ * codes this file used to list (deadlock, statement/lock timeout, connection
+ * exceptions), their Postgres message text for errors whose `.code` did not
+ * survive a re-throw (e.g. `ShotPatternMiner.savePatterns` wrapping the pg
  * error into `new Error('Failed to save CoachHelm shot patterns: ' +
- * error.message)`, which drops `.code` but keeps Postgres's own message
- * text — "deadlock detected", "canceling statement due to statement
- * timeout", etc.).
+ * error.message)`), and — added after the 2026-09-24 pool-exhaustion
+ * brownout (#2061) — PostgREST's own saturation codes PGRST003 (pool
+ * timeout), PGRST002 (schema cache unreachable) and 53300 (too many
+ * connections). Before that, the very errors of that brownout classified as
+ * UNKNOWN and the page showed its hard dead-end instead of retrying.
  */
-const RETRYABLE_MESSAGE_PATTERNS = [
-  'deadlock',
-  'statement timeout',
-  'lock timeout',
-  'lock_not_available',
-  'canceling statement due to',
-  'connection terminated',
-  'connection reset',
-  'connection refused',
-  'econnreset',
-  'etimedout',
-  'timeout exceeded',
-];
-
 /**
  * Classifies an unexpected `getPlayerCoachHelmDashboardImpl` failure so the
  * caller can decide whether it's worth an automatic retry.
  *
  * - `TRANSIENT_FAILURE` — a retryable DB error (deadlock, statement/lock
- *   timeout, connection blip). The most common live cause is
+ *   timeout, connection blip, pool exhaustion). The most common live cause is
  *   `ShotPatternMiner.savePatterns()` racing a concurrently-running
  *   coachhelm-* cron writer on `golf_patterns_v2`. A retry a moment later
  *   is very likely to succeed.
@@ -70,18 +51,5 @@ const RETRYABLE_MESSAGE_PATTERNS = [
  * modeled here.)
  */
 export function classifyDashboardFailure(error: unknown): DashboardFailureCode {
-  const code =
-    typeof error === 'object' && error !== null && 'code' in error
-      ? String((error as { code?: unknown }).code ?? '')
-      : '';
-  if (code && RETRYABLE_PG_CODES.has(code)) {
-    return 'TRANSIENT_FAILURE';
-  }
-
-  const message = (error instanceof Error ? error.message : String(error)).toLowerCase();
-  if (RETRYABLE_MESSAGE_PATTERNS.some((pattern) => message.includes(pattern))) {
-    return 'TRANSIENT_FAILURE';
-  }
-
-  return 'UNKNOWN';
+  return isTransientDbError(error) ? 'TRANSIENT_FAILURE' : 'UNKNOWN';
 }

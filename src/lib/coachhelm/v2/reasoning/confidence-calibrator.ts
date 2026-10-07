@@ -171,6 +171,11 @@ export interface CalibrationBucketRow {
 const CACHE_TTL_MS = 5 * 60 * 1000;
 let cachedBuckets: CalibrationBucketRow[] | null = null;
 let cachedAt = 0;
+// The read in flight, shared by every caller that misses the cache while it
+// runs. The feed ranker scores every insight in one Promise.all, so without
+// this a cold process sent one identical query per insight (Sentry N+1
+// JAVASCRIPT-NEXTJS-SB on GET /golf/dashboard).
+let inflight: Promise<CalibrationBucketRow[]> | null = null;
 
 /**
  * Invalidate the in-process cache so the next `loadBuckets` call refetches
@@ -179,6 +184,7 @@ let cachedAt = 0;
 export function invalidateCalibrationCache(): void {
   cachedBuckets = null;
   cachedAt = 0;
+  inflight = null;
 }
 
 /**
@@ -190,7 +196,20 @@ export async function loadBuckets(
   if (cachedBuckets && Date.now() - cachedAt < CACHE_TTL_MS) {
     return cachedBuckets;
   }
+  if (inflight) return inflight;
 
+  const read = readBuckets(supabase);
+  inflight = read;
+  try {
+    return await read;
+  } finally {
+    if (inflight === read) inflight = null;
+  }
+}
+
+async function readBuckets(
+  supabase: AdminSupabase,
+): Promise<CalibrationBucketRow[]> {
   const { data, error } = await supabase
     .from('golf_confidence_calibration')
     .select('bucket, prediction_type, predictions_count, correct_count, actual_accuracy, calibration_error, sample_size');

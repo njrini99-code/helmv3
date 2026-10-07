@@ -122,7 +122,7 @@ interface CodeRule {
 }
 
 /**
- * 23 rules. Each is real: either a documented production incident
+ * 27 rules. Each is real: either a documented production incident
  * (`memory/incidents/**`), a code path read directly in this checkout, or a
  * code/title pairing taken verbatim from the owner's own brief (§7, §9,
  * §47). Ordered by nothing — matching is scored, not positional, so table
@@ -259,6 +259,18 @@ const CODE_RULES: readonly CodeRule[] = [
     id: 'pgrst-204',
     code: 'PGRST204',
     title: 'Database schema cache is out of date',
+    operationContext: 'Platform > Database > Schema cache',
+  },
+  // PGRST002 — PostgREST could not reach the database to load its schema
+  // cache ("Could not query the database for the schema cache. Retrying.").
+  // Unlike PGRST204 (a stale cache missing a column), the cache is fine but
+  // the database is unreachable or saturated. Production admin_events rows
+  // carry it as metadata.errorCode (recordInsightExposure) and as
+  // metadata.extra.errorCode (getPredictionPerformance), 2026-09.
+  {
+    id: 'pgrst-002',
+    code: 'PGRST002',
+    title: 'Database API could not reach the database',
     operationContext: 'Platform > Database > Schema cache',
   },
   // BadDeviceToken — src/lib/notifications/push.ts, Apple's own "this token
@@ -460,6 +472,34 @@ const TRANSIENT_NETWORK_PATTERN =
 
 const INNGEST_SIGNATURE_PATTERN = /x-inngest-signature|invalid signature|signature (has expired|validation failed)/i;
 
+/** Postgres's own 57014 message text. Most call sites log the message and not
+ *  the code, so this is the only way to name them. Measured 2026-09-23: 65 of
+ *  324 error rows in 14 days, nearly all with no code captured anywhere. */
+const STATEMENT_TIMEOUT_PATTERN = /canceling statement due to statement timeout/i;
+
+/** PostgREST's PGRST002 message text. Anchored on the full phrase ON PURPOSE:
+ *  PGRST204's message ("Could not find the '…' column of '…' in the schema
+ *  cache") also says "schema cache" and means something else entirely. */
+const SCHEMA_CACHE_UNREACHABLE_PATTERN = /could not query the database for the schema cache/i;
+
+/** A server-side fetch/query cut off by its own timeout signal. What
+ *  `AbortSignal.timeout()` actually throws is a `TimeoutError` reading
+ *  "The operation was aborted due to timeout". Anchored on those shapes and
+ *  not on a bare "timed out" or a bare `AbortError`: a user navigating away
+ *  also aborts, and that is not a timeout. */
+const REQUEST_TIMEOUT_PATTERN = /\bTimeoutError\b|aborted due to timeout|\bAbortError\b.*\btime(?:d)?\s*out\b/i;
+
+/**
+ * Unscoped rules are checked in array order (`find`), so order matters here
+ * even though it does not in CODE_RULES. The two database rules sit before
+ * the transient-network rule because they name a more specific cause. The
+ * request-timeout rule sits after it so a real network failure keeps its own
+ * title.
+ *
+ * The signatures for the database rules name the failure and NOT the code
+ * (`57014`, `PGRST002`). These rows captured no code, and writing one into
+ * the signature would invent evidence the row does not hold.
+ */
 const FINGERPRINT_RULES: readonly FingerprintRule[] = [
   {
     id: 'fp-round-submit-timeout',
@@ -476,12 +516,35 @@ const FINGERPRINT_RULES: readonly FingerprintRule[] = [
     operationContext: 'Platform > Background Jobs > Inngest',
     normalizedSignature: 'Inngest: invalid signature',
   },
+  // Same meaning as CODE_RULES `pg-57014`, for rows that logged the message only.
+  {
+    id: 'fp-statement-timeout',
+    pattern: STATEMENT_TIMEOUT_PATTERN,
+    title: 'Database query timed out',
+    operationContext: 'Platform > Database > Query',
+    normalizedSignature: 'Postgres: statement timeout',
+  },
+  // Same meaning as CODE_RULES `pgrst-002`, for rows that logged the message only.
+  {
+    id: 'fp-schema-cache-unreachable',
+    pattern: SCHEMA_CACHE_UNREACHABLE_PATTERN,
+    title: 'Database API could not reach the database',
+    operationContext: 'Platform > Database > Schema cache',
+    normalizedSignature: 'PostgREST: schema cache unavailable',
+  },
   {
     id: 'fp-transient-network',
     pattern: TRANSIENT_NETWORK_PATTERN,
     title: 'Server could not reach an external dependency',
     operationContext: 'Platform > Network > Outbound request',
     normalizedSignature: 'TypeError: fetch failed',
+  },
+  {
+    id: 'fp-request-timeout',
+    pattern: REQUEST_TIMEOUT_PATTERN,
+    title: 'Request timed out',
+    operationContext: 'Platform > Server > Request',
+    normalizedSignature: 'TimeoutError: operation aborted',
   },
   {
     id: 'fp-player-profile-not-found',
@@ -618,12 +681,20 @@ export function resolveIncidentPresentation(subject: PresentationSubject): Incid
     };
   }
 
+  // Computed once, used twice. The operation and feature tiers own the TITLE
+  // (they know more about where it happened), but the message shape still
+  // tells us WHAT happened. Without passing it through, a feature-tier title
+  // such as "CoachHelm AI request failed" sat beside "signature unavailable"
+  // while the message plainly said "canceling statement due to statement
+  // timeout". It only feeds the signature, so no title or tier changes.
+  const fpMatch = findUnscopedFingerprintMatch(subject);
+
   const opMatch = findOperationMatch(subject);
   if (opMatch) {
     return {
       title: opMatch.title,
       operationContext: opMatch.operationContext,
-      technicalSignature: buildTechnicalSignature(subject, null),
+      technicalSignature: buildTechnicalSignature(subject, fpMatch),
       resolvedBy: 'operation',
       matchedRule: opMatch.id,
     };
@@ -634,13 +705,12 @@ export function resolveIncidentPresentation(subject: PresentationSubject): Incid
     return {
       title: featMatch.title,
       operationContext: `${featureAppLabel(featMatch.featureId)} > ${featMatch.operationSuffix}`,
-      technicalSignature: buildTechnicalSignature(subject, null),
+      technicalSignature: buildTechnicalSignature(subject, fpMatch),
       resolvedBy: 'feature',
       matchedRule: featMatch.id,
     };
   }
 
-  const fpMatch = findUnscopedFingerprintMatch(subject);
   if (fpMatch) {
     return {
       title: fpMatch.title,

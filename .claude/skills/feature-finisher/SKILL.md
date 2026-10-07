@@ -1,6 +1,7 @@
 ---
 name: feature-finisher
-description: Analyzes features for completeness and suggests improvements to make them legendary. Use when asking "finish" or "complete" a feature, analyzing what's missing, or improving feature quality. Applies the Feature Finisher Framework to assess features on a 4-layer scale (Functional → Complete → Polished → Legendary) and generates prioritized improvement roadmaps. Use for GolfHelm, BaseballHelm, or any feature that needs to go from "works" to "world-class".
+disable-model-invocation: true
+description: Analyzes features for completeness and suggests improvements to make them legendary. Product ideation, invoked by name — not the definition of done (that is finish-task). Applies the Feature Finisher Framework to assess features on a 4-layer scale (Functional → Complete → Polished → Legendary) and generates prioritized improvement roadmaps. Use for GolfHelm, BaseballHelm, or any feature that needs to go from "works" to "world-class".
 ---
 
 # Feature Finisher Skill

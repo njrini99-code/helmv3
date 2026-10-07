@@ -135,7 +135,7 @@ function SourceCard({ source }: { source: IncidentSourceEvidence }) {
                 href={source.permalink}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-accent-700 underline"
+                className="inline-flex items-center gap-1 text-accent-700 underline [@media(pointer:coarse)]:min-h-11"
               >
                 {source.ref}
                 <ExternalLink size={11} aria-hidden />
@@ -315,7 +315,7 @@ const REPAIR_STATUS_TONE: Readonly<Record<RepairStatus, ChipTone>> = {
 
 function RepairBoundaryNote() {
   return (
-    <p className="mt-3 text-caption text-warm-400">
+    <p className="mt-3 text-caption text-warm-500">
       Repair opens pull requests. It never merges and never deploys — a human decides both.
     </p>
   );
@@ -349,7 +349,12 @@ export function RepairCard({ repair }: { repair: IncidentRepair | null }) {
           <dt className="uppercase tracking-widest text-warm-500">Pull request</dt>
           <dd className="mt-0.5">
             {repair.prUrl ? (
-              <a href={repair.prUrl} target="_blank" rel="noreferrer" className="text-accent-700 underline">
+              <a
+                href={repair.prUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center text-accent-700 underline [@media(pointer:coarse)]:min-h-11"
+              >
                 {repair.prNumber ? `PR #${repair.prNumber}` : 'open PR'}
               </a>
             ) : repair.prNumber ? (

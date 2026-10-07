@@ -72,7 +72,7 @@ const METHOD_INFO: Record<AttributionMethodLabel, Omit<AttributionMethodInfo, 'l
     isClean: true,
   },
   observed_change_limited: {
-    description: "Observed change — another change happened in the same window, so it can't be isolated",
+    description: "Observed change, but another change happened in the same window, so it can't be isolated",
     isClean: false,
   },
   unknown: {

@@ -101,17 +101,17 @@ export function summarizeCalibration(performance: PredictionPerformanceData | un
   if (!performance || validated < CALIBRATION_MIN_VALIDATED) {
     return {
       live: false,
-      label: `Calibration — awaiting validated predictions (${validated} of ${CALIBRATION_MIN_VALIDATED} needed).`,
+      label: `Calibration: awaiting validated predictions (${validated} of ${CALIBRATION_MIN_VALIDATED} needed).`,
       tone: 'neutral',
     };
   }
   const { calibrationScore, overconfidenceRate, underconfidenceRate } = performance.summary;
   const scorePct = Math.round(calibrationScore * 100);
   if (overconfidenceRate > underconfidenceRate + CALIBRATION_LEAN_GAP) {
-    return { live: true, label: `Calibration ${scorePct}% — trends overconfident.`, tone: 'warning' };
+    return { live: true, label: `Calibration ${scorePct}%: trends overconfident.`, tone: 'warning' };
   }
   if (underconfidenceRate > overconfidenceRate + CALIBRATION_LEAN_GAP) {
-    return { live: true, label: `Calibration ${scorePct}% — trends underconfident.`, tone: 'warning' };
+    return { live: true, label: `Calibration ${scorePct}%: trends underconfident.`, tone: 'warning' };
   }
-  return { live: true, label: `Calibration ${scorePct}% — well matched to actual outcomes.`, tone: 'positive' };
+  return { live: true, label: `Calibration ${scorePct}%: well matched to actual outcomes.`, tone: 'positive' };
 }

@@ -113,7 +113,7 @@ const rule: CompositeRule = {
         `bunker distance control to a ${dir}-tucked pin, then the ${dir}-break read.`
       : `Two separate short-game leaks are showing up this window: ${sandPct}% sand ` +
         `save AND a tendency to miss ${dir} on break putts. They're different skills ` +
-        `— splash-out distance control vs green-reading — and we can't yet confirm ` +
+        `(splash-out distance control vs green-reading), and we can't yet confirm ` +
         `they overlap on the same scoring holes, so treat them as a combined session: ` +
         `bunker distance control plus ${dir}-break read work, not a single compound fault.`;
     return {

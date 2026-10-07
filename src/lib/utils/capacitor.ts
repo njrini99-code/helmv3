@@ -21,14 +21,67 @@ export function isNativeApp(): boolean {
 }
 
 /**
+ * Does this element bring up iOS's number/decimal pad? Those pads have no
+ * return or Done key, so with the accessory bar hidden the only way to put the
+ * keyboard away is tapping elsewhere — and in round entry the pad covers the
+ * sticky "Next shot" bar (round-entry audit, P1: ~50 extra taps a round).
+ */
+export function wantsKeyboardAccessoryBar(el: Element | null | undefined): boolean {
+  if (!el || el.tagName !== 'INPUT') return false;
+  const input = el as HTMLInputElement;
+  if (input.readOnly || input.disabled) return false;
+  const mode = (input.getAttribute('inputmode') || '').toLowerCase();
+  if (mode === 'numeric' || mode === 'decimal' || mode === 'tel') return true;
+  const type = (input.getAttribute('type') || '').toLowerCase();
+  return type === 'number' || type === 'tel';
+}
+
+type AccessoryBarKeyboard = {
+  setAccessoryBarVisible: (opts: { isVisible: boolean }) => Promise<void>;
+};
+
+/**
+ * Keep the accessory bar (with its Done key) hidden everywhere EXCEPT while a
+ * numeric/decimal input has focus. Text inputs keep the clean bar-less
+ * keyboard; number pads get Done back. Focus moving between two numeric
+ * fields keeps the bar up instead of flickering it off and on.
+ * Returns a cleanup that removes the listeners.
+ */
+export function installNumericAccessoryBar(keyboard: AccessoryBarKeyboard, doc: Document = document): () => void {
+  let visible = false;
+  const apply = (next: boolean) => {
+    if (next === visible) return;
+    visible = next;
+    keyboard.setAccessoryBarVisible({ isVisible: next }).catch(() => {
+      // Plugin call failed; the keyboard is still usable, just without Done.
+    });
+  };
+  const onFocusIn = (e: FocusEvent) => apply(wantsKeyboardAccessoryBar(e.target as Element | null));
+  const onFocusOut = (e: FocusEvent) => apply(wantsKeyboardAccessoryBar(e.relatedTarget as Element | null));
+  doc.addEventListener('focusin', onFocusIn);
+  doc.addEventListener('focusout', onFocusOut);
+  return () => {
+    doc.removeEventListener('focusin', onFocusIn);
+    doc.removeEventListener('focusout', onFocusOut);
+  };
+}
+
+let accessoryBarInstalled = false;
+
+/**
  * Initialize Capacitor-specific settings (call once on app mount).
- * Hides the iOS keyboard accessory bar (prev/next/done toolbar).
+ * Hides the iOS keyboard accessory bar (prev/next/done toolbar) for text
+ * input, and shows it while a number/decimal pad is up so it has a Done key.
  */
 export async function initCapacitor(): Promise<void> {
   if (!isNativeApp()) return;
   try {
     const { Keyboard } = await import('@capacitor/keyboard');
     await Keyboard.setAccessoryBarVisible({ isVisible: false });
+    if (!accessoryBarInstalled && typeof document !== 'undefined') {
+      accessoryBarInstalled = true;
+      installNumericAccessoryBar(Keyboard);
+    }
   } catch {
     // Keyboard plugin not available on this platform
   }

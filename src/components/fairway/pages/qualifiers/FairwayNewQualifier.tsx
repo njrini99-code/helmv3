@@ -21,7 +21,7 @@
  * Tokens / primitives ONLY. No glass / warm-* / blur.
  * ========================================================================== */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -72,7 +72,14 @@ const todayISO = () => localDayIso();
 
 export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
   const router = useRouter();
-  const today = useMemo(todayISO, []);
+  // The viewer's local day, read AFTER mount. A useMemo ran on the server too,
+  // whose day (UTC on Vercel) differs from the viewer's for hours every
+  // evening, so the date inputs' `min` mismatched on hydration (audit HYD-07).
+  // Until mount the inputs carry no `min`; the server re-validates dates anyway.
+  const [today, setToday] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    setToday(todayISO());
+  }, []);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -234,7 +241,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
                 required
               />
             </FormField>
-            <FormField label="Description" showOptional help="What players should expect — format, stakes, vibe.">
+            <FormField label="Description" showOptional help="What players should expect: format, stakes, vibe.">
               <TextArea
                 name="description"
                 rows={3}
@@ -279,7 +286,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
             <FormField
               label="Entry deadline"
               showOptional
-              help="When players must confirm in — on or before the start date."
+              help="When players must confirm in, on or before the start date."
               error={entryDeadlineError ?? undefined}
             >
               <Input
@@ -344,7 +351,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
             {isMultiRound ? (
               <FormField
                 label="Course per round"
-                help="Pick the course each round is played at — players see it on the qualifier."
+                help="Pick the course each round is played at. Players see it on the qualifier."
               >
                 <div className="flex flex-col gap-2.5">
                   {Array.from({ length: rounds }, (_, i) => i + 1).map((roundNumber) => {
@@ -361,7 +368,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
                           <Flag className="h-4 w-4" strokeWidth={1.75} />
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+                          <p className="font-fw-sans text-caption font-semibold text-text-tertiary">
                             Round {roundNumber}
                           </p>
                           {assigned?.courseName ? (
@@ -405,7 +412,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
             <FormField
               label="Scoring rules"
               showOptional
-              help="Shown on the qualifier page — e.g. tiebreak order, counted rounds."
+              help="Shown on the qualifier page, e.g. tiebreak order, counted rounds."
             >
               <TextArea
                 name="rules"
@@ -445,9 +452,9 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
             </div>
             {/* Live read-out — same vocabulary as the leaderboard cut lines. */}
             <Surface elevation="border" padding="md" className="bg-surface-sunken">
-              <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
+              <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">
                 How the squad is set
-              </p>
+              </h3>
               <p className="mt-1.5 font-fw-sans text-body text-text-secondary">
                 <span className="font-medium text-accent-700 tabular-nums">Top {autoQualify}</span>{' '}
                 auto-qualify on score
@@ -489,7 +496,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
                 variant="subtle"
                 icon={Users}
                 title="No active players on your roster"
-                description="Add players to your team first — then you can enter them into a qualifier."
+                description="Add players to your team first, then you can enter them into a qualifier."
               />
             </Surface>
           ) : (

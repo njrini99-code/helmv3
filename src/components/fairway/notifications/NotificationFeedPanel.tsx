@@ -140,7 +140,7 @@ export function NotificationFeedPanel({
           <div className="flex flex-col gap-3">
             {grouped.map(({ bucket, items: bucketItems }) => (
               <section key={bucket} aria-label={`${DAY_BUCKET_LABEL[bucket]}, ${bucketItems.length} notifications`}>
-                <h3 className="px-2 pb-1 font-fw-sans text-eyebrow font-medium uppercase tracking-[0.1em] text-text-tertiary">
+                <h3 className="px-2 pb-1 font-fw-sans text-body-sm font-semibold text-text-primary">
                   {DAY_BUCKET_LABEL[bucket]}
                 </h3>
                 <ul>

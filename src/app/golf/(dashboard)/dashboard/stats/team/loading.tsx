@@ -18,29 +18,28 @@ const SKELETON_ROW_COUNT = 6;
  * column `TeamStatsBoard` renders, so the skeleton→content handoff is a
  * quiet fade, not a layout jump.
  *
- * Eyebrow + h1 are real static text (matching `<ViewHeader eyebrow="Team
- * Stats" title="Team Stats" />`, TeamStatsBoard.tsx:342-344), not
- * `<Skeleton>` blocks; the description needs the fetched roster/team name,
- * so it stays a Skeleton.
+ * The h1 is real static text (matching `<ViewHeader title="Team Stats" />`
+ * in TeamStatsBoard.tsx, which has no eyebrow), not a `<Skeleton>` block;
+ * the description needs the fetched roster/team name, so it stays a Skeleton.
  *
  * Board row shape verified against the module kit: `RankCell` (Tee/App/
  * Shrt/Putt/Scor) is a `rounded-fw-sm` badge, NOT a circle (RankCell.tsx:
- * 24-29); only `RingGauge` (Composite) is actually circular (RingGauge.tsx:
+ * 24-29); only `RingGauge` (Form) is actually circular (RingGauge.tsx:
  * 16-41); the "who" cell is name + subtitle text with no avatar
- * (TeamStatsBoard.tsx:302-306). Scor/Composite/Trend/Signal hide below
+ * (TeamStatsBoard.tsx:302-306). Scor/Form/Trend/Signal hide below
  * 940px exactly like MatrixBoard's own columns (MatrixBoard.tsx:29,
  * `HIDE_ON_MOBILE`).
  */
 export default function TeamStatsLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-      <div role="status" aria-busy="true" aria-live="polite" className="mx-auto w-full max-w-[1536px] px-4 py-6 md:px-6 md:py-8 pb-24">
-        <span className="sr-only">Loading team stats…</span>
+      <div aria-busy="true" className="mx-auto w-full max-w-[1536px] px-4 py-6 md:px-6 md:py-8 pb-24">
+        {/* A11Y-02: the live region is only this line, not the whole skeleton (Skeleton is aria-hidden). */}
+        <span role="status" aria-live="polite" className="sr-only">Loading team stats…</span>
 
-        {/* ── MASTHEAD: ViewHeader — eyebrow · title · description · secondary actions ── */}
+        {/* ── MASTHEAD: ViewHeader — title · description · secondary actions ── */}
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1 space-y-3">
-            <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-accent-700">Team Stats</p>
             <h1 className="min-w-0 font-fw-display text-h1 font-medium tracking-[-0.008em] text-text-primary [text-wrap:balance]">Team Stats</h1>
             <Skeleton className="h-4 w-64 max-w-full" />
           </div>
@@ -65,7 +64,7 @@ export default function TeamStatsLoading() {
             </div>
 
             {/* Header row — Player/Tee/App/Shrt/Putt visible at every width, Scor/
-                Composite/Trend/Signal hidden below 940px, matching MatrixBoard's
+                Form/Trend/Signal hidden below 940px, matching MatrixBoard's
                 own `COLUMNS` + `HIDE_ON_MOBILE` (MatrixBoard.tsx:29,120-136;
                 TeamStatsBoard.tsx:150-160). */}
             <div className="flex items-center gap-4 border-b border-border-subtle px-5 py-2.5">
@@ -81,7 +80,7 @@ export default function TeamStatsLoading() {
                 (TeamStatsBoard.tsx:302-306). Tee/App/Shrt/Putt are `RankCell`,
                 a rounded-fw-sm badge (RankCell.tsx:24-29), NOT a circle — only
                 `RingGauge` (composite) is actually circular (RingGauge.tsx:16-41).
-                Scor/Composite/Trend/Signal hide below 940px like the real
+                Scor/Form/Trend/Signal hide below 940px like the real
                 columns (MatrixBoard.tsx:29). */}
             {Array.from({ length: SKELETON_ROW_COUNT }).map((_, i) => (
               <div key={i} className={cn('flex items-center justify-between gap-4 px-5 py-2.5', i < SKELETON_ROW_COUNT - 1 && 'border-b border-border-subtle')}>

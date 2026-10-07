@@ -302,7 +302,7 @@ function DatePickerInner<M extends CalendarMode = 'single'>(
              * `z-dropdown` is the same fix already used for Select's popup
              * positioner (forms/styles.ts) for the identical footgun.
              */
-            'z-dropdown rounded-lg p-1 outline-none',
+            'z-dropdown rounded-fw-md p-1 outline-none',
             /*
              * Fit the space that actually exists, and scroll if it does not.
              *

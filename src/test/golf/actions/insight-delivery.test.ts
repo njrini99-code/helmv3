@@ -440,6 +440,24 @@ describe('getInsightsForPlayer', () => {
     expect(result).toEqual([]);
   });
 
+  it('does not log a missing session as an error, but still logs a real auth failure', async () => {
+    const { AuthSessionMissingError, AuthApiError } = await import('@supabase/supabase-js');
+    const { logServerError } = await import('@/lib/server-error-logger');
+    const withAuthError = (error: Error) => {
+      const sb = makeSupabaseMock({ userId: null });
+      sb.auth.getUser = vi.fn(async () => ({ data: { user: null }, error })) as never;
+      return sb;
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(await getInsightsForPlayer('p-1', {}, withAuthError(new AuthSessionMissingError()) as any)).toEqual([]);
+    expect(logServerError).not.toHaveBeenCalled();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(await getInsightsForPlayer('p-1', {}, withAuthError(new AuthApiError('upstream down', 500, 'unexpected_failure')) as any)).toEqual([]);
+    expect(logServerError).toHaveBeenCalledTimes(1);
+  });
+
   it('returns [] when verifyPlayerAccess denies', async () => {
     verifyPlayerAccessMock.mockResolvedValueOnce({ allowed: false, reason: 'denied' });
     const sb = makeSupabaseMock({

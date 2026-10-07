@@ -104,9 +104,17 @@ const askDatabase = cache(async (): Promise<AllowlistAnswer> => {
   }
 });
 
-export async function checkSuperAdminAccess(): Promise<SuperAdminProbe> {
+/** `cache()` per request, same reasoning as `askDatabase` above — a
+ *  layout + page + server-action pass on one request otherwise pays for
+ *  `getUser()`'s own round-trip once per caller instead of once per request. */
+const getCachedUser = cache(async () => {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  return user;
+});
+
+export async function checkSuperAdminAccess(): Promise<SuperAdminProbe> {
+  const user = await getCachedUser();
   if (!user) return { allowed: false, reason: 'unauthenticated' };
 
   const answer = await askDatabase();

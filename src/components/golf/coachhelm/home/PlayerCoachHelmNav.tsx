@@ -38,7 +38,7 @@ const SECTION_KEYS = new Set<string>(SECTIONS.map((section) => section.key));
 /**
  * Label of the CoachHelm section the `?view=` param currently selects.
  *
- * The stage has no visible page title — `PlayerSpine` is the hero — so the
+ * The stage has no visible page title (the overview opens on its masthead), so the
  * surface shipped with NO `<h1>` at all and jumped straight to `<h2>`
  * (audit P-21). Callers render this inside a visually-hidden heading so the
  * document has a top-level title that tracks the active section.
@@ -97,10 +97,11 @@ export function PlayerCoachHelmNav() {
                   setActive(section.key);
                   replaceStageUrl('view', section.key, 'home');
                 }}
-                aria-current={selected ? 'page' : undefined}
+                // In-page view switch, not a route: `true`, not `page` (A11Y-R6).
+                aria-current={selected ? 'true' : undefined}
                 className={cn(
                   'relative inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-t-fw-sm px-3.5 py-2',
-                  'font-fw-sans text-label font-medium outline-none transition-colors duration-150',
+                  'font-fw-sans text-microlabel font-medium outline-none transition-colors duration-150',
                   'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                   selected ? 'text-text-primary' : 'text-text-secondary hover:bg-surface-tint hover:text-text-primary',
                 )}

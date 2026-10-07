@@ -201,7 +201,7 @@ export function FairwayAnnouncements({
   // previously duplicated the count in both slots ("5 posted." directly above
   // a "5 total" chip). ─────────────────────────────────────────────────────
   const description = isCoach
-    ? 'Share schedule changes, news, and important updates with your team.'
+    ? 'Share news and schedule changes with your team.'
     : 'The latest from the coaching staff.';
 
   // Honest count chips — only when there's something real to show.

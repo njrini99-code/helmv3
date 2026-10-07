@@ -45,14 +45,16 @@ function playerData(): PlayerDashboardData {
   };
 }
 
-describe('FairwayPlayerDashboard — Scoring trend has exactly one heading', () => {
-  it('renders "Scoring trend" once as the page section title, not again inside the chart card', () => {
+// The scoring-trend chart became the round strip (audit redesign, 2026-09-23):
+// same contract — the section is titled once, by the page-level <h2>, and the
+// strip itself carries no second visible title.
+describe('FairwayPlayerDashboard — the round-form section has exactly one heading', () => {
+  it('renders "Last 3 rounds" once as the page section title, not again inside the strip', () => {
     render(<FairwayPlayerDashboard data={playerData()} />);
 
-    const headings = screen.getAllByText('Scoring trend');
+    const headings = screen.getAllByText('Last 3 rounds');
     expect(headings).toHaveLength(1);
-    // It's the real page-level <h2> SectionTitle, not a ChartFrame <h3>.
-    expect(headings[0]!.tagName).toBe('H2');
+    expect(headings[0]!.closest('h2')).not.toBeNull();
   });
 });
 

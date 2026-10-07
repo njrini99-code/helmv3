@@ -2,8 +2,8 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { FairwayDashboardShell } from './FairwayDashboardShell';
-import { resolveCoachActiveTeamId, getCoachTeamSwitchContext } from '@/lib/golf/resolve-team';
-import { getActiveTeamCookie } from '@/app/golf/actions/team-switcher';
+import { getCoachTeamSwitchContext } from '@/lib/golf/resolve-team';
+import { resolveCoachActiveTeamIdForRequest, getActivePlayerTeamMembership } from '@/lib/golf/dashboard-request-cache';
 import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
 import { ThemeApplier } from '@/components/golf/theme/ThemeApplier';
 import type { GolfUserData } from '@/contexts/golf-user-context';
@@ -151,7 +151,38 @@ export default async function GolfDashboardLayout({
     // new-program onboarding anyway — they could not reach the dashboard at
     // all. Routing now lives in one place for every entry point; see
     // lib/golf/coach-entry-path.ts.
-    const entry = await resolveGolfCoachEntry(session.userId);
+    //
+    // PERF (2026-09-23): the entry check (two service-role reads) used to run
+    // to completion BEFORE the team reads below were even dispatched. The team
+    // reads depend only on the session's coach row, so both now start in the
+    // same tick; the entry verdict is still awaited — and still redirects —
+    // before any team data is used or rendered. A redirected request simply
+    // discards its (RLS-scoped, read-only) team reads.
+    const entryPromise = resolveGolfCoachEntry(session.userId);
+
+    // Fetch coach's active team with cookie-awareness:
+    //   1. Read the golf_active_team cookie (if set).
+    //   2. Validate it via golf_team_coach_staff before trusting it.
+    //   3. Fall back to the coach's staffed team, then the org resolver.
+    // Also fetch the switch context (teams + head-coach gate) so the
+    // TeamSwitcher renders only for multi-team head coaches (program heads).
+    //
+    // The active-team resolution goes through the request-scoped cache
+    // (dashboard-request-cache.ts) so a page under this layout that resolves
+    // the same team (e.g. the dashboard home) reuses this result instead of
+    // repeating the cookie validation + staff reads.
+    const supabase = await createClient();
+    const teamReads = coach
+      ? Promise.all([
+          resolveCoachActiveTeamIdForRequest(coach.organization_id ?? null, coach.id),
+          getCoachTeamSwitchContext(supabase, coach.id, coach.organization_id),
+        ])
+      : null;
+    // Observed below; this only avoids an unhandled rejection when the entry
+    // check redirects first.
+    teamReads?.catch(() => {});
+
+    const entry = await entryPromise;
     if (entry.path !== '/golf/dashboard') redirect(entry.path);
 
     // The resolver only answers '/golf/dashboard' when a coach row AND a staff
@@ -163,37 +194,11 @@ export default async function GolfDashboardLayout({
     // /golf/coach/pending redirects straight through to the dashboard the
     // moment the staff row is readable. Guessing '/golf/coach' instead would
     // offer new-program onboarding to a coach who demonstrably has a program.
-    if (!coach) redirect('/golf/coach/pending');
+    if (!coach || !teamReads) redirect('/golf/coach/pending');
 
-    // Fetch coach's active team with cookie-awareness:
-    //   1. Read the golf_active_team cookie (if set).
-    //   2. Validate it via golf_team_coach_staff before trusting it.
-    //   3. Fall back to the coach's staffed team, then the org resolver.
-    // Also fetch the switch context (teams + head-coach gate) so the
-    // TeamSwitcher renders only for multi-team head coaches (program heads).
     let teamId: string | undefined;
     let teamName: string | undefined;
-    const supabase = await createClient();
-
-    // Parallel fetch: active team id + switch context (teams + canSwitch gate).
-    //
-    // `getActiveTeamCookie()` does no I/O (it's a `cookies()` lookup), but it
-    // was previously `await`ed to completion BEFORE `getCoachTeamSwitchContext`
-    // was even called — so that query's first Supabase round trip couldn't be
-    // dispatched until the cookie's microtask hop (through the server-action
-    // wrapper) had fully unwound. `resolveCoachActiveTeamId` genuinely needs
-    // the resolved cookie VALUE (its signature takes a string, not a promise),
-    // so it can't start any earlier than this — but `getCoachTeamSwitchContext`
-    // has no such dependency. Calling it here, before awaiting the cookie,
-    // dispatches its `golf_team_coach_staff` read in the same tick as the
-    // cookie read instead of after it.
-    const cookiePromise = getActiveTeamCookie();
-    const switchContextPromise = getCoachTeamSwitchContext(supabase, coach.id, coach.organization_id);
-    const cookieTeamId = await cookiePromise;
-    const [resolvedTeamId, switchContext] = await Promise.all([
-      resolveCoachActiveTeamId(supabase, coach.organization_id, coach.id, cookieTeamId),
-      switchContextPromise,
-    ]);
+    const [resolvedTeamId, switchContext] = await teamReads;
     const coachTeams = switchContext.teams;
 
     if (resolvedTeamId) {
@@ -233,7 +238,6 @@ export default async function GolfDashboardLayout({
     // Fetch player's team via team membership
     let teamId: string | undefined;
     let teamName: string | undefined;
-    const supabase = await createClient();
     // The `error` is READ — logged, not thrown.
     //
     // Same swallow the calendar page had: only `data` was destructured, so a
@@ -243,12 +247,10 @@ export default async function GolfDashboardLayout({
     // EVERY dashboard route, so throwing here would turn a transient blip into
     // a whole-product outage. Logging makes the failure visible without that
     // blast radius; the calendar page, which can fail alone, does throw.
-    const { data: teamMember, error: teamMemberError } = await supabase
-      .from('golf_team_members')
-      .select('team_id, golf_teams(id, name)')
-      .eq('player_id', player.id)
-      .eq('status', 'active')
-      .maybeSingle();
+    //
+    // Request-scoped (dashboard-request-cache.ts): the dashboard home reads
+    // the same membership, and now shares this one query.
+    const { data: teamMember, error: teamMemberError } = await getActivePlayerTeamMembership(player.id);
 
     if (teamMemberError) {
       void logServerError(

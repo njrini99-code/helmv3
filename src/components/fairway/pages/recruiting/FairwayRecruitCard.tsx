@@ -57,17 +57,25 @@ export function FairwayRecruitCard({
                 <h3 className="line-clamp-2 font-fw-display text-body-lg font-semibold tracking-[-0.01em] text-text-primary">
                   {fullName || 'Unnamed prospect'}
                 </h3>
-                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-fw-sans text-caption text-text-tertiary">
-                  <span className="inline-flex items-center gap-1 tabular-nums">
-                    <GraduationCap className="h-3.5 w-3.5" />
-                    {recruit.hs_class ? `Class of ${recruit.hs_class}` : '—'}
-                  </span>
-                  <span aria-hidden>·</span>
-                  <span className="inline-flex min-w-0 items-center gap-1">
-                    <MapPin className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{location ?? '—'}</span>
-                  </span>
-                </div>
+                {/* Only the facts on file: a prospect with neither read as
+                    "🎓 — · 📍 —", icons captioning nothing. */}
+                {(recruit.hs_class || location) && (
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-fw-sans text-caption text-text-tertiary">
+                    {recruit.hs_class && (
+                      <span className="inline-flex items-center gap-1 tabular-nums">
+                        <GraduationCap className="h-3.5 w-3.5" />
+                        {`Class of ${recruit.hs_class}`}
+                      </span>
+                    )}
+                    {recruit.hs_class && location && <span aria-hidden>·</span>}
+                    {location && (
+                      <span className="inline-flex min-w-0 items-center gap-1">
+                        <MapPin className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{location}</span>
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
               <StatusPill tone={status.tone} className="shrink-0">
                 {status.label}

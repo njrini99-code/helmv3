@@ -153,40 +153,19 @@ describe('vercelMutatingDenyHits — the Supabase exclusion is derived from the 
 });
 
 describe('the live configuration', () => {
-  it('purchases and project controls ask, and CLI production deploys are denied because the owner runs releases', () => {
-    // Production mutators remain subject to native authorization, including
-    // tools addressed by the account connector UUID. The CLI `vercel --prod` /
-    // `vercel deploy --prod` spellings are denied outright rather than asked:
-    // Git deploys are disabled and the owner releases by running
-    // scripts/deploy-prod.sh, never an agent.
+  it('Vercel CLI and MCP are fully permitted: nothing asks or denies (owner grant)', () => {
+    // The owner granted full Vercel access. Releases still go through
+    // scripts/deploy-prod.sh by policy (AGENTS.md "Production"), not by a
+    // permission rule.
     const settings = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
     const connectors: Connector[] = JSON.parse(
       readFileSync(resolve(REPO, 'config/mcp-connector-ids.json'), 'utf-8'),
     ).connectors;
     const vercelIds = connectors.filter((c) => c.service === 'Vercel').map((c) => c.id);
-    expect(vercelIds.length).toBeGreaterThan(0);
-    expect(settings.permissions.deny).toContain('Bash(vercel --prod:*)');
-    expect(settings.permissions.deny).toContain('Bash(vercel deploy --prod:*)');
-    expect(settings.permissions.ask).not.toContain('Bash(vercel --prod:*)');
-    expect(settings.permissions.ask).not.toContain('mcp__claude_ai_Vercel__deploy_to_vercel');
-    for (const id of vercelIds) {
-      for (const tool of MUTATING_TOOLS.filter((name) => name !== 'deploy_to_vercel')) {
-        expect(settings.permissions.ask, `${tool} under ${id}`).toContain(`mcp__${id}__${tool}`);
-      }
-    }
-  });
-
-  it('the production authorization rules cover every UUID spelling and exclude Supabase from the Vercel count', () => {
-    const settings = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
-    const connectors: Connector[] = JSON.parse(
-      readFileSync(resolve(REPO, 'config/mcp-connector-ids.json'), 'utf-8'),
-    ).connectors;
-    const { hits, uuidHits } = vercelMutatingDenyHits(settings.permissions.ask, connectors);
-    const supabaseIds = connectors.filter((c) => c.service === 'Supabase').map((c) => c.id);
-    for (const r of hits) {
-      for (const id of supabaseIds) expect(r.startsWith(`mcp__${id}__`), r).toBe(false);
-      expect(r.startsWith('mcp__claude_ai_Supabase__'), r).toBe(false);
-    }
-    expect(uuidHits.length).toBe(MUTATING_TOOLS.length - 1);
+    const rules = [...settings.permissions.ask, ...settings.permissions.deny];
+    const gated = rules.filter((r: string) => /vercel|deploy-prod/i.test(r) || vercelIds.some((id) => r.includes(id)));
+    expect(gated).toEqual([]);
+    const { hits } = vercelMutatingDenyHits(settings.permissions.deny, connectors);
+    expect(hits).toEqual([]);
   });
 });

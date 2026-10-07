@@ -7,7 +7,7 @@ import { FairwayEditQualifier } from '@/components/fairway/pages/qualifiers/Fair
 import { getQualifierRoundCourses } from '@/app/golf/actions/golf';
 
 export const metadata: Metadata = {
-  title: 'Edit Qualifier | Helm Sports',
+  title: 'Edit Qualifier',
   description: 'Edit an existing team qualifier',
 };
 

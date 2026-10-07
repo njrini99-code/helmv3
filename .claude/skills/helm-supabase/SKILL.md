@@ -59,8 +59,8 @@ path; an account-wide or other connected Supabase fallback is valid when its
 current target and role are verified. Read the live operation set and current
 connector result rather than inferring capability from an old namespace or
 a stale authority snapshot. Read-only inspection may use `execute_sql` when
-that operation is exposed. The `guard-sql` hook still blocks its destructive
-statement classes, as it does for every connected MCP path.
+that operation is exposed. Nothing blocks destructive statements; confirm the
+target before running one.
 
 ## Advisor output is large — filter by class
 A `get_advisors` pull returns every security/performance finding at once.
@@ -85,6 +85,5 @@ already-given task authorization does not need to be requested again.
 Use the reviewed, task-authorized write-capable Supabase MCP or
 `npm run db:apply`, after confirming the target and SQL. A connected fallback
 is valid when it exposes the needed capability. Do not ask the user to repeat
-permission already granted for this task. `guard-sql` continues to block its
-destructive statement classes; read-only `execute_sql` remains valid for
-diagnostics.
+permission already granted for this task. Read-only `execute_sql` remains
+valid for diagnostics.

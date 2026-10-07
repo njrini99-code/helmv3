@@ -4,13 +4,12 @@
  * ============================================================================
  * DeepDiveDrill — `?view=deep-dive` (spec §5.3)
  * ----------------------------------------------------------------------------
- * Shot analysis + what-if scenarios, reusing `ShotAnalysisCard`/`WhatIfPanel`
- * UNCHANGED (ported verbatim from `FairwayPlayerCoachHelm`'s collapsible
- * "Deep dive analysis" section — the stage door replaces the disclosure).
+ * Shot analysis, then what-if scenarios, stacked on one scroll (DD-01: the
+ * two-tab switch hid the what-if behind a tap on a screen that is already
+ * one level deep).
  * ========================================================================== */
 
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/fairway';
-import { DrillPanel, useStage } from '@/components/fairway/modules';
+import { DrillPanel } from '@/components/fairway/modules';
 import { ShotAnalysisCard } from '@/components/golf/coachhelm/player/ShotAnalysisCard';
 import { WhatIfPanel } from '@/components/golf/coachhelm/player/WhatIfPanel';
 import { getPlayerWhatIf } from '@/app/golf/actions/coachhelm-data';
@@ -24,40 +23,33 @@ export interface DeepDiveDrillProps {
 }
 
 export function DeepDiveDrill({ playerId, shotData, profileData }: DeepDiveDrillProps) {
-  const { home } = useStage();
+  const rawPrediction = profileData?.currentPrediction;
+  const baselinePrediction =
+    typeof rawPrediction === 'number' && Number.isFinite(rawPrediction) ? rawPrediction : null;
 
   return (
-    <DrillPanel title="Deep dive" backLabel="Home" onBack={home}>
-      <Tabs defaultValue="shot-analysis" className="gap-3">
-        <TabsList className="w-full">
-          <TabsTrigger value="shot-analysis" className="min-h-11 flex-1 justify-center">Shot analysis</TabsTrigger>
-          <TabsTrigger value="what-if" className="min-h-11 flex-1 justify-center">What if</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="shot-analysis">
-          <ShotAnalysisCard shotData={shotData ?? undefined} playerId={playerId} />
-        </TabsContent>
-
-        <TabsContent value="what-if">
-          <WhatIfPanel
-            playerId={playerId}
-            profileData={profileData ?? undefined}
-            onSimulate={async (metric, amount) => {
-              // PRESERVED: getPlayerWhatIf simulation contract (verbatim from
-              // FairwayPlayerCoachHelm).
-              const baseline = (profileData?.currentPrediction as number | undefined) ?? 0;
-              const res = await getPlayerWhatIf(playerId, { metric, amount });
-              if (!res.success || !res.data) {
-                return { projectedScore: baseline, rankChange: 0 };
-              }
-              return {
-                projectedScore: baseline + res.data.scenario.projectedScoringChange,
-                rankChange: res.data.scenario.projectedRankChange,
-              };
-            }}
-          />
-        </TabsContent>
-      </Tabs>
+    <DrillPanel title="Deep dive">
+      <div className="space-y-4">
+        <ShotAnalysisCard shotData={shotData ?? undefined} playerId={playerId} />
+        <WhatIfPanel
+          playerId={playerId}
+          profileData={profileData ?? undefined}
+          onSimulate={baselinePrediction == null ? undefined : async (metric, amount) => {
+            // getPlayerWhatIf simulation contract (from FairwayPlayerCoachHelm).
+            // Only offered when a real prediction exists (DD-01): projecting
+            // from a missing prediction used `?? 0` and printed a projected
+            // score of "+0.0 + change" as if the player were even par.
+            const res = await getPlayerWhatIf(playerId, { metric, amount });
+            if (!res.success || !res.data) {
+              return { projectedScore: baselinePrediction, rankChange: 0 };
+            }
+            return {
+              projectedScore: baselinePrediction + res.data.scenario.projectedScoringChange,
+              rankChange: res.data.scenario.projectedRankChange,
+            };
+          }}
+        />
+      </div>
     </DrillPanel>
   );
 }

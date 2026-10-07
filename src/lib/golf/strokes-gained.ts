@@ -344,13 +344,13 @@ function toStatisticalSW(c: StrengthWeaknessCandidate): StatisticalStrengthWeakn
 
   let detail: string;
   if (c.unit === '%') {
-    detail = `${c.playerValue.toFixed(0)}% (${benchLabel}: ${c.benchmark.toFixed(0)}%) — ${impactStr}`;
+    detail = `${c.playerValue.toFixed(0)}% (${benchLabel}: ${c.benchmark.toFixed(0)}%), ${impactStr}`;
   } else if (c.unit === 'strokes/round') {
-    detail = `${c.playerValue >= 0 ? '+' : ''}${c.playerValue.toFixed(2)} (${benchLabel}: ${c.benchmark >= 0 ? '+' : ''}${c.benchmark.toFixed(2)}) — ${impactStr}`;
+    detail = `${c.playerValue >= 0 ? '+' : ''}${c.playerValue.toFixed(2)} (${benchLabel}: ${c.benchmark >= 0 ? '+' : ''}${c.benchmark.toFixed(2)}), ${impactStr}`;
   } else if (c.unit === 'per round') {
-    detail = `${c.playerValue.toFixed(1)} per round (${benchLabel}: ${c.benchmark.toFixed(1)}) — ${impactStr}`;
+    detail = `${c.playerValue.toFixed(1)} per round (${benchLabel}: ${c.benchmark.toFixed(1)}), ${impactStr}`;
   } else {
-    detail = `${c.playerValue.toFixed(1)} ${c.unit} (${benchLabel}: ${c.benchmark.toFixed(1)}) — ${impactStr}`;
+    detail = `${c.playerValue.toFixed(1)} ${c.unit} (${benchLabel}: ${c.benchmark.toFixed(1)}), ${impactStr}`;
   }
 
   return {
@@ -733,7 +733,7 @@ function addScoringCandidates(stats: GolfStats, candidates: StrengthWeaknessCand
       strokeImpact,
       confidence: Math.min(1, stats.roundsPlayed / 6),
       recommendation: deltaPct < 0
-        ? `Only ${stats.girPctPar5.toFixed(0)}% GIR on par 5s (target: ${COLLEGE_BENCHMARKS.girPctPar5}%). These are scoring holes — work on long approach play.`
+        ? `Only ${stats.girPctPar5.toFixed(0)}% GIR on par 5s (target: ${COLLEGE_BENCHMARKS.girPctPar5}%). These are scoring holes: work on long approach play.`
         : undefined,
     });
   }

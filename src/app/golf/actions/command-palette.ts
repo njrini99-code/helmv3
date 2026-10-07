@@ -133,6 +133,7 @@ async function getCommandPaletteDataImpl(): Promise<CommandPaletteData> {
       player:golf_players ( first_name, last_name )
     `)
     .eq('team_id', teamId)
+    .eq('is_test', false)
     .order('round_date', { ascending: false })
     .limit(10);
 

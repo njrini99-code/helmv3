@@ -88,7 +88,7 @@ export function SourceStatusList({ state, onRetry, className }: SourceStatusList
           className,
         )}
       >
-        <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'bg-accent-650 text-text-on-accent')}>
+        <span aria-hidden className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full', 'bg-accent-fill text-text-on-accent-fill')}>
           <CheckCircle2 className="h-4 w-4" aria-hidden />
         </span>
         <p className="font-fw-sans text-body-sm text-text-primary">

@@ -290,7 +290,7 @@ export function AutomationEditor({
                     onChange={(value) => setTriggerEvent(value as CrmAutomationTrigger)}
                     className="rounded-fw-sm"
                   />
-                  <p className="mt-1 text-eyebrow text-text-tertiary">
+                  <p className="mt-1 text-caption text-text-tertiary">
                     {TRIGGER_EVENTS.find((t) => t.value === triggerEvent)?.description}
                   </p>
                 </div>
@@ -307,7 +307,7 @@ export function AutomationEditor({
                     onChange={(e) => setPriority(parseInt(e.target.value, 10) || 0)}
                     className="min-h-0 py-2 rounded-fw-sm"
                   />
-                  <p className="mt-1 text-eyebrow text-text-tertiary">Lower runs first.</p>
+                  <p className="mt-1 text-caption text-text-tertiary">Lower runs first.</p>
                 </div>
               </div>
 
@@ -450,7 +450,7 @@ export function AutomationEditor({
                   {showAdvanced ? '▾' : '▸'} Advanced JSON view
                 </Button>
                 {showAdvanced && (
-                  <pre className="mt-2 p-3 bg-surface-sunken border border-border-subtle rounded-fw-sm text-eyebrow text-text-secondary overflow-x-auto whitespace-pre">
+                  <pre className="mt-2 p-3 bg-surface-sunken border border-border-subtle rounded-fw-sm text-caption text-text-secondary overflow-x-auto whitespace-pre">
                     {advancedJson}
                   </pre>
                 )}

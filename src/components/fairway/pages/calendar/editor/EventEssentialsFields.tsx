@@ -90,7 +90,7 @@ export function EventEssentialsFields({ formData, onChange, disabled }: EventEss
                 // FairwayEventCard's own `ring-offset-canvas` convention.
                 'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
                 active
-                  ? cn('border border-transparent text-text-on-accent hover:text-text-on-accent', 'bg-accent-650 text-text-on-accent')
+                  ? cn('border border-transparent text-text-on-accent-fill hover:text-text-on-accent-fill', 'bg-accent-fill text-text-on-accent-fill')
                   : cn('text-text-secondary hover:text-text-primary', 'border border-border-subtle bg-surface'),
               )}
             >

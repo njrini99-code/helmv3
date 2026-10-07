@@ -92,7 +92,7 @@ export function EventRecurrenceFields({
                 'inline-flex items-center rounded-full px-3 py-1.5 font-fw-sans text-caption font-medium transition-colors',
                 'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
                 active
-                  ? 'bg-accent-650 text-text-on-accent shadow-flat'
+                  ? 'bg-accent-fill text-text-on-accent-fill shadow-flat'
                   : 'border border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint',
               )}
             >
@@ -125,7 +125,7 @@ export function EventRecurrenceFields({
                     "before:absolute before:-inset-1.5 before:content-['']",
                     'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
                     selected
-                      ? 'bg-accent-650 text-text-on-accent shadow-flat'
+                      ? 'bg-accent-fill text-text-on-accent-fill shadow-flat'
                       : 'border border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint',
                   )}
                 >

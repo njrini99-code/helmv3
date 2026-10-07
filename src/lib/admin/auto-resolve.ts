@@ -465,12 +465,13 @@ export async function autoResolveFixedIncidents(): Promise<AutoResolveResult> {
   const rows = await fetchAllRows<{
     fingerprint: string | null;
     created_at: string | null;
+    severity: string | null;
     /** Generated types widen this to `Json`; narrowed at the read below. */
     metadata: unknown;
   }>((from, to) =>
     admin
       .from('admin_events')
-      .select('fingerprint, created_at, metadata')
+      .select('fingerprint, created_at, severity, metadata')
       .eq('resolved', false)
       .eq('event_type', 'error')
       .not('fingerprint', 'is', null)
@@ -479,6 +480,14 @@ export async function autoResolveFixedIncidents(): Promise<AutoResolveResult> {
   );
 
   const maxByFingerprint = new Map<string, number>();
+  // The same reduction over FAULT rows only — everything but severity 'info'.
+  // An info row is a path reporting that it worked (a cron's hourly
+  // "sent=12 failed=0" summary), so its recurrence is the path running again,
+  // not a fix failing to hold. Regression detection reads this map; the
+  // archive rules below still read `maxByFingerprint`, so info rows keep
+  // ageing out exactly as before. Production 2026-09-24: five info-only
+  // fingerprints (incl. the event-reminders summary 75cabac7) sat REGRESSED.
+  const maxFaultByFingerprint = new Map<string, number>();
   // Fingerprints that NO deploy and no amount of quiet can fix: a spent
   // balance, a rejected key, a missing credential. See the note below.
   const operatorGated = new Set<string>();
@@ -488,6 +497,10 @@ export async function autoResolveFixedIncidents(): Promise<AutoResolveResult> {
     if (Number.isNaN(t)) continue;
     const prev = maxByFingerprint.get(row.fingerprint);
     if (prev === undefined || t > prev) maxByFingerprint.set(row.fingerprint, t);
+    if (row.severity !== 'info') {
+      const prevFault = maxFaultByFingerprint.get(row.fingerprint);
+      if (prevFault === undefined || t > prevFault) maxFaultByFingerprint.set(row.fingerprint, t);
+    }
     const errorCode = (row.metadata as { errorCode?: string | null } | null)?.errorCode;
     if (isOperatorGatedFaultCode(errorCode)) operatorGated.add(row.fingerprint);
   }
@@ -532,7 +545,7 @@ export async function autoResolveFixedIncidents(): Promise<AutoResolveResult> {
     regressionSkippedReason = `resolutions read failed: ${stored.error}`;
   } else {
     const reopen = planReopens({
-      openFaults: [...maxByFingerprint].map(([fingerprint, maxT]) => ({
+      openFaults: [...maxFaultByFingerprint].map(([fingerprint, maxT]) => ({
         fingerprint,
         lastSeenAt: new Date(maxT).toISOString(),
         occurrences: 0,

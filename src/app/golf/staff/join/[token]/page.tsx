@@ -26,7 +26,7 @@ import { StaffJoinClient } from './staff-join-client';
  */
 
 export const metadata: Metadata = {
-  title: 'Staff invitation · GolfHelm',
+  title: 'Staff invitation',
   robots: { index: false, follow: false },
 };
 

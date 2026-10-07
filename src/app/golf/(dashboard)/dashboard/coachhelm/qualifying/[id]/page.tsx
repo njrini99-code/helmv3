@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .eq('id', id)
     .maybeSingle();
   return {
-    title: data?.name ? `${data.name} · Selection · CoachHelm` : 'Selection · CoachHelm',
+    title: data?.name ? `${data.name} · Selection` : 'Selection',
   };
 }
 

@@ -26,6 +26,7 @@ import { formatTime, getEventTypeConfig } from '@/lib/calendar/event-styles';
 import type { EventType } from '@/lib/types/calendar';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { Button } from '@/components/ui/button';
+import { fwPressSurface } from '@/components/fairway/controls';
 
 interface MobileEventCardProps {
   event: CalendarEvent;
@@ -102,7 +103,7 @@ export function MobileEventCard({
         'shadow-sm shadow-warm-200/50',
         'border border-warm-100',
         'transition-all duration-200 ease-out',
-        'active:scale-[0.98] active:shadow-none',
+        fwPressSurface,
         isEventPast && 'opacity-50',
         className
       )}

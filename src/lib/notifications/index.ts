@@ -166,7 +166,7 @@ export async function notifyTaskAssigned(
     userIds: [recipientId],
     type: 'event_reminder',
     title: 'New task',
-    body: dueDate ? `${taskTitle} — due ${dueDate}` : taskTitle,
+    body: dueDate ? `${taskTitle}, due ${dueDate}` : taskTitle,
     actionUrl: `/golf/dashboard/tasks?task=${taskId}`,
     // Same discriminator task-reminders.ts uses, so the row files under
     // Tasks rather than Events.

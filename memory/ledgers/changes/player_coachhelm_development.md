@@ -120,7 +120,7 @@
 ## 2026-09-23 — repair-plan §14.12: observed-outcome language fix (InsightCard OutcomeBadge)
 
 - SHA: 961d255b1.
-- Change: `src/components/golf/coachhelm/insight-card/InsightCard.tsx`'s
+- Change: `src/components/golf/coachhelm/insight-card/InsightCard.tsx`'s (this file was removed in the 2026-09-24 golf audit dead-code sweep)
   `OutcomeBadge` rendered "Saved {impact} strokes/rd" once a player/coach
   marked a focus area's originating insight `improved`
   (`golf_coach_insights.outcome_status`, a human self-report via

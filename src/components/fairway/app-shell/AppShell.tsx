@@ -76,6 +76,8 @@ export interface AppShellProps {
 
   /** Breadcrumb trail for the top bar. */
   breadcrumbs?: readonly Breadcrumb[];
+  /** Phone-only back link to the parent screen on pushed routes (NAT-04). */
+  backLink?: Breadcrumb & { readonly href: string };
   /** Opens the command menu (⌘K). Renders the persistent command entry. */
   onSearchOpen?: () => void;
   /** Placeholder for the command entry. */
@@ -84,6 +86,8 @@ export interface AppShellProps {
   searchSlot?: React.ReactNode;
   /** Top-bar right action cluster. */
   topBarActions?: React.ReactNode;
+  /** NAT-04: opt into the 44pt iOS phone bar (see `FairwayTopBar.nativeBar`). */
+  nativeTopBar?: boolean;
   /**
    * A hub sub-tab strip rendered as part of the ONE sticky chrome unit —
    * immediately below the top bar, above `{children}`. Presence sets `flush`
@@ -196,10 +200,12 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     sidebarFooter,
     sidebarIdentityExtra,
     breadcrumbs,
+    backLink,
     onSearchOpen,
     searchPlaceholder = DEFAULT_PLACEHOLDER,
     searchSlot,
     topBarActions,
+    nativeTopBar,
     subNav,
     pageTitle,
     accentColor,
@@ -337,6 +343,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
   const topBarProps: FairwayTopBarProps = useMemo(
     () => ({
       breadcrumbs,
+      backLink,
       onSearchOpen,
       searchPlaceholder,
       searchSlot,
@@ -349,13 +356,16 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
       // that only change on navigation.
       pageTitle: pageTitle ?? breadcrumbs?.at(-1)?.label,
       flush: !!subNav,
+      nativeBar: nativeTopBar,
     }),
     [
       breadcrumbs,
+      backLink,
       onSearchOpen,
       searchPlaceholder,
       searchSlot,
       topBarActions,
+      nativeTopBar,
       accentColor,
       linkComponent,
       pageTitle,
@@ -451,8 +461,13 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
           // overshot the viewport by 41px at 390x844 (pushing the composer
           // under the bottom tab bar) and by 97px at 1440x900.
           '[--fw-shell-offset:calc(4rem+env(safe-area-inset-top,0px)+2rem+env(safe-area-inset-bottom,0px))]',
+          nativeTopBar &&
+            '[--golf-mobile-header-offset:calc(4rem+env(safe-area-inset-top,0px))] max-md:[--golf-mobile-header-offset:calc(2.75rem+env(safe-area-inset-top,0px))]',
+          nativeTopBar && !bottomNav && 'max-md:[--fw-shell-offset:calc(2.75rem+env(safe-area-inset-top,0px)+2rem+env(safe-area-inset-bottom,0px))]',
           bottomNav &&
-            'max-md:[--fw-shell-offset:calc(4rem+env(safe-area-inset-top,0px)+2rem+56px+env(safe-area-inset-bottom,0px))]',
+            (nativeTopBar
+              ? 'max-md:[--fw-shell-offset:calc(2.75rem+env(safe-area-inset-top,0px)+2rem+56px+env(safe-area-inset-bottom,0px))]'
+              : 'max-md:[--fw-shell-offset:calc(4rem+env(safe-area-inset-top,0px)+2rem+56px+env(safe-area-inset-bottom,0px))]'),
         )}
         // In-page sticky sub-headers offset below the glass top bar (4rem tall
         // + the notch inset). The immersive branch sets this var elsewhere.
@@ -460,7 +475,9 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
         // part of the sticky unit, so a page's own sticky chrome can sit right
         // under it (calendar hero) without guessing whether a strip exists.
         style={{
-          '--golf-mobile-header-offset': 'calc(4rem + env(safe-area-inset-top, 0px))',
+          // With the 44pt phone bar the offset is class-driven (it needs a
+          // breakpoint), so the inline default steps aside.
+          ...(nativeTopBar ? {} : { '--golf-mobile-header-offset': 'calc(4rem + env(safe-area-inset-top, 0px))' }),
           '--fw-hub-subnav-offset': subNav ? '2.5rem' : '0px',
         } as React.CSSProperties}
       >

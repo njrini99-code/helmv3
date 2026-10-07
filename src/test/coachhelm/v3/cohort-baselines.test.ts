@@ -70,12 +70,18 @@ describe('anchor labels and sources say what the number is (repair plan N16)', (
  * check is a real data assertion, not a read of prose.
  */
 describe('typed provenance metadata (repair plan N16)', () => {
-  it('every women\'s anchor is provenance "derived" with a non-empty sourceNote', () => {
+  it('women\'s putt-make anchors are "measured" LPGA rows; every other women\'s anchor is "derived" with a non-empty sourceNote', () => {
     for (const id of cohortAnchorMetricIds()) {
       const p = cohortAnchorProvenance(id, 'womens');
       expect(p, `no provenance for ${id}/womens`).not.toBeNull();
-      expect(p!.provenance).toBe('derived');
-      expect(p!.sourceNote.length).toBeGreaterThan(0);
+      if (id.startsWith('putts_made_')) {
+        // Owner decision 2026-09-25: one source with lib/golf/benchmarks/putting.ts.
+        expect(p!.provenance).toBe('measured');
+        expect(p!.sourceNote).toMatch(/golf_pga_standards tour=lpga/);
+      } else {
+        expect(p!.provenance).toBe('derived');
+        expect(p!.sourceNote.length).toBeGreaterThan(0);
+      }
     }
     for (const bucket of APPROACH_BUCKETS) {
       const p = greenHitAnchorProvenance(bucket, 'womens');

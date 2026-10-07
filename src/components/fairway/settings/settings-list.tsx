@@ -89,7 +89,7 @@ export function SettingsGroup({
         <div className="flex items-end justify-between gap-3 px-1">
           <div className="min-w-0">
             {title ? (
-              <h2 className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
+              <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
                 {title}
               </h2>
             ) : null}

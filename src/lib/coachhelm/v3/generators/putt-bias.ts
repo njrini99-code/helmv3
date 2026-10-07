@@ -246,7 +246,7 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
     ) {
       return {
         title: 'Putting break check: no directional bias detected',
-        content: `Across your last ${agg.rounds_played} rounds, your make rate on left-break vs right-break putts is statistically even once distance is controlled for — no single break direction stands out. Keep working both ways on the practice green.`,
+        content: `Across your last ${agg.rounds_played} rounds, your make rate on left-break vs right-break putts is statistically even once distance is controlled for. No single break direction stands out. Keep working both ways on the practice green.`,
         priority: 'low',
         signature: 'putt_bias:balanced',
         evidence: {
@@ -284,15 +284,15 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
     const slopeText = agg.slope ? `, ${agg.slope}` : '';
     const action =
       agg.weakest_direction === 'left'
-        ? `start your read higher on the left edge and commit to playing more break — your makes drop on left-to-right putts, the classic under-read.`
-        : `start your read higher on the right edge and commit to playing more break — your makes drop on right-to-left putts, the classic under-read.`;
+        ? `Start your read higher on the left edge and commit to playing more break. Your makes drop on left-to-right putts, the classic under-read.`
+        : `Start your read higher on the right edge and commit to playing more break. Your makes drop on right-to-left putts, the classic under-read.`;
     const slopeAction = agg.slope
       ? ` It shows up most on ${agg.slope} ${agg.band} putts, so rehearse that exact look.`
       : '';
 
     return {
       title: `Putting break: under-reading ${breakLabel} (${agg.band})`,
-      content: `On ${agg.band}${slopeText} putts you're making ${weakDisp} of ${breakLabel} breaks vs ${strongDisp} the other way — a ${gap}-point gap at matched distance (n=${agg.weak_n}/${agg.strong_n}). ${action}${slopeAction}`,
+      content: `On ${agg.band}${slopeText} putts you're making ${weakDisp} of ${breakLabel} breaks vs ${strongDisp} the other way, a ${gap}-point gap at matched distance (n=${agg.weak_n}/${agg.strong_n}). ${action}${slopeAction}`,
       priority: 'medium',
       signature: `putt_bias:${agg.weakest_direction}:${agg.band}`,
       evidence: {

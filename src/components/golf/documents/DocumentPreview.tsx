@@ -37,7 +37,7 @@ function FileTypeIcon({ mimeType, className }: { mimeType: string; className?: s
     return <FileTextIcon className={cn('text-fw-danger-ink', className)} />;
   }
   if (mimeType.startsWith('image/')) {
-    return <FileImageIcon className={cn('text-accent-600', className)} />;
+    return <FileImageIcon className={cn('text-accent-ink', className)} />;
   }
   if (mimeType.startsWith('video/')) {
     return <FileVideoIcon className={cn('text-accent-700', className)} />;

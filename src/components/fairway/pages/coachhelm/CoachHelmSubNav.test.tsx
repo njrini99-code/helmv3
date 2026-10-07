@@ -30,24 +30,10 @@ describe('CoachHelmSubNav — player consolidation', () => {
   // Standing are now `?view=` drills of the Overview home — the stage IS the
   // player nav for that content, so the strip collapses to the single
   // Overview tab (still mounted by e.g. the player Stats identity shell).
-  it('renders the single consolidated Overview tab with its canonical route', () => {
-    render(createElement(CoachHelmSubNav, { active: 'brief', role: 'player' }));
-
-    const overview = screen.getByRole('link', { name: 'Overview' });
-    expect(overview.getAttribute('href')).toBe('/golf/dashboard/coachhelm');
-    expect(overview.getAttribute('aria-current')).toBe('page');
-
-    // Exactly one player tab — the retired Development / Game Profile /
-    // Standing tabs (now legacy+hidden in the registry) must NOT render, nor
-    // must the coach-only surfaces (Signals / Effectiveness / Ask).
-    const nav = screen.getByRole('navigation', { name: 'CoachHelm sections' });
-    expect(within(nav).getAllByRole('link')).toHaveLength(1);
-    expect(screen.queryByRole('link', { name: 'Development' })).toBeNull();
-    expect(screen.queryByRole('link', { name: 'Game Profile' })).toBeNull();
-    expect(screen.queryByRole('link', { name: 'Standing' })).toBeNull();
-    expect(screen.queryByRole('link', { name: 'Signals' })).toBeNull();
-    expect(screen.queryByRole('link', { name: 'Effectiveness' })).toBeNull();
-    expect(screen.queryByRole('link', { name: 'Ask' })).toBeNull();
+  it('renders no strip for the player: one view is not navigation (DASH-06)', () => {
+    const { container } = render(createElement(CoachHelmSubNav, { active: 'brief', role: 'player' }));
+    expect(container.querySelector('[data-slot="coachhelm-subnav"]')).toBeNull();
+    expect(screen.queryByRole('navigation', { name: 'CoachHelm sections' })).toBeNull();
   });
 
   // Spine & Stage (2026-07-19, plan Task 9): Signals / Players / Effectiveness

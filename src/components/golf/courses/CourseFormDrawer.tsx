@@ -12,7 +12,7 @@
 
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { FormField } from '@/components/fairway/forms/FormField';
 import { Button, IconButton } from '@/components/fairway/controls/button';
 import { useToast } from '@/components/ui/sonner';
@@ -159,14 +159,20 @@ export function CourseFormDrawer({
   const title = mode === 'edit' ? 'Edit course' : 'Add course';
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="overflow-hidden sm:mx-auto sm:max-w-lg sm:rounded-fw-lg">
+    <Sheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      customTitle
+      hideClose
+      className="overflow-hidden sm:mx-auto sm:max-w-lg"
+    >
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
           {/* Header */}
           <div className="flex items-start justify-between gap-3 px-6 pt-5 pb-4">
-            <DrawerTitle className="font-fw-display text-text-primary">
+            <Sheet.Title className="font-fw-display text-text-primary">
               {title}
-            </DrawerTitle>
+            </Sheet.Title>
             <IconButton
               type="button"
               variant="ghost"
@@ -278,7 +284,6 @@ export function CourseFormDrawer({
             </Button>
           </div>
         </form>
-      </DrawerContent>
-    </Drawer>
+    </Sheet>
   );
 }

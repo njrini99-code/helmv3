@@ -49,6 +49,23 @@ export interface RequestContext {
   requestId: string;
   /** The wrapped action's name, so nested logs can attribute themselves. */
   action?: string | null;
+  /**
+   * WHO this invocation belongs to — for ATTRIBUTION ONLY.
+   *
+   * Never read this to make an authorization decision. It is written from
+   * whatever the request's auth resolution produced, is absent on unwrapped
+   * runtimes, and (see `setRequestUserId`) may be an UNVERIFIED subject
+   * recovered from a rejected session so that a mid-round expiry is still
+   * attributable to the player it happened to. Authorization must keep using
+   * `supabase.auth.getUser()` directly, which verifies with GoTrue.
+   *
+   * Mutable, unlike `requestId`: the id is not known when the scope opens
+   * (the action authenticates a few frames later), so this is filled in on
+   * the active store rather than seeded.
+   */
+  userId?: string | null;
+  /** True when `userId` came from a rejected/unverified session. */
+  userIdUnverified?: boolean;
 }
 
 const requestContext = new AsyncLocalStorage<RequestContext>();
@@ -105,6 +122,68 @@ export function bindRequestContext(): <T>(fn: () => T) => T {
     return (fn) => requestContext.run(existing, fn);
   } catch {
     return (fn) => fn();
+  }
+}
+
+/**
+ * Record the user this invocation belongs to, for ATTRIBUTION ONLY.
+ *
+ * THE GAP THIS CLOSES
+ * -------------------
+ * `RoundErrorContext.userId` had the identical failure mode this module was
+ * written for: the field was plumbed end-to-end (`normalizeContext`, both
+ * Bridge tables, the Sentry scope, and `/admin/errors/[fingerprint]` renders
+ * it as a link to the user) and almost nothing passed it. Measured against
+ * production on 2026-09-08: of 5,516 error rows in 30 days only 2,114 (38%)
+ * carried a user, and `source='server_action'` — 4,924 of those rows — sat at
+ * 39%. An operator looking at an error could not tell WHO it happened to.
+ *
+ * Per-call-site was never an option: `auth.getUser()` appears at 583 sites in
+ * `src/`. So this is written once, from the `createClient()` auth wrapper, and
+ * every logger call beneath it inherits the id — the same structural fix, for
+ * the same reason, as `requestId` above.
+ *
+ * `unverified` marks a subject read from a session GoTrue REJECTED. That is
+ * deliberately still recorded: "auto-save failed, session expired mid-round"
+ * is precisely the error an operator most needs attributed, and it is by
+ * definition emitted when verification just failed. Attribution is not a
+ * grant — see the `userId` field docs.
+ *
+ * Best-effort and non-throwing: with no scope open this is a no-op.
+ */
+export function setRequestUserId(
+  userId: string | null | undefined,
+  options: { unverified?: boolean } = {},
+): void {
+  try {
+    if (!userId) return;
+    const store = requestContext.getStore();
+    if (!store) return;
+    // A VERIFIED id must never be downgraded by a later unverified read, and
+    // the first verified answer wins over a subsequent one.
+    if (store.userId && !store.userIdUnverified) return;
+    store.userId = userId;
+    store.userIdUnverified = options.unverified ?? false;
+  } catch {
+    // Attribution must never be able to break the request it describes.
+  }
+}
+
+/** Active attributed user id, or null. Never throws. Never an authz input. */
+export function getRequestUserId(): string | null {
+  try {
+    return requestContext.getStore()?.userId ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Whether the active `getRequestUserId()` came from an unverified session. */
+export function isRequestUserIdUnverified(): boolean {
+  try {
+    return requestContext.getStore()?.userIdUnverified === true;
+  } catch {
+    return false;
   }
 }
 

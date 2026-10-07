@@ -411,7 +411,7 @@ export function FairwayEventDetailDrawer({
                           aria-hidden
                           className={cn(
                             'grid h-8 w-8 place-items-center rounded-full',
-                            isSelected ? 'bg-accent-650 text-text-on-accent' : 'text-text-secondary',
+                            isSelected ? 'bg-accent-fill text-text-on-accent-fill' : 'text-text-secondary',
                           )}
                         >
                           <Icon className="h-4 w-4" />

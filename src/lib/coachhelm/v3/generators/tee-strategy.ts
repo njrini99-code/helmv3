@@ -248,16 +248,16 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
         `Over the last ${agg.roundsCovered} rounds your driver finds the ` +
         `fairway ${driverFw}% of the time (${agg.driver.attempts} attempts) ` +
         `vs ${ndFw}% with your tee fairway clubs (${agg.nonDriver.attempts} ` +
-        `attempts) — a ${fwGapPp}pp accuracy gap. Average distance gain is ` +
+        `attempts), a ${fwGapPp}pp accuracy gap. Average distance gain is ` +
         `only ${distGap} yards${distanceNote}. On par-4/5 holes where driver isn't pinning ` +
         `you to a much better approach distance, the layback is the higher-EV play.`;
     } else if (agg.pattern === 'sharp') {
-      title = 'Driver is performing — keep it in play';
+      title = 'Driver is performing: keep it in play';
       content =
         `Across the last ${agg.roundsCovered} rounds your driver fairway% ` +
         `(${driverFw}%) is within ${fwGapPp}pp of your other tee clubs ` +
         `(${ndFw}%) while gaining ${distGap} yards on average${distanceNote}. This is the ` +
-        `right risk/reward signature — default to driver on par-4/5 tees ` +
+        `right risk/reward signature. Default to driver on par-4/5 tees ` +
         `unless trouble makes the layback obvious.`;
     } else {
       // Inconclusive — neither pattern fires. We still emit a brief

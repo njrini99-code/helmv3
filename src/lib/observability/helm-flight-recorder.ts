@@ -477,6 +477,29 @@ export async function createHelmFlightRecorder(
       // or, if this file's own execution were ever cut off, swallow — the
       // Sentry-side emission this deliverable exists to add.
       recordFinalWorkflowMetric(finalStatus, failedStep?.errorCode);
+      // Closed BEFORE the persistFinalize write below, for the SAME reason
+      // the metric above is emitted before it — and this used to be on the
+      // wrong side of that write.
+      //
+      // The span's whole purpose is to measure the WORKFLOW. The workflow is
+      // over the moment `finalStatus` is decided; everything after it is
+      // diagnostics drain. Leaving `.end()` after an unbounded RPC made the
+      // span measure "workflow + however long the helm_debug writes took to
+      // clear", and because every call site fires `void flightRecorder.x(...)`
+      // there can be ~15-50 concurrent persistStep RPCs still in flight when
+      // finalize runs, all held open by vercelWaitUntil. Measured in
+      // production over the 7 days to 2026-09-04, with the recorder enabled:
+      //
+      //   POST /api/golf/rounds/partial-save (the transaction)  p50   429ms
+      //   golf.round.autosave (this span, INSIDE it)            p50 11628ms
+      //
+      // A child span reporting 27x its own parent transaction is not a slow
+      // workflow — it is a mismeasured one, and it silently poisons any
+      // latency read of golf.workflow. `closeSpanSafely` is synchronous and
+      // swallows its own throws, so moving it cannot affect the write that
+      // follows; the start-timeout degrade path above already closes the span
+      // this way, before returning.
+      closeSpanSafely(finalStatus === 'failure' ? 'internal_error' : 'ok');
       await failOpen('finalize', () => dependencies.persistFinalize({
         traceId,
         status: finalStatus,
@@ -489,7 +512,6 @@ export async function createHelmFlightRecorder(
           } : {}),
         }),
       }));
-      closeSpanSafely(finalStatus === 'failure' ? 'internal_error' : 'ok');
     },
   };
 }

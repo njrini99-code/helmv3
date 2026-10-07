@@ -34,7 +34,7 @@
  * ========================================================================== */
 
 import { useId, useMemo, useState } from 'react';
-import { ChevronDown, Sparkles, Target, TrendingDown, TrendingUp } from 'lucide-react';
+import { ChevronDown, Lightbulb, Target, TrendingDown, TrendingUp } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import {
@@ -77,9 +77,9 @@ export function CategoryInsightsPanel({
   if (themes.length === 0) {
     return (
       <EmptyState
-        icon={Sparkles}
+        icon={Lightbulb}
         title="No themes yet"
-        description="Log a few rounds with shot detail and CoachHelm will surface the strokes-gained themes worth working on — putting, approach, off-the-tee, around-the-green, and your scoring patterns."
+        description="Log a few rounds with shot detail and CoachHelm will surface the strokes-gained themes worth working on: putting, approach, off-the-tee, around-the-green, and your scoring patterns."
       />
     );
   }
@@ -88,9 +88,9 @@ export function CategoryInsightsPanel({
   if (substantive.length === 0) {
     return (
       <InsufficientData
-        icon={Sparkles}
+        icon={Lightbulb}
         title="Not enough rounds yet"
-        description="Log a few rounds with shot detail and CoachHelm will surface the strokes-gained themes worth working on — putting, approach, off-the-tee, around-the-green, and your scoring patterns."
+        description="Log a few rounds with shot detail and CoachHelm will surface the strokes-gained themes worth working on: putting, approach, off-the-tee, around-the-green, and your scoring patterns."
       />
     );
   }
@@ -230,7 +230,7 @@ function CategorySection({ theme, onMakePlan, makePlanPendingId }: CategorySecti
 
       {state === 'thin' ? (
         <p className="max-w-prose font-fw-sans text-body-sm leading-relaxed text-text-tertiary">
-          Not enough rounds yet — log a few with shot detail (and tag your putt misses) and this
+          Not enough rounds yet. Log a few with shot detail (and tag your putt misses) and this
           theme will light up.
         </p>
       ) : causes.length > 0 ? (
@@ -247,8 +247,8 @@ function CategorySection({ theme, onMakePlan, makePlanPendingId }: CategorySecti
       ) : (
         <p className="max-w-prose font-fw-sans text-body-sm leading-relaxed text-text-tertiary">
           {isStrength
-            ? 'Keep doing what’s working here — no leak to address.'
-            : 'No specific cause surfaced yet — keep logging rounds to pinpoint it.'}
+            ? 'Keep doing what’s working here. No leak to address.'
+            : 'No specific cause surfaced yet. Keep logging rounds to pinpoint it.'}
         </p>
       )}
     </section>
@@ -393,14 +393,15 @@ function CauseCard({ cause, onMakePlan, makePlanPending = false }: CauseCardProp
         <div id={panelId} className="flex flex-col gap-3 px-2 pb-1 pt-0.5">
           {suppressed ? (
             <p className="max-w-prose font-fw-sans text-caption leading-relaxed text-text-tertiary">
-              A directional read from your pattern — there isn&rsquo;t a reliable stroke estimate
+              A directional read from your pattern. There isn&rsquo;t a reliable stroke estimate
               for this yet, so treat it as a tendency to watch rather than a measured leak.
             </p>
           ) : null}
 
           {showTourCeiling && tourGap != null ? (
             <p className="font-fw-sans text-caption text-text-tertiary">
-              <span className="tabular-nums">{tourGap.toFixed(1)}</span> from Tour
+              {/* NUM-30: the gap carries its unit. */}
+              <span className="tabular-nums">{tourGap.toFixed(1)}</span> strokes a round from Tour
             </p>
           ) : null}
 
@@ -437,7 +438,7 @@ function CauseCard({ cause, onMakePlan, makePlanPending = false }: CauseCardProp
           {hasDrill ? (
             <div className="flex flex-col gap-2">
               <Eyebrow className="inline-flex items-center gap-1.5">
-                <Target className="h-3 w-3 text-accent-600" aria-hidden />
+                <Target className="h-3 w-3 text-accent-ink" aria-hidden />
                 Drills
               </Eyebrow>
               <div className="flex flex-wrap gap-2">
@@ -472,7 +473,7 @@ function CauseCard({ cause, onMakePlan, makePlanPending = false }: CauseCardProp
           ) : needsDrill ? (
             <Inset padding="sm" className="flex items-center">
               <span className="font-fw-sans text-caption text-text-tertiary">
-                No drill yet — talk to your coach.
+                No drill yet. Talk to your coach.
               </span>
             </Inset>
           ) : null}

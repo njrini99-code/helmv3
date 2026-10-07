@@ -477,3 +477,70 @@ describe('safety net — transient failures (R3 backoff_with_deadline)', () => {
     expect(postRoundTriggerMock).not.toHaveBeenCalled();
   });
 });
+
+describe('safety net — coverage read is batched (Sentry N+1 JAVASCRIPT-NEXTJS-107)', () => {
+  function legacyParked(id: string, playerId: string, ageMs: number): Row {
+    return completed({
+      id,
+      player_id: playerId,
+      created_at: ago(ageMs),
+      coachhelm_failed_at: ago(ageMs - MINUTE_MS),
+      coachhelm_failure_reason: 'engine_no_recent_rounds',
+    });
+  }
+
+  async function golfRoundsReadsFor(playerCount: number): Promise<number> {
+    seed({
+      golf_rounds: Array.from({ length: playerCount }, (_, i) =>
+        legacyParked(`r${i}`, `p${i}`, 40 * 24 * HOUR_MS + i * MINUTE_MS),
+      ),
+    });
+    const fromSpy = vi.spyOn(fake, 'from');
+    await callGet();
+    return fromSpy.mock.calls.filter(([table]) => table === 'golf_rounds').length;
+  }
+
+  it('reads golf_rounds a fixed number of times, however many parked players there are', async () => {
+    const one = await golfRoundsReadsFor(1);
+    const five = await golfRoundsReadsFor(5);
+    expect(five).toBe(one);
+  });
+
+  it('covers exactly the players that have a newer analyzed round', async () => {
+    seed({
+      golf_rounds: [
+        legacyParked('a-old', 'pa', 40 * 24 * HOUR_MS),
+        completed({ id: 'a-new', player_id: 'pa', created_at: ago(HOUR_MS), coachhelm_analyzed_at: ago(50 * MINUTE_MS) }),
+        legacyParked('b-old', 'pb', 39 * 24 * HOUR_MS),
+        legacyParked('c-old', 'pc', 38 * 24 * HOUR_MS),
+        // pc's analyzed round is OLDER than its parked round: no coverage.
+        completed({ id: 'c-older', player_id: 'pc', created_at: ago(60 * 24 * HOUR_MS), coachhelm_analyzed_at: ago(60 * 24 * HOUR_MS) }),
+      ],
+    });
+
+    const body = (await (await callGet()).json()) as { reconciled: { covered: number; stillParked: number } };
+    expect(body.reconciled).toMatchObject({ covered: 1, stillParked: 2 });
+    expect((await round('a-old')).data).toMatchObject({ coachhelm_failure_reason: 'engine_covered_by_later_run' });
+    expect((await round('b-old')).data).toMatchObject({ coachhelm_failure_reason: 'engine_no_recent_rounds' });
+    expect((await round('c-old')).data).toMatchObject({ coachhelm_failure_reason: 'engine_no_recent_rounds' });
+  });
+
+  it('a player crowded out of a truncated batch read still gets its own coverage read', async () => {
+    const busy = Array.from({ length: 1000 }, (_, i) =>
+      completed({ id: `busy-${i}`, player_id: 'pbusy', created_at: ago(HOUR_MS + i * 1000), coachhelm_analyzed_at: ago(HOUR_MS) }),
+    );
+    seed({
+      golf_rounds: [
+        legacyParked('busy-old', 'pbusy', 50 * 24 * HOUR_MS),
+        legacyParked('quiet-old', 'pquiet', 40 * 24 * HOUR_MS),
+        // Older than all 1,000 of pbusy's rows, so a capped batch read drops it.
+        completed({ id: 'quiet-new', player_id: 'pquiet', created_at: ago(30 * 24 * HOUR_MS), coachhelm_analyzed_at: ago(30 * 24 * HOUR_MS) }),
+        ...busy,
+      ],
+    });
+
+    const body = (await (await callGet()).json()) as { reconciled: { covered: number } };
+    expect(body.reconciled.covered).toBe(2);
+    expect((await round('quiet-old')).data).toMatchObject({ coachhelm_failure_reason: 'engine_covered_by_later_run' });
+  });
+});

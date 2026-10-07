@@ -957,7 +957,7 @@ export class PatternMiner {
         }
 
         if (condition.operator === 'gte' && days >= 3) {
-          return 'Get a short range session into the 48 hours before you play again — at this gap the rust shows up in your scoring, not just in your warm-up.';
+          return 'Get a short range session into the 48 hours before you play again. At this gap the rust shows up in your scoring, not just in your warm-up.';
         }
 
         if (condition.operator === 'lte' && days <= 1) {
@@ -966,7 +966,7 @@ export class PatternMiner {
       }
 
       if (condition.field === 'round_type' && condition.value === 'tournament') {
-        return 'The gap only appears in competition, so more range volume will not close it — rehearse the pre-shot routine under pressure in qualifiers and money games until the tournament rep feels like the practice rep.';
+        return 'The gap only appears in competition, so more range volume will not close it. Rehearse the pre-shot routine under pressure in qualifiers and money games until the tournament rep feels like the practice rep.';
       }
     }
 
@@ -976,7 +976,7 @@ export class PatternMiner {
     const conditionText = joinConditionLabels(conditions);
     if (conditionText) {
       const lowered = `${conditionText.charAt(0).toLowerCase()}${conditionText.slice(1)}`;
-      return `Watch this over your next few rounds — if ${lowered} keeps producing the same gap, it is a tendency worth a dedicated practice block rather than variance.`;
+      return `Watch this over your next few rounds: if ${lowered} keeps producing the same gap, it is a tendency worth a dedicated practice block rather than variance.`;
     }
 
     return 'Watch this over your next few rounds to confirm it is a real tendency rather than variance before building practice around it.';

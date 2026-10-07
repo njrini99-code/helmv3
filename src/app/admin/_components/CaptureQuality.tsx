@@ -69,7 +69,7 @@ function WeakestSourceRow({ item }: { item: CaptureQualityWeakSource }) {
           {item.missing} missing · {item.rows} {item.rows === 1 ? 'row' : 'rows'}
         </span>
       </div>
-      <p className="mt-0.5 truncate font-fw-mono text-caption text-warm-400" title={item.sampleTitle}>
+      <p className="mt-0.5 truncate font-fw-mono text-caption text-warm-500" title={item.sampleTitle}>
         {item.sampleTitle}
       </p>
     </li>

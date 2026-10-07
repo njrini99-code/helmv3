@@ -30,8 +30,15 @@ function ChipRow({
   ariaLabel: string;
 }) {
   return (
-    <nav className="flex flex-wrap items-center gap-2" aria-label={ariaLabel}>
-      <span className="text-xs font-medium uppercase tracking-widest text-warm-500">{label}</span>
+    // Below `md` the row is its own horizontal scroller (up to nine area
+    // chips): at the 44px touch floor, wrapping them stacked four rows of
+    // chips above the timeline. The scroll is contained here, never the page.
+    // From `md` the chips wrap as before.
+    <nav
+      className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] md:flex-wrap md:overflow-visible md:pb-0"
+      aria-label={ariaLabel}
+    >
+      <span className="shrink-0 text-xs font-medium uppercase tracking-widest text-warm-500">{label}</span>
       {chips.map((chip) => (
         <FilterPillLink
           key={chip.key}
@@ -40,6 +47,7 @@ function ChipRow({
           showCheck={false}
           selected={chip.selected}
           count={chip.count}
+          className="shrink-0 whitespace-nowrap [@media(pointer:coarse)]:min-h-11"
         >
           {chip.label}
         </FilterPillLink>

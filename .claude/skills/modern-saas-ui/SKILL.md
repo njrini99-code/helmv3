@@ -7,8 +7,8 @@ description: >-
   design system: the binding rule is .claude/rules/design-system.md and the
   canonical tokens are src/styles/design-tokens.css. Read those first and let
   them override anything here. For Fairway dashboard implementation prefer the
-  rule plus the shipped components; for layout/overlay/breakpoint defects use
-  ui-stability-debugger-v2.
+  rule plus the shipped components; for layout/overlay/breakpoint defects, reproduce
+  and fix with the debugger agent.
 ---
 
 # Modern SaaS UI — App Enhancement Guide

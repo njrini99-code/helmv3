@@ -23,7 +23,10 @@ export function ViewAsButton({ onEnter }: { onEnter: () => Promise<void> }) {
 
   if (confirming) {
     return (
-      <div role="group" aria-label="Confirm view-as" className="flex items-center gap-2">
+      // flex-wrap: Cancel + the long confirm label are ~340px side by side,
+      // wider than a 375px screen's content column. Layout only — the
+      // two-step confirm and its handlers are unchanged.
+      <div role="group" aria-label="Confirm view-as" className="flex flex-wrap items-center gap-2">
         <Button
           type="button"
           variant="secondary"

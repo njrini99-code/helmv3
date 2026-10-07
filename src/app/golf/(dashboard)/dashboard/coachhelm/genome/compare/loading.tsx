@@ -1,115 +1,37 @@
-import { Skeleton } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 
 /**
- * CoachHelmSubNav's COACH strip — two tabs, "Brief" and "Ask" (`COACH_TABS` in
- * CoachHelmSubNav.tsx; labels are the `brief`/`ask` canonicalNames from
- * surface-registry.ts). Width-approximated so the strip's footprint matches the
- * real component before hydration.
- *
- * This file drew ONE tab, on the premise that Spine & Stage (2026-07-19) had
- * collapsed the coach strip to a single Brief front door. It collapsed it to
- * two: `ask` carries neither `legacy` nor `hidden` and was restored to
- * COACH_TABS — only Signals/Players/Effectiveness were folded into `?view=`
- * drills. So the strip grew a second tab on hydrate and the cockpit below it
- * shifted. The single-tab shape is the PLAYER strip (`PLAYER_TABS`, one
- * "Overview" tab) — and GenomeCompareView mounts CoachHelmShell with
- * `role="coach"` and no `embedded`, so the coach set is what paints here.
+ * Compare first paint: title + verdict → the two player slots → the stage
+ * holding two aligned strands. Mirrors GenomeCompareStrands' spacing.
  */
-const SUBNAV_TAB_WIDTHS = [44, 28] as const;
-
-/**
- * Route Suspense fallback for /golf/dashboard/coachhelm/genome/compare.
- *
- * Mirrors GenomeCompareView's default (no `?p1=&p2=` yet) first paint: the
- * CoachHelmShell masthead+subnav chain (same nested `mx-auto max-w-[1200px]`
- * masthead/body wrapper pair as CoachHelmShell.tsx:152,212) plus its "Players
- * > Compare" leaf breadcrumb, then the cockpit — a raised instrument panel
- * shaped like the `!anySelected` EmptyState branch (GenomeCompareView.tsx:
- * 181-188) — and the two roster ComparePicker panels below it. The icon
- * chip/gap/padding mirror EmptyState's own DEFAULT-variant classes
- * (EmptyState.tsx:94 `gap-4 px-8 py-16`, :105 `h-16 w-16` chip) —
- * GenomeCompareView passes no `variant`, so this is not the smaller `subtle`
- * shape some other loading.tsx files mirror.
- */
-export default function GenomeCompareLoading() {
+export default function Loading() {
   return (
-    <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans')}>
-      <div className="mx-auto w-full max-w-[1200px] px-4 py-2 md:px-6">
-        <div
-          className="flex w-full flex-col"
-          role="status"
-          aria-busy="true"
-          aria-live="polite"
-        >
-          <span className="sr-only">Loading genome compare…</span>
-
-          {/* CoachHelmShell's masthead+subnav container. */}
-          <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 pt-2 md:px-6">
-            <div className="flex flex-col gap-2">
-              <Skeleton className="h-3 w-24 rounded-fw-sm" />
-              <Skeleton className="h-9 w-72 max-w-full rounded-fw-sm" />
-              <Skeleton className="h-4 w-80 max-w-full rounded-fw-sm" />
-            </div>
-
-            {/* Leaf breadcrumb — "Players > Compare" */}
-            <div className="-mt-1 flex items-center gap-1.5">
-              <Skeleton className="h-3 w-12" />
-              <Skeleton className="h-3 w-3" />
-              <Skeleton className="h-3 w-14" />
-            </div>
-
-            {/* CoachHelmSubNav strip — the coach's "Brief" + "Ask" tabs. */}
-            <nav
-              aria-hidden="true"
-              className="flex w-full items-center gap-1 border-b border-border-subtle"
-            >
-              {SUBNAV_TAB_WIDTHS.map((w) => (
-                <div key={w} className="px-3.5 pb-3 pt-2.5">
-                  <Skeleton className="h-4" style={{ width: w }} />
-                </div>
-              ))}
-            </nav>
+    <div className={fairwayScope('min-h-full bg-canvas')}>
+      <div
+        role="status"
+        aria-busy="true"
+        aria-live="polite"
+        className="mx-auto flex w-full max-w-[1120px] flex-col px-4 pb-16 pt-4 md:px-8 md:pt-8"
+      >
+        <span className="sr-only">Loading comparison…</span>
+        <Skeleton className="h-8 w-40 md:h-10" />
+        <Skeleton className="mt-2 h-5 w-full max-w-[60ch]" />
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+          <Skeleton className="h-14 flex-1 rounded-fw-md" />
+          <Skeleton className="h-11 w-16 self-center rounded-full" />
+          <Skeleton className="h-14 flex-1 rounded-fw-md" />
+        </div>
+        <div className="mt-8 rounded-card border border-border-subtle bg-surface px-4 pb-4 pt-4 md:px-6 md:pb-6 md:pt-5">
+          <div className="flex items-start justify-between gap-4">
+            <Skeleton className="h-5 w-28" />
+            <Skeleton className="h-11 w-[168px] rounded-full" />
           </div>
-
-          {/* CoachHelmShell's body container. */}
-          <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6">
-            <div className="flex flex-col gap-6">
-              {/* The cockpit — raised accent panel, EmptyState-shaped */}
-              <div
-                aria-hidden="true"
-                className="flex flex-col items-center gap-4 rounded-card border border-accent-200 bg-surface px-8 py-16 text-center"
-              >
-                <Skeleton circle className="h-16 w-16" />
-                <Skeleton className="h-5 w-64 max-w-full" />
-                <Skeleton className="h-3.5 w-80 max-w-full" />
-              </div>
-
-              {/* Pickers — the two ?p1=&p2= roster lists */}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {[0, 1].map((col) => (
-                  <div
-                    key={col}
-                    aria-hidden="true"
-                    className="flex flex-col gap-2 rounded-card border border-border-subtle bg-surface p-4"
-                  >
-                    <div className="flex items-center gap-2 px-1">
-                      <Skeleton circle className="h-2.5 w-2.5" />
-                      <Skeleton className="h-3 w-16" />
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <div key={i} className="flex items-center gap-3 rounded-fw-sm px-2.5 py-2">
-                          <Skeleton circle className="h-6 w-6 flex-shrink-0" />
-                          <Skeleton className="h-3.5 flex-1" style={{ maxWidth: `${64 - (i % 3) * 10}%` }} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <Skeleton className="mt-5 h-4 w-36" />
+          <Skeleton className="mt-1 h-[88px] w-full rounded-fw-md" />
+          <Skeleton className="my-2 h-8 w-full rounded-fw-md" />
+          <Skeleton className="h-4 w-36" />
+          <Skeleton className="mt-1 h-[88px] w-full rounded-fw-md" />
         </div>
       </div>
     </div>

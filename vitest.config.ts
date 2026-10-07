@@ -146,13 +146,13 @@ export default defineConfig({
             // SessionStart/Stop hooks wired in .claude/settings.json. Same
             // "named explicitly, not swept in" rule applies — an unlisted
             // file under scripts/__tests__/ runs under nothing.
-            'scripts/__tests__/hooks/guard-git.test.mjs',
-            'scripts/__tests__/hooks/guard-sql.test.mjs',
-            'scripts/__tests__/hooks/guard-config-change.test.mjs',
             'scripts/__tests__/hooks/route-prompt.test.mjs',
             'scripts/__tests__/hooks/session-state-compaction.test.mjs',
+<<<<<<< HEAD
             'scripts/__tests__/hooks/require-gates.test.mjs',
             'scripts/__tests__/hooks/require-preflight.test.mjs',
+=======
+>>>>>>> ca15f4ce6c4559e02af41f49db27b15b668f2de5
             // db:apply preflight (2026-09-08). Same "named explicitly" rule.
             // Both checks it covers were found broken while dry-running the
             // September helm_debug/helm_jobs/pgaudit migrations (8 of the 9
@@ -238,6 +238,10 @@ export default defineConfig({
             // testable off a live connection, and it is the part that would
             // ship a wrong ledger row silently.
             'scripts/__tests__/db-apply-single-file.test.mjs',
+            // CI's generated-artifact drift gate (2026-09-23): which drift
+            // fails a PR — introduced yes; inherited from main or merge skew
+            // no. Builds a throwaway git repo per run.
+            'scripts/__tests__/pr-drift-gate.test.mjs',
             // Weekly control-plane report (A6): the pure decision functions
             // behind control-plane-weekly.yml's four hard checks (secret
             // scanning, Dependabot severity ceiling, full-history gitleaks

@@ -203,6 +203,9 @@ export function __setSentryRetryDelayForTests(fn: RetryDelayFn | null): void {
 export async function fetchSentryIssues(opts?: {
   query?: string;
   limit?: number;
+  /** Sentry environments to scope to, sent as `environment` URL params so
+   *  each issue's lastSeen and 24h stats are scoped too. Omitted = all. */
+  environment?: readonly string[];
 }): Promise<AdminFetchResult<SentryIssue[]>> {
   const cfg = config();
   if (!cfg) return unconfigured('Sentry read API');
@@ -223,6 +226,7 @@ export async function fetchSentryIssues(opts?: {
         statsPeriod: '24h',
         project: '-1',
       });
+      for (const env of opts?.environment ?? []) params.append('environment', env);
       if (cursor) params.set('cursor', cursor);
 
       let res = await sentryGet(`/organizations/${cfg.org}/issues/`, params, cfg.token);

@@ -4,6 +4,7 @@ import { Surface, Inset, StatusPill, InlineNotice, type FwStatusTone } from '@/c
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { LocalTime } from '../_components/LocalTime';
+import { DetailsDisclosure, TabHeader } from '../_components/TabHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,9 +78,11 @@ function FlagRow({ flag }: { flag: FeatureFlagRow }) {
   return (
     <Inset padding="sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-fw-mono text-sm font-medium text-warm-900">{flag.feature_id}</p>
-          <p className="mt-1 text-xs leading-relaxed text-warm-600">{flag.purpose}</p>
+        <div className="min-w-0 flex-1 basis-48">
+          {/* feature_id is one unbroken snake_case token — without
+              overflow-wrap it forced the row past the card edge at 375px. */}
+          <p className="break-words font-fw-mono text-sm font-medium text-warm-900 [overflow-wrap:anywhere]">{flag.feature_id}</p>
+          <p className="mt-1 break-words text-xs leading-relaxed text-warm-600">{flag.purpose}</p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">
           <StatusPill tone={ROLLOUT_TONE[flag.rolloutStatus]} dot size="sm">
@@ -90,8 +93,8 @@ function FlagRow({ flag }: { flag: FeatureFlagRow }) {
       </div>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <EnvironmentDots environment={flag.environment} />
-        <div className="text-right text-caption text-text-tertiary">
-          <p>owner: {flag.owner}</p>
+        <div className="min-w-0 text-right text-caption text-text-tertiary">
+          <p className="break-words">owner: {flag.owner}</p>
           <p>
             {flag.expires_at ? (
               <>
@@ -105,7 +108,7 @@ function FlagRow({ flag }: { flag: FeatureFlagRow }) {
         </div>
       </div>
       {flag.type === 'operations_kill_switch' && flag.kill_switch_behavior ? (
-        <p className="mt-2 border-t border-border-subtle pt-2 text-caption leading-relaxed text-warm-600">
+        <p className="mt-2 break-words border-t border-border-subtle pt-2 text-caption leading-relaxed text-warm-600">
           <span className="font-medium text-warm-700">kill switch: </span>
           {flag.kill_switch_behavior}
         </p>
@@ -154,14 +157,19 @@ export default async function ReleasesPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-lg font-semibold text-warm-900">Releases</h1>
-        <p className="mt-0.5 max-w-2xl text-sm text-warm-600">
-          Every registered feature flag and kill switch — owner, per-environment rollout, and how close it is to
-          its own expiry. Governed by <code className="font-fw-mono">npm run flags:check</code> in CI; see{' '}
-          <code className="font-fw-mono">docs/ai-system/FEATURE_FLAGS.md</code>.
-        </p>
-      </div>
+      <TabHeader
+        title="Releases"
+        description="Every registered feature flag and kill switch — owner, per-environment rollout, and how close it is to its own expiry."
+      >
+        {/* Governance pointers are for whoever edits the registry, not for
+            reading the board — one tap away instead of on every visit. */}
+        <DetailsDisclosure className="max-w-2xl">
+          <p>
+            Governed by <code className="font-fw-mono">npm run flags:check</code> in CI; see{' '}
+            <code className="font-fw-mono">docs/ai-system/FEATURE_FLAGS.md</code>.
+          </p>
+        </DetailsDisclosure>
+      </TabHeader>
       <PanelBoundary title="Releases" skeleton={<PanelPageSkeleton />}>
         <ReleasesPanel />
       </PanelBoundary>

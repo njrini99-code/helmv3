@@ -111,7 +111,7 @@ export function FairwayCalendarMemberRail({
             phone it is the only control here — "Compare schedules…" lives in
             the menu — so nothing sits nested inside it. From `md` up the
             labelled Compare button stands beside the row, never inside it. */}
-        <div className="flex min-w-0 flex-1 items-center gap-1 rounded-xl border border-border-subtle bg-surface p-1 [box-shadow:var(--fw-shadow-card)]">
+        <div className="flex min-w-0 flex-1 items-center gap-1 rounded-card border border-border-subtle bg-surface p-1 [box-shadow:var(--fw-shadow-card)]">
         {/* The summary is the menu: one press opens People. */}
         <PopoverPanel
           open={menuOpen}
@@ -124,7 +124,7 @@ export function FairwayCalendarMemberRail({
             <PressTarget
               aria-label="People"
               className={cn(
-                'flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-md py-1 pl-2 pr-2 text-left',
+                'flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-fw-md py-1 pl-2 pr-2 text-left',
                 '[@media(hover:hover)]:hover:bg-surface-sunken active:bg-surface-sunken',
               )}
             >

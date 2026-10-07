@@ -4,11 +4,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const setCategoryChannelMock = vi.fn();
 const setQuietModeMock = vi.fn();
+const setAllChannelsMock = vi.fn();
 const toastDangerMock = vi.fn();
 
 vi.mock('@/app/golf/actions/v3/notification-prefs', () => ({
   setCategoryChannel: setCategoryChannelMock,
   setQuietMode: setQuietModeMock,
+  setAllChannels: setAllChannelsMock,
 }));
 
 vi.mock('@/components/fairway/feedback/ToastStack', () => ({
@@ -22,12 +24,14 @@ vi.mock('@/components/fairway', () => ({
   Button: ({
     children,
     onClick,
+    disabled,
   }: {
     children: ReactNode;
     onClick?: () => void;
+    disabled?: boolean;
   }) => (
     // eslint-disable-next-line helm/no-raw-button
-    <button type="button" onClick={onClick}>
+    <button type="button" onClick={onClick} disabled={disabled}>
       {children}
     </button>
   ),
@@ -61,6 +65,8 @@ describe('FairwaySettingsNotifications', () => {
     setCategoryChannelMock.mockClear();
     setQuietModeMock.mockResolvedValue({ ok: true });
     setQuietModeMock.mockClear();
+    setAllChannelsMock.mockResolvedValue({ ok: true });
+    setAllChannelsMock.mockClear();
     toastDangerMock.mockClear();
   });
 
@@ -119,5 +125,94 @@ describe('FairwaySettingsNotifications', () => {
     await waitFor(() => {
       expect(savingToggle).not.toBeDisabled();
     });
+  });
+
+  // ── DATA-08 — a failed toggle reverts only its own cell ──────────────────
+  it('reverts only the failed cell, keeping a concurrent toggle that succeeded', async () => {
+    let resolvePush: (value: { ok: boolean; error?: string }) => void = () => {};
+    setCategoryChannelMock
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolvePush = resolve;
+        }),
+      )
+      .mockResolvedValueOnce({ ok: true });
+    const { FairwaySettingsNotifications } = await import(
+      '@/components/fairway/pages/settings/FairwaySettingsNotifications'
+    );
+
+    render(<FairwaySettingsNotifications prefs={{}} quietMode={false} />);
+
+    // Same category, sibling channels: the stale-snapshot bug clobbered these.
+    const push = screen.getByRole('button', { name: 'New insight landed · Push' });
+    const email = screen.getByRole('button', { name: 'New insight landed · Email' });
+    // A different category too.
+    const goalPush = screen.getByRole('button', { name: 'Goal achieved · Push' });
+
+    fireEvent.click(push); // pending
+    fireEvent.click(email); // succeeds
+    await waitFor(() => expect(email).not.toBeDisabled());
+    setCategoryChannelMock.mockResolvedValueOnce({ ok: true });
+    fireEvent.click(goalPush); // succeeds
+    await waitFor(() => expect(goalPush).not.toBeDisabled());
+
+    resolvePush({ ok: false, error: 'Network down' });
+    await waitFor(() => expect(toastDangerMock).toHaveBeenCalledWith('Network down'));
+
+    expect(push).toHaveAttribute('aria-pressed', 'false');
+    expect(email).toHaveAttribute('aria-pressed', 'true');
+    expect(goalPush).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  // ── DATA-09 — bulk writes and cell writes never overlap ──────────────────
+  it('locks every cell while a bulk mute is pending', async () => {
+    let resolveBulk: (value: { ok: boolean }) => void = () => {};
+    setAllChannelsMock.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveBulk = resolve;
+      }),
+    );
+    const { FairwaySettingsNotifications } = await import(
+      '@/components/fairway/pages/settings/FairwaySettingsNotifications'
+    );
+
+    render(<FairwaySettingsNotifications prefs={{}} quietMode={false} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mute push' }));
+
+    const cell = screen.getByRole('button', { name: 'Goal achieved · Email' });
+    await waitFor(() => expect(cell).toBeDisabled());
+    fireEvent.click(cell);
+    expect(setCategoryChannelMock).not.toHaveBeenCalled();
+
+    resolveBulk({ ok: true });
+    await waitFor(() => expect(cell).not.toBeDisabled());
+  });
+
+  it('locks the bulk actions while a cell write is pending', async () => {
+    let resolveSave: (value: { ok: boolean }) => void = () => {};
+    setCategoryChannelMock.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveSave = resolve;
+      }),
+    );
+    const { FairwaySettingsNotifications } = await import(
+      '@/components/fairway/pages/settings/FairwaySettingsNotifications'
+    );
+
+    render(<FairwaySettingsNotifications prefs={{}} quietMode={false} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'New insight landed · Push' }));
+
+    const mutePush = screen.getByRole('button', { name: 'Mute push' });
+    const muteEmail = screen.getByRole('button', { name: 'Mute email' });
+    const reset = screen.getByRole('button', { name: 'Reset defaults' });
+    await waitFor(() => expect(mutePush).toBeDisabled());
+    expect(muteEmail).toBeDisabled();
+    expect(reset).toBeDisabled();
+
+    resolveSave({ ok: true });
+    await waitFor(() => expect(mutePush).not.toBeDisabled());
+    expect(setAllChannelsMock).not.toHaveBeenCalled();
   });
 });

@@ -68,7 +68,7 @@ export function EngagementBadge({
   if (!engagement) {
     return (
       <span
-        className="text-micro text-text-tertiary tabular-nums"
+        className="text-microlabel text-text-tertiary tabular-nums"
         aria-label="No engagement data"
       >
         &mdash;
@@ -93,7 +93,7 @@ export function EngagementBadge({
       size="sm"
       dot={false}
       title={title}
-      className={cn('gap-1 text-eyebrow', size === 'md' ? 'px-2' : 'px-1.5', tone.override)}
+      className={cn('gap-1 text-caption', size === 'md' ? 'px-2' : 'px-1.5', tone.override)}
     >
       <tone.Icon size={iconSize} className={tone.iconClass} aria-hidden />
       {tone.label}

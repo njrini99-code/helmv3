@@ -25,10 +25,11 @@
  * ========================================================================== */
 
 import { forwardRef, Children, isValidElement, cloneElement } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Check, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { staggerVariants } from './motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export type OnboardingStepStatus = 'upcoming' | 'active' | 'complete';
 
@@ -86,7 +87,7 @@ export const OnboardingStep = forwardRef<HTMLDivElement, OnboardingStepProps>(
           aria-hidden="true"
           className={cn(
             'grid h-9 w-9 shrink-0 place-items-center rounded-full font-fw-mono text-body-sm font-medium tabular-nums transition-colors [transition-duration:180ms]',
-            isComplete && 'bg-accent-650 text-text-on-accent',
+            isComplete && 'bg-accent-fill text-text-on-accent-fill',
             isActive &&
               'bg-accent-50 text-fw-success-ink ring-2 ring-accent-500 ring-offset-2 ring-offset-surface',
             status === 'upcoming' && 'bg-surface-sunken text-text-tertiary ring-1 ring-border-subtle',
@@ -194,7 +195,7 @@ export function OnboardingSteps({
   label = 'Onboarding steps',
   className,
 }: OnboardingStepsProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard() ?? false;
   const { container, item } = staggerVariants(reduced);
 
   const steps = Children.toArray(children).filter(isValidElement);

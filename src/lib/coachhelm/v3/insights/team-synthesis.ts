@@ -113,7 +113,7 @@ export function synthesizeTeamSignals(signals: GroupedSignal[]): GroupedSignal[]
       title: `Team leak: ${entry.label}`,
       claim:
         `${players} players are losing a combined ${rounded.toFixed(2)} strokes per round on ` +
-        `${entry.label}. Each is listed on their own card below — this is the roster total, ` +
+        `${entry.label}. Each is listed on their own card below; this is the roster total, ` +
         `and the size of the practice block it would take to close.`,
       // A synthesis has no detection date of its own; it is as current as the
       // signals it was built from, which the surface already dates.

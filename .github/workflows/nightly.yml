@@ -1,0 +1,249 @@
+name: Nightly
+
+# Slow, post-merge-only suites that used to run on EVERY push to main from
+# ci.yml (2026-09-23, PR throughput). Moving them here takes 7 jobs off each
+# merge — the shifted-timezone matrix (2 zones x 3 shards) and the
+# BaseballHelm authenticated smoke — which competed with open PRs for the
+# account's 20 concurrent runner slots (queueing was 64% of PR wait time on
+# 2026-09-23). Neither was a merge gate; both are release signals, and a
+# nightly run on main's head is when that signal is read.
+#
+# Job names are unchanged from ci.yml; neither is a required check.
+# Run on demand: `gh workflow run nightly.yml` (optionally `--ref <branch>`).
+
+on:
+  schedule:
+    - cron: '23 8 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # Same as ci.yml: a valid-format dummy on secretless runs. The baseball
+  # smoke overwrites both with its local stack's values before it builds.
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy-ci-build.supabase.co' }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-anon-key-ci-build-only' }}
+  NODE_OPTIONS: --max-old-space-size=8192
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # The same unit suite, run at a FAR timezone offset.
+  #
+  # WHY THIS IS NOT HYGIENE. On 2026-07-29 `main` went red at 8pm EDT because two
+  # "today" fixtures were anchored to the UTC date while the code under test used a
+  # local/team date (#1123). Sweeping for the class found exactly two
+  # offset-dependent files in 8,514 tests — and the second one proved the sharper
+  # point. Re-injecting the ORIGINAL React #418 hydration bug that
+  # `FairwayAgendaView` was hardened against gives:
+  #
+  #     TZ=America/New_York    -> 4 passed   <- the bug is INVISIBLE
+  #     TZ=Pacific/Kiritimati  -> 1 failed
+  #     TZ=Asia/Tokyo          -> 1 failed
+  #
+  # CI runs at UTC, where midday-ET fixtures land on the same calendar day, so that
+  # guard was DORMANT: it could not catch the regression it exists to prevent.
+  # This job is what wakes it up.
+  #
+  # WHY A MATRIX OF BOTH EXTREMES. Each caught a different subset — UTC-11 broke one
+  # assertion in stage-history-format, UTC+14 broke the other two plus both agenda
+  # cases. One offset is enough to detect the class in principle; two is cheap
+  # insurance against a fixture that only slips in one direction.
+  #
+  # COST: runner minutes, not wall-clock — GHA runs these in parallel with the
+  # other jobs, so a green PR is not slower. Rejected alternative: banning
+  # `toISOString().slice(0, 10)`. There are 216 call sites and most are legitimate
+  # (formatting an already-stored date, or intentionally UTC), so a blanket rule
+  # would be noise. Running at a shifted offset catches the class regardless of
+  # which API produced the date.
+  #
+  # Verified clean at BOTH offsets on c2ea35695 before this job was added:
+  # 892 files / 8,514 tests, identical to the UTC run.
+  # ---------------------------------------------------------------------------
+  unit-tests-timezone:
+    name: Unit tests (shifted timezone)
+    # NIGHTLY (2026-09-23, PR throughput). Off the PR gate since 2026-08-20;
+    # until today it still ran on EVERY push to main — six jobs per merge
+    # competing with open PRs for the account's 20 concurrent runner slots,
+    # for a check whose own history (#1123) is a date-boundary class that a
+    # once-a-day run at both offsets catches as well as a per-merge one. A
+    # red run here blocks the next release, not a merge.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        tz:
+          - Pacific/Kiritimati  # UTC+14, the furthest ahead of UTC
+          - Pacific/Midway      # UTC-11, the furthest behind
+        # Sharded for the same reason as unit-tests. Unsharded, this job would
+        # become the critical path the moment the others got faster.
+        shard: [1, 2, 3]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Unit tests at ${{ matrix.tz }} (shard ${{ matrix.shard }}/3)
+        env:
+          TZ: ${{ matrix.tz }}
+        run: |
+          echo "Runner offset: $(date +%z)  ($(date))"
+          npm run test:run -- --shard=${{ matrix.shard }}/3
+
+  baseball-auth-smoke:
+    name: BaseballHelm authenticated smoke
+    # packages: read lets the local-supabase-stack composite action's ghcr.io
+    # login step get the authenticated (higher) pull rate limit for
+    # ghcr.io/supabase/* images; the workflow-level `permissions:` block above
+    # only grants `contents: read`, so a job needs this to use the token for
+    # anything else.
+    permissions:
+      contents: read
+      packages: read
+    # NIGHTLY (2026-09-23, PR throughput). Removed from the PR gate on
+    # 2026-08-26 after it blocked a golf production hotfix twice in one
+    # afternoon (the runner died during this job's in-job build). Until
+    # 2026-09-23 it still ran on every push to main: a full local Supabase
+    # stack plus a second `next build` per merge. It now runs nightly and on
+    # dispatch (`gh workflow run nightly.yml`); a red run blocks the next
+    # release, not a merge.
+    # #372: promotes the already-built, already-mandatory baseball-smoke +
+    # onboarding-smoke specs (e2e/baseball-smoke.spec.ts,
+    # e2e/baseball-onboarding-smoke.spec.ts) from push/workflow_dispatch-only
+    # (.github/workflows/playwright.yml's `e2e` job) into a required PR gate —
+    # the same mechanism that promoted Supabase RLS tests into `all` (#517)
+    # and the import-cycle ratchet (#808).
+    #
+    # ── 2026-07-30: THIS JOB NO LONGER TOUCHES PRODUCTION ──────────────────
+    # It used to run `npm run seed:baseball:ci` with the production Supabase URL
+    # and service-role key in its env, on every pull request. It now stands up a
+    # throwaway Supabase stack on the runner
+    # (.github/actions/local-supabase-stack) and seeds that instead.
+    #
+    # Three consequences worth knowing:
+    #
+    # 1. NO SECRETS ARE NEEDED, so the readiness-check / fail-loud steps that
+    #    used to sit here are gone, and the fork + Dependabot `if:` skip went
+    #    with them. That skip existed only because external PRs "structurally
+    #    cannot supply these secrets" — with the secrets gone the reason is gone,
+    #    and a required gate that silently skips on forks was a hole in it.
+    #
+    # 2. THE STEP ORDER MATTERS. `supabase start` must run BEFORE `npm run
+    #    build`, because Next.js inlines NEXT_PUBLIC_* at build time — a build
+    #    made before the local URL exists would ship the old value into the
+    #    client bundle and the smoke run would authenticate against it.
+    #
+    # 3. IT TESTS THIS PR'S SCHEMA, not production's. `supabase start` applies
+    #    everything under supabase/migrations/, so a migration that breaks a
+    #    smoke path now fails on the PR that introduces it.
+    #
+    # COST NOTE: this doubles Playwright-browser-install + a full `npm run
+    # build` on every push to main, on top of the existing next-build, and adds
+    # ~1-2min of `supabase start` — a real, ongoing CI-minutes tradeoff.
+    runs-on: ubuntu-latest
+    # 45, not 30. Measured on this branch: a CLEAN run is ~17 min (supabase start
+    # ~1m45s, build ~9-10 min under container contention, seed ~1 min, the smoke
+    # itself ~1m30s). A run where the smoke FAILS costs ~24 min, because every spec
+    # retries twice — which left only ~6 min of head-room against 30.
+    #
+    # That head-room is what produces a diagnosable failure. When the JOB timeout
+    # fires first, GitHub cancels the job outright and the `if: always()`
+    # report-upload step never runs: exactly how #953 produced three consecutive
+    # `cancelled` runs with nothing to debug from (see the note in
+    # playwright.yml's `e2e` job). A red run that uploads its Playwright report is
+    # worth far more than a cancelled one that finishes 15 minutes sooner.
+    timeout-minutes: 45
+    env:
+      # NOT secrets, and deliberately not read from any. The seed script creates
+      # exactly these two accounts on the local stack with exactly these values
+      # (scripts/seed-baseball-demo.ts — DEMO_COACH_EMAIL / DEMO_PLAYER_EMAIL /
+      # DEMO_PASSWORD, whose own header names this as the intended wiring). They
+      # are credentials for a database that is destroyed when the job ends.
+      E2E_BASEBALL_COACH_EMAIL: demo-coach@baseballhelmdemo.com
+      E2E_BASEBALL_COACH_PASSWORD: BaseballDemo2026
+      E2E_BASEBALL_PLAYER_EMAIL: demo-player@baseballhelmdemo.com
+      E2E_BASEBALL_PLAYER_PASSWORD: BaseballDemo2026
+      NODE_OPTIONS: --max-old-space-size=8192
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      # Everything below this point talks to the runner's own Postgres. See the
+      # action for why, and for the loopback assertion it ends with.
+      - name: Start local Supabase stack
+        uses: ./.github/actions/local-supabase-stack
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # MUST come after the stack is up: Next.js inlines NEXT_PUBLIC_* into the
+      # client bundle at build time, so building first would bake in whatever the
+      # env held before the local URL existed. No .next/cache here (2026-09-23):
+      # the dedicated next-smoke cache was dropped to keep the repository's
+      # 10 GB cache budget for ci.yml's Next build.
+      - name: Build (so dev server boots fast)
+        run: npm run build
+
+      # No --allow-prod (see package.json). Against a loopback URL the target
+      # guard allows the write with no flag; if production credentials ever leak
+      # back into this job's env, the guard refuses instead of seeding prod.
+      - name: Seed BaseballHelm CI accounts into the local stack
+        run: npm run seed:baseball:ci
+
+      - name: Run BaseballHelm mandatory smoke (blocking)
+        run: |
+          npx playwright test \
+            --project=chromium \
+            --project=baseball-coach \
+            --project=baseball-player \
+            e2e/baseball-onboarding-smoke.spec.ts \
+            e2e/baseball-smoke.spec.ts
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: baseball-auth-smoke-playwright-report
+          path: playwright-report/
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - name: Stop local Supabase stack
+        if: always()
+        run: supabase stop || true

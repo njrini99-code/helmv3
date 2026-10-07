@@ -53,10 +53,10 @@ describe('FairwayDayStrip — timezone-aware density bucketing', () => {
     );
 
     expect(
-      screen.getByRole('button', { name: 'Monday, July 20 — 1 event' }),
+      screen.getByRole('button', { name: 'Monday, July 20, 1 event' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Tuesday, July 21 — no events' }),
+      screen.getByRole('button', { name: 'Tuesday, July 21, no events' }),
     ).toBeInTheDocument();
   });
 
@@ -77,10 +77,10 @@ describe('FairwayDayStrip — timezone-aware density bucketing', () => {
       />,
     );
     expect(
-      screen.getByRole('button', { name: 'Monday, July 20 — 1 event' }),
+      screen.getByRole('button', { name: 'Monday, July 20, 1 event' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Tuesday, July 21 — no events' }),
+      screen.getByRole('button', { name: 'Tuesday, July 21, no events' }),
     ).toBeInTheDocument();
 
     rerender(
@@ -94,10 +94,10 @@ describe('FairwayDayStrip — timezone-aware density bucketing', () => {
       />,
     );
     expect(
-      screen.getByRole('button', { name: 'Monday, July 20 — no events' }),
+      screen.getByRole('button', { name: 'Monday, July 20, no events' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Tuesday, July 21 — 1 event' }),
+      screen.getByRole('button', { name: 'Tuesday, July 21, 1 event' }),
     ).toBeInTheDocument();
   });
 
@@ -123,10 +123,10 @@ describe('FairwayDayStrip — timezone-aware density bucketing', () => {
         onSelectDate={vi.fn()}
       />,
     );
-    expect(screen.getByRole('button', { name: 'Monday, July 20 — no events' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Tuesday, July 21 — 1 event' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Wednesday, July 22 — 1 event' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Thursday, July 23 — 1 event' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Friday, July 24 — no events' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Monday, July 20, no events' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tuesday, July 21, 1 event' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Wednesday, July 22, 1 event' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Thursday, July 23, 1 event' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Friday, July 24, no events' })).toBeInTheDocument();
   });
 });

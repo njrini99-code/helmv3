@@ -41,6 +41,8 @@ import { writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { linkedQueryArgs, parseQueryRows } from './query-json.mjs';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..', '..');
 const SUPABASE_CLI = resolve(REPO_ROOT, 'node_modules/.bin/supabase');
@@ -99,16 +101,14 @@ function parseArgs(argv) {
 }
 
 function queryLinked(sql) {
-  const raw = execFileSync(
-    SUPABASE_CLI,
-    ['db', 'query', '--linked', '--output-format', 'json', sql],
-    { cwd: REPO_ROOT, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 },
-  );
-  const parsed = JSON.parse(raw);
-  if (!parsed || !Array.isArray(parsed.rows)) {
-    throw new Error(`unexpected response shape from 'supabase db query --linked': ${raw.slice(0, 200)}`);
-  }
-  return parsed.rows;
+  // linkedQueryArgs pins `--agent no`: outside an agent session the CLI
+  // prints a bare array, not `{rows}`, and this threw on every human run.
+  const raw = execFileSync(SUPABASE_CLI, linkedQueryArgs(sql), {
+    cwd: REPO_ROOT,
+    encoding: 'utf-8',
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  return parseQueryRows(raw);
 }
 
 function sqlLiteral(value) {

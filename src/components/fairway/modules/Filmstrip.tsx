@@ -53,7 +53,7 @@ const HoleShotPath = dynamic(
   () => import('@/components/golf/coachhelm/v3/HoleShotPath').then((mod) => mod.HoleShotPath),
   {
     ssr: false,
-    loading: () => <Skeleton className="h-28 w-7 rounded-2xl md:h-32 md:w-8" />,
+    loading: () => <Skeleton className="h-28 w-7 rounded-fw-sm md:h-32 md:w-8" />,
   },
 );
 
@@ -67,7 +67,7 @@ const RING_TONE: Record<HoleTone, string> = {
   par: 'ring-1 ring-warm-300/70',
   birdie: 'ring-2 ring-accent-500',
   bogey: 'ring-2 ring-fw-warning',
-  double: 'ring-2 ring-danger',
+  double: 'ring-2 ring-fw-danger',
 };
 
 // 18 columns at the canonical 70ms sibling stagger would take the reveal
@@ -151,7 +151,7 @@ export function Filmstrip({ holes, activeHole, onScrub, shotsByHole }: Filmstrip
                     active={isActive}
                   />
                 </m.div>
-                <span className="font-fw-mono text-eyebrow font-normal text-text-tertiary tabular-nums">
+                <span className="font-fw-mono text-caption font-normal text-text-tertiary tabular-nums">
                   {hole.n}
                 </span>
               </PressTarget>

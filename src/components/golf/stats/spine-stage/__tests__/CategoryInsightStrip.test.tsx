@@ -85,6 +85,22 @@ describe('CategoryInsightStrip', () => {
     expect(screen.getByText('+0.8')).toBeInTheDocument();
   });
 
+  it('lets a long recommendation wrap inside the card instead of running off the edge (390px)', () => {
+    const long =
+      'This is a recovery pattern, not a swing pattern: on the second round of a back-to-back day, plan the first three holes before you tee off.';
+    const { container } = render(
+      <CategoryInsightStrip insights={[{ title: 'Back-to-back rounds', strokeImpact: -4.3, recommendation: long }]} />,
+    );
+    const row = container.querySelector('[data-slot="category-insight-row"]');
+    // The row grid is minmax(0, 1fr): an implicit `auto` track sized itself
+    // to the unwrapped line and pushed both rows past the card edge.
+    expect(row?.parentElement?.className).toMatch(/\bgrid-cols-1\b/);
+    const fix = screen.getByText(long, { exact: false });
+    // Whole sentence in the DOM, wrapping — no single-line truncation.
+    expect(fix.textContent).toContain(long);
+    expect(fix.className).not.toMatch(/\btruncate\b|\bwhitespace-nowrap\b/);
+  });
+
   it('omits the recommendation line when none is given', () => {
     const { container } = render(
       <CategoryInsightStrip insights={[{ title: 'No fix yet', strokeImpact: -0.4 }]} />,

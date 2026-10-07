@@ -26,7 +26,7 @@
 import { useState } from 'react';
 
 import { Button, Surface, Switch, ViewHeader } from '@/components/fairway';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmAlert } from '@/components/fairway/overlays/ConfirmAlert';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import {
   setAllChannels,
@@ -104,6 +104,15 @@ export function FairwaySettingsNotifications({
   const [pendingKeys, setPendingKeys] = useState<Set<string>>(new Set());
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
+  // DATA-09 — a bulk write replaces the WHOLE prefs object server-side, and a
+  // single-cell write is a read-modify-write of the same JSONB. Letting them
+  // overlap means whichever lands last silently wins. So: every cell is locked
+  // while a bulk write is pending, and the bulk actions are locked while any
+  // cell write is pending.
+  const bulkPending = pendingKeys.has(BULK_KEY);
+  const cellPending = [...pendingKeys].some((k) => k !== BULK_KEY && k !== 'quiet');
+  const bulkBlocked = bulkPending || cellPending;
+
   function setPending(key: string, pending: boolean) {
     setPendingKeys((current) => {
       const next = new Set(current);
@@ -119,16 +128,23 @@ export function FairwaySettingsNotifications({
     enabled: boolean,
   ) {
     const key = `${cat}:${channel}`;
-    const current = prefs[cat] ?? DEFAULT_CHANNELS;
-    const next: ChannelPref = { ...current, [channel]: enabled };
-    const previousPrefs = prefs;
+    // DATA-08 — both the optimistic write and the rollback touch ONLY this
+    // one cell, read from the latest state. Snapshotting `prefs` (the closure
+    // copy) made a failed toggle restore the whole matrix as it was when the
+    // toggle started, wiping any other toggle that succeeded meanwhile —
+    // including a sibling channel in the same category.
+    const setCell = (value: boolean) =>
+      setPrefs((currentPrefs) => ({
+        ...currentPrefs,
+        [cat]: { ...(currentPrefs[cat] ?? DEFAULT_CHANNELS), [channel]: value },
+      }));
 
-    setPrefs((currentPrefs) => ({ ...currentPrefs, [cat]: next }));
+    setCell(enabled);
     setPending(key, true);
 
     const result = await setCategoryChannel(cat, channel, enabled);
     if (!result.ok) {
-      setPrefs(previousPrefs);
+      setCell(!enabled);
       fairwayToast.danger(result.error || 'Failed to save notification preference');
     }
     setPending(key, false);
@@ -158,7 +174,7 @@ export function FairwaySettingsNotifications({
     successMessage: string,
     failureMessage: string,
   ) {
-    if (pendingKeys.has(BULK_KEY)) return;
+    if (bulkBlocked) return;
     const previousPrefs = prefs;
 
     setPrefs(nextPrefs);
@@ -207,7 +223,7 @@ export function FairwaySettingsNotifications({
       <ViewHeader
         eyebrow="Settings"
         title="Notifications"
-        description="Choose how each kind of update reaches you. Quiet mode silences everything except round-review-ready and coach-assigned goals."
+        description="Choose how each kind of update reaches you."
       />
 
       {/* ── Quiet mode — the one master switch ──────────────────────────────── */}
@@ -238,7 +254,7 @@ export function FairwaySettingsNotifications({
           <div className="flex flex-col gap-1">
             {/* Eyebrow, not a display h2 — matches the settings vocabulary the
                 rest of the surfaces moved to (2026-07-25). */}
-            <h2 className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
+            <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
               Per-update preferences
             </h2>
             <p className="font-fw-sans text-caption text-text-secondary">
@@ -250,7 +266,7 @@ export function FairwaySettingsNotifications({
               variant="secondary"
               size="sm"
               onClick={() => muteChannel('push')}
-              disabled={pendingKeys.has(BULK_KEY)}
+              disabled={bulkBlocked}
             >
               Mute push
             </Button>
@@ -258,7 +274,7 @@ export function FairwaySettingsNotifications({
               variant="secondary"
               size="sm"
               onClick={() => muteChannel('email')}
-              disabled={pendingKeys.has(BULK_KEY)}
+              disabled={bulkBlocked}
             >
               Mute email
             </Button>
@@ -266,7 +282,7 @@ export function FairwaySettingsNotifications({
               variant="ghost"
               size="sm"
               onClick={() => setResetConfirmOpen(true)}
-              disabled={pendingKeys.has(BULK_KEY)}
+              disabled={bulkBlocked}
             >
               Reset defaults
             </Button>
@@ -282,13 +298,13 @@ export function FairwaySettingsNotifications({
 
           {/* Column header */}
           <div className="grid grid-cols-12 items-center gap-2 border-b border-border-subtle px-4 py-3 sm:px-5">
-            <span className="col-span-6 font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
+            <span className="col-span-6 font-fw-sans text-caption font-medium text-text-tertiary">
               Update
             </span>
             {CHANNELS.map((c) => (
               <span
                 key={c.key}
-                className="col-span-2 text-center font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary"
+                className="col-span-2 text-center font-fw-sans text-caption font-medium text-text-tertiary"
               >
                 {c.label}
               </span>
@@ -300,7 +316,7 @@ export function FairwaySettingsNotifications({
               <section key={group.label} aria-labelledby={`notification-group-${group.label}`}>
                 <h3
                   id={`notification-group-${group.label}`}
-                  className="border-b border-border-subtle bg-surface-sunken/30 px-4 py-2 font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary sm:px-5"
+                  className="border-b border-border-subtle bg-surface-sunken/30 px-4 py-2 sm:px-5 font-fw-sans text-body-sm font-semibold text-text-primary"
                 >
                   {group.label}
                 </h3>
@@ -336,7 +352,7 @@ export function FairwaySettingsNotifications({
                             <Switch
                               checked={channels[c.key]}
                               onCheckedChange={(enabled) => handleToggle(cat, c.key, enabled)}
-                              disabled={pendingKeys.has(`${cat}:${c.key}`)}
+                              disabled={bulkPending || pendingKeys.has(`${cat}:${c.key}`)}
                               aria-label={`${CATEGORY_LABEL[cat]} · ${c.label}`}
                             />
                           </div>
@@ -353,14 +369,14 @@ export function FairwaySettingsNotifications({
 
       {/* Error prevention: Reset defaults discards every per-update channel
           choice, so gate it behind an explicit confirm. */}
-      <ConfirmDialog
+      <ConfirmAlert
         open={resetConfirmOpen}
         title="Reset notification preferences?"
         message="This replaces every per-update channel choice with the defaults (in-app on, push and email off). This can't be undone."
         confirmLabel="Reset to defaults"
         cancelLabel="Cancel"
         variant="warning"
-        isLoading={pendingKeys.has(BULK_KEY)}
+        isLoading={bulkPending}
         onConfirm={() => {
           setResetConfirmOpen(false);
           void resetDefaults();

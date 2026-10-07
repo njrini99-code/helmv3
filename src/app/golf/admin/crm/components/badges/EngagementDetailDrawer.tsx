@@ -249,7 +249,7 @@ export function EngagementDetailDrawer({
                   <div>
                     <span
                       className={cn(
-                        'inline-flex items-center gap-1 text-eyebrow font-medium px-2 py-0.5 rounded-full border',
+                        'inline-flex items-center gap-1 text-caption font-medium px-2 py-0.5 rounded-full border',
                         tone.pillClass,
                       )}
                     >
@@ -267,25 +267,25 @@ export function EngagementDetailDrawer({
 
                 <dl className="mt-4 grid grid-cols-3 gap-3 text-center">
                   <div className="rounded-fw-sm bg-surface-sunken/70 px-2 py-2">
-                    <dt className="text-eyebrow uppercase tracking-wider text-text-tertiary">
+                    <dt className="text-caption text-text-tertiary">
                       Opens
                     </dt>
                     <dd className="text-lg font-semibold text-text-primary tabular-nums">
                       {engagement.opens_90d}
                     </dd>
-                    <dd className="text-eyebrow text-text-tertiary">last 90d</dd>
+                    <dd className="text-caption text-text-tertiary">last 90d</dd>
                   </div>
                   <div className="rounded-fw-sm bg-surface-sunken/70 px-2 py-2">
-                    <dt className="text-eyebrow uppercase tracking-wider text-text-tertiary">
+                    <dt className="text-caption text-text-tertiary">
                       Clicks
                     </dt>
                     <dd className="text-lg font-semibold text-text-primary tabular-nums">
                       {engagement.clicks_90d}
                     </dd>
-                    <dd className="text-eyebrow text-text-tertiary">last 90d</dd>
+                    <dd className="text-caption text-text-tertiary">last 90d</dd>
                   </div>
                   <div className="rounded-fw-sm bg-surface-sunken/70 px-2 py-2">
-                    <dt className="text-eyebrow uppercase tracking-wider text-text-tertiary">
+                    <dt className="text-caption text-text-tertiary">
                       Last event
                     </dt>
                     <dd className="text-sm font-semibold text-text-primary">
@@ -304,7 +304,7 @@ export function EngagementDetailDrawer({
                   <p className="text-sm text-text-primary leading-relaxed">
                     {explainer}
                   </p>
-                  <p className="mt-2 text-eyebrow text-text-tertiary">
+                  <p className="mt-2 text-caption text-text-tertiary">
                     Score uses a 14-day half-life decay over the last 90 days
                     of email events. Hot ≥ 60, Warm ≥ 25, Cold &lt; 25.
                   </p>
@@ -379,21 +379,21 @@ function EventRow({ event }: EventRowProps) {
         <div className="flex items-center gap-2 flex-wrap">
           <span
             className={cn(
-              'inline-flex items-center text-eyebrow font-medium px-1.5 py-0.5 rounded-full border',
+              'inline-flex items-center text-caption font-medium px-1.5 py-0.5 rounded-full border',
               tone,
             )}
           >
             {label}
           </span>
           {recipient && (
-            <span className="text-eyebrow text-text-tertiary truncate">
+            <span className="text-caption text-text-tertiary truncate">
               {recipient}
             </span>
           )}
         </div>
       </div>
       <span
-        className="text-eyebrow text-text-tertiary tabular-nums flex-shrink-0"
+        className="text-caption text-text-tertiary tabular-nums flex-shrink-0"
         title={absolute}
       >
         {rel}

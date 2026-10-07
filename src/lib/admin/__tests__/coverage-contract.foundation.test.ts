@@ -222,7 +222,16 @@ describe('global tripwire', () => {
     ).not.toThrow();
   });
 
-  it('total wrapped-and-valid action count across the discovered area is exactly 436', () => {
+  // A FLOOR, not an exact count (2026-09-23). The invariant that matters —
+  // every discovered export is wrapped with a valid FeatureKey — is the test
+  // above, and it is exhaustive. This one guards against DISCOVERY silently
+  // shrinking (a reorganized directory, a lost 'use server'), which a floor
+  // catches. As an exact number it collided whenever two open PRs each added
+  // an action ("expected 430 to be 429"): each PR bumped it for itself, and
+  // the second to merge went red on main's count. Adding actions never needs
+  // an edit here; removing enough of them to cross the floor is a deliberate
+  // change that should lower it with a note.
+  it('total wrapped-and-valid action count across the discovered area stays above its floor', () => {
     const golfActionFiles = discoverGolfActionFiles();
     let total = 0;
 
@@ -418,6 +427,8 @@ describe('global tripwire', () => {
     // round-review narrative action — withAdminObserved-wrapped with
     // feature `round_review_ai`, gated behind
     // `coachhelm_round_review_narrative` (default off). Total 435 -> 436.
-    expect(total).toBe(436);
+    // 2026-09-23: exact count (436) replaced by a floor — see the note on
+    // this test. The history above stays as the record of what moved it.
+    expect(total).toBeGreaterThanOrEqual(425);
   });
 });

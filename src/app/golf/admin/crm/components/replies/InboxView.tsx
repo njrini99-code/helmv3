@@ -206,7 +206,7 @@ export function InboxView({ onCoachClick }: InboxViewProps = {}) {
                         {r.subject && (
                           <p className="text-xs text-text-secondary truncate">{r.subject}</p>
                         )}
-                        <p className="text-eyebrow text-text-tertiary mt-0.5">
+                        <p className="text-caption text-text-tertiary mt-0.5">
                           {relTime(r.received_at)}
                         </p>
                       </Button>
@@ -247,7 +247,7 @@ export function InboxView({ onCoachClick }: InboxViewProps = {}) {
                       <h4 className="text-sm font-semibold text-text-primary">
                         {selection.task.title}
                       </h4>
-                      <p className="text-eyebrow text-text-tertiary mt-0.5">
+                      <p className="text-caption text-text-tertiary mt-0.5">
                         Due {relTime(selection.task.due_at)} · {selection.task.priority}
                       </p>
                     </div>
@@ -299,7 +299,7 @@ export function InboxView({ onCoachClick }: InboxViewProps = {}) {
                         <p className="text-sm font-medium text-text-primary truncate">
                           {t.title}
                         </p>
-                        <p className="text-eyebrow text-text-tertiary mt-0.5">
+                        <p className="text-caption text-text-tertiary mt-0.5">
                           {t.due_at ? `Due ${relTime(t.due_at)}` : 'No due date'} · {t.priority}
                         </p>
                       </Button>

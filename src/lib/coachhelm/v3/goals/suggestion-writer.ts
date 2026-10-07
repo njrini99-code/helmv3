@@ -23,6 +23,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isMetricId, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { isStandingTourComparable } from '@/lib/coachhelm/v3/standing/tour-basis';
+import { findMetric } from '@/lib/coachhelm/focus-areas/catalog';
 
 /**
  * One row from `golf_player_standing` plus the metric direction we need
@@ -174,6 +175,7 @@ export function selectSuggestionsForPlayer(input: SelectionInput): SuggestionDra
       suggested_target_value: computeTargetValue({
         playerValue: row.player_value,
         pgaValue: row.pga_value,
+        metricId: row.metric_id,
       }),
       severity,
     });
@@ -189,12 +191,49 @@ export function selectSuggestionsForPlayer(input: SelectionInput): SuggestionDra
 }
 
 /**
- * Midpoint heuristic: aim halfway between current player value and
- * PGA baseline. Rounded to 4dp to keep numeric storage tidy.
+ * v3 metric id -> focus-area catalog key whose `improveStep` bounds one goal
+ * window's realistic move (NUM-36). Metrics with no catalog counterpart (SG,
+ * putt make % by distance, miss bias, penalties, pressure deltas) keep the
+ * plain midpoint.
  */
-export function computeTargetValue(args: { playerValue: number; pgaValue: number }): number {
-  const t =
-    args.playerValue + (args.pgaValue - args.playerValue) * DEFAULT_TARGET_CLOSURE_PCT;
+const STEP_CATALOG_KEY: Partial<Record<MetricId, string>> = {
+  scrambling_pct_sand: 'sand_save_pct',
+  scrambling_pct_rough: 'scrambling_pct',
+  scrambling_pct_fairway: 'scrambling_pct',
+  gir_pct: 'gir_pct',
+  approach_proximity_50_125ft: 'proximity',
+  approach_proximity_125_175ft: 'proximity',
+  approach_proximity_175_plus_ft: 'proximity',
+  scoring_par_3: 'par3_avg',
+  scoring_par_4: 'par4_avg',
+  scoring_par_5: 'par5_avg',
+};
+
+/** The per-window improvement step for a v3 metric, or null when uncapped. */
+export function improveStepForMetric(metricId: string | null | undefined): number | null {
+  if (!metricId || !isMetricId(metricId)) return null;
+  const key = STEP_CATALOG_KEY[metricId];
+  if (!key) return null;
+  const step = findMetric(key)?.improveStep;
+  return typeof step === 'number' && step > 0 ? step : null;
+}
+
+/**
+ * Midpoint heuristic: aim halfway between current player value and
+ * PGA baseline, then cap the move at the metric's catalog `improveStep`
+ * when one exists (NUM-36: a 5% sand scrambler was told to aim for 28%
+ * because the Tour midpoint is 23 points away). Pure. Rounded to 4dp to
+ * keep numeric storage tidy.
+ */
+export function computeTargetValue(args: {
+  playerValue: number;
+  pgaValue: number;
+  metricId?: string | null;
+}): number {
+  const gap = (args.pgaValue - args.playerValue) * DEFAULT_TARGET_CLOSURE_PCT;
+  const step = improveStepForMetric(args.metricId);
+  const move = step == null ? gap : Math.sign(gap) * Math.min(Math.abs(gap), step);
+  const t = args.playerValue + move;
   return Math.round(t * 10_000) / 10_000;
 }
 

@@ -98,6 +98,7 @@ CREATE TABLE IF NOT EXISTS "public"."golf_announcements" (
     "created_by" "uuid",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
+    "is_test" boolean DEFAULT false NOT NULL,
     CONSTRAINT "golf_announcements_urgency_check" CHECK (("urgency" = ANY (ARRAY['low'::"text", 'normal'::"text", 'high'::"text", 'urgent'::"text"])))
 );
 
@@ -659,7 +660,8 @@ CREATE TABLE IF NOT EXISTS "public"."golf_documents" (
     "current_version_id" "uuid",
     "version_count" integer DEFAULT 1,
     "folder" "text",
-    "updated_at" timestamp with time zone DEFAULT "now"()
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "is_test" boolean DEFAULT false NOT NULL
 );
 
 ALTER TABLE "public"."golf_documents" OWNER TO "postgres";
@@ -1440,7 +1442,8 @@ CREATE TABLE IF NOT EXISTS "public"."golf_players" (
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
     "profile_complete" boolean DEFAULT false,
-    "anonymized_at" timestamp with time zone
+    "anonymized_at" timestamp with time zone,
+    "is_test" boolean DEFAULT false NOT NULL
 );
 
 ALTER TABLE "public"."golf_players" OWNER TO "postgres";
@@ -1592,6 +1595,7 @@ CREATE TABLE IF NOT EXISTS "public"."golf_qualifiers" (
     "target_tournament_id" "uuid",
     "selection_state" "text" DEFAULT 'open'::"text" NOT NULL,
     "num_rounds" integer DEFAULT 1 NOT NULL,
+    "is_test" boolean DEFAULT false NOT NULL,
     CONSTRAINT "golf_qualifiers_check" CHECK ((("selection_slots_coach_pick" >= 0) AND ("selection_slots_coach_pick" <= "selection_slots_total"))),
     CONSTRAINT "golf_qualifiers_num_rounds_range" CHECK ((("num_rounds" >= 1) AND ("num_rounds" <= 50))),
     CONSTRAINT "golf_qualifiers_selection_slots_total_check" CHECK ((("selection_slots_total" >= 1) AND ("selection_slots_total" <= 12))),
@@ -1820,7 +1824,8 @@ CREATE TABLE IF NOT EXISTS "public"."golf_rounds" (
     "coachhelm_analyzed_at" timestamp with time zone,
     "coachhelm_failed_at" timestamp with time zone,
     "coachhelm_failure_reason" "text",
-    "tee_id" "uuid"
+    "tee_id" "uuid",
+    "is_test" boolean DEFAULT false NOT NULL
 );
 
 ALTER TABLE "public"."golf_rounds" OWNER TO "postgres";
@@ -1952,7 +1957,8 @@ CREATE TABLE IF NOT EXISTS "public"."golf_tasks" (
     "reminder_sent" boolean DEFAULT false,
     "category" "text",
     "recurrence_rule" "text",
-    "parent_task_id" "uuid"
+    "parent_task_id" "uuid",
+    "is_test" boolean DEFAULT false NOT NULL
 );
 
 ALTER TABLE "public"."golf_tasks" OWNER TO "postgres";
@@ -2067,6 +2073,7 @@ CREATE TABLE IF NOT EXISTS "public"."golf_teams" (
     "timezone" "text" DEFAULT 'America/New_York'::"text" NOT NULL,
     "gender" "text" DEFAULT 'mens'::"text" NOT NULL,
     "season_active" boolean DEFAULT true NOT NULL,
+    "is_test" boolean DEFAULT false NOT NULL,
     CONSTRAINT "golf_teams_gender_check" CHECK (("gender" = ANY (ARRAY['mens'::"text", 'womens'::"text"])))
 );
 
@@ -2128,6 +2135,7 @@ CREATE TABLE IF NOT EXISTS "public"."golf_travel_itineraries" (
     "created_by" "uuid",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
+    "is_test" boolean DEFAULT false NOT NULL,
     CONSTRAINT "golf_travel_itineraries_transportation_type_check" CHECK (("transportation_type" = ANY (ARRAY['bus'::"text", 'van'::"text", 'flight'::"text", 'carpool'::"text", 'other'::"text"])))
 );
 

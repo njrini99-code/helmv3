@@ -228,7 +228,7 @@ function PickerBody({
                       aria-hidden
                       className={cn(
                         'grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition-colors',
-                        selected ? cn('border-transparent', 'bg-accent-650 text-text-on-accent') : 'border-border-strong text-transparent',
+                        selected ? cn('border-transparent', 'bg-accent-fill text-text-on-accent-fill') : 'border-border-strong text-transparent',
                       )}
                     >
                       <Check className="h-3.5 w-3.5" />

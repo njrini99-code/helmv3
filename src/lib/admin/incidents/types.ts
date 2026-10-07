@@ -38,7 +38,7 @@
 
 import type { RcaCategory } from '@/lib/admin/rca-category';
 import type { IncidentClass } from '@/lib/admin/incident-classification';
-import type { TriageSeverity } from '@/lib/admin/data/triage';
+import type { AffectedPerson, TriageSeverity } from '@/lib/admin/data/triage';
 
 // ---------------------------------------------------------------------------
 // Sources
@@ -521,6 +521,18 @@ export interface UnifiedIncident {
    * zero-means-zero. The flag keeps the card from claiming the wrong one.
    */
   affectedUsersKnown: boolean;
+  /**
+   * WHO, not just how many — the union of the app contributors' identities,
+   * capped at `MAX_AFFECTED_PEOPLE`. Empty when every contributor is
+   * Sentry-origin (its API returns a `userCount` and no identities) or when
+   * nothing captured an identity at all, which is the same "no KNOWN identity"
+   * state `affectedUsersKnown` describes.
+   *
+   * `affectedUsers` remains the count and can legitimately exceed
+   * `affectedPeople.length` at the cap — render "+N more", never a shorter
+   * count.
+   */
+  affectedPeople: readonly AffectedPerson[];
 
   sources: readonly IncidentSourceEvidence[];
   /** Independent observers that SAW it. Not a confidence score. */

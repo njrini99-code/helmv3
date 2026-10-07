@@ -95,18 +95,18 @@ function StepPreviewPane({
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border-subtle bg-surface-sunken/60">
         <span
           className={cn(
-            'px-2 py-0.5 rounded-full text-eyebrow font-bold uppercase tracking-wider',
+            'px-2 py-0.5 rounded-full text-caption font-bold',
             fmt.badge,
           )}
         >
           {fmt.label}
         </span>
-        <span className="ml-auto text-eyebrow text-text-tertiary">
+        <span className="ml-auto text-caption text-text-tertiary">
           rendered for {PREVIEW_COACH.name}
         </span>
       </div>
       <div className="px-3 py-2.5 border-b border-border-subtle">
-        <p className="text-eyebrow uppercase tracking-wider text-text-tertiary mb-0.5">Subject</p>
+        <p className="text-caption text-text-tertiary mb-0.5">Subject</p>
         <p className="text-sm font-semibold text-text-primary break-words">
           {mergedSubject || <span className="text-text-tertiary italic">No subject</span>}
         </p>
@@ -346,7 +346,7 @@ export function SequenceStepEditor({
             className="w-full flex items-center justify-between px-2 py-2 min-h-0 text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-surface transition-colors"
           >
             <span className="flex items-center gap-1.5">
-              <IconEye size={13} className="text-accent-600" aria-hidden />
+              <IconEye size={13} className="text-accent-ink" aria-hidden />
               Preview
             </span>
             <IconChevronDown

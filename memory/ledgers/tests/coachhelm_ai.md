@@ -329,7 +329,7 @@
   echo). `getPlayerAttributionReadouts`: flag off → `null`, no DB call;
   access denied (`verifyPlayerAccess`) → `null` without ever calling the
   loader; a failed read → `null`; rows found → keyed by `insight_id`.
-- New: `src/test/golf/components/AttributionReadout.test.tsx` (5) — the
+- New: `src/test/golf/components/AttributionReadout.test.tsx` (5) — the (this file was removed in the 2026-09-24 golf audit dead-code sweep)
   required "a failed read renders nothing" coverage at the component
   layer: a `null` prop renders an empty DOM element. Plus: the `missing`
   state renders a quiet "Not attributed yet" note (a real, non-null

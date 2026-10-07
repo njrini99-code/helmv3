@@ -8,7 +8,7 @@ import { FairwayNewQualifier } from '@/components/fairway/pages/qualifiers/Fairw
 import { FeatureUnavailable } from '@/components/fairway';
 
 export const metadata: Metadata = {
-  title: 'Create Qualifier | Helm Sports',
+  title: 'Create Qualifier',
   description: 'Create a new team qualifier for player selection',
 };
 

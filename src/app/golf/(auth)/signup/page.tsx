@@ -5,7 +5,8 @@ import { AuthHomeLink } from '../AuthHomeLink';
 import Image from 'next/image';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { GolfSignUpForm } from '@/components/auth/golf-sign-up-form';
 import { CoastalScene } from '@/components/golf/scenes/CoastalScene';
@@ -25,7 +26,7 @@ function SignInLink() {
   return (
     <Link
       href={loginHref}
-      className="text-primary-600 font-semibold hover:text-primary-500 transition-colors"
+      className="text-accent-ink font-semibold hover:text-accent-ink transition-colors"
     >
       Sign in
     </Link>
@@ -33,7 +34,7 @@ function SignInLink() {
 }
 
 export default function SignupPage() {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const router = useRouter();
   // Defer native detection to useEffect to avoid hydration mismatch.
   const [isNative, setIsNative] = useState(false);
@@ -179,7 +180,7 @@ export default function SignupPage() {
                     placeholder="Team code"
                     // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input on signup access-code gate
                     autoFocus
-                    className={`w-full h-12 px-4 rounded-xl border bg-surface text-text-primary placeholder:text-text-tertiary text-center text-lg tracking-widest font-medium focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition-all ${
+                    className={`w-full h-12 px-4 rounded-fw-sm border bg-surface text-text-primary placeholder:text-text-tertiary text-center text-lg tracking-widest font-medium focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition ${
                       codeError ? 'border-red-300 ring-2 ring-red-500/20' : 'border-border-subtle'
                     }`}
                   />
@@ -194,7 +195,7 @@ export default function SignupPage() {
                   // primary-700 (not -600): white text on primary-600 (#16a34a)
                   // is only 3.29:1 — below WCAG AA 4.5:1. primary-700 (#15803d)
                   // lands at ~5.0:1. Hover/active darken further to stay compliant.
-                  className="w-full h-12 rounded-xl bg-primary-700 text-white font-semibold hover:bg-primary-800 active:bg-primary-900 transition-colors"
+                  className="w-full h-12 rounded-fw-sm bg-primary-700 text-white font-semibold hover:bg-primary-800 active:bg-primary-900 transition-colors"
                 >
                   Continue
                 </Button>
@@ -210,14 +211,14 @@ export default function SignupPage() {
                   These two lines used to sit as bare text directly on the
                   painterly course illustration. On a phone the card ends
                   higher up the viewport, so they landed right on the trees —
-                  green `text-primary-600` links on green foliage, reported
+                  green `text-accent-ink` links on green foliage, reported
                   2026-08-20 as "the wording at the bottom you can't even
                   read". The panel gives them their own opaque ground instead
                   of relying on whatever pixel happens to be behind them. */}
-              <div className="mx-auto mt-5 sm:mt-6 w-fit max-w-full rounded-2xl bg-surface/95 px-4 py-3 shadow-sm ring-1 ring-border-subtle backdrop-blur-sm">
+              <div className="mx-auto mt-5 sm:mt-6 w-fit max-w-full rounded-card bg-surface/95 px-4 py-3 shadow-sm ring-1 ring-border-subtle backdrop-blur-sm">
               <p className="text-center text-text-secondary text-sm">
                 Already have an account?{' '}
-                <Suspense fallback={<Link href="/golf/login" className="text-primary-700 font-semibold hover:text-primary-600 transition-colors">Sign in</Link>}>
+                <Suspense fallback={<Link href="/golf/login" className="text-primary-700 font-semibold hover:text-accent-ink transition-colors">Sign in</Link>}>
                   <SignInLink />
                 </Suspense>
               </p>
@@ -236,7 +237,7 @@ export default function SignupPage() {
                 Not joining a team?{' '}
                 <Link
                   href="/golf/demo"
-                  className="text-primary-700 font-semibold hover:text-primary-600 transition-colors"
+                  className="text-primary-700 font-semibold hover:text-accent-ink transition-colors"
                 >
                   See a live demo
                 </Link>
@@ -255,7 +256,7 @@ export default function SignupPage() {
       {/* Skip to main content link for keyboard navigation */}
       <a
         href="#signup-form"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-modal focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-modal focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-accent-fill text-text-on-accent-fill px-4 py-2 rounded-fw-sm font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
       >
         Skip to signup form
       </a>
@@ -330,14 +331,14 @@ export default function SignupPage() {
           >
             <Suspense fallback={
               <div className="space-y-4 animate-pulse">
-                <div className="h-20 bg-surface-sunken rounded-xl" />
+                <div className="h-20 bg-surface-sunken rounded-fw-md" />
                 <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                  <div className="h-12 bg-surface-sunken rounded-xl" />
-                  <div className="h-12 bg-surface-sunken rounded-xl" />
+                  <div className="h-12 bg-surface-sunken rounded-fw-sm" />
+                  <div className="h-12 bg-surface-sunken rounded-fw-sm" />
                 </div>
-                <div className="h-12 bg-surface-sunken rounded-xl" />
-                <div className="h-12 bg-surface-sunken rounded-xl" />
-                <div className="h-12 bg-primary-400/20 rounded-xl" />
+                <div className="h-12 bg-surface-sunken rounded-fw-sm" />
+                <div className="h-12 bg-surface-sunken rounded-fw-sm" />
+                <div className="h-12 bg-primary-400/20 rounded-fw-sm" />
               </div>
             }>
               <GolfSignUpForm joinCode={joinCode} codeScope={codeScope} teamName={teamName} />
@@ -353,10 +354,10 @@ export default function SignupPage() {
         >
           {/* Same readability panel as the code gate: these lines sit over the
               painterly scene, and on a phone they land on the foliage. */}
-          <div className="mx-auto mt-5 sm:mt-6 w-fit max-w-full rounded-2xl bg-surface/95 px-4 py-3 shadow-sm ring-1 ring-border-subtle backdrop-blur-sm">
+          <div className="mx-auto mt-5 sm:mt-6 w-fit max-w-full rounded-card bg-surface/95 px-4 py-3 shadow-sm ring-1 ring-border-subtle backdrop-blur-sm">
             <p className="text-center text-text-secondary text-sm">
               Already have an account?{' '}
-              <Suspense fallback={<Link href="/golf/login" className="text-primary-700 font-semibold hover:text-primary-600 transition-colors">Sign in</Link>}>
+              <Suspense fallback={<Link href="/golf/login" className="text-primary-700 font-semibold hover:text-accent-ink transition-colors">Sign in</Link>}>
                 <SignInLink />
               </Suspense>
             </p>
@@ -366,7 +367,7 @@ export default function SignupPage() {
             <p className="text-center mt-3 sm:mt-4 text-text-secondary text-sm">
               <Link
                 href="/"
-                className="inline-flex items-center gap-1 hover:text-text-secondary transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-lg active:bg-surface-sunken"
+                className="inline-flex items-center gap-1 hover:text-text-secondary transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-fw-sm active:bg-surface-sunken"
               >
                 ← Back to HelmLabs
               </Link>
@@ -376,14 +377,14 @@ export default function SignupPage() {
           <div className="flex items-center justify-center gap-2 mt-2 sm:mt-3">
             <Link
               href="/privacy"
-              className="text-text-tertiary hover:text-text-secondary transition-colors text-xs px-3 py-3 -my-3 min-h-[44px] flex items-center rounded-lg active:bg-surface-sunken"
+              className="text-text-tertiary hover:text-text-secondary transition-colors text-xs px-3 py-3 -my-3 min-h-[44px] flex items-center rounded-fw-sm active:bg-surface-sunken"
             >
               Privacy
             </Link>
             <span className="text-text-tertiary" aria-hidden="true">·</span>
             <Link
               href="/terms"
-              className="text-text-tertiary hover:text-text-secondary transition-colors text-xs px-3 py-3 -my-3 min-h-[44px] flex items-center rounded-lg active:bg-surface-sunken"
+              className="text-text-tertiary hover:text-text-secondary transition-colors text-xs px-3 py-3 -my-3 min-h-[44px] flex items-center rounded-fw-sm active:bg-surface-sunken"
             >
               Terms
             </Link>

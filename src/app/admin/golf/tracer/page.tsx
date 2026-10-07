@@ -6,12 +6,13 @@ import {
   bridgeListFlightTraces,
   type FlightTraceRun,
 } from '@/app/admin/actions/golf-tracer';
-import { Surface, InlineNotice, Sparkline, StatStrip } from '@/components/fairway';
+import { Surface, Sparkline, StatStrip } from '@/components/fairway';
 import { PanelBoundary } from '../../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
 import { PanelAllClear } from '../../_components/PanelStates';
 import { KpiTile } from '../../_components/KpiTile';
 import { AutoRefresh } from '../../_components/AutoRefresh';
+import { DetailsDisclosure, TabHeader } from '../../_components/TabHeader';
 import { StuckRoundsPanel } from './StuckRoundsPanel';
 import { TracerPlayerList } from './TracerPlayerList';
 import { TracerIncidentRow } from './TracerIncidentRow';
@@ -31,15 +32,15 @@ export interface FlightTraceFetch {
 
 /**
  * `bridgeListFlightTraces` throws when `public.helm_debug_list_traces`
- * doesn't exist — true in production today: the flight recorder migration
- * (20260825200811_helm_flight_recorder.sql) is HELD, not yet applied
- * (supabase/migrations/HELD.md). It could also throw for an unrelated reason
- * (a revoked grant, a misconfigured admin client) that this thin action
- * layer can't distinguish from that one — so the held migration is
- * surfaced as the likely cause, not asserted as certain. Isolating the
- * failure here, instead of letting it reject inside the page's shared
- * `Promise.all`, keeps a missing migration from taking down the whole
- * Tracer page along with it.
+ * doesn't exist or the call otherwise fails (a revoked grant, a
+ * misconfigured admin client, etc.). The flight recorder migration
+ * (20260825200811_helm_flight_recorder.sql) was applied to production on
+ * 2026-08-26 (supabase/migrations/HELD.md) and verified live the same day,
+ * so a missing-migration cause is no longer the likely explanation for a
+ * throw here — this now surfaces the real error message rather than a
+ * pointer to a hold that has since been discharged. Isolating the failure
+ * here, instead of letting it reject inside the page's shared `Promise.all`,
+ * still keeps a genuine outage from taking down the whole Tracer page.
  */
 async function loadFlightTraces(): Promise<FlightTraceFetch> {
   try {
@@ -48,9 +49,7 @@ async function loadFlightTraces(): Promise<FlightTraceFetch> {
     const detail = err instanceof Error ? err.message : 'unknown error';
     return {
       traces: [],
-      unavailableReason:
-        `${detail} Most likely cause: migration 20260825200811 (Helm Flight ` +
-        'Recorder) is not applied to production yet — see supabase/migrations/HELD.md.',
+      unavailableReason: `Could not load flight traces: ${detail}`,
     };
   }
 }
@@ -123,7 +122,7 @@ async function TracerBody({ initialTraceId }: { initialTraceId: string | null })
         <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">Daily activity (30d)</h2>
         <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex items-center justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-medium text-warm-600">Rounds started / day</p>
               <p className="font-fw-mono text-lg font-semibold tabular-nums text-warm-900">
                 {dailyRounds.at(-1) ?? 0}
@@ -132,7 +131,7 @@ async function TracerBody({ initialTraceId }: { initialTraceId: string | null })
             <Sparkline data={dailyRounds} goodDirection="up" label="Rounds started per day" width={100} height={28} />
           </div>
           <div className="flex items-center justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-medium text-warm-600">Tracer errors / day</p>
               <p className="font-fw-mono text-lg font-semibold tabular-nums text-warm-900">
                 {dailyErrors.at(-1) ?? 0}
@@ -196,17 +195,28 @@ export default async function TracerPage({
   return (
     <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
-      <InlineNotice tone="info" title="Round diagnostics and fixes live here">
-        Click any player below to see their rounds; expand a round to inspect
-        its data-quality checks and run a fix (recalculate totals, GIR,
-        strokes gained, refresh the stats cache, or remove a stuck round).
-        These incidents are <span className="font-fw-mono">admin_events</span>{' '}
-        rows, so marking one resolved happens in{' '}
-        <Link href="/admin/errors" className="underline">
-          Errors
-        </Link>
-        . The hole-by-hole shot browser has no Bridge equivalent yet.
-      </InlineNotice>
+      {/* One-line purpose, then the how-to behind a disclosure. This used to
+          be a five-line info notice ABOVE the KPIs, so on a phone the first
+          screen was instructions and the stuck-round count sat below the
+          fold. Nothing was cut: the full text is one tap away. */}
+      <TabHeader
+        title="Tracer"
+        description="Round data quality, stuck rounds and data-quality incidents — with the fixes attached."
+      >
+        <DetailsDisclosure>
+          <p>
+            Click any player below to see their rounds; expand a round to inspect
+            its data-quality checks and run a fix (recalculate totals, GIR,
+            strokes gained, refresh the stats cache, or remove a stuck round).
+            These incidents are <span className="font-fw-mono">admin_events</span>{' '}
+            rows, so marking one resolved happens in{' '}
+            <Link href="/admin/errors" className="underline">
+              Errors
+            </Link>
+            . The hole-by-hole shot browser has no Bridge equivalent yet.
+          </p>
+        </DetailsDisclosure>
+      </TabHeader>
       <PanelBoundary title="Tracer" skeleton={<PanelPageSkeleton rows={8} />}>
         <TracerBody initialTraceId={initialTraceId} />
       </PanelBoundary>

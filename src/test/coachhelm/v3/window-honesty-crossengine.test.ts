@@ -47,3 +47,12 @@ describe('Phase E — ATTEMPT_FLOOR is the single shared floor', () => {
     expect(ATTEMPT_FLOOR).toBeLessThanOrEqual(12);
   });
 });
+
+describe('NUM-12 dataThroughSuffix', () => {
+  it('always dates a parseable last round and is empty otherwise', async () => {
+    const { dataThroughSuffix } = await import('@/lib/coachhelm/v3/engine/window-honesty');
+    expect(dataThroughSuffix('2026-09-20T10:00:00Z')).toBe(' Data through 2026-09-20.');
+    expect(dataThroughSuffix(null)).toBe('');
+    expect(dataThroughSuffix('not a date')).toBe('');
+  });
+});

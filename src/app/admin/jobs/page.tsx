@@ -19,6 +19,7 @@ import { JobExecutionWaterfall } from '@/components/admin/triage/JobExecutionWat
 import { fetchHelmJobsQueueStatus } from '@/lib/admin/data/helm-jobs';
 import { HelmJobsQueuePanel } from './HelmJobsQueuePanel';
 import { SectionLabel } from '../_components/SectionLabel';
+import { TabHeader } from '../_components/TabHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,16 +41,18 @@ const CRON_STATUS_TONE: Record<CronBoardRow['status'], FwStatusTone> = {
 /**
  * Per-job-type note surfaced under the job identity on both the card and
  * table renderings. Only `reliability-triage` and `selfheal-triage` have
- * one today: each writes a SECOND `background_job_logs` detail row per run
- * by design (the triage pass and the invocation/heartbeat it records are
- * separate rows under the same `jobType`), which otherwise reads as a
- * duplicate-write bug to anyone scanning "last 20 runs" for this job. Add
- * here, not inline in JSX, so the reasoning lives in one place next to the
- * jobType it explains.
+ * one today: each run ALSO writes a `background_job_logs` row under a
+ * separate, related job_type (`reliability-triage` -> `reliability-snapshot`,
+ * `normalize.ts`; `selfheal-triage` -> `selfheal-triage-invocation`,
+ * `selfheal-triage/route.ts`'s crash-safety wrapper) — not the SAME jobType
+ * as this file previously said. That second row otherwise reads as an
+ * unexplained extra job to anyone scanning the cron board for "why is there
+ * a job I didn't expect". Add here, not inline in JSX, so the reasoning
+ * lives in one place next to the jobType it explains.
  */
 const JOB_TYPE_NOTE: Partial<Record<string, string>> = {
-  'reliability-triage': 'Writes a second detail row per run by design (triage pass + invocation record) — not a duplicate.',
-  'selfheal-triage': 'Writes a second detail row per run by design (triage pass + invocation record) — not a duplicate.',
+  'reliability-triage': 'Also writes a reliability-snapshot row per run by design — a separate, related job_type, not a duplicate of this one.',
+  'selfheal-triage': 'Also writes a selfheal-triage-invocation row per run by design (crash-safety wrapper) — a separate, related job_type, not a duplicate of this one.',
 };
 
 /**
@@ -204,17 +207,8 @@ function CronJobCard({ row }: { row: CronBoardRow }) {
     <Inset padding="sm" className={cn('relative pl-3', isAlarm && 'ring-1 ring-fw-danger/30')}>
       <span aria-hidden className={cn('absolute inset-y-2 left-0 w-1 rounded-r-sm', rail)} />
       <div className="flex items-start justify-between gap-3">
-        <p className="min-w-0 break-words font-fw-mono text-xs font-medium text-warm-900">
+        <p className="min-w-0 break-words font-fw-mono text-xs font-medium text-warm-900 [overflow-wrap:anywhere]">
           {row.jobType}
-          {JOB_TYPE_NOTE[row.jobType] ? (
-            <span
-              title={JOB_TYPE_NOTE[row.jobType]}
-              className="ml-1 cursor-help font-sans text-warm-400"
-              aria-label={JOB_TYPE_NOTE[row.jobType]}
-            >
-              ⓘ
-            </span>
-          ) : null}
         </p>
         {/* Status still reaches assistive tech and colour-blind readers as a
             word — the rail is reinforcement, never the only channel. */}
@@ -224,6 +218,11 @@ function CronJobCard({ row }: { row: CronBoardRow }) {
           {row.status}
         </StateChip>
       </div>
+      {/* The note in words, not behind an ⓘ tooltip: this card is the
+          phone layout, and a phone has no hover to reveal a `title`. */}
+      {JOB_TYPE_NOTE[row.jobType] ? (
+        <p className="mt-1 text-caption text-warm-500">{JOB_TYPE_NOTE[row.jobType]}</p>
+      ) : null}
       <div className="mt-2.5 space-y-1.5 text-xs">
         <StatLine
           label="Last run"
@@ -280,7 +279,7 @@ function CronBoardCards({ rows, unreadable }: { rows: CronBoardRow[]; unreadable
       )}
       {restRows.length > 0 ? (
         <details>
-          <summary className="flex min-h-[44px] cursor-pointer items-center px-2 text-xs text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-400">
+          <summary className="flex min-h-[44px] cursor-pointer items-center px-2 text-xs text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-500">
             {restRows.length} other job{restRows.length === 1 ? '' : 's'} — view schedule
           </summary>
           <div className="mt-3 space-y-2">
@@ -324,7 +323,7 @@ function CronBoardTable({ rows, unreadable }: { rows: CronBoardRow[]; unreadable
                   {JOB_TYPE_NOTE[row.jobType] ? (
                     <span
                       title={JOB_TYPE_NOTE[row.jobType]}
-                      className="ml-1 cursor-help font-sans text-warm-400"
+                      className="ml-1 cursor-help font-sans text-warm-500"
                       aria-label={JOB_TYPE_NOTE[row.jobType]}
                     >
                       ⓘ
@@ -374,7 +373,7 @@ function IntegrityCheckCard({ check }: { check: IntegrityRow }) {
   return (
     <Inset padding="sm" className={cn(isFail && 'ring-1 ring-fw-danger/30')}>
       <div className="flex items-start justify-between gap-3">
-        <p className="min-w-0 break-words font-fw-mono text-xs font-medium text-warm-900">{check.check}</p>
+        <p className="min-w-0 break-words font-fw-mono text-xs font-medium text-warm-900 [overflow-wrap:anywhere]">{check.check}</p>
         <StatusPill tone={isFail ? 'danger' : 'success'} dot size="sm" className="shrink-0">
           {check.status}
         </StatusPill>
@@ -385,7 +384,7 @@ function IntegrityCheckCard({ check }: { check: IntegrityRow }) {
       </div>
       {isFail && check.sample.length > 0 ? (
         <details className="mt-2">
-          <summary className="flex min-h-[44px] cursor-pointer items-center px-2 text-xs text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-400">
+          <summary className="flex min-h-[44px] cursor-pointer items-center px-2 text-xs text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-500">
             view sample rows
           </summary>
           <pre className="mt-2 max-w-full overflow-x-auto whitespace-pre-wrap break-all border-t border-warm-200/60 pt-2 text-xs text-warm-700">
@@ -417,7 +416,7 @@ function IntegrityCards({ checks }: { checks: IntegrityRow[] }) {
       )}
       {passing.length > 0 && failing.length > 0 ? (
         <details>
-          <summary className="flex min-h-[44px] cursor-pointer items-center px-2 text-xs text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-400">
+          <summary className="flex min-h-[44px] cursor-pointer items-center px-2 text-xs text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-500">
             {passing.length} passing check{passing.length === 1 ? '' : 's'} — view
           </summary>
           <div className="mt-3 space-y-2">
@@ -467,7 +466,7 @@ function IntegrityGrid({ checks }: { checks: IntegrityRow[] }) {
                 <td className="px-3 font-fw-mono text-xs tabular-nums text-warm-600">
                   {c.status === 'fail' && c.sample.length > 0 ? (
                     <details>
-                      <summary className="cursor-pointer text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-400">
+                      <summary className="cursor-pointer text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-500">
                         {c.count} — view rows
                       </summary>
                       <pre className="mt-2 max-w-[420px] whitespace-pre-wrap break-all rounded-lg bg-surface-sunken p-2 text-xs text-warm-700">
@@ -496,9 +495,10 @@ function IntegrityGrid({ checks }: { checks: IntegrityRow[] }) {
 /**
  * The self-healing loop.
  *
- * One of its three stages runs OUTSIDE this deployment — a GitHub Actions
- * workflow (Repair; it was a launchd agent on the owner's laptop until
- * 2026-09-05) — so nothing in the app can observe it failing.
+ * One of its three stages runs OUTSIDE this deployment — the Claude desktop
+ * health routine on the owner's Mac (Repair since 2026-09-23; a GitHub
+ * Actions workflow before that, and a launchd agent until 2026-09-05) — so
+ * nothing in the app can observe it failing.
  * Its only evidence of life is a heartbeat row, and this panel is where its
  * absence becomes visible. Without it, a dead stage and a quiet week look the
  * same. (Diagnose moved from an Anthropic-hosted cloud routine onto a Vercel
@@ -558,12 +558,12 @@ function SelfHealLoop({ stages, status }: { stages: SelfHealStageRow[]; status: 
               <StatusPill tone={CRON_STATUS_TONE[stage.status]} dot size="sm">
                 {stage.unreadable ? 'unreadable' : stage.status}
               </StatusPill>
-              <span className="font-fw-mono text-caption text-warm-500">
+              <span className="min-w-0 break-words font-fw-mono text-caption text-warm-500 [overflow-wrap:anywhere]">
                 {SELFHEAL_RUNNER_LABEL[stage.runner]} · {stage.jobType}
               </span>
             </div>
             <p className="mt-1 break-words text-xs text-warm-500 [overflow-wrap:anywhere]">{stage.what}</p>
-            <p className="mt-1 font-fw-mono text-caption text-warm-500">
+            <p className="mt-1 break-words font-fw-mono text-caption text-warm-500 [overflow-wrap:anywhere]">
               {stage.unreadable ? (
                 // "We could not look" is not "it never ran". Saying the second
                 // when the first is true is how a broken read becomes a calm
@@ -618,6 +618,19 @@ async function JobsBody() {
 
   return (
     <div className="space-y-6">
+      {/* Promoted from the small Inngest tile at the bottom of this page —
+          a rejecting key means every durable job routed through Inngest is
+          silently dropped (see INNGEST_TONE's header comment: a dead key
+          survived 10 days here before this state existed at all). Kept
+          small on purpose — this is a pointer to the tile below, not a
+          duplicate of its detail. */}
+      {tab.inngest.status === 'rejecting' ? (
+        <InlineNotice tone="danger" title="Inngest is rejecting its configured keys">
+          Events are being dropped, not delivered — see the Inngest tile below for the fault code and when it was
+          last seen.
+        </InlineNotice>
+      ) : null}
+
       <HelmJobsQueuePanel status={helmJobsStatus} />
 
       <Surface padding="sm">
@@ -676,7 +689,10 @@ async function JobsBody() {
         <StatTile label="admin_events rows" value={tab.logHealth.adminEvents} tone="neutral" mono />
         <StatTile label="error_logs rows" value={tab.logHealth.errorLogs} tone="neutral" mono />
         <StatTile label="job log rows" value={tab.logHealth.jobLogs} tone="neutral" mono />
-        <Surface padding="sm">
+        {/* Full row on a phone: its detail is a sentence, and a half-width
+            (~165px) cell wrapped it into a narrow column beside three
+            single-number tiles. */}
+        <Surface padding="sm" className="col-span-2 md:col-span-1">
           <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Inngest</p>
           <div className="mt-1.5">
             <StatusPill tone={INNGEST_TONE[tab.inngest.status]} dot size="sm">
@@ -695,6 +711,10 @@ export default async function JobsPage() {
   return (
     <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
+      {/* The one header every Bridge tab carries — Jobs had none, so on a
+          phone the page opened straight into a queue panel with nothing
+          saying where you were beyond the shell's top-bar crumb. */}
+      <TabHeader title="Jobs & Integrity" />
       <PanelBoundary title="Jobs & Integrity" skeleton={<PanelPageSkeleton rows={8} />}>
         <JobsBody />
       </PanelBoundary>

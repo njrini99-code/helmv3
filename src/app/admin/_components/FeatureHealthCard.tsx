@@ -74,15 +74,15 @@ export function FeatureHealthCard({ feature }: { feature: FeatureHealth }) {
 
       <dl className="mt-4 flex flex-wrap gap-4 text-xs text-warm-600">
         <div>
-          <dt className="text-warm-400">Warnings 24h (drill-in only)</dt>
+          <dt className="text-warm-500">Warnings 24h (drill-in only)</dt>
           <dd className="font-fw-mono tabular-nums text-warm-800">{feature.drillIn.warnings24h}</dd>
         </div>
         <div>
-          <dt className="text-warm-400">RLS denials 24h (drill-in only)</dt>
+          <dt className="text-warm-500">RLS denials 24h (drill-in only)</dt>
           <dd className="font-fw-mono tabular-nums text-warm-800">{feature.drillIn.rlsDenials24h}</dd>
         </div>
         <div>
-          <dt className="text-warm-400">Heartbeat</dt>
+          <dt className="text-warm-500">Heartbeat</dt>
           <dd className="font-fw-mono tabular-nums text-warm-800">
             {feature.drillIn.heartbeatAgeHours === null ? 'no data' : `${feature.drillIn.heartbeatAgeHours}h ago`}
           </dd>

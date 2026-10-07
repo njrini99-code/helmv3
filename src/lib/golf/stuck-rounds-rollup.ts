@@ -17,5 +17,5 @@ export function shouldRollupStuckRounds(count: number): boolean {
 }
 
 export function formatStuckRollupLabel(count: number): string {
-  return `${count} rounds idle — view in Tracer`;
+  return `${count} rounds idle, view in Tracer`;
 }

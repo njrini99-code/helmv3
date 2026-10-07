@@ -64,8 +64,16 @@ export function replaceStageUrl(param: string, key: string, homeKey: string): bo
   // The custom event still dispatches either way: listeners care that a stage
   // was selected, not that the address bar changed, and skipping it here would
   // make re-selecting the current stage silently do nothing.
+  //
+  // `null` state, not `window.history.state`: the existing state carries
+  // Next's `__NA` marker, and Next's patched replaceState skips syncing its
+  // router URL for any entry that has it. That left the router's canonical
+  // URL on the previous stage, so a later `router.refresh()` re-fetched the
+  // old query and wrote it back over the address bar. With `null`, Next
+  // copies its own tree state onto the entry and syncs `useSearchParams`
+  // from it without a server round trip.
   if (nextUrl !== `${window.location.pathname}${window.location.search}${window.location.hash}`) {
-    window.history.replaceState(window.history.state, '', nextUrl);
+    window.history.replaceState(null, '', nextUrl);
   }
   window.dispatchEvent(
     new CustomEvent<StageNavigationDetail>(STAGE_NAVIGATION_EVENT, {
@@ -113,7 +121,22 @@ export function StageRouter({ param, homeKey, views }: StageRouterProps) {
   const requestedActiveKey = requestedKey && knownKeys.has(requestedKey) ? requestedKey : homeKey;
   const [activeKey, setActiveKey] = React.useState(requestedActiveKey);
 
-  React.useEffect(() => setActiveKey(requestedActiveKey), [requestedActiveKey]);
+  React.useEffect(() => {
+    // Next applies a replaceState sync inside a transition, so after two
+    // quick taps the hook snapshot can briefly still name the FIRST stage
+    // while the address bar (and local state) already show the second.
+    // Adopting that trailing snapshot would flash the old stage back for a
+    // frame. Only follow the hook when it agrees with the live URL.
+    if (typeof window !== 'undefined') {
+      const liveKey = new URLSearchParams(window.location.search).get(param);
+      const liveActiveKey = liveKey && knownKeys.has(liveKey) ? liveKey : homeKey;
+      if (liveActiveKey !== requestedActiveKey) return;
+    }
+    setActiveKey(requestedActiveKey);
+    // Keyed on the resolved snapshot only; param/homeKey/knownKeys are stable
+    // for a mounted stage.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedActiveKey]);
   React.useEffect(() => {
     const onStageNavigation = (event: Event) => {
       const detail = (event as CustomEvent<StageNavigationDetail>).detail;
@@ -127,7 +150,9 @@ export function StageRouter({ param, homeKey, views }: StageRouterProps) {
   // Focus management: when the stage swaps to a new view (via open()/home()),
   // move focus onto the new view's container so keyboard/AT users land in
   // the fresh content instead of staying stranded on whatever trigger they
-  // clicked. Skipped on first mount — that's initial page load, not a
+  // clicked. This focus move IS the announcement — the stage is deliberately
+  // not an `aria-live` region too, or every swap was read out twice (once
+  // as a live-region update of the whole new view, once on focus). Skipped on first mount — that's initial page load, not a
   // stage swap.
   //
   // `preventScroll: true` is load-bearing. Focusing a container that starts
@@ -169,7 +194,7 @@ export function StageRouter({ param, homeKey, views }: StageRouterProps) {
 
   return (
     <StageContext.Provider value={contextValue}>
-      <div data-slot="stage" className="relative min-h-[320px]" aria-live="polite">
+      <div data-slot="stage" className="relative min-h-[320px]">
         {activeView ? (
           <div
             key={activeView.key}

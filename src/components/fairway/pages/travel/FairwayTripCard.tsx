@@ -4,18 +4,24 @@
  * ============================================================================
  * Fairway · Travel · FairwayTripCard — one trip in the itinerary list
  * ----------------------------------------------------------------------------
- * A matte selectable list-row (native <button> with Surface-look classes, the
- * proven TripRow pattern from hub-parts). Shows the transport icon, event name,
- * lifecycle StatusPill, destination, and date range — every data point the
- * legacy list row carried. Selecting it surfaces the trip in the detail panel.
+ * A matte selectable list-row (a Fairway PressTarget with Surface-look
+ * classes). Shows the transport icon, event name, destination, date range and
+ * lifecycle StatusPill — every data point the legacy list row carried.
+ * Selecting it surfaces the trip in the detail panel.
+ *
+ * The name owns the full text column and wraps to two lines; the status pill
+ * sits on its own line under the dates. At 390px the pill beside the name
+ * left it a few characters before the ellipsis. PressTarget rather than
+ * Button: Button's base is a nowrap pill (`whitespace-nowrap`,
+ * `rounded-full`), which kept the name on one line and rounded the card into
+ * a capsule.
  *
  * Presentation only. Tokens ONLY.
  * ========================================================================== */
 
 import { MapPin, Calendar, ChevronRight } from 'lucide-react';
 
-import { StatusPill } from '@/components/fairway';
-import { Button } from '@/components/fairway/controls/button';
+import { PressTarget, StatusPill } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import {
   type TravelItinerary,
@@ -38,17 +44,14 @@ export function FairwayTripCard({ itinerary, selected, now, onSelect }: FairwayT
     itinerary.return_date && itinerary.return_date !== itinerary.departure_date;
 
   return (
-    <Button
-      type="button"
-      variant="ghost"
+    <PressTarget
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
-        'group relative block h-auto min-h-0 w-full rounded-card p-4 text-left font-normal',
-        'transition-[box-shadow,transform,border-color,background-color]',
-        '[transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
-        'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-        'motion-reduce:transition-none motion-reduce:hover:translate-y-0',
+        // PressTarget brings the focus ring, the 180ms transition and the
+        // surface press response; the card look is ours.
+        'group relative block w-full rounded-card p-4 text-left',
+        'motion-reduce:hover:translate-y-0',
         selected
           ? 'border border-accent-300 bg-accent-50/60 shadow-soft hover:bg-accent-50/60'
           : 'border border-border-subtle bg-surface shadow-flat hover:-translate-y-px hover:border-border-strong hover:bg-surface hover:shadow-raise',
@@ -64,18 +67,13 @@ export function FairwayTripCard({ itinerary, selected, now, onSelect }: FairwayT
           <Icon className="h-4 w-4" aria-hidden />
         </span>
         <span className="block min-w-0 flex-1">
-          <span className="flex items-center justify-between gap-2">
-            <span
-              className={cn(
-                'truncate font-fw-sans text-body-sm font-medium',
-                selected ? 'text-fw-success-ink' : 'text-text-primary',
-              )}
-            >
-              {itinerary.event_name || 'Trip'}
-            </span>
-            <StatusPill tone={status.tone} size="sm" dot pulse={status.pulse} className="flex-shrink-0">
-              {status.label}
-            </StatusPill>
+          <span
+            className={cn(
+              'line-clamp-2 break-words font-fw-sans text-body-sm font-medium',
+              selected ? 'text-fw-success-ink' : 'text-text-primary',
+            )}
+          >
+            {itinerary.event_name || 'Trip'}
           </span>
           <span className="mt-1 flex items-center gap-1.5 font-fw-sans text-caption text-text-tertiary">
             <MapPin aria-hidden className="h-3.5 w-3.5 shrink-0" />
@@ -88,15 +86,20 @@ export function FairwayTripCard({ itinerary, selected, now, onSelect }: FairwayT
               {hasReturn ? <> &ndash; {formatTravelDate(itinerary.return_date as string)}</> : null}
             </span>
           </span>
+          {/* Its own line: "Aug 28, 2026 – Sep 12, 2026" plus a pill does not
+              fit one line of the 390px text column. */}
+          <StatusPill tone={status.tone} size="sm" dot pulse={status.pulse} className="mt-2 flex w-fit">
+            {status.label}
+          </StatusPill>
         </span>
         <ChevronRight
           aria-hidden
           className={cn(
             'mt-0.5 h-4 w-4 shrink-0',
-            selected ? 'text-accent-600' : 'text-text-tertiary',
+            selected ? 'text-accent-ink' : 'text-text-tertiary',
           )}
         />
       </span>
-    </Button>
+    </PressTarget>
   );
 }

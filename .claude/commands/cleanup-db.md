@@ -1,8 +1,18 @@
+---
+description: Report (never change) Supabase tables and columns with no references in code, SQL, or infra
+argument-hint: "[table-prefix]"
+disable-model-invocation: true
+---
+
 # Database ↔ Codebase Cross-Reference (Zero False Positive Mode)
 
 Find tables and columns in Supabase that are genuinely dead — not referenced anywhere in code, policies, functions, triggers, edge functions, migrations, or dynamic patterns.
 
 **Accuracy target: ZERO false positives. If there is ANY doubt, mark as KEEP.**
+
+One production database serves Golf (`golf_*`), Baseball (`baseball_*`) and
+Lift Lab (`helm_lifting_*`). Classify findings per sport prefix; anything
+shared or unprefixed is ⚠️ at most.
 
 ---
 
@@ -68,7 +78,8 @@ SELECT
 FROM information_schema.table_constraints tc
 JOIN information_schema.key_column_usage kcu
   ON tc.constraint_name = kcu.constraint_name
-  AND tc.table_schema = kcu.table_schemaJOIN information_schema.constraint_column_usage ccu
+  AND tc.table_schema = kcu.table_schema
+JOIN information_schema.constraint_column_usage ccu
   ON ccu.constraint_name = tc.constraint_name
   AND ccu.table_schema = tc.table_schema
 WHERE tc.constraint_type = 'FOREIGN KEY'
@@ -133,13 +144,14 @@ Search ALL source files (`src/`, `app/`, `lib/`, `utils/`, `components/`, `hooks
 1. **Exact quoted string**: `'table_name'` or `"table_name"` or `` `table_name` ``
 2. **Inside .from()**: `.from('table_name')`
 3. **Inside .rpc()**: `.rpc('function_that_touches_table')`
-4. **Type references**: `Tables['table_name']`, `Database['public']['Tables']['table_name']`5. **In comments or TODOs**: even a commented-out reference means someone intends to use it
+4. **Type references**: `Tables['table_name']`, `Database['public']['Tables']['table_name']`
+5. **In comments or TODOs**: even a commented-out reference means someone intends to use it
 
 Exclude ONLY:
 - `node_modules/`
 - `.next/`
 - `dist/`
-- `database.types.ts` / `database.types.gen.ts` (auto-generated, doesn't count as a "usage")
+- `src/lib/types/database.ts` (generated from the schema, so it doesn't count as a usage)
 
 **DO NOT exclude** test files, config files, seed files, or scripts — these count as valid references.
 
@@ -217,7 +229,8 @@ For each table, assign ONE of these statuses:
 
 ### ❌ CONFIRMED UNREFERENCED
 - Zero string literal matches in ALL source files, edge functions, migrations, seeds
-- Zero matches for camelCase/PascalCase/singular/plural variants- Not a FK target of any referenced table
+- Zero matches for camelCase/PascalCase/singular/plural variants
+- Not a FK target of any referenced table
 - Not in any RLS policy, trigger, view, or function
 - Not in Realtime publication
 - Not in any cron job
@@ -276,11 +289,11 @@ actual write uses the reviewed, task-authorized write-capable Supabase path
 (`npm run db:apply` or a connected MCP) and follows the normal migration
 workflow, including `supabase/migrations/HELD.md` when applicable.
 1. Create a new migration with `ALTER TABLE x RENAME TO _deprecated_x`
-2. Deploy to preview/staging
-3. Run full test suite
-4. Manual smoke test for 1 week
-5. If nothing breaks, create a DROP migration
-6. Warn about any storage, webhooks, or external integrations that might reference the table outside the codebase
+2. Apply it through the normal migration path (AGENTS.md "Database"); there is
+   no staging copy
+3. Watch Sentry and `error_logs` for `42P01` on the renamed table for a week
+4. If nothing breaks, create a DROP migration
+5. Warn about any storage, webhooks, or external integrations that might reference the table outside the codebase
 
 ---
 

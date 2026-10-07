@@ -408,6 +408,8 @@ export {
   type ModalShellSize,
   DiscardChangesModal,
   type DiscardChangesModalProps,
+  ConfirmAlert,
+  type ConfirmAlertProps,
   Sheet,
   type SheetProps,
   type SheetSide,

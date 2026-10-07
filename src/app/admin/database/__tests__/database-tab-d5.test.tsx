@@ -48,18 +48,21 @@ function emptyAnalysisSnapshot() {
 }
 
 describe('SlowStatementsPanel', () => {
-  it('renders an unconfigured empty state when the migration is HELD', async () => {
+  it('renders an unconfigured empty state with the read error, not a stale HELD claim', async () => {
+    // Both the statement-capture migration (20260906120010) and the analysis
+    // collector are applied and ledger-verified live — an `unconfigured`
+    // result today means the read genuinely failed, so the panel must not
+    // claim a migration hold that no longer exists.
     mockedFetchSlowStatements.mockResolvedValue({
       status: 'unconfigured',
       data: null,
       fetchedAt: null,
-      error: 'db_statement_samples (migration HELD — see supabase/migrations/HELD.md)',
+      error: 'record_db_statement_samples: permission denied',
     });
     render(await SlowStatementsPanel());
-    expect(screen.getByText(/statement capture is held, not missing/i)).toBeInTheDocument();
-    // The specific migration filename, not just "see HELD.md" — a 109-row
-    // register the reader would otherwise have to search themselves.
-    expect(screen.getByText(/20260906120010_helm_debug_db_statement_samples\.sql/)).toBeInTheDocument();
+    expect(screen.getByText(/could not read statement capture/i)).toBeInTheDocument();
+    expect(screen.getByText(/permission denied/i)).toBeInTheDocument();
+    expect(screen.queryByText(/held, not missing/i)).not.toBeInTheDocument();
   });
 
   it('renders a no-data empty state when applied but nothing sampled yet', async () => {

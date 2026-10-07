@@ -54,7 +54,7 @@ function ThroughputStep({
 }) {
   return (
     <div className="min-w-0 flex-1 rounded-fw-md bg-surface-sunken p-3">
-      <p className="text-eyebrow font-semibold uppercase tracking-widest text-warm-400">{label}</p>
+      <p className="text-eyebrow font-semibold uppercase tracking-widest text-warm-500">{label}</p>
       {count === null ? (
         <p className="mt-1 text-sm font-semibold text-fw-warning-ink">unknown</p>
       ) : (
@@ -177,7 +177,7 @@ function LocalRunnerStage({ stage }: { stage: SelfHealStageDetail }) {
           actual failed run would be a claim this page cannot back up. */}
       {stage.status === 'overdue' ? (
         <p className="mt-1.5 text-caption text-fw-warning-ink">
-          Overdue. The machine may have been asleep, or the launchd job did not fire.
+          Overdue. The machine may have been asleep, or the Claude desktop app was closed when the scheduled task was due.
         </p>
       ) : null}
     </div>
@@ -192,8 +192,8 @@ function LocalRunnerBlock({ stages }: { stages: readonly SelfHealStageDetail[] }
     <Surface padding="sm">
       <Eyebrow as="h2">Local runner</Eyebrow>
       <p className="mt-1 text-xs text-warm-500">
-        Runs on the owner&rsquo;s laptop via launchd, outside this deployment — nothing here can watch it fail, only
-        notice that it stopped writing a heartbeat.
+        Runs on the owner&rsquo;s laptop as a Claude desktop scheduled task, outside this deployment — nothing here can
+        watch it fail, only notice that it stopped writing a heartbeat.
       </p>
       <div className="mt-3 space-y-3">
         {local.map((stage) => (

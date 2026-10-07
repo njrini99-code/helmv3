@@ -97,7 +97,7 @@ const rule: CompositeRule = {
         `tournament strokes go is not measured here. Short putts are where a ` +
         `pressure gap tends to show first (Research doc §9), so check: compare ` +
         `make rate from ${bucket} in tournament rounds vs practice rounds. ` +
-        `Recommended: practice the routine, not the stroke — same alignment, ` +
+        `Recommended: practice the routine, not the stroke: same alignment, ` +
         `same number of looks, same trigger.`,
       signature: `pressure_decel:${bucket.replace('-', '_').replace(' ft', 'ft')}`,
       evidence: {

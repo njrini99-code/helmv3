@@ -94,16 +94,18 @@
    * ============================================================ */
 
   /* Font family — CANONICAL
-     The single source of truth for the body font is `--font-geist-sans`,
-     set by next/font in src/app/layout.tsx (GeistSans.variable).
-     `--font-sans` is the alias every CSS surface references; it mirrors
-     Tailwind's `fontFamily.sans` so utility-based and CSS-only callers
-     stay in sync. */
-  --font-sans: var(--font-geist-sans), 'DM Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --font-serif: var(--font-fraunces, var(--font-serif)), 'Playfair Display', Georgia, serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  /* Legacy alias — kept so any remaining `var(--font-family)` callers
-     resolve to Geist instead of falling back to system-ui. */
+     `--font-sans` is the Apple SF system stack (2026-09-23): the root layout
+     loads no web fonts, so the whole app renders in one sans face and GolfHelm
+     ships zero font bytes. It mirrors Tailwind's `fontFamily.sans` so
+     utility-based and CSS-only callers stay in sync. The BaseballHelm-only
+     faces (Fraunces, Geist Mono, Space Grotesk) are declared on :root by
+     src/app/baseball/layout.tsx. Every var() carries an inline fallback: an
+     undefined var() with none makes the custom property invalid, and
+     `font-family: var(--font-sans)` would then inherit the UA default serif. */
+  --font-sans: var(--font-geist-sans, -apple-system), -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-fraunces, Georgia), Georgia, serif;
+  --font-mono: var(--font-geist-mono, ui-monospace), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  /* Legacy alias for remaining `var(--font-family)` callers. */
   --font-family: var(--font-sans);
 
   /* CANONICAL 9-step type scale (synthesis §5 — replaces ~24 ad-hoc

@@ -65,12 +65,19 @@ Team page
 - Pending join requests should not become active membership without the intended approval path.
 - Roster/player profile data must be team-scoped.
 - Player profile stats are derived from rounds and cache/source data, not hand-entered roster fields.
+- Roster card avg score, rounds count, trend and SG: Total use countable
+  rounds only (see "Countable rounds" in `memory/features/stats-analytics.md`);
+  SG: Total is the mean of per-round `golf_round_stats_cache` values, not the
+  lifetime player cache.
 
 ## UI Contract
 
 - Roster needs clear search/filter/status affordances and pending-request visibility.
 - Player profile needs identity, role/status badges, recent rounds, and stats sections without blocking the whole page.
 - Team page must visibly distinguish coach-editable settings from player read-only info.
+- Team Info staff rows name the role once, in the pill. A stored
+  `golf_coaches.title` shows only when it says something else, like "Director
+  of Golf" (`src/components/fairway/pages/team/staff-title.ts`, 2026-09-27).
 - Empty states should distinguish no players, no pending requests, and no recent player activity.
 - A route's `loading.tsx` reserves the page's paint at t=0 — for a
   `'use client'` page holding its own `loading` state that is that

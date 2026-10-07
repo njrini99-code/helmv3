@@ -50,10 +50,18 @@ export interface FairwayUnfinishedBannerProps {
   playerId: string;
 }
 
-function relativeTime(round: RoundLibraryRound): string {
+/** How many unfinished rounds show before "Show N more" (DASH-10). */
+const VISIBLE_UNFINISHED = 2;
+
+function roundTime(round: RoundLibraryRound): number {
+  const ts = round.updated_at ?? round.created_at;
+  return ts ? new Date(ts).getTime() : 0;
+}
+
+function relativeTime(round: RoundLibraryRound, now: number): string {
   const ts = round.updated_at ?? round.created_at;
   if (!ts) return '';
-  const diff = Date.now() - new Date(ts).getTime();
+  const diff = now - new Date(ts).getTime();
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const days = Math.floor(hours / 24);
   if (days > 0) return `${days}d ago`;
@@ -69,21 +77,30 @@ export function FairwayUnfinishedBanner({ rounds, playerId }: FairwayUnfinishedB
   // Keep local state in sync if the server passes a fresh list.
   React.useEffect(() => setLocalRounds(rounds), [rounds]);
 
+  const [expanded, setExpanded] = React.useState(false);
+
   if (localRounds.length === 0) return null;
+
+  // Newest first, and only the most recent few until asked: a player with a
+  // backlog of stale drafts got one full card per round stacked above their
+  // library (DASH-10).
+  const sorted = [...localRounds].sort((a, b) => roundTime(b) - roundTime(a));
+  const shown = expanded ? sorted : sorted.slice(0, VISIBLE_UNFINISHED);
+  const hiddenCount = sorted.length - shown.length;
 
   return (
     <section aria-label="Rounds in progress" className="flex flex-col gap-3">
       <div className="flex items-center gap-2 px-1">
-        <h2 className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary">
+        <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
           In progress
         </h2>
-        <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
+        <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
           {localRounds.length}
         </span>
       </div>
 
       <div className="flex flex-col gap-2.5">
-        {localRounds.map((round) => (
+        {shown.map((round) => (
           <UnfinishedRow
             key={round.id}
             round={round}
@@ -94,6 +111,11 @@ export function FairwayUnfinishedBanner({ rounds, playerId }: FairwayUnfinishedB
             }}
           />
         ))}
+        {hiddenCount > 0 ? (
+          <Button variant="ghost" size="sm" className="self-start" onClick={() => setExpanded(true)}>
+            Show {hiddenCount} more
+          </Button>
+        ) : null}
       </div>
     </section>
   );
@@ -130,7 +152,11 @@ function UnfinishedRow({
   const city = round.course_city
     ? [round.course_city, round.course_state].filter(Boolean).join(', ')
     : null;
-  const timeAgo = relativeTime(round);
+  // "3h ago" depends on the clock, so it is computed after mount: the server
+  // render and hydration would otherwise disagree (HYD-15).
+  const [now, setNow] = React.useState<number | null>(null);
+  React.useEffect(() => setNow(Date.now()), []);
+  const timeAgo = now === null ? '' : relativeTime(round, now);
 
   const handleContinue = () => {
     router.push(`/golf/dashboard/rounds/continue/${round.id}`);
@@ -171,7 +197,7 @@ function UnfinishedRow({
                 <span className="font-fw-mono text-h3 font-medium leading-none tabular-nums text-fw-warning-ink">
                   {currentHole}
                 </span>
-                <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
+                <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
                   / {holesTarget}
                 </span>
               </>
@@ -190,7 +216,7 @@ function UnfinishedRow({
                 </StatusPill>
               )}
               {timeAgo && (
-                <span className="font-fw-sans text-eyebrow text-text-tertiary">{timeAgo}</span>
+                <span className="font-fw-sans text-caption text-text-tertiary">{timeAgo}</span>
               )}
             </div>
             <p className="mt-1 truncate font-fw-sans text-body-sm font-medium text-text-primary">

@@ -1,6 +1,8 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { resolveTeamUserIds } from '@/lib/admin/data/team-scope';
+import { excludeAuthNoise } from '@/lib/admin/data/triage';
+import { INCIDENT_SEVERITIES } from '@/lib/admin/severity';
 
 /**
  * Helm Bridge — The Thread: a single entity's whole story (USER or TEAM
@@ -158,18 +160,39 @@ async function fetchUserThread(admin: AdminClient, userId: string): Promise<Enti
   const baseballCoachId = (baseballCoachRes.data as { id: string } | null)?.id ?? null;
 
   const sources: Record<string, Runner> = {
+    // Two independently-capped queries feed this one source: non-error event
+    // types (login/signup/security/...) are read as-is, while `error` rows
+    // get the same resolved/severity/noise filter player-detail.ts's error
+    // panel uses — otherwise a resolved "network error" (the vast majority
+    // of admin_events error rows) renders in the Thread as a live incident.
     admin_events: async () => {
-      const { data, error } = await admin
-        .from('admin_events')
-        .select('id, created_at, event_type, severity, title, message, feature, fingerprint, source')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(SOURCE_LIMIT);
-      if (error) throw new Error(error.message);
-      const rows = (data ?? []) as unknown as AdminEventRow[];
+      const cols = 'id, created_at, event_type, severity, title, message, feature, fingerprint, source';
+      const [nonErrorRes, errorRes] = await Promise.all([
+        admin
+          .from('admin_events')
+          .select(cols)
+          .eq('user_id', userId)
+          .neq('event_type', 'error')
+          .order('created_at', { ascending: false })
+          .limit(SOURCE_LIMIT),
+        excludeAuthNoise(
+          admin
+            .from('admin_events')
+            .select(cols)
+            .eq('user_id', userId)
+            .eq('event_type', 'error')
+            .in('severity', INCIDENT_SEVERITIES)
+            .eq('resolved', false)
+            .order('created_at', { ascending: false })
+            .limit(SOURCE_LIMIT),
+        ),
+      ]);
+      if (nonErrorRes.error) throw new Error(nonErrorRes.error.message);
+      if (errorRes.error) throw new Error(errorRes.error.message);
+      const rows = [...(nonErrorRes.data ?? []), ...(errorRes.data ?? [])] as unknown as AdminEventRow[];
       return {
         events: rows.map(mapAdminEvent).filter((e): e is ThreadEvent => !!e),
-        hitCap: rows.length >= SOURCE_LIMIT,
+        hitCap: (nonErrorRes.data ?? []).length >= SOURCE_LIMIT || (errorRes.data ?? []).length >= SOURCE_LIMIT,
       };
     },
   };
@@ -429,16 +452,37 @@ async function fetchTeamThread(admin: AdminClient, teamId: string): Promise<Enti
   const userIdList = Array.from(teamUserIds);
 
   const sources: Record<string, Runner> = {
+    // Same split as fetchUserThread's admin_events source: error rows get
+    // the resolved/severity/noise filter, other event types don't.
     admin_events_team: async () => {
-      const { data, error } = await admin
-        .from('admin_events')
-        .select('id, created_at, event_type, severity, title, message, feature, fingerprint, source')
-        .eq('team_id', teamId)
-        .order('created_at', { ascending: false })
-        .limit(SOURCE_LIMIT);
-      if (error) throw new Error(error.message);
-      const rows = (data ?? []) as unknown as AdminEventRow[];
-      return { events: rows.map(mapAdminEvent).filter((e): e is ThreadEvent => !!e), hitCap: rows.length >= SOURCE_LIMIT };
+      const cols = 'id, created_at, event_type, severity, title, message, feature, fingerprint, source';
+      const [nonErrorRes, errorRes] = await Promise.all([
+        admin
+          .from('admin_events')
+          .select(cols)
+          .eq('team_id', teamId)
+          .neq('event_type', 'error')
+          .order('created_at', { ascending: false })
+          .limit(SOURCE_LIMIT),
+        excludeAuthNoise(
+          admin
+            .from('admin_events')
+            .select(cols)
+            .eq('team_id', teamId)
+            .eq('event_type', 'error')
+            .in('severity', INCIDENT_SEVERITIES)
+            .eq('resolved', false)
+            .order('created_at', { ascending: false })
+            .limit(SOURCE_LIMIT),
+        ),
+      ]);
+      if (nonErrorRes.error) throw new Error(nonErrorRes.error.message);
+      if (errorRes.error) throw new Error(errorRes.error.message);
+      const rows = [...(nonErrorRes.data ?? []), ...(errorRes.data ?? [])] as unknown as AdminEventRow[];
+      return {
+        events: rows.map(mapAdminEvent).filter((e): e is ThreadEvent => !!e),
+        hitCap: (nonErrorRes.data ?? []).length >= SOURCE_LIMIT || (errorRes.data ?? []).length >= SOURCE_LIMIT,
+      };
     },
   };
 
@@ -450,16 +494,36 @@ async function fetchTeamThread(admin: AdminClient, teamId: string): Promise<Enti
     };
   } else if (userIdList.length > 0) {
     sources.admin_events_users = async () => {
-      const { data, error } = await admin
-        .from('admin_events')
-        .select('id, created_at, event_type, severity, title, message, feature, fingerprint, source')
-        .is('team_id', null)
-        .in('user_id', userIdList)
-        .order('created_at', { ascending: false })
-        .limit(SOURCE_LIMIT);
-      if (error) throw new Error(error.message);
-      const rows = (data ?? []) as unknown as AdminEventRow[];
-      return { events: rows.map(mapAdminEvent).filter((e): e is ThreadEvent => !!e), hitCap: rows.length >= SOURCE_LIMIT };
+      const cols = 'id, created_at, event_type, severity, title, message, feature, fingerprint, source';
+      const [nonErrorRes, errorRes] = await Promise.all([
+        admin
+          .from('admin_events')
+          .select(cols)
+          .is('team_id', null)
+          .in('user_id', userIdList)
+          .neq('event_type', 'error')
+          .order('created_at', { ascending: false })
+          .limit(SOURCE_LIMIT),
+        excludeAuthNoise(
+          admin
+            .from('admin_events')
+            .select(cols)
+            .is('team_id', null)
+            .in('user_id', userIdList)
+            .eq('event_type', 'error')
+            .in('severity', INCIDENT_SEVERITIES)
+            .eq('resolved', false)
+            .order('created_at', { ascending: false })
+            .limit(SOURCE_LIMIT),
+        ),
+      ]);
+      if (nonErrorRes.error) throw new Error(nonErrorRes.error.message);
+      if (errorRes.error) throw new Error(errorRes.error.message);
+      const rows = [...(nonErrorRes.data ?? []), ...(errorRes.data ?? [])] as unknown as AdminEventRow[];
+      return {
+        events: rows.map(mapAdminEvent).filter((e): e is ThreadEvent => !!e),
+        hitCap: (nonErrorRes.data ?? []).length >= SOURCE_LIMIT || (errorRes.data ?? []).length >= SOURCE_LIMIT,
+      };
     };
   }
 

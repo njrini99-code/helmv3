@@ -345,7 +345,7 @@ export function FairwayRecruitDocuments({ recruitId }: { recruitId: string }) {
       {loading ? (
         <div className="space-y-2" aria-busy="true">
           {[0, 1].map((i) => (
-            <div key={i} className="h-14 animate-pulse rounded-xl bg-surface-tint" />
+            <div key={i} className="h-14 animate-pulse rounded-fw-md bg-surface-tint" />
           ))}
         </div>
       ) : loadError ? (

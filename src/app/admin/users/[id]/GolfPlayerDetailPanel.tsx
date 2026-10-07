@@ -48,9 +48,9 @@ function formatHoursIdle(hours: number | null): string {
   return `${(hours / 24).toFixed(1)}d idle`;
 }
 
-function GraphiteStat({ label, value }: { label: string; value: ReactNode }) {
+function GraphiteStat({ label, value, className }: { label: string; value: ReactNode; className?: string }) {
   return (
-    <div className="flex flex-col gap-1 rounded-fw-md bg-surface-sunken p-3">
+    <div className={`flex min-w-0 flex-col gap-1 rounded-fw-md bg-surface-sunken p-3 ${className ?? ''}`}>
       <span className="font-fw-mono text-lg font-bold tabular-nums text-warm-900">{value}</span>
       <span className="text-eyebrow uppercase tracking-widest text-warm-500">{label}</span>
     </div>
@@ -93,7 +93,10 @@ export async function GolfPlayerDetailPanel({ userId }: { userId: string }) {
         {degraded.includes('identity') ? (
           <span className="text-warm-500">team unknown</span>
         ) : player.team ? (
-          <Link href={`/admin/teams/${player.team.id}`} className="text-accent-700 underline-offset-2 hover:underline">
+          <Link
+            href={`/admin/teams/${player.team.id}`}
+            className="inline-flex items-center text-accent-700 underline-offset-2 hover:underline [@media(pointer:coarse)]:min-h-11"
+          >
             {player.team.name}
           </Link>
         ) : (
@@ -127,7 +130,10 @@ export async function GolfPlayerDetailPanel({ userId }: { userId: string }) {
               label="Avg score"
               value={!roundsFailed && roundsSummary.averageScore !== null ? roundsSummary.averageScore.toFixed(1) : '—'}
             />
+            {/* Fifth of five: full width on the phone's 2-up grid rather than
+                a ragged half-row. */}
             <GraphiteStat
+              className="col-span-2 md:col-span-1"
               label="Last round"
               value={
                 roundsFailed ? (
@@ -176,14 +182,20 @@ export async function GolfPlayerDetailPanel({ userId }: { userId: string }) {
                     {r.holesPlayed !== null ? ` (${r.holesPlayed} played)` : ''}
                   </span>
                   <span className="font-fw-mono text-xs tabular-nums text-warm-500">{formatHoursIdle(r.hoursIdle)}</span>
-                  <span className="font-fw-mono text-xs tabular-nums text-warm-400">
+                  <span className="whitespace-nowrap font-fw-mono text-xs tabular-nums text-warm-500">
                     {r.updatedAt ? <LocalTime iso={r.updatedAt} variant="datetime" /> : '—'}
                   </span>
-                  <Link href="/admin/golf/tracer#stuck-rounds" className="text-xs text-accent-700 underline-offset-2 hover:underline">
+                  <Link
+                    href="/admin/golf/tracer#stuck-rounds"
+                    className="inline-flex items-center text-xs text-accent-700 underline-offset-2 hover:underline [@media(pointer:coarse)]:min-h-11"
+                  >
                     Open in Tracer →
                   </Link>
                   {r.traceHref ? (
-                    <Link href={r.traceHref} className="text-xs text-accent-700 underline-offset-2 hover:underline">
+                    <Link
+                      href={r.traceHref}
+                      className="inline-flex items-center text-xs text-accent-700 underline-offset-2 hover:underline [@media(pointer:coarse)]:min-h-11"
+                    >
                       View flight trace →
                     </Link>
                   ) : null}
@@ -225,7 +237,10 @@ export async function GolfPlayerDetailPanel({ userId }: { userId: string }) {
                       set) — a link only ever appears here when one was
                       actually found. */}
                   {i === 0 && mostRecentRoundTraceHref ? (
-                    <Link href={mostRecentRoundTraceHref} className="text-xs text-accent-700 underline-offset-2 hover:underline">
+                    <Link
+                      href={mostRecentRoundTraceHref}
+                      className="inline-flex items-center text-xs text-accent-700 underline-offset-2 hover:underline [@media(pointer:coarse)]:min-h-11"
+                    >
                       View flight trace →
                     </Link>
                   ) : null}

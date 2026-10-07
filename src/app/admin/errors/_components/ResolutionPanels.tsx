@@ -128,7 +128,12 @@ export function ResolutionSummary({ resolution }: { resolution: ArchivedResoluti
           <dt className="text-caption uppercase tracking-widest text-warm-500">Pull request</dt>
           <dd className="text-sm">
             {resolution.prUrl ? (
-              <a href={resolution.prUrl} target="_blank" rel="noreferrer" className="text-accent-700 underline">
+              <a
+                href={resolution.prUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center text-accent-700 underline [@media(pointer:coarse)]:min-h-11"
+              >
                 {resolution.prNumber ? `PR #${resolution.prNumber}` : 'open PR'}
               </a>
             ) : resolution.prNumber ? (

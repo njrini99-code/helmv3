@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'My Qualifiers | GolfHelm',
+  title: 'My Qualifiers',
   description: 'View your qualifier entries, scores, and upcoming qualifying events.',
 };
 

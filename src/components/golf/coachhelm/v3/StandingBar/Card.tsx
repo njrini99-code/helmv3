@@ -26,9 +26,10 @@ import {
   pgaOmissionNote,
   pgaReferenceLabel,
   resolveDisplayScale,
+  unitHardBounds,
   shouldShowTeamMarker,
   standingSubjectLabel,
-  teamRelativeText,
+  cohortComparisonText,
   toScalePct,
 } from './utils';
 import { EASE_CINEMATIC, DURATION, useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
@@ -61,7 +62,7 @@ export function Card(props: CardProps) {
   const effectiveScale = resolveDisplayScale(
     props.scale,
     [props.player_value, showTeam ? props.team_avg : null, props.pga_omitted ? null : props.pga_value],
-    { symmetric: isSgMetric },
+    { symmetric: isSgMetric, hardBounds: unitHardBounds(props.unit) },
   );
   const youPct = toScalePct(props.player_value, effectiveScale);
   const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, effectiveScale) : null;
@@ -72,7 +73,7 @@ export function Card(props: CardProps) {
   // renders (team_n>=5 && team_avg!=null). On a tiny roster the comparison is
   // statistical noise, so we suppress the caption alongside the hidden marker.
   const cohortText = showTeam
-    ? teamRelativeText(props.player_value, props.team_avg, props.direction, props.unit)
+    ? cohortComparisonText(props)
     : '';
   const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).short;
   const omissionNote = pgaOmissionNote(props);
@@ -103,8 +104,11 @@ export function Card(props: CardProps) {
         )}
       </div>
 
-      {/* Explicit comparison cells — no cryptic loose labels floating over a rail. */}
-      <div className="mb-4 grid grid-cols-3 gap-2 tabular-nums">
+      {/* Explicit comparison cells — no cryptic loose labels floating over a rail.
+          NUM-38: cells never truncate ("TE… 5…" at 390px). They keep a
+          minimum width and wrap to a second row when the card is too narrow
+          for three. */}
+      <div className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(5.5rem,1fr))] gap-2 tabular-nums" data-slot="standing-comparison-cells">
         <ComparisonCell
           label="Team"
           value={showTeam && props.team_avg !== null ? formatValue(props.team_avg, props.unit) : '—'}
@@ -137,7 +141,7 @@ export function Card(props: CardProps) {
       {/* Scale endpoints — reflect the WIDENED domain (`effectiveScale`), not
           the raw caller-supplied `props.scale`, so the printed range always
           agrees with where the markers above actually sit. */}
-      <div className="mt-1 flex items-baseline justify-between font-fw-mono text-eyebrow text-text-tertiary tabular-nums">
+      <div className="mt-1 flex items-baseline justify-between font-fw-mono text-caption text-text-tertiary tabular-nums">
         <span>{formatValue(effectiveScale.min, props.unit)}</span>
         <span>{formatValue(effectiveScale.max, props.unit)}</span>
       </div>
@@ -149,11 +153,11 @@ export function Card(props: CardProps) {
 
       {/* A2: a suppressed reference with a reason says why (not "missing data"). */}
       {omissionNote && (
-        <p className="text-xs text-warm-500 mt-2">{omissionNote}</p>
+        <p className="text-xs text-text-tertiary mt-2">{omissionNote}</p>
       )}
 
       {state === 'cold-start' && (
-        <p className="text-xs text-warm-500 mt-2">
+        <p className="text-xs text-text-tertiary mt-2">
           Team marker appears once 5+ teammates have 5+ rounds each.
         </p>
       )}
@@ -179,14 +183,14 @@ function ComparisonCell({
       }
     >
       <span className="sr-only">{label} {value}</span>
-      <span className="block truncate font-fw-display text-eyebrow font-semibold uppercase tracking-[0.08em] text-text-tertiary">
+      <span className="block break-words font-fw-sans text-caption font-semibold text-text-tertiary">
         {label}
       </span>
       <strong
         className={
           emphasis
-            ? 'mt-0.5 block truncate font-fw-mono text-body-lg font-semibold text-fw-success-ink tabular-nums'
-            : 'mt-0.5 block truncate font-fw-mono text-body font-medium text-text-primary tabular-nums'
+            ? 'mt-0.5 block whitespace-nowrap font-fw-mono text-body-lg font-semibold text-fw-success-ink tabular-nums'
+            : 'mt-0.5 block whitespace-nowrap font-fw-mono text-body font-medium text-text-primary tabular-nums'
         }
       >
         {value}
@@ -205,7 +209,7 @@ function CardSkeleton() {
       role="status"
       aria-label="Loading standing"
       data-state="loading"
-      className="glass-standard rounded-2xl shadow-glass p-5 animate-pulse"
+      className="glass-standard rounded-card shadow-glass p-5 animate-pulse"
     >
       <div className="h-3 w-32 bg-warm-100 rounded mb-3" />
       <div className="h-3 w-full bg-warm-100 rounded mb-2" />
@@ -219,7 +223,7 @@ function CardError({ message }: { message?: string }) {
     <div
       role="alert"
       data-state="error"
-      className="glass-standard border-red-200 rounded-2xl p-5"
+      className="glass-standard border-red-200 rounded-card p-5"
     >
       <p className="text-sm text-red-700">
         Couldn’t load standing.
@@ -237,10 +241,10 @@ function CardEmpty({ label }: { label: string }) {
   return (
     <div
       data-state="empty"
-      className="glass-standard rounded-2xl shadow-glass p-5"
+      className="glass-standard rounded-card shadow-glass p-5"
     >
       <h3 className="text-sm font-medium text-warm-900 tracking-[-0.01em]">{label}</h3>
-      <p className="text-xs text-warm-500 mt-2">
+      <p className="text-xs text-text-tertiary mt-2">
         Log 5 rounds to see how you stack up.
       </p>
     </div>
@@ -344,7 +348,7 @@ export function Bar({ youPct, teamPct, pgaPct, size, zeroPct = null, fill = null
           leftPct={drawnPct.get('pga')!}
           markerSize={markerSize}
           label="P"
-          toneClass="bg-warm-400 text-white"
+          toneClass="bg-text-tertiary text-surface"
           delay={0.08}
         />
       )}
@@ -355,7 +359,7 @@ export function Bar({ youPct, teamPct, pgaPct, size, zeroPct = null, fill = null
           leftPct={drawnPct.get('team')!}
           markerSize={markerSize}
           label="T"
-          toneClass="bg-warm-600 text-white"
+          toneClass="bg-text-secondary text-surface"
           delay={0.14}
         />
       )}
@@ -363,7 +367,7 @@ export function Bar({ youPct, teamPct, pgaPct, size, zeroPct = null, fill = null
        *
        * The label is EMPTY on purpose: the filled circle IS the mark. It used
        * to pass '●', which rendered an 11px (`text-eyebrow`) white bullet glyph
-       * inside a 12px (`w-3 h-3`) `bg-primary-600` circle — the glyph covered
+       * inside a 12px (`w-3 h-3`) `bg-accent-fill` circle — the glyph covered
        * the middle and the "you" marker read as a hollow white donut with a
        * thin green rim (Nick's 07-24 round-review screenshot). That inverted
        * the hierarchy: the two REFERENCE chips ('T'/'P') were legible while the
@@ -375,7 +379,7 @@ export function Bar({ youPct, teamPct, pgaPct, size, zeroPct = null, fill = null
         leftPct={drawnPct.get('you')!}
         markerSize={markerSize}
         label=""
-        toneClass="bg-primary-600 ring-2 ring-primary-200 shadow-[0_0_0_4px_rgba(22,163,74,0.16)]"
+        toneClass="bg-accent-fill ring-2 ring-primary-200 shadow-[0_0_0_4px_rgba(22,163,74,0.16)]"
         delay={0.22}
       />
     </div>
@@ -417,7 +421,7 @@ function Marker({ kind, leftPct, markerSize, label, toneClass, delay }: MarkerPr
       initial={reduce ? false : { opacity: 0, scale: initialScale }}
       animate={reduce ? false : { opacity: 1, scale: 1 }}
       transition={reduce ? undefined : transition}
-      className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 ${markerSize} rounded-full flex items-center justify-center text-eyebrow font-semibold ${toneClass}`}
+      className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 ${markerSize} rounded-full flex items-center justify-center text-caption font-semibold ${toneClass}`}
       style={{ left: `${leftPct}%`, transformOrigin: 'center' }}
       aria-hidden="true"
     >

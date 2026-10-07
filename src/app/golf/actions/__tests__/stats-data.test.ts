@@ -243,8 +243,8 @@ describe('stats-data server actions', () => {
 
     it('calculates summary stats correctly when rounds exist', async () => {
       const roundsData = [
-        { id: 'r1', round_date: '2026-02-01', course_name: 'TPC', round_type: 'practice', total_score: 72, score_to_par: 0, total_fairways_hit: 10, total_fairways: 14, total_gir: 12, total_gir_possible: 18, total_putts: 30, holes_played: 18 },
-        { id: 'r2', round_date: '2026-02-05', course_name: 'TPC', round_type: 'practice', total_score: 74, score_to_par: 2, total_fairways_hit: 8, total_fairways: 14, total_gir: 10, total_gir_possible: 18, total_putts: 32, holes_played: 18 },
+        { id: 'r1', round_date: '2026-02-01', course_name: 'TPC', round_type: 'practice', total_score: 72, score_to_par: 0, total_fairways_hit: 10, total_fairways: 14, total_gir: 12, total_gir_possible: 18, total_putts: 30, holes_played: 18, front_nine: 36, back_nine: 36 },
+        { id: 'r2', round_date: '2026-02-05', course_name: 'TPC', round_type: 'practice', total_score: 74, score_to_par: 2, total_fairways_hit: 8, total_fairways: 14, total_gir: 10, total_gir_possible: 18, total_putts: 32, holes_played: 18, front_nine: 37, back_nine: 37 },
       ];
 
       mockRoundsData = roundsData;
@@ -398,6 +398,8 @@ describe('stats-data preset limits behavior', () => {
       total_fairways_hit: null, total_fairways: null,
       total_gir: null, total_gir_possible: null,
       total_putts: null, holes_played: 18,
+      // Fully scored (countable) rounds: nine totals summing to total_score.
+      front_nine: 36, back_nine: 36 + i,
     }));
 
     mockRoundsData = manyRounds;
@@ -426,7 +428,7 @@ describe('2026-06-09 fix E — getDetailedStats passes holes_played into RoundIn
     mockRoundsData = [{
       id: 'r9', round_date: '2026-03-01', course_name: 'Short Loop',
       round_type: 'practice', total_score: 38, score_to_par: 2,
-      holes_played: 9,
+      holes_played: 9, front_nine: 38, back_nine: null,
       total_fairways_hit: null, total_fairways: null,
       total_gir: null, total_gir_possible: null, total_putts: null,
     }];
@@ -523,14 +525,14 @@ describe('2026-06-09 fix F — getTrendAnalysis bestToPar normalizes to 18-hole 
       {
         id: 'r18', round_date: '2026-03-01', course_name: 'Long Track',
         round_type: 'practice', total_score: 69, score_to_par: -3,
-        holes_played: 18,
+        holes_played: 18, front_nine: 34, back_nine: 35,
         total_fairways_hit: null, total_fairways: null,
         total_gir: null, total_gir_possible: null, total_putts: null,
       },
       {
         id: 'r9', round_date: '2026-03-02', course_name: 'Short Loop',
         round_type: 'practice', total_score: 34, score_to_par: -2,
-        holes_played: 9,
+        holes_played: 9, front_nine: 34, back_nine: null,
         total_fairways_hit: null, total_fairways: null,
         total_gir: null, total_gir_possible: null, total_putts: null,
       },

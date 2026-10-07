@@ -155,7 +155,7 @@ describe('EvidencePanel', () => {
     expect(screen.getByTestId('evidence-impact').textContent).toContain('strokes');
 
     // Confidence
-    expect(screen.getByTestId('evidence-confidence').textContent).toContain('78%');
+    expect(screen.getByTestId('evidence-confidence').textContent).toContain('Solid read');
   });
 
   it('expanded mode renders all seven rows', () => {
@@ -178,23 +178,25 @@ describe('EvidencePanel', () => {
   });
 
   describe('confidenceColor thresholds', () => {
-    it('returns green (primary) for confidence >= 0.7', () => {
+    it('returns green (accent) for confidence >= 0.7', () => {
       const result = confidenceColor(0.7);
-      expect(result.bar).toContain('primary');
-      expect(result.text).toContain('primary');
+      expect(result.bar).toContain('accent');
+      expect(result.text).toBe('text-accent-ink');
+      expect(result.bg).toBe('bg-accent-wash');
     });
 
     it('returns amber for confidence 0.4 <= c < 0.7', () => {
       const low = confidenceColor(0.4);
       const mid = confidenceColor(0.6);
-      expect(low.bar).toContain('amber');
-      expect(mid.bar).toContain('amber');
+      expect(low.bar).toContain('warning');
+      expect(mid.bar).toContain('warning');
+      expect(mid.text).toBe('text-fw-warning-text');
     });
 
     it('returns gray for confidence < 0.4', () => {
       const result = confidenceColor(0.3);
-      expect(result.bar).toContain('warm');
-      expect(result.text).toContain('warm');
+      expect(result.text).toBe('text-text-tertiary');
+      expect(result.bg).toBe('bg-surface-sunken');
     });
   });
 

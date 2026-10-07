@@ -16,10 +16,11 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { ChartTooltip } from './ChartTooltip';
 import { VIZ_CHROME, VIZ_COLOR } from './theme';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface MakeCurvePoint {
   label: string;
@@ -98,7 +99,7 @@ const Y_GRIDLINES = [0, 50, 100];
 const ENTRANCE_MS = 380;
 
 export function MakeCurve({ points, ariaLabel }: MakeCurveProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard() ?? false;
   const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
 
   const runs = React.useMemo(() => computeLineRuns(points), [points]);

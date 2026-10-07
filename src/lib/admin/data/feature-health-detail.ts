@@ -309,14 +309,18 @@ export function rankFeatureDetailRows<T extends FeatureDetailRankable>(rows: rea
 // ---------------------------------------------------------------------------
 
 export const DETAIL_WINDOW_DAYS = 7;
-// Real 7d production volume at design time was ~2,100 admin_events rows
-// total (317 + 94 + 8 + 462 + 615 + 50 + 25 attributed + 539 unattributed —
-// 2026-08-27 snapshot). 8,000 leaves ample headroom for a bad week without
-// ever silently discarding today's numbers; `rowsTruncated` below tells the
-// UI (and the UI tells the reader) on the rare week this still isn't enough.
-// Exported (not just a local const) so the page can name the exact bound in
-// its own truncation notice rather than restating a magic number by hand.
-export const DETAIL_ROW_LIMIT = 8000;
+// Was 8000. PostgREST caps every response at 1,000 rows regardless of the
+// `.limit()` requested (trap: database.md) — real 7d production volume at
+// design time was ~2,100 admin_events rows (2026-08-27 snapshot), well past
+// that cap, so `.limit(8000)` always came back at 1,000 and `rows.length >=
+// RAW_EVENT_ROW_LIMIT` could never be true: `rowsTruncated` was dead code,
+// always false, silently under-counting every feature's 7d numbers on a
+// week like that one with no way for the UI to say so. 1,000 matches the
+// real cap, so the truncation flag now fires exactly when the page IS
+// missing rows. Exported (not just a local const) so the page can name the
+// exact bound in its own truncation notice rather than restating a magic
+// number by hand.
+export const DETAIL_ROW_LIMIT = 1000;
 const RAW_EVENT_ROW_LIMIT = DETAIL_ROW_LIMIT;
 
 export type FeatureDetailKind = 'registered' | 'unregistered';

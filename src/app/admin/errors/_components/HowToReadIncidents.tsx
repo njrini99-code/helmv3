@@ -14,7 +14,9 @@ import { ChevronRight } from 'lucide-react';
 
 function Term({ term, children }: { term: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[minmax(6rem,8rem)_minmax(0,1fr)] gap-x-3">
+    // Stacked on a phone: a 6-8rem term column left ~160px for the
+    // definition at 375px, wrapping every sentence into a narrow ribbon.
+    <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-[minmax(6rem,8rem)_minmax(0,1fr)]">
       <dt className="font-fw-mono text-caption font-semibold uppercase leading-5 text-warm-700">{term}</dt>
       <dd className="text-caption leading-5 text-warm-700">{children}</dd>
     </div>
@@ -33,7 +35,7 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
 export function HowToReadIncidents() {
   return (
     <details className="group rounded-fw-md bg-surface-sunken px-3 py-2">
-      <summary className="flex cursor-pointer list-none items-center gap-1.5 text-body-sm font-medium text-warm-800 [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 text-body-sm font-medium text-warm-800 [&::-webkit-details-marker]:hidden [@media(pointer:coarse)]:min-h-11">
         <ChevronRight size={14} aria-hidden className="transition-transform group-open:rotate-90 motion-reduce:transition-none" />
         How to read this page
       </summary>

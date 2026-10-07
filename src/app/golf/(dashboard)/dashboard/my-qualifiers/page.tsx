@@ -66,7 +66,8 @@ export default async function MyQualifiersPage() {
         course_name,
         start_date,
         end_date,
-        status
+        status,
+        is_test
       )
     `)
     .eq('player_id', player.id);
@@ -99,6 +100,7 @@ export default async function MyQualifiersPage() {
     .from('golf_rounds')
     .select('qualifier_id, qualifier_round_number, total_score, score_to_par, holes_played')
     .eq('player_id', player.id)
+    .eq('is_test', false)
     .in('qualifier_id', qualifierIds)
     .eq('status', 'completed');
 
@@ -128,11 +130,13 @@ export default async function MyQualifiersPage() {
       start_date: string;
       end_date: string | null;
       status: string;
+      is_test: boolean;
     } | null;
   };
 
   const qualifiers: PlayerQualifierInfo[] = (entries as unknown as QualifierEntry[])
-    .filter((e) => e.qualifier && typeof e.qualifier === 'object' && !('error' in e.qualifier))
+    // QA qualifiers (is_test, OD-03) are hidden from players.
+    .filter((e) => e.qualifier && typeof e.qualifier === 'object' && !('error' in e.qualifier) && !e.qualifier.is_test)
     .map((entry) => {
       const q = entry.qualifier as {
         id: string;

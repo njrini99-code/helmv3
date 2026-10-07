@@ -2,14 +2,10 @@
 
 import { useState } from 'react';
 import { Button, IconButton } from '@/components/ui/button';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmAlert } from '@/components/fairway/overlays/ConfirmAlert';
 import { IconX, IconClock, IconMapPin, IconUser } from '@/components/icons';
 import { formatTimeDisplay, formatDaysDisplay } from '@/lib/utils/schedule-parser';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from '@/components/ui/drawer';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 
 interface ClassDetailModalProps {
   isOpen: boolean;
@@ -62,16 +58,17 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
   };
 
   return (
-    <Drawer
+    <>
+    <Sheet
       open={isOpen}
       onOpenChange={(next) => {
         if (!next) onClose();
       }}
+      title={classData.course_name || 'Untitled Class'}
+      customTitle
+      hideClose
+      className="overflow-hidden sm:mx-auto sm:max-w-md"
     >
-      <DrawerContent
-        className="sm:max-w-md sm:mx-auto sm:rounded-3xl p-0 overflow-hidden"
-        aria-labelledby="class-detail-title"
-      >
         {/* Color header */}
         {/* `--fw-color-accent-500` (NOT `--color-primary-600`, which has no
             dark-mode override and stays the flat light-mode green under dark
@@ -88,9 +85,9 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
               <span className="font-mono text-sm font-medium text-accent-700">
                 {classData.course_code}
               </span>
-              <DrawerTitle id="class-detail-title" className="text-h3 font-medium text-text-primary tracking-[-0.015em] mt-1">
+              <Sheet.Title className="font-fw-sans text-h3 font-medium text-text-primary tracking-[-0.015em] mt-1">
                 {classData.course_name || 'Untitled Class'}
-              </DrawerTitle>
+              </Sheet.Title>
               {classData.semester.trim() && (
                 <p className="text-sm text-text-tertiary mt-1">{classData.semester}</p>
               )}
@@ -98,7 +95,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
             <IconButton variant="default"
               onClick={onClose}
               aria-label="Close"
-              className="p-2 text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
+              className="p-2 text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken rounded-fw-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
             >
               <IconX size={20} />
             </IconButton>
@@ -109,7 +106,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
         <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6 space-y-4">
           {/* Schedule */}
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-surface-sunken flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-fw-md bg-surface-sunken flex items-center justify-center flex-shrink-0">
               <IconClock size={20} className="text-text-tertiary" />
             </div>
             <div>
@@ -127,7 +124,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
           {/* Location */}
           {(classData.location || classData.building || classData.room) && (
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-surface-sunken flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-fw-md bg-surface-sunken flex items-center justify-center flex-shrink-0">
                 <IconMapPin size={20} className="text-text-tertiary" />
               </div>
               <div>
@@ -142,7 +139,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
           {/* Instructor */}
           {classData.instructor && (
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-surface-sunken flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-fw-md bg-surface-sunken flex items-center justify-center flex-shrink-0">
                 <IconUser size={20} className="text-text-tertiary" />
               </div>
               <div>
@@ -153,9 +150,9 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
           )}
 
           {/* Credits */}
-          {classData.credits && (
+          {classData.credits != null && classData.credits > 0 && (
             <div className="flex items-center gap-2 text-sm">
-              <span className="px-2 py-1 bg-surface-sunken rounded-md text-text-secondary font-medium">
+              <span className="px-2 py-1 bg-surface-sunken rounded-fw-sm text-text-secondary font-medium">
                 {classData.credits} credits
               </span>
             </div>
@@ -163,7 +160,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
 
           {/* Notes */}
           {classData.notes && (
-            <div className="p-3 bg-surface-sunken rounded-xl">
+            <div className="p-3 bg-surface-sunken rounded-fw-md">
               <p className="text-xs font-medium text-text-tertiary mb-1">Notes</p>
               <p className="text-sm text-text-secondary">{classData.notes}</p>
             </div>
@@ -171,7 +168,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-border-subtle bg-surface-sunken">
+        <div className="flex items-center justify-between px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-border-subtle bg-surface-sunken">
           <Button
             variant="secondary"
             onClick={handleDeleteClick}
@@ -184,9 +181,10 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
             Edit Class
           </Button>
         </div>
+    </Sheet>
 
-        {/* Delete Confirmation Dialog */}
-        <ConfirmDialog
+        {/* Delete Confirmation Dialog: a sibling of the Sheet, stacked above it. */}
+        <ConfirmAlert
           open={showDeleteConfirm}
           title="Delete Class"
           message={`Are you sure you want to delete ${classData.course_code}? This will remove the class and all associated calendar events. This action cannot be undone.`}
@@ -197,7 +195,6 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
           onConfirm={handleDeleteConfirm}
           onCancel={handleDeleteCancel}
         />
-      </DrawerContent>
-    </Drawer>
+    </>
   );
 }

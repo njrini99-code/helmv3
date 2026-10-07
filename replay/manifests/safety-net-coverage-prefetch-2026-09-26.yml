@@ -1,0 +1,29 @@
+schema_version: 1
+replay_id: safety-net-coverage-prefetch-2026-09-26
+incident_id: memory/incidents/coachhelm_ai/INC-2026-09-26-safety-net-coverage-n-plus-one.md
+feature_id: coachhelm_ai
+title: >-
+  coachhelm-safety-net read golf_rounds once per parked player (Sentry N+1
+  JAVASCRIPT-NEXTJS-107); prefetchNewestAnalyzed makes it one read per tick.
+bad_version: 8abeccd2a17da87c89554c523ddb5676e9ee7045
+fixed_version: 6ef000d89b957916f3b7261a3cbbc4865acdccf7
+fixture:
+  - source: coachhelm-safety-net-reconcile.test.ts
+    target: src/test/api/cron/coachhelm-safety-net-reconcile.test.ts
+test_command: "./node_modules/.bin/vitest run src/test/api/cron/coachhelm-safety-net-reconcile.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic round rows with invented IDs ('p1', 'pa', 'r1'); no production
+    rows, player IDs, PII, tokens or logs.
+source_incident_status: fixed
+created_at: "2026-09-26"
+notes: >-
+  On bad_version one test fails: "expected 9 to be 5" (5 parked players cost 9
+  golf_rounds reads, 1 player costs 5). The coverage and truncation tests pass
+  on both versions; they guard behaviour, not the read count.

@@ -103,14 +103,16 @@ This area is high criticality because it often uses broader access patterns, ope
   PostgREST failures grouped by fingerprint, `pg_stat_statements`
   delta/regression detection — read from `helm_debug` every 5-15 minutes via
   `src/lib/admin/database/{overview,errors,performance}.ts`. Its data source
-  (`src/lib/observability/supabase/**`, four new `helm_debug` tables) is
-  **HELD, not applied to production** — see `supabase/migrations/HELD.md` —
-  so every fetcher currently renders "not shipped yet"
-  (`status: 'unconfigured'`), not a false failure state.
+  (`src/lib/observability/supabase/**`, the `helm_debug` collector tables)
+  is **applied in production** (2026-09-03; see `supabase/migrations/HELD.md`,
+  verified live 2026-09-23). The `status: 'unconfigured'` path remains only
+  for a database without those tables (a fresh local stack or a preview), so
+  it renders "not shipped yet" there rather than a false failure state.
 - `src/app/api/cron/db-health-sampler/**`, `db-stat-delta/**`,
   `db-observability-prune/**` — the three Vercel-cron collectors behind
-  `/admin/database` (5m / 15m / daily). Degrade cleanly on the HELD-migration
-  "not found" error shape, same pattern as `helm-debug-prune/route.ts`.
+  `/admin/database` (5m / 15m / daily). Degrade cleanly on the
+  missing-migration "not found" error shape (fresh or preview databases),
+  same pattern as `helm-debug-prune/route.ts`.
 - `src/app/api/cron/selfheal-triage/**` — the self-healing loop's Diagnose
   stage, moved here from an Anthropic-hosted cloud routine (2026-09-02). Its
   collection/apply core is `src/lib/admin/triage-collect.ts` /
@@ -251,11 +253,21 @@ them would have broken those routes, not the dead one.
   every status-based filter would have missed. Both `admin_reliability_collector`
   and `admin_selfheal` write to this shared table under this vocabulary.
   every status-based filter would have missed.
+- **`admin_events.source` is a closed enum** — `ADMIN_EVENT_SOURCES` in
+  `src/lib/admin-logger.ts` mirrors the DB check constraint
+  `admin_events_source_check`; `logAdminEvent`'s `source` is typed to it.
+  A caller's free-form origin belongs in metadata (`logEmailSuppressed` →
+  `metadata.origin`), never in `source`: the constraint rejected 1,006
+  `email.suppressed` writes as `bridge_write_failed` before this (#1917).
 - **As of 2026-09-02, `recordJobRun` also drives a Sentry Cron Monitor
   check-in — a SEPARATE signal from `background_job_logs`/the Jobs board,
   not a replacement for it.** `startCronCheckIn`/`finishCronCheckIn`
   (`src/lib/observability/cron-monitors.ts`) wrap all 3 exit paths (success,
-  a resolved >=400 Response, a thrown error), keyed by a monitor slug
+  a resolved >=400 Response, a thrown error), and each path `await`s
+  `flushCronCheckIn` before returning — Vercel freezes the function on
+  response, and an unflushed terminal check-in is what Sentry reports as a
+  monitor timeout (`api-cron-db-health-sampler`, ~half its runs, #1918).
+  Check-ins are keyed by a monitor slug
   resolved from `CRON_REGISTRY` (`api-cron-<dashed-path>`, or
   `job-<jobType>` for anything unregistered). This is Sentry's OWN Cron
   Monitors feature (an external "did this heartbeat arrive on schedule"
@@ -277,8 +289,9 @@ them would have broken those routes, not the dead one.
   (The launchd Repair script and its own Sentry check-in helper —
   scripts/lib/sentry-cron-checkin.mjs no longer exists — were removed 2026-09-05
   along with the rest of the launchd Repair path — see `memory/features/admin-selfheal.md`;
-  Repair now runs as `.github/workflows/selfheal-repair.yml`, which reports
-  through a `background_job_logs` heartbeat step, not a Sentry Cron Monitor.)
+  Repair ran as `.github/workflows/selfheal-repair.yml` from 2026-09-05 and,
+  since 2026-09-23, as the Claude desktop health routine; both report through
+  a `background_job_logs` heartbeat, not a Sentry Cron Monitor.)
 - **Only a TOTALLY blind reliability run returns 503; a partially blind one
   returns 200.** `recordJobRun` does more than write a job row on a >=400 — it
   also calls `logServerEvent(..., 'error')`, which writes an `admin_events` row.
@@ -350,7 +363,10 @@ them would have broken those routes, not the dead one.
   `background_job_logs` recorded 72 consecutive `completed` runs. Reasons
   written into a cron response must be SCALARS: `recordJobRun`'s
   `extractOutcomeMetadata` keeps only top-level scalars and silently drops
-  arrays.
+  arrays. Since 2026-09-24 the same bounded scalar snapshot is taken from a
+  job that returns a PLAIN OBJECT (not a Response), which is how
+  `selfheal-close` reports `AutoResolveResult`; before that every
+  `selfheal-close` row carried `metadata = null`.
 - **A source that could not be read is never reported as zero problems.** The
   reliability collector's arms each return `{status, reason, signals}`, and the
   run's status is the WORST arm — so a run whose Sentry token is missing writes
@@ -412,6 +428,15 @@ them would have broken those routes, not the dead one.
   of 50 production traces miss declared-required steps while 40 of those
   succeeded — a short trace is not a failed one, and a combined "46 problems"
   figure would be false. `trace-fleet.ts` counts them separately;
+  outcome counts only what a trace recorded: `succeeded` is counted from
+  status 'success', never derived as total minus failures. A trace still
+  'started' after `STUCK_TRACE_AFTER_MS` (15 min) is `stuck` ("never
+  closed", neutral tone), and a younger one is `running`. `stuck` is not a
+  failure count: on 2026-09-23 all 68 open traces were
+  `golf.round.autosave`, and each one with steps ended on a successful
+  `db.save_partial_round_atomic.commit`, so the autosave path leaves traces
+  open (an instrumentation gap). Deriving healthy by
+  subtraction had shown 62 never-finalized runs as succeeded (2026-09-23);
   `stepCoverage` returns null rather than inventing a denominator. This is
   `/admin/traces`, a DIFFERENT Flight Recorder from the self-healing loop's
   Diagnose/Repair pipeline in `admin_selfheal`.
@@ -545,6 +570,18 @@ them would have broken those routes, not the dead one.
   `durableCollapse: true`, out with `false`. Severity is never changed by it.
   The Vercel insights reader additionally negative-caches its own failure for
   5 minutes per process so a dead endpoint is not re-probed on every refresh.
+- **Database-saturation rows are throttled per process before they write.**
+  During the 2026-09-24 pool-exhaustion brownout (#2061) every failing read
+  also wrote an `error_logs` row and an `admin_events` row into the database
+  that was already saturated. `server-error-logger.ts` now treats a trace
+  whose code (`errorCode` or `extra.errorCode`) is `57014`, `PGRST003`,
+  `PGRST002` or `53300`, or whose message is one of those failures' own text,
+  as a saturation signal: within `DB_SATURATION_WRITE_WINDOW_MS` (60s) a
+  repeat of the same fingerprint in the same process writes nothing, and the
+  next row that does write carries the suppressed count in
+  `metadata.metadata.collapsed_count`. Sentry still gets every occurrence. A
+  row that does not land gives the window back (`releaseEmit`). Every other
+  trace writes exactly as before.
 - **In production a MISSING Inngest credential is a fault, not a config
   state.** `integration-health.ts`'s "never report unconfigured" is right for
   an optional Bridge reader and wrong for Inngest, on which round analysis,
@@ -607,6 +644,12 @@ them would have broken those routes, not the dead one.
 ## UI Contract
 
 - Admin surfaces should be dense, scannable, and operational rather than marketing-style.
+- Every tab has one `<h1>`, from `TabHeader` (`src/app/admin/_components/TabHeader.tsx`),
+  with no eyebrow or second masthead. Methodology and "how this is counted"
+  prose sits behind its native Details disclosure, never above the data and
+  never hidden on phones. Tap targets are 44px on coarse pointers
+  (`[@media(pointer:coarse)]:min-h-11`), keyed to input, not width (Bridge
+  mobile rework, 2026-09-24).
 - Health, errors, data freshness, and needs-attention states should be visible without hunting.
 - A count that could not be read is rendered as UNREADABLE, never as zero and
   never as nothing — the Health badge follows this rule, the same as the
@@ -1514,7 +1557,14 @@ assumed it would:
   tagging casually: the current check keys on `VERCEL_ENV`'s absence, and if
   that assumption ever broke, real production errors would be relabelled and
   any alert rule scoped to `environment:production` would go silent, which is
-  worse than the noise. Sentry's Supabase tracing instrumentation
+  worse than the noise. The one downgrade that is safe, and now applied
+  first in both `resolveServerEnvironment` and the `admin_events` gate
+  (`shouldPersistAdminTables`/`getRuntimeEnv`), is `NODE_ENV === 'development'`:
+  Vercel forces `NODE_ENV=production` on every build and runtime, so
+  `next dev` is positive evidence of a laptop even when a pulled
+  `.env.local` carries `VERCEL="1"` + `VERCEL_ENV=production` (#1919 —
+  2026-09-08 dev traffic from `Mac.lan` tagged production in Sentry and
+  written to the prod ledger). Sentry's Supabase tracing instrumentation
   (`@supabase/supabase-js/tracing` + `Sentry.instrumentSupabaseClient()`)
   also reports a failed query to Sentry on its own, independent of whether
   the calling code caught and handled it gracefully — a correctly-handled

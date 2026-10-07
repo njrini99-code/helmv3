@@ -81,6 +81,43 @@ export interface ClientSentryOptions {
   ignoreErrors: (string | RegExp)[];
 }
 
+/**
+ * The browser connectivity hook intentionally treats any response from
+ * /api/health as proof that the device reached the server. A 503 still
+ * indicates an unhealthy backend, but it is not a browser exception the
+ * player can act on. The route's bounded server-side readiness probe and its
+ * Bridge record remain the source of truth for that failure.
+ *
+ * Keep this deliberately narrower than a generic 5xx filter: it only drops
+ * Sentry's automatic fetch capture for this one probe and status code.
+ */
+export function isHealthProbeFetchEcho(event: {
+  request?: { url?: string | undefined } | undefined;
+  exception?: {
+    values?: Array<{
+      value?: string | undefined;
+      mechanism?: { type?: string | undefined } | undefined;
+    }> | undefined;
+  } | undefined;
+}): boolean {
+  const url = event.request?.url;
+  if (!url) return false;
+
+  let pathname: string;
+  try {
+    pathname = new URL(url, 'https://helm.invalid').pathname;
+  } catch {
+    return false;
+  }
+
+  if (pathname !== '/api/health') return false;
+
+  return event.exception?.values?.some((value) =>
+    value.mechanism?.type === 'auto.http.client.fetch'
+      && value.value === 'HTTP Client Error with status code: 503',
+  ) ?? false;
+}
+
 /** Blank/undefined/non-finite -> fallback. Otherwise clamped into [0, 1]. */
 export function parseSampleRateEnv(raw: string | undefined, fallback: number): number {
   if (raw === undefined) return fallback;
@@ -113,6 +150,34 @@ export const CLIENT_IGNORE_ERRORS: (string | RegExp)[] = [
   'TypeError: cancelled',
   // User-initiated navigation
   'AbortError',
+  // @supabase/auth-js's own "commit guard" (GoTrueClient `_callRefreshToken`):
+  // a token refresh completed, but storage changed under it mid-flight — a
+  // concurrent `signOut`, or another tab that rotated the refresh token first.
+  // auth-js DISCARDS the rotated tokens deliberately, RETURNS this as an
+  // `error` VALUE (it is never thrown), exports `isAuthRefreshDiscardedError`
+  // for callers to branch on, and handles it internally in `__loadSession`.
+  // Nothing in Helm has to react to it.
+  //
+  // It reaches Sentry anyway because @sentry/core's Supabase auto-
+  // instrumentation (`instrumentAuthOperation`, integrations/supabase.js)
+  // captures ANY returned `{ error }` from an instrumented auth call as
+  // `mechanism: { handled: false, type: 'auto.db.supabase.auth' }` — so a
+  // value auth-js deliberately handles arrives as an UNHANDLED error on
+  // /golf/dashboard. First seen 2026-09-04 (JAVASCRIPT-NEXTJS-RR): 1 event,
+  // 0 users impacted, over 7 days.
+  //
+  // Matches as a substring against both `value` and `${type}: ${value}` —
+  // see @sentry/core's `getPossibleEventMessages` (utils/eventUtils.js),
+  // which pushes both — so the bare type name hits the rendered title
+  // "AuthRefreshDiscardedError: Refresh result discarded: …".
+  //
+  // KNOWN GAP this filter does NOT fix, recorded here so the next person does
+  // not re-derive it: in the another-tab-rotated-first case, `__loadSession`'s
+  // `stillStored.refresh_token === currentSession.refresh_token` guard fails
+  // (the other tab already wrote a NEW refresh token), so `getUser()` returns
+  // `user: null` for someone who is still signed in. If spurious multi-tab
+  // sign-outs on golf are ever reported, start there — not at n=1.
+  'AuthRefreshDiscardedError',
   // ResizeObserver — benign, fires when layout settles
   /ResizeObserver loop/,
   // CefSharp's JavaScript bridge emits this when an embedded-browser host

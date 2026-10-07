@@ -172,7 +172,10 @@ const FEATURE_AREA = 'coachhelm_effectiveness';
  *
  * Retry (N-audit 2026-09-23): the Supabase client's underlying `fetch` can
  * THROW before ever returning a typed `{ data, error }` pair — most commonly
- * `TypeError: fetch failed` on a real network blip. That is a different
+ * `TypeError: fetch failed` on a real network blip — or, more often, RESOLVE
+ * that same blip as a typed insert `error` whose message is the fetch failure
+ * (fixed 2026-09-27, fingerprint f34bc102: that shape used to skip the retry
+ * and land on the Bridge as an error incident). Both shapes are retried. That is a different
  * failure mode from a constraint violation or RLS denial, which always come
  * back as a typed `error` above and are logged, never retried. One bounded
  * retry with a short backoff, gated on `isTransientFetchError` (the same
@@ -233,6 +236,14 @@ export async function recordInsightExposure(
     if (toInsert.length === 0) return;
 
     const { error } = await admin.from('golf_insight_exposure').insert(toInsert);
+    if (error && isTransientFetchError(error)) {
+      // postgrest-js usually RESOLVES a network blip as a typed error
+      // ({ message: 'TypeError: fetch failed', code: '' }) instead of throwing
+      // (see transient-error.ts, "TWO SHAPES"). Rethrow it so the bounded
+      // retry below covers this shape too; a constraint/RLS error is not
+      // transient and still falls through to the log. Fingerprint f34bc102.
+      throw Object.assign(new Error(error.message), { code: error.code });
+    }
     if (error) {
       await logServerError(`recordInsightExposure insert failed: ${error.message}`, {
         action: 'recordInsightExposure',

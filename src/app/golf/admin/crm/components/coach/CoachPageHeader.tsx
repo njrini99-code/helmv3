@@ -113,7 +113,7 @@ export function CoachPageHeader({
               <span className="text-text-tertiary">·</span>
               <span
                 className={cn(
-                  'px-1.5 py-0.5 rounded text-eyebrow font-bold',
+                  'px-1.5 py-0.5 rounded text-caption font-bold',
                   coach.division === 'D2'
                     ? 'bg-surface-sunken text-text-secondary'
                     : 'bg-accent-100 text-accent-700',
@@ -141,7 +141,7 @@ export function CoachPageHeader({
         isOverdue && coach.next_follow_up_at ? (
           <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-fw-sm bg-fw-danger-bg/80 border border-fw-danger/25/40">
             <IconClock size={12} className="text-fw-danger" />
-            <span className="text-eyebrow font-medium text-fw-danger-ink">
+            <span className="text-caption font-medium text-fw-danger-ink">
               Overdue follow-up · {formatShort(coach.next_follow_up_at)}
             </span>
           </div>

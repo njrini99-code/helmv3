@@ -3,7 +3,7 @@ import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchFingerprintDetail } from '@/lib/admin/data/errors';
 import { InlineNotice, StatStrip, StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
 import type { TriageSeverity } from '@/lib/admin/data/triage';
-import { extractActionName, featureLabelFor, resolveActionFilePath } from '@/lib/admin/incident-report';
+import { extractActionName, extractUserIdUnverified, featureLabelFor, resolveActionFilePath } from '@/lib/admin/incident-report';
 import { PanelBoundary } from '../../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
 import { PanelNoData } from '../../_components/PanelStates';
@@ -37,6 +37,8 @@ import { buildBoardAliasGroups, buildIncidentGenome } from '@/lib/admin/incident
 import { fetchCurrentReleaseWatch } from '@/lib/admin/incidents/release-watch';
 import { ReleaseRelationshipLabel } from '@/components/admin/premium';
 import { IncidentGenomePanel } from '../_components/IncidentGenomePanel';
+import { AffectedPeoplePanel } from '../_components/AffectedPeoplePanel';
+import { fetchAffectedPeopleForFingerprint } from '@/lib/admin/data/affected-people';
 export const dynamic = 'force-dynamic';
 
 const SEVERITY_TONE: Record<TriageSeverity, FwStatusTone> = {
@@ -203,10 +205,21 @@ export default async function FingerprintDetailPage({
     // The unified incident is fetched ALONGSIDE the forensics, not instead of
     // them: this page is the one surface where the raw occurrences still
     // matter, and a lifecycle read that fails must not take them down with it.
-    const [{ events, report, summary, forensics, trend, storedRca }, unified] = await Promise.all([
-      fetchFingerprintDetail(rawFingerprint),
-      fetchIncidentById(fingerprint).catch(() => null),
-    ]);
+    const [{ events, report, summary, forensics, trend, storedRca }, unified, affected] =
+      await Promise.all([
+        fetchFingerprintDetail(rawFingerprint),
+        fetchIncidentById(fingerprint).catch(() => null),
+        // WHO, alongside the occurrences — the identities `mergeTriage` has
+        // always read and discarded. Its own read rather than the board's
+        // capped `affectedPeople`: this page is the fault's whole history, not
+        // the board's 72h window. Fails to `known: false`, never to a silent
+        // empty, so "could not read who" can never render as "nobody".
+        fetchAffectedPeopleForFingerprint(rawFingerprint).catch(() => ({
+          people: [],
+          total: 0,
+          known: false,
+        })),
+      ]);
 
     if (events.length === 0 || !forensics) {
       // A reliability-sourced fingerprint (`rel:<signature>`, from the nightly
@@ -321,6 +334,12 @@ export default async function FingerprintDetailPage({
 
         <ForensicsHeader forensics={forensics} />
 
+        <AffectedPeoplePanel
+          people={affected.people}
+          total={affected.total}
+          known={affected.known}
+        />
+
         {/* Rollup the data layer already computed but previously discarded —
             an operator had to Copy the report and paste it elsewhere to see
             first-seen, unique users, or which deploys bracket the incident. */}
@@ -389,8 +408,10 @@ export default async function FingerprintDetailPage({
         <ul className="space-y-3">
           {events.map((e) => (
             <Surface as="li" key={e.id} padding="sm" className="min-w-0">
-              <div className="flex min-w-0 items-start justify-between gap-3">
-                <p className="min-w-0 flex-1 break-words text-sm font-medium text-warm-900 [overflow-wrap:anywhere]">{e.title}</p>
+              {/* flex-wrap: two pills held beside the title left it ~170px on
+                  a phone; now they drop under a long title instead. */}
+              <div className="flex min-w-0 flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                <p className="min-w-0 flex-1 basis-48 break-words text-sm font-medium text-warm-900 [overflow-wrap:anywhere]">{e.title}</p>
                 <div className="flex shrink-0 items-center gap-2">
                   <SportBadge sport={normalizeSport(e.sport)} />
                   <StatusPill tone={severityTone(e.severity)} dot size="sm">
@@ -403,9 +424,27 @@ export default async function FingerprintDetailPage({
               </p>
               <EventDetailLine source={e.source} feature={e.feature} metadata={e.metadata} />
               {e.user_id ? (
-                <Link href={`/admin/users/${e.user_id}`} className="text-xs text-accent-700 underline">
-                  {e.user_email ?? e.user_id}
-                </Link>
+                <span className="inline-flex max-w-full flex-wrap items-center gap-1.5">
+                  <Link
+                    href={`/admin/users/${e.user_id}`}
+                    className="inline-flex min-w-0 items-center break-all text-xs text-accent-700 underline [@media(pointer:coarse)]:min-h-11"
+                  >
+                    {e.user_email ?? e.user_id}
+                  </Link>
+                  {extractUserIdUnverified(e.metadata) ? (
+                    // Not a confirmed identity — this row's user_id came from
+                    // an unverified JWT subject (see extractUserIdUnverified),
+                    // the normal "session expired mid-round" case. Surfaced
+                    // here so an operator can't mistake it for a getUser()-
+                    // verified attribution just because it renders as a link.
+                    <span
+                      className="rounded bg-warm-100 px-1 py-0.5 text-eyebrow font-medium uppercase tracking-wide text-warm-600"
+                      title="Attributed from an unverified session subject, not a verified getUser() call"
+                    >
+                      unverified
+                    </span>
+                  ) : null}
+                </span>
               ) : null}
               {e.stack_trace ? (
                 // Contained CODE block, never a page-level pan: w-full + min-w-0
@@ -424,7 +463,14 @@ export default async function FingerprintDetailPage({
 
   return (
     <div className="space-y-4">
-      <Link href="/admin/errors" className="text-xs text-warm-500 underline">← Errors</Link>
+      {/* "Incidents", matching the tab this returns to (admin-nav.ts renamed
+          it from Errors); 44px tall so it is a real target on a phone. */}
+      <Link
+        href="/admin/errors"
+        className="inline-flex items-center text-body-sm text-warm-600 underline [@media(pointer:coarse)]:min-h-11"
+      >
+        ← Incidents
+      </Link>
       <h1 className="break-words font-fw-mono text-lg text-warm-900 [overflow-wrap:anywhere]">fingerprint {fingerprint}</h1>
       <PanelBoundary title="Fingerprint detail" skeleton={<PanelPageSkeleton stats={3} rows={4} />}>
         <Body />

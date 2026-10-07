@@ -7,7 +7,8 @@ import { isUuid } from '@/lib/utils/uuid';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { Metadata } from 'next';
 import { fairwayScope } from '@/lib/redesign/flag';
-import { FairwayPlayerProfile } from '@/components/fairway/pages/roster/FairwayPlayerProfile';
+import { PlayerDetailScreen } from '@/components/fairway/pages/player-detail/PlayerDetailScreen';
+import { loadPlayerDetail } from '@/components/fairway/pages/player-detail/loadPlayerDetail';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -25,11 +26,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .maybeSingle();
 
   if (!player) {
-    return { title: 'Player Not Found | Helm Golf' };
+    return { title: 'Player Not Found' };
   }
 
   return {
-    title: `${player.first_name} ${player.last_name} | Helm Golf`,
+    title: `${player.first_name} ${player.last_name}`,
     description: `View ${player.first_name} ${player.last_name}'s golf profile and stats`,
   };
 }
@@ -55,23 +56,29 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   // so a coach clicking a player on their OWN roster was told that player does
   // not exist. Absent and unreadable are not the same answer, and only the
   // first one is a 404.
-  const { data: player, error: playerError } = await supabase
-    .from('golf_players')
-    .select(`
-      id,
-      first_name,
-      last_name,
-      avatar_url,
-      hometown,
-      state,
-      graduation_year,
-      handicap,
-      phone,
-      email,
-      created_at
-    `)
-    .eq('id', id)
-    .maybeSingle();
+  // The team lookup does not depend on the player row, so both reads run
+  // together (PERF-R6).
+  const [{ data: player, error: playerError }, teamId] = await Promise.all([
+    supabase
+      .from('golf_players')
+      .select(`
+        id,
+        first_name,
+        last_name,
+        avatar_url,
+        hometown,
+        state,
+        graduation_year,
+        handicap,
+        phone,
+        email,
+        created_at
+      `)
+      .eq('id', id)
+      .maybeSingle(),
+    // Deterministic: handles orgs with >1 team.
+    resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id),
+  ]);
 
   if (playerError) {
     await logServerError(
@@ -85,9 +92,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     notFound();
   }
 
-  // Verify player is on coach's team (deterministic: handles orgs with >1 team)
-  const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
-
+  // Verify player is on coach's team.
   if (!teamId) {
     notFound();
   }
@@ -115,9 +120,27 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     notFound();
   }
 
+  // One parallel server batch (rounds, round stats, genome, insights, focus
+  // areas, goals), started now and streamed: identity paints immediately and
+  // the body resolves behind Suspense. Nothing is fetched after hydration.
+  const firstName = player.first_name?.trim() || 'This player';
+  const detail = loadPlayerDetail(supabase, id, firstName);
+
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
-      <FairwayPlayerProfile player={player} membershipStatus={membership.status} />
+      <PlayerDetailScreen
+        player={{
+          id: player.id,
+          firstName,
+          fullName: `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || 'Player',
+          avatarUrl: player.avatar_url,
+          graduationYear: player.graduation_year,
+          email: player.email,
+          phone: player.phone,
+          membershipStatus: membership.status,
+        }}
+        detail={detail}
+      />
     </div>
   );
 }

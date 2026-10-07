@@ -18,8 +18,9 @@
  *      never any other merge strategy.
  *   4. Fast-forwards the CANONICAL checkout (resolved from git worktree
  *      metadata, never a hardcoded path) with `git pull --ff-only`.
- *   5. Runs `node scripts/worktree-lifecycle.mjs --retire` from the
- *      canonical checkout, which parks the now-disposable worktree and
+ *   5. Runs `node scripts/worktree-lifecycle.mjs --retire --branch <head>`
+ *      (this PR only, reported by name), then the repo-wide `--retire`
+ *      from the canonical checkout, which parks the now-disposable worktree and
  *      deletes the branch under the DELETE_MERGED_EXACT proof standard
  *      (see scripts/lib/worktree-lifecycle.mjs, including the no-upstream
  *      case #1863 added — a merged PR's head OID is stronger evidence than a
@@ -122,6 +123,26 @@ export function evaluateRequiredChecks(rollup, requiredContexts) {
 export function canonicalSyncPlan(currentBranch) {
   if (currentBranch === 'main') return { args: ['pull', '--ff-only'], fatal: true };
   return { args: ['fetch', 'origin', 'main:main'], fatal: false };
+}
+
+/**
+ * What is left of the landed PR's workspace after retirement: one line for
+ * the summary. Pure, so it's unit-tested directly.
+ *
+ * @param {string} worktreePorcelain  `git worktree list --porcelain`
+ * @param {boolean} branchExists
+ * @param {string} branch
+ */
+export function landedResidue(worktreePorcelain, branchExists, branch) {
+  let path = null;
+  let cur = null;
+  for (const line of String(worktreePorcelain ?? '').split('\n')) {
+    if (line.startsWith('worktree ')) cur = line.slice(9);
+    else if (line === `branch refs/heads/${branch}`) path = cur;
+  }
+  if (path) return `worktree kept at ${path} — see its verdict above (a live session, uncommitted work, or unpushed commits)`;
+  if (branchExists) return 'worktree gone; local branch kept — see its verdict above';
+  return 'worktree and local branch retired';
 }
 
 /** Run a command, returning { ok, stdout, stderr }. Never throws. */
@@ -264,16 +285,28 @@ async function main(argv) {
     process.stdout.write(`pr-land: canonical is on '${canonicalBranch || '(detached)'}'; updated local main without touching it\n`);
   }
 
+  // Retire THIS PR's worktree and branch first, by name, so the result is
+  // stated for the thing just landed rather than buried in a repo-wide table.
+  // Then the usual sweep, unchanged.
   const retireScript = resolve(HERE, 'worktree-lifecycle.mjs');
+  const own = exec('node', [retireScript, '--retire', '--branch', pr.headRefName], { cwd: canonicalRoot });
+  process.stdout.write(own.stdout ? `${own.stdout}\n` : '');
+  if (own.stderr) process.stderr.write(`${own.stderr}\n`);
   const retire = exec('node', [retireScript, '--retire'], { cwd: canonicalRoot });
   process.stdout.write(retire.stdout ? `${retire.stdout}\n` : '');
   if (retire.stderr) process.stderr.write(`${retire.stderr}\n`);
+  const residue = landedResidue(
+    exec('git', ['worktree', 'list', '--porcelain'], { cwd: canonicalRoot }).stdout,
+    exec('git', ['rev-parse', '--verify', '--quiet', `refs/heads/${pr.headRefName}`], { cwd: canonicalRoot }).ok,
+    pr.headRefName,
+  );
 
   process.stdout.write('\n');
   process.stdout.write(`pr-land summary for #${args.prNumber}\n`);
   process.stdout.write(`  merged:  gh pr merge --squash (branch ${pr.headRefName})\n`);
   process.stdout.write(`  pulled:  ${canonicalRoot} fast-forwarded to origin/main\n`);
   process.stdout.write(`  retired: ${retire.ok ? 'worktree-lifecycle.mjs --retire ran' : 'worktree-lifecycle.mjs --retire reported an issue — see above'}\n`);
+  process.stdout.write(`  ${pr.headRefName}: ${residue}\n`);
   return 0;
 }
 

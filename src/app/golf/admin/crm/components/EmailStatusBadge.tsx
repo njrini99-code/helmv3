@@ -128,7 +128,7 @@ export function EmailStatusBadge({
     return (
       <span
         title={title}
-        className="text-micro text-text-tertiary tabular-nums"
+        className="text-microlabel text-text-tertiary tabular-nums"
         aria-label="No email activity"
       >
         &mdash;
@@ -144,7 +144,7 @@ export function EmailStatusBadge({
       size="sm"
       dot={!isUnsubscribed}
       title={title}
-      className={cn('gap-1 px-1.5 text-eyebrow', tone.override)}
+      className={cn('gap-1 px-1.5 text-caption', tone.override)}
     >
       {isUnsubscribed ? <IconBan size={compact ? 10 : 11} /> : null}
       {tone.label}

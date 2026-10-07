@@ -29,7 +29,7 @@
  * #1318 — the CTA copy used to just say "the general Settings page" / "Open
  * Settings". That reads as a dead end of its own: this route's own breadcrumb
  * and sidebar both already say "Settings" (the top-bar breadcrumb only ever
- * shows the FIRST path segment as the second crumb — see `buildBreadcrumbs` in
+ * shows the FIRST path segment as the second crumb — see `buildGolfBreadcrumbs` in
  * `FairwayDashboardShell.tsx` — so `/settings/notifications` renders exactly
  * the same "Dashboard / Settings" trail as `/settings` itself, and the rail's
  * Settings link highlights on any `/settings*` path). Telling a coach who
@@ -49,7 +49,7 @@ import { FeatureUnavailable } from '@/components/fairway';
 import { FairwaySettingsNotifications } from '@/components/fairway/pages/settings';
 
 export const metadata: Metadata = {
-  title: 'Notification preferences · GolfHelm',
+  title: 'Notification preferences',
 };
 
 export default async function NotificationPrefsPage() {
@@ -63,7 +63,7 @@ export default async function NotificationPrefsPage() {
     return session.coach ? (
       <FeatureUnavailable
         title="Notification preferences"
-        message="This per-category matrix is a player-only control — coach accounts don't have one. Your own alert preferences (push, email, in-app) live in the Notifications section, further down the Settings page."
+        message="This per-category matrix is a player-only control. Coach accounts don't have one. Your own alert preferences (push, email, in-app) live in the Notifications section, further down the Settings page."
         actionHref="/golf/dashboard/settings"
         actionLabel="Manage your notifications"
       />

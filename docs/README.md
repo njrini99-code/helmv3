@@ -131,7 +131,6 @@ What remains loose, and why:
 | `REPO_MAP.md`, `CODEBASE_MAP.md`, `CI_RUNBOOK.md`, `OBSERVABILITY.md`, `README.md` | Routed to from `CLAUDE.md` / `AGENTS.md` / `.claude/rules/` |
 | `v3-*.md` (9 files) | Referenced from `memory/registry.yml` — registry paths never move |
 | `SECURITY_AUDIT.md`, `BASEBALL_RLS_SECURITY_AUDIT.md`, `PRIVACY_AUDIT.md`-class | Cited from rules or audit docs as standing references |
-| `AGENT_LIFECYCLE.md` | Documented exception, added 2026-09-06: a self-auditing trace of the agent/CI machinery with its own staleness check (an anchor SHA + a `git rev-list` command at the top of the file). Nothing outside `docs/` links to it yet — the trace itself currently reports as unverified past its anchor, so re-run its own check before adding a link that implies it's current. |
 | the rest | Each is linked from a living doc or the registry |
 
 **Before adding a file here:** put it in a cluster directory instead. A loose

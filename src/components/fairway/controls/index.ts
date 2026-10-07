@@ -74,3 +74,5 @@ export type {
 } from './Toolbar';
 
 export type { FwStatusTone } from './_internal';
+/** The press recipes for raw buttons and large tappable surfaces (DS-15). */
+export { fwPress, fwPressSurface } from './_internal';

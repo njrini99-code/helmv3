@@ -3,6 +3,7 @@ import { ExternalLink, GitPullRequest } from 'lucide-react';
 import type { WorkLogEntry } from '@/lib/admin/github-pr-timeline';
 import type { WorkArea } from '@/lib/admin/pr-body-parser';
 import { StatusPill, Surface, StatTile, StatStrip, InlineNotice, type FwStatusTone } from '@/components/fairway';
+import { DetailsDisclosure } from '../_components/TabHeader';
 
 // Exported — WorkFilterChips (area/state filter row) reuses the same
 // labels/tones so the chips and the cards they filter never drift apart.
@@ -164,14 +165,16 @@ export function WorkTimeline({
   return (
     <div className="min-w-0 space-y-6">
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
-          <StatusPill tone="success" dot size="sm">
-            GitHub PRs
-          </StatusPill>
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          {/* The source, as text: a green pill here said "healthy" about a
+              label. Colour on the Bridge means severity. */}
+          <span className="text-caption font-medium text-warm-700">GitHub PRs</span>
           {authorLogins.length > 0 ? (
-            <StatusPill tone="neutral" dot={false} size="sm">
+            // Plain wrapping text, not a StatusPill: the pill is a fixed-height
+            // nowrap chip, so a list of logins ran past the card edge at 375px.
+            <span className="min-w-0 break-words text-caption text-warm-600 [overflow-wrap:anywhere]">
               {authorLogins.map((login) => `@${login}`).join(', ')}
-            </StatusPill>
+            </span>
           ) : (
             <StatusPill tone="warning" dot size="sm">
               all authors
@@ -182,9 +185,9 @@ export function WorkTimeline({
           href={`https://github.com/${repoLabel}/pulls`}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1 text-xs font-medium text-accent-700 hover:underline"
+          className="inline-flex min-h-11 min-w-0 items-center gap-1 text-xs font-medium text-accent-700 [overflow-wrap:anywhere] hover:underline"
         >
-          <GitPullRequest size={14} aria-hidden />
+          <GitPullRequest size={14} className="shrink-0" aria-hidden />
           Open {repoLabel} pulls
         </Link>
       </div>
@@ -230,15 +233,18 @@ export function WorkTimeline({
         </div>
       ) : null}
 
-      <Surface padding="sm" className="min-w-0 border border-dashed border-warm-300/80 bg-surface-sunken/40">
-        <p className="break-words text-sm text-warm-700 [overflow-wrap:anywhere]">
+      {/* Template guidance is for whoever writes the next PR, not for reading
+          the timeline — it sat between the counts and the first card on every
+          visit. Same text, one tap away. */}
+      <DetailsDisclosure>
+        <p>
           Summaries are parsed from your PR template — fill in{' '}
           <code className="text-xs">Partner-readable summary</code>,{' '}
           <code className="text-xs">Area</code>, and{' '}
           <code className="text-xs">Git Activity Timeline note</code>. No AI guessing: if a section is empty, the card
           tells you what to add on the next PR.
         </p>
-      </Surface>
+      </DetailsDisclosure>
 
       <div className="space-y-8">
         {months.map(({ month, entries: monthEntries }) => (

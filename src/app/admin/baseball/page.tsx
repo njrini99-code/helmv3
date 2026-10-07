@@ -5,7 +5,7 @@ import { fetchErrorsTab } from '@/lib/admin/data/errors';
 import { fetchUsersTab } from '@/lib/admin/data/users';
 import { fetchBaseballTab } from '@/lib/admin/data/baseball';
 import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/feature-health';
-import { Surface, StatStrip, StatTile, StatusPill, TrendChart } from '@/components/fairway';
+import { Surface, StatStrip, StatTile, StatusPill, TrendChart, InlineNotice } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData } from '../_components/PanelStates';
@@ -14,6 +14,7 @@ import { TeamHealthTable, type TeamHealthEntry } from '../_components/TeamHealth
 import { TeamCommandCard } from '../_components/TeamCommandCard';
 import { PlayerWatchlist } from '../_components/PlayerWatchlist';
 import { AutoRefresh } from '../_components/AutoRefresh';
+import { TabHeader } from '../_components/TabHeader';
 import { FeatureHealthRollup } from '../_components/FeatureHealthRollup';
 import { parseView, type AdminViewOf } from '@/lib/admin/views';
 import { ViewRail } from '../_components/ViewRail';
@@ -22,16 +23,9 @@ import { SectionLabel } from '../_components/SectionLabel';
 
 export const dynamic = 'force-dynamic';
 
-// Dateline rule — replaces the retired border-l-2 "key panel" left-edge
-// stripe. Chrome, not a status signal: a helm-green h-[2px] w-7 rounded-full
-// rule above the card title.
-function KeyPanelRule() {
-  return <span aria-hidden className="mb-3 block h-[2px] w-7 rounded-full bg-accent-500" />;
-}
-
 async function BaseballBody() {
   const [usersTab, errorsTab, baseballTab, featureHealth] = await Promise.all([
-    fetchUsersTab({}),
+    fetchUsersTab({ sport: 'baseball' }),
     fetchErrorsTab({ sport: 'baseball', windowHours: 168 }),
     fetchBaseballTab(),
     fetchFeatureHealth(),
@@ -53,7 +47,18 @@ async function BaseballBody() {
   const quietPlayers = players.filter((player) => player.activity30d === 0).length;
   const profileGaps = players.filter((player) => player.profileQuality !== 'complete').length;
   const teamsWithErrors = teams.filter((team) => team.errors7d > 0).length;
-  const recentErrors = errorsTab.incidents.length;
+  // Same denominator as the Journey view and the Errors page — the actionable
+  // group count, not the raw (filtered-but-unfiltered-by-actionability)
+  // incident list. Previously this rendered as both "Errors 7d" (here) and
+  // "Incidents 7d" (Error trace hooks below), so the two tiles always agreed
+  // by construction rather than by measuring the same thing twice; the
+  // duplicate tile there is now removed.
+  const recentErrors = errorsTab.counts.actionableGroups;
+  // Denominator for the "Mapped incidents" ratio below is the actual
+  // fetched incidents array (already actionable-only by default), NOT
+  // `recentErrors` — those two counts differ by isFixture rows, and mixing
+  // them would produce a numerator that can exceed its own denominator.
+  const incidentCount = errorsTab.incidents.length;
   const mappedRoutes = errorsTab.incidents.filter((incident) => incident.route || incident.actionName || incident.feature).length;
   const watchlist = players
     .filter((player) => player.errors7d > 0 || player.activity30d === 0 || player.profileQuality !== 'complete')
@@ -80,23 +85,10 @@ async function BaseballBody() {
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)]">
         <Surface padding="sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <KeyPanelRule />
-              <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Baseball command center</p>
-              {/* Mobile Doctrine rule 2: eyebrow + long title + paragraph is a
-                  desktop cover treatment. Below `md` the headline condenses to
-                  the smaller text-h3 step and the descriptive paragraph is
-                  dropped entirely (mirrors admin/page.tsx CommandHeader) so
-                  the KPI row below is reachable at 390px without scrolling
-                  past decoration first. */}
-              <h2 className="mt-2 text-h3 font-semibold tracking-normal text-warm-900 md:text-2xl">
-                Team-by-team, player-by-player visibility
-              </h2>
-              <p className="mt-2 hidden max-w-3xl text-sm leading-6 text-warm-600 md:block">
-                Baseball is now a real Helm Bridge operating view: roster posture, quiet players, profile gaps, and
-                production errors are pulled from the same sources as Users, Errors, and Overview.
-              </p>
-            </div>
+            {/* A section label, not a second masthead: the tab's one header
+                is the TabHeader above the view rail. The eyebrow + tagline +
+                desktop-only paragraph that sat here was a second title. */}
+            <SectionLabel rule={false}>Command center</SectionLabel>
             <StatusPill tone={recentErrors > 0 || profileGaps > 0 ? 'warning' : 'success'} dot size="sm">
               {recentErrors > 0 ? 'watch errors' : 'launch ready'}
             </StatusPill>
@@ -122,26 +114,34 @@ async function BaseballBody() {
               { icon: Users, label: 'Quiet players', value: quietPlayers, href: '/admin/users?sport=baseball&attention=quiet' },
               { icon: SearchCheck, label: 'Profile gaps', value: profileGaps, href: '/admin/users?sport=baseball&attention=profile' },
               { icon: AlertTriangle, label: 'Teams with errors', value: teamsWithErrors, href: '/admin/errors?sport=baseball&window=168' },
-              { icon: ShieldCheck, label: 'Mapped incidents', value: `${mappedRoutes}/${recentErrors}`, href: '/admin/errors?sport=baseball&window=168' },
+              { icon: ShieldCheck, label: 'Mapped incidents', value: `${mappedRoutes}/${incidentCount}`, href: '/admin/errors?sport=baseball&window=168' },
             ].map((item) => {
               const Icon = item.icon;
               return (
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="flex items-center justify-between gap-3 rounded-fw-md border border-warm-200 bg-surface-sunken px-3 py-2 transition-colors hover:bg-surface"
+                  className="flex min-h-11 items-center justify-between gap-3 rounded-fw-md border border-warm-200 bg-surface-sunken px-3 py-2 transition-colors hover:bg-surface"
                 >
                   <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-warm-800">
-                    <Icon size={15} className="text-accent-600" aria-hidden />
+                    <Icon size={15} className="shrink-0 text-accent-600" aria-hidden />
                     {item.label}
                   </span>
-                  <span className="font-fw-mono text-sm font-semibold tabular-nums text-warm-900">{item.value}</span>
+                  <span className="shrink-0 font-fw-mono text-sm font-semibold tabular-nums text-warm-900">{item.value}</span>
                 </Link>
               );
             })}
           </div>
         </Surface>
       </section>
+
+      {baseballTab.demoTeams.count > 0 && (
+        <InlineNotice tone="warning" title="Includes test/demo teams">
+          {baseballTab.demoTeams.count} of {baseballTab.demoTeams.total} baseball_teams are test/demo accounts
+          (name contains &ldquo;test&rdquo; or &ldquo;demo&rdquo;) — the counts on this page are real, they just
+          aren&rsquo;t all live customers yet.
+        </InlineNotice>
+      )}
 
       {/* Activity pulse — baseball engine rollup (fetchBaseballTab), the
           BaseballHelm parity counterpart to golf's rounds/CoachHelm trend
@@ -182,6 +182,15 @@ async function BaseballBody() {
             <StatTile label="Sessions 30d" value={baseballTab.liftLab.sessions30d} tone="neutral" mono />
             <StatTile label="Active athletes 30d" value={baseballTab.liftLab.activeAthletes30d} tone="neutral" mono />
           </div>
+          {/* helm_lifting_sessions has only ever belonged to seed/demo orgs
+              (see /admin/lifting's own banner) — caveat rather than let a
+              real-looking count pass as live customer usage. */}
+          <p className="mt-3 text-xs text-warm-500">
+            Seed/demo data only so far — see the full cross-sport picture at{' '}
+            <Link href="/admin/lifting" className="text-accent-700 underline">
+              /admin/lifting →
+            </Link>
+          </p>
         </Surface>
 
         {/* Feature health cross-link — BaseballHelm slice of the platform-wide
@@ -233,21 +242,23 @@ async function BaseballBody() {
           />
           <Surface padding="sm">
             <SectionLabel>Error trace hooks</SectionLabel>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <StatTile label="Incidents 7d" value={recentErrors} tone="neutral" mono goodDirection="down" />
+            {/* "Incidents 7d" used to duplicate the "Errors 7d" KPI tile above
+                (same value, two labels) — removed rather than kept alongside
+                it now that both would read the same actionableGroups count. */}
+            <div className="mt-3 grid grid-cols-1 gap-3">
               <StatTile label="RLS denials 24h" value={errorsTab.rlsDenials24h} tone="neutral" mono goodDirection="down" />
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
                 href="/admin/errors?sport=baseball&window=168"
-                className="inline-flex items-center gap-2 rounded-full border border-warm-200 bg-surface-sunken px-3 py-1.5 text-xs font-medium text-warm-800 hover:bg-surface"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-warm-200 bg-surface-sunken px-4 py-2 text-xs font-medium text-warm-800 hover:bg-surface"
               >
                 <RadioTower size={14} aria-hidden />
                 Open baseball errors
               </Link>
               <Link
                 href="/admin/users?sport=baseball&attention=watch"
-                className="inline-flex items-center gap-2 rounded-full border border-warm-200 bg-surface-sunken px-3 py-1.5 text-xs font-medium text-warm-800 hover:bg-surface"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-warm-200 bg-surface-sunken px-4 py-2 text-xs font-medium text-warm-800 hover:bg-surface"
               >
                 <Activity size={14} aria-hidden />
                 Open launch watchlist
@@ -272,6 +283,7 @@ export default async function BaseballTabPage({
   return (
     <div className="space-y-6">
       <AutoRefresh />
+      <TabHeader title="Baseball" />
       <ViewRail
         host="/admin/baseball"
         active={view}

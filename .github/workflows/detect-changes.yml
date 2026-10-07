@@ -103,54 +103,9 @@ jobs:
         continue-on-error: true
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d  # v4.0.3
         with:
-          filters: |
-            code:
-              - 'src/**'
-              - 'supabase/**'
-              - 'e2e/**'
-              - 'package.json'
-              - 'package-lock.json'
-              - 'next.config.*'
-              - 'tsconfig*.json'
-              - 'vitest.config.ts'
-              - 'eslint.config.mjs'
-              - 'tailwind.config.*'
-              - 'postcss.config.*'
-              - 'middleware.ts'
-              - 'scripts/**/*.ts'
-              - 'scripts/**/*.mjs'
-              - '.github/workflows/ci.yml'
-              - '.github/workflows/detect-changes.yml'
-            frontend:
-              - 'src/**'
-              - 'app/**'
-              - 'components/**'
-              - 'lib/**'
-              - 'e2e/**'
-              - 'public/**'
-              - 'playwright.config.ts'
-              - 'package.json'
-              - 'package-lock.json'
-              - '.github/workflows/ci.yml'
-              - '.github/workflows/detect-changes.yml'
-              - '.github/workflows/playwright.yml'
-            e2e:
-              - 'src/**'
-              - 'e2e/**'
-              - 'public/**'
-              - 'playwright.config.ts'
-              - 'package.json'
-              - 'package-lock.json'
-              - '.github/workflows/ci.yml'
-              - '.github/workflows/detect-changes.yml'
-            migrations:
-              - 'supabase/migrations/**'
-            python:
-              - '**/*.py'
-              - 'requirements*.txt'
-              - 'pyproject.toml'
-            actions:
-              - '.github/**'
+          # The path lists live in .github/path-filters.yml (2026-09-23) so
+          # ci.yml's heavy jobs can read the SAME `code` list in-job.
+          filters: .github/path-filters.yml
 
       # Ported verbatim from feature-awareness.yml's original `detect-changes`
       # job: a git-diff-based "is every changed file docs/markdown" check —

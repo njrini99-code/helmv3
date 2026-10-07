@@ -29,7 +29,29 @@ process.chdir(repoRoot);
 
 // Files explicitly permitted to retain `#FFFEFA`. Keep these paths
 // canonical (no trailing slashes) and matched exactly to grep output.
+const FROZEN_SPORTS = new Set([
+  'src/app/lifting/(auth)/login/page.tsx',
+  'src/app/lifting/(auth)/signup/page.tsx',
+  'src/components/baseball/command-center/BaseballInviteButton.tsx',
+  'src/components/lifting/sessions/LiveWeightRoomClient.tsx',
+  'src/components/lifting/weight/WeightEntryModal.tsx',
+]);
+
 const ALLOWLIST = new Set([
+  // Baseball and Lift Lab are frozen outside the golf redesign (owner OD-17,
+  // 2026-09-24): their existing cream stays until those products get their
+  // own pass. Not a golf regression, so listed rather than edited.
+  'src/app/lifting/(auth)/forgot-password/page.tsx',
+  'src/app/lifting/(auth)/login/page.tsx',
+  'src/app/lifting/(auth)/reset-password/page.tsx',
+  'src/app/lifting/(auth)/signup/page.tsx',
+  'src/app/lifting/(onboarding)/coach/page.tsx',
+  'src/components/baseball/command-center/BaseballInviteButton.tsx',
+  'src/components/baseball/stat-visuals/chart-geometry.ts',
+  'src/components/lifting/sessions/LiveWeightRoomClient.tsx',
+  'src/components/lifting/shell/LabShell.tsx',
+  'src/components/lifting/soreness/severity-colors.ts',
+  'src/components/lifting/weight/WeightEntryModal.tsx',
   // Design tokens — source of truth.
   'src/app/globals.css',
   'src/styles/tokens.css',
@@ -37,10 +59,14 @@ const ALLOWLIST = new Set([
   'src/components/golf/scenes/palette.ts',
   // Auth splash pages — intentional marketing gradient.
   'src/app/golf/(auth)/welcome/page.tsx',
-  'src/app/golf/(auth)/login/page.tsx',
   // Email + notification templates — literal hex required for email
   // client compat (cannot reference CSS vars).
   'src/lib/email/coach-digest-template.ts',
+  'src/lib/email/lifting-invite-template.ts',
+  // Standalone HTML page served straight from an API route (the email
+  // unsubscribe link) — no app stylesheet loads, so it inlines its colours
+  // exactly like the email templates above.
+  'src/app/api/crm/unsubscribe/route.ts',
   'src/lib/email/team-invite.ts',
   'src/lib/notifications/email.ts',
   'src/lib/coachhelm/v3/recap/template.ts',
@@ -95,7 +121,9 @@ let failures = 0;
 // anywhere under src/ (auth splash uses CSS var / style={{}}, not
 // Tailwind arbitrary).
 {
-  const files = uniqueFiles(grepHits('bg-\\[#FFFEFA\\]'));
+  // Baseball / Lift Lab files are frozen (OD-17, see ALLOWLIST); every other
+  // file under src/ must stay clean.
+  const files = uniqueFiles(grepHits('bg-\\[#FFFEFA\\]')).filter((f) => !FROZEN_SPORTS.has(f));
   if (files.length > 0) {
     failures += 1;
     console.error('FAIL: bg-[#FFFEFA] Tailwind arbitrary value found — replace with bg-cream-100:');

@@ -67,9 +67,35 @@ Round completion
   -> player stats, team stats, roster profile, CoachHelm reads consume cache/source data
 ```
 
+Player Stats first paint (PERF-R10): `stats/page.tsx` awaits
+`getPlayerStatsDashboardCritical` (detailed, trend, standing) and streams
+`getPlayerStatsDashboardDeferred` (leak maps, spray, strengths, worst holes,
+patterns) to `StatsSpineStage` as a promise. Parts owned by the other half
+read `{ ok: false, reason: 'deferred' }`, which is "coming", not "failed". A
+failed deferred read makes the client fetch the whole bundle; scope changes
+still use `getPlayerStatsDashboardBundle`.
+
 ## Business Rules
 
 - Round and shot data remain the source of truth; cached stats are derived.
+- Test data (OD-03, 2026-09-27): rounds with `golf_rounds.is_test = true` are
+  QA/demo rows. Every player- and coach-facing stats read in `stats-data.ts`,
+  `stats-leak-maps.ts`, `shot-analytics.ts`, `stats.ts`,
+  `stats-intelligence.ts`, `player-profile-stats.ts` and the team-stats page
+  filters `.eq('is_test', false)`; shots and holes follow the filtered round
+  ids. `golf_player_stats_cache` does not read the flag yet, so cached
+  aggregates still include flagged rounds.
+- Putt leak-map bands (`stats-leak-maps.ts`) are upper-inclusive: "3-5 ft" is
+  (3, 5], the same edges as the cache writer (`putt_make_pct_3_5ft`) and the
+  calculator's `getPuttDistanceBucket`, so the chart and the Putting-by-distance
+  table agree. Approach bands still use `bandFor`'s [min, max).
+- Standing's vs-team caption can be direction-aware (StandingBar opt-in
+  `cohort_wording: 'direction_aware'`): Closer/Farther for distances in feet,
+  Better/Worse for other lower-is-better stats. The default stays Above/Below
+  (NUM-13). The stats Standing drill opts in.
+- The rounds list's scoring trend uses `computeScoringTrendFromRounds`
+  (`src/lib/golf/scoring-trend.ts`), like Team Stats and the CoachHelm Players
+  table; its KPI tiles and "Scoring trend" pill read that one verdict.
 - `recalculate_round_strokes_gained` is the protected derived-write path for
   completed rounds. It may change only the five stored strokes-gained fields;
   it must never require a general exception to completed-round immutability.
@@ -85,9 +111,39 @@ Round completion
   reviewing the set. Career-only standing, trends, leak maps, and CoachHelm
   patterns must stay out of this scoped report so two different scopes are
   never presented as one result.
+- Putting benchmarks (DASH-12, 2026-09-25): `src/lib/golf/benchmarks/putting.ts`
+  mirrors the `golf_pga_standards` putt-make rows (PGA and LPGA, Tour and D1,
+  five bands from 3 ft; 0-3 ft has no standard) with each row's source cited.
+  The Putting drill's benchmark sheet grades the career leak-map buckets
+  against it, prefers the live reference on the bucket, and grades a band only
+  at 10+ putts. `getPlayerLeakMaps` returns `windowFrom`/`windowTo` (dates of
+  the same countable rounds as `roundsIncluded`) and `tour` (the reference
+  set it routed to), so the sheet and LeakMap never guess either.
 - Strokes-gained and putting tendency gaps should be called out rather than silently treated as complete.
 - Team analytics should not mix players across teams or organizations.
 - CoachHelm can consume stats but should not own stat calculation truth.
+- **Countable rounds (2026-09-23).** A round feeds any average, best, trend,
+  strokes-gained figure, percentile, prediction or team rollup only if
+  `isCountableRound` (`src/lib/golf/round-countable.ts`) accepts it: it is
+  completed, 9 or 18 holes, has every declared hole scored (`front_nine`/
+  `back_nine` proxy or `recorded_holes`), clears the stroke floor
+  (`MIN_PLAUSIBLE_STROKES_PER_18 = 50`, putts-aware), and has |SG: Total| <=
+  `MAX_ABS_SG_TOTAL_PER_ROUND = 15` when SG is known. Totals are the canonical
+  hole sums (`withCanonicalRoundTotal`). Headline aggregates over countable
+  rounds come from `aggregateCountableRounds`
+  (`src/lib/golf/countable-round-stats.ts`), which reads per-round
+  `golf_round_stats_cache` rows. The DB-side `golf_player_stats_cache`
+  (trigger `update_player_stats_complete`) and `golf_player_standing`
+  (`refresh_player_standing_round_metrics`) do NOT apply this rule yet, so
+  loaders that need a correct number aggregate per-round rows instead of
+  reading those caches. Adopting the rule in SQL is an owner-approved
+  migration.
+- **One scoring-average definition.** "Scoring average" everywhere (player
+  dashboard, coach dashboard Top Performers, roster, Team Stats, Team
+  Health) is the mean of countable 18-hole rounds. 9-hole rounds count toward
+  per-hole rates (putts/18, birdies/18) only.
+- Standing captions from `teamCohortText` describe a RANK (`team_pct`), so
+  they read "Upper/Lower half of your team", never "above/below team average".
 
 ## UI Contract
 

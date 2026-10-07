@@ -11,17 +11,31 @@ import type { GolfCourse } from '@/lib/types/golf-course';
  *   • featured — tall cinematic card, title + meta overlaid on a scrimmed vista,
  *     with a glass "go" affordance. The whole card is the tap target.
  *   • standard — compact grid card, vista on top with the title beneath.
+ *   • row — thumbnail list row for the long tail ("More courses"): 65 standard
+ *     cards made the library ~21,500px tall on a phone.
  */
 
 function locationLabel(course: GolfCourse): string | null {
-  const parts = [course.city, course.state].filter(Boolean);
-  return parts.length ? parts.join(', ') : null;
+  // Trimmed: import data carries stray spaces ("Lexington , KY").
+  const parts = [course.city?.trim(), course.state?.trim()].filter(Boolean);
+  if (parts.length) return parts.join(', ');
+  // No city or state (a hand-added course, e.g. "PGA National - Champ"): the
+  // country is still a real location when the row has one.
+  return course.country?.trim() || null;
 }
+
+/**
+ * The list row and the grid card keep their location slot when a course has
+ * no location at all, so it reads as missing data in the same place on every
+ * card instead of the tee count sliding into the location's spot. The
+ * featured hero just omits the line.
+ */
+const MISSING_LOCATION = 'Location not set';
 
 export interface CourseCardProps {
   course: GolfCourse;
   teeCount?: number;
-  variant?: 'featured' | 'standard';
+  variant?: 'featured' | 'standard' | 'row';
   pinned?: boolean;
   /** Secondary line, e.g. "Played 4×" or "Last played Jun 2". */
   meta?: string;
@@ -58,7 +72,7 @@ export function CourseCard({
         onClick={handle}
         aria-label={`Open ${displayName}`}
         className={cn(
-          'group relative block w-full overflow-hidden rounded-[1.5rem] text-left',
+          'group relative block w-full overflow-hidden rounded-card text-left',
           'shadow-soft ring-1 ring-black/[0.06]',
           'transition-[transform,box-shadow] [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)]',
           'hover:-translate-y-1.5 hover:shadow-pop active:-translate-y-0.5',
@@ -113,7 +127,7 @@ export function CourseCard({
 
           {/* Bottom content */}
           <div className="absolute inset-x-0 bottom-0 p-3.5 sm:p-5">
-            <h3 className="line-clamp-2 font-fw-display text-title-3 font-semibold leading-tight tracking-tight text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.55)] sm:text-title-2">
+            <h3 className="line-clamp-2 font-fw-display text-h3 font-semibold leading-tight tracking-tight text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.55)] sm:text-h2">
               {displayName}
             </h3>
             {location && (
@@ -141,6 +155,46 @@ export function CourseCard({
     );
   }
 
+  if (variant === 'row') {
+    return (
+      // eslint-disable-next-line helm/no-raw-button -- row is a single tap target
+      <button
+        type="button"
+        onClick={handle}
+        aria-label={`Open ${displayName}`}
+        className={cn(
+          'group flex min-h-[64px] w-full items-center gap-3 px-3 py-2.5 text-left',
+          'transition-colors [transition-duration:var(--fw-dur-fast)] hover:bg-surface-tint',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-600',
+          className,
+        )}
+      >
+        <div className="relative h-12 w-16 flex-shrink-0 overflow-hidden rounded-fw-sm">
+          <CourseImage
+            name={course.name}
+            imageUrl={course.image_url}
+            normalizedName={course.normalized_name}
+            sizes="64px"
+          />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate font-fw-sans text-body font-semibold tracking-[-0.01em] text-text-primary">
+            {displayName}
+          </h3>
+          <div className="mt-0.5 flex min-w-0 items-center gap-x-2.5 text-caption text-text-tertiary">
+            <span className="truncate">{location ?? MISSING_LOCATION}</span>
+            {teeLabel && (
+              <span className="inline-flex flex-shrink-0 items-center gap-1">
+                <IconFlag size={12} aria-hidden /> {teeLabel}
+              </span>
+            )}
+          </div>
+        </div>
+        <IconChevronRight size={16} aria-hidden className="flex-shrink-0 text-text-tertiary" />
+      </button>
+    );
+  }
+
   // standard
   return (
     // eslint-disable-next-line helm/no-raw-button -- card is a single tap target
@@ -149,7 +203,7 @@ export function CourseCard({
       onClick={handle}
       aria-label={`Open ${displayName}`}
       className={cn(
-        'group relative flex w-full flex-col overflow-hidden rounded-fw-card text-left',
+        'group relative flex w-full flex-col overflow-hidden rounded-card text-left',
         'bg-surface border border-border-subtle shadow-flat',
         'transition-[transform,box-shadow] [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)]',
         'hover:-translate-y-1 hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600',
@@ -178,12 +232,10 @@ export function CourseCard({
             {displayName}
           </h3>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0 text-caption text-text-tertiary">
-            {location && (
-              <span className="inline-flex min-w-0 items-center gap-1">
-                <IconMapPin size={12} aria-hidden className="flex-shrink-0" />
-                <span className="truncate">{location}</span>
-              </span>
-            )}
+            <span className="inline-flex min-w-0 items-center gap-1">
+              <IconMapPin size={12} aria-hidden className="flex-shrink-0" />
+              <span className="truncate">{location ?? MISSING_LOCATION}</span>
+            </span>
             {teeLabel && (
               <span className="inline-flex items-center gap-1">
                 <IconFlag size={12} aria-hidden /> {teeLabel}

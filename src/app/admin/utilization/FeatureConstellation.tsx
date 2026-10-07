@@ -71,11 +71,14 @@ function FeatureTile({
         dimmed ? 'opacity-20' : null,
       )}
     >
-      <div className="flex items-center gap-1.5">
+      {/* min-w-0 + truncate on the app name: in the phone's 2-up grid a tile
+          is ~150px, and "BASEBALLHELM" plus the risk pill did not fit — the
+          pill hung past the tile's right edge. */}
+      <div className="flex min-w-0 items-center gap-1.5">
         <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', TIER_DOT[row.tier])} aria-hidden />
-        <span className="text-eyebrow uppercase text-warm-500">{APP_LABEL[row.app]}</span>
+        <span className="min-w-0 truncate text-eyebrow uppercase text-warm-500">{APP_LABEL[row.app]}</span>
         {row.dropoutRisk ? (
-          <StatusPill tone="warning" size="sm" dot={false} className="ml-auto">
+          <StatusPill tone="warning" size="sm" dot={false} className="ml-auto shrink-0">
             risk
           </StatusPill>
         ) : null}
@@ -89,7 +92,7 @@ function FeatureTile({
       {zone === 'cold' ? (
         <p className="mt-2 text-caption text-warm-500">quiet {row.quietDays}d</p>
       ) : (
-        <div className="mt-2 flex items-center justify-between gap-2">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
           <Sparkline data={row.eventCount14d} label={`${row.label} 14-day events`} />
           {row.delta7dPct === null ? null : (
             <TrendChip delta={row.delta7dPct} label={`${row.delta7dPct > 0 ? '+' : ''}${row.delta7dPct}%`} size="sm" />
@@ -118,7 +121,10 @@ function PowerUserRow({
       type="button"
       onClick={onSelect}
       className={cn(
-        'flex w-full items-center justify-between gap-2 rounded-fw-sm px-2 py-1.5 text-left transition-colors',
+        // Dense on a mouse; 44px on touch (the same coarse-pointer bump
+        // Fairway's own Button sm uses), so the list keeps its rhythm on
+        // desktop and is still tappable on a phone.
+        'flex w-full items-center justify-between gap-2 rounded-fw-sm px-2 py-1.5 text-left transition-colors [@media(pointer:coarse)]:min-h-11',
         selected ? 'bg-primary-100' : 'hover:bg-surface-sunken',
       )}
     >
@@ -208,7 +214,11 @@ export function FeatureConstellation({
         <p className="mt-3 border-t border-warm-200 pt-2 text-caption text-warm-500">
           Dimming every tile <Link href={`/admin/users/${selectedUser.userId}`} className="underline">{selectedUser.userEmail ?? selectedUser.userId}</Link> hasn&apos;t touched in 30d.{' '}
           {/* eslint-disable-next-line helm/no-raw-button -- inline text-level clear action, not a <Button> pill */}
-          <button type="button" className="text-accent-700 underline" onClick={() => setSelectedUserId(null)}>
+          <button
+            type="button"
+            className="inline-flex items-center text-accent-700 underline [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:px-2"
+            onClick={() => setSelectedUserId(null)}
+          >
             Clear
           </button>
         </p>
@@ -255,7 +265,13 @@ export function FeatureConstellation({
               { value: 'alpha', label: 'A–Z' },
             ]}
           />
-          <FilterPill size="sm" showCheck={false} selected={coldOnly} onClick={() => setColdOnly((v) => !v)}>
+          <FilterPill
+            size="sm"
+            showCheck={false}
+            selected={coldOnly}
+            onClick={() => setColdOnly((v) => !v)}
+            className="[@media(pointer:coarse)]:min-h-11"
+          >
             Cold &amp; Dead (30d)
           </FilterPill>
           <Button

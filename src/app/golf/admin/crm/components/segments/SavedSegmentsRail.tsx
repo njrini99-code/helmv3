@@ -187,7 +187,7 @@ export function SavedSegmentsRail({
         <IconButton variant="default"
           onClick={() => setDialogOpen(true)}
           aria-label="Save current filters as segment"
-          className="w-full flex items-center justify-center p-2.5 rounded-fw-sm text-nav-text-dim hover:bg-nav-surface hover:text-nav-text transition-all duration-200"
+          className="w-full flex items-center justify-center p-2.5 rounded-fw-sm text-nav-text-dim hover:bg-nav-surface hover:text-nav-text transition duration-200"
         >
           <IconBookmark size={16} />
         </IconButton>
@@ -204,7 +204,7 @@ export function SavedSegmentsRail({
   return (
     <div className="px-3 py-2 border-t border-nav-text/10">
       <div className="flex items-center justify-between px-3 mb-2">
-        <span className="text-eyebrow font-semibold uppercase tracking-wider text-nav-text-dim">
+        <span className="text-caption font-semibold text-nav-text-dim">
           Segments
         </span>
         <IconButton variant="default"
@@ -226,11 +226,11 @@ export function SavedSegmentsRail({
       )}
 
       {!loading && error && (
-        <p className="px-3 text-eyebrow text-fw-danger/80">{error}</p>
+        <p className="px-3 text-caption text-fw-danger/80">{error}</p>
       )}
 
       {!loading && !error && ordered.length === 0 && (
-        <p className="px-3 py-2 text-eyebrow text-nav-text-dim">
+        <p className="px-3 py-2 text-caption text-nav-text-dim">
           No segments yet — apply filters and click <IconBookmark size={10} className="inline" /> to save one.
         </p>
       )}

@@ -22,7 +22,8 @@
  * across the two files.
  * ========================================================================== */
 
-import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { Flag } from 'lucide-react';
 
@@ -49,7 +50,7 @@ export function FairwayRoundSummarySheet({
   onGoBack,
   onSubmit,
 }: FairwayRoundSummarySheetProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
 
   const totalScore = finalStats.reduce((sum, h) => sum + (h?.score ?? 0), 0);
   const totalPar = finalStats.reduce((sum, h) => sum + (h?.par ?? 0), 0);
@@ -65,7 +66,7 @@ export function FairwayRoundSummarySheet({
     const diff = (h?.score ?? 0) - (h?.par ?? 0);
     const cls =
       diff <= -2 ? 'text-accent-700 bg-accent-100 font-medium'
-        : diff === -1 ? 'text-accent-600 bg-accent-50 font-medium'
+        : diff === -1 ? 'text-accent-ink bg-accent-50 font-medium'
           : diff === 0 ? 'text-text-secondary bg-surface font-medium'
             : diff === 1 ? 'text-fw-warning-ink bg-fw-warning-bg font-medium'
               : 'text-fw-danger-ink bg-fw-danger-bg font-medium';
@@ -110,7 +111,7 @@ export function FairwayRoundSummarySheet({
               transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.15, duration: 0.4, type: 'spring', stiffness: 200, damping: 15 }}
               className="relative"
             >
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-text-on-accent/20 backdrop-blur-sm">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-fw-md bg-text-on-accent/20 backdrop-blur-sm">
                 <Flag className="h-6 w-6 text-text-on-accent" aria-hidden />
               </div>
               <h2 className="mb-1 font-fw-display text-body-lg font-medium text-text-on-accent/90">Round Complete</h2>
@@ -167,20 +168,20 @@ export function FairwayRoundSummarySheet({
               animate={{ opacity: 1, y: 0 }}
               transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.3, duration: 0.3 }}
             >
-              <p className="mb-2 font-fw-sans text-eyebrow font-medium uppercase tracking-[0.12em] text-text-tertiary">Scorecard</p>
+              <h3 className="mb-2 font-fw-sans text-body-sm font-semibold text-text-primary">Scorecard</h3>
               <div className="overflow-x-auto overflow-hidden rounded-fw-md border border-border-subtle">
                 {/* Front 9 (or all 9 for a 9-hole round) */}
                 <div className="grid gap-px bg-border-subtle" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
                   {finalStats.slice(0, 9).map((_, idx) => (
                     <div key={`h${idx}`} className="bg-surface-sunken py-1 text-center">
-                      <span className="font-fw-sans text-eyebrow font-medium text-text-tertiary">{idx + 1}</span>
+                      <span className="font-fw-sans text-caption font-medium text-text-tertiary">{idx + 1}</span>
                     </div>
                   ))}
                 </div>
                 <div className="grid gap-px bg-border-subtle" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
                   {finalStats.slice(0, 9).map((h, idx) => (
                     <div key={`p${idx}`} className="bg-surface py-1 text-center">
-                      <span className="font-fw-mono text-eyebrow text-text-tertiary">{h?.par}</span>
+                      <span className="font-fw-mono text-caption text-text-tertiary">{h?.par}</span>
                     </div>
                   ))}
                 </div>
@@ -197,14 +198,14 @@ export function FairwayRoundSummarySheet({
                     <div className="grid gap-px bg-border-subtle" style={{ gridTemplateColumns: 'repeat(9, 1fr)' }}>
                       {finalStats.slice(9, 18).map((_, idx) => (
                         <div key={`h2${idx}`} className="bg-surface-sunken py-1 text-center">
-                          <span className="font-fw-sans text-eyebrow font-medium text-text-tertiary">{idx + 10}</span>
+                          <span className="font-fw-sans text-caption font-medium text-text-tertiary">{idx + 10}</span>
                         </div>
                       ))}
                     </div>
                     <div className="grid gap-px bg-border-subtle" style={{ gridTemplateColumns: 'repeat(9, 1fr)' }}>
                       {finalStats.slice(9, 18).map((h, idx) => (
                         <div key={`p2${idx}`} className="bg-surface py-1 text-center">
-                          <span className="font-fw-mono text-eyebrow text-text-tertiary">{h?.par}</span>
+                          <span className="font-fw-mono text-caption text-text-tertiary">{h?.par}</span>
                         </div>
                       ))}
                     </div>

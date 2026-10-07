@@ -6,6 +6,8 @@ COMMENT ON TABLE "public"."golf_announcement_recipients" IS 'Specific player rec
 
 COMMENT ON TABLE "public"."golf_announcement_tasks" IS 'Tasks attached to announcements (links to golf_tasks)';
 
+COMMENT ON COLUMN "public"."golf_announcements"."is_test" IS 'QA/demo row: hidden from team reads (OD-03).';
+
 COMMENT ON COLUMN "public"."golf_coach_insights"."engine_version" IS 'v3 W21. ''v2'' = legacy mining/* generator output; ''v3'' = BaseGenerator output. Combined with the v3: signature prefix lets both engines coexist during W21-W25 transition + lets W35 outcome attribution score them separately.';
 
 COMMENT ON COLUMN "public"."golf_coach_philosophy"."email_digest_enabled" IS 'Coach opt-in for daily 06:30 UTC morning digest email of top insights.';
@@ -65,6 +67,8 @@ COMMENT ON COLUMN "public"."golf_documents"."current_version_id" IS 'Reference t
 COMMENT ON COLUMN "public"."golf_documents"."version_count" IS 'Total number of versions for quick display';
 
 COMMENT ON COLUMN "public"."golf_documents"."folder" IS 'Optional folder name for document organization';
+
+COMMENT ON COLUMN "public"."golf_documents"."is_test" IS 'QA/demo row: hidden from team reads (OD-03).';
 
 COMMENT ON COLUMN "public"."golf_event_attendance"."attendance_status" IS 'Coach-recorded attendance mark (dual-axis with status, which is the player''s RSVP). NULL = not yet marked. checked_in/checked_in_at remain the timestamped check-in record.';
 
@@ -163,9 +167,13 @@ COMMENT ON COLUMN "public"."golf_player_stats_cache"."round_ids_included" IS 'Ro
 
 COMMENT ON COLUMN "public"."golf_players"."anonymized_at" IS 'Set when the linked auth user was deleted and the identity fields were cleared. The round/shot history under this player is deliberately retained and is de-identified. NULL = active player.';
 
+COMMENT ON COLUMN "public"."golf_players"."is_test" IS 'QA/demo row: hidden from player, team and CoachHelm reads (OD-03).';
+
 COMMENT ON TABLE "public"."golf_qualifier_round_courses" IS 'Feature G: the course (and optional tee) a coach assigns to each round of a multi-round qualifier. One row per (qualifier_id, round_number). Team-scoped through golf_qualifiers.team_id.';
 
 COMMENT ON TABLE "public"."golf_qualifier_selections" IS 'v3 W29 per-player picks for a qualifier. selection_type=top_score is auto-locked from top-N position; coach_pick is discretionary (coach_reasoning expected).';
+
+COMMENT ON COLUMN "public"."golf_qualifiers"."is_test" IS 'QA/demo row: hidden from player, team and CoachHelm reads (OD-03).';
 
 COMMENT ON TABLE "public"."golf_review_events" IS 'Timeline of events related to reviews for history display';
 
@@ -186,6 +194,8 @@ COMMENT ON COLUMN "public"."golf_rounds"."coachhelm_analyzed_at" IS 'Timestamp w
 COMMENT ON COLUMN "public"."golf_rounds"."coachhelm_failed_at" IS 'Timestamp when triggerPlayerInsightsAfterRound terminated with an error. Set alongside coachhelm_failure_reason.';
 
 COMMENT ON COLUMN "public"."golf_rounds"."coachhelm_failure_reason" IS 'Short error reason captured by postRoundTrigger on the failure path. Truncated to ~500 chars.';
+
+COMMENT ON COLUMN "public"."golf_rounds"."is_test" IS 'QA/demo row: hidden from player, team and CoachHelm reads (OD-03).';
 
 COMMENT ON TABLE "public"."golf_shots" IS 'Golf shot data. Migration 065 fixed around_green shots that had incorrect lie_before=green values.';
 
@@ -245,6 +255,8 @@ COMMENT ON COLUMN "public"."golf_tasks"."recurrence_rule" IS 'RRULE text on a se
 
 COMMENT ON COLUMN "public"."golf_tasks"."parent_task_id" IS 'Series root for a materialized recurring-task occurrence; NULL for one-off tasks and for the root itself. Same convention as golf_events.parent_event_id.';
 
+COMMENT ON COLUMN "public"."golf_tasks"."is_test" IS 'QA/demo row: hidden from team reads (OD-03).';
+
 COMMENT ON COLUMN "public"."golf_team_coachhelm_settings"."preferences" IS 'Per-team v3 generator toggles (e.g. {tee_strategy_enabled: false}). Generator-toggles.ts defaults missing keys to true; coaches opt OUT by setting a key to false.';
 
 COMMENT ON TABLE "public"."golf_team_join_requests" IS 'Tracks player requests to join golf teams, requiring coach approval';
@@ -263,6 +275,8 @@ COMMENT ON COLUMN "public"."golf_team_settings"."event_reminder_late_minutes" IS
 
 COMMENT ON COLUMN "public"."golf_teams"."season_active" IS 'Seasonal email gate: when false, scheduled digest/recap emails (coach morning digest, weekly coach email) skip this team. Event-driven emails (RSVP, cancellations) are NOT gated.';
 
+COMMENT ON COLUMN "public"."golf_teams"."is_test" IS 'QA/demo row: hidden from player, team and CoachHelm reads (OD-03).';
+
 COMMENT ON TABLE "public"."golf_travel_budgets" IS 'Budget allocations per category for travel itineraries';
 
 COMMENT ON TABLE "public"."golf_travel_expenses" IS 'Travel expenses for golf team trips';
@@ -270,3 +284,5 @@ COMMENT ON TABLE "public"."golf_travel_expenses" IS 'Travel expenses for golf te
 COMMENT ON COLUMN "public"."golf_travel_expenses"."category" IS 'Expense category: lodging, transportation, meals, entry_fees, equipment, other';
 
 COMMENT ON COLUMN "public"."golf_travel_expenses"."paid_by" IS 'Who paid: team, player, pending_reimbursement, split';
+
+COMMENT ON COLUMN "public"."golf_travel_itineraries"."is_test" IS 'QA/demo row: hidden from team reads (OD-03).';

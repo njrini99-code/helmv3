@@ -163,7 +163,7 @@ export function TracerRoundDiagnostic({
           ))}
           {roundStatus === 'in_progress' ? (
             confirmingResolve ? (
-              <span className="flex items-center gap-2">
+              <span className="flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
                   variant="secondary"
@@ -198,7 +198,7 @@ export function TracerRoundDiagnostic({
           ) : null}
         </div>
         {fixResult ? (
-          <p className={cn('mt-2 text-xs', fixResult.ok ? 'text-fw-success-ink' : 'text-fw-danger-ink')}>{fixResult.message}</p>
+          <p className={cn('mt-2 break-words text-xs', fixResult.ok ? 'text-fw-success-ink' : 'text-fw-danger-ink')}>{fixResult.message}</p>
         ) : null}
       </div>
     </div>
@@ -208,7 +208,7 @@ export function TracerRoundDiagnostic({
 function Stat({ label, value, danger = false }: { label: string; value: string; danger?: boolean }) {
   return (
     <div className="rounded-lg bg-surface-sunken px-2.5 py-2">
-      <p className="text-eyebrow uppercase tracking-wider text-warm-400">{label}</p>
+      <p className="text-eyebrow uppercase tracking-wider text-warm-500">{label}</p>
       <p className={cn('font-fw-mono text-sm font-semibold tabular-nums', danger ? 'text-fw-danger-ink' : 'text-warm-900')}>
         {value}
       </p>

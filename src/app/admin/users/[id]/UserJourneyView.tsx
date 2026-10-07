@@ -54,7 +54,7 @@ export async function UserJourneyView({ userId }: { userId: string }) {
           <p className="text-eyebrow uppercase text-warm-500">Recent incidents</p>
           <div className="mt-3 divide-y divide-warm-200/60">
             {ribbon.incidents.recentTitles.map((title, i) => (
-              <p key={i} className="truncate py-2 text-sm text-warm-800">
+              <p key={i} className="break-words py-2 text-sm text-warm-800 [overflow-wrap:anywhere]">
                 {title}
               </p>
             ))}
@@ -62,7 +62,10 @@ export async function UserJourneyView({ userId }: { userId: string }) {
         </Surface>
       )}
 
-      <Link href={ribbon.threadHref} className="inline-block text-xs font-medium text-accent-700 hover:underline">
+      <Link
+        href={ribbon.threadHref}
+        className="inline-flex items-center text-xs font-medium text-accent-700 hover:underline [@media(pointer:coarse)]:min-h-11"
+      >
         Open full activity thread →
       </Link>
     </div>

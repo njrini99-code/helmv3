@@ -88,7 +88,7 @@ describe('TeeStrategyGenerator', () => {
     expect(c.content).toContain('65%');
     expect(c.content).toContain('68%');
     expect(c.content).toContain('45 yards'); // 285 - 240
-    expect(c.content).toMatch(/default to driver/);
+    expect(c.content).toMatch(/default to driver/i);
     expect(c.signature).toBe('tee_strategy:sharp');
   });
 

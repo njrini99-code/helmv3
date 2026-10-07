@@ -233,7 +233,7 @@ function DetailRow({ label, value, mono = true }: { label: string; value: ReactN
   // 2026-08-27 (src/lib/utils.ts registers the custom font-size group, and
   // src/lib/__tests__/cn-font-size.test.ts pins it), so cn() is safe here
   // now — this stays a plain string only because it needs no merging.
-  const valueClassName = `min-w-0 flex-1 break-words text-caption ${mono ? 'font-fw-mono' : 'font-fw-sans'} ${empty ? 'text-warm-400' : 'text-warm-900'}`;
+  const valueClassName = `min-w-0 flex-1 break-words text-caption ${mono ? 'font-fw-mono' : 'font-fw-sans'} ${empty ? 'text-warm-500' : 'text-warm-900'}`;
   return (
     <div className="flex gap-3 py-1">
       <span className="w-28 shrink-0 text-caption text-warm-500">{label}</span>
@@ -385,7 +385,7 @@ function TraceKpiStrip({
               <span className="ml-1 text-caption font-normal text-warm-500">ms</span>
             </>
           ) : (
-            <span className="text-warm-400">{EM_DASH}</span>
+            <span className="text-warm-500">{EM_DASH}</span>
           )}
         </span>
       </KpiCell>
@@ -420,7 +420,7 @@ function TraceKpiStrip({
       >
         {/* Same `cn()` trap as above — `text-body` is a custom size token. */}
         <span
-          className={`block truncate font-fw-mono text-body font-semibold ${failureKey ? 'text-fw-danger-ink' : 'text-warm-400'}`}
+          className={`block truncate font-fw-mono text-body font-semibold ${failureKey ? 'text-fw-danger-ink' : 'text-warm-500'}`}
           title={failureKey ?? undefined}
         >
           {/* The full dotted key, not just the leaf — "where" is the whole

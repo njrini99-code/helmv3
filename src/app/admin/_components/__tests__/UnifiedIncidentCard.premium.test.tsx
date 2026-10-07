@@ -23,6 +23,7 @@ function baseIncident(id: string): UnifiedIncident {
     lastSeen: '2026-09-01T00:00:00.000Z',
     occurrences: 3,
     affectedUsers: 2,
+    affectedPeople: [],
     affectedUsersKnown: true,
     sources: [],
     corroboration: 1,
@@ -69,6 +70,19 @@ describe('UnifiedIncidentCard — Phase 1 additions', () => {
     expect(screen.getByText('Golf > Round Tracking > Autosave')).toBeInTheDocument();
     expect(screen.getByText('42501 · permission denied')).toBeInTheDocument();
     expect(screen.queryByText('raw description a')).not.toBeInTheDocument();
+  });
+
+  it('drops the "signature unavailable" placeholder line instead of printing it on every card', () => {
+    const presentation: IncidentPresentation = {
+      title: 'An unexpected error occurred',
+      operationContext: 'Golf > Intelligence Hub',
+      technicalSignature: 'signature unavailable',
+      resolvedBy: 'generic',
+      matchedRule: 'generic-fallback',
+    };
+    render(<UnifiedIncidentCard incident={baseIncident('a')} series={null} presentation={presentation} />);
+    expect(screen.queryByText('signature unavailable')).not.toBeInTheDocument();
+    expect(screen.getByText('Golf > Intelligence Hub')).toBeInTheDocument();
   });
 
   it('renders a hatched "unknown" release relationship when the prop is explicitly null, not omitted', () => {

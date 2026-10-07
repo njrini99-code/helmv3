@@ -17,7 +17,7 @@
  *     outcomes are operational, not forensic).
  *   - pg_cron (`purge-admin-event-telemetry`, `10 4 * * *`, production-only,
  *     see `supabase/migrations/20260906120000_narrow_admin_event_purge_pg_cron.sql`,
- *     HELD as of this PR — see `supabase/migrations/HELD.md`)
+ *     applied in production — ledger-verified 2026-09-22, see HELD.md)
  *     is a REDUNDANT FLOOR, info/warning `admin_events` only, 180d — a
  *     backstop for if this route stops running, not a second policy. It no
  *     longer touches `admin_analytics_events`, which this route now owns

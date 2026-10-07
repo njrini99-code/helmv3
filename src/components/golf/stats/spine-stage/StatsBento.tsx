@@ -191,20 +191,28 @@ export function StatsBento({
   const puttingRows: RailBarRow[] = [
     { label: '0-3ft', pct: finite(s?.puttMakePct0_3) ?? 0, value: fmtPct(finite(s?.puttMakePct0_3)) },
     {
+      // The 3-5ft band is the headline putting read elsewhere (Insights,
+      // focus areas); the bento skipped straight from 0-3 to 5-10.
+      label: '3-5ft',
+      pct: finite(s?.puttMakePct3_5) ?? 0,
+      value: fmtPct(finite(s?.puttMakePct3_5)),
+      tickPct: pgaTickPct(standingByMetric, 'putts_made_3_5ft_pct'),
+    },
+    {
       label: '5-10ft',
       pct: finite(s?.puttMakePct5_10) ?? 0,
       value: fmtPct(finite(s?.puttMakePct5_10)),
       tickPct: pgaTickPct(standingByMetric, 'putts_made_5_10ft_pct'),
     },
     {
-      // Plots `puttMakePct15_20` — the real 15-20ft bucket. The label matches
-      // the field it renders; the PGA tick is the closest available Tour
-      // benchmark (`putts_made_15_25ft_pct` — no 15-20ft-exact metric exists)
-      // so it stays a reference point rather than an exact-bucket match.
-      label: '15-20ft',
-      pct: finite(s?.puttMakePct15_20) ?? 0,
-      value: fmtPct(finite(s?.puttMakePct15_20)),
-      tickPct: pgaTickPct(standingByMetric, 'putts_made_15_25ft_pct'),
+      // Canonical band edges (PuttBucketKey, putt-distance.ts): 3-5, 5-10,
+      // 10-15, 15-25, 25+. The bento used to plot the legacy 15-20ft column
+      // against the 15-25ft Tour tick, a band no other surface uses. 10-15ft
+      // is a canonical band with an exact-bucket Tour benchmark.
+      label: '10-15ft',
+      pct: finite(s?.puttMakePct10_15) ?? 0,
+      value: fmtPct(finite(s?.puttMakePct10_15)),
+      tickPct: pgaTickPct(standingByMetric, 'putts_made_10_15ft_pct'),
     },
   ];
 
@@ -236,14 +244,44 @@ export function StatsBento({
 
   const bestCategory = strengths[0] ?? null;
   const worstCategory = weaknesses[0] ?? null;
+  // Title, number and colour describe ONE metric. The preview rail is SG:
+  // Total, so once it has computed the headline is SG: Total too, with the
+  // spine's Gaining/Losing read; the strongest area and the biggest leak stay
+  // named in the sentence. (The cell headlined the leak, "SG: Putting", above
+  // SG: Total's −1.61 painted green.) Until SG: Total computes there is no
+  // rail, and the headline is the leak (or best) category.
+  const sgTotal = finite(standingByMetric.get('sg_total')?.player_value ?? null);
+  // Hundredths, as displayed: a "0.00" reads neither gaining nor losing.
+  const sgTotalHundredths = sgTotal === null ? 0 : Math.round(sgTotal * 100);
   const standingFocus: {
     chip?: { tone: CellChipTone; text: string };
-    headline?: { value: string };
-  } = worstCategory
-    ? { chip: { tone: 'leak', text: 'Leak' }, headline: { value: worstCategory.label } }
-    : bestCategory
-      ? { chip: { tone: 'strength', text: 'Best' }, headline: { value: bestCategory.label } }
-      : {};
+    headline?: { value: string; unit?: string };
+  } =
+    sgTotal !== null
+      ? {
+          chip:
+            sgTotalHundredths > 0
+              ? { tone: 'strength', text: 'Gaining' }
+              : sgTotalHundredths < 0
+                ? { tone: 'leak', text: 'Losing' }
+                : undefined,
+          headline: { value: formatSgSigned(sgTotal), unit: 'SG: Total' },
+        }
+      : worstCategory
+        ? { chip: { tone: 'leak', text: 'Leak' }, headline: { value: worstCategory.label } }
+        : bestCategory
+          ? { chip: { tone: 'strength', text: 'Best' }, headline: { value: bestCategory.label } }
+          : {};
+  const standingSentence =
+    bestCategory && worstCategory
+      ? // NUM-37: canonical labels as-is ("SG: Off the Tee"), never
+        // lowercased into "sg: off the tee".
+        `Strongest: ${bestCategory.label}. Biggest leak: ${worstCategory.label}.`
+      : worstCategory
+        ? `Biggest leak: ${worstCategory.label}.`
+        : bestCategory
+          ? `Strongest: ${bestCategory.label}.`
+          : 'Every metric vs PGA Tour and the team.';
 
   return (
     <Bento separated>
@@ -282,7 +320,7 @@ export function StatsBento({
         onOpen={() => stage.open('putting')}
       >
         {/* 60, matching "Off the tee" below: RailBars' label column is a HARD
-            px track, and "15-20ft" is as wide as the "Fairways" label that
+            px track, and "10-15ft" is as wide as the "Fairways" label that
             already proved 44px too narrow. */}
         <RailBars rows={puttingRows} labelWidth={60} />
       </BentoCell>
@@ -338,7 +376,7 @@ export function StatsBento({
             <Sparkline
               data={scoringTrend?.series ?? []}
               goodDirection="down"
-              label={scoringTrend?.label ?? 'Score to par'}
+              label={scoringTrend?.label ?? 'Score per 18 holes'}
               width={52}
               height={16}
             />
@@ -351,6 +389,9 @@ export function StatsBento({
                       ? 'improving'
                       : 'declining'
                 }
+                // Scoring: lower is better, so the arrow follows the raw number
+                // (↓ for a falling score) while colour follows good/bad.
+                goodDirection="down"
                 label={scoringTrend.delta.text}
                 size="sm"
                 numeric
@@ -366,11 +407,7 @@ export function StatsBento({
         span={2}
         chip={standingFocus.chip}
         headline={standingFocus.headline}
-        sentence={
-          bestCategory && worstCategory
-            ? `Strongest in ${bestCategory.label.toLowerCase()}; leaking most in ${worstCategory.label.toLowerCase()}.`
-            : 'Every metric vs PGA Tour and the team.'
-        }
+        sentence={standingSentence}
         onOpen={() => stage.open('standing')}
       >
         <StandingPinPreview standingByMetric={standingByMetric} />
@@ -414,7 +451,7 @@ function StandingPinPreview({ standingByMetric }: { standingByMetric: Map<string
     return (
       <div data-slot="standing-pin-preview" data-state="empty" className="mt-0.5 flex flex-col gap-1.5">
         <div aria-hidden="true" className="h-[7px] rounded-full bg-surface-sunken" />
-        <p className="font-fw-sans text-eyebrow text-text-tertiary">Fills in after 5+ rounds</p>
+        <p className="font-fw-sans text-caption text-text-tertiary">Fills in after 5+ rounds</p>
       </div>
     );
   }
@@ -433,16 +470,10 @@ function StandingPinPreview({ standingByMetric }: { standingByMetric: Map<string
     { key: 'Tour', pct: tourPct },
   ]);
 
+  // The figure and its "SG: Total" label are the cell's headline (StatsBento),
+  // so this preview is the rail alone — no second, differently coloured copy.
   return (
     <div data-slot="standing-pin-preview" className="mt-0.5 flex flex-col gap-1.5">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="font-fw-mono text-caption font-semibold tabular-nums text-accent-700">
-          {formatSgSigned(you)}
-        </span>
-        <span className="font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
-          SG: Total
-        </span>
-      </div>
       <div className="relative h-[7px] rounded-full bg-surface-sunken">
         {teamPct !== null ? (
           <div
@@ -463,11 +494,14 @@ function StandingPinPreview({ standingByMetric }: { standingByMetric: Map<string
         />
         <div
           aria-hidden="true"
-          className="absolute top-1/2 h-[11px] w-[11px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-500 shadow-soft ring-2 ring-surface"
+          className={cn(
+            'absolute top-1/2 h-[11px] w-[11px] -translate-x-1/2 -translate-y-1/2 rounded-full shadow-soft ring-2 ring-surface',
+            isGain ? 'bg-accent-500' : 'bg-fw-warning',
+          )}
           style={{ left: `${youPct}%` }}
         />
       </div>
-      <div className="relative h-[12px] font-fw-mono text-microbadge normal-case tracking-normal text-text-tertiary">
+      <div className="relative h-[12px] font-fw-mono text-microlabel normal-case tracking-normal text-text-tertiary">
         {labelPositions.map((pos) => {
           const isSubject = pos.key === STANDING_TRACK_SUBJECT_KEY;
           return (

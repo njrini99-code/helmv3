@@ -7,19 +7,20 @@
  * The secondary insight feed (ported from `FairwayPlayerCoachHelm`'s "More
  * for you" section) — hierarchical THEMES (flag on + present) REPLACE the
  * flat feed, exactly as the monolith did; the top insight itself lives on
- * the bento home, so this feed is the REST of the evidence (deduped).
+ * the overview (`PlayerHubFeed`), so this feed is the REST of the evidence (deduped).
  *
  * FIX 1: `topInsightDrills` carries the OVERFLOW of the top insight's
- * prescribed drills — `PlayerHomeBento` renders only the first attached
- * drill (space-constrained bento cell), so anything beyond that (indices
+ * prescribed drills — the overview shows only the first attached drill,
+ * so anything beyond that (indices
  * 1+, still ranked/capped at 3 by `insight-delivery.ts`) surfaces here via
  * `PracticeRxPanel` so every attached drill stays visible somewhere.
  * ========================================================================== */
 
 import { useMemo, useState } from 'react';
 
-import { DrillPanel, useStage } from '@/components/fairway/modules';
-import { InsightCard, InsightPanel, Eyebrow, type InsightPanelAction, type InsightPriority } from '@/components/fairway';
+import { DrillPanel } from '@/components/fairway/modules';
+import { InsightCard, InsightPanel, Eyebrow, type InsightPriority } from '@/components/fairway';
+import { InsightOverflowMenu } from './InsightOverflowMenu';
 import { StandingStrip } from '@/components/fairway/charts/StandingStrip';
 import { PracticeRxPanel } from '@/components/fairway/pages/coachhelm/PracticeRxPanel';
 import { CategoryInsightsPanel } from '@/components/golf/coachhelm/insights/CategoryInsightsPanel';
@@ -92,9 +93,12 @@ export interface InsightsDrillProps {
   onMakePlan: (cause: CauseNode, theme: ThemeNode) => void;
   makePlanPendingId: string | null;
   /** FIX 1: overflow of the top insight's prescribed drills (index 1+) —
-   *  `PlayerHomeBento` already rendered the first one. Empty/undefined when
+   *  the overview already rendered the first one. Empty/undefined when
    *  the top insight has 0 or 1 attached drills. */
   topInsightDrills?: InsightAttachedDrill[];
+  /** Deep link (`?view=insights&insight=<id>`): open this insight's evidence
+   *  sheet on arrival. It may be the top insight, which is not in `insights`. */
+  initialOpenInsight?: EvidenceInsight | null;
 }
 
 export function InsightsDrill({
@@ -106,9 +110,9 @@ export function InsightsDrill({
   onMakePlan,
   makePlanPendingId,
   topInsightDrills = [],
+  initialOpenInsight = null,
 }: InsightsDrillProps) {
-  const { home } = useStage();
-  const [openInsight, setOpenInsight] = useState<EvidenceInsight | null>(null);
+  const [openInsight, setOpenInsight] = useState<EvidenceInsight | null>(initialOpenInsight);
 
   const showThemes = themesEnabled && themes.length > 0;
 
@@ -118,7 +122,7 @@ export function InsightsDrill({
   const groupedInsights = useMemo(() => groupInsightsByCategory(insights), [insights]);
 
   return (
-    <DrillPanel title="Insights" backLabel="Home" onBack={home}>
+    <DrillPanel title="Insights">
       {topInsightDrills.length > 0 ? (
         <div className="mb-6">
           <Eyebrow>More drills for your top insight</Eyebrow>
@@ -195,7 +199,7 @@ export function InsightsDrill({
         </div>
       ) : (
         <p className="font-fw-sans text-body-sm text-text-tertiary">
-          No more insights right now — log a few more rounds and CoachHelm will surface the next pattern.
+          No more insights right now. Log a few more rounds and CoachHelm will surface the next pattern.
         </p>
       )}
 
@@ -218,25 +222,17 @@ export function InsightsDrill({
             ) : undefined
           }
           evidenceLabel={openInsight.evidence?.metric_label ? 'The evidence' : undefined}
-          actions={
-            [
-              {
-                key: 'acknowledge',
-                label: 'Acknowledge',
-                onClick: () => {
-                  onRate(openInsight.id, 'acknowledged');
-                  setOpenInsight(null);
-                },
-              },
-              {
-                key: 'dismiss',
-                label: 'Dismiss',
-                onClick: () => {
-                  onRate(openInsight.id, 'dismissed');
-                  setOpenInsight(null);
-                },
-              },
-            ] satisfies InsightPanelAction[]
+          actionsSlot={
+            <InsightOverflowMenu
+              onPositive={() => {
+                onRate(openInsight.id, 'acknowledged');
+                setOpenInsight(null);
+              }}
+              onDismiss={() => {
+                onRate(openInsight.id, 'dismissed');
+                setOpenInsight(null);
+              }}
+            />
           }
         >
           {openInsight.content}

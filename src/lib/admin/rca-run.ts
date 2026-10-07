@@ -29,6 +29,7 @@ import {
   extractCollapsedCount,
   extractErrorCode,
   extractRoute,
+  extractUserIdUnverified,
   resolveActionFilePath,
 } from '@/lib/admin/incident-report';
 import { runRcaAnalysis, type RcaAnalysis, type RcaResult } from '@/lib/admin/rca';
@@ -100,6 +101,7 @@ export function buildCleanIncidentReport(fingerprint: string, events: Fingerprin
       timestamp: e.created_at ?? 'unknown',
       route: e.url ?? extractRoute(e.metadata),
       userId: e.user_id,
+      userIdUnverified: extractUserIdUnverified(e.metadata),
     })),
   });
 }

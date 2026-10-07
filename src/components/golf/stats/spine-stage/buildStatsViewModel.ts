@@ -19,6 +19,7 @@
 import type { PriorityItem, SpineLedgerRow, StandingTrackProps } from '@/components/fairway/modules';
 import { clampPct } from '@/components/fairway/modules';
 import { standingSubjectLabel } from '@/components/golf/coachhelm/v3/StandingBar';
+import { formatMetricText } from '@/lib/golf/metrics/display-registry';
 
 /** The seven `?area=` stage views (`home` renders the bento). */
 export type StatsArea =
@@ -70,8 +71,9 @@ function fmtInt(n: number | null): string {
 function fmtPct(n: number | null): string {
   return n === null ? '—' : `${Math.round(n)}%`;
 }
-function fmtNum(n: number | null, digits = 1): string {
-  return n === null ? '—' : n.toFixed(digits);
+/** Putts per round, by the registry's one rule (1 dp). */
+function fmtPuttsPerRound(n: number | null): string {
+  return formatMetricText('putts_per_round', n);
 }
 
 /** The subset of a `periodComparison` side (`last30Days`/`previous30Days`)
@@ -108,11 +110,9 @@ function fmtPctDelta(delta: number): string {
   return `${delta > 0 ? '+' : '−'}${rounded}%`;
 }
 
-/** Signed delta display, e.g. "+0.4" / "0.0". */
-function fmtNumDelta(delta: number, digits = 1): string {
-  const magnitude = Math.abs(delta).toFixed(digits);
-  if (Number(magnitude) === 0) return magnitude;
-  return `${delta > 0 ? '+' : '−'}${magnitude}`;
+/** Signed putts-per-round change, e.g. "+0.4" / "0.0" (registry delta rule). */
+function fmtPuttsDelta(delta: number): string {
+  return formatMetricText('putts_per_round', delta, { delta: true });
 }
 
 /**
@@ -161,8 +161,8 @@ export function buildLedger(input: LedgerInput): SpineLedgerRow[] {
     },
     {
       label: 'Putts / rd',
-      value: fmtNum(finite(input.puttsPerRound), 1),
-      delta: ledgerDelta(input.last30?.puttsPerRound, input.previous30?.puttsPerRound, false, (d) => fmtNumDelta(d, 1)),
+      value: fmtPuttsPerRound(finite(input.puttsPerRound)),
+      delta: ledgerDelta(input.last30?.puttsPerRound, input.previous30?.puttsPerRound, false, fmtPuttsDelta),
     },
   ];
 }
@@ -170,6 +170,10 @@ export function buildLedger(input: LedgerInput): SpineLedgerRow[] {
 export interface PriorityInput {
   label: string;
   strokeImpact: number | null | undefined;
+  /** The measured strokes-gained figure for this same area, when one exists.
+   *  Shown instead of the estimate so "SG: Putting" never reads two numbers
+   *  on one screen. */
+  measured?: number | null;
 }
 
 /**
@@ -181,8 +185,8 @@ export function buildPriorities(
   max = 3,
 ): PriorityItem[] {
   const scored = weaknesses
-    .map((w) => ({ label: w.label, impact: finite(w.strokeImpact) }))
-    .filter((w): w is { label: string; impact: number } => w.impact !== null && w.impact !== 0)
+    .map((w) => ({ label: w.label, impact: finite(w.strokeImpact), measured: finite(w.measured) }))
+    .filter((w): w is { label: string; impact: number; measured: number | null } => w.impact !== null && w.impact !== 0)
     .sort((a, b) => Math.abs(b.impact) - Math.abs(a.impact))
     .slice(0, max);
 
@@ -194,17 +198,22 @@ export function buildPriorities(
     // carries its own `confidence`, not a measured figure) rendered with the
     // exact same "+X.XX" typography as the spine's measured SG total —
     // visually indistinguishable from a real number.
-    value: `${w.impact > 0 ? '+' : '−'}${Math.abs(w.impact).toFixed(2)} est.`,
+    value:
+      w.measured !== null
+        ? formatMetricText('sg_total', w.measured)
+        : `${formatMetricText('sg_total', w.impact)} est.`,
   }));
 }
 
-/** Signed strokes-gained display, e.g. "+0.42" / "−0.31" / "E". */
+/**
+ * Signed strokes-gained display, e.g. "+0.42" / "−0.31" / "0.00".
+ *
+ * Delegates to the display registry (§5.2): SG is 2 dp with a true minus,
+ * and zero is "0.00". "E" means level PAR, which SG is not; the old local
+ * copy also printed "−0.00" for −0.004.
+ */
 export function formatSgSigned(value: number | null | undefined): string {
-  const n = finite(value);
-  if (n === null) return '—';
-  if (n === 0) return 'E';
-  const fixed = Math.abs(n).toFixed(2);
-  return n > 0 ? `+${fixed}` : `−${fixed}`;
+  return formatMetricText('sg_total', finite(value));
 }
 
 /**
@@ -260,6 +269,9 @@ export function buildVerdict(
     n >= 0
       ? `Gaining ${formatSgSigned(n)} strokes per round on the field`
       : `${formatSgSigned(n)} strokes per round vs the field`;
+  // `leakLabel` is prose from StatsSpineStage ("off the tee", "putting"), not
+  // a registry label, so lowercasing it is safe here. NUM-37's "sg: off the
+  // tee" came from StatsBento's Standing sentence, which now prints labels as-is.
   return leakLabel ? `${head}. Leaking most in ${leakLabel.toLowerCase()}.` : `${head}.`;
 }
 
@@ -464,7 +476,34 @@ export interface CategoryTrendsInput {
 export interface CategoryTrend {
   series: number[];
   delta?: NonNullable<SpineLedgerRow['delta']>;
+  /** What the delta compares, e.g. "last 5 vs prior 5 rounds". */
+  deltaWindow?: string;
   label: string;
+}
+
+/** Largest window per side of a trend comparison. */
+export const TREND_WINDOW_MAX = 5;
+/** Smallest window per side — fewer rounds is noise, so no delta at all. */
+export const TREND_WINDOW_MIN = 3;
+
+/**
+ * Recent-vs-prior trend delta: the mean of the latest `w` points minus the
+ * mean of the `w` points before them, `w = min(5, floor(n / 2))`. Replaces a
+ * newest-minus-oldest diff that read one outlier round (a 37 against a 76)
+ * as "−39.0". Series must be oldest → newest.
+ */
+export function recentVsPriorDelta(
+  series: readonly number[],
+  higherIsBetter: boolean,
+  formatMagnitude: (delta: number) => string,
+): { delta: NonNullable<SpineLedgerRow['delta']>; window: number } | undefined {
+  const w = Math.min(TREND_WINDOW_MAX, Math.floor(series.length / 2));
+  if (w < TREND_WINDOW_MIN) return undefined;
+  const avg = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+  const recent = avg(series.slice(series.length - w));
+  const prior = avg(series.slice(series.length - 2 * w, series.length - w));
+  const delta = ledgerDelta(recent, prior, higherIsBetter, formatMagnitude);
+  return delta ? { delta, window: w } : undefined;
 }
 
 function toFiniteSeries(points: ReadonlyArray<CategoryTrendPoint> | null | undefined): number[] {
@@ -480,11 +519,13 @@ function buildCategoryTrend(
 ): CategoryTrend | null {
   const series = toFiniteSeries(points);
   if (series.length === 0) return null;
-  const delta =
-    series.length >= 2
-      ? ledgerDelta(series[series.length - 1], series[0], higherIsBetter, formatMagnitude)
-      : undefined;
-  return { series, label, delta };
+  const trend = recentVsPriorDelta(series, higherIsBetter, formatMagnitude);
+  return {
+    series,
+    label,
+    delta: trend?.delta,
+    deltaWindow: trend ? `last ${trend.window} vs prior ${trend.window} rounds` : undefined,
+  };
 }
 
 /** Per-category `?area=` trends: `null` where genuinely absent (short game),
@@ -507,8 +548,12 @@ export function buildCategoryTrends(input: CategoryTrendsInput | null | undefine
   return {
     driving: buildCategoryTrend(input?.fairway, 'Fairways hit', true, fmtPctDelta),
     approach: buildCategoryTrend(input?.gir, 'Greens in regulation', true, fmtPctDelta),
-    putting: buildCategoryTrend(input?.putts, 'Putts per round', false, (d) => fmtNumDelta(d, 1)),
-    scoring: buildCategoryTrend(input?.score, 'Score to par', false, (d) => fmtNumDelta(d, 1)),
+    putting: buildCategoryTrend(input?.putts, 'Putts per round', false, fmtPuttsDelta),
+    // The series is the 18-hole-normalized SCORE (getTrendAnalysis
+    // trends.score), not score to par — label it for what it is.
+    scoring: buildCategoryTrend(input?.score, 'Score per 18 holes', false, (d) =>
+      formatMetricText('scoring_average', d, { delta: true }),
+    ),
     short_game: null,
   };
 }

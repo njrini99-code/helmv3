@@ -174,3 +174,16 @@ describe('formatTaskDueDate — renders the day that was stored, in any zone', (
     expect(formatTaskDueDate('2026-08-17T09:00:00Z')).toBe('8/17/2026');
   });
 });
+
+describe('parseTaskDueDate (HYD-06)', () => {
+  it('reads a bare date as LOCAL midnight of that calendar day', async () => {
+    const { parseTaskDueDate } = await import('../task-overdue');
+    const d = parseTaskDueDate('2026-08-17');
+    expect([d.getFullYear(), d.getMonth(), d.getDate(), d.getHours()]).toEqual([2026, 7, 17, 0]);
+  });
+
+  it('parses a full timestamp as Date does', async () => {
+    const { parseTaskDueDate } = await import('../task-overdue');
+    expect(parseTaskDueDate('2026-08-17T15:00:00.000Z').toISOString()).toBe('2026-08-17T15:00:00.000Z');
+  });
+});

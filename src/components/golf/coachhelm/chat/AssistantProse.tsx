@@ -229,7 +229,7 @@ function Mentions({
             'font-medium text-text-primary underline decoration-border-strong',
             'underline-offset-[3px] decoration-1',
             'transition-colors hover:text-fw-success-ink hover:decoration-accent-600',
-            'rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1',
+            'rounded-fw-sm outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1',
           )}
         >
           {name}

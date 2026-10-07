@@ -1920,30 +1920,36 @@ export type Database = {
       }
       baseball_camp_registrations: {
         Row: {
+          attended_at: string | null
           camp_id: string
           created_at: string | null
           id: string
           notes: string | null
           payment_status: string | null
           player_id: string
+          registered_at: string | null
           status: string | null
         }
         Insert: {
+          attended_at?: string | null
           camp_id: string
           created_at?: string | null
           id?: string
           notes?: string | null
           payment_status?: string | null
           player_id: string
+          registered_at?: string | null
           status?: string | null
         }
         Update: {
+          attended_at?: string | null
           camp_id?: string
           created_at?: string | null
           id?: string
           notes?: string | null
           payment_status?: string | null
           player_id?: string
+          registered_at?: string | null
           status?: string | null
         }
         Relationships: [
@@ -4242,7 +4248,9 @@ export type Database = {
       baseball_pitch_events: {
         Row: {
           batter_handedness: string | null
+          batter_id: string | null
           called_strike: boolean
+          count_state: string | null
           created_at: string
           data_context: string
           extension: number | null
@@ -4254,6 +4262,7 @@ export type Database = {
           import_run_id: string | null
           in_play: boolean
           induced_vertical_break: number | null
+          is_called_strike: boolean | null
           is_in_zone: boolean | null
           is_swing: boolean | null
           is_whiff: boolean | null
@@ -4265,6 +4274,7 @@ export type Database = {
           pitch_number: number | null
           pitch_result: string | null
           pitch_type: string | null
+          pitch_type_classified: string | null
           pitcher_id: string | null
           plate_height: number | null
           plate_side: number | null
@@ -4288,7 +4298,9 @@ export type Database = {
         }
         Insert: {
           batter_handedness?: string | null
+          batter_id?: string | null
           called_strike?: boolean
+          count_state?: string | null
           created_at?: string
           data_context?: string
           extension?: number | null
@@ -4300,6 +4312,7 @@ export type Database = {
           import_run_id?: string | null
           in_play?: boolean
           induced_vertical_break?: number | null
+          is_called_strike?: boolean | null
           is_in_zone?: boolean | null
           is_swing?: boolean | null
           is_whiff?: boolean | null
@@ -4311,6 +4324,7 @@ export type Database = {
           pitch_number?: number | null
           pitch_result?: string | null
           pitch_type?: string | null
+          pitch_type_classified?: string | null
           pitcher_id?: string | null
           plate_height?: number | null
           plate_side?: number | null
@@ -4334,7 +4348,9 @@ export type Database = {
         }
         Update: {
           batter_handedness?: string | null
+          batter_id?: string | null
           called_strike?: boolean
+          count_state?: string | null
           created_at?: string
           data_context?: string
           extension?: number | null
@@ -4346,6 +4362,7 @@ export type Database = {
           import_run_id?: string | null
           in_play?: boolean
           induced_vertical_break?: number | null
+          is_called_strike?: boolean | null
           is_in_zone?: boolean | null
           is_swing?: boolean | null
           is_whiff?: boolean | null
@@ -4357,6 +4374,7 @@ export type Database = {
           pitch_number?: number | null
           pitch_result?: string | null
           pitch_type?: string | null
+          pitch_type_classified?: string | null
           pitcher_id?: string | null
           plate_height?: number | null
           plate_side?: number | null
@@ -4379,6 +4397,13 @@ export type Database = {
           visibility?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "baseball_pitch_events_batter_id_fkey"
+            columns: ["batter_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_players"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "baseball_pitch_events_game_id_fkey"
             columns: ["game_id"]
@@ -8555,32 +8580,38 @@ export type Database = {
         Row: {
           acked_at: string
           acked_by: string
+          acknowledged_at: string
           id: string
           note: string | null
           player_id: string
           reaction: string | null
           team_id: string
           timeline_event_id: string
+          user_id: string
         }
         Insert: {
           acked_at?: string
           acked_by: string
+          acknowledged_at?: string
           id?: string
           note?: string | null
           player_id: string
           reaction?: string | null
           team_id: string
           timeline_event_id: string
+          user_id: string
         }
         Update: {
           acked_at?: string
           acked_by?: string
+          acknowledged_at?: string
           id?: string
           note?: string | null
           player_id?: string
           reaction?: string | null
           team_id?: string
           timeline_event_id?: string
+          user_id?: string
         }
         Relationships: [
           {
@@ -9113,10 +9144,12 @@ export type Database = {
       baseball_workload_events: {
         Row: {
           avg_velocity: number | null
+          count: number | null
           created_at: string
           event_date: string
           event_type: string
           game_id: string | null
+          high_intent_count: number | null
           id: string
           innings_pitched: number | null
           max_velocity: number | null
@@ -9128,10 +9161,12 @@ export type Database = {
         }
         Insert: {
           avg_velocity?: number | null
+          count?: number | null
           created_at?: string
           event_date: string
           event_type?: string
           game_id?: string | null
+          high_intent_count?: number | null
           id?: string
           innings_pitched?: number | null
           max_velocity?: number | null
@@ -9143,10 +9178,12 @@ export type Database = {
         }
         Update: {
           avg_velocity?: number | null
+          count?: number | null
           created_at?: string
           event_date?: string
           event_type?: string
           game_id?: string | null
+          high_intent_count?: number | null
           id?: string
           innings_pitched?: number | null
           max_velocity?: number | null
@@ -14990,11 +15027,14 @@ export type Database = {
       }
       golf_player_standing: {
         Row: {
+          basis: string | null
           computed_at: string
+          layup_excluded_n: number | null
           level_avg: number | null
           level_n: number
           level_pct: number | null
           metric_id: string
+          on_green_proximity_feet: number | null
           pga_delta: number | null
           pga_value: number
           player_id: string
@@ -15004,11 +15044,14 @@ export type Database = {
           team_pct: number | null
         }
         Insert: {
+          basis?: string | null
           computed_at?: string
+          layup_excluded_n?: number | null
           level_avg?: number | null
           level_n?: number
           level_pct?: number | null
           metric_id: string
+          on_green_proximity_feet?: number | null
           pga_delta?: number | null
           pga_value: number
           player_id: string
@@ -15018,11 +15061,14 @@ export type Database = {
           team_pct?: number | null
         }
         Update: {
+          basis?: string | null
           computed_at?: string
+          layup_excluded_n?: number | null
           level_avg?: number | null
           level_n?: number
           level_pct?: number | null
           metric_id?: string
+          on_green_proximity_feet?: number | null
           pga_delta?: number | null
           pga_value?: number
           player_id?: string
@@ -15334,6 +15380,7 @@ export type Database = {
           high_school_name: string | null
           hometown: string | null
           id: string
+          is_test: boolean
           last_name: string | null
           onboarding_completed: boolean | null
           phone: string | null
@@ -15355,6 +15402,7 @@ export type Database = {
           high_school_name?: string | null
           hometown?: string | null
           id?: string
+          is_test?: boolean
           last_name?: string | null
           onboarding_completed?: boolean | null
           phone?: string | null
@@ -15376,6 +15424,7 @@ export type Database = {
           high_school_name?: string | null
           hometown?: string | null
           id?: string
+          is_test?: boolean
           last_name?: string | null
           onboarding_completed?: boolean | null
           phone?: string | null
@@ -15836,6 +15885,7 @@ export type Database = {
           end_date: string | null
           entry_deadline: string | null
           id: string
+          is_test: boolean
           name: string
           num_rounds: number
           rules: string | null
@@ -15858,6 +15908,7 @@ export type Database = {
           end_date?: string | null
           entry_deadline?: string | null
           id?: string
+          is_test?: boolean
           name: string
           num_rounds?: number
           rules?: string | null
@@ -15880,6 +15931,7 @@ export type Database = {
           end_date?: string | null
           entry_deadline?: string | null
           id?: string
+          is_test?: boolean
           name?: string
           num_rounds?: number
           rules?: string | null
@@ -16489,6 +16541,7 @@ export type Database = {
           front_nine: number | null
           holes_played: number | null
           id: string
+          is_test: boolean
           notes: string | null
           player_id: string
           qualifier_id: string | null
@@ -16534,6 +16587,7 @@ export type Database = {
           front_nine?: number | null
           holes_played?: number | null
           id?: string
+          is_test?: boolean
           notes?: string | null
           player_id: string
           qualifier_id?: string | null
@@ -16579,6 +16633,7 @@ export type Database = {
           front_nine?: number | null
           holes_played?: number | null
           id?: string
+          is_test?: boolean
           notes?: string | null
           player_id?: string
           qualifier_id?: string | null
@@ -17445,6 +17500,7 @@ export type Database = {
           description: string | null
           gender: string
           id: string
+          is_test: boolean
           join_code: string
           logo_url: string | null
           name: string
@@ -17462,6 +17518,7 @@ export type Database = {
           description?: string | null
           gender?: string
           id?: string
+          is_test?: boolean
           join_code: string
           logo_url?: string | null
           name: string
@@ -17479,6 +17536,7 @@ export type Database = {
           description?: string | null
           gender?: string
           id?: string
+          is_test?: boolean
           join_code?: string
           logo_url?: string | null
           name?: string

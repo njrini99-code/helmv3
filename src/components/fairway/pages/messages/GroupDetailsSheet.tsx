@@ -284,7 +284,7 @@ function MemberRow({
         )}
       </div>
       {isAdmin && (
-        <span className="flex-shrink-0 rounded-full bg-accent-100 px-2.5 py-[3px] font-fw-sans text-eyebrow text-accent-700">
+        <span className="flex-shrink-0 rounded-full bg-accent-100 px-2.5 py-[3px] font-fw-sans text-caption text-accent-700">
           Admin
         </span>
       )}
@@ -294,7 +294,7 @@ function MemberRow({
           window.confirm would block the WKWebView outright. */}
       {canRemove && confirming && (
         <Inset padding="none" className="flex flex-shrink-0 items-center gap-1 bg-fw-danger-bg px-2.5 py-1.5">
-          <span className="mr-1 font-fw-sans text-eyebrow text-fw-danger-ink">Remove?</span>
+          <span className="mr-1 font-fw-sans text-caption text-fw-danger-ink">Remove?</span>
           {/* Safe to hand `busy` straight to the primitive: this pair only
               renders for the ONE member whose `removeConfirmId` is armed, so
               there is no set of siblings to spin at once. `IconButton` swaps

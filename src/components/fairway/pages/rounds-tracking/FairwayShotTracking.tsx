@@ -20,9 +20,13 @@
  * guard release. Result selection ONLY ever dispatches HANDLE_RESULT_SELECT.
  * ========================================================================== */
 
+import { haptic } from '@/lib/haptics';
 import { useRef, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { calculateShotDistanceWithDirection, calculateHoleStats } from '@/lib/utils/shot-helpers';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+
+import { fwHaptic } from '@/lib/fairway/haptics';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import { useHoleSwipe } from './useHoleSwipe';
 
 import type { ShotRecord, HoleStats, RoundHole } from '@/lib/types/golf';
 
@@ -226,14 +230,14 @@ export default function FairwayShotTracking({
     if (hasUnsavedInput()) {
       setPendingNavHoleIndex(targetIndex);
     } else {
-      void triggerHaptic('medium');
+      void haptic('checkpoint');
       onNavigateToHole?.(targetIndex);
     }
   }, [hasUnsavedInput, onNavigateToHole]);
 
   const confirmDiscardAndNavigate = useCallback(() => {
     if (pendingNavHoleIndex !== null) {
-      void triggerHaptic('medium');
+      void haptic('checkpoint');
       onNavigateToHole?.(pendingNavHoleIndex);
       setPendingNavHoleIndex(null);
     }
@@ -309,10 +313,8 @@ export default function FairwayShotTracking({
       }
     }
 
-    // Putting always needs break (filled before result)
-    if (isPutting) {
-      if (!puttBreak) return false;
-    }
+    // RE-F13: putt break is optional (a tap-in has no read worth logging);
+    // an unset break is saved as undefined, never defaulted to "straight".
 
     // Miss direction required for tee shot misses (left/right)
     if (isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot) && !missDirection) return false;
@@ -429,8 +431,10 @@ export default function FairwayShotTracking({
     const isHoleComplete = resultOfShot === 'hole';
     dispatch({ type: 'RECORD_SHOT', payload: { shot: shotRecord, isHoleComplete } });
 
-    // Haptic feedback — subtle for shot, celebratory for hole-out
-    void triggerHaptic(isHoleComplete ? 'success' : 'light');
+    // RE-F14: no haptic here. The "Next shot" / "Complete hole" tap already
+    // answers the hand (FairwayShotEntry + the Fairway Button's own tick);
+    // firing a second one from the state machine buzzed twice per shot, and
+    // `success` is reserved for the round-submitted moment.
 
     // Build updated history for callbacks that need it immediately
     const updatedHistory = [...shotHistory, shotRecord];
@@ -514,6 +518,35 @@ export default function FairwayShotTracking({
       handleEditShot(shot);
     }
   }, [dispatch, shotHistory, handleEditShot]);
+
+  // ── D-HOLESWIPE (owner decision): swipe between holes ─────────────────────
+  // Same reach as the header's Prev/Next: any earlier hole, a later hole once
+  // it has a score — plus the frontier (the next unplayed hole), which is
+  // where a player reviewing an earlier hole is headed anyway. Unsaved input
+  // still routes through the discard prompt. One haptic: the selection tick.
+  const reduceMotion = useReducedMotionGuard();
+  const frontierIdx = holes.findIndex((h) => h.score === null);
+  const swipePrevIdx = currentHoleIndex - 1;
+  const swipeNextIdx = currentHoleIndex + 1;
+  const canSwipePrev = !!onNavigateToHole && swipePrevIdx >= 0;
+  const canSwipeNext = !!onNavigateToHole && swipeNextIdx < holes.length
+    && (holes[swipeNextIdx]?.score != null || swipeNextIdx === frontierIdx);
+  const swipeToHole = useCallback((targetIndex: number) => {
+    if (hasUnsavedInput()) {
+      setPendingNavHoleIndex(targetIndex);
+      return;
+    }
+    fwHaptic('selection');
+    onNavigateToHole?.(targetIndex);
+  }, [hasUnsavedInput, onNavigateToHole]);
+  const holeSwipeRef = useHoleSwipe<HTMLDivElement>({
+    canPrev: canSwipePrev,
+    canNext: canSwipeNext,
+    onPrev: () => swipeToHole(swipePrevIdx),
+    onNext: () => swipeToHole(swipeNextIdx),
+    enabled: !!onNavigateToHole && !showEditModal && !showPenaltyModal && pendingNavHoleIndex === null,
+    reduceMotion,
+  });
 
   // Early return for invalid hole data - must be after all hooks
   if (!currentHole) {
@@ -604,7 +637,11 @@ export default function FairwayShotTracking({
           on desktop (hole context left, live shot entry right) so the card no
           longer floats mid-screen with big wasted side margins. The shot pills
           stay full-bleed-sticky at the top of the content column. */}
-      <div className="mx-auto w-full min-w-0 max-w-5xl px-4 pb-6 pt-4 sm:px-6">
+      <div
+        ref={holeSwipeRef}
+        data-slot="hole-swipe-surface"
+        className="mx-auto w-full min-w-0 max-w-5xl touch-pan-y px-4 pb-6 pt-4 sm:px-6"
+      >
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start">
             {/* Hole context — flyover + readouts. Sticks alongside the entry on
                 desktop so the live panel can scroll without losing context. */}
@@ -710,6 +747,8 @@ export default function FairwayShotTracking({
           onClose={handleCloseEditModal}
           onSave={handleSaveEditedShot}
           onDelete={handleDeleteShot}
+          hole={{ holeNumber: currentHole.number, par: currentHole.par, yardage: currentHole.yardage }}
+          shotHistory={shotHistory}
         />
       )}
     </div>

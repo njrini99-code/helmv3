@@ -5,8 +5,64 @@ import { createClient } from '@/lib/supabase/client';
 import { describeError } from '@/lib/utils/describe-error';
 import { logError } from '@/lib/error-logging';
 
-const HEARTBEAT_INTERVAL = 60000; // 1 minute
+/**
+ * `public.heartbeat()` writes `users.last_seen` unconditionally, and the coach
+ * roster calls a player online when last_seen is under 5 minutes old
+ * (`isUserOnline`, roster-helpers.ts). 4 minutes keeps that dot honest while
+ * cutting the write rate 4x vs the old 60s cadence (owner-approved 2026-09-23).
+ */
+export const HEARTBEAT_INTERVAL = 4 * 60_000;
+/**
+ * Minimum gap between two heartbeats from this browser, across remounts and
+ * full reloads (persisted per user in localStorage). Slightly under the
+ * interval so a scheduled tick is never skipped for being a few seconds early.
+ */
+export const HEARTBEAT_MIN_GAP = 3.5 * 60_000;
 const INITIAL_HEARTBEAT_DELAY = 5000;
+const LAST_SENT_KEY_PREFIX = 'helm:presence:lastSent:';
+
+function readLastSent(userId: string): number {
+  try {
+    const raw = window.localStorage.getItem(LAST_SENT_KEY_PREFIX + userId);
+    const n = raw ? Number(raw) : 0;
+    return Number.isFinite(n) ? n : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function writeLastSent(userId: string, at: number): void {
+  try {
+    window.localStorage.setItem(LAST_SENT_KEY_PREFIX + userId, String(at));
+  } catch {
+    // Private mode / blocked storage: the in-memory interval still bounds us.
+  }
+}
+
+/** Run `cb` once the main thread is idle (bounded), or immediately without the API. */
+function whenIdle(cb: () => void): () => void {
+  const win = window as Window & {
+    requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+    cancelIdleCallback?: (id: number) => void;
+  };
+  if (typeof win.requestIdleCallback === 'function') {
+    const id = win.requestIdleCallback(cb, { timeout: 5_000 });
+    return () => win.cancelIdleCallback?.(id);
+  }
+  // No idle API (Safari < 16.4 / jsdom): the fixed INITIAL_HEARTBEAT_DELAY
+  // already moved us past first paint, so run now.
+  cb();
+  return () => {};
+}
+
+/**
+ * Supabase's browser client can surface its internal request deadline as a
+ * resolved RPC error (`TimeoutError: signal timed out`). Presence is best
+ * effort, so this is neither an auth failure nor a round-save failure.
+ */
+function isPresenceHeartbeatTimeout(error: unknown): boolean {
+  return /timeouterror:\s*signal timed out/i.test(describeError(error));
+}
 
 /**
  * Hook to track user online presence
@@ -24,11 +80,17 @@ export function usePresence() {
     let authRevision = 0;
     let initialTimeout: ReturnType<typeof setTimeout> | null = null;
     let interval: ReturnType<typeof setInterval> | null = null;
+    let heartbeatInFlight = false;
+    let cancelIdle: (() => void) | null = null;
 
     const stopTimers = () => {
       if (initialTimeout) {
         clearTimeout(initialTimeout);
         initialTimeout = null;
+      }
+      if (cancelIdle) {
+        cancelIdle();
+        cancelIdle = null;
       }
       if (interval) {
         clearInterval(interval);
@@ -38,7 +100,16 @@ export function usePresence() {
 
     const sendHeartbeat = async () => {
       const userId = authenticatedUserId;
-      if (!active || !userId) return;
+      // A visibility return can coincide with the scheduled interval. Avoid
+      // issuing two background writes for the same presence tick.
+      if (!active || !userId || heartbeatInFlight) return;
+      // Presence means "using the app now" — a hidden tab does not write.
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      // At most one heartbeat per HEARTBEAT_MIN_GAP per user in this browser,
+      // including across shell remounts and full page reloads.
+      if (Date.now() - readLastSent(userId) < HEARTBEAT_MIN_GAP) return;
+      heartbeatInFlight = true;
+      writeLastSent(userId, Date.now());
 
       try {
         // Take the session immediately BEFORE the call, not just once when the
@@ -87,6 +158,11 @@ export function usePresence() {
 
         console.debug('[Presence] Heartbeat failed:', describeError(error));
 
+        // The Supabase client request budget expired before it obtained a
+        // response. Do not turn a best-effort presence refresh into a Bridge
+        // error: it carries no round mutation and the next interval retries.
+        if (isPresenceHeartbeatTimeout(error)) return;
+
         // PostgREST returns failures as VALUES, so nothing here ever threw and
         // nothing ever entered the Bridge pipeline: 15 Sentry events in 7d for
         // `permission denied for function heartbeat` (2026-08-26..28, Chrome
@@ -134,6 +210,8 @@ export function usePresence() {
       } catch (error) {
         // Silently fail - presence is non-critical
         console.debug('[Presence] Heartbeat failed:', describeError(error));
+      } finally {
+        heartbeatInFlight = false;
       }
     };
 
@@ -144,11 +222,15 @@ export function usePresence() {
       stopTimers();
       authenticatedUserId = userId;
 
-      // PERF: Defer initial heartbeat so it does not compete with critical
-      // dashboard data fetching during page load.
+      // PERF: Defer the initial heartbeat so it does not compete with critical
+      // dashboard data fetching during page load — a fixed delay, then the
+      // next idle period (bounded).
       initialTimeout = setTimeout(() => {
         initialTimeout = null;
-        void sendHeartbeat();
+        cancelIdle = whenIdle(() => {
+          cancelIdle = null;
+          void sendHeartbeat();
+        });
       }, INITIAL_HEARTBEAT_DELAY);
       interval = setInterval(() => {
         void sendHeartbeat();

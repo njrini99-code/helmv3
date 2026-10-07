@@ -99,6 +99,13 @@ export interface ViewHeaderProps
   /** Optional context / metadata line under the title. */
   description?: React.ReactNode;
   /**
+   * Show the whole description on a phone too. By default a phone clamps it to
+   * one line (orientation copy a returning user has read many times, P-22).
+   * Opt in where the description explains the screen itself, so it is never
+   * cut mid-word (Recover a round, Coaching Intelligence).
+   */
+  fullDescription?: boolean;
+  /**
    * Optional inline metadata cluster (e.g. status chip, "Updated 2m ago",
    * record counts). Rendered as a quiet row beneath the description.
    */
@@ -176,6 +183,7 @@ export const ViewHeader = React.forwardRef<HTMLElement, ViewHeaderProps>(
       eyebrow,
       title,
       description,
+      fullDescription = false,
       meta,
       primaryAction,
       asPrimaryActionChild = false,
@@ -312,7 +320,8 @@ export const ViewHeader = React.forwardRef<HTMLElement, ViewHeaderProps>(
                       // first actual task (audit P-22). Full text from `sm` up,
                       // and `line-clamp` keeps it selectable + readable by AT
                       // either way — nothing is removed, only visually capped.
-                      "line-clamp-1 sm:line-clamp-none",
+                      // `fullDescription` opts a screen out of the cap.
+                      !fullDescription && "line-clamp-1 sm:line-clamp-none",
                       compact ? "text-body-sm" : "text-body-sm sm:text-body-lg",
                     )}
                   >

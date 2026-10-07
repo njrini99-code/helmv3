@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Settings | Helm Golf',
+  title: 'Settings',
   description: 'Manage your account settings, notifications, team preferences, and personal information.',
 };
 

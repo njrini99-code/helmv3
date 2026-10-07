@@ -19,7 +19,7 @@ import { Skeleton, Surface } from '@/components/fairway';
  *   - Travel        (L268-313) — header row + countdown/title/subtitle.
  *   - Announcements (L324-366) — header row + title + caption.
  *   - Classes       (L369-404) — header row + up to 3 preview rows
- *                    (color dot + class name + time).
+ *                    (color dot + class name, days · time on a line below).
  *   - Teammates     (`md:col-span-2`, L407-441) — header + a 6-avatar stack.
  */
 export default function Loading() {
@@ -79,15 +79,17 @@ export default function Loading() {
             </div>
           </Surface>
 
-          {/* ═══ Classes — header + up to 3 preview rows (dot + name + time) ═══ */}
+          {/* ═══ Classes — header + up to 3 preview rows (dot + name, time below) ═══ */}
           <Surface padding="md" className="flex h-full flex-col gap-3">
             <CardHeaderSkeleton titleWidth="w-24" />
             <div className="flex flex-col gap-2">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <Skeleton circle className="h-2.5 w-2.5 shrink-0" />
-                  <Skeleton className="h-3.5 flex-1" style={{ maxWidth: `${60 - i * 8}%` }} />
-                  <Skeleton className="h-3 w-16 shrink-0" />
+                <div key={i} className="flex items-start gap-3">
+                  <Skeleton circle className="mt-[5px] h-2.5 w-2.5 shrink-0" />
+                  <div className="flex min-w-0 flex-1 flex-col gap-1.5 py-[3px]">
+                    <Skeleton className="h-3.5" style={{ width: `${60 - i * 8}%` }} />
+                    <Skeleton className="h-3 w-28" />
+                  </div>
                 </div>
               ))}
             </div>

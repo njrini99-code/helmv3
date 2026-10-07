@@ -51,6 +51,13 @@ const nextConfig = {
   allowedDevOrigins: ['127.0.0.1'],
   reactStrictMode: true, // Enable to catch potential issues
 
+  // The dev server logs every server action with its arguments by default,
+  // which writes sign-in passwords (loginAction) into the terminal and any
+  // captured dev log. Keep the arguments out.
+  logging: {
+    serverFunctions: false,
+  },
+
   // Type errors block the build. Keep this honest.
   typescript: {
     ignoreBuildErrors: false,
@@ -143,6 +150,16 @@ const nextConfig = {
       './docs/generated/janitor-findings.json',
       './supabase/migrations/HELD.md',
       './config/mutation-gate.json',
+    ],
+    // `read-model.ts` (`src/lib/admin/release-intel/read-model.ts`) reads
+    // these three files via `readFileSync` at request time for
+    // /admin/deploys' Release intelligence panel — same gap as the two
+    // entries above: nothing traces a computed `readFileSync` argument into
+    // the bundle without an explicit include here.
+    '/admin/deploys': [
+      './memory/operations/release-queue.yml',
+      './memory/registry.yml',
+      './docs/generated/WORLD_MODEL.json',
     ],
   // `held-migrations.ts` (`src/lib/admin/command-deck/held-migrations.ts`)
   // reads `supabase/migrations/HELD.md` via `fs` at request time from

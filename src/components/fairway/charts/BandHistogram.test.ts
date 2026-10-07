@@ -14,6 +14,7 @@ import {
   computeMaxN,
   computePctTrackOffset,
   isGhostBand,
+  narrowBandLabels,
   rampBandForPct,
 } from './BandHistogram';
 
@@ -137,5 +138,20 @@ describe('computeBenchmarkTop', () => {
     const step1 = computeBenchmarkTop(25) - computeBenchmarkTop(50);
     const step2 = computeBenchmarkTop(50) - computeBenchmarkTop(75);
     expect(step1).toBeCloseTo(step2);
+  });
+});
+
+describe('narrowBandLabels', () => {
+  const GIR = ['50-75 yds', '75-100 yds', '100-125 yds', '125-150 yds', '150-175 yds', '175-200 yds', '200-225 yds', '225+ yds'];
+
+  it('keeps the shared unit on the last band only (the eight GIR bands on a 390px phone)', () => {
+    expect(narrowBandLabels(GIR)).toEqual(['50-75', '75-100', '100-125', '125-150', '150-175', '175-200', '200-225', '225+ yds']);
+  });
+
+  it('passes mixed-unit and unit-less labels through unchanged', () => {
+    expect(narrowBandLabels(['0-3 ft', '3-5 m'])).toEqual(['0-3 ft', '3-5 m']);
+    expect(narrowBandLabels(['Short', 'Long'])).toEqual(['Short', 'Long']);
+    expect(narrowBandLabels(['50-75 yds'])).toEqual(['50-75 yds']);
+    expect(narrowBandLabels([])).toEqual([]);
   });
 });

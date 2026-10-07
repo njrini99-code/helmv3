@@ -100,6 +100,18 @@ export interface LockIncidentCandidate {
   relationName: string | null;
 }
 
+/**
+ * Query classes that are `state = 'active'` for the whole life of their
+ * connection by design, so their duration is connection age, not statement
+ * age. A logical-replication walsender (Supabase Realtime's
+ * `START_REPLICATION SLOT ...`, classified by the SQL facade as
+ * `start_replication`) sits active in `WalSenderWaitForWal` indefinitely;
+ * judged as a statement it produced a CRITICAL long_active incident every few
+ * hours (six unresolved in 24h on 2026-09-23). Only long_active is exempt — a
+ * replication session that is waiting on a lock is still reported.
+ */
+const ALWAYS_ACTIVE_QUERY_CLASSES: ReadonlySet<string> = new Set(['start_replication']);
+
 function severityFor(durationMs: number, pair: ThresholdPair): LockSeverity | null {
   if (durationMs >= pair.criticalMs) return 'critical';
   if (durationMs > pair.warningMs) return 'warning';
@@ -149,6 +161,7 @@ export function evaluateLockSnapshot(options: EvaluateLockSnapshotOptions): Lock
     }
 
     if (row.state === 'active') {
+      if (ALWAYS_ACTIVE_QUERY_CLASSES.has(row.safeQueryClass)) continue;
       const severity = severityFor(row.durationMs, posture.active);
       if (severity) {
         candidates.push({

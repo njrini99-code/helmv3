@@ -33,8 +33,7 @@ describe('CoachHelmShell — embedded chrome suppression', () => {
     render(
       <CoachHelmShell
         active="players"
-        // eslint-disable-next-line jsx-a11y/aria-role
-        role="coach"
+        viewerRole="coach"
         title="Players"
       >
         <div>body content</div>
@@ -51,8 +50,7 @@ describe('CoachHelmShell — embedded chrome suppression', () => {
     render(
       <CoachHelmShell
         active="players"
-        // eslint-disable-next-line jsx-a11y/aria-role
-        role="coach"
+        viewerRole="coach"
         title="Players"
         embedded
       >
@@ -71,8 +69,7 @@ describe('CoachHelmShell — embedded chrome suppression', () => {
     render(
       <CoachHelmShell
         active="players"
-        // eslint-disable-next-line jsx-a11y/aria-role
-        role="coach"
+        viewerRole="coach"
         title="Players"
         embedded
         actions={<Button>New focus area</Button>}

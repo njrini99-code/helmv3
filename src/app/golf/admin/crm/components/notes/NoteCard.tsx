@@ -179,19 +179,19 @@ export function NoteCard({
                 value: k,
                 label: KIND_LABEL[k],
               }))}
-              className="text-eyebrow font-medium px-2 py-0.5 rounded-fw-sm border border-border-subtle bg-surface text-text-primary focus:outline-none focus:ring-2 focus:ring-border-focus/30"
+              className="text-caption font-medium px-2 py-0.5 rounded-fw-sm border border-border-subtle bg-surface text-text-primary focus:outline-none focus:ring-2 focus:ring-border-focus/30"
             />
           ) : (
             <span
               className={cn(
-                'inline-flex items-center text-eyebrow font-medium px-1.5 py-0.5 rounded-full border',
+                'inline-flex items-center text-caption font-medium px-1.5 py-0.5 rounded-full border',
                 KIND_TONE[note.kind],
               )}
             >
               {KIND_LABEL[note.kind]}
             </span>
           )}
-          <span className="text-eyebrow text-text-tertiary tabular-nums truncate">
+          <span className="text-caption text-text-tertiary tabular-nums truncate">
             {relTime}
           </span>
         </div>
@@ -284,13 +284,13 @@ export function NoteCard({
 
       {/* Footer */}
       {!editing && (
-        <div className="mt-2 text-eyebrow text-text-tertiary truncate">
+        <div className="mt-2 text-caption text-text-tertiary truncate">
           {authorLabel ?? 'Unknown author'}
         </div>
       )}
 
       {error && (
-        <p className="mt-2 text-eyebrow text-fw-danger-ink bg-fw-danger-bg border border-fw-danger/25 rounded-fw-sm px-2 py-1">
+        <p className="mt-2 text-caption text-fw-danger-ink bg-fw-danger-bg border border-fw-danger/25 rounded-fw-sm px-2 py-1">
           {error}
         </p>
       )}

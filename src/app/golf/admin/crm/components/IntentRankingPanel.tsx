@@ -72,7 +72,7 @@ export function IntentRankingPanel({ onCoachClick }: IntentRankingPanelProps) {
         <div className="min-w-0">
           <h3 className="text-sm font-bold text-text-primary">Demo &amp; reply intent</h3>
           {state === 'ready' && result && (
-            <p className="text-micro text-text-tertiary">
+            <p className="text-microlabel text-text-tertiary">
               {result.coaches.length === 0
                 ? 'No coaches showing real intent right now'
                 : result.totalQualifying > result.coaches.length
@@ -149,11 +149,11 @@ function IntentRow({ coach, onCoachClick }: { coach: IntentCoach; onCoachClick: 
         <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
           <span className="min-w-0">
             <span className="block truncate font-semibold text-text-primary">{coach.name || 'Unnamed coach'}</span>
-            <span className="block truncate text-micro text-text-tertiary">{coach.school ?? '—'}</span>
+            <span className="block truncate text-microlabel text-text-tertiary">{coach.school ?? '—'}</span>
           </span>
           <span
             className={cn(
-              'inline-flex flex-shrink-0 items-center rounded-full border px-2 py-0.5 text-micro font-medium',
+              'inline-flex flex-shrink-0 items-center rounded-full border px-2 py-0.5 text-microlabel font-medium',
               stageColors?.bg, stageColors?.text, stageColors?.border,
             )}
           >
@@ -166,7 +166,7 @@ function IntentRow({ coach, onCoachClick }: { coach: IntentCoach; onCoachClick: 
           {coach.opens > 0 && (
             <IntentStat icon={<IconEye size={13} aria-hidden />} value={coach.opens} label="open" dominant={false} />
           )}
-          <span className="ml-auto whitespace-nowrap text-micro tabular-nums text-text-tertiary">
+          <span className="ml-auto whitespace-nowrap text-microlabel tabular-nums text-text-tertiary">
             {formatIntentTime(coach.last_intent_at)}
           </span>
         </div>
@@ -184,7 +184,7 @@ function IntentStat({ icon, value, label, dominant }: { icon: ReactNode; value: 
         'inline-flex items-center gap-1 rounded-full tabular-nums',
         dominant
           ? cn('px-2 py-1 text-body-sm font-bold', hasValue ? 'bg-accent-50 text-fw-success-ink' : 'bg-surface-sunken text-text-tertiary')
-          : 'px-2 py-0.5 text-micro font-medium text-text-tertiary',
+          : 'px-2 py-0.5 text-microlabel font-medium text-text-tertiary',
       )}
     >
       {icon}

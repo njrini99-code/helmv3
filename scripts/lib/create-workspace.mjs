@@ -143,7 +143,7 @@ function freeGib(path) {
  *   creating one — the inverse of `--park`, which removes a checkout and
  *   keeps its branch. Without this there is no supported way back: the door
  *   only ever ran `git worktree add -b`, so a parked branch could be
- *   reattached solely by the raw command guard-git refuses.
+ *   reattached only by a raw command that skips the workspace marker.
  * @param {boolean} [opts.keep]  force parkPolicy: KEEP even on an agent/*
  *                               branch — see the parkPolicy note below
  * @param {string} [opts.home]   worktree home dir — default HELM_WORKTREE_HOME

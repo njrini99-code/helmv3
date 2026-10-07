@@ -168,6 +168,10 @@ describe('FairwayAgendaView — anchor scroll', () => {
       />,
     );
     expect(scrollIntoViewMock).not.toHaveBeenCalled();
+    // The past event is already listed, so there is nothing "earlier" to show
+    // (walk-through 2026-09-24: "Show 1 earlier event" above that one event).
+    expect(screen.queryByRole('button', { name: /earlier event/i })).toBeNull();
+    expect(screen.getByText('Event old')).toBeInTheDocument();
   });
 
   it('does not re-scroll on a data-only refresh of the same navigation range', () => {
@@ -300,5 +304,48 @@ describe('FairwayAgendaView — multi-day events appear on every day they run', 
     );
     const occurrences = (container.textContent ?? '').split('Team Photo Day').length - 1;
     expect(occurrences).toBe(1);
+  });
+});
+
+describe('FairwayAgendaView — end of list (DASH-16)', () => {
+  beforeEach(() => {
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', { configurable: true, writable: true, value: vi.fn() });
+  });
+
+  it('closes a short range agenda with what it covered, not a void', () => {
+    const { container } = render(
+      <FairwayAgendaView
+        events={[makeEvent('one', middayEt(20), 'Qualifier')]}
+        mode="range"
+        focusDate={NOW}
+        rangeStart={new Date(2026, 6, 1)}
+        rangeEnd={new Date(2026, 6, 31)}
+        periodLabel="July 2026"
+        timezone={TEAM_TZ}
+        isCoach={false}
+        nowRef={NOW}
+      />,
+    );
+    expect(container.querySelector('[data-slot="agenda-end"]')?.textContent).toBe("That's everything for July 2026.");
+  });
+
+  it('offers the coach a way to add an event from the end of the list', () => {
+    const onCreateEvent = vi.fn();
+    render(
+      <FairwayAgendaView
+        events={[makeEvent('one', middayEt(20), 'Qualifier')]}
+        mode="range"
+        focusDate={NOW}
+        rangeStart={new Date(2026, 6, 1)}
+        rangeEnd={new Date(2026, 6, 31)}
+        periodLabel="July 2026"
+        timezone={TEAM_TZ}
+        isCoach
+        onCreateEvent={onCreateEvent}
+        nowRef={NOW}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Add an event' }));
+    expect(onCreateEvent).toHaveBeenCalledTimes(1);
   });
 });

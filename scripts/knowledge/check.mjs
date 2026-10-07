@@ -35,6 +35,20 @@ import { fileURLToPath } from 'node:url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const args = process.argv.slice(2);
 
+// KNOWLEDGE_CHECK_SKIP_GENERATED=1 is set by ci.yml's `Static checks` ONLY,
+// where the two GENERATED-artifact stages below (document inventory, feature
+// map) run in their own step through scripts/github/pr-drift-gate.mjs, which
+// fails a PR for drift it introduced but not for drift `main` moving put
+// there. They are moved, not dropped: that step runs them on every PR.
+// Everywhere else (local, docs:check) this runs every stage.
+const SKIP_GENERATED = process.env.KNOWLEDGE_CHECK_SKIP_GENERATED === '1';
+if (SKIP_GENERATED) {
+  console.log(
+    'knowledge:check: document-inventory --check and gen-feature-map --check run in CI\'s ' +
+      '"Generated artifacts are current" step (KNOWLEDGE_CHECK_SKIP_GENERATED=1).',
+  );
+}
+
 execFileSync(process.execPath, ['scripts/knowledge/check-doc-coverage.mjs', ...args], {
   stdio: 'inherit',
 });
@@ -50,9 +64,11 @@ execFileSync(process.execPath, ['scripts/knowledge/check-ledger-integrity.mjs', 
 execFileSync(process.execPath, ['scripts/knowledge/check-authority.mjs', ...args], {
   stdio: 'inherit',
 });
-execFileSync(process.execPath, ['scripts/knowledge/document-inventory.mjs', '--check'], {
-  stdio: 'inherit',
-});
+if (!SKIP_GENERATED) {
+  execFileSync(process.execPath, ['scripts/knowledge/document-inventory.mjs', '--check'], {
+    stdio: 'inherit',
+  });
+}
 
 // The registry checker is TypeScript on purpose: FEATURE_KEYS is a Set derived
 // from FEATURE_REGISTRY, not an array literal, so it has to be IMPORTED. A
@@ -77,7 +93,9 @@ execFileSync(tsx, ['scripts/knowledge/check-feature-registry.ts', ...args], {
 // The generated feature map is a PROJECTION. --check re-renders and diffs
 // without writing, so a stale map fails here instead of quietly describing a
 // registry that has moved.
-execFileSync(tsx, ['scripts/knowledge/gen-feature-map.ts', '--check'], {
-  stdio: 'inherit',
-  cwd: ROOT,
-});
+if (!SKIP_GENERATED) {
+  execFileSync(tsx, ['scripts/knowledge/gen-feature-map.ts', '--check'], {
+    stdio: 'inherit',
+    cwd: ROOT,
+  });
+}

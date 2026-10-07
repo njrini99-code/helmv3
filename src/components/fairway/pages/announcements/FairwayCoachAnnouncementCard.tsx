@@ -95,9 +95,9 @@ function fullName(first: string | null | undefined, last: string | null | undefi
 /* ─── Quiet uppercase section overline (inside expanded detail) ────────────── */
 function DetailHeading({ children }: { children: React.ReactNode }) {
   return (
-    <p className="font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+    <h4 className="font-fw-sans text-body-sm font-semibold text-text-primary">
       {children}
-    </p>
+    </h4>
   );
 }
 
@@ -106,7 +106,7 @@ function ProgressTrack({ pct, complete }: { pct: number; complete: boolean }) {
   return (
     <div className="h-1.5 overflow-hidden rounded-full bg-surface-sunken">
       <div
-        className={cn('h-full rounded-full transition-all duration-500', complete ? 'bg-fw-success' : 'bg-accent-400')}
+        className={cn('h-full rounded-full transition-[width] duration-500', complete ? 'bg-fw-success' : 'bg-accent-400')}
         style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
       />
     </div>

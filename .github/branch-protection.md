@@ -190,7 +190,9 @@ when the owner moved it out of the PR gate (out of `CI aggregate`'s `needs`,
 `if:` limited to push-to-`main`) after two consecutive PR runs died to runner
 shutdowns mid-build without executing a test. Post-merge coverage on `main`
 remains; a red run there blocks the next production promote rather than PR
-merges. See the job's own comment in `ci.yml` for the revert recipe.
+merges. Since 2026-09-23 the job lives in `nightly.yml` (nightly + dispatch)
+instead of running on every push to `main`; it is still not a required
+context.
 
 **HISTORICAL (both AI reviewers were dropped 2026-07-20).** `the external review bot` was
 intentionally advisory, not required: its `its config` skipped

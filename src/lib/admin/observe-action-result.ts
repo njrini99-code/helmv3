@@ -176,6 +176,11 @@ const EXPECTED_SOFT_FAILURE_CODES: ReadonlySet<string> = new Set([
   // explicitly, while the Bridge records it as a handled warning rather than
   // sending a misleading server-error event to Sentry.
   'shot_not_found',
+  // Round-entry plausibility (src/lib/golf/round-entry-validation.ts): the
+  // submit action refused an impossible hole or round before writing. The
+  // player sees the field-level message and corrects it; nothing to repair.
+  'hole_invalid',
+  'round_implausible',
   // These are server-protected qualifier lifecycle outcomes. The player sees
   // an exact message and keeps all saved round data; they are not production
   // faults and should not mint Sentry incidents.

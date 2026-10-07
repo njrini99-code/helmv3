@@ -122,10 +122,10 @@ export function PracticeRxPanel({
     >
       {/* Header — turns a diagnosis into a prescription. Plain-English. */}
       <div className="flex items-center gap-2">
-        <IconTarget size={14} className="text-accent-600" aria-hidden />
-        <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+        <IconTarget size={14} className="text-accent-ink" aria-hidden />
+        <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">
           Practice Rx
-        </span>
+        </h3>
       </div>
       <p className="mt-1 font-fw-sans text-caption text-text-secondary">
         {variant === 'hero'
@@ -215,7 +215,7 @@ function PracticeRxRow({ drill, onView }: PracticeRxRowProps) {
             {hasVideo ? (
               <IconPlay
                 size={13}
-                className="flex-shrink-0 text-accent-600 opacity-0 transition-opacity group-hover:opacity-100"
+                className="flex-shrink-0 text-accent-ink opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
                 aria-hidden
               />
             ) : null}

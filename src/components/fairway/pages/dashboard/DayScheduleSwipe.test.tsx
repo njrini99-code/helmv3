@@ -66,6 +66,17 @@ describe('DayScheduleSwipe', () => {
     render(<DayScheduleSwipe events={[]} />);
     await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
     expect(screen.getByText('Nothing scheduled')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Next day' })).toBeDisabled();
+    // Nothing after today: no one-chip week strip, no dead chevrons, and no
+    // reserved blank height under the one line.
+    expect(screen.queryByRole('toolbar', { name: 'Pick a day' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Next day' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Previous day' })).toBeNull();
+    expect(document.querySelector('.min-h-\\[132px\\]')).toBeNull();
+  });
+
+  it('keeps the week strip and chevrons when the feed has later days', async () => {
+    render(<DayScheduleSwipe events={events()} />);
+    await waitFor(() => expect(screen.getByRole('toolbar', { name: 'Pick a day' })).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Next day' })).toBeEnabled();
   });
 });

@@ -6,9 +6,10 @@
  * routine, REPAIRED into pull requests by a local routine running against the
  * real checkout, and CLOSED — with evidence — into `admin_error_resolutions`
  * by the nightly cron. Each stage is a different runner in a different place:
- * two Vercel crons and a GitHub Actions workflow (Repair — a launchd agent
- * on the owner's laptop until 2026-09-05, and an Anthropic-hosted routine
- * for Diagnose until 2026-09-02).
+ * two Vercel crons and the Claude desktop health routine on the owner's Mac
+ * (Repair since 2026-09-23 — a GitHub Actions workflow 2026-09-05..09-23 and
+ * a launchd agent before that; Diagnose was an Anthropic-hosted routine until
+ * 2026-09-02).
  *
  * WHICH IS EXACTLY WHY THIS FILE EXISTS. Two of those three runners are
  * outside this deployment entirely — nothing in the app invokes them, nothing
@@ -68,6 +69,13 @@ export interface SelfHealStage {
    *  in git on purpose — see the header of `docs/ai-system/selfheal/README.md`
    *  for what happened when the contract lived only in routine config. */
   contract: string;
+  /**
+   * `metadata.method` values written by RETIRED runners of this stage. A row
+   * carrying one is kept in the run history (it is real evidence that a
+   * retired runner is still firing) but never decides the stage's status:
+   * see `selectStageHeartbeat`.
+   */
+  retiredMethods?: readonly string[];
 }
 
 const DAILY = 24 * 60;
@@ -97,6 +105,10 @@ export const SELFHEAL_STAGES: readonly SelfHealStage[] = [
     // docs/ai-system/selfheal/README.md and triage-contract.md.
     runner: 'vercel-cron',
     cadenceMinutes: 6 * 60,
+    // The retired Anthropic-hosted cloud task still fires daily ~09:05-09:20
+    // UTC (2026-09-25..27) and writes a `failed` row with this method. Until
+    // the owner disables it, it must not paint Diagnose red.
+    retiredMethods: ['claude-code-cloud-session'],
     what: 'Reads every unresolved fingerprint in the last 72h, groups them by root cause, and writes one rca_analysis row per fingerprint.',
     contract: 'docs/ai-system/selfheal/triage-contract.md',
   },
@@ -105,13 +117,16 @@ export const SELFHEAL_STAGES: readonly SelfHealStage[] = [
     jobType: 'selfheal-repair',
     step: 2,
     title: 'Repair',
-    // .github/workflows/selfheal-repair.yml since 2026-09-05; the launchd
-    // agent on the owner's laptop is retired (README.md). The Bridge kept
-    // saying "Local agent — on the owner's laptop" for four more days, which
-    // sent an operator to wake a machine that was not the runner.
-    runner: 'github-actions',
-    cadenceMinutes: DAILY,
-    what: 'Takes the repairable analyses, reproduces each with a failing test, and opens a verified PR. Never merges, never deploys.',
+    // Since 2026-09-23: the Claude desktop health routine on the owner's Mac,
+    // every 6h at :47 past 03/09/15/21 UTC (30 min after Diagnose). It
+    // replaced .github/workflows/selfheal-repair.yml (disabled; its
+    // `metadata.runtime = 'github-actions'` heartbeats are history). Its own
+    // heartbeats carry `metadata.runner = 'desktop-routine'`. The label must
+    // name the real runner: from 2026-09-05 to 2026-09-09 the Bridge named a
+    // retired one and sent an operator to wake the wrong machine.
+    runner: 'local-agent',
+    cadenceMinutes: 6 * 60,
+    what: 'Takes the repairable analyses, reproduces each with a failing test, opens a verified PR and lands it once required checks are green (owner-authorized 2026-09-23). Never deploys.',
     contract: 'docs/ai-system/selfheal/repair-contract.md',
   },
   {
@@ -173,6 +188,32 @@ export function classifySelfHealStage(
   // doesn't need to fabricate a jobType/path this stage's own type doesn't
   // carry under those names.
   return classifyCronStatus({ cadenceMinutes: stage.cadenceMinutes }, lastRun, now);
+}
+
+/**
+ * The heartbeat row that speaks for a stage: the newest row NOT written by one
+ * of the stage's `retiredMethods`. Rows arrive newest first.
+ *
+ * Deliberately narrow. An operator-run row (`method: 'manual-…'`) still counts
+ * — a human standing in for the stage is the stage running. And when every
+ * row in view came from a retired runner, the newest row is returned rather
+ * than null: reporting `never-ran` because we filtered the evidence away would
+ * be the `unknown → healthy`-class move this board exists to refuse.
+ */
+export function selectStageHeartbeat<T extends { metadata?: unknown }>(
+  stage: Pick<SelfHealStage, 'retiredMethods'>,
+  runs: readonly T[],
+): T | null {
+  if (runs.length === 0) return null;
+  const retired = stage.retiredMethods ?? [];
+  if (retired.length === 0) return runs[0] ?? null;
+  const fromLiveRunner = runs.find((r) => {
+    const meta = r.metadata;
+    if (typeof meta !== 'object' || meta === null || Array.isArray(meta)) return true;
+    const method = (meta as Record<string, unknown>).method;
+    return !(typeof method === 'string' && retired.includes(method));
+  });
+  return fromLiveRunner ?? runs[0] ?? null;
 }
 
 export type SelfHealLoopStatus = CronBoardStatus | 'unknown';

@@ -69,6 +69,14 @@ export interface StatTileProps {
    * omitted, the delta is derived from `trendData` (last − first).
    */
   delta?: number;
+  /**
+   * Explicit trend verdict, e.g. a server-classified trend the page also
+   * shows elsewhere. Wins over the verdict derived from `delta`/`trendData`,
+   * so the chip and the Sparkline tint can't contradict that read (the
+   * Rounds library tiles said "Improving" off first-vs-last round beside a
+   * "Declining" scoring-trend pill). Opt-in: omitted = derived, unchanged.
+   */
+  trend?: TrendDirection;
   /** Hide the TrendChip even when a trend is computable. */
   hideTrend?: boolean;
 
@@ -109,6 +117,7 @@ export const StatTile = React.forwardRef<HTMLDivElement, StatTileProps>(function
     goodDirection = 'up',
     flatThreshold = 0,
     delta,
+    trend,
     hideTrend = false,
     starved = false,
     current,
@@ -174,9 +183,10 @@ export const StatTile = React.forwardRef<HTMLDivElement, StatTileProps>(function
         : undefined;
 
   const verdict: TrendDirection | undefined =
-    typeof derivedDelta === 'number'
+    trend ??
+    (typeof derivedDelta === 'number'
       ? classifyTrend(derivedDelta, { goodDirection, flatThreshold })
-      : undefined;
+      : undefined);
 
   const showTrend = !hideTrend && verdict !== undefined;
   const showSpark = finite.length >= 2;

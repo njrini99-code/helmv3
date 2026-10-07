@@ -25,6 +25,7 @@ export type {
   SurfaceProps,
   SurfaceHeaderProps,
   SurfaceElevation,
+  SurfaceVariant,
   SurfacePadding,
   InsetProps,
   ElevatedProps,

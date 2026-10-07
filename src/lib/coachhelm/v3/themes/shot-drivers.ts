@@ -260,7 +260,7 @@ function buildApproachDriver(shots: readonly ShotDriverInput[]): RootDriver | nu
 
   const prose =
     `From ${APPROACH_BAND_LABEL[band]}, your missed greens (${agg.n} shots) ` +
-    `${parts.join(' and ')}. A balanced miss pattern would spread evenly — ` +
+    `${parts.join(' and ')}. A balanced miss pattern would spread evenly, so ` +
     `this is a repeatable shape worth working from that range.`;
 
   return {
@@ -440,7 +440,7 @@ function buildPuttingLagDriver(shots: readonly ShotDriverInput[]): RootDriver | 
   const prose =
     `Your 3-putts come from long first putts, not missed short ones: ` +
     `${longPct}% of your ${threePuttTotal} three-putts started from ${LONG_FIRST_PUTT_FT}+ ft` +
-    `${shortClause}. The leak is lag speed and the approach/chip leaving you that far — ` +
+    `${shortClause}. The leak is lag speed and the approach/chip leaving you that far, ` +
     `not your stroke. Work distance control from 30-45 ft and tighter approach proximity, ` +
     `not short-putt mechanics.`;
 
@@ -502,7 +502,7 @@ function buildTeeDriver(shots: readonly ShotDriverInput[]): RootDriver | null {
     prose += `, and ${pct(sideCount, directional)}% of those misses leak ${domSide}`;
   }
   prose +=
-    `. A one-sided driver miss is a tee-strategy and start-line lever — favor the ` +
+    `. A one-sided driver miss is a tee-strategy and start-line lever: favor the ` +
     `side that takes the big miss out of play.`;
 
   return {

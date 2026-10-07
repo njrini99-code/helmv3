@@ -31,7 +31,7 @@
  * above already owns the chrome for this route.
  * ========================================================================== */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Segmented, type SegmentedOption } from '@/components/fairway/controls/segmented';
 import {
@@ -39,11 +39,8 @@ import {
   type FairwayPlayerGameFingerprintProps,
 } from '@/components/fairway/pages/player-game';
 import { CoachHelmShell } from '@/components/fairway/pages/coachhelm/CoachHelmShell';
-import {
-  FairwayPlayerInsight,
-  type FairwayPlayerInsightProps,
-} from '@/components/fairway/pages/coachhelm/FairwayPlayerInsight';
-import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
+import { ScoutingReport, type ScoutingReportProps } from '@/components/fairway/pages/scouting/ScoutingReport';
+import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint-types';
 
 type DeepDiveTab = 'fingerprint' | 'scouting';
 
@@ -54,16 +51,20 @@ const TAB_OPTIONS: SegmentedOption<DeepDiveTab>[] = [
 
 export interface PlayerDeepDiveTabsProps {
   fingerprint: PlayerFingerprint;
-  /** Everything FairwayPlayerInsight needs, pre-fetched alongside the fingerprint. */
-  insight: FairwayPlayerInsightProps;
+  /** Everything ScoutingReport reads (player, rounds, focus areas, themes).
+   *  `signalCount` feeds the shell badge, which the `embedded` shell does not
+   *  render, so the route passes null rather than running an extra query. */
+  insight: ScoutingReportProps & { signalCount?: number | null };
   /** Threaded straight through to `FairwayPlayerGameFingerprint` (addendum
    *  §13 A7) — server-built extra content per section, e.g. the A2
    *  distance-profile surface under `approach`. Omitted for every existing
    *  call site, so nothing about their output changes. */
   sectionAddenda?: FairwayPlayerGameFingerprintProps['sectionAddenda'];
+  /** Coach-only approach distance ladder, a streamed server node. */
+  approachLadder?: ReactNode;
 }
 
-export function PlayerDeepDiveTabs({ fingerprint, insight, sectionAddenda }: PlayerDeepDiveTabsProps) {
+export function PlayerDeepDiveTabs({ fingerprint, insight, sectionAddenda, approachLadder }: PlayerDeepDiveTabsProps) {
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<DeepDiveTab>(
     searchParams.get('tab') === 'scouting' ? 'scouting' : 'fingerprint',
@@ -99,8 +100,7 @@ export function PlayerDeepDiveTabs({ fingerprint, insight, sectionAddenda }: Pla
   return (
     <CoachHelmShell
       active="players"
-      // eslint-disable-next-line jsx-a11y/aria-role
-      role="coach"
+      viewerRole="coach"
       signalCount={insight.signalCount}
       embedded
       breadcrumbs={[
@@ -116,9 +116,13 @@ export function PlayerDeepDiveTabs({ fingerprint, insight, sectionAddenda }: Pla
           aria-label="Player deep-dive view"
         />
         {tab === 'fingerprint' ? (
-          <FairwayPlayerGameFingerprint fingerprint={fingerprint} sectionAddenda={sectionAddenda} />
+          <FairwayPlayerGameFingerprint
+            fingerprint={fingerprint}
+            sectionAddenda={sectionAddenda}
+            approachLadder={approachLadder}
+          />
         ) : (
-          <FairwayPlayerInsight {...insight} embedded />
+          <ScoutingReport {...insight} />
         )}
       </div>
     </CoachHelmShell>

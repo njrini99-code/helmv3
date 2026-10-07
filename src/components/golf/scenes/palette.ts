@@ -10,11 +10,12 @@ export const SCENE_PALETTE = {
   cream3: '#FDEAC0',
   // Warm sun halo
   glow: 'rgba(255, 214, 168, 0.55)',
-  // Grass + shadow
-  grass: '#c2c681',
-  grassShadow: '#a2ad62',
+  // Grass + shadow: a fresher fairway green than the original olive (OD-15,
+  // "more green").
+  grass: '#a9c47c',
+  grassShadow: '#86a35c',
   // Tree foliage (lightest → darkest)
-  treeTones: ['#a9bf86', '#88a06d', '#5f7d45', '#3f5930'] as const,
+  treeTones: ['#9fbe7e', '#7c9d62', '#557a3f', '#37562b'] as const,
   trunk: '#6a503a',
   // Bunker
   sand: '#f2e0bc',

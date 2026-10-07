@@ -43,6 +43,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { localDayIso } from '@/lib/golf/local-day';
+import { fwPress } from '@/components/fairway/controls';
 
 type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
 
@@ -406,7 +407,8 @@ export function MobileEventSheet({
                       disabled={isSaving}
                       className={cn(
                         'flex items-center gap-2 px-3.5 py-2 rounded-full text-sm font-medium',
-                        'whitespace-nowrap transition-[color,background-color,transform,box-shadow] duration-200 active:scale-95',
+                        'whitespace-nowrap transition-[color,background-color,transform,box-shadow] duration-200',
+                        fwPress,
                         'min-h-[40px] touch-manipulation',
                         isActive
                           ? cn(pill.activeBg, pill.activeText, 'shadow-md')
@@ -811,7 +813,8 @@ export function MobileEventSheet({
                     'w-full flex items-center justify-center gap-2',
                     'px-4 py-3 rounded-2xl bg-warm-50',
                     'text-warm-700 font-medium text-sm',
-                    'active:scale-[0.98] active:bg-warm-100',
+                    fwPress,
+                    'active:bg-warm-100',
                     'transition-[background-color,transform] min-h-[48px]'
                   )}
                 >
@@ -828,7 +831,8 @@ export function MobileEventSheet({
                     'w-full flex items-center justify-center gap-2',
                     'px-4 py-3 rounded-2xl bg-red-50',
                     'text-red-600 font-medium text-sm',
-                    'active:scale-[0.98] active:bg-red-100',
+                    fwPress,
+                    'active:bg-red-100',
                     'transition-[background-color,transform] min-h-[48px]'
                   )}
                 >
@@ -850,7 +854,8 @@ export function MobileEventSheet({
                       className={cn(
                         'flex-1 px-4 py-2.5 rounded-xl bg-cream-50',
                         'text-warm-700 font-medium',
-                        'active:scale-[0.98] min-h-[44px] shadow-sm'
+                        fwPress,
+                        'min-h-[44px] shadow-sm'
                       )}
                     >
                       Keep Event
@@ -862,7 +867,8 @@ export function MobileEventSheet({
                       className={cn(
                         'flex-1 px-4 py-2.5 rounded-xl',
                         'bg-red-600 text-white font-medium',
-                        'active:scale-[0.98] min-h-[44px]',
+                        fwPress,
+                        'min-h-[44px]',
                         isDeleting && 'opacity-50'
                       )}
                     >
@@ -889,7 +895,8 @@ export function MobileEventSheet({
                 'w-full py-4 rounded-2xl font-medium text-base',
                 'bg-gradient-to-r from-primary-600 to-primary-500 text-white',
                 'shadow-lg shadow-primary-600/25',
-                'active:scale-[0.98] transition-[transform,opacity] min-h-[52px]',
+                fwPress,
+                'transition-[transform,opacity] min-h-[52px]',
                 isSaving && 'opacity-50'
               )}
             >
@@ -902,7 +909,8 @@ export function MobileEventSheet({
               className={cn(
                 'w-full py-4 rounded-2xl font-medium text-base',
                 'bg-warm-100 text-warm-700',
-                'active:scale-[0.98] transition-[transform,opacity] min-h-[52px]'
+                fwPress,
+                'transition-[transform,opacity] min-h-[52px]'
               )}
             >
               Close

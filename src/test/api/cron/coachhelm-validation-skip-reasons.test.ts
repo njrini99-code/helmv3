@@ -33,6 +33,9 @@ import { NextRequest } from 'next/server';
 
 vi.mock('@/lib/coachhelm/v2/learning/outcome-validator', () => ({
   validatePredictionAgainstOutcome: vi.fn(),
+  // The route batches the rounds read first; an empty map means every
+  // prediction falls back to its own read, which these tests stub out.
+  prefetchCandidateRounds: vi.fn().mockResolvedValue(new Map()),
 }));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn() }));
 

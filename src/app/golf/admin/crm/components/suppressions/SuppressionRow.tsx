@@ -92,7 +92,7 @@ export function SuppressionRow({ row, onRemove }: SuppressionRowProps) {
       <td className="px-4 py-2.5">
         <span
           className={cn(
-            'inline-flex items-center text-eyebrow font-medium px-2 py-0.5 rounded-full border',
+            'inline-flex items-center text-caption font-medium px-2 py-0.5 rounded-full border',
             REASON_TONE[row.reason],
           )}
         >
@@ -115,7 +115,7 @@ export function SuppressionRow({ row, onRemove }: SuppressionRowProps) {
           <IconTrash size={12} />
           {busy ? 'Removing...' : 'Remove'}
         </Button>
-        {error && <p className="mt-1 text-eyebrow text-fw-danger-ink">{error}</p>}
+        {error && <p className="mt-1 text-caption text-fw-danger-ink">{error}</p>}
       </td>
     </tr>
   );

@@ -59,7 +59,7 @@ async function RollbackBanner() {
       </div>
       <ul className="mt-2 space-y-1">
         {evidence.map((e, i) => (
-          <li key={i} className="text-xs text-warm-600">
+          <li key={i} className="break-words text-xs text-warm-600 [overflow-wrap:anywhere]">
             {e.detail}
           </li>
         ))}
@@ -75,7 +75,7 @@ function RiskRow({ item }: { item: PendingReleaseRisk }) {
         <p className="truncate text-xs font-medium text-warm-900">{item.id}</p>
         <p className="truncate text-xs text-warm-500">feature: {item.featureId}</p>
         {item.score.inputsMissing.length > 0 ? (
-          <p className="mt-0.5 text-xs text-warm-400">
+          <p className="mt-0.5 text-xs text-warm-500">
             {item.score.inputsMissing.length} input(s) unread — biased toward the higher tier.
           </p>
         ) : null}

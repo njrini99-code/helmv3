@@ -158,7 +158,7 @@ export function FlightTraceExplorer({
   return (
     <Surface padding="sm">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-accent-600/25 pb-2">
-        <div>
+        <div className="min-w-0 flex-1">
           <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">Flight recorder</h2>
           <p className="mt-1 text-xs text-warm-600">Opt-in action traces. Missing means a required stage did not run—not merely that it had no log line.</p>
         </div>
@@ -186,9 +186,9 @@ export function FlightTraceExplorer({
                 selectedId === trace.trace_id && '-mx-2 rounded-lg bg-accent-50/60 px-2',
               )}
             >
-              <div className="min-w-0">
-                <p className="font-fw-mono text-xs font-semibold text-warm-900">{trace.workflow}</p>
-                <p className="mt-1 text-xs text-warm-600">
+              <div className="min-w-0 flex-1">
+                <p className="break-words font-fw-mono text-xs font-semibold text-warm-900 [overflow-wrap:anywhere]">{trace.workflow}</p>
+                <p className="mt-1 break-words text-xs text-warm-600 [overflow-wrap:anywhere]">
                   <LocalTime iso={trace.started_at} variant="datetime" /> · {trace.duration_ms ?? '–'} ms
                   {trace.failure_step ? ` · failed at ${trace.failure_step}` : ''}
                   {trace.missing_required_step_count ? ` · ${trace.missing_required_step_count} missing` : ''}
@@ -204,10 +204,10 @@ export function FlightTraceExplorer({
 
       {error && <p className="mt-3 text-sm text-danger-700">{error}</p>}
       {selected && (
-        <div className="mt-4 rounded-xl border border-warm-200 bg-cream-50 p-4">
+        <div className="mt-4 rounded-xl border border-warm-200 bg-cream-50 p-3 sm:p-4">
           <div className="flex flex-wrap justify-between gap-2">
-            <p className="font-fw-mono text-xs font-semibold text-warm-900">{selected.run.workflow}</p>
-            <p className="font-fw-mono text-xs text-warm-600">{selected.run.trace_id}</p>
+            <p className="min-w-0 break-words font-fw-mono text-xs font-semibold text-warm-900 [overflow-wrap:anywhere]">{selected.run.workflow}</p>
+            <p className="min-w-0 break-all font-fw-mono text-xs text-warm-600">{selected.run.trace_id}</p>
           </div>
           <FlightWaterfall workflow={String(selected.run.workflow)} steps={selected.steps} />
         </div>
