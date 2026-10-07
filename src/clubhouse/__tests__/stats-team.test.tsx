@@ -986,4 +986,3 @@ describe('ScoreLine · the mean label keeps off the line', () => {
     expect(r.y).toBeLessThan(r.mean);
   });
 });
-
