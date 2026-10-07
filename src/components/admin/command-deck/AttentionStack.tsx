@@ -28,16 +28,22 @@ export function AttentionStack({
   checkedAt,
   canClaimAllClear,
   impactByKey,
+  quiet = false,
 }: {
   rows: readonly AttentionRow[];
   total: number;
   checkedAt: string;
   canClaimAllClear: boolean;
   impactByKey: ReadonlyMap<string, AttentionStackImpact>;
+  /** Set only when the page already leads with an `AllClearBanner`: the empty
+   *  state shrinks to one quiet row instead of repeating the banner as a
+   *  second green block. Never changes what a non-empty or unreadable list
+   *  renders. */
+  quiet?: boolean;
 }) {
   if (rows.length === 0) {
     return canClaimAllClear ? (
-      <PanelAllClear label="Nothing needs attention" checkedAt={checkedAt} />
+      <PanelAllClear label="Nothing needs attention" checkedAt={checkedAt} variant={quiet ? 'inline' : 'block'} />
     ) : (
       <PanelNoData
         label="Could not fully compute what needs attention"

@@ -18,6 +18,7 @@ import { StatStrip, StatusPill, Surface, type FwStatusTone } from '@/components/
 import { applyIncidentFacets, countLensesForKind, suppressedByClass } from '@/lib/admin/incidents/lens';
 import { sumHourlyBuckets, describeWindowDelta, type DeltaDirection } from '@/lib/admin/error-trend';
 import { canClaimAllClear } from '@/lib/admin/incidents/sources';
+import { deriveAllClear, describeWindow } from '@/lib/admin/incidents/all-clear';
 import {
   INCIDENT_LENSES,
   INCIDENT_LENS_LABEL,
@@ -29,7 +30,8 @@ import { IncidentLensRail } from '../_components/IncidentLensRail';
 import { BlindnessBeacon } from '../_components/BlindnessBeacon';
 import { ErrorSurfaceReconciliation } from '../_components/ErrorSurfaceReconciliation';
 import { reconcileErrorSurfaces } from '@/lib/admin/incidents/reconciliation';
-import { SourceCoverageSummaryLine } from '../_components/SourceCoverage';
+import { SourceCoverageSummaryLine, oldestReadingLabel } from '../_components/SourceCoverage';
+import { AllClearBanner } from '../_components/AllClearBanner';
 import { ErrorsOverTime } from '../_components/ErrorsOverTime';
 import { KpiTile } from '../_components/KpiTile';
 import { PanelBoundary } from '../_components/PanelBoundary';
@@ -39,7 +41,8 @@ import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
 import { CopyReportButton } from '../_components/CopyReportButton';
 import { ViewRail } from '../_components/ViewRail';
-import { TabHeader } from '../_components/TabHeader';
+import { DetailsDisclosure, TabHeader } from '../_components/TabHeader';
+import type { SentryIssue } from '@/lib/admin/sentry-api';
 import { parseView, type AdminViewOf } from '@/lib/admin/views';
 import { SourcesView } from './_components/sources/SourcesView';
 import { LoopView } from './_components/loop/LoopView';
@@ -435,6 +438,36 @@ function ErrorTraceabilityStrip({ appIncidents }: { appIncidents: Awaited<Return
   );
 }
 
+/** The org-wide unresolved Sentry list, one row per issue. Level is a word
+ *  and a tone, never colour alone. */
+function SentryIssueList({ issues }: { issues: readonly SentryIssue[] }) {
+  return (
+    <ul className="divide-y divide-warm-200/60">
+      {issues.map((issue) => (
+        <li key={issue.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+          <StatusPill tone={SENTRY_LEVEL_TONE[issue.level] ?? 'danger'} dot size="sm">
+            {issue.level}
+          </StatusPill>
+          <span className="w-20 shrink-0 font-fw-mono text-xs tabular-nums text-warm-500">{issue.shortId}</span>
+          <span className="min-w-0 flex-1 basis-full break-words text-sm text-warm-900 [overflow-wrap:anywhere] sm:basis-auto">{issue.title}</span>
+          <span className="font-fw-mono text-xs tabular-nums text-warm-600">
+            {issue.userCount} users · {issue.count} events
+          </span>
+          <a
+            href={issue.permalink}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`Open ${issue.shortId} in Sentry`}
+            className="ml-auto inline-flex items-center text-xs text-accent-700 underline sm:ml-0 [@media(pointer:coarse)]:px-2 [@media(pointer:coarse)]:min-h-11"
+          >
+            open
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /** Section heading per lens — the list says which question it is answering. */
 function lensHeading(lens: IncidentLens): string {
   return lens === 'all' ? 'All incidents' : `${INCIDENT_LENS_LABEL[lens]} incidents`;
@@ -643,6 +676,42 @@ export default async function ErrorsPage({
     const appHourly = sumHourlyBuckets(tab.appHourlyBuckets, tab.appHourlyComputedAt);
     const lensCounts = countLensesForKind(board.incidents, filters.kind);
 
+    // The page-level all-clear (`all-clear.ts`). Only in an un-narrowed
+    // view: the board is built from the URL's sport/severity/source/feature
+    // filters, so under any of them an empty board proves something about
+    // that slice, not about production. The window is fine, the banner names
+    // it. Lens and kind never narrow the board, only the list below it.
+    const narrowed = Boolean(filters.sport || filters.severity || filters.source || filters.feature);
+    const verdict = narrowed
+      ? null
+      : deriveAllClear({
+          blindnessNote: board.blindnessNote,
+          coverage: board.coverage,
+          lensCounts: board.lensCounts,
+          staleUnresolved: {
+            readable: board.staleUnresolved.readable,
+            count: board.staleUnresolved.items.length,
+          },
+          windowHours: board.windowHours,
+          checkedAt: board.computedAt,
+          releaseWatch: releaseWatch.context.releaseWatch,
+        });
+    const claim = verdict && verdict.state !== 'none' ? verdict : null;
+    const oldestReading = oldestReadingLabel(board.coverage);
+    // What an EMPTY queue may claim. The list is already narrowed by lens,
+    // kind and filters, so only the default view speaks for the whole
+    // window; every other view says "this view", which is all it checked.
+    // Under the banner the default view's row only has to say the list is
+    // empty; the banner already said what that means.
+    const defaultView = !narrowed && lens === 'actionable' && !filters.kind;
+    const windowWords = describeWindow(board.windowHours);
+    const queueAllClearLabel = !defaultView
+      ? `No incidents match this view in the last ${windowWords}`
+      : claim
+        ? 'The queue is empty'
+        : `Nothing needs action in the last ${windowWords}`;
+    const noBreakdown = sourceBreakdown.length === 0 && featureBreakdown.length === 0;
+
     return (
       <div className="space-y-8">
         {/* THE PAGE STATES ITS OWN PROVENANCE. Counts, the sources behind
@@ -650,27 +719,43 @@ export default async function ErrorsPage({
             reconciled — because a count without those four is a claim about
             the present made from data of unknown vintage. */}
         <section aria-label="Incident summary" className="space-y-3">
-          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-            <p className="font-fw-mono text-body-sm tabular-nums text-warm-800">
-              <span className="font-semibold text-warm-900">{board.lensCounts.actionable}</span> actionable
-              <span className="px-1.5 text-warm-500">·</span>
-              <span className="font-semibold text-warm-900">{board.lensCounts.regressions}</span> regression
-              {board.lensCounts.regressions === 1 ? '' : 's'}
-              <span className="px-1.5 text-warm-500">·</span>
-              <span className="font-semibold text-warm-900">{board.lensCounts.repairable}</span> repairable
-              <span className="px-1.5 text-warm-500">·</span>
-              <span className="font-semibold text-warm-900">{board.lensCounts.stalled}</span> stalled
-            </p>
-            <p className="flex flex-wrap items-center gap-x-2 font-fw-mono text-caption text-warm-500">
-              <SourceCoverageSummaryLine coverage={board.coverage} />
-              <span aria-hidden>·</span>
-              <span>{board.windowHours}h window</span>
-              <span aria-hidden>·</span>
-              <span>
-                reconciled <LocalTime iso={board.computedAt} />
-              </span>
-            </p>
-          </div>
+          {/* A granted all-clear replaces the "0 actionable · 0 regressions ·
+              0 repairable · 0 stalled" line: four zeros are the long way to
+              say one thing. It still states its provenance (sources reading,
+              the window, the oldest reading, when it was reconciled). Any
+              refusal (a blind or partial source, anything open, a release
+              alarm, an unread backlog, a narrowing filter) keeps the counts. */}
+          {claim ? (
+            <AllClearBanner
+              claim={claim}
+              checkedLabel="reconciled"
+              details={oldestReading ? [oldestReading] : []}
+              olderOpenHref="#stale-unresolved-heading"
+              headingId="incidents-all-clear-heading"
+            />
+          ) : (
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <p className="font-fw-mono text-body-sm tabular-nums text-warm-800">
+                <span className="font-semibold text-warm-900">{board.lensCounts.actionable}</span> actionable
+                <span className="px-1.5 text-warm-500">·</span>
+                <span className="font-semibold text-warm-900">{board.lensCounts.regressions}</span> regression
+                {board.lensCounts.regressions === 1 ? '' : 's'}
+                <span className="px-1.5 text-warm-500">·</span>
+                <span className="font-semibold text-warm-900">{board.lensCounts.repairable}</span> repairable
+                <span className="px-1.5 text-warm-500">·</span>
+                <span className="font-semibold text-warm-900">{board.lensCounts.stalled}</span> stalled
+              </p>
+              <p className="flex flex-wrap items-center gap-x-2 font-fw-mono text-caption text-warm-500">
+                <SourceCoverageSummaryLine coverage={board.coverage} />
+                <span aria-hidden>·</span>
+                <span>{board.windowHours}h window</span>
+                <span aria-hidden>·</span>
+                <span>
+                  reconciled <LocalTime iso={board.computedAt} />
+                </span>
+              </p>
+            </div>
+          )}
           <HowToReadIncidents />
         </section>
 
@@ -693,10 +778,15 @@ export default async function ErrorsPage({
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <CopyReportButton
-                report={buildFilteredIncidentsReport(tab.incidents, filters)}
-                label={`Copy all (filtered) · ${tab.incidents.length}`}
-              />
+              {/* Nothing to copy renders no button, the same rule
+                  BulkResolveButton already follows at zero: "Copy all · 0"
+                  is an action that does nothing, offered on a calm day. */}
+              {tab.incidents.length > 0 ? (
+                <CopyReportButton
+                  report={buildFilteredIncidentsReport(tab.incidents, filters)}
+                  label={`Copy all (filtered) · ${tab.incidents.length}`}
+                />
+              ) : null}
               <BulkResolveButton eventIds={lensed.flatMap((i) => board.eventIdsByIncident[i.id] ?? [])} />
             </div>
           </div>
@@ -713,7 +803,15 @@ export default async function ErrorsPage({
 
           {showSuppressedNotice ? (
             <p className="mt-3 rounded-fw-md bg-surface-sunken px-3 py-2 text-caption leading-5 text-warm-700">
-              Showing <span className="font-fw-mono tabular-nums">{shownActionable}</span> that need action.{' '}
+              {shownActionable === 0 ? (
+                // "Showing 0 that need action" read as a broken list on a
+                // calm day; the held-back count that follows is the news.
+                'Nothing needs action. '
+              ) : (
+                <>
+                  Showing <span className="font-fw-mono tabular-nums">{shownActionable}</span> that need action.{' '}
+                </>
+              )}
               <span className="font-fw-mono tabular-nums">{heldBack}</span> held back as not a bug:{' '}
               {suppressedBreakdown.map((entry, i) => (
                 <span key={entry.klass}>
@@ -788,6 +886,8 @@ export default async function ErrorsPage({
               presentations={board.presentations}
               genomeByIncident={genomeByIncident}
               releaseRelationships={releaseWatch.relationships}
+              allClearLabel={queueAllClearLabel}
+              quietAllClear={claim !== null && defaultView}
             />
           </div>
           <p className="mt-3 text-caption text-warm-500">
@@ -845,23 +945,36 @@ export default async function ErrorsPage({
                 numbers stay comparable.
               </p>
               <dl className="mt-4 grid grid-cols-2 gap-3">
-                <div>
-                  <dt className="text-eyebrow uppercase text-warm-500">Active incidents</dt>
-                  <dd className="font-fw-mono text-h2 tabular-nums text-warm-900">{counts.totalGroups}</dd>
-                  <dd className="text-caption text-warm-500">
-                    {counts.appGroups} app · {counts.sentryGroups} Sentry
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-eyebrow uppercase text-warm-500">Need action</dt>
-                  <dd className="font-fw-mono text-h2 tabular-nums text-warm-900">{counts.actionableGroups}</dd>
-                  <dd className="text-caption text-warm-500">{counts.highSeverityGroups} high severity · the nav badge</dd>
-                </div>
-                <div>
-                  <dt className="text-eyebrow uppercase text-warm-500">Affected users</dt>
-                  <dd className="font-fw-mono text-h2 tabular-nums text-warm-900">{counts.affectedUsers}</dd>
-                  <dd className="text-caption text-warm-500">deduped per incident</dd>
-                </div>
+                {claim && counts.totalGroups === 0 ? (
+                  // Under a granted all-clear with nothing at all in the
+                  // window, three oversized zeros (active, need action,
+                  // affected users) restate the banner. One line says it;
+                  // any other zero state keeps the numbers.
+                  <div className="col-span-2">
+                    <dt className="text-eyebrow uppercase text-warm-500">Active incidents</dt>
+                    <dd className="mt-0.5 text-body-sm text-warm-700">None in this window.</dd>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <dt className="text-eyebrow uppercase text-warm-500">Active incidents</dt>
+                      <dd className="font-fw-mono text-h2 tabular-nums text-warm-900">{counts.totalGroups}</dd>
+                      <dd className="text-caption text-warm-500">
+                        {counts.appGroups} app · {counts.sentryGroups} Sentry
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-eyebrow uppercase text-warm-500">Need action</dt>
+                      <dd className="font-fw-mono text-h2 tabular-nums text-warm-900">{counts.actionableGroups}</dd>
+                      <dd className="text-caption text-warm-500">{counts.highSeverityGroups} high severity · the nav badge</dd>
+                    </div>
+                    <div>
+                      <dt className="text-eyebrow uppercase text-warm-500">Affected users</dt>
+                      <dd className="font-fw-mono text-h2 tabular-nums text-warm-900">{counts.affectedUsers}</dd>
+                      <dd className="text-caption text-warm-500">deduped per incident</dd>
+                    </div>
+                  </>
+                )}
                 <div className="min-w-0">
                   <KpiTile
                     label="RLS denials · 24h"
@@ -875,62 +988,70 @@ export default async function ErrorsPage({
             </Surface>
           </div>
 
-          <Surface padding="sm">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="min-w-0">
-                <h3 className="text-eyebrow uppercase text-warm-500">By source</h3>
-                <p className="mt-0.5 text-caption text-warm-500">Where the rows were captured. Click one to narrow the list.</p>
-                {sourceBreakdown.length > 0 ? (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {sourceBreakdown.map(([source, count]) => (
-                      <BreakdownChip
-                        key={source}
-                        href={chipHref(current, 'source', source)}
-                        selected={current.get('source') === source}
-                        label={SOURCE_LABEL[source] ?? source}
-                        count={count}
-                        title={SOURCE_DESCRIPTION[source]}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-2 text-caption text-warm-500">No incidents in this window.</p>
-                )}
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-eyebrow uppercase text-warm-500">By feature</h3>
-                <p className="mt-0.5 text-caption text-warm-500">
-                  The product area each incident is tagged to. A dashed tag is not in the feature registry, or the
-                  error was logged without one, and cannot be filtered on.
-                </p>
-                {featureBreakdown.length > 0 ? (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {featureBreakdown.map(([feature, count]) => {
-                      const known = feature !== '' && feature in FEATURE_LABELS;
-                      return (
+          {noBreakdown ? (
+            // Both breakdowns empty used to render the same sentence twice,
+            // side by side, under two headings. One line says it.
+            <p className="text-caption text-warm-500">
+              No incidents in this window, so there is nothing to break down by source or feature.
+            </p>
+          ) : (
+            <Surface padding="sm">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="min-w-0">
+                  <h3 className="text-eyebrow uppercase text-warm-500">By source</h3>
+                  <p className="mt-0.5 text-caption text-warm-500">Where the rows were captured. Click one to narrow the list.</p>
+                  {sourceBreakdown.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {sourceBreakdown.map(([source, count]) => (
                         <BreakdownChip
-                          key={feature || 'untagged'}
-                          href={known ? chipHref(current, 'feature', feature) : null}
-                          selected={known && current.get('feature') === feature}
-                          label={feature === '' ? 'untagged' : (FEATURE_LABELS[feature] ?? feature)}
+                          key={source}
+                          href={chipHref(current, 'source', source)}
+                          selected={current.get('source') === source}
+                          label={SOURCE_LABEL[source] ?? source}
                           count={count}
-                          title={
-                            feature === ''
-                              ? 'Logged without a featureArea — counts against no feature'
-                              : known
-                                ? undefined
-                                : 'Not a registered feature key — the Errors filter cannot narrow to it'
-                          }
+                          title={SOURCE_DESCRIPTION[source]}
                         />
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="mt-2 text-caption text-warm-500">No incidents in this window.</p>
-                )}
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-caption text-warm-500">No incidents in this window.</p>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-eyebrow uppercase text-warm-500">By feature</h3>
+                  <p className="mt-0.5 text-caption text-warm-500">
+                    The product area each incident is tagged to. A dashed tag is not in the feature registry, or the
+                    error was logged without one, and cannot be filtered on.
+                  </p>
+                  {featureBreakdown.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {featureBreakdown.map(([feature, count]) => {
+                        const known = feature !== '' && feature in FEATURE_LABELS;
+                        return (
+                          <BreakdownChip
+                            key={feature || 'untagged'}
+                            href={known ? chipHref(current, 'feature', feature) : null}
+                            selected={known && current.get('feature') === feature}
+                            label={feature === '' ? 'untagged' : (FEATURE_LABELS[feature] ?? feature)}
+                            count={count}
+                            title={
+                              feature === ''
+                                ? 'Logged without a featureArea — counts against no feature'
+                                : known
+                                  ? undefined
+                                  : 'Not a registered feature key — the Errors filter cannot narrow to it'
+                            }
+                          />
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-caption text-warm-500">No incidents in this window.</p>
+                  )}
+                </div>
               </div>
-            </div>
-          </Surface>
+            </Surface>
+          )}
         </section>
 
         {/* 3. Coverage — what each source reported, and how traceable the feed is. */}
@@ -997,31 +1118,24 @@ export default async function ErrorsPage({
           <div className="mt-2">
             {tab.sentry.status === 'ok' && tab.sentry.data ? (
               tab.sentry.data.length === 0 ? (
-                <PanelAllClear label="No unresolved Sentry issues" checkedAt={tab.sentry.fetchedAt ?? new Date().toISOString()} />
+                <PanelAllClear
+                  label="No unresolved Sentry issues"
+                  checkedAt={tab.sentry.fetchedAt ?? new Date().toISOString()}
+                  variant={claim ? 'inline' : 'block'}
+                />
+              ) : claim ? (
+                // Under a granted all-clear this org-wide, un-windowed backlog
+                // is reference, not news: nothing in the window needs action,
+                // and a long column of danger pills for issues outside it read
+                // as an outage. One tap away and never removed; whenever the
+                // all-clear is refused the list renders open, as before.
+                <DetailsDisclosure
+                  label={`Show all ${tab.sentry.data.length} unresolved Sentry ${tab.sentry.data.length === 1 ? 'issue' : 'issues'}`}
+                >
+                  <SentryIssueList issues={tab.sentry.data} />
+                </DetailsDisclosure>
               ) : (
-                <ul className="divide-y divide-warm-200/60">
-                  {tab.sentry.data.map((issue) => (
-                    <li key={issue.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
-                      <StatusPill tone={SENTRY_LEVEL_TONE[issue.level] ?? 'danger'} dot size="sm">
-                        {issue.level}
-                      </StatusPill>
-                      <span className="w-20 shrink-0 font-fw-mono text-xs tabular-nums text-warm-500">{issue.shortId}</span>
-                      <span className="min-w-0 flex-1 basis-full break-words text-sm text-warm-900 [overflow-wrap:anywhere] sm:basis-auto">{issue.title}</span>
-                      <span className="font-fw-mono text-xs tabular-nums text-warm-600">
-                        {issue.userCount} users · {issue.count} events
-                      </span>
-                      <a
-                        href={issue.permalink}
-                        target="_blank"
-                        rel="noreferrer"
-                        aria-label={`Open ${issue.shortId} in Sentry`}
-                        className="ml-auto inline-flex items-center text-xs text-accent-700 underline sm:ml-0 [@media(pointer:coarse)]:px-2 [@media(pointer:coarse)]:min-h-11"
-                      >
-                        open
-                      </a>
-                    </li>
-                  ))}
-                </ul>
+                <SentryIssueList issues={tab.sentry.data} />
               )
             ) : tab.sentry.status === 'unconfigured' ? (
               <PanelNoData label="Sentry pull not configured" description="Provision SENTRY_READ_TOKEN (org:read, project:read, event:read)." />

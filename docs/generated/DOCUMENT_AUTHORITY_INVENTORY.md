@@ -36,7 +36,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 6 | 0 |
 | `AGENT_SKILL` | 133 | 0 | 8 | 0 |
-| `CURRENT_FEATURE` | 27 | 27 | 14 | 0 |
+| `CURRENT_FEATURE` | 27 | 27 | 14 | 1 |
 | `REFERENCE` | 52 | 15 | 20 | 0 |
 | `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
@@ -45,7 +45,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PLAN` | 44 | 5 | 18 | 78 |
 | `AUDIT_SNAPSHOT` | 67 | 6 | 35 | 29 |
 | `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
-| `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
+| `HISTORY_LEDGER` | 41 | 0 | 7 | 20 |
 | `INCIDENT` | 49 | 15 | 2 | 4 |
 | `ADR` | 6 | 0 | 3 | 2 |
 | `INDEX` | 25 | 1 | 8 | 5 |
@@ -221,7 +221,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | Dead |
 | --- | --- | --- | --- | --- | --- |
 | `memory/features/admin-incidents.md` | current | yes | - | yes | - |
-| `memory/features/admin-platform.md` | current | yes | - | yes | - |
+| `memory/features/admin-platform.md` | current | yes | - | yes | 1 |
 | `memory/features/admin-reliability-collector.md` | current | yes | - | - | - |
 | `memory/features/admin-replay-lab.md` | current | yes | - | - | - |
 | `memory/features/admin-selfheal.md` | current | yes | - | - | - |
@@ -526,7 +526,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/README.md` | current | - | - | yes | - |
 | `memory/ledgers/changes/README.md` | current | - | - | - | - |
 | `memory/ledgers/changes/admin_incidents.md` | current | - | - | - | - |
-| `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 9 |
+| `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 10 |
 | `memory/ledgers/changes/admin_reliability_collector.md` | current | - | - | - | - |
 | `memory/ledgers/changes/admin_selfheal.md` | current | - | - | - | - |
 | `memory/ledgers/changes/admin_slo.md` | current | - | - | - | - |
