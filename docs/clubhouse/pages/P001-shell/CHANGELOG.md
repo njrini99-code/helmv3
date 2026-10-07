@@ -1,5 +1,11 @@
 # P001 — Shell: changelog
 
+## 2026-10-06 — Canopy top bar at rest
+
+On canopy pages the top bar's resting state is clear over the green with ivory ink, and scrolling settles it into the
+ivory glass. A page too short to scroll (the timeline is inactive) keeps the clear bar instead of a tinted glass. Where
+scroll-driven animations are unsupported, the bar is the solid field green.
+
 ## 2026-10-06 — Ivory sidebar and canopy
 
 The sidebar and frame are ivory, the selected row is a green key, the brand uses the green mark with a serif

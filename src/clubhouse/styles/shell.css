@@ -1742,8 +1742,29 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
   .ch-canvas:has(main[data-canopy]) .ch-bell__count {
     box-shadow: 0 0 0 2px var(--ch-bar-ring, var(--ch-bg-page));
   }
-  @supports (animation-timeline: scroll()) {
+  /* Without scroll-driven animations the bar is the field's own green with ivory ink, never a tinted glass over it. */
+  @supports not (animation-timeline: scroll()) {
     .ch-canvas:has(main[data-canopy]) .ch-topbar {
+      --ch-bar-ink: #f4eedd;
+      --ch-bar-ink-soft: rgb(222 214 190 / 0.8);
+      --ch-bar-ring: #0b3a25;
+      border-bottom-color: rgb(176 149 96 / 0.5);
+      background: var(--ch-field-green);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+  @supports (animation-timeline: scroll()) {
+    /* At rest (and when the page is too short to scroll, so the timeline is inactive) the bar is clear on the green
+       with ivory ink; scrolling settles it into the ivory glass. */
+    .ch-canvas:has(main[data-canopy]) .ch-topbar {
+      --ch-bar-ink: #f4eedd;
+      --ch-bar-ink-soft: rgb(222 214 190 / 0.8);
+      --ch-bar-ring: #0b3a25;
+      border-bottom-color: transparent;
+      background: transparent;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
       animation: ch-bar-settle linear both;
       animation-timeline: scroll(nearest block);
       animation-range: 0 180px;
@@ -1757,24 +1778,29 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
   }
 }
 @keyframes ch-bar-settle {
-  from {
-    --ch-bar-ink: #f4eedd;
-    --ch-bar-ink-soft: rgb(222 214 190 / 0.8);
-    --ch-bar-ring: #0b3a25;
-    border-bottom-color: transparent;
-    background: rgb(11 58 37 / 0);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
+  0%,
   70% {
     --ch-bar-ink: #f4eedd;
     --ch-bar-ink-soft: rgb(222 214 190 / 0.8);
     --ch-bar-ring: #0b3a25;
   }
-  71% {
+  0% {
+    border-bottom-color: transparent;
+    background: rgb(240 236 225 / 0);
+    -webkit-backdrop-filter: blur(0) saturate(1);
+    backdrop-filter: blur(0) saturate(1);
+  }
+  71%,
+  100% {
     --ch-bar-ink: #0f4a2f;
     --ch-bar-ink-soft: #6b6860;
     --ch-bar-ring: #ebe7dc;
+  }
+  100% {
+    border-bottom-color: var(--ch-border-hairline);
+    background: var(--ch-glass-bg);
+    -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+    backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
   }
 }
 @keyframes ch-title-fold {

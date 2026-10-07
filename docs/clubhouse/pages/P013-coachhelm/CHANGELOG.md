@@ -1,5 +1,17 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-06 — Views on ivory, serif headlines
+
+Game profile, Standing and Deep dive no longer open on dark green summary panels. They are ivory reading sheets
+whose headlines are set in the display serif in the field green, with the key figures in green italic (for example
+"0 of 19"). Their inner panels are soft wells, and warning figures use the warning ink.
+
+Other details on the board:
+- The week's drill is a recessed ivory panel ruled in green, not a green block.
+- The Development link reads on the canopy.
+- The Ask question is set in the serif, without the mockup's spark tile (owner: no stock AI marks).
+- The phone eyebrow returns to green on ivory; mint is used on the canopy only.
+
 ## 2026-10-06 — Large-title header on the canopy
 
 CoachHelm opens on the canopy:

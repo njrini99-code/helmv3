@@ -47,8 +47,11 @@
 .ch-hl[data-canopy] > .ch-hl-h {
   padding-top: 40px;
 }
-[data-canopy-head] .ch-hl-role {
-  color: var(--ch-hero-mint);
+@media (min-width: 821px) {
+  main[data-canopy] .ch-hl-role,
+  main[data-canopy] .ch-hv-tabs .ch-btn--ghost {
+    color: var(--ch-hero-mint);
+  }
 }
 
 .ch-hl-h h1 {
@@ -304,25 +307,28 @@
 }
 
 /* This week */
+/* The week's drill: a recessed ivory panel ruled in green at its left, so the one action reads as set apart without
+   another green fill (owner: green only for the field, selection and the scoreboard). */
 .ch-hl-drill {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 18px 20px;
-  border-radius: 16px;
-  background: var(--ch-green-800);
-  color: var(--ch-ivory-100);
+  padding: 18px 20px 18px 22px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow), inset 3px 0 0 var(--ch-field-green);
+  color: var(--ch-text-primary);
 }
 .ch-hl-drill__k {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font: 600 12px/1 var(--ch-font-sans);
-  color: var(--ch-hero-mint);
+  color: var(--ch-green-600);
 }
 .ch-hl-drill p {
   font: 400 15.5px/1.55 var(--ch-font-sans);
-  color: var(--ch-ivory-100);
+  color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
 .ch-hl-drill__t b {
@@ -331,7 +337,7 @@
 .ch-hl-drill__t em {
   font-style: normal;
   font-size: 13px;
-  color: rgb(244 241 232 / 0.72);
+  color: var(--ch-text-tertiary);
 }
 
 /* Why we think this */
