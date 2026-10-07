@@ -1,10 +1,12 @@
 import os from 'node:os';
+import process from 'node:process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import bundleAnalyzer from '@next/bundle-analyzer';
 import { withSentryConfig } from '@sentry/nextjs';
 import { imageRemotePatterns } from './src/lib/security/image-remote-patterns.mjs';
 import { localSupabaseConnectSrc } from './src/lib/security/local-supabase-csp.mjs';
+import { clubhousePreviewHeaders } from './src/lib/security/clubhouse-preview-headers.mjs';
 import { buildSentryBuildOptions } from './src/lib/sentry-build-options.mjs';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
@@ -421,7 +423,7 @@ const nextConfig = {
 
   // Headers for caching and security
   async headers() {
-    return [
+    return clubhousePreviewHeaders([
       // Security headers for all routes
       {
         source: '/:path*',
@@ -483,13 +485,13 @@ const nextConfig = {
           //     surveys bundles (entrypoints/external-scripts-loader.js), then
           //     falls back to a plain GET of /array/<token>/config from the
           //     same host when the script yields no config (remote-config.js).
-          //   browser-intake-datadoghq.com (connect) — @datadog/browser-core
-          //     buildEndpointHost() for the default site datadoghq.com; RUM,
-          //     Logs and Session Replay all post to this one bare host. NO
-          //     wildcard: the SDK reaches a SUBDOMAIN of it only under
-          //     usePciIntake, internalAnalyticsSubdomain or
-          //     remoteConfigurationId, none of which src/lib/datadog/index.ts
-          //     sets. Set one and add its host by name.
+          //   browser-intake-datadoghq.com (connect) — @datadog/js-core
+          //     buildEndpointUrl() (SDK v7) for the default site datadoghq.com;
+          //     RUM, Logs and Session Replay all post to this one bare host. NO
+          //     wildcard: the SDK reaches a SUBDOMAIN of it only for
+          //     remoteConfigurationId or profiling (profilingSampleRate > 0),
+          //     neither of which src/lib/datadog/index.ts sets. Set one and
+          //     add its host by name.
           //
           // A non-default NEXT_PUBLIC_POSTHOG_HOST or NEXT_PUBLIC_DD_SITE needs
           // its host added here too, or it is blocked the same way.
@@ -534,7 +536,7 @@ const nextConfig = {
           },
         ],
       },
-    ];
+    ], process.env.NODE_ENV);
   },
 };
 

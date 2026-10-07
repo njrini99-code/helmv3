@@ -25,6 +25,7 @@ import { BusySheet } from './extras';
 import { CalendarPhone } from './CalendarPhone';
 import { Modal } from '../../ui/Modal';
 import { useChPhone } from '../../lib/use-phone';
+import { usePopoverFit } from '../../lib/use-popover-fit';
 import { CalendarFirstRun } from './CalendarFirstRun';
 
 function zonedNow(timeZone: string, d: Date): ChNow {
@@ -36,6 +37,7 @@ function zonedNow(timeZone: string, d: Date): ChNow {
 function JumpPanel({ anchor, today, view, onPick, onClose }: { anchor: string; today: string; view: ChCalView; onPick: (d: string) => void; onClose: () => void }) {
   const [month, setMonth] = useState(`${monthKey(anchor)}-01`);
   const ref = useRef<HTMLDivElement | null>(null);
+  const placement = usePopoverFit(ref);
   const range = view === 'week' ? new Set(weekDates(anchor)) : new Set([anchor]);
   useEffect(() => {
     const onDown = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && onClose();
@@ -49,7 +51,7 @@ function JumpPanel({ anchor, today, view, onPick, onClose }: { anchor: string; t
     };
   }, [onClose]);
   return (
-    <div className="ch-cal-jump" role="dialog" aria-label="Jump to a date" ref={ref}>
+    <div className="ch-cal-jump" role="dialog" aria-label="Jump to a date" ref={ref} style={placement}>
       <div className="ch-cal-jump__head">
         <span>
           {monthName(month)} {yearOf(month)}
@@ -89,6 +91,8 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const ref = useRef<HTMLDivElement | null>(null);
+  const popover = useRef<HTMLDivElement | null>(null);
+  const placement = usePopoverFit(popover, open);
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
@@ -131,7 +135,7 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
         </Button>
       )}
       {open && (
-        <div className="ch-pp__pop" role="dialog" aria-label="Choose people">
+        <div ref={popover} className="ch-pp__pop" role="dialog" aria-label="Choose people" style={placement}>
           <SearchField className="ch-pp__search" value={q} onChange={setQ} placeholder="Find a player" label="Find a player" />
           <button type="button" className="ch-pp__row" aria-pressed={!chosen.length} onClick={() => (haptic('select'), setSel([]))}>
             <span className="ch-pp__all">

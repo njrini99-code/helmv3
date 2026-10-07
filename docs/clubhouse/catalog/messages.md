@@ -1,5 +1,18 @@
 # Messages catalog (7xxx)
 
+<!-- clubhouse:release-audit:start -->
+## Catalog audit — 2026-10-06
+
+Conversation rail, phone thread, growing composer, reply and group dialogs.
+Check reader-position preservation, Return/newline versus desktop Enter,
+keyboard height, long messages and draft retention.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p007-messages). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Route `/golf/dashboard/messages` (coach and player) · code
 `src/clubhouse/screens/messages/`, loader
 `src/clubhouse/data/messages.ts` · tests

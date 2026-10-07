@@ -72,7 +72,7 @@ export function Segmented<V extends string>({
               <m.span
                 className="ch-seg__pill"
                 layoutId={reduced ? undefined : `seg-${id}`}
-                transition={chTween('base')}
+                transition={chTween('base', reduced)}
                 aria-hidden="true"
               />
             )}

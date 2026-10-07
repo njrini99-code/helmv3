@@ -1,5 +1,17 @@
 # Phone design: Stats (player profile, and the player's own stats)
 
+<!-- clubhouse:release-audit:start -->
+## Phone acceptance audit — 2026-10-06
+
+Player Stats periods, development proposals and filters. Check player context,
+chart resizing, proposal responses, keyboard filters and loading geometry.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p005-stats-player).
+Existing checklist ticks and catalog identifiers retain their recorded scope.
+Automated browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Status: approved. The owner's v2 phone board is the spec (D-22): `design/handoff/Coach - Stats - Mobile.html` (board "Player · approach"), `m-stats.jsx` `Player`, `m.css`. It replaces the earlier draft in this file. Built 2026-09-30 as `src/clubhouse/screens/stats/StatsPlayerPhone.tsx`, inside the desktop `StatsPlayer` (the loader, window change, Add focus area sheet and catalog are shared). The iPhone pass is open.
 
 ## Layout

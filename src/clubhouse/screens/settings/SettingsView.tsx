@@ -8,7 +8,7 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { haptic } from '../../lib/haptics';
-import { CH_ROUTE } from '../../lib/motion';
+import { CH_ROUTE, chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useChPhone } from '../../lib/use-phone';
 import { chTrail } from '../../lib/track';
@@ -177,15 +177,15 @@ export function SettingsView({
             ))}
           </nav>
           <div className="ch-set-body">
-            {/* CH-8601: the old section fades out, the new one settles in. */}
-            <AnimatePresence mode="wait" initial={false}>
+            {/* CH-8601: the new section mounts immediately and settles in; the old exits at once. */}
+            <AnimatePresence mode="popLayout" initial={false}>
               <m.div
                 key={section}
                 className="ch-set-stack"
-                initial={reduced ? { opacity: 0 } : CH_ROUTE.initial}
+                initial={reduced ? false : CH_ROUTE.initial}
                 animate={reduced ? { opacity: 1 } : CH_ROUTE.animate}
-                exit={reduced ? { opacity: 0 } : CH_ROUTE.exit}
-                transition={CH_ROUTE.transition}
+                exit={{ opacity: 0, transition: { duration: 0 } }}
+                transition={chTween('base', reduced)}
               >
                 <SectionBoundary surface={`settings.${section}`} label={current.label} code="CH-8212">
                   {section === 'account' && <AccountSection data={data} writes={writes} onDeleted={onDeleted} />}

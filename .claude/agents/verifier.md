@@ -4,7 +4,7 @@ description: Independent check that a completion claim is true — reads the dif
 model: sonnet
 effort: high
 maxTurns: 25
-disallowedTools: Write, Edit, MultiEdit, NotebookEdit, Bash(git commit:*), Bash(git push:*)
+disallowedTools: Write, Edit, MultiEdit, NotebookEdit
 skills: finish-task
 ---
 

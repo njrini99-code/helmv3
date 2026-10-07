@@ -1,0 +1,103 @@
+name: Clubhouse presentation quality
+
+# Development fixtures, no credentials or database seeding. Authenticated
+# production and physical iPhone evidence remain separate release checks.
+on:
+  pull_request:
+    paths:
+      - 'src/clubhouse/**'
+      - 'src/app/clubhouse-preview/**'
+      - 'e2e/clubhouse-quality.spec.ts'
+      - 'e2e/clubhouse-playground.spec.ts'
+      - 'playwright.clubhouse.config.ts'
+      - 'next.config.mjs'
+      - 'src/lib/security/clubhouse-preview-headers.mjs'
+      - 'scripts/clubhouse/**'
+      - 'config/clubhouse/**'
+      - 'stylelint.clubhouse.config.mjs'
+      - 'scripts/clubhouse/__tests__/a11y.test.mjs'
+      - '.github/workflows/clubhouse-quality.yml'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+    inputs:
+      full:
+        description: All popup variants and viewport sizes
+        type: boolean
+        default: true
+      visual:
+        description: Compare against externally reviewed baselines (never update)
+        type: boolean
+        default: false
+      baseline_run_id:
+        description: Workflow run containing clubhouse-quality-baselines artifact for matching Linux/browser version
+        type: string
+        required: false
+
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: clubhouse-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: local-presentation-fixture-only
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: local-presentation-fixture-only
+  NEXT_TELEMETRY_DISABLED: '1'
+  CH_QUALITY: '1'
+  CH_FULL: ${{ github.event_name == 'workflow_dispatch' && inputs.full && '1' || '0' }}
+  CH_VISUAL: ${{ github.event_name == 'workflow_dispatch' && inputs.visual && '1' || '0' }}
+  CH_VISUAL_BASELINES: ${{ github.workspace }}/.helm/screenshots/clubhouse/quality-baselines
+
+jobs:
+  presentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: node --test scripts/clubhouse/__tests__/*.test.mjs
+      - name: Component catalog is current
+        run: npm run clubhouse:catalog -- --check
+      - name: Clubhouse CSS quality
+        run: npm run clubhouse:css
+      - run: ./node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Require reviewed baseline source for visual mode
+        if: inputs.visual
+        env:
+          BASELINE_RUN_ID: ${{ inputs.baseline_run_id }}
+        run: |
+          if ! [[ "$BASELINE_RUN_ID" =~ ^[0-9]+$ ]]; then
+            echo 'Visual comparison requires a numeric baseline_run_id containing reviewed clubhouse-quality-baselines.'
+            exit 1
+          fi
+      - name: Download reviewed baselines
+        if: inputs.visual
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: clubhouse-quality-baselines
+          path: .helm/screenshots/clubhouse/quality-baselines
+          run-id: ${{ inputs.baseline_run_id }}
+          github-token: ${{ github.token }}
+      - name: Smoke normal and reduced motion in Chromium and WebKit
+        timeout-minutes: 25
+        run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts
+      - name: Upload diagnostic screenshots, reports and failure traces
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: clubhouse-quality-evidence
+          path: |
+            test-results/clubhouse-quality/
+            playwright-report/clubhouse-quality/
+          if-no-files-found: warn
+          retention-days: 14

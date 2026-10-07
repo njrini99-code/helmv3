@@ -1,5 +1,18 @@
 # Phone design: Stats (team)
 
+<!-- clubhouse:release-audit:start -->
+## Phone acceptance audit — 2026-10-06
+
+Team Stats periods, comparisons, filters and focus-area sheets. Check
+period-change layout stability, filter date controls, long course names and
+empty/error/loading geometry.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p004-stats-team).
+Existing checklist ticks and catalog identifiers retain their recorded scope.
+Automated browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Status: approved. The owner's v2 phone board is the spec (D-22): `design/handoff/Coach - Stats - Mobile.html` (board "Team stats"), `m-stats.jsx` `Team`, `m.css`. It replaces the earlier draft in this file. Built 2026-09-30 as `src/clubhouse/screens/stats/StatsTeamPhone.tsx`, placed by the page frame (`StatsTeamFrame`'s `phone`), so the loader, the window change and its notices are the desktop's. The iPhone pass is open.
 
 ## Layout

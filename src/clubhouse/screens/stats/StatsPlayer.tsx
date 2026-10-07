@@ -266,7 +266,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
               >
                 {l}
                 {n != null && <span className="ch-tab-t__n ch-num">{n}</span>}
-                {tab === t && <m.span className="ch-tab-t__bar" layoutId={reduced ? undefined : 'pf-tab'} transition={chTween('base')} />}
+                {tab === t && <m.span className="ch-tab-t__bar" layoutId={reduced ? undefined : 'pf-tab'} transition={chTween('base', reduced)} />}
               </button>
             ))}
           </div>

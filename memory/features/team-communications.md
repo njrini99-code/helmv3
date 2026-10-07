@@ -842,3 +842,11 @@ on apply (`docs/clubhouse/held/data/message-attachments-hardening.md`, `docs/clu
 members) are EXISTING: they call `createGolfTeamBroadcast`, `addGolfGroupMember` and `getGolfGroupAddCandidates`,
 which predate Clubhouse (79f6e1a07) and which Fairway's `GroupDetailsSheet` already uses; no server action or
 query changed, and the policies they rest on are applied in production. D-48 is HELD-FEATURE, gated as above.
+
+## Clubhouse premium audit, October 6
+
+Quoted-message navigation uses the canonical Clubhouse reduced-motion hook,
+so both OS reduced motion and live Animations off use immediate scrolling.
+The keyboard-only Message actions alternative becomes visible when focused;
+ordinary screen-reader labels stay hidden. Evidence and remaining reaction-menu
+keyboard review are in `docs/clubhouse/PREMIUM_AUDIT.md`.

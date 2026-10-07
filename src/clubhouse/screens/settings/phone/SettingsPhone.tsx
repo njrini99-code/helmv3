@@ -5,7 +5,7 @@ import { Bell, ChevronRight, Flag, SlidersVertical, Sparkle, UserRound, Users, t
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon } from '../../../ui/Icon';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
-import { CH_ROUTE } from '../../../lib/motion';
+import { CH_ROUTE, chTween } from '../../../lib/motion';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { initials } from '../../../lib/format';
 import { chTrail } from '../../../lib/track';
@@ -106,14 +106,14 @@ export function SettingsPhone({
         title={<span className="ch-sr-only">{current?.label ?? 'Settings'}</span>}
         titleId="ch-setm-title"
       />
-      <AnimatePresence mode="wait" initial={false}>
+      <AnimatePresence mode="popLayout" initial={false}>
         <m.div
           key={section ?? 'root'}
           className="ch-setm-page"
-          initial={reduced ? { opacity: 0 } : CH_ROUTE.initial}
+          initial={reduced ? false : CH_ROUTE.initial}
           animate={reduced ? { opacity: 1 } : CH_ROUTE.animate}
-          exit={reduced ? { opacity: 0 } : CH_ROUTE.exit}
-          transition={CH_ROUTE.transition}
+          exit={{ opacity: 0, transition: { duration: 0 } }}
+          transition={chTween('base', reduced)}
         >
           <p className="ch-setm-title" aria-hidden="true">
             {current?.label ?? 'Settings'}

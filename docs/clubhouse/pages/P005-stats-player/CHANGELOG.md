@@ -1,5 +1,40 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-06 — Premium interaction corrections
+
+```text
+PR/commit:      #2155, codex/clubhouse-smoothness-audit
+Design package: existing Clubhouse focus and motion owners
+Contract IDs:   existing keyboard and reduced-motion behavior
+Data impact:    none
+Held items:     physical iPhone and complete manual release acceptance
+```
+
+Desktop Game detail section navigation observes both OS reduced motion and
+the live Clubhouse Animations preference. The selected section and phone
+selection/persistence contracts remain unchanged.
+
+See [premium audit](../../PREMIUM_AUDIT.md) for focused evidence and limits.
+
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+StatsPlayer and the shared segmented indicator use zero-duration motion
+when disabled.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
+## 2026-10-06 — Whole-app release audit
+
+Reconciled page purpose, design acceptance, contract status, wiring and
+verification against the current flagged implementation. Indexed 6 mapped
+actions and 4 overlay/control call sites in the [all-page
+audit](../../ALL_PAGE_AUDIT.md#p005-stats-player). Approved handoffs and
+contract IDs are preserved; runtime gaps stay explicit.
+<!-- clubhouse:release-audit:end -->
+
 ## 2026-10-06 — Motion import path moves to `motion/react`
 
 ```text

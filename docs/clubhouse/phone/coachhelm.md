@@ -1,5 +1,18 @@
 # Design: CoachHelm (coach and player, desktop and phone)
 
+<!-- clubhouse:release-audit:start -->
+## Phone acceptance audit — 2026-10-06
+
+Coach/player boards, streaming Ask, history drawer and proposed focus. Profile
+render and scroll work during streaming; check drawer focus, player context
+and proposal feedback.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p013-coachhelm). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Status: approved. The owner's boards are the spec (D-22): `design/handoff/Player - CoachHelm.html`, `Coach - CoachHelm.html` and `Coach and Player - CoachHelm - Mobile.html` (`helm3.jsx`, `helm3.css`, `coachhelm2.css`). The mobile board draws the same two pages, the player's and the coach's, at phone width (`PlayerHelm` and `CoachHelm` in `helm3.jsx`, inside the phone shell).
 
 The route is `/golf/dashboard/coachhelm`, for both roles. The Fairway page is the player's only; a coach lands on a pointer to the Brief. In Clubhouse one route draws the role's page from the session: `session.coach` is the coach's board (a coach who also has a player profile is a coach here), `session.player` the player's. The coach's Brief (`/intelligence`) is a different screen and is not built here.

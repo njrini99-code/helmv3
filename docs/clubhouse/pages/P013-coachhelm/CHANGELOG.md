@@ -1,5 +1,34 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-06 — Mention picker accessibility
+
+The desktop Ask mention list gives the option role to each clickable row,
+without a nested interactive button under another option. The text field
+identifies the active option while arrow keys move through the roster.
+Mention insertion and sending remain unchanged. Verified with the existing
+mention interaction tests and the popup browser audit on PR #2155.
+Physical VoiceOver acceptance remains open.
+
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+Streaming follow-scroll is scheduled once per browser frame and canceled
+when superseded. It rechecks reader position and scrolls instantly. Sending
+uses instant scrolling with reduced motion and smooth scrolling otherwise.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
+## 2026-10-06 — Whole-app release audit
+
+Reconciled page purpose, design acceptance, contract status, wiring and
+verification against the current flagged implementation. Indexed 4 mapped
+actions and 8 overlay/control call sites in the [all-page
+audit](../../ALL_PAGE_AUDIT.md#p013-coachhelm). Approved handoffs and contract
+IDs are preserved; runtime gaps stay explicit.
+<!-- clubhouse:release-audit:end -->
+
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 

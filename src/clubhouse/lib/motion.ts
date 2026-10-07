@@ -21,8 +21,8 @@ export const CH_DUR = {
   reveal: 0.52,
 } as const;
 
-export function chTween(duration: keyof typeof CH_DUR = 'base'): Transition {
-  return { duration: CH_DUR[duration], ease: CH_EASE };
+export function chTween(duration: keyof typeof CH_DUR = 'base', reduced = false): Transition {
+  return { duration: reduced ? 0 : CH_DUR[duration], ease: CH_EASE };
 }
 
 /** A panel's content swap inside a fixed frame (a Settings section): a base crossfade with a 6px settle. */
@@ -42,11 +42,11 @@ export const CH_POP = {
 } as const;
 
 /** Content swap inside a fixed frame (for example, paging rounds). */
-export function chSwap(direction: 1 | -1) {
+export function chSwap(direction: 1 | -1, reduced = false) {
   return {
     initial: { opacity: 0, x: 12 * direction },
     animate: { opacity: 1, x: 0 },
     exit: { opacity: 0, x: -12 * direction },
-    transition: chTween('base'),
+    transition: chTween('base', reduced),
   } as const;
 }

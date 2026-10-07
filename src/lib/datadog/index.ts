@@ -58,6 +58,15 @@ export function initDatadog() {
         trackResources: true,
         trackLongTasks: true,
         defaultPrivacyLevel: 'mask-user-input',
+        // Browser SDK v7 flipped these two defaults. Pin the v6 values so the
+        // upgrade does not change what we collect or send:
+        // - v7 defaults propagateTraceBaggage to true, adding a `baggage`
+        //   header to traced requests (Supabase is cross-origin, so that is a
+        //   new CORS-preflighted header). v6 never sent it.
+        // - v7 defaults enablePrivacyForActionName to true, masking click
+        //   action names per defaultPrivacyLevel. v6 collected them as-is.
+        propagateTraceBaggage: false,
+        enablePrivacyForActionName: false,
         allowedTracingUrls: [
           { match: /https:\/\/.*\.supabase\.co/, propagatorTypes: ['tracecontext'] },
           { match: window.location.origin, propagatorTypes: ['tracecontext'] },
@@ -70,6 +79,9 @@ export function initDatadog() {
         service,
         env,
         forwardErrorsToLogs: true,
+        // Logs v7 decoupled forwardErrorsToLogs from console.error capture;
+        // v6 forwarded console.error as part of forwardErrorsToLogs.
+        forwardConsoleLogs: ['error'],
         sessionSampleRate: 100,
       });
     } catch (error) {

@@ -1,5 +1,14 @@
 # Clubhouse page transitions, loading accuracy and heavy-page performance
 
+## October 6 release evidence
+
+Existing rules, route ticks and device requirements retain their scope.
+They do not certify the dependency-upgraded release candidate.
+
+[ALL_PAGE_AUDIT.md](ALL_PAGE_AUDIT.md) covers all 15 page families;
+[SMOOTHNESS_AUDIT.md](SMOOTHNESS_AUDIT.md) records confirmed motion findings.
+Physical Safari/iPhone acceptance and production-build profiling remain open.
+
 The working standard for how Clubhouse moves, loads and saves. It condenses the
 owner's research guide (2026-10-01, "GolfHelm Smooth Transitions, Accurate
 Loading States, and Heavy Page Performance") into rules, then records where

@@ -146,6 +146,8 @@
 }
 /* The coach's teams, under the brand block: a popover panel (.ch-popover) of two or three rows. */
 .ch-tsw {
+  overflow-y: auto;
+  overscroll-behavior: contain;
   position: fixed;
   z-index: var(--ch-z-overlay);
   /* Over the green sidebar the glass would turn the ivory to grey-green: nearly opaque keeps it the board's ivory. */

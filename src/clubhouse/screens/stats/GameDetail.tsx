@@ -2,6 +2,7 @@
 
 import { CircleDot, Crosshair, Flag, FlagTriangleRight, MoveUpRight, type LucideIcon } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
+import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useChSessionState } from '../../lib/session-state';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { holeCoverage } from '../../data/round-scope';
@@ -155,6 +156,7 @@ export function GameDetail({
   phone?: boolean;
 }) {
   // The player reading their own stats is "You": the verb agrees and mid-sentence it is lower case (F-45).
+  const reduced = useChReducedMotion();
   const you = first === 'You';
   const verb = (third: string, base: string) => (you ? base : third);
   const mid = you ? 'you' : first;
@@ -185,7 +187,7 @@ export function GameDetail({
     haptic('select');
     setOn(id);
     if (phone) return;
-    document.getElementById(`gm-${id}`)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    document.getElementById(`gm-${id}`)?.scrollIntoView({ behavior: reduced ? 'instant' : 'smooth', block: 'start' });
   };
 
   const dist = {

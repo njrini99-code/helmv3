@@ -5,7 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, cleanup, fireEvent } from '@testing-library/react';
 import { PRESS_MAX_WIDTH, pressScale, useChPress } from '../lib/press';
-import { CH_DUR } from '../lib/motion';
+import { CH_DUR, chTween, chSwap } from '../lib/motion';
 
 function Harness({ enabled }: { enabled: boolean }) {
   useChPress(enabled);
@@ -98,5 +98,17 @@ describe('CH-1606 press', () => {
 describe('v2 durations', () => {
   it('are press 110, quick 180, base 260, release 280 and reveal 520ms', () => {
     expect(CH_DUR).toEqual({ press: 0.11, quick: 0.18, base: 0.26, release: 0.28, reveal: 0.52 });
+  });
+});
+
+describe('animation preference timing', () => {
+  it('finishes tweens immediately when motion is disabled while retaining normal tokens', () => {
+    expect(chTween('base', true).duration).toBe(0);
+    expect(chTween('quick', true).duration).toBe(0);
+    expect(chTween('base', false).duration).toBe(CH_DUR.base);
+  });
+  it('finishes content swaps immediately when motion is disabled', () => {
+    expect(chSwap(1, true).transition.duration).toBe(0);
+    expect(chSwap(-1, false).transition.duration).toBe(CH_DUR.base);
   });
 });

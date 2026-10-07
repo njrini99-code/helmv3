@@ -1,5 +1,32 @@
 # P013 — CoachHelm: page contract
 
+Ask's desktop roster suggestions expose one option per clickable row and
+aria-activedescendant on the composing field. Phone uses the existing modal
+roster picker. See [popup audit](../../POPUP_AUDIT.md).
+
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+Streaming follow-scroll is scheduled once per browser frame and canceled
+when superseded. It rechecks reader position and scrolls instantly. Sending
+uses instant scrolling with reduced motion and smooth scrolling otherwise.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
+## Current contract audit — 2026-10-06
+
+The manifest reports complete contract coverage and 4 mapped actions. Existing
+Bridge IDs, catalog rows and generated contract tables remain authoritative.
+Profile render and scroll work during streaming; check drawer focus, player
+context and proposal feedback.
+
+The [all-page audit](../../ALL_PAGE_AUDIT.md#p013-coachhelm) distinguishes
+implemented/tested behavior from open runtime acceptance; this pass does not
+reserve new IDs or mark manual contracts verified.
+<!-- clubhouse:release-audit:end -->
+
 Every behaviour CoachHelm promises, by the 25 V2 categories (D-69). A contract's
 number is its Bridge ID (D-68: namespace 13, category, item); `Code` is the
 catalog code on the element and in the test (`docs/clubhouse/catalog/coachhelm.md`).

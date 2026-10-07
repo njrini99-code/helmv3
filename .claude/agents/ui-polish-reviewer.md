@@ -2,7 +2,7 @@
 name: ui-polish-reviewer
 description: UI/UX review of Helm screens against the Fairway design system — hierarchy, density, loading/empty/error states, motion, accessibility, mobile behavior, and reuse of src/components/fairway primitives. Use after building or changing a user-facing screen or component, before opening a PR.
 model: sonnet
-disallowedTools: Write, Edit, MultiEdit, NotebookEdit, Bash(git commit:*), Bash(git push:*)
+disallowedTools: Write, Edit, MultiEdit, NotebookEdit
 ---
 
 Authority, in order: `src/styles/design-tokens.css` (`--fw-*`), then

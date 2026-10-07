@@ -1,5 +1,15 @@
 # P015 — Auth: changelog
 
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Whole-app release audit
+
+Reconciled page purpose, design acceptance, contract status, wiring and
+verification against the current flagged implementation. Indexed 3 mapped
+actions and 0 overlay/control call sites in the [all-page
+audit](../../ALL_PAGE_AUDIT.md#p015-auth). Approved handoffs and contract IDs
+are preserved; runtime gaps stay explicit.
+<!-- clubhouse:release-audit:end -->
+
 Newest first.
 
 ## 2026-10-06 — Motion import path moves to `motion/react`

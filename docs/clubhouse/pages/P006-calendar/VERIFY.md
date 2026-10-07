@@ -1,9 +1,36 @@
 # P006 — Calendar: verification
 
+<!-- clubhouse:release-audit:start -->
+## Current release evidence — 2026-10-06
+
+Calendar month/week/day, editor, overlap, busy and subscribe sheets.
+
+Check event sizing and collision layout, keyboard edit flows and Retry inside
+the native dialog top layer.
+
+Fresh WebKit 26.6: `/clubhouse-preview/calendar` at
+375, 430 and 1280px; zero Axe A/AA violations and no horizontal document
+overflow in these three fixture renders. The 430px full-page screenshot
+was inspected and recorded below. This does not exercise every popup.
+Clubhouse runtime suites: 117 files / 3,092 tests pass on this branch.
+External action suites listed in WIRING are outside that count.
+
+Additional WebKit base check: 320px also fits without horizontal overflow
+and reports zero Axe violations. The state/opener inventory completes 20
+cases for this page at applicable 1280/390px widths with zero Axe
+violations or document overflow.
+
+Current browser/test results: [all-page
+audit](../../ALL_PAGE_AUDIT.md#p006-calendar). Current status remains partial.
+Physical Safari/iPhone, VoiceOver and durable authenticated writes remain
+separate acceptance checks. Earlier verification status and gap sections below
+are historical observations; use the current audit for release scope.
+<!-- clubhouse:release-audit:end -->
+
 Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
 checklist is `docs/clubhouse/screens/calendar.md`.
 
-## Current verification status
+## Historical verification status
 
 ```text
 Status:     partial
@@ -30,17 +57,28 @@ Date:       2026-09-30
 | `src/clubhouse/__tests__/logic.test.ts` ("calendar model") | the date, lane, overlap and open-time model | pass (2026-09-30; not changed) |
 | `src/clubhouse/__tests__/shell.test.tsx` | the shell contracts this page inherits (10703, 10702, 11611, 11811 and the rest) | not run in this pass |
 
-Mutation checks. 37 changes to the code the new tests guard were made one at a time, the tests run, and the
-code put back. All 37 failed a test, so none survived: the seven Retry follow-ups moved back into the button
-(each of the seven scenarios failed), the loader sending a player every reply, the replies read per event, busy time
-read after the replies, a player offered the team link, a swallowed Undo error, Undo sending offline, an impossible
-date accepted, another player's class shown, busy time read for a player, a player treated as a coach, the reply
-offered to someone not invited, every step asking the server, the screen ignoring the server's new view, the T key,
-Try again doing nothing, a reply that waits for the server, attendance forgetting what saved, a clash blocking
-Publish, a removed file waiting for the server, the loader filing a time by UTC, a failed read not logged, the route
-not stopping for no team, a player loaded without their id, Undo not re-reading, the page passing `new` for any
-value, the count off by one, Publish bypassing the save hook, the seeds staying in the address, a refused reply
-not going back, and the series scopes of Cancel event promising a soft cancel again.
+Mutation checks. 37 changes to the code the new tests guard were made one at a
+time, the tests run, and the
+code put back. All 37 failed a test, so none survived: the seven Retry
+follow-ups moved back into the button
+(each of the seven scenarios failed), the loader sending a player every reply,
+the replies read per event, busy time
+read after the replies, a player offered the team link, a swallowed Undo error,
+Undo sending offline, an impossible
+date accepted, another player's class shown, busy time read for a player, a
+player treated as a coach, the reply
+offered to someone not invited, every step asking the server, the screen
+ignoring the server's new view, the T key,
+Try again doing nothing, a reply that waits for the server, attendance
+forgetting what saved, a clash blocking
+Publish, a removed file waiting for the server, the loader filing a time by UTC,
+a failed read not logged, the route
+not stopping for no team, a player loaded without their id, Undo not re-reading,
+the page passing `new` for any
+value, the count off by one, Publish bypassing the save hook, the seeds staying
+in the address, a refused reply
+not going back, and the series scopes of Cancel event promising a soft cancel
+again.
 
 ## Visual verification
 
@@ -79,8 +117,10 @@ Result:       built 2026-09-30 to the approved spec; the browser and iPhone pass
 | Destructive | 61101, 61102, 61201 | tests | confirm first, warning haptic |
 | Optimistic | 61301, 61302 | tests | the choice shows at once and goes back; the file goes at once and comes back |
 
-Not forced: a slow save (the shell's 10702) on a Calendar write; the server's own refusals (60806: read, not run); a
-publish whose answer is lost on the way back. A state never observed is not verified.
+Not forced: a slow save (the shell's 10702) on a Calendar write; the server's
+own refusals (60806: read, not run); a
+publish whose answer is lost on the way back. A state never observed is not
+verified.
 
 ## Accessibility
 
@@ -152,14 +192,45 @@ before, after, baseline or evidence.
 | `P006__calendar__player__390__default__before__d3a6483.png` | before | d3a6483 | calendar (player), 390px, default; /clubhouse-preview/calendar-player, synthetic preview fixture |
 | `P006__mobile-overview__coach__390__safari-populated__before__cbc1c0d.png` | before | cbc1c0d (working tree) | Mobile overview (coach), 390px, WebKit iPhone 13; /clubhouse-preview/calendar, synthetic preview fixture; shared materials in progress |
 | `P006__mobile-overview__coach__390__safari-populated__after__cbc1c0d.png` | after | cbc1c0d (working tree) | Mobile overview (coach), 390px, WebKit iPhone 13; /clubhouse-preview/calendar, synthetic preview fixture; shared materials in progress |
+| `P006__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
+| `P006__date-popover__coach__1280x400__popup-audit__after__43a146a.png` | after | 43a146a | date-popover (coach), 1280x400px, popup-audit; local synthetic preview; 43a146a plus working-tree popup and depth repairs |
+| `P006__date-popover__coach__1280x400__popup-audit__before__43a146a.png` | before | 43a146a | date-popover (coach), 1280x400px, popup-audit; local synthetic preview; 43a146a baseline |
+| `P006__new-event__coach__390x844__popup-audit__after__43a146a.png` | after | 43a146a | new-event (coach), 390x844px, popup-audit; local synthetic preview; 43a146a plus working-tree popup and depth repairs |
+| `P006__new-event__coach__390x844__popup-audit__before__43a146a.png` | before | 43a146a | new-event (coach), 390x844px, popup-audit; local synthetic preview; 43a146a baseline |
+| `P006__people-popover__coach__1280x400__popup-audit__after__43a146a.png` | after | 43a146a | people-popover (coach), 1280x400px, popup-audit; local synthetic preview; 43a146a plus working-tree popup and depth repairs |
+| `P006__people-popover__coach__1280x400__popup-audit__before__43a146a.png` | before | 43a146a | people-popover (coach), 1280x400px, popup-audit; local synthetic preview; 43a146a baseline |
+| `P006__event-menu__coach__390x844__popup-audit__after__43a146a.png` | after | 43a146a | event-menu (coach), 390x844px, popup-audit; synthetic preview; 43a146a plus working-tree repairs |
+| `P006__event-menu__coach__390x844__popup-audit__before__43a146a.png` | before | 43a146a | event-menu (coach), 390x844px, popup-audit; synthetic preview; 43a146a baseline |
+| `P006__premium-audit__coach__1280__case-005-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-005-webkit-reduce; /clubhouse-preview/calendar; synthetic preview |
+| `P006__premium-audit__coach__1280__case-048-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-048-chromium-normal; /clubhouse-preview/calendar; synthetic preview |
+| `P006__premium-audit__coach__390__case-005-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-005-webkit-reduce; /clubhouse-preview/calendar; synthetic preview |
+| `P006__premium-audit__coach__390__case-048-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-048-chromium-normal; /clubhouse-preview/calendar; synthetic preview |
 
-## Open verification gaps
+## Historical verification gaps
 
-- A browser pass with a real coach account and a real player account, desktop and phone (owner or merge pass).
+- A browser pass with a real coach account and a real player account, desktop
+  and phone (owner or merge pass).
 - The iPhone pass through `npm run ios:dev` (owner).
-- `clubhouse:a11y` after the phone build and the v2 changes; the full keyboard walk; LCP and layout shift.
-- Each write forced against a live session; the server refusals in 60806 run against a database.
-- Not verified in a browser: the toast's Retry when the failure came from inside a modal dialog. The tests click it in jsdom; a real browser makes everything outside a modal dialog inert, and the toasts are outside it (CONTRACT.md 14). The follow-up moves are proved; whether the button can be pressed there is not.
-- Not reproduced: the editor setting its fields again when the page re-reads while it is open (CONTRACT.md 12).
-- Not handled: a create whose answer is lost can be created twice by Retry (CONTRACT.md 06).
-- v2 draws a whole-page first-run state for a team that has never scheduled anything (D-71); it is not built.
+- `clubhouse:a11y` after the phone build and the v2 changes; the full keyboard
+  walk; LCP and layout shift.
+- Each write forced against a live session; the server refusals in 60806 run
+  against a database.
+- Not verified in a browser: the toast's Retry when the failure came from inside
+  a modal dialog. The tests click it in jsdom; a real browser makes everything
+  outside a modal dialog inert, and the toasts are outside it (CONTRACT.md 14).
+  The follow-up moves are proved; whether the button can be pressed there is
+  not.
+- Not reproduced: the editor setting its fields again when the page re-reads
+  while it is open (CONTRACT.md 12).
+- Not handled: a create whose answer is lost can be created twice by Retry
+  (CONTRACT.md 06).
+- v2 draws a whole-page first-run state for a team that has never scheduled
+  anything (D-71); it is not built.
+
+## Premium audit matrix — 2026-10-06
+
+24 synthetic captures are recorded for this page family. The table above
+keeps representative viewport/browser evidence; the complete state/opener
+ledger and review limitations are in the
+[premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
+Captured states are not all visually approved.

@@ -366,3 +366,10 @@ opens Overview. It is read once on load (`StatsPlayer({ initialTab })`, passed t
 "All N" to `?player=<id>&window=season&tab=rounds`. The season window counts the same countable 18-hole season rounds
 as Roster's `rounds`, so the Rounds tab's count matches the N on the link. Tests: `src/clubhouse/__tests__/stats-player.test.tsx`
 › "Stats player · opened from a link" (commit 041ef83ee).
+
+## Clubhouse interaction preferences, October 6
+
+Desktop Game detail section jumps use the canonical Clubhouse reduced-motion
+hook, including live Animations off/on updates, rather than only the OS query.
+The phone section selection and preserved session state are unchanged. The
+premium composition audit is recorded in `docs/clubhouse/PREMIUM_AUDIT.md`.

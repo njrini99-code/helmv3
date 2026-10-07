@@ -9,7 +9,11 @@ paths:
 
 ## Design System
 
-**Fairway is the only dashboard design system.** `src/lib/redesign/flag.ts`
+**Fairway is the design system for the existing Fairway dashboards.**
+Clubhouse is a separate tree: `src/clubhouse/**` and its flagged route
+integration follow `src/clubhouse/AGENTS.md` and `.claude/rules/clubhouse.md`,
+with `--ch-*` tokens and Clubhouse primitives. The Fairway styling, font,
+motion and primitive rules below do not apply to a Clubhouse render. `src/lib/redesign/flag.ts`
 `isRedesignEnabled()` is hardcoded `return true` — on in every environment
 including prod. The old GolfDashboardShell/GolfSidebar
 fork and its `glass-standard`/`cream-100`/`warm-*` visual language are

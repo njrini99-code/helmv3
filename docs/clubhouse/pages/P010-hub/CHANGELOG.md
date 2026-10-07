@@ -1,5 +1,15 @@
 # P010 — Team Hub: changelog
 
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Whole-app release audit
+
+Reconciled page purpose, design acceptance, contract status, wiring and
+verification against the current flagged implementation. Indexed 11 mapped
+actions and 14 overlay/control call sites in the [all-page
+audit](../../ALL_PAGE_AUDIT.md#p010-hub). Approved handoffs and contract IDs
+are preserved; runtime gaps stay explicit.
+<!-- clubhouse:release-audit:end -->
+
 ## 2026-10-02 — Intuitive improvement: distinguish pending choices from confirmed changes
 
 ```text

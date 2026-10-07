@@ -248,6 +248,7 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
           autoComplete="off"
           aria-describedby={blocked ? `${listId}-blocked` : undefined}
           aria-controls={pickerOpen ? `${listId}-list` : undefined}
+          aria-activedescendant={pickerOpen && matches.length > 0 ? `${listId}-option-${active}` : undefined}
           onChange={(e) => {
             setValue(e.target.value);
             setDismissed(false);
@@ -294,9 +295,12 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
               </li>
             ) : (
               matches.map((p, i) => (
-                <li key={p.id} role="option" aria-selected={i === active}>
+                <li key={p.id} role="presentation">
                   <button
                     type="button"
+                    role="option"
+                    aria-selected={i === active}
+                    id={`${listId}-option-${i}`}
                     tabIndex={-1}
                     className={'ch-ask-pick__row' + (i === active ? ' is-on' : '')}
                     onMouseDown={(e) => e.preventDefault()}

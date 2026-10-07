@@ -1,0 +1,70 @@
+/* Development workspace; shared components retain their production owners. */
+.ch-playground {
+  min-height: 100dvh;
+  padding: 28px;
+  background: var(--ch-bg-page);
+  color: var(--ch-text-primary);
+}
+.ch-playground__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+.ch-playground h1, .ch-gallery h1 { margin: 0; font: var(--ch-type-display-s); }
+.ch-playground h2, .ch-gallery h2 { margin: 0; font: var(--ch-type-title); }
+.ch-playground p, .ch-gallery p { margin: 8px 0; }
+.ch-playground__eyebrow { color: var(--ch-text-secondary); font: var(--ch-type-caption); }
+.ch-playground__layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 32px; }
+.ch-playground__controls { display: grid; align-content: start; gap: 14px; }
+.ch-playground__controls h2 { margin-top: 12px; }
+.ch-playground__controls p { font: var(--ch-type-caption); color: var(--ch-text-secondary); }
+.ch-playground__field, .ch-gallery__field { display: grid; gap: 8px; min-width: 0; }
+.ch-playground__field > span { display: flex; justify-content: space-between; gap: 8px; }
+.ch-playground__field output { color: var(--ch-text-secondary); }
+.ch-playground__field input[type='range'] { width: 100%; accent-color: var(--ch-accent); }
+.ch-playground__field textarea { width: 100%; resize: vertical; font: var(--ch-type-body-s); }
+.ch-playground__previews { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: start; gap: 24px; min-width: 0; }
+.ch-playground__pane { min-width: 0; }
+.ch-playground__pane > p { color: var(--ch-text-secondary); font: var(--ch-type-caption); }
+.ch-playground__viewport { overflow: auto; border: 1px solid var(--ch-border-subtle); border-radius: var(--ch-radius-md); background: var(--ch-bg-surface); }
+.ch-playground__viewport iframe { display: block; border: 0; max-width: none; }
+.ch-gallery { display: grid; gap: 28px; padding: var(--ch-gutter); min-width: 0; }
+.ch-gallery__section { display: grid; gap: 16px; min-width: 0; }
+.ch-gallery__row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.ch-gallery__field input { width: 100%; }
+.ch-gallery .ch-surface__title, .ch-gallery .ch-modal h2 { overflow-wrap: anywhere; }
+.ch-gallery__motion {
+  padding: 16px;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-bg-surface);
+  transform: translateX(0);
+  transition: transform var(--ch-play-duration, var(--ch-dur-base)) var(--ch-ease);
+}
+.ch-gallery__motion[data-active='true'] { transform: translateX(12px); }
+@media (prefers-reduced-motion: reduce) {
+  .ch-gallery__motion { transition: none; }
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-gallery__motion { transition: none; }
+@media (max-width: 820px) {
+  .ch-playground { padding: 20px; }
+  .ch-playground__header { flex-direction: column; }
+  .ch-playground__layout { grid-template-columns: minmax(0, 1fr); }
+  .ch-playground__controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ch-playground__controls > h2, .ch-playground__controls > p, .ch-playground__field:has(textarea) { grid-column: 1 / -1; }
+}
+
+.ch-gallery__skeleton { display: grid; gap: 12px; }
+.ch-gallery .ch-pbar { position: relative; inset: auto; }
+.ch-catalog { margin-top: 40px; min-width: 0; }
+.ch-catalog__filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 16px; margin: 20px 0; }
+.ch-catalog details { padding: 12px 0; border-bottom: 1px solid var(--ch-border-subtle); }
+.ch-catalog summary { cursor: pointer; overflow-wrap: anywhere; }
+.ch-catalog p { overflow-wrap: anywhere; }
+.ch-catalog__modules { max-height: 480px; overflow: auto; }
+.ch-catalog__table { overflow: auto; }
+.ch-catalog table { width: 100%; border-collapse: collapse; font: var(--ch-type-caption); }
+.ch-catalog th, .ch-catalog td { padding: 8px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.ch-catalog__links { display: flex; flex-wrap: wrap; gap: 16px; padding: 16px 0; }
+.ch-catalog summary:focus-visible { outline: 2px solid var(--ch-border-focus); outline-offset: 4px; }

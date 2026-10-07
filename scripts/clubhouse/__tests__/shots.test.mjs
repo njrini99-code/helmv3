@@ -88,6 +88,9 @@ test('import moves a loose capture into the store under its label, records it, a
   assert.ok(gallery.includes('src="2026-10-01/P007__thread__coach__390__keyboard-open__after__abc1234.png"'), 'import regenerates the page gallery');
   assert.ok(readFileSync(join(store, 'GALLERY.html'), 'utf8').includes('href="P007-messages/GALLERY.html"'), 'and the index');
   assert.equal(run('check').status, 0, 'generated galleries are not unlabeled files');
+  const logged = run('log', '--page', 'P007');
+  assert.equal(logged.status, 0, 'log ignores the generated gallery beside date directories');
+  assert.ok(logged.stdout.includes('P007__thread__coach__390__keyboard-open__after__abc1234.png'));
   writeFileSync(join(store, 'P007-messages/2026-10-01/stray.png'), 'x');
   assert.equal(run('check').status, 1);
   rmSync(join(store, 'P007-messages/2026-10-01/stray.png'));

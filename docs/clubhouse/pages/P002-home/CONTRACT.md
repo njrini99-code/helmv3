@@ -1,5 +1,27 @@
 # P002 — Home: page contract
 
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+LatestRound passes the reduced preference through chSwap, eliminating the
+retained fade when motion is disabled.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
+## Current contract audit — 2026-10-06
+
+The manifest reports complete contract coverage and 13 mapped actions.
+Existing Bridge IDs, catalog rows and generated contract tables remain
+authoritative. Check loading-to-content geometry, long names, team-timezone
+day labels and latest-round expansion under reduced motion.
+
+The [all-page audit](../../ALL_PAGE_AUDIT.md#p002-home) distinguishes
+implemented/tested behavior from open runtime acceptance; this pass does not
+reserve new IDs or mark manual contracts verified.
+<!-- clubhouse:release-audit:end -->
+
 Every behaviour Home promises, by the 25 V2 categories (D-69). A contract's
 number is its Bridge ID (D-68: namespace 2, category, item); `Code` is the
 catalog code on the element and in the test (`docs/clubhouse/catalog/home.md`).
