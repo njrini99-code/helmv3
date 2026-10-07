@@ -34,6 +34,45 @@ describe('mergeTriage', () => {
     });
   });
 
+  it('keeps the IDENTITIES behind affectedUsers, not just the count', () => {
+    // The count was always right; the identities were built into a Set and
+    // then dropped on the next line, so no surface could say WHICH users.
+    const items = mergeTriage({
+      sentryIssues: [],
+      appEvents: [
+        appEvent({ id: 'e1', user_id: 'u1', user_email: 'a@example.com' }),
+        appEvent({ id: 'e2', user_id: 'u2', user_email: 'b@example.com' }),
+        appEvent({ id: 'e3', user_id: 'u2', user_email: 'b@example.com' }),
+      ],
+    });
+    expect(items[0]!.affectedUsers).toBe(2);
+    expect(items[0]!.affectedPeople).toEqual([
+      { userId: 'u1', email: 'a@example.com' },
+      { userId: 'u2', email: 'b@example.com' },
+    ]);
+  });
+
+  it('prefers the occurrence that carried a user id over one with only an email', () => {
+    // Both rows are the same person under the `user_id ?? user_email` key, but
+    // only the id can address /admin/thread/user/<id> — so the entry that has
+    // one must win regardless of which row arrived first.
+    const items = mergeTriage({
+      sentryIssues: [],
+      appEvents: [
+        appEvent({ id: 'e1', user_id: null, user_email: 'a@example.com' }),
+        appEvent({ id: 'e2', user_id: null, user_email: 'a@example.com' }),
+      ],
+    });
+    expect(items[0]!.affectedUsers).toBe(1);
+    expect(items[0]!.affectedPeople).toEqual([{ userId: null, email: 'a@example.com' }]);
+  });
+
+  it('gives a Sentry item no identities — its API returns a count and no people', () => {
+    const items = mergeTriage({ sentryIssues: [sentryIssue({ userCount: 7 })], appEvents: [] });
+    expect(items[0]!.affectedUsers).toBe(7);
+    expect(items[0]!.affectedPeople).toEqual([]);
+  });
+
   it('ranks by affected users first, recency second — never raw volume', () => {
     const items = mergeTriage({
       sentryIssues: [sentryIssue({ id: 'noisy', count: 9999, userCount: 1 })],

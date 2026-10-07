@@ -212,7 +212,7 @@ is a second thing to keep true.
 **Auth Onboarding And Join** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/auth-onboarding-join.md`
-- **Code:** `src/app/golf/(auth)/**`, `src/app/golf/(onboarding)/**`, `src/app/golf/join/**`, `src/components/golf/onboarding/**`, `src/components/golf/settings/JoinTeamSection.tsx`, `src/app/api/golf/auth/**` … and 14 more in the registry
+- **Code:** `src/app/golf/(auth)/**`, `src/app/golf/(onboarding)/**`, `src/app/golf/join/**`, `src/components/golf/onboarding/**`, `src/components/golf/settings/JoinTeamSection.tsx`, `src/app/api/golf/auth/**` … and 15 more in the registry
 - **Telemetry:** `auth_onboarding` (golfhelm, med), `join_team_flow` (golfhelm, med)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

@@ -36,6 +36,7 @@ function appItem(overrides: Partial<TriageItem> = {}): TriageItem {
     sport: 'golf',
     occurrences: 3,
     affectedUsers: 2,
+    affectedPeople: [],
     firstSeen: '2026-08-20T10:00:00.000Z',
     lastSeen: '2026-08-20T12:00:00.000Z',
     permalink: null,
@@ -55,6 +56,12 @@ function appItem(overrides: Partial<TriageItem> = {}): TriageItem {
     isFixture: false,
     fingerprint: 'fp-default',
     report: reportWithStack(true, 'Client error: Load failed'),
+    // Real app rows hash their raw `message`; these fixtures carry no separate
+    // message, so the title IS the correlation text. Derived from the RESOLVED
+    // title (after `overrides`) so a fixture that renames the fault still joins
+    // a reliability signal keyed on that name — which is what the join tests
+    // below actually assert.
+    correlationMessage: overrides.title ?? 'Client error: Load failed',
     ...overrides,
   };
 }
@@ -68,6 +75,7 @@ function sentryItem(overrides: Partial<TriageItem> = {}): TriageItem {
     sport: 'golf',
     occurrences: 5,
     affectedUsers: 4,
+    affectedPeople: [],
     firstSeen: '2026-08-20T09:00:00.000Z',
     lastSeen: '2026-08-20T13:00:00.000Z',
     permalink: 'https://sentry.io/issues/9001',
@@ -89,6 +97,8 @@ function sentryItem(overrides: Partial<TriageItem> = {}): TriageItem {
     isFixture: false,
     fingerprint: null,
     report: reportWithStack(false, 'Client error: Load failed'),
+    // Same derivation as appItem — see its note.
+    correlationMessage: overrides.title ?? 'Client error: Load failed',
     ...overrides,
   };
 }
@@ -232,6 +242,63 @@ describe('correlateIncidents — cross-source join', () => {
     expect(drafts).toHaveLength(1);
     expect(drafts[0]!.occurrences).toBe(10);
   });
+
+  // ── The regression guard for the keyspace split fixed 2026-09-08 ─────────
+  //
+  // THE ONLY instrument for this join, and the reason the fixtures below make
+  // `title` and `correlationMessage` DIFFER: production app rows almost always
+  // do (`title` is route-decorated — "[/golf/dashboard] X" — while `message` is
+  // the bare fault), and the correlator used to hash the title while the
+  // reliability collector hashed the message. Two keyspaces that could never
+  // intersect: measured against production, ZERO of 22 app incidents joined a
+  // reliability signal, and the whole board reported corroboration > 1 exactly
+  // once in 84 incidents.
+  //
+  // A fixture whose title equals its message cannot detect that — it passes
+  // under both the broken and the fixed key. If someone "simplifies"
+  // `correlationMessage` back to `title`, THIS is the test that must go red.
+  it('joins an app item to a reliability signal keyed on the MESSAGE, not the route-decorated title', () => {
+    const message = 'The destination stream closed early.';
+    const app = appItem({
+      key: 'app:fp-stream',
+      fingerprint: 'fp-stream',
+      errorCode: null,
+      route: '/golf/dashboard',
+      // Route-decorated, exactly as server-error-logger writes it.
+      title: `[/golf/dashboard] ${message}`,
+      correlationMessage: message,
+      occurrences: 24,
+    });
+    // Built the way `sources.ts`'s Supabase arm builds it: over `row.message`.
+    const sig = signal({
+      signature: correlationKey({ errorCode: null, route: '/golf/dashboard', message }),
+      route: '/golf/dashboard',
+      errorCode: null,
+      title: message,
+      summary: message,
+      sources: ['supabase'],
+      evidence: [{ source: 'supabase', ref: 'supabase-ref-stream' }],
+    });
+
+    const drafts = correlateIncidents(
+      input({
+        triage: [app],
+        reliabilitySignals: [sig],
+        sourceHealth: [health('app', 'reading'), health('supabase', 'reading')],
+      }),
+    );
+
+    // ONE incident, not the app row plus a phantom `rel:` twin.
+    expect(drafts).toHaveLength(1);
+    const draft = drafts[0]!;
+    // The app fingerprint wins the id, so the operator's link still resolves.
+    expect(draft.id).toBe('fp-stream');
+    expect(draft.corroboration).toBeGreaterThan(1);
+    expect(draft.sources.map((sc) => sc.source).sort()).toEqual(['app', 'supabase']);
+    // Occurrences stay the app's honest tally — a reliability signal folded
+    // FROM the same rows must not be added on top.
+    expect(draft.occurrences).toBe(24);
+  });
 });
 
 describe('correlateIncidents — reliability-only signals', () => {
@@ -277,6 +344,70 @@ describe('correlateIncidents — reliability-only signals', () => {
     expect(drafts).toHaveLength(1);
     expect(drafts[0]!.id).toBe('rel:vercel-sig-1');
     expect(drafts[0]!.sources.map((s) => s.source)).toEqual(['vercel']);
+  });
+
+  // ── Reliability-only buckets run the real classifier ─────────────────────
+  //
+  // These used to be hardcoded `defect` / actionable because "no app or Sentry
+  // classifier has ever looked at this fault". That is not a conservative
+  // default: measured against production, 59 of 84 board incidents were
+  // reliability-only and every one was force-flagged actionable — ten copies
+  // of "N+1 Query" and the whole empty-state family among them — which is why
+  // the board counted 77 actionable while the Errors tab counted 22.
+  it('classifies a reliability-only empty state as empty_state, NOT an actionable defect', () => {
+    const sig = signal({
+      signature: 'sig-empty',
+      severity: 'info',
+      title: '[getPlayerProfile] No completed rounds found for this player',
+      summary: '[getPlayerProfile] No completed rounds found for this player',
+      errorCode: null,
+    });
+
+    const drafts = correlateIncidents(
+      input({ reliabilitySignals: [sig], sourceHealth: [health('supabase', 'reading')] }),
+    );
+
+    expect(drafts[0]!.klass).toBe('empty_state');
+    expect(drafts[0]!.actionable).toBe(false);
+    // Provenance is still on the record — the operator can see nothing
+    // corroborates it yet.
+    expect(drafts[0]!.klassReason).toContain('reliability-only signal');
+  });
+
+  it('still defaults an UNRECOGNISED error-severity signal to a visible actionable defect', () => {
+    const sig = signal({
+      signature: 'sig-novel',
+      severity: 'error',
+      title: 'Something nobody has written a rule for yet',
+      summary: 'Something nobody has written a rule for yet',
+      errorCode: null,
+    });
+
+    const drafts = correlateIncidents(
+      input({ reliabilitySignals: [sig], sourceHealth: [health('supabase', 'reading')] }),
+    );
+
+    expect(drafts[0]!.klass).toBe('defect');
+    expect(drafts[0]!.actionable).toBe(true);
+  });
+
+  it('does not file a server-observed signal as the visitor\'s own connectivity', () => {
+    // `source: 'client'` is what flips rule 3c/4 to non-actionable. A
+    // reliability signal is read from Supabase/Sentry/Vercel, never reported
+    // by a browser, so it must not take that branch.
+    const sig = signal({
+      signature: 'sig-transport',
+      severity: 'error',
+      title: 'Load failed',
+      summary: 'Load failed',
+      errorCode: null,
+    });
+
+    const drafts = correlateIncidents(
+      input({ reliabilitySignals: [sig], sourceHealth: [health('supabase', 'reading')] }),
+    );
+
+    expect(drafts[0]!.actionable).toBe(true);
   });
 });
 
@@ -344,6 +475,92 @@ describe('correlateIncidents — blind sources', () => {
     // corroboration counts non-blind sources only: app + supabase, not the
     // blind sentry entry.
     expect(joinedDraft.corroboration).toBe(2);
+  });
+});
+
+describe('correlateIncidents — affected people', () => {
+  it('UNIONS identities across co-bucketed app items instead of taking the max', () => {
+    // Two app items for one fault, each reporting one affected user — but two
+    // DIFFERENT users. `Math.max` said 1, which is the undercount a count-only
+    // model cannot avoid: only the identities can say whether those are the
+    // same person. They were available and discarded.
+    const a = appItem({
+      key: 'app:fp-a',
+      fingerprint: 'fp-a',
+      errorCode: 'E1',
+      route: '/r',
+      title: 'Same fault',
+      affectedUsers: 1,
+      affectedPeople: [{ userId: 'u1', email: 'u1@example.com' }],
+    });
+    const b = appItem({
+      key: 'app:fp-b',
+      fingerprint: 'fp-b',
+      errorCode: 'E1',
+      route: '/r',
+      title: 'Same fault',
+      affectedUsers: 1,
+      affectedPeople: [{ userId: 'u2', email: 'u2@example.com' }],
+    });
+
+    const drafts = correlateIncidents(input({ triage: [a, b] }));
+
+    expect(drafts).toHaveLength(1);
+    expect(drafts[0]!.affectedUsers).toBe(2);
+    expect(drafts[0]!.affectedPeople.map((p) => p.userId).sort()).toEqual(['u1', 'u2']);
+  });
+
+  it('does not double-count one person seen by two co-bucketed items', () => {
+    const a = appItem({
+      key: 'app:fp-a', fingerprint: 'fp-a', errorCode: 'E2', route: '/r2', title: 'One fault',
+      affectedUsers: 1, affectedPeople: [{ userId: 'u1', email: 'u1@example.com' }],
+    });
+    const b = appItem({
+      key: 'app:fp-b', fingerprint: 'fp-b', errorCode: 'E2', route: '/r2', title: 'One fault',
+      affectedUsers: 1, affectedPeople: [{ userId: 'u1', email: 'u1@example.com' }],
+    });
+
+    const drafts = correlateIncidents(input({ triage: [a, b] }));
+
+    expect(drafts[0]!.affectedUsers).toBe(1);
+    expect(drafts[0]!.affectedPeople).toHaveLength(1);
+  });
+
+  it('never SUMS the app union with Sentry userCount — different populations', () => {
+    const app = appItem({
+      key: 'app:fp-s', fingerprint: 'fp-s', errorCode: 'E3', route: '/r3', title: 'Shared fault',
+      affectedUsers: 2,
+      affectedPeople: [
+        { userId: 'u1', email: null },
+        { userId: 'u2', email: null },
+      ],
+    });
+    const sentry = sentryItem({
+      key: 'sentry:1', errorCode: 'E3', route: '/r3', title: 'Shared fault', affectedUsers: 7,
+    });
+
+    const drafts = correlateIncidents(input({ triage: [app, sentry] }));
+
+    // 7, not 9: Sentry's tally overlaps the app's, it does not extend it.
+    expect(drafts[0]!.affectedUsers).toBe(7);
+    // The identities we DO have still travel, even though Sentry's larger
+    // count wins the scalar — naming two of seven beats naming none.
+    expect(drafts[0]!.affectedPeople).toHaveLength(2);
+  });
+
+  it('never lets the count shrink below an item\'s own affectedUsers at the cap', () => {
+    // `affectedPeople` is capped; `affectedUsers` is not. A bucket whose
+    // identities were truncated must still report the honest total.
+    const app = appItem({
+      key: 'app:fp-c', fingerprint: 'fp-c', errorCode: 'E4', route: '/r4', title: 'Capped fault',
+      affectedUsers: 400,
+      affectedPeople: [{ userId: 'u1', email: null }],
+    });
+
+    const drafts = correlateIncidents(input({ triage: [app] }));
+
+    expect(drafts[0]!.affectedUsers).toBe(400);
+    expect(drafts[0]!.affectedPeople).toHaveLength(1);
   });
 });
 

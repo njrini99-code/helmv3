@@ -11,24 +11,11 @@
 
 ## Database Type Management
 
-### Type Regeneration — manual only, no automated hook or CI gate
+### Type Regeneration
 
-There is currently **no pre-commit hook and no CI job** that
-regenerates or checks `src/lib/types/database.ts` automatically —
-`.husky/` doesn't exist in this repo and no GitHub Actions workflow
-runs `db:types` or `db:types:check`. Keeping types in sync is a manual
-step:
-
-1. **Manual regeneration**: Run `npm run db:types` after applying a
-   migration.
-
-2. **Manual Check**: Run `npm run db:types:check` to verify types are
-   current without regenerating (fails with a reminder message if
-   `database.ts` is stale).
-
-If you want this automated, wire `npm run db:types:check` into
-`.github/workflows/ci.yml` and/or add a Husky pre-commit hook — neither
-exists today.
+`npm run db:types` regenerates `src/lib/types/database.ts`; the pre-commit hook
+reminds you when a migration is staged, and CI's `check:types-drift` compares
+it with production (details: `.claude/rules/database.md`).
 
 ### Manual Commands
 

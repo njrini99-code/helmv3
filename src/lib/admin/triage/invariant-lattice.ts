@@ -75,13 +75,18 @@ export interface InvariantLatticeView {
 const UNREADABLE_SOURCES: readonly { id: string; label: string; group: string; detail: string }[] = [
   {
     id: 'schema-invariants',
-    label: 'Schema invariants',
+    // "(CI only)" in the LABEL itself, not just the detail line — this row's
+    // 'unknown' state is PERMANENT and will never resolve to pass/fail on a
+    // future refresh, unlike a qualifiers/integrity/round-graph row whose
+    // 'unknown' means a transient read failure that may clear next refresh.
+    // The two used to share the same undifferentiated label.
+    label: 'Schema invariants (CI only)',
     group: 'Schema',
     detail: 'scripts/check-schema-invariants.sh runs in CI only and persists no outcome to read.',
   },
   {
     id: 'business-contracts',
-    label: 'Business contracts',
+    label: 'Business contracts (CI only)',
     group: 'Business contracts',
     detail: 'npm run test:business runs in CI only and persists no outcome to read.',
   },

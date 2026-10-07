@@ -2,13 +2,19 @@
 // .claude/hooks/require-preflight.mjs — PreToolUse(Bash): no push or PR
 // without a green `npm run preflight` for the exact tree being published.
 //
+// NOT WIRED BY DEFAULT. The 2026-09-22 owner grant is "no PreToolUse hook
+// blocks tool calls" (src/test/scripts/control-plane-enforcement.test.ts), so
+// enforcement ships in the git pre-push hook instead. To turn this on (an
+// owner decision): add it under PreToolUse/Bash in .claude/settings.json and
+// update that test's expectation in the same change.
+//
 // Why: agents pushed, waited for CI, read the failure, fixed one thing and
 // pushed again — each push cancelling the last run. `npm run preflight`
 // reproduces the required checks locally in minutes; this hook makes running
 // it the only way forward in a Claude session.
 //
 // Refuses, when .helm/runtime/preflight.json does not match the tree:
-//   git push <remote> <branch>      (any branch except main — guard-git owns main)
+//   git push <remote> <branch>      (any branch except main; branch protection guards main)
 //   gh pr create                    (without --draft; a draft runs no CI)
 //   gh pr ready                     (the moment CI actually runs)
 // Allowed regardless: `git push --delete`, tag pushes, `--dry-run`,
@@ -20,7 +26,7 @@
 // (the git pre-push hook applies there, with HELM_SKIP_PREPUSH=1 as its
 // escape hatch).
 //
-// Text matching over the command string, like guard-git.mjs — a guardrail
+// Text matching over the command string — a guardrail
 // for the typed forms, not a sandbox. Contract: exit 0 allow, exit 2 with a
 // reason on stderr to block. Never throws; an internal error allows.
 
@@ -28,7 +34,20 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, realpathSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { maskQuoted } from './guard-git.mjs';
+
+/**
+ * Replace every quoted span and heredoc body with one opaque word (Q), so the
+ * matchers see commands, not prose: `git commit -m "then git push"` is not a
+ * push. A placeholder keeps argument positions: `git push origin "$b"` still
+ * parses as a push with a ref.
+ */
+export function maskQuoted(command) {
+  let s = String(command || '');
+  s = s.replace(/<<-?\s*'?"?([A-Za-z_][A-Za-z0-9_]*)'?"?[\s\S]*?\n\s*\1\b/g, '<<Q');
+  s = s.replace(/'[^']*'/g, 'Q');
+  s = s.replace(/"(?:[^"\\]|\\.)*"/g, 'Q');
+  return s;
+}
 
 function readStdinJson() {
   return new Promise((resolvePromise) => {
@@ -110,7 +129,7 @@ export async function evaluate(input, env = process.env) {
   const cwd = intent.dir ? (isAbsolute(intent.dir) ? intent.dir : resolve(base, intent.dir.replace(/^~(?=\/|$)/, env.HOME ?? '~'))) : base;
   const root = gitOut(cwd, ['rev-parse', '--show-toplevel']);
   if (!root || !existsSync(join(root, 'scripts/preflight.mjs')) || !existsSync(join(root, 'scripts/lib/preflight-stamp.mjs'))) return null;
-  // `git push` with no refspec pushes the current branch; main is guard-git's business.
+  // `git push` with no refspec pushes the current branch; pushes to main are out of scope.
   if (intent.action === 'git push' && (!intent.target || intent.target === 'HEAD') && gitOut(root, ['rev-parse', '--abbrev-ref', 'HEAD']) === 'main') return null;
   // The stamp logic lives with the checkout being pushed, so a branch that
   // changes it is judged by its own rules.

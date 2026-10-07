@@ -103,14 +103,16 @@ This area is high criticality because it often uses broader access patterns, ope
   PostgREST failures grouped by fingerprint, `pg_stat_statements`
   delta/regression detection — read from `helm_debug` every 5-15 minutes via
   `src/lib/admin/database/{overview,errors,performance}.ts`. Its data source
-  (`src/lib/observability/supabase/**`, four new `helm_debug` tables) is
-  **HELD, not applied to production** — see `supabase/migrations/HELD.md` —
-  so every fetcher currently renders "not shipped yet"
-  (`status: 'unconfigured'`), not a false failure state.
+  (`src/lib/observability/supabase/**`, the `helm_debug` collector tables)
+  is **applied in production** (2026-09-03; see `supabase/migrations/HELD.md`,
+  verified live 2026-09-23). The `status: 'unconfigured'` path remains only
+  for a database without those tables (a fresh local stack or a preview), so
+  it renders "not shipped yet" there rather than a false failure state.
 - `src/app/api/cron/db-health-sampler/**`, `db-stat-delta/**`,
   `db-observability-prune/**` — the three Vercel-cron collectors behind
-  `/admin/database` (5m / 15m / daily). Degrade cleanly on the HELD-migration
-  "not found" error shape, same pattern as `helm-debug-prune/route.ts`.
+  `/admin/database` (5m / 15m / daily). Degrade cleanly on the
+  missing-migration "not found" error shape (fresh or preview databases),
+  same pattern as `helm-debug-prune/route.ts`.
 - `src/app/api/cron/selfheal-triage/**` — the self-healing loop's Diagnose
   stage, moved here from an Anthropic-hosted cloud routine (2026-09-02). Its
   collection/apply core is `src/lib/admin/triage-collect.ts` /
@@ -251,11 +253,21 @@ them would have broken those routes, not the dead one.
   every status-based filter would have missed. Both `admin_reliability_collector`
   and `admin_selfheal` write to this shared table under this vocabulary.
   every status-based filter would have missed.
+- **`admin_events.source` is a closed enum** — `ADMIN_EVENT_SOURCES` in
+  `src/lib/admin-logger.ts` mirrors the DB check constraint
+  `admin_events_source_check`; `logAdminEvent`'s `source` is typed to it.
+  A caller's free-form origin belongs in metadata (`logEmailSuppressed` →
+  `metadata.origin`), never in `source`: the constraint rejected 1,006
+  `email.suppressed` writes as `bridge_write_failed` before this (#1917).
 - **As of 2026-09-02, `recordJobRun` also drives a Sentry Cron Monitor
   check-in — a SEPARATE signal from `background_job_logs`/the Jobs board,
   not a replacement for it.** `startCronCheckIn`/`finishCronCheckIn`
   (`src/lib/observability/cron-monitors.ts`) wrap all 3 exit paths (success,
-  a resolved >=400 Response, a thrown error), keyed by a monitor slug
+  a resolved >=400 Response, a thrown error), and each path `await`s
+  `flushCronCheckIn` before returning — Vercel freezes the function on
+  response, and an unflushed terminal check-in is what Sentry reports as a
+  monitor timeout (`api-cron-db-health-sampler`, ~half its runs, #1918).
+  Check-ins are keyed by a monitor slug
   resolved from `CRON_REGISTRY` (`api-cron-<dashed-path>`, or
   `job-<jobType>` for anything unregistered). This is Sentry's OWN Cron
   Monitors feature (an external "did this heartbeat arrive on schedule"
@@ -412,6 +424,15 @@ them would have broken those routes, not the dead one.
   of 50 production traces miss declared-required steps while 40 of those
   succeeded — a short trace is not a failed one, and a combined "46 problems"
   figure would be false. `trace-fleet.ts` counts them separately;
+  outcome counts only what a trace recorded: `succeeded` is counted from
+  status 'success', never derived as total minus failures. A trace still
+  'started' after `STUCK_TRACE_AFTER_MS` (15 min) is `stuck` ("never
+  closed", neutral tone), and a younger one is `running`. `stuck` is not a
+  failure count: on 2026-09-23 all 68 open traces were
+  `golf.round.autosave`, and each one with steps ended on a successful
+  `db.save_partial_round_atomic.commit`, so the autosave path leaves traces
+  open (an instrumentation gap). Deriving healthy by
+  subtraction had shown 62 never-finalized runs as succeeded (2026-09-23);
   `stepCoverage` returns null rather than inventing a denominator. This is
   `/admin/traces`, a DIFFERENT Flight Recorder from the self-healing loop's
   Diagnose/Repair pipeline in `admin_selfheal`.
@@ -1514,7 +1535,14 @@ assumed it would:
   tagging casually: the current check keys on `VERCEL_ENV`'s absence, and if
   that assumption ever broke, real production errors would be relabelled and
   any alert rule scoped to `environment:production` would go silent, which is
-  worse than the noise. Sentry's Supabase tracing instrumentation
+  worse than the noise. The one downgrade that is safe, and now applied
+  first in both `resolveServerEnvironment` and the `admin_events` gate
+  (`shouldPersistAdminTables`/`getRuntimeEnv`), is `NODE_ENV === 'development'`:
+  Vercel forces `NODE_ENV=production` on every build and runtime, so
+  `next dev` is positive evidence of a laptop even when a pulled
+  `.env.local` carries `VERCEL="1"` + `VERCEL_ENV=production` (#1919 —
+  2026-09-08 dev traffic from `Mac.lan` tagged production in Sentry and
+  written to the prod ledger). Sentry's Supabase tracing instrumentation
   (`@supabase/supabase-js/tracing` + `Sentry.instrumentSupabaseClient()`)
   also reports a failed query to Sentry on its own, independent of whether
   the calling code caught and handled it gracefully — a correctly-handled

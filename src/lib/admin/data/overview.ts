@@ -23,28 +23,48 @@ import {
 } from '@/lib/admin/data/feature-health';
 
 export interface OverviewKpis {
-  /** Unresolved Sentry issues (org-wide; not windowed). */
-  sentryUnresolved: number | null;
-  /** Why `sentryUnresolved` is null when it is — 'unconfigured' (no
+  /** Sentry-origin incident groups actually firing inside the
+   *  DEFAULT_INCIDENT_WINDOW_HOURS (72h) feed — windowed and deduped by
+   *  `mergeTriage`, the exact same population the Errors tab's default list
+   *  shows. NOT the full org-wide unresolved backlog (~270 issues at design
+   *  time, most with no occurrence in the visible window at all) — that
+   *  count used to turn this tile red on any nonzero reading of noise that
+   *  never clears. */
+  sentryFiring72h: number | null;
+  /** Why `sentryFiring72h` is null when it is — 'unconfigured' (no
    *  SENTRY_READ_TOKEN) vs 'error' (the API call failed) vs 'ok' (it isn't
    *  null). Lets the KPI tile show honest starved copy instead of the
    *  generic "log more data" message (bridge-tab-audit-p0p1 overview
    *  Finding 1) — those are different problems with different fixes. */
   sentryStatus: 'ok' | 'unconfigured' | 'error';
-  /** Coalesced incident groups in the last 24h — same feed as Overview triage + Errors tab default. */
-  incidentGroups24h: number;
+  /** Coalesced, ACTIONABLE incident groups in the DEFAULT_INCIDENT_WINDOW_HOURS
+   *  (72h) feed — same feed and the same predicate as the Errors tab's
+   *  default list and the bridge chrome badge (`counts.actionableGroups`).
+   *  Named for the real window (was "incidentGroups24h" naming a feed that
+   *  had already moved to 72h — see DEFAULT_INCIDENT_WINDOW_HOURS's own doc
+   *  comment) and the real predicate (was `counts.totalGroups`, which counted
+   *  every group including QA fixture rows the tab itself hides by default). */
+  actionableIncidents72h: number;
   /** ALL `event_type='security'` rows in 24h — password resets, view-as
    *  enter/exit, and session revocations included, not just failed logins.
    *  Named for what it actually counts (was "Auth failures 24h", which
-   *  overclaimed every non-failure security action as a failure). */
-  securityEvents24h: number;
+   *  overclaimed every non-failure security action as a failure). `null`
+   *  when the count read FAILED — never 0 (this used to coerce a failed
+   *  query to 0, indistinguishable from a genuinely quiet day). */
+  securityEvents24h: number | null;
   /** null when the `users` count read FAILED — never 0. A failed read and a
    *  genuinely empty day are different facts, and the Command Deck's Users
    *  orbit node has an unknown branch that only this null can reach. Collapsing
    *  the failure to 0 painted that node healthy, reading "0 today", while the
    *  real state was that nobody could count. */
   activeUsersToday: number | null;
-  activityToday: { golf: number; baseball: number; lifting: number };
+  /** Each sport's count is `null` when ITS OWN query failed — never coerced
+   *  to 0 (same rule as `activeUsersToday` above). These three used to
+   *  collapse a failed read to 0 and sum straight through, so a broken
+   *  `golf_rounds` count read as "zero golf activity today" rather than
+   *  "unknown" — the same silent-wrong-answer `activeUsersToday` already
+   *  guards against. */
+  activityToday: { golf: number | null; baseball: number | null; lifting: number | null };
   lastDeploy: { state: string; ageMinutes: number } | null;
 }
 
@@ -92,6 +112,12 @@ export function classifyKpiTone(count: number, redAt: number): KpiTone {
 /** "Sustained/high" lines for the Overview KPI tiles (classifyKpiTone). */
 export const ERRORS_24H_RED_AT = 10;
 export const SECURITY_EVENTS_24H_RED_AT = 5;
+/** Overview's own 72h-windowed tiles get their own named thresholds —
+ *  deliberately NOT sharing `ERRORS_24H_RED_AT` (the Activity tab's
+ *  genuinely-24h "Errors today" tile, src/app/admin/activity/page.tsx),
+ *  since the two tiles no longer share a window. */
+export const ACTIONABLE_INCIDENTS_72H_RED_AT = 10;
+export const SENTRY_FIRING_72H_RED_AT = 10;
 
 function isoHoursAgo(hours: number): string {
   return new Date(Date.now() - hours * 3600_000).toISOString();
@@ -240,16 +266,21 @@ export const fetchOverviewSnapshot = cache(async () => {
 
   const lastDeployRow = deploys.data?.[0] ?? null;
   const kpis: OverviewKpis = {
-    sentryUnresolved:
-      incidentFeed24h.sentry.status === 'ok' ? (incidentFeed24h.sentry.data?.length ?? 0) : null,
+    // `counts.sentryGroups` is Sentry-origin groups already windowed to
+    // DEFAULT_INCIDENT_WINDOW_HOURS and merged/deduped by mergeTriage — not
+    // `incidentFeed24h.sentry.data?.length`, the full org-wide unresolved
+    // backlog. Still gated on the raw pull's status: if Sentry itself is
+    // unreachable, a merged count of 0 would misread as "nothing firing"
+    // rather than "unknown".
+    sentryFiring72h: incidentFeed24h.sentry.status === 'ok' ? incidentFeed24h.counts.sentryGroups : null,
     sentryStatus: incidentFeed24h.sentry.status,
-    incidentGroups24h: incidentFeed24h.counts.totalGroups,
-    securityEvents24h: security24h.count ?? 0,
+    actionableIncidents72h: incidentFeed24h.counts.actionableGroups,
+    securityEvents24h: security24h.error ? null : (security24h.count ?? null),
     activeUsersToday: activeToday.error ? null : (activeToday.count ?? null),
     activityToday: {
-      golf: golfToday.count ?? 0,
-      baseball: baseballToday.count ?? 0,
-      lifting: liftsToday.count ?? 0,
+      golf: golfToday.error ? null : (golfToday.count ?? null),
+      baseball: baseballToday.error ? null : (baseballToday.count ?? null),
+      lifting: liftsToday.error ? null : (liftsToday.count ?? null),
     },
     lastDeploy: lastDeployRow
       ? {

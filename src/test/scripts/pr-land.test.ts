@@ -13,6 +13,7 @@ import {
   parseArgs,
   evaluateRequiredChecks,
   canonicalSyncPlan,
+  landedResidue,
   DEFAULT_REQUIRED_CONTEXTS,
 } from '../../../scripts/pr-land.mjs';
 
@@ -105,5 +106,38 @@ describe('pr-land canonicalSyncPlan', () => {
 
   it('treats a detached HEAD (empty branch name) like a task branch', () => {
     expect(canonicalSyncPlan('')).toEqual({ args: ['fetch', 'origin', 'main:main'], fatal: false });
+  });
+});
+
+describe('pr-land landedResidue — what is left of the landed PR', () => {
+  const porcelain = [
+    'worktree /repo',
+    'HEAD aaa',
+    'branch refs/heads/main',
+    '',
+    'worktree /wt/landed',
+    'HEAD bbb',
+    'branch refs/heads/agent/landed',
+  ].join('\n');
+
+  it('names the checkout when the worktree is still there', () => {
+    expect(landedResidue(porcelain, true, 'agent/landed')).toMatch(/worktree kept at \/wt\/landed/);
+  });
+
+  it('reports a kept branch once its checkout is gone', () => {
+    expect(landedResidue('worktree /repo\nbranch refs/heads/main', true, 'agent/landed')).toMatch(
+      /local branch kept/,
+    );
+  });
+
+  it('reports full retirement when neither remains', () => {
+    expect(landedResidue('worktree /repo\nbranch refs/heads/main', false, 'agent/landed')).toBe(
+      'worktree and local branch retired',
+    );
+  });
+
+  it('does not match a branch that merely shares a prefix', () => {
+    const other = 'worktree /wt/x\nbranch refs/heads/agent/landed-two';
+    expect(landedResidue(other, false, 'agent/landed')).toBe('worktree and local branch retired');
   });
 });

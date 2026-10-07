@@ -9,9 +9,11 @@ import { LocalTime } from '../_components/LocalTime';
  * D5 — the Database Tab's five new sections: Slow statements, Index
  * suggestions, Unused indexes, Bloat, Coverage — plus the "Changed since
  * yesterday" strip rendered near the top of the page. Same tokens and
- * unconfigured/stale/all-clear discipline as every panel in page.tsx;
- * every empty state below names the exact HELD.md path so a reader knows
- * this is "not applied yet", never a fabricated "nothing wrong".
+ * unconfigured/stale/all-clear discipline as every panel in page.tsx. The
+ * two RPCs these panels read (statement capture, analysis collector) are
+ * applied and ledger-verified live (HELD.md, ledger-verified 2026-09-22),
+ * so an `unconfigured` result today means the read genuinely failed, not
+ * a deliberately-unapplied migration — see `unavailableDescription`.
  *
  * WHY A SEPARATE FILE FROM page.tsx: these panels are exported so
  * `__tests__/database-tab-d5.test.tsx` can call each one directly and
@@ -30,34 +32,20 @@ import { LocalTime } from '../_components/LocalTime';
  * -------------------------------------------------------------------- */
 
 /**
- * "Held", not "missing" — and named, not gestured at.
- *
- * These panels read RPCs that do not exist in production because their
- * migrations are DELIBERATELY unapplied, awaiting `db-migration-reviewer`
- * review (HELD.md, row `20260906115900`+). That is a decision someone made,
- * not an outage and not an empty table, and the two have completely different
- * fixes. `Migrations HELD — see HELD.md` said the right thing but made the
- * reader open a 109-row register and find the row themselves; naming the file
- * is the difference between a state an operator can act on and one they have
- * to research. Same standard the Agent Flight Recorder panel already sets.
+ * Both the statement-capture migration (20260906120010) and the analysis-
+ * collector migration (20260906120100) are APPLIED and ledger-verified live
+ * (supabase/migrations/HELD.md, row `20260906115900`+, ledger-verified
+ * 2026-09-22) — the "held, not missing" framing this file used to render
+ * described a state that no longer exists. `result.status === 'unconfigured'`
+ * can still fire (isMigrationNotAppliedError's four Postgres/PostgREST error
+ * codes — statements.ts/analysis.ts), but today that means a genuine read
+ * failure (a bad grant, a dropped function), not a deliberately-unapplied
+ * migration, so the fallback below says exactly that instead of naming a
+ * hold that has already been discharged.
  */
-const STATEMENT_CAPTURE_HELD =
-  'Held: supabase/migrations/20260906120010_helm_debug_db_statement_samples.sql is written and awaiting db-migration-reviewer review, so record_db_statement_samples does not exist in production yet. This is not an empty table — see HELD.md.';
-
-/**
- * The held note ALWAYS wins the description, with the read's own words kept
- * beside it. `result.error ?? NOTE` used to mean the note only ever rendered
- * when the read said nothing — and the read always says something, namely
- * "migration HELD — see HELD.md", which is exactly the gesture-at-a-109-row-
- * register this replaces. The read still names which RPC it could not find,
- * so both facts belong on screen.
- */
-function heldDescription(note: string, readError: string | null | undefined): string {
-  return readError ? `${note} (the read reported: ${readError})` : note;
+function unavailableDescription(readError: string | null | undefined): string {
+  return readError ?? 'This read failed this refresh for an unknown reason.';
 }
-
-const ANALYSIS_COLLECTOR_HELD =
-  'Held: supabase/migrations/20260906120100_helm_debug_db_analysis_samples.sql is written and awaiting db-migration-reviewer review, so helm_debug_db_analysis_snapshot does not exist in production yet. This is not an empty table — see HELD.md.';
 
 function Sparkline({ points }: { points: SparklinePoint[] }) {
   if (points.length < 2) return null;
@@ -100,7 +88,7 @@ export async function SlowStatementsPanel() {
   const result = await fetchSlowStatements();
 
   if (result.status === 'unconfigured') {
-    return <PanelNoData label="Statement capture is held, not missing" description={heldDescription(STATEMENT_CAPTURE_HELD, result.error)} />;
+    return <PanelNoData label="Could not read statement capture" description={unavailableDescription(result.error)} />;
   }
   if (result.status === 'error' || !result.data) {
     return <PanelStale label="Slow statements" error={result.error} />;
@@ -143,7 +131,7 @@ function AnalysisRowView({ row }: { row: AnalysisSampleRow }) {
 export async function IndexSuggestionsPanel() {
   const result = await fetchDatabaseAnalysis();
   if (result.status === 'unconfigured') {
-    return <PanelNoData label="Analysis collector is held, not missing" description={heldDescription(ANALYSIS_COLLECTOR_HELD, result.error)} />;
+    return <PanelNoData label="Could not read analysis collector" description={unavailableDescription(result.error)} />;
   }
   if (result.status === 'error' || !result.data) {
     return <PanelStale label="Index suggestions" error={result.error} />;
@@ -164,7 +152,7 @@ export async function IndexSuggestionsPanel() {
 export async function UnusedIndexesPanel() {
   const result = await fetchDatabaseAnalysis();
   if (result.status === 'unconfigured') {
-    return <PanelNoData label="Analysis collector is held, not missing" description={heldDescription(ANALYSIS_COLLECTOR_HELD, result.error)} />;
+    return <PanelNoData label="Could not read analysis collector" description={unavailableDescription(result.error)} />;
   }
   if (result.status === 'error' || !result.data) {
     return <PanelStale label="Unused indexes" error={result.error} />;
@@ -185,7 +173,7 @@ export async function UnusedIndexesPanel() {
 export async function BloatPanel() {
   const result = await fetchDatabaseAnalysis();
   if (result.status === 'unconfigured') {
-    return <PanelNoData label="Analysis collector is held, not missing" description={heldDescription(ANALYSIS_COLLECTOR_HELD, result.error)} />;
+    return <PanelNoData label="Could not read analysis collector" description={unavailableDescription(result.error)} />;
   }
   if (result.status === 'error' || !result.data) {
     return <PanelStale label="Bloat" error={result.error} />;
@@ -206,7 +194,7 @@ export async function BloatPanel() {
 export async function CoveragePanel() {
   const result = await fetchDatabaseAnalysis();
   if (result.status === 'unconfigured') {
-    return <PanelNoData label="Coverage census is held, not missing" description={heldDescription(ANALYSIS_COLLECTOR_HELD, result.error)} />;
+    return <PanelNoData label="Could not read coverage census" description={unavailableDescription(result.error)} />;
   }
   if (result.status === 'error' || !result.data) {
     return <PanelStale label="Coverage" error={result.error} />;
@@ -273,14 +261,12 @@ export async function DriftPanel() {
 export async function ChangedSinceYesterdayStrip() {
   const result = await fetchDatabaseAnalysis();
   if (result.status !== 'ok' || !result.data || !result.data.priorSampledAt) {
-    // No prior window yet (collector too new, or not shipped) — say so
-    // plainly rather than rendering a strip of misleading zeros.
+    // No prior window yet (collector too new, or the read genuinely failed)
+    // — say so plainly rather than rendering a strip of misleading zeros.
     return (
       <p className="text-xs text-warm-500">
         Changed since yesterday: not enough history yet
-        {result.status === 'unconfigured'
-          ? ' — held, not missing: supabase/migrations/20260906120010_helm_debug_db_statement_samples.sql awaits review'
-          : ''}
+        {result.status === 'unconfigured' ? ` — ${unavailableDescription(result.error)}` : ''}
         .
       </p>
     );

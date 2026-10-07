@@ -7,11 +7,12 @@ import {
 } from '@/lib/admin/vercel-api';
 import { fetchSentryReleaseHealth } from '@/lib/admin/sentry-api';
 import { githubIssuesRepo } from '@/lib/admin/github-issues-config';
+import { cachedDeployFreshness } from '@/lib/admin/deploy-freshness';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelStatsSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData, PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
-import { Surface, Inset, StatTile, StatusPill, SkeletonList, type FwStatusTone } from '@/components/fairway';
+import { Surface, Inset, StatTile, StatusPill, SkeletonList, InlineNotice, type FwStatusTone } from '@/components/fairway';
 import { ShowMoreList } from './_components/ShowMoreList';
 import { ReleaseLedger } from './_components/ReleaseLedger';
 import { fetchReleaseRunway } from '@/lib/admin/triage/release-runway';
@@ -107,6 +108,25 @@ function CurrentBuildCard() {
       {author ? <p className="text-xs text-white/50">by {author}</p> : null}
     </section>
   );
+}
+
+/**
+ * "How far behind main is production, right now?" — the one sentence
+ * deploy-freshness.ts exists to hand the founder's briefing, rendered here
+ * too so the Deploys tab says it directly instead of only the digest email.
+ * FAIL-SOFT by construction (classifyDeployFreshness never throws): an
+ * `unknown` state renders its own honest sentence, never a blank.
+ */
+async function DeployFreshnessNote() {
+  const freshness = await cachedDeployFreshness();
+  if (freshness.state === 'stale' && freshness.red) {
+    return (
+      <InlineNotice tone="danger" title="Production may be behind">
+        {freshness.red}
+      </InlineNotice>
+    );
+  }
+  return <p className="text-xs text-warm-500">{freshness.summary}</p>;
 }
 
 /**
@@ -375,6 +395,9 @@ export default async function DeploysPage() {
     <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
       <CurrentBuildCard />
+      <PanelBoundary title="Deploy freshness" skeleton={<SkeletonList rows={1} />}>
+        <DeployFreshnessNote />
+      </PanelBoundary>
 
       <Surface padding="sm">
         <SectionLabel>Release runway</SectionLabel>

@@ -127,6 +127,7 @@ function incident(id: string, overrides: Partial<UnifiedIncident> = {}): Unified
     lastSeen: '2026-09-01T00:00:00Z',
     occurrences: 1,
     affectedUsers: 0,
+    affectedPeople: [],
     affectedUsersKnown: false,
     sources: [],
     corroboration: 1,

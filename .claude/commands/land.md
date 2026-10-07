@@ -13,5 +13,8 @@ Follow AGENTS.md authorization. Prefer this script for merge, canonical sync,
 and retirement; use a direct authorized GitHub merge only when necessary and
 never bypass required checks with `--admin`.
 
+The script lands `agent/*` branches; pass `--any-branch` for another branch the
+user named. Merging does not deploy (AGENTS.md "Production").
+
 Report the actual merge, sync, and retirement outcomes separately. On failure,
 report the command exit code and preserve the task's branch and files.

@@ -249,10 +249,25 @@ alongside (not duplicated here).
   operation is therefore not evidence of an unhandled bug on its own — the
   question is whether the failing call could be avoided (check a session
   before an RPC, use `.maybeSingle()` where a missing row is expected), not
-  whether the catch block is good enough. See `memory/features/
-  admin-platform.md`'s Known Risk Areas for the companion "most unresolved
+  whether the catch block is good enough. The one deliberately suppressed
+  case is the `TimeoutError: signal timed out` emitted from
+  `usePresence.sendHeartbeat`: the hook has no round mutation, serializes
+  refreshes, and retries on its next interval. The client `beforeSend` filter
+  requires that exact error and source frame, so other Supabase timeouts remain
+  visible. See `memory/features/admin-platform.md`'s Known Risk Areas for the companion "most unresolved
   Sentry issues are noise" triage note. (STU, source:
   `supabase-tracing-reports-handled-errors.md`, no date field.)
+- **Those auto-captures are regrouped by their Postgres code.** The
+  integration (mechanism `auto.db.supabase.postgres`) hangs the code only on
+  `hint.originalException.code`, so `fingerprintByPostgresCode` never saw it.
+  `src/lib/observability/supabase-error-grouping.ts`, called from both
+  `beforeSend` hooks, groups INFRASTRUCTURE codes (PGRST000-003, 08*, 53*,
+  57014, 57P0*, 55P03) on the code alone, so one database incident is one
+  issue rather than one per call site (2026-09-18: one schema-cache reload
+  became 15+ issues). Query-specific codes keep default grouping plus
+  `pg:<code>`, and uncoded transport failures group by kind. A deliberate
+  fingerprint is never overridden. Measured 2026-09-23: 35 of the top 100
+  unresolved issues were these auto-captures.
 
 ## Rollback
 

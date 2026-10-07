@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   recordHelmBreadcrumb: vi.fn(),
@@ -18,6 +18,7 @@ import {
   observeRealtimeChannel,
   createRealtimeActivityMonitor,
   __resetRealtimeCaptureDedupeForTests,
+  REALTIME_RECOVERY_GRACE_MS,
   type RealtimeChannelLike,
 } from '../realtime';
 
@@ -34,8 +35,16 @@ class FakeChannel implements RealtimeChannelLike {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.useFakeTimers();
   __resetRealtimeCaptureDedupeForTests();
 });
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+/** The Sentry capture waits out the recovery window; let it elapse. */
+const outlastRecoveryWindow = () => vi.advanceTimersByTime(REALTIME_RECOVERY_GRACE_MS);
 
 const baseOptions = { feature: 'golf.tasks', channelClass: 'golf_task_assignments', subscriptionType: 'postgres_changes' as const };
 
@@ -82,6 +91,8 @@ describe('observeRealtimeChannel', () => {
     channel.emit('CHANNEL_ERROR', new Error('boom'));
     expect(mocks.recordRealtimeChannelFailure).toHaveBeenCalledWith({ feature: 'golf.tasks', result: 'CHANNEL_ERROR' });
     expect(mocks.helmLogWarn).toHaveBeenCalledTimes(1);
+    expect(mocks.captureMessage).not.toHaveBeenCalled();
+    outlastRecoveryWindow();
     expect(mocks.captureMessage).toHaveBeenCalledTimes(1);
     expect(mocks.captureMessage).toHaveBeenCalledWith(
       expect.stringContaining('CHANNEL_ERROR'),
@@ -101,6 +112,7 @@ describe('observeRealtimeChannel', () => {
     const fake = new FakeChannel();
     const channel = observeRealtimeChannel(fake, baseOptions) as FakeChannel;
     channel.emit('TIMED_OUT');
+    outlastRecoveryWindow();
     expect(mocks.captureMessage).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ level: 'warning' }));
   });
 
@@ -122,6 +134,7 @@ describe('observeRealtimeChannel', () => {
     const fake2 = new FakeChannel();
     const channel2 = observeRealtimeChannel(fake2, baseOptions) as FakeChannel; // same channelClass, different channel instance
     channel2.emit('TIMED_OUT');
+    outlastRecoveryWindow();
 
     expect(mocks.captureMessage).toHaveBeenCalledTimes(1);
   });
@@ -134,8 +147,48 @@ describe('observeRealtimeChannel', () => {
     const fakeB = new FakeChannel();
     const channelB = observeRealtimeChannel(fakeB, { ...baseOptions, channelClass: 'golf_qualifiers' }) as FakeChannel;
     channelB.emit('CHANNEL_ERROR');
+    outlastRecoveryWindow();
 
     expect(mocks.captureMessage).toHaveBeenCalledTimes(2);
+  });
+
+  /**
+   * JAVASCRIPT-NEXTJS-RJ: 143 error-level captures for mobile sockets that
+   * dropped and re-joined on their own. A recovered channel is a metric, not
+   * an issue.
+   */
+  it('a channel that recovers inside the window never reaches Sentry, but still counts as a failure', () => {
+    const channel = observeRealtimeChannel(new FakeChannel(), baseOptions) as FakeChannel;
+    channel.emit('SUBSCRIBED');
+    channel.emit('CHANNEL_ERROR');
+    vi.advanceTimersByTime(REALTIME_RECOVERY_GRACE_MS - 1);
+    channel.emit('SUBSCRIBED');
+    outlastRecoveryWindow();
+
+    expect(mocks.captureMessage).not.toHaveBeenCalled();
+    expect(mocks.recordRealtimeChannelFailure).toHaveBeenCalledTimes(1);
+  });
+
+  it('a channel closed after a failure (teardown) never reaches Sentry', () => {
+    const channel = observeRealtimeChannel(new FakeChannel(), baseOptions) as FakeChannel;
+    channel.emit('CHANNEL_ERROR');
+    channel.emit('CLOSED');
+    outlastRecoveryWindow();
+    expect(mocks.captureMessage).not.toHaveBeenCalled();
+  });
+
+  it('restarts the window when the timer fires late because the tab was asleep', () => {
+    const channel = observeRealtimeChannel(new FakeChannel(), baseOptions) as FakeChannel;
+    channel.emit('CHANNEL_ERROR');
+    // The tab slept: the clock jumped far past the window before the timer ran.
+    vi.setSystemTime(Date.now() + REALTIME_RECOVERY_GRACE_MS * 10);
+    outlastRecoveryWindow();
+    expect(mocks.captureMessage).not.toHaveBeenCalled();
+
+    // Woken up, the socket re-joins inside the fresh window.
+    channel.emit('SUBSCRIBED');
+    outlastRecoveryWindow();
+    expect(mocks.captureMessage).not.toHaveBeenCalled();
   });
 
   it('never throws even when subscribe itself throws synchronously', () => {

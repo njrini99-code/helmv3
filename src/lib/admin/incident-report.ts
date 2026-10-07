@@ -24,6 +24,11 @@ export interface IncidentReportOccurrence {
   timestamp: string;
   route?: string | null;
   userId?: string | null;
+  /** True when `userId` came from an unverified cookie fallback
+   *  (`extractUserIdUnverified(metadata)`) rather than a verified `getUser()`
+   *  call — must render visibly so a reader (often Claude, via the copied
+   *  report) doesn't treat the id as a confirmed identity. */
+  userIdUnverified?: boolean;
   /** Freeform per-event context (admin_events.metadata), rendered as JSON. */
   metadata?: unknown;
 }
@@ -172,6 +177,26 @@ export function extractRoute(metadata: unknown): string | null {
     if (typeof route === 'string' && route.length > 0) return route;
   }
   return null;
+}
+
+/**
+ * `metadata.tags.user_id_unverified` — set by server-error-logger.ts's
+ * enrichTraceContext() when the row's `user_id` came from
+ * `unverifiedSubjectFromCookies()` (a decoded-but-not-signature-checked JWT
+ * `sub`, read only after `getUser()` failed to verify a session — the normal
+ * "session expired mid-round" case) rather than a verified `getUser()` call.
+ * `user_id` itself carries no marker, so any admin surface that links off it
+ * (e.g. the `/admin/users/[id]` link on the fingerprint detail page) must
+ * check this before presenting the id as a confirmed identity.
+ */
+export function extractUserIdUnverified(metadata: unknown): boolean {
+  if (metadata && typeof metadata === 'object' && 'tags' in metadata) {
+    const tags = (metadata as { tags?: unknown }).tags;
+    if (tags && typeof tags === 'object') {
+      return (tags as { user_id_unverified?: unknown }).user_id_unverified === 'true';
+    }
+  }
+  return false;
 }
 
 /**
@@ -471,7 +496,9 @@ export function buildIncidentReport(input: IncidentReportInput): string {
   if (occurrences.length) {
     const rows = occurrences.slice(0, 20).map((occ) => {
       const route = occ.route ? ` route=${occ.route}` : '';
-      const user = occ.userId ? ` user=${occ.userId}` : '';
+      const user = occ.userId
+        ? ` user=${occ.userId}${occ.userIdUnverified ? ' (unverified)' : ''}`
+        : '';
       const meta =
         occ.metadata !== undefined && occ.metadata !== null ? ` metadata=${safeJson(occ.metadata)}` : '';
       return `${occ.timestamp}${route}${user}${meta}`;

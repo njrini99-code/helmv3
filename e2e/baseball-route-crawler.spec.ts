@@ -40,7 +40,7 @@
  *
  * A per-role JSON report is written to test-results/ for CI artifact upload.
  *
- * NOT wired into the #372 hard PR gate (ci.yml's `baseball-auth-smoke` job).
+ * NOT wired into the #372 hard PR gate (nightly.yml's `baseball-auth-smoke` job).
  * DOM-driven visible-link discovery + the stuck-spinner/near-blank
  * heuristics are new, unproven surface area — bundling them into an
  * already-required gate would compound flake risk before this has run

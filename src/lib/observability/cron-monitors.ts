@@ -183,3 +183,35 @@ export function finishCronCheckIn(
     // Diagnostic infrastructure about the job must never affect the job.
   }
 }
+
+/**
+ * How long a terminal check-in may wait for the Sentry transport before the
+ * job returns anyway. The whole check-in is one small HTTP POST; 2s is well
+ * inside every cron route's function budget.
+ */
+const CHECK_IN_FLUSH_TIMEOUT_MS = 2_000;
+
+/**
+ * Wait for a finished check-in to actually leave the process.
+ *
+ * `captureCheckIn` only queues the envelope on the SDK transport. On Vercel
+ * the function is frozen the moment the route returns its Response, so the
+ * `ok` check-in queued by `finishCronCheckIn` microseconds earlier routinely
+ * never sends — while the `in_progress` check-in, queued before the job's
+ * real work, does. Sentry then sees an orphaned `in_progress` and reports a
+ * timeout: `api-cron-db-health-sampler` timed out on ~half its runs (776
+ * events / 7d) while background_job_logs showed every run completing in
+ * under 11s (#1918). Callers `await` this after the terminal check-in and
+ * before returning.
+ *
+ * A `null` checkInId (gated off / start failed) is a no-op, same as
+ * `finishCronCheckIn`. NEVER THROWS.
+ */
+export async function flushCronCheckIn(checkInId: string | null): Promise<void> {
+  if (!checkInId) return;
+  try {
+    await Sentry.flush(CHECK_IN_FLUSH_TIMEOUT_MS);
+  } catch {
+    // Diagnostic infrastructure about the job must never affect the job.
+  }
+}

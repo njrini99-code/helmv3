@@ -1,7 +1,10 @@
 ---
 paths:
-  - "**/*.tsx"
-  - "**/*.css"
+  - "src/app/golf/**"
+  - "src/app/baseball/**"
+  - "src/components/**"
+  - "src/styles/**"
+  - "src/app/**/*.css"
 ---
 
 ## Design System

@@ -1,6 +1,7 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { excludeAuthNoise } from '@/lib/admin/data/triage';
+import { FAILURE_SEVERITIES } from '@/lib/admin/severity';
 
 /**
  * Activity tab — LOCAL, single-purpose reads owned by this route only (the
@@ -77,11 +78,12 @@ export async function fetchActivityTodayStats(now: Date = new Date()): Promise<A
       .gte('created_at', yesterdayStart).lt('created_at', todayStart),
     excludeAuthNoise(
       admin.from('admin_events').select('id', { count: 'exact', head: true })
-        .eq('event_type', 'error').in('severity', ['error', 'critical']).gte('created_at', todayStart),
+        .eq('event_type', 'error').in('severity', FAILURE_SEVERITIES).eq('resolved', false)
+        .gte('created_at', todayStart),
     ),
     excludeAuthNoise(
       admin.from('admin_events').select('id', { count: 'exact', head: true })
-        .eq('event_type', 'error').in('severity', ['error', 'critical'])
+        .eq('event_type', 'error').in('severity', FAILURE_SEVERITIES).eq('resolved', false)
         .gte('created_at', yesterdayStart).lt('created_at', todayStart),
     ),
   ]);

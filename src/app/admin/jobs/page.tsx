@@ -40,16 +40,18 @@ const CRON_STATUS_TONE: Record<CronBoardRow['status'], FwStatusTone> = {
 /**
  * Per-job-type note surfaced under the job identity on both the card and
  * table renderings. Only `reliability-triage` and `selfheal-triage` have
- * one today: each writes a SECOND `background_job_logs` detail row per run
- * by design (the triage pass and the invocation/heartbeat it records are
- * separate rows under the same `jobType`), which otherwise reads as a
- * duplicate-write bug to anyone scanning "last 20 runs" for this job. Add
- * here, not inline in JSX, so the reasoning lives in one place next to the
- * jobType it explains.
+ * one today: each run ALSO writes a `background_job_logs` row under a
+ * separate, related job_type (`reliability-triage` -> `reliability-snapshot`,
+ * `normalize.ts`; `selfheal-triage` -> `selfheal-triage-invocation`,
+ * `selfheal-triage/route.ts`'s crash-safety wrapper) — not the SAME jobType
+ * as this file previously said. That second row otherwise reads as an
+ * unexplained extra job to anyone scanning the cron board for "why is there
+ * a job I didn't expect". Add here, not inline in JSX, so the reasoning
+ * lives in one place next to the jobType it explains.
  */
 const JOB_TYPE_NOTE: Partial<Record<string, string>> = {
-  'reliability-triage': 'Writes a second detail row per run by design (triage pass + invocation record) — not a duplicate.',
-  'selfheal-triage': 'Writes a second detail row per run by design (triage pass + invocation record) — not a duplicate.',
+  'reliability-triage': 'Also writes a reliability-snapshot row per run by design — a separate, related job_type, not a duplicate of this one.',
+  'selfheal-triage': 'Also writes a selfheal-triage-invocation row per run by design (crash-safety wrapper) — a separate, related job_type, not a duplicate of this one.',
 };
 
 /**
@@ -618,6 +620,19 @@ async function JobsBody() {
 
   return (
     <div className="space-y-6">
+      {/* Promoted from the small Inngest tile at the bottom of this page —
+          a rejecting key means every durable job routed through Inngest is
+          silently dropped (see INNGEST_TONE's header comment: a dead key
+          survived 10 days here before this state existed at all). Kept
+          small on purpose — this is a pointer to the tile below, not a
+          duplicate of its detail. */}
+      {tab.inngest.status === 'rejecting' ? (
+        <InlineNotice tone="danger" title="Inngest is rejecting its configured keys">
+          Events are being dropped, not delivered — see the Inngest tile below for the fault code and when it was
+          last seen.
+        </InlineNotice>
+      ) : null}
+
       <HelmJobsQueuePanel status={helmJobsStatus} />
 
       <Surface padding="sm">

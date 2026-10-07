@@ -13,7 +13,7 @@ import {
   INCIDENT_CLASS_DESCRIPTION,
   INCIDENT_CLASS_ORDER,
 } from '@/lib/admin/incident-classification';
-import { DEFAULT_INCIDENT_WINDOW_HOURS } from '@/lib/admin/data/incident-feed';
+import { DEFAULT_INCIDENT_WINDOW_HOURS, type StaleUnresolvedResult } from '@/lib/admin/data/incident-feed';
 import { StatStrip, StatusPill, Surface, type FwStatusTone } from '@/components/fairway';
 import { applyIncidentFacets, countLensesForKind, suppressedByClass } from '@/lib/admin/incidents/lens';
 import { sumHourlyBuckets, describeWindowDelta, type DeltaDirection } from '@/lib/admin/error-trend';
@@ -297,6 +297,72 @@ function SectionHeading({ id, title, lede }: { id: string; title: string; lede: 
       </h2>
       <p className="mt-0.5 text-caption leading-5 text-warm-500">{lede}</p>
     </div>
+  );
+}
+
+/** "5h" for under 48h, "5d" past it — matches formatWatcherAge's own split
+ *  in admin/page.tsx (Overview), reused here rather than imported since it
+ *  is a two-line pure function and the two pages have no shared module. */
+function formatQuietAge(lastSeenIso: string, nowMs: number): string {
+  const ageMs = Math.max(0, nowMs - Date.parse(lastSeenIso));
+  const hours = Math.round(ageMs / 3_600_000);
+  if (hours < 48) return `${hours}h`;
+  return `${Math.round(hours / 24)}d`;
+}
+
+/**
+ * "Still open, quiet for 72h+" (bridge-tab-audit-p0p1 incidents Finding 8).
+ *
+ * A compact, SEPARATE section — never merged into the incident queue above
+ * or its counts. `board.staleUnresolved` is bounded and best-effort (see
+ * `queryStaleUnresolvedIncidents`'s own doc comment in incident-feed.ts):
+ * this is "here is a sample of what's still open", not a claim that it is
+ * complete or that the counts above are wrong.
+ */
+function StaleUnresolvedSection({ result, windowHours }: { result: StaleUnresolvedResult; windowHours: number }) {
+  if (!result.readable) {
+    return (
+      <section aria-labelledby="stale-unresolved-heading" className="space-y-2">
+        <SectionHeading
+          id="stale-unresolved-heading"
+          title="Still open, quiet for 72h+"
+          lede={`Unresolved error/critical fingerprints with no occurrence in the last ${windowHours}h — they fell off the list above without being fixed.`}
+        />
+        <PanelNoData
+          label="Could not read"
+          description={result.reason ?? 'The stale-unresolved lookup failed this request.'}
+        />
+      </section>
+    );
+  }
+  if (result.items.length === 0) return null;
+
+  const now = Date.now();
+  return (
+    <section aria-labelledby="stale-unresolved-heading" className="space-y-2">
+      <SectionHeading
+        id="stale-unresolved-heading"
+        title="Still open, quiet for 72h+"
+        lede={`${result.items.length} unresolved error/critical fingerprint${result.items.length === 1 ? '' : 's'} with no occurrence in the last ${windowHours}h — they fell off the list above without being fixed. A bounded sample, not a complete count.`}
+      />
+      <ul className="divide-y divide-warm-200/60 rounded-fw-md border border-warm-200/60">
+        {result.items.map((item) => (
+          <li key={item.fingerprint} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm">
+            <StatusPill tone={item.severity === 'critical' ? 'danger' : 'warning'} dot size="sm">
+              {item.severity}
+            </StatusPill>
+            <Link
+              href={`/admin/errors/${item.fingerprint}`}
+              className="min-w-0 flex-1 basis-full truncate text-warm-900 hover:underline sm:basis-auto"
+            >
+              {item.title}
+            </Link>
+            <span className="font-fw-mono text-xs tabular-nums text-warm-500">{item.occurrences}× seen</span>
+            <span className="font-fw-mono text-xs tabular-nums text-warm-500">quiet {formatQuietAge(item.lastSeen, now)}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -725,6 +791,8 @@ export default async function ErrorsPage({
             incidents live under their <span className="font-fw-mono">rel:</span> signature.
           </p>
         </Surface>
+
+        <StaleUnresolvedSection result={board.staleUnresolved} windowHours={board.windowHours} />
 
         {/* 2. Trends — the one "compared to what", and where the rows come from. */}
         <section aria-labelledby="incidents-trends-heading" className="space-y-3">

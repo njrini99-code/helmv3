@@ -72,7 +72,7 @@ export default async function UserDetailPage({
     // Server-side filter (SQL WHERE, before the RPC's internal LIMIT 500) —
     // a client-side filter of the platform-wide top-500 window would
     // silently show "No active sessions" for a user outside that window.
-    const sessions = await fetchActiveSessions(id);
+    const { sessions } = await fetchActiveSessions(id);
     const enterViewAsForUser = enterViewAs.bind(null, id);
     const viewAsConfigured = Boolean(process.env.ADMIN_IMPERSONATION_SECRET);
 

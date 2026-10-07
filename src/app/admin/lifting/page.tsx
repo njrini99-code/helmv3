@@ -80,6 +80,13 @@ async function LiftingBody() {
           Every helm_lifting_sessions row that has ever existed belongs to Rini University or Demo University — no
           real program has logged a Lift Lab session yet. The numbers below are honestly computed; there just isn't
           real usage to compute them from.
+          {lift.lastSessionAt && (
+            <>
+              {' '}
+              Last session logged{' '}
+              {Math.floor((Date.now() - new Date(lift.lastSessionAt).getTime()) / 86_400_000)} days ago.
+            </>
+          )}
         </InlineNotice>
       )}
 

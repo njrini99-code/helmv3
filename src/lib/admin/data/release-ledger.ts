@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
 import { fetchVercelDeployments } from '@/lib/admin/vercel-api';
@@ -212,7 +213,18 @@ export function reignIndexFor(t: number, cards: readonly { createdAt: number }[]
   return null;
 }
 
-export async function fetchReleaseLedger(): Promise<AdminFetchResult<ReleaseLedgerData>> {
+/**
+ * React `cache()`-memoised per request — same convention as
+ * `cachedDeployFreshness` (deploy-freshness.ts). /admin/deploys renders this
+ * TWICE in the same request (ReleaseLedger.tsx directly, and again inside
+ * release-runway.ts's `fetchReleaseRunway`), so without this the Vercel/
+ * admin_events reads underneath doubled on every load of that one page.
+ * Callers keep the same name and signature — the memoization is invisible
+ * at every call site.
+ */
+export const fetchReleaseLedger = cache(fetchReleaseLedgerUncached);
+
+async function fetchReleaseLedgerUncached(): Promise<AdminFetchResult<ReleaseLedgerData>> {
   const now = Date.now();
   const currentBuildSha = process.env.VERCEL_GIT_COMMIT_SHA?.trim() || null;
   const admin = createAdminClient();

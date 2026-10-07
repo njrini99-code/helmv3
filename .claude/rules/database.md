@@ -1,4 +1,3 @@
-<!-- markdownlint-disable MD022 MD012 -->
 ---
 paths:
   - "supabase/migrations/**"
@@ -6,7 +5,7 @@ paths:
   - "src/lib/supabase/**"
   - "scripts/db/**"
 ---
-
+<!-- markdownlint-disable MD022 MD012 -->
 # Database rules
 Loads automatically when you touch SQL, migrations, or Supabase client code.
 Review checklist for a migration/policy PR: `.claude/rules/database-review.md`.
@@ -34,12 +33,9 @@ convenient when available, not a prerequisite.
 
 ## Migrations are additive
 One shared production database serves Golf, Baseball and Lift Lab, no
-staging copy. `guard-sql.mjs` (`PreToolUse`) refuses `DROP TABLE`/`SCHEMA`,
-`TRUNCATE`, a WHERE-less `DELETE FROM`, and `ALTER ... DROP COLUMN`
-reaching a Supabase MCP `execute_sql`/`apply_migration` call or a Bash
-`psql`/`supabase db` command — text matching, not a parser: a runtime-built
-statement it can't see whole may slip past, and `GRANT`/`ALTER ROLE`/
-`DROP FUNCTION` are deliberately out of scope.
+staging copy. No hook or permission rule blocks destructive SQL: a
+`DROP`, `TRUNCATE`, WHERE-less `DELETE`, or `DROP COLUMN` against production
+runs as typed, so state the target and statement before running one.
 The generated `docs/CONTROL_PLANE_ENFORCEMENT.md` lists configured
 mechanisms; AGENTS.md owns task authorization.
 
@@ -74,6 +70,8 @@ before depending on a column or policy existing. `npm run db:drift:check`
 is the broader comparison.
 
 ## After a schema change
-`npm run db:types` regenerates `src/lib/types/database.ts`; CI fails if it
-drifts (`db:types:check`), and running it refreshes the columns doc on the
-next `node scripts/regen-docs.mjs`.
+`npm run db:types` regenerates `src/lib/types/database.ts`. CI's
+`check:types-drift` compares it with production (it warns instead of failing
+when `SUPABASE_ACCESS_TOKEN` is absent). Run `node scripts/regen-docs.mjs`
+afterwards to refresh the columns doc. For client/query work, load the
+`helm-supabase` skill.

@@ -5,20 +5,32 @@ import { redirect } from 'next/navigation';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logSecurityEvent } from '@/lib/admin-logger';
+import { logServerError } from '@/lib/server-error-logger';
 import { signViewAsToken, VIEW_AS_COOKIE, VIEW_AS_TTL_MS } from '@/lib/admin/view-as';
 
 async function writeAudit(action: string, adminUserId: string, targetUserId: string) {
   try {
     const admin = createAdminClient();
-    await admin.from('audit_log').insert({
+    const { error } = await admin.from('audit_log').insert({
       user_id: adminUserId,
       action,
       table_name: 'users',
       record_id: targetUserId,
       new_data: { target_user: targetUserId, ttl_ms: VIEW_AS_TTL_MS },
     });
-  } catch {
-    // Auditing is best-effort here; the RPC-side audit patterns cover writes.
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    // Auditing is best-effort — a failed write must never block the view-as
+    // action itself — but a silent `catch {}` here meant a broken audit
+    // trail for impersonation left NO signal anywhere. Logged at 'warning'
+    // (not 'error'): this codebase's headline error counts should stay
+    // reserved for things actually broken in the product, not this
+    // best-effort side channel.
+    await logServerError(
+      `[view-as] audit_log write failed for ${action}: ${err instanceof Error ? err.message : String(err)}`,
+      { action: `admin.view_as.audit_write_failed`, featureArea: 'admin', userId: adminUserId, metadata: { targetUserId, viewAsAction: action } },
+      'warning',
+    ).catch(() => {});
   }
 }
 

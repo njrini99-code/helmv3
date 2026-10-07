@@ -3,28 +3,39 @@
  *
  * Reads one small batch per queue (`coachhelm_analysis`, `email_send`,
  * `push_send`) from pgmq via the `helm_jobs_*` SECURITY DEFINER facades
- * (supabase/migrations/20260906140000_helm_jobs_pgmq_queues.sql, HELD —
- * see that file's header), runs the matching handler, and acks or fails
+ * (supabase/migrations/20260906140000_helm_jobs_pgmq_queues.sql, applied
+ * in production — ledger-verified 2026-09-22, see HELD.md), runs the
+ * matching handler, and acks or fails
  * each message. Handlers reuse the EXACT functions the inline paths already
  * call — `postRoundTrigger`, `sendEmailNotificationDirect`,
  * `sendPushNotificationDirect` — so a job processed here behaves
  * identically to one processed inline, including the email kill-switch
  * (see sendEmailNotificationDirect's own header).
  *
- * DEGRADES CLEANLY WHILE THE MIGRATION IS HELD: the facade RPCs do not
- * exist in production until an owner applies the migration (see HELD.md).
- * `isMigrationNotAppliedError` below (same idiom as
+ * DEGRADES CLEANLY WHERE THE FACADES ARE MISSING (a fresh local stack, a
+ * preview database): `isMigrationNotAppliedError` below (same idiom as
  * src/app/api/cron/helm-debug-prune/route.ts) turns that into a 200 no-op,
- * not a failed cron run — this route is not useful until the migration
- * ships, and that is an expected, not exceptional, state.
+ * not a failed cron run.
+ *
+ * ONE DEPTH CHECK PER TICK, NOT THREE READS: nothing enqueues onto these
+ * queues yet (HELM_QUEUE_ENABLED is off; on 2026-09-23 every queue's msg_id
+ * sequence had never been called), yet the route ran three sequential
+ * read_batch RPCs 1,440 times a day, and Sentry's N+1 detector filed the
+ * pattern as an issue (~280 events/day). `helm_jobs_depth()` reports every
+ * queue in one call, so an idle tick is one RPC and only queues that hold
+ * messages are read. If the depth call itself fails, every queue is read
+ * exactly as before — the gate may only skip work, never lose it. That
+ * fallback also covers a stack built from origin/main alone: production runs
+ * the corrected definition (20260909130000_helm_jobs_depth_qualify_queue,
+ * verified live 2026-09-23), whose file is not on main yet (#1927).
  *
  * Schedule: every minute (see vercel.json, config/routines.yml,
- * src/lib/admin/cron-registry.ts). A HELD alternative
- * (pg_cron + pg_net, supabase/migrations/20260906141000_...) exists for the
- * owner to switch to later; do not run both.
+ * src/lib/admin/cron-registry.ts). An alternative (pg_cron + pg_net,
+ * supabase/migrations/20260906141000_...) is created but deliberately NOT
+ * scheduled (confirmed inert 2026-09-22); do not run both.
  * Auth: Vercel Cron sends `Authorization: Bearer ${CRON_SECRET}`, checked
  * by requireCronAuth — the same header a pg_cron+pg_net caller would send
- * per that HELD migration's design.
+ * per that alternative's design.
  */
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -193,6 +204,34 @@ async function consumeQueue(
   return counts;
 }
 
+interface DepthRow {
+  queue: string;
+  queue_length: number | string | null;
+}
+
+/**
+ * The queues worth reading this tick, from one `helm_jobs_depth()` call.
+ * Returns null when depth is unavailable (error, or a shape this code does
+ * not recognise) so the caller falls back to reading every queue — skipping
+ * on bad information could strand real messages, reading an empty queue
+ * only costs one round trip.
+ */
+async function queuesWithMessages(
+  admin: ReturnType<typeof createAdminClient>,
+): Promise<QueueName[] | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (admin as any).rpc('helm_jobs_depth');
+  if (error || !Array.isArray(data)) return null;
+  const lengths = new Map<string, number>();
+  for (const row of data as DepthRow[]) {
+    const length = Number(row.queue_length);
+    if (typeof row.queue !== 'string' || !Number.isFinite(length)) return null;
+    lengths.set(row.queue, length);
+  }
+  // A queue the depth call did not report is read anyway, for the same reason.
+  return QUEUES.filter((queue) => (lengths.get(queue) ?? 1) > 0);
+}
+
 export async function GET(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
   if (unauthorized) return unauthorized;
@@ -201,7 +240,12 @@ export async function GET(req: NextRequest) {
     const admin = createAdminClient();
     const results: Record<string, QueueCounts | { skipped: string; code: string }> = {};
 
+    const toRead = (await queuesWithMessages(admin)) ?? QUEUES;
     for (const queue of QUEUES) {
+      if (!toRead.includes(queue)) {
+        results[queue] = { read: 0, acked: 0, failed: 0, deadLettered: 0 };
+        continue;
+      }
       results[queue] = await consumeQueue(admin, queue);
     }
 

@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   finishCronCheckIn: vi.fn(
     (_jobType: string, _checkInId: string | null, _status: 'ok' | 'error', _durationMs?: number) => {},
   ),
+  flushCronCheckIn: vi.fn(async (_checkInId: string | null) => {}),
 }));
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
@@ -24,6 +25,7 @@ vi.mock('@/lib/server-error-logger', () => ({ logServerEvent: mocks.logServerEve
 vi.mock('@/lib/observability/cron-monitors', () => ({
   startCronCheckIn: mocks.startCronCheckIn,
   finishCronCheckIn: mocks.finishCronCheckIn,
+  flushCronCheckIn: mocks.flushCronCheckIn,
 }));
 
 import { recordJobRun, summariseErrorBody } from '@/lib/admin/job-log';
@@ -35,6 +37,20 @@ describe('recordJobRun', () => {
     mocks.failInsert = false;
     mocks.startCronCheckIn.mockClear();
     mocks.finishCronCheckIn.mockClear();
+    mocks.flushCronCheckIn.mockClear();
+  });
+
+  it('flushes the terminal check-in before returning on every exit path (#1918)', async () => {
+    await recordJobRun('log-retention', async () => new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }));
+    expect(mocks.flushCronCheckIn).toHaveBeenCalledWith('checkin-id-1');
+
+    mocks.flushCronCheckIn.mockClear();
+    await recordJobRun('log-retention', async () => new Response('{"error":"x"}', { status: 500, headers: { 'content-type': 'application/json' } }));
+    expect(mocks.flushCronCheckIn).toHaveBeenCalledWith('checkin-id-1');
+
+    mocks.flushCronCheckIn.mockClear();
+    await expect(recordJobRun('log-retention', async () => { throw new Error('boom'); })).rejects.toThrow('boom');
+    expect(mocks.flushCronCheckIn).toHaveBeenCalledWith('checkin-id-1');
   });
 
   it('passes the result through and writes a completed row', async () => {

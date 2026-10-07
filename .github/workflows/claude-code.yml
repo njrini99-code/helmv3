@@ -101,7 +101,7 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
             --max-turns 10
-            --append-system-prompt "Follow CLAUDE.md and docs/operations/HELM_MISSION_CONTROL_OS.md. Branch + PR only; never push to main. No secrets. High-risk changes require human review."
+            --append-system-prompt "AGENTS.md is the operating policy (CLAUDE.md imports it). Branch + PR only; never push to main. No secrets. High-risk changes require human review."
 
       - name: Agent safety reminder
         if: always()

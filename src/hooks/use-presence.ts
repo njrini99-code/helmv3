@@ -9,6 +9,15 @@ const HEARTBEAT_INTERVAL = 60000; // 1 minute
 const INITIAL_HEARTBEAT_DELAY = 5000;
 
 /**
+ * Supabase's browser client can surface its internal request deadline as a
+ * resolved RPC error (`TimeoutError: signal timed out`). Presence is best
+ * effort, so this is neither an auth failure nor a round-save failure.
+ */
+function isPresenceHeartbeatTimeout(error: unknown): boolean {
+  return /timeouterror:\s*signal timed out/i.test(describeError(error));
+}
+
+/**
  * Hook to track user online presence
  * Sends periodic heartbeats to update last_seen timestamp
  */
@@ -24,6 +33,7 @@ export function usePresence() {
     let authRevision = 0;
     let initialTimeout: ReturnType<typeof setTimeout> | null = null;
     let interval: ReturnType<typeof setInterval> | null = null;
+    let heartbeatInFlight = false;
 
     const stopTimers = () => {
       if (initialTimeout) {
@@ -38,7 +48,10 @@ export function usePresence() {
 
     const sendHeartbeat = async () => {
       const userId = authenticatedUserId;
-      if (!active || !userId) return;
+      // A visibility return can coincide with the scheduled interval. Avoid
+      // issuing two background writes for the same presence tick.
+      if (!active || !userId || heartbeatInFlight) return;
+      heartbeatInFlight = true;
 
       try {
         // Take the session immediately BEFORE the call, not just once when the
@@ -87,6 +100,11 @@ export function usePresence() {
 
         console.debug('[Presence] Heartbeat failed:', describeError(error));
 
+        // The Supabase client request budget expired before it obtained a
+        // response. Do not turn a best-effort presence refresh into a Bridge
+        // error: it carries no round mutation and the next interval retries.
+        if (isPresenceHeartbeatTimeout(error)) return;
+
         // PostgREST returns failures as VALUES, so nothing here ever threw and
         // nothing ever entered the Bridge pipeline: 15 Sentry events in 7d for
         // `permission denied for function heartbeat` (2026-08-26..28, Chrome
@@ -134,6 +152,8 @@ export function usePresence() {
       } catch (error) {
         // Silently fail - presence is non-critical
         console.debug('[Presence] Heartbeat failed:', describeError(error));
+      } finally {
+        heartbeatInFlight = false;
       }
     };
 

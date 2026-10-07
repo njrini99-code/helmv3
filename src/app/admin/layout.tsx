@@ -21,13 +21,6 @@ export default async function AdminLayout({
     redirect(probe.reason === 'unauthenticated' ? '/golf/login' : '/golf/dashboard');
   }
 
-  // M1 (bridge-chrome): the mobile bottom bar's Errors badge — a single
-  // cheap COUNT (see fetchBridgeErrorBadge's doc comment), re-resolved on
-  // every navigation + `router.refresh()` under this force-dynamic layout.
-  // `null` means the read failed — same rule as healthCount below: unknown
-  // must never render like zero.
-  const errorCount = await fetchBridgeErrorBadge();
-
   // bridge-refit: the Health badge — count of RED features. This layout
   // re-executes on EVERY navigation AND every `<AutoRefresh />` tick (30s on
   // admin/page.tsx, 60s on the tracer), so an idle open Bridge tab polls this
@@ -48,12 +41,17 @@ export default async function AdminLayout({
   // replaces: `catch { healthCount = 0 }` made a rate-limited Sentry sweep
   // indistinguishable from "0 red features"). AdminShell only shows a badge
   // when the count is a positive number.
-  let healthCount: number | null = null;
-  try {
-    healthCount = await fetchFeatureHealthRedCount();
-  } catch {
-    healthCount = null;
-  }
+  //
+  // The Errors badge (`fetchBridgeErrorBadge`) and this Health badge are two
+  // independent reads with no data dependency on each other — they used to
+  // run as two sequential awaits, paying their latency back to back on every
+  // navigation of this force-dynamic layout. `Promise.all` runs them
+  // concurrently instead; `fetchBridgeErrorBadge` already never throws (see
+  // its own doc comment), so only this call keeps its `catch`.
+  const [errorCount, healthCount] = await Promise.all([
+    fetchBridgeErrorBadge(),
+    fetchFeatureHealthRedCount().catch(() => null),
+  ]);
 
   // AdminNativeGuard hides /admin from the iOS Capacitor shell (App Store
   // 4.2.2/3.1.1) — belt to the middleware's braces.

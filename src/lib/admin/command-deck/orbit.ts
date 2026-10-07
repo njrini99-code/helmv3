@@ -30,8 +30,14 @@ const ORBIT_NODE_HREF: Readonly<Record<OrbitNodeId, string | null>> = {
   auth: '/admin/auth',
   supabase: '/admin/errors?view=sources',
   ai: '/admin/errors?feature=coachhelm_ai_engine',
-  postgres: '/admin/jobs',
-  jobs: '/admin/self-heal',
+  // The database's own tab, not Jobs & Integrity — this node's subject is
+  // Postgres state itself (same distinction admin-nav.ts's Database tab
+  // draws against Incidents' `sources` view).
+  postgres: '/admin/database',
+  // '/admin/self-heal' is not a route — nothing under src/app/admin resolves
+  // it. The self-heal loop's own board lives at the Incidents tab's `loop`
+  // view (src/app/admin/errors/page.tsx's `case 'loop':` branch).
+  jobs: '/admin/errors?view=loop',
   realtime: null,
 };
 

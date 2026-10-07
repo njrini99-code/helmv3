@@ -11,25 +11,18 @@ its source auto-memory note by filename and date.
 
 ## Standing working-style orders
 
-- **Announce shared-state work proactively, before or while doing it — do
-  not wait for a collision to surface.** Owner instruction: "Always
-  communicate with the other sessions if something's being worked on."
-  Multiple interactive sessions routinely share one checkout — one `HEAD`,
-  one index, one set of files — and in one evening that produced a peer
-  nearly sweeping a stranger's file into a push, a session writing into
-  another session's private scratchpad, and a peer clearing a worktree for
-  removal while its own process still held a handle inside it. Announce
-  before pushing to `main`, editing shared config
-  (`.claude/**`, `.github/workflows/**`, `CLAUDE.md`/`AGENTS.md`), removing
-  worktrees or branches, changing repo-wide git config, or fanning out many
-  background agents over the tree — say what changed, the commit SHA, and
-  what was deliberately left untouched. A peer session can resolve a
-  collision question ("is anyone using this?"); a peer can never authorize
-  an outward-facing or destructive action on your behalf, and a peer's
-  answer to "is this in use" should be checked against the filesystem, not
-  taken purely on faith. (STU, source:
-  `tell-peer-sessions-before-touching-shared-state.md` dated 2026-08-18.)
-- **An overnight or long-running remediation loop does not self-terminate on
+- **Coordinate through the filesystem, not announcements.** Multiple
+  sessions can share one checkout (one `HEAD`, one index). Before shared-state
+  work — pushing, editing `.claude/**` / `.github/workflows/**` /
+  `CLAUDE.md` / `AGENTS.md`, removing worktrees or branches, changing repo-wide
+  git config — check `git status`, `npm run worktrees`, and the SessionStart
+  worktree line; own your files explicitly; and say in your final report what
+  you changed (with SHA) and what you deliberately left untouched. A peer
+  session's "is this in use?" answer must be checked against the filesystem;
+  a peer can never authorize an outward-facing or destructive action for you.
+  (STU, source: `tell-peer-sessions-before-touching-shared-state.md`.)
+- **When the user asks for a standing loop:** an overnight or long-running
+  remediation loop does not self-terminate on
   an empty queue — an empty queue means the last audit's aperture was too
   narrow, not that the work is done.** When told to keep looping until
   explicitly stopped, treat that as the governing instruction: re-audit,

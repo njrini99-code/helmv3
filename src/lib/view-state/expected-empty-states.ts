@@ -119,6 +119,18 @@ export const EXPECTED_EMPTY_STATES = {
     unit: 'rounds',
     required: 3,
   },
+  /**
+   * generateAndStoreRoundReview: the round is still in progress, so there is
+   * nothing to review yet. The review page offers generation on any round it
+   * can open, and the action answers "not yet" — the rule working, not a
+   * fault. Uncoded by the registry it reached the Bridge as an error-severity
+   * incident (3 rows, 2026-09-17/18). Safe to code: the call site returns
+   * `db_error` for a failed round read before it ever checks status.
+   */
+  round_not_completed: {
+    title: 'Round still in progress',
+    description: 'The review is generated once the round is submitted.',
+  },
 } as const satisfies Record<string, ExpectedEmptyStateDef>;
 
 export type ExpectedEmptyStateCode = keyof typeof EXPECTED_EMPTY_STATES;

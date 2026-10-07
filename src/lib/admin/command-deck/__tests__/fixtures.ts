@@ -25,6 +25,7 @@ export function baseIncident(id: string): UnifiedIncident {
     lastSeen: '2026-09-03T00:00:00.000Z',
     occurrences: 1,
     affectedUsers: 0,
+    affectedPeople: [],
     affectedUsersKnown: false,
     sources: [],
     corroboration: 1,

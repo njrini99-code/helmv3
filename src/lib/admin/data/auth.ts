@@ -189,6 +189,7 @@ export async function fetchAuthTab(filters: AuthTabFilters = {}): Promise<{
   const admin = createAdminClient();
   const now = new Date();
   const ago7d = new Date(now.getTime() - 7 * 86400_000).toISOString();
+  const ago14d = new Date(now.getTime() - 14 * 86400_000).toISOString();
   const ago24h = new Date(now.getTime() - 86400_000).toISOString();
 
   const eventTypes = filters.eventType
@@ -204,10 +205,14 @@ export async function fetchAuthTab(filters: AuthTabFilters = {}): Promise<{
   if (filters.q) feedQuery = feedQuery.ilike('user_email', `%${filters.q}%`);
   feedQuery = feedQuery.order('created_at', { ascending: false }).limit(200);
 
+  // Bounded to the last 14 days — unbounded, this surfaces a handful of
+  // stale typos (1-3 failed attempts, up to 83 days old) as if they were
+  // current, alongside genuinely fresh lockouts.
   let lockoutQuery = admin
     .from('login_attempts')
     .select('email, failed_attempts, locked_until, last_attempt', { count: 'exact' })
-    .gt('failed_attempts', 0);
+    .gt('failed_attempts', 0)
+    .gte('last_attempt', ago14d);
   if (filters.q) lockoutQuery = lockoutQuery.ilike('email', `%${filters.q}%`);
   lockoutQuery = lockoutQuery.order('last_attempt', { ascending: false }).limit(50);
 
@@ -285,7 +290,17 @@ export async function fetchAuthTab(filters: AuthTabFilters = {}): Promise<{
  * active sessions" for any user outside that top-500 window; this param is
  * what lets `/admin/users/[id]` avoid that failure mode.
  */
-export async function fetchActiveSessions(userId?: string): Promise<SessionRow[]> {
+const ACTIVE_SESSIONS_RPC_LIMIT = 500;
+
+export async function fetchActiveSessions(userId?: string): Promise<{
+  sessions: SessionRow[];
+  /** True when the platform-wide (no `userId`) call came back at the
+   *  function's internal LIMIT 500 — the real `auth.sessions` count can
+   *  exceed that (seen ~1,133 live) with no signal otherwise that the list
+   *  is partial. A per-user call hitting 500 would mean one account holding
+   *  500 sessions, which isn't the truncation this flags. */
+  truncated: boolean;
+}> {
   const supabase = await createClient();
   const rpc = supabase.rpc.bind(supabase) as unknown as (
     fn: 'get_active_sessions',
@@ -293,5 +308,9 @@ export async function fetchActiveSessions(userId?: string): Promise<SessionRow[]
   ) => Promise<{ data: SessionRow[] | null; error: { message: string } | null }>;
   const { data, error } = await rpc('get_active_sessions', { p_user_id: userId ?? null });
   if (error) throw new Error(`get_active_sessions failed: ${error.message}`);
-  return data ?? [];
+  const sessions = data ?? [];
+  return {
+    sessions,
+    truncated: !userId && sessions.length >= ACTIVE_SESSIONS_RPC_LIMIT,
+  };
 }

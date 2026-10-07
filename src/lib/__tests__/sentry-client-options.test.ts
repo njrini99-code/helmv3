@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildClientSentryOptions,
+  isHealthProbeFetchEcho,
   parseSampleRateEnv,
   CLIENT_IGNORE_ERRORS,
   type ClientSentryOptionsEnv,
@@ -43,6 +44,37 @@ describe('parseSampleRateEnv', () => {
 
   it('clamps below 0 up to 0', () => {
     expect(parseSampleRateEnv('-2', 0.05)).toBe(0);
+  });
+});
+
+describe('isHealthProbeFetchEcho', () => {
+  it('drops only the automatic 503 echo from the connectivity probe', () => {
+    expect(isHealthProbeFetchEcho({
+      request: { url: 'https://helmsportslabs.com/api/health' },
+      exception: {
+        values: [{
+          value: 'HTTP Client Error with status code: 503',
+          mechanism: { type: 'auto.http.client.fetch' },
+        }],
+      },
+    })).toBe(true);
+  });
+
+  it.each([
+    {
+      request: { url: 'https://helmsportslabs.com/api/health' },
+      exception: { values: [{ value: 'HTTP Client Error with status code: 500', mechanism: { type: 'auto.http.client.fetch' } }] },
+    },
+    {
+      request: { url: 'https://helmsportslabs.com/api/other' },
+      exception: { values: [{ value: 'HTTP Client Error with status code: 503', mechanism: { type: 'auto.http.client.fetch' } }] },
+    },
+    {
+      request: { url: 'https://helmsportslabs.com/api/health' },
+      exception: { values: [{ value: 'HTTP Client Error with status code: 503', mechanism: { type: 'generic' } }] },
+    },
+  ])('keeps every other event', (event) => {
+    expect(isHealthProbeFetchEcho(event)).toBe(false);
   });
 });
 
@@ -203,5 +235,29 @@ describe('buildClientSentryOptions — static options untouched by this task', (
     expect(CLIENT_IGNORE_ERRORS.some((p) => p instanceof RegExp && p.source.includes('ChunkLoadError'))).toBe(
       true,
     );
+    expect(CLIENT_IGNORE_ERRORS).toContain('AuthRefreshDiscardedError');
+  });
+
+  // Sentry filters on `getPossibleEventMessages` (@sentry/core
+  // utils/eventUtils.js), which pushes BOTH the exception `value` and
+  // `${type}: ${value}` — and `stringMatchesSomePattern` treats a string
+  // pattern as a SUBSTRING test. The bare type name in the list above is
+  // therefore only correct if it matches the rendered title. Pin that here
+  // rather than trusting the reading: an entry that matches nothing is a
+  // filter that silently does not filter.
+  it('the AuthRefreshDiscardedError entry matches the shape Sentry actually tests against', () => {
+    const type = 'AuthRefreshDiscardedError';
+    const value = 'Refresh result discarded: session state changed mid-flight (e.g., concurrent signOut)';
+    const candidates = [value, `${type}: ${value}`];
+
+    const matches = candidates.filter((candidate) =>
+      CLIENT_IGNORE_ERRORS.some((pattern) =>
+        typeof pattern === 'string' ? candidate.includes(pattern) : pattern.test(candidate),
+      ),
+    );
+
+    // `${type}: ${value}` is the one that must match — the bare `value` never
+    // names the error type, so it is expected NOT to.
+    expect(matches).toEqual([`${type}: ${value}`]);
   });
 });

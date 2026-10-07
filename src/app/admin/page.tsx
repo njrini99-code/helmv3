@@ -3,7 +3,8 @@ import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import {
   fetchOverviewSnapshot,
   classifyKpiTone,
-  ERRORS_24H_RED_AT,
+  ACTIONABLE_INCIDENTS_72H_RED_AT,
+  SENTRY_FIRING_72H_RED_AT,
   SECURITY_EVENTS_24H_RED_AT,
   type WatcherSignal,
 } from '@/lib/admin/data/overview';
@@ -53,13 +54,19 @@ async function PostureBoards() {
     >
   > = [
     {
-      key: 'sentry-unresolved',
-      label: 'Sentry unresolved',
-      value: kpis.sentryUnresolved,
+      key: 'sentry-firing-72h',
+      label: 'Sentry issues firing (72h)',
+      value: kpis.sentryFiring72h,
       href: '/admin/errors',
-      tone: kpis.sentryUnresolved ? 'danger' : 'neutral',
       goodDirection: 'down',
-      source: 'Sentry issues API — unresolved, org-wide (not windowed).',
+      // Was danger on ANY nonzero count of the full org-wide unresolved
+      // backlog (~270 issues at design time, most with zero occurrences in
+      // the visible window) — a routinely-nonzero number that never clears.
+      // This is the same windowed, deduped Sentry-origin group count the
+      // Errors tab's default list actually shows.
+      tone: kpis.sentryFiring72h === null ? 'neutral' : classifyKpiTone(kpis.sentryFiring72h, SENTRY_FIRING_72H_RED_AT),
+      source:
+        '72h feed — Sentry issues merged into incident groups (same population as the Errors tab default list, not the full unresolved backlog).',
       // Honest starved copy (bridge-tab-audit-p0p1 overview Finding 1) —
       // without this the tile falls through to StatTile's generic "log a
       // few more data points" message even when Sentry is unconfigured or
@@ -78,13 +85,18 @@ async function PostureBoards() {
           : {}),
     },
     {
-      key: 'incident-groups-24h',
-      label: 'Incident groups 24h',
-      value: kpis.incidentGroups24h,
+      key: 'incidents-needing-action-72h',
+      label: 'Incidents needing action (72h)',
+      value: kpis.actionableIncidents72h,
       href: '/admin/errors',
       goodDirection: 'down',
-      tone: classifyKpiTone(kpis.incidentGroups24h, ERRORS_24H_RED_AT),
-      source: '24h feed — admin_events + Sentry (lastSeen), grouped into incidents.',
+      tone: classifyKpiTone(kpis.actionableIncidents72h, ACTIONABLE_INCIDENTS_72H_RED_AT),
+      // Was labeled "24h" over a feed that had already moved to 72h
+      // (DEFAULT_INCIDENT_WINDOW_HOURS) and counted `totalGroups` — every
+      // group, QA fixtures included — rather than the actionable predicate
+      // the Errors tab's default list and the bridge chrome badge both use.
+      source:
+        '72h feed — admin_events + Sentry, grouped into incidents, same actionable predicate as the Errors tab default list.',
       freshness: watcher.find((w) => w.label === 'Error pipeline'),
     },
     {
@@ -93,8 +105,11 @@ async function PostureBoards() {
       value: kpis.securityEvents24h,
       href: '/admin/auth',
       goodDirection: 'down',
-      tone: classifyKpiTone(kpis.securityEvents24h, SECURITY_EVENTS_24H_RED_AT),
+      tone:
+        kpis.securityEvents24h === null ? 'neutral' : classifyKpiTone(kpis.securityEvents24h, SECURITY_EVENTS_24H_RED_AT),
       source: "admin_events where event_type = 'security', last 24h count.",
+      starvedTitle: 'Security-event count unavailable',
+      starvedDescription: 'The admin_events security-event count could not be read. This is not zero security events.',
     },
     {
       key: 'active-users-today',
@@ -112,9 +127,21 @@ async function PostureBoards() {
     {
       key: 'activity-today',
       label: 'Activity today',
-      value: kpis.activityToday.golf + kpis.activityToday.baseball + kpis.activityToday.lifting,
-      href: '/admin/golf',
+      // null (not a silent 0) if ANY of the three sport counts failed to
+      // read — summing a failed read straight through used to report
+      // "zero activity" for a sport whose count query simply broke.
+      value:
+        kpis.activityToday.golf === null ||
+        kpis.activityToday.baseball === null ||
+        kpis.activityToday.lifting === null
+          ? null
+          : kpis.activityToday.golf + kpis.activityToday.baseball + kpis.activityToday.lifting,
+      // Was `/admin/golf` — a three-sport SUM linking to one sport's own tab.
+      // `/admin/activity` is the actual cross-sport combined activity feed.
+      href: '/admin/activity',
       source: 'golf_rounds + baseball_games (completed) + helm_lifting_sessions, created today.',
+      starvedTitle: 'Activity count unavailable',
+      starvedDescription: 'One of the golf/baseball/lifting counts could not be read. This is not zero activity.',
     },
     {
       key: 'last-deploy',

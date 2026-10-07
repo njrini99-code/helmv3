@@ -91,6 +91,92 @@ always derived at read time.
   recomputed its own read-time key from normalized message + route + action +
   errorCode, which could disagree with the Errors tab's grouping for the same
   underlying rows.
+- **The cross-source join key hashes the MESSAGE, on every side.** A fixed
+  severity is only half of "one key"; hashing a different FIELD on each side of
+  the join splits the keyspace just as thoroughly. `correlate.ts` keys app and
+  Sentry items on `TriageItem.correlationMessage`, and each `mergeTriage`
+  branch sets that to the same expression the matching arm of
+  `src/lib/reliability/sources.ts` used before `correlationSignature`
+  (`src/lib/reliability/normalize.ts`) hashed it — `row.message ?? row.title`
+  for app rows, `` `${title} — ${culprit}` `` for Sentry issues. Until
+  2026-09-08 `correlate.ts` hashed `item.title` instead: against production,
+  ZERO of 22 app incidents in the 72h window joined a reliability signal, every
+  incident rendered twice (once as `<fingerprint>`, once as a phantom
+  `rel:<signature>` twin with `occurrences: 0`), and the board reported
+  `corroboration > 1` exactly once in 84 incidents. After: 16 of 69. The guard
+  is `correlate.test.ts`'s "keyed on the MESSAGE, not the route-decorated
+  title" — its fixture deliberately makes title and message differ, because one
+  where they are equal passes under both the broken and the fixed key. Changing
+  either side without the other silently reopens the split, and the only
+  symptom is a corroboration count nobody is watching.
+- **One classifier, one verdict, whichever source saw the fault.**
+  Reliability-only buckets run `classifyIncident` like every other incident.
+  They used to be hardcoded `defect`/actionable on the grounds that "no app or
+  Sentry classifier has ever looked at this fault" — which is not a
+  conservative default: 59 of 84 board incidents were reliability-only and all
+  59 were force-flagged actionable, including ten "N+1 Query" signals and the
+  whole empty-state family, so the board counted 77 actionable against the
+  Errors tab's 22. The safe direction is preserved where it matters because it
+  is the classifier's OWN severity ladder — an unrecognised error/critical
+  signal still returns `defect`/actionable/`matched: false`. Pass
+  `source: null`, never `'client'`: a reliability signal is server-observed
+  (Supabase/Sentry/Vercel arms) and must not take the branches that file a
+  fault as the visitor's own connectivity.
+- **An incident carries WHO, not only how many.** `mergeTriage` built a Set of
+  `user_id`/`user_email` per fingerprint and kept only `.size`, so every Bridge
+  surface could render "2 users" and none could say which two —
+  `/admin/thread/user/<id>` and `entity-thread.ts` shipped the whole time with
+  nothing linking to them from an incident. `TriageItem.affectedPeople` and
+  `UnifiedIncident.affectedPeople` now carry the identities (capped at
+  `MAX_AFFECTED_PEOPLE`), `correlate.ts` UNIONS them across co-bucketed app
+  items rather than taking `Math.max` of the per-item counts (two items each
+  reporting one user are two people unless they are the same person, and only
+  identities can say which), and `src/lib/admin/data/affected-people.ts`
+  resolves them to names — which live on the sport profile tables, never on
+  `users`. Sentry contributors stay a MAX against the app side, never a sum:
+  its `userCount` is an opaque tally of an overlapping population. Identities
+  are deliberately NOT folded into `report`, the string the RCA action forwards
+  to a third-party model. The detail page's `AffectedPeoplePanel` keeps three
+  states: named people, "no identity was captured" (a capture gap), and "could
+  not read who" — the last must never render as the second.
+- **`fetchAffectedPeopleForFingerprint`'s identity read is paginated, not a
+  single `.limit()`.** It asked PostgREST for up to `IDENTITY_ROW_LIMIT`
+  (2000) `admin_events` rows in one request; PostgREST caps every request at
+  1,000 regardless of what `.limit()` asks for, so a fingerprint with more
+  than 1,000 distinct identity rows in its history silently undercounted
+  `total` and dropped names — no error, an incident that just looked smaller
+  than it was. `IDENTITY_ROW_LIMIT` is now a TOTAL bound drained across
+  `PAGE_SIZE` (1000) pages via `.range()`, ordered by `created_at` with an
+  `id` tiebreaker so a page boundary can't drop or duplicate a row when many
+  share a timestamp.
+- **Server-render faults capture the signed-in user from the request's own
+  cookies.** `onRequestError` (`src/instrumentation.ts`) is the capture path for
+  every server-render and route-handler failure and passed no identity at all,
+  so every `source='server_component'` row landed with `user_id NULL` — 79 of
+  the ~151 error rows visible in a 72h window on 2026-09-08, the top three
+  incidents by volume among them. `cookies()` from `next/headers` is
+  unavailable in that frame (the render has already unwound) and the ambient
+  `RequestContext` AsyncLocalStorage is opened only by `observed-action.ts`, so
+  a page render never has one; `request.headers` is the only identity signal
+  the hook gets. `src/lib/observability/observed-user-from-request.ts` reads it
+  via `createServerClient` — the cookie is chunked and `base64-` enveloped and
+  a hand-rolled decoder that gets it subtly wrong would ATTRIBUTE A FAULT TO
+  THE WRONG PERSON, which is worse than the null it replaces. ATTRIBUTION
+  ONLY: the session's signature is not re-verified and nothing there may ever
+  gate access — `updateSession` already verified this request via
+  `getUserResilient` before a render could throw, and a real permission
+  decision goes through `requireSuperAdmin()` or RLS. The edge branch relays
+  the same pair through `/api/internal/log-server-error`, which re-validates
+  the id's UUID shape so a malformed value costs one field and not the whole
+  row. Historical rows cannot be backfilled — attribution is forward-only.
+  THE IDENTITY READ NEVER TOUCHES THE NETWORK: auth-js treats a session inside
+  `EXPIRY_MARGIN_MS` as expired and `getSession()` then calls
+  `_callRefreshToken`, which `autoRefreshToken: false` does not gate — so the
+  client is handed a `global.fetch` that answers 400. The status is the design:
+  a rejection or 5xx is retryable and costs ~10s of backoff sleeps on the error
+  path, and any 2xx would be parsed as a real refresh result. A session still
+  inside its true expiry is returned by auth-js's own fallback, so the refusal
+  costs no attribution.
 - **Incident resolution has exactly one write path.** Every resolve — a single
   row, a whole fingerprint, or a bulk selection — goes through the user-scoped
   `resolve_admin_event` RPC and busts `BRIDGE_INCIDENT_CACHE_TAG`. The RPC

@@ -79,6 +79,12 @@ export default async function UtilizationPage() {
             Who is actually driving each feature. Select a power user to see exactly which features they touch;
             everything else dims.
           </p>
+          {readouts.internalActiveUsers > 0 ? (
+            <p className="mt-1 text-caption text-warm-400">
+              {readouts.internalActiveUsers} of {readouts.activeUsers30d} 30d-active accounts are test, demo, or
+              internal — kept in every count above, not excluded.
+            </p>
+          ) : null}
           <div className="mt-3">
             <FeatureConstellation rows={rows} users={users} />
           </div>

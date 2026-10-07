@@ -728,4 +728,58 @@ describe('helm.workflow.* metrics, helmLog, and Sentry trace correlation', () =>
 
     expect(finalizeOrder).toEqual(['metric', 'persist']);
   });
+
+  // Same argument as the test above, for the span rather than the metric.
+  // The span measures the WORKFLOW; persistFinalize is diagnostics drain that
+  // runs after the workflow's outcome is already decided, is unbounded, and
+  // queues behind the ~15-50 concurrent void-called persistStep writes. With
+  // `.end()` on the far side of it, production reported golf.round.autosave
+  // at p50 11.6s inside a transaction whose own p50 was 429ms.
+  it('ends the Sentry span BEFORE the (unbounded) persistFinalize write, so the span measures the workflow and not the diagnostics drain', async () => {
+    const order: string[] = [];
+    const spanEnd = vi.fn(() => { order.push('span_end'); });
+    const dependencies: FlightRecorderDependencies = {
+      newTraceId: () => 'ffffffff-1111-2222-3333-444444444444',
+      startSpan: () => ({
+        traceId: 'sentry-trace',
+        spanId: 'sentry-span',
+        end: spanEnd,
+        setStatus: vi.fn(),
+      }),
+      persistStart: async () => {},
+      persistStep: async () => {},
+      persistFinalize: async () => { order.push('persist'); },
+      onRecorderFailure: vi.fn(),
+    };
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.autosave' }, dependencies);
+
+    await recorder.finalize('success');
+
+    expect(order).toEqual(['span_end', 'persist']);
+    expect(spanEnd).toHaveBeenCalledTimes(1);
+  });
+
+  // The reordering must not cost the span its status: a failed workflow still
+  // has to close 'internal_error', which is what makes it findable in Sentry.
+  it('still sets the failure status on the span when it closes early', async () => {
+    const spanSetStatus = vi.fn();
+    const dependencies: FlightRecorderDependencies = {
+      newTraceId: () => 'ffffffff-1111-2222-3333-444444444444',
+      startSpan: () => ({
+        traceId: 'sentry-trace',
+        spanId: 'sentry-span',
+        end: vi.fn(),
+        setStatus: spanSetStatus,
+      }),
+      persistStart: async () => {},
+      persistStep: async () => {},
+      persistFinalize: async () => {},
+      onRecorderFailure: vi.fn(),
+    };
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.autosave' }, dependencies);
+
+    await recorder.finalize('failure');
+
+    expect(spanSetStatus).toHaveBeenCalledWith('internal_error');
+  });
 });

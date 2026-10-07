@@ -8,8 +8,9 @@ export const meta = {
   ],
 }
 
-// args: an array of PR numbers, e.g. [1867, 1866]. A single number is accepted too.
-const prs = Array.isArray(args) ? args : (args != null ? [args] : [])
+// args: PR numbers as an array, a single number, or the slash-command string "1867 1866".
+const prs = (Array.isArray(args) ? args : String(args ?? '').split(/[\s,]+/))
+  .map(Number).filter(Number.isInteger)
 if (!prs.length) throw new Error('helm-fix-ci needs PR numbers as args, e.g. args: [1867, 1866]')
 
 const DIAGNOSIS = {
@@ -18,7 +19,7 @@ const DIAGNOSIS = {
   properties: {
     pr: { type: 'integer' },
     branch: { type: 'string' },
-    worktree: { type: 'string', description: 'absolute path under /Users/ricknini/worktrees/helmv3, or "" if none' },
+    worktree: { type: 'string', description: 'absolute path from `git worktree list` for this branch, or "" if none' },
     failures: {
       type: 'array',
       description: 'real failures only — each one a check the PR\'s own diff can fix',
@@ -51,7 +52,7 @@ const NON_ACTIONABLE =
 const out = await pipeline(
   prs,
   (pr) => agent(
-    `PR #${pr} in njrini99-code/helmv3 has red checks. gh needs the Bash sandbox disabled in this environment (TLS errors otherwise); use that only for gh commands. ` +
+    `PR #${pr} in njrini99-code/helmv3 has red checks. ` +
     `Find the head SHA (gh pr view ${pr} --json headRefName,headRefOid,isDraft), list check runs (gh api repos/njrini99-code/helmv3/commits/<sha>/check-runs?per_page=100), ` +
     'and for each failing job read `gh run view <run> --job <job> --log-failed`. Identify the exact failing step and its cause from the log, not from memory of past failures. ' +
     NON_ACTIONABLE + ' ' +
@@ -63,7 +64,7 @@ const out = await pipeline(
       log(`#${pr}: no actionable failures${diag?.nonActionable?.length ? ` (non-actionable: ${diag.nonActionable.join('; ')})` : ''}`)
       return { pr, fixed: false, note: 'no actionable failures', nonActionable: diag?.nonActionable ?? [] }
     }
-    if (!diag.worktree) { log(`#${pr}: no worktree for ${diag.branch}; skipping`); return { pr, fixed: false, note: 'no worktree' } }
+    if (!diag.worktree) { log(`#${pr}: no worktree for ${diag.branch}; skipping (reattach one with scripts/new-worktree.sh <task> --reattach)`); return { pr, fixed: false, note: 'no worktree' } }
     return agent(
       `Worktree: ${diag.worktree}, branch ${diag.branch}, PR #${pr}. Confirm the branch and that \`node -v\` is v22 first. ` +
       'Fix ONLY these CI failures — never the PR\'s intent, never raise a baseline, never skip, weaken or delete a test:\n' +
@@ -74,12 +75,12 @@ const out = await pipeline(
       '2. Fix every reproduced failure. Then run `npm run preflight` (add `--full` if the PR touches supabase/**, a \'use server\' file, or many areas). ' +
       'It regenerates generated artifacts and runs every required CI step it can; fix EVERYTHING it reports, not only what CI showed, in the same batch.\n' +
       '3. Push ONCE, only after preflight exits 0: commit with explicit `git add <paths>` and the trailer `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`, ' +
-      'then `git push` (sandbox disabled for the push only). One push per round — every extra push cancels the CI run in flight.\n' +
+      'then `git push`. One push per round — every extra push cancels the CI run in flight.\n' +
       '4. STOP after 2 rounds. If preflight is still red after two fix attempts, or a failure is pre-existing on main or infrastructure noise, do not push again: ' +
       'report what fails, the evidence, and what you tried.\n' +
       'Do not merge. Final text: the new head SHA (or "not pushed"), the preflight result and wall time, one line per fix, and anything left unresolved.',
       { label: `fix:${pr}`, phase: 'Fix', agentType: 'helm-worker' },
-    ).then((text) => ({ pr, fixed: true, report: text, nonActionable: diag.nonActionable ?? [] }))
+    ).then((text) => ({ pr, fixed: text != null, report: text, nonActionable: diag.nonActionable ?? [] }))
   },
 )
 

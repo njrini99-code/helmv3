@@ -199,7 +199,11 @@ const STACK_START_RE = /supabase-start-with-retry|local-supabase-stack|\bsupabas
 export const STEP_RULES = [
   { name: 'aggregate-job', when: (s, ctx) => ctx.jobId === 'all', kind: 'plumbing', reason: 'aggregate job: preflight reports each step itself' },
   { name: 'setup-action', when: (s) => s.uses && /actions\/(checkout|setup-[\w-]+|cache(\/\w+)?|upload-artifact|download-artifact)@|denoland\/setup-deno|supabase\/setup-cli/.test(s.uses), kind: 'plumbing', reason: 'runner setup' },
-  { name: 'install', when: (s) => /^\s*npm ci\s*$/.test(runOf(s)), kind: 'plumbing', reason: 'dependency install: preflight uses the local node_modules' },
+  { name: 'install', when: (s) => /^\s*npm ci\b[^\n]*\s*$/.test(runOf(s)), kind: 'plumbing', reason: 'dependency install: preflight uses the local node_modules' },
+  { name: 'change-detection', when: (s) => s.uses && /paths-filter/.test(s.uses), kind: 'plumbing', reason: 'change detection: preflight decides from its own diff' },
+  // A step whose only job is to set a step output (a skip gate, a cache key):
+  // it writes $GITHUB_OUTPUT and runs no tool.
+  { name: 'output-only', when: (s) => /GITHUB_OUTPUT/.test(runOf(s)) && !/(^|[\s;&|(])(npm|npx|node|tsx|deno|supabase|bash|sh|git|sg|semgrep|gitleaks)\s/m.test(runOf(s)), kind: 'plumbing', reason: 'sets a step output (skip gate / cache key) only' },
   { name: 'install-linters', when: (s) => /^Install linters$/i.test(s.name ?? ''), kind: 'plumbing', reason: 'CI tool install: preflight uses local tools and warns on version drift' },
   { name: 'aggregate-step', when: (s) => /STEP_OUTCOMES/.test(runOf(s)) || /aggregate/i.test(s.name ?? ''), kind: 'plumbing', reason: 'aggregate of the steps preflight reports individually' },
   { name: 'registry-login', when: (s) => /docker login/.test(runOf(s)), kind: 'plumbing', reason: 'CI container-registry credential' },

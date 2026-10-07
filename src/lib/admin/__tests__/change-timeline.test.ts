@@ -55,6 +55,7 @@ function makeIncident(overrides: Partial<UnifiedIncident> & { id: string }): Uni
     lastSeen: NOW_ISO,
     occurrences: 1,
     affectedUsers: 0,
+    affectedPeople: [],
     affectedUsersKnown: false,
     sources: [],
     corroboration: 1,

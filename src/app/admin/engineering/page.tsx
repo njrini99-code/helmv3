@@ -62,9 +62,11 @@ async function DecisionInboxBody() {
   return (
     <div className="space-y-3">
       {!janitorFindingsRead ? (
-        <InlineNotice tone="info" title="Janitor findings not generated yet">
-          Held-migration decisions still show below. Run <span className="font-fw-mono">npm run janitor</span> to
-          surface entropy findings here too.
+        <InlineNotice tone="info" title="Janitor findings not readable here">
+          Held-migration decisions still show below. Janitor findings are a weekly CircleCI artifact
+          (<span className="font-fw-mono">docs/generated/janitor-findings.json</span> is gitignored and never
+          shipped to the Bridge) — running <span className="font-fw-mono">npm run janitor</span> locally cannot
+          populate this panel in production.
         </InlineNotice>
       ) : null}
       {items.length === 0 ? (
@@ -192,9 +194,8 @@ async function CharterBody() {
           </div>
         ) : (
           <p className="mt-2 text-xs text-warm-500">
-            {janitor.error ?? 'Not generated. Run '}
-            <span className="font-fw-mono">npm run janitor</span> to produce
-            <span className="font-fw-mono"> docs/generated/janitor-findings.json</span>.
+            {janitor.error ??
+              'Janitor findings are a weekly CI artifact and are not shipped to the Bridge — see the CircleCI janitor job.'}
           </p>
         )}
       </div>

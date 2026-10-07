@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { logServerError } from '@/lib/server-error-logger';
+import { FAILURE_SEVERITIES } from '@/lib/admin/severity';
 
 /**
  * Helm Bridge — Pulse Grid: every team (golf + baseball) as one row with a
@@ -314,6 +315,10 @@ export async function fetchPulseGrid(sort: PulseSort = 'attention'): Promise<Pul
         // A resolved incident isn't part of the current EKG — matches
         // /admin/errors' `.eq('resolved', false)` convention.
         .eq('resolved', false)
+        // event_type='error' rows carry any severity (info/warning included)
+        // — without this the "errors" overlay counted warning/info noise
+        // alongside real failures, same rule teams-ekg.ts already applies.
+        .in('severity', FAILURE_SEVERITIES)
         .gte('created_at', ago30d)
         .order('id', { ascending: true })
         .range(from, to),
@@ -327,6 +332,9 @@ export async function fetchPulseGrid(sort: PulseSort = 'attention'): Promise<Pul
         // Same resolved-exclusion as the team-tagged branch above — this is
         // the OTHER half of the same union, not a separate signal.
         .eq('resolved', false)
+        // Same severity guard as the team-tagged branch above — the two
+        // halves of one union must agree on what counts as an "error".
+        .in('severity', FAILURE_SEVERITIES)
         .gte('created_at', ago30d)
         .in('user_id', batch)
         .order('id', { ascending: true })

@@ -32,7 +32,7 @@ Read `design-tokens.md` first on every invocation. The tokens are the non-negoti
 
 ## Core Philosophy
 
-GolfHelm creatives follow one rule: **the ad IS the product.** Every creative should look like a natural extension of the GolfHelm dashboard — same glass cards, same DM Sans typography, same warm cream-to-green palette. A user mid-session should think it's a screenshot with editorial framing, not a marketing asset.
+GolfHelm creatives follow one rule: **the ad IS the product.** Every creative should look like a natural extension of the GolfHelm dashboard — using the product's real screens and Fairway surfaces, framed with the marketing palette below (ads may use the marketing glass/cream treatment; the product itself does not). A user mid-session should think it's a screenshot with editorial framing, not a marketing asset.
 
 This means:
 - Use real UI components (score predictions, insight cards, round reviews) as the visual hero

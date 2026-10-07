@@ -1,45 +1,45 @@
 name: Docs Regen
-# VERIFICATION ONLY as of 2026-08-29. This workflow no longer opens PRs.
+# THE REPAIR ARM FOR GENERATED ARTIFACTS ON MAIN (2026-09-23).
 #
-# WHAT IT USED TO DO, AND WHY THAT WAS A CONTROL-PLANE LEAK
+# HISTORY. Until 2026-08-29 this regenerated inventory blocks on every push
+# to main and opened a follow-up PR. That was retired for two reasons:
+# `created != integrated` (#1623 sat open while main carried a stale route
+# count) and PRs created with GITHUB_TOKEN receive no required CI. From then
+# until 2026-09-23 it only verified, and the PR-time `--check` steps in
+# ci.yml were the enforcement point.
 #
-# It regenerated the inventory blocks on every push to main and opened a
-# FOLLOW-UP PR with the diff. Two things went wrong with that shape:
+# WHY IT REGENERATES AGAIN. The PR-time checks ran on the MERGE of each PR
+# into the current main, so they went red on every open PR whenever main
+# moved — main stale (inherited) or two PRs regenerating the same file
+# (skew). That was a large share of red-by-default PR runs. As of
+# 2026-09-23 those steps run through scripts/github/pr-drift-gate.mjs and
+# fail a PR only for drift it introduced. The price is that a skewed
+# combination can now land on main, so main needs a repair arm again —
+# this workflow:
 #
-#   1. `created != integrated`. #1623 sat open while main carried a stale route
-#      count (234 vs the real 235, after /admin/self-heal shipped). The
-#      correction existed; nothing merged it.
-#   2. This file's own former header recorded that PRs created with
-#      GITHUB_TOKEN may receive no required CI — so the follow-up PR could not
-#      be merged confidently even by someone who noticed it.
+#   1. runs every generated-artifact --check on the new main commit;
+#   2. if any is stale, runs the generators, re-checks that they converged,
+#      and opens or updates the `docs/auto-regen` PR;
+#   3. fails loudly if the generators do not converge or no PR could be
+#      opened.
 #
-# Drift is now a REQUIRED PR-time check (`Generated inventory is current` in
-# ci.yml, running `npm run docs:inventory-check`). A source change and its
-# generated truth land in the same PR, which is where they belong.
+# The PR still needs CI to merge. With `REGEN_PR_PAT` set (owner action,
+# see docs/CI_RUNBOOK.md) it gets CI like any PR; without it, a human push to
+# the branch (or close/reopen by hand) triggers CI.
 #
-# This job remains as a backstop for anything that reached main without that
-# gate. It FAILS LOUDLY and creates nothing.
-#
-# SECURITY: no untrusted input; no write permissions; no PR creation.
+# SECURITY: no untrusted input; writes only generated files to its own
+# branch.
 on:
   push:
     branches: [main]
-    paths:
-      - 'src/lib/types/database.ts'
-      - 'src/app/**/page.tsx'
-      - 'src/app/**/page.ts'
-      - 'src/app/**/actions/**/*.ts'
-      - 'src/hooks/**/*.ts'
-      - 'scripts/regen-docs.mjs'
-      - 'memory/glossary.md'
-      - 'memory/projects/golfhelm.md'
-      - 'memory/context/golfhelm-database.md'
   workflow_dispatch: {}
 concurrency:
+  # Only the newest main matters; a newer push regenerates from a newer tree.
   group: docs-regen-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
 jobs:
   verify:
     name: Generated inventory is current (main)
@@ -49,6 +49,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          # Full history: the document inventory and world model read git.
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Setup Node
@@ -58,8 +60,83 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit --no-fund
 
-      # Non-mutating. Leaves the tree byte-identical and exits non-zero on drift.
-      - name: Verify generated inventory
-        run: npm run docs:inventory-check
+      # Non-mutating. Every check runs even when an earlier one is stale.
+      - name: Verify generated artifacts
+        id: verify
+        continue-on-error: true
+        run: |
+          rc=0
+          for check in docs:inventory-check enforcement:check tool-authority:check \
+                       knowledge:feature-map:check knowledge:world-model:check knowledge:doc-inventory:check; do
+            echo "::group::$check"
+            npm run "$check" || { rc=1; echo "::warning::$check is stale on main"; }
+            echo "::endgroup::"
+          done
+          exit "$rc"
+
+      # Order matters: the document inventory counts the other generated
+      # docs, so it runs last.
+      - name: Regenerate
+        if: steps.verify.outcome == 'failure'
+        run: |
+          set -euo pipefail
+          npm run docs:regen
+          npm run enforcement:regen
+          npm run tool-authority:regen
+          npm run knowledge:feature-map
+          npm run knowledge:world-model
+          npm run knowledge:doc-inventory
+          # Converged? A generator that disagrees with its own --check is a
+          # bug, and a PR carrying its output would fail the same gate.
+          for check in docs:inventory-check enforcement:check tool-authority:check \
+                       knowledge:feature-map:check knowledge:world-model:check knowledge:doc-inventory:check; do
+            npm run --silent "$check"
+          done
+          git --no-pager diff --stat
+
+      - name: Open or update the regeneration PR
+        id: cpr
+        if: steps.verify.outcome == 'failure'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1  # v8.1.1
+        with:
+          # Same token rule as types-regen.yml: GITHUB_TOKEN-created PRs get
+          # no `pull_request` CI; REGEN_PR_PAT (when the owner adds it) does.
+          token: ${{ secrets.REGEN_PR_PAT || secrets.GITHUB_TOKEN }}
+          commit-message: "chore(docs): regenerate generated artifacts on main"
+          branch: docs/auto-regen
+          delete-branch: true
+          title: "chore(docs): regenerate generated artifacts on main"
+          body: |
+            Automated regeneration — a generated artifact on `main` no longer
+            matches its sources (usually two PRs that each regenerated the
+            same file, merged back to back). Generator output only.
+
+            🤖 Opened by `.github/workflows/docs-regen.yml`
+          add-paths: |
+            memory/glossary.md
+            memory/projects/golfhelm.md
+            memory/context/golfhelm-database.md
+            docs/CONTROL_PLANE_ENFORCEMENT.md
+            docs/TOOL_AUTHORITY_MATRIX.md
+            docs/generated/HELM_FEATURE_MAP.md
+            docs/generated/WORLD_MODEL.json
+            docs/generated/WORLD_MODEL.md
+            docs/generated/DOCUMENT_AUTHORITY_INVENTORY.md
+
+      - name: Summary
+        if: always()
+        env:
+          VERIFY: ${{ steps.verify.outcome }}
+          PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
+        run: |
+          if [ "$VERIFY" = "success" ]; then
+            echo "Every generated artifact on main matches its sources." | tee -a "$GITHUB_STEP_SUMMARY"
+          elif [ -n "$PR_URL" ]; then
+            echo "::warning::Generated artifacts were stale on main — regeneration PR: $PR_URL"
+            echo "Generated artifacts were stale on main — regeneration PR: $PR_URL" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::Generated artifacts are stale on main and no regeneration PR was opened."
+            exit 1
+          fi

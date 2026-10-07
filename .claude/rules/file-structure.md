@@ -1,6 +1,8 @@
 ---
 paths:
-  - "src/**/*"
+  - "src/app/golf/**"
+  - "src/components/golf/**"
+  - "src/lib/golf/**"
 ---
 
 ## File Structure (Key Paths)

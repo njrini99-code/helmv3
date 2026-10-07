@@ -409,6 +409,47 @@ describe('fetchFeatureHealthDetail', () => {
     expect(roundTracking!.counts).toEqual({ errors: 1, warnings: 0, total: 1 });
   });
 
+  it('a raw-event page at the real PostgREST 1,000-row cap sets rowsTruncated: true', async () => {
+    // Regression for the dead-code truncation flag: RAW_EVENT_ROW_LIMIT used
+    // to be 8000, but PostgREST caps every response at 1,000 rows regardless
+    // of `.limit()`, so `rows.length >= RAW_EVENT_ROW_LIMIT` could never be
+    // true — a bad week silently under-counted with no way for the UI to say
+    // so. This pins that hitting the real cap (1,000 rows back) now flags it.
+    mocks.fetchFeatureHealth.mockResolvedValue({
+      features: [registeredHealth],
+      generatedAt: NOW.toISOString(),
+      degraded: false,
+      degradedReason: null,
+    });
+
+    const rawRows = Array.from({ length: 1000 }, (_, i) => ({
+      id: `r${i}`,
+      feature: 'round_tracking',
+      severity: 'error',
+      title: 'boom',
+      created_at: hoursAgoIso(1),
+      fingerprint: `fp-${i}`,
+    }));
+
+    vi.mocked(createAdminClient).mockReturnValue(
+      mockAdminClient([
+        { data: rawRows, error: null },
+        { count: 5000, error: null },
+        { count: 100, error: null },
+        { count: 10, error: null },
+        { count: 10, error: null },
+      ]) as unknown as ReturnType<typeof createAdminClient>,
+    );
+
+    const result = await fetchFeatureHealthDetail();
+
+    expect(result.rowsTruncated).toBe(true);
+    // The coverage totals come from separate exact head-counts, never from
+    // the bounded row page, so they stay exact even while the page itself
+    // is truncated.
+    expect(result.coverage).toMatchObject({ totalEvents: 5000, unattributedEvents: 100 });
+  });
+
   it('a failed coverage query degrades to coverage:null with an error, never a fabricated percentage', async () => {
     mocks.fetchFeatureHealth.mockResolvedValue({
       features: [registeredHealth],

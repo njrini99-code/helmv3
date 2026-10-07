@@ -40,6 +40,34 @@ describe('instrumentation-client privacy sentinel — beforeSend / beforeSendMet
     vi.unstubAllEnvs();
   });
 
+  it('drops only the non-critical Supabase presence-heartbeat timeout', async () => {
+    const { beforeSend } = await loadInitOptions();
+    const event = {
+      exception: {
+        values: [{
+          type: 'Error',
+          value: 'TimeoutError: signal timed out',
+          stacktrace: { frames: [{ filename: '../src/hooks/use-presence.ts', function: 'sendHeartbeat' }] },
+        }],
+      },
+    };
+    expect(beforeSend!(event, {})).toBeNull();
+  });
+
+  it('retains a timeout that did not originate from the presence heartbeat', async () => {
+    const { beforeSend } = await loadInitOptions();
+    const event = {
+      exception: {
+        values: [{
+          type: 'Error',
+          value: 'TimeoutError: signal timed out',
+          stacktrace: { frames: [{ filename: '../src/app/golf/actions/save-round.ts', function: 'saveRound' }] },
+        }],
+      },
+    };
+    expect(beforeSend!(event, {})).not.toBeNull();
+  });
+
   it('beforeSend strips Authorization, Cookie, and Set-Cookie headers', async () => {
     const { beforeSend } = await loadInitOptions();
     expect(beforeSend).toBeTypeOf('function');

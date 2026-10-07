@@ -7,8 +7,8 @@ captured from THIS PR's own build and uploaded to Sentry's Snapshots product
 **2026-09-06: the standalone `sentry-snapshots.yml` workflow this doc
 describes is gone** — its job (`Capture + upload Sentry snapshots`) now
 lives as the `sentry-snapshot-capture` job inside `.github/workflows/ci.yml`,
-gated by the shared `.github/workflows/detect-changes.yml` detector's
-`code`/`e2e` outputs instead of a trigger-level `paths:` filter, and it
+run on push to `main`, dispatch, or a `ci:e2e`-labelled PR (2026-09-23;
+before that, gated by the shared detector's `code`/`e2e` outputs), and it
 downloads `ci.yml`'s own `next-build` artifact instead of running its own
 `npm run build`. The design below (screen list, determinism rules,
 advisory-then-required plan) is otherwise unchanged. Spec files:
@@ -113,7 +113,7 @@ name.
 
 ## 3. Why production data, not a local throwaway stack
 
-`ci.yml`'s `baseball-auth-smoke` job proves the alternative — spin up a
+`nightly.yml`'s `baseball-auth-smoke` job (in `ci.yml` until 2026-09-23) proves the alternative — spin up a
 disposable Supabase stack on the runner, seed it, and test against that
 instead of production — and that pattern was deliberately **not** reused
 here, for two concrete reasons:
@@ -198,14 +198,13 @@ inside the single `sentry-snapshot-capture` job in `ci.yml`, not a separate
    cost with no product. As of this writing the secret does NOT exist (see
    §6), so every PR pays only that step's few seconds until an owner adds
    it.
-2. **`detect-changes`'s shared `code`/`e2e` outputs must both be true** —
-   the same shared `.github/workflows/detect-changes.yml` reusable workflow
-   `pr-smoke-a11y` also consumes, replacing what used to be this workflow's
-   own trigger-level `paths:` filter. A docs-only or backend-only PR never
-   pays for a Next build it has no reason to need — nor does this job even
-   start, since it also `needs: next-build`, which itself skips on
-   `code=='false'`. `push` to `main` always runs regardless (§1, base build
-   refresh).
+2. **The event must be push to `main`, `workflow_dispatch`, or a PR
+   labelled `ci:e2e`** (2026-09-23; until then it ran on most PRs, gated on
+   `detect-changes`'s `code`/`e2e` outputs). It also needs `next-build` to
+   have built (`needs.next-build.outputs.built`). `push` to `main` always
+   runs (§1, base build refresh), so the base build Sentry diffs against
+   stays current; add the label to a PR whose visuals you want diffed
+   before merge.
 
 This job is **advisory, not required** — it is not added to branch
 protection's required checks, so a capture failure can never block a merge
