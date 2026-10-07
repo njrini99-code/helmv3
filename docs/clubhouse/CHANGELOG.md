@@ -1,5 +1,25 @@
 # Clubhouse changelog
 
+## 2026-10-07 — Framed workspace and page head
+
+The shell and every main page's head now follow the owner's Coach Home handoff
+(the "Coach - Home" design bundle). The frame and sidebar are the frame green
+(`--ch-shell` is `--ch-frame`), the brand sits in its own panel, and the
+selected row is an ivory plate with a fine edge. The desktop canvas is a warmer
+parchment (`--ch-workspace`) with a faint green bleed along its left edge, a
+soft green mist at the top left and a fine frame edge
+(`--ch-elevation-framed`).
+
+The green canopy band is gone. `main[data-canopy]` now opts a page into the
+framed page head: a double hairline above, one below, a small engraved date or
+section line, a heavy 44px sans title in forest ink with a letterpress edge, one
+sentence, and the actions on the right. Home, CoachHelm, Team stats, Roster,
+Qualifiers, Calendar, Team Hub, Recruiting and Settings use it, and their
+loading screens hold the same head heights (measured in WebKit at 1440 and
+1100), so nothing moves when the data lands. The shared `PageHero` component
+renders the head for Team stats and takes a tone for the header lab
+(`/clubhouse-preview/header-lab`). The phone is unchanged.
+
 ## 2026-10-07 — Digits in serif headings sit with the words
 
 The digits that `SerifText` sets in the sans inside a serif heading

@@ -1,5 +1,12 @@
 # P002 — Home: changelog
 
+## 2026-10-07 — Home in the framed page head
+
+Desktop Home's greeting block is the framed page head instead of the green
+canopy: the date as an engraved line, "Good morning" as the heavy sans title in
+forest ink, the brief, and the actions on the right. The loading screen draws
+the same head line for line (183px at 1440).
+
 ## 2026-10-07 — Loading holds the loaded page
 
 Desktop Home loading draws on the canopy, with the title block in the loaded

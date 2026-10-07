@@ -1,5 +1,14 @@
 # P001 — Shell: changelog
 
+## 2026-10-07 — Framed workspace, replacing the ivory sidebar and canopy
+
+The sidebar and frame are the frame green again, with the brand in its own
+panel and an ivory plate for the selected row. The desktop canvas is the
+parchment workspace with a left-edge green bleed and a top-left mist. The
+canopy's green field and scroll-settling top bar are removed; the top bar is a
+parchment glass. `main[data-canopy]` now means the framed page head (see the
+Clubhouse changelog).
+
 ## 2026-10-07 — Canopy top bar at rest
 
 On canopy pages the top bar's resting state is clear over the green with ivory
