@@ -77,6 +77,7 @@ vi.mock('@/lib/server-error-logger', () => ({
 
 // Import AFTER mocks are registered.
 const { PatternMiner } = await import('@/lib/coachhelm/v2/mining/pattern-miner');
+const { __resetEmitThrottleForTests } = await import('@/lib/admin/emit-throttle');
 
 /** N identical, feature-flat rounds — nothing for any condition to key off:
  *  same score, same non-tournament/qualifier round_type, no days-since-last
@@ -112,6 +113,9 @@ describe('pattern-miner starvation telemetry — per-player fingerprint', () => 
   beforeEach(() => {
     logServerEventMock.mockClear();
     roundsData.rows = [];
+    // The starvation line is throttled per player per process (one line an
+    // hour): start every test from an empty throttle map.
+    __resetEmitThrottleForTests();
   });
 
   it('gives two different players two different dbFingerprints', async () => {
@@ -130,14 +134,29 @@ describe('pattern-miner starvation telemetry — per-player fingerprint', () => 
   });
 
   it('gives the same player the same dbFingerprint across repeated cron ticks', async () => {
+    // Each cron tick is a fresh lambda in production, so the per-process
+    // throttle starts empty on every tick: reset it between the two mines.
     roundsData.rows = flatRounds(12);
     await new PatternMiner('player-cccc').minePatterns();
+    __resetEmitThrottleForTests();
     roundsData.rows = flatRounds(12);
     await new PatternMiner('player-cccc').minePatterns();
 
     const [first, second] = loggedFingerprints();
     expect(first?.dbFingerprint).toBe('pattern-miner-starvation:player-cccc');
     expect(second?.dbFingerprint).toBe(first?.dbFingerprint);
+  });
+
+  it('logs a player at most once per process window: a same-process re-mine is silent', async () => {
+    // analyzePlayer and predictPerformance both mine the same player within
+    // one run; 762 error_logs rows in 7 days came from exactly that. The
+    // second mine still starves (returns []) but writes no second line.
+    roundsData.rows = flatRounds(12);
+    await new PatternMiner('player-gggg').minePatterns();
+    roundsData.rows = flatRounds(12);
+    await expect(new PatternMiner('player-gggg').minePatterns()).resolves.toEqual([]);
+
+    expect(loggedFingerprints()).toHaveLength(1);
   });
 
   it('also sets a per-player Sentry-side fingerprint (harmless today under skipSentry, correct if that ever changes)', async () => {

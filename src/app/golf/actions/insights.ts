@@ -3232,6 +3232,10 @@ async function triggerPlayerInsightsAfterRoundImpl(
           playerId,
           // A coach setting doing its job, not a fault.
           skipSentry: true,
+          // The nightly roster sweep re-evaluates the same under-floor players
+          // every run; one row per player per burst, not per sweep.
+          durableCollapse: true,
+          dbFingerprint: `round-floor:${playerId}`,
           extra: { completedRounds: completedRoundCount, floor: philosophy.minRoundsForSignal },
         },
         'info',

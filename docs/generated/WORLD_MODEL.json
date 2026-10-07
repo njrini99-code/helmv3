@@ -12855,6 +12855,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/mining/pattern-miner.ts",
+          "anchor": "src/lib/admin/emit-throttle"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/mining/shot-pattern-miner.ts",
           "anchor": "src/lib/supabase/admin"
         },
