@@ -2,17 +2,23 @@
 
 ## 2026-10-07 — One continuous conversation rail
 
-The inbox rail is no longer three boxed cards (Announcements, Today, This week). The rows sit directly on the rail as
-rounded targets, the way a mail sidebar works:
+The inbox rail is no longer three boxed cards (Announcements, Today, This week).
+The rows sit directly on the rail as rounded targets, the way a mail sidebar
+works:
+
 - a soft tint on hover and on press;
-- the open conversation is a raised ivory key ruled in the field green at its left;
-- fine seams separate conversations, inset to the text, and hide next to a hovered or selected row.
+- the open conversation is a raised ivory key ruled in the field green at its
+  left;
+- fine seams separate conversations, inset to the text, and hide next to a
+  hovered or selected row.
 
 The Messages title is set in the display serif.
 
 ## 2026-10-06 — Display type relaxed
 
-The owner found the display type too compact. Display headings on this page widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on every Clubhouse page. Layout and content are unchanged.
+The owner found the display type too compact. Display headings on this page
+widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on
+every Clubhouse page. Layout and content are unchanged.
 
 ## 2026-10-06 — Premium interaction corrections
 

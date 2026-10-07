@@ -2,7 +2,9 @@
 
 ## 2026-10-06 — Display type relaxed
 
-The owner found the display type too compact. Display headings on this page widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on every Clubhouse page. Layout and content are unchanged.
+The owner found the display type too compact. Display headings on this page
+widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on
+every Clubhouse page. Layout and content are unchanged.
 
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Whole-app release audit

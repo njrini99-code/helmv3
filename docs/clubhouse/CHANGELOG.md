@@ -2,91 +2,113 @@
 
 ## 2026-10-07 — Digits in serif headings sit with the words
 
-The digits that `SerifText` sets in the sans inside a serif heading (`.ch-serif-num`) used tabular figures at weight 500.
-Every 1 was padded to a full figure width, so "Penalty strokes: 1.1 per round" read like typewriter digits, heavier than
-the serif around them. They now use proportional lining figures at the serif's weight (400). Tables and figure columns
-keep their own tabular figures.
+The digits that `SerifText` sets in the sans inside a serif heading
+(`.ch-serif-num`) used tabular figures at weight 500. Every 1 was padded to a
+full figure width, so "Penalty strokes: 1.1 per round" read like typewriter
+digits, heavier than the serif around them. They now use proportional lining
+figures at the serif's weight (400). Tables and figure columns keep their own
+tabular figures.
 
 ## 2026-10-07 — One green for the primary action
 
-The primary button (`.ch-btn--primary`) was a second, brighter green (#1a6542) beside the field green of the sidebar
-selection, the canopy and the scoreboard; the owner's rule is one green. It is now the field green, with a faint lift at
-its top edge, and its words are the warm on-green ink with the small engraved shadow, never pure white. Hover and press
-step darker within the same hue.
+The primary button (`.ch-btn--primary`) was a second, brighter green (#1a6542)
+beside the field green of the sidebar selection, the canopy and the scoreboard;
+the owner's rule is one green. It is now the field green, with a faint lift at
+its top edge, and its words are the warm on-green ink with the small engraved
+shadow, never pure white. Hover and press step darker within the same hue.
 
 ## 2026-10-07 — Contrast after the darker page tone
 
-The accessibility audit found text that fell under 4.5:1 once the page and wells darkened. The loss amber
-(`--ch-chart-loss`) is now #865608 (5.1:1 on the page tone, 4.7:1 on a soft well), and inside a well it takes the
-darker on-tint amber. Rounds' unplayed hole numbers and the Classes timeline labels use the muted on-green ink, and the
-labels go up to the 12px floor. The player stats miss map's counts are darker. `clubhouse:a11y` is clean on Rounds,
-Classes and both stats pages. The component catalog is regenerated.
+The accessibility audit found text that fell under 4.5:1 once the page and wells
+darkened. The loss amber (`--ch-chart-loss`) is now #865608 (5.1:1 on the page
+tone, 4.7:1 on a soft well), and inside a well it takes the darker on-tint
+amber. Rounds' unplayed hole numbers and the Classes timeline labels use the
+muted on-green ink, and the labels go up to the 12px floor. The player stats
+miss map's counts are darker. `clubhouse:a11y` is clean on Rounds, Classes and
+both stats pages. The component catalog is regenerated.
 
 ## 2026-10-07 — Digits in serif headings, phone text floor
 
-Display-serif headings that come from data set their digits in the sans (`SerifText`, `.ch-serif-num`): the serif's
-1 has no flag, so 11 read as ll. This covers CoachHelm's insight and deep-dive titles, Team Hub's announcement and
-trip names, and the live qualifier's name. The Standing and Deep dive counts inside serif headlines use the same sans
-figures. New captions under 12px (the Rounds range ends and date day, the Roster figure labels) are raised to 12px,
+Display-serif headings that come from data set their digits in the sans
+(`SerifText`, `.ch-serif-num`): the serif's 1 has no flag, so 11 read as ll.
+This covers CoachHelm's insight and deep-dive titles, Team Hub's announcement
+and trip names, and the live qualifier's name. The Standing and Deep dive counts
+inside serif headlines use the same sans figures. New captions under 12px (the
+Rounds range ends and date day, the Roster figure labels) are raised to 12px,
 the phone text floor.
 
 ## 2026-10-07 — More contrast
 
-The owner said there wasn't a lot of contrast. The desktop's secondary and tertiary inks move one step darker, to the
-phone's values (`--ch-ink-600` #46433d, `--ch-ink-500` #5f5c55). Reading sheets are brighter (#fdfbf7) and their
-edge ring firmer, at 0.085 at rest and 0.1 on hover.
+The owner said there wasn't a lot of contrast. The desktop's secondary and
+tertiary inks move one step darker, to the phone's values
+(`--ch-ink-600` `#46433d`, `--ch-ink-500` `#5f5c55`). Reading sheets are
+brighter (`#fdfbf7`) and
+their edge ring firmer, at 0.085 at rest and 0.1 on hover.
 
 ## 2026-10-07 — No banding: solid sheets, no canvas wash
 
-The owner saw the ivory as grainy in its gradients. Large, gentle ivory gradients band on 8-bit displays, so reading
-sheets (`--ch-sheet-bg`) are now solid ivory; their lit top edge remains the elevation's inset highlight. The canvas
-wash is removed. Small keys and wells keep their gradients, because they are too short to band.
+The owner saw the ivory as grainy in its gradients. Large, gentle ivory
+gradients band on 8-bit displays, so reading sheets (`--ch-sheet-bg`) are now
+solid ivory; their lit top edge remains the elevation's inset highlight. The
+canvas wash is removed. Small keys and wells keep their gradients, because they
+are too short to band.
 
 ## 2026-10-07 — Classic direction: ivory shell, canopy, serif titles
 
-Owner direction, live in review: aim for a Masters, old-money look; an ivory sidebar with green only on the
-selected row ("way too much green"); and one green throughout ("it's not even the same green"). The owner noted the
-overall direction may be revisited later.
-- **Shell:** the sidebar and the frame around the canvas are ivory (`--ch-shell`). The selected row is a green key in
-  `--ch-field-green`, and the brand uses the green golf mark with a serif wordmark. The next-event card is a light
-  sheet.
+Owner direction, live in review: aim for a Masters, old-money look; an ivory
+sidebar with green only on the selected row ("way too much green"); and one
+green throughout ("it's not even the same green"). The owner noted the overall
+direction may be revisited later.
+
+- **Shell:** the sidebar and the frame around the canvas are ivory
+  (`--ch-shell`). The selected row is a green key in `--ch-field-green`, and the
+  brand uses the green golf mark with a serif wordmark. The next-event card is a
+  light sheet.
 - **Canopy (`main[data-canopy]`, desktop):**
-  - The page's title block paints an edge-to-edge field in the one Clubhouse green, closed by a fine gilt rule.
-    There's no box: the fill is a spread box-shadow clipped at the title block's lower edge, so it ends where the
+  - The page's title block paints an edge-to-edge field in the one Clubhouse
+    green, closed by a fine gilt rule. There's no box: the fill is a spread
+    box-shadow clipped at the title block's lower edge, so it ends where the
     title does on every page.
   - The title is ivory with an engraved shadow.
-  - On scroll the title folds away and the top bar settles from clear-on-green to the ivory glass (scroll-driven;
-    off with reduced motion or Animations off).
+  - On scroll the title folds away and the top bar settles from clear-on-green
+    to the ivory glass (scroll-driven; off with reduced motion or Animations
+    off).
   - Researched against Apple Sports, Health and Journal navigation fields.
-- **Serif titles:** Instrument Serif (`--ch-font-serif`, `--ch-type-serif-*`) sets page and section titles only.
-  Data, controls and body text stay sans.
+- **Serif titles:** Instrument Serif (`--ch-font-serif`, `--ch-type-serif-*`)
+  sets page and section titles only. Data, controls and body text stay sans.
 - **Scoreboard:** shares the one green.
 
 ## 2026-10-06 — Tone, type and scoreboard (owner direction)
 
-Owner direction, given live while reviewing in Safari. The page is a slightly deeper ivory, about midway between the
-earlier ivory and the darker trial, with a faint green-and-champagne light across its top. Cards return to a light
-ivory that stands off it ("too much white", then "make the cards lighter", then "somewhere in between").
-- **Display type:** relaxed everywhere. The width axis goes from 88 to 96 and the tightest tracking eases to -0.026em,
-  after the owner called the display type "too compact".
-- **Wells:** a step darker with a crisper edge. Muted text inside any well steps up one ink, so dates and scores
-  never sit ivory on ivory.
-- **New scoreboard material (`.ch-scoreboard`):** scorecards are set on a deep green board with ivory numerals. Board
-  finishes for the marks: a red disc under par, a ringed disc for eagle, an ivory outline over par, and a solid ivory
-  tile for double or worse.
-- **Type on green:** the hero band and scoreboard set type in a warm ivory (`--ch-on-green-ink`) with a soft engraved
-  shadow, never white (owner: "more ivory and text depth").
-- **Shadows and radii:** this pass's component shadows are now tokens, and the shared nine table radius is on the
-  scale.
+Owner direction, given live while reviewing in Safari. The page is a slightly
+deeper ivory, about midway between the earlier ivory and the darker trial, with
+a faint green-and-champagne light across its top. Cards return to a light ivory
+that stands off it ("too much white", then "make the cards lighter", then
+"somewhere in between").
+
+- **Display type:** relaxed everywhere. The width axis goes from 88 to 96 and
+  the tightest tracking eases to -0.026em, after the owner called the display
+  type "too compact".
+- **Wells:** a step darker with a crisper edge. Muted text inside any well steps
+  up one ink, so dates and scores never sit ivory on ivory.
+- **New scoreboard material (`.ch-scoreboard`):** scorecards are set on a deep
+  green board with ivory numerals. Board finishes for the marks: a red disc
+  under par, a ringed disc for eagle, an ivory outline over par, and a solid
+  ivory tile for double or worse.
+- **Type on green:** the hero band and scoreboard set type in a warm ivory
+  (`--ch-on-green-ink`) with a soft engraved shadow, never white (owner: "more
+  ivory and text depth").
+- **Shadows and radii:** this pass's component shadows are now tokens, and the
+  shared nine table radius is on the scale.
 
 ## 2026-10-06 — Premium materials, seams, radius scale and smooth scroll
 
 Owner-directed pass on shared materials, verified in Safari 27 (desktop 1440 and
 iPhone emulation). Reading surfaces regain a layered light: a lit top edge, a
 contact shadow and a soft ambient shadow. Dark and branded surfaces use a
-shadow-only cast. New on-dark materials (raised, well, control) serve the
-green hero. Joins inside one surface use an engraved seam, an ink line beside a
-lit line (`--ch-seam-x`, `--ch-seam-y`), in place of faint hairlines. Score marks
+shadow-only cast. New on-dark materials (raised, well, control) serve the green
+hero. Joins inside one surface use an engraved seam, an ink line beside a lit
+line (`--ch-seam-x`, `--ch-seam-y`), in place of faint hairlines. Score marks
 (birdie, eagle, bogey, double) share one raised construction with an edge and
 depth. The secondary button ring is softer with a firmer lift. The phone tab bar
 floats as a glass capsule above the safe area.
@@ -97,9 +119,9 @@ padding). Sidebar brand, nav item and next-event radii follow.
 
 Desktop canvas scrolling eases mouse-wheel steps (Lenis, `CH_SCROLL_DUR`); touch
 pointers, phone layouts, reduced motion and Animations off keep native scroll.
-Route changes and Back restoration jump instantly; in-page jumps ease.
-Safari audit on player Home: no console errors, no failed requests, viewport and
-safe areas correct, no off-scale radii left on the page.
+Route changes and Back restoration jump instantly; in-page jumps ease. Safari
+audit on player Home: no console errors, no failed requests, viewport and safe
+areas correct, no off-scale radii left on the page.
 
 ## 2026-10-06 — Shared component playground
 

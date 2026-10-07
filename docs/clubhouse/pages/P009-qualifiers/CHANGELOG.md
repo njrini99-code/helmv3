@@ -2,44 +2,57 @@
 
 ## 2026-10-07 — Desktop facts drawn on the stat line; panel titles serif; the qualifier loads in place
 
-- **Desktop facts:** the six facts leave their card and sit on the stat line, between gilt rules and divided by seams.
-  Rounds submitted and Spots are drawn as on the phone, with the bar and seats shared as `.ch-qf-bar` and `.ch-qf-seats`.
-- **Panel titles:** Leaderboard, Selections and Course per round use the display serif.
-- **Loading skeleton** (`QualifierDetailSkeleton`): it now holds the loaded layout.
-  - The head holds the eyebrow, the serif name, the sentence at its measure and, for a coach only, the three actions
-    (`SkeletonCoachActions`).
+- **Desktop facts:** the six facts leave their card and sit on the stat line,
+  between gilt rules and divided by seams. Rounds submitted and Spots are drawn
+  as on the phone, with the bar and seats shared as `.ch-qf-bar` and
+  `.ch-qf-seats`.
+- **Panel titles:** Leaderboard, Selections and Course per round use the display
+  serif.
+- **Loading skeleton** (`QualifierDetailSkeleton`): it now holds the loaded
+  layout.
+  - The head holds the eyebrow, the serif name, the sentence at its measure and,
+    for a coach only, the three actions (`SkeletonCoachActions`).
   - The facts hold their four lines.
 
-  Measured in WebKit through `?state=loading`: the head, facts and body tops don't move at 1440, 1300 and 1100. At 1000 a
-  long description can wrap to a second line, which the skeleton can't know.
+  Measured in WebKit through `?state=loading`: the head, facts and body tops
+  don't move at 1440, 1300 and 1100. At 1000 a long description can wrap to a
+  second line, which the skeleton can't know.
 
 ## 2026-10-07 — Phone facts drawn on the stat line
 
-On the phone qualifier page, the three facts were bare numbers in a card. They now sit on the stat line, between gilt
-rules and divided by seams, and two of them are drawn:
+On the phone qualifier page, the three facts were bare numbers in a card. They
+now sit on the stat line, between gilt rules and divided by seams, and two of
+them are drawn:
+
 - **Rounds in:** a bar of the rounds posted against the rounds due.
-- **Spots:** the squad's seats. Seats won on score are filled green; the coach's picks are open gilt rings.
+- **Spots:** the squad's seats. Seats won on score are filled green; the coach's
+  picks are open gilt rings.
 
 The deadline stays a date.
 
 ## 2026-10-07 — Phone qualifier name in the serif
 
-On the phone qualifier page, the qualifier's name now uses the display serif at 32px, as the list's names do. Its digits stay in the sans (`SerifText`).
+On the phone qualifier page, the qualifier's name now uses the display serif at
+32px, as the list's names do. Its digits stay in the sans (`SerifText`).
 
 ## 2026-10-07 — Digits in serif titles
 
-Data-fed serif titles set their digits in the sans (shared `SerifText`; see the cross-page log), so a name or title with figures reads cleanly.
+Data-fed serif titles set their digits in the sans (shared `SerifText`; see the
+cross-page log), so a name or title with figures reads cleanly.
 
 ## 2026-10-07 — Leaders on the scoreboard, ledger lists, serif titles
 
-The live qualifier's leaders sit on the green scoreboard, a tournament board, with ivory names, red under par and the
-top-score line in mint. Active and concluded qualifiers are no longer grids of cards: each is a ledger row on the page
-between gilt rules, separated by seams, with a tinted hover. The page title and the live qualifier's name are set in
-the display serif.
+The live qualifier's leaders sit on the green scoreboard, a tournament board,
+with ivory names, red under par and the top-score line in mint. Active and
+concluded qualifiers are no longer grids of cards: each is a ledger row on the
+page between gilt rules, separated by seams, with a tinted hover. The page title
+and the live qualifier's name are set in the display serif.
 
 ## 2026-10-06 — Display type relaxed
 
-The owner found the display type too compact. Display headings on this page widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on every Clubhouse page. Layout and content are unchanged.
+The owner found the display type too compact. Display headings on this page
+widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on
+every Clubhouse page. Layout and content are unchanged.
 
 ## 2026-10-06 — Course-picker loading accessibility
 

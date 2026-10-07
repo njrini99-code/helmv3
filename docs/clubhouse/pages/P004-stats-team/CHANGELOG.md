@@ -2,33 +2,44 @@
 
 ## 2026-10-07 — Gauges directly under the words
 
-At full width the gauges sat at the foot of each figure, so the supporting figures had a gap of about 80px between their
-words and their drawing. Now:
+At full width the gauges sat at the foot of each figure, so the supporting
+figures had a gap of about 80px between their words and their drawing. Now:
+
 - **Values:** every value sits on the lead's 48px line, sharing its baseline.
 - **Gauges:** every gauge follows its words directly, so all six share one line.
-- **Lead note:** the lead's note ("vs Tour · 58 rounds with shots") moves below its gauge.
+- **Lead note:** the lead's note ("vs Tour · 58 rounds with shots") moves below
+  its gauge.
 
-The rows layout below 900px is unchanged. Measured in WebKit at 1440, 1300, 1180 and 1000, the row holds its height (248px)
-and nothing moves between loading and loaded.
+The rows layout below 900px is unchanged. Measured in WebKit at 1440, 1300, 1180
+and 1000, the row holds its height (248px) and nothing moves between loading and
+loaded.
 
 ## 2026-10-07 — Chart card titles in the serif
 
-The yardage cards' titles (`YardagePage`: Scoring, Strokes gained by leg, Team putting, and "Jonah vs. team") were a 15px semibold sans next to serif panel titles. They now use the display serif (`--ch-type-serif-s`), with any digits in the sans (`SerifText`).
+The yardage cards' titles (`YardagePage`: Scoring, Strokes gained by leg, Team
+putting, and "Jonah vs. team") were a 15px semibold sans next to serif panel
+titles. They now use the display serif (`--ch-type-serif-s`), with any digits in
+the sans (`SerifText`).
 
 ## 2026-10-07 — Scoring trend mean label off the line
 
-On the phone, the scoring trend's "Mean" label sat on the line. It now goes in the first corner the line keeps clear of
-(right end above, right below, left above, left below), with an ivory halo as a backstop.
+On the phone, the scoring trend's "Mean" label sat on the line. It now goes in
+the first corner the line keeps clear of (right end above, right below, left
+above, left below), with an ivory halo as a backstop.
 
 ## 2026-10-07 — Phone figures on the stat line
 
-On the phone, the four team figures were bare numbers in one white sheet. They now sit on the stat line, as on the
-desktop: no surface, a gilt rule above, seams between the columns, and a row of gauges under them (par, the Tour's
-greens mark, 36 putts, scrambling 0–100) closed by a second gilt rule. The skeleton holds the gauge row's 39px.
+On the phone, the four team figures were bare numbers in one white sheet. They
+now sit on the stat line, as on the desktop: no surface, a gilt rule above,
+seams between the columns, and a row of gauges under them (par, the Tour's
+greens mark, 36 putts, scrambling 0–100) closed by a second gilt rule. The
+skeleton holds the gauge row's 39px.
 
 ## 2026-10-07 — Every figure drawn against its reference
 
-The owner's rule is no bare numbers. Each figure on the stat line now carries a small gauge under its words:
+The owner's rule is no bare numbers. Each figure on the stat line now carries a
+small gauge under its words:
+
 - strokes gained from the Tour's zero;
 - the scoring average from par;
 - greens along 0–100% with the Tour's mark;
@@ -36,34 +47,45 @@ The owner's rule is no bare numbers. Each figure on the stat line now carries a 
 - scrambling along 0–100%;
 - birdies as holes out of 18.
 
-The references come from the data, and a figure with no value draws nothing. The gauges sit at the foot of each figure,
-so the line keeps one baseline. Below 900px they sit between the words and the value, aligned down the list. Reserves
-are re-measured: the lead row is 248px above 900px and 208px full width, with no shift at 1440, 1300, 1180 or 1000.
+The references come from the data, and a figure with no value draws nothing. The
+gauges sit at the foot of each figure, so the line keeps one baseline. Below
+900px they sit between the words and the value, aligned down the list. Reserves
+are re-measured: the lead row is 248px above 900px and 208px full width, with no
+shift at 1440, 1300, 1180 or 1000.
 
 ## 2026-10-07 — Strokes gained lead folded onto the stat line (#2160)
 
-PR #2160's lead layout is merged into this branch. Strokes gained still reads first, with a larger value. The five
-supporting figures no longer share a card: they sit on the stat line beside the lead, divided by the same engraved seams.
-The lead reserves are re-measured with the stat-line padding: 212px at the widest canvas and 171px full width. Measured
-in WebKit at 1440 and 1000, the title, figures and trend card tops don't move between loading and loaded.
+PR #2160's lead layout is merged into this branch. Strokes gained still reads
+first, with a larger value. The five supporting figures no longer share a card:
+they sit on the stat line beside the lead, divided by the same engraved seams.
+The lead reserves are re-measured with the stat-line padding: 212px at the
+widest canvas and 171px full width. Measured in WebKit at 1440 and 1000, the
+title, figures and trend card tops don't move between loading and loaded.
 
 ## 2026-10-07 — Loading reserves re-measured
 
-The figure line's reserves (`--ch-fg-h`) are re-measured for the stat-line padding (+4px). The loading title takes the serif title's 53px line, and the trend card's head the serif title's 95px. Measured in WebKit at 1440 and 1000: the title, figures and trend card tops don't move.
+The figure line's reserves (`--ch-fg-h`) are re-measured for the stat-line
+padding (+4px). The loading title takes the serif title's 53px line, and the
+trend card's head the serif title's 95px. Measured in WebKit at 1440 and 1000:
+the title, figures and trend card tops don't move.
 
 ## 2026-10-07 — Figures as a stat line, legs on the page, serif titles
 
-The owner called the figure row "card heavy", then said "even worse" when a single sheet was placed around it. The
-figures (`.ch-fg`, which Team stats, a player's stats and the player profile share) now have no surface at all. They
-sit straight on the page, divided by engraved seams, between two fine gilt rules like a printed stat line. The four
-strokes-gained legs are one selector set the same way: quiet tiles, with the chosen leg a soft green key. The page
-title and the card and section titles are set in the display serif.
+The owner called the figure row "card heavy", then said "even worse" when a
+single sheet was placed around it. The figures (`.ch-fg`, which Team stats, a
+player's stats and the player profile share) now have no surface at all. They
+sit straight on the page, divided by engraved seams, between two fine gilt rules
+like a printed stat line. The four strokes-gained legs are one selector set the
+same way: quiet tiles, with the chosen leg a soft green key. The page title and
+the card and section titles are set in the display serif.
 
-PR #2160 also changes `FigureCards` (the strokes gained lead); it is folded in above.
+PR #2160 also changes `FigureCards` (the strokes gained lead); it is folded in
+above.
 
 ## 2026-10-06 — Smooth scroll and materials
 
-In-page jumps on the phone player stats view ease through the shared smooth scroll helper and stay instant with reduced motion.
+In-page jumps on the phone player stats view ease through the shared smooth
+scroll helper and stay instant with reduced motion.
 
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
@@ -85,13 +107,15 @@ contract IDs are preserved; runtime gaps stay explicit.
 
 ## 2026-10-06 — Strokes gained leads the figures
 
-The premium audit's P1 for this page: six equal floating cards gave the page no first read. On the
-owner's choice (lead and supporting), Team SG per round now sits on its own card with a 48px value, and
-the five supporting figures share one quieter surface divided by hairlines. Below a 900px canvas the
-supporting figures become rows (label and change left, value right) under a full-width strokes gained
-card. The loading skeleton draws the same layout, and the held heights were re-measured so the page
-below does not move when the figures land or the window changes. Values, deltas, notes, catalog codes
-and the player profile's figures are unchanged. See VERIFY.md for the measurements.
+The premium audit's P1 for this page: six equal floating cards gave the page no
+first read. On the owner's choice (lead and supporting), Team SG per round now
+sits on its own card with a 48px value, and the five supporting figures share
+one quieter surface divided by hairlines. Below a 900px canvas the supporting
+figures become rows (label and change left, value right) under a full-width
+strokes gained card. The loading skeleton draws the same layout, and the held
+heights were re-measured so the page below does not move when the figures land
+or the window changes. Values, deltas, notes, catalog codes and the player
+profile's figures are unchanged. See VERIFY.md for the measurements.
 
 ## 2026-10-02 — Keep charts steady when the period changes
 

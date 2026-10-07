@@ -48,8 +48,9 @@ Read the team's direction, find the leg to work on, and open the player who lose
 
 ## Visual hierarchy
 
-Header (team, active players, window switch, Export), the figures (strokes gained leading on its own
-card, five supporting figures on one surface), the trend (strokes gained or
+Header (team, active players, window switch, Export), the figures (strokes
+gained leading on its own card, five supporting figures on one surface), the
+trend (strokes gained or
 scoring, with a player list beside it), the four leg cards, the player grid, then Team putting and
 Season bests side by side. On the phone: four figures, the scoring line, strokes gained by leg as
 bars, the players as rows, and Team putting.
@@ -96,11 +97,12 @@ change is refused offline (CH-4901). Every other tap is silent.
 
 ## Desktop
 
-The figures (strokes gained on its own card, the five supporting figures on one surface divided by
-hairlines), the trend and the leg cards full width, the grid, then putting and bests in two columns. The
-layout follows the container, not the viewport (`stats.css`): the two-column row stacks below 1080px,
-below 900px strokes gained spans the width and the supporting figures become rows (label and change left,
-value right), and the padding tightens below 720px.
+The figures (strokes gained on its own card, the five supporting figures on one
+surface divided by hairlines), the trend and the leg cards full width, the grid,
+then putting and bests in two columns. The layout follows the container, not the
+viewport (`stats.css`): the two-column row stacks below 1080px, below 900px
+strokes gained spans the width and the supporting figures become rows (label and
+change left, value right), and the padding tightens below 720px.
 The page never scrolls sideways.
 
 ## Phone
@@ -158,9 +160,11 @@ tab), D-70 (haptics), D-71 (page empty state), Q-68 (phone gaps, built on the re
 ## Strokes gained (2026-09-30)
 
 - The figure row leads with **Team SG per round**: the window's mean per round, signed, with a change chip
-  against the previous 10 and "vs Tour" under it (a women's team: "vs the women's Tour baseline").
-  Since 2026-10-06 (owner decision, premium audit P004 P1) it is the row's first read: its own card with a
-  48px value, beside one surface holding the five supporting figures. The skeleton draws the same layout.
+  against the previous 10 and "vs Tour" under it (a women's team: "vs the
+  women's Tour baseline"). Since 2026-10-06 (owner decision, premium audit P004
+  P1) it is the row's first read: its own card with a 48px value, beside one
+  surface holding the five supporting figures. The skeleton draws the same
+  layout.
 - Every strokes gained headline is the window's mean, not the latest week: the four leg cards, the team
   and player figures beside the trend. The trend's dashed line and the chart are weekly; the caption says
   the names show the window average.

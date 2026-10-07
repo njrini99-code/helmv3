@@ -2,43 +2,59 @@
 
 ## 2026-10-07 — The pulse's held space says something
 
-The program pulse holds three rows of space so nothing below moves when it streams in. With four items or fewer that left
-an empty band in the card. When every read the pulse is made from came in (no gaps), the foot of that space now says
-"Nothing else is flagged across the program", with a check, over a hairline. When a read failed it stays silent: the
-existing CH-13206 notice says what wasn't checked, never "nothing is flagged". The card keeps its height.
+The program pulse holds three rows of space so nothing below moves when it
+streams in. With four items or fewer that left an empty band in the card. When
+every read the pulse is made from came in (no gaps), the foot of that space now
+says "Nothing else is flagged across the program", with a check, over a
+hairline. When a read failed it stays silent: the existing CH-13206 notice says
+what wasn't checked, never "nothing is flagged". The card keeps its height.
 
 ## 2026-10-07 — Digits in serif titles
 
-Data-fed serif titles set their digits in the sans (shared `SerifText`; see the cross-page log), so a name or title with figures reads cleanly.
+Data-fed serif titles set their digits in the sans (shared `SerifText`; see the
+cross-page log), so a name or title with figures reads cleanly.
 
 ## 2026-10-07 — Loading holds the loaded page
 
-The pulse keeps its reserved height (CH-13405) whether the rows, a notice or the skeleton are in it. Desktop loading draws on the canopy with the view strip level with the title, as the page does, and holds the measured heights: a 194px title block and a 258px pulse. Measured in WebKit at 1440 and 1000, coach and player views: the header, pulse and grid tops don't move when the page lands.
+The pulse keeps its reserved height (CH-13405) whether the rows, a notice or the
+skeleton are in it. Desktop loading draws on the canopy with the view strip
+level with the title, as the page does, and holds the measured heights: a 194px
+title block and a 258px pulse. Measured in WebKit at 1440 and 1000, coach and
+player views: the header, pulse and grid tops don't move when the page lands.
 
 ## 2026-10-07 — Views on ivory, serif headlines
 
-Game profile, Standing and Deep dive no longer open on dark green summary panels. They are ivory reading sheets
-whose headlines are set in the display serif in the field green, with the key figures in green italic (for example
-"0 of 19"). Their inner panels are soft wells, and warning figures use the warning ink.
+Game profile, Standing and Deep dive no longer open on dark green summary
+panels. They are ivory reading sheets whose headlines are set in the display
+serif in the field green, with the key figures in green italic (for example "0
+of 19"). Their inner panels are soft wells, and warning figures use the warning
+ink.
 
 Other details on the board:
+
 - The week's drill is a recessed ivory panel ruled in green, not a green block.
 - The Development link reads on the canopy.
-- The Ask question is set in the serif, without the mockup's spark tile (owner: no stock AI marks).
+- The Ask question is set in the serif, without the mockup's spark tile (owner:
+  no stock AI marks).
 - The phone eyebrow returns to green on ivory; mint is used on the canopy only.
 
 ## 2026-10-07 — Large-title header on the canopy
 
 CoachHelm opens on the canopy:
-- **Header:** the role as a mint eyebrow, then a serif CoachHelm title and the live line. On desktop the view switch
-  (Board/Ask, or the player's views) sits level with the title instead of on its own row.
-- **Program pulse:** a serif title, seams between rows and round raised icon keys. Its reserved height applies only
-  while the pulse is streaming, so a short pulse no longer leaves empty space.
+
+- **Header:** the role as a mint eyebrow, then a serif CoachHelm title and the
+  live line. On desktop the view switch (Board/Ask, or the player's views) sits
+  level with the title instead of on its own row.
+- **Program pulse:** a serif title, seams between rows and round raised icon
+  keys. Its reserved height applies only while the pulse is streaming, so a
+  short pulse no longer leaves empty space.
 - **Focus card:** the insight title is set in the display serif.
 
 ## 2026-10-06 — Display type relaxed
 
-The owner found the display type too compact. Display headings on this page widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on every Clubhouse page. Layout and content are unchanged.
+The owner found the display type too compact. Display headings on this page
+widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on
+every Clubhouse page. Layout and content are unchanged.
 
 ## 2026-10-06 — Mention picker accessibility
 

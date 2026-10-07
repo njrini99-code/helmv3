@@ -2,22 +2,29 @@
 
 ## 2026-10-07 — Narrow cascaded events keep their time
 
-An event stepped in by an overlap can be under 50px wide. Its title wrapped to two lines, which pushed the time out of a
-one-hour block and cut the title through its second line ("Busy · Staf"). Lane events now measure themselves
-(`container-type: inline-size`): with under 60px for text, the title keeps one line and ellipsizes, so the time shows.
-Wider events still wrap to two lines. Checked in WebKit at 1440 and 1200: no lane event overflows.
+An event stepped in by an overlap can be under 50px wide. Its title wrapped to
+two lines, which pushed the time out of a one-hour block and cut the title
+through its second line ("Busy · Staf"). Lane events now measure themselves
+(`container-type: inline-size`): with under 60px for text, the title keeps one
+line and ellipsizes, so the time shows. Wider events still wrap to two lines.
+Checked in WebKit at 1440 and 1200: no lane event overflows.
 
 ## 2026-10-07 — Overlapping events cascade
 
-Overlapping events in the week and day grids no longer split a column into equal lanes, which crushed titles into
-mid-word fragments. They cascade as Apple Calendar does: each later lane steps right and lies over the earlier ones,
-reaching the column's right edge, edged in the sheet's ivory. An event that starts earlier shows in full above where
-the next begins. A cascaded title wraps at word boundaries only, over at most two lines. The phone's month title is
-set in the display serif; the desktop's numeric date-range title stays in the sans, because the serif's 1 reads as l.
+Overlapping events in the week and day grids no longer split a column into equal
+lanes, which crushed titles into mid-word fragments. They cascade as Apple
+Calendar does: each later lane steps right and lies over the earlier ones,
+reaching the column's right edge, edged in the sheet's ivory. An event that
+starts earlier shows in full above where the next begins. A cascaded title wraps
+at word boundaries only, over at most two lines. The phone's month title is set
+in the display serif; the desktop's numeric date-range title stays in the sans,
+because the serif's 1 reads as l.
 
 ## 2026-10-06 — Display type relaxed
 
-The owner found the display type too compact. Display headings on this page widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on every Clubhouse page. Layout and content are unchanged.
+The owner found the display type too compact. Display headings on this page
+widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on
+every Clubhouse page. Layout and content are unchanged.
 
 ## 2026-10-06 — Short-screen popup and hover verification
 

@@ -2,7 +2,8 @@
 
 ## 2026-10-07 — Phone title in the serif
 
-The phone Recruiting large title was a 34px semibold sans. It now uses the display serif at 38px, matching every other phone page title.
+The phone Recruiting large title was a 34px semibold sans. It now uses the
+display serif at 38px, matching every other phone page title.
 
 ## 2026-10-07 — Serif title
 

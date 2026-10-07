@@ -376,14 +376,19 @@ premium composition audit is recorded in `docs/clubhouse/PREMIUM_AUDIT.md`.
 
 ## Clubhouse team figures drawn, October 7
 
-Each Team stats figure (`ChFigure.gauge`, drawn by `FigureGauge` in `src/clubhouse/screens/stats/charts.tsx`) is drawn
-against a reference the data gives, never an invented benchmark:
+Each Team stats figure (`ChFigure.gauge`, drawn by `FigureGauge` in
+`src/clubhouse/screens/stats/charts.tsx`) is drawn against a reference the data
+gives, never an invented benchmark:
+
 - strokes gained from the Tour's zero;
-- the scoring average from par (`score_to_par` per 18 holes, over the same rounds as the average);
-- greens on a 0–100 track with the Tour's `gir_pct` mark, which is drawn only when the team's tour is known (CH-4210);
+- the scoring average from par (`score_to_par` per 18 holes, over the same
+  rounds as the average);
+- greens on a 0–100 track with the Tour's `gir_pct` mark, which is drawn only
+  when the team's tour is known (CH-4210);
 - scrambling on a 0–100 track with no mark;
 - putts against two on every green (36);
 - birdies as holes out of 18.
 
-A figure with no value draws no gauge. Tests: `strokes-gained.test.tsx` › "every team figure is drawn against a real
-reference", and `stats-total-only.test.tsx` › Season.
+A figure with no value draws no gauge. Tests: `strokes-gained.test.tsx` › "every
+team figure is drawn against a real reference", and `stats-total-only.test.tsx`
+› Season.

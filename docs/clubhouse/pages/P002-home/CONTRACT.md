@@ -43,7 +43,17 @@ write changes.
 
 Status: DEFINED
 
-Home is `/golf/dashboard`, and it is two pages. A coach with the Clubhouse flag on gets Coach Home (20101): the date, the greeting and a one-sentence brief; Message team and New event; the week beside the latest round in one sheet; and the season leaderboard. A player gets Player Home (20102): the date and the greeting, with no brief line under it (owner, 2026-10-06); Message coach; the week beside Up next with its countdown and My latest round; then Scoring and the four parts of the game. Both are read on the server, so the first paint has its data. A team with nothing yet gets the first-run page (20408 for a coach, 20412 for a player, D-71). Every link Home hands out is 20103. Home reads no Clubhouse query parameter: the Fairway dashboard's `?range=` is ignored here, and there is no deep link into Home.
+Home is `/golf/dashboard`, and it is two pages. A coach with the Clubhouse flag
+on gets Coach Home (20101): the date, the greeting and a one-sentence brief;
+Message team and New event; the week beside the latest round in one sheet; and
+the season leaderboard. A player gets Player Home (20102): the date and the
+greeting, with no brief line under it (owner, 2026-10-06); Message coach; the
+week beside Up next with its countdown and My latest round; then Scoring and the
+four parts of the game. Both are read on the server, so the first paint has its
+data. A team with nothing yet gets the first-run page (20408 for a coach, 20412
+for a player, D-71). Every link Home hands out is 20103. Home reads no Clubhouse
+query parameter: the Fairway dashboard's `?range=` is ignored here, and there is
+no deep link into Home.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

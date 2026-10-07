@@ -2,19 +2,24 @@
 
 ## 2026-10-07 — Canopy top bar at rest
 
-On canopy pages the top bar's resting state is clear over the green with ivory ink, and scrolling settles it into the
-ivory glass. A page too short to scroll (the timeline is inactive) keeps the clear bar instead of a tinted glass. Where
+On canopy pages the top bar's resting state is clear over the green with ivory
+ink, and scrolling settles it into the ivory glass. A page too short to scroll
+(the timeline is inactive) keeps the clear bar instead of a tinted glass. Where
 scroll-driven animations are unsupported, the bar is the solid field green.
 
 ## 2026-10-07 — Ivory sidebar and canopy
 
-The sidebar and frame are ivory, the selected row is a green key, the brand uses the green mark with a serif
-wordmark, and the next-event card is a light sheet. The shared canopy (`main[data-canopy]`) and its scroll-settling
-top bar live in shell.css.
+The sidebar and frame are ivory, the selected row is a green key, the brand uses
+the green mark with a serif wordmark, and the next-event card is a light sheet.
+The shared canopy (`main[data-canopy]`) and its scroll-settling top bar live in
+shell.css.
 
 ## 2026-10-06 — Smooth scroll and materials
 
-The phone tab bar floats as a glass capsule above the safe area, and the canvas reserves its height. Desktop wheel scrolling eases through the canvas scroller (shared smooth scroll); route changes and Back restoration land instantly. Sidebar brand, nav item and next-event radii are on the scale.
+The phone tab bar floats as a glass capsule above the safe area, and the canvas
+reserves its height. Desktop wheel scrolling eases through the canvas scroller
+(shared smooth scroll); route changes and Back restoration land instantly.
+Sidebar brand, nav item and next-event radii are on the scale.
 
 ## 2026-10-06 — Popup geometry and focus styling
 
