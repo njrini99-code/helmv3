@@ -1,5 +1,11 @@
 # Clubhouse changelog
 
+## 2026-10-06 — More contrast
+
+The owner said there wasn't a lot of contrast. The desktop's secondary and tertiary inks move one step darker, to the
+phone's values (`--ch-ink-600` #46433d, `--ch-ink-500` #5f5c55). Reading sheets are brighter (#fdfbf7) and their
+edge ring firmer, at 0.085 at rest and 0.1 on hover.
+
 ## 2026-10-06 — No banding: solid sheets, no canvas wash
 
 The owner saw the ivory as grainy in its gradients. Large, gentle ivory gradients band on 8-bit displays, so reading

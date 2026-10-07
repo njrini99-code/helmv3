@@ -21,8 +21,9 @@
   --ch-ink-950: #141412;
   --ch-ink-900: #1c1b18;
   --ch-ink-700: #3a3833;
-  --ch-ink-600: #55524b;
-  --ch-ink-500: #6b6860;
+  /* One step darker than the first pass (owner, 2026-10-06: "there's not a lot of contrast"); the phone's values. */
+  --ch-ink-600: #46433d;
+  --ch-ink-500: #5f5c55;
   --ch-ink-400: #8f8b81;
   --ch-ink-300: #b3afa5;
   /* Every owned scroller inherits the same quiet thumb; horizontal strip geometry stays page-owned. */
@@ -213,13 +214,13 @@
   /* Reading surfaces (premium brief, October 6): layered light rather than one broad shadow. A lit top edge, a crisp
      hairline, a tight contact shadow and an ambient falloff with negative spread, so the shadow sits under the card
      instead of hazing the canvas around it. */
-  --ch-elevation-reading: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 0 0 1px rgb(28 25 18 / 0.045),
-    0 1px 2px rgb(28 25 18 / 0.06), 0 8px 18px -10px rgb(28 25 18 / 0.16), 0 22px 40px -24px rgb(28 25 18 / 0.18);
+  --ch-elevation-reading: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 0 0 1px rgb(28 25 18 / 0.085),
+    0 1px 2px rgb(28 25 18 / 0.08), 0 8px 18px -10px rgb(28 25 18 / 0.16), 0 22px 40px -24px rgb(28 25 18 / 0.18);
   /* The reading surface's cast shadow alone, for dark and branded surfaces where a white top edge or ink hairline
      would draw a line (the green hero, the green Up next card). */
   --ch-elevation-cast: 0 1px 2px rgb(28 25 18 / 0.06), 0 8px 18px -10px rgb(28 25 18 / 0.16),
     0 22px 40px -24px rgb(28 25 18 / 0.18);
-  --ch-elevation-reading-hover: inset 0 1px 0 rgb(255 255 255 / 0.95), 0 0 0 1px rgb(28 25 18 / 0.06),
+  --ch-elevation-reading-hover: inset 0 1px 0 rgb(255 255 255 / 0.95), 0 0 0 1px rgb(28 25 18 / 0.1),
     0 2px 4px rgb(28 25 18 / 0.07), 0 12px 24px -12px rgb(28 25 18 / 0.2), 0 28px 48px -26px rgb(28 25 18 / 0.22);
   --ch-elevation-reading-accent: 0 1px 3px rgb(8 43 28 / 0.08), 0 4px 12px -6px rgb(8 43 28 / 0.12);
   --ch-elevation-control: var(--ch-highlight), 0 1px 2px rgb(28 25 18 / 0.06);
@@ -266,7 +267,7 @@
   --ch-raised-shadow: var(--ch-elevation-control);
   /* Lit upper edge, warm lower face and a contact shadow, from handoff/depth.css. */
   /* Solid: a tall sheet's gentle gradient banded visibly; the lit top edge is the elevation's inset highlight. */
-  --ch-sheet-bg: #fbf9f3;
+  --ch-sheet-bg: #fdfbf7;
   --ch-sheet-shadow: var(--ch-elevation-reading);
   /* Materials on the green hero (the content layer is dark there). Raised: a lighter tonal green with a mint-lit top
      edge and a deep green cast shadow (ink shadows vanish on green). Well: one recess darker than the hero. Control: a
@@ -327,7 +328,7 @@
     --ch-bg-hover: #f5f2ea;
     --ch-bg-inset: #e9e5da;
     --ch-raised-bg: linear-gradient(180deg, #fffdf8 0%, #f9f7f0 60%, #f1eee5 100%);
-    --ch-sheet-bg: #fbf9f3;
+    --ch-sheet-bg: #fdfbf7;
     --ch-chart-paper: #fbf9f3;
     --ch-phone-bar-bg: rgb(237 233 223 / 0.94);
     /* Glass, not a lid: the page shows through as it slides under (F-49). */

@@ -453,6 +453,8 @@ function RosterList({
   menuFor: (p: ChRosterPlayer) => MenuItem[];
   onShowEveryone: () => void;
 }) {
+  // Every scored player's average, for the faces' team strip (where each player sits on the team).
+  const teamAvgs = rows.map((r) => r.avg).filter((v): v is number => v != null);
   return (
     <>
       {rows.length === 0 ? (
@@ -495,20 +497,7 @@ function RosterList({
               <span className="ch-rs-face__form">
                 <FormLine data={p.trend} width={150} height={30} earlyBelow={3} label={`${p.name} form`} />
               </span>
-              <span className="ch-rs-face__figs">
-                <span>
-                  <b className="ch-num">{formatFixed(p.avg)}</b>Avg
-                </span>
-                <span>
-                  <b className={'ch-num' + (p.sgPerRound == null ? '' : p.sgPerRound >= 0 ? ' is-gain' : ' is-loss')}>
-                    {p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)}
-                  </b>
-                  SG
-                </span>
-                <span>
-                  <b className="ch-num">{formatHcp(p.handicap)}</b>HCP
-                </span>
-              </span>
+              <FaceFigures p={p} avgs={teamAvgs} />
               {p.attention && <span className={`ch-rs-face__note is-${p.attention.tone}`}>{p.attention.text}</span>}
             </button>
           ))}
@@ -660,5 +649,50 @@ function InviteModal({
         />
       )}
     </Modal>
+  );
+}
+
+/**
+ * A roster card's figures, drawn (owner, 2026-10-06: no bare numbers). Scoring: the player's average among the
+ * team's on one strip, with their place. Strokes gained: a bar from zero, green for gained, amber for lost. Handicap
+ * reads as a labelled line.
+ */
+function FaceFigures({ p, avgs }: { p: { avg: number | null; sgPerRound: number | null; handicap: number | null }; avgs: number[] }) {
+  const lo = avgs.length ? Math.min(...avgs) : 0;
+  const hi = avgs.length ? Math.max(...avgs) : 0;
+  const at = (v: number) => (hi === lo ? 50 : ((v - lo) / (hi - lo)) * 100);
+  const place = p.avg == null ? null : avgs.filter((v) => v < p.avg!).length + 1;
+  const ord = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
+  const sg = p.sgPerRound;
+  const sgW = sg == null ? 0 : Math.min(50, (Math.abs(sg) / 3) * 50);
+  return (
+    <span className="ch-rs-figs">
+      <span className="ch-rs-fig">
+        <span className="ch-rs-fig__k">Scoring</span>
+        <b className="ch-num">{formatFixed(p.avg)}</b>
+        <span className="ch-rs-fig__m">{place != null && avgs.length > 1 ? `${ord(place)} of ${avgs.length}` : 'Avg'}</span>
+        {p.avg != null && avgs.length > 1 && (
+          <span className="ch-rs-team" aria-hidden="true">
+            {avgs.map((v, k) => (
+              <i key={k} style={{ left: `${at(v)}%` }} />
+            ))}
+            <i className="is-me" style={{ left: `${at(p.avg)}%` }} />
+          </span>
+        )}
+      </span>
+      <span className="ch-rs-fig">
+        <span className="ch-rs-fig__k">Strokes gained</span>
+        <b className={'ch-num' + (sg == null ? '' : sg >= 0 ? ' is-gain' : ' is-loss')}>{sg == null ? NO_DATA : formatSigned(sg)}</b>
+        <span className="ch-rs-fig__m">a round</span>
+        {sg != null && (
+          <span className="ch-rs-sgbar" aria-hidden="true">
+            <i className={sg >= 0 ? 'is-gain' : 'is-loss'} style={sg >= 0 ? { left: '50%', width: `${sgW}%` } : { right: '50%', width: `${sgW}%` }} />
+          </span>
+        )}
+      </span>
+      <span className="ch-rs-face__hcp">
+        Handicap <b className="ch-num">{formatHcp(p.handicap)}</b>
+      </span>
+    </span>
   );
 }
