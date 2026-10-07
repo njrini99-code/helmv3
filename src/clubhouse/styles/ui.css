@@ -18,8 +18,8 @@
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
-  transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease),
-    color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease), background-position var(--ch-dur-base) var(--ch-ease),
+    box-shadow var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-root .ch-btn:focus-visible {
   outline: none;
@@ -51,12 +51,14 @@
 .ch-btn--primary {
   color: var(--ch-on-green-ink);
   text-shadow: var(--ch-on-green-text-shadow-s);
-  background: linear-gradient(180deg, #0f4429 0%, var(--ch-field-green) 100%);
+  /* Hover glides rather than snaps (owner, 2026-10-07: premium motion): one gradient twice the key's height holds the
+     hover face above the resting one, and hover slides it into view. A gradient itself cannot be transitioned. */
+  background: linear-gradient(180deg, #124b2e 0%, #0d3f28 50%, #0f4429 50%, var(--ch-field-green) 100%) 0 100% / 100% 200%;
   box-shadow: 0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), 0 1px 2px rgb(12 65 40 / 0.22),
     0 4px 10px -6px rgb(12 65 40 / 0.4);
 }
 .ch-btn--primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #124b2e 0%, #0d3f28 100%);
+  background-position: 0 0;
   box-shadow: 0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), 0 2px 4px rgb(12 65 40 / 0.22),
     0 8px 16px -8px rgb(12 65 40 / 0.45);
 }
@@ -66,11 +68,11 @@
 }
 .ch-btn--secondary {
   color: var(--ch-text-primary);
-  background: linear-gradient(180deg, #fefdfa 0%, #f7f5ef 100%);
+  background: linear-gradient(180deg, #fefdfa 0%, #f3f1ea 50%, #fefdfa 50%, #f7f5ef 100%) 0 100% / 100% 200%;
   box-shadow: var(--ch-btn-secondary-shadow);
 }
 .ch-btn--secondary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #fefdfa 0%, #f3f1ea 100%);
+  background-position: 0 0;
   box-shadow: var(--ch-btn-secondary-hover-shadow);
 }
 .ch-btn--secondary:active:not(:disabled) {

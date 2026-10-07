@@ -1,5 +1,26 @@
 # Clubhouse changelog
 
+## 2026-10-07 — Motion: swaps, tabs and keys that glide
+
+A shared `Swap` (`ui/Swap.tsx`) runs a content swap inside a fixed frame:
+- **Settle:** the new content fades in with a 6px rise (base) while the old
+  fades out (quick).
+- **Slide:** the new content moves 12px in the direction of travel.
+
+The leaving copy is hidden from assistive tech and focus at once. Nothing
+animates on first paint, and reduced motion or Animations off swaps instantly.
+It runs on:
+- the profile's and Team Hub's tab panels;
+- Team stats' trend measure;
+- a round's hole stepping;
+- each figure's value when the window changes (inline).
+
+Tabs answer on the press: the underline moves first and the panel renders just
+behind it (`useDeferredValue`). The primary and secondary keys' hover now glides
+between faces (one gradient twice the key's height, sliding on
+`background-position`) instead of snapping, since a gradient itself cannot be
+transitioned.
+
 ## 2026-10-07 — The Ledger: sections flush on the canvas
 
 The owner asked for pages that are flush and less card-heavy, and chose the
