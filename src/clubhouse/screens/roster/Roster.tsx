@@ -672,7 +672,7 @@ function FaceFigures({ p, avgs }: { p: { avg: number | null; sgPerRound: number 
         <b className="ch-num">{formatFixed(p.avg)}</b>
         <span className="ch-rs-fig__m">{place != null && avgs.length > 1 ? `${ord(place)} of ${avgs.length}` : 'Avg'}</span>
         {p.avg != null && avgs.length > 1 && (
-          <span className="ch-rs-team" aria-hidden="true">
+          <span className="ch-rs-strip" aria-hidden="true">
             {avgs.map((v, k) => (
               <i key={k} style={{ left: `${at(v)}%` }} />
             ))}

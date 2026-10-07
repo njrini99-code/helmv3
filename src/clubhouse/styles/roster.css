@@ -377,7 +377,8 @@
   font: 500 12px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
-.ch-rs-team,
+/* The card's team strip (`.ch-rs-strip`; not `.ch-rs-team`, the header's avatar row) and its SG bar. */
+.ch-rs-strip,
 .ch-rs-sgbar {
   position: relative;
   grid-area: viz;
@@ -386,7 +387,7 @@
   background: rgb(28 25 18 / 0.06);
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.08);
 }
-.ch-rs-team i {
+.ch-rs-strip i {
   position: absolute;
   top: 50%;
   width: 6px;
@@ -395,7 +396,7 @@
   background: var(--ch-ink-300);
   translate: -50% -50%;
 }
-.ch-rs-team i.is-me {
+.ch-rs-strip i.is-me {
   z-index: 1;
   width: 10px;
   height: 10px;

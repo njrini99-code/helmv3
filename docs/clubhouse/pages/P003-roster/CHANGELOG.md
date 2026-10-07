@@ -1,5 +1,12 @@
 # P003 — Roster: changelog
 
+## 2026-10-07 — The header's team row restored
+
+The card team strip from earlier tonight reused the class `.ch-rs-team`, which already names the header's avatar row
+("Varsity · Fall 2026"). The strip's 10px height and tint landed on the header: the avatars overlapped the team name over
+a grey bar, for coach and player. The strip is now `.ch-rs-strip`, and the header is back to its own row. No other class
+added tonight exists on `main`; `ch-rd-season` is reused on purpose within its own component.
+
 ## 2026-10-07 — Phone title in the serif
 
 The phone Roster title was a 28px semibold sans. It now uses the display serif at 34px, matching every other phone page title.
