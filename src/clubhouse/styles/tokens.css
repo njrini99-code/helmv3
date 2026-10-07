@@ -47,8 +47,8 @@
   --ch-hero-mint-strong: #7bc79a;
   --ch-frame: #0a331f;
   /* The app shell around the canvas and the sidebar: the Frame (owner, 2026-10-07, replacing the 2026-10-06 ivory
-     sidebar). A deeper green than the hero's field green, so the dashboard reads as its own framed panel. */
-  --ch-shell: #041a10;
+     sidebar). The sidebar's green runs on as a thin frame around the ivory dashboard. */
+  --ch-shell: var(--ch-green-800);
   /* The one Clubhouse green for large fields and the selected nav row: the canopy and the sidebar selection share it. */
   --ch-field-green: var(--ch-green-800);
   /* Champagne: hairline detail only */
@@ -233,11 +233,7 @@
     0 2px 6px rgb(28 25 18 / 0.08), 0 14px 32px -12px rgb(28 25 18 / 0.32);
   /* Depth on the Frame's green (owner, 2026-10-07): the framed dashboard panel, and a plate or card lifted off the
      green (the selected nav row, the next-event card). A gilt ring, then a deeper drop than ivory needs. */
-  --ch-elevation-framed: 0 0 0 1px rgb(176 149 96 / 0.6), 0 0 0 6px rgb(253 251 246 / 0.55), 0 0 0 7px rgb(176 149 96 / 0.35),
-    0 22px 44px -24px rgb(28 25 18 / 0.45), 0 2px 6px rgb(28 25 18 / 0.12);
-  /* The ivory mat between the green sidebar and the framed dashboard: light at the top, settling warmer below. */
-  --ch-mat: linear-gradient(180deg, #f6f2e8 0%, #ebe5d6 55%, #e2dbca 100%);
-  --ch-elevation-sidebar-cast: 8px 0 22px -14px rgb(2 18 10 / 0.55);
+  --ch-elevation-framed: 0 0 0 1px rgb(2 18 10 / 0.35), 0 1px 3px rgb(2 18 10 / 0.35);
   --ch-elevation-on-frame: 0 0 0 1px rgb(176 149 96 / 0.45), 0 1px 2px rgb(2 18 10 / 0.3);
   --ch-elevation-on-frame-hover: 0 0 0 1px rgb(176 149 96 / 0.6), 0 2px 6px rgb(2 18 10 / 0.35);
   --ch-elevation-overlay: 0 4px 12px rgb(28 25 18 / 0.08), 0 16px 36px -12px rgb(28 25 18 / 0.16);

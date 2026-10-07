@@ -1900,17 +1900,9 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
 @media (min-width: 821px) {
   /* The dashboard is framed (owner, 2026-10-07: "separation from the sidebar, like framing the dashboard"): the
      canvas sits inset in the deeper frame green with a fine gilt edge and a soft drop, hero and all. */
-  /* The ivory mat (owner, 2026-10-07: "the ivory should bleed in between the dashboard and the sidebar"): the app
-     ground right of the green sidebar is ivory, the sidebar casts onto it, and the dashboard sits on the mat inside a
-     double gilt frame. */
-  .ch-app {
-    background: var(--ch-mat);
-  }
-  .ch-sidebar {
-    box-shadow: var(--ch-elevation-sidebar-cast);
-  }
+  /* Framed on the side (owner, 2026-10-07, with a reference screenshot): the green sidebar runs on as a thin green
+     frame around the ivory dashboard, which sits inset with its own edge. */
   .ch-canvas {
-    margin: 22px 22px 22px 24px;
     box-shadow: var(--ch-elevation-framed);
   }
 }
