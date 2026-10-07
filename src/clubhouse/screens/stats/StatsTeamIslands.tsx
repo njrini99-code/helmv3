@@ -311,6 +311,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
           />
         </div>
       </div>
+      {/* Strokes gained and Scoring crossfade (CH-4603). */}
       <Swap swapKey={lens}>
         {n === 0 || !all.length ? (
           // The empty window keeps the plot's height (the team's players set it), so the page below stays where it was.

@@ -1347,7 +1347,7 @@
     "name": "PAGING_THE_LATEST_ROUND",
     "chCode": "CH-2601",
     "meaning": "Paging the latest round",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
@@ -2870,7 +2870,7 @@
     "name": "CHANGING_THE_TRENDS_MEASURE",
     "chCode": "CH-4603",
     "meaning": "Changing the trend's measure",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
@@ -3799,7 +3799,7 @@
     "name": "CHANGING_TABS",
     "chCode": "CH-5601",
     "meaning": "Changing tabs",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
@@ -3821,7 +3821,7 @@
     "name": "THE_TABS_PANEL_SWAPS",
     "chCode": "CH-5603",
     "meaning": "The tab's panel swaps",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
@@ -11779,7 +11779,7 @@
     "name": "STEPPING_THROUGH_A_ROUNDS_HOLES",
     "chCode": "CH-11604",
     "meaning": "Stepping through a round's holes",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {

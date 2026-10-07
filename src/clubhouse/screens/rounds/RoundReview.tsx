@@ -236,6 +236,7 @@ function HoleCard({
           </button>
         </div>
       </div>
+      {/* The shots slide in the direction of travel (CH-11604). */}
       <Swap swapKey={hole.n} kind="slide" dir={dir}>
         {shotsError ? (
           <InlineNotice code="CH-11205" title="The shots for this round didn't load" body="The scorecard is right; only the shot-by-shot detail is missing. Try again in a moment." onRetry={onRetry} retrying={retrying} />

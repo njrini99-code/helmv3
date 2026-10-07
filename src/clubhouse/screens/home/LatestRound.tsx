@@ -102,6 +102,7 @@ export function LatestRound({ data, mine = false, lead }: { data: ChCoachHome['l
         />
       ) : (
         <div className="ch-h-round-frame">
+          {/* Paging rounds slides 12px in the direction of travel (CH-2601). */}
           <AnimatePresence mode="popLayout" initial={false} custom={dir}>
             <m.div
               key={r.id}

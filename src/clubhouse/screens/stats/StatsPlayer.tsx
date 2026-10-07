@@ -296,6 +296,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
           <InlineNotice code="CH-5201" title="Rounds didn't load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they're hidden. Try again; the error has been reported." onRetry={() => router.refresh()} />
         )}
 
+        {/* The tab's panel swaps (CH-5603) behind the underline that already moved (CH-5601). */}
         <Swap swapKey={shownTab}>
           <div role="tabpanel" id={`panel-${shownTab}`} aria-labelledby={`tab-${shownTab}`} className="ch-st-panel">
             {emptyFilter && shownTab !== 'dev' && <FilterEmpty code={filterCodes.empty} onClear={() => changeFilter(clearFilters(data.filter))} />}

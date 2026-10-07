@@ -240,7 +240,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 20806 |  | 08 Permission / authorization | `CONTROLS_STAY_WITH_THEIR_ROLE` | implemented | Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, Post a round or countdown. |
 | 21401 | CH-2402 | 14 Retry / recovery | `TRY_AGAIN_WAS_PRESSED_ON_A_SECTION` | reserved | Try again was pressed on a section |
 | 21402 |  | 14 Retry / recovery | `TRY_AGAIN_ASKS_THE_SERVER_AGAIN` | implemented | Try again on a section that did not load asks the server for the whole page again (router.refresh) and, offline, says so and asks nothing; a section that crashed only draws itself again and does not ask the server. |
-| 21601 | CH-2601 | 16 Micro animation | `PAGING_THE_LATEST_ROUND` | reserved | Paging the latest round |
+| 21601 | CH-2601 | 16 Micro animation | `PAGING_THE_LATEST_ROUND` | implemented | Paging the latest round |
 | 21602 | CH-2602 | 16 Micro animation | `HOVERING_OR_PRESSING_A_LEADERBOARD_ROW` | reserved | Hovering or pressing a leaderboard row |
 | 21701 | CH-2701 | 17 Haptic | `PAGING_THE_LATEST_ROUND_2` | reserved | Paging the latest round |
 | 21702 | CH-2702 | 17 Haptic | `NEW_EVENT` | reserved | New event (button or the N key) |
@@ -381,7 +381,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 41401 |  | 14 Retry / recovery | `TRY_AGAIN_REFRESHES_THE_PAGE` | implemented | Try again on a failed-read notice (team rounds, round figures, putting) asks the server for the whole page again (router.refresh), so every read is retried, not one section's. |
 | 41601 | CH-4601 | 16 Micro animation | `FOCUSING_A_PLAYER_ON_THE_TREND` | reserved | Focusing a player on the trend |
 | 41602 | CH-4602 | 16 Micro animation | `CHOOSING_A_LEG` | reserved | Choosing a leg |
-| 41603 | CH-4603 | 16 Micro animation | `CHANGING_THE_TRENDS_MEASURE` | reserved | Changing the trend's measure |
+| 41603 | CH-4603 | 16 Micro animation | `CHANGING_THE_TRENDS_MEASURE` | implemented | Changing the trend's measure |
 | 41604 | CH-4604 | 16 Micro animation | `A_NEW_WINDOWS_FIGURES_ARRIVE` | implemented | A new window's figures arrive |
 | 41701 | CH-4701 | 17 Haptic | `CHOOSING_A_LEG_FOCUSING_A_PLAYER_CHANGING` | reserved | Choosing a leg, focusing a player, changing the window or lens |
 | 41702 | CH-4702 | 17 Haptic | `AN_EXPORT_LANDS_FAILS` | reserved | An export lands / fails |
@@ -467,9 +467,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 51202 |  | 12 State preservation | `TAB_KEPT_ACROSS_WINDOWS_AND_PLAYERS` | implemented | The chosen tab stays when the window changes or the coach pages to another player. |
 | 51401 |  | 14 Retry / recovery | `TRY_AGAIN_REFRESHES_THE_PAGE` | implemented | Try again on a failed-read notice (rounds, shot detail, development items) asks the server for the whole page again (router.refresh), so every read is retried, not one tab's. |
 | 51501 |  | 15 Data freshness / sync | `PAGE_READ_AGAIN_AFTER_A_PROPOSAL` | implemented | After a focus area is proposed the page is read again (router.refresh), so Development lists it as proposed without a reload. |
-| 51601 | CH-5601 | 16 Micro animation | `CHANGING_TABS` | reserved | Changing tabs |
+| 51601 | CH-5601 | 16 Micro animation | `CHANGING_TABS` | implemented | Changing tabs |
 | 51602 | CH-5602 | 16 Micro animation | `OPENING_ADD_FOCUS_AREA` | reserved | Opening Add focus area |
-| 51603 | CH-5603 | 16 Micro animation | `THE_TABS_PANEL_SWAPS` | reserved | The tab's panel swaps |
+| 51603 | CH-5603 | 16 Micro animation | `THE_TABS_PANEL_SWAPS` | implemented | The tab's panel swaps |
 | 51604 | CH-5604 | 16 Micro animation | `A_NEW_WINDOWS_FIGURES_ARRIVE` | implemented | A new window's figures arrive |
 | 51701 | CH-5701 | 17 Haptic | `CHANGING_TABS_THE_WINDOW_OR_PAGING_PLAYERS` | reserved | Changing tabs, the window, or paging players; choosing a Game detail leg |
 | 51702 | CH-5702 | 17 Haptic | `PROPOSING_A_FOCUS_AREA_WITH_NO_NAME` | reserved | Proposing a focus area with no name |
@@ -1190,7 +1190,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 111601 | CH-11601 | 16 Micro animation | `HOVERING_A_ROUND_THAT_OPENS_ITS_REVIEW` | reserved | Hovering a round that opens its review |
 | 111602 | CH-11602 | 16 Micro animation | `THE_SHOT_LOG_OPENS` | implemented | The shot log opens |
 | 111603 | CH-11603 | 16 Micro animation | `SUBMITTING_THE_ROUND` | implemented | Submitting the round |
-| 111604 | CH-11604 | 16 Micro animation | `STEPPING_THROUGH_A_ROUNDS_HOLES` | reserved | Stepping through a round's holes |
+| 111604 | CH-11604 | 16 Micro animation | `STEPPING_THROUGH_A_ROUNDS_HOLES` | implemented | Stepping through a round's holes |
 | 111701 | CH-11701 | 17 Haptic | `DISCARD_IS_TAPPED` | implemented | Discard is tapped |
 | 111702 | CH-11702 | 17 Haptic | `A_ROUND_IS_OPENED` | implemented | A round is opened |
 | 111703 | CH-11703 | 17 Haptic | `CONTINUE_SUBMIT_OR_START_A_ROUND_IS` | implemented | Continue, Submit or Start a round is tapped |
