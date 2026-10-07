@@ -111,8 +111,8 @@ snapshots, rather than new event streams.
 ## Rules that bit tonight
 
 - Never `git reset`/stash/checkout in a worktree another agent owns.
-- Commit with explicit paths; every commit ends with
-  `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
+- Commit with explicit paths; end every commit with the attribution trailer your
+  session instructions give (do not hardcode a model name).
 - Ledger/doc conflicts on merge: keep both sides, regenerate
   `docs/generated/DOCUMENT_AUTHORITY_INVENTORY.md` and `HELM_FEATURE_MAP.md`
   (`tsx` may need the sandbox disabled).

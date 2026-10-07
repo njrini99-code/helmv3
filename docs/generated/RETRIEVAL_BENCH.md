@@ -18,7 +18,7 @@ Scored against gold set `scripts/knowledge/bench/gold-set.v1.json` (schema 1.1.0
 | Recall@10 (feature docs only) | 70% | gold feature doc within the first 10 feature-specific docs |
 | Recall@5 (full ordered list) | 70% | same, but counting the 3 fixed docs (AGENTS.md/CLAUDE.md/registry.yml) against the budget |
 | Recall@10 (full ordered list) | 70% | same, K=10 |
-| Irrelevant-token % | 17% | share of feature-doc characters owned by a feature outside the gold set |
+| Irrelevant-token % | 18% | share of feature-doc characters owned by a feature outside the gold set |
 | Stale-context % | 0% | share of included docs flagged SUPERSEDED/HISTORICAL/archived |
 | Historical-analogue retrieval rate | 50% | pack includes any `memory/incidents/**` path |
 

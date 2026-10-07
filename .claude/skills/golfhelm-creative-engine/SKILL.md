@@ -1,6 +1,7 @@
 ---
 name: golfhelm-creative-engine
 description: Generate premium Instagram creatives, social media ads, and marketing mockups for GolfHelm — an AI-powered golf coaching SaaS for college teams. Use this skill whenever the user mentions Instagram ads, social creatives, marketing mockups, ad templates, carousel posts, social media content, or any visual marketing asset for GolfHelm. Also trigger when the user asks to "make an ad", "create a post", "design a carousel", "mockup a creative", or anything related to GolfHelm marketing visuals. This skill contains the complete extracted design token system, product feature catalog, and creative rules — everything needed to generate pixel-perfect, on-brand assets without accessing the codebase.
+disable-model-invocation: true
 ---
 
 # GolfHelm Creative Engine

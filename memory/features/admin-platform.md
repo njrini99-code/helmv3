@@ -283,9 +283,7 @@ them would have broken those routes, not the dead one.
   duplicating this. Fail-open throughout: a Sentry outage never blocks or
   fails a cron. Full job table, monitor slug conventions, and the
   `automaticVercelMonitors:false` decision record live in
-  `docs/observability/SENTRY_CRON_MONITORS.md`. (Inngest, whose durable
-  functions used to check in through their own call site, was removed
-  2026-10-06.)
+  `docs/observability/SENTRY_CRON_MONITORS.md`.
   (The launchd Repair script and its own Sentry check-in helper —
   scripts/lib/sentry-cron-checkin.mjs no longer exists — were removed 2026-09-05
   along with the rest of the launchd Repair path — see `memory/features/admin-selfheal.md`;

@@ -1,5 +1,27 @@
 # docs/ — Index
 
+## Start here
+
+The ten documents that matter, in trust order. Read the first two on every task,
+the rest when the row says so.
+
+| # | Document | Read it when |
+| --- | --- | --- |
+| 1 | `AGENTS.md` | Always. Policy, workflow, and the traps that waste time. |
+| 2 | `CLAUDE.md` | Always (Claude Code). Commands, subagents and skills. |
+| 3 | `src/lib/types/database.ts` | You need a table, column or enum name. Generated; beats every prose doc. |
+| 4 | `memory/registry.yml` | You are changing a feature. Maps files to the feature doc to read. |
+| 5 | `docs/CONTROL_PLANE_ENFORCEMENT.md` | You wonder what a hook, rule or CI check really blocks. Generated. |
+| 6 | `docs/setup/DEPLOY.md` | You are deploying, rolling back or verifying a release. |
+| 7 | `docs/operations/APPLY_PATH.md` | You are applying a migration to production. |
+| 8 | `supabase/migrations/HELD.md` | A migration is unapplied; read its row before applying. |
+| 9 | `src/styles/design-tokens.css` | You are touching Fairway UI. The token source of truth. |
+| 10 | `.claude/rules/design-system.md` | You are touching Fairway UI. Rules that sit on top of the tokens. |
+
+Everything else under `docs/` is background. Check a doc's `STATUS` banner
+before trusting it: STALE, HISTORICAL, SUPERSEDED and RETIRED mean read for
+history only.
+
 > **Trust first.** `docs/` holds two kinds of file and they carry different
 > weight.
 >
