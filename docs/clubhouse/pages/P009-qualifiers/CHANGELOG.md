@@ -1,5 +1,9 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-07 — Phone qualifier name in the serif
+
+On the phone qualifier page, the qualifier's name now uses the display serif at 32px, as the list's names do. Its digits stay in the sans (`SerifText`).
+
 ## 2026-10-07 — Digits in serif titles
 
 Data-fed serif titles set their digits in the sans (shared `SerifText`; see the cross-page log), so a name or title with figures reads cleanly.

@@ -1390,11 +1390,11 @@
     font: 500 13px/1 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
+  /* The qualifier's name in the display serif (its digits in the sans, SerifText), as the list's names. */
   .ch-qfm-head h1 {
     margin-top: 2px;
-    font: 600 24px/1.1 var(--ch-font-sans);
-    letter-spacing: -0.026em;
-    font-variation-settings: 'wdth' 96;
+    font: 400 32px/1.08 var(--ch-font-serif);
+    letter-spacing: -0.008em;
     color: var(--ch-text-primary);
     overflow-wrap: anywhere;
   }

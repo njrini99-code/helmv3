@@ -23,6 +23,7 @@ import { dayLabel, plural, positionLabel, shortRange, type ChQRound, type ChQRow
 import { StateBadge, StatusPill, ToPar } from './parts';
 import { Courses, Selections, StaleStandings } from './QualifierSections';
 import { NinesSkeleton, Streamed } from './streamed';
+import { SerifText } from '../../ui/SerifText';
 
 const LIST = '/golf/dashboard/qualifiers';
 
@@ -85,7 +86,9 @@ export function QualifierDetailPhone({
           <StatusPill status={status} />
           <span className="ch-num">{shortRange(data.startDate, data.endDate)}</span>
         </span>
-        <h1>{data.name}</h1>
+        <h1>
+          <SerifText text={data.name} />
+        </h1>
         <p>{[data.entriesError ? null : plural(data.entrants, 'entrant'), data.course].filter(Boolean).join(' · ')}</p>
       </header>
 

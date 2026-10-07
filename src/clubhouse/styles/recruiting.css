@@ -823,10 +823,11 @@
     flex-direction: column;
     gap: 12px;
   }
+  /* The display serif, as every phone page's title. */
   .ch-recm-title {
     margin: 2px 0 0;
-    font: 600 34px/1.1 var(--ch-font-sans);
-    letter-spacing: -0.03em;
+    font: 400 38px/1.05 var(--ch-font-serif);
+    letter-spacing: -0.008em;
   }
   .ch-recm-search {
     height: 40px;

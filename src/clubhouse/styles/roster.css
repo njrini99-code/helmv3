@@ -864,11 +864,11 @@
     font: 500 13px/1 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
+  /* The display serif, as every phone page's title. */
   .ch-rsm-title {
     margin: 2px 0 0;
-    font: 600 28px/1.1 var(--ch-font-sans);
-    letter-spacing: -0.026em;
-    font-variation-settings: 'wdth' 96;
+    font: 400 34px/1.05 var(--ch-font-serif);
+    letter-spacing: -0.008em;
   }
   .ch-rsm-sort {
     display: flex;
