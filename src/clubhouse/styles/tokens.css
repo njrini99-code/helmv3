@@ -72,7 +72,8 @@
   /* Charts (yardage book) */
   --ch-chart-paper: #fbf9f3;
   --ch-chart-gain: #155a39;
-  --ch-chart-loss: #9a6512;
+  /* 4.5:1 on the page tone (#ebe7dc, 5.1) and a soft well; #9a6512 fell to 4.0 once the page darkened (a11y 2026-10-07). */
+  --ch-chart-loss: #865608;
   /* The loss amber on a tinted cell: darker so it holds 4.5:1 on the heat fills. */
   --ch-chart-loss-on-tint: #744a06;
   --ch-chart-flag: #b03a2e;

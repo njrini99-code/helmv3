@@ -1,5 +1,10 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-07 — Loss amber and miss map contrast
+
+The loss amber is darker everywhere (4.5:1 on the darker page tone and in wells), and the miss map's counts hold 5:1 on
+the heaviest fill. `clubhouse:a11y` is clean on the phone stats panels.
+
 ## 2026-10-07 — Hero figures on the hero
 
 The profile hero's four figures (Scoring avg, Handicap, SG / round, Rounds) no longer sit on a card inside the hero. They run in one row across the hero's foot, under a seam, divided by seams, at every width.

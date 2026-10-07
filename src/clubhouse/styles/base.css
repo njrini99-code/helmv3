@@ -175,6 +175,7 @@
 .ch-well-soft {
   --ch-text-secondary: var(--ch-ink-700);
   --ch-text-tertiary: var(--ch-ink-600);
+  --ch-chart-loss: var(--ch-chart-loss-on-tint);
 }
 .ch-scoreboard {
   --ch-text-primary: var(--ch-on-green-ink);

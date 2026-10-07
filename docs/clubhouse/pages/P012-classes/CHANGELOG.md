@@ -1,5 +1,9 @@
 # P012 — Classes: changelog
 
+## 2026-10-07 — Timeline labels
+
+The banner timeline's start and end labels move from 11px at 4.0:1 to 12px in the muted on-green ink.
+
 ## 2026-10-07 — Solid semester banner, serif title
 
 The semester banner is solid field green with no large gradient (which banded) and no deep cast shadow; its type takes the warm ivory used on green. The Classes title is set in the display serif.

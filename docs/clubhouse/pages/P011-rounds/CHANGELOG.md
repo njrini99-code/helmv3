@@ -1,5 +1,10 @@
 # P011 — Rounds: changelog
 
+## 2026-10-07 — Unplayed holes legible
+
+An in-progress round's unplayed hole numbers sat at 2.8:1 on the green. They now use the muted on-green ink (4.5:1 or
+better); the recess, not a faded number, says the hole is still to come.
+
 ## 2026-10-07 — Drawn season figures, ledger dates, serif titles
 
 Owner: "random numbers with not great labeling mean little without visuals". Season scoring's figures are now drawn,

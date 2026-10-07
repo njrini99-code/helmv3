@@ -1,5 +1,13 @@
 # Clubhouse changelog
 
+## 2026-10-07 — Contrast after the darker page tone
+
+The accessibility audit found text that fell under 4.5:1 once the page and wells darkened. The loss amber
+(`--ch-chart-loss`) is now #865608 (5.1:1 on the page tone, 4.7:1 on a soft well), and inside a well it takes the
+darker on-tint amber. Rounds' unplayed hole numbers and the Classes timeline labels use the muted on-green ink, and the
+labels go up to the 12px floor. The player stats miss map's counts are darker. `clubhouse:a11y` is clean on Rounds,
+Classes and both stats pages. The component catalog is regenerated.
+
 ## 2026-10-07 — Digits in serif headings, phone text floor
 
 Display-serif headings that come from data set their digits in the sans (`SerifText`, `.ch-serif-num`): the serif's

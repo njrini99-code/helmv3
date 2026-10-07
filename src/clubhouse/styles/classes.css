@@ -275,8 +275,8 @@
 .ch-cl-tb__lab {
   position: absolute;
   top: 24px;
-  font: 500 11px/1 var(--ch-font-sans);
-  color: rgb(244 241 232 / 0.5);
+  font: 500 12px/1 var(--ch-font-sans);
+  color: var(--ch-on-green-ink-muted);
 }
 .ch-cl-tb__lab.is-s {
   left: 0;
