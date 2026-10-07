@@ -2418,3 +2418,39 @@
     margin-top: 36px;
   }
 }
+
+/* The Ledger on desktop Home (owner, 2026-10-07): the week and the latest round sit on the canvas under one engraved
+   rule, split by a hairline column; the leaderboard is rows on the canvas, aligned to the head's edge. */
+@media (min-width: 821px) {
+  .ch-h-main--desk[data-canopy] .ch-h-sheet > .ch-h-pane {
+    padding: 22px 0 8px;
+  }
+  .ch-h-main--desk[data-canopy] .ch-h-sheet > .ch-h-pane:first-child {
+    padding-right: 32px;
+  }
+  .ch-h-main--desk[data-canopy] .ch-h-sheet > .ch-h-pane + .ch-h-pane {
+    padding-left: 32px;
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-h-main--desk[data-canopy] .ch-h-sec {
+    margin-top: 44px;
+    padding-bottom: 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-h-main--desk[data-canopy] .ch-h-lb {
+    margin-inline: -12px;
+    padding-top: 0;
+  }
+  .ch-h-main--desk[data-canopy] .ch-h-lb__row {
+    padding-inline: 12px;
+  }
+  .ch-h-main--desk[data-canopy] .ch-h-lb__row + .ch-h-lb__row::before {
+    right: 12px;
+    left: 12px;
+    height: 1px;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:hover {
+    background: var(--ch-ledger-row-hover);
+  }
+}

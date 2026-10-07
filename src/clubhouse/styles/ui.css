@@ -567,3 +567,64 @@
     font-size: 12px;
   }
 }
+
+/* Section (the Ledger, owner 2026-10-07): a heading and an engraved rule on the canvas; the body is flush. */
+.ch-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.ch-sec__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+}
+.ch-sec__titles {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.ch-sec__title {
+  margin: 0;
+  font: 600 19px/1.2 var(--ch-font-sans);
+  letter-spacing: -0.022em;
+  color: var(--ch-ledger-ink);
+}
+.ch-sec__meta {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-sec__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The back link above a sub-screen's page head. */
+.ch-backlink {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 0 -4px;
+  padding: 4px 8px 4px 4px;
+  border-radius: var(--ch-radius-md);
+  font: 500 13px/1.2 var(--ch-font-sans);
+  color: var(--ch-green-700);
+  text-decoration: none;
+  transition: background var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-backlink:hover {
+  background: var(--ch-ledger-row-hover);
+  color: var(--ch-green-800);
+}
+.ch-backlink:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 1px;
+}

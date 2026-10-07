@@ -1706,6 +1706,29 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
   }
 }
 
+/* The Ledger (owner, 2026-10-07: "flush, not so card heavy", Ledger chosen over one sheet or quiet cards). Inside
+   the framed workspace a page's sections sit on the canvas: a reading sheet loses its fill, ring and shadow, and the
+   section headings take the head's heavy sans in forest ink. A real object (the scorecard, a well, a form field, a
+   dialog) keeps its own material. Phone keeps its approved boards. */
+@media (min-width: 821px) {
+  [data-ui='clubhouse'] main[data-canopy] {
+    --ch-type-serif-l: 600 32px/1.1 var(--ch-font-sans);
+    --ch-type-serif-m: 600 22px/1.15 var(--ch-font-sans);
+    --ch-type-serif-s: 600 19px/1.2 var(--ch-font-sans);
+  }
+  [data-ui='clubhouse'] main[data-canopy] :is(h2, h3) {
+    letter-spacing: -0.022em;
+  }
+  [data-ui='clubhouse'] main[data-canopy] h2 {
+    color: var(--ch-ledger-ink);
+  }
+  [data-ui='clubhouse'] main[data-canopy] .ch-sheet {
+    background: none;
+    box-shadow: none;
+    border-radius: 0;
+  }
+}
+
 /* The Frame (owner, 2026-10-07, matching the Coach Home handoff): the sidebar is the frame's green with the brand in
    its own panel (the base .ch-brand), ivory type on the green, and an ivory plate for the selected row; the
    next-event card stays a light sheet. */

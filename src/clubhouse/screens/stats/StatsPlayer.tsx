@@ -182,7 +182,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   // `is-desk`: the server renders desktop; at phone width it stays hidden until the phone view takes over at hydration.
   return (
     <>
-      <main className="ch-st is-desk" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined}>
+      <main className="ch-st is-desk" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined} data-canopy="">
         {coach && (
           <div className="ch-st-back">
             <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={href(null, data.filter)}>
@@ -204,9 +204,9 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
           </div>
         )}
 
-        <section className="ch-pf-hero" aria-label={data.name}>
+        <section className="ch-pf-hero" aria-label={data.name} data-canopy-head="">
           <span className="ch-pf-hero__av">
-            <Avatar name={data.name} size={112} />
+            <Avatar name={data.name} size={84} />
           </span>
           <div className="ch-pf-hero__id">
             <div className="ch-pf-hero__tags">
