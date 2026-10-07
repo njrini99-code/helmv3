@@ -42,7 +42,7 @@
   color: var(--ch-green-600);
 }
 .ch-hl[data-canopy] {
-  padding-top: 0;
+  padding-top: 20px;
 }
 .ch-hl[data-canopy] > .ch-hl-h {
   padding-top: 6px;
