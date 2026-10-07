@@ -470,8 +470,9 @@ const nextConfig = {
             value: 'max-age=63072000; includeSubDomains; preload',
           },
           // Content Security Policy
-          // SECURITY: In development, we need 'unsafe-inline' and 'unsafe-eval' for Next.js hot reload
-          // TODO: Use nonce-based CSP in production
+          // SECURITY: 'unsafe-eval' is only for development (Next.js hot reload,
+          // React dev tooling); production builds never send it.
+          // TODO: Use nonce-based CSP in production to drop 'unsafe-inline' too.
           //
           // ANALYTICS HOSTS. src/app/layout.tsx mounts PostHogProvider and
           // DatadogProvider; both initialise client-side whenever their
@@ -508,7 +509,7 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: `
               default-src 'self';
-              script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://va.vercel-scripts.com https://us-assets.i.posthog.com blob:;
+              script-src 'self' 'unsafe-inline' ${process.env.NODE_ENV === 'production' ? '' : "'unsafe-eval'"} https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://va.vercel-scripts.com https://us-assets.i.posthog.com blob:;
               style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
               img-src 'self' data: https: blob:;
               font-src 'self' data: https://fonts.gstatic.com;
