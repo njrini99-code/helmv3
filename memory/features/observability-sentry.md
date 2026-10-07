@@ -28,6 +28,15 @@ pure function, `src/lib/sentry-client-options.ts`'s
 `ignoreErrors`, and `tracePropagationTargets` are unit-testable without
 booting the SDK.
 
+Every `tracePropagationTargets` entry is an anchored regex built in
+`src/lib/observability/trace-targets.ts`: Sentry matches a string target
+anywhere in a URL, so a bare `'localhost'` or Supabase origin would also send
+trace headers to look-alike hosts. Datadog RUM's `allowedTracingUrls` uses
+the same helper. The browser transport sets
+`transportOptions.fetchOptions.credentials: 'omit'`: envelopes go to the
+same-origin `/monitoring` tunnel, which Next rewrites to sentry.io, and a
+same-origin fetch would otherwise carry the Supabase auth cookie there.
+
 Browser UI profiling reads `NEXT_PUBLIC_SENTRY_PROFILES_SAMPLE_RATE` but
 maps it into `profileSessionSampleRate` + `profileLifecycle: 'trace'` —
 the installed SDK's `profilesSampleRate` field is deprecated and, verified
