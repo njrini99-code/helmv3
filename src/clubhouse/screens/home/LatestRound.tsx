@@ -16,6 +16,7 @@ import { chSwap } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { changeTone, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { RefreshNotice } from '../../ui/RefreshNotice';
+import { GirViz, PuttsViz, SgViz } from './RoundViz';
 
 function Nine({ label, holes }: { label: string; holes: ChHoleScore[] }) {
   const par = holes.every((h) => h.par != null) ? holes.reduce((a, h) => a + (h.par ?? 0), 0) : null;
@@ -148,14 +149,17 @@ export function LatestRound({ data, mine = false, lead }: { data: ChCoachHome['l
                   <span>
                     <em>GIR</em>
                     {r.gir ?? NO_DATA}
+                    <GirViz gir={r.gir} />
                   </span>
                   <span>
                     <em>Putts</em>
                     {r.putts ?? NO_DATA}
+                    <PuttsViz putts={r.putts} />
                   </span>
                   <span>
                     <em>SG</em>
                     <b className={changeTone(r.sg, false) || undefined}>{formatSigned(r.sg)}</b>
+                    <SgViz sg={r.sg} />
                   </span>
                 </div>
                 {roundHref(r.id, mine ? 'player' : 'coach') ? (

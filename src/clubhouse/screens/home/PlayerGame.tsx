@@ -1,7 +1,7 @@
 'use client';
 
 import { PenLine } from 'lucide-react';
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
 import type { ChPlayerHome, ChPlayerLeg, ChScoringPoint } from '../../data/player-home';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
@@ -50,6 +50,35 @@ function Scoring({ data, phone }: { data: ChPlayerHome; phone: boolean }) {
   const delta = mean != null && prevMean != null ? mean - prevMean : null;
   const withPar = shown.filter((p): p is ChScoringPoint & { par: number } => p.par != null);
   const under = withPar.filter((p) => p.score < p.par).length;
+  // Each figure drawn against a real reference (owner, 2026-10-06: no bare numbers): the average against the previous
+  // window's, strokes gained from zero, and one mark per round for under par. Decorative: the words carry it.
+  const lo = Math.min(mean ?? 0, prevMean ?? mean ?? 0) - 1.5;
+  const hi = Math.max(mean ?? 0, prevMean ?? mean ?? 0) + 1.5;
+  const at = (v: number) => ((v - lo) / (hi - lo)) * 100;
+  const sg = data.sgPerRound;
+  const viz: Record<string, ReactNode> = {
+    'Scoring avg':
+      mean != null && prevMean != null ? (
+        <span className="ch-ph-viz ch-ph-viz--avg" aria-hidden="true">
+          <i className="is-was" style={{ left: `${at(prevMean)}%` }} />
+          <i className={'is-now ' + (mean <= prevMean ? 'is-better' : 'is-worse')} style={{ left: `${at(mean)}%` }} />
+          <b style={{ left: `${Math.min(at(mean), at(prevMean))}%`, width: `${Math.abs(at(mean) - at(prevMean))}%` }} />
+        </span>
+      ) : null,
+    'Strokes gained':
+      sg != null ? (
+        <span className="ch-ph-viz ch-ph-viz--sg" aria-hidden="true">
+          <i className={sg >= 0 ? 'is-gain' : 'is-loss'} style={sg >= 0 ? { left: '50%', width: `${Math.min(50, (sg / 3) * 50)}%` } : { right: '50%', width: `${Math.min(50, (-sg / 3) * 50)}%` }} />
+        </span>
+      ) : null,
+    'Under par': withPar.length ? (
+      <span className="ch-ph-viz ch-ph-viz--rounds" aria-hidden="true">
+        {withPar.map((p, i) => (
+          <i key={i} className={p.score < p.par ? 'is-under' : p.score === p.par ? 'is-even' : undefined} />
+        ))}
+      </span>
+    ) : null,
+  };
   const figs: Array<[string, string, string, string]> = [
     ['Scoring avg', formatFixed(mean), delta == null ? `Last ${shown.length}` : `${formatSigned(delta)} vs previous ${before.length}`, changeTone(delta, true)],
     ['Strokes gained', data.sgPerRound == null ? NO_DATA : formatSigned(data.sgPerRound), data.sgPerRound == null ? 'After three rounds' : `Season, per round ${sgBaseline(data.tour).vs}`, changeTone(data.sgPerRound, false)],
@@ -79,7 +108,11 @@ function Scoring({ data, phone }: { data: ChPlayerHome; phone: boolean }) {
           <div key={k}>
             <dt>{k}</dt>
             <dd className={'ch-num ' + t}>{v}</dd>
-            <dd className="ch-ph-figs__m ch-num">{m}</dd>
+            {/* The drawing sits in the caption's dd (no text of its own), so each figure stays one dt and its value, caption dd pair. */}
+            <dd className="ch-ph-figs__m ch-num">
+              {viz[k]}
+              {m}
+            </dd>
           </div>
         ))}
       </dl>

@@ -18,6 +18,7 @@ import { Countdown } from './Countdown';
 import { Today, UpNext, WeekStrip } from './HomePhone';
 import { PlayerGame } from './PlayerGame';
 import { messageCoachHref, MY_STATS, postRoundHref, roundHref } from './player-links';
+import { GirViz, PuttsViz, SgViz } from './RoundViz';
 
 /**
  * The player's phone Home (v2, design/handoff/Player - Home - Mobile.html,
@@ -168,14 +169,23 @@ function Latest({ data }: { data: ChPlayerHome['latest'] }) {
             <div>
               <dt>GIR</dt>
               <dd className="ch-num">{r.gir ?? NO_DATA}</dd>
+              <dd className="ch-ph-strip__viz">
+                <GirViz gir={r.gir} />
+              </dd>
             </div>
             <div>
               <dt>Putts</dt>
               <dd className="ch-num">{r.putts ?? NO_DATA}</dd>
+              <dd className="ch-ph-strip__viz">
+                <PuttsViz putts={r.putts} />
+              </dd>
             </div>
             <div>
               <dt>SG</dt>
               <dd className={'ch-num ' + changeTone(r.sg, false)}>{formatSigned(r.sg)}</dd>
+              <dd className="ch-ph-strip__viz">
+                <SgViz sg={r.sg} />
+              </dd>
             </div>
           </dl>
           {/* The board's "Open recap": the round's own review; My stats when it isn't rebuilt. */}

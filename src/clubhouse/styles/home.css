@@ -1669,6 +1669,88 @@
 .ch-ph-figs > div + div {
   box-shadow: var(--ch-seam-x);
 }
+/* The figures drawn (PlayerGame `viz`): the average against the previous window's, strokes gained from zero, one mark
+   per round for under par. */
+.ch-ph-viz {
+  position: relative;
+  display: block;
+  margin: 2px 0 7px;
+  height: 8px;
+  border-radius: 4px;
+  background: rgb(28 25 18 / 0.06);
+  box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.08);
+}
+.ch-ph-viz--avg i {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  translate: -50% -50%;
+}
+.ch-ph-viz--avg i.is-was {
+  background: var(--ch-ink-300);
+}
+.ch-ph-viz--avg i.is-now {
+  width: 10px;
+  height: 10px;
+  box-shadow: 0 0 0 2px var(--ch-sheet-bg);
+}
+.ch-ph-viz--avg i.is-better {
+  background: var(--ch-green-600);
+}
+.ch-ph-viz--avg i.is-worse {
+  background: var(--ch-chart-loss);
+}
+.ch-ph-viz--avg b {
+  position: absolute;
+  top: 3px;
+  height: 2px;
+  background: var(--ch-ink-300);
+}
+.ch-ph-viz--sg::after {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: 50%;
+  width: 1.5px;
+  background: var(--ch-ink-700);
+  translate: -50% 0;
+  content: '';
+}
+.ch-ph-viz--sg i {
+  position: absolute;
+  top: 1.5px;
+  bottom: 1.5px;
+  border-radius: 3px;
+}
+.ch-ph-viz--sg i.is-gain {
+  background: var(--ch-green-500);
+}
+.ch-ph-viz--sg i.is-loss {
+  background: var(--ch-chart-loss);
+}
+.ch-ph-viz--rounds {
+  display: flex;
+  gap: 3px;
+  margin-top: 4px;
+  height: auto;
+  background: none;
+  box-shadow: none;
+}
+.ch-ph-viz--rounds i {
+  flex: 1;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--ch-ivory-300);
+}
+.ch-ph-viz--rounds i.is-even {
+  background: var(--ch-green-200);
+}
+.ch-ph-viz--rounds i.is-under {
+  background: var(--ch-score-under);
+}
 .ch-ph-figs dt {
   font: 500 12.5px/1 var(--ch-font-sans);
   color: var(--ch-text-secondary);
@@ -2213,4 +2295,90 @@
   .ch-ph-chart__val {
     font-size: 12.5px;
   }
+}
+
+/* A round's figures drawn (RoundViz.tsx): greens hit out of played, putts against two a green, strokes gained from zero.
+   Under the latest round's GIR, Putts and SG, desktop and phone. */
+.ch-rviz {
+  position: relative;
+  display: block;
+  width: 72px;
+  height: 6px;
+  margin-top: 6px;
+  border-radius: 3px;
+  background: rgb(28 25 18 / 0.07);
+  box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.08);
+}
+.ch-h-round__stats span {
+  flex-wrap: wrap;
+}
+.ch-h-round__stats .ch-rviz {
+  flex-basis: 100%;
+}
+.ch-ph-strip__viz {
+  margin: 0;
+}
+.ch-ph-strip__viz .ch-rviz {
+  width: 100%;
+}
+.ch-rviz--gir {
+  display: flex;
+  gap: 2px;
+  background: none;
+  box-shadow: none;
+}
+.ch-rviz--gir i {
+  flex: 1;
+  border-radius: 1.5px;
+  background: var(--ch-ivory-300);
+}
+.ch-rviz--gir i.is-hit {
+  background: var(--ch-green-500);
+}
+.ch-rviz--putts i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+}
+.ch-rviz--putts i.is-good {
+  background: var(--ch-green-500);
+}
+.ch-rviz--putts i.is-over {
+  background: var(--ch-chart-loss);
+}
+.ch-rviz--putts b,
+.ch-rviz--sg::after {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 1.5px;
+  background: var(--ch-ink-700);
+  translate: -50% 0;
+}
+.ch-rviz--sg::after {
+  left: 50%;
+  content: '';
+}
+.ch-rviz--sg i {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  border-radius: 2px;
+}
+.ch-rviz--sg i.is-gain {
+  background: var(--ch-green-500);
+}
+.ch-rviz--sg i.is-loss {
+  background: var(--ch-chart-loss);
+}
+/* The stats row's own span rule (flex, baseline, 6px gap) also reaches the drawings; reset them. */
+.ch-h-round__stats .ch-rviz {
+  display: block;
+  gap: 0;
+  font: inherit;
+}
+.ch-h-round__stats .ch-rviz--gir {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
 }

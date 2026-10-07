@@ -1,5 +1,16 @@
 # P002 — Home: changelog
 
+## 2026-10-06 — Figures drawn, not stated
+
+Owner: no bare numbers. Each Scoring figure is now drawn against a reference that is real:
+- **Average:** the current window's average beside the previous window's, as two marks on one track.
+- **Strokes gained:** a bar from a zero tick.
+- **Under par:** one mark per round, red under par and pale green at par.
+
+The latest round's GIR, Putts and SG (desktop and phone) carry small drawings (`RoundViz.tsx`): greens hit out of
+those played, putts against two on every green (36), and strokes gained from zero. Each drawing sits in its caption's
+dd, so every figure stays one dt with its value and caption dd pair.
+
 ## 2026-10-06 — Home on the canopy
 
 Desktop Home moves from the green band card onto the shared canopy: a serif greeting, the brief in larger type, and
