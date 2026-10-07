@@ -2347,6 +2347,11 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
     const facts = document.querySelector('.ch-qfm-facts')!;
     expect([...facts.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Rounds in', 'Spots', 'Deadline']);
     expect(facts.textContent).toMatch(/4\+1/);
+    // Drawn, decoratively: the rounds posted along the rounds due, and the squad's seats (four won on score, one pick).
+    expect(facts.querySelector('.ch-qfm-facts__bar i')).not.toBeNull();
+    expect(facts.querySelectorAll('.ch-qfm-facts__seats i.is-score')).toHaveLength(4);
+    expect(facts.querySelectorAll('.ch-qfm-facts__seats i.is-pick')).toHaveLength(1);
+    for (const v of facts.querySelectorAll('.ch-qfm-facts__viz')) expect(v.getAttribute('aria-hidden')).toBe('true');
     expect(screen.getByRole('link', { name: 'Manage selections' }).getAttribute('href')).toBe(`/golf/dashboard/qualifiers/${detail('live').id}/selection`);
     expect(document.querySelectorAll('.ch-qfm-lb__row').length).toBeGreaterThan(3);
     // Round-by-round stays on desktop (Q-20).

@@ -1,5 +1,14 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-07 — Phone facts drawn on the stat line
+
+On the phone qualifier page, the three facts were bare numbers in a card. They now sit on the stat line, between gilt
+rules and divided by seams, and two of them are drawn:
+- **Rounds in:** a bar of the rounds posted against the rounds due.
+- **Spots:** the squad's seats. Seats won on score are filled green; the coach's picks are open gilt rings.
+
+The deadline stays a date.
+
 ## 2026-10-07 — Phone qualifier name in the serif
 
 On the phone qualifier page, the qualifier's name now uses the display serif at 32px, as the list's names do. Its digits stay in the sans (`SerifText`).

@@ -65,9 +65,30 @@ export function QualifierDetailPhone({
   const topScore = Math.max(0, data.squad - data.picks);
   const peeked = peek && b ? (b.rows.find((r) => r.playerId === peek) ?? null) : null;
 
-  const facts: Array<[string, string]> = [
-    ['Rounds in', b ? `${b.submitted}/${data.entrants * data.numRounds}` : '—'],
-    ['Spots', data.picks ? `${topScore}+${data.picks}` : String(data.squad)],
+  // Each figure drawn (owner, 2026-10-07: no bare numbers; decorative, the figure says it): the rounds posted along the
+  // rounds due, and the squad's seats, the ones won on score filled and the coach's picks open.
+  const due = data.entrants * data.numRounds;
+  const facts: Array<[string, string, ReactNode?]> = [
+    [
+      'Rounds in',
+      b ? `${b.submitted}/${due}` : '—',
+      b && due > 0 ? (
+        <span className="ch-qfm-facts__bar">
+          <i style={{ width: `${Math.min(100, (b.submitted / due) * 100)}%` }} />
+        </span>
+      ) : null,
+    ],
+    [
+      'Spots',
+      data.picks ? `${topScore}+${data.picks}` : String(data.squad),
+      data.squad > 0 && data.squad <= 12 ? (
+        <span className="ch-qfm-facts__seats">
+          {Array.from({ length: data.squad }, (_, i) => (
+            <i key={i} className={i < topScore || !data.picks ? 'is-score' : 'is-pick'} />
+          ))}
+        </span>
+      ) : null,
+    ],
     ['Deadline', data.deadline ? dayLabel(data.deadline) : '—'],
   ];
 
@@ -116,10 +137,13 @@ export function QualifierDetailPhone({
       )}
 
       <dl className="ch-qfm-facts">
-        {facts.map(([k, v]) => (
+        {facts.map(([k, v, viz]) => (
           <div key={k}>
             <dt>{k}</dt>
             <dd className="ch-num">{v}</dd>
+            <dd className="ch-qfm-facts__viz" aria-hidden="true">
+              {viz}
+            </dd>
           </div>
         ))}
       </dl>
