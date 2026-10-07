@@ -1,5 +1,9 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-06 — Hero figures on the hero
+
+The profile hero's four figures (Scoring avg, Handicap, SG / round, Rounds) no longer sit on a card inside the hero. They run in one row across the hero's foot, under a seam, divided by seams, at every width.
+
 ## 2026-10-06 — Figures as a stat line, serif titles
 
 The figure row uses the shared stat line (no cards; seams between gilt rules; see P004). The player's name and the
