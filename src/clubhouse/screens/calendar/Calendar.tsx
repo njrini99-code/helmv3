@@ -477,8 +477,8 @@ export function Calendar({
   }
 
   return (
-    <main className="ch-cal" aria-busy={pending} /* CH-6406: busy while a view, week or save is on its way; the page dims */>
-      <header className="ch-cal-mast">
+    <main className="ch-cal" data-canopy="" aria-busy={pending} /* CH-6406: busy while a view, week or save is on its way; the page dims */>
+      <header className="ch-cal-mast" data-canopy-head="">
         <div className="ch-cal-mast__l">
           <button type="button" className="ch-cal-title" onClick={() => setJump(!jump)} aria-expanded={jump} aria-haspopup="dialog" aria-label={`${title.main}${title.year ? ` ${title.year}` : ''}. Jump to a date`}>
             <h1>{title.main}</h1>

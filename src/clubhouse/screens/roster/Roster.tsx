@@ -256,8 +256,8 @@ export function Roster({ data }: { data: ChRoster }) {
   }
 
   return (
-    <main className="ch-rs">
-      <header className="ch-rs-head">
+    <main className="ch-rs" data-canopy="">
+      <header className="ch-rs-head" data-canopy-head="">
         <div>
           <span className="ch-rs-team">
             <span className="ch-rs-team__stack" aria-hidden="true">

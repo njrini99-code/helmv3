@@ -139,8 +139,8 @@ export function SettingsView({
 
   return (
     <DirtyContext.Provider value={report}>
-      <main className="ch-set">
-        <header className="ch-set-head">
+      <main className="ch-set" data-canopy="">
+        <header className="ch-set-head" data-canopy-head="">
           <h1 className="ch-display">Settings</h1>
           <p>
             {data.role === 'coach' ? 'Coach' : 'Player'}

@@ -21,8 +21,8 @@ import { Pipeline } from './Pipeline';
 export function RecruitingDesktop({ c }: { c: RecCtx }) {
   const nothing = c.total === 0;
   return (
-    <main className="ch-rec" aria-labelledby="ch-rec-title" data-ch-code="CH-14904">
-      <header className="ch-rec-head">
+    <main className="ch-rec" data-canopy="" aria-labelledby="ch-rec-title" data-ch-code="CH-14904">
+      <header className="ch-rec-head" data-canopy-head="">
         <div>
           <h1 id="ch-rec-title">Recruiting</h1>
           <p>Prospects you&apos;re following, from first look to commitment. Only coaches see this page.</p>

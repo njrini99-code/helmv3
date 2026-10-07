@@ -287,10 +287,10 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
   };
 
   return (
-    <main className={'ch-hb' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hb-title">
+    <main className={'ch-hb' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hb-title" data-canopy={phone ? undefined : ''}>
       {phone && !coach && <PhoneTop start title="Team Hub" />}
       {phone && coach && <PhoneTop title="Team Hub" back={{ label: 'More', onBack: backFromMore }} />}
-      <header className="ch-hb-h">
+      <header className="ch-hb-h" data-canopy-head="">
         <div>
           <span className="ch-hb-role">
             <Icon icon={coach ? ClipboardList : User} size={12} />

@@ -129,8 +129,8 @@ describe('Stats team · reads that fail', () => {
     await expectCode('CH-4201', /Team rounds didn't load/);
     expect(code('CH-4301')).toBeNull();
     // A roster that did not load is not "0 active players".
-    expect(document.querySelector('.ch-st-head p')!.textContent).toBe('Varsity · countable rounds only');
-    expect(document.querySelector('.ch-st-head')!.textContent).not.toMatch(/\b0 active/);
+    expect(document.querySelector('.ch-hero .ch-hero__line')!.textContent).toBe('Varsity · countable rounds only');
+    expect(document.querySelector('.ch-hero')!.textContent).not.toMatch(/\b0 active/);
   });
 
   it('CH-4211 the season’s longest putt does not load: Season bests says so beside the other bests, never "No season bests yet" and never a quiet gap', async () => {
