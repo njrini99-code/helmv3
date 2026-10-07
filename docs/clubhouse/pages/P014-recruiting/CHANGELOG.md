@@ -1,5 +1,31 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-07 — Recruiting on the Ledger
+
+On desktop, Recruiting now sits on the canvas instead of in cards (owner:
+"flush, not so card heavy"):
+
+- **Pipeline:** "Pipeline" and its count are the section heading, set over an
+  engraved rule. The four stages are now columns divided by hairlines rather
+  than a timeline. Each coin has its stage, blurb and share beside it, or under
+  it on a narrower canvas. A stage is still a filter, and the stage being shown
+  takes a green tint.
+- **Prospect list:** the search and sort head the list over an engraved rule.
+  The table's rows have seams and sit on the canvas. A row's hover and selected
+  tints are drawn as one box, so Safari leaves no hairline gaps between columns.
+- **Prospect panel:** a column beside the list behind a hairline, or under it
+  behind a rule once they stack. Contact rows and documents have seams, the
+  notes are plain text, and an empty part is a row with an engraved icon instead
+  of a card.
+- **Delete prospect** is red, as in the handoff (D-42). It had no style and
+  drew as black text.
+
+The loading screen draws the same pipeline line for line. The list used to drop
+27px at 1440 when the data landed; it now moves 0px (WebKit, 1440 and 1100).
+The lede no longer leaves "page." alone on its last line. Coins, stage chips, the
+search field, segmented controls and dialogs keep their material. The phone is
+unchanged.
+
 ## 2026-10-07 — Phone title in the serif
 
 The phone Recruiting large title was a 34px semibold sans. It now uses the

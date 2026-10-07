@@ -1428,3 +1428,264 @@
     min-height: 167px;
   }
 }
+
+/* The Ledger on desktop Recruiting (owner, 2026-10-07: "flush, not so card heavy"). The pipeline, the prospect list and
+   the open prospect sit on the canvas: the pipeline is a section head over an engraved rule and four stage columns
+   split by hairlines (each still a filter); the table is rows and seams; the prospect is a column beside it, split
+   off by a hairline. Coins, stage chips, the search field, segmented controls and dialogs keep their material. The
+   loading screen draws the same head and stage heights, so the list doesn't move when the data lands. */
+@media (min-width: 821px) {
+  .ch-rec[data-canopy] .ch-rec-head p {
+    text-wrap: pretty;
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe {
+    gap: 0;
+    margin-top: 14px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__head {
+    box-sizing: border-box;
+    align-items: flex-end;
+    min-height: 56px;
+    padding: 0 0 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__sum {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__sum b {
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.022em;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__sum span {
+    font: var(--ch-type-caption);
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__all {
+    margin-right: -10px;
+  }
+  /* Columns, not a timeline: the hairlines between stages replace the connecting line. */
+  .ch-rec[data-canopy] .ch-rec-pipe__seg {
+    display: none;
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__line,
+  .ch-rec[data-canopy] .ch-rec-skel-pipe {
+    margin-inline: -12px;
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__stage,
+  .ch-rec[data-canopy] .ch-rec-skel-pipe__s {
+    box-sizing: border-box;
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    min-height: 92px;
+    padding: 16px 24px;
+    text-align: left;
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__stage.is-watched,
+  .ch-rec[data-canopy] .ch-rec-skel-pipe__s:first-child {
+    padding-left: 12px;
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__stage.is-committed,
+  .ch-rec[data-canopy] .ch-rec-skel-pipe__s:last-child {
+    padding-right: 12px;
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__stage + .ch-rec-pipe__stage,
+  .ch-rec[data-canopy] .ch-rec-skel-pipe__s + .ch-rec-skel-pipe__s {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__stage {
+    transition: background var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__stage:not(:disabled):hover {
+    background: var(--ch-ledger-row-hover);
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__stage[aria-pressed='true'],
+  .ch-rec[data-canopy] .ch-rec-pipe__stage[aria-pressed='true']:hover {
+    background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__stage:focus-visible {
+    outline-offset: -3px;
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__dot {
+    flex: none;
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__txt {
+    min-width: 0;
+  }
+  /* Too narrow for a coin and its words side by side: the words go under the coin, so no blurb breaks. */
+  @container (max-width: 1120px) {
+    .ch-rec[data-canopy] .ch-rec-pipe__stage,
+    .ch-rec[data-canopy] .ch-rec-skel-pipe__s {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+      min-height: 160px;
+    }
+  }
+
+  /* The list: the search and sort head it over an engraved rule; the table is bled 12px so a row's tint clears the
+     text while the names line up with the search field. Safari draws no shadow on a table row, so the seams are on
+     the cells. */
+  .ch-rec[data-canopy] .ch-rec-body {
+    gap: 32px;
+    margin-top: 18px;
+  }
+  .ch-rec[data-canopy] .ch-rec-list {
+    overflow: visible;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rec[data-canopy] .ch-rec-list > .ch-rec-bar {
+    padding: 0 0 16px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rec[data-canopy] .ch-rec-tb {
+    width: calc(100% + 24px);
+    margin-inline: -12px;
+  }
+  .ch-rec[data-canopy] .ch-rec-tb th[scope='col'] {
+    padding-block: 14px 10px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rec[data-canopy] .ch-rec-tb th[scope='col']:first-child,
+  .ch-rec[data-canopy] .ch-rec-tb th[scope='row'] {
+    padding-left: 12px;
+  }
+  .ch-rec[data-canopy] .ch-rec-tb .is-when {
+    padding-right: 12px;
+  }
+  .ch-rec[data-canopy] .ch-rec-tb tbody tr,
+  .ch-rec[data-canopy] .ch-rec-tb tbody tr:hover,
+  .ch-rec[data-canopy] .ch-rec-tb tbody tr.is-on {
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rec[data-canopy] .ch-rec-tb tbody tr + tr > * {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  /* A row's hover and selected tint are drawn once, as one box behind the row's cells (the click target above them
+     stays clear): Safari paints a row's own background cell by cell, which leaves hairline gaps at fractional widths. */
+  .ch-rec[data-canopy] .ch-rec-tb__name::before {
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    transition: background var(--ch-dur-quick) var(--ch-ease);
+    content: '';
+    pointer-events: none;
+  }
+  .ch-rec[data-canopy] .ch-rec-tb tbody tr:hover .ch-rec-tb__name::before {
+    background: var(--ch-ledger-row-hover);
+  }
+  .ch-rec[data-canopy] .ch-rec-tb tbody tr.is-on .ch-rec-tb__name::before {
+    background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+  }
+  .ch-rec[data-canopy] .ch-rec-skel-row {
+    padding: 0;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rec[data-canopy] .ch-rec-bar + .ch-rec-skel-row {
+    box-shadow: none;
+  }
+
+  /* The open prospect: a column beside the list, under its own rule. Contact rows and documents are seams on the
+     canvas, bled 10px for their hover tint; the notes are text; a part with nothing in it yet is a row with an
+     engraved key, not a card. */
+  .ch-rec[data-canopy] .ch-rec-panel {
+    padding-left: 32px;
+    overflow: visible;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rec[data-canopy] .ch-rec-panel__top {
+    padding: 0 0 20px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  /* 4px of room inside the scroller so a focus ring at the column's edge isn't clipped. */
+  .ch-rec[data-canopy] .ch-rec-panel__body {
+    gap: 24px;
+    margin-inline: -4px;
+    padding: 22px 4px;
+  }
+  .ch-rec[data-canopy] .ch-rec-panel__foot {
+    padding: 14px 0 0;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rec[data-canopy] .ch-rec-panel__foot .ch-rec-danger,
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-sec__head .ch-rec-link {
+    margin-right: -10px;
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-rows,
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-docs {
+    margin-inline: -10px;
+    overflow: visible;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-row,
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-doc {
+    position: relative;
+    box-shadow: none;
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-row + .ch-rec-row::before,
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-doc + .ch-rec-doc::before {
+    position: absolute;
+    top: 0;
+    right: 10px;
+    left: 10px;
+    height: 1px;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    content: '';
+    pointer-events: none;
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-row {
+    padding: 0 10px;
+    border-radius: var(--ch-radius-md);
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-row:hover,
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-doc__open:hover {
+    background: var(--ch-ledger-row-hover);
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-doc__open {
+    padding-left: 10px;
+    border-radius: var(--ch-radius-md);
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-doc__x {
+    margin-right: 1px;
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-docs.is-loading .ch-rec-doc {
+    padding: 0 10px;
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-notes {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-empty {
+    padding: 2px 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-empty__ic {
+    background: none;
+    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-empty__a {
+    margin-right: -8px;
+  }
+  @container (max-width: 860px) {
+    /* The prospect follows the list: its hairline runs across the top instead. */
+    .ch-rec[data-canopy] .ch-rec-panel {
+      padding: 28px 0 0;
+      box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+    }
+  }
+}

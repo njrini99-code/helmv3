@@ -195,7 +195,7 @@ function ProspectPanel({ p, c }: { p: ChProspect; c: RecCtx }) {
       </div>
       <footer className="ch-rec-panel__foot">
         <MetaLine p={p} now={c.now} tz={c.tz} />
-        <button type="button" className="ch-rec-del" onClick={() => c.askDelete(p)}>
+        <button type="button" className="ch-rec-danger" onClick={() => c.askDelete(p)}>
           Delete prospect
         </button>
       </footer>

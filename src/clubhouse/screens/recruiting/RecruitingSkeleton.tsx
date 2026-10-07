@@ -15,14 +15,20 @@ export function RecruitingSkeleton() {
         </header>
         <div className="ch-rec-pipe">
           <div className="ch-rec-pipe__head">
-            <Skeleton width={180} height={14} />
+            <span className="ch-rec-pipe__sum">
+              <Skeleton width={84} height={20} />
+              <Skeleton width={180} height={13} />
+            </span>
           </div>
           <div className="ch-rec-skel-pipe">
             {Array.from({ length: 4 }, (_, i) => (
               <div key={i} className="ch-rec-skel-pipe__s">
                 <Skeleton width={56} height={56} radius={28} />
-                <Skeleton width={84} height={14} />
-                <Skeleton width={120} height={12} />
+                <span className="ch-rec-pipe__txt">
+                  <Skeleton width={84} height={14} />
+                  <Skeleton width={120} height={12} />
+                  <Skeleton width={64} height={12} />
+                </span>
               </div>
             ))}
           </div>
@@ -30,7 +36,7 @@ export function RecruitingSkeleton() {
         <div className="ch-rec-body has-panel">
           <div className="ch-rec-list">
             <div className="ch-rec-bar">
-              <Skeleton width="60%" height={40} radius={12} />
+              <Skeleton width="60%" height={36} radius={12} />
               <Skeleton width={300} height={36} radius={12} />
             </div>
             {Array.from({ length: 7 }, (_, i) => (

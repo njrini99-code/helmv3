@@ -1455,10 +1455,221 @@
 }
 
 /* Loading in the framed page head (desktop): the roster head holds the loaded head's measured height (WebKit 1440 and 1100,
-   2026-10-07: 187px), so nothing under it moves on load. */
+   2026-10-07: 186px once the Ledger dropped the head's second rule), so nothing under it moves on load. */
 @media (min-width: 821px) {
   .ch-rs[aria-busy='true'][data-canopy] .ch-rs-head {
     box-sizing: border-box;
-    min-height: 187px;
+    min-height: 186px;
+  }
+}
+
+/* The Ledger on desktop Roster (owner, 2026-10-07: "flush, not so card heavy"). Join requests and the players sit on
+   the canvas under engraved rules: a face is a portrait on the page, not a card, and it answers a hover or a press
+   with a tint; the table is rows and seams; the open player is a column beside them, split off by a hairline.
+   Avatars, chips, controls and the note field keep their material. */
+@media (min-width: 821px) {
+  /* The framed head draws its own rule; the head's older champagne border doubled it. With nobody active the
+     avatar row is empty and gives up its gap, so the team line starts at the title's edge. */
+  .ch-rs[data-canopy] .ch-rs-head {
+    border-bottom: 0;
+  }
+  .ch-rs[data-canopy] .ch-rs-team__stack:empty {
+    display: none;
+  }
+
+  .ch-rs[data-canopy] .ch-rs-req {
+    margin-top: 14px;
+    overflow: visible;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rs[data-canopy] .ch-rs-req__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    padding: 0 0 12px;
+    border-bottom: 0;
+    background: none;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rs[data-canopy] .ch-rs-req__ic {
+    display: none;
+  }
+  .ch-rs[data-canopy] .ch-rs-req__head b {
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.022em;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rs[data-canopy] .ch-rs-req__head > span:last-child {
+    font: var(--ch-type-caption);
+  }
+  .ch-rs[data-canopy] .ch-rs-req__row {
+    padding: 14px 0;
+    border-top: 0;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rs[data-canopy] .ch-rs-req__head + .ch-rs-req__row {
+    box-shadow: none;
+  }
+  .ch-rs[data-canopy] .ch-rs-attn {
+    margin-top: 10px;
+  }
+
+  /* The toolbar heads the players: an engraved rule under it, as under a section title, and the players hang from
+     that rule (the faces' column lines start on it). */
+  .ch-rs[data-canopy] .ch-rs-bar {
+    margin-top: 18px;
+    padding-bottom: 16px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rs[data-canopy] .ch-rs-body,
+  .ch-rs[data-canopy] .ch-rs-bar + .ch-rs-faces {
+    margin-top: -18px;
+  }
+  .ch-rs[data-canopy] .ch-rs-empty {
+    padding: 28px 0 8px;
+  }
+
+  /* Faces: portraits on a ruled page. Hairlines run only between the cells (each face draws the line to its left and
+     above; the grid clips the outer ones), and a face has no fill, lift or shadow: hover and press tint its cell,
+     the open player's cell takes the selected tint and its coin a green ring. The figures sit in the cell, not in a
+     well. The coin's rings are outlines, so the gap between coin and ring is the cell itself, whatever its tint. */
+  .ch-rs[data-canopy] .ch-rs-faces {
+    gap: 0;
+    overflow: hidden;
+  }
+  .ch-rs[data-canopy] .ch-rs-face,
+  .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
+    padding: 22px 20px 26px;
+    border-radius: 0;
+    background: none;
+    box-shadow: -1px 0 0 var(--ch-ledger-rule-soft), 0 -1px 0 var(--ch-ledger-rule-soft);
+    transform: none;
+    transition: background var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
+    background: var(--ch-ledger-row-hover);
+  }
+  .ch-rs[data-canopy] .ch-rs-face.is-sel,
+  .ch-rs[data-canopy] .ch-rs-face.is-sel:hover {
+    background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+  }
+  .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):active {
+    background: color-mix(in oklab, var(--ch-green-600) 11%, transparent);
+  }
+  .ch-rs[data-canopy] .ch-rs-face:focus-visible {
+    outline-offset: -3px;
+  }
+  /* An inactive player dims its contents, not its cell, so its hairlines match every other. */
+  .ch-rs[data-canopy] .ch-rs-face.is-off {
+    opacity: 1;
+  }
+  .ch-rs[data-canopy] .ch-rs-face.is-off > * {
+    opacity: 0.7;
+  }
+  .ch-rs[data-canopy] .ch-rs-face__av {
+    box-shadow: var(--ch-elevation-floating);
+    outline: 1px solid var(--ch-ledger-rule);
+    outline-offset: 3px;
+  }
+  .ch-rs[data-canopy] .ch-rs-face.is-sel .ch-rs-face__av {
+    box-shadow: var(--ch-elevation-floating);
+    outline: 2px solid var(--ch-green-600);
+  }
+  .ch-rs[data-canopy] .ch-rs-face.is-sel .ch-rs-face__name {
+    color: var(--ch-green-800);
+  }
+  .ch-rs[data-canopy] .ch-rs-figs {
+    margin-top: 12px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  /* The table: a quiet label row over a seam, rows on the canvas with seams, bled 12px so the hover tint clears the
+     text while the names line up with the toolbar. */
+  .ch-rs[data-canopy] .ch-rs-list {
+    margin-inline: -12px;
+    padding: 14px 0 0;
+  }
+  .ch-rs[data-canopy] .ch-rs-row {
+    border-bottom-color: var(--ch-ledger-rule-soft);
+    border-radius: 0;
+  }
+  .ch-rs[data-canopy] .ch-rs-row--head {
+    margin-bottom: 0;
+    padding-block: 2px 12px;
+    border-bottom: 1px solid var(--ch-ledger-rule-soft);
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rs[data-canopy] .ch-rs-row:not(.ch-rs-row--head):hover {
+    background: var(--ch-ledger-row-hover);
+  }
+  .ch-rs[data-canopy] .ch-rs-row.is-sel,
+  .ch-rs[data-canopy] .ch-rs-row.is-sel:hover {
+    border-bottom-color: var(--ch-ledger-rule-soft);
+    background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+  }
+
+  /* The open player: a column beside the players, divided by a hairline, its sections under rules. */
+  .ch-rs[data-canopy] .ch-rs-body.has-peek {
+    column-gap: 32px;
+  }
+  .ch-rs[data-canopy] .ch-rs-peek {
+    gap: 20px;
+    padding: 22px 0 24px 32px;
+    overflow: visible;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rs[data-canopy] .ch-rs-peek > * {
+    margin-inline: 0;
+  }
+  .ch-rs[data-canopy] .ch-rs-peek__top {
+    padding: 0;
+    background: none;
+  }
+  .ch-rs[data-canopy] .ch-rs-peek__hero {
+    margin-top: -14px;
+    padding: 0 0 22px;
+    border-bottom: 0;
+    background: none;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rs[data-canopy] .ch-rs-peek__av {
+    margin-bottom: 10px;
+    box-shadow: var(--ch-elevation-floating);
+    outline: 1px solid var(--ch-ledger-rule);
+    outline-offset: 4px;
+  }
+  .ch-rs[data-canopy] .ch-rs-peek__facts {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rs[data-canopy] .ch-rs-peek__figs {
+    padding: 14px 0;
+    border-top-color: var(--ch-ledger-rule-soft);
+    border-bottom-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-rs[data-canopy] .ch-rs-peek__figs div + div {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rs[data-canopy] .ch-rs-peek__rd {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  @container (max-width: 1080px) {
+    /* The panel follows the players: its hairline runs across the top instead. */
+    .ch-rs[data-canopy] .ch-rs-peek {
+      margin-top: 14px;
+      padding: 28px 0 24px;
+      box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+    }
   }
 }

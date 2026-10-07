@@ -1,5 +1,30 @@
 # P003 — Roster: changelog
 
+## 2026-10-07 — Roster on the Ledger
+
+On desktop, Roster now sits on the canvas instead of in cards (owner: "flush,
+not so card heavy"):
+
+- **Join requests:** the request count is the section heading, set over an
+  engraved rule, with each request as a row below it and hairlines between rows.
+- **Players:** the toolbar heads the players with an engraved rule. The faces
+  hang from that rule on a ruled page: hairlines between cells, and no card,
+  lift or shadow. A hover or press now tints the cell instead of lifting a card
+  (CH-3602). The open player's cell takes a green tint and its coin a green
+  ring. The figures sit in the cell, not in a well.
+- **Table:** the header well is now a quiet label row. Rows have seams and sit
+  on the canvas.
+- **Player panel:** a column beside the players behind a hairline, or under them
+  behind a rule once they stack. Its sections sit under rules, without the
+  tinted band or the facts box.
+- **Head:** the old champagne border that doubled the page head's rule is gone.
+  With nobody active, the empty avatar row no longer indents the team line.
+
+The loading screen draws the same ruled faces and holds the head at 186px
+(WebKit, 1440 and 1100), so the head doesn't move when the page lands. Avatars,
+chips, controls and the note field keep their material. The phone and the
+player's roster are unchanged.
+
 ## 2026-10-07 — The header's team row restored
 
 The card team strip from earlier tonight reused the class `.ch-rs-team`, which
