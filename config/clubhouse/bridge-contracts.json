@@ -2863,6 +2863,28 @@
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
+    "id": 41603,
+    "page": "P004",
+    "category": 16,
+    "item": 3,
+    "name": "CHANGING_THE_TRENDS_MEASURE",
+    "chCode": "CH-4603",
+    "meaning": "Changing the trend's measure",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
+    "id": 41604,
+    "page": "P004",
+    "category": 16,
+    "item": 4,
+    "name": "A_NEW_WINDOWS_FIGURES_ARRIVE",
+    "chCode": "CH-4604",
+    "meaning": "A new window's figures arrive",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
     "id": 41701,
     "page": "P004",
     "category": 17,
@@ -3789,6 +3811,28 @@
     "chCode": "CH-5602",
     "meaning": "Opening Add focus area",
     "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 51603,
+    "page": "P005",
+    "category": 16,
+    "item": 3,
+    "name": "THE_TABS_PANEL_SWAPS",
+    "chCode": "CH-5603",
+    "meaning": "The tab's panel swaps",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 51604,
+    "page": "P005",
+    "category": 16,
+    "item": 4,
+    "name": "A_NEW_WINDOWS_FIGURES_ARRIVE",
+    "chCode": "CH-5604",
+    "meaning": "A new window's figures arrive",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
@@ -11725,6 +11769,17 @@
     "chCode": "CH-11603",
     "meaning": "Submitting the round",
     "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111604,
+    "page": "P011",
+    "category": 16,
+    "item": 4,
+    "name": "STEPPING_THROUGH_A_ROUNDS_HOLES",
+    "chCode": "CH-11604",
+    "meaning": "Stepping through a round's holes",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
