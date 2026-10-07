@@ -6,7 +6,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from
 import { createPortal } from 'react-dom';
 import { Icon } from '../ui/Icon';
 import { haptic } from '../lib/haptics';
-import { CH_POP } from '../lib/motion';
+import { CH_POP, chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { useTeamSwitch, type ChTeamSwitch } from './team-switch';
 
@@ -22,7 +22,7 @@ export function BrandTeamSwitch({ model, teamName }: { model: ChTeamSwitch; team
   const reduced = useChReducedMotion();
   const id = useId();
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ left: number; top: number; width: number } | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; width: number; maxHeight: number } | null>(null);
   const btn = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLDivElement>(null);
   const current = model.choices.find((c) => c.id === sw.shownId)?.label ?? teamName;
@@ -36,7 +36,13 @@ export function BrandTeamSwitch({ model, teamName }: { model: ChTeamSwitch; team
     if (!open || !btn.current) return;
     const place = () => {
       const r = btn.current!.getBoundingClientRect();
-      setPos({ left: r.left, top: r.bottom + 6, width: Math.max(r.width, 224) });
+      const width = Math.min(Math.max(r.width, 224), window.innerWidth - 16);
+      setPos({
+        left: Math.max(8, Math.min(r.left, window.innerWidth - width - 8)),
+        top: r.bottom + 6,
+        width,
+        maxHeight: Math.max(0, window.innerHeight - r.bottom - 14),
+      });
     };
     place();
     const onScroll = (e: Event) => {
@@ -59,7 +65,7 @@ export function BrandTeamSwitch({ model, teamName }: { model: ChTeamSwitch; team
     };
     document.addEventListener('mousedown', onDown);
     // The team you are on takes focus, so Enter again changes nothing and an arrow goes straight to the other.
-    const frame = requestAnimationFrame(() => (list.current?.querySelector<HTMLElement>('[aria-selected="true"]') ?? list.current?.querySelector<HTMLElement>(OPTION))?.focus());
+    const frame = requestAnimationFrame(() => (list.current?.querySelector<HTMLElement>('[aria-selected="true"]') ?? list.current?.querySelector<HTMLElement>(OPTION))?.focus({ preventScroll: true }));
     return () => {
       document.removeEventListener('mousedown', onDown);
       cancelAnimationFrame(frame);
@@ -128,11 +134,11 @@ export function BrandTeamSwitch({ model, teamName }: { model: ChTeamSwitch; team
                 id={id}
                 className="ch-popover ch-tsw"
                 data-ui="clubhouse"
-                style={{ left: pos?.left ?? -9999, top: pos?.top, width: pos?.width }}
+                style={{ left: pos?.left ?? -9999, top: pos?.top, width: pos?.width, maxHeight: pos?.maxHeight }}
                 initial={reduced ? { opacity: 0 } : CH_POP.initial}
                 animate={reduced ? { opacity: 1 } : CH_POP.animate}
                 exit={reduced ? { opacity: 0 } : CH_POP.exit}
-                transition={CH_POP.transition}
+                transition={chTween('quick', reduced)}
                 onKeyDown={onKey}
               >
                 <div className="ch-popover__label" id={`${id}-l`}>

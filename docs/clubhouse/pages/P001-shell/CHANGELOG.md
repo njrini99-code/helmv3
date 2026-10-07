@@ -1,5 +1,33 @@
 # P001 — Shell: changelog
 
+## 2026-10-06 — Popup geometry and focus styling
+
+Native-dialog menus use their dialog's top layer and reserve keyboard space.
+Tall menus and desktop team listboxes scroll within their available height.
+Reading-destination headings retain accessible focus without a control outline;
+shared buttons retain their existing rounded focus ring without a second box.
+Settings form/list sheets initially focus their labelled heading. Source,
+regression and local browser evidence is in [POPUP_AUDIT](../../POPUP_AUDIT.md).
+
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+Shared Menu, TeamSwitch, OfflineBanner and Toast now use zero-duration
+transitions when motion is disabled.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
+## 2026-10-06 — Whole-app release audit
+
+Reconciled page purpose, design acceptance, contract status, wiring and
+verification against the current flagged implementation. Indexed 8 mapped
+actions and 6 overlay/control call sites in the [all-page
+audit](../../ALL_PAGE_AUDIT.md#p001-shell). Approved handoffs and contract IDs
+are preserved; runtime gaps stay explicit.
+<!-- clubhouse:release-audit:end -->
+
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 

@@ -1,5 +1,14 @@
 # Clubhouse UI ownership
 
+## October 6 current audit
+
+[ALL_PAGE_AUDIT.md](ALL_PAGE_AUDIT.md) inventories the current flagged
+implementation across all 15 page families and links current test/browser
+evidence. [SMOOTHNESS_AUDIT.md](SMOOTHNESS_AUDIT.md) records the reproduced
+appearance-store repair and remaining motion/profiling findings. Older
+measurements below retain their original source and device scope; release
+acceptance remains partial. No production flag or deployment changed.
+
 This is an index of existing owners for plugin-assisted review. The page
 CONTRACT, DESIGN and WIRING files remain the detailed sources. Native popup
 behavior is preserved where the current shared control delegates to the OS;
@@ -28,10 +37,14 @@ This review covers Clubhouse. Fairway, Baseball and Lift Lab retain their
 existing owners. Locale is the existing English UI with explicit team timezones;
 no Japanese locale or Japan-market behavior is introduced.
 
-## Static auditor adjudication
+## Static auditor adjudication (prior limited-scope snapshot)
 
-The installed plugin strict scan of premium-ui.json exits 1: 25 detections,
-zero unresolved ownership choices. This result is not a compliance pass.
+The earlier installed-plugin strict scan covered Auth, Home, Messages, Hub
+and shared UI/shell/styles. That scan exited 1: 25 detections,
+zero unresolved ownership choices. This result is not a compliance pass or
+a result for the expanded profile. `premium-ui.json` now covers all P001–P015
+manifest families (Stats team/player share a runtime root), onboarding and
+shared route/lib owners. Rerun the auditor for a current full-scope result.
 All detections were inspected against their runtime owners:
 
 - Eleven actionless-button detections are uppercase React Button calls with
@@ -52,3 +65,12 @@ The plugin-managed auditor and the project baselines were not modified. WebKit
 observed themed native scrolling, automatic forced-color defaults and an
 unchanged outer body. These scoped observations do not prove every application
 control or physical Safari interaction.
+
+## Complete source catalog
+
+The development-only `/clubhouse-preview/components` indexes every non-test
+Clubhouse TSX module and stylesheet, with source export/class/import hints and
+contextual fixture links. `npm run clubhouse:catalog` regenerates it; the
+`--check` form detects drift in CI. Hints are not authoritative runtime
+ownership or proof of audited states. Material declarations and role candidates
+are separately inspectable through `npm run clubhouse:materials`.

@@ -1,5 +1,18 @@
 # Phone design: Qualifiers
 
+<!-- clubhouse:release-audit:start -->
+## Phone acceptance audit — 2026-10-06
+
+Qualifier list/detail/create/edit, selections and live standings. Check
+streamed placeholder geometry, round-course pickers, standings updates and
+Back/Forward scroll restoration.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p009-qualifiers).
+Existing checklist ticks and catalog identifiers retain their recorded scope.
+Automated browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Status: approved; built 2026-09-30 (the iPhone pass is open). The design is `design/handoff/mobile/Qualifiers Mobile.html`, `qual-mobile.jsx` and `qual-mobile.css`, and it shares `qual-core.jsx`, `qual-data.js` and `qual.css` with desktop. Under D-22 the owner's design is the phone spec. The mapping's questions are answered: the player view (Q-5, D-30), navigation (Q-15, D-33), the tab (Q-16, D-34) and the phone gaps (Q-20, D-33). The phone build waits for the foundation to merge (D-34).
 
 The boards are drawn at 402 × 874, an iPhone 16 Pro inside a Safari frame. They were rendered on 2026-09-29 at 390 × 844 without the bezel (`qualifiers-01..11`) and as drawn (`qualifiers-01..05-*-frame`); the captures are not committed. Every board is the coach's view, and there is no player phone design (Q-5).

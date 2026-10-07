@@ -1,5 +1,18 @@
 # Qualifiers checklist
 
+<!-- clubhouse:release-audit:start -->
+## Release checklist audit — 2026-10-06
+
+Qualifier list/detail/create/edit, selections and live standings. Check
+streamed placeholder geometry, round-course pickers, standings updates and
+Back/Forward scroll restoration.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p009-qualifiers).
+Existing checklist ticks and catalog identifiers retain their recorded scope.
+Automated browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Reference: design/handoff/Qualifiers.html, qualifiers.jsx, qual-core.jsx, qual-data.js, qual.css (desktop); design/handoff/mobile/Qualifiers Mobile.html, qual-mobile.jsx, qual-mobile.css (iPhone, mapped in `docs/clubhouse/phone/qualifiers.md`). Rendered 2026-09-29 at 1280 and 924 (`qualifiers-01..21`) and 390 × 844 (`qualifiers-01..11`); the captures are not committed.
 Route: `/golf/dashboard/qualifiers` with `/new`, `/[id]`, `/[id]/edit` (coach; list and detail are also read by players today), and `/golf/dashboard/my-qualifiers` (player). The player view is not drawn (Q-5).
 Surface tag: `qualifiers.<list|hero|facts|leaderboard|scorecard|rounds|selections|courses|rules|form|status>`

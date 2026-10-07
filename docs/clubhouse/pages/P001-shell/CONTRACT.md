@@ -1,5 +1,31 @@
 # P001 — Shell: page contract
 
+Popup sizing, native top-layer placement and description association follow the
+[popup audit](../../POPUP_AUDIT.md). Long content remains scrollable within the
+available viewport; source/browser checks do not grant physical-device acceptance.
+
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+Shared Menu, TeamSwitch, OfflineBanner and Toast now use zero-duration
+transitions when motion is disabled.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
+## Current contract audit — 2026-10-06
+
+The manifest reports complete contract coverage and 8 mapped actions. Existing
+Bridge IDs, catalog rows and generated contract tables remain authoritative.
+Nested overlays must retain scroll and restore focus; check keyboard dismissal
+and VoiceOver isolation.
+
+The [all-page audit](../../ALL_PAGE_AUDIT.md#p001-shell) distinguishes
+implemented/tested behavior from open runtime acceptance; this pass does not
+reserve new IDs or mark manual contracts verified.
+<!-- clubhouse:release-audit:end -->
+
 Everything the Clubhouse frame promises on every page, by the 25 V2 categories (D-69): the sidebar,
 the top bar and bell, the phone tab bar and More sheet, the offline banner, the toasts, the route
 error views and the not-rebuilt notice. A contract's number is its Bridge ID (D-68: namespace 1,

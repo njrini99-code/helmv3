@@ -1,5 +1,18 @@
 # Calendar checklist
 
+<!-- clubhouse:release-audit:start -->
+## Release checklist audit — 2026-10-06
+
+Calendar month/week/day, editor, overlap, busy and subscribe sheets. Check
+event sizing and collision layout, keyboard edit flows and Retry inside the
+native dialog top layer.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p006-calendar). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Reference: design/handoff/Calendar.html, cal-views.jsx, cal-inspector.jsx, cal-editor.jsx, cal.css, screenshots/calendar-01..12
 Route: /golf/dashboard/calendar (coach and player) · `?view=day|week|month|agenda&date=YYYY-MM-DD&event=<id>`
 Surface tag: `calendar.<view|panel|detail|attendance|subscribe|saveEvent|cancelEvent|rsvp|createFeed>`

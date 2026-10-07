@@ -1,5 +1,18 @@
 # Foundation checklist
 
+<!-- clubhouse:release-audit:start -->
+## Release checklist audit — 2026-10-06
+
+Navigation crossfade, Back/Forward scroll restoration, Bell, More and team
+switch. Nested overlays must retain scroll and restore focus; check keyboard
+dismissal and VoiceOver isolation.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p001-shell). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Reference: design/handoff/README.md (Shell), sidebar.css, depth.css, design-system/
 Route: (shell, tokens, primitives)   Surface tag: `shell`
 

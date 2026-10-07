@@ -1,5 +1,18 @@
 # P010 — Team Hub: page contract
 
+<!-- clubhouse:release-audit:start -->
+## Current contract audit — 2026-10-06
+
+The manifest reports complete contract coverage and 11 mapped actions.
+Existing Bridge IDs, catalog rows and generated contract tables remain
+authoritative. Check pending operations across tab remounts, partial data,
+audience pickers and dialog-hosted Retry.
+
+The [all-page audit](../../ALL_PAGE_AUDIT.md#p010-hub) distinguishes
+implemented/tested behavior from open runtime acceptance; this pass does not
+reserve new IDs or mark manual contracts verified.
+<!-- clubhouse:release-audit:end -->
+
 Every behaviour Team Hub promises, by the 25 V2 categories (D-69). A contract's
 number is its Bridge ID (D-68: namespace 10, category, item); `Code` is the
 catalog code on the element and in the test (`docs/clubhouse/catalog/hub.md`).

@@ -1,5 +1,18 @@
 # P006 — Calendar: wiring map
 
+<!-- clubhouse:release-audit:start -->
+## Current ownership audit — 2026-10-06
+
+Root: `src/clubhouse/screens/calendar`. The AST inventory found 10 source
+files, 12 overlay/control sites and 0 motion nodes. Calendar month/week/day,
+editor, overlap, busy and subscribe sheets.
+
+Exact call sites, direct package imports, responsive styles and mapped tests
+are in the [all-page audit](../../ALL_PAGE_AUDIT.md#p006-calendar). Shared
+Modal/Menu/PhoneScreen owners and shell behavior are audited once there;
+counts include wrappers rather than unique popups.
+<!-- clubhouse:release-audit:end -->
+
 ## Entry point
 
 ```text

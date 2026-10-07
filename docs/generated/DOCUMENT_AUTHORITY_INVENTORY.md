@@ -35,21 +35,21 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Category | Files | Routed | Claims authority | Dead refs |
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 6 | 0 |
-| `AGENT_SKILL` | 131 | 0 | 7 | 0 |
-| `CURRENT_FEATURE` | 27 | 27 | 13 | 0 |
+| `AGENT_SKILL` | 133 | 0 | 7 | 0 |
+| `CURRENT_FEATURE` | 27 | 27 | 14 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
 | `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 43 | 5 | 18 | 74 |
-| `AUDIT_SNAPSHOT` | 63 | 6 | 34 | 25 |
+| `PLAN` | 44 | 5 | 18 | 74 |
+| `AUDIT_SNAPSHOT` | 67 | 6 | 35 | 25 |
 | `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 49 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 25 | 1 | 8 | 5 |
-| `UNKNOWN` | 320 | 12 | 56 | 81 |
+| `UNKNOWN` | 321 | 12 | 70 | 81 |
 
 ## Files
 
@@ -82,6 +82,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | Dead |
 | --- | --- | --- | --- | --- | --- |
+| `.claude/agents/clubhouse-design-reviewer.md` | current | - | - | - | - |
+| `.claude/agents/clubhouse-polish-reviewer.md` | current | - | - | - | - |
 | `.claude/agents/code-reviewer.md` | current | - | - | - | - |
 | `.claude/agents/db-migration-reviewer.md` | current | - | - | yes | - |
 | `.claude/agents/debugger.md` | current | - | - | - | - |
@@ -243,7 +245,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/shot-tracking.md` | current | yes | - | yes | - |
 | `memory/features/stats-analytics.md` | current | yes | - | yes | - |
 | `memory/features/team-access-control.md` | current | yes | - | - | - |
-| `memory/features/team-communications.md` | current | yes | - | - | - |
+| `memory/features/team-communications.md` | current | yes | - | yes | - |
 | `memory/features/team-operations.md` | current | yes | - | - | - |
 
 ### `REFERENCE`
@@ -411,6 +413,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/superpowers/plans/2026-08-17-coachhelm-instrumentation.md` | current | - | - | - | 7 |
 | `docs/superpowers/plans/2026-08-18-coachhelm-cron-insights-wiring.md` | current | - | - | yes | - |
 | `docs/superpowers/plans/2026-08-25-golf-flight-recorder.md` | current | - | - | yes | - |
+| `docs/superpowers/plans/2026-10-06-clubhouse-quality-tooling.md` | current | - | - | - | - |
 | `docs/superpowers/plans/README.md` | current | - | - | - | - |
 | `docs/superpowers/plans/helm-bridge/EXECUTION_LOG.md` | current | - | - | - | 1 |
 | `docs/superpowers/plans/helm-bridge/waves/w00-security-prereqs.md` | current | - | - | - | 1 |
@@ -477,9 +480,13 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/audits/UNREACHABLE_CAPABILITY_2026-08-15.md` | current | - | - | yes | - |
 | `docs/audits/coaching_universe_audit.md` | current | - | - | - | - |
 | `docs/clubhouse/AESTHETIC_AUDIT.md` | current | - | - | yes | - |
+| `docs/clubhouse/ALL_PAGE_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/DEPTH_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/HIGH_FIDELITY_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/INTUITIVE_SECONDARY_AUDIT.md` | current | - | - | - | - |
+| `docs/clubhouse/POPUP_AUDIT.md` | current | - | - | - | - |
+| `docs/clubhouse/PREMIUM_AUDIT.md` | current | - | - | yes | - |
+| `docs/clubhouse/SMOOTHNESS_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/SWAP_AUDIT.md` | current | - | - | yes | - |
 | `docs/clubhouse/foundation-v2/01_REPO_AUDIT_AND_RECOMMENDATION.md` | current | - | - | yes | - |
 | `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 3 |
@@ -743,6 +750,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
 | `docs/clubhouse/PAGE_PERFORMANCE.md` | current | - | - | - | - |
 | `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
+| `docs/clubhouse/QUALITY_TOOLING.md` | current | - | - | - | - |
 | `docs/clubhouse/RELEASE_CANDIDATE.md` | current | - | - | yes | - |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
 | `docs/clubhouse/UI_OWNERSHIP.md` | current | - | - | yes | - |
@@ -790,53 +798,53 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/held/features/conversation-files.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/qualifier-squad-and-entrants.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P001-shell/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P001-shell/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/WIRING.md` | current | - | - | - | 2 |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P003-roster/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P004-stats-team/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P004-stats-team/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P005-stats-player/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P005-stats-player/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/PARITY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P006-calendar/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P006-calendar/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | - |
-| `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P008-settings/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P009-qualifiers/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P009-qualifiers/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P010-hub/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P010-hub/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/WIRING.md` | current | - | - | - | - |
@@ -846,22 +854,22 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/pages/P011-rounds/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P012-classes/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P012-classes/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P012-classes/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | yes | - |
-| `docs/clubhouse/pages/P013-coachhelm/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/CHANGELOG.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P015-auth/CONTRACT.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P015-auth/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P015-auth/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/WIRING.md` | current | - | - | - | - |
@@ -903,7 +911,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/templates/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/templates/WIRING.md` | current | - | - | - | - |
 | `docs/design/DESIGN-SYSTEM.md` | current | - | - | yes | - |
-| `docs/design/taste-memory.md` | current | - | - | - | - |
 | `docs/design/team-level-insights-are-dark.md` | current | - | - | - | - |
 | `docs/fairway-coachhelm-insight-rebuild.md` | current | - | - | yes | 1 |
 | `docs/guides/SENTRY_SETUP_GUIDE.md` | current | - | - | - | - |
@@ -969,6 +976,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | - |
 | `public/courses/CREDITS.md` | current | - | - | - | - |
 | `scripts/ops/MAC_MINI_HEADLESS_RUNBOOK.md` | current | - | - | - | - |
+| `src/clubhouse/AGENTS.md` | current | - | - | - | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 6 |
 | `supabase/migrations/HELD.md` | current | - | - | yes | - |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | - |

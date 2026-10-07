@@ -25,7 +25,7 @@ is a second thing to keep true.
 **Feature Awareness System** · active · criticality high · owner platform
 
 - **Behaviour:** `docs/ai-system/helmv3-ai-codebase-intelligence.md`
-- **Code:** `scripts/knowledge/**`, `scripts/contracts/**`, `memory/journeys/**`, `.devin/wiki.json`, `.github/workflows/feature-awareness.yml`, `package.json` … and 29 more in the registry
+- **Code:** `src/clubhouse/preview/ComponentPlayground.tsx`, `src/clubhouse/preview/ComponentGallery.tsx`, `src/clubhouse/preview/ComponentCatalog.tsx`, `src/clubhouse/preview/component-catalog.json`, `src/clubhouse/styles/base.css`, `src/clubhouse/preview/playground-tokens.ts` … and 49 more in the registry
 - **Telemetry:** none. Agent tooling, not a product surface. Nothing here writes admin_events.feature, and no FeatureKey should exist for it.
 - **Incidents:** `memory/incidents/feature_awareness_system/INC-2026-08-16-parallel-agents-shared-tree.md`, `memory/incidents/feature_awareness_system/INC-2026-08-18-worktrees-inside-repo-duplicate-tree.md`, `memory/incidents/feature_awareness_system/INC-2026-08-19-codeql-matrix-rename-phantom-checks.md`, `memory/incidents/feature_awareness_system/INC-2026-08-29-disk-exhaustion-from-six-worktrees.md`, `memory/incidents/feature_awareness_system/INC-2026-08-30-worktree-removed-without-owner-consent.md`, `memory/incidents/feature_awareness_system/INC-2026-08-30-zsh-history-modifier-broke-pushes.md`, `memory/incidents/feature_awareness_system/INC-2026-08-31-vercel-upload-cap-vercelignore-fix.md`, `memory/incidents/feature_awareness_system/INC-2026-08-31-worktree-report-missed-remote-branches.md`, `memory/incidents/feature_awareness_system/INC-2026-09-02-ci-runner-slot-starvation-consolidation.md`, `memory/incidents/feature_awareness_system/INC-2026-09-02-vercel-cli-pipe-close-abort.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-automemory-user-scope-drift.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-golf-e2e-env-injection-skip.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-mcp-namespace-policy-contradiction.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-sandboxed-dev-server-false-ready.md`, `memory/incidents/feature_awareness_system/INC-2026-09-04-surface-registry-miscategorized-as-generated.md`, `memory/incidents/feature_awareness_system/INC-2026-09-26-ledger-vs-catalog-false-drift.md`
 - **Repair units:** none in the queue
@@ -124,7 +124,7 @@ is a second thing to keep true.
 **Stats And Analytics** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/stats-analytics.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/stats/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/components/golf/stats/**`, `src/app/golf/actions/stats.ts`, `src/app/golf/actions/stats-data.ts`, `src/app/golf/actions/stats-data-types.ts` … and 27 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/stats/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/components/golf/stats/**`, `src/clubhouse/screens/stats/**`, `src/app/golf/actions/stats.ts`, `src/app/golf/actions/stats-data.ts` … and 28 more in the registry
 - **Telemetry:** `stats_analytics` (golfhelm, high), `my_game_profile` (golfhelm, low)
 - **Incidents:** `memory/incidents/stats_analytics/INC-2026-10-05-worst-hole-read-statement-timeout.md`
 - **Repair units:** `worst-hole-indexed-read-2026-10-05` (verified)
@@ -168,7 +168,7 @@ is a second thing to keep true.
 **Team Communications** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/team-communications.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/clubhouse/screens/messages/**`, `src/components/golf/announcements/**`, `src/components/fairway/pages/messages/**` … and 41 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/clubhouse/screens/messages/**`, `src/clubhouse/styles/messages.css`, `src/components/golf/announcements/**` … and 42 more in the registry
 - **Telemetry:** `messaging` (golfhelm, high), `announcements` (golfhelm, med), `notifications` (golfhelm, med)
 - **Incidents:** `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md`, `memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md`
 - **Repair units:** `reactions-anon-42501-after-session-drop-2026-09-27` (verified), `reactions-client-deadline-abort-2026-09-28` (verified), `reactions-save-deadline-abort-2026-10-05` (verified)
@@ -223,7 +223,7 @@ is a second thing to keep true.
 **Settings And Preferences** · active · criticality medium · owner product
 
 - **Behaviour:** `memory/features/settings-preferences.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/settings/**`, `src/components/golf/settings/**`, `src/components/golf/coachhelm/settings/**`, `src/components/fairway/pages/settings/**`, `src/app/golf/actions/v3/notification-prefs.ts`, `src/app/golf/actions/coaching-philosophy.ts` … and 8 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/settings/**`, `src/components/golf/settings/**`, `src/components/golf/coachhelm/settings/**`, `src/clubhouse/screens/settings/**`, `src/clubhouse/styles/settings.css`, `src/components/fairway/pages/settings/**` … and 12 more in the registry
 - **Telemetry:** `settings` (golfhelm, low), `whats_new` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

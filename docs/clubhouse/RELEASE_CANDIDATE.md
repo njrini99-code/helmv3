@@ -1,5 +1,14 @@
 # Clubhouse release candidate — 2026-10-02
 
+## October 6 current audit
+
+[ALL_PAGE_AUDIT.md](ALL_PAGE_AUDIT.md) inventories the current flagged
+implementation across all 15 page families and links current test/browser
+evidence. [SMOOTHNESS_AUDIT.md](SMOOTHNESS_AUDIT.md) records the reproduced
+appearance-store repair and remaining motion/profiling findings. Older
+measurements below retain their original source and device scope; release
+acceptance remains partial. No production flag or deployment changed.
+
 Candidate: `codex/clubhouse-design-fidelity`,
 [PR #2121](https://github.com/njrini99-code/helmv3/pull/2121).
 The PR head and its check results identify the exact candidate. This document

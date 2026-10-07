@@ -1,5 +1,18 @@
 # P011 — Rounds: page contract
 
+<!-- clubhouse:release-audit:start -->
+## Current contract audit — 2026-10-06
+
+The manifest reports complete contract coverage and 7 mapped actions. Existing
+Bridge IDs, catalog rows and generated contract tables remain authoritative.
+Check narrow shot controls, nested sheets, keyboard entry, offline
+checkpoints, save/continue and lost-response recovery.
+
+The [all-page audit](../../ALL_PAGE_AUDIT.md#p011-rounds) distinguishes
+implemented/tested behavior from open runtime acceptance; this pass does not
+reserve new IDs or mark manual contracts verified.
+<!-- clubhouse:release-audit:end -->
+
 Every behaviour Rounds promises, by the 25 V2 categories (D-69). A contract's number is its Bridge ID (D-68:
 namespace 11, category, item); `Code` is the catalog code on the element and in the test
 (`docs/clubhouse/catalog/rounds.md`). Rows without a code are behaviours with no single element, recorded in

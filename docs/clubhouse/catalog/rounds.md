@@ -1,5 +1,18 @@
 # Rounds catalog (11xxx)
 
+<!-- clubhouse:release-audit:start -->
+## Catalog audit — 2026-10-06
+
+Round library/setup/tracking/review, scorecard and recovery/discard sheets.
+Check narrow shot controls, nested sheets, keyboard entry, offline
+checkpoints, save/continue and lost-response recovery.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p011-rounds). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Routes: `/golf/dashboard/rounds` (the library, for players), `/golf/dashboard/rounds/[id]` (a round's review, for the player and a coach of their team), and, for players, round entry: `/golf/dashboard/rounds/new` and `/golf/dashboard/rounds/continue/[id]`. Coaches have no Rounds library in v2; they reach a round from Stats, Home and Qualifiers, and a coach on the entry addresses gets the shell's not-rebuilt page (a coach does not log rounds). For players, `/golf/dashboard/rounds/recover` is rebuilt too (swap audit F-02): where the engines send a submit that couldn't reach the server, and the one place a round the device holds and the server may not can be restored, synced again or discarded. Spec: `docs/clubhouse/phone/rounds.md`. Plan: `docs/clubhouse/ROUNDS_PLAN.md`.
 
 The library shows the round in progress, the season's scoring, then every posted round by month or by course. Review, New round and Continue are rebuilt, so their controls are drawn for a player (`nav.rebuiltHref`); a control for a screen that is not rebuilt is still not drawn, so no control ever leads nowhere. New round and Continue run over the round engine (`src/lib/golf/round-session/`, #2104), through one round screen for both (`RoundRuntime`).

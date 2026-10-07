@@ -322,6 +322,9 @@ describe('the composer', () => {
     await userEvent.type(box(), 'Compare @jo');
     const list = screen.getByRole('listbox', { name: 'Players' });
     expect(within(list).getAllByRole('option').map((o) => o.textContent)).toEqual(['Jonah Okafor']);
+    expect(within(list).getByRole('option')).toHaveAttribute('aria-selected', 'true');
+    expect(within(list).queryByRole('button')).toBeNull();
+    expect(box()).toHaveAttribute('aria-activedescendant', within(list).getByRole('option').id);
     await userEvent.keyboard('{Enter}');
     expect(box().value).toBe('Compare @Jonah Okafor ');
     expect(screen.queryByRole('listbox')).toBeNull();

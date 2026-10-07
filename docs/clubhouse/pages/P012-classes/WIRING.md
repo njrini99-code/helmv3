@@ -1,5 +1,18 @@
 # P012 — Classes: wiring map
 
+<!-- clubhouse:release-audit:start -->
+## Current ownership audit — 2026-10-06
+
+Root: `src/clubhouse/screens/classes`. The AST inventory found 10 source
+files, 6 overlay/control sites and 0 motion nodes. Classes list, class editor,
+import review and schedule synchronization.
+
+Exact call sites, direct package imports, responsive styles and mapped tests
+are in the [all-page audit](../../ALL_PAGE_AUDIT.md#p012-classes). Shared
+Modal/Menu/PhoneScreen owners and shell behavior are audited once there;
+counts include wrappers rather than unique popups.
+<!-- clubhouse:release-audit:end -->
+
 ## Entry point
 
 ```text

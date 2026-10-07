@@ -1,5 +1,40 @@
 # P003 — Roster: verification
 
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+RosterPeek uses zero-duration transitions when motion is disabled.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
+## Current release evidence — 2026-10-06
+
+Roster cards/list, player peek, invite, requests and read-only player view.
+
+Check profile push/pop, note blur save, approve/decline feedback and roster
+refresh without losing scroll.
+
+Fresh WebKit 26.6: `/clubhouse-preview/roster` at
+375, 430 and 1280px; zero Axe A/AA violations and no horizontal document
+overflow in these three fixture renders. The 430px full-page screenshot
+was inspected and recorded below. This does not exercise every popup.
+Clubhouse runtime suites: 117 files / 3,092 tests pass on this branch.
+External action suites listed in WIRING are outside that count.
+
+Additional WebKit base check: 320px also fits without horizontal overflow
+and reports zero Axe violations. The state/opener inventory completes 15
+cases for this page at applicable 1280/390px widths with zero Axe
+violations or document overflow.
+
+Current browser/test results: [all-page
+audit](../../ALL_PAGE_AUDIT.md#p003-roster). Current status remains partial.
+Physical Safari/iPhone, VoiceOver and durable authenticated writes remain
+separate acceptance checks. Earlier verification status and gap sections below
+are historical observations; use the current audit for release scope.
+<!-- clubhouse:release-audit:end -->
+
 Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
 checklist is `docs/clubhouse/screens/roster.md`.
 
@@ -22,7 +57,7 @@ checklist is `docs/clubhouse/screens/roster.md`.
 - This verifies the destination link and keyboard access. Real-account thread
   resolution or message delivery was not exercised in this pass.
 
-## Current verification status
+## Historical verification status
 
 ```text
 Status:     partial
@@ -141,6 +176,13 @@ before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+| `P003__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
+| `P003__player-peek__coach__1280x844__reduced-motion__before__ee0bab8.png` | before | ee0bab8 | player-peek (coach), 1280x844px, reduced-motion |
+| `P003__player-peek__coach__1280x844__reduced-motion__after__ee0bab8.png` | after | ee0bab8 | player-peek (coach), 1280x844px, reduced-motion |
+| `P003__premium-audit__coach__1280__case-002-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-002-webkit-reduce; /clubhouse-preview/roster; synthetic preview |
+| `P003__premium-audit__coach__1280__case-010-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-010-chromium-normal; /clubhouse-preview/roster; synthetic preview |
+| `P003__premium-audit__coach__390__case-002-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-002-webkit-reduce; /clubhouse-preview/roster; synthetic preview |
+| `P003__premium-audit__coach__390__case-010-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-010-chromium-normal; /clubhouse-preview/roster; synthetic preview |
 
 ## 2026-10-02 — Mobile design fidelity verification
 
@@ -166,7 +208,7 @@ before, after, baseline or evidence.
   intended-user discoverability, physical iPhone performance or durable
   live-data outcomes.
 
-## Open verification gaps
+## Historical verification gaps
 
 - The iPhone pass through `npm run ios:dev` (owner); 430px and toasts over
   content (merge pass).
@@ -209,3 +251,18 @@ before, after, baseline or evidence.
   - The desktop Schedule 1:1 (panel) and View insights (row menu, CoachHelm
     `?player=`) were built 2026-09-30
     (CLICKABLES gaps 4 and 16).
+
+## Repair verification — 2026-10-06
+
+Shared motion and thread regressions pass within the 3,100-test Clubhouse/
+appearance run; full typecheck and mapped travel checks pass. See the global
+[repair acceptance](../../SMOOTHNESS_AUDIT.md#repair-acceptance--2026-10-06)
+for timing, screenshots and the physical-device limits.
+
+## Premium audit matrix — 2026-10-06
+
+17 synthetic captures are recorded for this page family. The table above
+keeps representative viewport/browser evidence; the complete state/opener
+ledger and review limitations are in the
+[premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
+Captured states are not all visually approved.

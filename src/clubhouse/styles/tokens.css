@@ -143,39 +143,23 @@
   --ch-glass-blur: 20px;
   --ch-glass-saturate: 110%;
 
-  /* Depth (component depth audit, owner 2026-10-01, Q-142: "everything is flat and looks basic"). Depth follows a
-     component's role. The October 2 owner review removes decorative outlines and accent rails: reading surfaces
-     separate from the canvas through a lit face, a soft contact shadow and wider ambient shade. A raised control
-     adds a top highlight. A floating surface (composer, floating
-     action) lifts further; an overlay (menu, sheet) is the highest. The canvas is a step darker than every surface. */
+  /* Depth follows role. Owner review, October 6: remove the broad, muddy shadows
+     under ordinary fields/cards. Reading surfaces are quiet; floating controls
+     and overlays retain a small, progressively stronger separation. */
   --ch-edge: rgb(28 25 18 / 0.08);
   --ch-highlight: inset 0 1px 0 rgb(255 255 255 / 0.7);
-  --ch-elevation-reading: inset 0 1px 0 rgb(255 255 255 / 0.92),
-    0 2px 4px rgb(28 25 18 / 0.07), 0 10px 20px -8px rgb(28 25 18 / 0.2),
-    0 24px 44px -18px rgb(28 25 18 / 0.24);
-  --ch-elevation-reading-hover: var(--ch-highlight), 0 3px 6px rgb(28 25 18 / 0.08),
-    0 14px 28px -10px rgb(28 25 18 / 0.22), 0 30px 52px -20px rgb(28 25 18 / 0.26);
-  --ch-elevation-reading-accent: inset 0 1px 0 rgb(255 255 255 / 0.16),
-    0 2px 5px rgb(8 43 28 / 0.16), 0 12px 26px -10px rgb(8 43 28 / 0.3),
-    0 28px 52px -20px rgb(8 43 28 / 0.34);
-  --ch-elevation-control: var(--ch-highlight), 0 1px 2px rgb(28 25 18 / 0.08),
-    0 5px 10px -3px rgb(28 25 18 / 0.18);
-  --ch-elevation-floating: var(--ch-highlight), 0 3px 7px rgb(28 25 18 / 0.09),
-    0 20px 48px -14px rgb(28 25 18 / 0.27);
+  --ch-elevation-reading: 0 1px 2px rgb(28 25 18 / 0.04), 0 3px 8px -4px rgb(28 25 18 / 0.06);
+  --ch-elevation-reading-hover: 0 1px 3px rgb(28 25 18 / 0.05), 0 5px 12px -6px rgb(28 25 18 / 0.1);
+  --ch-elevation-reading-accent: 0 1px 3px rgb(8 43 28 / 0.08), 0 4px 12px -6px rgb(8 43 28 / 0.12);
+  --ch-elevation-control: var(--ch-highlight), 0 1px 2px rgb(28 25 18 / 0.06);
+  --ch-elevation-floating: 0 2px 6px rgb(28 25 18 / 0.06), 0 8px 20px -8px rgb(28 25 18 / 0.12);
   --ch-elevation-floating-focus: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo),
     var(--ch-elevation-floating);
-  --ch-elevation-overlay: var(--ch-highlight), 0 6px 16px rgb(28 25 18 / 0.12),
-    0 30px 70px -18px rgb(28 25 18 / 0.32);
-  /* A bottom sheet: a fine top edge and a long soft shadow cast up over the page. */
-  --ch-elevation-sheet: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 -6px 18px rgb(28 25 18 / 0.08),
-    0 -20px 52px -12px rgb(28 25 18 / 0.28);
-  --ch-elevation-bubble: inset 0 1px 0 rgb(255 255 255 / 0.95), inset 0 -1px 0 rgb(28 25 18 / 0.035),
-    0 1px 2px rgb(28 25 18 / 0.08), 0 5px 10px -3px rgb(28 25 18 / 0.14),
-    0 12px 24px -9px rgb(28 25 18 / 0.2);
+  --ch-elevation-overlay: 0 4px 12px rgb(28 25 18 / 0.08), 0 16px 36px -12px rgb(28 25 18 / 0.16);
+  --ch-elevation-sheet: 0 -4px 12px rgb(28 25 18 / 0.06), 0 -12px 32px -12px rgb(28 25 18 / 0.12);
+  --ch-elevation-bubble: 0 1px 2px rgb(28 25 18 / 0.04);
   --ch-bubble-mine-bg: linear-gradient(180deg, #1e6a45 0%, #155a39 60%, #0f4a2f 100%);
-  --ch-elevation-bubble-mine: inset 0 1px 0 rgb(255 255 255 / 0.2), inset 0 -1px 0 rgb(8 43 28 / 0.25),
-    0 1px 2px rgb(11 58 37 / 0.16), 0 5px 10px -3px rgb(11 58 37 / 0.22),
-    0 12px 24px -9px rgb(11 58 37 / 0.32);
+  --ch-elevation-bubble-mine: 0 1px 2px rgb(11 58 37 / 0.08);
   --ch-control-bg: var(--ch-raised-bg);
   --ch-field-pill-edge: inset 0 0 0 1px rgb(28 25 18 / 0.14);
   --ch-field-pill-edge-focus: inset 0 0 0 1.5px var(--ch-border-focus);

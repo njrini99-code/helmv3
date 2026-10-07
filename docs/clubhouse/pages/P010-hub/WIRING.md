@@ -1,5 +1,18 @@
 # P010 — Team Hub: wiring map
 
+<!-- clubhouse:release-audit:start -->
+## Current ownership audit — 2026-10-06
+
+Root: `src/clubhouse/screens/hub`. The AST inventory found 7 source files, 14
+overlay/control sites and 0 motion nodes. Hub tabs, compose, assignment, trip,
+document and confirmation sheets.
+
+Exact call sites, direct package imports, responsive styles and mapped tests
+are in the [all-page audit](../../ALL_PAGE_AUDIT.md#p010-hub). Shared
+Modal/Menu/PhoneScreen owners and shell behavior are audited once there;
+counts include wrappers rather than unique popups.
+<!-- clubhouse:release-audit:end -->
+
 ## Entry point
 
 ```text

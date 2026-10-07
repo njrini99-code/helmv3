@@ -1,5 +1,18 @@
 # P015 — Auth: wiring map
 
+<!-- clubhouse:release-audit:start -->
+## Current ownership audit — 2026-10-06
+
+Root: `src/clubhouse/screens/auth`. The AST inventory found 16 source files, 0
+overlay/control sites and 11 motion nodes. Sign-in course scene, welcome,
+onboarding and dashboard handoff.
+
+Exact call sites, direct package imports, responsive styles and mapped tests
+are in the [all-page audit](../../ALL_PAGE_AUDIT.md#p015-auth). Shared
+Modal/Menu/PhoneScreen owners and shell behavior are audited once there;
+counts include wrappers rather than unique popups.
+<!-- clubhouse:release-audit:end -->
+
 ## Entry point
 
 ```text

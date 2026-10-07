@@ -1,5 +1,58 @@
 # P008 — Settings: changelog
 
+## 2026-10-06 — Premium interaction corrections
+
+```text
+PR/commit:      #2155, codex/clubhouse-smoothness-audit
+Design package: existing Clubhouse focus and motion owners
+Contract IDs:   existing keyboard and reduced-motion behavior
+Data impact:    none
+Held items:     physical iPhone and complete manual release acceptance
+```
+
+Keyboard Move up/down alternatives reveal in their own row on focus.
+Ordinary assistive descriptions remain hidden; the visible reorder handle and
+its arrow-key path remain available.
+
+See [premium audit](../../PREMIUM_AUDIT.md) for focused evidence and limits.
+
+## 2026-10-06 — Phone popup sizing corrections
+
+Form/list sheets initially focus their labelled heading. Reading destinations do not draw a green control box; buttons retain keyboard focus indicators.
+
+```text
+PR/commit:      #2155, codex/clubhouse-smoothness-audit
+Design package: approved phone bars and action-sheet layout
+Contract IDs:   existing phone form/list/action-sheet contracts
+Data impact:    none; CSS overflow and sizing only
+Held items:     physical Safari/iPhone keyboard and VoiceOver acceptance
+```
+
+Form bars reserve Cancel/Save space and wrap long titles. List/picker titles
+wrap within the panel. Tall action-sheet descriptions scroll on short screens
+without compressing the actions. Dirty/busy guards and preference behavior are
+preserved. See [popup evidence](../../POPUP_AUDIT.md).
+
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+Desktop and phone sections enter immediately without an outgoing wait,
+using one normal 260ms entrance. Reduced motion and Animations off use zero
+duration. Inline validation/save feedback follows the same preference.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
+## 2026-10-06 — Whole-app release audit
+
+Reconciled page purpose, design acceptance, contract status, wiring and
+verification against the current flagged implementation. Indexed 29 mapped
+actions and 33 overlay/control call sites in the [all-page
+audit](../../ALL_PAGE_AUDIT.md#p008-settings). Approved handoffs and contract
+IDs are preserved; runtime gaps stay explicit.
+<!-- clubhouse:release-audit:end -->
+
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
 
 ## 2026-10-02 — End obsolete autosave feedback

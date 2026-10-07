@@ -1,5 +1,18 @@
 # P009 — Qualifiers: page contract
 
+<!-- clubhouse:release-audit:start -->
+## Current contract audit — 2026-10-06
+
+The manifest reports complete contract coverage and 12 mapped actions.
+Existing Bridge IDs, catalog rows and generated contract tables remain
+authoritative. Check streamed placeholder geometry, round-course pickers,
+standings updates and Back/Forward scroll restoration.
+
+The [all-page audit](../../ALL_PAGE_AUDIT.md#p009-qualifiers) distinguishes
+implemented/tested behavior from open runtime acceptance; this pass does not
+reserve new IDs or mark manual contracts verified.
+<!-- clubhouse:release-audit:end -->
+
 Every behaviour Qualifiers promises, by the 25 V2 categories (D-69). A contract's
 number is its Bridge ID (D-68: namespace 9, category, item); `Code` is the
 catalog code on the element and in the test (`docs/clubhouse/catalog/qualifiers.md`).

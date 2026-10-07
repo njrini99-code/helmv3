@@ -1,5 +1,18 @@
 # P012 — Classes: page contract
 
+<!-- clubhouse:release-audit:start -->
+## Current contract audit — 2026-10-06
+
+The manifest reports complete contract coverage and 6 mapped actions. Existing
+Bridge IDs, catalog rows and generated contract tables remain authoritative.
+Check narrow day/time controls, long class names, import warnings, partial
+imports and calendar-sync refusal.
+
+The [all-page audit](../../ALL_PAGE_AUDIT.md#p012-classes) distinguishes
+implemented/tested behavior from open runtime acceptance; this pass does not
+reserve new IDs or mark manual contracts verified.
+<!-- clubhouse:release-audit:end -->
+
 Every behaviour Classes promises, by the 25 V2 categories (D-69). A contract's
 number is its Bridge ID (D-68: namespace 12, category, item); `Code` is the
 catalog code on the element and in the test (`docs/clubhouse/catalog/classes.md`).

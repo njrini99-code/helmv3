@@ -1,9 +1,95 @@
 # Clubhouse changelog
 
+## 2026-10-06 — Shared component playground
+
+Added a development-only workspace for original/candidate shared components,
+real phone/desktop frame sizes, long-content stress, local visual tuning and
+CSS proposal export. Modal/menu keyboard behavior and reduced-motion samples
+remain shared. No production tokens or page designs are changed. The gallery
+can be framed only by the same origin in development. Open Props, GUI Challenges
+and Radix Themes are documented as the three reference priorities. Stylelint
+adds invalid-color, calc-operator and keyframe-priority checks.
+
+## 2026-10-06 — Quality tooling and scoped agent guidance
+
+Clubhouse agents now follow its own tokens and exemplars. The premium profile
+covers all 15 page families; an optional reviewer checks implementation details.
+Dedicated Chromium/WebKit checks exercise normal and reduced motion, keyboard
+contracts, popup bounds and accessibility. Reviewed external visual baselines,
+a CSS regression guard and a raw-capture performance budget reader support
+repeatable audits. Next DevTools MCP and React DevTools are pinned; setup and
+evidence limits are documented in [QUALITY_TOOLING](QUALITY_TOOLING.md).
+This entry changes tooling, not page appearance or release acceptance.
+
+## 2026-10-06 — Owner rejects excessive card depth
+
+The owner described the large stacked shadows as looking poor and artificially
+styled. The shared depth ladder now uses quiet contact shadows for reading
+cards, shallow controls, a small floating lift and stronger separation only for
+menus/sheets. Settings form groups have no drop shadow. Home and Recruiting
+card overrides use the same reading token, including Home’s hero and nested
+next-event card. Broad 44/52px reading-card shadows
+and stacked bubble shadows are removed. Existing layout, colors, typography,
+focus indication and data behavior remain intact. This updates the October 2
+depth direction; earlier audit entries below record that prior review.
+
+Before/after normal-content captures are in page VERIFY logs. Physical-device
+and owner visual acceptance remain open in [POPUP_AUDIT](POPUP_AUDIT.md).
+
+## 2026-10-06 — Popup layout and native-layer repairs
+
+Reading-destination headings no longer wear the global control outline; shared buttons use their existing rounded focus treatment. Settings form/list sheets initially focus their heading. Calendar custom popovers and the desktop team listbox are height-bounded. These changes preserve keyboard access.
+
+Menus inside native dialogs now receive pointer input in the same top layer.
+Tall menus are bounded and scroll above keyboard space. Modal descriptions are
+announced, long headings/descriptions wrap and scroll without hiding footers,
+and Settings/Recruiting phone bars reserve space for their actions. Tall action
+sheets remain reachable on short screens. Full source inventory and browser
+evidence are in [POPUP_AUDIT](POPUP_AUDIT.md).
+
 Every Clubhouse change with the issue it fixed, newest first. Each page's own
 changelog (`docs/clubhouse/pages/<page>/CHANGELOG.md`) has the detail; decisions
 and the full verification log are in `docs/clubhouse/PROGRESS.md`. Nothing here
 is in production: Clubhouse is behind a flag that is off.
+
+## 2026-10-06 — Motion and streaming repairs
+
+Settings replaces the sequential exit/entrance with immediate outgoing removal
+and one 260ms incoming transition. OS reduced motion and Animations off use
+zero-duration shared JavaScript transitions, including Home rounds, Roster
+peek, Stats/segmented indicators, menus, team switch, offline notices, toasts
+and Settings feedback. Approved normal-motion tokens and layouts are preserved.
+
+CoachHelm schedules streaming follow-scroll once per browser frame, cancels
+superseded work and respects the reader's position. It scrolls instantly while
+streaming and when motion is disabled; sending otherwise retains smooth scroll.
+
+Desktop WebKit fixture switches settled in 274–315ms normally (previously
+550–562ms) and 45–48ms with OS reduced motion (previously 497–531ms), three
+trials each. These include development overhead, not device FPS or production
+INP. Before/after captures are logged on the affected page VERIFY records.
+
+A paired Chromium 4x-CPU scroll probe covered Home, Stats, round Track, round
+Setup and onboarding Account: 20 trials, 60 frames each, with filters enabled
+and diagnostically disabled. Both had 16.7ms medians, 16.7–16.8ms p95 and zero
+frames over 33ms. A pure buildTurns benchmark (200 messages, 100 trials) had
+0.175ms median and 0.781ms p95. Neither supports a speculative glass removal
+or parser cache. Physical Safari/iPhone traces, VoiceOver, keyboard and durable
+writes remain release checks; the Mac is locked.
+
+## 2026-10-06 — Smoothness source audit and stable appearance subscriptions
+
+The audit targets the current Clubhouse source on main, selected by the
+Clubhouse flags in preview/development. The older agent/clubhouse checkout
+still contains navigation and dismissal behavior repaired in the October 1–2
+passes. SMOOTHNESS_AUDIT.md separates these versions and inventories all
+15 page families using their existing contracts, catalogs and runtime owners.
+
+The shared appearance store now hydrates once and compares stored values before
+notifying. Mounting another consumer no longer rerenders unchanged subscribers;
+same-tab updates and cross-tab changes still propagate, and a storage clear
+restores defaults. This changes no appearance, motion timing or server data.
+Focused regression evidence and remaining runtime checks are in the audit.
 
 ## 2026-10-02 — Floating cards and stationary overlay backgrounds
 
@@ -166,3 +252,23 @@ The changelog gate now holds a shared piece (a file under `src/clubhouse/ui`, `l
 | CoachHelm | **Assign as focus on a strength (Clickables gap 12).** Assign was hidden on a strength, though the board draws it on Theo's card; contract 130806 had been written from the code, not the board. | CoachHelm offers Assign as focus on a strength (a keep-doing focus); 130806 is reworded (Q-80, kept by the owner). |
 
 Earlier changes (2026-09-28 to 2026-09-30: the page builds, the contract passes and their fixes) are listed in each page's changelog.
+
+## 2026-10-06 — Complete page documentation and fixture audit
+
+Updated all 15 page families and their catalogs, phone specs and checklists
+with source ownership, current evidence and explicit device/release gaps.
+ALL_PAGE_AUDIT.md records the 305 state cases, 60 WebKit base renders,
+24 onboarding renders and measured Settings reduced-motion mismatch.
+The screenshot log now ignores generated galleries; its regression first
+failed and then passed. Production settings and approved handoffs are intact.
+
+## 2026-10-06 — Premium audit, complete catalog and focus repair
+
+Added the complete component/style catalog, a repeatable material declaration
+inventory and the read-only clubhouse-design-reviewer. Recorded all 15 page
+families and 383 local synthetic renders in
+[PREMIUM_AUDIT.md](PREMIUM_AUDIT.md).
+Shared opt-in keyboard alternatives now reveal in document flow; ordinary
+screen-reader labels remain hidden. Message quotes and desktop Game detail
+observe live Animations off as well as OS reduced motion. No production flag,
+database or deployment changed.

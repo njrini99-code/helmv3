@@ -384,7 +384,7 @@ function cmdLog(opts, root) {
   const dir = join(storeDir(root), pageDir(pages, opts.page));
   if (!existsSync(dir)) fail(`no screenshots for ${opts.page} in ${dir}`);
   const entries = [];
-  for (const day of readdirSync(dir)) {
+  for (const day of readdirSync(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && validDate(d.name)).map((d) => d.name)) {
     const m = readIfPresent(join(dir, day, 'manifest.json'));
     if (m) entries.push(...JSON.parse(m));
   }

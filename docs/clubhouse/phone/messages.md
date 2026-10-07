@@ -1,5 +1,18 @@
 # Phone design: Messages (coach and player)
 
+<!-- clubhouse:release-audit:start -->
+## Phone acceptance audit — 2026-10-06
+
+Conversation rail, phone thread, growing composer, reply and group dialogs.
+Check reader-position preservation, Return/newline versus desktop Enter,
+keyboard height, long messages and draft retention.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p007-messages). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Status: approved (owner design, design/handoff/mobile/Messages Mobile.html, m-msg.jsx, m-shell.jsx, m.css)
 
 The owner's brief: "this is messages mobile for the both player and coach to match desktop". The

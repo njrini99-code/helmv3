@@ -1,9 +1,37 @@
 # P012 — Classes: verification
 
-Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate checklist is
+<!-- clubhouse:release-audit:start -->
+## Current release evidence — 2026-10-06
+
+Classes list, class editor, import review and schedule synchronization.
+
+Check narrow day/time controls, long class names, import warnings, partial
+imports and calendar-sync refusal.
+
+Fresh WebKit 26.6: `/clubhouse-preview/classes` at
+375, 430 and 1280px; zero Axe A/AA violations and no horizontal document
+overflow in these three fixture renders. The 430px full-page screenshot
+was inspected and recorded below. This does not exercise every popup.
+Clubhouse runtime suites: 117 files / 3,092 tests pass on this branch.
+External action suites listed in WIRING are outside that count.
+
+Additional WebKit base check: 320px also fits without horizontal overflow
+and reports zero Axe violations. The state/opener inventory completes 12
+cases for this page at applicable 1280/390px widths with zero Axe
+violations or document overflow.
+
+Current browser/test results: [all-page
+audit](../../ALL_PAGE_AUDIT.md#p012-classes). Current status remains partial.
+Physical Safari/iPhone, VoiceOver and durable authenticated writes remain
+separate acceptance checks. Earlier verification status and gap sections below
+are historical observations; use the current audit for release scope.
+<!-- clubhouse:release-audit:end -->
+
+Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
+checklist is
 `docs/clubhouse/screens/classes.md`.
 
-## Current verification status
+## Historical verification status
 
 ```text
 Status:     partial
@@ -28,19 +56,28 @@ Date:       2026-09-30
 | --- | --- | --- |
 | `src/clubhouse/__tests__/classes.test.tsx` (106 cases) | every catalog row of kinds 0 to 5 that is not preview (CH-12001 to CH-12902, less CH-12601 and CH-12602), and the hand contracts in the table below | pass: `npx vitest run src/clubhouse/__tests__/classes.test.tsx` exit 0, 106/106 (run in the docs pass); every fix of the review was mutation-checked, as reported in PROGRESS.md |
 
-What the suite forces, beyond the catalog: the loader against a fake database (the player's own rows, the team's
-week in the team's zone, each failed read on its own); the live writes against a fake client (the stored form,
-the update a policy hides, the calendar-first removal, the id made by the page and the duplicate-key answer, the
-sync's arguments and the no-time removal, the import's read-before-write duplicate check); each write
-succeeding, failing with Retry and refused offline; the calendar sync in the background; and the route, the page's
+What the suite forces, beyond the catalog: the loader against a fake database
+(the player's own rows, the team's
+week in the team's zone, each failed read on its own); the live writes against a
+fake client (the stored form,
+the update a policy hides, the calendar-first removal, the id made by the page
+and the duplicate-key answer, the
+sync's arguments and the no-time removal, the import's read-before-write
+duplicate check); each write
+succeeding, failing with Retry and refused offline; the calendar sync in the
+background; and the route, the page's
 role gate and the loading file inside and outside the shell.
 
 ### Hand contracts and the tests that prove them
 
-All 29 hand contracts are `reserved` in the registry: no Classes test title carries a Bridge ID yet, and the
-registry marks a hand contract `implemented` only when a test file names its ID. This table says which ones a test
-in `classes.test.tsx` already covers (a phrase from the test title is given, so the ID can be added to it), which
-it covers in part, and which none does. Coverage is by reading the test bodies, not by a mutation run of its own.
+All 29 hand contracts are `reserved` in the registry: no Classes test title
+carries a Bridge ID yet, and the
+registry marks a hand contract `implemented` only when a test file names its ID.
+This table says which ones a test
+in `classes.test.tsx` already covers (a phrase from the test title is given, so
+the ID can be added to it), which
+it covers in part, and which none does. Coverage is by reading the test bodies,
+not by a mutation run of its own.
 
 | Bridge ID | Contract | Covered | Tests that prove it (a title in classes.test.tsx starts with or contains) | Not covered |
 | --- | --- | --- | --- | --- |
@@ -135,37 +172,64 @@ Notes:             first-load JS and LCP (CH-1954) are open
 
 ## Screenshots
 
-Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
+committed) and travel in the PR description; this table is the committed record
+of them. One row per file; the label is the file's basename, named by `npm run
+clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is
+before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+| `P012__release-audit__player__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (player), 430x844px, ready |
+| `P012__premium-audit__coach__1280__case-021-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-021-webkit-reduce; /clubhouse-preview/classes; synthetic preview |
+| `P012__premium-audit__coach__1280__case-135-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-135-chromium-normal; /clubhouse-preview/classes; synthetic preview |
+| `P012__premium-audit__coach__390__case-021-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-021-webkit-reduce; /clubhouse-preview/classes; synthetic preview |
+| `P012__premium-audit__coach__390__case-135-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-135-chromium-normal; /clubhouse-preview/classes; synthetic preview |
 
-## Open verification gaps
+## Historical verification gaps
 
-- The iPhone pass through `npm run ios:dev`, and a browser pass with a real player account (a class saved and
+- The iPhone pass through `npm run ios:dev`, and a browser pass with a real
+  player account (a class saved and
   imported, and the coach seeing it on the calendar).
 - `npm run build` was not run.
-- Every write and every failure against a live session: the tests replace `syncClassToCalendar`,
-  `removeClassFromCalendar` and the vision reader, so the real calendar sync, the real reader on a real
+- Every write and every failure against a live session: the tests replace
+  `syncClassToCalendar`,
+  `removeClassFromCalendar` and the vision reader, so the real calendar sync,
+  the real reader on a real
   screenshot and the PDF reader (PDF.js from the CDN) were not exercised.
-- The row-level-security policies for `golf_player_classes` were read in the baseline migration and not run
-  (`npm run test:rls` was not run); no test forces a refusal by a server action (120803).
-- The toast's Retry inside a real modal dialog: the tests run the shell's dialog-hosted toast in jsdom, which has
+- The row-level-security policies for `golf_player_classes` were read in the
+  baseline migration and not run
+  (`npm run test:rls` was not run); no test forces a refusal by a server action
+  (120803).
+- The toast's Retry inside a real modal dialog: the tests run the shell's
+  dialog-hosted toast in jsdom, which has
   no top layer.
-- Found and not fixed (see the report to the parent): an import whose response is lost and then retried says "Nothing
-  new to import" and syncs nothing, because the first attempt stored the rows; an import in a term's last 21 days,
-  or the first save of an imported class, puts the whole term on the calendar, past meetings included; the
-  no-time flag and the "No time set" notice have no catalog code of their own (they are described under CH-12303);
-  two rows of the same import with the same name and term are both inserted (`importRows` compares against the
-  classes already stored, not among the rows being imported; read in code, not run); the calendar sync's landing also fires the
-  success haptic, with no toast (read in `useAction`, not felt on a device); the insert policy on
-  `golf_player_classes` checks the player and not `team_id` (read in the baseline migration; the server
+- Found and not fixed (see the report to the parent): an import whose response
+  is lost and then retried says "Nothing
+  new to import" and syncs nothing, because the first attempt stored the rows;
+  an import in a term's last 21 days,
+  or the first save of an imported class, puts the whole term on the calendar,
+  past meetings included; the
+  no-time flag and the "No time set" notice have no catalog code of their own
+  (they are described under CH-12303);
+  two rows of the same import with the same name and term are both inserted
+  (`importRows` compares against the
+  classes already stored, not among the rows being imported; read in code, not
+  run); the calendar sync's landing also fires the
+  success haptic, with no toast (read in `useAction`, not felt on a device); the
+  insert policy on
+  `golf_player_classes` checks the player and not `team_id` (read in the
+  baseline migration; the server
   action checks team membership).
-- Also found: when the calendar removal lands and the delete then fails, the toast can read "It is still on your
-  schedule and your calendar" (the hint of CH-12003), which is untrue for the calendar, and the class gets no "Not
-  on your calendar" flag; the toast's Retry repeats both steps and clears it (read in `writes.remove` and the
+- Also found: when the calendar removal lands and the delete then fails, the
+  toast can read "It is still on your
+  schedule and your calendar" (the hint of CH-12003), which is untrue for the
+  calendar, and the class gets no "Not
+  on your calendar" flag; the toast's Retry repeats both steps and clears it
+  (read in `writes.remove` and the
   `removeAction` copy, not run).
-- Q-75 is partly answered: Delete all classes (Q-75a) was approved on 2026-09-30 and is built (below); the rest is an
+- Q-75 is partly answered: Delete all classes (Q-75a) was approved on 2026-09-30
+  and is built (below); the rest is an
   open owner question, built on its reversible choices.
 
 ## Delete all classes (Q-75a), 2026-09-30
@@ -179,10 +243,23 @@ What was run, and what was seen:
 | Accessibility | a one-off axe scan (WCAG 2.0 to 2.2 AA) of the preview at 1280 and 390: the button, the question, the question with a class from another term, the half-way toast (`?state=failpartial`), the nothing-deleted toast (`?state=failwrites`) | 0 violations in 10 scans; no sideways scroll at 390; the phone button measured 358 x 44. The entries are not in `scripts/clubhouse/a11y.mjs` yet (the lead's file) |
 | Types | `npm run typecheck:fast` | 4 errors, none in Classes (two in another page's tests, `hub.test.tsx` and `travel-class-conflicts.test.ts`, one in `recruiting-upload.test.tsx`) |
 
-Seen by eye (screenshots at 1280 and 390): the button under the deck, the question, and the half-way outcome: three
-classes gone, BUSI 401 kept, EXSS 188 flagged "Not on your calendar", the question counting the 2 that are left.
+Seen by eye (screenshots at 1280 and 390): the button under the deck, the
+question, and the half-way outcome: three
+classes gone, BUSI 401 kept, EXSS 188 flagged "Not on your calendar", the
+question counting the 2 that are left.
 
-Not verified: the live `removeAll` against a real database and the real calendar action (the tests use a fake client
-and a fake action); Delete all with a real player account; a real iPhone (the button's feel, the sheet, the warning
-haptic); that a Retry after a really lost answer finds the rows gone (forced with fakes, not with a dropped
+Not verified: the live `removeAll` against a real database and the real calendar
+action (the tests use a fake client
+and a fake action); Delete all with a real player account; a real iPhone (the
+button's feel, the sheet, the warning
+haptic); that a Retry after a really lost answer finds the rows gone (forced
+with fakes, not with a dropped
 connection). Not in `a11y.mjs` and `native.mjs` yet.
+
+## Premium audit matrix — 2026-10-06
+
+14 synthetic captures are recorded for this page family. The table above
+keeps representative viewport/browser evidence; the complete state/opener
+ledger and review limitations are in the
+[premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
+Captured states are not all visually approved.

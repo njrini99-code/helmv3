@@ -1,5 +1,18 @@
 # Auth catalog (15xxx)
 
+<!-- clubhouse:release-audit:start -->
+## Catalog audit — 2026-10-06
+
+Sign-in course scene, welcome, onboarding and dashboard handoff. Check
+shortest phone heights, credential zoom/autocomplete, reduced-motion camera
+and no blank handoff frames.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p015-auth). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Routes: `/golf/login` (sign in), `/golf/welcome` (the greeting after it), `/golf/signup` (the code, and the questions before the account) and `/golf/player` (a new player's questions after it). Sign up follows Q-96: a roster code signs up a player, a staff code an assistant coach (instantly, no role picker), there is no head-coach path, and Request access reaches the owner's inbound list. It changes presentation only: the same `validateAccessCode`, `signupAction`, `completePlayerOnboarding` and `submitDemoRequest`, with the rules in `docs/clubhouse/drafts/auth-onboarding-ground-truth.md`. They are drawn for a visitor with no role, so they sit outside the dashboard frame and outside `isClubhouseFor`: the owner's design (`design/handoff/auth/`, approved with Q-96) is drawn behind its own flag, `golf_clubhouse_front_door`, which is off in production until the owner says so. With it off, the current pages render exactly as before. The flag chooses the page that is drawn and nothing else: both call the same server action (`loginAction`, which resets the shared idle marker in the response that sets the session cookies) and follow the same redirects.
 
 The screens: the painted clubhouse hole (a seeded SVG course whose sky follows the viewer's own clock), the form on an ivory panel (a sheet on the phone), and then the welcome: the course fills the frame, the camera pushes to the pin, a ball lands, the greeting focuses in and a card says what has happened since the last visit. There is no auto-advance: the welcome waits for Continue (or Return), then folds the course into the app canvas and hands over.

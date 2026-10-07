@@ -1,5 +1,14 @@
 # Clubhouse on iPhone
 
+## October 6 release evidence
+
+Existing rules, route ticks and device requirements retain their scope.
+They do not certify the dependency-upgraded release candidate.
+
+[ALL_PAGE_AUDIT.md](ALL_PAGE_AUDIT.md) covers all 15 page families;
+[SMOOTHNESS_AUDIT.md](SMOOTHNESS_AUDIT.md) records confirmed motion findings.
+Physical Safari/iPhone acceptance and production-build profiling remain open.
+
 How a mobile design in `design/handoff/mobile/` becomes the phone version of
 a Clubhouse page, running in the iOS app. Desktop steps are in `README.md`,
 and the rules that hold throughout are in `.claude/rules/clubhouse.md`. The

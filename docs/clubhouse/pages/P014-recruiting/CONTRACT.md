@@ -1,5 +1,22 @@
 # P014 — Recruiting: page contract
 
+Popup sizing, native top-layer placement and description association follow the
+[popup audit](../../POPUP_AUDIT.md). Long content remains scrollable within the
+available viewport; source/browser checks do not grant physical-device acceptance.
+
+<!-- clubhouse:release-audit:start -->
+## Current contract audit — 2026-10-06
+
+The manifest reports complete contract coverage and 9 mapped actions. Existing
+Bridge IDs, catalog rows and generated contract tables remain authoritative.
+Check keyboard-open forms, long prospect names, stage drag/tap, pending
+uploads and refused file recovery.
+
+The [all-page audit](../../ALL_PAGE_AUDIT.md#p014-recruiting) distinguishes
+implemented/tested behavior from open runtime acceptance; this pass does not
+reserve new IDs or mark manual contracts verified.
+<!-- clubhouse:release-audit:end -->
+
 Every behaviour Recruiting promises, by the 25 V2 categories (D-69). A contract's
 number is its Bridge ID (D-68: namespace 14, category, item); `Code` is the
 catalog code on the element and in the test (`docs/clubhouse/catalog/recruiting.md`).

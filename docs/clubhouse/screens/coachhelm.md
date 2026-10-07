@@ -1,5 +1,18 @@
 # CoachHelm checklist
 
+<!-- clubhouse:release-audit:start -->
+## Release checklist audit — 2026-10-06
+
+Coach/player boards, streaming Ask, history drawer and proposed focus. Profile
+render and scroll work during streaming; check drawer focus, player context
+and proposal feedback.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p013-coachhelm). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Reference: `design/handoff/Player - CoachHelm.html`, `Coach - CoachHelm.html`, `Coach and Player - CoachHelm - Mobile.html` (`helm3.jsx`, `helm3.css`, `coachhelm2.css`); spec `docs/clubhouse/phone/coachhelm.md`
 Route: `/golf/dashboard/coachhelm` (coach and player)   Surface tag: `coachhelm` (Sentry `surface=coachhelm.<section>`)
 

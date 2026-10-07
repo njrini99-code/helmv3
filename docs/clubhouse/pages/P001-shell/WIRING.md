@@ -1,5 +1,18 @@
 # P001 — Shell: wiring map
 
+<!-- clubhouse:release-audit:start -->
+## Current ownership audit — 2026-10-06
+
+Root: `src/clubhouse/shell`. The AST inventory found 21 source files, 6
+overlay/control sites and 13 motion nodes. Navigation crossfade, Back/Forward
+scroll restoration, Bell, More and team switch.
+
+Exact call sites, direct package imports, responsive styles and mapped tests
+are in the [all-page audit](../../ALL_PAGE_AUDIT.md#p001-shell). Shared
+Modal/Menu/PhoneScreen owners and shell behavior are audited once there;
+counts include wrappers rather than unique popups.
+<!-- clubhouse:release-audit:end -->
+
 ## Entry point
 
 ```text
@@ -65,7 +78,7 @@ in `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`.
 | `shell/Bell.tsx` | The bell: popover, phone sheet, filter, mark all read | 10201, 10301, 10402, 10403, 10601, 10602, 11301, 11805, 11811, 11612 |
 | `shell/TabBar.tsx` | Phone tabs and the More sheet (a head coach on two or more teams gets the Team list under who they are; the sheet scrolls on a short screen) | 11808, 11802, 11602, 11901, 11701, 11704, 11814 |
 | `shell/OfflineBanner.tsx` | The offline banner | 10701, 11605, 11706 |
-| `shell/RouteFrame.tsx` | The route reveal and the press; keyed by pathname and team, so a new team remounts the page | 10101, 10103, 11601, 11606 |
+| `shell/RouteFrame.tsx` | The route crossfade and the press; keyed by pathname and team, so a new team remounts the page | 10101, 10103, 11601, 11606 |
 | `shell/NotRebuilt.tsx` | A route not rebuilt for the role | 10401 |
 | `shell/PhoneScreen.tsx`, `phone-chrome.tsx` | Pushed screens, the page top, the phone back | 11610, 11809, 12001 |
 | `ui/Toast.tsx`, `ui/Notices.tsx` | Toasts, inline notices, route error views | 11804, 10704, 10603 to 10607, 11401 |

@@ -132,8 +132,12 @@ Supabase/Vercel binaries.
 
 ## Product conventions
 
-Mobile/UI authority: `src/styles/design-tokens.css`, then
-`src/components/fairway/**`, then `.claude/rules/design-system.md`. Reuse the
+Mobile/UI authority for Fairway surfaces: `src/styles/design-tokens.css`, then
+`src/components/fairway/**`, then `.claude/rules/design-system.md`. Clubhouse
+(`src/clubhouse/**`, including its route integration) uses its scoped runtime
+tokens, shared UI/shell and owner handoffs instead: see `src/clubhouse/AGENTS.md`
+and `.claude/rules/clubhouse.md`. Do not apply Fairway primitives or motion
+rules to Clubhouse. Reuse the
 shared shell, safe areas, navigation, buttons, cards, and empty states; keep
 one primary action per screen. Golf reliability context:
 `memory/system/golfhelm-engineering-os.md` (it grants no production

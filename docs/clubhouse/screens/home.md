@@ -1,5 +1,18 @@
 # Home checklist
 
+<!-- clubhouse:release-audit:start -->
+## Release checklist audit — 2026-10-06
+
+Coach/player Home, latest-round expansion, round sheet and partial-data cards.
+Check loading-to-content geometry, long names, team-timezone day labels and
+latest-round expansion under reduced motion.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p002-home). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Reference: design/handoff/Coach Home v3.html, coach-home-v3.jsx, screenshots/home-01-top.jpg, home-02-leaderboard.jpg
 Route: /golf/dashboard (coach and player)   Surface tag: `home.<week|latestRound|leaderboard|upNext|today|form|game>`
 Player Home: design/handoff/Player - Home.html, player-home.jsx, Player - Home - Mobile.html (phone spec `phone/home-player.md`)
