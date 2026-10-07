@@ -26,55 +26,80 @@ export function YardagePage({ title, meta, note, children }: { title: string; me
   );
 }
 
+type FigureItem = {
+  label: string;
+  value: string;
+  unit?: string;
+  delta?: number | null;
+  deltaDigits?: number;
+  lowerIsBetter?: boolean;
+  context: string;
+  /** A second line under the context: what the figure is measured against. */
+  note?: string;
+  /** Green for a gain and amber for a loss (strokes gained), on the value itself. */
+  tone?: 'gain' | 'loss';
+  /** The catalog state this card is in, when it is one (found by `data-ch-code`). */
+  code?: string;
+};
+
 /** Figure cards with a change chip; the chip colour follows direction and whether lower is better. */
 export function FigureCards({
   items,
   hold = false,
+  lead = false,
 }: {
   /** Team stats: the cards keep the height of their fullest layout in every window (`.ch-fg--hold`), so a window change does not move the page below. */
   hold?: boolean;
-  items: Array<{
-    label: string;
-    value: string;
-    unit?: string;
-    delta?: number | null;
-    deltaDigits?: number;
-    lowerIsBetter?: boolean;
-    context: string;
-    /** A second line under the context: what the figure is measured against. */
-    note?: string;
-    /** Green for a gain and amber for a loss (strokes gained), on the value itself. */
-    tone?: 'gain' | 'loss';
-    /** The catalog state this card is in, when it is one (found by `data-ch-code`). */
-    code?: string;
-  }>;
+  /**
+   * Team stats: the first figure (strokes gained) is the page's first read, on its own card with a larger value; the rest
+   * are supporting figures on one shared surface divided by hairlines (owner decision 2026-10-06, premium audit P004 P1).
+   */
+  lead?: boolean;
+  items: FigureItem[];
 }) {
+  const [first, ...rest] = items;
+  if (lead && first && rest.length > 0) {
+    return (
+      <div className={'ch-fg ch-fg--lead' + (hold ? ' ch-fg--hold' : '')} style={{ ['--ch-fg-n' as string]: rest.length }}>
+        <FigureCard it={first} lead />
+        <div className="ch-fg__group">
+          {rest.map((it) => (
+            <FigureCard key={it.label} it={it} />
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={'ch-fg' + (hold ? ' ch-fg--hold' : '')} style={{ ['--ch-fg-n' as string]: items.length }}>
-      {items.map((it) => {
-        const d = it.delta;
-        const flat = d != null && Math.abs(d) < (it.deltaDigits ? 0.05 : 0.5);
-        const good = d != null && !flat && (it.lowerIsBetter ? d < 0 : d > 0);
-        return (
-          <div key={it.label} className="ch-fg__c" data-ch-code={it.code}>
-            <span className="ch-fg__l">{it.label}</span>
-            <span className={'ch-fg__v ch-num' + (it.tone ? ` ch-${it.tone}` : '')}>
-              {it.value}
-              {it.unit && it.value !== NO_DATA && <small>{it.unit}</small>}
-            </span>
-            <span className="ch-fg__d">
-              {d != null && (
-                <span className={`ch-delta ch-num ${flat ? 'is-flat' : good ? 'is-good' : 'is-bad'}`}>
-                  <Icon icon={flat ? Minus : d > 0 ? ArrowUpRight : ArrowDownRight} size={12} />
-                  {formatSigned(d, it.deltaDigits ?? 0)}
-                </span>
-              )}
-              <span>{it.context}</span>
-            </span>
-            {it.note && <span className="ch-fg__n">{it.note}</span>}
-          </div>
-        );
-      })}
+      {items.map((it) => (
+        <FigureCard key={it.label} it={it} />
+      ))}
+    </div>
+  );
+}
+
+function FigureCard({ it, lead = false }: { it: FigureItem; lead?: boolean }) {
+  const d = it.delta;
+  const flat = d != null && Math.abs(d) < (it.deltaDigits ? 0.05 : 0.5);
+  const good = d != null && !flat && (it.lowerIsBetter ? d < 0 : d > 0);
+  return (
+    <div className={'ch-fg__c' + (lead ? ' ch-fg__c--lead' : '')} data-ch-code={it.code}>
+      <span className="ch-fg__l">{it.label}</span>
+      <span className={'ch-fg__v ch-num' + (it.tone ? ` ch-${it.tone}` : '')}>
+        {it.value}
+        {it.unit && it.value !== NO_DATA && <small>{it.unit}</small>}
+      </span>
+      <span className="ch-fg__d">
+        {d != null && (
+          <span className={`ch-delta ch-num ${flat ? 'is-flat' : good ? 'is-good' : 'is-bad'}`}>
+            <Icon icon={flat ? Minus : d > 0 ? ArrowUpRight : ArrowDownRight} size={12} />
+            {formatSigned(d, it.deltaDigits ?? 0)}
+          </span>
+        )}
+        <span>{it.context}</span>
+      </span>
+      {it.note && <span className="ch-fg__n">{it.note}</span>}
     </div>
   );
 }
