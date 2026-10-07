@@ -1,5 +1,9 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-06 — Smooth scroll and materials
+
+In-page jumps on the phone view ease through the shared smooth scroll helper and stay instant with reduced motion.
+
 ## 2026-10-06 — Premium interaction corrections
 
 ```text

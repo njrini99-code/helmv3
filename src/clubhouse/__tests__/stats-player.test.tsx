@@ -460,7 +460,7 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     Element.prototype.scrollIntoView = scroll;
     phone(player(), 'rounds');
     expect(rows()).toBe(10);
-    expect(scroll).toHaveBeenCalledWith({ block: 'start' });
+    expect(scroll).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
   });
 
   it('Add focus area opens the same sheet as desktop', async () => {

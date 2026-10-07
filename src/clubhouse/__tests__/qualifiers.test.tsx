@@ -1503,7 +1503,7 @@ describe('Qualifiers · the list comes back as it was left, and Back is a real B
 
     // The qualifier opens at the top (a new page), the filter and the place are kept.
     view.rerender(tree(page(DETAIL, <QualifierDetail data={{ ...d, id: link.getAttribute('href')!.split('/').pop()! }} writes={fakeWrites()} live={false} />)));
-    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0 });
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' });
 
     // Back: a step back in history (a popstate), then the list again, restored once by the frame, with its filter and search.
     await user.click(backLink());
@@ -1513,7 +1513,7 @@ describe('Qualifiers · the list comes back as it was left, and Back is a real B
     });
     const sends = (canvas.scrollTo as Mock).mock.calls.length;
     view.rerender(tree(page(TEAM_LIST, <QualifiersList data={list()} />)));
-    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 520 });
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 520, behavior: 'instant' });
     expect(pill(/^Active/)).toBe('true');
     expect(searchBox().value).toBe('pine');
     // One restore, the frame's: it settled on the first try (the canvas reached 520), and the list sent nothing of its own.

@@ -1,5 +1,27 @@
 # Clubhouse changelog
 
+## 2026-10-06 — Premium materials, seams, radius scale and smooth scroll
+
+Owner-directed pass on shared materials, verified in Safari 27 (desktop 1440 and
+iPhone emulation). Reading surfaces regain a layered light: a lit top edge, a
+contact shadow and a soft ambient shadow. Dark and branded surfaces use a
+shadow-only cast. New on-dark materials (raised, well, control) serve the
+green hero. Joins inside one surface use an engraved seam, an ink line beside a
+lit line (`--ch-seam-x`, `--ch-seam-y`), in place of faint hairlines. Score marks
+(birdie, eagle, bogey, double) share one raised construction with an edge and
+depth. The secondary button ring is softer with a firmer lift. The phone tab bar
+floats as a glass capsule above the safe area.
+
+Radii snap to the scale (owner choice): wells and segmented tracks 14px, sheets
+20px, raised chips 10px; inner pieces are concentric (track radius less its
+padding). Sidebar brand, nav item and next-event radii follow.
+
+Desktop canvas scrolling eases mouse-wheel steps (Lenis, `CH_SCROLL_DUR`); touch
+pointers, phone layouts, reduced motion and Animations off keep native scroll.
+Route changes and Back restoration jump instantly; in-page jumps ease.
+Safari audit on player Home: no console errors, no failed requests, viewport and
+safe areas correct, no off-scale radii left on the page.
+
 ## 2026-10-06 — Shared component playground
 
 Added a development-only workspace for original/candidate shared components,

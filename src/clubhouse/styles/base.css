@@ -162,22 +162,22 @@
 .ch-well {
   background: var(--ch-well-bg);
   box-shadow: var(--ch-well-shadow);
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
 }
 .ch-well-soft {
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
 }
 .ch-raised {
   background: var(--ch-raised-bg);
   box-shadow: var(--ch-raised-shadow);
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
 }
 .ch-sheet {
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
-  border-radius: 16px;
+  border-radius: var(--ch-radius-xl);
 }
 /* System contrast modes suppress shadows; retain a visible surface boundary there. */
 @media (forced-colors: active) {

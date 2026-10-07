@@ -21,6 +21,10 @@ export const CH_DUR = {
   reveal: 0.52,
 } as const;
 
+/** Wheel easing on the desktop canvas (smooth-scroll.ts): how long a wheel step glides. Scrolling, not UI motion, so it
+ *  sits outside CH_DUR; reduced motion and Animations off turn it off entirely. */
+export const CH_SCROLL_DUR = 0.85;
+
 export function chTween(duration: keyof typeof CH_DUR = 'base', reduced = false): Transition {
   return { duration: reduced ? 0 : CH_DUR[duration], ease: CH_EASE };
 }

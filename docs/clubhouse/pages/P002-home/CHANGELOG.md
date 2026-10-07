@@ -1,5 +1,9 @@
 # P002 — Home: changelog
 
+## 2026-10-06 — Premium materials pass
+
+Player Home premium pass (owner, Safari 27 desktop and iPhone emulation). The CoachHelm brief line is removed. Up next opens the latest-round pane, and the week, latest round and Scoring join in one surface with engraved seams. The today key in the desktop week strip is a frosted, higher-contrast key. "By part of the game" becomes "Your game" with more space above it; the legs drop their icon tiles and show a full-width trend line with an Improving/Steady/Slipping caption. Score marks, the countdown well, hero actions and the scorecard well use the shared materials. All Home radii are on the scale.
+
 ## 2026-10-06 — Owner rejects excessive card depth
 
 The owner described the large stacked shadows as looking poor and artificially

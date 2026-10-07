@@ -1,5 +1,9 @@
 # P011 — Rounds: changelog
 
+## 2026-10-06 — Smooth scroll and materials
+
+New round resets the canvas to the top instantly through the canvas scroller, so the shared wheel easing never animates the step change.
+
 ## 2026-10-06 — Course-picker loading accessibility
 
 Course and tee loading containers now use status semantics, making their

@@ -93,6 +93,12 @@
   --ch-border-subtle: rgb(28 25 18 / 0.1);
   --ch-border-control: rgb(28 25 18 / 0.14);
   --ch-border-strong: rgb(28 25 18 / 0.24);
+  /* A seam between sections of one surface: an ink line with a lit line beside it, so it reads as an engraved join,
+     not a faint hairline (owner, 2026-10-06: "add more borders in between the cards"). */
+  --ch-seam-ink: rgb(28 25 18 / 0.15);
+  --ch-seam-light: rgb(255 255 255 / 0.9);
+  --ch-seam-x: inset 0 1px 0 var(--ch-seam-ink), inset 0 2px 0 var(--ch-seam-light);
+  --ch-seam-y: inset 1px 0 0 var(--ch-seam-ink), inset 2px 0 0 var(--ch-seam-light);
   /* Green, not ink: the owner rejected the black keyboard outline (F-46). */
   --ch-border-focus: var(--ch-green-600);
   /* Green and champagne hairlines (Qualifiers: the pressed pill, the cut line, the one-round note). */
@@ -148,13 +154,25 @@
      and overlays retain a small, progressively stronger separation. */
   --ch-edge: rgb(28 25 18 / 0.08);
   --ch-highlight: inset 0 1px 0 rgb(255 255 255 / 0.7);
-  --ch-elevation-reading: 0 1px 2px rgb(28 25 18 / 0.04), 0 3px 8px -4px rgb(28 25 18 / 0.06);
-  --ch-elevation-reading-hover: 0 1px 3px rgb(28 25 18 / 0.05), 0 5px 12px -6px rgb(28 25 18 / 0.1);
+  /* Reading surfaces (premium brief, October 6): layered light rather than one broad shadow. A lit top edge, a crisp
+     hairline, a tight contact shadow and an ambient falloff with negative spread, so the shadow sits under the card
+     instead of hazing the canvas around it. */
+  --ch-elevation-reading: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 0 0 1px rgb(28 25 18 / 0.045),
+    0 1px 2px rgb(28 25 18 / 0.06), 0 8px 18px -10px rgb(28 25 18 / 0.16), 0 22px 40px -24px rgb(28 25 18 / 0.18);
+  /* The reading surface's cast shadow alone, for dark and branded surfaces where a white top edge or ink hairline
+     would draw a line (the green hero, the green Up next card). */
+  --ch-elevation-cast: 0 1px 2px rgb(28 25 18 / 0.06), 0 8px 18px -10px rgb(28 25 18 / 0.16),
+    0 22px 40px -24px rgb(28 25 18 / 0.18);
+  --ch-elevation-reading-hover: inset 0 1px 0 rgb(255 255 255 / 0.95), 0 0 0 1px rgb(28 25 18 / 0.06),
+    0 2px 4px rgb(28 25 18 / 0.07), 0 12px 24px -12px rgb(28 25 18 / 0.2), 0 28px 48px -26px rgb(28 25 18 / 0.22);
   --ch-elevation-reading-accent: 0 1px 3px rgb(8 43 28 / 0.08), 0 4px 12px -6px rgb(8 43 28 / 0.12);
   --ch-elevation-control: var(--ch-highlight), 0 1px 2px rgb(28 25 18 / 0.06);
   --ch-elevation-floating: 0 2px 6px rgb(28 25 18 / 0.06), 0 8px 20px -8px rgb(28 25 18 / 0.12);
   --ch-elevation-floating-focus: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo),
     var(--ch-elevation-floating);
+  /* The phone's floating tab bar: a lit edge, a hairline and a long soft shadow that separates it from the scrolling page. */
+  --ch-elevation-tabbar: inset 0 1px 0 rgb(255 255 255 / 0.7), 0 0 0 1px rgb(28 25 18 / 0.07),
+    0 2px 6px rgb(28 25 18 / 0.08), 0 14px 32px -12px rgb(28 25 18 / 0.32);
   --ch-elevation-overlay: 0 4px 12px rgb(28 25 18 / 0.08), 0 16px 36px -12px rgb(28 25 18 / 0.16);
   --ch-elevation-sheet: 0 -4px 12px rgb(28 25 18 / 0.06), 0 -12px 32px -12px rgb(28 25 18 / 0.12);
   --ch-elevation-bubble: 0 1px 2px rgb(28 25 18 / 0.04);
@@ -193,6 +211,19 @@
   /* Lit upper edge, warm lower face and a contact shadow, from handoff/depth.css. */
   --ch-sheet-bg: linear-gradient(180deg, #fffefb 0%, #fdfcf8 40%, #faf8f2 100%);
   --ch-sheet-shadow: var(--ch-elevation-reading);
+  /* Materials on the green hero (the content layer is dark there). Raised: a lighter tonal green with a mint-lit top
+     edge and a deep green cast shadow (ink shadows vanish on green). Well: one recess darker than the hero. Control: a
+     raised green face that compresses on press. */
+  --ch-on-dark-raised-bg: linear-gradient(180deg, #245740 0%, #1b4a33 100%);
+  --ch-on-dark-raised-shadow: inset 0 1px 0 rgb(210 244 221 / 0.16), 0 0 0 1px rgb(2 18 10 / 0.18),
+    0 2px 4px rgb(2 18 10 / 0.28), 0 14px 28px -14px rgb(2 18 10 / 0.6);
+  --ch-on-dark-well-bg: linear-gradient(180deg, #0c3221 0%, #10382a 100%);
+  --ch-on-dark-well-shadow: inset 0 2px 4px rgb(0 0 0 / 0.32), inset 0 0 0 1px rgb(0 0 0 / 0.14),
+    0 1px 0 rgb(210 244 221 / 0.08);
+  --ch-on-dark-control-bg: linear-gradient(180deg, #2c6148 0%, #22553c 100%);
+  --ch-on-dark-control-shadow: inset 0 1px 0 rgb(210 244 221 / 0.2), 0 0 0 1px rgb(2 18 10 / 0.2),
+    0 1px 2px rgb(2 18 10 / 0.35), 0 6px 12px -6px rgb(2 18 10 / 0.5);
+  --ch-on-dark-control-press-shadow: inset 0 1px 3px rgb(2 18 10 / 0.4), 0 0 0 1px rgb(2 18 10 / 0.2);
   --ch-green-raised-bg: linear-gradient(180deg, #1e6a45 0%, #155a39 55%, #0f4a2f 100%);
   --ch-green-raised-shadow: 0 1px 2px rgb(8 43 28 / 0.2), 0 6px 12px -4px rgb(8 43 28 / 0.36),
     inset 0 1px 0 rgb(255 255 255 / 0.18), inset 0 -1px 0 rgb(0 0 0 / 0.15);

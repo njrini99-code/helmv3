@@ -1,5 +1,9 @@
 # P008 — Settings: changelog
 
+## 2026-10-06 — Smooth scroll and materials
+
+Returning to the top on a section change lands instantly through the canvas scroller, so the shared wheel easing never animates a page switch.
+
 ## 2026-10-06 — Premium interaction corrections
 
 ```text

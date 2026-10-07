@@ -133,7 +133,7 @@ describe('Scoring and the parts of the game, on the phone', () => {
     expect(card.querySelector('h2')).toBeNull();
     expect(within(scoring).getByText(/Gross · par 72 · countable rounds/).closest('.ch-ph-game')).toBeNull();
     expect(card.firstElementChild!.getAttribute('role')).toBe('radiogroup');
-    const legs = screen.getByRole('heading', { level: 2, name: 'By part of the game' }).closest('section')!;
+    const legs = screen.getByRole('heading', { level: 2, name: 'Your game' }).closest('section')!;
     expect(legs.querySelector('.ch-ph-legs')!.querySelector('h2')).toBeNull();
     expect(within(legs).getByText('Strokes gained vs Tour')).toBeTruthy();
   });

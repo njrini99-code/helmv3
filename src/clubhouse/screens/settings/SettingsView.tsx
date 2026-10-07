@@ -23,6 +23,7 @@ import { CoachHelmSection } from './CoachHelm';
 import { PreferencesSection } from './Preferences';
 import { SettingsPhone } from './phone/SettingsPhone';
 import '../../styles/settings.css';
+import { canvasScrollNow } from '../../lib/smooth-scroll';
 
 const ICON: Record<ChSettingsSection, LucideIcon> = {
   account: UserRound,
@@ -122,7 +123,7 @@ export function SettingsView({
     url.pathname = '/golf/dashboard/settings';
     url.searchParams.set('section', next);
     window.history.replaceState(null, '', url.pathname + url.search);
-    document.getElementById('ch-canvas')?.scrollTo({ top: 0 });
+    canvasScrollNow(0);
   };
   const go = (next: ChSettingsSection) => (dirty ? setAsk(next) : show(next));
   const current = sections.find((s) => s.id === section) ?? sections[0]!;

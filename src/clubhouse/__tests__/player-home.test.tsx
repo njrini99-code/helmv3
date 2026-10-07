@@ -92,10 +92,11 @@ beforeEach(() => {
 const stopNavigation = (e: Event) => e.preventDefault();
 
 describe('Player Home · desktop (Player - Home.html)', () => {
-  it('20102 20103 the day, the brief, Message coach to the coach’s thread; Post a round opens round entry', () => {
+  it('20102 20103 the day, no brief line, Message coach to the coach’s thread; Post a round opens round entry', () => {
     show();
     expect(screen.getByRole('heading', { level: 1, name: 'Good afternoon, Theo.' })).toBeTruthy();
-    expect(screen.getByText(/Off the tee is gaining you 0\.8 strokes a round/)).toBeTruthy();
+    // Owner, 2026-10-06: the CoachHelm brief no longer sits under the greeting.
+    expect(screen.queryByText(/Off the tee is gaining you 0\.8 strokes a round/)).toBeNull();
     expect(screen.getByRole('link', { name: 'Message coach' }).getAttribute('href')).toBe('/golf/dashboard/messages?user=coach-maya');
     // Round entry is rebuilt for players (P011), so the button leads there.
     expect(screen.getByRole('link', { name: 'Post a round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
@@ -182,7 +183,7 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     for (const c of ['CH-2201', 'CH-2202', 'CH-2215']) expect(code(c)).not.toBeNull();
     expect(code('CH-2301')).toBeNull();
     expect(code('CH-2310')).toBeNull();
-    expect(screen.queryByRole('heading', { name: 'By part of the game' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Your game' })).toBeNull();
   });
 
   it('CH-2216 scrambling didn’t load: the notice, the other parts stay', () => {
@@ -515,13 +516,15 @@ describe('Player Home · the page’s own contracts (desktop)', () => {
     vi.restoreAllMocks();
   });
 
-  it('20102 Player Home opens with its header, the week beside My latest round, and Scoring and the parts of the game', () => {
+  it('20102 Player Home opens with its header, the week beside Up next and My latest round, and Scoring and the parts of the game', () => {
     show();
     expect(screen.getByRole('heading', { level: 1, name: PREVIEW_PLAYER_HOME.greeting })).toBeTruthy();
     expect(document.body.textContent).toContain(PREVIEW_PLAYER_HOME.todayLabel);
-    expect(screen.getByText(PREVIEW_PLAYER_HOME.brief!)).toBeTruthy();
+    expect(screen.queryByText(PREVIEW_PLAYER_HOME.brief!)).toBeNull();
+    // Up next opens the latest round's pane, so the two columns balance.
+    expect(document.querySelector('[aria-labelledby="ch-round-title"] > .ch-ph-next:first-child')).not.toBeNull();
     const headings = [...document.querySelectorAll('h2')].map((h) => h.textContent);
-    expect(headings).toEqual(['This week', 'My latest round', 'Scoring', 'By part of the game']);
+    expect(headings).toEqual(['This week', 'My latest round', 'Scoring', 'Your game']);
     // The phone Home is not drawn on a wide canvas.
     expect(document.querySelector('.ch-hm')).toBeNull();
   });
@@ -585,7 +588,7 @@ describe('Player Home · the phone, the page’s own contracts', () => {
     const main = document.querySelector('main.ch-hm')!;
     expect(main.getAttribute('aria-label')).toBe('Home');
     const headings = [...main.querySelectorAll('h2')].map((h) => h.textContent);
-    expect(headings.filter((h) => ['This week', 'Today', 'My latest round', 'Scoring', 'By part of the game'].includes(h!))).toEqual(['This week', 'Today', 'My latest round', 'Scoring', 'By part of the game']);
+    expect(headings.filter((h) => ['This week', 'Today', 'My latest round', 'Scoring', 'Your game'].includes(h!))).toEqual(['This week', 'Today', 'My latest round', 'Scoring', 'Your game']);
     expect(document.querySelector('.ch-h-main')).toBeNull();
   });
 

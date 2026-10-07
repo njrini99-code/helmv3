@@ -30,6 +30,8 @@ import { WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { ProposalAnswer } from './ProposalAnswer';
 import { devProgress, devTitle, goalLine } from './dev-format';
+import { chScrollIntoView } from '../../lib/smooth-scroll';
+import { useChReducedMotion } from '../../lib/reduced-motion';
 
 /** Rounds the list shows before "All N rounds". */
 const ROUNDS_SHOWN = 5;
@@ -325,9 +327,10 @@ function Trend({ data }: { data: ChPlayerProfile }) {
 function Rounds({ rounds, open }: { rounds: ChPlayerProfile['rounds']; open: boolean }) {
   const [all, setAll] = useState(open);
   const ref = useRef<HTMLElement>(null);
+  const reduced = useChReducedMotion();
   useEffect(() => {
-    if (open) ref.current?.scrollIntoView({ block: 'start' });
-  }, [open]);
+    if (open) chScrollIntoView(ref.current, reduced);
+  }, [open, reduced]);
   const shown = all ? rounds : rounds.slice(0, ROUNDS_SHOWN);
   return (
     <section className="ch-stm-panel" aria-labelledby="ch-spm-rounds" ref={ref}>

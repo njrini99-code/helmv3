@@ -5,17 +5,18 @@
   display: inline-flex;
   gap: 3px;
   padding: 4px;
+  border-radius: var(--ch-radius-lg);
 }
 .ch-seg--sm {
   padding: 3px;
-  border-radius: 11px;
 }
 .ch-seg__b {
   position: relative;
   height: 30px;
   padding: 0 14px;
   border: 0;
-  border-radius: 8px;
+  /* Concentric with the track: its radius less its padding. */
+  border-radius: calc(var(--ch-radius-lg) - 4px);
   background: transparent;
   /* The unselected label sits on the well's gradient: #6f6a5f measured 4.1:1 there, on every segmented control in
      Clubhouse (aesthetic audit X-1); secondary ink holds 5.4:1 and still reads lighter than the selected green. */
@@ -28,6 +29,7 @@
   transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-seg--sm .ch-seg__b {
+  border-radius: calc(var(--ch-radius-lg) - 3px);
   height: 26px;
   padding: 0 11px;
   font-size: 12.5px;
@@ -47,7 +49,7 @@
 .ch-seg__pill {
   position: absolute;
   inset: 0;
-  border-radius: 8px;
+  border-radius: inherit;
   background: var(--ch-control-bg);
   box-shadow: var(--ch-elevation-control);
 }

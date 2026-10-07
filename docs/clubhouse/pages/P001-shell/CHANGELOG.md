@@ -1,5 +1,9 @@
 # P001 — Shell: changelog
 
+## 2026-10-06 — Smooth scroll and materials
+
+The phone tab bar floats as a glass capsule above the safe area, and the canvas reserves its height. Desktop wheel scrolling eases through the canvas scroller (shared smooth scroll); route changes and Back restoration land instantly. Sidebar brand, nav item and next-event radii are on the scale.
+
 ## 2026-10-06 — Popup geometry and focus styling
 
 Native-dialog menus use their dialog's top layer and reserve keyboard space.

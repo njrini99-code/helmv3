@@ -1,33 +1,34 @@
 'use client';
 
-import { CircleDot, Crosshair, FlagTriangleRight, MoveUpRight, PenLine, type LucideIcon } from 'lucide-react';
+import { PenLine } from 'lucide-react';
 import { useId } from 'react';
-import type { ChLegKey, ChPlayerHome, ChPlayerLeg, ChScoringPoint } from '../../data/player-home';
+import type { ChPlayerHome, ChPlayerLeg, ChScoringPoint } from '../../data/player-home';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Segmented } from '../../ui/Segmented';
 import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
+import { monotonePath } from '../../lib/chart';
 import { formatHcp } from '../roster/format';
 import { useChSessionState } from '../../lib/session-state';
 
 type Span = 5 | 10 | 20;
 const SPANS: Span[] = [5, 10, 20];
 
-const LEG_ICON: Record<ChLegKey, LucideIcon> = { tee: MoveUpRight, approach: Crosshair, short: FlagTriangleRight, putting: CircleDot };
 
 /**
  * The player's game on Home (Player - Home.html `DetailedStats`, and the phone's
- * Scoring and "By part of the game"): the scoring line for the last 5, 10 or 20
+ * Scoring and "Your game"): the scoring line for the last 5, 10 or 20
  * rounds against par and the player's own mean, four figures, one sentence,
  * then the four parts of the game against the Tour where a benchmark exists.
  */
-export function PlayerGame({ data, phone = false }: { data: ChPlayerHome; phone?: boolean }) {
+export function PlayerGame({ data, phone = false, part }: { data: ChPlayerHome; phone?: boolean; part?: 'scoring' | 'legs' }) {
+  // `part`: desktop Home draws Scoring inside its one continuous surface and the parts of the game below it.
   return (
     <>
-      <Scoring data={data} phone={phone} />
-      <Legs legs={data.legs} tour={data.tour} phone={phone} />
+      {part !== 'legs' && <Scoring data={data} phone={phone} />}
+      {part !== 'scoring' && <Legs legs={data.legs} tour={data.tour} phone={phone} />}
     </>
   );
 }
@@ -278,13 +279,13 @@ function Legs({ legs, tour, phone }: { legs: ChPlayerHome['legs']; tour: ChSgTou
       {phone ? (
         // The board's one-line meta beside the title. The stats are the last 10 rounds and each part's strokes gained is the season's: each pill says so to a screen reader, and the desktop's caption in full.
         <div className="ch-hm-sec__h">
-          <h2 id="ch-ph-legs">By part of the game</h2>
+          <h2 id="ch-ph-legs">Your game</h2>
           <span className="ch-hm-meta">Strokes gained {sgBaseline(tour).vs}</span>
         </div>
       ) : (
         <div className="ch-ph-game__h">
           <div>
-            <h2 id="ch-ph-legs">By part of the game</h2>
+            <h2 id="ch-ph-legs">Your game</h2>
             {/* The stats are the last 10 rounds; each part's strokes gained is the season's, against the Tour; a stat with a Tour average draws it as a mark. */}
             <span>Last 10 rounds · strokes gained this season {sgBaseline(tour).vs}</span>
           </div>
@@ -315,9 +316,6 @@ function Leg({ g }: { g: ChPlayerLeg }) {
   return (
     <article className="ch-ph-leg" aria-labelledby={`ch-ph-leg-${g.key}`}>
       <div className="ch-ph-leg__h">
-        <span className="ch-ph-leg__ic" aria-hidden="true">
-          <Icon icon={LEG_ICON[g.key]} size={15} />
-        </span>
         <b id={`ch-ph-leg-${g.key}`}>{g.label}</b>
         {g.sg != null && (
           <span className={'ch-ph-leg__sg ch-num ' + (changeTone(g.sg, false) || 'is-flat')}>
@@ -329,8 +327,8 @@ function Leg({ g }: { g: ChPlayerLeg }) {
       <div className="ch-ph-leg__v">
         <span className="ch-num">{g.value == null ? NO_DATA : fmt(g.value)}</span>
         <em>{g.stat}</em>
-        <Spark data={g.trend} lowerIsBetter={g.lowerIsBetter} label={g.stat} />
       </div>
+      <Spark data={g.trend} lowerIsBetter={g.lowerIsBetter} label={g.stat} />
       {g.value != null && g.bench != null && (
         <div className="ch-ph-bench">
           <span className="ch-ph-bench__t" aria-hidden="true">
@@ -348,27 +346,52 @@ function Leg({ g }: { g: ChPlayerLeg }) {
   );
 }
 
-/** A leg's last rounds, green when it moved the good way and amber when not; a dashed mean. */
+/**
+ * A leg's last rounds across the card: a smooth line over a soft fill, the rounds' average as a faint guide and the
+ * latest round as a dot, green when it moved the good way and amber when not, with the window and the direction in
+ * words underneath. The better direction is always up: fewer putts sit higher.
+ */
 function Spark({ data, lowerIsBetter, label }: { data: number[]; lowerIsBetter: boolean; label: string }) {
+  const gid = useId();
   if (data.length < 2) return null;
-  const w = 84;
-  const h = 28;
-  const p = 4;
-  const lo = Math.min(...data) - 0.4;
-  const hi = Math.max(...data) + 0.4;
-  const x = (i: number) => p + (i * (w - p * 2)) / (data.length - 1);
-  // The better direction is always up: fewer putts sit higher.
-  const y = (v: number) => p + ((lowerIsBetter ? v - lo : hi - v) / (hi - lo)) * (h - p * 2);
+  const w = 240;
+  const h = 44;
+  const pad = 5;
+  const span = Math.max(...data) - Math.min(...data) || 1;
+  const lo = Math.min(...data) - span * 0.18;
+  const hi = Math.max(...data) + span * 0.18;
+  const x = (i: number) => (i * w) / (data.length - 1);
+  const y = (v: number) => pad + ((lowerIsBetter ? v - lo : hi - v) / (hi - lo)) * (h - pad * 2);
   const ch = data[data.length - 1]! - data[0]!;
   const good = lowerIsBetter ? ch < -0.2 : ch > 0.2;
   const bad = lowerIsBetter ? ch > 0.2 : ch < -0.2;
   const mean = data.reduce((a, b) => a + b, 0) / data.length;
   const tone = good ? 'is-gain' : bad ? 'is-loss' : '';
+  const word = good ? 'Improving' : bad ? 'Slipping' : 'Steady';
+  const pts = data.map((v, i) => [x(i), y(v)] as [number, number]);
+  const line = monotonePath(pts);
+  const last = pts[pts.length - 1]!;
   return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className={'ch-ph-spark ' + tone} role="img" aria-label={`${label}, your last ${data.length} rounds, ${good ? 'improving' : bad ? 'slipping' : 'steady'}`}>
-      <line x1={p} x2={w - p} y1={y(mean)} y2={y(mean)} className="ch-ph-spark__mean" />
-      <path d={data.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')} className="ch-ph-spark__line" />
-      <circle cx={x(data.length - 1)} cy={y(data[data.length - 1]!)} r="2.6" className="ch-ph-spark__dot" />
-    </svg>
+    <figure className={'ch-ph-spark ' + tone}>
+      <span className="ch-ph-spark__plot">
+        <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="img" aria-label={`${label}, your last ${data.length} rounds, ${word.toLowerCase()}`}>
+          <defs>
+            <linearGradient id={gid} x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" className="ch-ph-spark__f0" />
+              <stop offset="1" className="ch-ph-spark__f1" />
+            </linearGradient>
+          </defs>
+          <path d={`${line} L${w},${h} L0,${h} Z`} fill={`url(#${gid})`} />
+          <line x1={0} x2={w} y1={y(mean)} y2={y(mean)} className="ch-ph-spark__mean" />
+          <path d={line} className="ch-ph-spark__line" />
+        </svg>
+        {/* The dot is drawn in HTML so the stretched plot doesn't squash it into an oval. */}
+        <i className="ch-ph-spark__dot" style={{ left: `${(last[0] / w) * 100}%`, top: `${(last[1] / h) * 100}%` }} aria-hidden="true" />
+      </span>
+      <figcaption>
+        <span>Last {data.length} rounds</span>
+        <span className="ch-ph-spark__word">{word}</span>
+      </figcaption>
+    </figure>
   );
 }

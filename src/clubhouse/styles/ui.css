@@ -63,17 +63,17 @@
 .ch-btn--secondary {
   color: var(--ch-text-primary);
   background: linear-gradient(180deg, #fefdfa 0%, #f7f5ef 100%);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.12), inset 0 -1px 0 rgb(28 25 18 / 0.06), inset 0 1px 0 #fff,
-    0 1px 2px rgb(28 25 18 / 0.06), 0 3px 6px -3px rgb(28 25 18 / 0.08);
+  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07), inset 0 -1px 0 rgb(28 25 18 / 0.05), inset 0 1px 0 #fff,
+    0 1px 2px rgb(28 25 18 / 0.08), 0 4px 10px -5px rgb(28 25 18 / 0.18);
 }
 .ch-btn--secondary:hover:not(:disabled) {
   background: linear-gradient(180deg, #fefdfa 0%, #f3f1ea 100%);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.2), inset 0 -1px 0 rgb(28 25 18 / 0.06), inset 0 1px 0 #fff,
-    0 2px 4px rgb(28 25 18 / 0.07), 0 6px 12px -6px rgb(28 25 18 / 0.12);
+  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1), inset 0 -1px 0 rgb(28 25 18 / 0.05), inset 0 1px 0 #fff,
+    0 2px 4px rgb(28 25 18 / 0.09), 0 8px 16px -8px rgb(28 25 18 / 0.22);
 }
 .ch-btn--secondary:active:not(:disabled) {
   background: #f5f3ec;
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.18), inset 0 1px 2px rgb(28 25 18 / 0.1);
+  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1), inset 0 1px 2px rgb(28 25 18 / 0.12);
 }
 .ch-btn--ghost {
   color: var(--ch-green-600);
@@ -249,25 +249,42 @@
   height: 21px;
   font-size: 11.5px;
 }
+/* Scorecard marks (owner, 2026-10-06): one physical token in four finishes, so a card of them reads as a set. Each has
+   a lit face, a defined 1px edge, a top highlight and a contact shadow; only colour and shape change. The convention
+   stays: a circle under par, a square over it, red only for under par (D-42), solid for eagle and double or worse. */
+.ch-score--birdie,
+.ch-score--eagle,
+.ch-score--bogey,
+.ch-score--double {
+  font-weight: 600;
+}
 .ch-score--birdie {
-  color: var(--ch-score-under);
+  color: #962e23;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 1.25px currentColor;
+  background: linear-gradient(180deg, #fdeeeb 0%, #f3d3cd 100%);
+  box-shadow: inset 0 0 0 1px rgb(150 46 35 / 0.38), inset 0 1px 0 rgb(255 255 255 / 0.85), 0 1px 2px rgb(120 36 28 / 0.2);
 }
 .ch-score--eagle {
-  color: var(--ch-score-under);
+  color: #fff7f4;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 1.25px currentColor, inset 0 0 0 3.25px var(--ch-bg-surface), inset 0 0 0 4.5px currentColor;
+  background: linear-gradient(180deg, #c4493b 0%, #a1342a 100%);
+  box-shadow: inset 0 0 0 1px rgb(110 30 22 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.25), 0 1px 2px rgb(110 30 22 / 0.35);
 }
 .ch-score--bogey {
-  color: var(--ch-green-600);
-  border-radius: 3px;
-  box-shadow: inset 0 0 0 1.25px currentColor;
+  color: var(--ch-ink-900);
+  border-radius: 7px;
+  background: linear-gradient(180deg, #fffefb 0%, #f1eee6 100%);
+  box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.24), inset 0 1px 0 #fff, 0 1px 2px rgb(28 25 18 / 0.16);
 }
 .ch-score--double {
-  color: var(--ch-green-800);
-  border-radius: 3px;
-  box-shadow: inset 0 0 0 1.25px currentColor, inset 0 0 0 3.25px var(--ch-bg-surface), inset 0 0 0 4.5px currentColor;
+  color: var(--ch-ivory-50);
+  border-radius: 7px;
+  background: linear-gradient(180deg, #3a3832 0%, #1c1b18 100%);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 2px rgb(28 25 18 / 0.3);
+}
+.ch-score--sm.ch-score--bogey,
+.ch-score--sm.ch-score--double {
+  border-radius: var(--ch-radius-xs);
 }
 .ch-score--empty {
   color: var(--ch-ink-300);

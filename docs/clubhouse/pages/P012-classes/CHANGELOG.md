@@ -1,5 +1,9 @@
 # P012 — Classes: changelog
 
+## 2026-10-06 — Smooth scroll and materials
+
+Jumping to a class eases through the shared smooth scroll helper and stays instant with reduced motion.
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Whole-app release audit
 

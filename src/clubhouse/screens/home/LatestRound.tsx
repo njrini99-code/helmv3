@@ -2,7 +2,7 @@
 
 import { AnimatePresence, m } from 'framer-motion';
 import { ArrowRight, ChevronLeft, ChevronRight, Flag } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHoleScore } from '../../data/home';
 import { Avatar } from '../../ui/Avatar';
 import { Button, IconButton } from '../../ui/Button';
@@ -57,7 +57,8 @@ const statsHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${id
  * `mine`: the player's Home ("My latest round", Player - Home.html): a flag in
  * place of the avatar, and My stats in place of the player's stats.
  */
-export function LatestRound({ data, mine = false }: { data: ChCoachHome['latestRounds']; mine?: boolean }) {
+/** `lead`: what opens the pane above the round (the player's Up next on desktop, so the two columns balance). */
+export function LatestRound({ data, mine = false, lead }: { data: ChCoachHome['latestRounds']; mine?: boolean; lead?: ReactNode }) {
   const [i, setI] = useState(0);
   const [dir, setDir] = useState<1 | -1>(1);
   const reduced = useChReducedMotion();
@@ -71,6 +72,7 @@ export function LatestRound({ data, mine = false }: { data: ChCoachHome['latestR
 
   return (
     <section className="ch-h-pane" aria-labelledby="ch-round-title">
+      {lead}
       <div className="ch-h-pane__head">
         <h2 id="ch-round-title">{mine ? 'My latest round' : 'Latest round'}</h2>
         {rounds.length > 1 && (
