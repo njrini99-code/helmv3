@@ -1898,10 +1898,11 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
   color: var(--ch-on-green-ink-muted);
 }
 @media (min-width: 821px) {
-  /* A page with a hero meets the frame without a seam: the canvas drops its ring, so the hero's green runs straight
-     into the sidebar's. The ivory below the hero is the page. */
-  .ch-canvas:has(main[data-canopy]) {
-    box-shadow: none;
+  /* The dashboard is framed (owner, 2026-10-07: "separation from the sidebar, like framing the dashboard"): the
+     canvas sits inset in the deeper frame green with a fine gilt edge and a soft drop, hero and all. */
+  .ch-canvas {
+    margin: 14px 14px 14px 2px;
+    box-shadow: 0 0 0 1px rgb(176 149 96 / 0.55), 0 18px 40px -22px rgb(0 0 0 / 0.7), 0 2px 6px rgb(0 0 0 / 0.25);
   }
 }
 
