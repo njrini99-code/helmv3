@@ -9,9 +9,8 @@
  * ROLLBACK_RECOMMENDED | UNKNOWN with itemized evidence.
  *
  * IT NEVER CALLS A DEPLOY OR ROLLBACK API — same stance as
- * `scripts/release-status.mjs`'s own header ("It never deploys. Promotes
- * are the owner's call") and `config/release-policy.yml`'s
- * `emergency.automatic_override: false`.
+ * `scripts/release-status.mjs`'s own header ("It never deploys") and the
+ * advisory-only posture of `src/lib/admin/release-intel/`.
  *
  * Two input modes:
  *   --live --candidate-sha <sha> --deployed-at <ISO> [--window-hours N]

@@ -1,5 +1,10 @@
 # GolfHelm v3 Design Language
 
+> **RETIRED / legacy (2026-10-07).** This doc teaches the glass/cream language
+> that the live product no longer uses. Use `.claude/rules/design-system.md`,
+> `src/styles/design-tokens.css` and `src/components/fairway/**` (Fairway), or
+> `.claude/rules/clubhouse.md` for `src/clubhouse/**`. Kept for history only.
+>
 > Locked 2026-05-26. The bones are the three manifestos the founder
 > issued: **The Death of Flat UI**, **The Ultimate Premium UI Doctrine**,
 > and **The Premium UX Philosophy System**. This doc encodes those

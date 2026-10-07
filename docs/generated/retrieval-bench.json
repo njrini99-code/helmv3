@@ -354,7 +354,7 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
+      "total_feature_doc_chars": 30150,
       "included_doc_count": 21,
       "stale_doc_count": 0,
       "historical_analogue_hit": true
@@ -378,7 +378,7 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
+      "total_feature_doc_chars": 30150,
       "included_doc_count": 21,
       "stale_doc_count": 0,
       "historical_analogue_hit": true
@@ -402,7 +402,7 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
+      "total_feature_doc_chars": 30150,
       "included_doc_count": 21,
       "stale_doc_count": 0,
       "historical_analogue_hit": true
@@ -426,7 +426,7 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
+      "total_feature_doc_chars": 30150,
       "included_doc_count": 21,
       "stale_doc_count": 0,
       "historical_analogue_hit": true
@@ -450,7 +450,7 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
+      "total_feature_doc_chars": 30150,
       "included_doc_count": 21,
       "stale_doc_count": 0,
       "historical_analogue_hit": true
@@ -474,7 +474,7 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
+      "total_feature_doc_chars": 30150,
       "included_doc_count": 21,
       "stale_doc_count": 0,
       "historical_analogue_hit": true
@@ -498,7 +498,7 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
+      "total_feature_doc_chars": 30150,
       "included_doc_count": 21,
       "stale_doc_count": 0,
       "historical_analogue_hit": true
@@ -522,7 +522,7 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
+      "total_feature_doc_chars": 30150,
       "included_doc_count": 21,
       "stale_doc_count": 0,
       "historical_analogue_hit": true
@@ -546,7 +546,7 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
+      "total_feature_doc_chars": 30150,
       "included_doc_count": 21,
       "stale_doc_count": 0,
       "historical_analogue_hit": true
@@ -570,7 +570,7 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
+      "total_feature_doc_chars": 30150,
       "included_doc_count": 21,
       "stale_doc_count": 0,
       "historical_analogue_hit": true
@@ -594,7 +594,7 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
+      "total_feature_doc_chars": 30150,
       "included_doc_count": 21,
       "stale_doc_count": 0,
       "historical_analogue_hit": true
@@ -618,7 +618,7 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
+      "total_feature_doc_chars": 30150,
       "included_doc_count": 21,
       "stale_doc_count": 0,
       "historical_analogue_hit": true
@@ -642,7 +642,7 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
+      "total_feature_doc_chars": 30150,
       "included_doc_count": 21,
       "stale_doc_count": 0,
       "historical_analogue_hit": true
@@ -666,7 +666,7 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
+      "total_feature_doc_chars": 30150,
       "included_doc_count": 21,
       "stale_doc_count": 0,
       "historical_analogue_hit": true
@@ -690,7 +690,7 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
+      "total_feature_doc_chars": 30150,
       "included_doc_count": 21,
       "stale_doc_count": 0,
       "historical_analogue_hit": true
@@ -754,7 +754,7 @@
     "recall_at_10_full": 0.7,
     "recall_at_5_feature_docs_only": 0.7,
     "recall_at_10_feature_docs_only": 0.7,
-    "irrelevant_token_rate": 0.17189948255159676,
+    "irrelevant_token_rate": 0.17174227630467645,
     "stale_context_rate": 0,
     "historical_analogue_retrieval_rate": 0.5
   }

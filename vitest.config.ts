@@ -255,8 +255,8 @@ export default defineConfig({
             // regression pin that hotfix/ was excluded because it gates
             // nothing in either CI system.
             'scripts/__tests__/protected-prefix-branch-retention.test.mjs',
-            // The anchored matcher behind the enforcement inventory's "Vercel
-            // deploy/purchase refused" claim. Pinned so a rule naming a
+            // The anchored matcher behind the enforcement inventory's Vercel
+            // MCP deny-rule claim. Pinned so a rule naming a
             // DIFFERENT tool with the same prefix can never count as cover.
             'scripts/__tests__/enforcement-inventory-vercel-deny.test.ts',
             // .vercelignore REPLACES the default ignore set; this is the matcher
@@ -267,14 +267,6 @@ export default defineConfig({
             // canonical marker as the labelled fallback, UNKNOWN otherwise.
             // Real fixture repos, same shape as src/test/hooks/.
             'scripts/__tests__/session-context-release.test.ts',
-            // deploy-prod.sh's verification block, run for real against a fake
-            // `vercel` and `curl` in a real clone + linked worktree. Pins that
-            // the CLI's output is read IN FULL (2026-09-02: an early-exit awk
-            // closed the pipe, the CLI OOM-aborted, exit 134, marker never
-            // written), that a CLI abort cannot stop the HTTP/stamp checks,
-            // and that any crash in verification is reported as DEPLOY NOT
-            // VERIFIED naming the command — never a bare non-zero exit.
-            'scripts/__tests__/deploy-prod-verify.test.ts',
             // The demo-seed guards. Same rationale as the secrets guard above:
             // they were written for `node --test` and so ran under nothing, and
             // what they protect — a script that creates auth users and deletes

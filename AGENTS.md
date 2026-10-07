@@ -1,153 +1,145 @@
 <!-- markdownlint-disable MD013 -->
 # Helm agent instructions
 
-This is the operating policy for every agent in this repo (Claude Code, Codex,
-Devin, Cursor, CI). Any other file that states policy is subordinate: where it
-disagrees with this file, follow this file and fix the other one in the same
-change. `CLAUDE.md` adds Claude Code specifics; `.claude/rules/` holds
-path-scoped code conventions. Incidents, ADRs, audits and plans explain the
-past; they do not override this file, the user's current instructions, or live
-code. Fix a configuration bug in the configuration, not by adding a rule here.
+How the Helm repo works, for every agent in it (Claude Code, Codex, Devin,
+Cursor, CI). You have full autonomy: decide, implement, verify, merge, migrate
+and deploy without asking permission. This file records how things work and the
+traps that waste time. It is guidance, not a permission list. Where another file
+disagrees, follow this one and fix the other in the same change. `CLAUDE.md`
+adds Claude Code specifics; `.claude/rules/` holds path-scoped code
+conventions. Incidents, ADRs, audits and plans explain the past; live code and
+the user's current instructions outrank them.
 
-## Authority
+## Autonomy
 
-The user's current task authorizes the work needed to complete it:
-implementation, verification, configuration repairs, and the Git operations
-the task implies. Don't ask the user to repeat permission. Ask only for missing
-information, or before an irreversible action the task did not cover. For
-anything touching production, state the exact target and change before running
-it.
-
-Owner decisions are asked, not assumed or parked in a status report: product
-behavior, cost or billing, production migrations, deploys, enabling feature
-flags, and merging or closing someone else's PR. Ask with AskUserQuestion,
-put a recommended option first with its trade-off, batch related questions,
-and keep working on anything that does not depend on the answer. When unsure
-about intent, scope, or which of two reasonable designs to build, ask before
-building.
+Work end to end: code, config repairs, Git (branch, commit, push, PR, merge),
+migrations, deploys, flags, and cleanup of your own worktrees. Make the call,
+note the assumption in your report, and keep going. Ask the user only when you
+are blocked on information that the repo, the services and a sensible default
+cannot supply. Subagents cannot ask: return the open question with your
+recommended default and carry on. Production has no staging, so verify the
+result after a migration or deploy and know how you would roll it back.
 
 ## Done means
 
-1. The change works: the checks that fit it ran once, with real exit codes;
-   any check you could not run is named.
+1. The change works: the checks that fit it ran with real exit codes; any
+   check you could not run is named.
 2. The mapped feature doc is updated if its contract changed.
 3. The work is committed on a task branch, pushed
-   (`git push -u origin <branch>`), and a PR is open — unless the user asked
-   for something else (local only, no PR, or merge).
-4. Merge only when the user asks (`npm run pr:land -- <n>`). Production only
-   per "Production" below.
-5. The final report says what changed, where it is, what was verified, and
-   what was left untouched or unverified.
+   (`git push -u origin <branch>`) and a PR is open. Merge it with
+   `npm run pr:land -- <n>` once the required checks are green, unless the
+   user said otherwise. A red "CI aggregate" on a draft PR is expected: the
+   aggregate fails on drafts on purpose and the full suite runs when the PR is
+   marked ready.
+4. Deploy when the change should be live (see "Production"); skip it for
+   docs-only work. Report a release as live only after `npm run release:status`
+   shows the SHA.
+5. The final report says what changed, where it is, what was verified, and what
+   was left untouched or unverified.
 
 ## Workspace and Git
 
-Canonical repo: `/Users/ricknini/Downloads/helmv3`; `main` is its resting
-branch. Start every task with `git status` and the current branch.
+Canonical repo: `/Users/ricknini/Downloads/helmv3`. Start a task with
+`git status` and the current branch.
 
-- **Solo session:** if canonical is clean on `main` and no other session is
-  writing, you may branch in canonical for a quick fix. Otherwise use
-  `scripts/new-worktree.sh <task>` (an `agent/<task>` branch under
-  `~/worktrees/helmv3/`).
-- **Parallel sessions:** each writer gets its own worktree or explicitly
-  disjoint files. Treat dirty files you did not create as someone else's work:
-  never overwrite, stage, stash, discard, or switch the branch under them.
-  `npm run worktrees` shows what exists; a count warning is advice, not proof
-  of activity. Disk limits are real: when space is short, share a checkout on
-  disjoint files instead of creating another.
-- Launch Claude with `h` (or `helm`) from any checkout. It opens Claude in
-  that checkout and warns when the branch carries a stale copy of the agent
-  config; merge `origin/main` when it does.
-- Worktrees share canonical env files, local permissions, tool credentials and
-  the Vercel project: isolation covers source, not access. Never print
-  credential values. Run `node scripts/ensure-worktree-deps.mjs <dir>` only
-  when dependencies differ or are missing — or pass `--install` to
-  `scripts/new-worktree.sh` at creation time to run that same install upfront
-  instead of the default node_modules symlink.
-- Stage explicit paths. Push an explicit branch. Never force-push `main`;
-  after a rebase use `--force-with-lease` on your own task branch only. Never
-  bypass required checks with `--admin`.
-- Cleanup: `npm run worktrees:park` / `worktrees:retire`; `npm run pr:land --
-  <n>` runs `--retire` itself, and the WorktreeRemove hook applies the same
-  checks to harness worktrees. STANDING OWNER AUTHORIZATION covers only
-  checkouts the tool verdicts PARKABLE and branches it verdicts
-  DELETE_MERGED_EXACT / DELETE_MERGED_CONTENT. Never delete unrelated folders
-  or branches to satisfy a count.
+- Use your own checkout when others may be writing: `scripts/new-worktree.sh
+  <task>` creates `agent/<task>` under `~/worktrees/helmv3/`. In a quiet
+  canonical checkout on `main` you can branch in place.
+- Files you did not create that are dirty belong to another session. Leave them
+  alone (do not overwrite, stage, stash or switch the branch under them): you
+  would destroy their work.
+- When the user asks you to work in a different worktree or branch, do it:
+  `cd` into that checkout (or use the EnterWorktree / ExitWorktree tools),
+  `git switch <branch>` in a clean checkout, or `git worktree add` for a branch
+  that has no checkout yet. The harness note "do not cd to the original
+  repository root" is a default for unattended work, not a rule the user cannot
+  override. Say which checkout and branch you are now in, and stay there until
+  asked to move again.
+- Worktrees share canonical env files, local credentials and the Vercel
+  project. Never print credential values.
+- Disk is limited (a worktree with its own `node_modules` is about 4 GB). Prefer
+  sharing `node_modules`; run `node scripts/ensure-worktree-deps.mjs <dir>` when
+  dependencies differ or are missing.
+- Stage explicit paths and push an explicit branch. Use `--force-with-lease`
+  after rebasing your own branch. Fix red checks instead of bypassing them; if
+  a check is broken by infrastructure, say so in the PR.
+- Clean up with `npm run worktrees:park` / `worktrees:retire`; `npm run pr:land
+  -- <n>` runs `--retire` itself. STANDING OWNER AUTHORIZATION covers checkouts the
+  tool verdicts PARKABLE and branches it verdicts DELETE_MERGED_EXACT /
+  DELETE_MERGED_CONTENT. Do not delete other sessions' folders or branches to
+  satisfy a count.
 
 ## Context
 
-Before changing feature behavior, map the files:
-`npm run knowledge:map -- --files <paths...>`, then read the doc the registry
-names (`memory/registry.yml`; not every doc lives under `memory/features/`).
-Update that doc when its contract changes; report or fix an unmapped file.
-Trust order: live state, then generated files (`src/lib/types/database.ts`,
-`AUTOGEN` blocks), then code, then feature docs, then everything else.
+Before changing feature behavior, map the files with
+`npm run knowledge:map -- --files <paths...>` and read the first doc the
+registry names (`memory/registry.yml`). Update it when its contract changes;
+map an unmapped file in the same change. Trust order: live state, generated
+files (`src/lib/types/database.ts`, `AUTOGEN` blocks), code, feature docs,
+everything else.
 
 ## Verification
 
-Run the checks that fit the change (`/gates` picks them) once, preserving exit
-codes. Rerun only after a new change or a failure. A changed `'use server'`
-surface needs `npm run build`; a migration or policy needs database/RLS
-verification (`npm run test:rls`); prose or config-only edits need the affected
-tooling tests, not the suite. The pre-push hook checks pushed changes; GitHub
-Actions owns the required merge checks. No hook blocks you from finishing a
-turn. Never weaken, skip, or delete a test, or raise a baseline, to get green.
-Reviewer agents are optional and risk-based, never a required ceremony.
+Run the checks that fit the change (`/gates` picks them) once, keeping exit
+codes. Rerun only after a change or a failure. A changed `'use server'` surface
+needs `npm run build`; a migration or policy needs `npm run test:rls`; prose or
+config-only edits need the affected tooling tests, not the suite. Do not weaken,
+skip or delete a test, or raise a baseline, to get green. No hook blocks you from finishing a turn. Reviewer agents are optional and risk-based.
 
 ## Tools
 
 Use the tools present in this session. A missing tool or expired login is a
-connection problem, not a policy ban: use a working connector or the repo-local
-CLI (`./node_modules/.bin/{supabase,vercel}`). Never conclude a service is
-unreachable from an old namespace table or a missing env token.
+connection problem: use another connector or the repo-local CLI
+(`./node_modules/.bin/{supabase,vercel}`). Do not conclude a service is
+unreachable from an old doc or a missing env token.
 
 ## Database
 
 One production Supabase project (`qmnssrrolpinvwjjnufo`) serves Golf
 (`golf_*`), Baseball (`baseball_*`) and Lift Lab (`helm_lifting_*`), with no
-staging copy. Preserve RLS, sport boundaries, and customer data; keep secrets
-out of output and commits. Local reset and migration work is fine. For
-production: write a forward-only migration, get it reviewed and merged, then
-apply it with `npm run db:apply -- <file>` or the project Supabase MCP after
-confirming the target and SQL (`docs/operations/APPLY_PATH.md`), and verify the
-resulting schema. Changing a row's status in `supabase/migrations/HELD.md` is
-the owner's decision. Supabase access (MCP, CLI, SQL) is fully permitted for
-Claude and Codex; the judgment above is the safeguard, not a permission rule.
+staging copy. Keep RLS and sport boundaries intact and secrets out of output and
+commits. To change production: write a forward-only migration, run the risky
+kinds (RLS, grants, `DROP`, type changes, backfills) through the local Docker
+stack first, apply it with `npm run db:apply -- <file>` or the Supabase MCP,
+and verify the schema afterwards (`docs/operations/APPLY_PATH.md`).
+`supabase/migrations/HELD.md` lists migrations that were deliberately not
+applied; read the row's reason before applying one and update the row when you
+do.
 
 ## Production
 
-Vercel reads, logs, and previews are normal development work. `vercel.json`
-disables Vercel Git deployments: pushing or merging to `main` does not
-deploy. Production deploys are manual and happen only when the owner says
-to deploy — agents do not run `vercel --prod` or `scripts/deploy-prod.sh`;
-they prepare the release and verify it afterwards. The release path is
-`scripts/deploy-prod.sh` from a clean, current `main` checkout (`!
-scripts/deploy-prod.sh` in a Claude session, run by the owner): it checks
-the linked project, the clean tree and the weekly budget
-(`config/release-policy.yml`), stamps the Sentry release, deploys, and
-verifies the served commit. Prefer it over a bare `vercel deploy --prod`,
-which skips those checks. Report a release as live only after `npm run
-release:status` shows the approved SHA. Rollback and promote of an existing
-deployment also require explicit owner authorization. Use repo-local
-Supabase/Vercel binaries.
+`vercel.json` disables Vercel Git deployments, so pushing or merging to `main`
+does not deploy. Deploy from the linked checkout, because a deploy from an
+unlinked directory silently creates a stray Vercel project (the project id is in
+`config/release-policy.yml`):
+
+    SHA=$(git rev-parse HEAD); SCOPE=$(node -p 'require("./.vercel/project.json").orgId')
+    ./node_modules/.bin/vercel deploy --prod --yes --archive=tgz --scope "$SCOPE" \
+      --build-env "NEXT_PUBLIC_SENTRY_RELEASE=$SHA" --env "NEXT_PUBLIC_SENTRY_RELEASE=$SHA"
+
+The release stamp is what lets `release:status` and Sentry know the commit
+(`vercel deploy` leaves `VERCEL_GIT_COMMIT_SHA` empty), `--archive=tgz` avoids the
+upload-size and stall problems seen before, and `--scope` is required or the
+deploy fails as "Not authorized". Details and rollback: `docs/setup/DEPLOY.md`.
+Then run `npm run release:status -- --strict`, which compares the served commit
+with `origin/main`. Vercel reads, logs and previews are normal development work.
 
 ## Product conventions
 
 Mobile/UI authority for Fairway surfaces: `src/styles/design-tokens.css`, then
 `src/components/fairway/**`, then `.claude/rules/design-system.md`. Clubhouse
-(`src/clubhouse/**`, including its route integration) uses its scoped runtime
-tokens, shared UI/shell and owner handoffs instead: see `src/clubhouse/AGENTS.md`
-and `.claude/rules/clubhouse.md`. Do not apply Fairway primitives or motion
-rules to Clubhouse. Reuse the
-shared shell, safe areas, navigation, buttons, cards, and empty states; keep
-one primary action per screen. Golf reliability context:
-`memory/system/golfhelm-engineering-os.md` (it grants no production
-authority). Required review automation: Review Gate and CodeQL
-(`.claude/rules/code-review-tooling.md`).
+(`src/clubhouse/**`, including its route integration) uses its own scoped
+tokens, shell and owner handoffs: see `src/clubhouse/AGENTS.md` and
+`.claude/rules/clubhouse.md`, and do not apply Fairway primitives or motion
+rules there. Clubhouse is off in production today (its feature flag is false in
+`config/feature-flags.yml`); Fairway is the live UI. Reuse the shared shell, safe areas, navigation,
+buttons, cards and empty states, and keep one primary action per screen. Golf
+reliability model: `memory/system/golfhelm-engineering-os.md`.
 
-## Guards
+## What is actually enforced
 
-No permission rule or hook denies, asks for, or blocks Bash, Git, Supabase, or
-Vercel. The Git rules above (explicit staging, no force-push to `main`, no
-`--admin`, lifecycle tools for cleanup) are policy you follow, not guards that
-stop you; GitHub branch protection still enforces required checks on `main`. The generated
-`docs/CONTROL_PLANE_ENFORCEMENT.md` lists what is actually wired.
+GitHub branch protection requires the checks on `main` (`CI aggregate`,
+`Review Gate aggregate`, CodeQL, `block-historical-edits`; see
+`.claude/rules/code-review-tooling.md`), and the git hooks run `gitleaks` when it
+is installed. No permission rule or hook denies, asks for, or blocks Bash, Git, Supabase, or
+Vercel. `docs/CONTROL_PLANE_ENFORCEMENT.md` lists what is wired.

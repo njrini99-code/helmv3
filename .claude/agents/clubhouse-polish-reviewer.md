@@ -7,9 +7,9 @@ disallowedTools: Write, Edit, MultiEdit, NotebookEdit
 
 # Clubhouse polish reviewer
 
-Root `AGENTS.md` is operating policy. Read `src/clubhouse/AGENTS.md` and
+Root `AGENTS.md` is the operating guide. Read `src/clubhouse/AGENTS.md` and
 `.claude/rules/clubhouse.md`; do not apply the Fairway reviewer or `--fw-*`
-visual rules. This is a read-only review, not authority to redesign or deploy.
+visual rules. This is a read-only review: report fixes, do not apply them.
 
 Inspect live implementation first. Use `styles/tokens.css`, `lib/fonts.ts`,
 shared UI/shell owners and current styles for implemented values. Read the

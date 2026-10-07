@@ -76,13 +76,12 @@ This table reports hard refusal only; an UNENFORCED row does not grant task auth
 | The Supabase CLI migration path is refused | NONE | — | UNENFORCED |
 | Account-wide Supabase MCP mutation is refused (display-name spelling `mcp__claude_ai_Supabase__*`) | NONE | — | UNENFORCED |
 | Account-wide Supabase MCP mutation is refused (UUID spelling the session exposes) | NONE | — | UNENFORCED — the connector id is recorded but no deny rule names it |
-| A production deploy, purchase, pause or deployment-protection change through the Vercel MCP is refused | NONE | — | UNENFORCED |
+| A production deploy, purchase, pause or deployment-protection change through the Vercel MCP is refused | NONE | — | UNENFORCED, BY DESIGN — agents may deploy through the Vercel connector (AGENTS.md "Production") |
 | A file write or process spawn through the Desktop Commander MCP is refused | NONE | — | UNENFORCED — Desktop Commander bypasses guard-canonical-write.mjs and the Bash sandbox |
 | The uninstalled Supabase plugin namespace cannot activate on install | NONE | — | UNENFORCED |
 | Arbitrary SQL against production through MCP is refused | NONE | — | UNENFORCED, KNOWINGLY — the only working query path; no read_only enforcement on it |
 | Direct psql / service-role writes to production are refused | NONE | — | UNENFORCED — guard-sql.sh deleted 2026-08-27; SUPABASE_SERVICE_ROLE_KEY carries write capability |
-| A production deploy typed as a vercel command (`deploy --prod`, `promote`, `rollback`) is refused | NONE | — | UNENFORCED, BY OWNER GRANT — e5ec5e7b8 (2026-09-01) removed these rules so scripts/deploy-prod.sh is the one sanctioned promote path; AGENTS.md still forbids a production action the user did not ask for |
+| A production deploy typed as a vercel command (`deploy --prod`, `promote`, `rollback`) is refused | NONE | — | UNENFORCED, BY DESIGN — agents deploy directly with ./node_modules/.bin/vercel deploy --prod (AGENTS.md "Production"); Git deployments stay disabled in vercel.json |
 | Re-pointing the production alias (`vercel alias set`) is refused | NONE | — | UNENFORCED |
-| A production deploy run through scripts/deploy-prod.sh is refused | NONE | — | UNENFORCED — scripts/deploy-prod.sh runs `vercel deploy --prod` in a child process; deny rules match the submitted command, which is the script. NOT probed: the only probe is a real production deploy |
 
 <!-- AUTOGEN:enforcement:end -->

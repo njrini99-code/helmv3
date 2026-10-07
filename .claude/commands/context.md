@@ -1,5 +1,5 @@
 ---
-description: Build a feature-context pack for the given files/task and load the mapped docs
+description: Build a feature-context pack for the given files/task and load the first mapped doc
 ---
 
 `/context <paths...>` — map the given files to their governed features, then
@@ -10,7 +10,7 @@ npm run knowledge:map -- --files <paths...>
 npm run knowledge:context -- --files <paths...> --task "<task>"
 ```
 
-Then read every doc the map step names (not all live under `memory/features/`) before making
-or reviewing any change to those paths. If a path maps to nothing in
-`memory/registry.yml`, say so explicitly instead of proceeding silently —
-that is a registry gap, not a green light to skip context.
+Read the first doc the map step names (not all live under `memory/features/`),
+and open further ones only when the task needs them. If a path maps to nothing
+in `memory/registry.yml`, say so: that is a registry gap to map in the same
+change, not a reason to skip context.

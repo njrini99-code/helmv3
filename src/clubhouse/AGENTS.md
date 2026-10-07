@@ -1,8 +1,8 @@
 # Clubhouse UI guidance
 
-Root `AGENTS.md` remains the operating policy. This file makes the Clubhouse
-exception available to agents working in this tree; it adds no Git, service or
-production permissions. Read `.claude/rules/clubhouse.md` for the scoped rules,
+Root `AGENTS.md` remains the operating guide. This file covers the Clubhouse
+exception for agents working in this tree (Clubhouse is off in production today;
+Fairway is the live UI). Read `.claude/rules/clubhouse.md` for the scoped rules,
 `docs/clubhouse/README.md` for the workflow and `docs/clubhouse/MOBILE.md` for
 phone behavior. Fairway's primitives, tokens and motion rules do not apply here.
 
@@ -13,7 +13,7 @@ the owner's references in `design/handoff/`. Runtime values come from
 are references, not a reason to restore behavior superseded by owner revisions.
 `DESIGN.md` at the repo root and `docs/clubhouse/UI_OWNERSHIP.md` index these
 owners. Follow the existing approved design; new phone designs still follow
-the owner-approval workflow in `.claude/rules/clubhouse.md`.
+the phone-design workflow in `.claude/rules/clubhouse.md`.
 
 ## Current shared exemplars
 
@@ -50,5 +50,5 @@ course/welcome implementation rather than applying routine-route timing.
 When review is useful, `.claude/agents/clubhouse-polish-reviewer.md` supplies the
 Clubhouse checklist. Reviewers are optional and risk-based. Keep source
 inspection, browser observations, emulated viewports, physical-device testing
-and owner acceptance distinct. Record only observed evidence in VERIFY and
+and owner acceptance distinct (say which you did). Record only observed evidence in VERIFY and
 move release gates only with the evidence required by the page contract.

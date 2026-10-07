@@ -2,7 +2,7 @@
 # CLAUDE.md — Claude Code adapter
 @AGENTS.md
 
-AGENTS.md is the policy. This file adds Claude Code specifics only.
+AGENTS.md is the operating guide. This file adds Claude Code specifics only.
 
 ## What this is
 Helm Sports Labs: GolfHelm (+ CoachHelm AI), BaseballHelm, Lift Lab.
@@ -31,6 +31,22 @@ and `AUTOGEN:*` blocks in `memory/` (never hand-edit inside one).
     npm run docs:check             # generated docs, drift, enforcement inventory
     npm run doctor / repo:doctor / release:status
 
+## Traps that waste time
+- zsh errors on unmatched globs: quote them (`--include='*.ts'`). macOS has no
+  `timeout`. Run slow checks (`build`, full `test`) in the background to a log
+  file and read it; a foreground call stops at 10 minutes.
+- Read big files with `offset` and `limit` (`golf.ts` is over 10,000 lines).
+- Read `src/lib/types/database.ts` before writing SQL; guessing column names
+  is the most common SQL failure.
+- Server code logs with `logServerError` / `logServerEvent`
+  (`src/lib/server-error-logger.ts`) and wraps actions with
+  `src/lib/admin/observed-action.ts`.
+- Subagents cannot use `AskUserQuestion` or slash commands and receive no hook
+  output; brief them fully and have them return open questions with a default.
+- Switching checkouts is allowed when the user asks: `cd` to the other
+  worktree, `git switch` in a clean checkout, or EnterWorktree / ExitWorktree.
+  No hook or permission rule blocks it; only another session's dirty files do.
+
 ## Slash commands
 `/context` feature docs · `/gates` pick checks · `/worktree` isolate ·
 `/land` merge + sync + retire · `/status` repo health · `/held` held
@@ -49,6 +65,7 @@ multi-agent PR review · `/helm-fix-ci` red CI on agent PRs.
 | `security-reviewer` | auth, RLS, PII, API routes, storage, secrets |
 | `db-migration-reviewer` | schema, RLS, grants, or migrations headed to production |
 | `ui-polish-reviewer` | Fairway UI/UX review of a changed screen |
+| `clubhouse-design-reviewer`, `clubhouse-polish-reviewer` | Clubhouse design and polish review |
 
 Skills: `finish-task` (definition of done and green-gate traps),
 `helm-supabase` (Supabase client and query traps), `helm-sentry` (read-only

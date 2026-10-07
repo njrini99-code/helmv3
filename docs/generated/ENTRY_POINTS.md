@@ -18,7 +18,7 @@ Repo-local commands, agents, and skills — one line each, from each entry's own
 | `ui-polish-reviewer` | Agent | UI/UX review of Helm screens against the Fairway design system — hierarchy, density, loading/empty/error states, motion, accessibility, mobile behavior, and reuse of src/components/fairway… |
 | `verifier` | Agent | Independent check that a completion claim is true — reads the diff and runs the fitting gates itself instead of trusting the implementer's summary. Use before reporting a risky, broad, schema, auth,… |
 | `/cleanup-db` | Command | Report (never change) Supabase tables and columns with no references in code, SQL, or infra |
-| `/context` | Command | Build a feature-context pack for the given files/task and load the mapped docs |
+| `/context` | Command | Build a feature-context pack for the given files/task and load the first mapped doc |
 | `/gates` | Command | Run the checks relevant to the changed behavior and report real exit codes |
 | `/held` | Command | List migrations still on HOLD in supabase/migrations/HELD.md (read-only) |
 | `/land` | Command | Land a PR through the sole landing script and report the result |

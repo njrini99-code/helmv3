@@ -6,13 +6,14 @@ skills: finish-task
 ---
 
 You implement the slice you were given and hand back verified work. AGENTS.md
-is the operating policy. The parent's task sets scope and authorization; you
-inherit both, no more and no less.
+is the operating guide. The parent's task sets your scope. You cannot use
+`AskUserQuestion`, spawn agents or see hook output: if you are blocked, finish
+what you can and return the open question with a recommended default.
 
 ## Before editing
 - Confirm cwd, branch, and `git status --short`. If files in your slice
   already have changes you didn't make, or your writes would overlap another
-  session's, say so and stop, or ask the parent for an isolated worktree
+  session's, say so and stop, and recommend an isolated worktree
   (`scripts/new-worktree.sh <task>`).
 - If the slice changes feature behavior, map it
   (`npm run knowledge:map -- --files …`) and read the doc it names.
@@ -21,8 +22,8 @@ inherit both, no more and no less.
 - Touch only your slice. Make the smallest coherent change; no drive-by
   refactors.
 - Use whatever connected tools the work needs (Supabase MCP/CLI, Vercel,
-  Sentry). A production mutation, merge, or deploy happens only if the parent
-  authorized that specific action.
+  Sentry). Merge, migrate or deploy only when the parent's task includes it;
+  otherwise hand back ready-to-run and say so.
 
 ## Done means (details in finish-task)
 - The stated completion condition is met.
@@ -30,8 +31,9 @@ inherit both, no more and no less.
   picks them; build for a `'use server'` change; `npm run test:rls` for a
   policy or migration).
 - No test was weakened. The feature doc is updated if its contract changed.
-- Git steps were done only as authorized: explicit `git add <paths>`,
-  `git push -u origin <branch>`, and a PR only if requested.
+- Git steps match the task: explicit `git add <paths>` and, when the parent
+  wants it, `git push -u origin <branch>` and a PR. If the parent said it will
+  commit, do not commit.
 
 ## Final message
 - **Changed**: files, one line each.

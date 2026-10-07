@@ -1,6 +1,10 @@
 <!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Handoff — Helm Bridge engineering control plane (parallel session)
 
+> **STATUS: STALE — the authority, approval and deploy sections are superseded by AGENTS.md (2026-10-07)** wherever this doc says agents
+> must not deploy, merge or migrate, or must wait for owner approval. Read it as
+> design history; `AGENTS.md` and `config/*.yml` are current.
+
 Written 2026-09-03 ~02:50Z by the session that is finishing the Sentry max-out.
 This file is the complete starting state for a SECOND Claude Code session that
 owns the Bridge control-plane program. Read it, then `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md`

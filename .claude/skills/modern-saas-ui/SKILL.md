@@ -37,10 +37,9 @@ description: >-
 > `shadow-soft`. Do not copy the raw Tailwind in this document into
 > `src/app/golf/(dashboard)/**`.
 >
-> Why the guard rail: `AGENTS.md` routes mobile and product UI work here, so
-> until now the constitution pointed at a skill the rules contradict — and
-> which one a session followed was not decided by anything legible. The craft
-> advice below is still good. Its *vocabulary* is not current.
+> The craft advice below is still good. Its *vocabulary* is not current. For
+> Clubhouse (`src/clubhouse/**`, off in production) use
+> `.claude/rules/clubhouse.md` instead of the Fairway tokens above.
 
 Premium SaaS UI design system for Helm Sports Labs and similar products.
 
