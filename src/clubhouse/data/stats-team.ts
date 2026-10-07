@@ -64,7 +64,7 @@ export interface ChFigure {
 export type ChGauge =
   | { kind: 'sg' }
   | { kind: 'par'; toPar: number | null }
-  | { kind: 'rate'; ref?: number | null }
+  | { kind: 'rate'; ref?: number | null; refLabel?: string }
   | { kind: 'putts' }
   | { kind: 'holes' };
 

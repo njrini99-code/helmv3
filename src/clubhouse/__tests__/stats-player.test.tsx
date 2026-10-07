@@ -910,6 +910,9 @@ describe('Stats player · the page', () => {
     expect(screen.getByRole('link', { name: 'Team stats' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Add focus area' })).toBeTruthy();
     expect(screen.getByTestId('trail').textContent).toBe('Stats › Jonah Okafor');
+    // Each overview figure drawn against the reference its words name: the team's mark for a coach, 36 putts, par for the best round.
+    const marks = [...document.querySelectorAll('.ch-fg__c')].map((c) => c.querySelector('.ch-fg__gauge em')?.textContent ?? null);
+    expect(marks).toEqual(['Team', 'Team', '36', 'Team', 'Par']);
   });
 
   it("50104 a coach's Message opens the direct thread with this player, on desktop and on the phone; a player's profile has none", () => {

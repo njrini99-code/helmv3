@@ -162,7 +162,7 @@ export function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
         <i className="is-gain" style={{ left: 0, width: pct(n) }} />
         {gauge.ref != null && <b style={{ left: pct(gauge.ref) }} />}
       </span>
-      {gauge.ref != null && <em style={{ left: pct(gauge.ref) }}>Tour</em>}
+      {gauge.ref != null && <em style={{ left: pct(gauge.ref) }}>{gauge.refLabel ?? 'Tour'}</em>}
     </span>
   );
 }
