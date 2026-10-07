@@ -361,6 +361,16 @@
 .ch-fg__c--lead .ch-fg__v {
   font-size: 48px;
 }
+/* Team stats reads as one line of figures: every value sits on the lead's 48px line (the supporting values at its foot,
+   sharing its baseline), and every gauge follows its words directly, so the six gauges share one line under the words
+   instead of dropping to the row's foot with a gap above them (owner, 2026-10-07). */
+.ch-fg--lead .ch-fg__group .ch-fg__v {
+  min-height: 48px;
+  align-items: flex-end;
+}
+.ch-fg--lead .ch-fg__gauge {
+  margin-top: 0;
+}
 /* A strokes gained change against the previous 10: the chip, then the words. */
 .ch-sgchg {
   display: inline-flex;
@@ -1836,9 +1846,13 @@ a.ch-lg__r:focus-visible {
   .ch-fg__group .ch-fg__l {
     grid-area: label;
   }
-  .ch-fg__group .ch-fg__v {
+  .ch-fg__group .ch-fg__v,
+  .ch-fg--lead .ch-fg__group .ch-fg__v {
     grid-area: value;
     justify-self: end;
+    /* As rows, the value sits beside its words: the wide layout's 48px line does not apply. */
+    min-height: 0;
+    align-items: baseline;
     font-size: 30px;
   }
   .ch-fg__group .ch-fg__d {

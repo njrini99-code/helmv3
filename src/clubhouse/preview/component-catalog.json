@@ -5683,6 +5683,7 @@
         "ch-hl-prop__r",
         "ch-hl-prop__t",
         "ch-hl-pulse",
+        "ch-hl-pulse__clear",
         "ch-hl-pulse__ic",
         "ch-hl-pulse__none",
         "ch-hl-pulse__sk",
@@ -8287,7 +8288,7 @@
           "name": "--ch-fg-h",
           "value": "208px",
           "scope": "@container (max-width: 900px) → .ch-fg.ch-fg--lead",
-          "line": 1815
+          "line": 1825
         }
       ]
     },

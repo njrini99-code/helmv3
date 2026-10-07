@@ -564,7 +564,25 @@
  * pulse of more rows than that (the phone's single column past three) grows the card, which is the one case that shifts.
  */
 .ch-hl-pulse__slot {
+  display: flex;
+  flex-direction: column;
   min-height: var(--ch-hl-pulse-h, 197px);
+}
+/* The all-clear at the foot of the held space (every read came in, four items or fewer): a quiet ruled line, so the
+   card's reserved room reads as a finished statement instead of a gap. Two classes: base.css's `.ch-root p` zeroes margins. */
+.ch-hl-pulse .ch-hl-pulse__clear {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: auto;
+  padding: 14px 0 2px;
+  border-top: 1px solid rgb(28 25 18 / 0.07);
+  font: 400 13px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-hl-pulse__clear svg {
+  flex: none;
+  color: var(--ch-chart-gain);
 }
 .ch-hl-pulse__sk {
   display: flex;

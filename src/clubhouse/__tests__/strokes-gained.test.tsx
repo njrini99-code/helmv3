@@ -261,6 +261,9 @@ describe('team stats · desktop', () => {
     expect(holes[2]!.style.getPropertyValue('--ch-fg-part')).toMatch(/^60(\.0+\d*)?%$|^59\.9+\d*%$/);
     // Decorative: the value and its words say it.
     expect(g('Putts per round').getAttribute('aria-hidden')).toBe('true');
+    // The lead draws its gauge before its note, so its gauge sits on the supporting figures' line.
+    const lead = card('Team SG per round');
+    expect(lead.querySelector('.ch-fg__gauge + .ch-fg__n')).not.toBeNull();
   });
 
   it('a figure with no value draws no gauge', () => {

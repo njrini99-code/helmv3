@@ -1,5 +1,12 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-07 — The pulse's held space says something
+
+The program pulse holds three rows of space so nothing below moves when it streams in. With four items or fewer that left
+an empty band in the card. When every read the pulse is made from came in (no gaps), the foot of that space now says
+"Nothing else is flagged across the program", with a check, over a hairline. When a read failed it stays silent: the
+existing CH-13206 notice says what wasn't checked, never "nothing is flagged". The card keeps its height.
+
 ## 2026-10-07 — Digits in serif titles
 
 Data-fed serif titles set their digits in the sans (shared `SerifText`; see the cross-page log), so a name or title with figures reads cleanly.

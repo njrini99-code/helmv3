@@ -1,5 +1,16 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-07 — Gauges directly under the words
+
+At full width the gauges sat at the foot of each figure, so the supporting figures had a gap of about 80px between their
+words and their drawing. Now:
+- **Values:** every value sits on the lead's 48px line, sharing its baseline.
+- **Gauges:** every gauge follows its words directly, so all six share one line.
+- **Lead note:** the lead's note ("vs Tour · 58 rounds with shots") moves below its gauge.
+
+The rows layout below 900px is unchanged. Measured in WebKit at 1440, 1300, 1180 and 1000, the row holds its height (248px)
+and nothing moves between loading and loaded.
+
 ## 2026-10-07 — Chart card titles in the serif
 
 The yardage cards' titles (`YardagePage`: Scoring, Strokes gained by leg, Team putting, and "Jonah vs. team") were a 15px semibold sans next to serif panel titles. They now use the display serif (`--ch-type-serif-s`), with any digits in the sans (`SerifText`).

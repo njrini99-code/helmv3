@@ -109,8 +109,10 @@ function FigureCard({ it, lead = false }: { it: FigureItem; lead?: boolean }) {
         )}
         <span>{it.context}</span>
       </span>
-      {it.note && <span className="ch-fg__n">{it.note}</span>}
+      {/* The lead draws its gauge before its note, so its gauge sits on the same line as the supporting figures' gauges. */}
+      {!lead && it.note && <span className="ch-fg__n">{it.note}</span>}
       {it.gauge && it.n != null && <FigureGauge gauge={it.gauge} n={it.n} />}
+      {lead && it.note && <span className="ch-fg__n">{it.note}</span>}
     </div>
   );
 }
