@@ -18,6 +18,16 @@ audit](../../ALL_PAGE_AUDIT.md#p004-stats-team). Approved handoffs and
 contract IDs are preserved; runtime gaps stay explicit.
 <!-- clubhouse:release-audit:end -->
 
+## 2026-10-06 — Strokes gained leads the figures
+
+The premium audit's P1 for this page: six equal floating cards gave the page no first read. On the
+owner's choice (lead and supporting), Team SG per round now sits on its own card with a 48px value, and
+the five supporting figures share one quieter surface divided by hairlines. Below a 900px canvas the
+supporting figures become rows (label and change left, value right) under a full-width strokes gained
+card. The loading skeleton draws the same layout, and the held heights were re-measured so the page
+below does not move when the figures land or the window changes. Values, deltas, notes, catalog codes
+and the player profile's figures are unchanged. See VERIFY.md for the measurements.
+
 ## 2026-10-02 — Keep charts steady when the period changes
 
 The measured phone Season switch moved the charts up by 64px: the comparison

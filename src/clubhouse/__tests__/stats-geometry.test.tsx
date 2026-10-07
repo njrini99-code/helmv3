@@ -49,6 +49,24 @@ describe('Team stats hold their geometry across windows', () => {
     for (const g of profile.container.querySelectorAll('.ch-fg')) expect(g.classList.contains('ch-fg--hold')).toBe(false);
   });
 
+  it('strokes gained leads the team figures on its own card, the five supporting figures share one surface, and the skeleton draws the same', () => {
+    const { container, unmount } = render(shell(<StatsTeam data={team()} />));
+    const fg = container.querySelector('.ch-fg')!;
+    expect(fg.classList.contains('ch-fg--lead')).toBe(true);
+    expect(fg.querySelector(':scope > .ch-fg__c--lead .ch-fg__l')!.textContent).toBe('Team SG per round');
+    expect(fg.querySelectorAll(':scope > .ch-fg__group > .ch-fg__c')).toHaveLength(5);
+    unmount();
+    const skel = render(shell(<StatsSkeleton />));
+    const sfg = skel.container.querySelector('.ch-fg')!;
+    expect(sfg.classList.contains('ch-fg--lead')).toBe(true);
+    expect(sfg.querySelectorAll(':scope > .ch-fg__c--lead.ch-fg__c--skel')).toHaveLength(1);
+    expect(sfg.querySelectorAll(':scope > .ch-fg__group > .ch-fg__c--skel')).toHaveLength(5);
+    skel.unmount();
+    // The profile keeps its five equal cards.
+    const profile = render(shell(<StatsPlayer data={player()} coachId="c1" />));
+    expect(profile.container.querySelector('.ch-fg--lead')).toBeNull();
+  });
+
   it('the hole-coverage line is in every window: the note when there is one, an empty line when there is none', () => {
     const noted = render(shell(<StatsTeam data={team({ figures: PREVIEW_TEAM_STATS.figures.map((f) => ({ ...f, note: 'Hole stats from 8 of 10 rounds' })) })} />));
     const lines = noted.container.querySelectorAll('.ch-st-cover');
@@ -89,6 +107,10 @@ describe('Team stats hold their geometry across windows', () => {
     expect(css).toMatch(/min-width: 901px\) and \(max-width: 940px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 229px/);
     expect(css).toMatch(/\(max-width: 900px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 155px/);
     expect(css).toMatch(/\.ch-fg__c--skel,\s*\.ch-fg--hold \.ch-fg__c\s*{\s*min-height: var\(--ch-fg-h\)/);
+    // With strokes gained leading: 208 at the widest canvas (its 48px value and two-line note), 167 full width, and 76 a supporting row.
+    expect(css).toMatch(/\.ch-fg--lead\s*{\s*--ch-fg-h: 208px/);
+    expect(css).toMatch(/\.ch-fg--lead\s*{\s*--ch-fg-h: 167px;/);
+    expect(css).toMatch(/\.ch-fg__group \.ch-fg__c\s*{[^}]*min-height: 76px/);
   });
 });
 

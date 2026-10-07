@@ -100,20 +100,34 @@ export function StatsSkeleton() {
       <div className="ch-sf" aria-hidden="true">
         <Skeleton width={78} height={30} radius={10} />
       </div>
-      <div className="ch-fg" style={{ ['--ch-fg-n' as string]: 6 }}>
-        {Array.from({ length: 6 }, (_, i) => (
-          <div key={i} className="ch-fg__c ch-fg__c--skel">
-            <Line height={17}>
-              <Skeleton width={110} height={13} />
-            </Line>
-            <Line height={36}>
-              <Skeleton width={80} height={34} radius={8} />
-            </Line>
-            <Line height={22}>
-              <Skeleton width={120} height={12} />
-            </Line>
-          </div>
-        ))}
+      {/* The loaded layout: strokes gained on its own card, the five supporting figures on one surface. */}
+      <div className="ch-fg ch-fg--lead" style={{ ['--ch-fg-n' as string]: 5 }}>
+        <div className="ch-fg__c ch-fg__c--lead ch-fg__c--skel">
+          <Line height={17}>
+            <Skeleton width={130} height={13} />
+          </Line>
+          <Line height={48}>
+            <Skeleton width={110} height={44} radius={10} />
+          </Line>
+          <Line height={22}>
+            <Skeleton width={150} height={12} />
+          </Line>
+        </div>
+        <div className="ch-fg__group">
+          {Array.from({ length: 5 }, (_, i) => (
+            <div key={i} className="ch-fg__c ch-fg__c--skel">
+              <Line height={17}>
+                <Skeleton width={110} height={13} />
+              </Line>
+              <Line height={36}>
+                <Skeleton width={80} height={34} radius={8} />
+              </Line>
+              <Line height={22}>
+                <Skeleton width={120} height={12} />
+              </Line>
+            </div>
+          ))}
+        </div>
       </div>
       {/* The caption line under the cards (the loaded page keeps it in every window). */}
       <p className="ch-st-cover" aria-hidden="true" />
