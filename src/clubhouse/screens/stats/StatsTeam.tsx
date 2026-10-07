@@ -133,6 +133,7 @@ function TeamFigures({ figures, cacheError }: { figures: ChTeamStats['figures'];
       )}
       <FigureCards
         hold
+        lead
         items={figures.map((x) => ({
           label: x.label,
           value: x.value == null ? NO_DATA : x.signed ? formatSigned(x.value, x.digits) : x.value.toFixed(x.digits),
@@ -144,6 +145,8 @@ function TeamFigures({ figures, cacheError }: { figures: ChTeamStats['figures'];
           note: x.note && shared.includes(x.note) ? undefined : x.note,
           tone: x.signed && x.value != null ? (x.value >= 0 ? ('gain' as const) : ('loss' as const)) : undefined,
           code: x.state === 'empty' ? 'CH-4311' : x.state === 'no-comparison' ? 'CH-4312' : undefined,
+          gauge: x.gauge,
+          n: x.value,
         }))}
       />
       {/* The line is there in every window (empty when no note is shared), so a window with a note and one without leave the page below where it was. */}

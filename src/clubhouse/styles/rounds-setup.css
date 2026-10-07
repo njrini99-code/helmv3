@@ -50,8 +50,8 @@
   margin: 8px 0 6px;
   max-width: 30ch;
   font: 600 30px/1.08 var(--ch-font-sans);
-  letter-spacing: -0.032em;
-  font-variation-settings: 'wdth' 86;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
   text-wrap: balance;
   color: var(--ch-ivory-100);
 }

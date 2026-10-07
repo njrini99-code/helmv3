@@ -321,7 +321,7 @@
   max-width: 12ch;
   font: 600 52px/1.02 var(--ch-font-sans);
   letter-spacing: -0.04em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-au-ivory);
   text-wrap: balance;
   text-shadow: 0 1px 24px rgb(10 51 31 / 0.35);
@@ -406,8 +406,8 @@
 .ch-au-lock span,
 .ch-au-mark span {
   font: 650 28px/1 var(--ch-font-sans);
-  letter-spacing: -0.045em;
-  font-variation-settings: 'wdth' 86;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
   color: #1c1b18;
   padding-top: 2px;
 }
@@ -419,8 +419,8 @@
 .ch-au-form h1 {
   margin: 36px 0 0;
   font: 600 36px/1.05 var(--ch-font-sans);
-  letter-spacing: -0.036em;
-  font-variation-settings: 'wdth' 88;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
 }
 .ch-au-sub {
@@ -735,8 +735,8 @@
 .ch-au-wl h1 {
   margin: 18px 0 0;
   font: 600 clamp(52px, 6.4vw, 92px) / 1 var(--ch-font-sans);
-  letter-spacing: -0.045em;
-  font-variation-settings: 'wdth' 88;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-au-wl-l1 {
   display: block;
@@ -1020,7 +1020,7 @@
   .ch-au-form h1 {
     margin: 0;
     font-size: 30px;
-    letter-spacing: -0.034em;
+    letter-spacing: -0.026em;
   }
   .ch-au-sub {
     margin-top: 6px;

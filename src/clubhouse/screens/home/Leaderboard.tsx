@@ -28,12 +28,15 @@ function Row({ p, pos }: { p: ChLeaderRow; pos: number }) {
   const href = rebuiltHref(`/golf/dashboard/stats?player=${p.playerId}`);
   const cells = (
     <>
-      <span className="ch-h-lb__pos ch-num" role="cell">{pos}</span>
+      <span className={'ch-h-lb__pos ch-num' + (pos <= 3 ? ' is-top' : '') + (pos === 1 ? ' is-lead' : '')} role="cell">{pos}</span>
       <span className="ch-h-lb__who" role="cell">
         <Avatar name={p.name} size={28} />
         <span>
           <span className="ch-h-lb__name">{p.name}</span>
-          <span className="ch-h-lb__meta">{[p.classYear, statusText(p)].filter(Boolean).join(' · ')}</span>
+          <span className="ch-h-lb__meta">
+            {p.classYear && <>{p.classYear} &middot; </>}
+            <span className={'ch-h-lb__status is-' + (p.quietDays != null && p.quietDays >= QUIET_DAYS ? 'quiet' : p.status)}>{statusText(p)}</span>
+          </span>
         </span>
       </span>
       <span className="ch-h-lb__trend" role="cell">
@@ -115,7 +118,7 @@ export function Leaderboard({ data }: { data: ChCoachHome['leaderboard'] }) {
         </div>
       ) : (
         <div className="ch-h-lb ch-sheet" role="table" aria-labelledby="ch-lb-title">
-          <div className="ch-h-lb__row ch-h-lb__head ch-well-soft" role="row">
+          <div className="ch-h-lb__row ch-h-lb__head" role="row">
             <span role="columnheader">
               <span className="ch-sr-only">Position</span>
             </span>

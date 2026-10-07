@@ -12,6 +12,7 @@ import { Menu } from '../../ui/Menu';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { haptic } from '../../lib/haptics';
 import { useAction, type ActionCopy, type ActionResult, type ServerResult } from '../../lib/use-action';
+import { SerifText } from '../../ui/SerifText';
 
 /*
  * Team Hub's sections (design/handoff/hub.jsx). Each takes what it shows and
@@ -188,7 +189,9 @@ export function Announcement({
   return (
     <article className={'ch-hb-ann' + (featured ? ' is-featured' : '')} aria-labelledby={`ch-hb-ann-${a.id}`}>
       {featured && <span className="ch-hb-eyebrow">{coach ? 'Latest' : a.needAck && !acked ? 'Needs your reply' : 'Latest from your coaches'}</span>}
-      <h3 id={`ch-hb-ann-${a.id}`}>{a.title}</h3>
+      <h3 id={`ch-hb-ann-${a.id}`}>
+        <SerifText text={a.title} />
+      </h3>
       {a.body && <p>{a.body}</p>}
       <div className="ch-hb-ann__h">
         <Avatar name={a.by} size={32} />
@@ -279,7 +282,9 @@ export function TripPass({
             />
           )}
         </div>
-        <b id={`ch-hb-trip-${t.id}`}>{t.name}</b>
+        <b id={`ch-hb-trip-${t.id}`}>
+          <SerifText text={t.name} />
+        </b>
         {t.destination && <span className="ch-hb-muted">{t.destination}</span>}
         <dl className="ch-hb-pass__f">
           <div>

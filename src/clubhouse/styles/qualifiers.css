@@ -32,9 +32,8 @@
   min-width: 0;
 }
 .ch-qf-head h1 {
-  font: 600 40px/1.08 var(--ch-font-sans);
-  letter-spacing: -0.036em;
-  font-variation-settings: 'wdth' 88;
+  font: 400 52px/1.02 var(--ch-font-serif);
+  letter-spacing: -0.01em;
   color: var(--ch-text-primary);
   overflow-wrap: anywhere;
 }
@@ -156,9 +155,8 @@
 /* Heading margins here and in the card, panel and form heads sit under .ch-qf so base.css's heading reset doesn't drop them. */
 .ch-qf .ch-qf-hero h2 {
   margin-top: 4px;
-  font: 600 30px/1.1 var(--ch-font-sans);
-  letter-spacing: -0.034em;
-  font-variation-settings: 'wdth' 88;
+  font: 400 40px/1.06 var(--ch-font-serif);
+  letter-spacing: -0.008em;
   color: var(--ch-text-primary);
 }
 .ch-qf-hero__main > p {
@@ -291,6 +289,59 @@
 .ch-qf-empty {
   padding: 12px;
 }
+/* The live leaders on the green scoreboard (a tournament board): ivory names and positions, red under par. */
+.ch-qf-lead.ch-scoreboard {
+  padding: 14px 16px;
+}
+.ch-scoreboard .ch-qf-lead__r {
+  border-top-color: var(--ch-board-rule);
+}
+.ch-scoreboard .ch-qf-tp {
+  color: var(--ch-on-green-ink);
+}
+.ch-scoreboard .ch-qf-tp.is-under {
+  color: #ff8b7d;
+}
+/* Concluded qualifiers: a ledger on the page, not a grid of cards (owner: no card soup). One row each, ruled by seams. */
+.ch-qf-grid.is-ledger {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--ch-champagne-rule);
+  border-bottom: 1px solid var(--ch-champagne-rule);
+}
+.ch-qf-grid.is-ledger .ch-qf-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 12px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-qf-grid.is-ledger .ch-qf-card + .ch-qf-card {
+  box-shadow: var(--ch-seam-x);
+}
+.ch-qf-grid.is-ledger .ch-qf-card:hover {
+  background: rgb(28 25 18 / 0.035);
+}
+.ch-qf-grid.is-ledger .ch-qf-card__h p {
+  -webkit-line-clamp: 1;
+}
+.ch-qf-grid.is-ledger .ch-qf-meta {
+  grid-template-columns: max-content;
+  gap: 6px;
+}
+.ch-qf-grid.is-ledger .ch-qf-mine {
+  grid-column: 1 / -1;
+  margin-top: -12px;
+}
+@media (max-width: 820px) {
+  .ch-qf-grid.is-ledger .ch-qf-card {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+}
 
 /* Status: a static dot for Live (D-33, no pulse) */
 .ch-qf-status {
@@ -327,14 +378,14 @@
 }
 
 /* Facts */
+/* On the stat line (owner, 2026-10-07: no card around figures): no surface, gilt rules above and below, seams. */
 .ch-qf-facts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   row-gap: 16px;
-  padding: 18px 4px;
-  border-radius: 14px;
-  background: var(--ch-bg-surface);
-  box-shadow: var(--ch-shadow-sm);
+  padding: 18px 0;
+  border-top: 1px solid var(--ch-champagne-rule);
+  border-bottom: 1px solid var(--ch-champagne-rule);
 }
 .ch-qf-facts > div {
   display: flex;
@@ -344,13 +395,55 @@
   padding: 2px 20px;
 }
 .ch-qf-facts > div + div {
-  border-left: 1px solid var(--ch-border-hairline);
+  box-shadow: var(--ch-seam-y);
+}
+.ch-qf-facts > div:first-child {
+  padding-left: 2px;
+}
+/* A fact drawn (decorative; the figure and its line say it), on desktop and phone: the rounds posted along the rounds
+   due, and the squad's seats, won on score filled green and the coach's picks an open gilt ring. */
+.ch-qf-bar {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 160px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgb(28 25 18 / 0.07);
+  box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.1);
+}
+.ch-qf-bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+  background: var(--ch-chart-gain);
+}
+.ch-qf-seats {
+  display: flex;
+  gap: 4px;
+}
+.ch-qf-seats i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.ch-qf-seats i.is-score {
+  background: var(--ch-chart-gain);
+}
+.ch-qf-seats i.is-pick {
+  box-shadow: inset 0 0 0 1.5px var(--ch-champagne-500);
+}
+.ch-qf-facts dd.ch-qf-facts__viz {
+  display: flex;
+  align-items: center;
+  min-height: 10px;
+  margin: 2px 0 0;
 }
 .ch-qf-facts dt {
   font: 500 12.5px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
-.ch-qf-facts dd:not(.ch-qf-facts__sub) {
+.ch-qf-facts dd:not(.ch-qf-facts__sub):not(.ch-qf-facts__viz) {
   margin: 4px 0 0;
   font: 500 22px/1.1 var(--ch-font-sans);
   letter-spacing: -0.03em;
@@ -423,10 +516,11 @@
   gap: 12px;
   padding: 18px 20px 14px;
 }
+/* Panel titles in the display serif, as Home's and Stats' panels. */
 .ch-qf .ch-qf-panel__head h2 {
   margin-bottom: 4px;
-  font: 600 16px/1.2 var(--ch-font-sans);
-  letter-spacing: -0.01em;
+  font: var(--ch-type-serif-s);
+  letter-spacing: -0.006em;
   color: var(--ch-text-primary);
 }
 .ch-qf-panel__head p {
@@ -1164,7 +1258,7 @@
     margin-top: 2px;
     font-size: 28px;
     line-height: 1.1;
-    letter-spacing: -0.034em;
+    letter-spacing: -0.026em;
   }
   .ch-qf--list .ch-qf-head p {
     font: 400 14px/1.4 var(--ch-font-sans);
@@ -1339,11 +1433,11 @@
     font: 500 13px/1 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
+  /* The qualifier's name in the display serif (its digits in the sans, SerifText), as the list's names. */
   .ch-qfm-head h1 {
     margin-top: 2px;
-    font: 600 24px/1.1 var(--ch-font-sans);
-    letter-spacing: -0.034em;
-    font-variation-settings: 'wdth' 88;
+    font: 400 32px/1.08 var(--ch-font-serif);
+    letter-spacing: -0.008em;
     color: var(--ch-text-primary);
     overflow-wrap: anywhere;
   }
@@ -1361,13 +1455,13 @@
   .ch-qfm-acts .ch-btn:only-child {
     width: 100%;
   }
+  /* On the stat line (owner, 2026-10-07: no card around figures): no surface, gilt rules above and below, seams. */
   .ch-qfm-facts {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    padding: 12px 0;
-    border-radius: var(--ch-radius-lg);
-    background: var(--ch-bg-surface);
-    box-shadow: var(--ch-shadow-sm);
+    padding: 14px 0 12px;
+    border-top: 1px solid var(--ch-champagne-rule);
+    border-bottom: 1px solid var(--ch-champagne-rule);
   }
   .ch-qfm-facts > div {
     display: flex;
@@ -1376,7 +1470,13 @@
     padding: 0 14px;
   }
   .ch-qfm-facts > div + div {
-    border-left: 1px solid var(--ch-border-hairline);
+    box-shadow: var(--ch-seam-y);
+  }
+  /* Every figure keeps the drawing's line, so the three values share one baseline. */
+  .ch-qfm-facts dd.ch-qfm-facts__viz {
+    display: flex;
+    align-items: center;
+    min-height: 10px;
   }
   .ch-qfm-facts dt {
     font: 500 12px/1 var(--ch-font-sans);
@@ -1558,4 +1658,13 @@
   .ch-qfm-lb__g em {
     font-size: 12px;
   }
+}
+
+/* The top-score line on the scoreboard: mint, so it reads on the green. */
+.ch-scoreboard .ch-qf-line {
+  color: var(--ch-hero-mint);
+}
+.ch-scoreboard .ch-qf-line::before,
+.ch-scoreboard .ch-qf-line::after {
+  border-top-color: rgb(159 224 182 / 0.45);
 }

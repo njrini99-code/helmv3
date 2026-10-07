@@ -29,8 +29,9 @@ export function StatsProfileSkeleton({ coach = false }: { coach?: boolean }) {
           <Skeleton width={112} height={112} radius={56} />
         </span>
         <div className="ch-pf-hero__id">
-          <Line height={35}>
-            <Skeleton width={240} height={32} radius={10} />
+          {/* The name's serif display line (48px measured; was 35 before the serif title). */}
+          <Line height={49}>
+            <Skeleton width={240} height={36} radius={10} />
           </Line>
           <Line height={18}>
             <Skeleton width={280} height={14} />
@@ -63,11 +64,28 @@ export function StatsProfileSkeleton({ coach = false }: { coach?: boolean }) {
             </span>
           ))}
         </div>
-        <Skeleton width={236} height={32} radius={11} />
+        {/* The window switch's measured width (216), so the tabs and it share one line wherever the loaded ones do. */}
+        <Skeleton width={216} height={32} radius={11} />
       </div>
       {/* The round filter's bar (its Filter button), so the figures do not move when it appears. */}
       <div className="ch-sf" aria-hidden="true">
         <Skeleton width={78} height={30} radius={10} />
+      </div>
+      {/* The overview's five figures, held at the loaded row's height (`.ch-fg--profile`), so they land without moving the page. */}
+      <div className="ch-fg ch-fg--profile" style={{ ['--ch-fg-n' as string]: 5 }} aria-hidden="true">
+        {Array.from({ length: 5 }, (_, i) => (
+          <div key={i} className="ch-fg__c ch-fg__c--skel">
+            <Line height={17}>
+              <Skeleton width={110} height={13} />
+            </Line>
+            <Line height={36}>
+              <Skeleton width={80} height={34} radius={8} />
+            </Line>
+            <Line height={22}>
+              <Skeleton width={120} height={12} />
+            </Line>
+          </div>
+        ))}
       </div>
       <div className="ch-sgt" style={{ padding: 20 }} aria-hidden="true">
         <Skeleton width={200} height={17} />
@@ -85,8 +103,9 @@ export function StatsSkeleton() {
       <header className="ch-st-head">
         <div className="ch-st-head__row">
           <div>
-            <Line height={41}>
-              <Skeleton width={220} height={38} radius={10} />
+            {/* The serif title's line (52px type, 53px line), measured with the page (WebKit 1440, 2026-10-07). */}
+            <Line height={53}>
+              <Skeleton width={260} height={46} radius={10} />
             </Line>
             <div style={{ height: 8 }} />
             <Line height={21}>
@@ -100,20 +119,34 @@ export function StatsSkeleton() {
       <div className="ch-sf" aria-hidden="true">
         <Skeleton width={78} height={30} radius={10} />
       </div>
-      <div className="ch-fg" style={{ ['--ch-fg-n' as string]: 6 }}>
-        {Array.from({ length: 6 }, (_, i) => (
-          <div key={i} className="ch-fg__c ch-fg__c--skel">
-            <Line height={17}>
-              <Skeleton width={110} height={13} />
-            </Line>
-            <Line height={36}>
-              <Skeleton width={80} height={34} radius={8} />
-            </Line>
-            <Line height={22}>
-              <Skeleton width={120} height={12} />
-            </Line>
-          </div>
-        ))}
+      {/* The loaded layout: strokes gained on its own card, the five supporting figures on one surface. */}
+      <div className="ch-fg ch-fg--lead" style={{ ['--ch-fg-n' as string]: 5 }}>
+        <div className="ch-fg__c ch-fg__c--lead ch-fg__c--skel">
+          <Line height={17}>
+            <Skeleton width={130} height={13} />
+          </Line>
+          <Line height={48}>
+            <Skeleton width={110} height={44} radius={10} />
+          </Line>
+          <Line height={22}>
+            <Skeleton width={150} height={12} />
+          </Line>
+        </div>
+        <div className="ch-fg__group">
+          {Array.from({ length: 5 }, (_, i) => (
+            <div key={i} className="ch-fg__c ch-fg__c--skel">
+              <Line height={17}>
+                <Skeleton width={110} height={13} />
+              </Line>
+              <Line height={36}>
+                <Skeleton width={80} height={34} radius={8} />
+              </Line>
+              <Line height={22}>
+                <Skeleton width={120} height={12} />
+              </Line>
+            </div>
+          ))}
+        </div>
       </div>
       {/* The caption line under the cards (the loaded page keeps it in every window). */}
       <p className="ch-st-cover" aria-hidden="true" />
@@ -126,7 +159,8 @@ export function StatsSkeleton() {
 function TrendSkeleton() {
   return (
     <div className="ch-sgt" aria-hidden="true">
-      <div className="ch-sgt__head" style={{ minHeight: 70 }}>
+      {/* With the serif card title the head is 95px (WebKit 1440, 2026-10-07). */}
+      <div className="ch-sgt__head" style={{ minHeight: 95 }}>
         <div>
           <Skeleton width={200} height={17} />
           <div style={{ height: 8 }} />

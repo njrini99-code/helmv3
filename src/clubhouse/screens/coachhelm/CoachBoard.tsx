@@ -332,11 +332,12 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
   // With CoachHelm off (CH-13305), Ask is off too, so the strip that leads there is not drawn.
   const tabs = data.off ? null : <CoachHelmTabs active={sw.shown} onGo={sw.go} />;
   return (
-    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined}>
+    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''}>
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone && tabs}
-      <Head who="Coach">{players.length > 0 && !data.off ? playersLine(playersOpen) : 'CoachHelm reads the rounds your players post.'}</Head>
-      {!phone && tabs}
+      <Head who="Coach" aside={!phone ? tabs : undefined}>
+        {players.length > 0 && !data.off ? playersLine(playersOpen) : 'CoachHelm reads the rounds your players post.'}
+      </Head>
       {body}
     </main>
   );
@@ -361,6 +362,14 @@ function PulseBody({ pulse }: { pulse: ChPulse }) {
   return (
     <>
       {pulse.rows.length > 0 && <PulseList rows={pulse.rows} />}
+      {/* Every read came in (no gaps), so what is not listed was checked and is clear: say so in the card's held space
+          instead of leaving it empty. Up to four items, the two rows the desktop's reserve leaves room under. */}
+      {!gaps && pulse.rows.length > 0 && pulse.rows.length <= 4 && (
+        <p className="ch-hl-pulse__clear">
+          <Icon icon={Check} size={13} />
+          Nothing else is flagged across the program.
+        </p>
+      )}
       {/* CH-13206: a read the pulse is made from failed, so what is not listed was not checked: never "nothing is flagged". */}
       {gaps && pulse.missing && (
         <RefreshNotice

@@ -24,9 +24,9 @@
   gap: 10px;
 }
 .ch-rs-head h1 {
-  font: 600 40px/1.08 var(--ch-font-sans);
-  letter-spacing: -0.036em;
-  font-variation-settings: 'wdth' 88;
+  font: 400 52px/1.02 var(--ch-font-serif);
+  letter-spacing: -0.01em;
+  font-variation-settings: normal;
 }
 .ch-rs-head p {
   font: var(--ch-type-body-l);
@@ -232,8 +232,8 @@
   gap: 6px;
   padding: 14px 16px 16px;
   border: 0;
-  border-radius: 16px;
-  background: linear-gradient(180deg, #fffefb 0%, #fbfaf5 55%, #f7f5ef 100%);
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-sheet-bg);
   color: inherit;
   text-align: center;
   cursor: pointer;
@@ -334,6 +334,105 @@
 .ch-rs-face__figs b.is-loss,
 .ch-rs-sg.is-loss {
   color: var(--ch-chart-loss);
+}
+/* The coach's card figures, drawn: the player's place on the team's scoring strip and a strokes-gained bar from zero. */
+.ch-rs-figs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-self: stretch;
+  margin-top: 6px;
+  padding: 12px 12px 10px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow);
+  text-align: left;
+}
+.ch-rs-fig {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'k v' 'viz viz' 'm m';
+  row-gap: 5px;
+  align-items: baseline;
+}
+.ch-rs-fig__k {
+  grid-area: k;
+  font: 600 12px/1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-rs-fig > b {
+  grid-area: v;
+  font: 600 16px/1 var(--ch-font-sans);
+  letter-spacing: -0.02em;
+  color: var(--ch-text-primary);
+}
+.ch-rs-fig > b.is-gain {
+  color: var(--ch-chart-gain);
+}
+.ch-rs-fig > b.is-loss {
+  color: var(--ch-chart-loss);
+}
+.ch-rs-fig__m {
+  grid-area: m;
+  font: 500 12px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+/* The card's team strip (`.ch-rs-strip`; not `.ch-rs-team`, the header's avatar row) and its SG bar. */
+.ch-rs-strip,
+.ch-rs-sgbar {
+  position: relative;
+  grid-area: viz;
+  height: 10px;
+  border-radius: 5px;
+  background: rgb(28 25 18 / 0.06);
+  box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.08);
+}
+.ch-rs-strip i {
+  position: absolute;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ch-ink-300);
+  translate: -50% -50%;
+}
+.ch-rs-strip i.is-me {
+  z-index: 1;
+  width: 10px;
+  height: 10px;
+  background: var(--ch-field-green);
+  box-shadow: 0 0 0 2px var(--ch-sheet-bg);
+}
+.ch-rs-sgbar::after {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: 50%;
+  width: 1.5px;
+  background: var(--ch-ink-700);
+  translate: -50% 0;
+  content: '';
+}
+.ch-rs-sgbar i {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  border-radius: 3px;
+}
+.ch-rs-sgbar i.is-gain {
+  background: var(--ch-green-500);
+}
+.ch-rs-sgbar i.is-loss {
+  background: var(--ch-chart-loss);
+}
+.ch-rs-face__hcp {
+  font: 500 12px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-rs-face__hcp b {
+  margin-left: 4px;
+  font-weight: 600;
+  color: var(--ch-text-primary);
 }
 .ch-rs-face__note {
   margin-top: 4px;
@@ -504,7 +603,7 @@
 .ch-rs-peek__hero h2 {
   font: 600 24px/1.15 var(--ch-font-sans);
   letter-spacing: -0.03em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-rs-peek__sub {
   font: 500 13px/1.3 var(--ch-font-sans);
@@ -766,11 +865,11 @@
     font: 500 13px/1 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
+  /* The display serif, as every phone page's title. */
   .ch-rsm-title {
     margin: 2px 0 0;
-    font: 600 28px/1.1 var(--ch-font-sans);
-    letter-spacing: -0.034em;
-    font-variation-settings: 'wdth' 88;
+    font: 400 34px/1.05 var(--ch-font-serif);
+    letter-spacing: -0.008em;
   }
   .ch-rsm-sort {
     display: flex;
@@ -909,7 +1008,7 @@
     font: 600 24px/1.1 var(--ch-font-sans);
     letter-spacing: -0.03em;
     color: var(--ch-ink-950);
-    font-variation-settings: 'wdth' 88;
+    font-variation-settings: 'wdth' 96;
     text-wrap: balance;
   }
   .ch-rsm-hero__id {

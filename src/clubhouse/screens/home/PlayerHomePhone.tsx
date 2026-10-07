@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, Flag, MessageSquare, Plus, Sparkles } from 'lucide-react';
+import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, Flag, MessageSquare, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import type { ChPlayerHome } from '../../data/player-home';
@@ -18,6 +18,7 @@ import { Countdown } from './Countdown';
 import { Today, UpNext, WeekStrip } from './HomePhone';
 import { PlayerGame } from './PlayerGame';
 import { messageCoachHref, MY_STATS, postRoundHref, roundHref } from './player-links';
+import { GirViz, PuttsViz, SgViz } from './RoundViz';
 
 /**
  * The player's phone Home (v2, design/handoff/Player - Home - Mobile.html,
@@ -35,15 +36,10 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
 
   return (
     <main className="ch-hm" aria-label="Home">
-      <header className="ch-hm-hero">
+      {/* Owner, 2026-10-06: the CoachHelm brief no longer sits between the greeting and Up next on the player's phone. */}
+      <header className="ch-hm-hero is-player">
         <span className="ch-hm-hero__date">{data.todayLabel}</span>
         <h1>{data.greeting}</h1>
-        {data.brief && (
-          <p className="ch-hm-hero__brief">
-            <Icon icon={Sparkles} size={14} />
-            {data.brief}
-          </p>
-        )}
         <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
           {data.week.error ? (
             <div className="ch-hm-next is-static">
@@ -160,7 +156,7 @@ function Latest({ data }: { data: ChPlayerHome['latest'] }) {
             </span>
           </div>
           {r.holes ? (
-            <div className="ch-ph-nines">
+            <div className="ch-ph-nines ch-scoreboard">
               <Nine label="Out" holes={r.holes.filter((h) => h.n <= 9)} caption="Front nine" />
               <Nine label="In" holes={r.holes.filter((h) => h.n > 9)} caption="Back nine" />
             </div>
@@ -173,18 +169,27 @@ function Latest({ data }: { data: ChPlayerHome['latest'] }) {
             <div>
               <dt>GIR</dt>
               <dd className="ch-num">{r.gir ?? NO_DATA}</dd>
+              <dd className="ch-ph-strip__viz">
+                <GirViz gir={r.gir} />
+              </dd>
             </div>
             <div>
               <dt>Putts</dt>
               <dd className="ch-num">{r.putts ?? NO_DATA}</dd>
+              <dd className="ch-ph-strip__viz">
+                <PuttsViz putts={r.putts} />
+              </dd>
             </div>
             <div>
               <dt>SG</dt>
               <dd className={'ch-num ' + changeTone(r.sg, false)}>{formatSigned(r.sg)}</dd>
+              <dd className="ch-ph-strip__viz">
+                <SgViz sg={r.sg} />
+              </dd>
             </div>
           </dl>
           {/* The board's "Open recap": the round's own review; My stats when it isn't rebuilt. */}
-          <Button size="lg" rightIcon={ArrowRight} href={roundHref(r.id, 'player') ?? MY_STATS} className="ch-ph-card__more">
+          <Button variant="ghost" rightIcon={ArrowRight} href={roundHref(r.id, 'player') ?? MY_STATS} className="ch-ph-card__more">
             {roundHref(r.id, 'player') ? 'Open recap' : 'My stats'}
           </Button>
         </div>

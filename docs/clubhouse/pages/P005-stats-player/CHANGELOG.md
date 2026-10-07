@@ -1,5 +1,82 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-07 — Chart card titles in the serif
+
+The yardage cards' titles (`YardagePage`: Scoring, Strokes gained by leg, Team
+putting, and "Jonah vs. team") were a 15px semibold sans next to serif panel
+titles. They now use the display serif (`--ch-type-serif-s`), with any digits in
+the sans (`SerifText`).
+
+## 2026-10-07 — Phone overview on the stat line
+
+The phone overview's three figures were bare numbers inside one white sheet.
+They now sit on the stat line with no surface, as on Team stats, and carry a row
+of gauges:
+
+- the scoring average from par, per 18 holes over the window's rounds that
+  record par;
+- strokes gained from the Tour's zero;
+- no gauge under the trend, which is already words.
+
+The phone skeleton holds the gauge row (39px).
+
+## 2026-10-07 — The profile holds still while it loads
+
+The profile's loading skeleton now matches the loaded page from the hero down
+through the figures:
+
+- **Figure row:** the skeleton now holds the overview's five figures. Both the
+  skeleton and the loaded cards keep the measured row height
+  (`.ch-fg--profile`): 169px, or 194px in the middle band where a label wraps.
+- **Name:** the name line takes the serif title's 48px.
+- **Window switch:** it has its loaded width (216px) and its 8px foot.
+- **Strokes gained change:** the words stay on one line. On a 680–770px canvas
+  they used to wrap and grow the hero by 24px.
+
+Measured in WebKit through the new preview state
+`/clubhouse-preview/player?state=loading`, at 1440, 1300, 1180, 1050, 1000, 900
+and 840: the hero, tabs, filter bar and figure row don't move between loading
+and loaded. This closes the gap noted in the entry below.
+
+## 2026-10-07 — Overview figures drawn against their reference
+
+The overview's five figures carry the same gauges as Team stats, each against
+the reference its words name. Fairways, greens and scrambling sit on a 0–100
+track with the team's mark for a coach, or the Tour's mark for a player (none
+when the tour is unknown). Putts are drawn against 36, and the best round
+against par. Not measured for load shift: the profile skeleton
+(`StatsProfileSkeleton`) has never held the figure row (it goes from the filter
+bar to a chart placeholder), and the preview has no profile loading state. That
+gap predates this change and is still open.
+
+## 2026-10-07 — Scoring line mean label off the line
+
+The phone scoring line (shared with Team stats) places its "Mean" label in a
+corner clear of the line, with a halo.
+
+## 2026-10-07 — Loss amber and miss map contrast
+
+The loss amber is darker everywhere (4.5:1 on the darker page tone and in
+wells), and the miss map's counts hold 5:1 on the heaviest fill.
+`clubhouse:a11y` is clean on the phone stats panels.
+
+## 2026-10-07 — Hero figures on the hero
+
+The profile hero's four figures (Scoring avg, Handicap, SG / round, Rounds) no
+longer sit on a card inside the hero. They run in one row across the hero's
+foot, under a seam, divided by seams, at every width.
+
+## 2026-10-07 — Figures as a stat line, serif titles
+
+The figure row uses the shared stat line (no cards; seams between gilt rules;
+see P004). The player's name and the section titles, on the phone and desktop,
+are set in the display serif.
+
+## 2026-10-06 — Smooth scroll and materials
+
+In-page jumps on the phone view ease through the shared smooth scroll helper and
+stay instant with reduced motion.
+
 ## 2026-10-06 — Premium interaction corrections
 
 ```text

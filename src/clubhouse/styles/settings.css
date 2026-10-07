@@ -12,9 +12,8 @@
   margin-bottom: 32px;
 }
 .ch-set-head h1 {
-  font: 600 40px/1.08 var(--ch-font-sans);
-  letter-spacing: -0.036em;
-  font-variation-settings: 'wdth' 88;
+  font: 400 52px/1.02 var(--ch-font-serif);
+  letter-spacing: -0.01em;
   color: var(--ch-text-primary);
 }
 .ch-set-head p {
@@ -642,11 +641,12 @@
     flex-direction: column;
     gap: 22px;
   }
-  /* The design's large title (34px); the top bar carries only the back link, and the page's heading for VoiceOver. */
+  /* The large title, in the display serif as every other phone page's title (Team stats, a profile's name); the top bar
+     carries only the back link, and the page's heading for VoiceOver. Section names are words, so the serif holds. */
   .ch-setm-title {
     margin: 0;
-    font: 600 34px/1.1 var(--ch-font-sans);
-    letter-spacing: -0.03em;
+    font: 400 38px/1.05 var(--ch-font-serif);
+    letter-spacing: -0.008em;
     color: var(--ch-text-primary);
   }
   .ch-setm-lead {

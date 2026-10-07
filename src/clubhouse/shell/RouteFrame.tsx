@@ -4,6 +4,7 @@ import { useEffect, useRef, ViewTransition, type ReactNode } from 'react';
 import { useChPress } from '../lib/press';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { markAppRunning, RouteScope } from '../lib/session-state';
+import { canvasScrollNow } from '../lib/smooth-scroll';
 
 /**
  * The page frame. Each page mounts fresh on navigation (keyed by route) and is shown as soon as it is ready: the
@@ -28,8 +29,8 @@ function restoreScroll(to: { canvas: number; win: number }): () => void {
   const until = Date.now() + 1000;
   let frame = 0;
   const step = () => {
-    canvas?.scrollTo({ top: to.canvas });
-    window.scrollTo({ top: to.win });
+    canvasScrollNow(to.canvas);
+    window.scrollTo({ top: to.win, behavior: 'instant' });
     const there = (!canvas || Math.abs(canvas.scrollTop - to.canvas) < 2) && Math.abs(window.scrollY - to.win) < 2;
     if (!there && Date.now() < until) frame = requestAnimationFrame(step);
   };
@@ -55,8 +56,8 @@ export function RouteFrame({ routeKey, children }: { routeKey: string; children:
       const saved = scrolled.get(routeKey);
       if (saved && Date.now() - poppedAt < RETURN_WINDOW_MS) cancel = restoreScroll(saved);
       else {
-        canvas?.scrollTo({ top: 0 });
-        window.scrollTo({ top: 0 });
+        canvasScrollNow(0);
+        window.scrollTo({ top: 0, behavior: 'instant' });
       }
     }
     return () => {

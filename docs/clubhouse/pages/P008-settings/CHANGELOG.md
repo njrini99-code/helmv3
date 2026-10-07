@@ -1,5 +1,20 @@
 # P008 — Settings: changelog
 
+## 2026-10-07 — Phone large title in the serif
+
+On the phone, the Settings large title and the section titles (Account,
+Notifications and the rest) were a heavy 34px sans, while every other phone page
+title is set in the display serif. They are now 38px Instrument Serif.
+
+## 2026-10-07 — Serif title
+
+The Settings title is set in the display serif, as on every Clubhouse page.
+
+## 2026-10-06 — Smooth scroll and materials
+
+Returning to the top on a section change lands instantly through the canvas
+scroller, so the shared wheel easing never animates a page switch.
+
 ## 2026-10-06 — Premium interaction corrections
 
 ```text

@@ -1,4 +1,6 @@
+import type { ReactNode } from 'react';
 import { Skeleton } from '../../ui/States';
+import { SkeletonCoachActions } from './SkeletonCoachActions';
 import '../../styles/qualifiers.css';
 
 /** Route loading for the Qualifiers list: head, tools, the hero and a row of cards in their final slots. */
@@ -44,19 +46,34 @@ export function QualifierDetailSkeleton() {
   return (
     <main className="ch-qf" aria-busy="true" aria-label="Loading the qualifier" data-ch-code="CH-09402">
       <Skeleton width={110} height={30} radius={8} />
+      {/* Each line at its loaded height (measured in WebKit 2026-10-07): the eyebrow, the serif name, the sentence at its
+          measure (so the coach's actions wrap under it, as loaded), then the actions. */}
       <header className="ch-qf-head">
         <div>
           <Skeleton width={140} height={22} radius={5} />
-          <Skeleton width={320} height={34} radius={10} />
-          <Skeleton width={420} height={16} />
+          <Held height={53}>
+            <Skeleton width={320} height={44} radius={10} />
+          </Held>
+          <Held height={25} width="72ch">
+            <Skeleton width={420} height={16} />
+          </Held>
         </div>
+        <SkeletonCoachActions />
       </header>
+      {/* The facts' four lines at their loaded heights: label, value, the line under it, and the drawing's line. */}
       <div className="ch-qf-facts">
         {Array.from({ length: 6 }, (_, i) => (
           <div key={i}>
-            <Skeleton width={70} height={12} />
-            <Skeleton width={90} height={22} radius={6} />
-            <Skeleton width={60} height={12} />
+            <Held height={13}>
+              <Skeleton width={70} height={12} />
+            </Held>
+            <Held height={24} top={4}>
+              <Skeleton width={90} height={22} radius={6} />
+            </Held>
+            <Held height={16}>
+              <Skeleton width={60} height={12} />
+            </Held>
+            <Held height={10} top={2} />
           </div>
         ))}
       </div>
@@ -170,5 +187,14 @@ export function QualifierFormSkeleton() {
         </div>
       </div>
     </main>
+  );
+}
+
+/** A line held at a measured height and top margin (and, for the head's sentence, its measure), its placeholder inside. */
+function Held({ height, width, top, children }: { height: number; width?: string; top?: number; children?: ReactNode }) {
+  return (
+    <span style={{ display: 'flex', alignItems: 'center', height, width, maxWidth: '100%', marginTop: top }} aria-hidden="true">
+      {children}
+    </span>
   );
 }

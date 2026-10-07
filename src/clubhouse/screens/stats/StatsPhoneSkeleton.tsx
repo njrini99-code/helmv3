@@ -33,9 +33,9 @@ function Panel({ rows, chart = false, height, title }: { rows: number; chart?: b
 }
 
 /** The strip's second line (a change or a caption) is in the loaded strip on Last 10, the window a page opens on. */
-function Figures({ count }: { count: number }) {
+function Figures({ count, line = false }: { count: number; line?: boolean }) {
   return (
-    <dl className={'ch-stm-figs' + (count === 3 ? ' is-three' : '')} aria-hidden="true">
+    <dl className={'ch-stm-figs' + (count === 3 ? ' is-three' : '') + (line ? ' is-line' : '')} aria-hidden="true">
       {Array.from({ length: count }, (_, i) => (
         <div key={i}>
           <dt>
@@ -67,7 +67,11 @@ export function StatsTeamPhoneSkeleton() {
       <div className="ch-stm-controls" aria-hidden="true">
         <Skeleton width="100%" height={44} radius={12} />
       </div>
-      <Figures count={4} />
+      {/* The team's stat line: the figures, then the gauge row's height held empty. */}
+      <div className="ch-stm-line" aria-hidden="true">
+        <Figures count={4} line />
+        <div className="ch-stm-gauges" />
+      </div>
       <p className="ch-stm-cover" aria-hidden="true"><Skeleton width={180} height={12} /></p>
       <Panel rows={0} chart height={0} title="Scoring trend" />
       <Panel rows={5} height={266} title="Strokes gained by leg" />
@@ -90,7 +94,9 @@ export function StatsPlayerPhoneSkeleton() {
         <Skeleton width="100%" height={44} radius={12} />
       </div>
       <div className="ch-stm-overview" aria-hidden="true">
-        <Figures count={3} />
+        {/* The stat line: the figures, then the gauge row's height held empty (as Team stats). */}
+        <Figures count={3} line />
+        <div className="ch-stm-gauges" />
         <div className="ch-stm-overview__meta">
           <Bar height={20.3}><Skeleton width={180} height={12} /></Bar>
           <Bar height={20.3}><Skeleton width={140} height={12} /></Bar>

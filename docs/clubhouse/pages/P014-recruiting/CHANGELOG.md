@@ -1,5 +1,14 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-07 — Phone title in the serif
+
+The phone Recruiting large title was a 34px semibold sans. It now uses the
+display serif at 38px, matching every other phone page title.
+
+## 2026-10-07 — Serif title
+
+The Recruiting title is set in the display serif, as on every Clubhouse page.
+
 ## 2026-10-06 — Popup text and height corrections
 
 ```text

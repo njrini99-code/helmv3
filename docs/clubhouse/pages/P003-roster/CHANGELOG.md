@@ -1,5 +1,40 @@
 # P003 — Roster: changelog
 
+## 2026-10-07 — The header's team row restored
+
+The card team strip from earlier tonight reused the class `.ch-rs-team`, which
+already names the header's avatar row ("Varsity · Fall 2026"). The strip's 10px
+height and tint landed on the header: the avatars overlapped the team name over
+a grey bar, for coach and player. The strip is now `.ch-rs-strip`, and the
+header is back to its own row. No other class added tonight exists on `main`;
+`ch-rd-season` is reused on purpose within its own component.
+
+## 2026-10-07 — Phone title in the serif
+
+The phone Roster title was a 28px semibold sans. It now uses the display serif
+at 34px, matching every other phone page title.
+
+## 2026-10-07 — Drawn card figures, serif title
+
+The coach's player cards no longer end in a pill of three bare numbers (owner:
+no bare numbers). The figures are drawn:
+
+- **Scoring:** the season average with the player's place (for example "1st of
+  7") and a strip showing every teammate's average, with this player's dot lit
+  in the field green.
+- **Strokes gained:** the figure per round with a bar running from a zero tick,
+  green for gained and amber for lost.
+- **Handicap:** reads as a labelled line.
+
+The card is a solid reading sheet, and "Your players." is set in the display
+serif. The player's own roster keeps handicap only, as before.
+
+## 2026-10-06 — Display type relaxed
+
+The owner found the display type too compact. Display headings on this page
+widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on
+every Clubhouse page. Layout and content are unchanged.
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
 

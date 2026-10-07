@@ -21,8 +21,9 @@
   --ch-ink-950: #141412;
   --ch-ink-900: #1c1b18;
   --ch-ink-700: #3a3833;
-  --ch-ink-600: #55524b;
-  --ch-ink-500: #6b6860;
+  /* One step darker than the first pass (owner, 2026-10-06: "there's not a lot of contrast"); the phone's values. */
+  --ch-ink-600: #46433d;
+  --ch-ink-500: #5f5c55;
   --ch-ink-400: #8f8b81;
   --ch-ink-300: #b3afa5;
   /* Every owned scroller inherits the same quiet thumb; horizontal strip geometry stays page-owned. */
@@ -45,6 +46,11 @@
   --ch-hero-mint: #9fe0b6;
   --ch-hero-mint-strong: #7bc79a;
   --ch-frame: #0a331f;
+  /* The app shell around the canvas and the sidebar (owner, 2026-10-06: "ivory sidebar with green highlight
+     selection, that's way too much green"). A deeper ivory than the page, so the canvas reads as the lighter sheet. */
+  --ch-shell: #e3ded1;
+  /* The one Clubhouse green for large fields and the selected nav row: the canopy and the sidebar selection share it. */
+  --ch-field-green: var(--ch-green-800);
   /* Champagne: hairline detail only */
   --ch-champagne-100: #efe6d2;
   --ch-champagne-300: #dccda6;
@@ -64,9 +70,10 @@
   --ch-score-over-bg: #efece4;
   --ch-score-double: #1c1b18;
   /* Charts (yardage book) */
-  --ch-chart-paper: #fbf8ef;
+  --ch-chart-paper: #fbf9f3;
   --ch-chart-gain: #155a39;
-  --ch-chart-loss: #9a6512;
+  /* 4.5:1 on the page tone (#ebe7dc, 5.1) and a soft well; #9a6512 fell to 4.0 once the page darkened (a11y 2026-10-07). */
+  --ch-chart-loss: #865608;
   /* The loss amber on a tinted cell: darker so it holds 4.5:1 on the heat fills. */
   --ch-chart-loss-on-tint: #744a06;
   --ch-chart-flag: #b03a2e;
@@ -75,9 +82,15 @@
   --ch-chart-rough: #e4e6d6;
 
   /* Semantic */
-  --ch-bg-page: var(--ch-ivory-150);
-  --ch-bg-surface: var(--ch-ivory-25);
-  --ch-bg-subtle: var(--ch-ivory-50);
+  /* Owner, 2026-10-06: "too much white, need darker ivory and green", then "make the cards lighter". The page is a
+     deeper parchment with a green light across its top; cards are a light ivory that stands off it. */
+  --ch-bg-page: #ebe7dc;
+  /* A green light falls across the top of the page and a champagne one from the right, so the canvas reads as a
+     lit green-and-ivory room rather than flat paper. Scrolls away with the content. */
+  /* No wash: large soft gradients band on 8-bit displays (owner, 2026-10-06: the ivory looked grainy). */
+  --ch-canvas-wash: linear-gradient(transparent, transparent);
+  --ch-bg-surface: #fcfaf5;
+  --ch-bg-subtle: #f5f2ea;
   --ch-bg-inset: var(--ch-ivory-150);
   --ch-bg-hover: var(--ch-ivory-50);
   --ch-bg-selected: var(--ch-green-50);
@@ -93,6 +106,52 @@
   --ch-border-subtle: rgb(28 25 18 / 0.1);
   --ch-border-control: rgb(28 25 18 / 0.14);
   --ch-border-strong: rgb(28 25 18 / 0.24);
+  /* A seam between sections of one surface: an ink line with a lit line beside it, so it reads as an engraved join,
+     not a faint hairline (owner, 2026-10-06: "add more borders in between the cards"). */
+  --ch-seam-ink: rgb(28 25 18 / 0.15);
+  --ch-seam-light: rgb(255 255 255 / 0.9);
+  --ch-seam-x: inset 0 1px 0 var(--ch-seam-ink), inset 0 2px 0 var(--ch-seam-light);
+  --ch-seam-y: inset 1px 0 0 var(--ch-seam-ink), inset 2px 0 0 var(--ch-seam-light);
+  /* The scoreboard (owner, 2026-10-06): a scorecard set as a tournament board, deep green with ivory numerals, so
+     scores never sit ivory on ivory. A recessed green panel with a lit lower lip. */
+  --ch-board-bg: radial-gradient(120% 140% at 85% -20%, rgb(123 199 154 / 0.14), transparent 55%),
+    linear-gradient(180deg, #0e3d28 0%, var(--ch-field-green) 100%);
+  --ch-board-shadow: inset 0 2px 4px rgb(0 0 0 / 0.35), inset 0 0 0 1px rgb(0 0 0 / 0.25), 0 1px 0 rgb(255 255 255 / 0.8);
+  /* Type on green (hero band, scoreboard): a warm ivory, never white, set with a soft engraved shadow so it sits in
+     the surface with depth (owner, 2026-10-06: "more ivory and text depth in the green"). */
+  --ch-on-green-ink: #f4eedd;
+  --ch-on-green-ink-soft: rgb(240 233 214 / 0.86);
+  --ch-on-green-ink-muted: rgb(222 214 190 / 0.72);
+  --ch-on-green-text-shadow: 0 1px 0 rgb(2 18 10 / 0.45), 0 2px 10px rgb(2 18 10 / 0.25);
+  --ch-on-green-text-shadow-s: 0 1px 0 rgb(2 18 10 / 0.4);
+  /* The selected sidebar row: a green key with a lit top and a green-cast lift. */
+  --ch-nav-selected-shadow: inset 0 1px 0 rgb(210 244 221 / 0.14), 0 1px 2px rgb(11 58 37 / 0.3), 0 6px 14px -8px rgb(11 58 37 / 0.55);
+  --ch-board-rule: rgb(210 244 221 / 0.14);
+  --ch-board-birdie-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28), 0 0 0 1px rgb(60 10 6 / 0.45), 0 1px 3px rgb(0 0 0 / 0.4);
+  --ch-board-eagle-shadow: 0 0 0 2px #0c3522, 0 0 0 3.5px #d0574a, 0 1px 3px rgb(0 0 0 / 0.4);
+  --ch-board-bogey-shadow: inset 0 0 0 1.5px rgb(250 248 240 / 0.72);
+  --ch-board-double-shadow: inset 0 1px 0 #fff, 0 1px 3px rgb(0 0 0 / 0.45);
+  /* Component materials (raised keys, buttons, score marks), kept here so pages use tokens, not raw shadows. */
+  /* Desktop week strip today key: frosted, edge, lit top and a real lift. */
+  --ch-key-frost-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgb(28 25 18 / 0.08), 0 2px 4px rgb(28 25 18 / 0.12), 0 10px 20px -10px rgb(28 25 18 / 0.4);
+  /* Phone week strip today key: raised ivory. */
+  --ch-key-raised-shadow: var(--ch-elevation-control), 0 0 0 1px rgb(28 25 18 / 0.05), 0 6px 12px -8px rgb(28 25 18 / 0.3);
+  /* Primary ivory action on the green hero: green-cast lift. */
+  --ch-on-dark-primary-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgb(2 18 10 / 0.12), 0 1px 2px rgb(2 18 10 / 0.3), 0 8px 16px -8px rgb(2 18 10 / 0.55);
+  /* A quiet raised chip in a soft segmented well. */
+  --ch-seg-pill-lift-shadow: var(--ch-elevation-control), 0 2px 6px -2px rgb(28 25 18 / 0.16);
+  /* Secondary button: soft ring, lit top, shallow lift. */
+  --ch-btn-secondary-shadow: 0 0 0 1px rgb(28 25 18 / 0.07), inset 0 -1px 0 rgb(28 25 18 / 0.05), inset 0 1px 0 #fff, 0 1px 2px rgb(28 25 18 / 0.08), 0 4px 10px -5px rgb(28 25 18 / 0.18);
+  /* Secondary button hover: a touch more ring and lift. */
+  --ch-btn-secondary-hover-shadow: 0 0 0 1px rgb(28 25 18 / 0.1), inset 0 -1px 0 rgb(28 25 18 / 0.05), inset 0 1px 0 #fff, 0 2px 4px rgb(28 25 18 / 0.09), 0 8px 16px -8px rgb(28 25 18 / 0.22);
+  /* Score mark (birdie): edge, lit top, contact shadow. */
+  --ch-score-birdie-shadow: inset 0 0 0 1px rgb(150 46 35 / 0.38), inset 0 1px 0 rgb(255 255 255 / 0.85), 0 1px 2px rgb(120 36 28 / 0.2);
+  /* Score mark (eagle): edge, lit top, contact shadow. */
+  --ch-score-eagle-shadow: inset 0 0 0 1px rgb(110 30 22 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.25), 0 1px 2px rgb(110 30 22 / 0.35);
+  /* Score mark (bogey): edge, lit top, contact shadow. */
+  --ch-score-bogey-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.24), inset 0 1px 0 #fff, 0 1px 2px rgb(28 25 18 / 0.16);
+  /* Score mark (double): edge, lit top, contact shadow. */
+  --ch-score-double-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 2px rgb(28 25 18 / 0.3);
   /* Green, not ink: the owner rejected the black keyboard outline (F-46). */
   --ch-border-focus: var(--ch-green-600);
   /* Green and champagne hairlines (Qualifiers: the pressed pill, the cut line, the one-round note). */
@@ -105,7 +164,12 @@
 
   /* Type */
   --ch-font-sans: var(--ch-font-instrument), ui-sans-serif, -apple-system, 'Segoe UI', system-ui, sans-serif;
+  --ch-font-serif: var(--ch-font-instrument-serif), 'Iowan Old Style', Georgia, serif;
   --ch-font-mono: var(--ch-font-jetbrains), ui-monospace, 'SF Mono', Menlo, monospace;
+  /* Serif titles (owner, 2026-10-06: classic, old money): page and section titles only, never data or controls. */
+  --ch-type-serif-l: 400 42px/1.06 var(--ch-font-serif);
+  --ch-type-serif-m: 400 31px/1.1 var(--ch-font-serif);
+  --ch-type-serif-s: 400 25px/1.15 var(--ch-font-serif);
   --ch-type-display-l: 600 36px/1.08 var(--ch-font-sans);
   --ch-type-display-s: 600 22px/1.2 var(--ch-font-sans);
   --ch-type-title: 600 15px/1.35 var(--ch-font-sans);
@@ -148,13 +212,25 @@
      and overlays retain a small, progressively stronger separation. */
   --ch-edge: rgb(28 25 18 / 0.08);
   --ch-highlight: inset 0 1px 0 rgb(255 255 255 / 0.7);
-  --ch-elevation-reading: 0 1px 2px rgb(28 25 18 / 0.04), 0 3px 8px -4px rgb(28 25 18 / 0.06);
-  --ch-elevation-reading-hover: 0 1px 3px rgb(28 25 18 / 0.05), 0 5px 12px -6px rgb(28 25 18 / 0.1);
+  /* Reading surfaces (premium brief, October 6): layered light rather than one broad shadow. A lit top edge, a crisp
+     hairline, a tight contact shadow and an ambient falloff with negative spread, so the shadow sits under the card
+     instead of hazing the canvas around it. */
+  --ch-elevation-reading: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 0 0 1px rgb(28 25 18 / 0.085),
+    0 1px 2px rgb(28 25 18 / 0.08), 0 8px 18px -10px rgb(28 25 18 / 0.16), 0 22px 40px -24px rgb(28 25 18 / 0.18);
+  /* The reading surface's cast shadow alone, for dark and branded surfaces where a white top edge or ink hairline
+     would draw a line (the green hero, the green Up next card). */
+  --ch-elevation-cast: 0 1px 2px rgb(28 25 18 / 0.06), 0 8px 18px -10px rgb(28 25 18 / 0.16),
+    0 22px 40px -24px rgb(28 25 18 / 0.18);
+  --ch-elevation-reading-hover: inset 0 1px 0 rgb(255 255 255 / 0.95), 0 0 0 1px rgb(28 25 18 / 0.1),
+    0 2px 4px rgb(28 25 18 / 0.07), 0 12px 24px -12px rgb(28 25 18 / 0.2), 0 28px 48px -26px rgb(28 25 18 / 0.22);
   --ch-elevation-reading-accent: 0 1px 3px rgb(8 43 28 / 0.08), 0 4px 12px -6px rgb(8 43 28 / 0.12);
   --ch-elevation-control: var(--ch-highlight), 0 1px 2px rgb(28 25 18 / 0.06);
   --ch-elevation-floating: 0 2px 6px rgb(28 25 18 / 0.06), 0 8px 20px -8px rgb(28 25 18 / 0.12);
   --ch-elevation-floating-focus: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo),
     var(--ch-elevation-floating);
+  /* The phone's floating tab bar: a lit edge, a hairline and a long soft shadow that separates it from the scrolling page. */
+  --ch-elevation-tabbar: inset 0 1px 0 rgb(255 255 255 / 0.7), 0 0 0 1px rgb(28 25 18 / 0.07),
+    0 2px 6px rgb(28 25 18 / 0.08), 0 14px 32px -12px rgb(28 25 18 / 0.32);
   --ch-elevation-overlay: 0 4px 12px rgb(28 25 18 / 0.08), 0 16px 36px -12px rgb(28 25 18 / 0.16);
   --ch-elevation-sheet: 0 -4px 12px rgb(28 25 18 / 0.06), 0 -12px 32px -12px rgb(28 25 18 / 0.12);
   --ch-elevation-bubble: 0 1px 2px rgb(28 25 18 / 0.04);
@@ -180,19 +256,33 @@
   --ch-avatar-neutral-ring: rgb(35 64 47 / 0.18);
 
   /* Depth vocabulary, restored for the October 1 Safari review: lit sheets, shallow content wells and raised controls. */
-  --ch-well-bg: linear-gradient(180deg, #dcd7ca 0%, #e6e2d7 55%, #ece8de 100%);
+  --ch-well-bg: linear-gradient(180deg, #d4cebe 0%, #ddd8ca 55%, #e4dfd3 100%);
   --ch-well-shadow: inset 0 2px 3px rgb(28 25 18 / 0.2), inset 0 4px 10px -2px rgb(28 25 18 / 0.16),
-    inset 0 -1px 0 rgb(255 255 255 / 0.55), inset 0 0 0 1px rgb(28 25 18 / 0.09), 0 1px 0 #fff,
+    inset 0 -1px 0 rgb(255 255 255 / 0.55), inset 0 0 0 1px rgb(28 25 18 / 0.13), 0 1px 0 #fff,
     0 0 0 1px rgb(255 255 255 / 0.35);
   /* The handoff's soft well: a shallow recess under figures and controls. */
-  --ch-well-soft-bg: linear-gradient(180deg, #e9e5da 0%, #efece3 60%, #f2efe7 100%);
+  --ch-well-soft-bg: linear-gradient(180deg, #e2ddd0 0%, #e9e5da 60%, #edeae0 100%);
   --ch-well-soft-shadow: inset 0 1px 2px rgb(28 25 18 / 0.12), inset 0 3px 8px -3px rgb(28 25 18 / 0.1),
-    inset 0 0 0 1px rgb(28 25 18 / 0.06), 0 1px 0 rgb(255 255 255 / 0.9);
-  --ch-raised-bg: linear-gradient(180deg, #fffefb 0%, #f7f5ef 60%, #efece4 100%);
+    inset 0 0 0 1px rgb(28 25 18 / 0.1), 0 1px 0 rgb(255 255 255 / 0.9);
+  --ch-raised-bg: linear-gradient(180deg, #fffdf8 0%, #f8f6ef 60%, #f0ede4 100%);
   --ch-raised-shadow: var(--ch-elevation-control);
   /* Lit upper edge, warm lower face and a contact shadow, from handoff/depth.css. */
-  --ch-sheet-bg: linear-gradient(180deg, #fffefb 0%, #fdfcf8 40%, #faf8f2 100%);
+  /* Solid: a tall sheet's gentle gradient banded visibly; the lit top edge is the elevation's inset highlight. */
+  --ch-sheet-bg: #fdfbf7;
   --ch-sheet-shadow: var(--ch-elevation-reading);
+  /* Materials on the green hero (the content layer is dark there). Raised: a lighter tonal green with a mint-lit top
+     edge and a deep green cast shadow (ink shadows vanish on green). Well: one recess darker than the hero. Control: a
+     raised green face that compresses on press. */
+  --ch-on-dark-raised-bg: linear-gradient(180deg, #245740 0%, #1b4a33 100%);
+  --ch-on-dark-raised-shadow: inset 0 1px 0 rgb(210 244 221 / 0.16), 0 0 0 1px rgb(2 18 10 / 0.18),
+    0 2px 4px rgb(2 18 10 / 0.28), 0 14px 28px -14px rgb(2 18 10 / 0.6);
+  --ch-on-dark-well-bg: linear-gradient(180deg, #0c3221 0%, #10382a 100%);
+  --ch-on-dark-well-shadow: inset 0 2px 4px rgb(0 0 0 / 0.32), inset 0 0 0 1px rgb(0 0 0 / 0.14),
+    0 1px 0 rgb(210 244 221 / 0.08);
+  --ch-on-dark-control-bg: linear-gradient(180deg, #2c6148 0%, #22553c 100%);
+  --ch-on-dark-control-shadow: inset 0 1px 0 rgb(210 244 221 / 0.2), 0 0 0 1px rgb(2 18 10 / 0.2),
+    0 1px 2px rgb(2 18 10 / 0.35), 0 6px 12px -6px rgb(2 18 10 / 0.5);
+  --ch-on-dark-control-press-shadow: inset 0 1px 3px rgb(2 18 10 / 0.4), 0 0 0 1px rgb(2 18 10 / 0.2);
   --ch-green-raised-bg: linear-gradient(180deg, #1e6a45 0%, #155a39 55%, #0f4a2f 100%);
   --ch-green-raised-shadow: 0 1px 2px rgb(8 43 28 / 0.2), 0 6px 12px -4px rgb(8 43 28 / 0.36),
     inset 0 1px 0 rgb(255 255 255 / 0.18), inset 0 -1px 0 rgb(0 0 0 / 0.15);
@@ -233,19 +323,19 @@
     --ch-ivory-0: #fdfbf7;
     --ch-ivory-25: #fbf9f4;
     --ch-ivory-50: #f3efe6;
-    --ch-bg-page: #f4f1e8;
-    --ch-bg-surface: var(--ch-ivory-25);
-    --ch-bg-subtle: var(--ch-ivory-50);
-    --ch-bg-hover: var(--ch-ivory-50);
-    --ch-bg-inset: #eeebe2;
-    --ch-raised-bg: linear-gradient(180deg, #fefdfa 0%, #faf8f2 60%, #f4f1e9 100%);
-    --ch-sheet-bg: linear-gradient(180deg, #fefdfa 0%, #fbf9f4 40%, #f5f1e8 100%);
-    --ch-chart-paper: #fbf9f4;
-    --ch-phone-bar-bg: rgb(244 241 232 / 0.94);
+    --ch-bg-page: #ede9df;
+    --ch-bg-surface: #fcfaf5;
+    --ch-bg-subtle: #f5f2ea;
+    --ch-bg-hover: #f5f2ea;
+    --ch-bg-inset: #e9e5da;
+    --ch-raised-bg: linear-gradient(180deg, #fffdf8 0%, #f9f7f0 60%, #f1eee5 100%);
+    --ch-sheet-bg: #fdfbf7;
+    --ch-chart-paper: #fbf9f3;
+    --ch-phone-bar-bg: rgb(237 233 223 / 0.94);
     /* Glass, not a lid: the page shows through as it slides under (F-49). */
-    --ch-phone-tabbar-bg: rgb(246 243 236 / 0.86);
+    --ch-phone-tabbar-bg: rgb(243 240 231 / 0.84);
     --ch-phone-composer-bg: #fbf9f4;
-    --ch-glass-bg: rgb(246 243 236 / 0.86);
+    --ch-glass-bg: rgb(243 240 231 / 0.84);
     /* Tertiary text holds 4.5:1 on the darker page. Raising it to #5f5c55 left secondary and tertiary 1.1 contrast points apart on
        a card (7.4 against 6.3), so captions, previews and times read as one gray; secondary steps darker to restore the
        ramp (9.3 against 6.3; the desktop ramp is 7.4 against 5.3). Aesthetic audit M-L1. */

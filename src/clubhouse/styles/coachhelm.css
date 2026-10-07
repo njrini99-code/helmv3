@@ -16,26 +16,46 @@
 }
 
 /* Header: the role chip, the title, one line */
+/* The large-title header: the role as a quiet green eyebrow, CoachHelm, and the live line; on desktop the view switch
+   sits level with the title at the right, so the page opens on one composed line of structure, with no box and no
+   rule. */
 .ch-hl-h {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid var(--ch-champagne-rule);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 32px;
+  row-gap: 8px;
+  align-items: end;
+}
+.ch-hl-h > :not(.ch-hl-h__aside) {
+  grid-column: 1;
+}
+.ch-hl-h__aside {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: end;
+  padding-bottom: 2px;
 }
 .ch-hl-role {
-  align-self: flex-start;
-  height: 24px;
-  padding: 0 10px;
-  border-radius: 999px;
-  font: 600 11.5px/24px var(--ch-font-sans);
-  color: var(--ch-green-700);
-  box-shadow: inset 0 0 0 1px var(--ch-green-ring);
+  justify-self: start;
+  font: 600 12.5px/1 var(--ch-font-sans);
+  letter-spacing: 0.01em;
+  color: var(--ch-green-600);
 }
+.ch-hl[data-canopy] {
+  padding-top: 0;
+}
+.ch-hl[data-canopy] > .ch-hl-h {
+  padding-top: 40px;
+}
+@media (min-width: 821px) {
+  main[data-canopy] .ch-hl-role {
+    color: var(--ch-hero-mint);
+  }
+}
+
 .ch-hl-h h1 {
-  font: 600 44px/1 var(--ch-font-sans);
-  letter-spacing: -0.036em;
-  font-variation-settings: 'wdth' 86;
+  font: 400 52px/1.02 var(--ch-font-serif);
+  letter-spacing: -0.01em;
 }
 .ch-hl-h p {
   max-width: 56ch;
@@ -68,10 +88,9 @@
   color: var(--ch-green-700);
 }
 .ch-hl-focus h2 {
-  font: 600 32px/1.12 var(--ch-font-sans);
-  letter-spacing: -0.03em;
+  font: var(--ch-type-serif-l);
+  letter-spacing: -0.008em;
   text-wrap: balance;
-  font-variation-settings: 'wdth' 88;
 }
 .ch-hl-lede {
   max-width: 58ch;
@@ -287,25 +306,28 @@
 }
 
 /* This week */
+/* The week's drill: a recessed ivory panel ruled in green at its left, so the one action reads as set apart without
+   another green fill (owner: green only for the field, selection and the scoreboard). */
 .ch-hl-drill {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 18px 20px;
-  border-radius: 16px;
-  background: var(--ch-green-800);
-  color: var(--ch-ivory-100);
+  padding: 18px 20px 18px 22px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow), inset 3px 0 0 var(--ch-field-green);
+  color: var(--ch-text-primary);
 }
 .ch-hl-drill__k {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font: 600 12px/1 var(--ch-font-sans);
-  color: var(--ch-hero-mint);
+  color: var(--ch-green-600);
 }
 .ch-hl-drill p {
   font: 400 15.5px/1.55 var(--ch-font-sans);
-  color: var(--ch-ivory-100);
+  color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
 .ch-hl-drill__t b {
@@ -314,7 +336,7 @@
 .ch-hl-drill__t em {
   font-style: normal;
   font-size: 13px;
-  color: rgb(244 241 232 / 0.72);
+  color: var(--ch-text-tertiary);
 }
 
 /* Why we think this */
@@ -362,7 +384,6 @@
   flex-direction: column;
 }
 .ch-hl-sec > h2,
-.ch-hl-pulse > h2,
 .ch-hl-prop > h2,
 .ch-hl-plist > h2 {
   margin: 0 0 10px;
@@ -477,10 +498,17 @@
 
 /* Coach: the program pulse */
 .ch-hl-pulse {
-  padding: 20px 24px 8px;
-  border-radius: 20px;
-  background: var(--ch-ivory-25);
+  padding: 22px 26px 10px;
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-reading);
+}
+/* The pulse is the board's headline read, so it takes a real title, not a caption label. */
+.ch-hl-pulse > h2 {
+  margin: 0 0 12px;
+  font: var(--ch-type-serif-s);
+  letter-spacing: -0.004em;
+  color: var(--ch-text-primary);
 }
 .ch-hl-pulse ol {
   list-style: none;
@@ -496,17 +524,18 @@
   column-gap: 12px;
   row-gap: 4px;
   align-items: center;
-  padding: 13px 0;
-  border-top: 1px solid rgb(28 25 18 / 0.07);
+  padding: 14px 0;
+  box-shadow: var(--ch-seam-x);
 }
 .ch-hl-pulse__ic {
   grid-row: 1 / 3;
   width: 30px;
   height: 30px;
-  border-radius: 10px;
+  border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--ch-ivory-150);
+  background: var(--ch-raised-bg);
+  box-shadow: var(--ch-key-raised-shadow);
   color: var(--ch-text-secondary);
 }
 .ch-hl-pulse li.is-warn .ch-hl-pulse__ic {
@@ -518,7 +547,7 @@
   color: var(--ch-green-700);
 }
 .ch-hl-pulse li b {
-  font: 500 14px/1.3 var(--ch-font-sans);
+  font: 600 14px/1.3 var(--ch-font-sans);
 }
 .ch-hl-pulse li > span:last-child {
   font: 400 12.5px/1.3 var(--ch-font-sans);
@@ -535,7 +564,25 @@
  * pulse of more rows than that (the phone's single column past three) grows the card, which is the one case that shifts.
  */
 .ch-hl-pulse__slot {
-  min-height: 197px;
+  display: flex;
+  flex-direction: column;
+  min-height: var(--ch-hl-pulse-h, 197px);
+}
+/* The all-clear at the foot of the held space (every read came in, four items or fewer): a quiet ruled line, so the
+   card's reserved room reads as a finished statement instead of a gap. Two classes: base.css's `.ch-root p` zeroes margins. */
+.ch-hl-pulse .ch-hl-pulse__clear {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: auto;
+  padding: 14px 0 2px;
+  border-top: 1px solid rgb(28 25 18 / 0.07);
+  font: 400 13px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-hl-pulse__clear svg {
+  flex: none;
+  color: var(--ch-chart-gain);
 }
 .ch-hl-pulse__sk {
   display: flex;
@@ -726,9 +773,19 @@
   flex-direction: column;
   gap: 14px;
   padding: 20px 24px 16px;
-  border-radius: 20px;
-  background: var(--ch-ivory-25);
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-reading);
+}
+/* Desktop loading holds the loaded page's measured heights (WebKit, 1440 and 1000, 2026-10-07): the canopy title block
+   194px with its serif title and live line, the pulse card 258px with its serif title and reserved rows (CH-13405). */
+@media (min-width: 821px) {
+  .ch-hl[aria-busy='true'][data-canopy] > .ch-hl-h {
+    min-height: 194px;
+  }
+  .ch-hl-sk__pulse {
+    min-height: 258px;
+  }
 }
 
 /* Narrow canvases: one column */
@@ -764,7 +821,7 @@
     background: var(--ch-sheet-bg);
   }
   .ch-hl-focus h2 {
-    font-size: 23px;
+    font-size: 30px;
   }
   .ch-hl-lede {
     font-size: 15.5px;

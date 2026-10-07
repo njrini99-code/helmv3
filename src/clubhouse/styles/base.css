@@ -111,8 +111,8 @@
 }
 .ch-display {
   font-weight: 600;
-  letter-spacing: -0.034em;
-  font-variation-settings: 'wdth' 88;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-sr-only {
   position: absolute;
@@ -162,22 +162,40 @@
 .ch-well {
   background: var(--ch-well-bg);
   box-shadow: var(--ch-well-shadow);
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
 }
 .ch-well-soft {
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
+}
+/* Text inside a recess sits on a darker ivory than the sheet, so the muted inks step up one shade there (owner,
+   2026-10-06: ivory on ivory needs more contrast). Secondary becomes body ink, tertiary becomes secondary. */
+.ch-well,
+.ch-well-soft {
+  --ch-text-secondary: var(--ch-ink-700);
+  --ch-text-tertiary: var(--ch-ink-600);
+  --ch-chart-loss: var(--ch-chart-loss-on-tint);
+}
+.ch-scoreboard {
+  --ch-text-primary: var(--ch-on-green-ink);
+  --ch-text-secondary: var(--ch-on-green-ink-soft);
+  --ch-text-tertiary: var(--ch-on-green-ink-muted);
+  text-shadow: var(--ch-on-green-text-shadow-s);
+  background: var(--ch-board-bg);
+  box-shadow: var(--ch-board-shadow);
+  border-radius: var(--ch-radius-lg);
+  color: var(--ch-text-primary);
 }
 .ch-raised {
   background: var(--ch-raised-bg);
   box-shadow: var(--ch-raised-shadow);
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
 }
 .ch-sheet {
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
-  border-radius: 16px;
+  border-radius: var(--ch-radius-xl);
 }
 /* System contrast modes suppress shadows; retain a visible surface boundary there. */
 @media (forced-colors: active) {
@@ -249,4 +267,16 @@
     /* A looping animation at 1ms would strobe: run it once and stop. */
     animation-iteration-count: 1 !important;
   }
+}
+
+/* Digits inside a display-serif heading (SerifText): the sans, a step smaller so its figures sit on the serif's x-height. */
+.ch-serif-num {
+  font-family: var(--ch-font-sans);
+  font-size: 0.84em;
+  font-style: normal;
+  /* Proportional figures at the serif's own weight: tabular figures padded every 1 to a full width, so "1.1" in a
+     headline read as a typewriter's, heavier than the words around it. Tables keep their tabular figures. */
+  font-weight: 400;
+  font-variant-numeric: lining-nums proportional-nums;
+  letter-spacing: -0.01em;
 }

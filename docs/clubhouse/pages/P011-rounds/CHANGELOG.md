@@ -1,5 +1,44 @@
 # P011 — Rounds: changelog
 
+## 2026-10-07 — Unplayed holes legible
+
+An in-progress round's unplayed hole numbers sat at 2.8:1 on the green. They now
+use the muted on-green ink (4.5:1 or better); the recess, not a faded number,
+says the hole is still to come.
+
+## 2026-10-07 — Drawn season figures, ledger dates, serif titles
+
+Owner: "random numbers with not great labeling mean little without visuals".
+Season scoring's figures are now drawn, each against a reference that needs no
+invented benchmark:
+
+- **Best:** the season's rounds as dots on their scoring range, the best lit
+  green and the average ticked. The caption says where the best came from.
+- **Putts:** a bar against 36 (two putts on every green), with how far under or
+  over it the season sits.
+- **GIR:** the 18 greens of a round, with as many lit as the season's greens per
+  18.
+
+The figures sit beside the season average on desktop and below it on the phone.
+Season scoring loses its double gilt frame, which read as a card inside a card,
+and becomes one reading sheet.
+
+Other changes:
+
+- **Month rows:** each starts with an ivory date key, its day numeral in the
+  field green, not a green block. Numerals stay in the sans, because the display
+  serif's 1 has no flag.
+- **Titles:** "Your rounds", the month headings and the round recap title are
+  set in the display serif.
+- **In-progress card:** solid field green with no large gradient (banding). Its
+  hole strip takes the scoreboard finishes, unplayed holes show their faint hole
+  numbers, and the strip is centred in the card.
+
+## 2026-10-06 — Smooth scroll and materials
+
+New round resets the canvas to the top instantly through the canvas scroller, so
+the shared wheel easing never animates the step change.
+
 ## 2026-10-06 — Course-picker loading accessibility
 
 Course and tee loading containers now use status semantics, making their

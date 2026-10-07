@@ -372,6 +372,9 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
       lowerIsBetter: c?.lowerIsBetter,
       context: ref == null ? `${holeCount} ${holeCount === 1 ? 'round' : 'rounds'}` : `vs. ${coach ? 'team' : 'Tour'} ${ref.toFixed(c?.digits ?? 0)}${c?.unit ?? ''}`,
       note: coverage ?? undefined,
+      // Drawn against the same reference the words name: a rate on 0–100 with the team's or the Tour's mark, putts against 36.
+      n: c?.you ?? null,
+      gauge: label === 'Putts per round' ? ({ kind: 'putts' } as const) : ({ kind: 'rate', ref: ref ?? null, refLabel: coach ? 'Team' : 'Tour' } as const),
     };
   };
   // Best round: one length at a time (a 9-hole score and an 18-hole score are not the same best): the 9-hole rounds when that is all
@@ -379,6 +382,8 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
   const bestHoles = data.filter.holes === '9' ? 9 : 18;
   const bestPool = data.rounds.filter((r) => r.holes === bestHoles);
   const best = bestPool.length ? Math.min(...bestPool.map((r) => r.score)) : null;
+  // The best round's own score against par, for its gauge.
+  const bestToPar = best == null ? null : (bestPool.find((r) => r.score === best)?.toPar ?? null);
   const trendRounds = [...data.rounds].reverse().slice(-10).map((r) => ({ label: r.date, score: per18(r.score, r.holes), toPar: r.toPar == null ? null : per18(r.toPar, r.holes), holes: r.holes }));
   const legs = [
     { label: 'Off the tee', value: w.sgLegs.tee },
@@ -398,12 +403,13 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
   return (
     <>
       <FigureCards
+        profile
         items={[
           fig('Fairways hit', 'Fairways hit'),
           fig('Greens in regulation', 'Greens in regulation'),
           fig('Putts per round', 'Putts per round'),
           fig('Scrambling', 'Scrambling'),
-          { label: 'Best round', value: best == null ? NO_DATA : String(best), context: bestHoles === 18 && data.filter.holes === '18' ? `${w.rounds} rounds in window` : `${bestPool.length} ${bestHoles}-hole ${bestPool.length === 1 ? 'round' : 'rounds'} in window` },
+          { label: 'Best round', value: best == null ? NO_DATA : String(best), n: best, gauge: { kind: 'par', toPar: bestToPar }, context: bestHoles === 18 && data.filter.holes === '18' ? `${w.rounds} rounds in window` : `${bestPool.length} ${bestHoles}-hole ${bestPool.length === 1 ? 'round' : 'rounds'} in window` },
         ]}
       />
       <div className="ch-st-grid2">

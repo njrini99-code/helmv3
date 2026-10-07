@@ -6,6 +6,7 @@ import { stanceOf, type ChBoardMissing, type ChHelmAssigned, type ChHelmEvidence
 import { haptic } from '../../lib/haptics';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
+import { SerifText } from '../../ui/SerifText';
 
 /**
  * The stance pill: amber for a Priority, and a word, so priority never rests on colour alone (CH-13806). A strength reads Working,
@@ -115,7 +116,9 @@ export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: Ch
         <span>{who ? `${who} · ${ins.category}` : ins.category}</span>
         <PriPill ins={ins} assigned={assigned} />
       </div>
-      <h2 id={`${id}-t`}>{ins.title}</h2>
+      <h2 id={`${id}-t`}>
+        <SerifText text={ins.title} />
+      </h2>
       {ins.lede && <p className="ch-hl-lede">{ins.lede}</p>}
       {/* CH-13903: a read from before the newest round is never drawn as current. */}
       {ins.stale && (
@@ -227,12 +230,17 @@ export function BoardPartial({ missing, what, focus = true }: { missing: ChBoard
 }
 
 /** The page's title block: the role chip, CoachHelm, one line. CH-13801: the h1 labels the page's main landmark (aria-labelledby), and each section below is a labelled region. */
-export function Head({ who, children }: { who: 'Player' | 'Coach'; children: ReactNode }) {
+/** `aside`: the view switch on desktop, set level with the title (the large-title pattern), so the header is one line of
+ *  structure instead of a title block over a separate strip. */
+export function Head({ who, children, aside }: { who: 'Player' | 'Coach'; children: ReactNode; aside?: ReactNode }) {
   return (
-    <header className="ch-hl-h">
+    <header className={'ch-hl-h' + (aside ? ' has-aside' : '')} data-canopy-head="">
       <span className="ch-hl-role">{who}</span>
       <h1 id="ch-hl-title">CoachHelm</h1>
-      <p>{children}</p>
+      <p>
+        {children}
+      </p>
+      {aside && <div className="ch-hl-h__aside">{aside}</div>}
     </header>
   );
 }

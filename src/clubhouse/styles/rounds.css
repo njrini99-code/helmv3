@@ -31,9 +31,8 @@
 }
 .ch-rd-h h1 {
   margin: 8px 0 0;
-  font: 600 36px/1.05 var(--ch-font-sans);
-  letter-spacing: -0.036em;
-  font-variation-settings: 'wdth' 86;
+  font: 400 50px/1.02 var(--ch-font-serif);
+  letter-spacing: -0.01em;
 }
 
 /* The hero: the round in progress beside the season */
@@ -51,10 +50,8 @@
   padding: 20px 22px 18px;
   border-radius: 20px;
   color: var(--ch-ivory-100);
-  background: radial-gradient(120% 90% at 100% 0%, rgb(123 199 154 / 0.18), transparent 60%), var(--ch-green-800);
-  box-shadow:
-    0 0 0 1px var(--ch-green-900),
-    0 22px 44px -28px rgb(11 58 37 / 0.7);
+  background: var(--ch-field-green);
+  box-shadow: inset 0 1px 0 rgb(210 244 221 / 0.12), var(--ch-elevation-cast);
 }
 .ch-rd-unf.is-idle {
   background: radial-gradient(120% 90% at 100% 0%, rgb(123 199 154 / 0.12), transparent 60%), var(--ch-green-800);
@@ -93,18 +90,21 @@
   margin-top: 18px;
   font: 600 28px/1.05 var(--ch-font-sans);
   letter-spacing: -0.03em;
-  font-variation-settings: 'wdth' 86;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-rd-unf__m {
   margin-top: 5px;
   font: 400 13px/1.3 var(--ch-font-sans);
   color: rgb(244 241 232 / 0.7);
 }
+/* The holes so far, set like the scoreboard: centred in the card's free height so the card never ends in a dead
+   band, with the board's finishes (a red disc under par, an ivory outline over it). */
 .ch-rd-strip {
   display: grid;
   grid-template-columns: repeat(9, minmax(0, 44px));
-  gap: 4px;
-  margin: 20px 0 18px;
+  gap: 6px 4px;
+  margin: auto 0;
+  padding: 20px 0 18px;
 }
 .ch-rd-strip span {
   aspect-ratio: 1;
@@ -115,7 +115,8 @@
   font-variant-numeric: tabular-nums;
   background: rgb(0 0 0 / 0.18);
   box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.3);
-  color: rgb(244 241 232 / 0.35);
+  /* An unplayed hole's number still reads (4.5:1 on the green); the recess, not a faded ink, says it is to come. */
+  color: var(--ch-on-green-ink-muted);
 }
 .ch-rd-strip span.is-par {
   background: rgb(255 255 255 / 0.1);
@@ -123,14 +124,15 @@
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
 }
 .ch-rd-strip span.is-under {
-  background: var(--ch-ivory-100);
-  color: var(--ch-score-under);
-  box-shadow: inset 0 0 0 2px var(--ch-score-under);
+  border-radius: 50%;
+  background: linear-gradient(180deg, #d0574a 0%, #a8372b 100%);
+  color: #fff8f5;
+  box-shadow: var(--ch-board-birdie-shadow);
 }
 .ch-rd-strip span.is-over {
-  background: rgb(255 255 255 / 0.1);
-  color: var(--ch-ivory-100);
-  box-shadow: inset 0 0 0 1.5px rgb(244 241 232 / 0.7);
+  background: transparent;
+  color: var(--ch-on-green-ink);
+  box-shadow: var(--ch-board-bogey-shadow);
 }
 .ch-rd-strip span.is-next {
   background: transparent;
@@ -205,19 +207,9 @@
 .ch-rd-season {
   position: relative;
   padding: 20px 22px 14px;
-  border-radius: 20px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
-  box-shadow:
-    0 0 0 1px rgb(176 149 96 / 0.28),
-    0 18px 40px -30px rgb(28 25 18 / 0.4);
-}
-.ch-rd-season::before {
-  content: '';
-  position: absolute;
-  inset: 7px;
-  border-radius: 14px;
-  border: 1px solid rgb(176 149 96 / 0.15);
-  pointer-events: none;
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-rd-season.is-empty {
   display: flex;
@@ -235,10 +227,10 @@
   color: var(--ch-text-secondary);
 }
 .ch-rd-season__h {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: end;
+  gap: 16px 28px;
 }
 .ch-rd-season__big {
   display: flex;
@@ -257,33 +249,119 @@
   color: var(--ch-text-secondary);
 }
 .ch-rd-season__f {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 0;
-  display: flex;
 }
-.ch-rd-season__f > div {
-  padding: 0 16px;
+.ch-rd-fig {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 18px;
 }
-.ch-rd-season__f > div + div {
-  border-left: 1px solid var(--ch-champagne-rule);
+.ch-rd-fig + .ch-rd-fig {
+  box-shadow: var(--ch-seam-y);
 }
-.ch-rd-season__f dt {
-  font: 500 11.5px/1 var(--ch-font-sans);
+.ch-rd-fig dt {
+  font: 600 12px/1 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
-.ch-rd-season__f dd {
+.ch-rd-fig dd {
   margin: 0;
-  font: 500 22px/1 var(--ch-font-sans);
-  letter-spacing: -0.035em;
 }
-/* The figure's sub-line: a second dd, so the list stays dt/dd pairs (axe definition-list). */
-.ch-rd-season__f dd + dd {
-  letter-spacing: normal;
-  font: 400 11.5px/1 var(--ch-font-sans);
+.ch-rd-fig__v {
+  font: 500 24px/1 var(--ch-font-sans);
+  letter-spacing: -0.026em;
+  color: var(--ch-text-primary);
+}
+.ch-rd-fig__viz {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 2px 0;
+}
+/* The figure's caption: a dd, so the list stays dt/dd pairs (axe definition-list). */
+.ch-rd-fig__m {
+  font: 400 12px/1.3 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
-  white-space: nowrap;
+}
+/* Best: the season's rounds on their range. */
+.ch-rd-range {
+  position: relative;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow);
+}
+.ch-rd-range i {
+  position: absolute;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ch-ink-400);
+  translate: -50% -50%;
+}
+.ch-rd-range i.is-best {
+  z-index: 1;
+  width: 9px;
+  height: 9px;
+  background: var(--ch-green-600);
+  box-shadow: 0 0 0 2px var(--ch-sheet-bg);
+}
+.ch-rd-range b {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--ch-ink-900);
+  translate: -50% 0;
+}
+.ch-rd-range__ends {
+  display: flex;
+  justify-content: space-between;
+  font: 600 12px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+/* Putts: a bar against two putts a green (36), ticked. */
+.ch-rd-putts {
+  position: relative;
+  height: 8px;
+  margin: 3px 0;
+  border-radius: 4px;
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow);
+}
+.ch-rd-putts i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--ch-green-500), var(--ch-green-600));
+}
+.ch-rd-putts b {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--ch-ink-900);
+  translate: -50% 0;
+}
+/* GIR: the 18 greens of a round. */
+.ch-rd-greens {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 3px;
+}
+.ch-rd-greens i {
+  height: 7px;
+  border-radius: 2px;
+  background: var(--ch-ivory-300);
+}
+.ch-rd-greens i.is-hit {
+  background: var(--ch-green-500);
 }
 .ch-rd-season__ch {
   display: flex;
@@ -488,8 +566,8 @@
 }
 .ch-rd-grp__h h3 {
   margin: 0;
-  font: 600 18px/1 var(--ch-font-sans);
-  letter-spacing: -0.02em;
+  font: var(--ch-type-serif-s);
+  letter-spacing: -0.004em;
   color: var(--ch-ink-950);
 }
 .ch-rd-grp__h b {
@@ -535,27 +613,29 @@ a.ch-rd-sc:focus-visible {
   outline-offset: 2px;
 }
 /* No photography (Q-72a): the photo tile becomes a green date tile. */
+/* The date: an ivory key with the day as a serif numeral in the field green, like a dated card in a club ledger
+   (owner: green only for the field, selection and the scoreboard, so no green block per row). */
 .ch-rd-sc__date {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
   width: 64px;
   height: 60px;
-  border-radius: 12px;
-  background: var(--ch-green-800);
-  color: var(--ch-ivory-100);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-raised-bg);
+  color: var(--ch-field-green);
+  box-shadow: var(--ch-key-raised-shadow);
 }
 .ch-rd-sc__date b {
-  font: 600 22px/1 var(--ch-font-sans);
-  letter-spacing: -0.03em;
+  font: 600 23px/1 var(--ch-font-sans);
+  letter-spacing: -0.02em;
 }
 .ch-rd-sc__date em {
-  font: 500 11px/1 var(--ch-font-sans);
+  font: 600 12px/1 var(--ch-font-sans);
   font-style: normal;
-  color: rgb(244 241 232 / 0.72);
+  color: var(--ch-text-tertiary);
 }
 .ch-rd-sc__c {
   min-width: 0;
@@ -710,7 +790,7 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rd-sc__s b {
   font: 500 22px/1 var(--ch-font-sans);
-  letter-spacing: -0.035em;
+  letter-spacing: -0.026em;
   color: var(--ch-ink-950);
 }
 .ch-rd-sc__s em {
@@ -742,7 +822,7 @@ a.ch-rd-sc:focus-visible {
 /* Phone (Player - Rounds - Mobile.html) */
 @container chrd (max-width: 640px) {
   .ch-rd-h h1 {
-    font-size: 28px;
+    font-size: 38px;
   }
   .ch-rd-tools {
     flex-wrap: nowrap;
@@ -787,11 +867,13 @@ a.ch-rd-sc:focus-visible {
   .ch-rd-season__big b {
     font-size: 36px;
   }
+  .ch-rd-season__h {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .ch-rd-season__f {
     width: 100%;
   }
   .ch-rd-season__f > div {
-    flex: 1;
     padding: 0 10px;
   }
   .ch-rd-season__f > div:first-child {
@@ -895,10 +977,10 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rv-hero h1 {
   margin: 0;
-  color: var(--ch-ivory-100);
-  font: 600 38px/1 var(--ch-font-sans);
-  letter-spacing: -0.035em;
-  font-variation-settings: 'wdth' 86;
+  color: var(--ch-on-green-ink);
+  font: 400 48px/1 var(--ch-font-serif);
+  letter-spacing: -0.01em;
+  text-shadow: var(--ch-on-green-text-shadow);
 }
 .ch-rv-hero__m {
   display: inline-flex;
@@ -916,7 +998,7 @@ a.ch-rd-sc:focus-visible {
 .ch-rv-hero__s b {
   font: 500 84px/0.85 var(--ch-font-sans);
   letter-spacing: -0.06em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-rv-hero__s em {
   font: 600 18px/1 var(--ch-font-sans);

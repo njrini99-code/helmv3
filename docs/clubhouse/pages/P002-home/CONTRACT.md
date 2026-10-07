@@ -43,12 +43,22 @@ write changes.
 
 Status: DEFINED
 
-Home is `/golf/dashboard`, and it is two pages. A coach with the Clubhouse flag on gets Coach Home (20101): the date, the greeting and a one-sentence brief; Message team and New event; the week beside the latest round in one sheet; and the season leaderboard. A player gets Player Home (20102): the date, the greeting and a sentence from their own rounds; Message coach; the week, with Up next and its countdown, beside My latest round; then Scoring and the four parts of the game. Both are read on the server, so the first paint has its data. A team with nothing yet gets the first-run page (20408 for a coach, 20412 for a player, D-71). Every link Home hands out is 20103. Home reads no Clubhouse query parameter: the Fairway dashboard's `?range=` is ignored here, and there is no deep link into Home.
+Home is `/golf/dashboard`, and it is two pages. A coach with the Clubhouse flag
+on gets Coach Home (20101): the date, the greeting and a one-sentence brief;
+Message team and New event; the week beside the latest round in one sheet; and
+the season leaderboard. A player gets Player Home (20102): the date and the
+greeting, with no brief line under it (owner, 2026-10-06); Message coach; the
+week beside Up next with its countdown and My latest round; then Scoring and the
+four parts of the game. Both are read on the server, so the first paint has its
+data. A team with nothing yet gets the first-run page (20408 for a coach, 20412
+for a player, D-71). Every link Home hands out is 20103. Home reads no Clubhouse
+query parameter: the Fairway dashboard's `?range=` is ignored here, and there is
+no deep link into Home.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 20101 | — | `COACH_HOME_READY` | Coach Home opens with the date, the greeting and the brief, Message team and New event, the week beside the latest round in one sheet, and the season leaderboard, all read on the server for the first paint; a team with nothing yet gets the first-run page (CH-2308), and on a phone the same data is drawn as the phone Home (21901). |
-| 20102 | — | `PLAYER_HOME_READY` | Player Home opens with the date, the greeting and one sentence from the player's own rounds, Message coach, the week beside My latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901). |
+| 20102 | — | `PLAYER_HOME_READY` | Player Home opens with the date and the greeting (no brief line: owner, 2026-10-06), Message coach, the week beside Up next and My latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901). |
 | 20103 | — | `LINKS_OPEN_WHAT_THEY_NAME` | Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, and Message coach the coach's thread (?user=); a link to a screen not yet rebuilt for the viewer's role is not drawn. |
 
 From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.

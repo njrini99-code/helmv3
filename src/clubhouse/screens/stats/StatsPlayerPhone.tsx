@@ -20,7 +20,7 @@ import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/forma
 import { sgBaseline } from '../../lib/sg';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
 import { formatHcp } from '../roster/format';
-import { SgBars, SgChangeChip } from './charts';
+import { FigureGauge, SgBars, SgChangeChip } from './charts';
 import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
 import { RoundsExtra } from './RoundsExtra';
@@ -30,6 +30,8 @@ import { WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { ProposalAnswer } from './ProposalAnswer';
 import { devProgress, devTitle, goalLine } from './dev-format';
+import { chScrollIntoView } from '../../lib/smooth-scroll';
+import { useChReducedMotion } from '../../lib/reduced-motion';
 
 /** Rounds the list shows before "All N rounds". */
 const ROUNDS_SHOWN = 5;
@@ -214,9 +216,12 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
   const flat = form != null && Math.abs(form) < 0.05;
   const formTone = form == null || flat ? '' : form < 0 ? ' ch-gain' : ' ch-loss';
   const d = data.sgChange.delta;
+  // The scoring average against par, per 18 holes over the window's rounds that carry a par (owner, 2026-10-07: no bare numbers).
+  const pars = data.rounds.filter((r) => r.toPar != null).map((r) => per18(r.toPar as number, r.holes));
+  const toPar = pars.length ? pars.reduce((a, b) => a + b, 0) / pars.length : null;
   return (
     <div className="ch-stm-overview">
-      <dl className="ch-stm-figs is-three">
+      <dl className="ch-stm-figs is-three is-line">
         <div>
           <dt>Scoring avg</dt>
           <dd className="ch-num">{formatFixed(w.avg)}</dd>
@@ -236,6 +241,13 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
           <dd>{form == null ? 'After three rounds' : 'Newer rounds'}</dd>
         </div>
       </dl>
+      {/* Each figure drawn against its reference (decorative; the figures say it): scoring from par, strokes gained from
+          the Tour's zero. The trend is already words. */}
+      <div className="ch-stm-gauges" aria-hidden="true">
+        <span>{w.avg != null && toPar != null && <FigureGauge gauge={{ kind: 'par', toPar }} n={w.avg} />}</span>
+        <span>{w.sgPerRound != null && <FigureGauge gauge={{ kind: 'sg' }} n={w.sgPerRound} />}</span>
+        <span />
+      </div>
       <div className="ch-stm-overview__meta">
         {readCaveat ?? (
           <>
@@ -325,9 +337,10 @@ function Trend({ data }: { data: ChPlayerProfile }) {
 function Rounds({ rounds, open }: { rounds: ChPlayerProfile['rounds']; open: boolean }) {
   const [all, setAll] = useState(open);
   const ref = useRef<HTMLElement>(null);
+  const reduced = useChReducedMotion();
   useEffect(() => {
-    if (open) ref.current?.scrollIntoView({ block: 'start' });
-  }, [open]);
+    if (open) chScrollIntoView(ref.current, reduced);
+  }, [open, reduced]);
   const shown = all ? rounds : rounds.slice(0, ROUNDS_SHOWN);
   return (
     <section className="ch-stm-panel" aria-labelledby="ch-spm-rounds" ref={ref}>

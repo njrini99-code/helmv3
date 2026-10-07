@@ -13,7 +13,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
 import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
-import { SgBars } from './charts';
+import { FigureGauge, SgBars } from './charts';
 import { teamPlayerHref } from './links';
 import { LinkPending } from '../../shell/LinkPending';
 import { puttingNote } from './notes';
@@ -115,17 +115,26 @@ function Figures({ figures }: { figures: ChTeamStats['figures'] }) {
   const shown = figures.filter((f) => !f.signed).slice(0, 4);
   // Keep the comparison row's geometry across windows; absence stays hidden from assistive technology.
   const anyDelta = shown.some((f) => f.delta != null);
+  // On the stat line, as on the desktop: no surface, gilt rules, seams, and each figure drawn against its reference
+  // in a row under the words (decorative; the figures say it).
   return (
-    <dl className="ch-stm-figs">
-      {shown.map((f) => (
-        <div key={f.label}>
-          <dt>{short[f.label] ?? f.label}</dt>
-          <dd className="ch-num">{f.value == null ? NO_DATA : `${f.value.toFixed(f.digits)}${f.unit}`}</dd>
-          {/* A change that rounds to zero ("0.0") is no change: neutral, not amber (F-54). */}
-          <dd aria-hidden={!anyDelta || f.delta == null ? true : undefined} className={'ch-num ' + (f.delta == null || Math.abs(f.delta) < 0.5 * 10 ** -(f.digits ?? 1) ? '' : f.delta < 0 === f.lowerIsBetter ? 'ch-gain' : 'ch-loss')}>{f.delta == null ? null : formatSigned(f.delta, f.digits)}</dd>
-        </div>
-      ))}
-    </dl>
+    <div className="ch-stm-line">
+      <dl className="ch-stm-figs is-line">
+        {shown.map((f) => (
+          <div key={f.label}>
+            <dt>{short[f.label] ?? f.label}</dt>
+            <dd className="ch-num">{f.value == null ? NO_DATA : `${f.value.toFixed(f.digits)}${f.unit}`}</dd>
+            {/* A change that rounds to zero ("0.0") is no change: neutral, not amber (F-54). */}
+            <dd aria-hidden={!anyDelta || f.delta == null ? true : undefined} className={'ch-num ' + (f.delta == null || Math.abs(f.delta) < 0.5 * 10 ** -(f.digits ?? 1) ? '' : f.delta < 0 === f.lowerIsBetter ? 'ch-gain' : 'ch-loss')}>{f.delta == null ? null : formatSigned(f.delta, f.digits)}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="ch-stm-gauges" aria-hidden="true">
+        {shown.map((f) => (
+          <span key={f.label}>{f.gauge && f.value != null && <FigureGauge gauge={f.gauge} n={f.value} />}</span>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -190,10 +199,37 @@ export function ScoreLine({ values, from, to, label }: { values: Array<number | 
   const y = (v: number) => pad + ((v - lo) / (hi - lo)) * (H - pad * 2 - 12);
   const d = pts.map((p, k) => `${k ? 'L' : 'M'}${x(p.i).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
   const last = pts[pts.length - 1]!;
+  // The mean's label goes in the corner the line keeps clear of (right or left end, above or below the dashed line),
+  // so it never sits on the data; the first clear corner wins, the right above first.
+  const lineAt = (px: number) => {
+    for (let k = 1; k < pts.length; k++) {
+      const a = pts[k - 1]!;
+      const b = pts[k]!;
+      if (px >= x(a.i) && px <= x(b.i)) return y(a.v) + ((px - x(a.i)) / Math.max(1e-6, x(b.i) - x(a.i))) * (y(b.v) - y(a.v));
+    }
+    return px < x(pts[0]!.i) ? y(pts[0]!.v) : y(last.v);
+  };
+  const labelW = 64;
+  const corners = [
+    { end: true, above: true },
+    { end: true, above: false },
+    { end: false, above: true },
+    { end: false, above: false },
+  ].map((c) => {
+    const ty = c.above ? y(mean) - 5 : y(mean) + 14;
+    const x0 = c.end ? W - pad - labelW : pad;
+    let clear = Infinity;
+    for (let px = x0; px <= x0 + labelW; px += 4) {
+      const ly = lineAt(px);
+      clear = Math.min(clear, ly < ty - 11 ? ty - 11 - ly : ly > ty + 3 ? ly - ty - 3 : 0);
+    }
+    return { ...c, ty, clear };
+  });
+  const spot = corners.find((c) => c.clear >= 4) ?? [...corners].sort((a, b) => b.clear - a.clear)[0]!;
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="ch-stm-chart" role="img" aria-label={label}>
       <line x1={pad} x2={W - pad} y1={y(mean)} y2={y(mean)} className="ch-stm-chart__mean" />
-      <text x={W - pad} y={y(mean) - 5} textAnchor="end" className="ch-stm-chart__t">
+      <text x={spot.end ? W - pad : pad} y={spot.ty} textAnchor={spot.end ? 'end' : 'start'} className="ch-stm-chart__t">
         Mean {formatFixed(mean)}
       </text>
       <path d={d} className="ch-stm-chart__line" />

@@ -17,14 +17,14 @@ function Chrome({ label, code, chained, children }: { label: string; code: strin
     </div>
   );
   return (
-    <main className={'ch-hl ch-hv' + (phone ? ' is-phone' : '')} aria-busy="true" aria-label={label} data-skel={chained ? 'chained' : undefined} data-ch-code={code}>
+    <main className={'ch-hl ch-hv' + (phone ? ' is-phone' : '')} aria-busy="true" aria-label={label} data-skel={chained ? 'chained' : undefined} data-ch-code={code} data-canopy={phone ? undefined : ''}>
       {phone && tabs}
-      <header className="ch-hl-h">
+      <header className={'ch-hl-h' + (phone ? '' : ' has-aside')} data-canopy-head="">
         <Skeleton width={62} height={24} radius={12} />
         <Skeleton width={190} height={44} radius={10} />
         <Skeleton width={360} height={14} />
+        {!phone && <div className="ch-hl-h__aside">{tabs}</div>}
       </header>
-      {!phone && tabs}
       {children}
     </main>
   );

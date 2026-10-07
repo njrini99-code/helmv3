@@ -183,6 +183,10 @@ before, after, baseline or evidence.
 | `P003__premium-audit__coach__1280__case-010-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-010-chromium-normal; /clubhouse-preview/roster; synthetic preview |
 | `P003__premium-audit__coach__390__case-002-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-002-webkit-reduce; /clubhouse-preview/roster; synthetic preview |
 | `P003__premium-audit__coach__390__case-010-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-010-chromium-normal; /clubhouse-preview/roster; synthetic preview |
+| `P003__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
+| `P003__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
+| `P003__page__player__1280x948__default__after__77e553a.png` | after | 77e553a | page (player), 1280x948px, default |
+| `P003__page__player__390x792__default__after__77e553a.png` | after | 77e553a | page (player), 390x792px, default |
 
 ## 2026-10-02 — Mobile design fidelity verification
 

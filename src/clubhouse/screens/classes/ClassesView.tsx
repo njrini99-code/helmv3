@@ -18,6 +18,8 @@ import { ClassForm } from './ClassForm';
 import { ImportSchedule } from './ImportSchedule';
 import { AddTile, ClassCard, CoachNote, OverlapsCard, SyncStatus, TermBar, TodayClasses } from './parts';
 import { newClassId, type ChClassesWrites, type ChRemoveAllData } from './writes';
+import { useChReducedMotion } from '../../lib/reduced-motion';
+import { chScrollIntoView } from '../../lib/smooth-scroll';
 
 const label = (c: { code: string; name: string }) => c.code || c.name;
 
@@ -39,6 +41,7 @@ const label = (c: { code: string; name: string }) => c.code || c.name;
 const offCalendar = (r: { success?: boolean; data?: unknown }) => !r.success && (r.data as { offCalendar?: boolean } | undefined)?.offCalendar === true;
 
 export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChClassesWrites }) {
+  const reduced = useChReducedMotion();
   const phone = useChPhone();
   const router = useRouter();
   const backFromMore = useBackFromMore();
@@ -344,7 +347,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
               overlaps={conflicts.length}
               overlapsError={week.error}
               compact={phone}
-              onOverlaps={() => document.getElementById('ch-cl-overlaps')?.scrollIntoView({ block: 'start' })}
+              onOverlaps={() => chScrollIntoView(document.getElementById('ch-cl-overlaps'), reduced)}
             />
           </SectionBoundary>
           {phone && (

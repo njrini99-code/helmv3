@@ -16,6 +16,7 @@ import { RecoveryHost, RoundRuntime, type RoundRuntimeRoutes } from './RoundRunt
 import { ENGINE_ROUTES } from './routes';
 import { roundHeading, trackingRound, type ChRoundSession } from './session';
 import { loadSetupQualifiers, QUALIFIER_READ_MS, SETUP_READ_PORTS, startRefusal, toStartForm } from './setup-reads';
+import { canvasScrollNow } from '../../../lib/smooth-scroll';
 
 const LIBRARY = '/golf/dashboard/rounds';
 
@@ -118,8 +119,8 @@ export function NewRound({ playerId }: { playerId: string }) {
   const tracking = engine.step === 'tracking' || engine.step === 'submitting';
   // The setup and the round are different screens on one address: the new one opens at its top.
   useEffect(() => {
-    document.getElementById('ch-canvas')?.scrollTo({ top: 0 });
-    window.scrollTo({ top: 0 });
+    canvasScrollNow(0);
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, [tracking]);
 
   const completed = engine.completedHoleStats[engine.currentHoleIndex];

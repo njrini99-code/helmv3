@@ -45,35 +45,37 @@
   font-size: 14.5px;
   letter-spacing: -0.015em;
 }
+/* One green (owner, 2026-10-06: "it's not even the same green"): the primary action is the field green the sidebar
+   selection, the canopy and the scoreboard use, its words in the warm on-green ink, engraved. A faint lift at the top
+   edge keeps it reading as a key; no second, brighter green. */
 .ch-btn--primary {
-  color: #fff;
-  background: linear-gradient(180deg, #1a6542 0%, #145838 100%);
+  color: var(--ch-on-green-ink);
+  text-shadow: var(--ch-on-green-text-shadow-s);
+  background: linear-gradient(180deg, #0f4429 0%, var(--ch-field-green) 100%);
   box-shadow: 0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), 0 1px 2px rgb(12 65 40 / 0.22),
     0 4px 10px -6px rgb(12 65 40 / 0.4);
 }
 .ch-btn--primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #176040 0%, #115133 100%);
+  background: linear-gradient(180deg, #124b2e 0%, #0d3f28 100%);
   box-shadow: 0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), 0 2px 4px rgb(12 65 40 / 0.22),
     0 8px 16px -8px rgb(12 65 40 / 0.45);
 }
 .ch-btn--primary:active:not(:disabled) {
-  background: #124f31;
+  background: #08301e;
   box-shadow: 0 0 0 1px #0e462c, inset 0 1px 3px rgb(0 0 0 / 0.25);
 }
 .ch-btn--secondary {
   color: var(--ch-text-primary);
   background: linear-gradient(180deg, #fefdfa 0%, #f7f5ef 100%);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.12), inset 0 -1px 0 rgb(28 25 18 / 0.06), inset 0 1px 0 #fff,
-    0 1px 2px rgb(28 25 18 / 0.06), 0 3px 6px -3px rgb(28 25 18 / 0.08);
+  box-shadow: var(--ch-btn-secondary-shadow);
 }
 .ch-btn--secondary:hover:not(:disabled) {
   background: linear-gradient(180deg, #fefdfa 0%, #f3f1ea 100%);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.2), inset 0 -1px 0 rgb(28 25 18 / 0.06), inset 0 1px 0 #fff,
-    0 2px 4px rgb(28 25 18 / 0.07), 0 6px 12px -6px rgb(28 25 18 / 0.12);
+  box-shadow: var(--ch-btn-secondary-hover-shadow);
 }
 .ch-btn--secondary:active:not(:disabled) {
   background: #f5f3ec;
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.18), inset 0 1px 2px rgb(28 25 18 / 0.1);
+  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1), inset 0 1px 2px rgb(28 25 18 / 0.12);
 }
 .ch-btn--ghost {
   color: var(--ch-green-600);
@@ -249,25 +251,63 @@
   height: 21px;
   font-size: 11.5px;
 }
+/* Scorecard marks (owner, 2026-10-06): one physical token in four finishes, so a card of them reads as a set. Each has
+   a lit face, a defined 1px edge, a top highlight and a contact shadow; only colour and shape change. The convention
+   stays: a circle under par, a square over it, red only for under par (D-42), solid for eagle and double or worse. */
+.ch-score--birdie,
+.ch-score--eagle,
+.ch-score--bogey,
+.ch-score--double {
+  font-weight: 600;
+}
 .ch-score--birdie {
-  color: var(--ch-score-under);
+  color: #962e23;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 1.25px currentColor;
+  background: linear-gradient(180deg, #fdeeeb 0%, #f3d3cd 100%);
+  box-shadow: var(--ch-score-birdie-shadow);
 }
 .ch-score--eagle {
-  color: var(--ch-score-under);
+  color: #fff7f4;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 1.25px currentColor, inset 0 0 0 3.25px var(--ch-bg-surface), inset 0 0 0 4.5px currentColor;
+  background: linear-gradient(180deg, #c4493b 0%, #a1342a 100%);
+  box-shadow: var(--ch-score-eagle-shadow);
 }
 .ch-score--bogey {
-  color: var(--ch-green-600);
-  border-radius: 3px;
-  box-shadow: inset 0 0 0 1.25px currentColor;
+  color: var(--ch-ink-900);
+  border-radius: 7px;
+  background: linear-gradient(180deg, #fffefb 0%, #f1eee6 100%);
+  box-shadow: var(--ch-score-bogey-shadow);
 }
 .ch-score--double {
-  color: var(--ch-green-800);
-  border-radius: 3px;
-  box-shadow: inset 0 0 0 1.25px currentColor, inset 0 0 0 3.25px var(--ch-bg-surface), inset 0 0 0 4.5px currentColor;
+  color: var(--ch-ivory-50);
+  border-radius: 7px;
+  background: linear-gradient(180deg, #3a3832 0%, #1c1b18 100%);
+  box-shadow: var(--ch-score-double-shadow);
+}
+.ch-score--sm.ch-score--bogey,
+.ch-score--sm.ch-score--double {
+  border-radius: var(--ch-radius-xs);
+}
+/* On the scoreboard the marks take board finishes: red discs under par (an eagle ringed twice), an ivory outline over
+   par, a solid ivory tile for double or worse. */
+.ch-scoreboard .ch-score--birdie,
+.ch-scoreboard .ch-score--eagle {
+  color: #fff8f5;
+  background: linear-gradient(180deg, #d0574a 0%, #a8372b 100%);
+  box-shadow: var(--ch-board-birdie-shadow);
+}
+.ch-scoreboard .ch-score--eagle {
+  box-shadow: var(--ch-board-eagle-shadow);
+}
+.ch-scoreboard .ch-score--bogey {
+  color: #fbf8ef;
+  background: transparent;
+  box-shadow: var(--ch-board-bogey-shadow);
+}
+.ch-scoreboard .ch-score--double {
+  color: var(--ch-green-900);
+  background: linear-gradient(180deg, #fbf8ef 0%, #e6e1d3 100%);
+  box-shadow: var(--ch-board-double-shadow);
 }
 .ch-score--empty {
   color: var(--ch-ink-300);
@@ -472,7 +512,7 @@
   padding: 6px 4px;
   border-collapse: separate;
   border-spacing: 0;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: 0 0 0 1px var(--ch-border-hairline);
   table-layout: fixed;
@@ -512,6 +552,9 @@
 }
 .ch-nine b {
   font: 600 14px/1 var(--ch-font-sans);
+}
+.ch-scoreboard .ch-nine .is-par td {
+  border-bottom-color: var(--ch-board-rule);
 }
 
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn

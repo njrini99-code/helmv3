@@ -634,6 +634,12 @@ describe('Qualifiers · one qualifier', () => {
     expect(fact('Rounds submitted')).toBe('Rounds submitted13of 24');
     expect(fact('Course')).toBe('CourseFinley GCPar by round');
     expect(fact('Spots')).toBe('Spots54 on score · 1 pick');
+    // Two facts drawn (decorative): 13 of 24 rounds along a bar, and five seats, four won on score and one pick.
+    const facts = document.querySelector('.ch-qf-facts')!;
+    expect((facts.querySelector('.ch-qf-bar i') as HTMLElement).style.width).toBe(`${(13 / 24) * 100}%`);
+    expect(facts.querySelectorAll('.ch-qf-seats i.is-score')).toHaveLength(4);
+    expect(facts.querySelectorAll('.ch-qf-seats i.is-pick')).toHaveLength(1);
+    for (const v of facts.querySelectorAll('.ch-qf-facts__viz')) expect(v.getAttribute('aria-hidden')).toBe('true');
     expect(screen.getByRole('heading', { level: 1, name: 'Pinehurst qualifier' })).toBeTruthy();
     for (const h of ['Leaderboard', 'Round-by-round scores', 'Selections', 'Course per round', 'Scoring rules']) expect(screen.getByRole('heading', { level: 2, name: h })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Manage selections' }).getAttribute('href')).toBe(`/golf/dashboard/qualifiers/${d.id}/selection`);
@@ -1503,7 +1509,7 @@ describe('Qualifiers · the list comes back as it was left, and Back is a real B
 
     // The qualifier opens at the top (a new page), the filter and the place are kept.
     view.rerender(tree(page(DETAIL, <QualifierDetail data={{ ...d, id: link.getAttribute('href')!.split('/').pop()! }} writes={fakeWrites()} live={false} />)));
-    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0 });
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' });
 
     // Back: a step back in history (a popstate), then the list again, restored once by the frame, with its filter and search.
     await user.click(backLink());
@@ -1513,7 +1519,7 @@ describe('Qualifiers · the list comes back as it was left, and Back is a real B
     });
     const sends = (canvas.scrollTo as Mock).mock.calls.length;
     view.rerender(tree(page(TEAM_LIST, <QualifiersList data={list()} />)));
-    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 520 });
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 520, behavior: 'instant' });
     expect(pill(/^Active/)).toBe('true');
     expect(searchBox().value).toBe('pine');
     // One restore, the frame's: it settled on the first try (the canvas reached 520), and the list sent nothing of its own.
@@ -1999,6 +2005,10 @@ describe('Qualifiers · loading', () => {
     expect(code('CH-09401')!.getAttribute('aria-busy')).toBe('true');
     expect(code('CH-09402')!.getAttribute('aria-label')).toBe('Loading the qualifier');
     expect(code('CH-09403')!.getAttribute('aria-label')).toBe('Loading the qualifier form');
+    // The detail's skeleton holds the loaded head and facts (measured 2026-10-07): a coach's three actions, and each fact's four lines.
+    const detailSk = code('CH-09402') as HTMLElement;
+    expect(detailSk.querySelector('.ch-qf-head .ch-qf-head__act')!.children).toHaveLength(3);
+    for (const f of detailSk.querySelectorAll('.ch-qf-facts > div')) expect(f.children).toHaveLength(4);
   });
 });
 
@@ -2347,6 +2357,11 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
     const facts = document.querySelector('.ch-qfm-facts')!;
     expect([...facts.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Rounds in', 'Spots', 'Deadline']);
     expect(facts.textContent).toMatch(/4\+1/);
+    // Drawn, decoratively: the rounds posted along the rounds due, and the squad's seats (four won on score, one pick).
+    expect(facts.querySelector('.ch-qf-bar i')).not.toBeNull();
+    expect(facts.querySelectorAll('.ch-qf-seats i.is-score')).toHaveLength(4);
+    expect(facts.querySelectorAll('.ch-qf-seats i.is-pick')).toHaveLength(1);
+    for (const v of facts.querySelectorAll('.ch-qfm-facts__viz')) expect(v.getAttribute('aria-hidden')).toBe('true');
     expect(screen.getByRole('link', { name: 'Manage selections' }).getAttribute('href')).toBe(`/golf/dashboard/qualifiers/${detail('live').id}/selection`);
     expect(document.querySelectorAll('.ch-qfm-lb__row').length).toBeGreaterThan(3);
     // Round-by-round stays on desktop (Q-20).

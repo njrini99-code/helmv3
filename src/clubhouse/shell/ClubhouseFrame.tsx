@@ -26,6 +26,7 @@ import '../styles/base.css';
 import '../styles/ui.css';
 import '../styles/shell.css';
 import '../styles/controls.css';
+import { useCanvasSmoothScroll } from '../lib/smooth-scroll';
 
 /**
  * The Clubhouse frame, UI only: a green frame with an inset ivory canvas
@@ -52,6 +53,8 @@ export function ClubhouseFrame({
   const item = activeNavItem(pathname, role);
   const rebuilt = forceRebuilt || isRebuilt(pathname, role);
   const { showAnimations } = useAppearancePreferences();
+  // Smooth wheel scrolling on the desktop canvas (off on a phone, with reduced motion and with Animations off).
+  useCanvasSmoothScroll();
   useEffect(() => chTagSession(), []);
   // Arriving from the welcome or onboarding: the curtain holding the fold's last frame lifts now the frame is here.
   useEffect(() => liftHandoffCurtain(), []);

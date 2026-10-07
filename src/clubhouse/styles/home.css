@@ -19,8 +19,8 @@
 }
 .ch-h-head h1 {
   font: 600 44px/1.08 var(--ch-font-sans);
-  letter-spacing: -0.036em;
-  font-variation-settings: 'wdth' 88;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
   text-wrap: balance;
 }
@@ -37,14 +37,83 @@
   margin-top: 8px;
 }
 
-/* The week and the latest round share one lit sheet, split by a hairline. */
+/* Desktop Home opens on the canopy (shell.css, main[data-canopy]): the date, greeting and brief in ivory on the green
+   field, the actions set level with the brief at the right. No box: the green fades into the page under the week. */
+.ch-h-main--desk {
+  padding-top: 40px;
+}
+.ch-h-main--desk > .ch-h-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 40px;
+  row-gap: 10px;
+  align-items: end;
+  max-width: none;
+}
+.ch-h-main--desk > .ch-h-head > :not(.ch-h-head__actions) {
+  grid-column: 1;
+}
+.ch-h-main--desk > .ch-h-head .ch-h-head__date {
+  font-weight: 600;
+  color: var(--ch-hero-mint);
+}
+.ch-h-main--desk > .ch-h-head h1 {
+  margin: 4px 0 4px;
+}
+.ch-h-main--desk > .ch-h-head .ch-h-head__sub {
+  max-width: 640px;
+}
+.ch-h-main--desk > .ch-h-head .ch-h-head__actions {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: end;
+  flex-wrap: nowrap;
+  margin: 0;
+}
+.ch-h-main--desk > .ch-h-head .ch-btn--primary .ch-btn__kbd {
+  color: var(--ch-green-700);
+  background: rgb(15 74 47 / 0.08);
+  box-shadow: inset 0 0 0 1px rgb(15 74 47 / 0.16);
+}
+/* The first sheet follows the title block with the page's own rhythm, where the green dissolves. */
+.ch-h-main--desk > .ch-h-head + .ch-h-sheet,
+.ch-h-main--desk > .ch-h-head + .ch-h-flow {
+  margin-top: 36px;
+}
+/* The canopy rises from under the top bar: the page's top padding is part of the green. */
+.ch-h-main--desk[data-canopy] {
+  padding-top: 0;
+}
+.ch-h-main--desk[data-canopy] > .ch-h-head {
+  padding-top: 44px;
+}
+
+/* The week and the latest round share one lit sheet, split by a seam. */
 .ch-h-sheet {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
   margin-top: 28px;
 }
+/* Player Home: the week sheet and Scoring are one surface. The sheet's own margin moves to the wrapper, and Scoring
+   drops its card for a seam, so the eye runs straight from the week into the scoring line. */
+.ch-h-flow.ch-sheet {
+  margin-top: 28px;
+  border-radius: var(--ch-radius-xl);
+}
+.ch-h-flow > .ch-h-sheet {
+  margin-top: 0;
+}
+.ch-h-flow .ch-ph-game {
+  border-radius: 0 0 var(--ch-radius-xl) var(--ch-radius-xl);
+  background: none;
+  box-shadow: var(--ch-seam-x);
+}
 .ch-h-sheet > .ch-h-pane + .ch-h-pane {
-  box-shadow: inset 1px 0 0 var(--ch-border-hairline);
+  box-shadow: var(--ch-seam-y);
+}
+/* Up next opening the latest round's pane (desktop player Home). */
+.ch-h-pane > .ch-ph-next:first-child {
+  margin: 0;
 }
 .ch-h-pane {
   display: flex;
@@ -61,7 +130,8 @@
   min-height: 28px;
 }
 .ch-h-pane__head h2 {
-  font: var(--ch-type-title);
+  font: var(--ch-type-serif-s);
+  letter-spacing: -0.004em;
   color: var(--ch-text-primary);
 }
 .ch-h-pager {
@@ -69,7 +139,7 @@
   align-items: center;
   gap: 2px;
   padding: 3px;
-  border-radius: 11px;
+  border-radius: calc(var(--ch-radius-lg) - 3px);
 }
 .ch-h-pager > span {
   margin: 0 6px 0 8px;
@@ -95,11 +165,11 @@
 }
 /* On the week strip's well tertiary measured 4.1:1 (UX360 sampled 3.7:1); secondary holds 5.4:1. Aesthetic audit X-2. */
 .ch-h-day__d {
-  font: 500 11.5px/1 var(--ch-font-sans);
+  font: 600 12px/1 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-h-day__n {
-  font: 600 15px/1 var(--ch-font-sans);
+  font: 650 16px/1 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-h-day__m {
@@ -115,9 +185,25 @@
   border-radius: 50%;
   background: var(--ch-green-400);
 }
+/* Today: a frosted key lifted out of the well (owner, 2026-10-06: more contrast and blur). A bright translucent face
+   over a backdrop blur, a crisp edge, a lit top and a real lift; radius concentric with the well's 4px inset. */
 .ch-h-day--today {
-  background: var(--ch-raised-bg);
-  box-shadow: var(--ch-raised-shadow);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.94), rgb(251 249 244 / 0.8));
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow: var(--ch-key-frost-shadow);
+}
+.ch-h-day--today .ch-h-day__n {
+  color: var(--ch-green-800);
+  font-weight: 700;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .ch-h-day--today {
+    background: #fff;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 .ch-h-day--today .ch-h-day__d,
 .ch-h-day--event .ch-h-day__n {
@@ -167,21 +253,16 @@
   margin: 2px -12px;
   padding: 12px;
   border-top-color: transparent;
-  border-radius: 12px;
-  background: linear-gradient(180deg, #f1f7f2, #e8f1ea);
-  box-shadow: 0 0 0 1px rgb(21 90 57 / 0.16), 0 1px 2px rgb(11 58 37 / 0.06), inset 0 1px 0 rgb(255 255 255 / 0.8);
+  border-radius: var(--ch-radius-lg);
+  background: rgb(21 90 57 / 0.06);
 }
 .ch-h-agenda__row.is-next + .ch-h-agenda__row {
   border-top-color: transparent;
 }
+/* The next item's time reads in green; the Next chip already marks it, so the time is not a second chip. */
 .ch-h-agenda__row.is-next .ch-h-agenda__t {
-  justify-self: start;
-  padding: 4px 7px;
-  border-radius: var(--ch-radius-sm);
-  background: var(--ch-green-600);
-  color: #fff;
+  color: var(--ch-green-700);
   font-weight: 600;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
 }
 .ch-h-agenda__row.is-next .ch-h-agenda__a {
   color: var(--ch-green-800);
@@ -233,7 +314,7 @@
 }
 .ch-h-round__score > span:first-child {
   font: var(--ch-type-figure-l);
-  letter-spacing: -0.045em;
+  letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 92;
   color: var(--ch-text-primary);
 }
@@ -250,7 +331,7 @@
   gap: 10px;
   padding: 12px 14px;
   overflow-x: auto;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
 }
 .ch-h-card--none {
   font: var(--ch-type-body-s);
@@ -274,14 +355,24 @@
 }
 .ch-h-nine__holes {
   height: 20px;
-  font: 500 11.5px/1 var(--ch-font-sans);
+  font: 600 12px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-h-nine__par {
   height: 20px;
-  border-bottom: 1px solid rgb(28 25 18 / 0.08);
-  font: 400 12px/1 var(--ch-font-sans);
+  border-bottom: 1px solid rgb(28 25 18 / 0.14);
+}
+.ch-scoreboard .ch-h-nine__par {
+  border-bottom-color: var(--ch-board-rule);
+}
+.ch-h-nine__par {
+  font: 500 12px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
+}
+/* Plain scores (par) read as ink, the same weight as the marks beside them. */
+.ch-h-nine__row:not(.ch-h-nine__holes):not(.ch-h-nine__par) > [role='cell'] {
+  font: 600 13.5px/1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
 }
 .ch-h-nine__tot {
   font: 600 14px/1 var(--ch-font-sans);
@@ -297,7 +388,7 @@
   gap: 12px;
   margin-top: 4px;
   padding-top: 14px;
-  border-top: 1px solid var(--ch-border-hairline);
+  box-shadow: var(--ch-seam-x);
 }
 .ch-h-round__stats {
   display: flex;
@@ -328,6 +419,91 @@
   color: var(--ch-chart-loss);
 }
 
+/* Coach desktop: recent rounds close the latest-round pane (LatestRound.tsx). Rows on the sheet, the shown round a
+   soft green tint with a lit edge; seams between them like the leaderboard. */
+.ch-h-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 16px;
+  box-shadow: var(--ch-seam-x);
+}
+.ch-h-rail__title {
+  font: var(--ch-type-label-s);
+  color: var(--ch-text-tertiary);
+}
+.ch-h-rail ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 -10px;
+  padding: 0;
+  list-style: none;
+}
+.ch-h-rail__item {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto 36px;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-h-rail__item:hover {
+  background: rgb(21 90 57 / 0.045);
+}
+.ch-h-rail__item:active {
+  background: rgb(21 90 57 / 0.08);
+}
+.ch-h-rail__item.is-on {
+  background: var(--ch-green-25);
+  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.12), inset 0 1px 0 rgb(255 255 255 / 0.9);
+}
+.ch-h-rail__item:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 1px;
+}
+.ch-h-rail__who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ch-h-rail__name {
+  overflow: hidden;
+  font: 600 13.5px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ch-h-rail__meta {
+  overflow: hidden;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ch-h-rail__score {
+  font: 600 17px/1 var(--ch-font-sans);
+  letter-spacing: -0.02em;
+  color: var(--ch-text-primary);
+}
+.ch-h-rail__par {
+  justify-self: end;
+  font: 600 12.5px/1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-h-rail__par.is-under {
+  color: var(--ch-score-under);
+}
+
 /* Leaderboard */
 .ch-h-sec {
   display: flex;
@@ -343,43 +519,49 @@
   gap: 5px;
 }
 .ch-h-sec h2 {
-  font: var(--ch-type-display-s);
-  font-size: 21px;
-  letter-spacing: -0.028em;
-  font-variation-settings: 'wdth' 88;
+  font: var(--ch-type-serif-m);
+  letter-spacing: -0.006em;
   color: var(--ch-text-primary);
 }
 .ch-h-sec span {
   font: var(--ch-type-body-s);
   color: var(--ch-text-tertiary);
 }
+/* The leaderboard is one reading sheet: a quiet column-label row, then players separated by seams inset to the
+   content edge. No header well, no card-in-card hover: a row lights with a soft tint, the podium positions sit in small
+   keys (the leader's green), and the season average is the row's figure. */
 .ch-h-lb {
-  padding: 6px;
+  padding: 4px 0 6px;
   overflow-x: auto;
 }
 .ch-h-lb__row {
+  position: relative;
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: 28px minmax(220px, 1fr) 164px 64px 64px 76px;
+  grid-template-columns: 28px minmax(220px, 1fr) 164px 72px 64px 76px;
   gap: 16px;
   align-items: center;
   width: 100%;
   min-width: 680px;
-  padding: 12px 8px;
-  border-bottom: 1px solid var(--ch-border-hairline);
-  border-radius: 10px;
+  padding: 13px 22px;
   color: inherit;
   text-decoration: none;
-  transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease),
-    transform var(--ch-dur-quick) var(--ch-ease);
+  transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-h-lb__row:last-child {
-  border-bottom: 0;
+/* A seam between players, inset to the content edge so it never meets the sheet's curve. */
+.ch-h-lb__row + .ch-h-lb__row::before {
+  position: absolute;
+  top: 0;
+  right: 22px;
+  left: 22px;
+  height: 2px;
+  box-shadow: var(--ch-seam-x);
+  content: '';
+  pointer-events: none;
 }
 .ch-h-lb__head {
-  margin-bottom: 4px;
-  padding: 10px 8px;
-  border-bottom: 0;
+  padding-top: 12px;
+  padding-bottom: 10px;
   font: var(--ch-type-label-s);
   color: var(--ch-text-tertiary);
 }
@@ -387,21 +569,61 @@
   cursor: pointer;
 }
 .ch-h-lb__row.is-link:hover {
-  border-bottom-color: transparent;
-  background: var(--ch-raised-bg);
-  box-shadow: var(--ch-raised-shadow);
+  background: linear-gradient(90deg, rgb(21 90 57 / 0.035), rgb(21 90 57 / 0.06) 60%, rgb(21 90 57 / 0.035));
+}
+.ch-h-lb__row.is-link:hover::before,
+.ch-h-lb__row.is-link:hover + .ch-h-lb__row::before {
+  opacity: 0;
+}
+.ch-h-lb__row.is-link::after {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  width: 14px;
+  height: 14px;
+  background: var(--ch-green-600);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+  opacity: 0;
+  translate: -6px -50%;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease), translate var(--ch-dur-base) var(--ch-ease);
+  content: '';
+}
+.ch-h-lb__row.is-link:hover::after,
+.ch-h-lb__row.is-link:focus-visible::after {
+  opacity: 1;
+  translate: 0 -50%;
+}
+.ch-h-lb__row.is-link:active {
+  background: rgb(21 90 57 / 0.08);
 }
 .ch-h-lb__row.is-link:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: -2px;
+  border-radius: var(--ch-radius-md);
 }
 .ch-h-lb .r {
   justify-self: end;
   text-align: right;
 }
 .ch-h-lb__pos {
-  font: 500 13px/1 var(--ch-font-sans);
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  font: 600 12.5px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
+}
+.ch-h-lb__pos.is-top {
+  border-radius: 50%;
+  color: var(--ch-ink-700);
+  background: var(--ch-raised-bg);
+  box-shadow: var(--ch-key-raised-shadow);
+}
+.ch-h-lb__pos.is-lead {
+  color: var(--ch-ivory-25);
+  background: linear-gradient(180deg, var(--ch-green-500), var(--ch-green-700));
+  box-shadow: var(--ch-score-eagle-shadow);
 }
 .ch-h-lb__who {
   display: flex;
@@ -411,27 +633,60 @@
 }
 .ch-h-lb__name {
   display: block;
-  font: 600 14px/1.25 var(--ch-font-sans);
+  font: 600 14.5px/1.25 var(--ch-font-sans);
+  letter-spacing: -0.01em;
   color: var(--ch-text-primary);
 }
 .ch-h-lb__meta {
   display: block;
+  margin-top: 2px;
   font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
 }
+/* The form word carries a small state dot, so the column scans by colour before it reads. */
+.ch-h-lb__status::before {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 5px 1px 0;
+  border-radius: 50%;
+  background: var(--ch-ink-300);
+  vertical-align: middle;
+  content: '';
+}
+.ch-h-lb__status.is-improving {
+  color: var(--ch-green-600);
+}
+.ch-h-lb__status.is-improving::before {
+  background: var(--ch-green-500);
+}
+.ch-h-lb__status.is-slipping,
+.ch-h-lb__status.is-quiet {
+  color: var(--ch-chart-loss);
+}
+.ch-h-lb__status.is-slipping::before,
+.ch-h-lb__status.is-quiet::before {
+  background: var(--ch-chart-loss);
+}
 .ch-h-lb__num {
   font: 500 15px/1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+/* The season average is the row's figure. */
+.ch-h-lb__row:not(.ch-h-lb__head) > .ch-h-lb__num:nth-child(4) {
+  font: 600 17px/1 var(--ch-font-sans);
+  letter-spacing: -0.02em;
   color: var(--ch-text-primary);
 }
 .ch-h-lb__num.is-under {
   color: var(--ch-score-under);
 }
 .ch-h-lb__sg {
-  font: 500 14px/1 var(--ch-font-sans);
+  font: 600 14px/1 var(--ch-font-sans);
 }
 .ch-h-lb__sg.is-early {
   font: 500 12.5px/1 var(--ch-font-sans);
-  color: var(--ch-chart-loss);
+  color: var(--ch-text-tertiary);
 }
 .ch-h-lb__trend {
   display: flex;
@@ -448,7 +703,7 @@
     min-width: 0;
   }
   .ch-h-sheet > .ch-h-pane + .ch-h-pane {
-    box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+    box-shadow: var(--ch-seam-x);
   }
 }
 @media (max-width: 820px) {
@@ -500,7 +755,7 @@
   .ch-hm-skel__bar {
     display: block;
     max-width: 100%;
-    border-radius: 6px;
+    border-radius: var(--ch-radius-xs);
     background: rgb(244 241 232 / 0.12);
   }
   .ch-hm-skel__card {
@@ -544,7 +799,7 @@
     background: linear-gradient(var(--ch-green-800), rgb(11 58 37 / 0) 72px),
       radial-gradient(90% 60% at 100% 0%, rgb(123 199 154 / 0.16), transparent 60%),
       radial-gradient(70% 50% at 0% 100%, rgb(255 255 255 / 0.05), transparent 70%), var(--ch-green-800);
-    box-shadow: 0 1px 0 var(--ch-green-900), var(--ch-elevation-reading);
+    box-shadow: 0 1px 0 var(--ch-green-900), var(--ch-elevation-cast);
     color: var(--ch-ivory-100);
   }
   .ch-hm-hero__date {
@@ -554,10 +809,14 @@
   /* Three selectors deep on purpose: base.css's `.ch-root h1 { margin: 0 }` ties a two-selector rule, and which stylesheet loads last decides the tie (the preview route loads this one first, and the greeting sat hard against the date). */
   .ch-hm > .ch-hm-hero > h1 {
     margin: 8px 0 10px;
-    font: 600 32px/1.05 var(--ch-font-sans);
-    letter-spacing: -0.036em;
-    font-variation-settings: 'wdth' 86;
-    color: var(--ch-ivory-100);
+    font: 400 38px/1.04 var(--ch-font-serif);
+    letter-spacing: -0.008em;
+    color: var(--ch-on-green-ink);
+    text-shadow: var(--ch-on-green-text-shadow);
+  }
+  /* The player's hero has no brief line: the greeting sits directly on Up next. */
+  .ch-hm > .ch-hm-hero.is-player > h1 {
+    margin-bottom: 18px;
   }
   /* Two classes: base.css zeroes every p's margin (.ch-root p), which one class loses to, and the brief sat hard against Up next. */
   .ch-hm-hero > .ch-hm-hero__brief {
@@ -578,9 +837,9 @@
     flex-direction: column;
     gap: 6px;
     padding: 16px;
-    border-radius: 18px;
-    background: linear-gradient(180deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.05));
-    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12), var(--ch-elevation-reading);
+    border-radius: var(--ch-radius-xl);
+    background: var(--ch-on-dark-raised-bg);
+    box-shadow: var(--ch-on-dark-raised-shadow);
     color: inherit;
     text-decoration: none;
   }
@@ -705,7 +964,7 @@
     justify-content: center;
     gap: 8px;
     height: 44px;
-    border-radius: 12px;
+    border-radius: var(--ch-radius-lg);
     background: linear-gradient(180deg, #fbf9f3, #ece8dd);
     box-shadow: 0 1px 2px rgb(0 0 0 / 0.3), inset 0 1px 0 #fff;
     font: 600 15px/1 var(--ch-font-sans);
@@ -766,8 +1025,8 @@
     display: flex;
     flex-direction: column;
     padding: 6px 0;
-    border-radius: 16px;
-    background: var(--ch-bg-surface);
+    border-radius: var(--ch-radius-xl);
+    background: var(--ch-sheet-bg);
     box-shadow: var(--ch-elevation-reading);
     list-style: none;
   }
@@ -1043,16 +1302,18 @@
     border-radius: 50%;
     background: rgb(28 25 18 / 0.25);
   }
+  /* Today is a raised ivory key; the competition day a raised green one. Other days stay flat on the canvas. */
   .ch-hm-week .is-today .ch-hm-week__d {
-    background: var(--ch-bg-surface);
-    box-shadow: 0 0 0 1px var(--ch-border-hairline), 0 4px 10px -6px rgb(28 25 18 / 0.25);
+    background: var(--ch-raised-bg);
+    box-shadow: var(--ch-key-raised-shadow);
   }
   .ch-hm-week .is-today .ch-hm-week__d b {
     font-weight: 600;
     color: var(--ch-green-700);
   }
   .ch-hm-week .is-major .ch-hm-week__d {
-    background: var(--ch-green-800);
+    background: var(--ch-green-raised-bg);
+    box-shadow: var(--ch-green-raised-shadow);
   }
   .ch-hm-week .is-major .ch-hm-week__d em {
     color: rgb(244 241 232 / 0.66);
@@ -1126,7 +1387,7 @@
     gap: 3px;
     min-width: 52px;
     height: 46px;
-    border-radius: 12px;
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-bg-subtle);
     box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.06);
   }
@@ -1153,7 +1414,7 @@
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     padding: 10px 12px;
-    border-radius: 12px;
+    border-radius: var(--ch-radius-lg);
   }
   .ch-hm-strip > div {
     display: flex;
@@ -1195,10 +1456,10 @@
   display: flex;
   flex-direction: column;
   margin: 14px 0 4px;
-  padding: 14px 16px;
-  border-radius: 14px;
+  padding: 16px 18px;
+  border-radius: var(--ch-radius-xl);
   background: radial-gradient(120% 140% at 90% -30%, rgb(255 255 255 / 0.1), transparent 55%), var(--ch-green-800);
-  box-shadow: 0 0 0 1px var(--ch-green-900), var(--ch-elevation-reading);
+  box-shadow: 0 0 0 1px var(--ch-green-900), var(--ch-elevation-cast);
   color: var(--ch-ivory-100);
   text-decoration: none;
 }
@@ -1228,21 +1489,24 @@
   font: 400 13px/1.3 var(--ch-font-sans);
   color: rgb(244 241 232 / 0.72);
 }
+/* One recessed instrument well holding the four figures, divided by faint lines: not four boxes inside the card. */
 .ch-cd {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
   margin-top: 14px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-on-dark-well-bg);
+  box-shadow: var(--ch-on-dark-well-shadow);
 }
 .ch-cd > span {
   display: flex;
   align-items: baseline;
   justify-content: center;
   gap: 3px;
-  padding: 12px 0;
-  border-radius: 12px;
-  background: linear-gradient(180deg, rgb(0 0 0 / 0.18), rgb(0 0 0 / 0.1));
-  box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.24), inset 0 0 0 1px rgb(0 0 0 / 0.1), 0 1px 0 rgb(255 255 255 / 0.12);
+  padding: 13px 0;
+}
+.ch-cd > span + span {
+  box-shadow: inset 1px 0 0 rgb(210 244 221 / 0.08);
 }
 .ch-cd b {
   font: 500 22px/1 var(--ch-font-sans);
@@ -1264,18 +1528,10 @@
 }
 .ch-ph-game {
   position: relative;
-  padding: 26px 28px 24px;
-  border-radius: 20px;
-  background: var(--ch-ivory-25);
-  box-shadow: inset 0 0 0 1px var(--ch-champagne-ring), var(--ch-elevation-reading);
-}
-.ch-ph-game::before {
-  content: '';
-  position: absolute;
-  inset: 8px;
-  border: 1px solid var(--ch-champagne-rule);
-  border-radius: 14px;
-  pointer-events: none;
+  padding: 24px 26px 22px;
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-ph-game__h {
   position: relative;
@@ -1285,9 +1541,9 @@
   gap: 12px;
 }
 .ch-ph-game__h > div > h2 {
-  margin: 0 0 5px;
-  font: 600 20px/1 var(--ch-font-sans);
-  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+  font: var(--ch-type-serif-m);
+  letter-spacing: -0.006em;
   color: var(--ch-text-primary);
 }
 /* The caption under the title only: the window picker's own labels are spans too, and took this grey. */
@@ -1393,7 +1649,7 @@
   justify-content: space-between;
   margin: 0;
   padding-left: 28px;
-  border-left: 1px solid var(--ch-champagne-rule);
+  box-shadow: var(--ch-seam-y);
 }
 @media (max-width: 1000px) {
   .ch-ph-figs {
@@ -1401,7 +1657,7 @@
     flex-wrap: wrap;
     gap: 18px 28px;
     padding-left: 0;
-    border-left: 0;
+    box-shadow: none;
   }
 }
 .ch-ph-figs > div {
@@ -1411,7 +1667,89 @@
   padding: 10px 0;
 }
 .ch-ph-figs > div + div {
-  border-top: 1px solid var(--ch-champagne-rule);
+  box-shadow: var(--ch-seam-x);
+}
+/* The figures drawn (PlayerGame `viz`): the average against the previous window's, strokes gained from zero, one mark
+   per round for under par. */
+.ch-ph-viz {
+  position: relative;
+  display: block;
+  margin: 2px 0 7px;
+  height: 8px;
+  border-radius: 4px;
+  background: rgb(28 25 18 / 0.06);
+  box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.08);
+}
+.ch-ph-viz--avg i {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  translate: -50% -50%;
+}
+.ch-ph-viz--avg i.is-was {
+  background: var(--ch-ink-300);
+}
+.ch-ph-viz--avg i.is-now {
+  width: 10px;
+  height: 10px;
+  box-shadow: 0 0 0 2px var(--ch-sheet-bg);
+}
+.ch-ph-viz--avg i.is-better {
+  background: var(--ch-green-600);
+}
+.ch-ph-viz--avg i.is-worse {
+  background: var(--ch-chart-loss);
+}
+.ch-ph-viz--avg b {
+  position: absolute;
+  top: 3px;
+  height: 2px;
+  background: var(--ch-ink-300);
+}
+.ch-ph-viz--sg::after {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: 50%;
+  width: 1.5px;
+  background: var(--ch-ink-700);
+  translate: -50% 0;
+  content: '';
+}
+.ch-ph-viz--sg i {
+  position: absolute;
+  top: 1.5px;
+  bottom: 1.5px;
+  border-radius: 3px;
+}
+.ch-ph-viz--sg i.is-gain {
+  background: var(--ch-green-500);
+}
+.ch-ph-viz--sg i.is-loss {
+  background: var(--ch-chart-loss);
+}
+.ch-ph-viz--rounds {
+  display: flex;
+  gap: 3px;
+  margin-top: 4px;
+  height: auto;
+  background: none;
+  box-shadow: none;
+}
+.ch-ph-viz--rounds i {
+  flex: 1;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--ch-ivory-300);
+}
+.ch-ph-viz--rounds i.is-even {
+  background: var(--ch-green-200);
+}
+.ch-ph-viz--rounds i.is-under {
+  background: var(--ch-score-under);
 }
 .ch-ph-figs dt {
   font: 500 12.5px/1 var(--ch-font-sans);
@@ -1420,7 +1758,7 @@
 .ch-ph-figs dd {
   margin: 0;
   font: 500 32px/1 var(--ch-font-sans);
-  letter-spacing: -0.045em;
+  letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 92;
   color: var(--ch-ink-950);
 }
@@ -1447,7 +1785,7 @@
   color: var(--ch-green-700);
 }
 .ch-ph-legs-sec {
-  margin-top: 4px;
+  margin-top: 28px;
 }
 .ch-ph-legs {
   display: grid;
@@ -1463,10 +1801,10 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 16px 16px 14px;
-  border-radius: 14px;
-  background: linear-gradient(180deg, var(--ch-ivory-25), var(--ch-ivory-50));
-  box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.07), inset 0 0 0 1px rgb(28 25 18 / 0.05), 0 1px 0 #fff;
+  padding: 18px 18px 16px;
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-ph-leg__h {
   display: flex;
@@ -1477,16 +1815,6 @@
   flex: 1;
   font: 600 13.5px/1 var(--ch-font-sans);
   color: var(--ch-ink-950);
-}
-.ch-ph-leg__ic {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
-  background: var(--ch-bg-surface);
-  color: var(--ch-green-700);
-  box-shadow: 0 0 0 1px rgb(21 90 57 / 0.14), 0 1px 2px rgb(28 25 18 / 0.08);
 }
 .ch-ph-leg__sg {
   padding: 4px 7px;
@@ -1508,20 +1836,18 @@
 }
 .ch-ph-leg__v {
   display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  margin-top: 6px;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
 }
 .ch-ph-leg__v > span {
   font: 500 34px/1 var(--ch-font-sans);
-  letter-spacing: -0.045em;
+  letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 92;
   color: var(--ch-ink-950);
 }
 .ch-ph-leg__v em {
-  flex: 1;
-  padding-bottom: 3px;
-  font: 500 12px/1.2 var(--ch-font-sans);
+  font: 500 13px/1.2 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-secondary);
 }
@@ -1569,41 +1895,77 @@
 /* Two classes: base.css zeroes every p's margin, which one class loses to. */
 .ch-ph-leg > .ch-ph-leg__n {
   margin: 4px 0 0;
-  padding-top: 10px;
-  border-top: 1px solid rgb(28 25 18 / 0.07);
+  padding-top: 6px;
   font: 400 12.5px/1.4 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
+/* A leg's trend across the card (PlayerGame Spark): the plot stretches to the card's width; the dot is HTML so it stays
+   round. Ink when steady, green when it moved the good way, amber when not. */
 .ch-ph-spark {
-  flex: none;
-  margin-left: auto;
+  margin: 4px 0 0;
+  --ch-spark: var(--ch-ink-400);
+}
+.ch-ph-spark.is-gain {
+  --ch-spark: var(--ch-chart-gain);
+}
+.ch-ph-spark.is-loss {
+  --ch-spark: var(--ch-chart-loss);
+}
+.ch-ph-spark__plot {
+  position: relative;
+  display: block;
+  height: 44px;
+}
+.ch-ph-spark__plot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.ch-ph-spark__f0 {
+  stop-color: var(--ch-spark);
+  stop-opacity: 0.16;
+}
+.ch-ph-spark__f1 {
+  stop-color: var(--ch-spark);
+  stop-opacity: 0;
 }
 .ch-ph-spark__mean {
-  stroke: var(--ch-ivory-300);
-  stroke-dasharray: 2 3;
+  stroke: rgb(28 25 18 / 0.14);
+  stroke-dasharray: 2 4;
+  vector-effect: non-scaling-stroke;
 }
 .ch-ph-spark__line {
   fill: none;
-  stroke: var(--ch-ink-400);
-  stroke-width: 1.6;
+  stroke: var(--ch-spark);
+  stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
 }
 .ch-ph-spark__dot {
-  fill: var(--ch-ink-400);
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: var(--ch-spark);
+  box-shadow: 0 0 0 3px var(--ch-bg-surface);
 }
-.ch-ph-spark.is-gain .ch-ph-spark__line {
-  stroke: var(--ch-chart-gain);
+.ch-ph-spark figcaption {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font: 500 12px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
 }
-.ch-ph-spark.is-gain .ch-ph-spark__dot {
-  fill: var(--ch-chart-gain);
+.ch-ph-spark__word {
+  color: var(--ch-spark);
+  font-weight: 600;
 }
-.ch-ph-spark.is-loss .ch-ph-spark__line {
-  stroke: var(--ch-chart-loss);
-}
-.ch-ph-spark.is-loss .ch-ph-spark__dot {
-  fill: var(--ch-chart-loss);
+.ch-ph-spark:not(.is-gain, .is-loss) .ch-ph-spark__word {
+  color: var(--ch-text-secondary);
 }
 
 /* Phone (m-player-home.css) */
@@ -1622,21 +1984,29 @@
   justify-content: center;
   gap: 8px;
   height: 46px;
-  border-radius: 13px;
-  background: rgb(255 255 255 / 0.08);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-on-dark-control-bg);
+  box-shadow: var(--ch-on-dark-control-shadow);
   font: 600 14.5px/1 var(--ch-font-sans);
   color: var(--ch-ivory-100);
   text-decoration: none;
   touch-action: manipulation;
+  transition: box-shadow var(--ch-dur-press) var(--ch-ease);
+}
+/* Press moves the control toward the hero: the lift collapses into a shallow recess. */
+.ch-ph-act:active {
+  box-shadow: var(--ch-on-dark-control-press-shadow);
 }
 .ch-ph-act svg {
   color: var(--ch-hero-mint);
 }
 .ch-ph-act.is-primary {
   background: linear-gradient(180deg, var(--ch-ivory-25), var(--ch-ivory-150));
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.3), inset 0 1px 0 #fff;
+  box-shadow: var(--ch-on-dark-primary-shadow);
   color: var(--ch-green-800);
+}
+.ch-ph-act.is-primary:active {
+  box-shadow: inset 0 1px 3px rgb(28 25 18 / 0.18), 0 0 0 1px rgb(2 18 10 / 0.12);
 }
 .ch-ph-act.is-primary svg {
   color: var(--ch-green-700);
@@ -1688,9 +2058,9 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 14px;
-  border-radius: 18px;
-  background: var(--ch-bg-surface);
+  padding: 16px;
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-reading);
 }
 .ch-ph-rd {
@@ -1714,18 +2084,36 @@
   font: 400 12.5px/1.25 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
+/* Both nines in one shallow recess, a hairline between them: the scorecard reads as one instrument, not two boxes. */
 .ch-ph-nines {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  padding: 2px 4px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow);
+}
+.ch-ph-nines.ch-scoreboard {
+  background: var(--ch-board-bg);
+  box-shadow: var(--ch-board-shadow);
+}
+.ch-ph-nines > .ch-nine {
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-ph-nines > .ch-nine + .ch-nine {
+  box-shadow: inset 0 1px 0 rgb(28 25 18 / 0.08);
+}
+.ch-ph-nines.ch-scoreboard > .ch-nine + .ch-nine {
+  box-shadow: inset 0 1px 0 var(--ch-board-rule);
 }
 /* The round's three figures (.mh-form__figs in the card): ruled in green, a rule between them, the figure over its label. */
 .ch-ph-strip {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   margin: 0;
-  padding-top: 12px;
-  border-top: 1px solid rgb(21 90 57 / 0.12);
+  padding-top: 2px;
 }
 .ch-ph-strip > div {
   display: flex;
@@ -1752,15 +2140,18 @@
 .ch-ph-strip dd.is-loss {
   color: var(--ch-chart-loss);
 }
+/* The card's onward link: a quiet green action at the foot, not a second raised button inside the card. */
 .ch-ph-card__more {
-  width: 100%;
+  align-self: flex-end;
+  margin: -4px -8px -6px 0;
 }
 /* Scoring on the phone (.mp-card.mp-paper): the title and meta sit above the card; the card opens on the window picker, then the line, the four figures and the note. */
 .ch-ph-game.is-phone {
   gap: 14px;
-  padding: 14px;
-  border-radius: 18px;
-  box-shadow: 0 0 0 1px rgb(176 149 96 / 0.28), inset 0 1px 0 #fff, 0 12px 28px -20px rgb(28 25 18 / 0.35);
+  padding: 16px;
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-ph-game.is-phone::before {
   display: none;
@@ -1772,13 +2163,13 @@
   gap: 2px;
   height: 42px;
   padding: 3px;
-  border-radius: 12px;
-  background: var(--ch-bg-inset);
-  box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.12);
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow);
 }
 .ch-ph-game.is-phone .ch-seg .ch-seg__b {
   height: auto;
-  border-radius: 9px;
+  border-radius: calc(var(--ch-radius-lg) - 3px);
   color: var(--ch-ink-600);
   font-size: 13.5px;
 }
@@ -1787,8 +2178,9 @@
 }
 /* The chip is a quiet raised ivory, not the deep key of the desktop's toggles (.mp-seg [aria-pressed]). */
 .ch-ph-game.is-phone .ch-seg .ch-seg__pill {
-  border-radius: 9px;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12), inset 0 1px 0 rgb(255 255 255 / 0.6);
+  border-radius: calc(var(--ch-radius-lg) - 3px);
+  background: var(--ch-raised-bg);
+  box-shadow: var(--ch-seg-pill-lift-shadow);
 }
 .ch-ph-game.is-phone .ch-ph-game__top {
   grid-template-columns: minmax(0, 1fr);
@@ -1799,8 +2191,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 0;
   padding: 0;
-  border-top: 1px solid var(--ch-champagne-rule);
-  border-left: 0;
+  box-shadow: none;
 }
 .ch-ph-game.is-phone .ch-ph-figs dt {
   font-size: 12px;
@@ -1813,14 +2204,17 @@
 }
 .ch-ph-game.is-phone .ch-ph-figs > div {
   padding: 12px 0;
-  border-top: 0;
+  box-shadow: none;
 }
 .ch-ph-game.is-phone .ch-ph-figs > div:nth-child(even) {
   padding-left: 14px;
-  border-left: 1px solid var(--ch-champagne-rule);
+  box-shadow: var(--ch-seam-y);
 }
 .ch-ph-game.is-phone .ch-ph-figs > div:nth-child(n + 3) {
-  border-top: 1px solid var(--ch-champagne-rule);
+  box-shadow: var(--ch-seam-x);
+}
+.ch-ph-game.is-phone .ch-ph-figs > div:nth-child(even):nth-child(n + 3) {
+  box-shadow: var(--ch-seam-x), var(--ch-seam-y);
 }
 .ch-ph-game.is-phone .ch-ph-figs dd:not(.ch-ph-figs__m) {
   font-size: 26px;
@@ -1844,12 +2238,12 @@
   flex-direction: column;
   gap: 0;
   overflow: hidden;
-  border-radius: 18px;
-  background: var(--ch-bg-surface);
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-reading);
 }
 .ch-ph-legs-sec.is-phone .ch-ph-leg {
-  padding: 14px 16px;
+  padding: 16px;
   border-radius: 0;
   background: none;
   box-shadow: none;
@@ -1875,7 +2269,7 @@
 }
 .ch-ph-legs-sec.is-phone .ch-ph-leg > .ch-ph-leg__n {
   margin: 0;
-  padding-top: 8px;
+  padding-top: 4px;
 }
 
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
@@ -1900,5 +2294,121 @@
   .ch-ph-chart__ax,
   .ch-ph-chart__val {
     font-size: 12.5px;
+  }
+}
+
+/* A round's figures drawn (RoundViz.tsx): greens hit out of played, putts against two a green, strokes gained from zero.
+   Under the latest round's GIR, Putts and SG, desktop and phone. */
+.ch-rviz {
+  position: relative;
+  display: block;
+  width: 72px;
+  height: 6px;
+  margin-top: 6px;
+  border-radius: 3px;
+  background: rgb(28 25 18 / 0.07);
+  box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.08);
+}
+.ch-h-round__stats span {
+  flex-wrap: wrap;
+}
+.ch-h-round__stats .ch-rviz {
+  flex-basis: 100%;
+}
+.ch-ph-strip__viz {
+  margin: 0;
+}
+.ch-ph-strip__viz .ch-rviz {
+  width: 100%;
+}
+.ch-rviz--gir {
+  display: flex;
+  gap: 2px;
+  background: none;
+  box-shadow: none;
+}
+.ch-rviz--gir i {
+  flex: 1;
+  border-radius: 1.5px;
+  background: var(--ch-ivory-300);
+}
+.ch-rviz--gir i.is-hit {
+  background: var(--ch-green-500);
+}
+.ch-rviz--putts i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+}
+.ch-rviz--putts i.is-good {
+  background: var(--ch-green-500);
+}
+.ch-rviz--putts i.is-over {
+  background: var(--ch-chart-loss);
+}
+.ch-rviz--putts b,
+.ch-rviz--sg::after {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 1.5px;
+  background: var(--ch-ink-700);
+  translate: -50% 0;
+}
+.ch-rviz--sg::after {
+  left: 50%;
+  content: '';
+}
+.ch-rviz--sg i {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  border-radius: 2px;
+}
+.ch-rviz--sg i.is-gain {
+  background: var(--ch-green-500);
+}
+.ch-rviz--sg i.is-loss {
+  background: var(--ch-chart-loss);
+}
+/* The stats row's own span rule (flex, baseline, 6px gap) also reaches the drawings; reset them. */
+.ch-h-round__stats .ch-rviz {
+  display: block;
+  gap: 0;
+  font: inherit;
+}
+.ch-h-round__stats .ch-rviz--gir {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+}
+
+/* Home loading on the canopy (desktop): the title block holds the loaded block's measured height (WebKit 1440, 2026-10-07:
+   237px with the serif greeting, the two-line brief and the actions) and starts where it does, so nothing moves on load. */
+@media (min-width: 821px) {
+  .ch-h-main[aria-busy='true'][data-canopy] {
+    padding-top: 0;
+  }
+  .ch-h-main[aria-busy='true'][data-canopy] > .ch-h-head {
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 40px;
+    row-gap: 10px;
+    align-items: end;
+    max-width: none;
+    padding-top: 44px;
+  }
+  .ch-h-main[aria-busy='true'][data-canopy] > .ch-h-head > :not(.ch-h-head__actions) {
+    grid-column: 1;
+  }
+  .ch-h-main[aria-busy='true'][data-canopy] > .ch-h-head > .ch-h-head__actions {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    flex-wrap: nowrap;
+    margin: 0;
+  }
+  .ch-h-main[aria-busy='true'][data-canopy] > .ch-h-head + .ch-h-sheet {
+    margin-top: 36px;
   }
 }

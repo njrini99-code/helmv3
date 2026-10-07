@@ -669,6 +669,11 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     wrap(roster());
     expect(screen.getByRole('heading', { level: 1, name: 'Your players.' })).toBeTruthy();
     expect(document.querySelector('.ch-rs-team__name')!.textContent).toBe('Varsity · Fall 2026');
+    // The card's team strip has its own class: the header's avatar row (.ch-rs-team) never takes the strip's bar styles.
+    expect(document.querySelector('.ch-rs-head .ch-rs-strip')).toBeNull();
+    const rosterCss = readFileSync(resolve(process.cwd(), 'src/clubhouse/styles/roster.css'), 'utf8');
+    expect(rosterCss).not.toMatch(/\.ch-rs-team,\s*\.ch-rs-sgbar/);
+    expect(rosterCss).toMatch(/\.ch-rs-strip,\s*\.ch-rs-sgbar/);
     expect(document.querySelector('.ch-rs-head p')!.textContent).toBe('8 players · 7 active. Team average 73.6 over the season.');
     expect(cardNames()).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Jonah Okafor', 'Eli Brandt', 'Priya Natarajan', 'Luca Ferraro']);
     expect(screen.getByRole('button', { name: 'Active · 7' }).getAttribute('aria-pressed')).toBe('true');

@@ -62,14 +62,20 @@ export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player';
   const coach = view === 'coach';
   const phone = useChPhone();
   return (
-    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-busy="true" aria-label="Loading CoachHelm" data-skel={chained ? 'chained' : undefined} data-ch-code={coach ? 'CH-13402' : 'CH-13401'}>
+    // Desktop: on the canopy, with the view strip level with the title as the page draws it (Head's aside), so neither the
+    // green nor the content below moves when the page lands.
+    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-busy="true" aria-label="Loading CoachHelm" data-skel={chained ? 'chained' : undefined} data-ch-code={coach ? 'CH-13402' : 'CH-13401'} data-canopy={phone ? undefined : ''}>
       {phone && <StripSkeleton coach={coach} phone />}
-      <header className="ch-hl-h">
+      <header className={'ch-hl-h' + (phone ? '' : ' has-aside')} data-canopy-head="">
         <Skeleton width={62} height={24} radius={12} />
         <Skeleton width={190} height={44} radius={10} />
         <Skeleton width={360} height={14} />
+        {!phone && (
+          <div className="ch-hl-h__aside">
+            <StripSkeleton coach={coach} phone={false} />
+          </div>
+        )}
       </header>
-      {!phone && <StripSkeleton coach={coach} phone={false} />}
       {coach ? (
         <>
           <div className="ch-hl-sk__pulse">

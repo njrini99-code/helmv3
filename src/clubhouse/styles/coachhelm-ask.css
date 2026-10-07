@@ -320,20 +320,12 @@
   gap: 14px;
   text-align: center;
 }
-.ch-ask-mark {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  background: var(--ch-green-800);
-  color: var(--ch-hero-mint);
-  box-shadow: 0 6px 18px -6px rgb(11 58 37 / 0.5);
-}
 .ch-ask-greet h2 {
   margin: 0;
-  font: 500 32px/1.15 var(--ch-font-sans);
-  letter-spacing: -0.025em;
+  font: var(--ch-type-serif-l);
+  letter-spacing: -0.008em;
+  color: var(--ch-text-primary);
+  text-wrap: balance;
 }
 .ch-ask-greet p {
   margin: 0;

@@ -305,14 +305,14 @@
   margin: 14px 0 0;
   font: 600 clamp(34px, 3.3vw, 46px) / 1.04 var(--ch-font-sans);
   letter-spacing: -0.04em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-ox-ink);
   text-wrap: balance;
 }
 .ch-ox--full .ch-ox-h1 {
   font-size: clamp(38px, 3.4vw, 52px);
   line-height: 1;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.026em;
 }
 .ch-ox-sub {
   margin: 14px 0 0;
@@ -701,8 +701,8 @@
   width: 100%;
   padding: 6px 0 12px;
   font: 600 38px/1.1 var(--ch-font-sans);
-  letter-spacing: -0.035em;
-  font-variation-settings: 'wdth' 88;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
   border-bottom: 2px solid rgb(28 25 18 / 0.14);
   transition: border-color var(--ch-ox-t-quick);
@@ -1368,8 +1368,8 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font: 600 30px/1.05 var(--ch-font-sans);
-  letter-spacing: -0.035em;
-  font-variation-settings: 'wdth' 88;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-ox-mc__name[data-blank] {
   color: rgb(11 58 37 / 0.32);

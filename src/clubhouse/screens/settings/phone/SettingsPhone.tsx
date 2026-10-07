@@ -19,6 +19,7 @@ import { NotificationsPhone } from './NotificationsPhone';
 import { PreferencesPhone } from './PreferencesPhone';
 import { TeamPhone } from './TeamPhone';
 import { ActionRow, Group, LinkRow, NavRow } from './ui';
+import { canvasScrollNow } from '../../../lib/smooth-scroll';
 
 const ICON: Record<ChSettingsSection, LucideIcon> = {
   account: UserRound,
@@ -84,7 +85,7 @@ export function SettingsPhone({
   const open = (id: ChSettingsSection) => {
     chTrail(`settings section ${id}`);
     setSection(id);
-    document.getElementById('ch-canvas')?.scrollTo({ top: 0 });
+    canvasScrollNow(0);
   };
   // A screen that is pushed or popped starts VoiceOver on its title.
   const moved = useRef(false);

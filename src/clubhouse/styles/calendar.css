@@ -44,12 +44,12 @@
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }
+/* A numeric title (Oct 11 – 17) stays in the sans: the display serif's 1 has no flag and 11 reads as ll. */
 .ch-cal-title h1 {
   margin: 0;
-  font: var(--ch-type-display-l);
-  font-size: 34px;
-  letter-spacing: -0.036em;
-  font-variation-settings: 'wdth' 88;
+  font: 600 34px/1 var(--ch-font-sans);
+  letter-spacing: -0.022em;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-cal-title__yr {
   font: 500 15px/1 var(--ch-font-sans);
@@ -530,15 +530,30 @@
    title showed "Sh..." and "Te..." (15 labels under half visible in the week). A shared block takes smaller padding,
    wraps its title (three lines) and keeps only the start time; a short one keeps its row and drops the time. The
    full range stays in the button's name and the side panel. */
+/* A cascaded block is edged in the sheet's ivory, so one lying over another reads as a separate card. Its title wraps
+   at word boundaries only (two lines), never mid-word. */
 .ch-ev--lane {
-  padding: 5px 5px;
+  padding: 5px 7px;
+  outline: 1.5px solid var(--ch-sheet-bg);
 }
 .ch-ev--lane .ch-ev__t {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   white-space: normal;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+/* A cascaded event can be narrow (an overlap steps it in): it measures itself, and under 60px of text its title keeps one line,
+   so a one-hour block still shows its time instead of a title cut through its second line. */
+.ch-ev--lane {
+  container-type: inline-size;
+}
+@container (max-width: 60px) {
+  .ch-ev--lane .ch-ev__t {
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
 }
 .ch-ev--lane.ch-ev--short {
   padding-top: 0;
@@ -930,7 +945,7 @@
   font: var(--ch-type-display-s);
   font-size: 22px;
   letter-spacing: -0.028em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
   text-wrap: balance;
 }
@@ -1271,7 +1286,7 @@
   font: var(--ch-type-display-s);
   font-size: 24px;
   letter-spacing: -0.028em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
   outline: none;
   transition: border-color var(--ch-dur-quick) var(--ch-ease);
@@ -1701,9 +1716,8 @@
     padding: 4px 2px 0;
   }
   .ch-calm-title {
-    font: 600 28px/1.1 var(--ch-font-sans);
-    letter-spacing: -0.034em;
-    font-variation-settings: 'wdth' 88;
+    font: 400 38px/1.05 var(--ch-font-serif);
+    letter-spacing: -0.008em;
     color: var(--ch-text-primary);
   }
   /* The week is one card; the chosen day is the raised chip (m.css .m-week). */
