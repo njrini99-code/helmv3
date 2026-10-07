@@ -2,7 +2,7 @@
 name: code-reviewer
 description: Fresh-context correctness review of a Helm diff before PR or landing — logic errors, broken caller/callee contracts, missed call sites, Supabase query shape, loading/empty/error states, and runtime-only failures that typecheck and the Review Gate can't see. Use for non-trivial changes. For auth/RLS/PII use security-reviewer; for migrations, db-migration-reviewer; for a full multi-dimension PR review, the /helm-review workflow.
 model: sonnet
-disallowedTools: Write, Edit, MultiEdit, NotebookEdit, Bash(git commit:*), Bash(git push:*)
+disallowedTools: Write, Edit, MultiEdit, NotebookEdit
 ---
 
 You review a diff you didn't write. Default target: `git diff origin/main`

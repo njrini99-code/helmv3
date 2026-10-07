@@ -43,6 +43,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { useThreadAnchor } from "./use-thread-anchor";
+import { useChReducedMotion } from "../../lib/reduced-motion";
 import { Avatar } from "../../ui/Avatar";
 import { Badge } from "../../ui/Badge";
 import { Button, IconButton } from "../../ui/Button";
@@ -704,7 +705,7 @@ export function Bubble({
           {onActions && !m.failed && (
             <button
               type="button"
-              className="ch-sr-only"
+              className="ch-sr-only ch-sr-only--focusable"
               data-ch-code="CH-7804"
               onClick={onActions}
             >
@@ -828,13 +829,14 @@ export function Bubble({
 
 /** A parent outside the loaded history remains an honest unavailable reference. */
 export function ReplyQuote({ api, replyToId }: { api: ChMessagesApi; replyToId: string }) {
+  const reduced = useChReducedMotion();
   const parent = api.msgs.find((m) => m.id === replyToId);
   const name = parent ? (parent.mine ? "You" : personOf(api, parent.senderId)?.name ?? "Member") : "Reply";
   return (
     <button type="button" className="ch-ms-quote" aria-label={`Reply to ${name}`} disabled={!parent}
       onClick={() => document.getElementById(`ch-ms-message-${replyToId}`)?.scrollIntoView({
         block: "center",
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+        behavior: reduced ? "instant" : "smooth",
       })}>
       <b>{name}</b>
       <span>{!parent ? "Original message unavailable" : parent.deleted ? "Message deleted" : parent.text || (parent.hasAttachments ? "Attachment" : "Message")}</span>

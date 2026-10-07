@@ -1,5 +1,9 @@
 # Feature: Recruiting HQ
 
+## Clubhouse popup layout — 2026-10-06
+
+Clubhouse phone form/picker titles and notes wrap long imported names within their panels. Deletion sheets are height-bounded and scrollable on short screens; the deletion message is linked with aria-describedby. See [popup audit](../../docs/clubhouse/POPUP_AUDIT.md).
+
 ## Status
 
 - active

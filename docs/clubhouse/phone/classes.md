@@ -1,5 +1,18 @@
 # Design: Classes (player, desktop and phone)
 
+<!-- clubhouse:release-audit:start -->
+## Phone acceptance audit — 2026-10-06
+
+Classes list, class editor, import review and schedule synchronization. Check
+narrow day/time controls, long class names, import warnings, partial imports
+and calendar-sync refusal.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p012-classes). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Status: approved. The owner's boards are the spec (D-22): `design/handoff/Player - Classes.html` and `Player - Classes - Mobile.html` (`classes.jsx`, `classes.css`, `gh-states.jsx`). The mobile board draws fourteen frames of one page (`ClassesM`: the shell's top bar "Classes" with "‹ More", the page, the tab bar with More on): the list, the empty state, the import in each step (pick, paste text, reading, review, imported), the four import errors (not a schedule, too large, reader failed, no classes found), sync failed, a class's detail and Add a class.
 
 The route is `/golf/dashboard/classes`, for players. It sits under School in the sidebar and opens from More on the phone (D-66), so the phone's top bar goes back to More (`useBackFromMore`). Coaches have no Classes page; `/golf/dashboard/classes` keeps the Fairway page for them.

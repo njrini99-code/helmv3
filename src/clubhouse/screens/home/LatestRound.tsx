@@ -67,7 +67,7 @@ export function LatestRound({ data, mine = false }: { data: ChCoachHome['latestR
     setDir(d);
     setI((x) => (x + rounds.length + d) % rounds.length);
   };
-  const swap = chSwap(dir);
+  const swap = chSwap(dir, reduced);
 
   return (
     <section className="ch-h-pane" aria-labelledby="ch-round-title">

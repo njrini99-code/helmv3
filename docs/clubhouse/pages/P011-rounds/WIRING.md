@@ -1,5 +1,18 @@
 # P011 — Rounds: wiring map
 
+<!-- clubhouse:release-audit:start -->
+## Current ownership audit — 2026-10-06
+
+Root: `src/clubhouse/screens/rounds`. The AST inventory found 37 source files,
+25 overlay/control sites and 0 motion nodes. Round
+library/setup/tracking/review, scorecard and recovery/discard sheets.
+
+Exact call sites, direct package imports, responsive styles and mapped tests
+are in the [all-page audit](../../ALL_PAGE_AUDIT.md#p011-rounds). Shared
+Modal/Menu/PhoneScreen owners and shell behavior are audited once there;
+counts include wrappers rather than unique popups.
+<!-- clubhouse:release-audit:end -->
+
 ## Entry points
 
 The library, the review and round entry (setup, then the shot screen) are routed, each behind `golf_clubhouse_ui`

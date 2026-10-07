@@ -61,7 +61,7 @@ export function RosterPeek({
           initial={reduced ? { opacity: 0 } : { opacity: 0, x: 16 }}
           animate={{ opacity: 1, x: 0 }}
           exit={reduced ? { opacity: 0 } : { opacity: 0, x: 12 }}
-          transition={chTween('base')}
+          transition={chTween('base', reduced)}
         >
           <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} onNoteSaved={onNoteSaved} />
         </m.aside>

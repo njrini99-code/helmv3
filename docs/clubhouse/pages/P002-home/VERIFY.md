@@ -1,9 +1,45 @@
 # P002 — Home: verification
 
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+LatestRound passes the reduced preference through chSwap, eliminating the
+retained fade when motion is disabled.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
+## Current release evidence — 2026-10-06
+
+Coach/player Home, latest-round expansion, round sheet and partial-data cards.
+
+Check loading-to-content geometry, long names, team-timezone day labels and
+latest-round expansion under reduced motion.
+
+Fresh WebKit 26.6: `/clubhouse-preview/home` at
+375, 430 and 1280px; zero Axe A/AA violations and no horizontal document
+overflow in these three fixture renders. The 430px full-page screenshot
+was inspected and recorded below. This does not exercise every popup.
+Clubhouse runtime suites: 117 files / 3,092 tests pass on this branch.
+External action suites listed in WIRING are outside that count.
+
+Additional WebKit base check: 320px also fits without horizontal overflow
+and reports zero Axe violations. The state/opener inventory completes 10
+cases for this page at applicable 1280/390px widths with zero Axe
+violations or document overflow.
+
+Current browser/test results: [all-page
+audit](../../ALL_PAGE_AUDIT.md#p002-home). Current status remains partial.
+Physical Safari/iPhone, VoiceOver and durable authenticated writes remain
+separate acceptance checks. Earlier verification status and gap sections below
+are historical observations; use the current audit for release scope.
+<!-- clubhouse:release-audit:end -->
+
 Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
 checklist is `docs/clubhouse/screens/home.md`.
 
-## Current verification status
+## Historical verification status
 
 ```text
 Status:     partial
@@ -39,7 +75,20 @@ modified.
 | `src/clubhouse/__tests__/logic.test.ts` | the derived copy (`model.ts`: the brief, agenda details, quiet days) | not run by this pass |
 | `src/clubhouse/__tests__/shell.test.tsx` | the shell contracts this page inherits (10704 and the rest) | not run by this pass |
 
-Mutation checks (2026-09-30): 57 breakages, one at a time, across 12 Home source files and the test file (the route's role and flag branches, redirects, team source, no-team reads, the swallowed membership error; the timezone fix and its log; each loader's logging and flags; a roster read, another player's rounds and named invitees in the player's loader; the creator and fallback of the coach lookup and the `?user=` link; the other role's controls on each Home; each haptic; the countdown's plural, hidden digits and interval; the phone's clock; the phone and desktop switches; each breadcrumb and crash surface; each link). Every one made the test that guards it fail, and each file was put back byte for byte. Not mutation-checked: the shared `RefreshNotice`, `SectionBoundary` and `InlineNotice` behind 21402 (another page's tests use them, so they were not broken), the Bridge half of 22401 (it reads `bridge-contracts.json`, which this pass does not edit; the same logic was run against the merged IDs), and the Scoring window's tick (`Segmented`, shared).
+Mutation checks (2026-09-30): 57 breakages, one at a time, across 12 Home source
+files and the test file (the route's role and flag branches, redirects, team
+source, no-team reads, the swallowed membership error; the timezone fix and its
+log; each loader's logging and flags; a roster read, another player's rounds and
+named invitees in the player's loader; the creator and fallback of the coach
+lookup and the `?user=` link; the other role's controls on each Home; each
+haptic; the countdown's plural, hidden digits and interval; the phone's clock;
+the phone and desktop switches; each breadcrumb and crash surface; each link).
+Every one made the test that guards it fail, and each file was put back byte for
+byte. Not mutation-checked: the shared `RefreshNotice`, `SectionBoundary` and
+`InlineNotice` behind 21402 (another page's tests use them, so they were not
+broken), the Bridge half of 22401 (it reads `bridge-contracts.json`, which this
+pass does not edit; the same logic was run against the merged IDs), and the
+Scoring window's tick (`Segmented`, shared).
 
 ## Visual verification
 
@@ -76,7 +125,10 @@ Result:       both built to the approved specs and driven by tests at the phone 
 | Crash | 20605 to 20607, 20612 to 20614, 20617 | tests | contained in the section, reported at high severity under its surface |
 | Bad timezone | 20618 | test (failed before the fix) | Eastern, logged, Home opens |
 
-Validation, destructive, optimistic rollback and offline saves do not exist on Home (CONTRACT.md 05, 11, 13, 09). Not forced against a live session: any of the above. A state never observed is not verified (08_CI_PROGRESS_AND_VERIFICATION.md).
+Validation, destructive, optimistic rollback and offline saves do not exist on
+Home (CONTRACT.md 05, 11, 13, 09). Not forced against a live session: any of the
+above. A state never observed is not verified
+(08_CI_PROGRESS_AND_VERIFICATION.md).
 
 ## Accessibility
 
@@ -149,12 +201,56 @@ before, after, baseline or evidence.
 | `P002__dashboard__player__390__default__before__d3a6483.png` | before | d3a6483 | dashboard (player), 390px, default; /clubhouse-preview/home-player, synthetic preview fixture |
 | `P002__home__player__390x664__ready__before__cbc1c0d.png` | before | `cbc1c0d` | Before: tiny team wordmark and flat/darker surface treatment. |
 | `P002__home__player__390x664__ready__after__cbc1c0d.png` | after | `cbc1c0d` | After: compact brand medallion, lit cards and roomier timed wells. |
+| `P002__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
+| `P002__latest-round__player__1280x844__reduced-motion__before__ee0bab8.png` | before | ee0bab8 | latest-round (player), 1280x844px, reduced-motion |
+| `P002__latest-round__player__1280x844__reduced-motion__after__ee0bab8.png` | after | ee0bab8 | latest-round (player), 1280x844px, reduced-motion |
+| `P002__cards__coach__390x844__popup-audit__after__43a146a.png` | after | 43a146a | cards (coach), 390x844px, popup-audit; local synthetic preview; 43a146a plus working-tree popup and depth repairs |
+| `P002__cards__coach__390x844__popup-audit__before__43a146a.png` | before | 43a146a | cards (coach), 390x844px, popup-audit; local synthetic preview; 43a146a baseline |
+| `P002__premium-audit__coach__1280__case-001-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-001-webkit-reduce; /clubhouse-preview/home; synthetic preview |
+| `P002__premium-audit__coach__1280__case-005-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-005-chromium-normal; /clubhouse-preview/home; synthetic preview |
+| `P002__premium-audit__coach__390__case-001-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-001-webkit-reduce; /clubhouse-preview/home; synthetic preview |
+| `P002__premium-audit__coach__390__case-005-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-005-chromium-normal; /clubhouse-preview/home; synthetic preview |
 
-## Open verification gaps
+## Historical verification gaps
 
-- The iPhone pass through `npm run ios:dev` (owner), and a browser pass at 1280, 390 and 430 with a real coach and a real player account.
-- Forced failures against a live session; `clubhouse:a11y` and a full keyboard walk; LCP and layout shift.
-- Whether the row level security on `golf_event_attendance` returns other players' replies to a player. The screen never has a name to draw (20804), but the counts come from those rows.
-- Not fixed, found in this pass: `dashboard/loading.tsx` shows the coach's desktop-shaped skeleton to a player and on a phone (Player Home's own and a phone-shaped skeleton are not built). The phone's "Today", "Tomorrow" and weekday labels compare the team-local event date with the device's date, so a viewer in another timezone than the team may see a label a day off near midnight (not tested). A page left open past midnight keeps the day it loaded. The desktop Up next in the player's week and the pagers leave no breadcrumb. The coach lookup behind Message coach sets no order on `golf_coaches`, so when the team's creating coach has no account, which other coach is named is not fixed (rare: `created_by` matches on the live teams). The first-run Invite players button (primary) gives the light tap, which no contract lists by name; the rule is in CONTRACT.md 17 (only primary buttons tap).
-- Fixed 2026-09-30: a stored team timezone that is not a real zone threw in `homeClock` and failed the whole page; it now reads as Eastern and is logged (20618, the test failed before the fix). The player's countdown was named "Starts in 1 days"; it now says "1 day" (21807, the expected string in the test changed on purpose).
-- `npm run knowledge:map` maps none of Home's files to a feature, so no feature doc names this page.
+- The iPhone pass through `npm run ios:dev` (owner), and a browser pass at 1280,
+  390 and 430 with a real coach and a real player account.
+- Forced failures against a live session; `clubhouse:a11y` and a full keyboard
+  walk; LCP and layout shift.
+- Whether the row level security on `golf_event_attendance` returns other
+  players' replies to a player. The screen never has a name to draw (20804), but
+  the counts come from those rows.
+- Not fixed, found in this pass: `dashboard/loading.tsx` shows the coach's
+  desktop-shaped skeleton to a player and on a phone (Player Home's own and a
+  phone-shaped skeleton are not built). The phone's "Today", "Tomorrow" and
+  weekday labels compare the team-local event date with the device's date, so a
+  viewer in another timezone than the team may see a label a day off near
+  midnight (not tested). A page left open past midnight keeps the day it loaded.
+  The desktop Up next in the player's week and the pagers leave no breadcrumb.
+  The coach lookup behind Message coach sets no order on `golf_coaches`, so when
+  the team's creating coach has no account, which other coach is named is not
+  fixed (rare: `created_by` matches on the live teams). The first-run Invite
+  players button (primary) gives the light tap, which no contract lists by name;
+  the rule is in CONTRACT.md 17 (only primary buttons tap).
+- Fixed 2026-09-30: a stored team timezone that is not a real zone threw in
+  `homeClock` and failed the whole page; it now reads as Eastern and is logged
+  (20618, the test failed before the fix). The player's countdown was named
+  "Starts in 1 days"; it now says "1 day" (21807, the expected string in the
+  test changed on purpose).
+- `npm run knowledge:map` maps none of Home's files to a feature, so no feature
+  doc names this page.
+
+## Repair verification — 2026-10-06
+
+Shared motion and thread regressions pass within the 3,100-test Clubhouse/
+appearance run; full typecheck and mapped travel checks pass. See the global
+[repair acceptance](../../SMOOTHNESS_AUDIT.md#repair-acceptance--2026-10-06)
+for timing, screenshots and the physical-device limits.
+
+## Premium audit matrix — 2026-10-06
+
+12 synthetic captures are recorded for this page family. The table above
+keeps representative viewport/browser evidence; the complete state/opener
+ledger and review limitations are in the
+[premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
+Captured states are not all visually approved.

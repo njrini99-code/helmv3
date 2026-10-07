@@ -1,5 +1,18 @@
 # Calendar catalog (6xxx)
 
+<!-- clubhouse:release-audit:start -->
+## Catalog audit — 2026-10-06
+
+Calendar month/week/day, editor, overlap, busy and subscribe sheets. Check
+event sizing and collision layout, keyboard edit flows and Retry inside the
+native dialog top layer.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p006-calendar). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Route `/golf/dashboard/calendar` (coach and player) · code `src/clubhouse/screens/calendar/`, loader
 `src/clubhouse/data/calendar.ts` · tests `src/clubhouse/__tests__/calendar.test.tsx` · preview
 `/clubhouse-preview/calendar` (`?state=empty|failed|partial|loading`, `&view=day|month|agenda`, `&event=`, `&new=1`) and

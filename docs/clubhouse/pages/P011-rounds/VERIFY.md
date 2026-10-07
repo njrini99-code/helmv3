@@ -1,5 +1,32 @@
 # P011 — Rounds: verification
 
+<!-- clubhouse:release-audit:start -->
+## Current release evidence — 2026-10-06
+
+Round library/setup/tracking/review, scorecard and recovery/discard sheets.
+
+Check narrow shot controls, nested sheets, keyboard entry, offline
+checkpoints, save/continue and lost-response recovery.
+
+Fresh WebKit 26.6: `/clubhouse-preview/rounds` at
+375, 430 and 1280px; zero Axe A/AA violations and no horizontal document
+overflow in these three fixture renders. The 430px full-page screenshot
+was inspected and recorded below. This does not exercise every popup.
+Clubhouse runtime suites: 117 files / 3,092 tests pass on this branch.
+External action suites listed in WIRING are outside that count.
+
+Additional WebKit base check: 320px also fits without horizontal overflow
+and reports zero Axe violations. The state/opener inventory completes 36
+cases for this page at applicable 1280/390px widths with zero Axe
+violations or document overflow.
+
+Current browser/test results: [all-page
+audit](../../ALL_PAGE_AUDIT.md#p011-rounds). Current status remains partial.
+Physical Safari/iPhone, VoiceOver and durable authenticated writes remain
+separate acceptance checks. Earlier verification status and gap sections below
+are historical observations; use the current audit for release scope.
+<!-- clubhouse:release-audit:end -->
+
 Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
 checklist is `docs/clubhouse/screens/rounds.md` (it still reads "This covers the
 library" and its boxes are not brought current for Review, Setup and Tracking;
@@ -14,11 +41,13 @@ see the gaps below).
 | Setup `/golf/dashboard/rounds/new` | yes (player, behind `golf_clubhouse_ui`) | unit tests with the **real new-round engine** and the real setup over mocked server actions (`round-entry-wiring.test`), the page's flag gate (`round-entry-routes.test`), the dev preview (fake ports), real Chromium at 390 on the preview (the dock read "Finley GC · Blue · 18 holes · Par 72"), axe on the preview |
 | Shot screen `/golf/dashboard/rounds/new` and `/rounds/continue/[id]` | yes (player, behind the flag) | unit tests with the real new-round and continue engines driving the real `RoundRuntime` (a stub `RoundTracking` in the wiring tests; the real one in `round-tracking.test`), the dev preview, real Chromium at 390 on the preview (a shot was recorded), axe on the preview |
 
-Round entry has been run against the round engine in unit tests, and its pages against a faked Supabase. It has **not**
-been seen in a browser on its routed addresses (the flag is off and was not flipped for this work), run against a live
+Round entry has been run against the round engine in unit tests, and its pages
+against a faked Supabase. It has **not**
+been seen in a browser on its routed addresses (the flag is off and was not
+flipped for this work), run against a live
 account, or run on an iPhone.
 
-## Current verification status
+## Historical verification status
 
 ```text
 Status:     partial
@@ -50,47 +79,82 @@ Date:       2026-09-30
 | `src/clubhouse/__tests__/round-entry-continue.test.tsx` (8 cases) | the **real continue engine**: CH-11512, CH-11513, CH-11010, CH-11902, CH-11006, CH-11518, CH-11519, CH-11516, CH-11012 | pass |
 | `src/clubhouse/__tests__/round-entry-routes.test.tsx` (33 cases) | the rebuilt list and the library's links (110105, 110109), the two pages' flag gate and the loading switch (110114, flag on and off, through a faked Supabase), `useAction`'s options and its gate (a run kept from a render that saw the action pending still runs, and two calls in one tick run it once: 111404), the setup reads (`toStartForm`, `startRefusal`: CH-11014 to CH-11016, CH-11907, CH-11208 to CH-11211, CH-11311), the engine's notices (CH-11903 to CH-11908), `RoundRuntime` over a fake session (CH-11909, CH-11910, CH-11603 and 110902 once, CH-11902) | pass |
 
-The four library, review, setup and tracking files were run together with the whole Clubhouse suite in this pass:
-`npx vitest run src/clubhouse`, exit 0, 28 files, 1413 of 1413 tests (the suite also holds other pages' files).
-The engine's own tests and the pages' source-text tests were run as well: `src/lib/golf/round-session`, the
-`rounds/new` and `rounds/continue` client tests, `round-start-guard-signal`, `new-round-setup-restore-signal`,
-`nav-registry`, `id-pages-validate-uuid`, `golf-conditional-redirect`, `error-logging` and the recover page's test,
+The four library, review, setup and tracking files were run together with the
+whole Clubhouse suite in this pass:
+`npx vitest run src/clubhouse`, exit 0, 28 files, 1413 of 1413 tests (the suite
+also holds other pages' files).
+The engine's own tests and the pages' source-text tests were run as well:
+`src/lib/golf/round-session`, the
+`rounds/new` and `rounds/continue` client tests, `round-start-guard-signal`,
+`new-round-setup-restore-signal`,
+`nav-registry`, `id-pages-validate-uuid`, `golf-conditional-redirect`,
+`error-logging` and the recover page's test,
 35 files, 436 of 436, exit 0; none of the engine files was edited.
 
-**Mutations (round entry).** Each was applied to the source, the tests that should catch it were run, and the source
-was put back (a backup and restore script, not committed). All killed: a start refused as in_progress_exists drawn as a
-failed start; the conflict dialog not opening after the discard question; the Start port reading the engine of an
-earlier render; no in-flight guard on Save for later; engine errors drawn instead of captured (double message); one
-conflict wording for both engines; the closed-qualifier sheet not opening; a qualifier round in progress not opening;
-no offline check on Start; useAction gating on the render's `pending` instead of a ref (two tests); no guard on Restore; state-reported failures not picked up; the round's review not opened
-after a post (equivalent after a refactor: the guard moved into the effect's deps); the player's `/rounds/continue`
-pattern removed from the shell; Continue's Submit bypassing the qualifier round number; each page's flag gate (flag
-on, flag off, the coach's message); a handled refusal drawing a toast; a final refusal keeping Retry. One was found
-to be a real bug by the test written to kill it (the round-posted timer was lost when the router's identity changed)
-and fixed. Not run: the qualifier preselect effect. One test (CH-11517) failed only when the machine was busy: the
-toast stack moves into whichever dialog is open and re-creates its buttons, so a click on a button just replaced did
-nothing; the test now clicks the Retry that is there until the discard has run again, and the describe that plays a
-whole round has a 20 s timeout. It passed 5 of 5 under five parallel runs after that.
+**Mutations (round entry).** Each was applied to the source, the tests that
+should catch it were run, and the source
+was put back (a backup and restore script, not committed). All killed: a start
+refused as in_progress_exists drawn as a
+failed start; the conflict dialog not opening after the discard question; the
+Start port reading the engine of an
+earlier render; no in-flight guard on Save for later; engine errors drawn
+instead of captured (double message); one
+conflict wording for both engines; the closed-qualifier sheet not opening; a
+qualifier round in progress not opening;
+no offline check on Start; useAction gating on the render's `pending` instead of
+a ref (two tests); no guard on Restore; state-reported failures not picked up;
+the round's review not opened
+after a post (equivalent after a refactor: the guard moved into the effect's
+deps); the player's `/rounds/continue`
+pattern removed from the shell; Continue's Submit bypassing the qualifier round
+number; each page's flag gate (flag
+on, flag off, the coach's message); a handled refusal drawing a toast; a final
+refusal keeping Retry. One was found
+to be a real bug by the test written to kill it (the round-posted timer was lost
+when the router's identity changed)
+and fixed. Not run: the qualifier preselect effect. One test (CH-11517) failed
+only when the machine was busy: the
+toast stack moves into whichever dialog is open and re-creates its buttons, so a
+click on a button just replaced did
+nothing; the test now clicks the Retry that is there until the discard has run
+again, and the describe that plays a
+whole round has a 20 s timeout. It passed 5 of 5 under five parallel runs after
+that.
 
-The earlier tracker record of mutations stands for the other files (`PROGRESS.md`, 2026-09-30): 20 of 20 on the library,
-21 of 21 on the review, 17 of 18 on setup (the survivor, the tee list's stale-read guard, is unreachable
-by going back, which remounts the list) and 20 of 21 on the shot screen (the survivor, the quick pick's unit dispatch,
+The earlier tracker record of mutations stands for the other files
+(`PROGRESS.md`, 2026-09-30): 20 of 20 on the library,
+21 of 21 on the review, 17 of 18 on setup (the survivor, the tee list's
+stale-read guard, is unreachable
+by going back, which remounts the list) and 20 of 21 on the shot screen (the
+survivor, the quick pick's unit dispatch,
 is equivalent: the engine derives the stored unit).
 
-**Contracts a test covers, and those it does not.** Of the 46 hand contracts, 34 are `implemented`: every test file each
-lists names its Bridge ID in a title (the 32 of the contract pass, plus 110114 `ROUND_ENTRY_FOLLOWS_THE_FLAG` and 111404
-`A_RETRY_RUNS_THE_ROUND_AS_IT_IS_NOW`, both proved by the round-entry tests). 110103, 110104, 110105, 110109, 110110,
-110902 and 112401 gained round-entry test files. **12 stay `reserved` with no covering test**: 110206 (the review's
-skeleton, not built), 110702 (offline: round entry's Start and Save for later are forced, the library's Discard and the
-hole's Try again are not), 110803 and 110804 (the player filter and the server action's checks, read not run), 111201
-and 111202 (a failed Start keeps the setup; a failed hole save keeps the shots), 111809 (axe, a script), 111810 (the
-scorecard's focusable region), 111901 and 111903 (the phone builds), 112001 (Esc) and 112101 (the read order). The
-catalog rows are the other contracts; those marked `preview` name no test: CH-11004, CH-11105, CH-11207, CH-11404,
-CH-11405, CH-11601, CH-11602, CH-11705, CH-11706, CH-11707, CH-11806, CH-11807, CH-11808 and CH-11901. CH-11006 is forced
-by round entry's tests and its row now names them. CH-11601 stays `reserved` in the registry because its code string is only in `rounds.css`
+**Contracts a test covers, and those it does not.** Of the 46 hand contracts, 34
+are `implemented`: every test file each
+lists names its Bridge ID in a title (the 32 of the contract pass, plus 110114
+`ROUND_ENTRY_FOLLOWS_THE_FLAG` and 111404
+`A_RETRY_RUNS_THE_ROUND_AS_IT_IS_NOW`, both proved by the round-entry tests).
+110103, 110104, 110105, 110109, 110110,
+110902 and 112401 gained round-entry test files. **12 stay `reserved` with no
+covering test**: 110206 (the review's
+skeleton, not built), 110702 (offline: round entry's Start and Save for later
+are forced, the library's Discard and the
+hole's Try again are not), 110803 and 110804 (the player filter and the server
+action's checks, read not run), 111201
+and 111202 (a failed Start keeps the setup; a failed hole save keeps the shots),
+111809 (axe, a script), 111810 (the
+scorecard's focusable region), 111901 and 111903 (the phone builds), 112001
+(Esc) and 112101 (the read order). The
+catalog rows are the other contracts; those marked `preview` name no test:
+CH-11004, CH-11105, CH-11207, CH-11404,
+CH-11405, CH-11601, CH-11602, CH-11705, CH-11706, CH-11707, CH-11806, CH-11807,
+CH-11808 and CH-11901. CH-11006 is forced
+by round entry's tests and its row now names them. CH-11601 stays `reserved` in
+the registry because its code string is only in `rounds.css`
 (the registry scans `.ts` and `.tsx`).
 
-A hand contract that lists more than one test file becomes `implemented` only when every listed file carries its Bridge ID.
+A hand contract that lists more than one test file becomes `implemented` only
+when every listed file carries its Bridge ID.
 
 ## Visual verification
 
@@ -340,6 +404,11 @@ before, after, baseline or evidence.
 | `P011__mobile-overview__player__390__safari-populated__after__cbc1c0d.png` | after | cbc1c0d (working tree) | Mobile overview (player), 390px, WebKit iPhone 13; /clubhouse-preview/rounds, synthetic preview fixture; shared materials in progress |
 | `P011__shiro-mobile-overview__player__390__populated__after__cca081c.png` | after | cca081c | shiro-mobile-overview (player), 390px, populated; /clubhouse-preview/rounds, synthetic preview fixture |
 | `P011__shiro-mobile-overview__player__390__populated__before__cca081c.png` | before | cca081c | shiro-mobile-overview (player), 390px, populated; /clubhouse-preview/rounds, synthetic preview fixture |
+| `P011__release-audit__player__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (player), 430x844px, ready |
+| `P011__premium-audit__coach__1280__case-017-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-017-webkit-reduce; /clubhouse-preview/rounds; synthetic preview |
+| `P011__premium-audit__coach__1280__case-117-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-117-chromium-normal; /clubhouse-preview/rounds; synthetic preview |
+| `P011__premium-audit__coach__390__case-017-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-017-webkit-reduce; /clubhouse-preview/rounds; synthetic preview |
+| `P011__premium-audit__coach__390__case-117-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-117-chromium-normal; /clubhouse-preview/rounds; synthetic preview |
 
 ## 2026-10-02 — Narrow setup layout and course selection
 
@@ -374,28 +443,53 @@ the development-only Next indicator. Real Safari browser chrome, software
 keyboard, text zoom, live persistence and routed accounts were not tested.
 Further browser checks paused when the shared dev server ran out of disk.
 
-## Open verification gaps
+## Historical verification gaps
 
-- The iPhone pass through `npm run ios:dev`, a browser pass with a real player and a real coach account (the library, the
+- The iPhone pass through `npm run ios:dev`, a browser pass with a real player
+  and a real coach account (the library, the
   review and Discard against a live session), and the Chromium pass at 430px.
-- The build ran once, before the last `useAction` edit; run it again with the stacked PRs' tip.
-- Round entry on its routed addresses: a browser pass with a real player account and the flag on (a round started,
-  saved for later, continued, submitted, a round recovered from the device, a closed qualifier), Chromium at 390 and
-  430px, and the iPhone pass through `npm run ios:dev`. The tests run the real engines but fake the server actions,
-  the session and the shot screen (a stub in the wiring tests). Nothing was flipped: the flag is off in production.
-- Offline on the library's Discard and the hole's Try again (110702 stays reserved; round entry's Start and Save for
-  later are forced offline), a failed Start keeping every field (111201), and the qualifier preselect effect.
-- `/rounds/recover` had no Clubhouse screen when this page was verified; it has one now (swap audit F-02, no board;
-  see the row above). It was not run on a phone or against a real failed submit. The entry routes' `error.tsx` files
+- The build ran once, before the last `useAction` edit; run it again with the
+  stacked PRs' tip.
+- Round entry on its routed addresses: a browser pass with a real player account
+  and the flag on (a round started,
+  saved for later, continued, submitted, a round recovered from the device, a
+  closed qualifier), Chromium at 390 and
+  430px, and the iPhone pass through `npm run ios:dev`. The tests run the real
+  engines but fake the server actions,
+  the session and the shot screen (a stub in the wiring tests). Nothing was
+  flipped: the flag is off in production.
+- Offline on the library's Discard and the hole's Try again (110702 stays
+  reserved; round entry's Start and Save for
+  later are forced offline), a failed Start keeping every field (111201), and
+  the qualifier preselect effect.
+- `/rounds/recover` had no Clubhouse screen when this page was verified; it has
+  one now (swap audit F-02, no board;
+  see the row above). It was not run on a phone or against a real failed submit.
+  The entry routes' `error.tsx` files
   are still Fairway's.
-- Offline (110702), Esc (112001), the read order (112101), a failed Start keeping the setup (111201) and a failed hole save
-  keeping the shots (111202) have no test; the review's skeleton (110206) is not built.
+- Offline (110702), Esc (112001), the read order (112101), a failed Start
+  keeping the setup (111201) and a failed hole save
+  keeping the shots (111202) have no test; the review's skeleton (110206) is not
+  built.
 - Found and not fixed (see the report to the parent):
-  - `rounds/[id]/loading.tsx` is Fairway's, so a Clubhouse review loads under the Fairway skeleton (110206); both
+  - `rounds/[id]/loading.tsx` is Fairway's, so a Clubhouse review loads under
+    the Fairway skeleton (110206); both
     `error.tsx` files are the shared Fairway boundary.
-  - A failed team-membership read fails the whole library although only "today" depends on the team.
-  - The checklist `screens/rounds.md` covers only the library, and its desktop, phone, motion and accessibility boxes are open.
-  - Setup's course, tee and scorecard reads run in the browser and report nothing to Sentry; the ports must.
-  - The catalog's intro and CH-11801 still say the review is not rebuilt; CH-11510 and CH-11511 (and other sheets that are not
+  - A failed team-membership read fails the whole library although only "today"
+    depends on the team.
+  - The checklist `screens/rounds.md` covers only the library, and its desktop,
+    phone, motion and accessibility boxes are open.
+  - Setup's course, tee and scorecard reads run in the browser and report
+    nothing to Sentry; the ports must.
+  - The catalog's intro and CH-11801 still say the review is not rebuilt;
+    CH-11510 and CH-11511 (and other sheets that are not
     destructive) sit in category 11 by the confirm-kind default.
   - Q-72 is open; the page is built on its recommendations.
+
+## Premium audit matrix — 2026-10-06
+
+44 synthetic captures are recorded for this page family. The table above
+keeps representative viewport/browser evidence; the complete state/opener
+ledger and review limitations are in the
+[premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
+Captured states are not all visually approved.

@@ -1,5 +1,18 @@
 # Recruiting catalog (14xxx)
 
+<!-- clubhouse:release-audit:start -->
+## Catalog audit — 2026-10-06
+
+Recruiting list/detail, stage picker, forms and document upload. Check
+keyboard-open forms, long prospect names, stage drag/tap, pending uploads and
+refused file recovery.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p014-recruiting).
+Existing checklist ticks and catalog identifiers retain their recorded scope.
+Automated browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Route: `/golf/dashboard/recruiting` (coaches only). The page gives a Clubhouse coach the new screen and everyone else the current Fairway page; a player is sent Home before either, as the current page does. Spec: `docs/clubhouse/phone/recruiting.md`. Boards: `design/handoff/recruiting/` (the owner's canvas, approved 2026-09-30).
 
 The coach's prospect tracker: high-school golfers a coach is following from first look to commitment, with their contact details, notes and private documents. It is a tracker, not a CRM: Email and Call are `mailto:` and `tel:` links, and nothing is sent from GolfHelm. A prospect is a row of `golf_recruits` and a document a row of `golf_recruit_documents` with its file in the private `recruit-documents` bucket, reached only through a link that expires. Every read and write is the current page's own server action (`getRecruits`, `createRecruit`, `updateRecruit`, `deleteRecruit`, `getRecruitDocuments`, `deleteRecruitDocument`, `getRecruitDocumentUrl`), which scopes to the coach's active team; RLS limits both tables to the team's coach staff. Two things are new for this page and optional for the current one: an Add carries a request id (`createRecruit(input, { requestId })`, CH-14915), and a document's bytes go straight to Storage on a signed URL the server makes for this coach and this prospect (`prepareRecruitDocumentUpload`, the transfer, then `completeRecruitDocumentUpload`), because a server action's request body is capped far below a film. Both server steps are safe to repeat with the same upload id (CH-14916).

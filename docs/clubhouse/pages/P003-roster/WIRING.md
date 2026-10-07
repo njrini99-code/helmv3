@@ -1,5 +1,18 @@
 # P003 — Roster: wiring map
 
+<!-- clubhouse:release-audit:start -->
+## Current ownership audit — 2026-10-06
+
+Root: `src/clubhouse/screens/roster`. The AST inventory found 13 source files,
+8 overlay/control sites and 3 motion nodes. Roster cards/list, player peek,
+invite, requests and read-only player view.
+
+Exact call sites, direct package imports, responsive styles and mapped tests
+are in the [all-page audit](../../ALL_PAGE_AUDIT.md#p003-roster). Shared
+Modal/Menu/PhoneScreen owners and shell behavior are audited once there;
+counts include wrappers rather than unique popups.
+<!-- clubhouse:release-audit:end -->
+
 ## Entry point
 
 ```text

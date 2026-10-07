@@ -1,5 +1,21 @@
 # P006 — Calendar: page contract
 
+Date-jump and people popovers remain beside their anchors, choose available
+viewport space and scroll their long content. See the [popup audit](../../POPUP_AUDIT.md).
+
+<!-- clubhouse:release-audit:start -->
+## Current contract audit — 2026-10-06
+
+The manifest reports complete contract coverage and 21 mapped actions.
+Existing Bridge IDs, catalog rows and generated contract tables remain
+authoritative. Check event sizing and collision layout, keyboard edit flows
+and Retry inside the native dialog top layer.
+
+The [all-page audit](../../ALL_PAGE_AUDIT.md#p006-calendar) distinguishes
+implemented/tested behavior from open runtime acceptance; this pass does not
+reserve new IDs or mark manual contracts verified.
+<!-- clubhouse:release-audit:end -->
+
 Every behaviour Calendar promises, by the 25 V2 categories (D-69). A contract's
 number is its Bridge ID (D-68: namespace 6, category, item); `Code` is the
 catalog code on the element and in the test (`docs/clubhouse/catalog/calendar.md`).

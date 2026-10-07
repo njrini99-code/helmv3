@@ -1,5 +1,39 @@
 # P002 — Home: changelog
 
+## 2026-10-06 — Owner rejects excessive card depth
+
+The owner described the large stacked shadows as looking poor and artificially
+styled. The shared depth ladder now uses quiet contact shadows for reading
+cards, shallow controls, a small floating lift and stronger separation only for
+menus/sheets. Settings form groups have no drop shadow. Home and Recruiting
+card overrides use the same reading token, including Home’s hero and nested
+next-event card. Broad 44/52px reading-card shadows
+and stacked bubble shadows are removed. Existing layout, colors, typography,
+focus indication and data behavior remain intact. This updates the October 2
+depth direction; earlier audit entries below record that prior review.
+
+Before/after normal-content captures are in page VERIFY logs. Physical-device
+and owner visual acceptance remain open in [POPUP_AUDIT](../../POPUP_AUDIT.md).
+
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+LatestRound passes the reduced preference through chSwap, eliminating the
+retained fade when motion is disabled.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
+## 2026-10-06 — Whole-app release audit
+
+Reconciled page purpose, design acceptance, contract status, wiring and
+verification against the current flagged implementation. Indexed 13 mapped
+actions and 2 overlay/control call sites in the [all-page
+audit](../../ALL_PAGE_AUDIT.md#p002-home). Approved handoffs and contract IDs
+are preserved; runtime gaps stay explicit.
+<!-- clubhouse:release-audit:end -->
+
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
 

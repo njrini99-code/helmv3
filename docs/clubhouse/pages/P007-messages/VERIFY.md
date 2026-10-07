@@ -1,9 +1,36 @@
 # P007 — Messages: verification
 
+<!-- clubhouse:release-audit:start -->
+## Current release evidence — 2026-10-06
+
+Conversation rail, phone thread, growing composer, reply and group dialogs.
+
+Check reader-position preservation, Return/newline versus desktop Enter,
+keyboard height, long messages and draft retention.
+
+Fresh WebKit 26.6: `/clubhouse-preview/messages` at
+375, 430 and 1280px; zero Axe A/AA violations and no horizontal document
+overflow in these three fixture renders. The 430px full-page screenshot
+was inspected and recorded below. This does not exercise every popup.
+Clubhouse runtime suites: 117 files / 3,092 tests pass on this branch.
+External action suites listed in WIRING are outside that count.
+
+Additional WebKit base check: 320px also fits without horizontal overflow
+and reports zero Axe violations. The state/opener inventory completes 26
+cases for this page at applicable 1280/390px widths with zero Axe
+violations or document overflow.
+
+Current browser/test results: [all-page
+audit](../../ALL_PAGE_AUDIT.md#p007-messages). Current status remains partial.
+Physical Safari/iPhone, VoiceOver and durable authenticated writes remain
+separate acceptance checks. Earlier verification status and gap sections below
+are historical observations; use the current audit for release scope.
+<!-- clubhouse:release-audit:end -->
+
 Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
 checklist is `docs/clubhouse/screens/messages.md`.
 
-## Current verification status
+## Historical verification status
 
 ```text
 Status:     partial
@@ -79,7 +106,8 @@ never observed is not verified (08_CI_PROGRESS_AND_VERIFICATION.md).
 ## Accessibility
 
 ```text
-Keyboard:       Enter sends and Shift+Enter adds a line (messages.test 72001); Esc closes a sheet (shell.test).
+Keyboard:       Desktop Enter sends and Shift+Enter adds a line; phone Return adds a line and Send sends.
+                Current source: MessagesView.tsx Composer (CH-7802); Esc closes a sheet (shell.test).
                 Not tested: that a sheet keeps Tab inside it. A full keyboard walk at 1280 and 390 is open.
 VoiceOver:      the long press has a Message actions button (CH-7804); not tried on a device.
 Focus:          a pushed screen takes focus on its title (CH-1809).
@@ -152,6 +180,13 @@ before, after, baseline or evidence.
 | `P007__composer-resize__coach__390x664__quote-six-lines__after__ae6447d.png` | after | ae6447d | composer-resize (coach), 390x664px, quote-six-lines |
 | `P007__composer-resize__coach__390x664__quote-six-lines__before__ae6447d.png` | before | ae6447d | composer-resize (coach), 390x664px, quote-six-lines |
 | `P007__recovery-geometry__coach__390x664__unbroken-filename__after__ae6447d.png` | after | ae6447d | recovery-geometry (coach), 390x664px, unbroken-filename; populated preview; temporary DOM pending notice/quote/filename content |
+| `P007__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
+| `P007__keyboard-actions__coach__390x844__focused__after__648b8d9.png` | after | 648b8d9 | keyboard-actions (coach), 390x844px, focused; development presentation fixture |
+| `P007__keyboard-actions__coach__390x844__focused__before__648b8d9.png` | before | 648b8d9 | keyboard-actions (coach), 390x844px, focused; development presentation fixture |
+| `P007__premium-audit__coach__1280__case-007-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-007-webkit-reduce; /clubhouse-preview/messages; synthetic preview |
+| `P007__premium-audit__coach__1280__case-058-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-058-chromium-normal; /clubhouse-preview/messages; synthetic preview |
+| `P007__premium-audit__coach__390__case-007-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-007-webkit-reduce; /clubhouse-preview/messages; synthetic preview |
+| `P007__premium-audit__coach__390__case-058-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-058-chromium-normal; /clubhouse-preview/messages; synthetic preview |
 
 ## 2026-10-02 — Apple Messages phone interaction pass
 
@@ -167,7 +202,8 @@ before, after, baseline or evidence.
   owner.
 - After the full suite, the reduced-motion parent jump was repaired and its
   existing timestamp/quote-scroll test ran again: 1/1 selected passed (281ms,
-  1.74 seconds overall), checking smooth normally and instant under reduced motion.
+  1.74 seconds overall), checking smooth normally and instant under reduced
+  motion.
 - Final scoped Messages source/test ESLint exit 0; `git diff --check` exit 0.
 - WebKit iPhone13 emulation, local synthetic populated fixture at port 3120:
   scrollWidth equals viewport at 375/390/430 pixels. At 390, a held native
@@ -282,13 +318,25 @@ unverified. The premium static auditor still exits1 with the same25 literal
 detections and0 unresolved owners documented in UI_OWNERSHIP; its JSON is
 preserved with the visual evidence and is not a compliance pass.
 
-## Open verification gaps
+## Historical verification gaps
 
 - The iPhone pass through `npm run ios:dev` (owner).
 - A browser pass with a real coach account (owner or merge pass).
 - Forced send, edit, delete and leave failures against a live session.
-- The full keyboard walk; `clubhouse:a11y` rerun after the v2 changes; LCP and layout shift.
+- The full keyboard walk; `clubhouse:a11y` rerun after the v2 changes; LCP and
+  layout shift.
 - The Messages e2e (it signs in to production, so the owner decides when).
-- Fixed 2026-09-30: an unsent draft used to be lost when you switched threads. Drafts are now kept per
-  conversation by the container (71202), and the test fails with the fix taken out (checked).
-- v2 draws the no-conversations state as a whole-page empty (D-71); the rail version is what is built.
+- Fixed 2026-09-30: an unsent draft used to be lost when you switched threads.
+  Drafts are now kept per
+  conversation by the container (71202), and the test fails with the fix taken
+  out (checked).
+- v2 draws the no-conversations state as a whole-page empty (D-71); the rail
+  version is what is built.
+
+## Premium audit matrix — 2026-10-06
+
+30 synthetic captures are recorded for this page family. The table above
+keeps representative viewport/browser evidence; the complete state/opener
+ledger and review limitations are in the
+[premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
+Captured states are not all visually approved.

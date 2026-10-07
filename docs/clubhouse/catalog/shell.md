@@ -1,5 +1,18 @@
 # Shell catalog (1xxx)
 
+<!-- clubhouse:release-audit:start -->
+## Catalog audit — 2026-10-06
+
+Navigation crossfade, Back/Forward scroll restoration, Bell, More and team
+switch. Nested overlays must retain scroll and restore focus; check keyboard
+dismissal and VoiceOver isolation.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p001-shell). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 The frame around every page: sidebar, top bar, bell, offline banner, full-page
 errors, and the behaviour every page shares. Code `src/clubhouse/shell/`,
 `src/clubhouse/ui/`, `src/clubhouse/lib/`. Tests `src/clubhouse/__tests__/shell.test.tsx`.

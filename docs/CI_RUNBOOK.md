@@ -1,5 +1,17 @@
 # CI Runbook — Triaging Pending / Red PR Checks
 
+## 2026-10-06 — Change detector checkout timeout
+
+PR #2155’s detector checkout fetched every branch/tag and reached its five-minute
+job timeout. The build, static, type/lint, unit and RLS jobs passed, but the
+aggregate correctly rejected the cancelled detector. The reusable detector now
+checks out two commits deep: GitHub’s PR merge commit and both parents provide
+the event base/head trees used by the existing two-dot diff. PR path filtering
+and fail-closed classification are preserved; non-PR events still run all gates.
+A local shallow-merge regression verifies both parent trees and identical diff
+results. The workflow has no business-feature registry match; this runbook is
+its operational documentation. Required gates and the timeout are unchanged.
+
 > Closes #390. Use this when a PR shows pending or failing checks and you
 > need to know: is this a real blocker, a transient queue, or a failure
 > inherited from `main`? And if it's stuck, how do I rerun it?

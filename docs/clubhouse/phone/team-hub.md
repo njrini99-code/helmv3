@@ -1,5 +1,18 @@
 # Design: Team Hub (coach and player, desktop and phone)
 
+<!-- clubhouse:release-audit:start -->
+## Phone acceptance audit — 2026-10-06
+
+Hub tabs, compose, assignment, trip, document and confirmation sheets. Check
+pending operations across tab remounts, partial data, audience pickers and
+dialog-hosted Retry.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p010-hub). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Status: approved. The owner's v2 boards are the spec (D-22): `design/handoff/Coach - Team Hub.html`, `Player - Team Hub.html` and `Coach and Player - Team Hub - Mobile.html` (`hub.jsx`, `hub.css`, `hub-data.js`). This file maps each board piece to the data and writes that already exist, and names every gap (Q-70). Built as `src/clubhouse/screens/hub/`.
 
 The route is `/golf/dashboard/team-hub` for both roles. Today a coach there gets "Team Hub collects a player's own tasks…" (the Fairway page is player-only); in Clubhouse the coach gets the coach hub, built from the separate coach surfaces' actions. It is a phone tab for players (D-66) and opens from More for coaches.

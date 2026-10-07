@@ -1,5 +1,17 @@
 # Stats (player) catalog (5xxx)
 
+<!-- clubhouse:release-audit:start -->
+## Catalog audit — 2026-10-06
+
+Player Stats periods, development proposals and filters. Check player context,
+chart resizing, proposal responses, keyboard filters and loading geometry.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p005-stats-player).
+Existing checklist ticks and catalog identifiers retain their recorded scope.
+Automated browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Route `/golf/dashboard/stats?player=<id>` (coach) and `/golf/dashboard/stats` (player) · code
 `src/clubhouse/screens/stats/StatsPlayer.tsx`, `GameDetail.tsx`, loader `src/clubhouse/data/stats-player.ts` ·
 tests `src/clubhouse/__tests__/stats-player.test.tsx` · preview `/clubhouse-preview/player`

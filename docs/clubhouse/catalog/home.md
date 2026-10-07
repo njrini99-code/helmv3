@@ -1,5 +1,18 @@
 # Home catalog (2xxx)
 
+<!-- clubhouse:release-audit:start -->
+## Catalog audit — 2026-10-06
+
+Coach/player Home, latest-round expansion, round sheet and partial-data cards.
+Check loading-to-content geometry, long names, team-timezone day labels and
+latest-round expansion under reduced motion.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p002-home). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Route `/golf/dashboard` (coach and player) · code `src/clubhouse/screens/home/`,
 loaders `src/clubhouse/data/home.ts` (coach) and
 `src/clubhouse/data/player-home.ts` (player) · tests

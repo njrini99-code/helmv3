@@ -1,5 +1,32 @@
 # P008 — Settings: page contract
 
+Popup sizing, native top-layer placement and description association follow the
+[popup audit](../../POPUP_AUDIT.md). Long content remains scrollable within the
+available viewport; source/browser checks do not grant physical-device acceptance.
+
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+Desktop and phone sections enter immediately without an outgoing wait,
+using one normal 260ms entrance. Reduced motion and Animations off use zero
+duration. Inline validation/save feedback follows the same preference.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
+## Current contract audit — 2026-10-06
+
+The manifest reports complete contract coverage and 29 mapped actions.
+Existing Bridge IDs, catalog rows and generated contract tables remain
+authoritative. Check the single 260ms entrance without exit wait; verify
+instant reduced motion, drag/scroll conflicts and pending saves.
+
+The [all-page audit](../../ALL_PAGE_AUDIT.md#p008-settings) distinguishes
+implemented/tested behavior from open runtime acceptance; this pass does not
+reserve new IDs or mark manual contracts verified.
+<!-- clubhouse:release-audit:end -->
+
 Every behaviour Settings promises, by the 25 V2 categories (D-69). A contract's
 number is its Bridge ID (D-68: namespace 8, category, item); `Code` is the
 catalog code on the element and in the test (`docs/clubhouse/catalog/settings.md`).
@@ -379,3 +406,9 @@ From the shell (P001): 12401 TESTS_NAME_CONTRACTS.
 ## 25 — Helm Bridge action
 
 Status: N/A — the Bridge is wired later (owner, D-68). Every contract above already has its Bridge ID; the commands (open a section, save the open card) are defined when the Bridge is.
+
+## October 6 premium interaction corrections
+
+Keyboard Move up/down alternatives reveal in their own row on focus.
+Ordinary assistive descriptions remain hidden; the visible reorder handle and
+its arrow-key path remain available.

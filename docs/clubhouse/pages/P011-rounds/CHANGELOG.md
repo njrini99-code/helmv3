@@ -1,5 +1,21 @@
 # P011 — Rounds: changelog
 
+## 2026-10-06 — Course-picker loading accessibility
+
+Course and tee loading containers now use status semantics, making their
+accessible labels valid while the popup is waiting. Catalog IDs and course
+selection behavior are unchanged. See [popup evidence](../../POPUP_AUDIT.md).
+
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Whole-app release audit
+
+Reconciled page purpose, design acceptance, contract status, wiring and
+verification against the current flagged implementation. Indexed 7 mapped
+actions and 25 overlay/control call sites in the [all-page
+audit](../../ALL_PAGE_AUDIT.md#p011-rounds). Approved handoffs and contract
+IDs are preserved; runtime gaps stay explicit.
+<!-- clubhouse:release-audit:end -->
+
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions). The first Rounds work is dated 2026-09-30: the tracker and
 the history show none earlier.

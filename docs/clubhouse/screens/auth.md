@@ -1,5 +1,18 @@
 # Auth checklist
 
+<!-- clubhouse:release-audit:start -->
+## Release checklist audit — 2026-10-06
+
+Sign-in course scene, welcome, onboarding and dashboard handoff. Check
+shortest phone heights, credential zoom/autocomplete, reduced-motion camera
+and no blank handoff frames.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p015-auth). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Reference: `design/handoff/auth/` (the owner's handoff: `README.md`, `Sign in.html`, `Sign in - Mobile.html`, `Sign in - Times of day.html`, `Sign up.html`, `Sign up - Mobile.html`, `src/`, `screenshots/`; owner decisions Q-96); spec `docs/clubhouse/phone/auth.md`
 Routes: `/golf/login` and `/golf/welcome` (built), `/golf/signup` and onboarding (phase 2, not built)   Surface tag: `auth` (Sentry `surface=auth.<section>`)
 Flag: `golf_clubhouse_front_door` (off in production). Page: P015, `pages/P015-auth/`.

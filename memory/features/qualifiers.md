@@ -7,6 +7,10 @@
 
 ## Current State
 
+Clubhouse course/tee picker loading regions use status semantics with their
+existing accessible loading labels. The [popup audit](../../docs/clubhouse/POPUP_AUDIT.md)
+records this accessibility repair; course selection and writes are unchanged.
+
 Qualifiers are multi-round golf team qualification events. Coaches create qualifier events and entries, players submit linked rounds, and leaderboards aggregate scores, ties, totals, and completion progress.
 
 There are three user surfaces:

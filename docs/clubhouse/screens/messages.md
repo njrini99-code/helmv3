@@ -1,5 +1,18 @@
 # Messages checklist
 
+<!-- clubhouse:release-audit:start -->
+## Release checklist audit — 2026-10-06
+
+Conversation rail, phone thread, growing composer, reply and group dialogs.
+Check reader-position preservation, Return/newline versus desktop Enter,
+keyboard height, long messages and draft retention.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p007-messages). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Reference: design/handoff/Messages.html, messages.jsx, msg-data.js, msg.css, screenshots/messages-01..04
 Route: /golf/dashboard/messages (coach and player) · `?conversation=<id>` · `?player=<golf_players.id>`
 Surface tag: `messages.<rail|thread|details|send|sendFiles|edit|remove|react|startDirect|createGroup|leave|members|attachments>`
