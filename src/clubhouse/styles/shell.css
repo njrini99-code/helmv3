@@ -112,10 +112,15 @@
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-brand--switch:hover,
 .ch-brand--switch[aria-expanded='true'] {
   background: rgb(250 248 241 / 0.1);
   box-shadow: inset 0 0 0 1px rgb(220 205 166 / 0.28);
+}
+@media (hover: hover) {
+  .ch-brand--switch:hover {
+    background: rgb(250 248 241 / 0.1);
+    box-shadow: inset 0 0 0 1px rgb(220 205 166 / 0.28);
+  }
 }
 .ch-brand--switch:focus-visible {
   outline: 2px solid #dccda6;
@@ -178,11 +183,17 @@
   text-align: left;
   cursor: pointer;
 }
-.ch-tsw__opt:hover,
 .ch-tsw__opt:focus-visible {
   outline: none;
   background: #ece8de;
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
+}
+@media (hover: hover) {
+  .ch-tsw__opt:hover {
+    outline: none;
+    background: #ece8de;
+    box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
+  }
 }
 .ch-tsw__opt[aria-selected='true'] {
   font-weight: 600;
@@ -245,12 +256,16 @@
   color: #cfc7b2;
   transition: color var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-navitem:hover {
-  background: rgb(250 248 241 / 0.07);
-  color: #fbfaf6;
+@media (hover: hover) {
+  .ch-navitem:hover {
+    background: rgb(250 248 241 / 0.07);
+    color: #fbfaf6;
+  }
 }
-.ch-navitem:hover svg {
-  color: #f4f1e8;
+@media (hover: hover) {
+  .ch-navitem:hover svg {
+    color: #f4f1e8;
+  }
 }
 .ch-navitem:focus-visible {
   outline: 2px solid #dccda6;
@@ -296,8 +311,10 @@
   box-shadow: 0 0 0 1px rgb(176 149 96 / 0.4), 0 8px 18px -10px rgb(0 0 0 / 0.5), inset 0 1px 0 #fff;
   transition: transform var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-next:hover {
-  box-shadow: 0 0 0 1px rgb(176 149 96 / 0.6), 0 10px 22px -10px rgb(0 0 0 / 0.55), inset 0 1px 0 #fff;
+@media (hover: hover) {
+  .ch-next:hover {
+    box-shadow: var(--ch-elevation-on-frame-card-hover);
+  }
 }
 .ch-next__k {
   display: flex;
@@ -1375,12 +1392,19 @@ button.ch-more__row[disabled] {
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-bellp__row:hover,
 .ch-bellp__row:focus-visible {
   /* .ch-menu__item hover: the design system's popover item */
   outline: none;
   background: #ece8de;
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
+}
+@media (hover: hover) {
+  .ch-bellp__row:hover {
+    /* .ch-menu__item hover: the design system's popover item */
+    outline: none;
+    background: #ece8de;
+    box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
+  }
 }
 .ch-bellp__ic {
   display: grid;
@@ -1700,9 +1724,11 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
     background: rgb(255 254 250 / 0.45);
     box-shadow: 0 0 0 1px rgb(110 98 62 / 0.2);
   }
-  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:hover:not(:disabled) {
-    background: rgb(255 254 250 / 0.8);
-    box-shadow: 0 0 0 1px rgb(110 98 62 / 0.32);
+  @media (hover: hover) {
+    [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:hover:not(:disabled) {
+      background: rgb(255 254 250 / 0.8);
+      box-shadow: 0 0 0 1px rgb(110 98 62 / 0.32);
+    }
   }
 }
 
@@ -1756,12 +1782,16 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
 .ch-navitem svg {
   color: var(--ch-on-green-ink-muted);
 }
-.ch-navitem:hover {
-  background: rgb(250 248 241 / 0.07);
-  color: var(--ch-on-green-ink);
+@media (hover: hover) {
+  .ch-navitem:hover {
+    background: rgb(250 248 241 / 0.07);
+    color: var(--ch-on-green-ink);
+  }
 }
-.ch-navitem:hover svg {
-  color: var(--ch-on-green-ink);
+@media (hover: hover) {
+  .ch-navitem:hover svg {
+    color: var(--ch-on-green-ink);
+  }
 }
 .ch-navitem[aria-current='page'],
 .ch-navitem:has(.ch-lp) {
@@ -1786,8 +1816,10 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-on-frame);
 }
-.ch-next:hover {
-  box-shadow: var(--ch-elevation-on-frame-hover);
+@media (hover: hover) {
+  .ch-next:hover {
+    box-shadow: var(--ch-elevation-on-frame-hover);
+  }
 }
 .ch-identity .ch-avatar {
   box-shadow: 0 0 0 2px rgb(250 248 241 / 0.25);

@@ -137,8 +137,10 @@
   cursor: pointer;
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-rs-attn__c:hover {
-  box-shadow: var(--ch-elevation-reading-hover);
+@media (hover: hover) {
+  .ch-rs-attn__c:hover {
+    box-shadow: var(--ch-elevation-reading-hover);
+  }
 }
 .ch-rs-attn__c b {
   font: 600 13px/1 var(--ch-font-sans);
@@ -210,8 +212,10 @@
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-rs-vt__b:hover {
-  color: var(--ch-text-primary);
+@media (hover: hover) {
+  .ch-rs-vt__b:hover {
+    color: var(--ch-text-primary);
+  }
 }
 .ch-rs-vt__b[aria-pressed='true'] {
   background: var(--ch-bg-selected);
@@ -240,9 +244,11 @@
   box-shadow: var(--ch-elevation-reading);
   transition: box-shadow var(--ch-dur-base) var(--ch-ease), transform var(--ch-dur-base) var(--ch-ease);
 }
-.ch-rs-face:not(.ch-rs-face--static):hover {
-  transform: translateY(-2px);
-  box-shadow: var(--ch-elevation-reading-hover);
+@media (hover: hover) {
+  .ch-rs-face:not(.ch-rs-face--static):hover {
+    transform: translateY(-2px);
+    box-shadow: var(--ch-elevation-reading-hover);
+  }
 }
 /* Pressing drops the hover lift; the shrink is the shell's press (D-64), so it isn't doubled here. */
 .ch-rs-face:not(.ch-rs-face--static):active {
@@ -458,8 +464,10 @@
 .ch-rs-row:last-child {
   border-bottom: 0;
 }
-.ch-rs-row:not(.ch-rs-row--head):hover {
-  background: var(--ch-ivory-50);
+@media (hover: hover) {
+  .ch-rs-row:not(.ch-rs-row--head):hover {
+    background: var(--ch-ivory-50);
+  }
 }
 .ch-rs-row.is-sel {
   border-bottom-color: transparent;
@@ -807,8 +815,10 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ch-rs-face:hover {
-    transform: none;
+  @media (hover: hover) {
+    .ch-rs-face:hover {
+      transform: none;
+    }
   }
 }
 
@@ -1426,8 +1436,10 @@
   grid-template-columns: minmax(200px, 1.6fr) 140px 72px;
   min-width: 0;
 }
-.ch-rs-list--team .ch-rs-row:not(.ch-rs-row--head):hover {
-  background: none;
+@media (hover: hover) {
+  .ch-rs-list--team .ch-rs-row:not(.ch-rs-row--head):hover {
+    background: none;
+  }
 }
 .ch-rs-who--static {
   cursor: default;
@@ -1539,8 +1551,7 @@
     gap: 0;
     overflow: hidden;
   }
-  .ch-rs[data-canopy] .ch-rs-face,
-  .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
+  .ch-rs[data-canopy] .ch-rs-face {
     padding: 22px 20px 26px;
     border-radius: 0;
     background: none;
@@ -1548,12 +1559,28 @@
     transform: none;
     transition: background var(--ch-dur-quick) var(--ch-ease);
   }
-  .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
-    background: var(--ch-ledger-row-hover);
+  @media (hover: hover) {
+    .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
+      padding: 22px 20px 26px;
+      border-radius: 0;
+      background: none;
+      box-shadow: -1px 0 0 var(--ch-ledger-rule-soft), 0 -1px 0 var(--ch-ledger-rule-soft);
+      transform: none;
+      transition: background var(--ch-dur-quick) var(--ch-ease);
+    }
   }
-  .ch-rs[data-canopy] .ch-rs-face.is-sel,
-  .ch-rs[data-canopy] .ch-rs-face.is-sel:hover {
+  @media (hover: hover) {
+    .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
+      background: var(--ch-ledger-row-hover);
+    }
+  }
+  .ch-rs[data-canopy] .ch-rs-face.is-sel {
     background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+  }
+  @media (hover: hover) {
+    .ch-rs[data-canopy] .ch-rs-face.is-sel:hover {
+      background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+    }
   }
   .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):active {
     background: color-mix(in oklab, var(--ch-green-600) 11%, transparent);
@@ -1606,13 +1633,20 @@
     background: none;
     box-shadow: none;
   }
-  .ch-rs[data-canopy] .ch-rs-row:not(.ch-rs-row--head):hover {
-    background: var(--ch-ledger-row-hover);
+  @media (hover: hover) {
+    .ch-rs[data-canopy] .ch-rs-row:not(.ch-rs-row--head):hover {
+      background: var(--ch-ledger-row-hover);
+    }
   }
-  .ch-rs[data-canopy] .ch-rs-row.is-sel,
-  .ch-rs[data-canopy] .ch-rs-row.is-sel:hover {
+  .ch-rs[data-canopy] .ch-rs-row.is-sel {
     border-bottom-color: var(--ch-ledger-rule-soft);
     background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+  }
+  @media (hover: hover) {
+    .ch-rs[data-canopy] .ch-rs-row.is-sel:hover {
+      border-bottom-color: var(--ch-ledger-rule-soft);
+      background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+    }
   }
 
   /* The open player: a column beside the players, divided by a hairline, its sections under rules. */

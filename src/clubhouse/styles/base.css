@@ -42,9 +42,11 @@
   background: var(--ch-scrollbar-thumb);
   border-radius: var(--ch-radius-xs);
 }
-[data-ui='clubhouse']::-webkit-scrollbar-thumb:hover,
-[data-ui='clubhouse'] *::-webkit-scrollbar-thumb:hover {
-  background: var(--ch-scrollbar-thumb-hover);
+@media (hover: hover) {
+  [data-ui='clubhouse']::-webkit-scrollbar-thumb:hover,
+  [data-ui='clubhouse'] *::-webkit-scrollbar-thumb:hover {
+    background: var(--ch-scrollbar-thumb-hover);
+  }
 }
 [data-ui='clubhouse']::-webkit-scrollbar-thumb:active,
 [data-ui='clubhouse'] *::-webkit-scrollbar-thumb:active {

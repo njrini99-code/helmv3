@@ -92,8 +92,10 @@
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
-.ch-qf-pill:hover {
-  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+@media (hover: hover) {
+  .ch-qf-pill:hover {
+    box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+  }
 }
 .ch-qf-pill[aria-pressed='true'] {
   background: var(--ch-bg-selected);
@@ -142,8 +144,10 @@
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-reading);
 }
-.ch-qf-hero:hover {
-  box-shadow: var(--ch-elevation-reading-hover);
+@media (hover: hover) {
+  .ch-qf-hero:hover {
+    box-shadow: var(--ch-elevation-reading-hover);
+  }
 }
 .ch-qf-hero__main {
   display: flex;
@@ -210,11 +214,15 @@
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
-.ch-qf-card:hover {
-  box-shadow: var(--ch-elevation-reading-hover);
+@media (hover: hover) {
+  .ch-qf-card:hover {
+    box-shadow: var(--ch-elevation-reading-hover);
+  }
 }
-.ch-qf-card:hover h3 {
-  color: var(--ch-green-700);
+@media (hover: hover) {
+  .ch-qf-card:hover h3 {
+    color: var(--ch-green-700);
+  }
 }
 .ch-qf-card__h {
   display: flex;
@@ -278,13 +286,17 @@
 .ch-qf-cta svg {
   transition: transform var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-qf-card:hover .ch-qf-cta,
-.ch-qf-hero:hover .ch-qf-cta {
-  color: var(--ch-green-800);
+@media (hover: hover) {
+  .ch-qf-card:hover .ch-qf-cta,
+  .ch-qf-hero:hover .ch-qf-cta {
+    color: var(--ch-green-800);
+  }
 }
-.ch-qf-card:hover .ch-qf-cta svg,
-.ch-qf-hero:hover .ch-qf-cta svg {
-  transform: translateX(2px);
+@media (hover: hover) {
+  .ch-qf-card:hover .ch-qf-cta svg,
+  .ch-qf-hero:hover .ch-qf-cta svg {
+    transform: translateX(2px);
+  }
 }
 .ch-qf-empty {
   padding: 12px;
@@ -322,8 +334,10 @@
 .ch-qf-grid.is-ledger .ch-qf-card + .ch-qf-card {
   box-shadow: var(--ch-seam-x);
 }
-.ch-qf-grid.is-ledger .ch-qf-card:hover {
-  background: rgb(28 25 18 / 0.035);
+@media (hover: hover) {
+  .ch-qf-grid.is-ledger .ch-qf-card:hover {
+    background: rgb(28 25 18 / 0.035);
+  }
 }
 .ch-qf-grid.is-ledger .ch-qf-card__h p {
   -webkit-line-clamp: 1;
@@ -595,9 +609,11 @@
   color: var(--ch-text-tertiary);
   cursor: pointer;
 }
-.ch-qf-open:hover {
-  background: var(--ch-bg-hover);
-  color: var(--ch-text-primary);
+@media (hover: hover) {
+  .ch-qf-open:hover {
+    background: var(--ch-bg-hover);
+    color: var(--ch-text-primary);
+  }
 }
 .ch-qf-open,
 .ch-qf-picker__row {
@@ -607,8 +623,10 @@
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-qf-rowbtn:hover:not(.is-open) {
-  background: var(--ch-bg-hover);
+@media (hover: hover) {
+  .ch-qf-rowbtn:hover:not(.is-open) {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-qf-pos {
   font: 500 14px/1 var(--ch-font-sans);
@@ -901,8 +919,10 @@
   border-radius: 10px;
   cursor: pointer;
 }
-.ch-qf-prow:hover {
-  background: var(--ch-bg-hover);
+@media (hover: hover) {
+  .ch-qf-prow:hover {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-qf-prow.is-locked {
   cursor: default;
@@ -998,8 +1018,10 @@
   text-align: left;
   cursor: pointer;
 }
-.ch-qf-picker__row:hover {
-  background: var(--ch-bg-hover);
+@media (hover: hover) {
+  .ch-qf-picker__row:hover {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-qf-picker__row b {
   display: block;
@@ -1202,8 +1224,10 @@
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-qfs-opt:hover {
-  background: var(--ch-bg-hover);
+@media (hover: hover) {
+  .ch-qfs-opt:hover {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-qfs-opt.is-on {
   background: var(--ch-bg-selected);
@@ -1744,8 +1768,10 @@
     font: var(--ch-type-serif-l);
     transition: color var(--ch-dur-quick) var(--ch-ease);
   }
-  .ch-qf--list[data-canopy] .ch-qf-hero:hover h2 {
-    color: var(--ch-green-700);
+  @media (hover: hover) {
+    .ch-qf--list[data-canopy] .ch-qf-hero:hover h2 {
+      color: var(--ch-green-700);
+    }
   }
   /* A narrow canvas puts the board under the qualifier rather than squeezing the name and dates beside it. */
   @container (max-width: 760px) {
@@ -1786,8 +1812,10 @@
     content: '';
     pointer-events: none;
   }
-  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card:hover {
-    background: var(--ch-ledger-row-hover);
+  @media (hover: hover) {
+    .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card:hover {
+      background: var(--ch-ledger-row-hover);
+    }
   }
   /* A player's row keeps its link at the right of the first line; their standing runs under the row. */
   .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-cta {
@@ -1874,8 +1902,10 @@
     margin-bottom: 0;
     background: none;
   }
-  .ch-qf[data-canopy] .ch-qf-rowbtn:hover:not(.is-open) {
-    background: var(--ch-ledger-row-hover);
+  @media (hover: hover) {
+    .ch-qf[data-canopy] .ch-qf-rowbtn:hover:not(.is-open) {
+      background: var(--ch-ledger-row-hover);
+    }
   }
   .ch-qf[data-canopy] .ch-qf-cap {
     padding: 14px 0 0;
@@ -1913,8 +1943,10 @@
   .ch-qf--form[data-canopy] .ch-qf-players {
     margin-inline: -8px;
   }
-  .ch-qf--form[data-canopy] .ch-qf-prow:hover {
-    background: var(--ch-ledger-row-hover);
+  @media (hover: hover) {
+    .ch-qf--form[data-canopy] .ch-qf-prow:hover {
+      background: var(--ch-ledger-row-hover);
+    }
   }
   .ch-qf--form[data-canopy] .ch-qf-rc {
     border-top-color: var(--ch-ledger-rule-soft);

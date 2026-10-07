@@ -400,8 +400,10 @@
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
 /* CH-13602: hovering a row or a player tints it (quick). */
-.ch-hl-row:hover {
-  background: rgb(28 25 18 / 0.025);
+@media (hover: hover) {
+  .ch-hl-row:hover {
+    background: rgb(28 25 18 / 0.025);
+  }
 }
 .ch-hl-row:focus-visible,
 .ch-hl-pl:focus-visible {
@@ -626,8 +628,10 @@
   border-radius: 14px;
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-hl-pl:hover {
-  background: rgb(28 25 18 / 0.03);
+@media (hover: hover) {
+  .ch-hl-pl:hover {
+    background: rgb(28 25 18 / 0.03);
+  }
 }
 .ch-hl-pl.is-on {
   background: var(--ch-ivory-25);
@@ -1039,16 +1043,20 @@
   .ch-hl[data-canopy] .ch-hl-pl {
     margin-inline: -12px;
   }
-  .ch-hl[data-canopy] .ch-hl-pl:hover,
-  .ch-hl[data-canopy] .ch-hl-row:hover {
-    background: var(--ch-ledger-row-hover);
+  @media (hover: hover) {
+    .ch-hl[data-canopy] .ch-hl-pl:hover,
+    .ch-hl[data-canopy] .ch-hl-row:hover {
+      background: var(--ch-ledger-row-hover);
+    }
   }
   .ch-hl[data-canopy] .ch-hl-pl.is-on {
     background: color-mix(in oklab, var(--ch-green-600) 7%, transparent);
     box-shadow: none;
   }
-  .ch-hl[data-canopy] .ch-hl-pl.is-on:hover {
-    background: color-mix(in oklab, var(--ch-green-600) 9%, transparent);
+  @media (hover: hover) {
+    .ch-hl[data-canopy] .ch-hl-pl.is-on:hover {
+      background: color-mix(in oklab, var(--ch-green-600) 9%, transparent);
+    }
   }
   .ch-hl[data-canopy] .ch-hl-row {
     border-top-color: var(--ch-ledger-rule-soft);

@@ -166,8 +166,10 @@
 .ch-hd-it.is-stale {
   --ch-hd-ink: var(--ch-text-tertiary);
 }
-.ch-hd-it:hover {
-  background: rgb(28 25 18 / 0.035);
+@media (hover: hover) {
+  .ch-hd-it:hover {
+    background: rgb(28 25 18 / 0.035);
+  }
 }
 .ch-hd-it.is-on {
   background: var(--ch-green-50);
@@ -415,8 +417,10 @@
 .ch-hd-rounds li:first-child .ch-hd-r {
   border-top: 0;
 }
-.ch-hd-r.is-link:hover {
-  background: rgb(28 25 18 / 0.035);
+@media (hover: hover) {
+  .ch-hd-r.is-link:hover {
+    background: rgb(28 25 18 / 0.035);
+  }
 }
 .ch-hd-r.is-link:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -573,8 +577,10 @@
 .ch-hd-plan__i.is-link {
   grid-template-columns: 34px minmax(0, 1fr) auto 16px;
 }
-.ch-hd-plan__i.is-link:hover {
-  background: var(--ch-green-25);
+@media (hover: hover) {
+  .ch-hd-plan__i.is-link:hover {
+    background: var(--ch-green-25);
+  }
 }
 .ch-hd-plan__i.is-link:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -898,15 +904,19 @@ p.ch-hd-none {
     width: calc(100% + 20px);
     margin-inline: -10px;
   }
-  main[data-canopy] .ch-hd-it:hover {
-    background: var(--ch-ledger-row-hover);
+  @media (hover: hover) {
+    main[data-canopy] .ch-hd-it:hover {
+      background: var(--ch-ledger-row-hover);
+    }
   }
   main[data-canopy] .ch-hd-it.is-on {
     background: color-mix(in oklab, var(--ch-green-600) 7%, transparent);
     box-shadow: none;
   }
-  main[data-canopy] .ch-hd-it.is-on:hover {
-    background: color-mix(in oklab, var(--ch-green-600) 9%, transparent);
+  @media (hover: hover) {
+    main[data-canopy] .ch-hd-it.is-on:hover {
+      background: color-mix(in oklab, var(--ch-green-600) 9%, transparent);
+    }
   }
 
   /* The open read: its head is the Board's ruled category line; its parts on soft rules; the plan as rows, as the
@@ -917,8 +927,10 @@ p.ch-hd-none {
   main[data-canopy] :is(.ch-hd-sec, .ch-hd-tr > li, .ch-hd-r, .ch-hd-dx__d > div) {
     border-top-color: var(--ch-ledger-rule-soft);
   }
-  main[data-canopy] .ch-hd-r.is-link:hover {
-    background: var(--ch-ledger-row-hover);
+  @media (hover: hover) {
+    main[data-canopy] .ch-hd-r.is-link:hover {
+      background: var(--ch-ledger-row-hover);
+    }
   }
   main[data-canopy] .ch-hd-plan {
     gap: 0;
@@ -930,8 +942,10 @@ p.ch-hd-none {
   main[data-canopy] .ch-hd-plan > li + li .ch-hd-plan__i {
     border-top: 1px solid var(--ch-ledger-rule-soft);
   }
-  main[data-canopy] .ch-hd-plan__i.is-link:hover {
-    background: var(--ch-ledger-row-hover);
+  @media (hover: hover) {
+    main[data-canopy] .ch-hd-plan__i.is-link:hover {
+      background: var(--ch-ledger-row-hover);
+    }
   }
 
   /* Loading holds the loaded sections (WebKit 1440, 2026-10-07: what CoachHelm has found 156px) and draws each head's

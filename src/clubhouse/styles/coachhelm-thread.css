@@ -133,9 +133,11 @@
   text-decoration-thickness: 1px;
   transition: color var(--ch-dur-quick) var(--ch-ease), text-decoration-color var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-th-mention:hover {
-  color: var(--ch-green-700);
-  text-decoration-color: var(--ch-green-rule);
+@media (hover: hover) {
+  .ch-th-mention:hover {
+    color: var(--ch-green-700);
+    text-decoration-color: var(--ch-green-rule);
+  }
 }
 
 /* What CoachHelm is doing */
@@ -559,9 +561,11 @@
   color: var(--ch-text-tertiary);
   transition: background var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-th-icobtn:hover {
-  background: var(--ch-ivory-150);
-  color: var(--ch-text-primary);
+@media (hover: hover) {
+  .ch-th-icobtn:hover {
+    background: var(--ch-ivory-150);
+    color: var(--ch-text-primary);
+  }
 }
 .ch-th--phone .ch-th-icobtn {
   width: 44px;
@@ -587,8 +591,10 @@
   color: var(--ch-text-primary);
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-th-pill:hover {
-  background: var(--ch-ivory-50);
+@media (hover: hover) {
+  .ch-th-pill:hover {
+    background: var(--ch-ivory-50);
+  }
 }
 .ch-th-work__btn:focus-visible,
 .ch-th-toggle:focus-visible,
@@ -846,8 +852,10 @@
   font: 500 12.5px/1 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
-a.ch-th-chip:hover {
-  box-shadow: 0 0 0 1px var(--ch-green-ring);
+@media (hover: hover) {
+  a.ch-th-chip:hover {
+    box-shadow: 0 0 0 1px var(--ch-green-ring);
+  }
 }
 .ch-th-receipt__meta {
   margin-top: 10px;

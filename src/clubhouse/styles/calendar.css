@@ -37,8 +37,10 @@
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-cal-title:hover {
-  background: rgb(28 25 18 / 0.04);
+@media (hover: hover) {
+  .ch-cal-title:hover {
+    background: rgb(28 25 18 / 0.04);
+  }
 }
 .ch-cal-title:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -122,8 +124,10 @@
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-cal-jump__d:hover {
-  background: var(--ch-bg-hover);
+@media (hover: hover) {
+  .ch-cal-jump__d:hover {
+    background: var(--ch-bg-hover);
+  }
 }
 /* Days outside the month are still pickable, so they read as tertiary, not disabled. */
 .ch-cal-jump__d.is-out {
@@ -213,8 +217,10 @@
     box-shadow var(--ch-dur-quick) var(--ch-ease),
     transform var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-pp__trigger:hover {
-  box-shadow: 0 0 0 1px var(--ch-border-strong), 0 1px 2px rgb(28 25 18 / 0.05);
+@media (hover: hover) {
+  .ch-pp__trigger:hover {
+    box-shadow: var(--ch-elevation-field-hover);
+  }
 }
 .ch-pp__trigger[aria-expanded='true'] {
   box-shadow: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo);
@@ -392,8 +398,10 @@
   color: var(--ch-text-primary);
   transition: color var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-wk__day:hover .ch-wk__n {
-  color: var(--ch-green-700);
+@media (hover: hover) {
+  .ch-wk__day:hover .ch-wk__n {
+    color: var(--ch-green-700);
+  }
 }
 .ch-wk__day.is-today .ch-wk__d {
   font-weight: 600;
@@ -503,8 +511,10 @@
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 1px;
 }
-.ch-ev:hover {
-  z-index: 4;
+@media (hover: hover) {
+  .ch-ev:hover {
+    z-index: 4;
+  }
 }
 .ch-ev__t {
   overflow: hidden;
@@ -585,11 +595,13 @@
   color: var(--ch-text-primary);
   box-shadow: inset 0 0 0 1px var(--ch-border-control);
 }
-.ch-ev--practice:hover,
-.ch-ev--workout:hover,
-.ch-ev--meeting:hover,
-.ch-ev--other:hover {
-  box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.24), 0 2px 6px -2px rgb(28 25 18 / 0.18);
+@media (hover: hover) {
+  .ch-ev--practice:hover,
+  .ch-ev--workout:hover,
+  .ch-ev--meeting:hover,
+  .ch-ev--other:hover {
+    box-shadow: var(--ch-elevation-chip-hover);
+  }
 }
 .ch-ev--tournament,
 .ch-ev--qualifier {
@@ -699,8 +711,10 @@
 .ch-mo__cell:nth-last-child(-n + 7) {
   border-bottom: 0;
 }
-.ch-mo__cell:hover {
-  background: var(--ch-bg-hover);
+@media (hover: hover) {
+  .ch-mo__cell:hover {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-mo__cell.is-out {
   background: rgb(28 25 18 / 0.018);
@@ -837,8 +851,10 @@
 .ch-ag__row:first-child {
   border-top: 0;
 }
-.ch-ag__row:hover {
-  background: #f3f8f4;
+@media (hover: hover) {
+  .ch-ag__row:hover {
+    background: #f3f8f4;
+  }
 }
 .ch-ag__row.is-sel {
   background: var(--ch-green-50);
@@ -1080,8 +1096,10 @@
   color: var(--ch-text-primary);
   transition: color var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-in__need:hover b {
-  color: var(--ch-green-700);
+@media (hover: hover) {
+  .ch-in__need:hover b {
+    color: var(--ch-green-700);
+  }
 }
 .ch-in__need span span {
   font: var(--ch-type-caption);
@@ -1625,8 +1643,10 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.ch-in__file a:hover b {
-  color: var(--ch-green-700);
+@media (hover: hover) {
+  .ch-in__file a:hover b {
+    color: var(--ch-green-700);
+  }
 }
 .ch-in__file span span,
 .ch-in__file a span {
@@ -2182,8 +2202,10 @@
   .ch-cal[data-canopy] .ch-mo__cell:nth-last-child(-n + 7) {
     border-bottom: 1px solid var(--ch-ledger-rule-soft);
   }
-  .ch-cal[data-canopy] .ch-mo__cell:hover {
-    background: var(--ch-ledger-row-hover);
+  @media (hover: hover) {
+    .ch-cal[data-canopy] .ch-mo__cell:hover {
+      background: var(--ch-ledger-row-hover);
+    }
   }
 
   /* Agenda: each day opens on an engraved rule; its events are rows on the canvas with soft seams, their text on the
@@ -2221,8 +2243,10 @@
     background: var(--ch-ledger-rule-soft);
     content: '';
   }
-  .ch-cal[data-canopy] .ch-ag__row:hover {
-    background: var(--ch-ledger-row-hover);
+  @media (hover: hover) {
+    .ch-cal[data-canopy] .ch-ag__row:hover {
+      background: var(--ch-ledger-row-hover);
+    }
   }
   .ch-cal[data-canopy] .ch-ag__now {
     padding: 0 12px;

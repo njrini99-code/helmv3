@@ -198,9 +198,11 @@
   color: rgb(244 241 232 / 0.7);
   cursor: pointer;
 }
-.ch-rd-unf__discard:hover {
-  background: rgb(255 255 255 / 0.14);
-  color: var(--ch-ivory-100);
+@media (hover: hover) {
+  .ch-rd-unf__discard:hover {
+    background: rgb(255 255 255 / 0.14);
+    color: var(--ch-ivory-100);
+  }
 }
 
 /* Season scoring */
@@ -510,9 +512,11 @@
   color: var(--ch-text-tertiary);
   cursor: pointer;
 }
-.ch-rd-more__discard:hover {
-  background: var(--ch-bg-hover);
-  color: var(--ch-text-primary);
+@media (hover: hover) {
+  .ch-rd-more__discard:hover {
+    background: var(--ch-bg-hover);
+    color: var(--ch-text-primary);
+  }
 }
 .ch-rd-more__go {
   height: 34px;
@@ -602,11 +606,11 @@
     transform var(--ch-dur-quick) var(--ch-ease);
 }
 /* CH-11601: a round that opens its review lifts and rings green on hover (quick). */
-a.ch-rd-sc:hover {
-  transform: translateY(-1px);
-  box-shadow:
-    0 0 0 1px rgb(21 90 57 / 0.25),
-    0 14px 28px -18px rgb(11 58 37 / 0.4);
+@media (hover: hover) {
+  a.ch-rd-sc:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--ch-elevation-row-card-hover);
+  }
 }
 a.ch-rd-sc:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -1211,8 +1215,10 @@ a.ch-rd-sc:focus-visible {
   color: inherit;
   cursor: pointer;
 }
-.ch-rv-nine thead button:hover {
-  background: var(--ch-bg-hover);
+@media (hover: hover) {
+  .ch-rv-nine thead button:hover {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-rv-nine thead button.is-sel {
   background: var(--ch-green-800);
@@ -1564,8 +1570,10 @@ a.ch-rd-sc:focus-visible {
     color: var(--ch-green-700);
     transition: background var(--ch-dur-quick) var(--ch-ease);
   }
-  .ch-rv[data-canopy] .ch-rv-back:hover {
-    background: var(--ch-ledger-row-hover);
+  @media (hover: hover) {
+    .ch-rv[data-canopy] .ch-rv-back:hover {
+      background: var(--ch-ledger-row-hover);
+    }
   }
   .ch-rv[data-canopy] .ch-rv-hero {
     align-items: flex-end;
@@ -1741,16 +1749,20 @@ a.ch-rd-sc:focus-visible {
       transform var(--ch-dur-press) var(--ch-ease),
       box-shadow var(--ch-dur-quick) var(--ch-ease);
   }
-  .ch-rd[data-canopy] .ch-rd-unf__cta:hover {
-    box-shadow: var(--ch-btn-secondary-hover-shadow);
+  @media (hover: hover) {
+    .ch-rd[data-canopy] .ch-rd-unf__cta:hover {
+      box-shadow: var(--ch-btn-secondary-hover-shadow);
+    }
   }
   .ch-rd[data-canopy] .ch-rd-unf__discard {
     background: none;
     color: var(--ch-text-tertiary);
   }
-  .ch-rd[data-canopy] .ch-rd-unf__discard:hover {
-    background: var(--ch-bg-hover);
-    color: var(--ch-text-primary);
+  @media (hover: hover) {
+    .ch-rd[data-canopy] .ch-rd-unf__discard:hover {
+      background: var(--ch-bg-hover);
+      color: var(--ch-text-primary);
+    }
   }
   .ch-rd[data-canopy] .ch-rd-unf__cta:focus-visible,
   .ch-rd[data-canopy] .ch-rd-unf__discard:focus-visible {
@@ -1881,14 +1893,18 @@ a.ch-rd-sc:focus-visible {
   }
   /* CH-11601: a round that opens its review takes the Ledger row tint on hover (quick), as Home's leaderboard rows do.
      A flush row has no card to lift, so it neither lifts nor rings. */
-  .ch-rd[data-canopy] a.ch-rd-sc:hover {
-    transform: none;
-    background: var(--ch-ledger-row-hover);
-    box-shadow: none;
+  @media (hover: hover) {
+    .ch-rd[data-canopy] a.ch-rd-sc:hover {
+      transform: none;
+      background: var(--ch-ledger-row-hover);
+      box-shadow: none;
+    }
   }
-  .ch-rd[data-canopy] a.ch-rd-sc:hover::before,
-  .ch-rd[data-canopy] a.ch-rd-sc:hover + .ch-rd-sc::before {
-    opacity: 0;
+  @media (hover: hover) {
+    .ch-rd[data-canopy] a.ch-rd-sc:hover::before,
+    .ch-rd[data-canopy] a.ch-rd-sc:hover + .ch-rd-sc::before {
+      opacity: 0;
+    }
   }
 
   /* One column below a 860px page: the panes stack, the column rule goes. */

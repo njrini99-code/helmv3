@@ -21,9 +21,11 @@
   color: var(--ch-green-700);
   text-decoration: none;
 }
-.ch-au a:hover {
-  color: var(--ch-green-800);
-  text-decoration: underline;
+@media (hover: hover) {
+  .ch-au a:hover {
+    color: var(--ch-green-800);
+    text-decoration: underline;
+  }
 }
 .ch-au-skip {
   position: absolute;
@@ -381,9 +383,11 @@
   color: var(--ch-text-secondary) !important;
   text-decoration: none !important;
 }
-.ch-au-back:hover {
-  background: rgb(28 25 18 / 0.05);
-  color: var(--ch-text-primary) !important;
+@media (hover: hover) {
+  .ch-au-back:hover {
+    background: rgb(28 25 18 / 0.05);
+    color: var(--ch-text-primary) !important;
+  }
 }
 .ch-au-form {
   margin: auto;
@@ -465,8 +469,10 @@
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
   color: var(--ch-text-tertiary);
 }
-.ch-au-input:hover {
-  box-shadow: 0 0 0 1px var(--ch-border-strong), 0 1px 2px rgb(28 25 18 / 0.04);
+@media (hover: hover) {
+  .ch-au-input:hover {
+    box-shadow: var(--ch-elevation-field-hover);
+  }
 }
 .ch-au-input:focus-within {
   box-shadow: 0 0 0 1px var(--ch-green-600), 0 0 0 4px rgb(21 90 57 / 0.12);
@@ -524,9 +530,11 @@
   position: absolute;
   inset: -7px;
 }
-.ch-au-eye:hover {
-  background: rgb(28 25 18 / 0.05);
-  color: var(--ch-text-primary);
+@media (hover: hover) {
+  .ch-au-eye:hover {
+    background: rgb(28 25 18 / 0.05);
+    color: var(--ch-text-primary);
+  }
 }
 .ch-au-eye:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -1056,8 +1064,10 @@
     background: transparent;
     box-shadow: none;
   }
-  .ch-au-input:hover {
-    box-shadow: none;
+  @media (hover: hover) {
+    .ch-au-input:hover {
+      box-shadow: none;
+    }
   }
   /* The field's own focus cue on the grouped sheet: a green hairline, never the app's black keyboard outline. */
   .ch-au-input:focus-within {

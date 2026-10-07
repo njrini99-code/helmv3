@@ -34,8 +34,10 @@
   padding: 0 11px;
   font-size: 12.5px;
 }
-.ch-seg__b:hover {
-  color: var(--ch-text-primary);
+@media (hover: hover) {
+  .ch-seg__b:hover {
+    color: var(--ch-text-primary);
+  }
 }
 .ch-seg__b.is-on {
   color: var(--ch-green-700);
@@ -80,9 +82,11 @@
   transition: color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease),
     background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-pill:hover {
-  color: var(--ch-text-primary);
-  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+@media (hover: hover) {
+  .ch-pill:hover {
+    color: var(--ch-text-primary);
+    box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+  }
 }
 .ch-pill[aria-pressed='true'] {
   background: #edf4ef;
@@ -141,8 +145,10 @@
   color: var(--ch-text-tertiary);
   cursor: pointer;
 }
-.ch-search__x:hover {
-  background: rgb(28 25 18 / 0.06);
+@media (hover: hover) {
+  .ch-search__x:hover {
+    background: rgb(28 25 18 / 0.06);
+  }
 }
 
 /* Fields */
@@ -185,9 +191,11 @@
   line-height: 1.5;
   resize: vertical;
 }
-.ch-input:hover,
-.ch-textarea:hover {
-  box-shadow: 0 0 0 1px var(--ch-border-strong), inset 0 1px 2px rgb(28 25 18 / 0.06);
+@media (hover: hover) {
+  .ch-input:hover,
+  .ch-textarea:hover {
+    box-shadow: 0 0 0 1px var(--ch-border-strong), inset 0 1px 2px rgb(28 25 18 / 0.06);
+  }
 }
 .ch-input:focus,
 .ch-textarea:focus {
@@ -241,11 +249,17 @@
   flex: none;
   color: var(--ch-green-600);
 }
-.ch-menu__item:hover,
 .ch-menu__item:focus-visible {
   outline: none;
   background: #ece8de;
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
+}
+@media (hover: hover) {
+  .ch-menu__item:hover {
+    outline: none;
+    background: #ece8de;
+    box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
+  }
 }
 .ch-menu__item.is-danger,
 .ch-menu__item.is-danger svg {
@@ -470,8 +484,10 @@
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-pp__row:hover {
-  background: rgb(28 25 18 / 0.045);
+@media (hover: hover) {
+  .ch-pp__row:hover {
+    background: rgb(28 25 18 / 0.045);
+  }
 }
 .ch-pp__row:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -611,8 +627,10 @@
   cursor: pointer;
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-select select:hover {
-  box-shadow: 0 0 0 1px var(--ch-border-strong), inset 0 1px 2px rgb(28 25 18 / 0.06);
+@media (hover: hover) {
+  .ch-select select:hover {
+    box-shadow: 0 0 0 1px var(--ch-border-strong), inset 0 1px 2px rgb(28 25 18 / 0.06);
+  }
 }
 .ch-select select:focus-visible {
   box-shadow: 0 0 0 1px var(--ch-green-600), 0 0 0 4px rgb(21 90 57 / 0.12);

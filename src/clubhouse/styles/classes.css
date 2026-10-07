@@ -112,12 +112,18 @@
   justify-content: flex-end;
   margin-top: 14px;
 }
-.ch-cl-delall .ch-cl-danger:hover:not(:disabled) {
-  color: var(--ch-danger-600);
+@media (hover: hover) {
+  .ch-cl-delall .ch-cl-danger:hover:not(:disabled) {
+    color: var(--ch-danger-600);
+  }
 }
-.ch-cl-delall .ch-cl-danger:hover:not(:disabled),
 .ch-cl-delall .ch-cl-danger:active:not(:disabled) {
   background: var(--ch-danger-100);
+}
+@media (hover: hover) {
+  .ch-cl-delall .ch-cl-danger:hover:not(:disabled) {
+    background: var(--ch-danger-100);
+  }
 }
 
 /* The term overview */
@@ -323,9 +329,11 @@
     box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 /* CH-12601: hovering a class lifts it 2px (quick). */
-.ch-cl-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--ch-elevation-reading-hover);
+@media (hover: hover) {
+  .ch-cl-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--ch-elevation-reading-hover);
+  }
 }
 .ch-cl-card:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -458,10 +466,12 @@
     color var(--ch-dur-quick) var(--ch-ease),
     transform var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-cl-add:hover {
-  border-color: var(--ch-green-600);
-  color: var(--ch-green-700);
-  transform: translateY(-2px);
+@media (hover: hover) {
+  .ch-cl-add:hover {
+    border-color: var(--ch-green-600);
+    color: var(--ch-green-700);
+    transform: translateY(-2px);
+  }
 }
 .ch-cl-add:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -813,10 +823,15 @@
     border-color var(--ch-dur-quick) var(--ch-ease),
     background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-cl-drop:hover,
 .ch-cl-drop.is-over {
   border-color: var(--ch-green-600);
   background: radial-gradient(60% 80% at 50% 0%, #e3eee6, transparent 70%), var(--ch-ivory-25);
+}
+@media (hover: hover) {
+  .ch-cl-drop:hover {
+    border-color: var(--ch-green-600);
+    background: radial-gradient(60% 80% at 50% 0%, #e3eee6, transparent 70%), var(--ch-ivory-25);
+  }
 }
 .ch-cl-drop:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -1116,9 +1131,11 @@
   color: var(--ch-text-tertiary);
   cursor: pointer;
 }
-.ch-cl-rv__x:hover {
-  background: var(--ch-bg-hover);
-  color: var(--ch-text-primary);
+@media (hover: hover) {
+  .ch-cl-rv__x:hover {
+    background: var(--ch-bg-hover);
+    color: var(--ch-text-primary);
+  }
 }
 .ch-cl-rv__x:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -1570,15 +1587,19 @@
   }
   /* CH-12601: a hovering class takes the Ledger row tint (quick), as Home's leaderboard rows do. A flush row has no
      card to lift, so it doesn't lift. */
-  .ch-cl[data-canopy] .ch-cl-card:hover {
-    transform: none;
-    background: var(--ch-ledger-row-hover);
-    box-shadow: none;
+  @media (hover: hover) {
+    .ch-cl[data-canopy] .ch-cl-card:hover {
+      transform: none;
+      background: var(--ch-ledger-row-hover);
+      box-shadow: none;
+    }
   }
-  .ch-cl[data-canopy] .ch-cl-card:hover::before,
-  .ch-cl[data-canopy] .ch-cl-card:hover + .ch-cl-card::before,
-  .ch-cl[data-canopy] .ch-cl-card:hover + .ch-cl-add::before {
-    opacity: 0;
+  @media (hover: hover) {
+    .ch-cl[data-canopy] .ch-cl-card:hover::before,
+    .ch-cl[data-canopy] .ch-cl-card:hover + .ch-cl-card::before,
+    .ch-cl[data-canopy] .ch-cl-card:hover + .ch-cl-add::before {
+      opacity: 0;
+    }
   }
   .ch-cl[data-canopy] .ch-cl-card__top {
     grid-area: top;
@@ -1694,9 +1715,11 @@
     text-align: left;
     transition: background var(--ch-dur-quick) var(--ch-ease);
   }
-  .ch-cl[data-canopy] .ch-cl-add:hover {
-    transform: none;
-    background: var(--ch-ledger-row-hover);
+  @media (hover: hover) {
+    .ch-cl[data-canopy] .ch-cl-add:hover {
+      transform: none;
+      background: var(--ch-ledger-row-hover);
+    }
   }
   .ch-cl[data-canopy] .ch-cl-add__plus {
     grid-area: plus;

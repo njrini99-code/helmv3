@@ -135,8 +135,10 @@
   color: var(--ch-text-tertiary);
   cursor: pointer;
 }
-.ch-hb-iconbtn:hover {
-  background: var(--ch-bg-hover);
+@media (hover: hover) {
+  .ch-hb-iconbtn:hover {
+    background: var(--ch-bg-hover);
+  }
 }
 
 /* RSVPs */
@@ -720,8 +722,10 @@
   text-align: left;
   cursor: pointer;
 }
-.ch-hb-file__open:hover {
-  background: var(--ch-bg-hover);
+@media (hover: hover) {
+  .ch-hb-file__open:hover {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-hb-file__open[disabled] {
   opacity: 0.6;
@@ -896,8 +900,10 @@
   text-align: left;
   cursor: pointer;
 }
-.ch-hb-dp__row:hover {
-  background: var(--ch-bg-hover);
+@media (hover: hover) {
+  .ch-hb-dp__row:hover {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-hb-dp__row[aria-pressed='true'] {
   background: var(--ch-green-50);
@@ -1411,8 +1417,10 @@
     content: '';
     pointer-events: none;
   }
-  .ch-hb[data-canopy] .ch-hb-file__open:hover {
-    background: var(--ch-ledger-row-hover);
+  @media (hover: hover) {
+    .ch-hb[data-canopy] .ch-hb-file__open:hover {
+      background: var(--ch-ledger-row-hover);
+    }
   }
 
   /* The route skeleton lays its bars flush, as the loaded sections are, and its tab strip is as tall as the tabs. */

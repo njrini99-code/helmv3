@@ -149,8 +149,10 @@
   color: var(--ch-green-600);
   transition: translate var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-hv-link:hover svg {
-  translate: 3px 0;
+@media (hover: hover) {
+  .ch-hv-link:hover svg {
+    translate: 3px 0;
+  }
 }
 .ch-hv-link:focus-visible {
   outline: 2px solid var(--ch-border-focus);

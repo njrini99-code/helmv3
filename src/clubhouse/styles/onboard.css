@@ -27,8 +27,10 @@
   color: var(--ch-green-700);
   text-decoration: none;
 }
-.ch-ox a:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .ch-ox a:hover {
+    text-decoration: underline;
+  }
 }
 
 .ch-ox-canvas {
@@ -284,9 +286,11 @@
   font: 500 13.5px/1 var(--ch-font-sans);
   color: #55524b;
 }
-.ch-ox-back:hover {
-  background: rgb(28 25 18 / 0.05);
-  color: var(--ch-text-primary);
+@media (hover: hover) {
+  .ch-ox-back:hover {
+    background: rgb(28 25 18 / 0.05);
+    color: var(--ch-text-primary);
+  }
 }
 .ch-ox-back:focus-visible,
 .ch-ox-link:focus-visible {
@@ -373,8 +377,10 @@
   font: 500 14px/1 var(--ch-font-sans);
   color: var(--ch-green-700);
 }
-.ch-ox-link:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .ch-ox-link:hover {
+    text-decoration: underline;
+  }
 }
 .ch-ox-hello {
   min-height: 22px;
@@ -444,12 +450,16 @@
   box-shadow: none;
   transition: box-shadow var(--ch-ox-t-hover);
 }
-.ch-ox-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--ch-elevation-reading-accent);
+@media (hover: hover) {
+  .ch-ox-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--ch-elevation-reading-accent);
+  }
 }
-.ch-ox-card:hover::before {
-  box-shadow: none;
+@media (hover: hover) {
+  .ch-ox-card:hover::before {
+    box-shadow: none;
+  }
 }
 .ch-ox-card:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -482,8 +492,10 @@
 .ch-ox-card__go svg {
   transition: transform var(--ch-ox-t-hover) var(--ch-ox-ease);
 }
-.ch-ox-card:hover .ch-ox-card__go svg {
-  transform: translateX(3px);
+@media (hover: hover) {
+  .ch-ox-card:hover .ch-ox-card__go svg {
+    transform: translateX(3px);
+  }
 }
 .ch-ox-art {
   display: grid;
@@ -497,11 +509,17 @@
   color: var(--ch-ox-brass);
   transition: background var(--ch-ox-t-hover), color var(--ch-ox-t-hover), box-shadow var(--ch-ox-t-hover);
 }
-.ch-ox-card:hover .ch-ox-art,
 .ch-ox-card[aria-checked='true'] .ch-ox-art {
   background: #f1ebda;
   color: var(--ch-ox-felt);
   box-shadow: 0 0 0 3px rgb(220 205 166 / 0.25);
+}
+@media (hover: hover) {
+  .ch-ox-card:hover .ch-ox-art {
+    background: #f1ebda;
+    color: var(--ch-ox-felt);
+    box-shadow: 0 0 0 3px rgb(220 205 166 / 0.25);
+  }
 }
 .ch-ox-tick {
   position: absolute;
@@ -710,8 +728,10 @@
 .ch-ox-big input::placeholder {
   color: #b7b0a0;
 }
-.ch-ox-big input:hover {
-  border-bottom-color: rgb(28 25 18 / 0.26);
+@media (hover: hover) {
+  .ch-ox-big input:hover {
+    border-bottom-color: rgb(28 25 18 / 0.26);
+  }
 }
 .ch-ox-big input:focus {
   border-bottom-color: var(--ch-green-600);
@@ -741,9 +761,11 @@
   box-shadow: var(--ch-well-soft-shadow);
   transition: background var(--ch-ox-t-quick), box-shadow var(--ch-ox-t-quick);
 }
-.ch-ox-tile:hover {
-  background: var(--ch-raised-bg);
-  box-shadow: var(--ch-raised-shadow);
+@media (hover: hover) {
+  .ch-ox-tile:hover {
+    background: var(--ch-raised-bg);
+    box-shadow: var(--ch-raised-shadow);
+  }
 }
 .ch-ox-tile:focus-visible {
   outline: 2px solid var(--ch-border-focus);

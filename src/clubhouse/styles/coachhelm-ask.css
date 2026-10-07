@@ -97,8 +97,10 @@
 .ch-ask-head__btn.is-accent {
   color: var(--ch-accent);
 }
-.ch-ask-head__btn:hover {
-  background: var(--ch-bg-inset);
+@media (hover: hover) {
+  .ch-ask-head__btn:hover {
+    background: var(--ch-bg-inset);
+  }
 }
 .ch-ask-scroll {
   flex: 1;
@@ -200,8 +202,10 @@
 .ch-ask-hist__iconbtn.is-accent {
   color: var(--ch-accent);
 }
-.ch-ask-hist__iconbtn:hover {
-  background: var(--ch-bg-inset);
+@media (hover: hover) {
+  .ch-ask-hist__iconbtn:hover {
+    background: var(--ch-bg-inset);
+  }
 }
 .ch-ask-hist__new {
   display: flex;
@@ -255,8 +259,10 @@
   white-space: nowrap;
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-ask-hist__row:hover {
-  background: var(--ch-bg-inset);
+@media (hover: hover) {
+  .ch-ask-hist__row:hover {
+    background: var(--ch-bg-inset);
+  }
 }
 .ch-ask-hist__row.is-on {
   background: var(--ch-bg-inset);
@@ -353,9 +359,11 @@
   cursor: pointer;
   transition: color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-ask-pill:hover {
-  color: var(--ch-text-primary);
-  box-shadow: 0 0 0 1px var(--ch-border-strong);
+@media (hover: hover) {
+  .ch-ask-pill:hover {
+    color: var(--ch-text-primary);
+    box-shadow: 0 0 0 1px var(--ch-border-strong);
+  }
 }
 
 /* "Since you were last here" */
@@ -411,8 +419,10 @@
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-ask-find__card.is-ask:hover {
-  background: var(--ch-bg-inset);
+@media (hover: hover) {
+  .ch-ask-find__card.is-ask:hover {
+    background: var(--ch-bg-inset);
+  }
 }
 .ch-ask-find__cat {
   font: 600 12px/1.2 var(--ch-font-sans);

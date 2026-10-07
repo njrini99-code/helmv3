@@ -731,8 +731,10 @@
 .ch-rsu-crs + .ch-rsu-crs {
   border-top: 1px solid rgb(28 25 18 / 0.07);
 }
-.ch-rsu-crs:hover {
-  background: var(--ch-bg-hover);
+@media (hover: hover) {
+  .ch-rsu-crs:hover {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-rsu-crs.is-skel {
   cursor: default;
@@ -838,10 +840,10 @@
   box-shadow: var(--ch-elevation-reading);
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-rsu-tee:hover:not(:disabled) {
-  box-shadow:
-    0 0 0 1.5px var(--ch-green-600),
-    0 10px 20px -14px rgb(11 58 37 / 0.4);
+@media (hover: hover) {
+  .ch-rsu-tee:hover:not(:disabled) {
+    box-shadow: var(--ch-elevation-choice-hover);
+  }
 }
 .ch-rsu-tee:disabled {
   cursor: default;

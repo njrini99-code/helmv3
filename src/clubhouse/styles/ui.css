@@ -57,10 +57,11 @@
   box-shadow: 0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), 0 1px 2px rgb(12 65 40 / 0.22),
     0 4px 10px -6px rgb(12 65 40 / 0.4);
 }
-.ch-btn--primary:hover:not(:disabled) {
-  background-position: 0 0;
-  box-shadow: 0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), 0 2px 4px rgb(12 65 40 / 0.22),
-    0 8px 16px -8px rgb(12 65 40 / 0.45);
+@media (hover: hover) {
+  .ch-btn--primary:hover:not(:disabled) {
+    background-position: 0 0;
+    box-shadow: var(--ch-elevation-primary-hover);
+  }
 }
 .ch-btn--primary:active:not(:disabled) {
   background: #08301e;
@@ -71,9 +72,11 @@
   background: linear-gradient(180deg, #fefdfa 0%, #f3f1ea 50%, #fefdfa 50%, #f7f5ef 100%) 0 100% / 100% 200%;
   box-shadow: var(--ch-btn-secondary-shadow);
 }
-.ch-btn--secondary:hover:not(:disabled) {
-  background-position: 0 0;
-  box-shadow: var(--ch-btn-secondary-hover-shadow);
+@media (hover: hover) {
+  .ch-btn--secondary:hover:not(:disabled) {
+    background-position: 0 0;
+    box-shadow: var(--ch-btn-secondary-hover-shadow);
+  }
 }
 .ch-btn--secondary:active:not(:disabled) {
   background: #f5f3ec;
@@ -83,9 +86,11 @@
   color: var(--ch-green-600);
   background: transparent;
 }
-.ch-btn--ghost:hover:not(:disabled) {
-  color: var(--ch-green-700);
-  background: var(--ch-green-50);
+@media (hover: hover) {
+  .ch-btn--ghost:hover:not(:disabled) {
+    color: var(--ch-green-700);
+    background: var(--ch-green-50);
+  }
 }
 .ch-btn--ghost:active:not(:disabled) {
   background: var(--ch-green-100);
@@ -126,9 +131,11 @@
 .ch-iconbtn.ch-btn--ghost {
   color: var(--ch-text-secondary);
 }
-.ch-iconbtn.ch-btn--ghost:hover:not(:disabled) {
-  color: var(--ch-text-primary);
-  background: rgb(28 25 18 / 0.05);
+@media (hover: hover) {
+  .ch-iconbtn.ch-btn--ghost:hover:not(:disabled) {
+    color: var(--ch-text-primary);
+    background: rgb(28 25 18 / 0.05);
+  }
 }
 
 .ch-kbd {
@@ -354,8 +361,10 @@
   font: 500 12.5px/1 var(--ch-font-sans);
   cursor: pointer;
 }
-.ch-toast__action:hover {
-  background: rgb(255 255 255 / 0.14);
+@media (hover: hover) {
+  .ch-toast__action:hover {
+    background: rgb(255 255 255 / 0.14);
+  }
 }
 
 /* Form line */
@@ -622,9 +631,11 @@
   text-decoration: none;
   transition: background var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-backlink:hover {
-  background: var(--ch-ledger-row-hover);
-  color: var(--ch-green-800);
+@media (hover: hover) {
+  .ch-backlink:hover {
+    background: var(--ch-ledger-row-hover);
+    color: var(--ch-green-800);
+  }
 }
 .ch-backlink:focus-visible {
   outline: 2px solid var(--ch-border-focus);

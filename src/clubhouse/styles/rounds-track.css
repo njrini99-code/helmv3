@@ -153,8 +153,10 @@ button.ch-rt-strip__h {
 .ch-rt-strip__h.is-done em {
   color: var(--ch-ink-600);
 }
-button.ch-rt-strip__h.is-done:hover {
-  background: var(--ch-ivory-0);
+@media (hover: hover) {
+  button.ch-rt-strip__h.is-done:hover {
+    background: var(--ch-ivory-0);
+  }
 }
 .ch-rt-strip__h.is-cur {
   background: transparent;
@@ -965,8 +967,10 @@ button.ch-rt-strip__h.is-done:hover {
   border-top: 1px solid rgb(28 25 18 / 0.07);
   color: var(--ch-text-tertiary);
 }
-.ch-rt-rs:hover:not(:disabled) {
-  background: var(--ch-bg-hover);
+@media (hover: hover) {
+  .ch-rt-rs:hover:not(:disabled) {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-rt-rs:disabled {
   cursor: default;

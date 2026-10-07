@@ -463,8 +463,10 @@
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-h-rail__item:hover {
-  background: rgb(21 90 57 / 0.045);
+@media (hover: hover) {
+  .ch-h-rail__item:hover {
+    background: rgb(21 90 57 / 0.045);
+  }
 }
 .ch-h-rail__item:active {
   background: rgb(21 90 57 / 0.08);
@@ -575,12 +577,16 @@
 .ch-h-lb__row.is-link {
   cursor: pointer;
 }
-.ch-h-lb__row.is-link:hover {
-  background: linear-gradient(90deg, rgb(21 90 57 / 0.035), rgb(21 90 57 / 0.06) 60%, rgb(21 90 57 / 0.035));
+@media (hover: hover) {
+  .ch-h-lb__row.is-link:hover {
+    background: linear-gradient(90deg, rgb(21 90 57 / 0.035), rgb(21 90 57 / 0.06) 60%, rgb(21 90 57 / 0.035));
+  }
 }
-.ch-h-lb__row.is-link:hover::before,
-.ch-h-lb__row.is-link:hover + .ch-h-lb__row::before {
-  opacity: 0;
+@media (hover: hover) {
+  .ch-h-lb__row.is-link:hover::before,
+  .ch-h-lb__row.is-link:hover + .ch-h-lb__row::before {
+    opacity: 0;
+  }
 }
 .ch-h-lb__row.is-link::after {
   position: absolute;
@@ -596,10 +602,15 @@
   transition: opacity var(--ch-dur-quick) var(--ch-ease), translate var(--ch-dur-base) var(--ch-ease);
   content: '';
 }
-.ch-h-lb__row.is-link:hover::after,
 .ch-h-lb__row.is-link:focus-visible::after {
   opacity: 1;
   translate: 0 -50%;
+}
+@media (hover: hover) {
+  .ch-h-lb__row.is-link:hover::after {
+    opacity: 1;
+    translate: 0 -50%;
+  }
 }
 .ch-h-lb__row.is-link:active {
   background: rgb(21 90 57 / 0.08);
@@ -2450,8 +2461,10 @@
     height: 1px;
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
   }
-  .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:hover {
-    background: var(--ch-ledger-row-hover);
+  @media (hover: hover) {
+    .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:hover {
+      background: var(--ch-ledger-row-hover);
+    }
   }
   /* Player Home: Scoring runs from the week without a card, at the head's edge; "Your game" is four figures on the
      canvas divided by soft rules, not four cards. */

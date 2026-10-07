@@ -76,8 +76,10 @@
   color: var(--ch-green-600);
   cursor: pointer;
 }
-.ch-rec-pipe__all:hover {
-  background: var(--ch-green-50);
+@media (hover: hover) {
+  .ch-rec-pipe__all:hover {
+    background: var(--ch-green-50);
+  }
 }
 .ch-rec-pipe__line {
   position: relative;
@@ -157,8 +159,10 @@
 .ch-rec-pipe__stage.is-offered:disabled .ch-rec-pipe__dot {
   color: var(--ch-ink-500);
 }
-.ch-rec-pipe__stage:not(:disabled):hover .ch-rec-pipe__dot {
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .ch-rec-pipe__stage:not(:disabled):hover .ch-rec-pipe__dot {
+    transform: translateY(-1px);
+  }
 }
 /* Pressed: the stage the list is showing. A second ring, so it is seen without colour. */
 .ch-rec-pipe__stage[aria-pressed='true'] .ch-rec-pipe__dot {
@@ -232,8 +236,10 @@
 .ch-rec-tb tbody tr:first-child {
   box-shadow: none;
 }
-.ch-rec-tb tbody tr:hover {
-  background: var(--ch-bg-hover);
+@media (hover: hover) {
+  .ch-rec-tb tbody tr:hover {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-rec-tb tbody tr.is-on {
   background: var(--ch-bg-selected);
@@ -469,8 +475,10 @@
   color: var(--ch-danger-600);
   cursor: pointer;
 }
-.ch-rec-danger:hover {
-  background: var(--ch-danger-100);
+@media (hover: hover) {
+  .ch-rec-danger:hover {
+    background: var(--ch-danger-100);
+  }
 }
 .ch-rec-danger.is-block {
   width: 100%;
@@ -532,8 +540,10 @@
   color: var(--ch-green-600);
   cursor: pointer;
 }
-.ch-rec-link:hover {
-  background: var(--ch-green-50);
+@media (hover: hover) {
+  .ch-rec-link:hover {
+    background: var(--ch-green-50);
+  }
 }
 .ch-rec-rows {
   overflow: hidden;
@@ -552,8 +562,10 @@
 .ch-rec-row + .ch-rec-row {
   box-shadow: 0 -1px 0 var(--ch-border-hairline);
 }
-.ch-rec-row:hover {
-  background: var(--ch-bg-hover);
+@media (hover: hover) {
+  .ch-rec-row:hover {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-rec-row svg {
   flex: none;
@@ -613,8 +625,10 @@
   text-align: left;
   cursor: pointer;
 }
-.ch-rec-doc__open:hover {
-  background: var(--ch-bg-hover);
+@media (hover: hover) {
+  .ch-rec-doc__open:hover {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-rec-doc__t {
   flex: 1;
@@ -644,9 +658,11 @@
   color: var(--ch-text-tertiary);
   cursor: pointer;
 }
-.ch-rec-doc__x:hover {
-  background: var(--ch-ivory-150);
-  color: var(--ch-text-primary);
+@media (hover: hover) {
+  .ch-rec-doc__x:hover {
+    background: var(--ch-ivory-150);
+    color: var(--ch-text-primary);
+  }
 }
 .ch-rec-note {
   font: 400 12px/1.4 var(--ch-font-sans);
@@ -734,8 +750,10 @@
   color: var(--ch-green-600);
   cursor: pointer;
 }
-.ch-rec-empty__a:hover {
-  background: var(--ch-green-50);
+@media (hover: hover) {
+  .ch-rec-empty__a:hover {
+    background: var(--ch-green-50);
+  }
 }
 
 /* ── The add and edit form ────────────────────────────────────────────────── */
@@ -1502,12 +1520,18 @@
   .ch-rec[data-canopy] .ch-rec-pipe__stage {
     transition: background var(--ch-dur-quick) var(--ch-ease);
   }
-  .ch-rec[data-canopy] .ch-rec-pipe__stage:not(:disabled):hover {
-    background: var(--ch-ledger-row-hover);
+  @media (hover: hover) {
+    .ch-rec[data-canopy] .ch-rec-pipe__stage:not(:disabled):hover {
+      background: var(--ch-ledger-row-hover);
+    }
   }
-  .ch-rec[data-canopy] .ch-rec-pipe__stage[aria-pressed='true'],
-  .ch-rec[data-canopy] .ch-rec-pipe__stage[aria-pressed='true']:hover {
+  .ch-rec[data-canopy] .ch-rec-pipe__stage[aria-pressed='true'] {
     background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+  }
+  @media (hover: hover) {
+    .ch-rec[data-canopy] .ch-rec-pipe__stage[aria-pressed='true']:hover {
+      background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+    }
   }
   .ch-rec[data-canopy] .ch-rec-pipe__stage:focus-visible {
     outline-offset: -3px;
@@ -1562,10 +1586,15 @@
     padding-right: 12px;
   }
   .ch-rec[data-canopy] .ch-rec-tb tbody tr,
-  .ch-rec[data-canopy] .ch-rec-tb tbody tr:hover,
   .ch-rec[data-canopy] .ch-rec-tb tbody tr.is-on {
     background: none;
     box-shadow: none;
+  }
+  @media (hover: hover) {
+    .ch-rec[data-canopy] .ch-rec-tb tbody tr:hover {
+      background: none;
+      box-shadow: none;
+    }
   }
   .ch-rec[data-canopy] .ch-rec-tb tbody tr + tr > * {
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
@@ -1580,8 +1609,10 @@
     content: '';
     pointer-events: none;
   }
-  .ch-rec[data-canopy] .ch-rec-tb tbody tr:hover .ch-rec-tb__name::before {
-    background: var(--ch-ledger-row-hover);
+  @media (hover: hover) {
+    .ch-rec[data-canopy] .ch-rec-tb tbody tr:hover .ch-rec-tb__name::before {
+      background: var(--ch-ledger-row-hover);
+    }
   }
   .ch-rec[data-canopy] .ch-rec-tb tbody tr.is-on .ch-rec-tb__name::before {
     background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
@@ -1649,9 +1680,11 @@
     padding: 0 10px;
     border-radius: var(--ch-radius-md);
   }
-  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-row:hover,
-  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-doc__open:hover {
-    background: var(--ch-ledger-row-hover);
+  @media (hover: hover) {
+    .ch-rec[data-canopy] .ch-rec-panel .ch-rec-row:hover,
+    .ch-rec[data-canopy] .ch-rec-panel .ch-rec-doc__open:hover {
+      background: var(--ch-ledger-row-hover);
+    }
   }
   .ch-rec[data-canopy] .ch-rec-panel .ch-rec-doc__open {
     padding-left: 10px;

@@ -67,11 +67,15 @@
   font: 400 12.5px/1.3 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
-.ch-set-rail__i:hover {
-  background: rgb(28 25 18 / 0.05);
+@media (hover: hover) {
+  .ch-set-rail__i:hover {
+    background: rgb(28 25 18 / 0.05);
+  }
 }
-.ch-set-rail__i.is-on:hover {
-  background: rgb(21 90 57 / 0.09);
+@media (hover: hover) {
+  .ch-set-rail__i.is-on:hover {
+    background: rgb(21 90 57 / 0.09);
+  }
 }
 .ch-set-rail__i.is-on {
   /* Flat selection: a soft green tint, no lift (owner, 2026-09-29). */
@@ -321,8 +325,10 @@
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-set-link:hover {
-  background: rgb(28 25 18 / 0.04);
+@media (hover: hover) {
+  .ch-set-link:hover {
+    background: rgb(28 25 18 / 0.04);
+  }
 }
 .ch-set-link > svg {
   color: var(--ch-green-600);
@@ -375,8 +381,10 @@
   font: 500 12.5px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
-.ch-set-matrix__row:not(.is-head):hover {
-  background: var(--ch-bg-subtle);
+@media (hover: hover) {
+  .ch-set-matrix__row:not(.is-head):hover {
+    background: var(--ch-bg-subtle);
+  }
 }
 .ch-set-matrix__group {
   padding: 14px 20px 4px;
@@ -1535,8 +1543,10 @@
   .ch-set[data-canopy] .ch-surface .ch-set-photo__img {
     box-shadow: 0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule);
   }
-  .ch-set[data-canopy] .ch-surface .ch-set-link:hover {
-    background: var(--ch-ledger-row-hover);
+  @media (hover: hover) {
+    .ch-set[data-canopy] .ch-surface .ch-set-link:hover {
+      background: var(--ch-ledger-row-hover);
+    }
   }
   /* The notification table: its labels and switches align to the section's edge and a row's hover tint reaches 12px
      past it, as the Home leaderboard's does, so its seams are drawn inset to that edge instead of as full-width
@@ -1554,7 +1564,9 @@
   .ch-set[data-canopy] .ch-surface .ch-set-matrix__group + .ch-set-matrix__row {
     background-image: none;
   }
-  .ch-set[data-canopy] .ch-surface .ch-set-matrix__row:not(.is-head):hover {
-    background-color: var(--ch-ledger-row-hover);
+  @media (hover: hover) {
+    .ch-set[data-canopy] .ch-surface .ch-set-matrix__row:not(.is-head):hover {
+      background-color: var(--ch-ledger-row-hover);
+    }
   }
 }

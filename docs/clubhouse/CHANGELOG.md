@@ -1,5 +1,15 @@
 # Clubhouse changelog
 
+## 2026-10-07 — Hover belongs to a pointer
+
+On a touch screen a tap used to leave a row's tint, a card's lift or a key's
+hover face behind until the next tap elsewhere. 168 hover-only rules across 24
+stylesheets now sit inside `@media (hover: hover)`, so they apply only where a
+pointer can hover. This includes a trackpad on an iPad, but not a finger on an
+iPhone. Press (`:active`), keyboard focus and selected states are untouched,
+and a selector that mixes hover with focus or press stays where it was. The
+hover shadows that moved are now depth tokens (`--ch-elevation-*-hover`).
+
 ## 2026-10-07 — Motion: swaps, tabs and keys that glide
 
 A shared `Swap` (`ui/Swap.tsx`) runs a content swap inside a fixed frame:

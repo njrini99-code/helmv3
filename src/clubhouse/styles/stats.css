@@ -542,8 +542,10 @@
 .ch-sgt__end:focus-visible {
   outline-offset: 0;
 }
-.ch-sgt__end:hover {
-  background: var(--ch-ivory-50);
+@media (hover: hover) {
+  .ch-sgt__end:hover {
+    background: var(--ch-ivory-50);
+  }
 }
 .ch-sgt__end.is-sel {
   background: #edf4ef;
@@ -603,13 +605,19 @@
   pointer-events: none;
 }
 .ch-sgm[aria-pressed='true']::before,
-.ch-sgm[aria-pressed='true'] + .ch-sgm::before,
-.ch-sgm:hover::before,
-.ch-sgm:hover + .ch-sgm::before {
+.ch-sgm[aria-pressed='true'] + .ch-sgm::before {
   opacity: 0;
 }
-.ch-sgm:hover {
-  background: rgb(28 25 18 / 0.035);
+@media (hover: hover) {
+  .ch-sgm:hover::before,
+  .ch-sgm:hover + .ch-sgm::before {
+    opacity: 0;
+  }
+}
+@media (hover: hover) {
+  .ch-sgm:hover {
+    background: rgb(28 25 18 / 0.035);
+  }
 }
 .ch-sgm[aria-pressed='true'] {
   background: var(--ch-green-25);
@@ -663,9 +671,13 @@ a.ch-lg__r {
   text-decoration: none;
   cursor: pointer;
 }
-a.ch-lg__r:hover,
 .ch-lg__r.is-sel {
   background: var(--ch-ivory-50);
+}
+@media (hover: hover) {
+  a.ch-lg__r:hover {
+    background: var(--ch-ivory-50);
+  }
 }
 /* Inside the grid's scroller an outset ring would be clipped. */
 a.ch-lg__r:focus-visible {
@@ -1120,8 +1132,10 @@ a.ch-lg__r:focus-visible {
   cursor: pointer;
   transition: color var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-tab-t:hover {
-  color: var(--ch-text-primary);
+@media (hover: hover) {
+  .ch-tab-t:hover {
+    color: var(--ch-text-primary);
+  }
 }
 .ch-tab-t[aria-selected='true'] {
   color: var(--ch-green-800);
@@ -1200,10 +1214,12 @@ a.ch-lg__r:focus-visible {
   color: inherit;
   text-decoration: none;
 }
-.ch-tr__link:hover {
-  color: var(--ch-green-700);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+@media (hover: hover) {
+  .ch-tr__link:hover {
+    color: var(--ch-green-700);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
 }
 .ch-tr__link:focus-visible {
   outline: 2px solid var(--ch-green-600);
@@ -2766,8 +2782,10 @@ a.ch-lg__r:focus-visible {
   touch-action: manipulation;
   transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-sf__chip:hover {
-  background: #e3eee7;
+@media (hover: hover) {
+  .ch-sf__chip:hover {
+    background: #e3eee7;
+  }
 }
 .ch-sf__chip:focus-visible,
 .ch-sf__clear:focus-visible {
@@ -2786,8 +2804,10 @@ a.ch-lg__r:focus-visible {
   cursor: pointer;
   touch-action: manipulation;
 }
-.ch-sf__clear:hover {
-  color: var(--ch-text-primary);
+@media (hover: hover) {
+  .ch-sf__clear:hover {
+    color: var(--ch-text-primary);
+  }
 }
 .ch-sf__count {
   margin: 0;
@@ -2837,8 +2857,10 @@ a.ch-lg__r:focus-visible {
   padding: 9px 10px;
   border-radius: 8px;
 }
-.ch-sf-list .ch-check:hover {
-  background: var(--ch-ivory-100);
+@media (hover: hover) {
+  .ch-sf-list .ch-check:hover {
+    background: var(--ch-ivory-100);
+  }
 }
 .ch-sf-row {
   display: flex;
