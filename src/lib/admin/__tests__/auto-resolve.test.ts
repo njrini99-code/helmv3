@@ -84,7 +84,9 @@ vi.mock('@/lib/supabase/admin', () => ({
       // difference would let one rule "pass" while actually exercising
       // another's code path.
       function makeSelectChain(selectedCols: string) {
-        const mode: 'ab' | 'c' | 'd' = selectedCols.includes('title')
+        // The A/B snapshot also selects `title` (regression detection
+        // classifies each row), but only it selects `created_at`.
+        const mode: 'ab' | 'c' | 'd' = selectedCols.includes('title') && !selectedCols.includes('created_at')
           ? 'd'
           : selectedCols.includes('fingerprint')
             ? 'ab'
@@ -812,6 +814,71 @@ describe('autoResolveFixedIncidents — fingerprint resolution ledger', () => {
 
     expect(result.regressions.marked).toBe(1);
     expect(regressionCalls()[0]!.args.p_fingerprint).toBe('fp-mixed');
+  });
+
+  it('does NOT regress a fingerprint whose recurrence the classifier recognises as non-actionable', async () => {
+    // Production 2026-09-19 → 2026-10-07: 20ae8f27 ("[updateShot] Shot not
+    // found", the designed shot_not_found reconciliation) and af4c2c9d (a
+    // browser-aborted client fetch) were reopened 4× each. Rule D closes these
+    // rows in the same pass; stamping them REGRESSED first only put noise on
+    // the Bridge. Same reasoning as the info-severity exemption above.
+    const recurredAt = new Date(NOW - 3600_000).toISOString();
+    mocks.rows = [
+      {
+        fingerprint: 'fp-shot',
+        created_at: recurredAt,
+        severity: 'warning',
+        title: '[updateShot] Shot not found',
+        message: 'Shot not found',
+        source: 'server_action',
+        metadata: { errorCode: 'shot_not_found' },
+      },
+    ];
+    mocks.storedResolutions = [
+      {
+        fingerprint: 'fp-shot',
+        resolved_at: new Date(NOW - 86400_000).toISOString(),
+        resolution_source: 'auto',
+        last_seen_at_resolution: new Date(NOW - 2 * 86400_000).toISOString(),
+        reopened_at: null,
+      },
+    ];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.regressions.marked).toBe(0);
+    expect(regressionCalls()).toHaveLength(0);
+  });
+
+  it('still regresses an unrecognised warning even when it is non-actionable by severity alone', async () => {
+    // Non-vacuity: only a CONTENT-matched verdict exempts a row; a warning the
+    // classifier did not recognise stays a fault and still regresses.
+    mocks.rows = [
+      {
+        fingerprint: 'fp-unknown',
+        created_at: new Date(NOW - 3600_000).toISOString(),
+        severity: 'warning',
+        title: '[x] something new broke',
+        message: 'something new broke',
+        source: 'server_action',
+      },
+    ];
+    mocks.storedResolutions = [
+      {
+        fingerprint: 'fp-unknown',
+        resolved_at: new Date(NOW - 86400_000).toISOString(),
+        resolution_source: 'auto',
+        last_seen_at_resolution: new Date(NOW - 2 * 86400_000).toISOString(),
+        reopened_at: null,
+      },
+    ];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.regressions.marked).toBe(1);
+    expect(regressionCalls()[0]!.args.p_fingerprint).toBe('fp-unknown');
   });
 
   it('SKIPS regression detection loudly when the resolutions read fails', async () => {
