@@ -513,9 +513,10 @@ sections below and are not in these counts.
   - Evidence: per transcript
 - **NUM-40** · partial: OD-03 applied 2026-09-27. Flagged and filtered: round
   91301a75, the five QA Test Course rounds, the QA and two MOMENTIC HELL
-  (year 60824) qualifiers. The QA announcement, task, document and trip wait on
-  20260927120000_golf_is_test_team_content.sql (merge, apply, then a filter
-  change)
+  (year 60824) qualifiers. 20260927120000_golf_is_test_team_content.sql
+  (applied 2026-09-27) flags the QA announcement, task, document and trip, and
+  the follow-up PR's list reads skip them; the player's to-do list and the
+  player home Latest list still show test items
   - Finding: [P1] Demo/QA data pollution visible to prospects: round 91301a75, 4
     QA Test Course rounds, QA Hell Enum, Progress ...
   - Where: supabase/migrations/20260924130000_golf_is_test_flag.sql
@@ -2074,8 +2075,9 @@ sections below and are not in these counts.
   - Evidence: per transcript
 - **OD-03** · partial: Flag applied 2026-09-27 (owner); 6 demo rounds and 3
   demo qualifiers flagged; player/coach list and stats reads filter them. Team
-  content (announcements, tasks, documents, trips) gets the column in
-  20260927120000 and its filters after that apply. Cached stats
+  content: 20260927120000 applied 2026-09-27 and the four QA rows flagged; the
+  follow-up PR's list and count reads skip them, except reads that start from
+  task assignments and the Team Hub RPC. Cached stats
   (golf_player_stats_cache) still include flagged rounds; OD-01 does not read
   is_test
   - Decision: Clean demo/QA data visible to prospects (QA courses, the 60824
@@ -2280,10 +2282,22 @@ player-23, player-39. The rounds and qualifiers are flagged and the list and
 stats reads skip them. Round detail and review (coach-18/19, player-10/11)
 still open by direct link; nothing lists them.
 
-**Team test content, after `20260927120000` (9).** coach-38, coach-40,
-coach-41; player-26, player-27, player-28, player-29, player-32, player-41. The
-QA announcement, task, document and trip need the new column applied, the four
-rows flagged, and a filter change.
+**Team test content, after `20260927120000` (9).** The column was applied on
+2026-09-27 and the QA announcement, task, document and trip were flagged. In
+the follow-up PR (`agent/deploy-rule-team-test-content`), list and count reads
+skip them; production shows them until that PR ships.
+
+- Hidden (7): coach-38 and player-28, Documents; coach-40 and player-26,
+  Announcements; coach-41, the coach Tasks list; player-29, Travel; player-32,
+  the Team page's announcement and task.
+- Partial (2): player-27, the player's own to-do list reads task assignments,
+  which the flag does not reach, so the QA task still shows. player-41, the old
+  hub link opens player home, whose Latest list reads each player's
+  notification copies; the two test announcements it shows are older posts no
+  longer in the announcements list, and the flag cannot reach them.
+- Team Hub announcements come from the `get_player_hub_announcements` RPC,
+  which does not read the flag. It returns the last 30 days only, and the
+  flagged announcement is older, so no note shows it today.
 
 **Left for #2073, the CoachHelm redesign (15).** coach-03, coach-14, coach-24,
 coach-25, coach-32, coach-33, coach-34, coach-50, coach-52; player-15,
@@ -2347,4 +2361,4 @@ ring marks More-menu pages only, and the badge loads after the capture settled
   (`20260924120000_golf_countable_round_stats_cache.sql`) is HELD in
   `supabase/migrations/HELD.md`. OD-03 (`20260924130000_golf_is_test_flag.sql`)
   was applied 2026-09-27; its team-content follow-up
-  (`20260927120000_golf_is_test_team_content.sql`) is applied after merge.
+  (`20260927120000_golf_is_test_team_content.sql`) was applied 2026-09-27.

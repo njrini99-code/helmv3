@@ -209,6 +209,15 @@ React state, which dies with the component.
 - Required acknowledgements need durable tracking per player.
 - Inline announcement tasks must stay consistent with task assignment state.
 - Urgent announcements may need push/email/in-app notification treatment; check current notification wiring before claiming it exists.
+- Test announcements (OD-03, 2026-09-27): `golf_announcements.is_test = true`
+  marks a QA or demo announcement. List and count reads (the announcements
+  list, the Team page, the home dashboard data, the player badge counts and
+  login modal) filter `.eq('is_test', false)`; by-id reads (detail,
+  acknowledgements), writes and admin ignore the flag. Not filtered: the Team
+  Hub announcements card reads the `get_player_hub_announcements` RPC (last 30
+  days), so a flagged announcement under 30 days old still shows there; hiding
+  it needs a database function change. The home Latest list reads each
+  player's `notifications` copies, which carry no flag.
 - A text send retries ONCE, after 750 ms, when the server-action POST fails
   at the transport layer (WebKit "Load failed", Chromium "Failed to fetch" —
   `withOneTransportRetry` in `src/lib/transient-network-error.ts`). Any other

@@ -300,6 +300,7 @@ export default async function TeamSettingsPage() {
     .from('golf_announcements')
     .select('id, title, body, created_at')
     .eq('team_id', teamMember.team_id)
+    .eq('is_test', false)
     .order('created_at', { ascending: false })
     .limit(5);
 
@@ -332,6 +333,7 @@ export default async function TeamSettingsPage() {
     ? await fromUntyped(supabase, 'golf_tasks')
         .select('id, title, description, due_date, priority')
         .in('id', taskIds)
+        .eq('is_test', false)
         .order('created_at', { ascending: false }) as { data: Array<{ id: string; title: string; description: string | null; due_date: string | null; priority: string | null }> | null }
     : { data: [] as Array<{ id: string; title: string; description: string | null; due_date: string | null; priority: string | null }> };
 

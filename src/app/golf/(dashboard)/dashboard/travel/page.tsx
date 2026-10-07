@@ -107,6 +107,7 @@ export default async function GolfTravelPage({ searchParams }: GolfTravelPagePro
       .from('golf_travel_itineraries')
       .select('*')
       .eq('team_id', teamId)
+      .eq('is_test', false)
       .order('departure_date', { ascending: true })
       .order('id', { ascending: true })
       .range(from, to),

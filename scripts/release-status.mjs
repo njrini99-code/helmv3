@@ -108,7 +108,7 @@ if (!deployed) {
   die(2, [
     `release-status: no commit from the last ${depth} on main appears in the served bundle.`,
     '  Either production is older than that window, or it was deployed without',
-    '  scripts/deploy-prod.sh (which stamps NEXT_PUBLIC_SENTRY_RELEASE with the commit).',
+    '  --build-env NEXT_PUBLIC_SENTRY_RELEASE=<sha> (AGENTS.md "Production" has the command).',
     '  This is UNKNOWN, not "in sync" — do not read it as healthy.',
   ].join('\n'));
 }
@@ -134,5 +134,5 @@ for (const line of (sh('git', ['log', '--oneline', `${deployed}..${mainSha}`]) ?
   console.log(`   ${line}`);
 }
 console.log('\nThese are fixes users do not have yet.');
-console.log('Merging does not deploy. Production changes only when the owner runs scripts/deploy-prod.sh; this script never deploys.');
+console.log('Merging does not deploy. Production changes only on a deploy from main the owner asked for (AGENTS.md "Production"); this script never deploys.');
 process.exit(behind > allow ? 1 : 0);

@@ -1095,6 +1095,7 @@ export async function getOpenTasks(sb: Sb, ctx: CoachChatContext): Promise<ToolE
     .from('golf_tasks')
     .select('id, title, due_date, status, priority, task_type')
     .eq('team_id', ctx.team_id)
+    .eq('is_test', false)
     .neq('status', 'completed')
     .order('due_date', { ascending: true })
     .limit(50);

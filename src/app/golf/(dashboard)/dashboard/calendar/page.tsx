@@ -245,6 +245,7 @@ export async function CalendarEventsSection({
             .from('golf_tasks')
             .select('status, due_date, assignments:golf_task_assignments!golf_task_assignments_task_id_fkey(status)')
             .eq('team_id', teamId)
+            .eq('is_test', false)
             .lte('due_date', overdueBound)
             .order('id', { ascending: true })
             .range(from, to),

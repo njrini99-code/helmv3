@@ -21,11 +21,11 @@ Regenerate affected docs explicitly before committing. Push hooks must not
 rewrite the checkout. **Pushing or merging to `main` does not deploy.** Vercel
 Git deployments are disabled for every branch by `vercel.json`. The ignored-build
 script is defense in depth and skips any build carrying `VERCEL_GIT_COMMIT_REF`.
-Production deploys only when the owner says to: the owner runs
-`scripts/deploy-prod.sh` from a clean, current `main`. Agents do not run
-`vercel --prod` or `scripts/deploy-prod.sh` — the owner deploys; agents
-prepare and verify instead. After a release, `npm run release:status` must
-show the released SHA before anyone calls it live.
+Production deploys only when the owner says to. The agent then deploys from
+a clean, current `main` with the repo-local Vercel CLI or the Vercel
+connector, never through a script (AGENTS.md "Production"). After a release,
+`npm run release:status` must show the released SHA before anyone calls it
+live.
 
 `.vercelignore` replaces the default ignore set; every secret-bearing ignored
 path must therefore be listed explicitly and checked by the repository doctor.

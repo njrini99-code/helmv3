@@ -11132,6 +11132,7 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           id: string
+          is_test: boolean
           publish_at: string | null
           published_at: string | null
           requires_acknowledgement: boolean | null
@@ -11147,6 +11148,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           id?: string
+          is_test?: boolean
           publish_at?: string | null
           published_at?: string | null
           requires_acknowledgement?: boolean | null
@@ -11162,6 +11164,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           id?: string
+          is_test?: boolean
           publish_at?: string | null
           published_at?: string | null
           requires_acknowledgement?: boolean | null
@@ -12926,6 +12929,7 @@ export type Database = {
           folder: string | null
           id: string
           is_public: boolean | null
+          is_test: boolean
           team_id: string
           title: string
           updated_at: string | null
@@ -12943,6 +12947,7 @@ export type Database = {
           folder?: string | null
           id?: string
           is_public?: boolean | null
+          is_test?: boolean
           team_id: string
           title: string
           updated_at?: string | null
@@ -12960,6 +12965,7 @@ export type Database = {
           folder?: string | null
           id?: string
           is_public?: boolean | null
+          is_test?: boolean
           team_id?: string
           title?: string
           updated_at?: string | null
@@ -17076,6 +17082,7 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          is_test: boolean
           parent_task_id: string | null
           priority: string | null
           recurrence_rule: string | null
@@ -17097,6 +17104,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          is_test?: boolean
           parent_task_id?: string | null
           priority?: string | null
           recurrence_rule?: string | null
@@ -17118,6 +17126,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          is_test?: boolean
           parent_task_id?: string | null
           priority?: string | null
           recurrence_rule?: string | null
@@ -17697,6 +17706,7 @@ export type Database = {
           hotel_name: string | null
           hotel_phone: string | null
           id: string
+          is_test: boolean
           notes: string | null
           return_date: string | null
           return_time: string | null
@@ -17722,6 +17732,7 @@ export type Database = {
           hotel_name?: string | null
           hotel_phone?: string | null
           id?: string
+          is_test?: boolean
           notes?: string | null
           return_date?: string | null
           return_time?: string | null
@@ -17747,6 +17758,7 @@ export type Database = {
           hotel_name?: string | null
           hotel_phone?: string | null
           id?: string
+          is_test?: boolean
           notes?: string | null
           return_date?: string | null
           return_time?: string | null

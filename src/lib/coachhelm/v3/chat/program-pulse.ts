@@ -231,6 +231,7 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
         .from('golf_tasks')
         .select('id, title, due_date, status')
         .eq('team_id', ctx.team_id)
+        .eq('is_test', false)
         .neq('status', 'completed')
         .limit(100),
     ),

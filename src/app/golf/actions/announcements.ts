@@ -681,6 +681,7 @@ async function getAnnouncementsWithMetaImpl(
       .from('golf_announcements')
       .select('*')
       .eq('team_id', teamId)
+      .eq('is_test', false)
       .order('published_at', { ascending: false })
       .limit(ANNOUNCEMENTS_FEED_LIMIT);
 

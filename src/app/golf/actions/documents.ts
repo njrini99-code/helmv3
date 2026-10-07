@@ -212,6 +212,7 @@ async function getDocumentsImpl(teamId: string): Promise<{ data: GolfDocument[] 
         )
       `)
       .eq('team_id', teamId)
+      .eq('is_test', false)
       .order('updated_at', { ascending: false });
 
     // Players only ever see public documents — never coach-only files. This

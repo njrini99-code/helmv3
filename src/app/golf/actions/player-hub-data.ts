@@ -137,6 +137,7 @@ async function getPlayerHubSummaryDataImpl(
         'id, event_name, destination, transportation_type, departure_date, departure_time, departure_location, return_date, return_time, hotel_name, hotel_address, hotel_phone, hotel_confirmation, uniform_requirements, gear_list, room_assignments, notes, flight_info',
       )
       .eq('team_id', teamId)
+      .eq('is_test', false)
       .gte('departure_date', tripsSince)
       .order('departure_date', { ascending: true })
       .limit(100),
@@ -259,6 +260,7 @@ async function getPlayerHubSummaryDataImpl(
       .from('golf_tasks')
       .select('id, title, description, due_date, category, task_type')
       .in('id', taskIds)
+      .eq('is_test', false)
       .eq('team_id', teamId)
       .order('due_date', { ascending: true, nullsFirst: false });
 

@@ -125,6 +125,7 @@ export default async function TeamHubPage({
       .from('golf_travel_itineraries')
       .select('*')
       .eq('team_id', teamId)
+      .eq('is_test', false)
       .order('departure_date', { ascending: true }),
 
     supabase
@@ -249,6 +250,7 @@ export default async function TeamHubPage({
       .from('golf_tasks')
       .select('id, title, description, due_date, category')
       .in('id', taskIds)
+      .eq('is_test', false)
       .eq('team_id', teamId)
       .order('due_date', { ascending: true, nullsFirst: false });
 

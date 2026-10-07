@@ -57,6 +57,10 @@ const COLUMN_DEFAULTS: Record<string, Row> = {
   golf_teams: { is_test: false },
   golf_players: { is_test: false },
   golf_qualifiers: { is_test: false },
+  golf_announcements: { is_test: false },
+  golf_tasks: { is_test: false },
+  golf_documents: { is_test: false },
+  golf_travel_itineraries: { is_test: false },
 };
 
 function cell(table: string, row: Row, col: string): unknown {

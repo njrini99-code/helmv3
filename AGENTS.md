@@ -117,18 +117,29 @@ Claude and Codex; the judgment above is the safeguard, not a permission rule.
 
 Vercel reads, logs, and previews are normal development work. `vercel.json`
 disables Vercel Git deployments: pushing or merging to `main` does not
-deploy. Production deploys are manual and happen only when the owner says
-to deploy — agents do not run `vercel --prod` or `scripts/deploy-prod.sh`;
-they prepare the release and verify it afterwards. The release path is
-`scripts/deploy-prod.sh` from a clean, current `main` checkout (`!
-scripts/deploy-prod.sh` in a Claude session, run by the owner): it checks
-the linked project, the clean tree and the weekly budget
-(`config/release-policy.yml`), stamps the Sentry release, deploys, and
-verifies the served commit. Prefer it over a bare `vercel deploy --prod`,
-which skips those checks. Report a release as live only after `npm run
-release:status` shows the approved SHA. Rollback and promote of an existing
-deployment also require explicit owner authorization. Use repo-local
-Supabase/Vercel binaries.
+deploy. Production deploys happen only when the owner says to deploy; the
+agent then deploys. Always deploy from a clean,
+current `main` checkout, with the repo-local Vercel CLI or the Vercel
+connector/MCP, never from a branch and never through a script
+(`scripts/deploy-prod.sh` is not the release path). Before deploying, state
+the target and check that `.vercel/project.json` points at
+`production.vercel_project_id` in `config/release-policy.yml`, the tree is
+clean, and `HEAD` equals `origin/main`. Deploy so the Sentry release carries
+the commit:
+
+    ./node_modules/.bin/vercel deploy --prod --yes --archive=tgz \
+      --scope <orgId> --build-env NEXT_PUBLIC_SENTRY_RELEASE=<sha> \
+      --env NEXT_PUBLIC_SENTRY_RELEASE=<sha>
+
+The weekly budget in `config/release-policy.yml` caps routine deploys (count
+this ISO week's with `vercel ls helmv3 --prod` piped to
+`scripts/lib/deploy-week-count.mjs`; canceled builds count). Going past it is
+the owner's call; record the reason in `memory/ledgers/deployments.md`. Once
+the upload finishes, Vercel builds and promotes the deployment even if the
+CLI is stopped; stopping it means canceling the deployment. Report a release
+as live only after `npm run release:status` shows that SHA. Rollback and
+promote of an existing deployment also require explicit owner
+authorization. Use repo-local Supabase/Vercel binaries.
 
 ## Product conventions
 

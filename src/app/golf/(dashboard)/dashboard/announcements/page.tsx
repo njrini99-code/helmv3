@@ -89,6 +89,7 @@ export default async function GolfAnnouncementsPage() {
           .from('golf_documents')
           .select('id, title, file_type, file_size')
           .eq('team_id', teamId)
+          .eq('is_test', false)
           .order('created_at', { ascending: false })
           .limit(200),
       ]);

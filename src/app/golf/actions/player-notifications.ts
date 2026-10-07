@@ -146,6 +146,7 @@ async function getPlayerNotificationCountsImpl(
         .from('golf_announcements')
         .select('*')
         .eq('team_id', teamId)
+        .eq('is_test', false)
         .not('published_at', 'is', null)
         .gte('published_at', new Date(Date.now() - 30 * 86400000).toISOString())
         .order('published_at', { ascending: false }),
@@ -311,7 +312,8 @@ async function getPlayerNotificationCountsImpl(
     let travelQuery = (supabase as any)
       .from('golf_travel_itineraries')
       .select('id', { count: 'exact', head: true })
-      .eq('team_id', teamId);
+      .eq('team_id', teamId)
+      .eq('is_test', false);
     if (lastTravelSeenAt) {
       travelQuery = travelQuery.gt('created_at', lastTravelSeenAt);
     }

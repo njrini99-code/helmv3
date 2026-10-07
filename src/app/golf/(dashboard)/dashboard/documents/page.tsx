@@ -105,6 +105,7 @@ export default async function GolfDocumentsPage() {
       folder
     `)
     .eq('team_id', teamId)
+    .eq('is_test', false)
     .order('created_at', { ascending: false });
 
   // Players can only see public documents

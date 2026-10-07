@@ -118,6 +118,18 @@ Player Team Hub
 - Travel itinerary data can include hotel, flight, room, packing, and uniform details; treat as potentially sensitive.
 - Documents need visibility controls and safe versioning.
 - Travel expense split support is incomplete; do not assume per-player split logic exists.
+- Test tasks, documents and trips (OD-03, 2026-09-27): `is_test = true` on
+  `golf_tasks`, `golf_documents` or `golf_travel_itineraries` marks a QA or
+  demo row. List and count reads (the coach Tasks list, Documents, Travel,
+  Team Hub, the Team page, the home dashboard data such as the player home
+  Tasks card, the coach calendar overdue count, the travel badge, the
+  announcement attachment picker and CoachHelm's open-task reads) filter
+  `.eq('is_test', false)`; by-id reads (document detail, versions and preview,
+  a trip's expenses, an event's trip or attachments), writes, the
+  task-reminder cron and admin ignore the flag. Reads that start from
+  `golf_task_assignments` still count a flagged task that has assignees: the
+  player Tasks view, the player pending-task badge and the player calendar
+  overdue count.
 
 ## UI Contract
 

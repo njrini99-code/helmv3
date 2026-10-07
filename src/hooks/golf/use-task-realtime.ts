@@ -293,6 +293,7 @@ export function useTaskRealtime(
           .from('golf_tasks')
           .select(TASK_COLUMNS)
           .eq('team_id', teamId)
+          .eq('is_test', false)
           .order('due_date', { ascending: true, nullsFirst: false });
 
         if (tasksError) throw tasksError;

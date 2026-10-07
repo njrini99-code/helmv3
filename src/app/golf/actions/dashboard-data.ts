@@ -370,6 +370,7 @@ async function getCoachDashboardDataImpl(
             .from('golf_tasks')
             .select('id, title, due_date, priority, status')
             .eq('team_id', teamId)
+            .eq('is_test', false)
             .in('status', ['pending', 'in_progress'])
             .order('due_date', { ascending: true, nullsFirst: false })
             .limit(20),
@@ -378,6 +379,7 @@ async function getCoachDashboardDataImpl(
             .from('golf_announcements')
             .select('id, title, created_at, urgency')
             .eq('team_id', teamId)
+            .eq('is_test', false)
             .not('published_at', 'is', null)
             .order('published_at', { ascending: false })
             .limit(5),
@@ -1073,6 +1075,7 @@ async function getPlayerDashboardDataImpl(
                 .from('golf_announcements')
                 .select('id, title, created_at, urgency')
                 .eq('team_id', teamId)
+                .eq('is_test', false)
                 .not('published_at', 'is', null)
                 .order('published_at', { ascending: false })
                 .limit(5)
@@ -1319,6 +1322,7 @@ async function getPlayerDashboardDataImpl(
             .from('golf_tasks')
             .select('id, title, due_date, priority')
             .in('id', pendingTaskIds)
+            .eq('is_test', false)
             .order('due_date', { ascending: true, nullsFirst: false })
             .limit(15);
 
