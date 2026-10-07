@@ -44,10 +44,9 @@
 }
 .ch-ms-rail__title h1 {
   margin: 0;
-  font: var(--ch-type-display-s);
-  font-size: 26px;
-  letter-spacing: -0.026em;
-  font-variation-settings: 'wdth' 96;
+  font: var(--ch-type-serif-m);
+  font-size: 34px;
+  letter-spacing: -0.008em;
   color: var(--ch-text-primary);
 }
 .ch-ms-rail__body {
@@ -65,11 +64,12 @@
   font: 500 12px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
+/* One continuous rail (Mail's sidebar, not a stack of boxes): rows sit on the page, each a rounded target that
+   lights on hover and holds the selection; fine seams between conversations, inset to the text. */
 .ch-ms-sec__card {
-  overflow: hidden;
-  border-radius: 14px;
-  background: var(--ch-bg-surface);
-  box-shadow: var(--ch-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 .ch-ms-row {
   display: grid;
@@ -78,9 +78,10 @@
   align-items: center;
   box-sizing: border-box;
   width: 100%;
-  padding: 12px 14px;
+  position: relative;
+  padding: 11px 12px;
   border: 0;
-  border-top: 1px solid var(--ch-border-hairline);
+  border-radius: var(--ch-radius-md);
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -88,18 +89,35 @@
     background var(--ch-dur-quick) var(--ch-ease),
     transform var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-ms-row:first-child {
-  border-top: 0;
+.ch-ms-row + .ch-ms-row::before {
+  position: absolute;
+  top: -1px;
+  right: 12px;
+  left: 60px;
+  height: 2px;
+  box-shadow: var(--ch-seam-x);
+  content: '';
+  pointer-events: none;
+}
+.ch-ms-row:hover::before,
+.ch-ms-row:hover + .ch-ms-row::before,
+.ch-ms-row.is-sel::before,
+.ch-ms-row.is-sel + .ch-ms-row::before {
+  opacity: 0;
 }
 .ch-ms-row:hover {
-  background: var(--ch-bg-hover);
+  background: rgb(28 25 18 / 0.045);
+}
+.ch-ms-row:active {
+  background: rgb(28 25 18 / 0.07);
 }
 .ch-ms-row:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: -2px;
 }
 .ch-ms-row.is-sel {
-  background: var(--ch-green-50);
+  background: var(--ch-raised-bg);
+  box-shadow: var(--ch-key-raised-shadow), inset 3px 0 0 var(--ch-field-green);
 }
 .ch-ms-grp {
   display: grid;
