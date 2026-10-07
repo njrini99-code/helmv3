@@ -169,25 +169,26 @@
   display: flex;
   align-items: center;
 }
-/* The loaded team card's height in each layout (`.ch-fg--hold` below; measured, perf 2026-10-01): six across, one line label; six across on a
+/* The loaded team figure's height in each layout (`.ch-fg--hold` below; measured, perf 2026-10-01, and re-measured in WebKit
+   2026-10-07 for the stat-line padding, +4px): six across, one line label; six across on a
    canvas up to 1116px, where "Greens in regulation" and the like take a second line; two across. */
 .ch-fg {
-  --ch-fg-h: 196px;
+  --ch-fg-h: 200px;
 }
 @container (min-width: 901px) and (max-width: 1116px) {
   .ch-fg {
-    --ch-fg-h: 213px;
+    --ch-fg-h: 217px;
   }
 }
 /* The narrowest six across (a canvas of 901 to 940px), where two cards' words take a third line. */
 @container (min-width: 901px) and (max-width: 940px) {
   .ch-fg {
-    --ch-fg-h: 229px;
+    --ch-fg-h: 233px;
   }
 }
 @container (max-width: 900px) {
   .ch-fg {
-    --ch-fg-h: 155px;
+    --ch-fg-h: 159px;
   }
 }
 /* The skeleton's card and the held team card are the same height, so nothing moves when the figures land or the window changes, even in a

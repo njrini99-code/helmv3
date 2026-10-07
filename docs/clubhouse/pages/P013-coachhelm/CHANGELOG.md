@@ -1,5 +1,9 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-07 — Loading holds the loaded page
+
+The pulse keeps its reserved height (CH-13405) whether the rows, a notice or the skeleton are in it. Desktop loading draws on the canopy with the view strip level with the title, as the page does, and holds the measured heights: a 194px title block and a 258px pulse. Measured in WebKit at 1440 and 1000, coach and player views: the header, pulse and grid tops don't move when the page lands.
+
 ## 2026-10-06 — Views on ivory, serif headlines
 
 Game profile, Standing and Deep dive no longer open on dark green summary panels. They are ivory reading sheets

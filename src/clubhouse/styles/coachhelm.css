@@ -563,8 +563,8 @@
  * desktop's six items in two columns), whether the rows, a notice or the skeleton are in it, and nothing below moves when they land. A
  * pulse of more rows than that (the phone's single column past three) grows the card, which is the one case that shifts.
  */
-.ch-hl-pulse__slot:has(.ch-hl-pulse__sk) {
-  min-height: 197px;
+.ch-hl-pulse__slot {
+  min-height: var(--ch-hl-pulse-h, 197px);
 }
 .ch-hl-pulse__sk {
   display: flex;
@@ -755,9 +755,19 @@
   flex-direction: column;
   gap: 14px;
   padding: 20px 24px 16px;
-  border-radius: 20px;
-  background: var(--ch-ivory-25);
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-reading);
+}
+/* Desktop loading holds the loaded page's measured heights (WebKit, 1440 and 1000, 2026-10-07): the canopy title block
+   194px with its serif title and live line, the pulse card 258px with its serif title and reserved rows (CH-13405). */
+@media (min-width: 821px) {
+  .ch-hl[aria-busy='true'][data-canopy] > .ch-hl-h {
+    min-height: 194px;
+  }
+  .ch-hl-sk__pulse {
+    min-height: 258px;
+  }
 }
 
 /* Narrow canvases: one column */

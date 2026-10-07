@@ -84,10 +84,10 @@ describe('Team stats hold their geometry across windows', () => {
     expect(css).toMatch(/\.ch-sgt__ends\s*{[^}]*align-self: start/);
     expect(css).toMatch(/\.ch-tab-t__n\s*{[^}]*min-width: 2ch/);
     // 196 six across with one-line labels, 213 where they wrap (a canvas of 901 to 1116px), 155 two across; the skeleton's card and the held card share it.
-    expect(css).toMatch(/\.ch-fg\s*{\s*--ch-fg-h: 196px/);
-    expect(css).toMatch(/min-width: 901px\) and \(max-width: 1116px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 213px/);
-    expect(css).toMatch(/min-width: 901px\) and \(max-width: 940px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 229px/);
-    expect(css).toMatch(/\(max-width: 900px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 155px/);
+    expect(css).toMatch(/\.ch-fg\s*{\s*--ch-fg-h: 200px/);
+    expect(css).toMatch(/min-width: 901px\) and \(max-width: 1116px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 217px/);
+    expect(css).toMatch(/min-width: 901px\) and \(max-width: 940px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 233px/);
+    expect(css).toMatch(/\(max-width: 900px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 159px/);
     expect(css).toMatch(/\.ch-fg__c--skel,\s*\.ch-fg--hold \.ch-fg__c\s*{\s*min-height: var\(--ch-fg-h\)/);
   });
 });

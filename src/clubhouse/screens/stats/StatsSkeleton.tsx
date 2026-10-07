@@ -85,8 +85,9 @@ export function StatsSkeleton() {
       <header className="ch-st-head">
         <div className="ch-st-head__row">
           <div>
-            <Line height={41}>
-              <Skeleton width={220} height={38} radius={10} />
+            {/* The serif title's line (52px type, 53px line), measured with the page (WebKit 1440, 2026-10-07). */}
+            <Line height={53}>
+              <Skeleton width={260} height={46} radius={10} />
             </Line>
             <div style={{ height: 8 }} />
             <Line height={21}>
@@ -126,7 +127,8 @@ export function StatsSkeleton() {
 function TrendSkeleton() {
   return (
     <div className="ch-sgt" aria-hidden="true">
-      <div className="ch-sgt__head" style={{ minHeight: 70 }}>
+      {/* With the serif card title the head is 95px (WebKit 1440, 2026-10-07). */}
+      <div className="ch-sgt__head" style={{ minHeight: 95 }}>
         <div>
           <Skeleton width={200} height={17} />
           <div style={{ height: 8 }} />

@@ -1,5 +1,9 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-07 — Loading reserves re-measured
+
+The figure line's reserves (`--ch-fg-h`) are re-measured for the stat-line padding (+4px). The loading title takes the serif title's 53px line, and the trend card's head the serif title's 95px. Measured in WebKit at 1440 and 1000: the title, figures and trend card tops don't move.
+
 ## 2026-10-06 — Figures as a stat line, legs on the page, serif titles
 
 The owner called the figure row "card heavy", then said "even worse" when a single sheet was placed around it. The

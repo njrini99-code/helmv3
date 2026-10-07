@@ -1,5 +1,9 @@
 # P002 — Home: changelog
 
+## 2026-10-07 — Loading holds the loaded page
+
+Desktop Home loading draws on the canopy, with the title block in the loaded grid: the actions sit beside the brief and the serif greeting's line is 71px. The sheet panes hold 623px. Measured in WebKit at 1440: the title, sheet and leaderboard tops don't move when the page lands.
+
 ## 2026-10-06 — Figures drawn, not stated
 
 Owner: no bare numbers. Each Scoring figure is now drawn against a reference that is real:

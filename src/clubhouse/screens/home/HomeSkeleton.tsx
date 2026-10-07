@@ -11,7 +11,8 @@ function Line({ height, children }: { height: number; children: ReactNode }) {
 /** Route loading for Home: the same frame as the page, so nothing shifts when data lands. */
 export function HomeSkeleton() {
   return (
-    <main className="ch-h-main" aria-busy="true" aria-label="Loading Home" data-ch-code="CH-2401">
+    // Desktop draws the loading page on the canopy, as the loaded page is, so the green doesn't arrive with the data.
+    <main className="ch-h-main" aria-busy="true" aria-label="Loading Home" data-ch-code="CH-2401" data-canopy="">
       <SkeletonHeroBar />
       {/* Phone: the page's own shape (green hero, then the Today and form cards), so the hand-off changes nothing but the words (F-37). */}
       <div className="ch-hm-skel" aria-hidden="true">
@@ -28,12 +29,13 @@ export function HomeSkeleton() {
         </div>
       </div>
       {/* Desktop head, line for line as loaded (perf 2026-10-01, measured with `npm run clubhouse:perf`): the date, the greeting, a two-line sentence and the two actions. */}
-      <header className="ch-h-head">
+      <header className="ch-h-head" data-canopy-head="">
         <Line height={14}>
           <Skeleton width={140} height={13} />
         </Line>
-        <Line height={48}>
-          <Skeleton width={360} height={44} radius={10} />
+        {/* The serif greeting's line on the canopy (58px type), 71px with its margins (WebKit 1440, 2026-10-07). */}
+        <Line height={71}>
+          <Skeleton width={420} height={54} radius={10} />
         </Line>
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, height: 48 }}>
           <Skeleton width="90%" height={14} />
@@ -46,7 +48,7 @@ export function HomeSkeleton() {
       </header>
       <div className="ch-h-sheet ch-sheet">
         {[0, 1].map((k) => (
-          <div key={k} className="ch-h-pane" style={{ minHeight: 423 }}>
+          <div key={k} className="ch-h-pane" style={{ minHeight: 623 }}>
             <Skeleton width={110} height={15} />
             <Skeleton width="100%" height={72} radius={12} />
             <Skeleton width="80%" height={13} />

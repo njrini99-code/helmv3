@@ -2382,3 +2382,33 @@
   align-items: stretch;
   gap: 2px;
 }
+
+/* Home loading on the canopy (desktop): the title block holds the loaded block's measured height (WebKit 1440, 2026-10-07:
+   237px with the serif greeting, the two-line brief and the actions) and starts where it does, so nothing moves on load. */
+@media (min-width: 821px) {
+  .ch-h-main[aria-busy='true'][data-canopy] {
+    padding-top: 0;
+  }
+  .ch-h-main[aria-busy='true'][data-canopy] > .ch-h-head {
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 40px;
+    row-gap: 10px;
+    align-items: end;
+    max-width: none;
+    padding-top: 44px;
+  }
+  .ch-h-main[aria-busy='true'][data-canopy] > .ch-h-head > :not(.ch-h-head__actions) {
+    grid-column: 1;
+  }
+  .ch-h-main[aria-busy='true'][data-canopy] > .ch-h-head > .ch-h-head__actions {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    flex-wrap: nowrap;
+    margin: 0;
+  }
+  .ch-h-main[aria-busy='true'][data-canopy] > .ch-h-head + .ch-h-sheet {
+    margin-top: 36px;
+  }
+}
