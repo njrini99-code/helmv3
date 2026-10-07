@@ -7,7 +7,10 @@ on the canvas, split by a soft hairline column. The leaderboard is rows on the
 canvas, aligned to the head's edge, with soft seams and a quiet hover tint. Its
 heading sits over the engraved rule. The section headings ("This week", "Latest
 round", "Leaderboard") are in the heavy sans. The scorecard keeps its green
-board, and the week strip keeps its well. The phone is unchanged.
+board, and the week strip keeps its well. On the player's Home, Scoring runs on
+from the week with no card, at the head's edge. "Your game" is four figures on
+the canvas divided by soft rules, not four cards, and the up-next board keeps
+its green. The phone is unchanged.
 
 ## 2026-10-07 — Home in the framed page head
 
