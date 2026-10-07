@@ -3,6 +3,7 @@ import { Fragment, type ReactNode } from 'react';
 import type { ChSgChange } from '../../data/stats-common';
 import type { ChGauge } from '../../data/stats-team';
 import { Icon } from '../../ui/Icon';
+import { SerifText } from '../../ui/SerifText';
 import { monotonePath } from '../../lib/chart';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { sgScale, sgShare } from '../../lib/sg';
@@ -18,7 +19,9 @@ export function YardagePage({ title, meta, note, children }: { title: string; me
   return (
     <section className="ch-yb">
       <header className="ch-yb__head">
-        <h3>{title}</h3>
+        <h3>
+          <SerifText text={title} />
+        </h3>
         {meta && <span className="ch-yb__meta">{meta}</span>}
       </header>
       {children}

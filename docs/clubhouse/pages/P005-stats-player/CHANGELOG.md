@@ -1,5 +1,9 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-07 — Chart card titles in the serif
+
+The yardage cards' titles (`YardagePage`: Scoring, Strokes gained by leg, Team putting, and "Jonah vs. team") were a 15px semibold sans next to serif panel titles. They now use the display serif (`--ch-type-serif-s`), with any digits in the sans (`SerifText`).
+
 ## 2026-10-07 — Phone overview on the stat line
 
 The phone overview's three figures were bare numbers inside one white sheet. They now sit on the stat line with no

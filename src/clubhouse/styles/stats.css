@@ -739,9 +739,11 @@ a.ch-lg__r:focus-visible {
   padding: 2px 2px 12px;
   border-bottom: 1px solid rgb(28 25 18 / 0.12);
 }
+/* The card's title in the display serif, as the trend card and every page's panels (words only; its digits, if any,
+   in the sans through SerifText). */
 .ch-yb__head h3 {
-  font: 600 15px/1.25 var(--ch-font-sans);
-  letter-spacing: -0.012em;
+  font: var(--ch-type-serif-s);
+  letter-spacing: -0.006em;
   color: var(--ch-ink-900);
 }
 .ch-yb__meta {

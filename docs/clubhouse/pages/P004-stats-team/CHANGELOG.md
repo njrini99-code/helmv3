@@ -1,5 +1,9 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-07 — Chart card titles in the serif
+
+The yardage cards' titles (`YardagePage`: Scoring, Strokes gained by leg, Team putting, and "Jonah vs. team") were a 15px semibold sans next to serif panel titles. They now use the display serif (`--ch-type-serif-s`), with any digits in the sans (`SerifText`).
+
 ## 2026-10-07 — Scoring trend mean label off the line
 
 On the phone, the scoring trend's "Mean" label sat on the line. It now goes in the first corner the line keeps clear of

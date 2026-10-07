@@ -8286,7 +8286,7 @@
           "name": "--ch-fg-h",
           "value": "208px",
           "scope": "@container (max-width: 900px) → .ch-fg.ch-fg--lead",
-          "line": 1813
+          "line": 1815
         }
       ]
     },
