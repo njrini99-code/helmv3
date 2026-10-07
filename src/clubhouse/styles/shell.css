@@ -1819,8 +1819,9 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
   }
 }
 
-/* Ivory sidebar (owner, 2026-10-06): ink type on the shell ivory, green only for the selected row (the same green as
-   the canopy), the brand set as a green mark on ivory, the next-event card a light sheet. */
+/* The Frame (owner, 2026-10-07): the sidebar is the frame's field green, the same green as each page's hero, so the
+   page sits inside one green L. Ivory type on the green; the selected row is an ivory plate with a gilt edge; the
+   next-event card stays a light sheet. */
 .ch-brand {
   background: none;
   box-shadow: none;
@@ -1829,70 +1830,138 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
   font: 400 23px/1 var(--ch-font-serif);
   letter-spacing: -0.006em;
   font-variation-settings: normal;
-  color: var(--ch-field-green);
+  color: var(--ch-on-green-ink);
 }
 .ch-brand__team,
 .ch-brand__team--switch svg {
-  color: var(--ch-text-tertiary);
+  color: var(--ch-on-green-ink-muted);
 }
 .ch-brand--switch:hover,
 .ch-brand--switch[aria-expanded='true'] {
-  background: rgb(28 25 18 / 0.04);
-  box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.08);
+  background: rgb(250 248 241 / 0.07);
+  box-shadow: inset 0 0 0 1px rgb(220 205 166 / 0.22);
 }
 .ch-brand--switch:focus-visible,
 .ch-navitem:focus-visible {
-  outline-color: var(--ch-border-focus);
+  outline-color: var(--ch-champagne-300);
 }
 .ch-nav__section {
-  color: var(--ch-text-tertiary);
+  color: var(--ch-on-green-ink-muted);
   opacity: 1;
 }
 .ch-navitem {
-  color: var(--ch-ink-700);
+  color: var(--ch-on-green-ink-soft);
 }
 .ch-navitem svg {
-  color: var(--ch-ink-500);
+  color: var(--ch-on-green-ink-muted);
 }
 .ch-navitem:hover {
-  background: rgb(28 25 18 / 0.045);
-  color: var(--ch-text-primary);
+  background: rgb(250 248 241 / 0.07);
+  color: var(--ch-on-green-ink);
 }
 .ch-navitem:hover svg {
-  color: var(--ch-ink-700);
+  color: var(--ch-on-green-ink);
 }
 .ch-navitem[aria-current='page'],
 .ch-navitem:has(.ch-lp) {
-  background: linear-gradient(180deg, #11452d, var(--ch-field-green));
-  color: var(--ch-on-green-ink);
-  box-shadow: var(--ch-nav-selected-shadow);
-  text-shadow: var(--ch-on-green-text-shadow-s);
+  background: var(--ch-ivory-25);
+  color: var(--ch-green-800);
+  box-shadow: 0 0 0 1px rgb(176 149 96 / 0.6), 0 1px 2px rgb(2 18 10 / 0.3);
+  text-shadow: none;
 }
 .ch-navitem[aria-current='page'] svg,
 .ch-navitem[aria-current='page'] .ch-navitem__count,
 .ch-navitem:has(.ch-lp) svg,
 .ch-navitem:has(.ch-lp) .ch-navitem__count {
-  color: var(--ch-hero-mint);
+  color: var(--ch-green-700);
 }
 .ch-navitem__count {
-  color: var(--ch-text-tertiary);
+  color: var(--ch-champagne-300);
 }
 .ch-sidebar__foot {
-  border-top-color: rgb(28 25 18 / 0.1);
+  border-top-color: rgb(250 248 241 / 0.12);
 }
 .ch-next {
   background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: 0 1px 2px rgb(2 18 10 / 0.3), 0 0 0 1px rgb(176 149 96 / 0.35);
 }
 .ch-next:hover {
-  box-shadow: var(--ch-elevation-reading-hover);
+  box-shadow: 0 2px 6px rgb(2 18 10 / 0.35), 0 0 0 1px rgb(176 149 96 / 0.5);
 }
 .ch-identity .ch-avatar {
-  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.7);
+  box-shadow: 0 0 0 2px rgb(250 248 241 / 0.25);
 }
 .ch-identity__name {
-  color: var(--ch-text-primary);
+  color: var(--ch-on-green-ink);
 }
 .ch-identity__meta {
+  color: var(--ch-on-green-ink-muted);
+}
+@media (min-width: 821px) {
+  /* A page with a hero meets the frame without a seam: the canvas drops its ring, so the hero's green runs straight
+     into the sidebar's. The ivory below the hero is the page. */
+  .ch-canvas:has(main[data-canopy]) {
+    box-shadow: none;
+  }
+}
+
+/* The shared page hero (PageHero): eyebrow, serif title, one line, and the page's actions on the right. Set on the
+   frame's green by main[data-canopy]; the same markup reads as a plain ivory head where the canopy does not apply. */
+.ch-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 40px;
+  row-gap: 10px;
+  align-items: end;
+}
+.ch-hero > :not(.ch-hero__actions) {
+  grid-column: 1;
+}
+.ch-hero__eyebrow {
+  font: 600 13.5px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
+}
+[data-canopy] .ch-hero__eyebrow {
+  color: var(--ch-hero-mint);
+}
+.ch-hero__title {
+  margin: 2px 0;
+  font: 400 52px/1.02 var(--ch-font-serif);
+  letter-spacing: -0.01em;
+  color: var(--ch-text-primary);
+}
+.ch-hero__line {
+  max-width: 720px;
+  font: 400 16px/1.5 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+  text-wrap: pretty;
+}
+.ch-hero__actions {
+  display: flex;
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: end;
+  align-items: center;
+  gap: 10px;
+}
+@media (min-width: 821px) {
+  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--ghost {
+    color: var(--ch-on-green-ink);
+  }
+  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--ghost:hover {
+    background: rgb(250 248 241 / 0.08);
+  }
+}
+@media (max-width: 820px) {
+  .ch-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ch-hero__actions {
+    grid-column: 1;
+    grid-row: auto;
+    flex-wrap: wrap;
+  }
+  .ch-hero__title {
+    font-size: 34px;
+  }
 }

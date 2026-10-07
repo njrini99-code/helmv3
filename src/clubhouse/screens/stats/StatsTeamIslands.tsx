@@ -93,7 +93,7 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
   };
   return (
     <GoFilter.Provider value={{ filter: current, go, shown: (loading ?? current).window }}>
-      <main className={'ch-st' + (isPhone ? ' is-phone' : '')} aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined}>
+      <main className={'ch-st' + (isPhone ? ' is-phone' : '')} aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined} data-canopy={isPhone ? undefined : ''}>
         {/* The server renders desktop; at phone width it stays hidden until the phone view takes over at hydration. */}
         {isPhone ? phone : <div className="ch-st-desk">{children}</div>}
       </main>

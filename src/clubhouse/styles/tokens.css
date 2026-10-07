@@ -46,9 +46,9 @@
   --ch-hero-mint: #9fe0b6;
   --ch-hero-mint-strong: #7bc79a;
   --ch-frame: #0a331f;
-  /* The app shell around the canvas and the sidebar (owner, 2026-10-06: "ivory sidebar with green highlight
-     selection, that's way too much green"). A deeper ivory than the page, so the canvas reads as the lighter sheet. */
-  --ch-shell: #e3ded1;
+  /* The app shell around the canvas and the sidebar: the Frame (owner, 2026-10-07, replacing the 2026-10-06 ivory
+     sidebar). The sidebar and each page's hero are one field green, so the page sits inside an L of green. */
+  --ch-shell: var(--ch-green-800);
   /* The one Clubhouse green for large fields and the selected nav row: the canopy and the sidebar selection share it. */
   --ch-field-green: var(--ch-green-800);
   /* Champagne: hairline detail only */

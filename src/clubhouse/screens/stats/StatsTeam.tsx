@@ -7,6 +7,7 @@ import { EmptyState } from '../../ui/States';
 import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { nineRoundsInWindow } from '../../data/stats-filter';
 import { EarlyRead, NineHint } from './StatsFilter';
+import { PageHero } from '../../ui/PageHero';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { formatSigned, NO_DATA } from '../../lib/format';
 import { FigureCards, PuttingRings, YardagePage } from './charts';
@@ -31,26 +32,23 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
 
   return (
     <StatsTeamFrame filter={data.filter} phone={<StatsTeamPhone data={data} />}>
-      <header className="ch-st-head">
-        <div className="ch-st-head__row">
-          <div>
-            <h1 className="ch-display">Team stats</h1>
-            <p>
-              {data.teamName}
-              {/* A roster that did not load is not "0 active players". */}
-              {!data.roundsError && (
-                <>
-                  {' '}
-                  &middot; <span className="ch-num">{data.activeCount}</span> active {data.activeCount === 1 ? 'player' : 'players'}
-                </>
-              )}{' '}
-              &middot; countable rounds only
-            </p>
-          </div>
-          {/* Never export a half-loaded window. */}
+      <PageHero
+        title="Team stats"
+        actions={
+          /* Never export a half-loaded window. */
           <TeamHeadActions filter={data.filter} teamName={data.teamName} grid={data.roundsError ? null : data.grid} />
-        </div>
-      </header>
+        }
+      >
+        {data.teamName}
+        {/* A roster that did not load is not "0 active players". */}
+        {!data.roundsError && (
+          <>
+            {' '}
+            &middot; <span className="ch-num">{data.activeCount}</span> active {data.activeCount === 1 ? 'player' : 'players'}
+          </>
+        )}{' '}
+        &middot; countable rounds only
+      </PageHero>
 
       {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} />}
 

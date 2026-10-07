@@ -99,19 +99,16 @@ export function StatsProfileSkeleton({ coach = false }: { coach?: boolean }) {
 /** Route loading for Stats: title, window switch, the filter bar, six figure cards (strokes gained first) and the trend card, in place. */
 export function StatsSkeleton() {
   return (
-    <main className="ch-st" aria-busy="true" aria-label="Loading stats" data-ch-code="CH-4401">
-      <header className="ch-st-head">
-        <div className="ch-st-head__row">
-          <div>
-            {/* The serif title's line (52px type, 53px line), measured with the page (WebKit 1440, 2026-10-07). */}
-            <Line height={53}>
-              <Skeleton width={260} height={46} radius={10} />
-            </Line>
-            <div style={{ height: 8 }} />
-            <Line height={21}>
-              <Skeleton width={300} height={14} />
-            </Line>
-          </div>
+    <main className="ch-st" aria-busy="true" aria-label="Loading stats" data-ch-code="CH-4401" data-canopy="">
+      {/* The hero in place (PageHero): the serif title's line and the one line under it, the window switch on the right. */}
+      <header className="ch-hero" data-canopy-head="" aria-hidden="true">
+        <Line height={53}>
+          <Skeleton width={260} height={46} radius={10} />
+        </Line>
+        <Line height={24}>
+          <Skeleton width={300} height={14} />
+        </Line>
+        <div className="ch-hero__actions">
           <Skeleton width={236} height={32} radius={11} />
         </div>
       </header>
