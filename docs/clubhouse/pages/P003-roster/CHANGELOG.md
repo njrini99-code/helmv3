@@ -1,6 +1,6 @@
 # P003 — Roster: changelog
 
-## 2026-10-06 — Drawn card figures, serif title
+## 2026-10-07 — Drawn card figures, serif title
 
 The coach's player cards no longer end in a pill of three bare numbers (owner: no bare numbers). The figures are
 drawn:

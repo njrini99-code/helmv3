@@ -1,6 +1,6 @@
 # P011 — Rounds: changelog
 
-## 2026-10-06 — Drawn season figures, ledger dates, serif titles
+## 2026-10-07 — Drawn season figures, ledger dates, serif titles
 
 Owner: "random numbers with not great labeling mean little without visuals". Season scoring's figures are now drawn,
 each against a reference that needs no invented benchmark:

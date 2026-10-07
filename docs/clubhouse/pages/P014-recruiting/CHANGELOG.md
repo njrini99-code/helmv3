@@ -1,6 +1,6 @@
 # P014 — Recruiting: changelog
 
-## 2026-10-06 — Serif title
+## 2026-10-07 — Serif title
 
 The Recruiting title is set in the display serif, as on every Clubhouse page.
 

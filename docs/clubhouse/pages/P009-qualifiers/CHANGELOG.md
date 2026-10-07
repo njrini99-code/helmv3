@@ -4,7 +4,7 @@
 
 Data-fed serif titles set their digits in the sans (shared `SerifText`; see the cross-page log), so a name or title with figures reads cleanly.
 
-## 2026-10-06 — Leaders on the scoreboard, ledger lists, serif titles
+## 2026-10-07 — Leaders on the scoreboard, ledger lists, serif titles
 
 The live qualifier's leaders sit on the green scoreboard, a tournament board, with ivory names, red under par and the
 top-score line in mint. Active and concluded qualifiers are no longer grids of cards: each is a ledger row on the page

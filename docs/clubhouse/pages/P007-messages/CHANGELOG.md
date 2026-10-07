@@ -1,6 +1,6 @@
 # P007 — Messages: changelog
 
-## 2026-10-06 — One continuous conversation rail
+## 2026-10-07 — One continuous conversation rail
 
 The inbox rail is no longer three boxed cards (Announcements, Today, This week). The rows sit directly on the rail as
 rounded targets, the way a mail sidebar works:

@@ -1,6 +1,6 @@
 # P006 — Calendar: changelog
 
-## 2026-10-06 — Overlapping events cascade
+## 2026-10-07 — Overlapping events cascade
 
 Overlapping events in the week and day grids no longer split a column into equal lanes, which crushed titles into
 mid-word fragments. They cascade as Apple Calendar does: each later lane steps right and lies over the earlier ones,

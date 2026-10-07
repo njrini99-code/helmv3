@@ -8,19 +8,19 @@ trip names, and the live qualifier's name. The Standing and Deep dive counts ins
 figures. New captions under 12px (the Rounds range ends and date day, the Roster figure labels) are raised to 12px,
 the phone text floor.
 
-## 2026-10-06 — More contrast
+## 2026-10-07 — More contrast
 
 The owner said there wasn't a lot of contrast. The desktop's secondary and tertiary inks move one step darker, to the
 phone's values (`--ch-ink-600` #46433d, `--ch-ink-500` #5f5c55). Reading sheets are brighter (#fdfbf7) and their
 edge ring firmer, at 0.085 at rest and 0.1 on hover.
 
-## 2026-10-06 — No banding: solid sheets, no canvas wash
+## 2026-10-07 — No banding: solid sheets, no canvas wash
 
 The owner saw the ivory as grainy in its gradients. Large, gentle ivory gradients band on 8-bit displays, so reading
 sheets (`--ch-sheet-bg`) are now solid ivory; their lit top edge remains the elevation's inset highlight. The canvas
 wash is removed. Small keys and wells keep their gradients, because they are too short to band.
 
-## 2026-10-06 — Classic direction: ivory shell, canopy, serif titles
+## 2026-10-07 — Classic direction: ivory shell, canopy, serif titles
 
 Owner direction, live in review: aim for a Masters, old-money look; an ivory sidebar with green only on the
 selected row ("way too much green"); and one green throughout ("it's not even the same green"). The owner noted the

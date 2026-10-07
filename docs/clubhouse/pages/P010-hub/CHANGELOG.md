@@ -4,7 +4,7 @@
 
 Data-fed serif titles set their digits in the sans (shared `SerifText`; see the cross-page log), so a name or title with figures reads cleanly.
 
-## 2026-10-06 — Serif titles, readable RSVP bars
+## 2026-10-07 — Serif titles, readable RSVP bars
 
 Team Hub reads like a club bulletin. The page title, card titles (RSVPs, Updates), the latest announcement's
 headline and the trip name are set in the display serif; body, data and controls stay sans. The coach's RSVP bars

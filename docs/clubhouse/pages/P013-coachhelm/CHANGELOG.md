@@ -8,7 +8,7 @@ Data-fed serif titles set their digits in the sans (shared `SerifText`; see the 
 
 The pulse keeps its reserved height (CH-13405) whether the rows, a notice or the skeleton are in it. Desktop loading draws on the canopy with the view strip level with the title, as the page does, and holds the measured heights: a 194px title block and a 258px pulse. Measured in WebKit at 1440 and 1000, coach and player views: the header, pulse and grid tops don't move when the page lands.
 
-## 2026-10-06 — Views on ivory, serif headlines
+## 2026-10-07 — Views on ivory, serif headlines
 
 Game profile, Standing and Deep dive no longer open on dark green summary panels. They are ivory reading sheets
 whose headlines are set in the display serif in the field green, with the key figures in green italic (for example
@@ -20,7 +20,7 @@ Other details on the board:
 - The Ask question is set in the serif, without the mockup's spark tile (owner: no stock AI marks).
 - The phone eyebrow returns to green on ivory; mint is used on the canopy only.
 
-## 2026-10-06 — Large-title header on the canopy
+## 2026-10-07 — Large-title header on the canopy
 
 CoachHelm opens on the canopy:
 - **Header:** the role as a mint eyebrow, then a serif CoachHelm title and the live line. On desktop the view switch
