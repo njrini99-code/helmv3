@@ -174,7 +174,7 @@ uninstall). This section said "four … including CodeRabbit" until 2026-07-30.
 > `Smoke checks` was real.**
 >
 > Required from then until 2026-09-02: `Smoke checks`, `CI aggregate`,
-> `Review Gate aggregate`, and the three `Analyze (...)` runs (five now — see
+> `Review Gate aggregate`, and the three `Analyze (...)` runs (six now — see
 > above). All six verified to run on both `push` to `main`
 > and `pull_request`, with no path filters, so none can hang a PR.
 >

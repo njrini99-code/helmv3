@@ -65,8 +65,8 @@ A living doc that still needs to cite one of them links straight to that URL.
 
 For orientation before diving into a specific doc cluster, read (in rough order):
 
-- **`CLAUDE.md`** — product rules, stack, design system, code patterns, context routing.
-- **`AGENTS.md`** — agent/session operating conventions.
+- **`AGENTS.md`** — the operating policy for every agent in this repo.
+- **`CLAUDE.md`** — the thin Claude Code adapter over `AGENTS.md`.
 - **`memory/README.md`** — ⭐ **the trust map for the knowledge base.** Which files
   are generated (authoritative) vs hand-written (hint only), what the two CI
   gates measure, and which of the two feature-doc generations wins. Read this
@@ -120,15 +120,14 @@ zero broken links after). They are history, not reference, and now live only
 in the attic (see above).
 
 The two counts that stood here — "there are 22" and "the other 44" — are gone
-on purpose. `.claude/rules/shipping.md` §1 forbids writing a count into prose
-because it rots within weeks and reads as current forever, and an index that
-breaks that rule about itself is not one to trust about anything else.
+on purpose: a count written into prose rots within weeks and reads as current
+forever, so this index points at the generated inventory instead.
 
 What remains loose, and why:
 
 | File(s) | Why it stays |
 |---|---|
-| `REPO_MAP.md`, `CODEBASE_MAP.md`, `CI_RUNBOOK.md`, `OBSERVABILITY.md`, `README.md` | Routed to from `CLAUDE.md` / `AGENTS.md` / `.claude/rules/` |
+| `REPO_MAP.md`, `CI_RUNBOOK.md`, `OBSERVABILITY.md`, `README.md` | Routed to from `CLAUDE.md` / `AGENTS.md` / `.claude/rules/` |
 | `v3-*.md` (9 files) | Referenced from `memory/registry.yml` — registry paths never move |
 | `SECURITY_AUDIT.md`, `BASEBALL_RLS_SECURITY_AUDIT.md`, `PRIVACY_AUDIT.md`-class | Cited from rules or audit docs as standing references |
 | the rest | Each is linked from a living doc or the registry |

@@ -244,7 +244,7 @@ services:
 Run this script to check your configuration:
 
 ```bash
-npm run check-env
+npm run check:env
 ```
 
 Or manually verify:

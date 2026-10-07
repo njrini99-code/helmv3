@@ -1,6 +1,6 @@
 ---
 name: ui-polish-reviewer
-description: UI/UX review of Helm screens against the Fairway design system — hierarchy, density, loading/empty/error states, motion, accessibility, mobile behavior, and reuse of src/components/fairway primitives. Use after building or changing a user-facing screen or component, before opening a PR.
+description: UI/UX review of Helm Fairway screens only (not src/clubhouse/**; use clubhouse-polish-reviewer there) against the Fairway design system — hierarchy, density, loading/empty/error states, motion, accessibility, mobile behavior, and reuse of src/components/fairway primitives. Use after building or changing a user-facing screen or component, before opening a PR.
 model: sonnet
 disallowedTools: Write, Edit, MultiEdit, NotebookEdit
 ---

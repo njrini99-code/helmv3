@@ -2,7 +2,7 @@
 name: security-reviewer
 description: Security review of Helm changes touching auth, roles, RLS, service-role use, PII (including minors' data), server-to-client data exposure, API routes, webhooks, storage, or secrets. Use when a diff touches src/app/api/**, mutating server actions, Supabase policies/functions/grants, src/lib/supabase/**, storage upload/download, or anything that returns player or coach data.
 model: opus
-disallowedTools: Write, Edit, MultiEdit, NotebookEdit, mcp__supabase__apply_migration
+disallowedTools: Write, Edit, MultiEdit, NotebookEdit, mcp__supabase__apply_migration, mcp__claude_ai_Supabase__apply_migration, mcp__claude_ai_Supabase__deploy_edge_function, mcp__claude_ai_Supabase__create_branch, mcp__claude_ai_Supabase__merge_branch, mcp__claude_ai_Supabase__reset_branch, mcp__claude_ai_Supabase__delete_branch
 ---
 
 Context: a multi-tenant college-athletics SaaS (Golf, Baseball, Lift Lab) on

@@ -84,17 +84,18 @@ untrusted data.
 
 ## Testing paths (cheapest first)
 1. Vitest with mocked Supabase: `npm run test:file -- <paths>`.
-2. Local stack, then `npm run test:rls` for pgTAP. No Docker needed: CLI
-   2.119+ runs the stack as native processes (alpha, off by default,
-   macOS Apple silicon and Linux):
+2. Local stack, then `npm run test:rls` for pgTAP. The default is Docker
+   (OrbStack, per `scripts/doctor.mjs` and the Brewfile): `supabase start`.
+   Optional alpha: CLI 2.119+ can run the stack as native processes (off by
+   default, macOS Apple silicon and Linux):
    `SUPABASE_EXPERIMENTAL_STACK=1 supabase start --runtime native --stack <name>`.
    One stack per name, so parallel worktrees can each run their own.
    `supabase stack list|status|logs|stop|destroy` manage them (same env var).
-   `--runtime auto` picks Docker, then Podman, then native. The plain
-   `supabase start` without the env var is the legacy Docker path.
+   `--runtime auto` picks Docker, then Podman, then native.
    Our `supabase/config.toml` sets `auth.email.template.*.content_path`,
    which the native stack rejects (`ExperimentalStackStartError`); run it
-   against a scratch copy of `supabase/` with those lines removed (verified
+   against a scratch copy of `supabase/` with those lines removed
+   (`--workdir <copy>`) rather than editing the repo config (verified
    2026-10-03: all migrations and seeds apply natively, and all 85 pgTAP
    files pass). A native stack idles to `readiness: sleeping`, and
    `supabase test db --local` then fails with `LocalDbRunningError` even though
@@ -102,7 +103,6 @@ untrusted data.
    pointing at a wrapper that swaps `--local` for
    `--db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres` (the local
    default, not a secret).
-   (`--workdir <copy>`) rather than editing the repo config.
    Before pushing a migration, `npm run db:check:local` runs `supabase db
    advisors` + `db lint` against the local stack and fails only on findings
    missing from `supabase/local-db-checks-baseline.json` (a ratchet: fix
@@ -136,8 +136,8 @@ already does this per class for the drift-alert baseline
 (`supabase-advisor-baseline.json`).
 
 ## When to invoke deeper guidance
-The vendored skills `supabase`, `supabase-postgres-best-practices` and
-`supabase-server` (`.claude/skills/`, pinned in `skills-lock.json`; refresh with
+The vendored skills `supabase` and `supabase-postgres-best-practices`
+(`.claude/skills/`, pinned in `skills-lock.json`; refresh with
 `npx skills update -p`) are the connected Supabase skills here; this file wins
 where they disagree. Use a connected Supabase skill when it is available for RLS, auth/session
 handling, client-library or SSR integration, Edge Functions, and query/schema

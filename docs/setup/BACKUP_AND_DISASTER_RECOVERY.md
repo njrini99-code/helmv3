@@ -203,6 +203,10 @@ psql -h localhost -U postgres -f backup.sql
 - Site returns 500 errors
 - Builds timing out
 
+> **Owner authorization required.** Production deploys, rollback and
+> promote happen only when the owner explicitly says so; the release path is
+> `scripts/deploy-prod.sh`, run by the owner (AGENTS.md "Production").
+
 **Recovery Steps:**
 1. Roll back to previous deployment:
    ```bash
@@ -514,6 +518,10 @@ Vercel Support    N/A             support@vercel.com   Dashboard
 - **Sentry:** https://status.sentry.io
 
 ### Quick Recovery Commands
+
+Deploy, rollback and promote need explicit owner authorization
+(AGENTS.md "Production"); the owner runs `scripts/deploy-prod.sh`.
+
 ```bash
 # Restore database
 psql -h HOST -U postgres -f backup.sql
