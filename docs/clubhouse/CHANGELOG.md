@@ -1,5 +1,11 @@
 # Clubhouse changelog
 
+## 2026-10-06 — No banding: solid sheets, no canvas wash
+
+The owner saw the ivory as grainy in its gradients. Large, gentle ivory gradients band on 8-bit displays, so reading
+sheets (`--ch-sheet-bg`) are now solid ivory; their lit top edge remains the elevation's inset highlight. The canvas
+wash is removed. Small keys and wells keep their gradients, because they are too short to band.
+
 ## 2026-10-06 — Classic direction: ivory shell, canopy, serif titles
 
 Owner direction, live in review: aim for a Masters, old-money look; an ivory sidebar with green only on the

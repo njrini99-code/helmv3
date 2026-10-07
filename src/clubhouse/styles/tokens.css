@@ -85,8 +85,8 @@
   --ch-bg-page: #ebe7dc;
   /* A green light falls across the top of the page and a champagne one from the right, so the canvas reads as a
      lit green-and-ivory room rather than flat paper. Scrolls away with the content. */
-  --ch-canvas-wash: radial-gradient(1100px 520px at 18% -8%, rgb(21 90 57 / 0.13), transparent 62%),
-    radial-gradient(800px 460px at 100% -4%, rgb(176 149 96 / 0.14), transparent 60%);
+  /* No wash: large soft gradients band on 8-bit displays (owner, 2026-10-06: the ivory looked grainy). */
+  --ch-canvas-wash: linear-gradient(transparent, transparent);
   --ch-bg-surface: #fcfaf5;
   --ch-bg-subtle: #f5f2ea;
   --ch-bg-inset: var(--ch-ivory-150);
@@ -265,7 +265,8 @@
   --ch-raised-bg: linear-gradient(180deg, #fffdf8 0%, #f8f6ef 60%, #f0ede4 100%);
   --ch-raised-shadow: var(--ch-elevation-control);
   /* Lit upper edge, warm lower face and a contact shadow, from handoff/depth.css. */
-  --ch-sheet-bg: linear-gradient(180deg, #fefcf7 0%, #fbf9f3 40%, #f7f4ec 100%);
+  /* Solid: a tall sheet's gentle gradient banded visibly; the lit top edge is the elevation's inset highlight. */
+  --ch-sheet-bg: #fbf9f3;
   --ch-sheet-shadow: var(--ch-elevation-reading);
   /* Materials on the green hero (the content layer is dark there). Raised: a lighter tonal green with a mint-lit top
      edge and a deep green cast shadow (ink shadows vanish on green). Well: one recess darker than the hero. Control: a
@@ -326,7 +327,7 @@
     --ch-bg-hover: #f5f2ea;
     --ch-bg-inset: #e9e5da;
     --ch-raised-bg: linear-gradient(180deg, #fffdf8 0%, #f9f7f0 60%, #f1eee5 100%);
-    --ch-sheet-bg: linear-gradient(180deg, #fefcf7 0%, #fbf9f3 40%, #f6f3ea 100%);
+    --ch-sheet-bg: #fbf9f3;
     --ch-chart-paper: #fbf9f3;
     --ch-phone-bar-bg: rgb(237 233 223 / 0.94);
     /* Glass, not a lid: the page shows through as it slides under (F-49). */

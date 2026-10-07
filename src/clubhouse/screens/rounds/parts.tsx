@@ -53,8 +53,9 @@ function Strip({ holes, played, next }: { holes: number; played: ChUnfinishedRou
           );
         }
         return (
+          // Unplayed holes show their number, faint, so the strip reads as the round's 18 holes.
           <span key={n} className={n === next ? 'is-next' : undefined}>
-            {n === next ? n : ''}
+            {n}
           </span>
         );
       })}
@@ -248,6 +249,76 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
 /** Rounds on the phone's ribbon: the last ten, so each bar and label stays readable. */
 export const PHONE_RIBBON = 10;
 
+/**
+ * The season's three figures, each drawn, not just stated (owner, 2026-10-06: "random numbers with not great labeling
+ * mean little without visuals"). Each has a visual and a reference that needs no invented benchmark:
+ *   Best: every season round as a dot on its scoring range, the best lit green, the average ticked.
+ *   Putts: a bar against 36, two putts on every green (golf's own baseline), with how far under or over it is.
+ *   GIR: the 18 greens of a round, as many lit as the season's greens per 18.
+ * dt then the value dd stays first in each pair (the season test reads label, then value).
+ */
+function SeasonFigures({ season }: { season: ChRoundsSeason }) {
+  const scores = season.ribbon.map((x) => x.score);
+  const lo = scores.length ? Math.min(...scores) : null;
+  const hi = scores.length ? Math.max(...scores) : null;
+  const pos = (v: number) => (lo == null || hi == null || hi === lo ? 50 : ((v - lo) / (hi - lo)) * 100);
+  const putts = season.putts;
+  const twoPutt = 36;
+  const lit = season.girPer18 == null ? 0 : Math.round(season.girPer18);
+  return (
+    <dl className="ch-rd-season__f">
+      <div className="ch-rd-fig">
+        <dt>Best</dt>
+        <dd className="ch-num ch-rd-fig__v">{season.best ? String(season.best.score) : NO_DATA}</dd>
+        {lo != null && hi != null && hi > lo && (
+          <dd className="ch-rd-fig__viz" aria-hidden="true">
+            <span className="ch-rd-range">
+              {season.ribbon.map((x) => (
+                <i key={x.id} className={x.score === lo ? 'is-best' : undefined} style={{ left: `${pos(x.score)}%` }} />
+              ))}
+              {season.avg != null && <b style={{ left: `${pos(season.avg)}%` }} />}
+            </span>
+            <span className="ch-rd-range__ends">
+              <span className="ch-num">{lo}</span>
+              <span className="ch-num">{hi}</span>
+            </span>
+          </dd>
+        )}
+        <dd className="ch-rd-fig__m">{season.best ? `${season.best.course.split(' ')[0]} · ${shortDay(season.best.date)}` : ''}</dd>
+      </div>
+      <div className="ch-rd-fig">
+        <dt>Putts</dt>
+        <dd className="ch-num ch-rd-fig__v">{formatFixed(putts, 1)}</dd>
+        {putts != null && (
+          <dd className="ch-rd-fig__viz" aria-hidden="true">
+            <span className="ch-rd-putts">
+              <i style={{ width: `${Math.min(100, (putts / 40) * 100)}%` }} />
+              <b style={{ left: `${(twoPutt / 40) * 100}%` }} />
+            </span>
+          </dd>
+        )}
+        <dd className="ch-rd-fig__m">
+          {putts == null ? 'a round' : `a round · ${formatFixed(Math.abs(twoPutt - putts), 1)} ${putts <= twoPutt ? 'under' : 'over'} two-putting`}
+        </dd>
+      </div>
+      <div className="ch-rd-fig">
+        <dt>GIR</dt>
+        <dd className="ch-num ch-rd-fig__v">{season.girPct == null ? NO_DATA : `${Math.round(season.girPct)}%`}</dd>
+        {season.girPer18 != null && (
+          <dd className="ch-rd-fig__viz" aria-hidden="true">
+            <span className="ch-rd-greens">
+              {Array.from({ length: 18 }, (_, i) => (
+                <i key={i} className={i < lit ? 'is-hit' : undefined} />
+              ))}
+            </span>
+          </dd>
+        )}
+        <dd className="ch-rd-fig__m">{season.girPer18 == null ? '' : `${formatFixed(season.girPer18, 1)} of 18 a round`}</dd>
+      </div>
+    </dl>
+  );
+}
+
 export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; phone?: boolean }) {
   if (!season.rounds) {
     return (
@@ -260,11 +331,6 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
       </section>
     );
   }
-  const figs: Array<[string, string, string]> = [
-    ['Best', season.best ? String(season.best.score) : NO_DATA, season.best ? `${season.best.course.split(' ')[0]} · ${shortDay(season.best.date)}` : ''],
-    ['Putts', formatFixed(season.putts, 1), 'per round'],
-    ['GIR', season.girPct == null ? NO_DATA : `${Math.round(season.girPct)}%`, season.girPer18 == null ? '' : `${formatFixed(season.girPer18, 1)} of 18`],
-  ];
   const under = season.ribbon.some((x) => x.toPar < 0);
   const q = season.ribbon.some((x) => x.type === 'qualifier');
   return (
@@ -279,15 +345,7 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
             <em>avg · {formatToPar(season.toPar, 1)} to par</em>
           </div>
         </div>
-        <dl className="ch-rd-season__f">
-          {figs.map(([k, v, m]) => (
-            <div key={k}>
-              <dt>{k}</dt>
-              <dd className="ch-num">{v}</dd>
-              <dd>{m}</dd>
-            </div>
-          ))}
-        </dl>
+        <SeasonFigures season={season} />
       </div>
       {season.ribbon.length >= 2 && season.toPar != null && (
         <>
