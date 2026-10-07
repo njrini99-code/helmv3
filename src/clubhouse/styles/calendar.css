@@ -544,6 +544,17 @@
   overflow-wrap: normal;
   word-break: normal;
 }
+/* A cascaded event can be narrow (an overlap steps it in): it measures itself, and under 60px of text its title keeps one line,
+   so a one-hour block still shows its time instead of a title cut through its second line. */
+.ch-ev--lane {
+  container-type: inline-size;
+}
+@container (max-width: 60px) {
+  .ch-ev--lane .ch-ev__t {
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
+}
 .ch-ev--lane.ch-ev--short {
   padding-top: 0;
   padding-bottom: 0;

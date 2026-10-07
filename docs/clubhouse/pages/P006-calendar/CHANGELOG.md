@@ -1,5 +1,12 @@
 # P006 — Calendar: changelog
 
+## 2026-10-07 — Narrow cascaded events keep their time
+
+An event stepped in by an overlap can be under 50px wide. Its title wrapped to two lines, which pushed the time out of a
+one-hour block and cut the title through its second line ("Busy · Staf"). Lane events now measure themselves
+(`container-type: inline-size`): with under 60px for text, the title keeps one line and ellipsizes, so the time shows.
+Wider events still wrap to two lines. Checked in WebKit at 1440 and 1200: no lane event overflows.
+
 ## 2026-10-07 — Overlapping events cascade
 
 Overlapping events in the week and day grids no longer split a column into equal lanes, which crushed titles into
