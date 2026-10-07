@@ -4931,6 +4931,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/incidents/__tests__/all-clear.test.ts",
+          "anchor": "src/lib/admin/command-deck/posture"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/incidents/__tests__/all-clear.test.ts",
+          "anchor": "src/lib/admin/command-deck/__tests__/fixtures"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/incidents/__tests__/attention.test.ts",
           "anchor": "src/lib/admin/data/selfheal"
         },
