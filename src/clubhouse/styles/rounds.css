@@ -1544,3 +1544,95 @@ a.ch-rd-sc:focus-visible {
     font-size: 12px;
   }
 }
+
+/* The Ledger (owner, 2026-10-07: sub-screens take the page head; "flush, not so card heavy"). On desktop the round's
+   green slab becomes the framed page head: the date and kind as the eyebrow, the course in the heavy sans, the tee
+   line, and the score on the right in forest ink. The figures and the sections sit on the canvas; the scorecard's
+   own grid and the green recap keep their material. */
+@media (min-width: 821px) {
+  .ch-rv[data-canopy] {
+    gap: 28px;
+  }
+  .ch-rv[data-canopy] .ch-rv-back {
+    height: auto;
+    margin: 0 0 -14px -4px;
+    padding: 4px 8px 4px 4px;
+    border-radius: var(--ch-radius-md);
+    background: none;
+    box-shadow: none;
+    font: 500 13px/1.2 var(--ch-font-sans);
+    color: var(--ch-green-700);
+    transition: background var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-rv[data-canopy] .ch-rv-back:hover {
+    background: var(--ch-ledger-row-hover);
+  }
+  .ch-rv[data-canopy] .ch-rv-hero {
+    align-items: flex-end;
+    min-height: 0;
+    border-radius: 0;
+    color: var(--ch-text-primary);
+    background: none;
+  }
+  .ch-rv[data-canopy] .ch-rv-hero__k {
+    font: 500 11px/1.3 var(--ch-font-sans);
+    letter-spacing: 0.14em;
+    color: var(--ch-ledger-eyebrow);
+  }
+  .ch-rv[data-canopy] .ch-rv-hero__m {
+    font: 400 15px/1.4 var(--ch-font-sans);
+    color: var(--ch-text-secondary);
+  }
+  .ch-rv[data-canopy] .ch-rv-hero__s b {
+    font-size: 64px;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rv[data-canopy] .ch-rv-hero__s em {
+    color: var(--ch-chart-loss);
+  }
+  .ch-rv[data-canopy] .ch-rv-hero__s em.is-under {
+    color: var(--ch-score-under);
+  }
+  .ch-rv[data-canopy] .ch-rv-hero__s span {
+    color: var(--ch-text-tertiary);
+  }
+  .ch-rv[data-canopy] .ch-rv-figs {
+    margin-top: -6px;
+    padding: 0 0 22px;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rv[data-canopy] .ch-rv-figs > div:first-child {
+    padding-left: 0;
+  }
+  .ch-rv[data-canopy] .ch-rv-figs > div + div {
+    border-left-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-rv[data-canopy] .ch-rv-card {
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rv[data-canopy] .ch-rv-card__h {
+    margin-bottom: 14px;
+    padding: 0 0 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rv[data-canopy] .ch-rv-card__h :is(h2, h3) {
+    font: 600 19px/1.2 var(--ch-font-sans);
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rv[data-canopy] :is(.ch-rv-sg__legs, .ch-rv-cardw, .ch-rv-shots, .ch-rv-dist, .ch-rv-notes p) {
+    padding-inline: 0;
+  }
+  .ch-rv[data-canopy] :is(.ch-rv-hole .ch-notice, .ch-rv-none) {
+    margin-inline: 0;
+  }
+  .ch-rv[data-canopy] .ch-rv-cols {
+    gap: 44px;
+  }
+  .ch-rv[data-canopy] .ch-rv-side {
+    gap: 32px;
+  }
+}

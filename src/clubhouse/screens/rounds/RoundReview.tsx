@@ -313,7 +313,7 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
   ];
 
   return (
-    <main className={'ch-rv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rv-title">
+    <main className={'ch-rv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rv-title" data-canopy={phone ? undefined : ''}>
       {phone && <PhoneTop title="Round" back={{ label: coach ? 'Stats' : 'Rounds', onBack: () => goBack() }} />}
       {!phone && (
         <Link
@@ -329,7 +329,7 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
           {back.label}
         </Link>
       )}
-      <header className="ch-rv-hero">
+      <header className="ch-rv-hero" data-canopy-head={phone ? undefined : ''}>
         <div className="ch-rv-hero__l">
           <span className="ch-rv-hero__k">{kicker}</span>
           <h1 id="ch-rv-title">{r.course}</h1>

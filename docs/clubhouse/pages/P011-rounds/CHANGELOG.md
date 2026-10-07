@@ -1,5 +1,22 @@
 # P011 — Rounds: changelog
 
+## 2026-10-07 — Round detail takes the page head
+
+On desktop, the round's green slab is now the framed page head:
+- **Back link:** "Rounds" (or "Stats") is a quiet link above the double hairline.
+- **Head:** the date and kind are the eyebrow, the course is in the head's
+  heavy sans, and the tee line follows. The score sits on the right in forest
+  ink: over par in amber, under par in red.
+- **Ledger:** the five figures sit on the canvas between soft rules.
+  Strokes gained, the scorecard, the hole, scoring distribution and the notes
+  lose their cards and sit as sections under the engraved rule.
+- **Kept:** the scorecard's nine tables and the green round recap keep their
+  material.
+
+The route skeleton (`RoundReviewSkeleton`) opts into the same head, and the
+preview now has a `?state=loading` for it. Its head measured 0px of shift in
+WebKit at 1440 and 1100. The phone is unchanged.
+
 ## 2026-10-07 — Unplayed holes legible
 
 An in-progress round's unplayed hole numbers sat at 2.8:1 on the green. They now

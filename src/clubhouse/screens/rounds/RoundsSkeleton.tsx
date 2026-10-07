@@ -34,10 +34,20 @@ export function RoundsSkeleton() {
 /** Route loading for a round's review (CH-11406): the back link, the green hero, five figures and the scorecard, in place. */
 export function RoundReviewSkeleton() {
   return (
-    <main className="ch-rv" aria-busy="true" aria-label="Loading the round" data-ch-code="CH-11406">
-      <Skeleton width={96} height={34} radius={17} />
-      <Skeleton width="100%" height={182} radius={20} />
-      <Skeleton width="100%" height={96} radius={16} />
+    <main className="ch-rv" aria-busy="true" aria-label="Loading the round" data-ch-code="CH-11406" data-canopy="">
+      <span className="ch-rv-back" aria-hidden="true">
+        <Skeleton width={72} height={16} />
+      </span>
+      {/* The framed page head, line for line: eyebrow 14.3, the course in the 44px sans 47.5, the tee line 21. */}
+      <header className="ch-rv-hero" aria-hidden="true" data-canopy-head="">
+        <div className="ch-rv-hero__l">
+          <SkelLine h={14.3} w={140} sh={10} />
+          <SkelLine h={47.5} w={260} sh={36} />
+          <SkelLine h={21} w={220} sh={14} />
+        </div>
+        <Skeleton width={96} height={92} radius={12} />
+      </header>
+      <Skeleton width="100%" height={86} radius={12} />
       <Skeleton width="100%" height={430} radius={18} />
     </main>
   );
@@ -77,5 +87,14 @@ export function RoundRecoverSkeleton() {
         ))}
       </ul>
     </main>
+  );
+}
+
+/** One text line's box at its measured height, with the bar centred in it. */
+function SkelLine({ h, w, sh }: { h: number; w: number; sh: number }) {
+  return (
+    <span style={{ display: 'flex', alignItems: 'center', height: h }}>
+      <Skeleton width={w} height={sh} />
+    </span>
   );
 }
