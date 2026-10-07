@@ -97,18 +97,21 @@
 .ch-h-main--desk > .ch-h-head .ch-h-head__date {
   font-weight: 600;
   color: var(--ch-hero-mint);
+  text-shadow: var(--ch-on-green-text-shadow-s);
 }
 .ch-h-main--desk > .ch-h-head h1 {
   margin: 2px 0 2px;
   font-size: 42px;
   line-height: 1.1;
-  color: #fffdf6;
+  color: var(--ch-on-green-ink);
+  text-shadow: var(--ch-on-green-text-shadow);
 }
 .ch-h-main--desk > .ch-h-head .ch-h-head__sub {
   max-width: 620px;
   font-size: 16.5px;
   line-height: 1.55;
-  color: rgb(250 248 240 / 0.9);
+  color: var(--ch-on-green-ink-soft);
+  text-shadow: var(--ch-on-green-text-shadow-s);
 }
 .ch-h-main--desk > .ch-h-head .ch-h-head__actions {
   grid-column: 2;
@@ -118,7 +121,8 @@
   margin: 0;
 }
 .ch-h-main--desk > .ch-h-head .ch-btn--secondary {
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-green-ink);
+  text-shadow: var(--ch-on-green-text-shadow-s);
   background: var(--ch-on-dark-control-bg);
   box-shadow: var(--ch-on-dark-control-shadow);
 }
@@ -876,7 +880,8 @@
     font: 600 32px/1.05 var(--ch-font-sans);
     letter-spacing: -0.026em;
     font-variation-settings: 'wdth' 96;
-    color: var(--ch-ivory-100);
+    color: var(--ch-on-green-ink);
+    text-shadow: var(--ch-on-green-text-shadow);
   }
   /* The player's hero has no brief line: the greeting sits directly on Up next. */
   .ch-hm > .ch-hm-hero.is-player > h1 {

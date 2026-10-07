@@ -12,6 +12,8 @@ ivory that stands off it ("too much white", then "make the cards lighter", then 
 - **New scoreboard material (`.ch-scoreboard`):** scorecards are set on a deep green board with ivory numerals. Board
   finishes for the marks: a red disc under par, a ringed disc for eagle, an ivory outline over par, and a solid ivory
   tile for double or worse.
+- **Type on green:** the hero band and scoreboard set type in a warm ivory (`--ch-on-green-ink`) with a soft engraved
+  shadow, never white (owner: "more ivory and text depth").
 - **Shadows and radii:** this pass's component shadows are now tokens, and the shared nine table radius is on the
   scale.
 

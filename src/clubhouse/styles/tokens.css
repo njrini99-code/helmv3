@@ -110,6 +110,13 @@
   --ch-board-bg: radial-gradient(120% 140% at 85% -20%, rgb(123 199 154 / 0.14), transparent 55%),
     linear-gradient(180deg, #0e3a26 0%, #0b3220 100%);
   --ch-board-shadow: inset 0 2px 4px rgb(0 0 0 / 0.35), inset 0 0 0 1px rgb(0 0 0 / 0.25), 0 1px 0 rgb(255 255 255 / 0.8);
+  /* Type on green (hero band, scoreboard): a warm ivory, never white, set with a soft engraved shadow so it sits in
+     the surface with depth (owner, 2026-10-06: "more ivory and text depth in the green"). */
+  --ch-on-green-ink: #f4eedd;
+  --ch-on-green-ink-soft: rgb(240 233 214 / 0.86);
+  --ch-on-green-ink-muted: rgb(222 214 190 / 0.72);
+  --ch-on-green-text-shadow: 0 1px 0 rgb(2 18 10 / 0.45), 0 2px 10px rgb(2 18 10 / 0.25);
+  --ch-on-green-text-shadow-s: 0 1px 0 rgb(2 18 10 / 0.4);
   --ch-board-rule: rgb(210 244 221 / 0.14);
   --ch-board-birdie-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28), 0 0 0 1px rgb(60 10 6 / 0.45), 0 1px 3px rgb(0 0 0 / 0.4);
   --ch-board-eagle-shadow: 0 0 0 2px #0c3522, 0 0 0 3.5px #d0574a, 0 1px 3px rgb(0 0 0 / 0.4);

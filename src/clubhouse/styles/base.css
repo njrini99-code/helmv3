@@ -177,9 +177,10 @@
   --ch-text-tertiary: var(--ch-ink-600);
 }
 .ch-scoreboard {
-  --ch-text-primary: #fbf8ef;
-  --ch-text-secondary: rgb(244 241 232 / 0.8);
-  --ch-text-tertiary: rgb(210 244 221 / 0.66);
+  --ch-text-primary: var(--ch-on-green-ink);
+  --ch-text-secondary: var(--ch-on-green-ink-soft);
+  --ch-text-tertiary: var(--ch-on-green-ink-muted);
+  text-shadow: var(--ch-on-green-text-shadow-s);
   background: var(--ch-board-bg);
   box-shadow: var(--ch-board-shadow);
   border-radius: var(--ch-radius-lg);
