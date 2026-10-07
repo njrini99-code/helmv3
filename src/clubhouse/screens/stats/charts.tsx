@@ -1,6 +1,7 @@
 import { ArrowDownRight, ArrowUpRight, Flag, Minus } from 'lucide-react';
 import { Fragment, type ReactNode } from 'react';
 import type { ChSgChange } from '../../data/stats-common';
+import type { ChGauge } from '../../data/stats-team';
 import { Icon } from '../../ui/Icon';
 import { monotonePath } from '../../lib/chart';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
@@ -40,6 +41,9 @@ type FigureItem = {
   tone?: 'gain' | 'loss';
   /** The catalog state this card is in, when it is one (found by `data-ch-code`). */
   code?: string;
+  /** The figure drawn against its reference, from `n` (the number behind `value`). */
+  gauge?: ChGauge;
+  n?: number | null;
 };
 
 /** Figure cards with a change chip; the chip colour follows direction and whether lower is better. */
@@ -100,7 +104,66 @@ function FigureCard({ it, lead = false }: { it: FigureItem; lead?: boolean }) {
         <span>{it.context}</span>
       </span>
       {it.note && <span className="ch-fg__n">{it.note}</span>}
+      {it.gauge && it.n != null && <FigureGauge gauge={it.gauge} n={it.n} />}
     </div>
+  );
+}
+
+/**
+ * A figure drawn against the reference its data gives (owner, 2026-10-07: no bare numbers), on one 6px track so the row
+ * reads as a set: strokes gained from the Tour's zero (three strokes to an end), the scoring average from par (six), a
+ * rate along 0 to 100 with the Tour's mark when there is one, putts on a track to 40 marked at 36 (two on every green),
+ * birdies as holes out of 18. Decorative: the value and its words say it.
+ */
+function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
+  const pct = (v: number) => `${Math.max(0, Math.min(100, v))}%`;
+  if (gauge.kind === 'holes') {
+    return (
+      <span className="ch-fg__gauge ch-fg__gauge--holes" aria-hidden="true">
+        {Array.from({ length: 18 }, (_, i) => (
+          <i key={i} style={i < Math.floor(n) ? undefined : i === Math.floor(n) ? { ['--ch-fg-part' as string]: pct((n % 1) * 100) } : { ['--ch-fg-part' as string]: '0%' }} />
+        ))}
+        <em>of 18 holes</em>
+      </span>
+    );
+  }
+  if (gauge.kind === 'sg' || gauge.kind === 'par') {
+    const v = gauge.kind === 'sg' ? n : gauge.toPar;
+    if (v == null) return null;
+    const end = gauge.kind === 'sg' ? 3 : 6;
+    const w = pct((Math.abs(v) / end) * 50);
+    // Strokes gained above zero is good; a score above par is not.
+    const good = gauge.kind === 'sg' ? v >= 0 : v <= 0;
+    const right = gauge.kind === 'sg' ? v >= 0 : v > 0;
+    return (
+      <span className="ch-fg__gauge" aria-hidden="true">
+        <span className="ch-fg__track">
+          <i className={good ? 'is-gain' : 'is-loss'} style={right ? { left: '50%', width: w } : { right: '50%', width: w }} />
+          <b style={{ left: '50%' }} />
+        </span>
+        <em style={{ left: '50%' }}>{gauge.kind === 'sg' ? 'Tour' : 'Par'}</em>
+      </span>
+    );
+  }
+  if (gauge.kind === 'putts') {
+    return (
+      <span className="ch-fg__gauge" aria-hidden="true">
+        <span className="ch-fg__track">
+          <i className={n <= 36 ? 'is-gain' : 'is-loss'} style={{ left: 0, width: pct((n / 40) * 100) }} />
+          <b style={{ left: '90%' }} />
+        </span>
+        <em style={{ left: '90%' }}>36</em>
+      </span>
+    );
+  }
+  return (
+    <span className="ch-fg__gauge" aria-hidden="true">
+      <span className="ch-fg__track">
+        <i className="is-gain" style={{ left: 0, width: pct(n) }} />
+        {gauge.ref != null && <b style={{ left: pct(gauge.ref) }} />}
+      </span>
+      {gauge.ref != null && <em style={{ left: pct(gauge.ref) }}>Tour</em>}
+    </span>
   );
 }
 

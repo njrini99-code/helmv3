@@ -175,10 +175,11 @@
 .ch-fg {
   --ch-fg-h: 200px;
 }
-/* With strokes gained leading (`.ch-fg--lead`), its larger value and two-line note set the row: 208px measured at a 1168px canvas (212px with the stat-line padding, 2026-10-07). The
-   narrower canvases below already reserve more than that. */
-.ch-fg--lead {
-  --ch-fg-h: 212px;
+/* With strokes gained leading (`.ch-fg--lead`, Team stats), its larger value, two-line note and gauge set the row at every
+   canvas wider than 900px: 248px, measured in WebKit 2026-10-07 at canvases of 1120, 980, 880 and 860px. Doubled up so it
+   holds against the width rules below. */
+.ch-fg.ch-fg--lead {
+  --ch-fg-h: 248px;
 }
 @container (min-width: 901px) and (max-width: 1116px) {
   .ch-fg {
@@ -226,6 +227,72 @@
 .ch-fg__d > span:last-child {
   font: 400 12.5px/1.3 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
+}
+/* A figure drawn against its reference (`FigureGauge`): a 6px recessed track, the figure as a fill, the reference as a
+   fine ink mark named under it. Every gauge is the same 26px tall and sits at the foot of its figure, so the stat line
+   keeps one baseline however the words above it wrap. */
+.ch-fg__gauge {
+  position: relative;
+  display: block;
+  margin-top: auto;
+  width: 100%;
+  max-width: 200px;
+  height: 26px;
+}
+.ch-fg__track {
+  position: absolute;
+  inset: 2px 0 auto;
+  height: 6px;
+  border-radius: 3px;
+  background: rgb(28 25 18 / 0.07);
+  box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.1);
+}
+.ch-fg__track i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 3px;
+}
+.ch-fg__track i.is-gain {
+  background: var(--ch-chart-gain);
+}
+.ch-fg__track i.is-loss {
+  background: var(--ch-chart-loss);
+}
+.ch-fg__track b {
+  position: absolute;
+  top: -3px;
+  width: 1.5px;
+  height: 12px;
+  margin-left: -0.75px;
+  border-radius: 1px;
+  background: var(--ch-ink-700);
+}
+.ch-fg__gauge em {
+  position: absolute;
+  top: 14px;
+  transform: translateX(-50%);
+  font: 500 12px/1 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+  white-space: nowrap;
+}
+/* Birdies: holes out of 18, the part hole filled to its fraction. */
+.ch-fg__gauge--holes {
+  display: grid;
+  grid-template-columns: repeat(18, minmax(0, 1fr));
+  gap: 2px;
+  align-content: start;
+}
+.ch-fg__gauge--holes i {
+  height: 8px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--ch-chart-gain) var(--ch-fg-part, 100%), rgb(28 25 18 / 0.08) var(--ch-fg-part, 100%));
+}
+.ch-fg__gauge--holes em {
+  left: auto;
+  right: 0;
+  transform: none;
 }
 /* What a figure is measured against, under its change (strokes gained: "vs Tour"). */
 .ch-fg__n {
@@ -1706,10 +1773,11 @@ a.ch-lg__r:focus-visible {
   .ch-fg__c:nth-child(even):nth-child(n + 3) {
     box-shadow: var(--ch-seam-x), var(--ch-seam-y);
   }
-  /* Strokes gained across the top (171px measured at a 769px canvas with the stat-line padding); the supporting figures as rows under it, the label and change on the
-     left and the value on the right, hairlines between rows. Each row holds one height so a window change moves nothing. */
-  .ch-fg--lead {
-    --ch-fg-h: 171px;
+  /* Strokes gained across the top (208px with its gauge, measured at a 680px canvas); the supporting figures as rows under it,
+     the label and change on the left, the gauge, then the value on the right, seams between rows. Each row holds one
+     height so a window change moves nothing. */
+  .ch-fg.ch-fg--lead {
+    --ch-fg-h: 208px;
     grid-template-columns: minmax(0, 1fr);
   }
   .ch-fg__group {
@@ -1717,10 +1785,11 @@ a.ch-lg__r:focus-visible {
   }
   .ch-fg__group .ch-fg__c {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    /* The value column is one width in every row, so the gauges line up down the list. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 160px) 96px;
     grid-template-areas:
-      'label value'
-      'change value';
+      'label gauge value'
+      'change gauge value';
     align-items: center;
     gap: 6px 16px;
     min-height: 76px;
@@ -1734,10 +1803,17 @@ a.ch-lg__r:focus-visible {
   }
   .ch-fg__group .ch-fg__v {
     grid-area: value;
+    justify-self: end;
     font-size: 30px;
   }
   .ch-fg__group .ch-fg__d {
     grid-area: change;
+  }
+  /* The gauge between the words and the value, across both lines. */
+  .ch-fg__group .ch-fg__gauge {
+    grid-area: gauge;
+    align-self: center;
+    margin-top: 0;
   }
   .ch-fg--hold .ch-fg__group .ch-fg__d {
     min-height: 22px;

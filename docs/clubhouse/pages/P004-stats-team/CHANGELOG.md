@@ -1,5 +1,19 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-07 — Every figure drawn against its reference
+
+The owner's rule is no bare numbers. Each figure on the stat line now carries a small gauge under its words:
+- strokes gained from the Tour's zero;
+- the scoring average from par;
+- greens along 0–100% with the Tour's mark;
+- putts against two on every green (36);
+- scrambling along 0–100%;
+- birdies as holes out of 18.
+
+The references come from the data, and a figure with no value draws nothing. The gauges sit at the foot of each figure,
+so the line keeps one baseline. Below 900px they sit between the words and the value, aligned down the list. Reserves
+are re-measured: the lead row is 248px above 900px and 208px full width, with no shift at 1440, 1300, 1180 or 1000.
+
 ## 2026-10-07 — Strokes gained lead folded onto the stat line (#2160)
 
 PR #2160's lead layout is merged into this branch. Strokes gained still reads first, with a larger value. The five

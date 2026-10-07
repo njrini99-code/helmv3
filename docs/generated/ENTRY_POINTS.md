@@ -7,6 +7,8 @@ Repo-local commands, agents, and skills — one line each, from each entry's own
 
 | Name | Type | When to use |
 | --- | --- | --- |
+| `clubhouse-design-reviewer` | Agent | Evidence-driven premium Clubhouse review across coach/player, semantic materials, composition, complete interaction states and native ergonomics. Read-only; does not certify a release from… |
+| `clubhouse-polish-reviewer` | Agent | Review Clubhouse hierarchy, depth, interaction, motion, states, accessibility and phone behavior against current scoped tokens, shared owners, page contracts and the owner handoff. Optional and… |
 | `code-reviewer` | Agent | Fresh-context correctness review of a Helm diff before PR or landing — logic errors, broken caller/callee contracts, missed call sites, Supabase query shape, loading/empty/error states, and… |
 | `db-migration-reviewer` | Agent | Independent review of Supabase schema, RLS, function, trigger, grant, or migration changes before they reach the shared production database (Golf, Baseball, Lift Lab). Use for a migration or policy… |
 | `debugger` | Agent | Root-cause a failure whose cause is not obvious from reading code — failing or flaky tests, runtime errors, hydration mismatches (#418), hangs, races, regressions, or "the fix didn't work".… |

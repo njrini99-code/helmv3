@@ -7991,9 +7991,12 @@
         "ch-fg__c--lead",
         "ch-fg__c--skel",
         "ch-fg__d",
+        "ch-fg__gauge",
+        "ch-fg__gauge--holes",
         "ch-fg__group",
         "ch-fg__l",
         "ch-fg__n",
+        "ch-fg__track",
         "ch-fg__v",
         "ch-ft",
         "ch-ft__floor",
@@ -8216,33 +8219,33 @@
         },
         {
           "name": "--ch-fg-h",
-          "value": "212px",
-          "scope": ".ch-fg--lead",
-          "line": 181
+          "value": "248px",
+          "scope": ".ch-fg.ch-fg--lead",
+          "line": 182
         },
         {
           "name": "--ch-fg-h",
           "value": "217px",
           "scope": "@container (min-width: 901px) and (max-width: 1116px) → .ch-fg",
-          "line": 185
+          "line": 186
         },
         {
           "name": "--ch-fg-h",
           "value": "233px",
           "scope": "@container (min-width: 901px) and (max-width: 940px) → .ch-fg",
-          "line": 191
+          "line": 192
         },
         {
           "name": "--ch-fg-h",
           "value": "159px",
           "scope": "@container (max-width: 900px) → .ch-fg",
-          "line": 196
+          "line": 197
         },
         {
           "name": "--ch-fg-h",
-          "value": "171px",
-          "scope": "@container (max-width: 900px) → .ch-fg--lead",
-          "line": 1711
+          "value": "208px",
+          "scope": "@container (max-width: 900px) → .ch-fg.ch-fg--lead",
+          "line": 1780
         }
       ]
     },

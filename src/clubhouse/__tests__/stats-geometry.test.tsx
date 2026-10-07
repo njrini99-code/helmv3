@@ -107,9 +107,9 @@ describe('Team stats hold their geometry across windows', () => {
     expect(css).toMatch(/min-width: 901px\) and \(max-width: 940px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 233px/);
     expect(css).toMatch(/\(max-width: 900px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 159px/);
     expect(css).toMatch(/\.ch-fg__c--skel,\s*\.ch-fg--hold \.ch-fg__c\s*{\s*min-height: var\(--ch-fg-h\)/);
-    // With strokes gained leading: 212 at the widest canvas (its 48px value and two-line note, measured with the stat-line padding), 171 full width, and 76 a supporting row.
-    expect(css).toMatch(/\.ch-fg--lead\s*{\s*--ch-fg-h: 212px/);
-    expect(css).toMatch(/\.ch-fg--lead\s*{\s*--ch-fg-h: 171px;/);
+    // With strokes gained leading: 248 at every canvas over 900px (its 48px value, two-line note and gauge), 208 full width, and 76 a supporting row.
+    expect(css).toMatch(/\.ch-fg\.ch-fg--lead\s*{\s*--ch-fg-h: 248px/);
+    expect(css).toMatch(/\.ch-fg\.ch-fg--lead\s*{\s*--ch-fg-h: 208px;/);
     expect(css).toMatch(/\.ch-fg__group \.ch-fg__c\s*{[^}]*min-height: 76px/);
   });
 });
