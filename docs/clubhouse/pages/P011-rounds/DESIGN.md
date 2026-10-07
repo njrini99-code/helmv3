@@ -44,13 +44,15 @@ thought, and check a round afterwards. Coach: read a player's round, hole by hol
 
 ## Visual hierarchy
 
-- **Library** (`.ch-rd`, a container named `chrd`): the header (the season kicker, "Your rounds", New round when
-  it is drawn), then the round card beside the season card, "N more unfinished rounds" when there are any, the
+- **Library** (`.ch-rd`, a container named `chrd`): the header (on desktop the framed page head: the season kicker,
+  "Your rounds", New round when it is drawn), then the round in progress beside the season (on desktop two
+  Ledger panes under engraved rules, split by a soft column rule; the hole strip keeps its small board), "N more unfinished rounds" when there are any, the
   search and grouping tools, and the book by month or by course. The card and the season stack below 860px, the
   book's meters hide below 1000px, and at 640px (the phone) the book drops Out · In · Tot to a date tile, the
   course and tee, and the to-par box, and a group's header drops its average and low.
-- **Review** (`.ch-rv`, `chrv`): Back, the hero (kicker, course, tee facts, the score with its to par), the
-  five figures, the scorecard as two captioned nines, then two columns (the picked hole's shots; the scoring
+- **Review** (`.ch-rv`, `chrv`): Back, the hero (on desktop the framed page head: kicker as the eyebrow, the
+  course in the heavy sans, tee facts, the score with its to par in forest ink; on the phone the green slab), the
+  five figures (flush on desktop), the scorecard as two captioned nines, then two columns (the picked hole's shots; the scoring
   distribution, the recap and the notes). One column below 900px; the figures wrap to three below 640px.
 - **Setup** (`.ch-rsu`, `chrs`): the green band with its steps (Course, Scorecard, Track) and Back, then two columns
   (course card, open qualifier, Round details, the note; the scorecard) and the dock with the one thing stopping

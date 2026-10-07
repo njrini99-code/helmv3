@@ -24,7 +24,8 @@ Status:   approved (the owner's v2 boards are the spec, D-22; docs/clubhouse/pho
 
 ## Design objective
 
-One calm page for a player's term: the term at a glance, every class as a card,
+One calm page for a player's term: the term at a glance, every class as a row of
+a timetable (on desktop, the Ledger: no cards; on the phone, a card),
 and the week's overlaps with the team's events, so a coach can plan around class
 and a player can see it. The schedule is quick to enter (a screenshot is read
 and reviewed row by row) and honest about what reached the team calendar.
@@ -42,8 +43,11 @@ and see whether any of them meets over practice or travel this week.
 
 ## Visual hierarchy
 
-Header (the term and its dates, the title, the sync status, Import schedule and
-Add class), the term overview, then the deck of class cards beside a side column
+Header (the framed page head on desktop: the term and its dates, the title, the
+sync status, Import schedule and Add class), the term overview (on desktop three
+figures between column rules, not a green band), then "Your classes": a ruled
+list where each class keeps only its department key in its tone and the day keys
+align down the list (on the phone, the deck of class cards), beside a side column
 (this week's overlaps, and what the coach sees). Below a 1000px container the
 side column goes under the deck; below 640px the deck is one column, the
 overview stacks (the week tile beside the credits and the bar, the overlap count
