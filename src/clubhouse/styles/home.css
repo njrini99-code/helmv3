@@ -140,8 +140,7 @@
   background: linear-gradient(180deg, rgb(255 255 255 / 0.94), rgb(251 249 244 / 0.8));
   -webkit-backdrop-filter: blur(14px) saturate(1.4);
   backdrop-filter: blur(14px) saturate(1.4);
-  box-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgb(28 25 18 / 0.08), 0 2px 4px rgb(28 25 18 / 0.12),
-    0 10px 20px -10px rgb(28 25 18 / 0.4);
+  box-shadow: var(--ch-key-frost-shadow);
 }
 .ch-h-day--today .ch-h-day__n {
   color: var(--ch-green-800);
@@ -1080,7 +1079,7 @@
   /* Today is a raised ivory key; the competition day a raised green one. Other days stay flat on the canvas. */
   .ch-hm-week .is-today .ch-hm-week__d {
     background: var(--ch-raised-bg);
-    box-shadow: var(--ch-elevation-control), 0 0 0 1px rgb(28 25 18 / 0.05), 0 6px 12px -8px rgb(28 25 18 / 0.3);
+    box-shadow: var(--ch-key-raised-shadow);
   }
   .ch-hm-week .is-today .ch-hm-week__d b {
     font-weight: 600;
@@ -1695,8 +1694,7 @@
 }
 .ch-ph-act.is-primary {
   background: linear-gradient(180deg, var(--ch-ivory-25), var(--ch-ivory-150));
-  box-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgb(2 18 10 / 0.12), 0 1px 2px rgb(2 18 10 / 0.3),
-    0 8px 16px -8px rgb(2 18 10 / 0.55);
+  box-shadow: var(--ch-on-dark-primary-shadow);
   color: var(--ch-green-800);
 }
 .ch-ph-act.is-primary:active {
@@ -1867,7 +1865,7 @@
 .ch-ph-game.is-phone .ch-seg .ch-seg__pill {
   border-radius: calc(var(--ch-radius-lg) - 3px);
   background: var(--ch-raised-bg);
-  box-shadow: var(--ch-elevation-control), 0 2px 6px -2px rgb(28 25 18 / 0.16);
+  box-shadow: var(--ch-seg-pill-lift-shadow);
 }
 .ch-ph-game.is-phone .ch-ph-game__top {
   grid-template-columns: minmax(0, 1fr);

@@ -99,6 +99,27 @@
   --ch-seam-light: rgb(255 255 255 / 0.9);
   --ch-seam-x: inset 0 1px 0 var(--ch-seam-ink), inset 0 2px 0 var(--ch-seam-light);
   --ch-seam-y: inset 1px 0 0 var(--ch-seam-ink), inset 2px 0 0 var(--ch-seam-light);
+  /* Component materials (raised keys, buttons, score marks), kept here so pages use tokens, not raw shadows. */
+  /* Desktop week strip today key: frosted, edge, lit top and a real lift. */
+  --ch-key-frost-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgb(28 25 18 / 0.08), 0 2px 4px rgb(28 25 18 / 0.12), 0 10px 20px -10px rgb(28 25 18 / 0.4);
+  /* Phone week strip today key: raised ivory. */
+  --ch-key-raised-shadow: var(--ch-elevation-control), 0 0 0 1px rgb(28 25 18 / 0.05), 0 6px 12px -8px rgb(28 25 18 / 0.3);
+  /* Primary ivory action on the green hero: green-cast lift. */
+  --ch-on-dark-primary-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgb(2 18 10 / 0.12), 0 1px 2px rgb(2 18 10 / 0.3), 0 8px 16px -8px rgb(2 18 10 / 0.55);
+  /* A quiet raised chip in a soft segmented well. */
+  --ch-seg-pill-lift-shadow: var(--ch-elevation-control), 0 2px 6px -2px rgb(28 25 18 / 0.16);
+  /* Secondary button: soft ring, lit top, shallow lift. */
+  --ch-btn-secondary-shadow: 0 0 0 1px rgb(28 25 18 / 0.07), inset 0 -1px 0 rgb(28 25 18 / 0.05), inset 0 1px 0 #fff, 0 1px 2px rgb(28 25 18 / 0.08), 0 4px 10px -5px rgb(28 25 18 / 0.18);
+  /* Secondary button hover: a touch more ring and lift. */
+  --ch-btn-secondary-hover-shadow: 0 0 0 1px rgb(28 25 18 / 0.1), inset 0 -1px 0 rgb(28 25 18 / 0.05), inset 0 1px 0 #fff, 0 2px 4px rgb(28 25 18 / 0.09), 0 8px 16px -8px rgb(28 25 18 / 0.22);
+  /* Score mark (birdie): edge, lit top, contact shadow. */
+  --ch-score-birdie-shadow: inset 0 0 0 1px rgb(150 46 35 / 0.38), inset 0 1px 0 rgb(255 255 255 / 0.85), 0 1px 2px rgb(120 36 28 / 0.2);
+  /* Score mark (eagle): edge, lit top, contact shadow. */
+  --ch-score-eagle-shadow: inset 0 0 0 1px rgb(110 30 22 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.25), 0 1px 2px rgb(110 30 22 / 0.35);
+  /* Score mark (bogey): edge, lit top, contact shadow. */
+  --ch-score-bogey-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.24), inset 0 1px 0 #fff, 0 1px 2px rgb(28 25 18 / 0.16);
+  /* Score mark (double): edge, lit top, contact shadow. */
+  --ch-score-double-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 2px rgb(28 25 18 / 0.3);
   /* Green, not ink: the owner rejected the black keyboard outline (F-46). */
   --ch-border-focus: var(--ch-green-600);
   /* Green and champagne hairlines (Qualifiers: the pressed pill, the cut line, the one-round note). */
