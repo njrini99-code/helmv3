@@ -1,5 +1,12 @@
 # Clubhouse changelog
 
+## 2026-10-07 — One green for the primary action
+
+The primary button (`.ch-btn--primary`) was a second, brighter green (#1a6542) beside the field green of the sidebar
+selection, the canopy and the scoreboard; the owner's rule is one green. It is now the field green, with a faint lift at
+its top edge, and its words are the warm on-green ink with the small engraved shadow, never pure white. Hover and press
+step darker within the same hue.
+
 ## 2026-10-07 — Contrast after the darker page tone
 
 The accessibility audit found text that fell under 4.5:1 once the page and wells darkened. The loss amber

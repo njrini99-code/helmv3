@@ -45,19 +45,23 @@
   font-size: 14.5px;
   letter-spacing: -0.015em;
 }
+/* One green (owner, 2026-10-06: "it's not even the same green"): the primary action is the field green the sidebar
+   selection, the canopy and the scoreboard use, its words in the warm on-green ink, engraved. A faint lift at the top
+   edge keeps it reading as a key; no second, brighter green. */
 .ch-btn--primary {
-  color: #fff;
-  background: linear-gradient(180deg, #1a6542 0%, #145838 100%);
+  color: var(--ch-on-green-ink);
+  text-shadow: var(--ch-on-green-text-shadow-s);
+  background: linear-gradient(180deg, #0f4429 0%, var(--ch-field-green) 100%);
   box-shadow: 0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), 0 1px 2px rgb(12 65 40 / 0.22),
     0 4px 10px -6px rgb(12 65 40 / 0.4);
 }
 .ch-btn--primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #176040 0%, #115133 100%);
+  background: linear-gradient(180deg, #124b2e 0%, #0d3f28 100%);
   box-shadow: 0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), 0 2px 4px rgb(12 65 40 / 0.22),
     0 8px 16px -8px rgb(12 65 40 / 0.45);
 }
 .ch-btn--primary:active:not(:disabled) {
-  background: #124f31;
+  background: #08301e;
   box-shadow: 0 0 0 1px #0e462c, inset 0 1px 3px rgb(0 0 0 / 0.25);
 }
 .ch-btn--secondary {
