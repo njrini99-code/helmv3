@@ -18,6 +18,7 @@
  */
 
 import { resolveClientEnvironment, type EnvironmentInput } from '@/lib/sentry-environment';
+import { LOCALHOST_TRACE_TARGET, originPatternFromUrl } from '@/lib/observability/trace-targets';
 
 export interface ClientSentryOptionsEnv extends EnvironmentInput {
   NEXT_PUBLIC_SENTRY_DSN?: string | undefined;
@@ -46,6 +47,13 @@ export interface ClientSentryOptions {
   debug: false;
   propagateTraceparent: true;
   tracePropagationTargets: (string | RegExp)[];
+  /**
+   * The browser transport sends envelopes to the same-origin `/monitoring`
+   * tunnel, which Next rewrites to sentry.io. A same-origin fetch carries the
+   * site's cookies by default, so the Supabase auth cookie would ride along to
+   * Sentry. The tunnel needs no cookies.
+   */
+  transportOptions: { fetchOptions: { credentials: 'omit' } };
   /**
    * UNCHANGED from the pre-existing behavior — do not edit without updating
    * `src/lib/__tests__/sentry-client-options.test.ts`'s pinning assertion.
@@ -213,13 +221,7 @@ export function buildClientSentryOptions(
   const release = env.NEXT_PUBLIC_SENTRY_RELEASE || env.VERCEL_GIT_COMMIT_SHA;
   const environment = resolveClientEnvironment(env, hostname);
 
-  const supabaseTraceTarget = (() => {
-    try {
-      return new URL(env.NEXT_PUBLIC_SUPABASE_URL ?? '').origin;
-    } catch {
-      return null;
-    }
-  })();
+  const supabaseTraceTarget = originPatternFromUrl(env.NEXT_PUBLIC_SUPABASE_URL);
 
   return {
     dsn,
@@ -227,11 +229,13 @@ export function buildClientSentryOptions(
     environment,
     debug: false,
     propagateTraceparent: true,
+    // Anchored regexes only; see '@/lib/observability/trace-targets'.
     tracePropagationTargets: [
-      'localhost',
+      LOCALHOST_TRACE_TARGET,
       /^\//,
       ...(supabaseTraceTarget ? [supabaseTraceTarget] : []),
     ],
+    transportOptions: { fetchOptions: { credentials: 'omit' } },
     tracesSampleRate: isDev ? 0.1 : 0.2,
     enableLogs: true,
     replaysOnErrorSampleRate: 1.0,

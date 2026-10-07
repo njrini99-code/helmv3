@@ -246,7 +246,6 @@
     "gsap": "^3.15.0",
     "html2canvas": "^1.4.1",
     "immer": "^11.1.21",
-    "inngest": "^4.21.1",
     "jose": "^6.2.10",
     "jspdf": "^4.2.1",
     "lenis": "^1.3.26",
@@ -283,6 +282,7 @@
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
+    "@types/pg": "8.15.6",
     "@types/web-push": "^3.6.4",
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
     "@vitejs/plugin-react": "^6.1.2",
@@ -356,5 +356,12 @@
     "fsevents": true,
     "core-js": false,
     "electron": true
-  }
+  },
+  "browserslist": [
+    "chrome >= 111",
+    "edge >= 111",
+    "firefox >= 111",
+    "safari >= 15",
+    "ios_saf >= 15"
+  ]
 }

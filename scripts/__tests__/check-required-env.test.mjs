@@ -75,40 +75,9 @@ test('throws when URL has uppercase PLACEHOLDER (case-insensitive)', () => {
   );
 });
 
-// F127 (2026-09-05): INNGEST_EVENT_KEY set without INNGEST_SIGNING_KEY put
-// Inngest into "cloud mode" with no signing key, producing 10 production
-// runtime errors on /api/inngest over 2026-09-01/02 with no build-time signal.
-
-test('throws in production when INNGEST_EVENT_KEY is set but INNGEST_SIGNING_KEY is missing', () => {
-  assert.throws(
-    () =>
-      checkRequiredEnv({
-        VERCEL_ENV: 'production',
-        NEXT_PUBLIC_SUPABASE_URL: 'https://qmnssrrolpinvwjjnufo.supabase.co',
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon-key-value',
-        SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value',
-        INNGEST_EVENT_KEY: 'a-real-looking-event-key-value',
-      }),
-    /INNGEST_SIGNING_KEY/
-  );
-});
-
-test('throws in preview when INNGEST_EVENT_KEY is set but INNGEST_SIGNING_KEY is blank', () => {
-  assert.throws(
-    () =>
-      checkRequiredEnv({
-        VERCEL_ENV: 'preview',
-        NEXT_PUBLIC_SUPABASE_URL: 'https://qmnssrrolpinvwjjnufo.supabase.co',
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon-key-value',
-        SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value',
-        INNGEST_EVENT_KEY: 'a-real-looking-event-key-value',
-        INNGEST_SIGNING_KEY: '   ',
-      }),
-    /INNGEST_SIGNING_KEY/
-  );
-});
-
-test('does not throw when both INNGEST_EVENT_KEY and INNGEST_SIGNING_KEY are set', () => {
+// Inngest was removed: INNGEST_* variables are no longer required or
+// validated, and a stale one lingering in the environment must not fail a build.
+test('does not throw on a lingering INNGEST_EVENT_KEY without a signing key (no longer validated)', () => {
   assert.doesNotThrow(() =>
     checkRequiredEnv({
       VERCEL_ENV: 'production',
@@ -116,18 +85,6 @@ test('does not throw when both INNGEST_EVENT_KEY and INNGEST_SIGNING_KEY are set
       NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon-key-value',
       SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value',
       INNGEST_EVENT_KEY: 'a-real-looking-event-key-value',
-      INNGEST_SIGNING_KEY: 'signkey-prod-abc123',
-    })
-  );
-});
-
-test('does not throw when neither Inngest var is set (Inngest not in use)', () => {
-  assert.doesNotThrow(() =>
-    checkRequiredEnv({
-      VERCEL_ENV: 'production',
-      NEXT_PUBLIC_SUPABASE_URL: 'https://qmnssrrolpinvwjjnufo.supabase.co',
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon-key-value',
-      SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value',
     })
   );
 });

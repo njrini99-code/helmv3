@@ -2330,5 +2330,7 @@ observability_keys_unowned:
   integrations:
     classification: platform
     reason: >-
-      Inngest job execution. Infrastructure that carries other features' work,
-      not a product feature with behaviour of its own to document.
+      Third-party provider faults (the catch-all area for external-service
+      credential and billing faults). Infrastructure that carries other
+      features' work, not a product feature with behaviour of its own to
+      document.
