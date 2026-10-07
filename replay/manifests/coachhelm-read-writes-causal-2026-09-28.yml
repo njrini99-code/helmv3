@@ -1,0 +1,30 @@
+schema_version: 1
+replay_id: coachhelm-read-writes-causal-2026-09-28
+incident_id: memory/incidents/coachhelm_ai/INC-2026-09-28-coachhelm-read-writes-causal.md
+feature_id: coachhelm_ai
+title: >-
+  The player CoachHelm page read wrote golf_causal_relationships through
+  CausalEngine.saveRelationships despite persistPatterns: false, so a failed
+  UPDATE ("fetch failed") failed the whole page (ca4409c2, ed64f3b6).
+bad_version: f466378b9b3d6cf460f7cba32af145f2ab586435
+fixed_version: cdd7b98351eac7a28c2e055154983f5913560e4c
+fixture:
+  - source: causal-engine.read-only.test.ts
+    target: src/lib/coachhelm/v2/mining/__tests__/causal-engine.read-only.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/lib/coachhelm/v2/mining/__tests__/causal-engine.read-only.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic round fixture and ids; the only production-derived value is the
+    error text "TypeError: fetch failed".
+source_incident_status: fixed
+created_at: "2026-09-28"
+notes: >-
+  On bad_version the persist:false case throws "Failed to update CoachHelm
+  causal relationship: TypeError: fetch failed" from saveRelationships (the
+  option is ignored). The default-persist control passes on both versions.

@@ -14,7 +14,62 @@
       ],
       "port": 3217,
       "env": {
-        "NODE_OPTIONS": "--max-old-space-size=6144"
+        "NODE_OPTIONS": "--max-old-space-size=4096"
+      }
+    },
+    {
+      "name": "golf-prod-after",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "start",
+        "--",
+        "-p",
+        "3219",
+        "-H",
+        "127.0.0.1"
+      ],
+      "port": 3219,
+      "url": "http://127.0.0.1:3219",
+      "env": {
+        "NEXT_TELEMETRY_DISABLED": "1",
+        "NODE_OPTIONS": "--max-old-space-size=4096"
+      }
+    },
+    {
+      "name": "coachhelm-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "/Users/ricknini/worktrees/helmv3/coachhelm-surfaces",
+        "run",
+        "dev",
+        "--",
+        "--webpack",
+        "-p",
+        "3218"
+      ],
+      "port": 3218,
+      "env": {
+        "NODE_OPTIONS": "--max-old-space-size=4096"
+      }
+    },
+    {
+      "name": "green-theme",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "/Users/ricknini/worktrees/helmv3/golf-green-vintage-theme",
+        "run",
+        "dev",
+        "--",
+        "--webpack",
+        "-p",
+        "3218"
+      ],
+      "port": 3218,
+      "env": {
+        "NODE_OPTIONS": "--max-old-space-size=9216"
       }
     }
   ]

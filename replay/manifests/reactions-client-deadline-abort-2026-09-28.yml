@@ -1,0 +1,27 @@
+schema_version: 1
+replay_id: reactions-client-deadline-abort-2026-09-28
+incident_id: memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md
+feature_id: team_communications
+title: >-
+  useMessageReactions reported the browser client's own request deadline
+  (WebKit "AbortError: Fetch is aborted") as a Bridge incident (9b8ad988).
+bad_version: ef6e37c0713e7d4e5774d2533d08b1744392fcc4
+fixed_version: c768e152f22c92a698ca21c00db5987dd14a1522
+fixture:
+  - source: use-message-reactions.test.tsx
+    target: src/hooks/golf/__tests__/use-message-reactions.test.tsx
+test_command: "./node_modules/.bin/vitest run --project unit-dom src/hooks/golf/__tests__/use-message-reactions.test.tsx"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic ids; the error text is the generic browser wording, no user data.
+source_incident_status: fixed
+created_at: "2026-09-28"
+notes: >-
+  On bad_version the new case fails with "expected vi.fn() to not be called at
+  all, but actually been called 1 times".

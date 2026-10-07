@@ -1,0 +1,63 @@
+name: CI retry failed jobs
+
+# One automatic "Re-run failed jobs" for a pull request's failed CI run.
+#
+# A flaky shard used to cost a manual click (or a fresh push that re-ran all
+# ~11 jobs). This re-runs ONLY the jobs that failed, plus the ones that depend
+# on them (`CI aggregate`), once. The jobs that passed keep their result.
+#
+# Guards, in order:
+#   - pull_request runs only: a red `main` push or merge-group run is left for
+#     a human to read.
+#   - first attempt only (`run_attempt == 1`): a real failure goes red again on
+#     the retry and stays red — there is never a second automatic retry.
+#   - the run's commit is still the PR head. A retry of a superseded commit
+#     joins ci.yml's per-PR concurrency group and would CANCEL the newer run.
+#
+# Owner decision 2026-09-27: auto-retry once, for all PRs.
+# Lives on the default branch: `workflow_run` only fires for workflows there.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  actions: write
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-retry-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  retry:
+    name: Re-run failed CI jobs once
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Re-run failed jobs if the commit is still the PR head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PR_NUMBER}" ]; then
+            echo "No same-repo PR attached to run ${RUN_ID} (fork PR?); not retrying."
+            exit 0
+          fi
+          current="$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq '.head.sha')"
+          if [ "${current}" != "${HEAD_SHA}" ]; then
+            echo "PR #${PR_NUMBER} moved on (${HEAD_SHA} -> ${current}); not retrying a superseded run."
+            exit 0
+          fi
+          echo "Re-running failed jobs of CI run ${RUN_ID} for PR #${PR_NUMBER} (${HEAD_SHA})."
+          gh run rerun "${RUN_ID}" --failed --repo "${REPO}"
