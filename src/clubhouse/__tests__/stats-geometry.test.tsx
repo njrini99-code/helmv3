@@ -198,6 +198,9 @@ describe('Skeletons draw the loaded page\'s lines', () => {
     profile.unmount();
     const teamPhone = render(<StatsTeamPhoneSkeleton />);
     for (const fig of teamPhone.container.querySelectorAll('.ch-stm-figs > div')) expect(fig.querySelectorAll('dd')).toHaveLength(2);
+    // The team's stat line: the figures and the gauge row the loaded page draws, its height held by the row's own min-height.
+    expect(teamPhone.container.querySelector('.ch-stm-line > .ch-stm-figs.is-line + .ch-stm-gauges')).not.toBeNull();
+    expect(css).toMatch(/\.ch-stm-gauges\s*{[^}]*min-height: 39px/);
     expect(teamPhone.container.querySelector('.ch-stm-cover')?.getAttribute('aria-hidden')).toBe('true');
     expect(teamPhone.container.querySelector('.ch-stm-chart-hold')).not.toBeNull();
     expect(teamPhone.container.querySelector('main')?.getAttribute('aria-label')).toBe('Loading stats');

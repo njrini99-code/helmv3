@@ -115,7 +115,7 @@ function FigureCard({ it, lead = false }: { it: FigureItem; lead?: boolean }) {
  * rate along 0 to 100 with the Tour's mark when there is one, putts on a track to 40 marked at 36 (two on every green),
  * birdies as holes out of 18. Decorative: the value and its words say it.
  */
-function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
+export function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
   const pct = (v: number) => `${Math.max(0, Math.min(100, v))}%`;
   if (gauge.kind === 'holes') {
     return (

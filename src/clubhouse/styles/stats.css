@@ -1947,6 +1947,42 @@ a.ch-lg__r:focus-visible {
   .ch-stm-figs:not(.is-three) dd + dd {
     min-height: 1.4em;
   }
+  /* Team stats: the figures on the stat line, as on the desktop (owner, 2026-10-07: no card around figures, no bare
+     numbers). No surface; a gilt rule above the figures and one under their gauges, seams between the columns running
+     through both rows. */
+  .ch-stm-figs.is-line {
+    padding: 14px 0 10px;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    border-top: 1px solid var(--ch-champagne-rule);
+  }
+  .ch-stm-figs.is-line > div + div,
+  .ch-stm-gauges > span + span {
+    border-left: 0;
+    box-shadow: var(--ch-seam-y);
+  }
+  .ch-stm-figs.is-line dt {
+    font-size: 12px;
+  }
+  .ch-stm-gauges {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    /* The loaded row's height (a 26px gauge, 12px under it, the rule), so the skeleton's empty row holds it. */
+    min-height: 39px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--ch-champagne-rule);
+  }
+  .ch-stm-gauges > span {
+    display: flex;
+    min-width: 0;
+    padding: 0 10px;
+  }
+  .ch-stm-gauges .ch-fg__gauge {
+    margin-top: 0;
+    max-width: none;
+  }
   .ch-stm-cover {
     min-height: 1.4em;
     margin: 8px 2px 0;

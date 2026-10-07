@@ -13,7 +13,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
 import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
-import { SgBars } from './charts';
+import { FigureGauge, SgBars } from './charts';
 import { teamPlayerHref } from './links';
 import { LinkPending } from '../../shell/LinkPending';
 import { puttingNote } from './notes';
@@ -115,17 +115,26 @@ function Figures({ figures }: { figures: ChTeamStats['figures'] }) {
   const shown = figures.filter((f) => !f.signed).slice(0, 4);
   // Keep the comparison row's geometry across windows; absence stays hidden from assistive technology.
   const anyDelta = shown.some((f) => f.delta != null);
+  // On the stat line, as on the desktop: no surface, gilt rules, seams, and each figure drawn against its reference
+  // in a row under the words (decorative; the figures say it).
   return (
-    <dl className="ch-stm-figs">
-      {shown.map((f) => (
-        <div key={f.label}>
-          <dt>{short[f.label] ?? f.label}</dt>
-          <dd className="ch-num">{f.value == null ? NO_DATA : `${f.value.toFixed(f.digits)}${f.unit}`}</dd>
-          {/* A change that rounds to zero ("0.0") is no change: neutral, not amber (F-54). */}
-          <dd aria-hidden={!anyDelta || f.delta == null ? true : undefined} className={'ch-num ' + (f.delta == null || Math.abs(f.delta) < 0.5 * 10 ** -(f.digits ?? 1) ? '' : f.delta < 0 === f.lowerIsBetter ? 'ch-gain' : 'ch-loss')}>{f.delta == null ? null : formatSigned(f.delta, f.digits)}</dd>
-        </div>
-      ))}
-    </dl>
+    <div className="ch-stm-line">
+      <dl className="ch-stm-figs is-line">
+        {shown.map((f) => (
+          <div key={f.label}>
+            <dt>{short[f.label] ?? f.label}</dt>
+            <dd className="ch-num">{f.value == null ? NO_DATA : `${f.value.toFixed(f.digits)}${f.unit}`}</dd>
+            {/* A change that rounds to zero ("0.0") is no change: neutral, not amber (F-54). */}
+            <dd aria-hidden={!anyDelta || f.delta == null ? true : undefined} className={'ch-num ' + (f.delta == null || Math.abs(f.delta) < 0.5 * 10 ** -(f.digits ?? 1) ? '' : f.delta < 0 === f.lowerIsBetter ? 'ch-gain' : 'ch-loss')}>{f.delta == null ? null : formatSigned(f.delta, f.digits)}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="ch-stm-gauges" aria-hidden="true">
+        {shown.map((f) => (
+          <span key={f.label}>{f.gauge && f.value != null && <FigureGauge gauge={f.gauge} n={f.value} />}</span>
+        ))}
+      </div>
+    </div>
   );
 }
 

@@ -1,5 +1,11 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-07 — Phone figures on the stat line
+
+On the phone, the four team figures were bare numbers in one white sheet. They now sit on the stat line, as on the
+desktop: no surface, a gilt rule above, seams between the columns, and a row of gauges under them (par, the Tour's
+greens mark, 36 putts, scrambling 0–100) closed by a second gilt rule. The skeleton holds the gauge row's 39px.
+
 ## 2026-10-07 — Every figure drawn against its reference
 
 The owner's rule is no bare numbers. Each figure on the stat line now carries a small gauge under its words:
