@@ -11,8 +11,8 @@ import { EmptyState } from '../../ui/States';
 export function ClassesNoTeam() {
   const settings = rebuiltHref('/golf/dashboard/settings?section=team', 'player');
   return (
-    <main className="ch-cl" aria-labelledby="ch-cl-title">
-      <header className="ch-cl-h">
+    <main className="ch-cl" aria-labelledby="ch-cl-title" data-canopy="">
+      <header className="ch-cl-h" data-canopy-head="">
         <div>
           <h1 id="ch-cl-title">Classes</h1>
         </div>

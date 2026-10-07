@@ -499,6 +499,10 @@
   padding: 16px 18px;
   color: var(--ch-green-700);
 }
+/* The eye keeps its size beside a long note (it shrank to about 5px on the phone). */
+.ch-cl-note > svg {
+  flex: none;
+}
 .ch-cl-note > div {
   display: flex;
   flex-direction: column;
@@ -1374,5 +1378,451 @@
   .ch-cl-rv__sum dt,
   .ch-cl-rv__tab {
     font-size: 12px;
+  }
+}
+
+/* The Ledger on Classes (owner, 2026-10-07: "flush, not so card heavy"; the page takes the framed head). On desktop
+   the title block is the framed page head; the term's figures, the credits bar and the term line sit on the canvas
+   over a soft rule; the classes are rows in one section, each with only a small tone key for its department and its
+   meeting days lined up down the list like a timetable; the week's overlaps and what the coach sees are a side column
+   past a soft column rule. Kept as material: the tone keys, the day keys, the term line's well and the flags. */
+@media (min-width: 821px) {
+  .ch-cl[data-canopy] {
+    --ch-cl-codew: 116px;
+    gap: 32px;
+  }
+  /* The head: the term line is set like the framed head's date line, the title is the shell's 44px sans. */
+  .ch-cl[data-canopy] .ch-cl-h > div:first-child {
+    font: 500 11px/1.3 var(--ch-font-sans);
+    letter-spacing: 0.14em;
+  }
+  .ch-cl[data-canopy] .ch-cl-k {
+    font: inherit;
+    color: var(--ch-ledger-eyebrow);
+  }
+  .ch-cl[data-canopy] .ch-cl-h[data-canopy-head] .ch-cl-k + h1 {
+    margin-top: 8px;
+  }
+  /* The calendar sync, when it has something to say: a hairline chip beside the head's actions, not a lifted card. */
+  .ch-cl[data-canopy] .ch-cl-sync {
+    background: var(--ch-sheet-bg);
+    box-shadow: 0 0 0 1px var(--ch-ledger-rule);
+  }
+  .ch-cl[data-canopy] .ch-cl-sync.is-failed {
+    background: var(--ch-warning-100);
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--ch-warning-600) 28%, transparent);
+  }
+
+  /* The term: three figures between soft column rules, then the term line in a shallow well. */
+  .ch-cl[data-canopy] .ch-cl-tb {
+    padding: 0 0 30px;
+    border-radius: 0;
+    color: var(--ch-text-primary);
+    background: none;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__top {
+    gap: 0;
+    align-items: stretch;
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__wk {
+    flex-flow: row wrap;
+    align-content: center;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 9px 6px;
+    width: auto;
+    height: auto;
+    padding-right: 32px;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__wk span {
+    flex: 1 0 100%;
+    font: 600 12px/1 var(--ch-font-sans);
+    color: var(--ch-text-secondary);
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__wk b {
+    font: 500 34px/0.9 var(--ch-font-sans);
+    letter-spacing: -0.04em;
+    color: var(--ch-text-primary);
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__wk em {
+    font: 500 13px/1 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__stack {
+    justify-content: center;
+    gap: 10px;
+    padding: 0 32px;
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__k {
+    font: 600 12px/1 var(--ch-font-sans);
+    color: var(--ch-text-secondary);
+  }
+  /* The credits bar: each class a small tone key, sized by its credits. */
+  .ch-cl[data-canopy] .ch-cl-tb__bar {
+    gap: 4px;
+    height: 30px;
+    overflow: visible;
+    border-radius: 0;
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__bar i {
+    border-radius: var(--ch-radius-sm);
+    box-shadow: inset 0 0 0 1px var(--ch-cl-tb);
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__over,
+  .ch-cl[data-canopy] .ch-cl-tb__over.has-any {
+    gap: 10px;
+    padding: 0 0 0 32px;
+    border-radius: 0;
+    background: none;
+    color: var(--ch-text-tertiary);
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__over.has-any {
+    color: var(--ch-warning-600);
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__over b {
+    font-size: 30px;
+    letter-spacing: -0.03em;
+    color: var(--ch-text-primary);
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__over.has-any b {
+    color: var(--ch-warning-600);
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__over span {
+    max-width: 112px;
+    color: var(--ch-text-secondary);
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__line {
+    background: var(--ch-well-soft-bg);
+    box-shadow: var(--ch-well-soft-shadow);
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__fill {
+    background: linear-gradient(90deg, var(--ch-green-200), var(--ch-green-500));
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__tick {
+    background: var(--ch-ledger-rule);
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__wkb {
+    background: color-mix(in oklab, var(--ch-warning-600) 10%, transparent);
+    box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--ch-warning-600) 45%, transparent);
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__wkb em {
+    color: var(--ch-warning-600);
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__today {
+    background: var(--ch-ledger-ink);
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__today em {
+    color: var(--ch-ledger-ink);
+  }
+  .ch-cl[data-canopy] .ch-cl-tb__lab {
+    color: var(--ch-text-tertiary);
+  }
+
+  /* The classes and the side column, split by a soft column rule. */
+  .ch-cl[data-canopy] .ch-cl-grid {
+    gap: 44px 32px;
+  }
+  .ch-cl[data-canopy] .ch-cl-sec {
+    gap: 6px;
+  }
+  .ch-cl[data-canopy] .ch-cl-deck {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-inline: -12px;
+  }
+  /* A class is a row: its department key and number, the name over the instructor and the room, and its days. */
+  .ch-cl[data-canopy] .ch-cl-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--ch-cl-codew) minmax(0, 1fr) 248px;
+    grid-template-areas:
+      'top name week'
+      'top prof week'
+      'top foot week';
+    column-gap: 24px;
+    row-gap: 3px;
+    align-content: center;
+    min-height: 0;
+    padding: 16px 12px;
+    border-radius: var(--ch-radius-md);
+    background: none;
+    color: var(--ch-text-primary);
+    box-shadow: none;
+    transition: background var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-cl[data-canopy] .ch-cl-card + .ch-cl-card::before,
+  .ch-cl[data-canopy] .ch-cl-card + .ch-cl-add::before {
+    position: absolute;
+    top: 0;
+    right: 12px;
+    left: 12px;
+    height: 1px;
+    background: var(--ch-ledger-rule-soft);
+    content: '';
+    pointer-events: none;
+  }
+  /* CH-12601: a hovering class takes the Ledger row tint (quick), as Home's leaderboard rows do. A flush row has no
+     card to lift, so it doesn't lift. */
+  .ch-cl[data-canopy] .ch-cl-card:hover {
+    transform: none;
+    background: var(--ch-ledger-row-hover);
+    box-shadow: none;
+  }
+  .ch-cl[data-canopy] .ch-cl-card:hover::before,
+  .ch-cl[data-canopy] .ch-cl-card:hover + .ch-cl-card::before,
+  .ch-cl[data-canopy] .ch-cl-card:hover + .ch-cl-add::before {
+    opacity: 0;
+  }
+  .ch-cl[data-canopy] .ch-cl-card__top {
+    grid-area: top;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 8px;
+  }
+  .ch-cl[data-canopy] .ch-cl-card__code {
+    align-items: center;
+    gap: 8px;
+    font: 500 22px/1 var(--ch-font-sans);
+    letter-spacing: -0.03em;
+    color: var(--ch-text-primary);
+  }
+  .ch-cl[data-canopy] .ch-cl-card__code b {
+    padding: 5px 7px 4px;
+    border-radius: var(--ch-radius-xs);
+    font: 700 11px/1 var(--ch-font-sans);
+    letter-spacing: 0;
+    color: var(--ch-cl-tf);
+    background: var(--ch-cl-t);
+    box-shadow: inset 0 0 0 1px var(--ch-cl-tb);
+  }
+  .ch-cl[data-canopy] .ch-cl-card__cr {
+    padding: 0;
+    border-radius: 0;
+    font: 500 12px/1 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+    background: none;
+  }
+  .ch-cl[data-canopy] .ch-cl-card__name {
+    grid-area: name;
+    align-self: end;
+    margin: 0;
+    color: var(--ch-text-primary);
+  }
+  .ch-cl[data-canopy] .ch-cl-card__prof {
+    grid-area: prof;
+    color: var(--ch-text-secondary);
+  }
+  .ch-cl[data-canopy] .ch-cl-card__f {
+    grid-area: foot;
+    gap: 6px 10px;
+    margin-top: 6px;
+    padding-top: 0;
+    border-top: 0;
+    color: var(--ch-text-secondary);
+  }
+  .ch-cl[data-canopy] .ch-cl-card__loc {
+    margin-right: 2px;
+  }
+  .ch-cl[data-canopy] .ch-cl-card__term {
+    background: none;
+    color: var(--ch-text-secondary);
+    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+  }
+  /* The days: a faint slot for each day, a raised key on the days it meets with the start under the letter, and
+     today ringed green. Every row's Monday sits over the last, so the list reads as the week. */
+  .ch-cl[data-canopy] .ch-cl-card__week,
+  .ch-cl[data-canopy] .ch-cl-card__flex {
+    grid-area: week;
+    align-self: center;
+    margin: 0;
+  }
+  .ch-cl[data-canopy] .ch-cl-card__week {
+    gap: 4px;
+    padding: 0;
+  }
+  .ch-cl[data-canopy] .ch-cl-card__week > span {
+    border-radius: var(--ch-radius-sm);
+    background: var(--ch-ledger-row-hover);
+  }
+  .ch-cl[data-canopy] .ch-cl-card__week em {
+    color: var(--ch-text-tertiary);
+    opacity: 1;
+  }
+  .ch-cl[data-canopy] .ch-cl-card__week > span.is-on {
+    background: var(--ch-raised-bg);
+    box-shadow: var(--ch-key-raised-shadow);
+  }
+  .ch-cl[data-canopy] .ch-cl-card__week > span.is-on em {
+    color: var(--ch-cl-tf);
+  }
+  .ch-cl[data-canopy] .ch-cl-card__week > span.is-today {
+    box-shadow: 0 0 0 1.5px var(--ch-green-500);
+  }
+  .ch-cl[data-canopy] .ch-cl-card__week > span.is-on.is-today {
+    box-shadow: 0 0 0 1.5px var(--ch-green-500), var(--ch-key-raised-shadow);
+  }
+  .ch-cl[data-canopy] .ch-cl-card__flex {
+    padding: 12px;
+    border-radius: var(--ch-radius-sm);
+    background: var(--ch-ledger-row-hover);
+    color: var(--ch-text-secondary);
+  }
+  /* Add a class: the last row, its label where the class names start. */
+  .ch-cl[data-canopy] .ch-cl-add {
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--ch-cl-codew) minmax(0, 1fr);
+    grid-template-areas:
+      'plus b'
+      'plus em';
+    column-gap: 24px;
+    row-gap: 4px;
+    align-items: center;
+    min-height: 0;
+    padding: 16px 12px;
+    border: 0;
+    border-radius: var(--ch-radius-md);
+    color: var(--ch-green-700);
+    text-align: left;
+    transition: background var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-cl[data-canopy] .ch-cl-add:hover {
+    transform: none;
+    background: var(--ch-ledger-row-hover);
+  }
+  .ch-cl[data-canopy] .ch-cl-add__plus {
+    grid-area: plus;
+    box-sizing: border-box;
+    width: 32px;
+    height: 32px;
+    border: 1.5px dashed var(--ch-green-rule);
+    background: none;
+    color: var(--ch-green-700);
+    box-shadow: none;
+  }
+  .ch-cl[data-canopy] .ch-cl-add__plus svg {
+    width: 16px;
+    height: 16px;
+  }
+  .ch-cl[data-canopy] .ch-cl-add b {
+    grid-area: b;
+    font: 600 15px/1.2 var(--ch-font-sans);
+    color: var(--ch-green-700);
+  }
+  .ch-cl[data-canopy] .ch-cl-add em {
+    grid-area: em;
+    font: 400 13px/1.2 var(--ch-font-sans);
+  }
+  .ch-cl[data-canopy] .ch-cl-delall {
+    margin-top: 8px;
+  }
+
+  /* The side column: this week's overlaps as a section, then what the coach sees. */
+  .ch-cl[data-canopy] .ch-cl-side {
+    gap: 44px;
+    padding-left: 32px;
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-cl[data-canopy] .ch-cl-over,
+  .ch-cl[data-canopy] .ch-cl-card2 {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-cl[data-canopy] .ch-cl-over__h {
+    align-items: flex-start;
+    gap: 10px;
+    padding-bottom: 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-cl[data-canopy] .ch-cl-over__h h2 {
+    font: 600 19px/1.2 var(--ch-font-sans);
+  }
+  .ch-cl[data-canopy] .ch-cl-over__ic {
+    width: 26px;
+    height: 26px;
+    border-radius: var(--ch-radius-sm);
+  }
+  .ch-cl[data-canopy] .ch-cl-over__l {
+    gap: 22px;
+    margin-top: 16px;
+  }
+  .ch-cl[data-canopy] .ch-cl-over__c {
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-cl[data-canopy] .ch-cl-over__r {
+    min-height: 0;
+    padding: 10px 0;
+  }
+  .ch-cl[data-canopy] .ch-cl-over__r + .ch-cl-over__r {
+    border-top: 0;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-cl[data-canopy] .ch-cl-note > svg {
+    flex: none;
+    margin-top: 1px;
+  }
+
+  /* One column below a 1000px page: the side column goes under the classes, without its rule. */
+  @container chcl (max-width: 1000px) {
+    .ch-cl[data-canopy] .ch-cl-side {
+      gap: 32px 40px;
+      padding-left: 0;
+      box-shadow: none;
+    }
+  }
+  /* Below 640px (a narrow desktop window): a class's days go under its name, and the overlap count under the bar. */
+  @container chcl (max-width: 640px) {
+    .ch-cl[data-canopy] .ch-cl-deck {
+      --ch-cl-codew: 92px;
+    }
+    .ch-cl[data-canopy] .ch-cl-card {
+      grid-template-columns: var(--ch-cl-codew) minmax(0, 1fr);
+      grid-template-areas:
+        'top name'
+        'top prof'
+        'top foot'
+        'top week';
+    }
+    .ch-cl[data-canopy] .ch-cl-card__week,
+    .ch-cl[data-canopy] .ch-cl-card__flex {
+      margin-top: 10px;
+    }
+    .ch-cl[data-canopy] .ch-cl-tb__over,
+    .ch-cl[data-canopy] .ch-cl-tb__over.has-any {
+      padding: 16px 0 0;
+      box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    }
+  }
+
+  /* Loading (CH-12401): the head holds the loaded head's height (the shell's 34px and 30px padding, the term line,
+     8px, the title's line; 133.8px in WebKit at 1440 and 1100), and its bars sit on the term line and the title, so
+     nothing moves on load. A player on no team has no term line; the title keeps its place. The deck's placeholders
+     are rows. */
+  .ch-cl[data-canopy] .ch-cl-h {
+    box-sizing: border-box;
+    min-height: calc(34px + 11px * 1.3 + 8px + 44px * 1.08 + 30px);
+  }
+  .ch-cl[data-ch-code='CH-12401'][data-canopy] .ch-cl-h > div:first-child > .ch-skel:first-child {
+    margin-bottom: 10.8px;
+  }
+  .ch-cl[data-ch-code='CH-12401'][data-canopy] .ch-cl-deck {
+    gap: 10px;
+    margin-inline: 0;
+  }
+  .ch-cl[data-ch-code='CH-12401'][data-canopy] .ch-cl-deck > .ch-skel {
+    height: 76px !important;
+    border-radius: var(--ch-radius-md) !important;
   }
 }

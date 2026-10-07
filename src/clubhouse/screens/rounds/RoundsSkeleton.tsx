@@ -2,11 +2,11 @@ import { Skeleton } from '../../ui/States';
 import '../../styles/rounds.css';
 import '../../styles/rounds-recover.css';
 
-/** Route loading for Rounds: the header, the round card beside the season, then a month of rounds, in place. */
+/** Route loading for Rounds: the header, the round card beside the season, then a month of rounds, in place. On desktop the header is the framed page head at its loaded height (rounds.css). */
 export function RoundsSkeleton() {
   return (
-    <main className="ch-rd" aria-busy="true" aria-label="Loading your rounds" data-ch-code="CH-11401">
-      <header className="ch-rd-h">
+    <main className="ch-rd" aria-busy="true" aria-label="Loading your rounds" data-ch-code="CH-11401" data-canopy="">
+      <header className="ch-rd-h" data-canopy-head="">
         <div>
           <Skeleton width={200} height={13} />
           <div style={{ height: 10 }} />

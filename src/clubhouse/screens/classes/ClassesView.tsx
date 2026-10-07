@@ -11,6 +11,7 @@ import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
 import { Button } from '../../ui/Button';
 import { InlineNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
+import { Section } from '../../ui/Section';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { ClassDetail } from './ClassDetail';
@@ -289,12 +290,50 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
     setOpenId(null);
     setAsking(c);
   };
+  const deck = (
+    <>
+      {/* CH-12801: the page is labelled by "Classes"; each card is one button. */}
+      <div className="ch-cl-deck">
+        {classes.map((c) => (
+          <ClassCard
+            key={c.id}
+            c={c}
+            todayIso={todayIso}
+            term={term}
+            overlaps={conflicts.filter((x) => x.classId === c.id)}
+            unsynced={failedSync.has(c.id)}
+            onOpen={(x) => {
+              chTrail('classes open');
+              setOpenId(x.id);
+            }}
+          />
+        ))}
+        <AddTile onAdd={startAdd} />
+      </div>
+      {/* CH-12503: the way out of a whole schedule, quiet and below the deck, red because it deletes (D-42). The warning comes before the question (CH-12704). */}
+      <div className="ch-cl-delall">
+        <Button
+          variant="ghost"
+          className="ch-cl-danger"
+          leftIcon={Trash2}
+          feel="warning"
+          disabled={busy}
+          onClick={() => {
+            chTrail('classes delete all');
+            setAskingAll(true);
+          }}
+        >
+          Delete all classes
+        </Button>
+      </div>
+    </>
+  );
 
   return (
-    <main className={'ch-cl' + (phone ? ' is-phone' : '')} aria-labelledby={phone ? undefined : 'ch-cl-title'} aria-label={phone ? 'Classes' : undefined}>
+    <main className={'ch-cl' + (phone ? ' is-phone' : '')} aria-labelledby={phone ? undefined : 'ch-cl-title'} aria-label={phone ? 'Classes' : undefined} data-canopy={phone ? undefined : ''}>
       {/* Phone: Classes opens from More (D-66), so the top bar goes back there. */}
       {phone && <PhoneTop title="Classes" back={{ label: 'More', onBack: backFromMore }} />}
-      <header className="ch-cl-h">
+      <header className="ch-cl-h" data-canopy-head={phone ? undefined : ''}>
         <div>
           <span className="ch-cl-k">
             {term.label} · {shortDay(term.start)} – {shortDay(term.end)}
@@ -357,40 +396,12 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
           )}
           <div className="ch-cl-grid">
             <SectionBoundary surface="classes.deck" label="Your classes" code="CH-12203">
-              {/* CH-12801: the page is labelled by "Classes"; each card is one button. */}
-              <div className="ch-cl-deck">
-                {classes.map((c) => (
-                  <ClassCard
-                    key={c.id}
-                    c={c}
-                    todayIso={todayIso}
-                    term={term}
-                    overlaps={conflicts.filter((x) => x.classId === c.id)}
-                    unsynced={failedSync.has(c.id)}
-                    onOpen={(x) => {
-                      chTrail('classes open');
-                      setOpenId(x.id);
-                    }}
-                  />
-                ))}
-                <AddTile onAdd={startAdd} />
-              </div>
-              {/* CH-12503: the way out of a whole schedule, quiet and below the deck, red because it deletes (D-42). The warning comes before the question (CH-12704). */}
-              <div className="ch-cl-delall">
-                <Button
-                  variant="ghost"
-                  className="ch-cl-danger"
-                  leftIcon={Trash2}
-                  feel="warning"
-                  disabled={busy}
-                  onClick={() => {
-                    chTrail('classes delete all');
-                    setAskingAll(true);
-                  }}
-                >
-                  Delete all classes
-                </Button>
-              </div>
+              {/* Desktop (the Ledger): the deck is a section on the canvas under its heading and rule, its classes rows. The phone keeps its board. */}
+              {phone ? deck : (
+                <Section id="ch-cl-deck" title="Your classes" className="ch-cl-sec">
+                  {deck}
+                </Section>
+              )}
             </SectionBoundary>
             <SectionBoundary surface="classes.side" label="This week's overlaps" code="CH-12203">
               <div className="ch-cl-side" id="ch-cl-overlaps">

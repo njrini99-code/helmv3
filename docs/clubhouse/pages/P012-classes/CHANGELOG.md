@@ -1,5 +1,35 @@
 # P012 — Classes: changelog
 
+## 2026-10-07 — Classes takes the page head; each class a ledger row
+
+On desktop, Classes opens on the framed page head, and the term, the classes
+and the week's overlaps sit on the canvas:
+
+- **Head:** the term and its dates are the eyebrow over "Classes", with Import
+  schedule and Add class on the right. The calendar sync shows as a hairline
+  chip when it has something to say.
+- **Term:** the green banner becomes three figures between soft column rules
+  (the week, the credits bar with a small tone key per class, and this week's
+  overlaps in amber), then the term line in a shallow well, closed by a soft
+  rule.
+- **Classes:** a "Your classes" section. Each class is a row that keeps only
+  its department key in the class's tone, then the name over the instructor and
+  room, then its meeting days as keys. The days line up down the list, so the
+  rows read as the week. Add a class is the last row, and Delete all classes
+  stays under the list. Hovering a class tints its row, as Home's leaderboard
+  does, with no lift (CH-12601).
+- **Side column:** this week's overlaps and what the coach sees sit past a soft
+  column rule beside the classes again. Delete all classes had taken the second
+  column and pushed them under the deck.
+- **Kept:** the tone keys, the day keys, the term line's well and the flags.
+
+The route skeleton (`ClassesSkeleton`) opts into the same head at the loaded
+head's height. Its head measured 0px of shift in WebKit at 1440 and 1100, and
+its deck placeholders are rows. Below a 1000px page the side column goes under
+the classes. The phone is unchanged: every new rule sits inside the desktop
+media query, and the phone renders the same elements (the skeleton and the
+no-team page only gain the canopy attributes, which style nothing there).
+
 ## 2026-10-07 — Timeline labels
 
 The banner timeline's start and end labels move from 11px at 4.0:1 to 12px in

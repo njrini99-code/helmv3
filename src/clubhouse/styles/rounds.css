@@ -1619,7 +1619,8 @@ a.ch-rd-sc:focus-visible {
     padding: 0 0 12px;
     box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
   }
-  .ch-rv[data-canopy] .ch-rv-card__h :is(h2, h3) {
+  .ch-rv[data-canopy] .ch-rv-card__h h2,
+  .ch-rv[data-canopy] .ch-rv-card__h h3 {
     font: 600 19px/1.2 var(--ch-font-sans);
     color: var(--ch-ledger-ink);
   }
@@ -1634,5 +1635,307 @@ a.ch-rd-sc:focus-visible {
   }
   .ch-rv[data-canopy] .ch-rv-side {
     gap: 32px;
+  }
+}
+
+/* The Ledger on the Rounds list (owner, 2026-10-07: "flush, not so card heavy"; the page takes the framed head). On
+   desktop the title block is the framed page head with its eyebrow; the round in progress and season scoring are
+   two panes on the canvas under engraved rules, split by a soft column rule, and the in-progress hole strip keeps its
+   scoreboard; more unfinished rounds and each month are sections, and every posted round is a row between soft seams.
+   Kept as material: the hole strip's board, the date key, the Out, In and Tot scorecard and the to-par key. */
+@media (min-width: 821px) {
+  .ch-rd[data-canopy] {
+    gap: 40px;
+  }
+  /* The head: the eyebrow is set like the framed head's date line, the title is the shell's 44px sans. */
+  .ch-rd[data-canopy] .ch-rd-h > div:first-child {
+    font: 500 11px/1.3 var(--ch-font-sans);
+    letter-spacing: 0.14em;
+  }
+  .ch-rd[data-canopy] .ch-rd-h .ch-rd-k {
+    font: inherit;
+    color: var(--ch-ledger-eyebrow);
+  }
+  .ch-rd[data-canopy] .ch-rd-h .ch-rd-upd {
+    margin-left: 10px;
+    font: inherit;
+  }
+  .ch-rd[data-canopy] .ch-rd-h[data-canopy-head] h1 {
+    margin-top: 8px;
+  }
+
+  /* The two panes */
+  .ch-rd[data-canopy] .ch-rd-hero {
+    gap: 0;
+  }
+  .ch-rd[data-canopy] .ch-rd-unf {
+    overflow: visible;
+    padding: 0 32px 0 0;
+    border-radius: 0;
+    color: var(--ch-text-primary);
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__top {
+    padding-bottom: 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__k {
+    gap: 10px;
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.022em;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__k i {
+    width: 8px;
+    height: 8px;
+    background: var(--ch-green-500);
+    box-shadow: 0 0 0 3px var(--ch-green-100);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__k.is-idle i {
+    background: var(--ch-ink-300);
+    box-shadow: none;
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__t {
+    font: 500 13px/1.2 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__c {
+    margin-top: 22px;
+    color: var(--ch-text-primary);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__m {
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: var(--ch-text-secondary);
+  }
+  /* The holes so far stay a scoreboard: a small recessed green board with the board's finishes. The pane reads top
+     down (the course, the board, where the round stands) and ends where its content does, as Home's week does. */
+  .ch-rd[data-canopy] .ch-rd-strip {
+    align-self: flex-start;
+    margin: 0 0 18px;
+    padding: 14px;
+    border-radius: var(--ch-radius-lg);
+    background: var(--ch-board-bg);
+    box-shadow: var(--ch-board-shadow);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf .ch-notice {
+    margin: 0 0 18px;
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__f {
+    margin-top: 0;
+    padding-top: 16px;
+    border-top: 0;
+    color: var(--ch-text-secondary);
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__f b {
+    color: var(--ch-text-primary);
+  }
+  /* One primary per page (New round, in the head): Continue is the raised secondary key, in green ink. */
+  .ch-rd[data-canopy] .ch-rd-unf__cta {
+    background: var(--ch-raised-bg);
+    color: var(--ch-green-700);
+    box-shadow: var(--ch-btn-secondary-shadow);
+    transition:
+      transform var(--ch-dur-press) var(--ch-ease),
+      box-shadow var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__cta:hover {
+    box-shadow: var(--ch-btn-secondary-hover-shadow);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__discard {
+    background: none;
+    color: var(--ch-text-tertiary);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__discard:hover {
+    background: var(--ch-bg-hover);
+    color: var(--ch-text-primary);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__cta:focus-visible,
+  .ch-rd[data-canopy] .ch-rd-unf__discard:focus-visible {
+    outline-color: var(--ch-border-focus);
+  }
+
+  /* Season scoring: the label becomes the pane's heading over the engraved rule; the average and the three figures
+     sit under it, then the ribbon. */
+  .ch-rd[data-canopy] .ch-rd-season {
+    padding: 0 0 0 32px;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rd[data-canopy] .ch-rd-season.is-empty {
+    justify-content: flex-start;
+    gap: 10px;
+  }
+  .ch-rd[data-canopy] .ch-rd-season .ch-rd-k {
+    grid-area: k;
+    padding-bottom: 12px;
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.022em;
+    color: var(--ch-ledger-ink);
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rd[data-canopy] .ch-rd-season.is-empty .ch-rd-k {
+    margin-bottom: 12px;
+  }
+  .ch-rd[data-canopy] .ch-rd-season__h {
+    grid-template-areas:
+      'k k'
+      'big figs';
+    row-gap: 22px;
+  }
+  .ch-rd[data-canopy] .ch-rd-season__h > div:first-child {
+    display: contents;
+  }
+  .ch-rd[data-canopy] .ch-rd-season__big {
+    grid-area: big;
+    align-self: center;
+    margin-top: 0;
+  }
+  .ch-rd[data-canopy] .ch-rd-season__f {
+    grid-area: figs;
+  }
+  .ch-rd[data-canopy] .ch-rd-fig + .ch-rd-fig {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rd[data-canopy] .ch-rd-range i.is-best {
+    box-shadow: 0 0 0 2px var(--ch-workspace);
+  }
+  .ch-rd[data-canopy] .ch-rd-season__ch {
+    margin-top: 26px;
+  }
+  /* Rounds failed: the notice stands in the season's pane, past the column rule. */
+  .ch-rd[data-canopy] .ch-rd-hero > .ch-notice {
+    align-self: start;
+    margin-left: 32px;
+  }
+
+  /* More unfinished rounds: a section, one row each. */
+  .ch-rd[data-canopy] .ch-rd-more {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rd[data-canopy] .ch-rd-more h2 {
+    margin: 0;
+    padding-bottom: 12px;
+    font: 600 19px/1.2 var(--ch-font-sans);
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rd[data-canopy] .ch-rd-more li {
+    padding: 12px 0;
+    border-top: 0;
+  }
+  .ch-rd[data-canopy] .ch-rd-more li + li {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  /* Continue and Submit share one width, so the discard buttons line up down the list. */
+  .ch-rd[data-canopy] .ch-rd-more__go {
+    box-sizing: border-box;
+    min-width: 92px;
+    text-align: center;
+  }
+
+  /* The book: the tools lead the months; each month is a section, each round a row. */
+  .ch-rd[data-canopy] .ch-rd-tools {
+    margin: 0 0 -12px;
+  }
+  .ch-rd[data-canopy] .ch-rd-grp {
+    gap: 0;
+    margin-top: 0;
+  }
+  .ch-rd[data-canopy] .ch-rd-grp__h {
+    padding: 0 0 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rd[data-canopy] .ch-rd-grp__h h3 {
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rd[data-canopy] .ch-rd-grp__rule {
+    background: none;
+  }
+  .ch-rd[data-canopy] .ch-rd-book {
+    gap: 0;
+    margin: 6px -12px 0;
+  }
+  .ch-rd[data-canopy] .ch-rd-sc {
+    position: relative;
+    padding: 12px;
+    border-radius: var(--ch-radius-md);
+    background: none;
+    box-shadow: none;
+    transition: background var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-rd[data-canopy] .ch-rd-sc + .ch-rd-sc::before {
+    position: absolute;
+    top: 0;
+    right: 12px;
+    left: 12px;
+    height: 1px;
+    background: var(--ch-ledger-rule-soft);
+    content: '';
+    pointer-events: none;
+  }
+  /* CH-11601: a round that opens its review takes the Ledger row tint on hover (quick), as Home's leaderboard rows do.
+     A flush row has no card to lift, so it neither lifts nor rings. */
+  .ch-rd[data-canopy] a.ch-rd-sc:hover {
+    transform: none;
+    background: var(--ch-ledger-row-hover);
+    box-shadow: none;
+  }
+  .ch-rd[data-canopy] a.ch-rd-sc:hover::before,
+  .ch-rd[data-canopy] a.ch-rd-sc:hover + .ch-rd-sc::before {
+    opacity: 0;
+  }
+
+  /* One column below a 860px page: the panes stack, the column rule goes. */
+  @container chrd (max-width: 860px) {
+    .ch-rd[data-canopy] .ch-rd-hero {
+      row-gap: 40px;
+    }
+    .ch-rd[data-canopy] .ch-rd-unf {
+      padding-right: 0;
+    }
+    .ch-rd[data-canopy] .ch-rd-season {
+      padding-left: 0;
+      box-shadow: none;
+    }
+    .ch-rd[data-canopy] .ch-rd-hero > .ch-notice {
+      margin-left: 0;
+    }
+  }
+  /* Below 640px (a narrow desktop window) the season's figures go under the average, as on the phone. */
+  @container chrd (max-width: 640px) {
+    .ch-rd[data-canopy] .ch-rd-season__h {
+      grid-template-areas:
+        'k'
+        'big'
+        'figs';
+    }
+    .ch-rd[data-canopy] .ch-rd-season__big {
+      justify-self: start;
+    }
+  }
+
+  /* Loading (CH-11401): the head holds the loaded head's height (the shell's 34px and 30px padding, the eyebrow's
+     line, 8px, the title's line; 133.8px in WebKit at 1440 and 1100), and its bars sit on the eyebrow and the title, so
+     nothing moves on load. */
+  .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-h {
+    box-sizing: border-box;
+    min-height: calc(34px + 11px * 1.3 + 8px + 44px * 1.08 + 30px);
+  }
+  .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-h > div:first-child > .ch-skel:first-child {
+    margin-bottom: 10.8px;
+  }
+  /* Its placeholders keep the panes' gutter and the head's edges, and stand apart in the book. */
+  .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-hero {
+    gap: 40px 64px;
+  }
+  .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-book {
+    gap: 8px;
+    margin: 0;
   }
 }

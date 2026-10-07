@@ -1,5 +1,31 @@
 # P011 — Rounds: changelog
 
+## 2026-10-07 — The rounds list takes the page head; flush panes and rows
+
+On desktop, the library opens on the framed page head and its sections sit on
+the canvas:
+
+- **Head:** "Since August 1" and the count are the eyebrow over "Your rounds"
+  in the head's heavy sans. New round stays the page's one primary.
+- **Panes:** the round in progress and season scoring are two panes under
+  engraved rules, split by a soft column rule. The in-progress pane reads top
+  down: the course, the hole strip (kept as a small scoreboard) and where the
+  round stands, with Continue as the raised secondary key. Season scoring's
+  label is the pane heading; the average sits beside the three drawn figures,
+  then the ribbon.
+- **Book:** more unfinished rounds and each month are sections with a heading
+  over the rule, and every round is a row between soft seams. Hovering a round
+  tints its row, as Home's leaderboard does, with no lift or ring (CH-11601).
+- **Kept:** the hole strip's board, the date key, the Out, In and Tot scorecard
+  and the to-par key keep their material.
+
+The route skeleton (`RoundsSkeleton`) opts into the same head at the loaded
+head's height. Its head measured 0px of shift in WebKit at 1440 and 1100, with
+the skeleton's server markup swapped into the loaded preview (the preview has
+no `?state=loading` for the library). Below a 860px page the panes stack. The
+phone is unchanged: WebKit captures at 390 in seven states match the earlier
+captures, apart from the dev server's Compiling badge in four of them.
+
 ## 2026-10-07 — A round’s holes slide as you step through them
 
 On a round's review, the hole's shots slide 12px in the direction of travel,
@@ -9,6 +35,7 @@ hole's head and the arrows stay put. With reduced motion it is instant.
 ## 2026-10-07 — Round detail takes the page head
 
 On desktop, the round's green slab is now the framed page head:
+
 - **Back link:** "Rounds" (or "Stats") is a quiet link above the double hairline.
 - **Head:** the date and kind are the eyebrow, the course is in the head's
   heavy sans, and the tee line follows. The score sits on the right in forest

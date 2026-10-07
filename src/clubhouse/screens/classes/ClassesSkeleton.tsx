@@ -1,11 +1,11 @@
 import { Skeleton } from '../../ui/States';
 import '../../styles/classes.css';
 
-/** Route loading for Classes: the header, the term overview, then the deck of classes beside the week's side card, in place. */
+/** Route loading for Classes: the header, the term overview, then the deck of classes beside the week's side card, in place. On desktop the header is the framed page head at its loaded height and the deck's placeholders are rows (classes.css). */
 export function ClassesSkeleton() {
   return (
-    <main className="ch-cl" aria-busy="true" aria-label="Loading your classes" data-ch-code="CH-12401">
-      <header className="ch-cl-h">
+    <main className="ch-cl" aria-busy="true" aria-label="Loading your classes" data-ch-code="CH-12401" data-canopy="">
+      <header className="ch-cl-h" data-canopy-head="">
         <div>
           <Skeleton width={190} height={13} />
           <div style={{ height: 10 }} />
