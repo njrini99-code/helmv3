@@ -28,7 +28,7 @@
   max-width: 28ch;
   font: 600 31px/1.15 var(--ch-font-sans);
   letter-spacing: -0.03em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-ivory-25);
   text-wrap: balance;
 }
@@ -234,7 +234,7 @@
   font: 600 30px/1.14 var(--ch-font-sans);
   letter-spacing: -0.03em;
   text-wrap: balance;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-hd-sec {
   display: flex;
@@ -279,7 +279,7 @@
 }
 .ch-hd-meas__v b {
   font: 600 44px/1 var(--ch-font-sans);
-  letter-spacing: -0.035em;
+  letter-spacing: -0.026em;
   color: var(--ch-hd-fig);
 }
 .ch-hd-meas__v span {

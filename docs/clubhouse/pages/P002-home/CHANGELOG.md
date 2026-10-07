@@ -1,5 +1,21 @@
 # P002 — Home: changelog
 
+## 2026-10-06 — Desktop hero band, leaderboard and scoreboard
+
+Desktop Home, coach and player, verified in Safari 27 at 1440×1000.
+- **Hero band:** the page opens on a deep green band, the desktop twin of the phone hero. It has ivory type, a
+  mint date, on-dark actions set at the right and a faint drifting contour pattern; the drift is off with reduced
+  motion or Animations off. The week sheet follows the band and is never tucked under it.
+- **Recent rounds (coach):** the latest-round pane closes with Recent rounds, a picker over the same rounds as the
+  pager, so the pane no longer ends in empty space.
+- **Leaderboard:** now one reading sheet:
+  - a quiet column-label row instead of a header well, and seams between players;
+  - podium position keys, with the leader's in green, and a state dot before each form word;
+  - the season average as each row's figure;
+  - a tinted hover with a sliding chevron instead of a card-in-card hover.
+- **Scorecards:** both the desktop and the phone scorecard use the new green scoreboard.
+- **Contrast:** stronger text in the week strip and scorecard.
+
 ## 2026-10-06 — Premium materials pass
 
 Player Home premium pass (owner, Safari 27 desktop and iPhone emulation). The CoachHelm brief line is removed. Up next opens the latest-round pane, and the week, latest round and Scoring join in one surface with engraved seams. The today key in the desktop week strip is a frosted, higher-contrast key. "By part of the game" becomes "Your game" with more space above it; the legs drop their icon tiles and show a full-width trend line with an Improving/Steady/Slipping caption. Score marks, the countdown well, hero actions and the scorecard well use the shared materials. All Home radii are on the scale.

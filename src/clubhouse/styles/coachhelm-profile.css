@@ -30,7 +30,7 @@
   max-width: 28ch;
   font: 600 32px/1.12 var(--ch-font-sans);
   letter-spacing: -0.03em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-ivory-25);
   text-wrap: balance;
 }
@@ -205,7 +205,7 @@
 .ch-hg-m__word {
   font: 600 28px/1.08 var(--ch-font-sans);
   letter-spacing: -0.03em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-hg-ink);
   text-wrap: balance;
 }

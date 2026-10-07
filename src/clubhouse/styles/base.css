@@ -111,8 +111,8 @@
 }
 .ch-display {
   font-weight: 600;
-  letter-spacing: -0.034em;
-  font-variation-settings: 'wdth' 88;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-sr-only {
   position: absolute;
@@ -168,6 +168,22 @@
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
   border-radius: var(--ch-radius-lg);
+}
+/* Text inside a recess sits on a darker ivory than the sheet, so the muted inks step up one shade there (owner,
+   2026-10-06: ivory on ivory needs more contrast). Secondary becomes body ink, tertiary becomes secondary. */
+.ch-well,
+.ch-well-soft {
+  --ch-text-secondary: var(--ch-ink-700);
+  --ch-text-tertiary: var(--ch-ink-600);
+}
+.ch-scoreboard {
+  --ch-text-primary: #fbf8ef;
+  --ch-text-secondary: rgb(244 241 232 / 0.8);
+  --ch-text-tertiary: rgb(210 244 221 / 0.66);
+  background: var(--ch-board-bg);
+  box-shadow: var(--ch-board-shadow);
+  border-radius: var(--ch-radius-lg);
+  color: var(--ch-text-primary);
 }
 .ch-raised {
   background: var(--ch-raised-bg);

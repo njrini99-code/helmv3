@@ -12,8 +12,9 @@
   margin: 8px 8px 8px 0;
   overflow: auto;
   overscroll-behavior: contain;
-  border-radius: 14px;
-  background: var(--ch-bg-page);
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-canvas-wash), var(--ch-bg-page);
+  background-attachment: local, local;
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.12);
   container-type: inline-size;
 }
@@ -428,7 +429,7 @@
 .ch-notyet__title {
   font: var(--ch-type-display-s);
   letter-spacing: -0.028em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
 }
 .ch-notyet__body {
@@ -530,7 +531,7 @@
 .ch-empty-page__title {
   margin: 0;
   font: 600 26px/1.15 var(--ch-font-sans);
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
   letter-spacing: -0.028em;
   color: var(--ch-ink-950);
   text-wrap: balance;

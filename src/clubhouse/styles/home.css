@@ -19,8 +19,8 @@
 }
 .ch-h-head h1 {
   font: 600 44px/1.08 var(--ch-font-sans);
-  letter-spacing: -0.036em;
-  font-variation-settings: 'wdth' 88;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
   text-wrap: balance;
 }
@@ -35,6 +35,120 @@
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
+}
+
+/* Desktop Home opens on a green hero band (owner, 2026-10-06: "darker ivory and green"), the desktop twin of the
+   phone hero: the date, greeting and brief in ivory on deep green lit from the top right, the actions as on-dark
+   controls set at the band's right, level with the brief. The week sheet sits below the band, never under it. */
+.ch-h-main--desk > .ch-h-head {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 40px;
+  row-gap: 10px;
+  align-items: end;
+  max-width: none;
+  padding: 36px 40px 34px;
+  border-radius: var(--ch-radius-xl);
+  background: radial-gradient(70% 90% at 100% 0%, rgb(123 199 154 / 0.2), transparent 62%),
+    radial-gradient(60% 80% at 0% 100%, rgb(176 149 96 / 0.12), transparent 70%),
+    linear-gradient(160deg, var(--ch-green-700) 0%, var(--ch-green-800) 55%, var(--ch-green-900) 100%);
+  box-shadow: inset 0 1px 0 rgb(210 244 221 / 0.14), var(--ch-elevation-cast);
+  color: var(--ch-ivory-100);
+  overflow: hidden;
+  isolation: isolate;
+}
+/* A fine contour pattern, like a green's slope lines, faded into the band's right side. */
+.ch-h-main--desk > .ch-h-head::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: repeating-radial-gradient(circle at 92% 18%, transparent 0 22px, rgb(210 244 221 / 0.055) 22px 23px);
+  -webkit-mask-image: linear-gradient(90deg, transparent 30%, #000 85%);
+  mask-image: linear-gradient(90deg, transparent 30%, #000 85%);
+  content: '';
+  pointer-events: none;
+}
+.ch-h-main--desk {
+  padding-top: 28px;
+}
+/* The contours drift, very slowly, like light moving over a green: ambient life, never attention. Off with reduced
+   motion and with Animations off. */
+@keyframes ch-h-contour-drift {
+  to {
+    translate: -28px 12px;
+  }
+}
+.ch-h-main--desk > .ch-h-head::after {
+  inset: -32px;
+  animation: ch-h-contour-drift 28s ease-in-out infinite alternate;
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-h-main--desk > .ch-h-head::after {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-h-main--desk > .ch-h-head::after {
+    animation: none;
+  }
+}
+.ch-h-main--desk > .ch-h-head > :not(.ch-h-head__actions) {
+  grid-column: 1;
+}
+.ch-h-main--desk > .ch-h-head .ch-h-head__date {
+  font-weight: 600;
+  color: var(--ch-hero-mint);
+}
+.ch-h-main--desk > .ch-h-head h1 {
+  margin: 2px 0 2px;
+  font-size: 42px;
+  line-height: 1.1;
+  color: #fffdf6;
+}
+.ch-h-main--desk > .ch-h-head .ch-h-head__sub {
+  max-width: 620px;
+  font-size: 16.5px;
+  line-height: 1.55;
+  color: rgb(250 248 240 / 0.9);
+}
+.ch-h-main--desk > .ch-h-head .ch-h-head__actions {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: end;
+  flex-wrap: nowrap;
+  margin: 0;
+}
+.ch-h-main--desk > .ch-h-head .ch-btn--secondary {
+  color: var(--ch-ivory-50);
+  background: var(--ch-on-dark-control-bg);
+  box-shadow: var(--ch-on-dark-control-shadow);
+}
+.ch-h-main--desk > .ch-h-head .ch-btn--secondary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #336b51 0%, #275c43 100%);
+  box-shadow: var(--ch-on-dark-control-shadow);
+}
+.ch-h-main--desk > .ch-h-head .ch-btn--secondary:active:not(:disabled) {
+  box-shadow: var(--ch-on-dark-control-press-shadow);
+}
+.ch-h-main--desk > .ch-h-head .ch-btn--secondary svg {
+  color: var(--ch-hero-mint);
+}
+.ch-h-main--desk > .ch-h-head .ch-btn--primary {
+  color: var(--ch-green-800);
+  background: linear-gradient(180deg, var(--ch-ivory-25), var(--ch-ivory-150));
+  box-shadow: var(--ch-on-dark-primary-shadow);
+}
+.ch-h-main--desk > .ch-h-head .ch-btn--primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #fff, var(--ch-ivory-100));
+}
+.ch-h-main--desk > .ch-h-head .ch-btn--primary .ch-btn__kbd {
+  color: var(--ch-green-700);
+  background: rgb(15 74 47 / 0.08);
+  box-shadow: inset 0 0 0 1px rgb(15 74 47 / 0.16);
+}
+/* The first sheet follows the band with the page's own rhythm. */
+.ch-h-main--desk > .ch-h-head + .ch-h-sheet,
+.ch-h-main--desk > .ch-h-head + .ch-h-flow {
+  margin-top: 24px;
 }
 
 /* The week and the latest round share one lit sheet, split by a seam. */
@@ -113,11 +227,11 @@
 }
 /* On the week strip's well tertiary measured 4.1:1 (UX360 sampled 3.7:1); secondary holds 5.4:1. Aesthetic audit X-2. */
 .ch-h-day__d {
-  font: 500 11.5px/1 var(--ch-font-sans);
+  font: 600 12px/1 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-h-day__n {
-  font: 600 15px/1 var(--ch-font-sans);
+  font: 650 16px/1 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-h-day__m {
@@ -262,7 +376,7 @@
 }
 .ch-h-round__score > span:first-child {
   font: var(--ch-type-figure-l);
-  letter-spacing: -0.045em;
+  letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 92;
   color: var(--ch-text-primary);
 }
@@ -303,14 +417,24 @@
 }
 .ch-h-nine__holes {
   height: 20px;
-  font: 500 11.5px/1 var(--ch-font-sans);
+  font: 600 12px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-h-nine__par {
   height: 20px;
-  border-bottom: 1px solid rgb(28 25 18 / 0.08);
-  font: 400 12px/1 var(--ch-font-sans);
+  border-bottom: 1px solid rgb(28 25 18 / 0.14);
+}
+.ch-scoreboard .ch-h-nine__par {
+  border-bottom-color: var(--ch-board-rule);
+}
+.ch-h-nine__par {
+  font: 500 12px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
+}
+/* Plain scores (par) read as ink, the same weight as the marks beside them. */
+.ch-h-nine__row:not(.ch-h-nine__holes):not(.ch-h-nine__par) > [role='cell'] {
+  font: 600 13.5px/1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
 }
 .ch-h-nine__tot {
   font: 600 14px/1 var(--ch-font-sans);
@@ -326,7 +450,7 @@
   gap: 12px;
   margin-top: 4px;
   padding-top: 14px;
-  border-top: 1px solid var(--ch-border-hairline);
+  box-shadow: var(--ch-seam-x);
 }
 .ch-h-round__stats {
   display: flex;
@@ -357,6 +481,91 @@
   color: var(--ch-chart-loss);
 }
 
+/* Coach desktop: recent rounds close the latest-round pane (LatestRound.tsx). Rows on the sheet, the shown round a
+   soft green tint with a lit edge; seams between them like the leaderboard. */
+.ch-h-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 16px;
+  box-shadow: var(--ch-seam-x);
+}
+.ch-h-rail__title {
+  font: var(--ch-type-label-s);
+  color: var(--ch-text-tertiary);
+}
+.ch-h-rail ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 -10px;
+  padding: 0;
+  list-style: none;
+}
+.ch-h-rail__item {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto 36px;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-h-rail__item:hover {
+  background: rgb(21 90 57 / 0.045);
+}
+.ch-h-rail__item:active {
+  background: rgb(21 90 57 / 0.08);
+}
+.ch-h-rail__item.is-on {
+  background: var(--ch-green-25);
+  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.12), inset 0 1px 0 rgb(255 255 255 / 0.9);
+}
+.ch-h-rail__item:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 1px;
+}
+.ch-h-rail__who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ch-h-rail__name {
+  overflow: hidden;
+  font: 600 13.5px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ch-h-rail__meta {
+  overflow: hidden;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ch-h-rail__score {
+  font: 600 17px/1 var(--ch-font-sans);
+  letter-spacing: -0.02em;
+  color: var(--ch-text-primary);
+}
+.ch-h-rail__par {
+  justify-self: end;
+  font: 600 12.5px/1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-h-rail__par.is-under {
+  color: var(--ch-score-under);
+}
+
 /* Leaderboard */
 .ch-h-sec {
   display: flex;
@@ -375,40 +584,48 @@
   font: var(--ch-type-display-s);
   font-size: 21px;
   letter-spacing: -0.028em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
 }
 .ch-h-sec span {
   font: var(--ch-type-body-s);
   color: var(--ch-text-tertiary);
 }
+/* The leaderboard is one reading sheet: a quiet column-label row, then players separated by seams inset to the
+   content edge. No header well, no card-in-card hover: a row lights with a soft tint, the podium positions sit in small
+   keys (the leader's green), and the season average is the row's figure. */
 .ch-h-lb {
-  padding: 6px;
+  padding: 4px 0 6px;
   overflow-x: auto;
 }
 .ch-h-lb__row {
+  position: relative;
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: 28px minmax(220px, 1fr) 164px 64px 64px 76px;
+  grid-template-columns: 28px minmax(220px, 1fr) 164px 72px 64px 76px;
   gap: 16px;
   align-items: center;
   width: 100%;
   min-width: 680px;
-  padding: 12px 8px;
-  border-bottom: 1px solid var(--ch-border-hairline);
-  border-radius: 10px;
+  padding: 13px 22px;
   color: inherit;
   text-decoration: none;
-  transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease),
-    transform var(--ch-dur-quick) var(--ch-ease);
+  transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-h-lb__row:last-child {
-  border-bottom: 0;
+/* A seam between players, inset to the content edge so it never meets the sheet's curve. */
+.ch-h-lb__row + .ch-h-lb__row::before {
+  position: absolute;
+  top: 0;
+  right: 22px;
+  left: 22px;
+  height: 2px;
+  box-shadow: var(--ch-seam-x);
+  content: '';
+  pointer-events: none;
 }
 .ch-h-lb__head {
-  margin-bottom: 4px;
-  padding: 10px 8px;
-  border-bottom: 0;
+  padding-top: 12px;
+  padding-bottom: 10px;
   font: var(--ch-type-label-s);
   color: var(--ch-text-tertiary);
 }
@@ -416,21 +633,61 @@
   cursor: pointer;
 }
 .ch-h-lb__row.is-link:hover {
-  border-bottom-color: transparent;
-  background: var(--ch-raised-bg);
-  box-shadow: var(--ch-raised-shadow);
+  background: linear-gradient(90deg, rgb(21 90 57 / 0.035), rgb(21 90 57 / 0.06) 60%, rgb(21 90 57 / 0.035));
+}
+.ch-h-lb__row.is-link:hover::before,
+.ch-h-lb__row.is-link:hover + .ch-h-lb__row::before {
+  opacity: 0;
+}
+.ch-h-lb__row.is-link::after {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  width: 14px;
+  height: 14px;
+  background: var(--ch-green-600);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+  opacity: 0;
+  translate: -6px -50%;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease), translate var(--ch-dur-base) var(--ch-ease);
+  content: '';
+}
+.ch-h-lb__row.is-link:hover::after,
+.ch-h-lb__row.is-link:focus-visible::after {
+  opacity: 1;
+  translate: 0 -50%;
+}
+.ch-h-lb__row.is-link:active {
+  background: rgb(21 90 57 / 0.08);
 }
 .ch-h-lb__row.is-link:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: -2px;
+  border-radius: var(--ch-radius-md);
 }
 .ch-h-lb .r {
   justify-self: end;
   text-align: right;
 }
 .ch-h-lb__pos {
-  font: 500 13px/1 var(--ch-font-sans);
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  font: 600 12.5px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
+}
+.ch-h-lb__pos.is-top {
+  border-radius: 50%;
+  color: var(--ch-ink-700);
+  background: var(--ch-raised-bg);
+  box-shadow: var(--ch-key-raised-shadow);
+}
+.ch-h-lb__pos.is-lead {
+  color: var(--ch-ivory-25);
+  background: linear-gradient(180deg, var(--ch-green-500), var(--ch-green-700));
+  box-shadow: var(--ch-score-eagle-shadow);
 }
 .ch-h-lb__who {
   display: flex;
@@ -440,27 +697,60 @@
 }
 .ch-h-lb__name {
   display: block;
-  font: 600 14px/1.25 var(--ch-font-sans);
+  font: 600 14.5px/1.25 var(--ch-font-sans);
+  letter-spacing: -0.01em;
   color: var(--ch-text-primary);
 }
 .ch-h-lb__meta {
   display: block;
+  margin-top: 2px;
   font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
 }
+/* The form word carries a small state dot, so the column scans by colour before it reads. */
+.ch-h-lb__status::before {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 5px 1px 0;
+  border-radius: 50%;
+  background: var(--ch-ink-300);
+  vertical-align: middle;
+  content: '';
+}
+.ch-h-lb__status.is-improving {
+  color: var(--ch-green-600);
+}
+.ch-h-lb__status.is-improving::before {
+  background: var(--ch-green-500);
+}
+.ch-h-lb__status.is-slipping,
+.ch-h-lb__status.is-quiet {
+  color: var(--ch-chart-loss);
+}
+.ch-h-lb__status.is-slipping::before,
+.ch-h-lb__status.is-quiet::before {
+  background: var(--ch-chart-loss);
+}
 .ch-h-lb__num {
   font: 500 15px/1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+/* The season average is the row's figure. */
+.ch-h-lb__row:not(.ch-h-lb__head) > .ch-h-lb__num:nth-child(4) {
+  font: 600 17px/1 var(--ch-font-sans);
+  letter-spacing: -0.02em;
   color: var(--ch-text-primary);
 }
 .ch-h-lb__num.is-under {
   color: var(--ch-score-under);
 }
 .ch-h-lb__sg {
-  font: 500 14px/1 var(--ch-font-sans);
+  font: 600 14px/1 var(--ch-font-sans);
 }
 .ch-h-lb__sg.is-early {
   font: 500 12.5px/1 var(--ch-font-sans);
-  color: var(--ch-chart-loss);
+  color: var(--ch-text-tertiary);
 }
 .ch-h-lb__trend {
   display: flex;
@@ -584,8 +874,8 @@
   .ch-hm > .ch-hm-hero > h1 {
     margin: 8px 0 10px;
     font: 600 32px/1.05 var(--ch-font-sans);
-    letter-spacing: -0.036em;
-    font-variation-settings: 'wdth' 86;
+    letter-spacing: -0.026em;
+    font-variation-settings: 'wdth' 96;
     color: var(--ch-ivory-100);
   }
   /* The player's hero has no brief line: the greeting sits directly on Up next. */
@@ -1450,7 +1740,7 @@
 .ch-ph-figs dd {
   margin: 0;
   font: 500 32px/1 var(--ch-font-sans);
-  letter-spacing: -0.045em;
+  letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 92;
   color: var(--ch-ink-950);
 }
@@ -1534,7 +1824,7 @@
 }
 .ch-ph-leg__v > span {
   font: 500 34px/1 var(--ch-font-sans);
-  letter-spacing: -0.045em;
+  letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 92;
   color: var(--ch-ink-950);
 }
@@ -1785,6 +2075,10 @@
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
 }
+.ch-ph-nines.ch-scoreboard {
+  background: var(--ch-board-bg);
+  box-shadow: var(--ch-board-shadow);
+}
 .ch-ph-nines > .ch-nine {
   border-radius: 0;
   background: none;
@@ -1792,6 +2086,9 @@
 }
 .ch-ph-nines > .ch-nine + .ch-nine {
   box-shadow: inset 0 1px 0 rgb(28 25 18 / 0.08);
+}
+.ch-ph-nines.ch-scoreboard > .ch-nine + .ch-nine {
+  box-shadow: inset 0 1px 0 var(--ch-board-rule);
 }
 /* The round's three figures (.mh-form__figs in the card): ruled in green, a rule between them, the figure over its label. */
 .ch-ph-strip {

@@ -78,8 +78,8 @@
 .ch-st-head h1 {
   font: 600 38px/1.08 var(--ch-font-sans);
   color: var(--ch-text-primary);
-  letter-spacing: -0.036em;
-  font-variation-settings: 'wdth' 88;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-st-head p {
   margin-top: 8px;
@@ -193,7 +193,7 @@
   align-items: baseline;
   gap: 3px;
   font: 500 36px/1 var(--ch-font-sans);
-  letter-spacing: -0.045em;
+  letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 92;
 }
 .ch-fg__v small {
@@ -861,8 +861,8 @@ a.ch-lg__r:focus-visible {
 }
 .ch-pf-hero__id h1 {
   font: 600 32px/1.08 var(--ch-font-sans);
-  letter-spacing: -0.036em;
-  font-variation-settings: 'wdth' 88;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-pf-hero__id p {
   font: var(--ch-type-body-s);
@@ -1161,7 +1161,7 @@ a.ch-lg__r:focus-visible {
   margin-bottom: 6px;
   font: 600 21px/1.2 var(--ch-font-sans);
   letter-spacing: -0.028em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-gm__t p {
   max-width: 68ch;
@@ -1723,8 +1723,8 @@ a.ch-lg__r:focus-visible {
   }
   .ch-stm-head h1 {
     font: 600 28px/1.1 var(--ch-font-sans);
-    letter-spacing: -0.034em;
-    font-variation-settings: 'wdth' 88;
+    letter-spacing: -0.026em;
+    font-variation-settings: 'wdth' 96;
     color: var(--ch-text-primary);
   }
   /* One card, the figures side by side split by hairlines (m.css .m-figs), never a grid of cards. */
@@ -2022,7 +2022,7 @@ a.ch-lg__r:focus-visible {
     overflow: hidden;
     font: 600 24px/1.1 var(--ch-font-sans);
     letter-spacing: -0.03em;
-    font-variation-settings: 'wdth' 88;
+    font-variation-settings: 'wdth' 96;
     color: var(--ch-text-primary);
     text-overflow: ellipsis;
     white-space: nowrap;

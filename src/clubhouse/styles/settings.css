@@ -13,8 +13,8 @@
 }
 .ch-set-head h1 {
   font: 600 40px/1.08 var(--ch-font-sans);
-  letter-spacing: -0.036em;
-  font-variation-settings: 'wdth' 88;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
 }
 .ch-set-head p {

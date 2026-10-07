@@ -131,7 +131,7 @@ export function LatestRound({ data, mine = false, lead }: { data: ChCoachHome['l
               </div>
 
               {r.holes ? (
-                <ScrollRegion label={mine ? 'Your scorecard' : `${r.playerName}'s scorecard`} className="ch-h-card ch-well-soft">
+                <ScrollRegion label={mine ? 'Your scorecard' : `${r.playerName}'s scorecard`} className="ch-h-card ch-scoreboard">
                   <Nine label="Out" holes={r.holes.slice(0, 9)} />
                   <Nine label="In" holes={r.holes.slice(9)} />
                 </ScrollRegion>
@@ -179,6 +179,40 @@ export function LatestRound({ data, mine = false, lead }: { data: ChCoachHome['l
               </div>
             </m.div>
           </AnimatePresence>
+        </div>
+      )}
+
+      {/* Coach desktop: the week beside this pane runs longer, so the other recent rounds fill the pane's foot as a
+          picker (same rounds as the pager); a tap shows that round above. */}
+      {!mine && !lead && !data.error && rounds.length > 1 && (
+        <div className="ch-h-rail" role="group" aria-label="Recent rounds">
+          <h3 className="ch-h-rail__title">Recent rounds</h3>
+          <ul>
+            {rounds.map((x, j) => (
+              <li key={x.id}>
+                <button
+                  type="button"
+                  className={'ch-h-rail__item' + (j === i ? ' is-on' : '')}
+                  aria-pressed={j === i}
+                  onClick={() => {
+                    if (j === i) return;
+                    setDir(j > i ? 1 : -1);
+                    setI(j);
+                  }}
+                >
+                  <Avatar name={x.playerName} size={26} />
+                  <span className="ch-h-rail__who">
+                    <span className="ch-h-rail__name">{x.playerName}</span>
+                    <span className="ch-h-rail__meta">{x.meta.split(' · ').slice(0, 2).join(' · ')}</span>
+                  </span>
+                  <span className="ch-h-rail__score ch-num">{x.score}</span>
+                  <span className={'ch-h-rail__par ch-num' + (x.toPar != null && x.toPar < 0 ? ' is-under' : '')}>
+                    {formatToPar(x.toPar)}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </section>

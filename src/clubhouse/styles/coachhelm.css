@@ -34,8 +34,8 @@
 }
 .ch-hl-h h1 {
   font: 600 44px/1 var(--ch-font-sans);
-  letter-spacing: -0.036em;
-  font-variation-settings: 'wdth' 86;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-hl-h p {
   max-width: 56ch;
@@ -71,7 +71,7 @@
   font: 600 32px/1.12 var(--ch-font-sans);
   letter-spacing: -0.03em;
   text-wrap: balance;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-hl-lede {
   max-width: 58ch;

@@ -1,5 +1,20 @@
 # Clubhouse changelog
 
+## 2026-10-06 — Tone, type and scoreboard (owner direction)
+
+Owner direction, given live while reviewing in Safari. The page is a slightly deeper ivory, about midway between the
+earlier ivory and the darker trial, with a faint green-and-champagne light across its top. Cards return to a light
+ivory that stands off it ("too much white", then "make the cards lighter", then "somewhere in between").
+- **Display type:** relaxed everywhere. The width axis goes from 88 to 96 and the tightest tracking eases to -0.026em,
+  after the owner called the display type "too compact".
+- **Wells:** a step darker with a crisper edge. Muted text inside any well steps up one ink, so dates and scores
+  never sit ivory on ivory.
+- **New scoreboard material (`.ch-scoreboard`):** scorecards are set on a deep green board with ivory numerals. Board
+  finishes for the marks: a red disc under par, a ringed disc for eagle, an ivory outline over par, and a solid ivory
+  tile for double or worse.
+- **Shadows and radii:** this pass's component shadows are now tokens, and the shared nine table radius is on the
+  scale.
+
 ## 2026-10-06 — Premium materials, seams, radius scale and smooth scroll
 
 Owner-directed pass on shared materials, verified in Safari 27 (desktop 1440 and

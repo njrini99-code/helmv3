@@ -48,8 +48,8 @@
   margin: 0;
   font: var(--ch-type-display-l);
   font-size: 34px;
-  letter-spacing: -0.036em;
-  font-variation-settings: 'wdth' 88;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-cal-title__yr {
   font: 500 15px/1 var(--ch-font-sans);
@@ -930,7 +930,7 @@
   font: var(--ch-type-display-s);
   font-size: 22px;
   letter-spacing: -0.028em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
   text-wrap: balance;
 }
@@ -1271,7 +1271,7 @@
   font: var(--ch-type-display-s);
   font-size: 24px;
   letter-spacing: -0.028em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
   outline: none;
   transition: border-color var(--ch-dur-quick) var(--ch-ease);
@@ -1702,8 +1702,8 @@
   }
   .ch-calm-title {
     font: 600 28px/1.1 var(--ch-font-sans);
-    letter-spacing: -0.034em;
-    font-variation-settings: 'wdth' 88;
+    letter-spacing: -0.026em;
+    font-variation-settings: 'wdth' 96;
     color: var(--ch-text-primary);
   }
   /* The week is one card; the chosen day is the raised chip (m.css .m-week). */

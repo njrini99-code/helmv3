@@ -155,7 +155,7 @@ function Latest({ data }: { data: ChPlayerHome['latest'] }) {
             </span>
           </div>
           {r.holes ? (
-            <div className="ch-ph-nines">
+            <div className="ch-ph-nines ch-scoreboard">
               <Nine label="Out" holes={r.holes.filter((h) => h.n <= 9)} caption="Front nine" />
               <Nine label="In" holes={r.holes.filter((h) => h.n > 9)} caption="Back nine" />
             </div>

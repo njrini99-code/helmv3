@@ -284,6 +284,27 @@
 .ch-score--sm.ch-score--double {
   border-radius: var(--ch-radius-xs);
 }
+/* On the scoreboard the marks take board finishes: red discs under par (an eagle ringed twice), an ivory outline over
+   par, a solid ivory tile for double or worse. */
+.ch-scoreboard .ch-score--birdie,
+.ch-scoreboard .ch-score--eagle {
+  color: #fff8f5;
+  background: linear-gradient(180deg, #d0574a 0%, #a8372b 100%);
+  box-shadow: var(--ch-board-birdie-shadow);
+}
+.ch-scoreboard .ch-score--eagle {
+  box-shadow: var(--ch-board-eagle-shadow);
+}
+.ch-scoreboard .ch-score--bogey {
+  color: #fbf8ef;
+  background: transparent;
+  box-shadow: var(--ch-board-bogey-shadow);
+}
+.ch-scoreboard .ch-score--double {
+  color: var(--ch-green-900);
+  background: linear-gradient(180deg, #fbf8ef 0%, #e6e1d3 100%);
+  box-shadow: var(--ch-board-double-shadow);
+}
 .ch-score--empty {
   color: var(--ch-ink-300);
 }
@@ -487,7 +508,7 @@
   padding: 6px 4px;
   border-collapse: separate;
   border-spacing: 0;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: 0 0 0 1px var(--ch-border-hairline);
   table-layout: fixed;
@@ -527,6 +548,9 @@
 }
 .ch-nine b {
   font: 600 14px/1 var(--ch-font-sans);
+}
+.ch-scoreboard .ch-nine .is-par td {
+  border-bottom-color: var(--ch-board-rule);
 }
 
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn

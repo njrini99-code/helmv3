@@ -46,8 +46,8 @@
   margin: 0;
   font: var(--ch-type-display-s);
   font-size: 26px;
-  letter-spacing: -0.034em;
-  font-variation-settings: 'wdth' 88;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
 }
 .ch-ms-rail__body {
@@ -883,7 +883,7 @@
   font: var(--ch-type-display-s);
   font-size: 24px;
   letter-spacing: -0.028em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
   text-wrap: balance;
 }
@@ -1374,7 +1374,7 @@
     margin: 10px 0 2px;
     font: 600 24px/1.1 var(--ch-font-sans);
     letter-spacing: -0.03em;
-    font-variation-settings: 'wdth' 88;
+    font-variation-settings: 'wdth' 96;
     color: var(--ch-text-primary);
   }
   .ch-msp-prof p {

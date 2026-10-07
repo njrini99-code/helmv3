@@ -285,7 +285,7 @@ button.ch-rt-strip__h.is-done:hover {
 .ch-rt-hero__dist b {
   font: 500 120px/0.85 var(--ch-font-sans);
   letter-spacing: -0.06em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
   font-variant-numeric: tabular-nums;
   color: var(--ch-ink-950);
 }
@@ -1288,7 +1288,7 @@ button.ch-rt-strip__h.is-done:hover {
 .ch-rt-sum__hero b {
   font: 500 64px/0.9 var(--ch-font-sans);
   letter-spacing: -0.06em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
   font-variant-numeric: tabular-nums;
 }
 .ch-rt-sum__hero em {

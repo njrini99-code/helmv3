@@ -32,8 +32,8 @@
 .ch-rd-h h1 {
   margin: 8px 0 0;
   font: 600 36px/1.05 var(--ch-font-sans);
-  letter-spacing: -0.036em;
-  font-variation-settings: 'wdth' 86;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
 }
 
 /* The hero: the round in progress beside the season */
@@ -93,7 +93,7 @@
   margin-top: 18px;
   font: 600 28px/1.05 var(--ch-font-sans);
   letter-spacing: -0.03em;
-  font-variation-settings: 'wdth' 86;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-rd-unf__m {
   margin-top: 5px;
@@ -276,7 +276,7 @@
 .ch-rd-season__f dd {
   margin: 0;
   font: 500 22px/1 var(--ch-font-sans);
-  letter-spacing: -0.035em;
+  letter-spacing: -0.026em;
 }
 /* The figure's sub-line: a second dd, so the list stays dt/dd pairs (axe definition-list). */
 .ch-rd-season__f dd + dd {
@@ -710,7 +710,7 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rd-sc__s b {
   font: 500 22px/1 var(--ch-font-sans);
-  letter-spacing: -0.035em;
+  letter-spacing: -0.026em;
   color: var(--ch-ink-950);
 }
 .ch-rd-sc__s em {
@@ -897,8 +897,8 @@ a.ch-rd-sc:focus-visible {
   margin: 0;
   color: var(--ch-ivory-100);
   font: 600 38px/1 var(--ch-font-sans);
-  letter-spacing: -0.035em;
-  font-variation-settings: 'wdth' 86;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-rv-hero__m {
   display: inline-flex;
@@ -916,7 +916,7 @@ a.ch-rd-sc:focus-visible {
 .ch-rv-hero__s b {
   font: 500 84px/0.85 var(--ch-font-sans);
   letter-spacing: -0.06em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-rv-hero__s em {
   font: 600 18px/1 var(--ch-font-sans);

@@ -1,5 +1,9 @@
 # P006 — Calendar: changelog
 
+## 2026-10-06 — Display type relaxed
+
+The owner found the display type too compact. Display headings on this page widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on every Clubhouse page. Layout and content are unchanged.
+
 ## 2026-10-06 — Short-screen popup and hover verification
 
 Full-page WebKit Axe checks pass with either date/people popover open and with

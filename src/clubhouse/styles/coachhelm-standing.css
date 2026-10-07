@@ -40,7 +40,7 @@
   max-width: 30ch;
   font: 600 31px/1.15 var(--ch-font-sans);
   letter-spacing: -0.03em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-ivory-25);
   text-wrap: balance;
 }
