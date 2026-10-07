@@ -3,19 +3,17 @@
 //
 // Compaction throws away the transcript. This snapshots the facts a resumed
 // session needs to reorient — branch, how many files are dirty, this
-// session's own STATE file tail, and (best-effort) open PR numbers — to a
-// PER-SESSION file under the OS scratch directory, keyed by session_id so
-// concurrent sessions never collide and a restart of the SAME session can
-// still find its own snapshot. restore-session-state.mjs reads it back on
-// the next SessionStart(compact|resume) and hands it back as
-// `additionalContext`.
+// session's own STATE file tail (see tailStateFile), and (best-effort) open
+// PR numbers — to a PER-SESSION file under the OS scratch directory, keyed
+// by session_id so concurrent sessions never collide and a restart of the
+// SAME session can still find its own snapshot. restore-session-state.mjs
+// reads it back on the next SessionStart(compact|resume) and hands it back
+// as `additionalContext`.
 //
 // WHY THE OS TMPDIR AND NOT `.helm/session-state.json` IN THE WORKTREE: the
 // worktree is shared across however many sessions have it open, and a single
-// path there is exactly the shared-mutable-state race this repo's other
-// session-state file (.claude/hooks/lib/session-state.mjs) was designed
-// around avoiding. Keying by session_id under `os.tmpdir()` gives each
-// session its own file with no lock needed.
+// path there is exactly a shared-mutable-state race. Keying by session_id
+// under `os.tmpdir()` gives each session its own file with no lock needed.
 //
 // NO NETWORK: "open PR numbers by this author" would need `gh pr list`,
 // which is a network call. This hook deliberately does not make one —
@@ -72,7 +70,12 @@ export function scratchStatePath(sessionId) {
   return join(SCRATCH_DIR, `${safeId(sessionId)}.json`);
 }
 
-/** Last `n` non-empty lines of this session's STATE (JSONL event log), or []. */
+/**
+ * Last `n` non-empty lines of `.claude/session-state/<session_id>.jsonl`, or [].
+ * No hook writes that file any more (the PostToolUse ledger was retired), so
+ * this normally returns []. It stays read-only and tolerant so the snapshot
+ * shape restore-session-state.mjs expects is unchanged.
+ */
 export function tailStateFile(repoRoot, sessionId, n = 20) {
   const path = sessionStatePath(repoRoot, sessionId);
   if (!existsSync(path)) return [];

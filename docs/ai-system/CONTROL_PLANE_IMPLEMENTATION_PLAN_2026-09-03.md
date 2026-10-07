@@ -1,6 +1,12 @@
 <!-- markdownlint-disable MD004 MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Helm Bridge Control-Plane Implementation Plan
 
+**Historical:** these npm scripts named below were not built or were
+retired, and are absent from `package.json`: `release:budget`,
+`release:prepare`, `release:check`, `reliability:collect`, `graph:impact`,
+`journeys:check`. Treat references to them as design
+history, not commands to run.
+
 > Scout deliverable. Read-only research against the canonical checkout
 > `/Users/ricknini/Downloads/helmv3` at commit `44f4ce183` (`git rev-parse
 > --short HEAD`, run 2026-09-02). This document was written into the

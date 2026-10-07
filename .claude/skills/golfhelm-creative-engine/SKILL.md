@@ -5,6 +5,10 @@ description: Generate premium Instagram creatives, social media ads, and marketi
 
 # GolfHelm Creative Engine
 
+> **Design-tool tokens only.** The `warm-*` token names in this skill are for
+> marketing/Pencil artwork only, never app code: `.claude/rules/design-system.md`
+> bans `warm-*` on dashboard surfaces.
+
 Generate premium Instagram creatives that look like they were designed by a senior product designer at a premium SaaS studio, not an AI. Every creative is built from GolfHelm's real design tokens, real UI patterns, and real product features.
 
 ## Before You Start

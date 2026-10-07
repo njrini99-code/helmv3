@@ -1,6 +1,11 @@
 # GolfHelm Self-Healing Engineering System — Master Design Specification
 <!-- markdownlint-disable MD033 -->
 
+**Historical:** these npm scripts named below were not built or were
+retired, and are absent from `package.json`: `release:budget`,
+`release:prepare`, `release:check`, `reliability:collect`. Treat references to them as design
+history, not commands to run.
+
 > Supplied by the owner 2026-08-21 as the implementation prompt for wiring the
 > GolfHelm Engineering OS. This is the long-form architecture/design/reference
 > document. The runtime operating contract every Claude session loads is the

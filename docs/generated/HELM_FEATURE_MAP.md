@@ -58,7 +58,7 @@ is a second thing to keep true.
 **CoachHelm AI** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/coachhelm-ai.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/coachhelm/**`, `src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**`, `src/components/golf/coachhelm/**`, `src/app/api/coachhelm/**`, `src/app/api/cron/coachhelm-calibration/**`, `src/app/api/cron/coachhelm-insight-lifecycle/**` … and 21 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/coachhelm/**`, `src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**`, `src/components/golf/coachhelm/**`, `src/app/api/coachhelm/**`, `src/app/api/cron/coachhelm-calibration/**`, `src/app/api/cron/coachhelm-insight-lifecycle/**` … and 20 more in the registry
 - **Telemetry:** `coachhelm_ai_engine` (coachhelm, high), `insights_management` (coachhelm, med), `coachhelm_analytics` (coachhelm, low), `round_review_ai` (coachhelm, med)
 - **Incidents:** `memory/incidents/coachhelm_ai/INC-2026-09-26-safety-net-coverage-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-26-validation-cron-rounds-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-27-calibration-load-stampede.md`, `memory/incidents/coachhelm_ai/INC-2026-09-27-exposure-returned-fetch-failure.md`, `memory/incidents/coachhelm_ai/INC-2026-09-28-coachhelm-read-writes-causal.md`, `memory/incidents/coachhelm_ai/INC-2026-09-28-roster-cohort-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-28-roster-exposure-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-30-best-effort-budget-abort-triage-loop.md`
 - **Repair units:** `coachhelm-safety-net-anon-client-2026-08-27` (triaging), `validation-rounds-prefetch-2026-09-26` (verified), `safety-net-coverage-prefetch-2026-09-26` (verified), `calibration-load-dedupe-2026-09-27` (verified), `exposure-returned-transient-retry-2026-09-27` (verified), `roster-cohort-batch-2026-09-28` (verified), `roster-exposure-batch-2026-09-28` (verified), `best-effort-budget-abort-2026-09-30` (verified_in_production), `pattern-miner-starvation-info-2026-10-01` (verified), `safety-net-wake-reads-batched-2026-10-03` (verified)
@@ -102,7 +102,7 @@ is a second thing to keep true.
 **Qualifiers** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/qualifiers.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/qualifiers/**`, `src/app/golf/(dashboard)/dashboard/my-qualifiers/**`, `src/app/golf/(dashboard)/dashboard/coachhelm/qualifying/**`, `src/components/fairway/pages/qualifiers/**`, `src/components/fairway/pages/my-qualifiers/**`, `src/clubhouse/screens/qualifiers/**` … and 15 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/qualifiers/**`, `src/app/golf/(dashboard)/dashboard/my-qualifiers/**`, `src/app/golf/(dashboard)/dashboard/coachhelm/qualifying/**`, `src/components/fairway/pages/qualifiers/**`, `src/components/fairway/pages/my-qualifiers/**`, `src/clubhouse/screens/qualifiers/**` … and 14 more in the registry
 - **Telemetry:** `qualifiers` (golfhelm, med), `my_qualifiers` (golfhelm, low)
 - **Incidents:** `memory/incidents/qualifiers/INC-2026-08-22-end-date-closed-qualifier-early.md`
 - **Repair units:** `qualifier-manual-close-only-2026-08-22` (verified_in_production)
@@ -124,7 +124,7 @@ is a second thing to keep true.
 **Stats And Analytics** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/stats-analytics.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/stats/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/components/golf/stats/**`, `src/clubhouse/screens/stats/**`, `src/app/golf/actions/stats.ts`, `src/app/golf/actions/stats-data.ts` … and 28 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/stats/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/components/golf/stats/**`, `src/clubhouse/screens/stats/**`, `src/app/golf/actions/stats.ts`, `src/app/golf/actions/stats-data.ts` … and 27 more in the registry
 - **Telemetry:** `stats_analytics` (golfhelm, high), `my_game_profile` (golfhelm, low)
 - **Incidents:** `memory/incidents/stats_analytics/INC-2026-10-05-worst-hole-read-statement-timeout.md`
 - **Repair units:** `worst-hole-indexed-read-2026-10-05` (verified)
@@ -157,7 +157,7 @@ is a second thing to keep true.
 **Player CoachHelm And Development** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/player-coachhelm-development.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/coachhelm/**`, `src/app/golf/(dashboard)/dashboard/my-insights/**`, `src/app/golf/(dashboard)/dashboard/my-development/**`, `src/app/golf/(dashboard)/dashboard/development/**`, `src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**`, `src/components/golf/coachhelm/player/**` … and 25 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/coachhelm/**`, `src/app/golf/(dashboard)/dashboard/my-insights/**`, `src/app/golf/(dashboard)/dashboard/my-development/**`, `src/app/golf/(dashboard)/dashboard/development/**`, `src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**`, `src/components/golf/coachhelm/player/**` … and 23 more in the registry
 - **Telemetry:** `player_coachhelm_dashboard` (coachhelm, med), `development_plans_coach` (coachhelm, med), `my_development` (coachhelm, low), `drills_practice_rx` (coachhelm, low), `coachhelm_v3_goals` (coachhelm, med)
 - **Incidents:** `memory/incidents/player_coachhelm_development/INC-2026-09-24-page-read-ran-insight-generators.md`
 - **Repair units:** `coachhelm-page-read-no-generators-2026-09-24` (verified), `coachhelm-bounded-fanout-and-saturation-throttle-2026-09-25` (verified)
@@ -168,7 +168,7 @@ is a second thing to keep true.
 **Team Communications** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/team-communications.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/clubhouse/screens/messages/**`, `src/clubhouse/styles/messages.css`, `src/components/golf/announcements/**` … and 42 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/clubhouse/screens/messages/**`, `src/clubhouse/styles/messages.css`, `src/components/golf/announcements/**` … and 41 more in the registry
 - **Telemetry:** `messaging` (golfhelm, high), `announcements` (golfhelm, med), `notifications` (golfhelm, med)
 - **Incidents:** `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md`, `memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md`
 - **Repair units:** `reactions-anon-42501-after-session-drop-2026-09-27` (verified), `reactions-client-deadline-abort-2026-09-28` (verified), `reactions-save-deadline-abort-2026-10-05` (verified)
@@ -179,7 +179,7 @@ is a second thing to keep true.
 **Team Operations** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/team-operations.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/tasks/**`, `src/app/golf/(dashboard)/dashboard/documents/**`, `src/app/golf/(dashboard)/dashboard/travel/**`, `src/app/golf/(dashboard)/dashboard/hub/**`, `src/app/golf/(dashboard)/dashboard/team-hub/**`, `src/components/fairway/pages/tasks/**` … and 27 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/tasks/**`, `src/app/golf/(dashboard)/dashboard/documents/**`, `src/app/golf/(dashboard)/dashboard/travel/**`, `src/app/golf/(dashboard)/dashboard/hub/**`, `src/app/golf/(dashboard)/dashboard/team-hub/**`, `src/components/fairway/pages/tasks/**` … and 26 more in the registry
 - **Telemetry:** `task_management` (golfhelm, med), `documents` (golfhelm, low), `travel` (golfhelm, low), `coach_dashboard` (golfhelm, high)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -190,7 +190,7 @@ is a second thing to keep true.
 **Roster And Team** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/roster-team.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/roster/**`, `src/app/golf/(dashboard)/dashboard/team/**`, `src/components/golf/roster/**`, `src/components/fairway/pages/dashboard/FairwayCoachDashboard.tsx`, `src/app/api/golf/players/**`, `src/components/fairway/pages/roster/**` … and 13 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/roster/**`, `src/app/golf/(dashboard)/dashboard/team/**`, `src/components/golf/roster/**`, `src/components/fairway/pages/dashboard/FairwayCoachDashboard.tsx`, `src/app/api/golf/players/**`, `src/components/fairway/pages/roster/**` … and 12 more in the registry
 - **Telemetry:** `roster_management` (golfhelm, med), `team_info` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -201,7 +201,7 @@ is a second thing to keep true.
 **Recruiting HQ** · active · criticality medium · owner product
 
 - **Behaviour:** `memory/features/recruiting.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/recruiting/**`, `src/components/fairway/pages/recruiting/**`, `src/clubhouse/screens/recruiting/**`, `src/clubhouse/data/recruiting.ts`, `src/clubhouse/data/recruiting-shape.ts`, `src/clubhouse/routes/recruiting.tsx` … and 10 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/recruiting/**`, `src/components/fairway/pages/recruiting/**`, `src/clubhouse/screens/recruiting/**`, `src/clubhouse/data/recruiting.ts`, `src/clubhouse/data/recruiting-shape.ts`, `src/clubhouse/routes/recruiting.tsx` … and 9 more in the registry
 - **Telemetry:** `recruiting_prospect_tracking` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -234,7 +234,7 @@ is a second thing to keep true.
 **Player Hub** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/player-hub.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/hub/**`, `src/components/fairway/pages/hub/**`, `src/app/golf/actions/dashboard-data.ts`, `src/app/golf/actions/travel.ts`, `src/app/golf/actions/tasks.ts`, `src/app/golf/actions/attendance.ts` … and 13 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/hub/**`, `src/components/fairway/pages/hub/**`, `src/app/golf/actions/dashboard-data.ts`, `src/app/golf/actions/travel.ts`, `src/app/golf/actions/tasks.ts`, `src/app/golf/actions/attendance.ts` … and 12 more in the registry
 - **Telemetry:** `player_hub` (golfhelm, high)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

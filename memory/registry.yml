@@ -296,7 +296,6 @@ features:
       db:
         - supabase/migrations/*coachhelm*.sql
         - supabase/migrations/*insight*.sql
-        - supabase/migrations/*golf_coachhelm*.sql
         - supabase/migrations/*attribution*.sql
       tests:
         - src/test/coachhelm/**
@@ -403,7 +402,7 @@ features:
         # no-op rather than a wrong answer. It belongs here: stages.ts reads
         # the `baseball_pipeline_stage` enum and its only importers are 3
         # baseball files + src/lib/validation. The entry NAMED `recruiting`
-        # is golf's (golf routes, *golf_recruits*.sql) and is correct as-is.
+        # is golf's (golf routes, *recruit_documents*.sql) and is correct as-is.
         - src/lib/recruiting/**
       db:
         - supabase/migrations/*baseball*.sql
@@ -500,7 +499,7 @@ features:
       tests:
         - src/app/golf/actions/__tests__/golf-schemas.test.ts
         - src/test/coachhelm/v2/post-round-trigger.test.ts
-        - e2e/**/round*.spec.ts
+        - e2e/golf-round.spec.ts
     integrations:
       - supabase
       - coachhelm_ai
@@ -616,7 +615,6 @@ features:
         - src/lib/golf/qualifier-selection-reasons.ts
       db:
         - supabase/migrations/*qualifier*.sql
-        - supabase/migrations/*qualifying*.sql
       tests:
         - e2e/golf-qualifier.spec.ts
         - src/test/coachhelm/v3/qualifying.test.ts
@@ -772,7 +770,6 @@ features:
       db:
         - supabase/migrations/*stats*.sql
         - supabase/migrations/*strokes_gained*.sql
-        - supabase/migrations/*putting*.sql
         # Reclassified 2026-09-06 off team_access_control's retired blanket
         # glob (Phase 5 registry glob lint) — strokes-gained/cohort/standing
         # calibration and seed data.
@@ -1045,9 +1042,7 @@ features:
         - src/lib/coachhelm/v3/**
       db:
         - supabase/migrations/*focus_area*.sql
-        - supabase/migrations/*feedback*.sql
         - supabase/migrations/*round_review*.sql
-        - supabase/migrations/*genome*.sql
         - supabase/migrations/*goal*.sql
       tests:
         - src/test/coachhelm/**
@@ -1135,7 +1130,6 @@ features:
       db:
         - supabase/migrations/*messag*.sql
         - supabase/migrations/*announcement*.sql
-        - supabase/migrations/*communication*.sql
         # Reclassified 2026-09-06 off team_access_control's retired blanket
         # glob (Phase 5 registry glob lint).
         - supabase/migrations/*conversation*.sql
@@ -1231,7 +1225,6 @@ features:
         - supabase/migrations/*golf_document*.sql
         - supabase/migrations/*baseball_documents*.sql
         - supabase/migrations/*documents_storage*.sql
-        - supabase/migrations/*travel*.sql
       tests:
         - src/app/golf/actions/__tests__/travel.test.ts
         - src/components/fairway/pages/team-hub/FairwayTeamHub.logic.test.ts
@@ -1291,7 +1284,6 @@ features:
       services:
         - src/lib/auth/**
       db:
-        - supabase/migrations/*roster*.sql
         - supabase/migrations/*team*.sql
         - supabase/migrations/*coach_staff*.sql
         # Reclassified 2026-09-06 off team_access_control's retired blanket
@@ -1347,7 +1339,6 @@ features:
         - src/app/golf/actions/recruit-documents-limits.ts
       services: []
       db:
-        - supabase/migrations/*golf_recruits*.sql
         - supabase/migrations/*recruit_documents*.sql
       tests:
         - src/clubhouse/__tests__/recruiting.test.tsx
@@ -1523,7 +1514,6 @@ features:
       services:
         - src/lib/supabase/**
       db:
-        - supabase/migrations/*travel*.sql
         - supabase/migrations/*task*.sql
         # Narrowed 2026-09-23 — see calendar_events' db: list for why the
         # blanket `*event*.sql` was replaced with these (same set, same

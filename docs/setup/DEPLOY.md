@@ -1,5 +1,9 @@
 # 🚀 Helm Sports Labs - Deployment Guide
 
+> **Superseded:** production deploys are owner-run via
+> `scripts/deploy-prod.sh`; Vercel Git deploys are disabled. See AGENTS.md
+> "Production".
+
 ## Recommended: Deploy to Vercel (Free)
 
 Vercel made Next.js, so it's the easiest and fastest option.

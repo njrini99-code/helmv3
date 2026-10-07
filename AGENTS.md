@@ -147,7 +147,8 @@ authority). Required review automation: Review Gate and CodeQL
 ## Guards
 
 No permission rule or hook denies, asks for, or blocks Bash, Git, Supabase, or
-Vercel. The Git rules above (explicit staging, no force-push to `main`, no
+Vercel, except one owner-set `ask`: Vercel MCP deploy, promote, rollback and
+domain-purchase tools prompt first. The Git rules above (explicit staging, no force-push to `main`, no
 `--admin`, lifecycle tools for cleanup) are policy you follow, not guards that
 stop you; GitHub branch protection still enforces required checks on `main`. The generated
 `docs/CONTROL_PLANE_ENFORCEMENT.md` lists what is actually wired.

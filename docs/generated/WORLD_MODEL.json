@@ -2142,11 +2142,6 @@
     ],
     "tests": [
       {
-        "id": "tests:e2e/**/round*.spec.ts",
-        "pattern": "e2e/**/round*.spec.ts",
-        "category": "tests"
-      },
-      {
         "id": "tests:e2e/auth.spec.ts",
         "pattern": "e2e/auth.spec.ts",
         "category": "tests"
@@ -17153,13 +17148,13 @@
     },
     {
       "source": "golf_round_lifecycle",
-      "target": "tests:e2e/**/round*.spec.ts",
+      "target": "tests:e2e/golf-round.spec.ts",
       "kind": "feature_test",
       "evidence": [
         {
           "kind": "registry_glob",
           "path": "memory/registry.yml",
-          "pattern": "e2e/**/round*.spec.ts"
+          "pattern": "e2e/golf-round.spec.ts"
         }
       ]
     },

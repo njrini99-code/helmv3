@@ -15,13 +15,13 @@ Repo-local commands, agents, and skills — one line each, from each entry's own
 | `helm-reader` | Agent | Read-only Helm investigator whose answers are cited (file:line) and labelled verified vs inferred, checked against Helm's generated truth (database.ts, AUTOGEN blocks, memory/registry.yml, live… |
 | `helm-worker` | Agent | Delegated implementer for a bounded Helm slice — a clearly scoped change on named files or in a worktree, often run in parallel with other work. Implements, runs the checks that fit the change, and… |
 | `security-reviewer` | Agent | Security review of Helm changes touching auth, roles, RLS, service-role use, PII (including minors' data), server-to-client data exposure, API routes, webhooks, storage, or secrets. Use when a diff… |
-| `ui-polish-reviewer` | Agent | UI/UX review of Helm screens against the Fairway design system — hierarchy, density, loading/empty/error states, motion, accessibility, mobile behavior, and reuse of src/components/fairway… |
+| `ui-polish-reviewer` | Agent | UI/UX review of Helm Fairway screens only (not src/clubhouse/**; use clubhouse-polish-reviewer there) against the Fairway design system — hierarchy, density, loading/empty/error states, motion,… |
 | `verifier` | Agent | Independent check that a completion claim is true — reads the diff and runs the fitting gates itself instead of trusting the implementer's summary. Use before reporting a risky, broad, schema, auth,… |
 | `/cleanup-db` | Command | Report (never change) Supabase tables and columns with no references in code, SQL, or infra |
 | `/context` | Command | Build a feature-context pack for the given files/task and load the mapped docs |
 | `/gates` | Command | Run the checks relevant to the changed behavior and report real exit codes |
 | `/held` | Command | List migrations still on HOLD in supabase/migrations/HELD.md (read-only) |
-| `/land` | Command | Land a PR through the sole landing script and report the result |
+| `/land` | Command | Land a PR through the preferred landing script and report the result |
 | `/status` | Command | Repo/branch/worktree/control-plane health, summarized in under ten lines |
 | `/worktree` | Command | Create an isolated task workspace when concurrent writes need one |
 | `app-store-screenshots` | Skill | App Store and Google Play screenshot creation with exact platform specs. Covers iOS/Android dimensions, gallery ordering, device mockups, and preview videos. Use for: app store optimization, ASO, app… |
@@ -38,4 +38,3 @@ Repo-local commands, agents, and skills — one line each, from each entry's own
 | `pencil-golfhelm` | Skill | Supercharged Pencil design system for GolfHelm — UI mockups, marketing creatives, and feature prototypes using the Lunaris component library. Use when designing anything in Pencil for GolfHelm… |
 | `supabase` | Skill | Use when doing ANY task involving Supabase. Triggers: Supabase products (Database, Auth, Edge Functions, Realtime, Storage, Vectors, Cron, Queues); client libraries and SSR integrations (supabase-js,… |
 | `supabase-postgres-best-practices` | Skill | Postgres best practices maintained by Supabase, for Postgres running anywhere. Load this skill BEFORE writing or changing anything that lives in a Postgres database: creating or altering tables and… |
-| `supabase-server` | Skill | Use when planning or writing server-side code that uses `@supabase/server` — Edge Functions, Hono apps, webhook handlers, or any backend that creates Supabase clients or validates inbound auth.… |

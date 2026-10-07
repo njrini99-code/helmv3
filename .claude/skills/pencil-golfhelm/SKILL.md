@@ -7,6 +7,10 @@ description: Supercharged Pencil design system for GolfHelm — UI mockups, mark
 
 > The complete bridge between GolfHelm's product and Pencil's design canvas.
 
+**Design-tool tokens only.** The `warm-*` token names in this skill are for
+marketing/Pencil artwork only, never app code: `.claude/rules/design-system.md`
+bans `warm-*` on dashboard surfaces.
+
 ## Before You Start — EVERY TIME
 
 1. **Open the right file:** `pencil-welcome-desktop.pen` (the Lunaris design system with 101 components)

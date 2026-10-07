@@ -17,9 +17,9 @@ memory; the underlying implementations change and this skill can drift.
   `sport`, `feature`, `pg_code`, and `supabase_key_error`. These four are the
   ones this codebase deliberately sets (see step 5); anything else is
   Sentry's own default tagging.
-- `search_events` is the companion tool for raw event-level queries (e.g.
+- `search_errors` is the companion tool for raw event-level queries (e.g.
   "how many of these in the last hour") when the issue-level counts aren't
-  enough.
+  enough; `search_logs` and `search_traces` cover logs and spans.
 
 ## 2. Code: map the culprit to a file
 

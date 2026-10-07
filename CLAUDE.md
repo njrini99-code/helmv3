@@ -48,7 +48,9 @@ multi-agent PR review · `/helm-fix-ci` red CI on agent PRs.
 | `code-reviewer` | fresh-context review of a non-trivial diff |
 | `security-reviewer` | auth, RLS, PII, API routes, storage, secrets |
 | `db-migration-reviewer` | schema, RLS, grants, or migrations headed to production |
-| `ui-polish-reviewer` | Fairway UI/UX review of a changed screen |
+| `ui-polish-reviewer` | Fairway UI/UX review (not `src/clubhouse`) |
+| `clubhouse-polish-reviewer` | Clubhouse hierarchy/state/phone vs handoff |
+| `clubhouse-design-reviewer` | optional deep, scored Clubhouse design audit |
 
 Skills: `finish-task` (definition of done and green-gate traps),
 `helm-supabase` (Supabase client and query traps), `helm-sentry` (read-only
