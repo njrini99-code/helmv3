@@ -1683,30 +1683,29 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
     --ch-text-primary: var(--ch-on-green-ink);
     --ch-text-secondary: var(--ch-on-green-ink-soft);
     --ch-text-tertiary: var(--ch-on-green-ink-muted);
-    position: relative;
-    padding-bottom: 40px;
-    background: var(--ch-field-green);
-    box-shadow: 0 0 0 100vmax var(--ch-field-green);
-    clip-path: inset(-100vmax -100vmax 0 -100vmax);
+    padding-bottom: 14px;
+    /* The fade (owner, 2026-10-07: "number 1", smaller): the green is solid to just above the head's lower edge,
+       then melts into the page over the first 84px below it. A border image painted outside the box is ink
+       overflow, so it reaches the canvas edges and the top bar's band without adding scroll width, and the page's
+       cards, painted after it, rise out of the fade. */
+    border-image: linear-gradient(
+        to top,
+        rgb(11 58 37 / 0) 0,
+        rgb(11 58 37 / 0.08) 18px,
+        rgb(11 58 37 / 0.26) 36px,
+        rgb(11 58 37 / 0.52) 54px,
+        rgb(11 58 37 / 0.78) 72px,
+        rgb(11 58 37 / 0.93) 88px,
+        var(--ch-field-green) 104px
+      )
+      fill 0 / 0 / 100vmax 100vmax 84px 100vmax;
     color: var(--ch-text-primary);
     text-shadow: var(--ch-on-green-text-shadow-s);
-  }
-  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head]::before {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    height: 1px;
-    background: rgb(176 149 96 / 0.8);
-    box-shadow: 0 0 0 100vmax rgb(176 149 96 / 0.8);
-    clip-path: inset(0 -100vmax);
-    content: '';
-    pointer-events: none;
   }
   /* The title is set in the display serif, large and unhurried: the classic voice of the page. */
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] h1 {
     font-family: var(--ch-font-serif);
-    font-size: 58px;
+    font-size: 44px;
     font-weight: 400;
     line-height: 1.02;
     letter-spacing: -0.012em;
@@ -1715,7 +1714,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
     text-shadow: var(--ch-on-green-text-shadow);
   }
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] p {
-    font-size: 17.5px;
+    font-size: 15.5px;
     line-height: 1.5;
   }
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary {
@@ -1903,6 +1902,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
   /* Framed on the side (owner, 2026-10-07, with a reference screenshot): the green sidebar runs on as a thin green
      frame around the ivory dashboard, which sits inset with its own edge. */
   .ch-canvas {
+    margin: 16px 16px 16px 8px;
     box-shadow: var(--ch-elevation-framed);
   }
 }
