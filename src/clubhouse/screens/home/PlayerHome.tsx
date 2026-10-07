@@ -35,8 +35,8 @@ export function PlayerHome({ data, now }: { data: ChPlayerHome; /** Preview and 
   if (phone) return <PlayerHomePhone data={data} now={now} />;
   const post = postRoundHref();
   return (
-    <main className="ch-h-main ch-h-main--desk">
-      <header className="ch-h-head">
+    <main className="ch-h-main ch-h-main--desk" data-canopy="">
+      <header className="ch-h-head" data-canopy-head="">
         <span className="ch-h-head__date">{data.todayLabel}</span>
         <h1 className="ch-display">{data.greeting}</h1>
         <div className="ch-h-head__actions">

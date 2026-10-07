@@ -1,5 +1,14 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-06 — Large-title header on the canopy
+
+CoachHelm opens on the canopy:
+- **Header:** the role as a mint eyebrow, then a serif CoachHelm title and the live line. On desktop the view switch
+  (Board/Ask, or the player's views) sits level with the title instead of on its own row.
+- **Program pulse:** a serif title, seams between rows and round raised icon keys. Its reserved height applies only
+  while the pulse is streaming, so a short pulse no longer leaves empty space.
+- **Focus card:** the insight title is set in the display serif.
+
 ## 2026-10-06 — Display type relaxed
 
 The owner found the display type too compact. Display headings on this page widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on every Clubhouse page. Layout and content are unchanged.

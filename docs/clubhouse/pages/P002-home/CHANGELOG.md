@@ -1,5 +1,11 @@
 # P002 — Home: changelog
 
+## 2026-10-06 — Home on the canopy
+
+Desktop Home moves from the green band card onto the shared canopy: a serif greeting, the brief in larger type, and
+the actions set level with the brief. Section titles (This week, Latest round, Leaderboard, Scoring, Your game) and
+the phone hero greeting are set in the display serif.
+
 ## 2026-10-06 — Desktop hero band, leaderboard and scoreboard
 
 Desktop Home, coach and player, verified in Safari 27 at 1440×1000.

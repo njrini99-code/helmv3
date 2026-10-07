@@ -53,7 +53,7 @@ export function Sidebar({
       ) : (
         <div className="ch-brand">
           <img
-            src="/helm-main-logo-transparent-white-trim.png"
+            src="/clubhouse/auth/helm-golf-mark.png"
             alt=""
             width={32}
             height={32}

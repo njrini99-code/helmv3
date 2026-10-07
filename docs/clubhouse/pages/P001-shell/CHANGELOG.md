@@ -1,5 +1,11 @@
 # P001 — Shell: changelog
 
+## 2026-10-06 — Ivory sidebar and canopy
+
+The sidebar and frame are ivory, the selected row is a green key, the brand uses the green mark with a serif
+wordmark, and the next-event card is a light sheet. The shared canopy (`main[data-canopy]`) and its scroll-settling
+top bar live in shell.css.
+
 ## 2026-10-06 — Smooth scroll and materials
 
 The phone tab bar floats as a glass capsule above the safe area, and the canvas reserves its height. Desktop wheel scrolling eases through the canvas scroller (shared smooth scroll); route changes and Back restoration land instantly. Sidebar brand, nav item and next-event radii are on the scale.

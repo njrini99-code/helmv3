@@ -24,8 +24,8 @@ export function CoachHome({ data, now }: { data: ChCoachHome; /** Preview and te
   if (isFirstRun(data)) return <HomeFirstRun data={data} />;
   if (phone) return <HomePhone data={data} now={now} />;
   return (
-    <main className="ch-h-main ch-h-main--desk">
-      <header className="ch-h-head">
+    <main className="ch-h-main ch-h-main--desk" data-canopy="">
+      <header className="ch-h-head" data-canopy-head="">
         <span className="ch-h-head__date">{data.todayLabel}</span>
         <h1 className="ch-display">{data.greeting}</h1>
         {data.subline && <p className="ch-h-head__sub">{data.subline}</p>}

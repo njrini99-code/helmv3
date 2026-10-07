@@ -37,59 +37,18 @@
   margin-top: 8px;
 }
 
-/* Desktop Home opens on a green hero band (owner, 2026-10-06: "darker ivory and green"), the desktop twin of the
-   phone hero: the date, greeting and brief in ivory on deep green lit from the top right, the actions as on-dark
-   controls set at the band's right, level with the brief. The week sheet sits below the band, never under it. */
+/* Desktop Home opens on the canopy (shell.css, main[data-canopy]): the date, greeting and brief in ivory on the green
+   field, the actions set level with the brief at the right. No box: the green fades into the page under the week. */
+.ch-h-main--desk {
+  padding-top: 40px;
+}
 .ch-h-main--desk > .ch-h-head {
-  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   column-gap: 40px;
   row-gap: 10px;
   align-items: end;
   max-width: none;
-  padding: 36px 40px 34px;
-  border-radius: var(--ch-radius-xl);
-  background: radial-gradient(70% 90% at 100% 0%, rgb(123 199 154 / 0.2), transparent 62%),
-    radial-gradient(60% 80% at 0% 100%, rgb(176 149 96 / 0.12), transparent 70%),
-    linear-gradient(160deg, var(--ch-green-700) 0%, var(--ch-green-800) 55%, var(--ch-green-900) 100%);
-  box-shadow: inset 0 1px 0 rgb(210 244 221 / 0.14), var(--ch-elevation-cast);
-  color: var(--ch-ivory-100);
-  overflow: hidden;
-  isolation: isolate;
-}
-/* A fine contour pattern, like a green's slope lines, faded into the band's right side. */
-.ch-h-main--desk > .ch-h-head::after {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: repeating-radial-gradient(circle at 92% 18%, transparent 0 22px, rgb(210 244 221 / 0.055) 22px 23px);
-  -webkit-mask-image: linear-gradient(90deg, transparent 30%, #000 85%);
-  mask-image: linear-gradient(90deg, transparent 30%, #000 85%);
-  content: '';
-  pointer-events: none;
-}
-.ch-h-main--desk {
-  padding-top: 28px;
-}
-/* The contours drift, very slowly, like light moving over a green: ambient life, never attention. Off with reduced
-   motion and with Animations off. */
-@keyframes ch-h-contour-drift {
-  to {
-    translate: -28px 12px;
-  }
-}
-.ch-h-main--desk > .ch-h-head::after {
-  inset: -32px;
-  animation: ch-h-contour-drift 28s ease-in-out infinite alternate;
-}
-[data-ui='clubhouse'][data-motion='off'] .ch-h-main--desk > .ch-h-head::after {
-  animation: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .ch-h-main--desk > .ch-h-head::after {
-    animation: none;
-  }
 }
 .ch-h-main--desk > .ch-h-head > :not(.ch-h-head__actions) {
   grid-column: 1;
@@ -97,21 +56,12 @@
 .ch-h-main--desk > .ch-h-head .ch-h-head__date {
   font-weight: 600;
   color: var(--ch-hero-mint);
-  text-shadow: var(--ch-on-green-text-shadow-s);
 }
 .ch-h-main--desk > .ch-h-head h1 {
-  margin: 2px 0 2px;
-  font-size: 42px;
-  line-height: 1.1;
-  color: var(--ch-on-green-ink);
-  text-shadow: var(--ch-on-green-text-shadow);
+  margin: 4px 0 4px;
 }
 .ch-h-main--desk > .ch-h-head .ch-h-head__sub {
-  max-width: 620px;
-  font-size: 16.5px;
-  line-height: 1.55;
-  color: var(--ch-on-green-ink-soft);
-  text-shadow: var(--ch-on-green-text-shadow-s);
+  max-width: 640px;
 }
 .ch-h-main--desk > .ch-h-head .ch-h-head__actions {
   grid-column: 2;
@@ -120,39 +70,22 @@
   flex-wrap: nowrap;
   margin: 0;
 }
-.ch-h-main--desk > .ch-h-head .ch-btn--secondary {
-  color: var(--ch-on-green-ink);
-  text-shadow: var(--ch-on-green-text-shadow-s);
-  background: var(--ch-on-dark-control-bg);
-  box-shadow: var(--ch-on-dark-control-shadow);
-}
-.ch-h-main--desk > .ch-h-head .ch-btn--secondary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #336b51 0%, #275c43 100%);
-  box-shadow: var(--ch-on-dark-control-shadow);
-}
-.ch-h-main--desk > .ch-h-head .ch-btn--secondary:active:not(:disabled) {
-  box-shadow: var(--ch-on-dark-control-press-shadow);
-}
-.ch-h-main--desk > .ch-h-head .ch-btn--secondary svg {
-  color: var(--ch-hero-mint);
-}
-.ch-h-main--desk > .ch-h-head .ch-btn--primary {
-  color: var(--ch-green-800);
-  background: linear-gradient(180deg, var(--ch-ivory-25), var(--ch-ivory-150));
-  box-shadow: var(--ch-on-dark-primary-shadow);
-}
-.ch-h-main--desk > .ch-h-head .ch-btn--primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #fff, var(--ch-ivory-100));
-}
 .ch-h-main--desk > .ch-h-head .ch-btn--primary .ch-btn__kbd {
   color: var(--ch-green-700);
   background: rgb(15 74 47 / 0.08);
   box-shadow: inset 0 0 0 1px rgb(15 74 47 / 0.16);
 }
-/* The first sheet follows the band with the page's own rhythm. */
+/* The first sheet follows the title block with the page's own rhythm, where the green dissolves. */
 .ch-h-main--desk > .ch-h-head + .ch-h-sheet,
 .ch-h-main--desk > .ch-h-head + .ch-h-flow {
-  margin-top: 24px;
+  margin-top: 36px;
+}
+/* The canopy rises from under the top bar: the page's top padding is part of the green. */
+.ch-h-main--desk[data-canopy] {
+  padding-top: 0;
+}
+.ch-h-main--desk[data-canopy] > .ch-h-head {
+  padding-top: 44px;
 }
 
 /* The week and the latest round share one lit sheet, split by a seam. */
@@ -197,7 +130,8 @@
   min-height: 28px;
 }
 .ch-h-pane__head h2 {
-  font: var(--ch-type-title);
+  font: var(--ch-type-serif-s);
+  letter-spacing: -0.004em;
   color: var(--ch-text-primary);
 }
 .ch-h-pager {
@@ -585,10 +519,8 @@
   gap: 5px;
 }
 .ch-h-sec h2 {
-  font: var(--ch-type-display-s);
-  font-size: 21px;
-  letter-spacing: -0.028em;
-  font-variation-settings: 'wdth' 96;
+  font: var(--ch-type-serif-m);
+  letter-spacing: -0.006em;
   color: var(--ch-text-primary);
 }
 .ch-h-sec span {
@@ -877,9 +809,8 @@
   /* Three selectors deep on purpose: base.css's `.ch-root h1 { margin: 0 }` ties a two-selector rule, and which stylesheet loads last decides the tie (the preview route loads this one first, and the greeting sat hard against the date). */
   .ch-hm > .ch-hm-hero > h1 {
     margin: 8px 0 10px;
-    font: 600 32px/1.05 var(--ch-font-sans);
-    letter-spacing: -0.026em;
-    font-variation-settings: 'wdth' 96;
+    font: 400 38px/1.04 var(--ch-font-serif);
+    letter-spacing: -0.008em;
     color: var(--ch-on-green-ink);
     text-shadow: var(--ch-on-green-text-shadow);
   }
@@ -1610,9 +1541,9 @@
   gap: 12px;
 }
 .ch-ph-game__h > div > h2 {
-  margin: 0 0 5px;
-  font: 600 20px/1 var(--ch-font-sans);
-  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+  font: var(--ch-type-serif-m);
+  letter-spacing: -0.006em;
   color: var(--ch-text-primary);
 }
 /* The caption under the title only: the window picker's own labels are spans too, and took this grey. */

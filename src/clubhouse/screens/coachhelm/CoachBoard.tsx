@@ -332,11 +332,12 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
   // With CoachHelm off (CH-13305), Ask is off too, so the strip that leads there is not drawn.
   const tabs = data.off ? null : <CoachHelmTabs active={sw.shown} onGo={sw.go} />;
   return (
-    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined}>
+    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''}>
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone && tabs}
-      <Head who="Coach">{players.length > 0 && !data.off ? playersLine(playersOpen) : 'CoachHelm reads the rounds your players post.'}</Head>
-      {!phone && tabs}
+      <Head who="Coach" aside={!phone ? tabs : undefined}>
+        {players.length > 0 && !data.off ? playersLine(playersOpen) : 'CoachHelm reads the rounds your players post.'}
+      </Head>
       {body}
     </main>
   );

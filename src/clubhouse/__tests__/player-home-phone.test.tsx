@@ -216,7 +216,7 @@ describe('spacing the base reset can’t take away', () => {
     expect(css).toMatch(/\.ch-hm > \.ch-hm-hero > h1\s*{\s*margin: 8px 0 10px;/);
     expect(css).toMatch(/\.ch-hm-hero \.ch-hm-next h2\s*{\s*margin-top: 6px;/);
     expect(css).toMatch(/\.ch-ph-leg > \.ch-ph-leg__n\s*{\s*margin: 4px 0 0;/);
-    expect(css).toMatch(/\.ch-ph-game__h > div > h2\s*{\s*margin: 0 0 5px;/);
+    expect(css).toMatch(/\.ch-ph-game__h > div > h2\s*{\s*margin: 0 0 6px;/);
     expect(css).not.toMatch(/\n\s*\.ch-hm-hero h1\s*{/);
     expect(css).not.toMatch(/\n\s*\.ch-hm-hero__brief\s*{/);
   });

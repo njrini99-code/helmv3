@@ -3,7 +3,7 @@
 .ch-app {
   display: flex;
   height: 100dvh;
-  background: var(--ch-frame);
+  background: var(--ch-shell);
 }
 .ch-canvas {
   position: relative;
@@ -64,8 +64,8 @@
   height: 100%;
   padding: 14px 10px 12px;
   overflow-y: auto;
-  background: linear-gradient(180deg, #0e4029, #0a331f);
-  color: #f4f1e8;
+  background: var(--ch-shell);
+  color: var(--ch-text-primary);
 }
 .ch-brand {
   display: flex;
@@ -1652,4 +1652,221 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
   .ch-tab__badge {
     font-size: 12px;
   }
+}
+
+/* The canopy (owner, 2026-10-06: green contrast, "better than a basic card"; research: Apple Sports, Health and
+   Journal set colour in the navigation area as a field that fades into the page and settles as the large title
+   collapses). A page opts in with main[data-canopy] on desktop. The canvas paints a deep green field at its top that
+   fades through sage into the ivory page, edge to edge, scrolling with the content: no box, no corners. The page's
+   title block (data-canopy-head) is set in ivory on it and folds away as the page scrolls, while the top bar settles
+   from clear-on-green to the ivory glass. Without scroll-driven animations the bar is the glass from the start. */
+@property --ch-bar-ink {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #0f4a2f;
+}
+@property --ch-bar-ring {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #ebe7dc;
+}
+@property --ch-bar-ink-soft {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #6b6860;
+}
+@media (min-width: 821px) {
+  /* The field is painted by the title block itself: a frame-green fill spread edge to edge (a box-shadow, so it adds
+     no scroll width) and clipped at the block's lower edge, so the green always ends exactly where the title block
+     does, on every page. A fine gilt rule closes it. The frame, the sidebar and this field are one green. */
+  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] {
+    --ch-text-primary: var(--ch-on-green-ink);
+    --ch-text-secondary: var(--ch-on-green-ink-soft);
+    --ch-text-tertiary: var(--ch-on-green-ink-muted);
+    position: relative;
+    padding-bottom: 40px;
+    background: var(--ch-field-green);
+    box-shadow: 0 0 0 100vmax var(--ch-field-green);
+    clip-path: inset(-100vmax -100vmax 0 -100vmax);
+    color: var(--ch-text-primary);
+    text-shadow: var(--ch-on-green-text-shadow-s);
+  }
+  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head]::before {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 1px;
+    background: rgb(176 149 96 / 0.8);
+    box-shadow: 0 0 0 100vmax rgb(176 149 96 / 0.8);
+    clip-path: inset(0 -100vmax);
+    content: '';
+    pointer-events: none;
+  }
+  /* The title is set in the display serif, large and unhurried: the classic voice of the page. */
+  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] h1 {
+    font-family: var(--ch-font-serif);
+    font-size: 58px;
+    font-weight: 400;
+    line-height: 1.02;
+    letter-spacing: -0.012em;
+    font-variation-settings: normal;
+    color: var(--ch-on-green-ink);
+    text-shadow: var(--ch-on-green-text-shadow);
+  }
+  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] p {
+    font-size: 17.5px;
+    line-height: 1.5;
+  }
+  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary {
+    color: var(--ch-on-green-ink);
+    background: var(--ch-on-dark-control-bg);
+    box-shadow: var(--ch-on-dark-control-shadow);
+  }
+  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:active:not(:disabled) {
+    box-shadow: var(--ch-on-dark-control-press-shadow);
+  }
+  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--primary {
+    color: var(--ch-green-800);
+    background: linear-gradient(180deg, var(--ch-ivory-25), var(--ch-ivory-150));
+    box-shadow: var(--ch-on-dark-primary-shadow);
+    text-shadow: none;
+  }
+  .ch-canvas:has(main[data-canopy]) .ch-topbar__crumbs {
+    color: var(--ch-bar-ink-soft);
+  }
+  .ch-canvas:has(main[data-canopy]) .ch-topbar__crumb b,
+  .ch-canvas:has(main[data-canopy]) .ch-topbar__actions .ch-iconbtn.ch-btn--ghost {
+    color: var(--ch-bar-ink);
+  }
+  .ch-canvas:has(main[data-canopy]) .ch-bell__count {
+    box-shadow: 0 0 0 2px var(--ch-bar-ring, var(--ch-bg-page));
+  }
+  @supports (animation-timeline: scroll()) {
+    .ch-canvas:has(main[data-canopy]) .ch-topbar {
+      animation: ch-bar-settle linear both;
+      animation-timeline: scroll(nearest block);
+      animation-range: 0 180px;
+    }
+    [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] > * {
+      transform-origin: 0 100%;
+      animation: ch-title-fold linear both;
+      animation-timeline: scroll(nearest block);
+      animation-range: 0 220px;
+    }
+  }
+}
+@keyframes ch-bar-settle {
+  from {
+    --ch-bar-ink: #f4eedd;
+    --ch-bar-ink-soft: rgb(222 214 190 / 0.8);
+    --ch-bar-ring: #0b3a25;
+    border-bottom-color: transparent;
+    background: rgb(11 58 37 / 0);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  70% {
+    --ch-bar-ink: #f4eedd;
+    --ch-bar-ink-soft: rgb(222 214 190 / 0.8);
+    --ch-bar-ring: #0b3a25;
+  }
+  71% {
+    --ch-bar-ink: #0f4a2f;
+    --ch-bar-ink-soft: #6b6860;
+    --ch-bar-ring: #ebe7dc;
+  }
+}
+@keyframes ch-title-fold {
+  to {
+    opacity: 0;
+    scale: 0.97;
+    translate: 0 -18px;
+  }
+}
+[data-ui='clubhouse'][data-motion='off'] main[data-canopy] [data-canopy-head] > * {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] > * {
+    animation: none;
+  }
+}
+
+/* Ivory sidebar (owner, 2026-10-06): ink type on the shell ivory, green only for the selected row (the same green as
+   the canopy), the brand set as a green mark on ivory, the next-event card a light sheet. */
+.ch-brand {
+  background: none;
+  box-shadow: none;
+}
+.ch-brand__word {
+  font: 400 23px/1 var(--ch-font-serif);
+  letter-spacing: -0.006em;
+  font-variation-settings: normal;
+  color: var(--ch-field-green);
+}
+.ch-brand__team,
+.ch-brand__team--switch svg {
+  color: var(--ch-text-tertiary);
+}
+.ch-brand--switch:hover,
+.ch-brand--switch[aria-expanded='true'] {
+  background: rgb(28 25 18 / 0.04);
+  box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.08);
+}
+.ch-brand--switch:focus-visible,
+.ch-navitem:focus-visible {
+  outline-color: var(--ch-border-focus);
+}
+.ch-nav__section {
+  color: var(--ch-text-tertiary);
+  opacity: 1;
+}
+.ch-navitem {
+  color: var(--ch-ink-700);
+}
+.ch-navitem svg {
+  color: var(--ch-ink-500);
+}
+.ch-navitem:hover {
+  background: rgb(28 25 18 / 0.045);
+  color: var(--ch-text-primary);
+}
+.ch-navitem:hover svg {
+  color: var(--ch-ink-700);
+}
+.ch-navitem[aria-current='page'],
+.ch-navitem:has(.ch-lp) {
+  background: linear-gradient(180deg, #11452d, var(--ch-field-green));
+  color: var(--ch-on-green-ink);
+  box-shadow: var(--ch-nav-selected-shadow);
+  text-shadow: var(--ch-on-green-text-shadow-s);
+}
+.ch-navitem[aria-current='page'] svg,
+.ch-navitem[aria-current='page'] .ch-navitem__count,
+.ch-navitem:has(.ch-lp) svg,
+.ch-navitem:has(.ch-lp) .ch-navitem__count {
+  color: var(--ch-hero-mint);
+}
+.ch-navitem__count {
+  color: var(--ch-text-tertiary);
+}
+.ch-sidebar__foot {
+  border-top-color: rgb(28 25 18 / 0.1);
+}
+.ch-next {
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-elevation-reading);
+}
+.ch-next:hover {
+  box-shadow: var(--ch-elevation-reading-hover);
+}
+.ch-identity .ch-avatar {
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.7);
+}
+.ch-identity__name {
+  color: var(--ch-text-primary);
+}
+.ch-identity__meta {
+  color: var(--ch-text-tertiary);
 }

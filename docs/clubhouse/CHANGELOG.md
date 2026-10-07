@@ -1,5 +1,25 @@
 # Clubhouse changelog
 
+## 2026-10-06 — Classic direction: ivory shell, canopy, serif titles
+
+Owner direction, live in review: aim for a Masters, old-money look; an ivory sidebar with green only on the
+selected row ("way too much green"); and one green throughout ("it's not even the same green"). The owner noted the
+overall direction may be revisited later.
+- **Shell:** the sidebar and the frame around the canvas are ivory (`--ch-shell`). The selected row is a green key in
+  `--ch-field-green`, and the brand uses the green golf mark with a serif wordmark. The next-event card is a light
+  sheet.
+- **Canopy (`main[data-canopy]`, desktop):**
+  - The page's title block paints an edge-to-edge field in the one Clubhouse green, closed by a fine gilt rule.
+    There's no box: the fill is a spread box-shadow clipped at the title block's lower edge, so it ends where the
+    title does on every page.
+  - The title is ivory with an engraved shadow.
+  - On scroll the title folds away and the top bar settles from clear-on-green to the ivory glass (scroll-driven;
+    off with reduced motion or Animations off).
+  - Researched against Apple Sports, Health and Journal navigation fields.
+- **Serif titles:** Instrument Serif (`--ch-font-serif`, `--ch-type-serif-*`) sets page and section titles only.
+  Data, controls and body text stay sans.
+- **Scoreboard:** shares the one green.
+
 ## 2026-10-06 — Tone, type and scoreboard (owner direction)
 
 Owner direction, given live while reviewing in Safari. The page is a slightly deeper ivory, about midway between the
