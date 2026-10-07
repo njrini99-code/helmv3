@@ -367,6 +367,10 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(trend.textContent).toMatch(/^(down|up) \d+\.\d$|^level$|^—$/);
     if (trend.textContent!.startsWith('down')) expect(trend.classList.contains('ch-gain')).toBe(true);
     if (trend.textContent!.startsWith('up')) expect(trend.classList.contains('ch-loss')).toBe(true);
+    // Drawn against their references under the figures: scoring from par, strokes gained from the Tour's zero; the trend is words.
+    const gauges = document.querySelector('.ch-stm-overview .ch-stm-gauges')!;
+    expect(gauges.getAttribute('aria-hidden')).toBe('true');
+    expect([...gauges.children].map((g) => g.querySelector('em')?.textContent ?? null)).toEqual(['Par', 'Tour', null]);
     // One section: Scoring first; a chip switches it with a tick.
     expect(screen.getByRole('heading', { level: 2, name: 'Scoring' })).toBeTruthy();
     expect(screen.queryByRole('heading', { level: 2, name: 'Approach' })).toBeNull();

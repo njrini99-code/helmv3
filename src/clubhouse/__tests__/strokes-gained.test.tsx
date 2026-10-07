@@ -698,7 +698,9 @@ describe('player profile · phone', () => {
     const footer = overview.querySelector('.ch-stm-overview__meta')!;
     expect(figures.parentElement).toBe(overview);
     expect(footer.parentElement).toBe(overview);
-    expect(figures.nextElementSibling).toBe(footer);
+    // The figures, their gauge row, then the footer: the change still sits directly under the figures' drawing.
+    expect(figures.nextElementSibling!.className).toBe('ch-stm-gauges');
+    expect(figures.nextElementSibling!.nextElementSibling).toBe(footer);
     const change = footer.querySelector('.ch-sgchg')!;
     expect(change.querySelector('.ch-delta')!.textContent).toBe('−1.3');
     expect(change.lastElementChild!.textContent).toBe('vs. previous 10');

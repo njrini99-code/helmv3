@@ -1,5 +1,15 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-07 — Phone overview on the stat line
+
+The phone overview's three figures were bare numbers inside one white sheet. They now sit on the stat line with no
+surface, as on Team stats, and carry a row of gauges:
+- the scoring average from par, per 18 holes over the window's rounds that record par;
+- strokes gained from the Tour's zero;
+- no gauge under the trend, which is already words.
+
+The phone skeleton holds the gauge row (39px).
+
 ## 2026-10-07 — The profile holds still while it loads
 
 The profile's loading skeleton now matches the loaded page from the hero down through the figures:

@@ -94,7 +94,9 @@ export function StatsPlayerPhoneSkeleton() {
         <Skeleton width="100%" height={44} radius={12} />
       </div>
       <div className="ch-stm-overview" aria-hidden="true">
-        <Figures count={3} />
+        {/* The stat line: the figures, then the gauge row's height held empty (as Team stats). */}
+        <Figures count={3} line />
+        <div className="ch-stm-gauges" />
         <div className="ch-stm-overview__meta">
           <Bar height={20.3}><Skeleton width={180} height={12} /></Bar>
           <Bar height={20.3}><Skeleton width={140} height={12} /></Bar>

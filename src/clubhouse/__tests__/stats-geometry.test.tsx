@@ -215,6 +215,10 @@ describe('Skeletons draw the loaded page\'s lines', () => {
     for (const fig of teamPhone.container.querySelectorAll('.ch-stm-figs > div')) expect(fig.querySelectorAll('dd')).toHaveLength(2);
     // The team's stat line: the figures and the gauge row the loaded page draws, its height held by the row's own min-height.
     expect(teamPhone.container.querySelector('.ch-stm-line > .ch-stm-figs.is-line + .ch-stm-gauges')).not.toBeNull();
+    // A profile's three figures take the same stat line and gauge row.
+    const profilePhone = render(<StatsPlayerPhoneSkeleton />);
+    expect(profilePhone.container.querySelector('.ch-stm-overview > .ch-stm-figs.is-three.is-line + .ch-stm-gauges')).not.toBeNull();
+    profilePhone.unmount();
     expect(css).toMatch(/\.ch-stm-gauges\s*{[^}]*min-height: 39px/);
     expect(teamPhone.container.querySelector('.ch-stm-cover')?.getAttribute('aria-hidden')).toBe('true');
     expect(teamPhone.container.querySelector('.ch-stm-chart-hold')).not.toBeNull();

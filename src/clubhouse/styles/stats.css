@@ -2990,10 +2990,18 @@ a.ch-lg__r:focus-visible {
 
 /* Phone overview: figure baselines and a shared sample/comparison footer. */
 @media (max-width: 820px) {
+  /* On the stat line, as Team stats (owner, 2026-10-07: no sheet around figures): no surface, the gauge row's rule
+     under the figures, the window's words beneath. */
   .ch-stm-overview {
-    border-radius: 16px;
-    background: var(--ch-sheet-bg);
-    box-shadow: var(--ch-sheet-shadow);
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-stm-overview .ch-stm-gauges {
+    padding-top: 2px;
+  }
+  .ch-stm-overview__meta {
+    padding-inline: 2px;
   }
   .ch-stm-overview .ch-stm-figs {
     padding-bottom: 0;
