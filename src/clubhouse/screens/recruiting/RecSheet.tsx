@@ -156,15 +156,16 @@ export function RecActionSheet({
   code?: string;
 }) {
   const titleId = useId();
+  const messageId = useId();
   const { dialogProps, retainContent } = useSheetDialog(open, onClose, busy, '.ch-rec-act');
   return (
-    <dialog {...dialogProps} className="ch-rec-dlg is-act" aria-labelledby={titleId} data-ch-code={code}>
+    <dialog {...dialogProps} className="ch-rec-dlg is-act" aria-labelledby={titleId} aria-describedby={messageId} data-ch-code={code}>
       {retainContent(open && (
         <div className="ch-rec-act">
           <div className="ch-rec-act__group">
             <div className="ch-rec-act__head">
               <h2 id={titleId} tabIndex={-1}>{title}</h2>
-              <p>{message}</p>
+              <p id={messageId}>{message}</p>
             </div>
             <button type="button" className="ch-rec-act__b is-danger" disabled={busy} onClick={onAction}>
               {actionLabel}

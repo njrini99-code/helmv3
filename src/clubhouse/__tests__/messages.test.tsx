@@ -1,4 +1,5 @@
 import { LazyMotion, domAnimation } from 'framer-motion';
+import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -133,7 +134,14 @@ function SlotHost() {
 function showPhone(d: ChMessagesData = data) {
   layout.phone = true;
   // Phone width: nothing opens beside the list.
-  window.matchMedia = ((q: string) => ({ matches: false, media: q, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, onchange: null, dispatchEvent: () => false })) as never;
+  const queries = new Map<string, MediaQueryList>();
+  window.matchMedia = ((q: string) => {
+    if (!queries.has(q)) queries.set(q, Object.assign(new EventTarget(), {
+      matches: false, media: q, onchange: null,
+      addListener: () => {}, removeListener: () => {},
+    }) as MediaQueryList);
+    return queries.get(q)!;
+  }) as typeof window.matchMedia;
   return render(
     <LazyMotion features={domAnimation}>
       <ToastProvider>
@@ -1048,12 +1056,44 @@ describe('Messages · phone', () => {
     document.getElementById('ch-ms-message-m1')!.scrollIntoView = scroll;
     await user.click(within(thread).getByRole('button', { name: 'Reply to You' }));
     expect(scroll).toHaveBeenCalledWith({ block: 'center', behavior: 'smooth' });
-    const previousMatchMedia = window.matchMedia;
-    window.matchMedia = ((query: string) => ({ ...previousMatchMedia(query), matches: query === '(prefers-reduced-motion: reduce)' })) as typeof window.matchMedia;
+    const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    act(() => {
+      Object.defineProperty(preference, 'matches', { value: true, configurable: true });
+      preference.dispatchEvent(new Event('change'));
+    });
+    await user.click(within(thread).getByRole('button', { name: 'Reply to You' }));
+    expect(scroll).toHaveBeenLastCalledWith({ block: 'center', behavior: 'instant' });
+  });
+
+
+  it('reply quotes respond immediately when Clubhouse Animations is switched off and back on', async () => {
+    function AnimationPreference() {
+      const { showAnimations, updatePreferences } = useAppearancePreferences();
+      return <button type="button" onClick={() => updatePreferences({ showAnimations: !showAnimations })}>
+        {showAnimations ? 'Switch animations off' : 'Switch animations on'}
+      </button>;
+    }
+    const user = userEvent.setup();
+    live.msgs.messages = [mine, { ...mine, id: 'm2', content: 'Follow up', reply_to_id: 'm1' }];
+    render(<AnimationPreference />);
+    showPhone();
+    const thread = await openThread(user);
+    const scroll = vi.fn();
+    document.getElementById('ch-ms-message-m1')!.scrollIntoView = scroll;
+    const quote = within(thread).getByRole('button', { name: 'Reply to You' });
     try {
-      await user.click(within(thread).getByRole('button', { name: 'Reply to You' }));
+      await user.click(quote);
+      expect(scroll).toHaveBeenLastCalledWith({ block: 'center', behavior: 'smooth' });
+      await user.click(screen.getByRole('button', { name: 'Switch animations off' }));
+      await user.click(quote);
       expect(scroll).toHaveBeenLastCalledWith({ block: 'center', behavior: 'instant' });
-    } finally { window.matchMedia = previousMatchMedia; }
+      await user.click(screen.getByRole('button', { name: 'Switch animations on' }));
+      await user.click(quote);
+      expect(scroll).toHaveBeenLastCalledWith({ block: 'center', behavior: 'smooth' });
+    } finally {
+      const restore = screen.queryByRole('button', { name: 'Switch animations on' });
+      if (restore) await user.click(restore);
+    }
   });
 
   it('CH-7309 the phone with nothing at all yet is the first-run empty alone: no search or filter chips over nothing', async () => {

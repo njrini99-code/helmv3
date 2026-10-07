@@ -113,7 +113,7 @@ export function CoursePicker({
             {coursesFailed ? (
               <InlineNotice code="CH-09209" title="Courses didn’t load." body="Nothing was changed. Try again." onRetry={() => setAttempt((n) => n + 1)} />
             ) : courses == null ? (
-              <div className="ch-qf-skel" aria-busy="true" aria-label="Loading courses" data-ch-code="CH-09407">
+              <div className="ch-qf-skel" role="status" aria-busy="true" aria-label="Loading courses" data-ch-code="CH-09407">
                 {Array.from({ length: 5 }, (_, i) => (
                   <Skeleton key={i} width="100%" height={40} radius={9} />
                 ))}
@@ -155,7 +155,7 @@ export function CoursePicker({
             {teesFailed ? (
               <InlineNotice code="CH-09210" title="Tees didn’t load." body="Nothing was changed. Try again." onRetry={() => loadTees(course)} />
             ) : tees == null ? (
-              <div className="ch-qf-skel" aria-busy="true" aria-label="Loading tees" data-ch-code="CH-09407">
+              <div className="ch-qf-skel" role="status" aria-busy="true" aria-label="Loading tees" data-ch-code="CH-09407">
                 {Array.from({ length: 3 }, (_, i) => (
                   <Skeleton key={i} width="100%" height={40} radius={9} />
                 ))}

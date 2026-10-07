@@ -87,6 +87,12 @@
   --tw-ring-offset-shadow: 0 0 #0000;
   --tw-ring-shadow: 0 0 #0000;
 }
+/* Programmatic reading destinations announce their title without drawing a control box. */
+.ch-root h1[tabindex='-1']:focus,
+.ch-root h2[tabindex='-1']:focus,
+.ch-root h3[tabindex='-1']:focus {
+  outline: none;
+}
 /* Text fields draw their own focus (green ring, underline, or the wrapper's
    focus-within), so the ring above would double it. */
 .ch-root :is(.ch-input, .ch-textarea, .ch-ed__title, .ch-search input, .ch-select select, .ch-ms-comp__field textarea, .ch-au-input input):focus-visible {
@@ -116,6 +122,40 @@
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* Opt in only for hidden interactive alternatives; descriptive labels stay hidden. */
+.ch-sr-only--focusable:focus-visible,
+.ch-sr-only--focusable:has(:focus-visible) {
+  position: static;
+  width: auto;
+  height: auto;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 12px;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--ch-raised-bg);
+  color: var(--ch-text-primary);
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  box-shadow: var(--ch-elevation-control);
+  font: var(--ch-type-body-s);
+}
+.ch-sr-only--focusable > button {
+  flex: 1;
+  min-height: 44px;
+  padding: 8px;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  font: inherit;
 }
 
 /* Depth vocabulary */

@@ -1,5 +1,18 @@
 # Classes checklist
 
+<!-- clubhouse:release-audit:start -->
+## Release checklist audit — 2026-10-06
+
+Classes list, class editor, import review and schedule synchronization. Check
+narrow day/time controls, long class names, import warnings, partial imports
+and calendar-sync refusal.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p012-classes). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Reference: `design/handoff/Player - Classes.html`, `Player - Classes - Mobile.html` (`classes.jsx`, `classes.css`, `gh-states.jsx`); spec `docs/clubhouse/phone/classes.md`
 Route: `/golf/dashboard/classes` (player)   Surface tag: `classes` (Sentry `surface=classes.<section>`)
 

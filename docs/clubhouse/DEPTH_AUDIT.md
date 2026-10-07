@@ -1,5 +1,22 @@
 # Clubhouse component depth audit: status
 
+## 2026-10-06 — Owner rejects excessive card depth
+
+The owner described the large stacked shadows as looking poor and artificially
+styled. The shared depth ladder now uses quiet contact shadows for reading
+cards, shallow controls, a small floating lift and stronger separation only for
+menus/sheets. Settings form groups have no drop shadow. Home and Recruiting
+card overrides use the same reading token. Home’s hero and nested next-event
+card also use that quiet separation instead of broad green/black shade. Broad 44/52px reading-card shadows
+and stacked bubble shadows are removed. Existing layout, colors, typography,
+focus indication and data behavior remain intact. This updates the October 2
+depth direction; earlier audit entries below record that prior review.
+
+Before/after normal-content captures are in page VERIFY logs. Physical-device
+and owner visual acceptance remain open in [POPUP_AUDIT](POPUP_AUDIT.md).
+
+## Historical October 2 audit
+
 The owner's "GolfHelm Component Depth and Native Fidelity Audit" and the
 Messages "clarity and depth repair example" (2026-10-01) are the briefs. The
 owner's direction: "Everything is flat and looks basic"; a full audit with
@@ -84,3 +101,10 @@ real test (not exercised).
 wide, at 2x, before and after (local only). Resting appearance only; motion,
 keyboard on a device, Safari traces, text enlargement and a real iPhone are
 not exercised.
+
+## Current premium composition review
+
+[PREMIUM_AUDIT.md](PREMIUM_AUDIT.md) applies the October 6 quiet-depth revision
+to all 15 families. Its material inventory distinguishes semantic references,
+focus/scoring/spatial exceptions and review candidates. The owner’s supplied
+older 44/52px ambient examples are historical hypotheses, not current values.

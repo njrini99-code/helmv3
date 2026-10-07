@@ -299,15 +299,21 @@ Then, in order:
 
 ---
 
-## STEP 4 — the gate trio, before you push
+## STEP 4 — the gates, before you push
 
-Run all three, in this order, and read the real exit codes:
+Run these one at a time with `HELM_GATE_SLOTS=1`, in this order, and read
+the real exit codes:
 
 ```bash
-npm run preflight   # typecheck, lint, lint:ratchet, the doc + supabase ratchets
-npm test            # the FULL suite — not a subset
-npm run build       # a page/component or 'use server' surface may have changed
+npm run preflight            # typecheck, lint, lint:ratchet, the doc + supabase ratchets
+npm test                     # the FULL suite — not a subset
+npm run check:types-drift    # needs SUPABASE_ACCESS_TOKEN sourced from .env, never echoed
+npm run docs:check
 ```
+
+Do **not** run `npm run build` locally: CI's `Next build` job is the
+authoritative build gate (the next paragraph says why the local build cannot
+run in a workspace).
 
 Three things learned the hard way on 2026-08-27, each of which cost a full CI
 cycle:
@@ -379,10 +385,14 @@ The PR body must contain:
 - the analysis's `probableCause`, and whether your own reading **confirmed** or
   **corrected** it — if the analysis was wrong, say so plainly
 - the failing test, and proof it failed before the fix
-- the three gate exit codes
+- every gate exit code
 - anything you deliberately did not fix
 
-**Do not merge. Do not deploy.**
+**Do not deploy.** Merge only as the Hard limits allow: your own non-R3 PR,
+with `npm run pr:land -- <n>`, after every required check on its head commit
+is green and `main` is green. An R3 PR is opened and left for the owner.
+(Until 2026-10-07 this line read "Do not merge", contradicting the
+owner-authorized landing rule above; the Hard limits are the policy.)
 
 **Keep your worktree while the PR is open.** Review comments and CI fixes need
 it, and `scripts/retire-worktrees.sh` — the lifecycle authority since Phase 7A —

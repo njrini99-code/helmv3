@@ -1,5 +1,18 @@
 # Stats (team) catalog (4xxx)
 
+<!-- clubhouse:release-audit:start -->
+## Catalog audit — 2026-10-06
+
+Team Stats periods, comparisons, filters and focus-area sheets. Check
+period-change layout stability, filter date controls, long course names and
+empty/error/loading geometry.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p004-stats-team).
+Existing checklist ticks and catalog identifiers retain their recorded scope.
+Automated browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Route `/golf/dashboard/stats` (coach, no `?player`) · code `src/clubhouse/screens/stats/StatsTeam.tsx` (server)
 and `StatsTeamIslands.tsx` (the client islands), loader `src/clubhouse/data/stats-team.ts` · tests
 `src/clubhouse/__tests__/stats-team.test.tsx` · preview `/clubhouse-preview/stats`

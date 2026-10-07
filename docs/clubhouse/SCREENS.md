@@ -1,5 +1,14 @@
 # Clubhouse screens
 
+## October 6 release evidence
+
+Existing rules, route ticks and device requirements retain their scope.
+They do not certify the dependency-upgraded release candidate.
+
+[ALL_PAGE_AUDIT.md](ALL_PAGE_AUDIT.md) covers all 15 page families;
+[SMOOTHNESS_AUDIT.md](SMOOTHNESS_AUDIT.md) records confirmed motion findings.
+Physical Safari/iPhone acceptance and production-build profiling remain open.
+
 Every GolfHelm screen live in production on the old Fairway UI, and whether
 Clubhouse has rebuilt it. Tick a screen when its route is added to
 `CH_REBUILT_ROUTES` (`src/clubhouse/shell/nav.ts`), which is when it reaches the

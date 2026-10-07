@@ -1,5 +1,18 @@
 # Recruiting checklist
 
+<!-- clubhouse:release-audit:start -->
+## Release checklist audit — 2026-10-06
+
+Recruiting list/detail, stage picker, forms and document upload. Check
+keyboard-open forms, long prospect names, stage drag/tap, pending uploads and
+refused file recovery.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p014-recruiting).
+Existing checklist ticks and catalog identifiers retain their recorded scope.
+Automated browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Reference: `design/handoff/recruiting/` (the owner's canvas "Clubhouse Recruiting": `Main`, `AddProspect`, `Empty`, `NoMatch`, `LoadFailed` and the `Phone*` boards, approved 2026-09-30, Q-87); spec `docs/clubhouse/phone/recruiting.md`
 Route: `/golf/dashboard/recruiting` (coach)   Surface tag: `recruiting` (Sentry `surface=recruiting.<section>`)
 

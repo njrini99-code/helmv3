@@ -1,0 +1,11 @@
+/* Local-only diagnostics, served by the production-disabled preview route. */
+.ch-popup-lab {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+}
+.ch-popup-lab__actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}

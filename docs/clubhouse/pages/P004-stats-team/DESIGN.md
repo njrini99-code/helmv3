@@ -1,5 +1,25 @@
 # P004 — Stats (team): design handoff
 
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+The shared segmented indicator uses zero-duration motion when disabled.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
+## Current implementation audit — 2026-10-06
+
+Check period-change layout stability, filter date controls, long course names
+and empty/error/loading geometry.
+
+The approved boards and phone specification remain the design authority.
+[all-page audit](../../ALL_PAGE_AUDIT.md#p004-stats-team) records current
+implementation owners; source token durations do not certify smoothness,
+visual fidelity or device behavior.
+<!-- clubhouse:release-audit:end -->
+
 ## Package
 
 ```text

@@ -143,16 +143,16 @@ export function SaveBar({
       <span className="ch-set-status" aria-live="polite" data-ch-code={pending ? 'CH-8402' : undefined}>
         <AnimatePresence mode="wait" initial={false}>
           {invalid && dirty ? (
-            <m.span key="inv" className="is-invalid" data-ch-code={invalid.code} initial={reduced ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={chTween('quick')}>
+            <m.span key="inv" className="is-invalid" data-ch-code={invalid.code} initial={reduced ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={chTween('quick', reduced)}>
               {invalid.text}
             </m.span>
           ) : dirty ? (
-            <m.span key="dirty" initial={reduced ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={chTween('quick')}>
+            <m.span key="dirty" initial={reduced ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={chTween('quick', reduced)}>
               <i className="ch-set-dot" aria-hidden />
               Unsaved changes
             </m.span>
           ) : flash ? (
-            <m.span key="saved" className="is-saved" initial={reduced ? false : { opacity: 0, y: 2 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={chTween('quick')}>
+            <m.span key="saved" className="is-saved" initial={reduced ? false : { opacity: 0, y: 2 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={chTween('quick', reduced)}>
               <Icon icon={Check} size={14} />
               Saved
             </m.span>

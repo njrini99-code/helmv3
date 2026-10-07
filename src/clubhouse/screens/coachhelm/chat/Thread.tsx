@@ -114,13 +114,19 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
     // The coach sent something: show it, wherever they were.
     if (lastRole === 'user') {
       stick.current = true;
-      endRef.current?.scrollIntoView?.({ block: 'end', behavior: reduced ? 'auto' : 'smooth' });
+      endRef.current?.scrollIntoView?.({ block: 'end', behavior: reduced ? 'instant' : 'smooth' });
     }
   }, [turnCount, lastRole, reduced]);
   useEffect(() => {
     // Streaming: follow the answer only while the coach is at the bottom.
-    if (stick.current) endRef.current?.scrollIntoView?.({ block: 'end' });
-  }, [messages, busy, error]);
+    if (lastRole === 'user') return;
+    // Coalesce chunks received before the next paint; never inherit CSS smooth
+    // scrolling, which would restart an animation for every stream update.
+    const frame = requestAnimationFrame(() => {
+      if (stick.current) endRef.current?.scrollIntoView?.({ block: 'end', behavior: 'instant' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [messages, busy, error, lastRole]);
 
   // ── Receipts that arrive while this thread is on screen: one haptic, and a toast when a write did not complete. A reloaded thread's receipts are not announced again. ──
   const seen = useRef<Set<string> | null>(null);

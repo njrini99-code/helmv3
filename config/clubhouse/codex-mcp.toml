@@ -1,0 +1,10 @@
+[mcp_servers.next-devtools]
+# Resolve pinned development dependencies in the active checkout.
+command = "npx"
+args = ["--no-install", "next-devtools-mcp"]
+startup_timeout_sec = 30
+
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = ["--no-install", "chrome-devtools-mcp", "--isolated", "--no-usage-statistics", "--no-performance-crux"]
+startup_timeout_sec = 30

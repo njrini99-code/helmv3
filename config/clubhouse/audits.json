@@ -139,5 +139,60 @@
     "note": "custom overlays, narrow controls, scoped feedback and measured phone Stats correction verified locally; physical Safari and intended-user validation remain open",
     "allPages": true,
     "pages": []
+  },
+  {
+    "file": "SMOOTHNESS_AUDIT.md",
+    "title": "Clubhouse smoothness audit",
+    "kind": "audit",
+    "date": "2026-10-06",
+    "scope": "All-page overlay/control inventory, current-source motion findings, stable appearance subscriptions and remaining Safari/iPhone profiling checks.",
+    "status": "in_progress",
+    "note": "appearance defect reproduced/repaired; Settings reduced-motion delay measured; physical-device profiling open",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "ALL_PAGE_AUDIT.md",
+    "title": "All-page release audit and UI ownership inventory",
+    "kind": "audit",
+    "date": "2026-10-06",
+    "scope": "All 15 page families: overlay and motion call sites, package/style owners, action/test mapping and current source/browser evidence.",
+    "status": "in_progress",
+    "note": "305 state cases, 60 WebKit page renders and 24 onboarding renders; physical-device and authenticated release checks open",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "POPUP_AUDIT.md",
+    "title": "Popup layout and interaction audit",
+    "kind": "audit",
+    "date": "2026-10-06",
+    "scope": "Complete popup call-site inventory, native-layer menu repairs, narrow/short viewport stress and keyboard/accessibility evidence.",
+    "status": "in_progress",
+    "note": "source and local browser repairs; physical device acceptance remains open",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "QUALITY_TOOLING.md",
+    "title": "Quality tooling and release evidence",
+    "kind": "plan",
+    "date": "2026-10-06",
+    "scope": "Scoped agent guidance, browser presentation matrix, reviewed visual comparisons, CSS and measured-performance guards, local profiler and MCP setup.",
+    "status": "done",
+    "note": "tooling implemented; reviewed baselines, authenticated performance and physical-device release evidence remain separate",
+    "allPages": true,
+    "pages": []
+  },
+  {
+    "file": "PREMIUM_AUDIT.md",
+    "title": "Premium UI/UX audit and design brief",
+    "kind": "audit",
+    "date": "2026-10-06",
+    "scope": "All 15 families: semantic materials, critical visual hierarchy, complete source catalog, rendered state evidence, focused accessibility/motion repairs and unresolved release risks.",
+    "status": "in_progress",
+    "note": "383 local Chromium/WebKit cases; partial visual rubric; physical iPhone, authenticated performance and full manual state acceptance remain open",
+    "allPages": true,
+    "pages": []
   }
 ]

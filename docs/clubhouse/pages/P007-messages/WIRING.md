@@ -1,5 +1,18 @@
 # P007 — Messages: wiring map
 
+<!-- clubhouse:release-audit:start -->
+## Current ownership audit — 2026-10-06
+
+Root: `src/clubhouse/screens/messages`. The AST inventory found 12 source
+files, 24 overlay/control sites and 1 motion nodes. Conversation rail, phone
+thread, growing composer, reply and group dialogs.
+
+Exact call sites, direct package imports, responsive styles and mapped tests
+are in the [all-page audit](../../ALL_PAGE_AUDIT.md#p007-messages). Shared
+Modal/Menu/PhoneScreen owners and shell behavior are audited once there;
+counts include wrappers rather than unique popups.
+<!-- clubhouse:release-audit:end -->
+
 ## Entry point
 
 ```text

@@ -1,5 +1,18 @@
 # Phone design: Calendar (coach and player)
 
+<!-- clubhouse:release-audit:start -->
+## Phone acceptance audit — 2026-10-06
+
+Calendar month/week/day, editor, overlap, busy and subscribe sheets. Check
+event sizing and collision layout, keyboard edit flows and Retry inside the
+native dialog top layer.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p006-calendar). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Status: approved. The owner's v2 phone board is the spec (D-22): `design/handoff/Coach - Calendar - Mobile.html`, `m-cal.jsx`, `m.css`. It replaces the earlier draft in this file. Built 2026-09-30 as `src/clubhouse/screens/calendar/CalendarPhone.tsx`, inside the desktop `Calendar` container (state, writes and dialogs shared). The iPhone pass is open.
 
 The boards: Day (week strip, agenda with classes), Event detail (conflict and suggested times), Month (competition days marked), New event (class-schedule check).

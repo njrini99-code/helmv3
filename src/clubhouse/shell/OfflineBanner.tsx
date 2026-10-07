@@ -47,7 +47,7 @@ export function OfflineBanner() {
           initial={reduced ? { opacity: 0 } : { opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0 }}
-          transition={chTween('base')}
+          transition={chTween('base', reduced)}
         >
           <Icon icon={WifiOff} size={15} />
           <span>You&apos;re offline. You can keep reading; changes will wait until you reconnect.</span>

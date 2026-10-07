@@ -1,5 +1,18 @@
 # Team Hub catalog (10xxx)
 
+<!-- clubhouse:release-audit:start -->
+## Catalog audit — 2026-10-06
+
+Hub tabs, compose, assignment, trip, document and confirmation sheets. Check
+pending operations across tab remounts, partial data, audience pickers and
+dialog-hosted Retry.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p010-hub). Existing
+checklist ticks and catalog identifiers retain their recorded scope. Automated
+browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Route: `/golf/dashboard/team-hub` (`?tab=home|ann|travel|docs|tasks`), for coaches and players. Spec: `docs/clubhouse/phone/team-hub.md`.
 
 A player replies to events, acknowledges posts, checks off tasks and opens files; a coach posts (with files from Documents), fixes the wording of a post, plans trips, assigns tasks, shares and deletes files, and sees who has replied, read and done each.

@@ -8,11 +8,14 @@
  *   npm run clubhouse:a11y        (CH_BASE=http://localhost:3100 by default)
  *   npm run clubhouse:a11y -- home settings   (only these screens)
  *
+ * CH_ENGINES=chromium,webkit CH_MOTION=no-preference,reduce CH_WIDTHS=390,430
+ * CH_HEIGHTS=480,844 customizes the engine/motion/viewport cross product.
+ * These are development fixtures, not production/device evidence.
+ *
  * Exits 1 when any page has a violation. The catalog's accessibility rows
  * (kind 8) cite this scan.
  */
-import { chromium } from 'playwright';
-import AxeBuilder from '@axe-core/playwright';
+import { pathToFileURL } from 'node:url';
 
 const BASE = process.env.CH_BASE ?? 'http://localhost:3100';
 
@@ -202,26 +205,56 @@ const KNOWN = [
 ];
 const isKnown = (page, width, rule) => KNOWN.some((k) => k.page === page && k.width === width && k.rule === rule);
 
+/** Validate the entire request before launching any browser. */
+export function scanOptions(env = process.env, only = []) {
+  const list = (name, fallback, allowed) => {
+    const values = (env[name] ?? fallback).split(',').map((value) => value.trim());
+    if (values.some((value) => !value || (allowed && !allowed.includes(value)))) {
+      throw new Error(`${name} must contain ${allowed?.join(', ') ?? 'positive integer dimensions'}`);
+    }
+    return [...new Set(values)];
+  };
+  const dimensions = (name, fallback) => list(name, fallback).map((value) => {
+    if (!/^\d+$/.test(value) || Number(value) < 1 || Number(value) > 10000) {
+      throw new Error(`${name} must contain integer dimensions between 1 and 10000`);
+    }
+    return Number(value);
+  });
+  const names = new Set(CH_A11Y_PAGES.map(([name]) => name));
+  const unknown = only.filter((name) => !names.has(name));
+  if (unknown.length) throw new Error(`Unknown Clubhouse pages: ${unknown.join(', ')}. Available: ${[...names].join(', ')}`);
+  const pages = only.length ? CH_A11Y_PAGES.filter(([name]) => only.includes(name)) : CH_A11Y_PAGES;
+  if (!pages.length) throw new Error('No Clubhouse pages selected');
+  const engines = list('CH_ENGINES', 'chromium', ['chromium', 'webkit', 'firefox']);
+  const motions = list('CH_MOTION', 'reduce', ['reduce', 'no-preference']);
+  const widths = dimensions('CH_WIDTHS', '1280,390');
+  const heights = env.CH_HEIGHTS === undefined ? null : dimensions('CH_HEIGHTS', '844');
+  return { pages, engines, motions, widths, heights };
+}
+
 async function main() {
-  const only = process.argv.slice(2);
-  const pages = only.length ? CH_A11Y_PAGES.filter(([p]) => only.includes(p)) : CH_A11Y_PAGES;
-  const browser = await chromium.launch();
+  const { pages, engines, motions, widths, heights } = scanOptions(process.env, process.argv.slice(2));
+  const browsers = await import('playwright');
+  const { default: AxeBuilder } = await import('@axe-core/playwright');
   let failed = 0;
   let scanned = 0;
-  // CH_WIDTHS=390,430 runs the phone pass at both iPhone widths.
-  const widths = (process.env.CH_WIDTHS ?? '1280,390').split(',').map(Number);
-  for (const width of widths) {
-    const ctx = await browser.newContext({ viewport: { width, height: width < 600 ? 844 : 800 }, reducedMotion: 'reduce' });
+  for (const engine of engines) {
+    const browser = await browsers[engine].launch();
+    try {
+    for (const motion of motions) for (const width of widths) for (const height of heights ?? [width < 600 ? 844 : 800]) {
+    const ctx = await browser.newContext({ viewport: { width, height }, reducedMotion: motion });
+    try {
     for (const [page, path, open] of pages) {
       const tab = await ctx.newPage();
-      await tab.goto(BASE + path, { waitUntil: 'networkidle', timeout: 240_000 });
+      const response = await tab.goto(BASE + path, { waitUntil: 'networkidle', timeout: 240_000 });
+      if (!response?.ok()) throw new Error(`Preview unavailable: ${path} (${response?.status() ?? 'no response'}). Use next dev; production previews return 404.`);
       const opener = open?.[width < 600 ? 'phone' : 'wide'];
       if (open && !opener) {
         await tab.close();
         continue;
       }
       // Only the Clubhouse tree: the dev overlay and Next's portal are not ours.
-      const label = `${page.padEnd(12)} ${width}px ${path}${opener ? ` (opened ${[opener].flat().join(' > ')})` : ''}`;
+      const label = `${engine} ${motion} ${page.padEnd(12)} ${width}x${height} ${path}${opener ? ` (opened ${[opener].flat().join(' > ')})` : ''}`;
       let stuck = null;
       for (const step of [opener ?? []].flat()) {
         try {
@@ -274,11 +307,15 @@ async function main() {
       }
       await tab.close();
     }
-    await ctx.close();
+    } finally { await ctx.close(); }
+    }
+    } finally { await browser.close(); }
   }
-  await browser.close();
+  if (!scanned) throw new Error('No Clubhouse pages were scanned');
   console.log(failed ? `\nclubhouse:a11y: ${failed} page(s) with violations` : `\nclubhouse:a11y clean: ${scanned} page(s)`);
   process.exit(failed ? 1 : 0);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => { console.error(`clubhouse:a11y: ${error.message}`); process.exitCode = 1; });
+}

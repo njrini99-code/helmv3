@@ -491,6 +491,44 @@ describe('scrolling', () => {
   afterEach(() => {
     Object.defineProperty(document.documentElement, 'scrollHeight', { value: 0, configurable: true });
   });
+  it('uses instant scrolling for a sent question when OS motion is reduced', () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = (query) => ({
+      matches: query === '(prefers-reduced-motion: reduce)', media: query,
+      addEventListener: vi.fn(), removeEventListener: vi.fn(), addListener: vi.fn(), removeListener: vi.fn(),
+      dispatchEvent: vi.fn(), onchange: null,
+    }) as MediaQueryList;
+    try {
+      const { update } = show({ messages: [msg('a1', 'assistant', [{ type: 'text', text: 'one' }])] });
+      scrollTo.mockClear();
+      update({ messages: [msg('u2', 'user', [{ type: 'text', text: 'second' }])] });
+      expect(scrollTo).toHaveBeenLastCalledWith({ block: 'end', behavior: 'instant' });
+    } finally { window.matchMedia = originalMatchMedia; }
+  });
+  it('coalesces streamed updates into one instant scroll per frame', () => {
+    const frames = new Map<number, FrameRequestCallback>();
+    let sequence = 0;
+    const raf = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      frames.set(++sequence, callback);
+      return sequence;
+    });
+    const cancel = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation((id) => { frames.delete(id); });
+    try {
+      const { update } = show({ messages: [msg('a1', 'assistant', [{ type: 'text', text: 'one' }])], busy: true });
+      scrollTo.mockClear();
+      for (const text of ['one two', 'one two three', 'one two three four']) {
+        update({ messages: [msg('a1', 'assistant', [{ type: 'text', text }])], busy: true });
+      }
+      expect(scrollTo).not.toHaveBeenCalled();
+      expect(frames.size).toBe(1);
+      act(() => { for (const callback of frames.values()) callback(performance.now()); frames.clear(); });
+      expect(scrollTo).toHaveBeenCalledTimes(1);
+      expect(scrollTo).toHaveBeenCalledWith({ block: 'end', behavior: 'instant' });
+    } finally {
+      raf.mockRestore();
+      cancel.mockRestore();
+    }
+  });
   it('shows what the coach sent, wherever they were; follows a streaming answer only while they are at the bottom', () => {
     const { update } = show({ messages: [msg('u1', 'user', [{ type: 'text', text: 'first' }]), msg('a1', 'assistant', [{ type: 'text', text: 'one' }])] });
     scrollTo.mockClear();

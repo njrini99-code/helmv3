@@ -6,8 +6,8 @@
 
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
-**Node counts:** 29 features, 68 routes, 60 components, 30 apis, 94 actions, 113 services, 83 tests, 134 tables, 165 rpcs, 25 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
-**Edges:** 1036 (merged; an edge with more than one evidence kind is a stronger claim).
+**Node counts:** 29 features, 68 routes, 72 components, 30 apis, 94 actions, 121 services, 89 tests, 134 tables, 165 rpcs, 25 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
+**Edges:** 1062 (merged; an edge with more than one evidence kind is a stronger claim).
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
 
 ---
@@ -151,7 +151,7 @@ Feature Awareness System · active · criticality high · owner platform
 - **Relations:** 4 doc/structurally-evidenced, 0 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** none
-- **Test surfaces:** 0
+- **Test surfaces:** 5
 - **Sentry/admin_events signals:** none
 
 ### `golf_round_lifecycle`
@@ -251,7 +251,7 @@ Settings And Preferences · active · criticality medium · owner product
 - **Relations:** 0 doc/structurally-evidenced, 5 import-graph-only (weak)
 - **Tables:** `baseball_import_sources`, `baseball_integration_configs`, `baseball_program_settings`, `baseball_seasons`, `baseball_settings_audit_log`
 - **RPCs:** none
-- **Test surfaces:** 1
+- **Test surfaces:** 2
 - **Sentry/admin_events signals:** `settings`, `whats_new`
 
 ### `shot_tracking`

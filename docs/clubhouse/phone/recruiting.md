@@ -1,5 +1,18 @@
 # Phone: Recruiting (coach)
 
+<!-- clubhouse:release-audit:start -->
+## Phone acceptance audit — 2026-10-06
+
+Recruiting list/detail, stage picker, forms and document upload. Check
+keyboard-open forms, long prospect names, stage drag/tap, pending uploads and
+refused file recovery.
+
+See [current all-page evidence](../ALL_PAGE_AUDIT.md#p014-recruiting).
+Existing checklist ticks and catalog identifiers retain their recorded scope.
+Automated browser checks do not replace physical keyboard, gesture or
+assistive-technology acceptance.
+<!-- clubhouse:release-audit:end -->
+
 Status: approved. The owner's boards are the spec: the eight `Phone*` boards in `design/handoff/recruiting/` (canvas "Clubhouse Recruiting", https://claude.ai/artifact/BuCcHSQ3ps3zJxcsmraTza, approved 2026-09-30, Q-87). They draw one page in eight frames: the list (`PhoneList`), a prospect (`PhoneDetail`), the edit sheet (`PhoneEdit`), the stage picker (`PhoneStage`), first run (`PhoneEmpty`), no match (`PhoneNoMatch`), a prospect with nothing yet (`PhoneSparse`) and did not load (`PhoneFailed`). The mockups win over any prose here.
 
 The route is `/golf/dashboard/recruiting`, for coaches. It is in the Team section of the sidebar, after Roster (production puts Recruiting HQ beside Roster in its Players hub), and on the phone it opens from More (D-66), so the top bar goes back to More (`useBackFromMore`).
