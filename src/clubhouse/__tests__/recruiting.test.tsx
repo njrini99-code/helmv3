@@ -22,7 +22,6 @@ const actions = vi.hoisted(() => ({
   updateRecruit: vi.fn(),
   deleteRecruit: vi.fn(),
   getDocs: vi.fn(),
-  upload: vi.fn(),
   deleteDoc: vi.fn(),
   docUrl: vi.fn(),
 }));
@@ -34,7 +33,6 @@ vi.mock('@/app/golf/actions/recruiting', () => ({
 }));
 vi.mock('@/app/golf/actions/recruit-documents', () => ({
   getRecruitDocuments: actions.getDocs,
-  uploadRecruitDocument: actions.upload,
   deleteRecruitDocument: actions.deleteDoc,
   getRecruitDocumentUrl: actions.docUrl,
 }));

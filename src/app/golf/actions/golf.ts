@@ -13,7 +13,6 @@ import {
   evaluateAndPersistGoals,
   evaluateAndPersistFocusAreas,
 } from '@/lib/golf/progress-drivers';
-import { inngest, isInngestConfigured } from '@/lib/inngest/client';
 import { enqueueJob, isHelmQueueEnabled } from '@/lib/jobs/enqueue';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
@@ -42,7 +41,6 @@ import { logServerError, logServerException, logServerEvent } from '@/lib/server
 import { findShotChainDiscontinuities } from '@/lib/golf/shot-ledger-continuity';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
-import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { updateQualifierEntryStats } from '@/lib/golf/qualifier-standings';
 import { isClubhouseFor } from '@/clubhouse/gate';
@@ -3006,9 +3004,9 @@ async function submitGolfRoundComprehensiveImpl(
       // nowhere; invoking the cron by hand immediately produced the correct
       // windowed 82.
       //
-      // Deliberately placed BEFORE the Inngest branch below, which `return`s
-      // when Inngest is configured — putting this after it would leave the
-      // durable-queue path (i.e. production) still stale-until-morning.
+      // Deliberately placed BEFORE the queue branch below, which `return`s
+      // when the job is enqueued — putting this after it would leave the
+      // durable-queue path still stale-until-morning.
       //
       // This is the round-SUBMIT write path, not a page render: it does not
       // reintroduce the read-path-writes problem that had the on-view hooks
@@ -3053,25 +3051,16 @@ async function submitGolfRoundComprehensiveImpl(
       // golf_rounds.coachhelm_{analyzed,failed}_at so the safety-net cron can
       // recover deterministically if the after-callback dies.
       //
-      // 2026-07-25: Fix 3 of the CoachHelm remediation plan. `after()` is
-      // fire-and-forget and NOT durable — if this instance is torn down
-      // before postRoundTrigger finishes, it silently never ran, no error,
-      // no failure flag. That's how 206 of 290 rounds went unanalyzed. When
-      // Inngest is configured (INNGEST_EVENT_KEY + INNGEST_SIGNING_KEY, set
-      // in Vercel Production BEFORE this deploy — Vercel bakes env vars in
-      // at deploy time), route through it instead for retries + durability.
-      // When it's NOT configured, or the send itself fails, fall through to
-      // the exact direct call below — byte-for-byte identical to today's
-      // behavior. Never silently stop analyzing rounds because keys are
-      // absent; that would be strictly worse than the status quo.
-      // Database Plan D6: the pgmq queue, when HELM_QUEUE_ENABLED=true and
-      // the facade migration is applied, is the preferred durable path —
-      // Postgres-native, no external provider credentials to rotate or
-      // expire. It is checked BEFORE Inngest so a fully-migrated deployment
-      // never pays for both. `enqueueJob` fails open (queue disabled,
-      // facade not yet applied, or a transient error) by returning
-      // `{ queued: false }`, in which case this falls through to the
-      // Inngest branch below exactly as it did before this queue existed.
+      // `after()` is fire-and-forget and NOT durable — if this instance is torn
+      // down before postRoundTrigger finishes, it silently never ran (206 of
+      // 290 rounds went unanalyzed before the 2026-07-25 remediation). The
+      // durability layers are, in order: the pgmq queue below (when
+      // HELM_QUEUE_ENABLED=true and the facade migration is applied —
+      // Postgres-native, no external provider credentials), then the direct
+      // postRoundTrigger call, then the coachhelm-safety-net cron.
+      // `enqueueJob` fails open (queue disabled, facade not yet applied, or a
+      // transient error) by returning `{ queued: false }`, in which case this
+      // falls through to the direct call below.
       if (isHelmQueueEnabled()) {
         // N12: a bare `round:${id}:analysis` key dedupes on round id alone,
         // so a correction to this round's shots/holes within the 24h
@@ -3114,82 +3103,11 @@ async function submitGolfRoundComprehensiveImpl(
         }
       }
 
-      // DEPRECATED PATH (Database Plan D6): Inngest remains the fallback
-      // durable layer while the pgmq queue proves itself in production.
-      // Once the queue has run clean for a week and the safety-net cron has
-      // been retired (see config/routines.yml and
-      // docs/operations/JOBS_QUEUE.md), this branch — and the Inngest
-      // event/function pair it sends to — is the next thing to remove.
-      if (isInngestConfigured()) {
-        try {
-          await inngest.send({
-            name: 'coachhelm/round.submitted',
-            data: { roundId: backgroundRoundId, playerId: backgroundPlayerId },
-          });
-          // The durable handoff succeeded — the actual analysis now runs
-          // under Inngest's own golf.coachhelm.post_round workflow/trace,
-          // not this one. Complete, not skip: from THIS trace's perspective
-          // the post.coachhelm step's job (start the work reliably) is done.
-          await flightRecorder.complete('post.coachhelm', { metadata: { handed_off_to: 'inngest' } });
-          return;
-        } catch (err) {
-          // A rotated/invalid INNGEST_EVENT_KEY is a provider-account fault, not
-          // a code defect: `isInngestConfigured()` sees the variable and reports
-          // the integration as live, so the raw text ("Inngest API Error: 404
-          // Event key not found") reads like a transient upstream blip when in
-          // fact every round submitted since the key rotated has silently lost
-          // its durability guarantee and fallen back to the non-durable
-          // `after()` path below. Naming the fault, with a stable code, is what
-          // lets that show up as one standing incident instead of one line per
-          // round submitted.
-          const fault = classifyProviderFault(err);
-          await logServerError(
-            fault
-              ? `Round analysis lost its durable queue and ran inline instead: ${fault.summary}`
-              : `Failed to send coachhelm/round.submitted to Inngest, falling back to direct postRoundTrigger: ${describeError(err)}`,
-            {
-              action: 'submitGolfRoundComprehensive.inngestSendFailed',
-              featureArea: 'coachhelm',
-              roundId: backgroundRoundId,
-              playerId: backgroundPlayerId,
-              userId: cacheUserId,
-              userEmail: cacheUserEmail,
-              ...(fault ? { errorCode: fault.code, skipSentry: true } : {}),
-              extra: {
-                stack: err instanceof Error ? err.stack : undefined,
-                ...(fault
-                  ? {
-                      providerFaultKind: fault.kind,
-                      provider: fault.provider,
-                      providerMessage: describeError(err).slice(0, 300),
-                    }
-                  : {}),
-              },
-            },
-            // Was a hardcoded 'warning'. providerFaultSeverity assigns 'error'
-            // to an operator-blocking fault, and 'warning' sits BELOW
-            // FAILURE_SEVERITIES — so a dead Inngest credential was excluded
-            // from the briefing's error-cluster check, the release ledger and
-            // every headline count. This was the lone hand-written outlier;
-            // schedule-image.ts, chat/stream/route.ts and compose.ts all use
-            // the helper.
-            fault ? providerFaultSeverity(fault).severity : 'warning',
-          );
-        }
-      } else {
-        await logServerEvent(
-          'Inngest not configured for round submit (INNGEST_EVENT_KEY/INNGEST_SIGNING_KEY unset) — using direct postRoundTrigger',
-          {
-            action: 'submitGolfRoundComprehensive.inngestNotConfigured',
-            featureArea: 'coachhelm',
-            roundId: backgroundRoundId,
-            playerId: backgroundPlayerId,
-            skipSentry: true,
-          },
-          'info',
-        );
-      }
-
+      // Direct path: the pgmq queue above is the durable path when enabled; when
+      // it is disabled, not yet migrated, or the enqueue fails open, the
+      // analysis runs inline here. postRoundTrigger writes terminal state to
+      // golf_rounds.coachhelm_{analyzed,failed}_at, so the coachhelm-safety-net
+      // cron recovers any round this call never finishes.
       const admin = createAdminClient();
       // Not wrapped to swallow a throw — postRoundTrigger's own error
       // handling (and Next's `after()`) is unchanged. Only reports the

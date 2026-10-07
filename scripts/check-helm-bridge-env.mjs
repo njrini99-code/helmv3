@@ -75,31 +75,6 @@ const checks = [
     kind: 'internal_log_key',
     required: 'INTERNAL_LOG_KEY',
   },
-  {
-    // Inngest was absent from this list entirely — not checked loosely,
-    // not checked at all. `grep -rn INNGEST_SIGNING_KEY scripts/ package.json`
-    // returned zero hits while production was rejecting every signed request
-    // from Inngest Cloud, and every round submitted since 2026-07-30 logged
-    // "Inngest API Error: 404 Event key not found".
-    //
-    // SAY WHAT THIS CANNOT DO: shape is not validity. A rotated key is
-    // still well-formed and still passes here — which is exactly the failure
-    // that happened. The real detector is the runtime diagnosis in
-    // src/app/api/inngest/route.ts (mismatch) plus src/lib/inngest/credentials.ts
-    // (missing/malformed, reported to the Bridge in production), and the
-    // end-to-end proof is `node scripts/inngest-health-check.mjs`. This check
-    // only closes the cheaper gap: a key that is missing or cannot be a key.
-    label: 'Inngest signing key (shape only — cannot detect a stale key)',
-    ...check('inngest_signing_key', ['INNGEST_SIGNING_KEY']),
-    kind: 'inngest_signing_key',
-    required: 'INNGEST_SIGNING_KEY',
-  },
-  {
-    label: 'Inngest event key (shape only — cannot detect a stale key)',
-    ...check('inngest_event_key', ['INNGEST_EVENT_KEY']),
-    kind: 'inngest_event_key',
-    required: 'INNGEST_EVENT_KEY',
-  },
 ];
 
 const failures = checks.filter((check) => !check.ok);

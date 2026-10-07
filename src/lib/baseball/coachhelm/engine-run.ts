@@ -17,9 +17,10 @@ import { describeError } from '@/lib/utils/describe-error';
 //   1. runBaseballEngine (src/app/baseball/actions/coachhelm.ts) — the manual /
 //      capability-gated server action (RLS client, session-resolved context).
 //      This is the "Run engine" button + post-import + insights.ts delegate.
-//   2. The SCHEDULED EVALUATOR (src/lib/inngest/functions.ts) — the daily durable
-//      heartbeat over every active team (service-role admin client). This is the
-//      piece that makes "Signals are the heartbeat of BaseballHelm" TRUE: time-
+//   2. The SCHEDULED EVALUATOR (src/lib/baseball/coachhelm/scheduled-evaluator.ts) —
+//      the daily heartbeat over every active team (service-role admin client).
+//      NOT YET SCHEDULED: no cron route invokes it today. This is the
+//      piece that would make "Signals are the heartbeat of BaseballHelm" TRUE: time-
 //      relative conditions (next-event proximity, stale source, overdue, dev-goal
 //      not trained) are re-evaluated every day so a coach who never clicks the
 //      button still has a live inbox.
@@ -28,7 +29,7 @@ import { describeError } from '@/lib/utils/describe-error';
 //
 // WHY A SHARED CORE (and not "let the cron call the server action")
 //   The server action resolves auth + active team + capability from the request
-//   COOKIE session. A cron / Inngest job has NO session, so it cannot call the
+//   COOKIE session. A cron job has NO session, so it cannot call the
 //   action. The established pattern in this codebase (outcome-sweep.ts) is to
 //   lift the body into a client-agnostic core that BOTH the RLS server action and
 //   the service-role cron drive. This file is that lift for the engine itself.
@@ -368,7 +369,7 @@ export async function runBaseballEngineCore(
   // baseball_lift_set_results tables are write-dead (0 rows for real activity;
   // the engine was blind to all real lifting data reading them). This core is
   // client-agnostic (RLS session client from the server action OR a
-  // service-role admin client from the Inngest cron), so org/athlete
+  // service-role admin client from a cron), so org/athlete
   // resolution is done inline against the SAME passed `db` client rather than
   // via resolveBaseballLiftingOrg/resolveBaseballAthleteIds (those helpers
   // open their own cookie-session client internally and would silently no-op

@@ -29,8 +29,11 @@ side over the fetched array. The coach's chosen filter and sort persist per
 browser through `useLocalStorage`, not per account.
 
 Documents live in a **private** `recruit-documents` storage bucket and are only
-ever reached through short-lived signed URLs. Upload rolls back the storage
-object if the row insert fails, so a file cannot outlive its record.
+ever reached through short-lived signed URLs. Both pages upload in two steps:
+the server signs an upload to a path it builds, the browser sends the bytes
+straight to Storage, and the server then records the row. The File never
+travels through a server action, because Vercel Functions refuse a request body
+over about 4.5 MB with a 413 before the action runs.
 
 This doc was written 2026-08-30. Until then the registry routed this feature to
 `memory/context/golfhelm-features.md`, which — verified by search — contains no
@@ -60,6 +63,8 @@ change prospect writes, stage choices, or unsaved-draft dismissal policy.
 - `src/components/fairway/pages/recruiting/FairwayRecruitCard.tsx`
 - `src/components/fairway/pages/recruiting/FairwayRecruitFormSheet.tsx`
 - `src/components/fairway/pages/recruiting/FairwayRecruitDocuments.tsx`
+- `src/components/fairway/pages/recruiting/recruit-document-upload.ts` (prepare, `uploadToSignedUrl` from the browser
+  client, complete; its own pre-send refusals keep the 25 MB / document-type copy)
 - `src/components/fairway/pages/recruiting/recruit-status.ts`
 
 ### Actions And Services
@@ -67,10 +72,13 @@ change prospect writes, stage choices, or unsaved-draft dismissal policy.
 - `src/app/golf/actions/recruiting.ts` — `getRecruits`, `createRecruit`,
   `updateRecruit`, `deleteRecruit`
 - `src/app/golf/actions/recruit-documents.ts` — `getRecruitDocuments`,
-  `uploadRecruitDocument`, `deleteRecruitDocument`, `getRecruitDocumentUrl`, and
-  the Clubhouse page's two-step upload, `prepareRecruitDocumentUpload` and
-  `completeRecruitDocumentUpload` (the file goes to Storage on a signed URL, not
-  through a server action)
+  `deleteRecruitDocument`, `getRecruitDocumentUrl`, and the two-step upload both
+  pages use, `prepareRecruitDocumentUpload` and `completeRecruitDocumentUpload`
+  (the file goes to Storage on a signed URL, not through a server action; prepare
+  returns the signed URL for the Clubhouse PUT and the server-built `path` plus
+  `token` for `uploadToSignedUrl`). There is no File-taking upload action: the
+  old `uploadRecruitDocument` was removed, since any file over ~4.5 MB 413'd on
+  Vercel before reaching it
 - `src/app/golf/actions/recruit-documents-limits.ts` — the allowed types and
   the size caps the page refuses with (25 MB; 100 MB for film), in a plain
   module for the same reason
@@ -97,11 +105,13 @@ change prospect writes, stage choices, or unsaved-draft dismissal policy.
 - Document categories are `note`, `schedule`, `transcript`, `film`, `other`.
 - The storage bucket is never public. Serve files through signed URLs only, and
   never widen the bucket to make a link work.
-- A failed row insert must remove the uploaded object. An orphaned file in a
-  private bucket is invisible and permanent. (The Clubhouse two-step upload
-  keeps the object when the row fails, on purpose, so a Retry with the same
-  upload id records it without sending a film twice; the object path is built on
-  the server, so it cannot point anywhere but this recruit's folder.)
+- Never send a recruit document through a server action argument: the platform's
+  request body limit (~4.5 MB on Vercel) refuses it before the action runs.
+- The two-step upload keeps the object when the row insert fails, on purpose, so
+  a Retry with the same upload id (each page keeps one per chosen file) records
+  it without sending the file twice. The object path is built on the server and
+  the signed token is bound to it, so it cannot point anywhere but this
+  recruit's folder.
 
 ## UI Contract
 
@@ -182,6 +192,9 @@ and one migration (film), written and not applied.
   cannot repeat); `src/test/golf/actions/recruit-document-upload.test.ts` and
   `recruiting-create.test.ts` for the server side
 - `src/components/fairway/pages/recruiting/FairwayRecruitingPage.test.tsx`
+- `src/components/fairway/pages/recruiting/FairwayRecruitDocuments.test.tsx`
+  (prepare, then `uploadToSignedUrl`, then complete; a 10 MB file never rides a
+  server action; size and type refusals keep their copy)
 - RLS tests whenever team scoping or the document bucket policy changes.
 
 ## Related Docs

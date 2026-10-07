@@ -104,13 +104,12 @@ describe('computeFeatureStatus — neutral-first (§3.1)', () => {
     expect(result.reason).toMatch(/not yet reporting/i);
   });
 
-  it("integrations with zero everything → NEUTRAL, never green (it must not claim Inngest is healthy)", () => {
-    // The registry entry's whole point. `integrations` is quiet by design
-    // between a Mon 14:00 UTC cron and a round-submitted event, and a quiet
-    // window has two readings the DB cannot separate: the signing key was
-    // fixed, or Inngest stopped calling us and durable jobs are dead silently.
-    // Green would assert the first. Neutral asserts neither, which is the only
-    // honest answer — so this asserts the RENDERED status, not registry shape.
+  it("integrations with zero everything → NEUTRAL, never green (it must not claim providers are healthy)", () => {
+    // The registry entry's whole point. `integrations` only reports provider
+    // faults, so a quiet window has two readings the DB cannot separate: no
+    // fault, or the integration stopped reporting. Green would assert the
+    // first. Neutral asserts neither, which is the only honest answer — so
+    // this asserts the RENDERED status, not registry shape.
     const result = computeFeatureStatus(
       baseInputs({
         key: 'integrations',
@@ -127,7 +126,7 @@ describe('computeFeatureStatus — neutral-first (§3.1)', () => {
     expect(result.status).toBe('neutral');
     expect(result.status).not.toBe('green');
     // seasonalEmpty picks the reason: "expected-empty", NOT the false
-    // "instrumentation not yet reporting" — it reported 454 times.
+    // "instrumentation not yet reporting".
     expect(result.reason).toMatch(SEASONAL_REASON_RE);
     expect(result.reason).not.toMatch(NOT_REPORTING_RE);
   });

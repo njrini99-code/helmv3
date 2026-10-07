@@ -28,7 +28,6 @@ vi.mock('@/app/golf/actions/recruiting', () => ({
 }));
 vi.mock('@/app/golf/actions/recruit-documents', () => ({
   getRecruitDocuments: vi.fn(),
-  uploadRecruitDocument: vi.fn(),
   deleteRecruitDocument: vi.fn(),
   getRecruitDocumentUrl: vi.fn(),
   prepareRecruitDocumentUpload: actions.prepare,
