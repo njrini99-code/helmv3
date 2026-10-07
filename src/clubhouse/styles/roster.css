@@ -1619,6 +1619,17 @@
   .ch-rs[data-canopy] .ch-rs-body.has-peek {
     column-gap: 32px;
   }
+  /* Beside the panel the table drops its form column (the panel draws the open player's form), so Rounds and the row
+     menu fit without a sideways scroll; the column comes back once the panel stacks under the table. */
+  @container (width > 1080px) {
+    .ch-rs[data-canopy] .ch-rs-body.has-peek .ch-rs-row {
+      grid-template-columns: minmax(160px, 1.6fr) 104px 56px 56px 64px 56px 36px;
+      min-width: 640px;
+    }
+    .ch-rs[data-canopy] .ch-rs-body.has-peek .ch-rs-row > :nth-child(3) {
+      display: none;
+    }
+  }
   .ch-rs[data-canopy] .ch-rs-peek {
     gap: 20px;
     padding: 22px 0 24px 32px;

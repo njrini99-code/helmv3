@@ -25,6 +25,11 @@ The loading screen draws the same ruled faces and holds the head at 186px
 chips, controls and the note field keep their material. The phone and the
 player's roster are unchanged.
 
+With a player open beside the list view's table, the table drops its form
+column (the panel draws that player's form), so Rounds and the row menu fit
+without a sideways scroll. The column returns once the panel stacks under the
+table.
+
 ## 2026-10-07 — The header's team row restored
 
 The card team strip from earlier tonight reused the class `.ch-rs-team`, which
