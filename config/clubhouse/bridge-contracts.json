@@ -504,6 +504,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 11613,
+    "page": "P001",
+    "category": 16,
+    "item": 13,
+    "name": "CHANGING_PAGES_FROM_THE_SIDEBAR",
+    "chCode": "CH-1613",
+    "meaning": "Changing pages from the sidebar",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 11701,
     "page": "P001",
     "category": 17,

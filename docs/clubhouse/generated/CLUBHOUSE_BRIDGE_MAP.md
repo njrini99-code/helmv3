@@ -98,7 +98,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Page | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | Total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P001 | 3 | 1 | 1 | 5 |  | 11 | 4 | 3 | 1 |  |  |  | 1 | 2 |  | 12 | 7 | 14 | 1 | 1 | 1 | 3 | 1 | 1 |  | 73 |
+| P001 | 3 | 1 | 1 | 5 |  | 11 | 4 | 3 | 1 |  |  |  | 1 | 2 |  | 13 | 7 | 14 | 1 | 1 | 1 | 3 | 1 | 1 |  | 74 |
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
 | P003 | 2 | 1 | 3 | 8 | 2 | 18 | 1 | 6 | 1 |  | 1 | 3 | 1 | 3 |  | 2 | 4 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 68 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
@@ -162,6 +162,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 11610 | CH-1610 | 16 Micro animation | `A_PHONE_SCREEN_IS_PUSHED_OR_POPPED` | implemented | A phone screen is pushed (a thread, details, a new message) or popped |
 | 11611 | CH-1611 | 16 Micro animation | `SOMEONE_DRAGS_A_PHONE_SHEET_DOWN_BY` | implemented | Someone drags a phone sheet (More, the bell, or any `Modal`) down by its grab or header |
 | 11612 | CH-1612 | 16 Micro animation | `OPENING_THE_BELL_ON_A_PHONE` | implemented | Opening the bell on a phone |
+| 11613 | CH-1613 | 16 Micro animation | `CHANGING_PAGES_FROM_THE_SIDEBAR` | implemented | Changing pages from the sidebar |
 | 11701 | CH-1701 | 17 Haptic | `CHANGING_TABS` | implemented | Changing tabs (not tapping the tab they're on) |
 | 11702 | CH-1702 | 17 Haptic | `ANY_SAVE_OR_SEND_LANDS` | implemented | Any save or send lands |
 | 11703 | CH-1703 | 17 Haptic | `ANY_SAVE_OR_SEND_FAILS` | implemented | Any save or send fails |

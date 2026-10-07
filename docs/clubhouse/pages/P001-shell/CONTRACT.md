@@ -186,7 +186,7 @@ Status: N/A — the shell keeps no data that can go stale on screen: the bell re
 
 Status: DEFINED
 
-v2 motion (D-64) for every page: the route reveal, the More sheet, menus and the bell, toasts, the offline banner, the press, the focus ring, reduced motion, the skeleton delay, pushed screens, sheet drags and the phone bell (11601 to 11612).
+v2 motion (D-64) for every page: the route reveal, the More sheet, menus and the bell, toasts, the offline banner, the press, the focus ring, reduced motion, the skeleton delay, pushed screens, sheet drags, the phone bell and the sidebar's gliding plate (11601 to 11613).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -202,6 +202,7 @@ v2 motion (D-64) for every page: the route reveal, the More sheet, menus and the
 | 11610 | CH-1610 | `A_PHONE_SCREEN_IS_PUSHED_OR_POPPED` | A phone screen is pushed (a thread, details, a new message) or popped |
 | 11611 | CH-1611 | `SOMEONE_DRAGS_A_PHONE_SHEET_DOWN_BY` | Someone drags a phone sheet (More, the bell, or any `Modal`) down by its grab or header |
 | 11612 | CH-1612 | `OPENING_THE_BELL_ON_A_PHONE` | Opening the bell on a phone |
+| 11613 | CH-1613 | `CHANGING_PAGES_FROM_THE_SIDEBAR` | Changing pages from the sidebar |
 
 ## 17 — Haptic
 

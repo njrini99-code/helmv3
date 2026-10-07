@@ -1912,3 +1912,35 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
     font-size: 34px;
   }
 }
+
+/* The selected plate as one gliding object (CH-1613, shell/NavPlate.tsx). Once the plate has measured, the nav carries
+   .ch-nav--plate and the rows stop drawing their own plate: the plate sits behind them and travels on the transform;
+   a row's ink follows it at the same pace. Before then (and without script) each row keeps its own plate. */
+.ch-nav {
+  position: relative;
+}
+.ch-nav__plate {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-ivory-25);
+  box-shadow: var(--ch-elevation-on-frame);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform var(--ch-dur-base) var(--ch-ease), opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-nav--plate .ch-navitem {
+  position: relative;
+  z-index: 1;
+  transition: background var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-base) var(--ch-ease);
+}
+.ch-nav--plate .ch-navitem[aria-current='page'],
+.ch-nav--plate .ch-navitem:has(.ch-lp) {
+  background: none;
+  box-shadow: none;
+}
+.ch-nav--plate .ch-navitem svg {
+  transition: color var(--ch-dur-base) var(--ch-ease);
+}

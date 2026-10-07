@@ -1,5 +1,16 @@
 # P001 — Shell: changelog
 
+## 2026-10-07 — The sidebar plate glides
+
+The selected row's ivory plate is now one object that travels (CH-1613,
+`shell/NavPlate.tsx`). On the first frame of a tap (`LinkPending`) it glides
+to the new row at the base duration, and the rows' ink follows at the same
+pace, instead of one row switching off and another on. It lands without
+travelling on first paint and on resize, and jumps with reduced motion or
+Animations off. Until it has measured, and wherever script never runs, each
+row still draws its own plate. Measured in WebKit: Home to Stats, 0 to 267px in
+about 210ms on the ease-out.
+
 ## 2026-10-07 — Framed workspace, replacing the ivory sidebar and canopy
 
 The sidebar and frame are the frame green again, with the brand in its own
