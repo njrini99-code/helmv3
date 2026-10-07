@@ -4,8 +4,9 @@
 
 The overview's five figures carry the same gauges as Team stats, each against the reference its words name. Fairways,
 greens and scrambling sit on a 0–100 track with the team's mark for a coach, or the Tour's mark for a player (none when
-the tour is unknown). Putts are drawn against 36, and the best round against par. Measured in WebKit at 1440, 1300,
-1180 and 1000: no shift between loading and loaded.
+the tour is unknown). Putts are drawn against 36, and the best round against par. Not measured for load shift: the profile
+skeleton (`StatsProfileSkeleton`) has never held the figure row (it goes from the filter bar to a chart placeholder),
+and the preview has no profile loading state. That gap predates this change and is still open.
 
 ## 2026-10-07 — Scoring line mean label off the line
 
