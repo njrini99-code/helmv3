@@ -1,5 +1,18 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-07 — The profile holds still while it loads
+
+The profile's loading skeleton now matches the loaded page from the hero down through the figures:
+- **Figure row:** the skeleton now holds the overview's five figures. Both the skeleton and the loaded cards keep the
+  measured row height (`.ch-fg--profile`): 169px, or 194px in the middle band where a label wraps.
+- **Name:** the name line takes the serif title's 48px.
+- **Window switch:** it has its loaded width (216px) and its 8px foot.
+- **Strokes gained change:** the words stay on one line. On a 680–770px canvas they used to wrap and grow the hero by 24px.
+
+Measured in WebKit through the new preview state `/clubhouse-preview/player?state=loading`, at 1440, 1300, 1180, 1050,
+1000, 900 and 840: the hero, tabs, filter bar and figure row don't move between loading and loaded. This closes the gap
+noted in the entry below.
+
 ## 2026-10-07 — Overview figures drawn against their reference
 
 The overview's five figures carry the same gauges as Team stats, each against the reference its words name. Fairways,

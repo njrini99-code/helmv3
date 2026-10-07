@@ -403,6 +403,7 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
   return (
     <>
       <FigureCards
+        profile
         items={[
           fig('Fairways hit', 'Fairways hit'),
           fig('Greens in regulation', 'Greens in regulation'),

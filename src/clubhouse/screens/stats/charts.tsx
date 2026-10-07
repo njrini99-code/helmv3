@@ -51,6 +51,7 @@ export function FigureCards({
   items,
   hold = false,
   lead = false,
+  profile = false,
 }: {
   /** Team stats: the cards keep the height of their fullest layout in every window (`.ch-fg--hold`), so a window change does not move the page below. */
   hold?: boolean;
@@ -59,6 +60,8 @@ export function FigureCards({
    * are supporting figures on one shared surface divided by hairlines (owner decision 2026-10-06, premium audit P004 P1).
    */
   lead?: boolean;
+  /** A player's overview: the cards hold the measured row height (`.ch-fg--profile`), as its loading skeleton does. */
+  profile?: boolean;
   items: FigureItem[];
 }) {
   const [first, ...rest] = items;
@@ -75,7 +78,7 @@ export function FigureCards({
     );
   }
   return (
-    <div className={'ch-fg' + (hold ? ' ch-fg--hold' : '')} style={{ ['--ch-fg-n' as string]: items.length }}>
+    <div className={'ch-fg' + (hold ? ' ch-fg--hold' : '') + (profile ? ' ch-fg--profile' : '')} style={{ ['--ch-fg-n' as string]: items.length }}>
       {items.map((it) => (
         <FigureCard key={it.label} it={it} />
       ))}

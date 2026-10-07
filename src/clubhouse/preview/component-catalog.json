@@ -2462,7 +2462,8 @@
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds-setup.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2502,6 +2503,7 @@
         "src/clubhouse/styles/rounds-track.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -3888,7 +3890,8 @@
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds-setup.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [
         "EmptyState",
@@ -7988,6 +7991,7 @@
         "ch-fg",
         "ch-fg--hold",
         "ch-fg--lead",
+        "ch-fg--profile",
         "ch-fg__c",
         "ch-fg__c--lead",
         "ch-fg__c--skel",
@@ -8140,6 +8144,7 @@
         "ch-sgt__svg",
         "ch-sgt__team",
         "ch-sgt__tools",
+        "ch-skel",
         "ch-skel-line",
         "ch-spm-dev",
         "ch-spm-head",
@@ -8233,21 +8238,39 @@
         },
         {
           "name": "--ch-fg-h",
+          "value": "169px",
+          "scope": ".ch-fg.ch-fg--profile",
+          "line": 193
+        },
+        {
+          "name": "--ch-fg-h",
+          "value": "194px",
+          "scope": "@container (min-width: 901px) and (max-width: 1116px) → .ch-fg.ch-fg--profile",
+          "line": 200
+        },
+        {
+          "name": "--ch-fg-h",
+          "value": "169px",
+          "scope": "@container (max-width: 900px) → .ch-fg.ch-fg--profile",
+          "line": 205
+        },
+        {
+          "name": "--ch-fg-h",
           "value": "233px",
           "scope": "@container (min-width: 901px) and (max-width: 940px) → .ch-fg",
-          "line": 192
+          "line": 211
         },
         {
           "name": "--ch-fg-h",
           "value": "159px",
           "scope": "@container (max-width: 900px) → .ch-fg",
-          "line": 197
+          "line": 216
         },
         {
           "name": "--ch-fg-h",
           "value": "208px",
           "scope": "@container (max-width: 900px) → .ch-fg.ch-fg--lead",
-          "line": 1780
+          "line": 1813
         }
       ]
     },

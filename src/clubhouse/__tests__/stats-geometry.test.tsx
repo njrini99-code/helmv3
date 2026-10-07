@@ -184,6 +184,21 @@ describe('Skeletons draw the loaded page\'s lines', () => {
     expect(coach.container.querySelector('.ch-pf-hero__act')!.children).toHaveLength(3);
   });
 
+  it('a profile holds its overview figures (measured in WebKit 2026-10-07: 169px, 194px in the middle band), the serif name and the switch\'s width', () => {
+    const { container } = render(<StatsProfileSkeleton coach />);
+    // The five figures sit between the filter bar and the chart, as loaded, at the row height the loaded cards also hold.
+    const order = [...container.querySelector('main')!.children].map((c) => c.className.split(' ')[0]);
+    expect(order.slice(order.indexOf('ch-sf'), order.indexOf('ch-sf') + 3)).toEqual(['ch-sf', 'ch-fg', 'ch-sgt']);
+    expect(container.querySelectorAll('.ch-fg.ch-fg--profile > .ch-fg__c--skel')).toHaveLength(5);
+    expect(css).toMatch(/\.ch-fg\.ch-fg--profile\s*{\s*--ch-fg-h: 169px/);
+    expect(css).toMatch(/\(min-width: 901px\) and \(max-width: 1116px\) {\s*\.ch-fg\.ch-fg--profile\s*{\s*--ch-fg-h: 194px/);
+    expect(css).toMatch(/\.ch-fg--profile \.ch-fg__c\s*{\s*min-height: var\(--ch-fg-h\)/);
+    // The change line under strokes gained never wraps (it grew the hero 24px on a 680–770px canvas).
+    expect(css).toMatch(/\.ch-pf-hero__figs \.ch-sgchg\s*{\s*flex-wrap: nowrap/);
+    // The window switch keeps the loaded one's foot.
+    expect(css).toMatch(/\.ch-pf-tabs \.ch-seg,\s*\.ch-pf-tabs > \.ch-skel:last-child\s*{\s*margin-bottom: 8px/);
+  });
+
   it('the phone skeletons keep the loaded order (a profile: head, the window and filter row, then the figures) and give each figure its second line', () => {
     const profile = render(<StatsPlayerPhoneSkeleton />);
     const order = [...profile.container.querySelector('main')!.children].map((c) => c.className.split(' ')[0]);

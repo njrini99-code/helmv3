@@ -186,6 +186,25 @@
     --ch-fg-h: 217px;
   }
 }
+/* A player's overview (`.ch-fg--profile`): five figures with their gauges, measured in WebKit 2026-10-07 at 18 widths. 169px
+   everywhere but the middle band, where a canvas of 830 to 880px wraps a label to 193px. The loaded cards hold it as the
+   skeleton does, so the figures land without moving the page. Doubled up to hold against the width rules. */
+.ch-fg.ch-fg--profile {
+  --ch-fg-h: 169px;
+}
+.ch-fg--profile .ch-fg__c {
+  min-height: var(--ch-fg-h);
+}
+@container (min-width: 901px) and (max-width: 1116px) {
+  .ch-fg.ch-fg--profile {
+    --ch-fg-h: 194px;
+  }
+}
+@container (max-width: 900px) {
+  .ch-fg.ch-fg--profile {
+    --ch-fg-h: 169px;
+  }
+}
 /* The narrowest six across (a canvas of 901 to 940px), where two cards' words take a third line. */
 @container (min-width: 901px) and (max-width: 940px) {
   .ch-fg {
@@ -357,6 +376,18 @@
   margin: 0;
   font: var(--ch-type-caption);
   letter-spacing: normal;
+}
+/* One line at every width: on a canvas of about 680 to 770px the four figures are narrow enough that "vs. previous 10"
+   wrapped under its chip and grew the hero 24px past its loading skeleton. The words shorten instead. */
+.ch-pf-hero__figs .ch-sgchg {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+.ch-pf-hero__figs .ch-sgchg > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .ch-delta {
   display: inline-flex;
@@ -1054,7 +1085,9 @@ a.ch-lg__r:focus-visible {
   margin-top: 4px;
   border-bottom: 1px solid var(--ch-border-hairline);
 }
-.ch-pf-tabs .ch-seg {
+/* The skeleton's window switch keeps the same foot, so a wrapped row is as tall loading as loaded. */
+.ch-pf-tabs .ch-seg,
+.ch-pf-tabs > .ch-skel:last-child {
   margin-bottom: 8px;
 }
 .ch-tabs {
