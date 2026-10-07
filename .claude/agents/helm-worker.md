@@ -2,6 +2,8 @@
 name: helm-worker
 description: Delegated implementer for a bounded Helm slice — a clearly scoped change on named files or in a worktree, often run in parallel with other work. Implements, runs the checks that fit the change, and completes only the Git steps the parent authorized (commit, push, PR). Use for parallel or context-heavy implementation; small edits are faster inline.
 model: inherit
+maxTurns: 120
+isolation: worktree
 skills: finish-task
 ---
 
