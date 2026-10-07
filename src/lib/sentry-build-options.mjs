@@ -137,7 +137,7 @@ export function buildSentryBuildOptions({ org, project, authToken, release, appl
 
     // React component annotations make stack traces show JSX component names.
     // Top-level again in v11 (applies to webpack and Turbopack builds).
-    reactComponentAnnotation: { enabled: true },
+    reactComponentAnnotation: { enabled: false }, // OOM PROBE — not for merge
 
     // Identifies this app's own bundle to `thirdPartyErrorFilterIntegration`
     // (client-side, instrumentation-client.ts) so it can tell "this repo's
