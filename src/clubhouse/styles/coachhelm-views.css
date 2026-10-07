@@ -164,3 +164,10 @@
     border-radius: 16px;
   }
 }
+
+/* The Development link beside the views reads in mint on the canopy (desktop). */
+@media (min-width: 821px) {
+  main[data-canopy] .ch-hv-tabs .ch-btn--ghost {
+    color: var(--ch-hero-mint);
+  }
+}
