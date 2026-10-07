@@ -6,7 +6,7 @@ import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfM
 import { isTransientNetworkErrorMessage, withOneTransportRetry } from '@/lib/transient-network-error';
 import type { GolfMessageRow } from '@/lib/types';
 import { logError } from '@/lib/error-logging';
-import { isClientDeadlineAbort } from '@/hooks/golf/client-deadline-abort';
+import { isClientDeadlineAbort } from '@/lib/client-deadline-abort';
 import { describeError, postgrestErrorContext, toPostgrestError } from '@/lib/utils/describe-error';
 import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';

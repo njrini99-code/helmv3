@@ -20,7 +20,7 @@ at a different call site.
 ## Fix
 
 `isClientDeadlineAbort` moves out of `use-message-reactions.ts` into
-`src/hooks/golf/client-deadline-abort.ts` and is shared. The rail skips
+`src/lib/client-deadline-abort.ts` and is shared. The rail skips
 reporting only that abort; it continues with the RPC rows and reloads on the
 next realtime change. Every other failure of the read is still logged.
 

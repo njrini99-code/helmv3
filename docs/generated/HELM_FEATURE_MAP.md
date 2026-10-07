@@ -170,8 +170,8 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/team-communications.md`
 - **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/clubhouse/screens/messages/**`, `src/clubhouse/styles/messages.css`, `src/components/golf/announcements/**` … and 42 more in the registry
 - **Telemetry:** `messaging` (golfhelm, high), `announcements` (golfhelm, med), `notifications` (golfhelm, med)
-- **Incidents:** `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md`, `memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md`
-- **Repair units:** `reactions-anon-42501-after-session-drop-2026-09-27` (verified), `reactions-client-deadline-abort-2026-09-28` (verified), `reactions-save-deadline-abort-2026-10-05` (verified)
+- **Incidents:** `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md`, `memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md`, `memory/incidents/team_communications/INC-2026-10-07-conversation-rail-deadline-abort.md`
+- **Repair units:** `reactions-anon-42501-after-session-drop-2026-09-27` (verified), `reactions-client-deadline-abort-2026-09-28` (verified), `reactions-save-deadline-abort-2026-10-05` (verified), `conversation-rail-deadline-abort-2026-10-07` (verified)
 - **History:** `memory/ledgers/changes/team_communications.md`, `memory/ledgers/tests/team_communications.md`
 
 ## `team_operations`
@@ -291,8 +291,8 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/admin-selfheal.md`
 - **Code:** `src/app/api/cron/selfheal-triage/**`, `src/app/api/cron/log-retention/**`, `src/app/admin/actions/triage.ts`, `src/lib/admin/selfheal-*.ts`, `src/lib/admin/rca*.ts`, `src/lib/admin/triage-*.ts` … and 8 more in the registry
 - **Telemetry:** none — covered by `admin_platform`. No dedicated runtime FeatureKey yet — heartbeats into background_job_logs (selfheal-triage/log-retention) and SELFHEAL_STAGES, not admin_events.
-- **Incidents:** `memory/incidents/admin_selfheal/INC-2026-09-27-retired-triage-runner-paints-loop-red.md`
-- **Repair units:** `retired-runner-heartbeat-2026-09-27` (verified), `retired-runner-key-heartbeat-2026-09-30` (verified), `retired-runner-prefix-heartbeat-2026-10-01` (verified)
+- **Incidents:** `memory/incidents/admin_selfheal/INC-2026-09-27-retired-triage-runner-paints-loop-red.md`, `memory/incidents/admin_selfheal/INC-2026-10-07-designed-paths-stamped-regressed.md`
+- **Repair units:** `retired-runner-heartbeat-2026-09-27` (verified), `retired-runner-key-heartbeat-2026-09-30` (verified), `retired-runner-prefix-heartbeat-2026-10-01` (verified), `designed-path-regression-noise-2026-10-07` (verified)
 - **History:** `memory/ledgers/changes/admin_selfheal.md`
 
 ## `admin_replay_lab`

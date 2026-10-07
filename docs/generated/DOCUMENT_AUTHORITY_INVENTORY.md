@@ -46,7 +46,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AUDIT_SNAPSHOT` | 67 | 6 | 35 | 25 |
 | `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
-| `INCIDENT` | 49 | 15 | 2 | 2 |
+| `INCIDENT` | 51 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 25 | 1 | 8 | 5 |
 | `UNKNOWN` | 321 | 12 | 70 | 81 |
@@ -574,6 +574,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md` | current | - | - | - | - |
 | `memory/incidents/admin_platform/INC-2026-09-27-bridge-merged-dev-sentry-issues.md` | current | - | - | - | - |
 | `memory/incidents/admin_selfheal/INC-2026-09-27-retired-triage-runner-paints-loop-red.md` | current | - | - | - | - |
+| `memory/incidents/admin_selfheal/INC-2026-10-07-designed-paths-stamped-regressed.md` | current | - | - | - | - |
 | `memory/incidents/auth_onboarding_join/INC-2026-09-27-presence-webkit-abort-noise.md` | current | - | - | - | - |
 | `memory/incidents/calendar_events/INC-2026-09-23-coach-invitees-deny-conflict-check.md` | current | - | - | - | - |
 | `memory/incidents/coachhelm_ai/INC-2026-09-26-safety-net-coverage-n-plus-one.md` | current | - | - | - | - |
@@ -618,6 +619,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/stats_analytics/INC-2026-10-05-worst-hole-read-statement-timeout.md` | current | - | - | - | - |
 | `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md` | current | - | - | - | - |
 | `memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md` | current | - | - | - | - |
+| `memory/incidents/team_communications/INC-2026-10-07-conversation-rail-deadline-abort.md` | current | - | - | - | - |
 
 ### `ADR`
 

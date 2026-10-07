@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logError } from '@/lib/error-logging';
-import { isClientDeadlineAbort } from '@/hooks/golf/client-deadline-abort';
+import { isClientDeadlineAbort } from '@/lib/client-deadline-abort';
 import { describeError } from '@/lib/utils/describe-error';
 
 export const MESSAGE_REACTIONS = [
