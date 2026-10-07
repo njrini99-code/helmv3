@@ -1,8 +1,8 @@
 ---
 paths:
   - "src/app/golf/**"
-  - "src/app/baseball/**"
-  - "src/components/**"
+  - "src/components/fairway/**"
+  - "src/components/golf/**"
   - "src/styles/**"
   - "src/app/**/*.css"
 ---
