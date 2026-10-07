@@ -14,13 +14,13 @@ Scored against gold set `scripts/knowledge/bench/gold-set.v1.json` (schema 1.1.0
 | Feature recall | 77% | gold feature present in knowledge:map's output for the seed file |
 | Wrong-feature rate | 23% | knowledge:map returned a feature outside the gold set |
 | Gold-file recall | 33% (n=21) | other incident files reachable via the matched feature's own code globs |
-| Recall@5 (feature docs only) | 70% | gold feature doc within the first 5 feature-specific docs |
-| Recall@10 (feature docs only) | 70% | gold feature doc within the first 10 feature-specific docs |
+| Recall@5 (feature docs only) | 77% | gold feature doc within the first 5 feature-specific docs |
+| Recall@10 (feature docs only) | 77% | gold feature doc within the first 10 feature-specific docs |
 | Recall@5 (full ordered list) | 70% | same, but counting the 3 fixed docs (AGENTS.md/CLAUDE.md/registry.yml) against the budget |
-| Recall@10 (full ordered list) | 70% | same, K=10 |
-| Irrelevant-token % | 18% | share of feature-doc characters owned by a feature outside the gold set |
+| Recall@10 (full ordered list) | 77% | same, K=10 |
+| Irrelevant-token % | 17% | share of feature-doc characters owned by a feature outside the gold set |
 | Stale-context % | 0% | share of included docs flagged SUPERSEDED/HISTORICAL/archived |
-| Historical-analogue retrieval rate | 50% | pack includes any `memory/incidents/**` path |
+| Historical-analogue retrieval rate | 0% | pack includes any `memory/incidents/**` path |
 
 ## Per-task detail
 

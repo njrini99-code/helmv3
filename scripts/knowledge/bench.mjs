@@ -96,8 +96,8 @@ export function isRetiredDoc(path, headText) {
 
 /**
  * Reconstruct the ordered doc list generate-context-pack.mjs builds
- * (AGENTS.md, CLAUDE.md, memory/registry.yml, then each matched feature's
- * `.docs` in registry order, deduped) directly from lib/registry.mjs's
+ * (AGENTS.md, CLAUDE.md, memory/registry.yml, then the capped, primary-first,
+ * STATUS-filtered shortlist the mapper reports as `contextDocs.docs`, deduped) directly from lib/registry.mjs's
  * output, rather than parsing the CLI's rendered markdown file.
  *
  * This is not a second implementation of that logic to drift against: it is
@@ -115,8 +115,16 @@ export function isRetiredDoc(path, headText) {
  * runRetrieval() below, as a cross-check that it runs cleanly end to end for
  * every seed file in the gold set — not as the source of the scored data.
  */
-export function buildDocEntries(mapFeatureRecords, { root, maxDocChars = 5000, readFileText, fileExists }) {
-  const docPaths = ['AGENTS.md', 'CLAUDE.md', 'memory/registry.yml', ...mapFeatureRecords.flatMap((f) => f.docs ?? [])];
+export function buildDocEntries(mapFeatureRecords, { root, maxDocChars = 5000, readFileText, fileExists, featureDocPaths }) {
+  // `featureDocPaths` is the capped shortlist the mapper reports as
+  // `contextDocs.docs` (the same selection generate-context-pack.mjs makes);
+  // without it, fall back to every mapped doc.
+  const docPaths = [
+    'AGENTS.md',
+    'CLAUDE.md',
+    'memory/registry.yml',
+    ...(featureDocPaths ?? mapFeatureRecords.flatMap((f) => f.docs ?? [])),
+  ];
   const uniqueDocPaths = [...new Set(docPaths)];
   return uniqueDocPaths.map((path) => {
     if (!fileExists(root, path)) return { path, included: false, text: '' };
@@ -281,7 +289,12 @@ function runRetrieval(task, { root, tmpDir }) {
   );
   const packText = readFileSync(outFile, 'utf8');
 
-  const docEntries = buildDocEntries(mapJson.impactedFeatures, { root, readFileText: fsReadFileText, fileExists: fsFileExists });
+  const docEntries = buildDocEntries(mapJson.impactedFeatures, {
+    root,
+    readFileText: fsReadFileText,
+    fileExists: fsFileExists,
+    featureDocPaths: mapJson.contextDocs?.docs,
+  });
   for (const doc of docEntries) {
     const header = doc.included ? `## ${doc.path}` : `## Missing Doc: ${doc.path}`;
     if (!packText.includes(header)) {
