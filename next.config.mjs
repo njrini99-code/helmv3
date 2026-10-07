@@ -183,11 +183,13 @@ const nextConfig = {
     webpackMemoryOptimizations: true,
     // Enable server actions.
     // bodySizeLimit must cover the largest Server Action payload. Recruit
-    // document uploads pass the File as an action arg (see
-    // src/app/golf/actions/recruit-documents.ts, MAX_FILE_BYTES = 25 MB), so a
-    // 2 MB cap would reject 2–25 MB files *before* the action runs — making the
-    // advertised 25 MB limit a lie. Keep a small margin above that cap for the
-    // multipart/action envelope.
+    // documents no longer pass a File through an action (they upload straight
+    // to Storage on a signed URL), but other uploads still do: team documents
+    // (uploadGolfDocument, uploadNewVersion, 25 MB bucket), baseball documents,
+    // expense receipts (10 MB) and admin screenshots. Lowering this would make
+    // those fail at Next's limit instead of the platform's, so it stays until
+    // they move to signed uploads too. On Vercel the platform's own ~4.5 MB
+    // request limit applies first regardless of this value.
     serverActions: {
       bodySizeLimit: '26mb',
     },
