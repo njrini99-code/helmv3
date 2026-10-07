@@ -3,7 +3,7 @@
 import { CalendarPlus, Check, ChevronLeft, ChevronRight, Info, MessageSquare, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
 import { m } from 'framer-motion';
-import { useEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from 'react';
+import { useDeferredValue, useEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';
 import type { ChPlayerProfile } from '../../data/stats-player';
@@ -17,6 +17,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { Segmented } from '../../ui/Segmented';
+import { Swap } from '../../ui/Swap';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { ScrollRegion } from '../../ui/ScrollRegion';
 import { useDelayedToast, useToast } from '../../ui/Toast';
@@ -71,6 +72,8 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   const [keptTab, setKeptTab] = useChSessionState<Tab>('profile-tab', 'overview');
   const named = useRef<Tab | undefined>(TABS.find((t) => t === initialTab));
   const tab = named.current ?? keptTab;
+  // The underline and the selected tab move on the press; the panel (the heavy part) renders just behind them.
+  const shownTab = useDeferredValue(tab);
   const setTab = (t: Tab) => {
     named.current = undefined;
     setKeptTab(t);
@@ -293,52 +296,54 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
           <InlineNotice code="CH-5201" title="Rounds didn't load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they're hidden. Try again; the error has been reported." onRetry={() => router.refresh()} />
         )}
 
-        <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="ch-st-panel">
-          {emptyFilter && tab !== 'dev' && <FilterEmpty code={filterCodes.empty} onClear={() => changeFilter(clearFilters(data.filter))} />}
+        <Swap swapKey={shownTab}>
+          <div role="tabpanel" id={`panel-${shownTab}`} aria-labelledby={`tab-${shownTab}`} className="ch-st-panel">
+            {emptyFilter && shownTab !== 'dev' && <FilterEmpty code={filterCodes.empty} onClear={() => changeFilter(clearFilters(data.filter))} />}
 
-          {tab === 'overview' && !emptyFilter && !failed && (
-            <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
-              {data.cacheError && <InlineNotice code="CH-5213" title={CACHE_ERROR.title} body={CACHE_ERROR.body} onRetry={() => router.refresh()} />}
-              <Overview data={data} coach={coach} />
-            </SectionBoundary>
-          )}
+            {shownTab === 'overview' && !emptyFilter && !failed && (
+              <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
+                {data.cacheError && <InlineNotice code="CH-5213" title={CACHE_ERROR.title} body={CACHE_ERROR.body} onRetry={() => router.refresh()} />}
+                <Overview data={data} coach={coach} />
+              </SectionBoundary>
+            )}
 
-          {tab === 'game' && !emptyFilter && !failed && (
-            <SectionBoundary surface="stats.player.game" label="Game detail" code="CH-5205">
-              {data.statsError ? (
-                <InlineNotice
-                  code="CH-5202"
-                  title="Shot-level detail didn't load."
-                  body="Scores and rounds above are correct. Try again; the error has been reported."
-                  onRetry={() => router.refresh()}
-                />
-              ) : data.stats && data.stats.roundsPlayed > 0 ? (
-                <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} onRetry={() => router.refresh()} />
-              ) : (
-                <div className="ch-st-card">
-                  <EmptyState code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
-                </div>
-              )}
-            </SectionBoundary>
-          )}
+            {shownTab === 'game' && !emptyFilter && !failed && (
+              <SectionBoundary surface="stats.player.game" label="Game detail" code="CH-5205">
+                {data.statsError ? (
+                  <InlineNotice
+                    code="CH-5202"
+                    title="Shot-level detail didn't load."
+                    body="Scores and rounds above are correct. Try again; the error has been reported."
+                    onRetry={() => router.refresh()}
+                  />
+                ) : data.stats && data.stats.roundsPlayed > 0 ? (
+                  <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} onRetry={() => router.refresh()} />
+                ) : (
+                  <div className="ch-st-card">
+                    <EmptyState code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
+                  </div>
+                )}
+              </SectionBoundary>
+            )}
 
-          {tab === 'rounds' && !emptyFilter && !failed && (
-            <SectionBoundary surface="stats.player.rounds" label="The rounds table" code="CH-5206">
-              {data.rounds.length > 0 && (
-                <div className="ch-st-grid2">
-                  <RoundsExtra x={data.extra} filter={data.filter} />
-                </div>
-              )}
-              <RoundsTable rounds={data.rounds} role={coach ? 'coach' : 'player'} tour={data.tour} holes={data.filter.holes} />
-            </SectionBoundary>
-          )}
+            {shownTab === 'rounds' && !emptyFilter && !failed && (
+              <SectionBoundary surface="stats.player.rounds" label="The rounds table" code="CH-5206">
+                {data.rounds.length > 0 && (
+                  <div className="ch-st-grid2">
+                    <RoundsExtra x={data.extra} filter={data.filter} />
+                  </div>
+                )}
+                <RoundsTable rounds={data.rounds} role={coach ? 'coach' : 'player'} tour={data.tour} holes={data.filter.holes} />
+              </SectionBoundary>
+            )}
 
-          {tab === 'dev' && (
-            <SectionBoundary surface="stats.player.development" label="Development" code="CH-5207">
-              <Development data={data} coach={coach} first={first} onAdd={coach && coachId ? () => setFocusOpen(true) : null} />
-            </SectionBoundary>
-          )}
-        </div>
+            {shownTab === 'dev' && (
+              <SectionBoundary surface="stats.player.development" label="Development" code="CH-5207">
+                <Development data={data} coach={coach} first={first} onAdd={coach && coachId ? () => setFocusOpen(true) : null} />
+              </SectionBoundary>
+            )}
+          </div>
+        </Swap>
 
         {sheet}
       </main>

@@ -1,5 +1,14 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-07 — Tabs answer on the press
+
+The underline and the selected tab move as soon as you press. The panel, the
+heavy part, renders just behind them (`useDeferredValue`): in a WebKit dev
+build the underline starts at 24ms instead of 95ms. The panel then swaps
+through the shared `Swap` (CH-5603): the new panel fades in with a 6px rise
+while the old one fades out, hidden from assistive tech. With reduced motion
+the swap is instant, and it never runs on first paint.
+
 ## 2026-10-07 — The profile takes the page head
 
 On desktop, the profile's striped banner card is now the framed page head:

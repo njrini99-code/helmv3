@@ -154,6 +154,7 @@ Every rule is the shared shot rules (`src/lib/golf/shot-entry-rules.ts`), the sa
 | --- | --- | --- | --- | --- |
 | CH-11601 | Hovering a round that opens its review | On desktop the row takes the Ledger row tint, with no lift (quick) | `a.ch-rd-sc:hover`, `--ch-dur-quick` | preview |
 | CH-11602 | The shot log opens | Its chevron turns (base); the rows show at once. No turn with reduced motion | `ShotLog`, `.ch-rt-log__chev` | preview |
+| CH-11604 | Stepping through a round's holes | The hole's shots slide 12px in the direction of travel (base in, quick out) while the hole's head and the arrows stay put. Instant with reduced motion | `Swap kind="slide"` in `HoleCard` | preview |
 | CH-11603 | Submitting the round | A spinner (still with reduced motion) and what is really happening: "Saving 71 shots, updating your stats and writing the round recap." No timed fake steps (Q-72d). Posted: a tick (the success haptic, once), "Round posted", View round review, which opens on its own after two and a half seconds | `SubmitOverlay` | round-tracking.test › CH-11603 |
 
 ## 117xx Haptics

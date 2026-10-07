@@ -366,13 +366,14 @@ Status: DEFINED
 
 Rounds adds a little motion of its own, all on the v2 tokens (D-64): a round in the book takes the Ledger row tint on hover on
 desktop, with no lift (CH-11601, preview only; owner Ledger, 2026-10-07), the shot log's chevron turns (CH-11602) and the submit spinner turns and holds still with reduced motion
-(CH-11603). Presses, sheets and skeleton fades are the shell's. Nothing counts up.
+(CH-11603); a hole's shots slide in the direction of travel when stepping holes (CH-11604). Presses, sheets and skeleton fades are the shell's. Nothing counts up.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 111601 | CH-11601 | `HOVERING_A_ROUND_THAT_OPENS_ITS_REVIEW` | Hovering a round that opens its review |
 | 111602 | CH-11602 | `THE_SHOT_LOG_OPENS` | The shot log opens |
 | 111603 | CH-11603 | `SUBMITTING_THE_ROUND` | Submitting the round |
+| 111604 | CH-11604 | `STEPPING_THROUGH_A_ROUNDS_HOLES` | Stepping through a round's holes |
 
 From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
 

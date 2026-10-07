@@ -14,6 +14,7 @@ import { PhoneTop } from '../../shell/phone-chrome';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { ScoreMark } from '../../ui/ScoreMark';
+import { Swap } from '../../ui/Swap';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { dateOf, TeeSwatch, TYPE_LABEL } from './parts';
@@ -198,8 +199,10 @@ function HoleCard({
   onStep,
   onRetry,
   retrying,
+  dir,
 }: {
   hole: ChReviewHole;
+  dir: 1 | -1;
   count: number;
   shotsError: boolean;
   onStep: (d: -1 | 1) => void;
@@ -233,30 +236,32 @@ function HoleCard({
           </button>
         </div>
       </div>
-      {shotsError ? (
-        <InlineNotice code="CH-11205" title="The shots for this round didn't load" body="The scorecard is right; only the shot-by-shot detail is missing. Try again in a moment." onRetry={onRetry} retrying={retrying} />
-      ) : hole.shots.length === 0 ? (
-        <p className="ch-rv-none" data-ch-code="CH-11306">
-          No shots were tracked on this hole. It was scored as a total.
-        </p>
-      ) : (
-        <ol className="ch-rv-shots">
-          {hole.shots.map((s) => (
-            <li key={s.n} className={s.penalty ? 'is-pen' : undefined}>
-              <span className={`ch-rv-shots__n is-${s.lie}`}>{s.penalty ? '+1' : s.n}</span>
-              <div>
-                <b>{[s.kind, s.club].filter(Boolean).join(' · ')}</b>
-                <span>
-                  {s.penalty ? 'Penalty stroke' : [s.from, s.lie === 'hole' ? 'holed' : [LIE_LABEL[s.lie]?.toLowerCase(), s.to].filter(Boolean).join(', ')].filter(Boolean).join(' → ')}
-                  {s.miss ? ` · ${s.miss}` : ''}
-                </span>
-                {s.read && <em>{s.read}</em>}
-              </div>
-              <span className={`ch-rv-lie is-${s.lie}`}>{LIE_LABEL[s.lie]}</span>
-            </li>
-          ))}
-        </ol>
-      )}
+      <Swap swapKey={hole.n} kind="slide" dir={dir}>
+        {shotsError ? (
+          <InlineNotice code="CH-11205" title="The shots for this round didn't load" body="The scorecard is right; only the shot-by-shot detail is missing. Try again in a moment." onRetry={onRetry} retrying={retrying} />
+        ) : hole.shots.length === 0 ? (
+          <p className="ch-rv-none" data-ch-code="CH-11306">
+            No shots were tracked on this hole. It was scored as a total.
+          </p>
+        ) : (
+          <ol className="ch-rv-shots">
+            {hole.shots.map((s) => (
+              <li key={s.n} className={s.penalty ? 'is-pen' : undefined}>
+                <span className={`ch-rv-shots__n is-${s.lie}`}>{s.penalty ? '+1' : s.n}</span>
+                <div>
+                  <b>{[s.kind, s.club].filter(Boolean).join(' · ')}</b>
+                  <span>
+                    {s.penalty ? 'Penalty stroke' : [s.from, s.lie === 'hole' ? 'holed' : [LIE_LABEL[s.lie]?.toLowerCase(), s.to].filter(Boolean).join(', ')].filter(Boolean).join(' → ')}
+                    {s.miss ? ` · ${s.miss}` : ''}
+                  </span>
+                  {s.read && <em>{s.read}</em>}
+                </div>
+                <span className={`ch-rv-lie is-${s.lie}`}>{LIE_LABEL[s.lie]}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </Swap>
     </section>
   );
 }
@@ -275,7 +280,13 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
   // Only a hole the player picked is kept; until then the review opens on the first hole over par of what it has. A card that
   // arrives after a retry therefore opens there, not on the hole 1 an empty card defaulted to.
   const [picked, setPicked] = useState<number | null>(null);
+  // Which way the last move went, so the hole's shots slide in from that side.
+  const [holeDir, setHoleDir] = useState<1 | -1>(1);
   const sel = picked ?? firstHole(r.holes);
+  const pick = (n: number) => {
+    setHoleDir(n >= sel ? 1 : -1);
+    setPicked(n);
+  };
   const coach = isCoachView(r);
   const hole = r.holes.find((h) => h.n === sel) ?? r.holes[0] ?? null;
   const dist = useMemo(() => distribution(r.holes), [r.holes]);
@@ -301,6 +312,7 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
     const next = r.holes[i + d];
     if (next) {
       haptic('select');
+      setHoleDir(d);
       setPicked(next.n);
     }
   };
@@ -386,14 +398,14 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
                 </div>
               </div>
               <div className="ch-rv-cardw">
-                <ReviewNine label="Out" holes={r.holes.filter((h) => h.n <= 9)} sel={sel} onPick={setPicked} />
-                <ReviewNine label="In" holes={r.holes.filter((h) => h.n > 9)} sel={sel} onPick={setPicked} />
+                <ReviewNine label="Out" holes={r.holes.filter((h) => h.n <= 9)} sel={sel} onPick={pick} />
+                <ReviewNine label="In" holes={r.holes.filter((h) => h.n > 9)} sel={sel} onPick={pick} />
               </div>
             </section>
           </SectionBoundary>
           <div className="ch-rv-cols">
             <SectionBoundary surface="rounds.review.hole" label="This hole" code="CH-11203">
-              {hole && <HoleCard hole={hole} count={r.holes[r.holes.length - 1]?.n ?? 18} shotsError={r.shotsError} onStep={step} onRetry={refresh} retrying={refreshing} />}
+              {hole && <HoleCard hole={hole} dir={holeDir} count={r.holes[r.holes.length - 1]?.n ?? 18} shotsError={r.shotsError} onStep={step} onRetry={refresh} retrying={refreshing} />}
             </SectionBoundary>
             <div className="ch-rv-side">
               <section className="ch-rv-card" aria-labelledby="ch-rv-dist-h">

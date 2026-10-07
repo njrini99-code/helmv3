@@ -628,3 +628,14 @@
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 1px;
 }
+
+/* Swap (owner 2026-10-07): the frame a content swap happens in. The leaving copy is lifted out of flow by the motion
+   library (popLayout) and fades over the arriving one, so the frame takes the new content's height at once. */
+.ch-swap {
+  position: relative;
+  min-width: 0;
+}
+.ch-swap__item,
+.ch-swap__body {
+  min-width: 0;
+}

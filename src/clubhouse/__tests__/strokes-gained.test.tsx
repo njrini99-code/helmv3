@@ -302,7 +302,7 @@ describe('team stats · desktop', () => {
     // A gained 0.5 a round over the window but lost strokes in the last week; B is the reverse.
     showTeam(team({ players: [mk('B', [-1, 1], -0.2, [74, 75], 72.6), mk('A', [1, -1], 0.5, [72, 71], 73.4)] }));
     // Each entry is a name and the number beside it.
-    const ends = () => [...document.querySelectorAll('.ch-sgt__end')].map((e) => `${e.children[1]!.textContent}${e.querySelector('b')!.textContent}`);
+    const ends = () => [...document.querySelectorAll('.ch-sgt__end')].filter((e) => !e.closest('.ch-swap__body[aria-hidden]')).map((e) => `${e.children[1]!.textContent}${e.querySelector('b')!.textContent}`);
     expect(ends()).toEqual(['A+0.5', 'B−0.2']);
     // Scoring: B's mean 72.6 is lower (better) than A's 73.4, though B's last week (75) is worse than A's (71).
     await user.click(screen.getByRole('radio', { name: 'Scoring' }));

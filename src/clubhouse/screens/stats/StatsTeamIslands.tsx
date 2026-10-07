@@ -15,6 +15,7 @@ import { EmptyState } from '../../ui/States';
 import { InlineNotice } from '../../ui/Notices';
 import { Icon } from '../../ui/Icon';
 import { Segmented } from '../../ui/Segmented';
+import { Swap } from '../../ui/Swap';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useDelayedToast, useToast } from '../../ui/Toast';
 import { useChPhone } from '../../lib/use-phone';
@@ -310,73 +311,75 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
           />
         </div>
       </div>
-      {n === 0 || !all.length ? (
-        // The empty window keeps the plot's height (the team's players set it), so the page below stays where it was.
-        <div className="ch-sgt__hold" style={{ ['--ch-ends' as string]: data.players.length }}>
-          <EmptyState code={isSg ? 'CH-4303' : 'CH-4304'} compact title={isSg ? 'No strokes gained in this window.' : 'No scores in this window.'} body={isSg ? 'Strokes gained appears for rounds posted with shots.' : undefined} />
-        </div>
-      ) : (
-        <div className="ch-sgt__plot" style={{ ['--ch-ends' as string]: data.players.length }}>
-          <svg viewBox={`0 0 ${w} ${h}`} className="ch-sgt__svg" role="img" aria-label={`${isSg ? 'Strokes gained' : 'Scoring average'} by week. ${note}`}>
-            {ticks.map((t) => (
-              <g key={t}>
-                <line x1={padL} x2={w - padR} y1={y(t)} y2={y(t)} stroke={t === ref ? 'var(--ch-champagne-500)' : 'var(--ch-ivory-200)'} strokeDasharray={t === ref ? '4 4' : undefined} />
-                <text x={padL - 8} y={y(t) + 4} textAnchor="end" className="ch-tick">
-                  {isSg ? (t > 0 ? `+${t}` : t === 0 ? '0' : `−${Math.abs(t)}`) : t}
-                </text>
-              </g>
-            ))}
-            {data.weeks.map((wk, i) => (
-              <text key={wk + i} x={x(i)} y={h - 8} textAnchor="middle" className="ch-tick">
-                {wk}
-              </text>
-            ))}
-            {lines.map(({ p, v }) => {
-              const d = gappedPath(v, x, y);
-              const on = p.id === focus;
-              return d ? (
-                <path
-                  key={p.id}
-                  d={d}
-                  className="ch-sgt__line"
-                  stroke={on ? 'var(--ch-green-600)' : 'var(--ch-ink-300)'}
-                  strokeOpacity={on ? 1 : 0.45}
-                  strokeWidth={on ? 2.25 : 1.25}
-                  onClick={() => setFocus(on ? null : p.id)}
-                />
-              ) : null;
-            })}
-            {teamPath && <path d={teamPath} fill="none" stroke="var(--ch-green-800)" strokeWidth={3} strokeLinecap="round" />}
-            {tLast && <circle cx={x(tLast.i)} cy={y(tLast.v)} r={4.5} fill="var(--ch-ivory-25)" stroke="var(--ch-green-800)" strokeWidth={2.5} />}
-            {sel && lastValue(sel.v) && <circle cx={x(lastValue(sel.v)!.i)} cy={y(lastValue(sel.v)!.v)} r={4} fill="var(--ch-ivory-25)" stroke="var(--ch-green-600)" strokeWidth={2} />}
-          </svg>
-          <div className="ch-sgt__ends">
-            <div className="ch-sgt__team">
-              <span>Team</span>
-              <b className="ch-num">{tMean != null ? fmt(tMean) : NO_DATA}</b>
-            </div>
-            {sorted.map(({ p, m }) => {
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  className={'ch-sgt__end' + (p.id === focus ? ' is-sel' : '')}
-                  aria-pressed={p.id === focus}
-                  onClick={() => {
-                    haptic('select');
-                    chTrail('stats focus player');
-                    setFocus(p.id === focus ? null : p.id);
-                  }}
-                >
-                  <Avatar name={p.name} size={22} />
-                  <span>{p.first}</span>
-                  <b className={`ch-num ${m == null ? '' : good(m) ? 'ch-gain' : 'ch-loss'}`}>{m != null ? fmtEnd(m) : NO_DATA}</b>
-                </button>
-              );
-            })}
+      <Swap swapKey={lens}>
+        {n === 0 || !all.length ? (
+          // The empty window keeps the plot's height (the team's players set it), so the page below stays where it was.
+          <div className="ch-sgt__hold" style={{ ['--ch-ends' as string]: data.players.length }}>
+            <EmptyState code={isSg ? 'CH-4303' : 'CH-4304'} compact title={isSg ? 'No strokes gained in this window.' : 'No scores in this window.'} body={isSg ? 'Strokes gained appears for rounds posted with shots.' : undefined} />
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="ch-sgt__plot" style={{ ['--ch-ends' as string]: data.players.length }}>
+            <svg viewBox={`0 0 ${w} ${h}`} className="ch-sgt__svg" role="img" aria-label={`${isSg ? 'Strokes gained' : 'Scoring average'} by week. ${note}`}>
+              {ticks.map((t) => (
+                <g key={t}>
+                  <line x1={padL} x2={w - padR} y1={y(t)} y2={y(t)} stroke={t === ref ? 'var(--ch-champagne-500)' : 'var(--ch-ivory-200)'} strokeDasharray={t === ref ? '4 4' : undefined} />
+                  <text x={padL - 8} y={y(t) + 4} textAnchor="end" className="ch-tick">
+                    {isSg ? (t > 0 ? `+${t}` : t === 0 ? '0' : `−${Math.abs(t)}`) : t}
+                  </text>
+                </g>
+              ))}
+              {data.weeks.map((wk, i) => (
+                <text key={wk + i} x={x(i)} y={h - 8} textAnchor="middle" className="ch-tick">
+                  {wk}
+                </text>
+              ))}
+              {lines.map(({ p, v }) => {
+                const d = gappedPath(v, x, y);
+                const on = p.id === focus;
+                return d ? (
+                  <path
+                    key={p.id}
+                    d={d}
+                    className="ch-sgt__line"
+                    stroke={on ? 'var(--ch-green-600)' : 'var(--ch-ink-300)'}
+                    strokeOpacity={on ? 1 : 0.45}
+                    strokeWidth={on ? 2.25 : 1.25}
+                    onClick={() => setFocus(on ? null : p.id)}
+                  />
+                ) : null;
+              })}
+              {teamPath && <path d={teamPath} fill="none" stroke="var(--ch-green-800)" strokeWidth={3} strokeLinecap="round" />}
+              {tLast && <circle cx={x(tLast.i)} cy={y(tLast.v)} r={4.5} fill="var(--ch-ivory-25)" stroke="var(--ch-green-800)" strokeWidth={2.5} />}
+              {sel && lastValue(sel.v) && <circle cx={x(lastValue(sel.v)!.i)} cy={y(lastValue(sel.v)!.v)} r={4} fill="var(--ch-ivory-25)" stroke="var(--ch-green-600)" strokeWidth={2} />}
+            </svg>
+            <div className="ch-sgt__ends">
+              <div className="ch-sgt__team">
+                <span>Team</span>
+                <b className="ch-num">{tMean != null ? fmt(tMean) : NO_DATA}</b>
+              </div>
+              {sorted.map(({ p, m }) => {
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className={'ch-sgt__end' + (p.id === focus ? ' is-sel' : '')}
+                    aria-pressed={p.id === focus}
+                    onClick={() => {
+                      haptic('select');
+                      chTrail('stats focus player');
+                      setFocus(p.id === focus ? null : p.id);
+                    }}
+                  >
+                    <Avatar name={p.name} size={22} />
+                    <span>{p.first}</span>
+                    <b className={`ch-num ${m == null ? '' : good(m) ? 'ch-gain' : 'ch-loss'}`}>{m != null ? fmtEnd(m) : NO_DATA}</b>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </Swap>
       <p className="ch-note">{note}</p>
     </section>
   );

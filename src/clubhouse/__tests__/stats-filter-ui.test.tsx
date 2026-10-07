@@ -28,7 +28,8 @@ import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_PLAYER_NOMATCH, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
 
-const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
+// A swap's leaving copy (ui/Swap.tsx) is hidden from assistive tech while it fades; read the live one.
+const code = (c: string) => [...document.querySelectorAll(`[data-ch-code="${c}"]`)].find((e) => !e.closest('.ch-swap__body[aria-hidden]')) ?? null;
 async function expectCode(c: string, text?: RegExp) {
   await waitFor(() => expect(code(c)).not.toBeNull());
   if (text) expect(code(c)!.textContent).toMatch(text);

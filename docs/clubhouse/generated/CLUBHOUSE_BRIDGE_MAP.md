@@ -101,14 +101,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P001 | 3 | 1 | 1 | 5 |  | 11 | 4 | 3 | 1 |  |  |  | 1 | 2 |  | 12 | 7 | 14 | 1 | 1 | 1 | 3 | 1 | 1 |  | 73 |
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
 | P003 | 2 | 1 | 3 | 8 | 2 | 18 | 1 | 6 | 1 |  | 1 | 3 | 1 | 3 |  | 2 | 4 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 68 |
-| P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 2 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 62 |
-| P005 | 4 | 2 | 2 | 22 | 2 | 18 | 3 | 6 | 1 |  |  | 2 |  | 1 | 1 | 2 | 3 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 83 |
+| P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 3 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 63 |
+| P005 | 4 | 2 | 2 | 22 | 2 | 18 | 3 | 6 | 1 |  |  | 2 |  | 1 | 1 | 3 | 3 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 84 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 27 | 1 | 8 | 1 | 2 | 4 | 3 | 2 | 2 | 1 | 3 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 91 |
 | P007 | 2 | 10 | 1 | 9 | 5 | 35 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 94 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 40 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 127 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 33 | 4 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 132 |
 | P010 | 2 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 87 |
-| P011 | 14 | 11 |  | 16 | 10 | 37 | 13 | 5 | 2 |  | 20 | 2 | 1 | 4 | 3 | 3 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 168 |
+| P011 | 14 | 11 |  | 16 | 10 | 37 | 13 | 5 | 2 |  | 20 | 2 | 1 | 4 | 3 | 4 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 169 |
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 80 |
 | P013 | 7 | 12 |  | 29 | 1 | 36 | 22 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 156 |
 | P014 | 1 | 3 | 4 | 6 | 10 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 2 | 3 | 5 | 1 | 1 |  |  |  |  |  | 62 |
@@ -381,6 +381,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 41401 |  | 14 Retry / recovery | `TRY_AGAIN_REFRESHES_THE_PAGE` | implemented | Try again on a failed-read notice (team rounds, round figures, putting) asks the server for the whole page again (router.refresh), so every read is retried, not one section's. |
 | 41601 | CH-4601 | 16 Micro animation | `FOCUSING_A_PLAYER_ON_THE_TREND` | reserved | Focusing a player on the trend |
 | 41602 | CH-4602 | 16 Micro animation | `CHOOSING_A_LEG` | reserved | Choosing a leg |
+| 41603 | CH-4603 | 16 Micro animation | `CHANGING_THE_TRENDS_MEASURE` | reserved | Changing the trend's measure |
 | 41701 | CH-4701 | 17 Haptic | `CHOOSING_A_LEG_FOCUSING_A_PLAYER_CHANGING` | reserved | Choosing a leg, focusing a player, changing the window or lens |
 | 41702 | CH-4702 | 17 Haptic | `AN_EXPORT_LANDS_FAILS` | reserved | An export lands / fails |
 | 41703 | CH-4703 | 17 Haptic | `SORTING_THE_PHONES_PLAYERS_BY_AVG_OR` | implemented | Sorting the phone's players by Avg or SG |
@@ -467,6 +468,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 51501 |  | 15 Data freshness / sync | `PAGE_READ_AGAIN_AFTER_A_PROPOSAL` | implemented | After a focus area is proposed the page is read again (router.refresh), so Development lists it as proposed without a reload. |
 | 51601 | CH-5601 | 16 Micro animation | `CHANGING_TABS` | reserved | Changing tabs |
 | 51602 | CH-5602 | 16 Micro animation | `OPENING_ADD_FOCUS_AREA` | reserved | Opening Add focus area |
+| 51603 | CH-5603 | 16 Micro animation | `THE_TABS_PANEL_SWAPS` | reserved | The tab's panel swaps |
 | 51701 | CH-5701 | 17 Haptic | `CHANGING_TABS_THE_WINDOW_OR_PAGING_PLAYERS` | reserved | Changing tabs, the window, or paging players; choosing a Game detail leg |
 | 51702 | CH-5702 | 17 Haptic | `PROPOSING_A_FOCUS_AREA_WITH_NO_NAME` | reserved | Proposing a focus area with no name |
 | 51703 | CH-5703 | 17 Haptic | `CHOOSING_A_ROUND_TYPE_A_LENGTH_A` | reserved | Choosing a round type, a length (18 holes, 9 holes, Both), a course or a round in the filter sheet, choosing a window or a pick mode there, or removing a chip / Clear |
@@ -1186,6 +1188,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 111601 | CH-11601 | 16 Micro animation | `HOVERING_A_ROUND_THAT_OPENS_ITS_REVIEW` | reserved | Hovering a round that opens its review |
 | 111602 | CH-11602 | 16 Micro animation | `THE_SHOT_LOG_OPENS` | implemented | The shot log opens |
 | 111603 | CH-11603 | 16 Micro animation | `SUBMITTING_THE_ROUND` | implemented | Submitting the round |
+| 111604 | CH-11604 | 16 Micro animation | `STEPPING_THROUGH_A_ROUNDS_HOLES` | reserved | Stepping through a round's holes |
 | 111701 | CH-11701 | 17 Haptic | `DISCARD_IS_TAPPED` | implemented | Discard is tapped |
 | 111702 | CH-11702 | 17 Haptic | `A_ROUND_IS_OPENED` | implemented | A round is opened |
 | 111703 | CH-11703 | 17 Haptic | `CONTINUE_SUBMIT_OR_START_A_ROUND_IS` | implemented | Continue, Submit or Start a round is tapped |

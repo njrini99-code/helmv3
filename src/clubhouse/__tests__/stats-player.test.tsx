@@ -54,7 +54,9 @@ import { markAppRunning, RouteScope } from '../lib/session-state';
 import StatsLoading from '@/app/golf/(dashboard)/dashboard/stats/loading';
 import './dialog-polyfill';
 
-const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
+// A swap's leaving copy (ui/Swap.tsx) is hidden from assistive tech while it fades; read the live one.
+const code = (c: string) => [...document.querySelectorAll(`[data-ch-code="${c}"]`)].find((e) => !e.closest('.ch-swap__body[aria-hidden]')) ?? null;
+const livePanel = () => [...document.querySelectorAll('.ch-st-panel')].find((e) => !e.closest('.ch-swap__body[aria-hidden]')) ?? null;
 async function expectCode(c: string, text?: RegExp) {
   await waitFor(() => expect(code(c)).not.toBeNull());
   if (text) expect(code(c)!.textContent).toMatch(text);
@@ -1212,11 +1214,11 @@ describe('Stats player · a failed read is never drawn as zero', () => {
     for (const tab of [/Overview/, /Game detail/, /Rounds/]) {
       await openTab(user, tab);
       expect(document.querySelector('main')!.textContent).not.toMatch(FALSE_ZEROS);
-      expect(document.querySelector('.ch-st-panel')!.textContent).toBe('');
+      expect(livePanel()!.textContent).toBe('');
     }
     // What does not read the rounds still shows.
     await openTab(user, /Development/);
-    expect(document.querySelector('.ch-st-panel')!.textContent).not.toBe('');
+    expect(livePanel()!.textContent).not.toBe('');
   });
 
   it('CH-5201 51402 the phone profile: no round count under the name, no early-read note, no figure or empty section made of nothing', async () => {

@@ -1,5 +1,11 @@
 # P011 — Rounds: changelog
 
+## 2026-10-07 — A round’s holes slide as you step through them
+
+On a round's review, the hole's shots slide 12px in the direction of travel,
+whether you step with the arrows or pick a hole on the card (CH-11604). The
+hole's head and the arrows stay put. With reduced motion it is instant.
+
 ## 2026-10-07 — Round detail takes the page head
 
 On desktop, the round's green slab is now the framed page head:

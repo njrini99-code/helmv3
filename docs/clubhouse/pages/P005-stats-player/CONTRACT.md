@@ -253,12 +253,13 @@ After a proposal lands the page is read again, so Development lists it as propos
 
 Status: DEFINED
 
-The profile's own motion is the tab underline and the focus-area sheet (51601, 51602), and the busy dim of a window change or paging (50302). Everything else is the shell's: v2 press, reveal, sheets and pushes (11601 to 11612, D-64).
+The profile's own motion is the tab underline, the tab panel's swap and the focus-area sheet (51601, 51603, 51602), and the busy dim of a window change or paging (50302). Everything else is the shell's: v2 press, reveal, sheets and pushes (11601 to 11612, D-64).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 51601 | CH-5601 | `CHANGING_TABS` | Changing tabs |
 | 51602 | CH-5602 | `OPENING_ADD_FOCUS_AREA` | Opening Add focus area |
+| 51603 | CH-5603 | `THE_TABS_PANEL_SWAPS` | The tab's panel swaps |
 
 From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
 
