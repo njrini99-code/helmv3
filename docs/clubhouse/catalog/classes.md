@@ -103,7 +103,7 @@ Every write goes through `useAction`, so these belong to the shell as well: offl
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-12601 | Hovering a class | It lifts 2px (quick) | `.ch-cl-card:hover`, `--ch-dur-quick` | preview |
+| CH-12601 | Hovering a class | On desktop the class takes the Ledger row tint, with no lift (quick) | `.ch-cl-card:hover`, `--ch-dur-quick` | preview |
 | CH-12602 | A schedule is being read | A scan line sweeps down the page (still with reduced motion) | `.ch-cl-read__scan`, `--ch-dur-shimmer` | preview |
 
 ## 127xx Haptics

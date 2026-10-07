@@ -99,7 +99,7 @@ All 25 (CONTRACT.md).
 ## Motion intent
 
 v2 (D-64), from the `--ch-dur-*` tokens and the v2 ease curves; nothing counts up. Rounds adds the
-book row's hover lift (1px, ring turns green, quick; CH-11601, preview only), the shot log's chevron turn (base;
+book row's hover tint (the Ledger row tint, no lift, quick; CH-11601, preview only), the shot log's chevron turn (base;
 CH-11602), the scoring distribution's bar width (base), and the submit spinner, which stops with reduced
 motion (CH-11603, and `prefers-reduced-motion` turns off the chevron, the choice buttons' fade and the spinner).
 Presses are the shell's (`useChPress`); sheets and skeleton fades are the shell's.

@@ -12,7 +12,6 @@
 .ch-hero[data-tone]:not([data-tone='canopy']) .ch-hero__eyebrow {
   font: 600 11px/1.2 var(--ch-font-sans);
   letter-spacing: 0.16em;
-  text-transform: uppercase;
   color: var(--ch-hero-brass);
 }
 .ch-hero[data-tone]:not([data-tone='canopy']) .ch-hero__title {
@@ -101,7 +100,6 @@
 .ch-hero[data-tone='board'] .ch-hero__title {
   font-size: 30px;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 .ch-hero__figs {
   display: flex;
@@ -117,7 +115,6 @@
 .ch-hero__figs dt {
   font: 600 10.5px/1 var(--ch-font-sans);
   letter-spacing: 0.14em;
-  text-transform: uppercase;
   color: var(--ch-hero-brass, #8a6f37);
 }
 .ch-hero__figs dd {

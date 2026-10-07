@@ -1716,7 +1716,8 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
     --ch-type-serif-m: 600 22px/1.15 var(--ch-font-sans);
     --ch-type-serif-s: 600 19px/1.2 var(--ch-font-sans);
   }
-  [data-ui='clubhouse'] main[data-canopy] :is(h2, h3) {
+  [data-ui='clubhouse'] main[data-canopy] h2,
+  [data-ui='clubhouse'] main[data-canopy] h3 {
     letter-spacing: -0.022em;
   }
   [data-ui='clubhouse'] main[data-canopy] h2 {

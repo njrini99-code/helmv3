@@ -9,7 +9,7 @@ import { PreviewRounds } from '@/clubhouse/preview/PreviewRounds';
 import { PreviewTracking } from '@/clubhouse/preview/PreviewTracking';
 import { PreviewSetup } from '@/clubhouse/preview/PreviewSetup';
 import { RoundReview } from '@/clubhouse/screens/rounds/RoundReview';
-import { RoundReviewSkeleton } from '@/clubhouse/screens/rounds/RoundsSkeleton';
+import { RoundReviewSkeleton, RoundsSkeleton } from '@/clubhouse/screens/rounds/RoundsSkeleton';
 import { PREVIEW_REVIEW, PREVIEW_REVIEW_COACH, PREVIEW_REVIEW_HOLE_BY_HOLE, PREVIEW_REVIEW_NO_HOLES, PREVIEW_REVIEW_NO_SG, PREVIEW_REVIEW_NO_SHOTS, PREVIEW_REVIEW_TOTAL_ONLY } from '@/clubhouse/preview/fixtures-round-review';
 import { PREVIEW_ROUNDS, PREVIEW_ROUNDS_EMPTY, PREVIEW_ROUNDS_FAILED, PREVIEW_ROUNDS_IDLE, PREVIEW_ROUNDS_MANY, PREVIEW_ROUNDS_NO_SEASON, PREVIEW_ROUNDS_UNFINISHED_FAILED } from '@/clubhouse/preview/fixtures-rounds';
 import '@/clubhouse/styles/rounds.css';
@@ -216,7 +216,9 @@ export default async function ClubhousePreview({
     },
     rounds: {
       path: '/golf/dashboard/rounds',
-      node: (
+      node: state === 'loading' ? (
+        <RoundsSkeleton />
+      ) : (
         <PreviewRounds
           state={state}
           data={

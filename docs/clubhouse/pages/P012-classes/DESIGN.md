@@ -85,8 +85,8 @@ All 25 (CONTRACT.md).
 
 ## Motion intent
 
-Two of its own, on the v2 tokens (D-64): a hovering class lifts 2px at the quick
-duration (CH-12601), and a scan line sweeps down the page while a schedule is
+Two of its own, on the v2 tokens (D-64): a hovering class takes the Ledger row tint at the quick
+duration, with no lift (CH-12601), and a scan line sweeps down the page while a schedule is
 read (CH-12602; it stops when Animations is off). Every press, sheet, toast and
 skeleton fade, and the first-paint rise, is the shell's; nothing counts up.
 
