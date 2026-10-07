@@ -1,0 +1,14 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "bridge-mobile-ux-dev",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd /Users/ricknini/worktrees/helmv3/bridge-mobile-ux && exec npx next dev --webpack -p 3118"
+      ],
+      "port": 3118
+    }
+  ]
+}
