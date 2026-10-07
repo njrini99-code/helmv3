@@ -7,7 +7,8 @@
 > `knowledge/` context-pack tooling used by CLAUDE.md's routing section,
 > `ui-intelligence/` screenshot+atlas tooling, `wf_*`/`baseballhelm-*`
 > workflow-runner scripts, etc.) with no per-script index — read a
-> script's header comment or run it with no args for usage.
+> script's header comment first (some scripts act when run with no arguments,
+> so do not run one blind to see its usage).
 
 ## Database Type Management
 

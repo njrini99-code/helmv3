@@ -1,6 +1,10 @@
 <!-- markdownlint-disable MD004 MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Helm Bridge Premium Observability Architecture (owner brief, 2026-09-03)
 
+> **STATUS: Superseded by AGENTS.md (2026-10-07)** wherever this doc says agents
+> must not deploy, merge or migrate, or must wait for owner approval. Read it as
+> design history; `AGENTS.md` and `config/*.yml` are current.
+
 Status: design specification, approved by the owner for implementation in auto mode
 ("all of this on main and green in the morning"). Direction: **Option A** — preserve the
 existing Fairway Bridge shell and route structure, replace roughly the top 40–50% of

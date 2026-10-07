@@ -1,6 +1,10 @@
 <!-- markdownlint-disable MD004 MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # HELM — Zero-cost maximum Supabase observability & error tracking (master brief)
 
+> **STATUS: Superseded by AGENTS.md (2026-10-07)** wherever this doc says agents
+> must not deploy, merge or migrate, or must wait for owner approval. Read it as
+> design history; `AGENTS.md` and `config/*.yml` are current.
+
 Owner-authored master design + implementation brief, researched 2026-09-03, transcribed
 verbatim in substance from the owner's message so a parallel session can execute it.
 Companion: `docs/ai-system/HANDOFF_BRIDGE_CONTROL_PLANE_2026-09-03.md` (ownership split,

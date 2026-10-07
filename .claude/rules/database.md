@@ -33,11 +33,10 @@ convenient when available, not a prerequisite.
 
 ## Migrations are additive
 One shared production database serves Golf, Baseball and Lift Lab, no
-staging copy. No hook or permission rule blocks destructive SQL: a
-`DROP`, `TRUNCATE`, WHERE-less `DELETE`, or `DROP COLUMN` against production
-runs as typed, so state the target and statement before running one.
-The generated `docs/CONTROL_PLANE_ENFORCEMENT.md` lists configured
-mechanisms; AGENTS.md owns task authorization.
+staging copy. Nothing blocks destructive SQL: a `DROP`, `TRUNCATE`, WHERE-less
+`DELETE`, or `DROP COLUMN` against production runs as typed. Rehearse those
+(and RLS, grants, type changes, backfills) on the local Docker stack first, and
+check the target and statement before sending them.
 
 ## Grants: anon is the unauthenticated role
 Never `GRANT ... TO anon` or `TO PUBLIC` — anyone holding the publishable

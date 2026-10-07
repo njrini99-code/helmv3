@@ -1,5 +1,9 @@
 # Contract: the Repair stage (`selfheal-repair`)
 
+> **STATUS: Superseded by AGENTS.md (2026-10-07)** wherever this doc says agents
+> must not deploy, merge or migrate, or must wait for owner approval. Read it as
+> design history; `AGENTS.md` and `config/*.yml` are current.
+>
 > Runner (since 2026-09-23): the **Claude desktop health routine** on the
 > owner's Mac, a scheduled task running every 6h at :47 past 03/09/15/21 UTC
 > (30 minutes after Diagnose). Heartbeat `job_type`: `selfheal-repair`, with

@@ -1705,11 +1705,6 @@
         "category": "services"
       },
       {
-        "id": "services:scripts/deploy-prod.sh",
-        "pattern": "scripts/deploy-prod.sh",
-        "category": "services"
-      },
-      {
         "id": "services:scripts/fail-open-audit.mjs",
         "pattern": "scripts/fail-open-audit.mjs",
         "category": "services"
@@ -15851,18 +15846,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "scripts/control-plane-verify.mjs"
-        }
-      ]
-    },
-    {
-      "source": "feature_awareness_system",
-      "target": "services:scripts/deploy-prod.sh",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "scripts/deploy-prod.sh"
         }
       ]
     },

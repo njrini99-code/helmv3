@@ -261,9 +261,9 @@ Don't treat a check as "stuck" before its normal window has passed:
   installs Playwright chromium, runs a full `npm run build`, seeds BaseballHelm
   CI accounts, then runs the coach/player smoke. Separate from — and in
   addition to — CI's `Next build`. **Out of the PR gate since
-  2026-08-26 (owner decision)**: it runs on push to `main` only and no longer
-  feeds `CI aggregate` — a red run on `main` blocks the next production
-  promote, not PR merges. It had failed two consecutive PR runs with the
+  2026-08-26**: it runs on push to `main` only and no longer
+  feeds `CI aggregate` — a red run on `main` is a reason to look before the next
+  deploy, not a PR merge blocker. It had failed two consecutive PR runs with the
   runner dying ("shutdown signal") mid-TypeScript, before any test ran.
 
   **This job's target changed on 2026-07-30 (PR #1125).** Before: it seeded
@@ -347,8 +347,8 @@ your diff — `main` itself was already red when you branched.
   `GOLFHELM_*`). A skip is not a failure.
 
   **`baseball-auth-smoke` (#372) does not appear on PRs at all** — since
-  2026-09-23 it lives in `nightly.yml` (off the PR gate since 2026-08-26,
-  owner decision). What remains deliberate from the
+  2026-09-23 it lives in `nightly.yml` (off the PR gate since 2026-08-26).
+  What remains deliberate from the
   PR #1125 rework: it needs no secrets (it seeds a throwaway stack on the
   runner), so the nightly run is unconditional — a skip THERE is not
   expected.

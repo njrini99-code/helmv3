@@ -120,10 +120,10 @@ untrusted data.
    repo is public, so SMTP identity stays dashboard-only
    (`supabase/config-drift-baseline.json`).
 4. A Supabase preview branch (`create_branch`): schema only, no customer data,
-   and billed per hour while it exists, so it is an owner cost decision. Delete
-   it when done.
-OrioleDB, Multigres and Supabase Compute are platform/billing changes for the
-owner, not something a task enables.
+   and billed per hour while it exists: create it only when it earns its cost and
+   delete it when done.
+OrioleDB, Multigres and Supabase Compute are platform/billing changes; leave
+them alone unless the task is about them.
 
 ## Advisor output is large — filter by class
 A `get_advisors` pull returns every security/performance finding at once.
@@ -146,13 +146,12 @@ a missing skill connection is not a policy ban.
 
 ## Migration review
 For a shared or production migration, review the SQL and target with
-`.claude/rules/database-review.md` before applying. Local-only work can follow
-the task's normal verification. A reviewer agent is optional and risk-based;
-already-given task authorization does not need to be requested again.
+`.claude/rules/database-review.md` before applying, and rehearse risky kinds
+(RLS, grants, `DROP`, type changes, backfills) on the local Docker stack. A
+reviewer agent is optional and risk-based.
 
 ## Applying a migration
-Use the reviewed, task-authorized write-capable Supabase MCP or
-`npm run db:apply`, after confirming the target and SQL. A connected fallback
-is valid when it exposes the needed capability. Do not ask the user to repeat
-permission already granted for this task. Read-only `execute_sql` remains
-valid for diagnostics.
+Use the write-capable Supabase MCP or `npm run db:apply`, after confirming the
+target and SQL, then verify the schema. A connected fallback is valid when it
+exposes the needed capability. Read-only `execute_sql` remains valid for
+diagnostics.

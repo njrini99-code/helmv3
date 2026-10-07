@@ -1,4 +1,8 @@
 # GolfHelm Self-Healing Engineering System — Master Design Specification
+
+> **STATUS: Superseded by AGENTS.md (2026-10-07)** wherever this doc says agents
+> must not deploy, merge or migrate, or must wait for owner approval. Read it as
+> design history; `AGENTS.md` and `config/*.yml` are current.
 <!-- markdownlint-disable MD033 -->
 
 > Supplied by the owner 2026-08-21 as the implementation prompt for wiring the

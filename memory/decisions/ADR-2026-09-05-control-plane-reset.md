@@ -28,7 +28,8 @@ the incidents/feature-doc edits committed alongside this record).
 - **One owner per setting** — user scope holds machine preferences and the
   sandbox; project scope holds every repo grant, deny, hook and plugin;
   local scope holds nothing a project needs.
-- **One deploy path, budgeted** — `scripts/deploy-prod.sh` is the only
+- **One deploy path, budgeted** — `scripts/deploy-prod.sh` (was removed
+  2026-10-07, see ADR-2026-10-07-agent-autonomy) is the only
   promote; it refuses a dirty tree, a non-`main` ref, and any deploy past a
   weekly policy count it reads from Vercel.
 - **One repair schedule** — the GitHub Actions Repair stage is the only

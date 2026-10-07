@@ -35,21 +35,21 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Category | Files | Routed | Claims authority | Dead refs |
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 6 | 0 |
-| `AGENT_SKILL` | 133 | 0 | 7 | 0 |
+| `AGENT_SKILL` | 133 | 0 | 8 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 14 | 0 |
-| `REFERENCE` | 52 | 15 | 19 | 0 |
-| `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
+| `REFERENCE` | 52 | 15 | 20 | 0 |
+| `GENERATED_TRUTH` | 41 | 3 | 22 | 5 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 44 | 5 | 18 | 74 |
-| `AUDIT_SNAPSHOT` | 67 | 6 | 35 | 25 |
+| `PLAN` | 44 | 5 | 18 | 75 |
+| `AUDIT_SNAPSHOT` | 67 | 6 | 35 | 27 |
 | `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
-| `INCIDENT` | 49 | 15 | 2 | 2 |
-| `ADR` | 5 | 0 | 3 | 0 |
+| `INCIDENT` | 49 | 15 | 2 | 4 |
+| `ADR` | 5 | 0 | 3 | 1 |
 | `INDEX` | 25 | 1 | 8 | 5 |
-| `UNKNOWN` | 321 | 12 | 70 | 81 |
+| `UNKNOWN` | 321 | 12 | 70 | 83 |
 
 ## Files
 
@@ -98,7 +98,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/commands/held.md` | current | - | - | - | - |
 | `.claude/commands/land.md` | current | - | - | yes | - |
 | `.claude/commands/status.md` | current | - | - | - | - |
-| `.claude/commands/worktree.md` | current | - | - | - | - |
+| `.claude/commands/worktree.md` | current | - | - | yes | - |
 | `.claude/skills/app-store-screenshots/SKILL.md` | current | - | - | - | - |
 | `.claude/skills/capacitor-best-practices/SKILL.md` | current | - | - | - | - |
 | `.claude/skills/debugging-capacitor/SKILL.md` | current | - | - | - | - |
@@ -275,7 +275,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/security/accepted-risks.md` | current | - | - | - | - |
 | `docs/security/auth-config.md` | current | yes | - | yes | - |
 | `docs/setup/BACKUP_AND_DISASTER_RECOVERY.md` | current | - | - | - | - |
-| `docs/setup/DEPLOY.md` | current | - | - | - | - |
+| `docs/setup/DEPLOY.md` | current | - | - | yes | - |
 | `docs/setup/ENVIRONMENT_VARIABLES.md` | current | - | - | - | - |
 | `docs/setup/ERROR_MONITORING_SETUP.md` | current | - | - | - | - |
 | `docs/setup/GMAIL_SEND_SETUP.md` | current | - | - | - | - |
@@ -313,7 +313,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `audit/A1-RESOLUTION.md` | generated | - | - | - | - |
 | `docs/CONTROL_PLANE_ENFORCEMENT.md` | generated | - | yes | yes | - |
 | `docs/TOOL_AUTHORITY_MATRIX.md` | generated | - | yes | - | - |
-| `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | - |
+| `docs/audits/COMPLETE_FINDINGS_2026_08_18.md` | current | - | yes | yes | 1 |
 | `docs/clubhouse/AUDITS.md` | generated | - | - | - | - |
 | `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md` | generated | - | - | - | - |
 | `docs/clubhouse/generated/CLUBHOUSE_BRIDGE_MAP.md` | generated | - | - | yes | - |
@@ -392,7 +392,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- |
 | `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md` | current | yes | - | - | - |
 | `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` | current | yes | - | yes | 14 |
-| `docs/ai-system/HANDOFF_BRIDGE_CONTROL_PLANE_2026-09-03.md` | current | - | - | yes | 1 |
+| `docs/ai-system/HANDOFF_BRIDGE_CONTROL_PLANE_2026-09-03.md` | current | - | - | yes | 2 |
 | `docs/ai-system/HELM_AUTONOMY_CONTROL_PLANE.md` | current | yes | - | yes | - |
 | `docs/architecture/COMPREHENSIVE_AUTH_SYSTEM_PLAN.md` | current | - | - | - | 4 |
 | `docs/baseball/BASEBALLHELM_EXECUTION_PLAN.md` | current | - | - | yes | 18 |
@@ -469,7 +469,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/audits/DEAD_CODE_DEAD_DB_2026-08-20.md` | current | - | - | yes | 1 |
 | `docs/audits/DUPLICATION_NESTING_2026-08-20.md` | current | - | - | yes | 1 |
 | `docs/audits/FEATURE_GAP_INTENT_2026-08-20.md` | current | - | - | yes | 1 |
-| `docs/audits/HEALTH_AUDIT_2026_08_18.md` | current | - | - | yes | 1 |
+| `docs/audits/HEALTH_AUDIT_2026_08_18.md` | current | - | - | yes | 2 |
 | `docs/audits/IOS_PREMIUM_APPLE_RESEARCH_2026-08-25.md` | current | - | - | - | - |
 | `docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md` | current | yes | - | yes | - |
 | `docs/audits/MOBILE_NATIVE_AUDIT_2026-09-08.md` | current | - | - | - | - |
@@ -490,7 +490,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/SWAP_AUDIT.md` | current | - | - | yes | - |
 | `docs/clubhouse/foundation-v2/01_REPO_AUDIT_AND_RECOMMENDATION.md` | current | - | - | yes | - |
 | `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 3 |
-| `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | - |
+| `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | 1 |
 | `docs/ui-audits/DESIGN_AUDIT_ASK_AND_CALENDAR_2026-08-15.md` | current | - | - | yes | - |
 | `docs/ui-audits/GOLF_UIUX_AUDIT_LEDGER_2026-09-24.md` | current | - | - | yes | - |
 | `docs/ui-audits/MOBILE_NATIVE_REBUILD_AUDIT_2026-09-03.md` | current | - | - | - | 1 |
@@ -593,7 +593,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/feature_awareness_system/INC-2026-08-31-vercel-upload-cap-vercelignore-fix.md` | current | yes | - | - | - |
 | `memory/incidents/feature_awareness_system/INC-2026-08-31-worktree-report-missed-remote-branches.md` | current | yes | - | - | - |
 | `memory/incidents/feature_awareness_system/INC-2026-09-02-ci-runner-slot-starvation-consolidation.md` | current | yes | - | - | - |
-| `memory/incidents/feature_awareness_system/INC-2026-09-02-vercel-cli-pipe-close-abort.md` | current | yes | - | - | - |
+| `memory/incidents/feature_awareness_system/INC-2026-09-02-vercel-cli-pipe-close-abort.md` | current | yes | - | - | 2 |
 | `memory/incidents/feature_awareness_system/INC-2026-09-04-automemory-user-scope-drift.md` | current | yes | - | - | - |
 | `memory/incidents/feature_awareness_system/INC-2026-09-04-golf-e2e-env-injection-skip.md` | current | yes | - | - | - |
 | `memory/incidents/feature_awareness_system/INC-2026-09-04-mcp-namespace-policy-contradiction.md` | current | yes | - | - | - |
@@ -626,7 +626,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/decisions/ADR-2026-08-30-helm-knowledge-authority.md` | current | - | - | yes | - |
 | `memory/decisions/ADR-2026-08-30-sandbox-filesystem-allowwrite.md` | current | - | - | yes | - |
 | `memory/decisions/ADR-2026-09-03-control-plane-owner-decisions.md` | current | - | - | - | - |
-| `memory/decisions/ADR-2026-09-05-control-plane-reset.md` | current | - | - | yes | - |
+| `memory/decisions/ADR-2026-09-05-control-plane-reset.md` | current | - | - | yes | 1 |
 | `memory/decisions/ADR-2026-09-06-demo-seed-scope.md` | current | - | - | - | - |
 
 ### `INDEX`
@@ -749,9 +749,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/HANDOFF.md` | current | - | - | - | - |
 | `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
 | `docs/clubhouse/PAGE_PERFORMANCE.md` | current | - | - | - | - |
-| `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
+| `docs/clubhouse/PROGRESS.md` | current | - | - | - | 1 |
 | `docs/clubhouse/QUALITY_TOOLING.md` | current | - | - | - | - |
-| `docs/clubhouse/RELEASE_CANDIDATE.md` | current | - | - | yes | - |
+| `docs/clubhouse/RELEASE_CANDIDATE.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
 | `docs/clubhouse/UI_OWNERSHIP.md` | current | - | - | yes | - |
 | `docs/clubhouse/UX_OPTIMIZATION.md` | current | - | - | - | - |

@@ -406,7 +406,7 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
                 ? 'CONFIGURED — display-name and UUID spellings; NOT probed (the only probe is a real production deploy, a purchase, or a protection change); id stability UNVERIFIED'
                 : 'CONFIGURED — display-name spelling only, which measured 2026-09-01 is not in the session inventory',
             }
-          : { mechanism: 'NONE', where: '—', observed: 'UNENFORCED' };
+          : { mechanism: 'NONE', where: '—', observed: 'UNENFORCED, BY DESIGN — agents may deploy through the Vercel connector (AGENTS.md "Production")' };
       },
     },
     {
@@ -495,7 +495,7 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
           : {
               mechanism: 'NONE',
               where: '—',
-              observed: 'UNENFORCED, BY OWNER GRANT — e5ec5e7b8 (2026-09-01) removed these rules so scripts/deploy-prod.sh is the one sanctioned promote path; AGENTS.md still forbids a production action the user did not ask for',
+              observed: 'UNENFORCED, BY DESIGN — agents deploy directly with ./node_modules/.bin/vercel deploy --prod (AGENTS.md "Production"); Git deployments stay disabled in vercel.json',
             };
       },
     },
@@ -512,59 +512,6 @@ function resolveClaims(hooks, denies, connectorIds = loadConnectorIds()) {
               observed: 'CONFIGURED — bare, ./node_modules/.bin and npx spellings; fires under bypassPermissions',
             }
           : { mechanism: 'NONE', where: '—', observed: 'UNENFORCED' };
-      },
-    },
-    {
-      // The row this file exists for. Everything above resolves a claim by
-      // finding a mechanism; this one resolves it by finding that the
-      // mechanism cannot see the call. `permissions.deny` prefix-matches the
-      // command the agent SUBMITS, and the wrapper submits as itself — the
-      // `vercel deploy --prod --yes` it runs is a child process no rule
-      // inspects. Same shape as the canonical-write row: a matcher that reads
-      // what was typed rather than what will happen.
-      claim: 'A production deploy run through scripts/deploy-prod.sh is refused',
-      resolve: () => {
-        const wrapper = 'scripts/deploy-prod.sh';
-        const covered = denyMatch((r) => r.includes('deploy-prod'));
-        if (covered.length) {
-          return {
-            mechanism: covered.join(', '),
-            where: '.claude/settings.json → permissions.deny',
-            observed: 'CONFIGURED — the wrapper itself is denied',
-          };
-        }
-        const askedFor = askMatch((r) => r.includes('deploy-prod'));
-        if (askedFor.length) {
-          return {
-            ...asked(askedFor, 'the release path in AGENTS.md "Production"'),
-            mechanism: askedFor.join(', '),
-          };
-        }
-        // Only report the gap if the wrapper actually still runs a production
-        // deploy. If someone rewrites it, this row must stop asserting.
-        let runsProdDeploy;
-        try {
-          runsProdDeploy = /vercel\s+deploy\s+--prod/.test(
-            readFileSync(resolve(ROOT, wrapper), 'utf8'),
-          );
-        } catch {
-          return {
-            mechanism: 'NONE',
-            where: '—',
-            observed: `UNKNOWN — ${wrapper} could not be read`,
-          };
-        }
-        return runsProdDeploy
-          ? {
-              mechanism: 'NONE',
-              where: '—',
-              observed: `UNENFORCED — ${wrapper} runs \`vercel deploy --prod\` in a child process; deny rules match the submitted command, which is the script. NOT probed: the only probe is a real production deploy`,
-            }
-          : {
-              mechanism: 'N/A',
-              where: '—',
-              observed: `N/A — ${wrapper} no longer runs a production deploy`,
-            };
       },
     },
   ].map((c) => ({ claim: c.claim, ...c.resolve() }));

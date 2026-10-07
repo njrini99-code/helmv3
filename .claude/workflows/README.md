@@ -3,7 +3,8 @@
 Scripts the Workflow tool runs by name (`/helm-review`, `/helm-fix-ci`). Each is
 plain JavaScript beginning with `export const meta`. They spawn the repo's own
 agent definitions (`helm-reader` for read-only stages, `helm-worker` for stages
-that edit inside a worktree) and never merge, deploy, or touch production.
+that edit inside a worktree) and do not merge, deploy or touch production themselves (landing and deploying
+are the caller's next step, per AGENTS.md).
 
 - `helm-review.js` — five-dimension review of a PR (`/helm-review 1875`, read
   from a detached checkout of the PR head) or the current checkout's diff (no

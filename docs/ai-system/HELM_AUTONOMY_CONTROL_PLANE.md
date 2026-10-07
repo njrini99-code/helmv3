@@ -1,5 +1,9 @@
 # Helm Autonomy Control Plane — Deep Research Extension
 
+> **STATUS: Superseded by AGENTS.md (2026-10-07)** wherever this doc says agents
+> must not deploy, merge or migrate, or must wait for owner approval. Read it as
+> design history; `AGENTS.md` and `config/*.yml` are current.
+>
 > Supplied by the owner 2026-08-21. Extension, not replacement: assumes the
 > GolfHelm Engineering OS (base) and the Advanced Reliability & Product
 > Intelligence Extension are installed. Implement after them.
