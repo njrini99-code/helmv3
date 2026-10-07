@@ -13,7 +13,7 @@ The figures sit beside the season average on desktop and below it on the phone. 
 frame, which read as a card inside a card, and becomes one reading sheet.
 
 Other changes:
-- **Month rows:** each starts with an ivory date key holding a serif numeral, not a green block.
+- **Month rows:** each starts with an ivory date key, its day numeral in the field green, not a green block. Numerals stay in the sans, because the display serif's 1 has no flag.
 - **Titles:** "Your rounds", the month headings and the round recap title are set in the display serif.
 - **In-progress card:** solid field green with no large gradient (banding). Its hole strip takes the scoreboard
   finishes, unplayed holes show their faint hole numbers, and the strip is centred in the card.

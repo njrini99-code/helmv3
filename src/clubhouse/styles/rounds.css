@@ -628,8 +628,8 @@ a.ch-rd-sc:focus-visible {
   box-shadow: var(--ch-key-raised-shadow);
 }
 .ch-rd-sc__date b {
-  font: 400 30px/0.95 var(--ch-font-serif);
-  letter-spacing: -0.01em;
+  font: 600 23px/1 var(--ch-font-sans);
+  letter-spacing: -0.02em;
 }
 .ch-rd-sc__date em {
   font: 600 11px/1 var(--ch-font-sans);

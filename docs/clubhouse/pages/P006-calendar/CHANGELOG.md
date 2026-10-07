@@ -1,5 +1,13 @@
 # P006 — Calendar: changelog
 
+## 2026-10-06 — Overlapping events cascade
+
+Overlapping events in the week and day grids no longer split a column into equal lanes, which crushed titles into
+mid-word fragments. They cascade as Apple Calendar does: each later lane steps right and lies over the earlier ones,
+reaching the column's right edge, edged in the sheet's ivory. An event that starts earlier shows in full above where
+the next begins. A cascaded title wraps at word boundaries only, over at most two lines. The phone's month title is
+set in the display serif; the desktop's numeric date-range title stays in the sans, because the serif's 1 reads as l.
+
 ## 2026-10-06 — Display type relaxed
 
 The owner found the display type too compact. Display headings on this page widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on every Clubhouse page. Layout and content are unchanged.
