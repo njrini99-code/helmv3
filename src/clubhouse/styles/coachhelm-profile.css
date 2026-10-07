@@ -446,6 +446,109 @@
   }
 }
 
+/* The Ledger (owner, 2026-10-07: "flush, not so card heavy"). On desktop the shape of the game is a section on the
+   canvas: its label and window over the engraved rule, the headline, then Strong and Worth watching as two columns of
+   rows split by a soft rule. Every measure is one ruled table: no card per measure and no stance wash; a measure's
+   stance stays in its word, its tag and its scale. The loading shapes flatten the same way. */
+@media (min-width: 821px) {
+  main[data-canopy] :is(.ch-hg-hero, .ch-hg-stand__c, .ch-hg-m, .ch-hg-sk__hero, .ch-hg-sk__m) {
+    padding: 0;
+    overflow: visible;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  main[data-canopy] :is(.ch-hg-hero__k, .ch-hg-sec__h, .ch-hg-sec > h2) {
+    padding-bottom: 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  main[data-canopy] .ch-hg-hero {
+    gap: 20px;
+  }
+  main[data-canopy] .ch-hg-stand {
+    gap: 18px 0;
+    padding-top: 6px;
+  }
+  /* Two columns even when one group is drawn, so a lone group's figures stay beside their labels. */
+  @container chhl (min-width: 641px) {
+    main[data-canopy] .ch-hg-stand {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    main[data-canopy] .ch-hg-stand__c:not(:only-child):first-child {
+      padding-right: 32px;
+    }
+    main[data-canopy] .ch-hg-stand__c + .ch-hg-stand__c {
+      padding-left: 32px;
+      box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+    }
+  }
+  main[data-canopy] .ch-hg-stand__c li {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  main[data-canopy] .ch-hg-stand__v {
+    color: var(--ch-text-primary);
+  }
+  main[data-canopy] .ch-hg-sec {
+    gap: 0;
+  }
+  main[data-canopy] .ch-hg-sec__h {
+    align-items: flex-end;
+  }
+  main[data-canopy] .ch-hg-sec h2 {
+    font: 600 19px/1.2 var(--ch-font-sans);
+  }
+  /* The measures: one table. A cell's figures align to the section's edge; columns split on a soft rule and rows on a
+     soft seam, as the profile's figure line does. One column on a narrow canvas. */
+  main[data-canopy] :is(.ch-hg-grid, .ch-hg-sk__grid) {
+    gap: 0;
+  }
+  main[data-canopy] :is(.ch-hg-grid, .ch-hg-sk__grid) > * {
+    padding: 24px 0 20px;
+  }
+  main[data-canopy] :is(.ch-hg-grid, .ch-hg-sk__grid) > * + * {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  @container chhl (min-width: 901px) {
+    main[data-canopy] :is(.ch-hg-grid, .ch-hg-sk__grid) > :nth-child(odd) {
+      padding-right: 32px;
+    }
+    main[data-canopy] :is(.ch-hg-grid, .ch-hg-sk__grid) > :nth-child(even) {
+      padding-left: 32px;
+      box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft), inset 0 1px 0 var(--ch-ledger-rule-soft);
+    }
+    main[data-canopy] :is(.ch-hg-grid, .ch-hg-sk__grid) > :nth-child(2) {
+      box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+    }
+    main[data-canopy] :is(.ch-hg-grid, .ch-hg-sk__grid) > :nth-child(odd):not(:first-child) {
+      box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    }
+  }
+  main[data-canopy] .ch-hg-m__f {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  /* Loading holds the loaded section (WebKit 1440, 2026-10-07: the shape of the game 221px) and draws its rules where
+     the page draws them: under the hero's label, and under the measures' heading and its two-line note. */
+  main[data-canopy] .ch-hg-sk__hero {
+    gap: 20px;
+    min-height: 221px;
+    background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 25px / 100% 1px no-repeat;
+  }
+  main[data-canopy] .ch-hg-sk__hero > .ch-skel:first-child {
+    margin: 2px 0 13px;
+  }
+  /* The headline's two lines sit together, and the groups follow them, as the loaded hero's do. */
+  main[data-canopy] .ch-hg-sk__hero > .ch-skel:nth-child(3) {
+    margin-top: -14px;
+  }
+  main[data-canopy] .ch-hg-sk__hero > .ch-hg-sk__stand {
+    margin-top: -7px;
+  }
+  main[data-canopy] .ch-hg-sk__grid {
+    padding-top: 50px;
+    background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 49px / 100% 1px no-repeat;
+  }
+}
+
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */

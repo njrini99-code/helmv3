@@ -1,5 +1,46 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-07 — The Ledger: the board and the views on the canvas
+
+On desktop CoachHelm's reading cards now sit on the framed canvas, under
+headings and engraved rules. Phone is unchanged.
+
+- **Board:** the program pulse is a section under its heading and rule. The
+  first row of each column sits on the rule, the rows are split by soft seams,
+  and its notice and quiet line clear the rule as a row does. By player (or the
+  player's other reads) and the focus are two columns whose heads share one
+  ruled line. A chosen player is a soft green tint, not a lifted plate, and
+  the tint hangs 12px past the column so the avatars align with it. The
+  evidence is part of the focus, set off by one soft rule; the week's drill
+  keeps its well. A dismissed insight is said on the focus column's head line,
+  with Undo, instead of on a card. Proposed for you is a section whose note
+  carries the rule.
+- **Game profile:** the shape of the game is a section: label and window over
+  the rule, the headline, then Strong and Worth watching as two columns split
+  by a soft rule. Every measure is one ruled table: columns split by a soft
+  rule and rows by soft seams, with no card or stance wash per measure (the
+  stance stays in the word, the tag and the scale). Keep reading is the
+  table's last cell.
+- **Standing:** the label and window head the section; the headline sits
+  beside Most to gain, a column split off by a soft rule. Each group of stats
+  is a section under its heading and rule.
+- **Deep dive:** the three counts are one figure line split by soft rules.
+  The list of reads and the open read are two columns whose heads share a
+  ruled line; the read's parts follow on soft rules, and the plan is rows, as
+  the rounds are.
+- **Fixes:** the Game profile's figure beside a strength (for example 62%) was
+  ivory on ivory and could not be read on desktop. The Development link beside
+  the views was the old green canopy's mint, barely visible on the ivory head;
+  it is the ghost button's green.
+- **Loading:** every skeleton flattens the same way and draws the rules where
+  the page does. Measured in WebKit at 1440 (the board also at 1000), the head
+  and section tops don't move when the page lands: the pulse section is 236.8px
+  (a 22.8px heading, 12px to its rule, and a 202px reserve on the canvas), the
+  Game profile's hero 221px, Standing's 282px and the Deep dive's 156px.
+  Standing's and the Deep dive's two-line head is held at 183px (the skeleton
+  held 159px before, a 24px shift), and the Game profile's hero no longer
+  shifts by 31px.
+
 ## 2026-10-07 — The pulse's held space says something
 
 The program pulse holds three rows of space so nothing below moves when it

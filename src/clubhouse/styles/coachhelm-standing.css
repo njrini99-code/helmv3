@@ -402,6 +402,78 @@
   }
 }
 
+/* The Ledger (owner, 2026-10-07: "flush, not so card heavy"). On desktop where you stand is a section on the canvas:
+   its label and window head it over one engraved rule, and the headline sits beside what is most to gain, a column
+   split off by a soft rule. Every group of stats is a section of rows under its heading and rule. The loading shapes
+   flatten the same way. */
+@media (min-width: 821px) {
+  main[data-canopy] :is(.ch-hs-hero, .ch-hs-gaps, .ch-hs-g, .ch-hs-sk__hero, .ch-hs-sk__g) {
+    padding: 0;
+    overflow: visible;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  main[data-canopy] .ch-hs-hero {
+    gap: 18px 32px;
+  }
+  main[data-canopy] .ch-hs-hero__main {
+    display: contents;
+  }
+  main[data-canopy] .ch-hs-hero__k {
+    grid-column: 1 / -1;
+    padding-bottom: 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  main[data-canopy] .ch-hs-hero__sub {
+    margin-top: 0;
+  }
+  /* The headline's note reads straight under it; the room the taller column leaves falls below the note. */
+  @container chhl (min-width: 901px) {
+    main[data-canopy] .ch-hs-hero {
+      grid-template-rows: auto auto 1fr;
+    }
+    main[data-canopy] .ch-hs-hero__main > :is(h2, .ch-hs-hero__sub) {
+      grid-column: 1;
+      align-self: start;
+    }
+    main[data-canopy] .ch-hs-gaps {
+      grid-column: 2;
+      grid-row: 2 / span 2;
+      padding-left: 32px;
+      box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+    }
+  }
+  main[data-canopy] :is(.ch-hs-gaps li, .ch-hs-r, .ch-hs-sk__r) {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  /* A group: its heading and note over the rule, its first row sitting on it. */
+  main[data-canopy] :is(.ch-hs-g, .ch-hs-sk__g) {
+    gap: 0;
+    margin-top: 16px;
+  }
+  main[data-canopy] :is(.ch-hs-g__h, .ch-hs-sk__g > :first-child) {
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  main[data-canopy] .ch-hs-g h2 {
+    font: 600 19px/1.2 var(--ch-font-sans);
+  }
+  main[data-canopy] :is(.ch-hs-r:first-child, .ch-hs-sk__g > :nth-child(2)) {
+    border-top-color: transparent;
+  }
+  /* Loading holds the loaded section (WebKit 1440, 2026-10-07: 282px) and draws the head's rule where the page draws it. */
+  main[data-canopy] .ch-hs-sk__hero {
+    min-height: 282px;
+    background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 25px / 100% 1px no-repeat;
+  }
+  main[data-canopy] .ch-hs-sk__col > .ch-skel:first-child {
+    margin: 2px 0 13px;
+  }
+  main[data-canopy] .ch-hs-sk__hero > .ch-skel {
+    margin-top: 44px;
+  }
+}
+
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */

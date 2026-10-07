@@ -774,13 +774,18 @@
   box-shadow: var(--ch-elevation-reading);
 }
 /* Desktop loading holds the loaded page's measured heights (WebKit, 1440 and 1000, 2026-10-07): the framed page head
-   159px with its sans title and live line, the pulse card 258px with its serif title and reserved rows (CH-13405). */
+   159px with its sans title and live line, and the pulse section: its 22.8px heading, 12px to its rule, and the rows'
+   reserved room (CH-13405; the Ledger, below). */
 @media (min-width: 821px) {
   .ch-hl[aria-busy='true'][data-canopy] > .ch-hl-h {
     min-height: 159px;
   }
   .ch-hl-sk__pulse {
-    min-height: 258px;
+    min-height: calc(34.8px + var(--ch-hl-pulse-h, 197px));
+  }
+  /* Standing's and the Deep dive's line runs to two lines beside the views (WebKit 1440: a 183px head). */
+  .ch-hl[aria-busy='true'][data-canopy]:is([data-ch-code='CH-13470'], [data-ch-code='CH-13480']) > .ch-hl-h {
+    min-height: 183px;
   }
 }
 
@@ -956,6 +961,165 @@
    dip the page between two skeletons. Skeletons only (aria-label 'Loading ...'), as the fade rule is (base.css). */
 [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='Loading'][data-skel='chained'] {
   animation: none;
+}
+
+/* The Ledger (owner, 2026-10-07: "flush, not so card heavy"). On desktop the board's reading cards sit on the canvas.
+   The program pulse is a section under its heading and an engraved rule. The players (or a player's other reads) and
+   the focus are two columns whose heads share one ruled line; the evidence is part of the focus, set off by a soft
+   rule, and a chosen player is a soft tint, not a lifted plate. The week's drill keeps its well; pills, keys, counts
+   and buttons keep their own material. The loading shapes flatten the same way. Phone keeps its approved boards. */
+@media (min-width: 821px) {
+  .ch-hl[data-canopy] :is(.ch-hl-pulse, .ch-hl-focus, .ch-hl-ev, .ch-hl-prop, .ch-hl-sk__pulse, .ch-hl-sk__card) {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  /* The pulse's reserved room (CH-13405) on the canvas: the preview's four items need 197px at 1440 and 202px at 1000,
+     so it holds 202px and the section is 236.8px at both; its loading shape holds the same (above). */
+  .ch-hl[data-canopy] {
+    --ch-hl-pulse-h: 202px;
+  }
+  /* A section's head: its heading over the engraved rule. */
+  .ch-hl[data-canopy] :is(.ch-hl-pulse > h2, .ch-hl-prop > .ch-hl-note) {
+    margin: 0;
+    padding: 0 0 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-hl[data-canopy] .ch-hl-pulse ol {
+    column-gap: 44px;
+  }
+  .ch-hl[data-canopy] .ch-hl-pulse li {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  /* The first row of each column sits on the heading's rule, so it draws no seam of its own. */
+  .ch-hl[data-canopy] .ch-hl-pulse li:first-child {
+    box-shadow: none;
+  }
+  @container chhl (min-width: 641px) {
+    .ch-hl[data-canopy] .ch-hl-pulse li:nth-child(2) {
+      box-shadow: none;
+    }
+  }
+  .ch-hl[data-canopy] .ch-hl-pulse .ch-hl-pulse__clear,
+  .ch-hl[data-canopy] .ch-hl-pulse__skrow {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  /* What stands in for the rows (the pulse's notice, its quiet line, its loading rows) clears the rule as a row does. */
+  .ch-hl[data-canopy] .ch-hl-pulse__slot > .ch-notice:first-child {
+    margin-top: 14px;
+  }
+  .ch-hl[data-canopy] .ch-hl-pulse__none {
+    padding-top: 14px;
+  }
+  .ch-hl[data-canopy] .ch-hl-pulse__skrow:first-child {
+    border-top-color: transparent;
+  }
+
+  /* A column's head: a short label (By player, Also worth knowing, Working) or the focus's category and stance, each on
+     the engraved rule at one height, so the two columns' rules meet on one line. */
+  .ch-hl[data-canopy] :is(.ch-hl-cgrid, .ch-hl-grid, .ch-hl-sk--coach, .ch-hl-sk--player) {
+    gap: 44px;
+  }
+  .ch-hl[data-canopy] :is(.ch-hl-plist, .ch-hl-side) {
+    padding-top: 0;
+  }
+  .ch-hl[data-canopy] :is(.ch-hl-plist > h2, .ch-hl-sec > h2, .ch-hl-focus__k) {
+    display: flex;
+    align-items: center;
+    min-height: 34px;
+    margin: 0;
+    padding-bottom: 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-hl[data-canopy] .ch-hl-plist > h2 {
+    margin-bottom: 8px;
+  }
+  /* The players hang their tint 12px past the column's edge, so the avatars align with the rule. */
+  .ch-hl[data-canopy] .ch-hl-pl {
+    margin-inline: -12px;
+  }
+  .ch-hl[data-canopy] .ch-hl-pl:hover,
+  .ch-hl[data-canopy] .ch-hl-row:hover {
+    background: var(--ch-ledger-row-hover);
+  }
+  .ch-hl[data-canopy] .ch-hl-pl.is-on {
+    background: color-mix(in oklab, var(--ch-green-600) 7%, transparent);
+    box-shadow: none;
+  }
+  .ch-hl[data-canopy] .ch-hl-pl.is-on:hover {
+    background: color-mix(in oklab, var(--ch-green-600) 9%, transparent);
+  }
+  .ch-hl[data-canopy] .ch-hl-row {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-hl[data-canopy] .ch-hl-sec > h2 + .ch-hl-row {
+    border-top-color: transparent;
+  }
+  /* A dismissed insight is said on the focus column's head line, with Undo at its end, not on a lifted card. */
+  .ch-hl[data-canopy] .ch-hl-dis {
+    min-height: 34px;
+    padding: 0 0 12px;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-hl[data-canopy] .ch-hl-dis .ch-btn {
+    margin-block: -5px;
+  }
+
+  /* The focus: the claim, then its evidence set off by one soft rule, with its count and read under the figures (no rule
+     of their own); the week's drill keeps its well. */
+  .ch-hl[data-canopy] .ch-hl-ev {
+    padding-top: 18px;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-hl[data-canopy] .ch-hl-ev__f {
+    padding-top: 0;
+    border-top-color: transparent;
+  }
+  .ch-hl[data-canopy] :is(.ch-hl-why, .ch-hl-prop__r) {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  /* A section on the board ends with the same room the page gives between sections. */
+  .ch-hl[data-canopy] > :is(.ch-hl-pulse, .ch-hl-prop, .ch-hl-sk__pulse) {
+    margin-bottom: 16px;
+  }
+
+  /* Loading draws the same heads: each section's and column's engraved rule where the loaded page draws it, with the
+     label's bar centred above it, and the rows where the loaded rows land. */
+  .ch-hl[data-canopy] :is(.ch-hl-sk__pulse, .ch-hl-sk--coach > .ch-hl-sk__col, .ch-hl-sk--player > .ch-hl-sk__col) {
+    padding-top: 0;
+    background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 33px / 100% 1px no-repeat;
+  }
+  .ch-hl[data-canopy] :is(.ch-hl-sk__pulse, .ch-hl-sk--player > .ch-hl-sk__col) > .ch-skel:first-child {
+    margin: 6px 0 16px;
+  }
+  .ch-hl[data-canopy] .ch-hl-sk--coach > .ch-hl-sk__col {
+    gap: 28px;
+    padding-top: 56px;
+  }
+  .ch-hl[data-canopy] .ch-hl-sk__card {
+    gap: 18px;
+  }
+  .ch-hl[data-canopy] .ch-hl-sk__card > :first-child {
+    align-items: center;
+    min-height: 34px;
+    padding-bottom: 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+
+  /* Proposed for you: a section whose caption carries the rule; its first answer sits on it. */
+  .ch-hl[data-canopy] .ch-hl-prop > h2 {
+    margin: 0 0 4px;
+    font: 600 19px/1.2 var(--ch-font-sans);
+  }
+  .ch-hl[data-canopy] .ch-hl-prop ul {
+    margin-top: 0;
+  }
+  .ch-hl[data-canopy] .ch-hl-prop__r:first-child {
+    border-top-color: transparent;
+  }
 }
 
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn

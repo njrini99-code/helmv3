@@ -165,9 +165,17 @@
   }
 }
 
-/* The Development link beside the views reads in mint on the canopy (desktop). */
+/* The Ledger (owner, 2026-10-07: "flush, not so card heavy"). On desktop the card that closes a view is part of the
+   canvas, its ways on separated by soft seams. The Development link beside the views keeps the ghost button's green:
+   the head it sits in is the ivory page head now, where the green canopy's mint did not read. */
 @media (min-width: 821px) {
-  main[data-canopy] .ch-hv-tabs .ch-btn--ghost {
-    color: var(--ch-hero-mint);
+  .ch-hv[data-canopy] .ch-hv-next {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-hv[data-canopy] .ch-hv-link {
+    border-top-color: var(--ch-ledger-rule-soft);
   }
 }

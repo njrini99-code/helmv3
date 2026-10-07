@@ -1,5 +1,20 @@
 # P008 — Settings: changelog
 
+## 2026-10-07 — The Ledger: sections on the canvas
+
+On desktop each settings card is now a section on the framed canvas, in the
+shared Section's geometry: the title in the 19px heavy sans in forest ink over
+an engraved rule, its caption under it, and the rows flush to the section's
+edge on soft seams. The save bar is a flush row under a soft rule (status on
+the left, Save on the right) instead of a darker footer. Sections sit 44px
+apart and run to the page head's right edge. The notification table's labels
+and switches align to the section edge: its header has no filled band, a row's
+hover tint reaches 12px past the edge, and the seams are drawn inset to it.
+Fields, switches, segments, sliders, notices and the section rail keep their
+own material. The loading shape uses the same classes and flattens with the
+page; the head holds its place on load (WebKit 1440 and 1000). Phone is
+unchanged.
+
 ## 2026-10-07 — Phone large title in the serif
 
 On the phone, the Settings large title and the section titles (Account,

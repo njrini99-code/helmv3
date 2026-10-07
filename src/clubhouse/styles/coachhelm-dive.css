@@ -813,6 +813,154 @@ p.ch-hd-none {
   padding: 14px 14px calc(24px + env(safe-area-inset-bottom));
 }
 
+/* The Ledger (owner, 2026-10-07: "flush, not so card heavy"). On desktop what CoachHelm has found is a section on the
+   canvas: its label over one engraved rule, the headline beside the three counts, which are one figure line split by
+   soft rules. The reads and the open read are two columns whose heads share a ruled line, as the Board's do; the
+   read's parts follow on soft rules, and only the week's drill keeps its well. The loading shapes flatten the same
+   way. */
+@media (min-width: 821px) {
+  main[data-canopy] :is(.ch-hd-hero, .ch-hd-rail, .ch-hd-dos, .ch-hd-dx, .ch-hd-plan__i, .ch-hd-sk__hero, .ch-hd-sk__dos) {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  main[data-canopy] .ch-hd-hero {
+    gap: 14px 40px;
+    align-items: start;
+    overflow: visible;
+  }
+  main[data-canopy] .ch-hd-hero__main {
+    display: contents;
+  }
+  main[data-canopy] .ch-hd-hero__k {
+    grid-column: 1 / -1;
+    margin-bottom: 4px;
+    padding-bottom: 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  @container chhl (min-width: 901px) {
+    main[data-canopy] .ch-hd-hero {
+      grid-template-rows: auto auto 1fr;
+    }
+    main[data-canopy] .ch-hd-hero__main > :is(h2, .ch-hd-hero__sub) {
+      grid-column: 1;
+    }
+    main[data-canopy] .ch-hd-hero__f {
+      grid-column: 2;
+      grid-row: 2 / span 2;
+      align-self: center;
+    }
+  }
+  main[data-canopy] .ch-hd-hero__f {
+    gap: 0;
+  }
+  main[data-canopy] .ch-hd-hero__f > div {
+    min-width: 0;
+    padding: 2px 28px;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  main[data-canopy] .ch-hd-hero__f > div:first-child {
+    padding-left: 0;
+  }
+  main[data-canopy] .ch-hd-hero__f > div:last-child {
+    padding-right: 0;
+  }
+  main[data-canopy] .ch-hd-hero__f > div + div {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+
+  /* The list of reads keeps its own scroll. Its padding sits outside the column, so the heads align with the column's
+     edge and a read's tint reaches 10px past it without being clipped. */
+  main[data-canopy] .ch-hd {
+    gap: 44px;
+  }
+  main[data-canopy] .ch-hd-rail {
+    gap: 28px;
+    margin-inline: -10px;
+    padding: 0 10px 10px;
+  }
+  main[data-canopy] .ch-hd-grp {
+    gap: 0;
+  }
+  main[data-canopy] .ch-hd-grp__h {
+    align-items: center;
+    min-height: 34px;
+    padding: 0 0 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  main[data-canopy] .ch-hd-grp > p {
+    padding: 10px 0 6px;
+  }
+  main[data-canopy] .ch-hd-it {
+    width: calc(100% + 20px);
+    margin-inline: -10px;
+  }
+  main[data-canopy] .ch-hd-it:hover {
+    background: var(--ch-ledger-row-hover);
+  }
+  main[data-canopy] .ch-hd-it.is-on {
+    background: color-mix(in oklab, var(--ch-green-600) 7%, transparent);
+    box-shadow: none;
+  }
+  main[data-canopy] .ch-hd-it.is-on:hover {
+    background: color-mix(in oklab, var(--ch-green-600) 9%, transparent);
+  }
+
+  /* The open read: its head is the Board's ruled category line; its parts on soft rules; the plan as rows, as the
+     rounds are. */
+  main[data-canopy] .ch-hd-dos__h {
+    gap: 18px;
+  }
+  main[data-canopy] :is(.ch-hd-sec, .ch-hd-tr > li, .ch-hd-r, .ch-hd-dx__d > div) {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  main[data-canopy] .ch-hd-r.is-link:hover {
+    background: var(--ch-ledger-row-hover);
+  }
+  main[data-canopy] .ch-hd-plan {
+    gap: 0;
+  }
+  main[data-canopy] .ch-hd-plan__i {
+    padding: 12px 8px;
+    border-radius: 10px;
+  }
+  main[data-canopy] .ch-hd-plan > li + li .ch-hd-plan__i {
+    border-top: 1px solid var(--ch-ledger-rule-soft);
+  }
+  main[data-canopy] .ch-hd-plan__i.is-link:hover {
+    background: var(--ch-ledger-row-hover);
+  }
+
+  /* Loading holds the loaded sections (WebKit 1440, 2026-10-07: what CoachHelm has found 156px) and draws each head's
+     rule where the page draws it: the hero's, each group's in the list, and the open read's. */
+  main[data-canopy] .ch-hd-sk__hero {
+    align-items: start;
+    min-height: 156px;
+    background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 25px / 100% 1px no-repeat;
+  }
+  main[data-canopy] .ch-hd-sk__hero > .ch-skel {
+    margin-top: 64px;
+  }
+  main[data-canopy] .ch-hd-sk__col > .ch-skel:first-child {
+    margin: 2px 0 17px;
+  }
+  main[data-canopy] :is(.ch-hd-sk__grp, .ch-hd-sk__dos) {
+    background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 33px / 100% 1px no-repeat;
+  }
+  main[data-canopy] .ch-hd-sk__grp > .ch-skel {
+    margin: 9px 0 57px;
+  }
+  main[data-canopy] .ch-hd-sk__it {
+    margin-inline: -10px;
+  }
+  main[data-canopy] .ch-hd-sk__dos > .ch-skel:first-child {
+    margin: 11px 0 12px;
+  }
+}
+
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */

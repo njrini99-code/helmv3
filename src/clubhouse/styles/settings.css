@@ -1485,3 +1485,76 @@
     min-height: 144px;
   }
 }
+
+/* The Ledger (owner, 2026-10-07: "flush, not so card heavy"). On desktop each settings card is a section on the canvas,
+   in the shared Section's geometry: the title in the heavy sans over an engraved rule, the rows flush to the section's
+   edge on soft seams, and the save bar a flush row under a soft rule instead of a darker footer. Fields, switches,
+   segments, sliders and the rail keep their own material; the sections meet the page head's rule at the right. */
+@media (min-width: 821px) {
+  .ch-set[data-canopy] .ch-set-stack {
+    gap: 44px;
+    max-width: none;
+  }
+  .ch-set[data-canopy] .ch-set-autosave {
+    margin: -4px 0 -24px;
+  }
+  .ch-set[data-canopy] .ch-surface {
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-set[data-canopy] .ch-surface__head {
+    align-items: flex-end;
+    padding: 0 0 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-set[data-canopy] .ch-surface__title {
+    font: 600 19px/1.2 var(--ch-font-sans);
+    color: var(--ch-ledger-ink);
+  }
+  .ch-set[data-canopy] .ch-surface__sub {
+    margin-top: 3px;
+  }
+  .ch-set[data-canopy] .ch-surface__body {
+    padding: 18px 0 0;
+  }
+  .ch-set[data-canopy] .ch-surface__foot {
+    margin-top: 20px;
+    padding: 14px 0 0;
+    border-top: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-set[data-canopy] .ch-set-failed {
+    padding: 0;
+  }
+  .ch-set[data-canopy] .ch-surface :is(.ch-set-row, .ch-set-sliders, .ch-set-rank__i) {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-set[data-canopy] .ch-surface .ch-set-photo__img {
+    box-shadow: 0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule);
+  }
+  .ch-set[data-canopy] .ch-surface .ch-set-link:hover {
+    background: var(--ch-ledger-row-hover);
+  }
+  /* The notification table: its labels and switches align to the section's edge and a row's hover tint reaches 12px
+     past it, as the Home leaderboard's does, so its seams are drawn inset to that edge instead of as full-width
+     borders. No filled header band and no closing rule (the next row draws its seam). */
+  .ch-set[data-canopy] .ch-surface .ch-set-matrix {
+    margin: 2px -12px 0;
+    border-top: 0;
+    border-bottom: 0;
+  }
+  .ch-set[data-canopy] .ch-surface :is(.ch-set-matrix__row, .ch-set-matrix__group) {
+    padding-inline: 12px;
+    border-top-color: transparent;
+    background: linear-gradient(var(--ch-ledger-rule-soft), var(--ch-ledger-rule-soft)) 12px 0 / calc(100% - 24px) 1px no-repeat border-box;
+  }
+  .ch-set[data-canopy] .ch-surface .ch-set-matrix__group + .ch-set-matrix__row {
+    background-image: none;
+  }
+  .ch-set[data-canopy] .ch-surface .ch-set-matrix__row:not(.is-head):hover {
+    background-color: var(--ch-ledger-row-hover);
+  }
+}
