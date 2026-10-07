@@ -1,6 +1,6 @@
 # Complete Findings — 2026-08-18
 
-Status: HISTORICAL — dated audit dump (2026-08-18); paths it names may no longer exist
+Status: HISTORICAL — dated audit dump (2026-08-18), superseded by `docs/audits/HEALTH_AUDIT_2026_08_18.md` (the merged edition); paths named here may no longer exist
 
 Every raw finding from both audits, **before** editorial merging into
 `HEALTH_AUDIT_2026_08_18.md`. Nothing is collapsed or dropped here, including
