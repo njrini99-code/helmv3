@@ -875,7 +875,7 @@ signal.
 | `golf_expense_category` | `lodging`, `transportation`, `meals`, `entry_fees`, `equipment`, `other` |
 | `golf_expense_paid_by` | `team`, `player`, `pending_reimbursement`, `split` |
 | `ncaa_division` | `D2`, `D3`, `D1`, `NAIA`, `JUCO`, `JUCO_D1`, `JUCO_D2`, `JUCO_D3`, `CCCAA` |
-| `notification_type` | `profile_view`, `watchlist_add`, `video_view`, `message`, `team_invite`, `team_join_request`, `team_join_approved`, `event_reminder`, `dev_plan_assigned`, `team_join`, `team_join_rejected` |
+| `notification_type` | `profile_view`, `watchlist_add`, `video_view`, `message`, `team_invite`, `team_join_request`, `team_join_approved`, `event_reminder`, `dev_plan_assigned`, `team_join`, `team_join_rejected`, `coachhelm_round_review_ready`, `coachhelm_coach_assigned_goal`, `coachhelm_goal_achieved`, `coachhelm_goal_missed`, `coachhelm_new_insight`, `coachhelm_composite_insight`, `coachhelm_weekly_digest`, `coachhelm_coach_commented`, `coachhelm_engine_suggested_goal`, `coachhelm_standing_percentile_changed` |
 | `organization_type` | `college`, `juco`, `high_school`, `showcase` |
 | `program_type` | `mens`, `womens`, `both` |
 | `reminder_type` | `in_app`, `email`, `push`, `all` |
