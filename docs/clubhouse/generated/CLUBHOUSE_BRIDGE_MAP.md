@@ -107,7 +107,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P007 | 2 | 10 | 1 | 9 | 5 | 35 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 94 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 40 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 127 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 33 | 4 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 132 |
-| P010 | 2 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 |  | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 87 |
+| P010 | 2 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 89 |
 | P011 | 14 | 11 |  | 16 | 10 | 37 | 13 | 5 | 2 |  | 20 | 2 | 1 | 4 | 3 | 4 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 169 |
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 80 |
 | P013 | 7 | 12 |  | 29 | 1 | 36 | 22 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 156 |
@@ -1035,6 +1035,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 101401 |  | 14 Retry / recovery | `RETRY_FINISHES_THE_JOB` | implemented | The error toast's Retry runs the same write again with the same arguments, and when it lands everything the button would have done follows: the reply, Got it or task tick shows, the file opens in a tab of its own, the sheet closes and clears, the page reads again, the deleted row leaves and its dialog closes, and the drop zone reads Uploading. This holds for all nine writes: a reply, Got it, a task check, opening a file, posting, planning a trip, assigning a task, uploading, and deleting a post, a task or a file. |
 | 101402 |  | 14 Retry / recovery | `TRY_AGAIN_REREADS_THE_PAGE` | implemented | Try again on a failed-read notice has the server read the whole page again; none re-reads a section on its own. |
 | 101501 |  | 15 Data freshness / sync | `PAGE_READS_AGAIN_AFTER_A_CHANGE` | implemented | After a coach's post, trip, task, upload or delete lands, the page reads again from the server (router.refresh). |
+| 101601 | CH-10602 | 16 Micro animation | `CHANGING_TABS` | implemented | Changing tabs |
+| 101602 | CH-10603 | 16 Micro animation | `THE_TABS_PANEL_SWAPS` | implemented | The tab's panel swaps |
 | 101701 | CH-10701 | 17 Haptic | `A_TAB_AN_RSVP_REPLY_AN_AUDIENCE` | implemented | A tab, an RSVP reply, an audience or transport choice, a player chip, a file to attach or take off |
 | 101702 | CH-10702 | 17 Haptic | `DELETE_A_FORM_SENT_WITH_A_MISTAKE` | implemented | Delete (before the question), a form sent with a mistake |
 | 101801 | CH-10801 | 18 Accessibility | `THE_SECTIONS_ARE_REAL_TABS_AN_RSVP` | implemented | The sections are real tabs (selected state, each controls its panel); an RSVP is a radio group named for its event; a task's box names the task and says when it's done |

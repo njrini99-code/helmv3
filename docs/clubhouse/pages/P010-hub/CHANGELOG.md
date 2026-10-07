@@ -1,5 +1,12 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-07 — Tabs that move
+
+The tabs' underline is now one bar that slides to the chosen tab on the press
+(CH-10602), where an inset rule used to jump. The panel renders just behind it
+and fades in with a 6px rise while the old one fades out (CH-10603, the shared
+`Swap`). With reduced motion both are instant.
+
 ## 2026-10-07 — The Ledger: Team Hub sits flush on the canvas
 
 On desktop RSVPs, Updates, tasks and document folders lose their card: each is

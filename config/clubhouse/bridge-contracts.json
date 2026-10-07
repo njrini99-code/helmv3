@@ -10044,6 +10044,28 @@
     ]
   },
   {
+    "id": 101601,
+    "page": "P010",
+    "category": 16,
+    "item": 1,
+    "name": "CHANGING_TABS",
+    "chCode": "CH-10602",
+    "meaning": "Changing tabs",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 101602,
+    "page": "P010",
+    "category": 16,
+    "item": 2,
+    "name": "THE_TABS_PANEL_SWAPS",
+    "chCode": "CH-10603",
+    "meaning": "The tab's panel swaps",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
     "id": 101701,
     "page": "P010",
     "category": 17,

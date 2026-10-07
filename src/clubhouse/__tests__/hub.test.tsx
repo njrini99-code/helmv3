@@ -52,7 +52,11 @@ import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 import { PREVIEW_HUB_COACH, PREVIEW_HUB_COACH_EMPTY, PREVIEW_HUB_COACH_FAILED, PREVIEW_HUB_PLAYER, PREVIEW_HUB_PLAYER_EMPTY, PREVIEW_HUB_PLAYER_FAILED } from '../preview/fixtures-hub';
 
-const code = (c: string) => document.querySelector<HTMLElement>(`[data-ch-code="${c}"]`);
+// A swap's leaving copy (ui/Swap.tsx) is hidden from assistive tech while it fades; jsdom never finishes the fade, so
+// read the live copy only.
+const LEAVING = '.ch-swap__body[aria-hidden]';
+const code = (c: string) => [...document.querySelectorAll<HTMLElement>(`[data-ch-code="${c}"]`)].find((e) => !e.closest(LEAVING)) ?? null;
+const liveText = (t: string) => screen.queryAllByText(t).filter((e) => !e.closest(LEAVING));
 async function expectCode(c: string, text?: RegExp) {
   await waitFor(() => expect(code(c)).not.toBeNull());
   if (text) expect(code(c)!.textContent).toMatch(text);
@@ -238,13 +242,13 @@ describe('Team Hub · player', () => {
     await user.click(screen.getByRole('button', { name: 'Got it' }));
     await tab('Announcements');
     expect(code('CH-10409')!.textContent).toContain('Acknowledging Pairings and tee times for Thursday');
-    expect(screen.queryByText('Acknowledged')).toBeNull();
+    expect(liveText('Acknowledged')).toHaveLength(0);
     expect(screen.queryByRole('button', { name: 'Got it' })).toBeNull();
     await tab('Home');
     expect(code('CH-10409')).not.toBeNull();
     expect(acknowledge).toHaveBeenCalledTimes(1);
     settle({ success: true });
-    await waitFor(() => expect(screen.getByText('Acknowledged')).toBeTruthy());
+    await waitFor(() => expect(liveText('Acknowledged')).toHaveLength(1));
     expect(code('CH-10409')).toBeNull();
   });
 
@@ -286,12 +290,12 @@ describe('Team Hub · player', () => {
     await expectCode('CH-10002');
     const retry = within(code('CH-10002')!).getByRole('button', { name: 'Retry' });
     await user.click(screen.getByRole('button', { name: 'Got it' }));
-    await waitFor(() => expect(screen.getByText('Acknowledged')).toBeTruthy());
+    await waitFor(() => expect(liveText('Acknowledged')).toHaveLength(1));
     await tab('Announcements');
     await user.click(retry);
     await waitFor(() => expect(acknowledge).toHaveBeenCalledTimes(3));
     await waitFor(() => expect(code('CH-10409')).toBeNull());
-    expect(screen.getByText('Acknowledged')).toBeTruthy();
+    expect(liveText('Acknowledged')).toHaveLength(1);
     expect(screen.queryByRole('button', { name: 'Got it' })).toBeNull();
   });
 

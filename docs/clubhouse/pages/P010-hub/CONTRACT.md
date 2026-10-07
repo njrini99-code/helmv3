@@ -248,7 +248,12 @@ Nothing refreshes in the background: the page is as fresh as its last read. Afte
 
 Status: DEFINED
 
-Team Hub adds no motion of its own (`hub.css` has no transition or animation): its sections rise once at first paint and every press, sheet and skeleton fade is the shell's (D-64).
+Team Hub's own motion is its tabs: the underline slides to the chosen tab on the press and the panel swaps behind it (CH-10602, CH-10603). Every press, sheet and skeleton fade is the shell's (D-64); there is no first-paint rise.
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 101601 | CH-10602 | `CHANGING_TABS` | Changing tabs |
+| 101602 | CH-10603 | `THE_TABS_PANEL_SWAPS` | The tab's panel swaps |
 
 From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
 

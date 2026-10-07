@@ -120,6 +120,13 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10503 | Deleting a file | "Delete this file?" + "Players can no longer open it. This can't be undone." | `ConfirmDelete` | hub.test › CH-10503 |
 | CH-10504 | Deleting a trip | "Delete this trip?" + "Players stop seeing the itinerary. Its expenses and budgets are deleted with it, and the calendar event stays. This can't be undone." Keep it / Delete. Warning haptic | `ConfirmDelete` | hub-trip-manage.test › CH-10504 |
 
+## 106xx Motion
+
+| # | When | They see | How | Test |
+| --- | --- | --- | --- | --- |
+| CH-10602 | Changing tabs | The underline slides to the new tab on the press (quick), as on a player's profile | `layoutId` on `.ch-hb-tabs__bar` | preview |
+| CH-10603 | The tab's panel swaps | The panel renders just behind the underline (`useDeferredValue`) and fades in with a 6px rise (base) while the old one fades out (quick), hidden from assistive tech. Instant with reduced motion; never on first paint | `Swap` (`ui/Swap.tsx`) | hub.test › CH-10409 |
+
 ## 107xx Haptics
 
 | # | When | They feel | How | Test |
