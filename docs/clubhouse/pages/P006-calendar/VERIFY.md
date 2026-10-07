@@ -205,6 +205,10 @@ before, after, baseline or evidence.
 | `P006__premium-audit__coach__1280__case-048-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-048-chromium-normal; /clubhouse-preview/calendar; synthetic preview |
 | `P006__premium-audit__coach__390__case-005-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-005-webkit-reduce; /clubhouse-preview/calendar; synthetic preview |
 | `P006__premium-audit__coach__390__case-048-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-048-chromium-normal; /clubhouse-preview/calendar; synthetic preview |
+| `P006__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
+| `P006__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
+| `P006__page__player__1280x948__default__after__77e553a.png` | after | 77e553a | page (player), 1280x948px, default |
+| `P006__page__player__390x792__default__after__77e553a.png` | after | 77e553a | page (player), 390x792px, default |
 
 ## Historical verification gaps
 

@@ -283,6 +283,8 @@ before, after, baseline or evidence.
 | `P004__figures-lead__coach__1600__default__after__d16567c.png` | after | d16567c | figures-lead (coach), 1600px window, Safari Technology Preview 253; strokes gained lead card beside one supporting surface; loaded row 208px = loading row 208px; /clubhouse-preview/stats; synthetic preview |
 | `P004__figures-lead__coach__1100__narrow-rows__after__d16567c.png` | after | d16567c | figures-lead (coach), 1100px window (767px canvas), Safari TP 253; full-width lead, supporting figures as rows; loaded 559px = loading 559px; /clubhouse-preview/stats; synthetic preview |
 | `P004__figures-lead__coach__1280__loading__after__d16567c.png` | after | d16567c | figures-lead (coach), 1280px window, Safari TP 253; skeleton in the lead layout; loading row 213px = loaded 213px; /clubhouse-preview/stats?state=loading; synthetic preview |
+| `P004__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
+| `P004__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
 
 ## 2026-10-02 — Mobile design fidelity verification
 
