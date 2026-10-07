@@ -1,5 +1,16 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-06 — Figures as a stat line, legs on the page, serif titles
+
+The owner called the figure row "card heavy", then said "even worse" when a single sheet was placed around it. The
+figures (`.ch-fg`, which Team stats, a player's stats and the player profile share) now have no surface at all. They
+sit straight on the page, divided by engraved seams, between two fine gilt rules like a printed stat line. The four
+strokes-gained legs are one selector set the same way: quiet tiles, with the chosen leg a soft green key. The page
+title and the card and section titles are set in the display serif.
+
+PR #2160 also changes `FigureCards` (the strokes gained lead). Merge it with this branch's `.ch-fg` rules, which drop
+the card surface.
+
 ## 2026-10-06 — Smooth scroll and materials
 
 In-page jumps on the phone player stats view ease through the shared smooth scroll helper and stay instant with reduced motion.

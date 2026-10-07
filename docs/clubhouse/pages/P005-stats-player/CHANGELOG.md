@@ -1,5 +1,10 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-06 — Figures as a stat line, serif titles
+
+The figure row uses the shared stat line (no cards; seams between gilt rules; see P004). The player's name and the
+section titles, on the phone and desktop, are set in the display serif.
+
 ## 2026-10-06 — Smooth scroll and materials
 
 In-page jumps on the phone view ease through the shared smooth scroll helper and stay instant with reduced motion.
