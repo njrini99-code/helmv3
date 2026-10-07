@@ -1,5 +1,18 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-07 — Desktop facts drawn on the stat line; panel titles serif; the qualifier loads in place
+
+- **Desktop facts:** the six facts leave their card and sit on the stat line, between gilt rules and divided by seams.
+  Rounds submitted and Spots are drawn as on the phone, with the bar and seats shared as `.ch-qf-bar` and `.ch-qf-seats`.
+- **Panel titles:** Leaderboard, Selections and Course per round use the display serif.
+- **Loading skeleton** (`QualifierDetailSkeleton`): it now holds the loaded layout.
+  - The head holds the eyebrow, the serif name, the sentence at its measure and, for a coach only, the three actions
+    (`SkeletonCoachActions`).
+  - The facts hold their four lines.
+
+  Measured in WebKit through `?state=loading`: the head, facts and body tops don't move at 1440, 1300 and 1100. At 1000 a
+  long description can wrap to a second line, which the skeleton can't know.
+
 ## 2026-10-07 — Phone facts drawn on the stat line
 
 On the phone qualifier page, the three facts were bare numbers in a card. They now sit on the stat line, between gilt

@@ -73,7 +73,7 @@ export function QualifierDetailPhone({
       'Rounds in',
       b ? `${b.submitted}/${due}` : '—',
       b && due > 0 ? (
-        <span className="ch-qfm-facts__bar">
+        <span className="ch-qf-bar">
           <i style={{ width: `${Math.min(100, (b.submitted / due) * 100)}%` }} />
         </span>
       ) : null,
@@ -82,7 +82,7 @@ export function QualifierDetailPhone({
       'Spots',
       data.picks ? `${topScore}+${data.picks}` : String(data.squad),
       data.squad > 0 && data.squad <= 12 ? (
-        <span className="ch-qfm-facts__seats">
+        <span className="ch-qf-seats">
           {Array.from({ length: data.squad }, (_, i) => (
             <i key={i} className={i < topScore || !data.picks ? 'is-score' : 'is-pick'} />
           ))}

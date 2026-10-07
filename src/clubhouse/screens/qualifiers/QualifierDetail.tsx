@@ -272,23 +272,48 @@ function parLine(s: ChQDetailSecondary): string {
 }
 
 function Facts({ data, topScore }: { data: ChQDetailCore; topScore: number }) {
-  const facts: Array<[string, string, ReactNode]> = [
+  const due = data.entrants * data.numRounds;
+  const facts: Array<[string, string, ReactNode, ReactNode?]> = [
     // A date never splits from its day; the range wraps at the dash (D-33: the fact wraps, never truncates).
     ['Dates', shortRange(data.startDate, data.endDate).replace(/ (?=\d)/g, '\u00a0'), `${yearOf(data.startDate)} · ${plural(data.numRounds, 'round')}`],
     ['Entry deadline', data.deadline ? dayLabel(data.deadline) : '—', data.deadline ? yearOf(data.deadline) : 'Not set'],
     ['Entrants', data.entriesError ? '—' : String(data.entrants), 'players'],
-    ['Rounds submitted', data.board ? String(data.board.submitted) : '—', data.entriesError ? '' : `of ${data.entrants * data.numRounds}`],
+    [
+      'Rounds submitted',
+      data.board ? String(data.board.submitted) : '—',
+      data.entriesError ? '' : `of ${due}`,
+      data.board && due > 0 && !data.entriesError ? (
+        <span className="ch-qf-bar">
+          <i style={{ width: `${Math.min(100, (data.board.submitted / due) * 100)}%` }} />
+        </span>
+      ) : null,
+    ],
     // The par comes from the tees, which stream in behind the page: the line holds its place until they do.
     ['Course', data.course ?? '—', <Streamed key="par" fallback={<ParLineSkeleton />}>{(s) => parLine(s) || ' '}</Streamed>],
-    ['Spots', String(data.squad), `${topScore} on score · ${plural(data.picks, 'pick')}`],
+    [
+      'Spots',
+      String(data.squad),
+      `${topScore} on score · ${plural(data.picks, 'pick')}`,
+      data.squad > 0 && data.squad <= 12 ? (
+        <span className="ch-qf-seats">
+          {Array.from({ length: data.squad }, (_, i) => (
+            <i key={i} className={i < topScore || !data.picks ? 'is-score' : 'is-pick'} />
+          ))}
+        </span>
+      ) : null,
+    ],
   ];
   return (
     <dl className="ch-qf-facts">
-      {facts.map(([k, v, s]) => (
+      {facts.map(([k, v, s, viz]) => (
         <div key={k}>
           <dt>{k}</dt>
           <dd>{v}</dd>
           <dd className="ch-qf-facts__sub">{typeof s === 'string' ? s || ' ' : s}</dd>
+          {/* Every fact keeps the drawing's line, so the row shares one baseline (decorative). */}
+          <dd className="ch-qf-facts__viz" aria-hidden="true">
+            {viz}
+          </dd>
         </div>
       ))}
     </dl>

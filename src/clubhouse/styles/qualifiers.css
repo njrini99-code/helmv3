@@ -378,14 +378,14 @@
 }
 
 /* Facts */
+/* On the stat line (owner, 2026-10-07: no card around figures): no surface, gilt rules above and below, seams. */
 .ch-qf-facts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   row-gap: 16px;
-  padding: 18px 4px;
-  border-radius: 14px;
-  background: var(--ch-bg-surface);
-  box-shadow: var(--ch-shadow-sm);
+  padding: 18px 0;
+  border-top: 1px solid var(--ch-champagne-rule);
+  border-bottom: 1px solid var(--ch-champagne-rule);
 }
 .ch-qf-facts > div {
   display: flex;
@@ -395,13 +395,55 @@
   padding: 2px 20px;
 }
 .ch-qf-facts > div + div {
-  border-left: 1px solid var(--ch-border-hairline);
+  box-shadow: var(--ch-seam-y);
+}
+.ch-qf-facts > div:first-child {
+  padding-left: 2px;
+}
+/* A fact drawn (decorative; the figure and its line say it), on desktop and phone: the rounds posted along the rounds
+   due, and the squad's seats, won on score filled green and the coach's picks an open gilt ring. */
+.ch-qf-bar {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 160px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgb(28 25 18 / 0.07);
+  box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.1);
+}
+.ch-qf-bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+  background: var(--ch-chart-gain);
+}
+.ch-qf-seats {
+  display: flex;
+  gap: 4px;
+}
+.ch-qf-seats i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.ch-qf-seats i.is-score {
+  background: var(--ch-chart-gain);
+}
+.ch-qf-seats i.is-pick {
+  box-shadow: inset 0 0 0 1.5px var(--ch-champagne-500);
+}
+.ch-qf-facts dd.ch-qf-facts__viz {
+  display: flex;
+  align-items: center;
+  min-height: 10px;
+  margin: 2px 0 0;
 }
 .ch-qf-facts dt {
   font: 500 12.5px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
-.ch-qf-facts dd:not(.ch-qf-facts__sub) {
+.ch-qf-facts dd:not(.ch-qf-facts__sub):not(.ch-qf-facts__viz) {
   margin: 4px 0 0;
   font: 500 22px/1.1 var(--ch-font-sans);
   letter-spacing: -0.03em;
@@ -474,10 +516,11 @@
   gap: 12px;
   padding: 18px 20px 14px;
 }
+/* Panel titles in the display serif, as Home's and Stats' panels. */
 .ch-qf .ch-qf-panel__head h2 {
   margin-bottom: 4px;
-  font: 600 16px/1.2 var(--ch-font-sans);
-  letter-spacing: -0.01em;
+  font: var(--ch-type-serif-s);
+  letter-spacing: -0.006em;
   color: var(--ch-text-primary);
 }
 .ch-qf-panel__head p {
@@ -1434,36 +1477,6 @@
     display: flex;
     align-items: center;
     min-height: 10px;
-  }
-  .ch-qfm-facts__bar {
-    position: relative;
-    width: 100%;
-    height: 6px;
-    border-radius: 3px;
-    background: rgb(28 25 18 / 0.07);
-    box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.1);
-  }
-  .ch-qfm-facts__bar i {
-    position: absolute;
-    inset: 0 auto 0 0;
-    border-radius: 3px;
-    background: var(--ch-chart-gain);
-  }
-  /* The squad's seats: won on score filled green, the coach's picks an open gilt ring. */
-  .ch-qfm-facts__seats {
-    display: flex;
-    gap: 4px;
-  }
-  .ch-qfm-facts__seats i {
-    width: 10px;
-    height: 10px;
-    border-radius: 3px;
-  }
-  .ch-qfm-facts__seats i.is-score {
-    background: var(--ch-chart-gain);
-  }
-  .ch-qfm-facts__seats i.is-pick {
-    box-shadow: inset 0 0 0 1.5px var(--ch-champagne-500);
   }
   .ch-qfm-facts dt {
     font: 500 12px/1 var(--ch-font-sans);
