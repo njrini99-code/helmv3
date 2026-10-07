@@ -453,3 +453,34 @@ items:
       - src/hooks/golf/__tests__/use-message-reactions.test.tsx
     queued_for_release: false
     first_seen: '2026-10-04T22:16:21Z'
+  - id: conversation-rail-deadline-abort-2026-10-07
+    feature_id: team_communications
+    root_cause: >-
+      loadGolfConversationRail reported the browser Supabase client's own
+      request-deadline abort of the participants read (WebKit 'AbortError:
+      Fetch is aborted') to logError, so af4c2c9d reopened on slow loads.
+    incident_id: memory/incidents/team_communications/INC-2026-10-07-conversation-rail-deadline-abort.md
+    status: verified
+    risk: R1
+    sha: 90ae5607f86f1e40d4844ec5f8a01b78d52c1daa
+    pr: null
+    regression_tests:
+      - src/hooks/golf/__tests__/use-golf-messages.rail-deadline-abort.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-25T00:00:00Z'
+  - id: designed-path-regression-noise-2026-10-07
+    feature_id: admin_selfheal
+    root_cause: >-
+      Regression detection counted every non-info row, and classifyIncident did
+      not recognise the shot_not_found reconciliation code, so the designed
+      stale-shot path (20ae8f27) was stamped REGRESSED on every recurrence.
+    incident_id: memory/incidents/admin_selfheal/INC-2026-10-07-designed-paths-stamped-regressed.md
+    status: verified
+    risk: R1
+    sha: 90ae5607f86f1e40d4844ec5f8a01b78d52c1daa
+    pr: null
+    regression_tests:
+      - src/lib/admin/__tests__/auto-resolve.test.ts
+      - src/lib/admin/__tests__/incident-classification-benign-recurrences.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-19T00:00:00Z'
