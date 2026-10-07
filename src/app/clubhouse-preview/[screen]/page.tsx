@@ -49,7 +49,7 @@ import { PreviewMessages } from '@/clubhouse/preview/PreviewMessages';
 import { PreviewBell } from '@/clubhouse/preview/PreviewBell';
 import { PreviewSettings } from '@/clubhouse/preview/PreviewSettings';
 import { QualifiersList } from '@/clubhouse/screens/qualifiers/QualifiersList';
-import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifiersSkeleton } from '@/clubhouse/screens/qualifiers/QualifiersSkeleton';
+import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifierSelectionSkeleton, QualifiersSkeleton } from '@/clubhouse/screens/qualifiers/QualifiersSkeleton';
 import { PreviewQualifierDetail, PreviewQualifierForm, PreviewQualifierSelection } from '@/clubhouse/preview/PreviewQualifiers';
 import { DETAIL_INDEX, previewCreateForm, previewDetail, previewEditForm, previewList, previewSelection } from '@/clubhouse/preview/fixtures-qualifiers';
 import { SettingsSkeleton } from '@/clubhouse/screens/settings/SettingsSkeleton';
@@ -391,7 +391,7 @@ export default async function ClubhousePreview({
     },
     'qualifier-selection': {
       path: '/golf/dashboard/qualifiers',
-      node: <PreviewQualifierSelection data={previewSelection(q === 'picking' || q === 'picked' || q === 'selected' ? q : 'standings')} state={state} />,
+      node: state === 'loading' ? <QualifierSelectionSkeleton /> : <PreviewQualifierSelection data={previewSelection(q === 'picking' || q === 'picked' || q === 'selected' ? q : 'standings')} state={state} />,
     },
     'messages-player': {
       path: '/golf/dashboard/messages',

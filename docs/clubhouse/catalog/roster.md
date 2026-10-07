@@ -94,7 +94,7 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-3601 | Opening or switching a player | The panel slides in 16px and fades (260ms); switching players cross-fades | `RosterPeek`, `chTween('base')`; on the phone the profile is pushed instead (the shell's CH-1610) | preview |
-| CH-3602 | Hovering or pressing a face card or row | It lifts (180ms) and shrinks about 6px (110ms) and springs back (280ms); the selected card keeps a green ring | `roster.css` | preview |
+| CH-3602 | Hovering or pressing a face card or row | On desktop the cell takes the Ledger tint on hover and press, with no lift; the selected face keeps a green tint, ring and name. The phone's card keeps its lift and press | `roster.css` | preview |
 
 ## 37xx Haptics
 
