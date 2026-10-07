@@ -245,6 +245,8 @@
   --ch-ledger-ink: rgb(18 59 41 / 0.9);
   --ch-ledger-eyebrow: #7a6b3f;
   --ch-ledger-row-hover: rgb(110 98 62 / 0.05);
+  /* A flush row's press: a deeper green tint, not a scale (lib/press.ts scales keys up to 240px only). */
+  --ch-ledger-row-press: color-mix(in oklab, var(--ch-green-600) 11%, transparent);
   /* A portrait set into the page head: a canvas gap, a fine engraved ring, a soft green drop. */
   --ch-ledger-avatar-ring: 0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule), 0 10px 22px -12px rgb(11 58 37 / 0.4);
   /* Hover depth, tokenised when the hover rules moved behind @media (hover: hover) (2026-10-07). */

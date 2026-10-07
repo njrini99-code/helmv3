@@ -11,8 +11,8 @@ import { CH_DUR, CH_EASE } from './motion';
  * change after it cannot animate by itself (the welcome unmounts, the dashboard
  * renders on the server), so for the moment in between this draws that same
  * still frame outside React, on top of everything. When the dashboard's frame
- * has mounted and its fonts are in, it fades away over the reveal beat and the
- * dashboard's own first-paint reveal plays underneath. Nothing ever shows an
+ * has mounted and its fonts are in, it fades away over the reveal beat onto the
+ * dashboard, which is already in place (there is no first-paint reveal). Nothing ever shows an
  * empty page, and nothing jumps: the frame is the same geometry on both sides.
  *
  * If the dashboard never says it is there (a different destination, an error
