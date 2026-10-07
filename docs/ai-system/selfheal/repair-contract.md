@@ -1,6 +1,6 @@
 # Contract: the Repair stage (`selfheal-repair`)
 
-> **STATUS: Superseded by AGENTS.md (2026-10-07)** wherever this doc says agents
+> **STATUS: STALE — the authority, approval and deploy sections are superseded by AGENTS.md (2026-10-07)** wherever this doc says agents
 > must not deploy, merge or migrate, or must wait for owner approval. Read it as
 > design history; `AGENTS.md` and `config/*.yml` are current.
 >

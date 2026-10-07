@@ -1,7 +1,7 @@
 <!-- markdownlint-disable MD004 MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Helm Bridge Premium Observability Architecture (owner brief, 2026-09-03)
 
-> **STATUS: Superseded by AGENTS.md (2026-10-07)** wherever this doc says agents
+> **STATUS: STALE — the authority, approval and deploy sections are superseded by AGENTS.md (2026-10-07)** wherever this doc says agents
 > must not deploy, merge or migrate, or must wait for owner approval. Read it as
 > design history; `AGENTS.md` and `config/*.yml` are current.
 

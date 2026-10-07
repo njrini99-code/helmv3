@@ -1,6 +1,6 @@
 # Complete Findings — 2026-08-18
 
-Status: active
+Status: HISTORICAL — dated audit dump (2026-08-18); paths it names may no longer exist
 
 Every raw finding from both audits, **before** editorial merging into
 `HEALTH_AUDIT_2026_08_18.md`. Nothing is collapsed or dropped here, including
@@ -128,10 +128,10 @@ Worktrees, nesting, database drift, broken config. Ran 25 agents; the live datab
 
 **The mandated production-deploy script is invisible to any doc in the repo**
 
-- **Where:** `scripts/deploy-prod.sh` · `CLAUDE.md:15-24 (Branch & deploy section)`
+- **Where:** scripts/deploy-prod.sh (removed 2026-10-07) · `CLAUDE.md:15-24 (Branch & deploy section)`
 - **Why it matters:** It is not wired into package.json as an npm script either (no 'deploy' or 'deploy:prod' entry). An agent asked to deploy to production has no doc-based way to discover this script exists and will reach for the bare `vercel deploy --prod` the script's own comment names as the cause of a real prior incident (misdiagnosed stale-release-tag, near-unnecessary force redeploy).
 - **Evidence:** grep -rl "deploy-prod" --include=*.md --include=*.yml --include=*.yaml --include=*.json --include=*.sh --include=*.mjs --include=*.ts . (excluding node_modules) returns ZERO hits outside scripts/deploy-prod.sh itself — not in CLAUDE.md, README.md, AGENTS.md, docs/CI_RUNBOOK.md, .claude/rules/*, or any .github/workflows/*.yml. Yet CLAUDE.md's own 'Branch & deploy' section discusses production deploys at length ('A push to main ships nothing... production is an on-demand CLI promote') without ever naming the script. The script's own header states why it exists: '`vercel deploy --prod` uploads local source with no git connection, so Vercel never sets VERCEL_GIT_COMMIT_SHA... On 2026-08-16 that …
-- **Fix:** Add a line to CLAUDE.md's 'Branch & deploy' section: 'Deploy to production with `scripts/deploy-prod.sh` (stamps the Sentry release from the real git SHA) — never a bare `vercel deploy --prod`.' Optionally also wire it as an npm script (e.g. `"deploy:prod": "bash scripts/deploy-prod.sh"`) for discoverability via `npm run`.
+- **Fix:** Add a line to CLAUDE.md's 'Branch & deploy' section: 'Deploy to production with scripts/deploy-prod.sh (removed 2026-10-07) (stamps the Sentry release from the real git SHA) — never a bare `vercel deploy --prod`.' Optionally also wire it as an npm script (e.g. `"deploy:prod": "bash scripts/deploy-prod.sh"`) for discoverability via `npm run`.
 - **Verifier (CONFIRMED):** Verified independently: `grep -rln "deploy-prod" --include="*.md" --include="*.yml" --include="*.yaml" --include="*.json" --include="*.sh" --include="*.mjs" --include="*.ts" .` (excluding node_modules/.git) returns exactly one hit: scripts/deploy-prod.sh itself. `grep -n "deploy" package.json` returns zero lines — no `deploy` or `deploy:prod` npm script exists. `grep -rln "deploy-prod" README.md docs/ .claude/ .github/` also returns nothing. The …
 
 #### gitignore-2 · `LOW` · `CONFIRMED` · `SAFE`
