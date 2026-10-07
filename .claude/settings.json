@@ -18,10 +18,26 @@
       "mcp__supabase",
       "mcp__claude_ai_Supabase",
       "mcp__claude_ai_Vercel",
-      "mcp__claude_ai_Sentry"
+      "mcp__claude_ai_Sentry",
+      "mcp__supabase-readonly"
     ],
     "deny": [],
-    "ask": []
+    "ask": [
+      "mcp__claude_ai_Vercel__request_promote",
+      "mcp__claude_ai_Vercel__request_rollback",
+      "mcp__claude_ai_Vercel__create_deployment",
+      "mcp__claude_ai_Vercel__deploy_to_vercel",
+      "mcp__claude_ai_Vercel__buy_domain",
+      "mcp__claude_ai_Vercel__buy_domains",
+      "mcp__claude_ai_Vercel__buy_single_domain",
+      "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__request_promote",
+      "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__request_rollback",
+      "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__create_deployment",
+      "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__deploy_to_vercel",
+      "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__buy_domain",
+      "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__buy_domains",
+      "mcp__fba2ada3-c190-4053-b91a-3e81f5296483__buy_single_domain"
+    ]
   },
   "hooks": {
     "SessionStart": [
