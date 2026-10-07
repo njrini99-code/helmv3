@@ -1226,11 +1226,211 @@
   }
 }
 
+/* The route skeleton's cards carry the loaded cards' padding (the Ledger below lays them flush on desktop). */
+.ch-hb[aria-busy='true'] .ch-hb-card {
+  padding: 18px;
+}
+
 /* Loading in the framed page head (desktop): the Team Hub head holds the loaded head's measured height (WebKit 1440 and 1100,
    2026-10-07: 158px), so nothing under it moves on load. */
 @media (min-width: 821px) {
   .ch-hb[aria-busy='true'][data-canopy] .ch-hb-h {
     box-sizing: border-box;
     min-height: 158px;
+  }
+}
+
+/* The Ledger on desktop Team Hub (owner, 2026-10-07: "flush, not so card heavy"). RSVPs, updates, tasks and folders
+   are headings over an engraved rule with their rows on the canvas, and Home's two columns part on a soft rule. The
+   latest announcement, the page's lead, keeps a gilt rule in the gutter instead of a card; a trip is an entry with its
+   plan beside it, not a boarding-pass card. The composer line, the drop zone, the reply segments and the date chips
+   keep their material. */
+@media (min-width: 821px) {
+  .ch-hb[data-canopy] .ch-hb-card,
+  .ch-hb[data-canopy] .ch-hb-ann,
+  .ch-hb[data-canopy] .ch-hb-pass {
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-hb[data-canopy] .ch-hb-card__h {
+    padding: 0 0 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  /* Rows start under the heading's rule, so the first one draws no seam of its own. */
+  .ch-hb[data-canopy] .ch-hb-rsvp__list,
+  .ch-hb[data-canopy] .ch-hb-feed ol,
+  .ch-hb[data-canopy] .ch-hb-tasks {
+    padding: 0;
+  }
+  .ch-hb[data-canopy] .ch-hb-rsvp__list li,
+  .ch-hb[data-canopy] .ch-hb-feed li,
+  .ch-hb[data-canopy] .ch-hb-task + .ch-hb-task {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-hb[data-canopy] .ch-hb-rsvp__list > li:first-child,
+  .ch-hb[data-canopy] .ch-hb-feed ol > li:first-child {
+    border-top: 0;
+  }
+  /* A section that didn't load: its notice stands a step under the rule, where the first row would start. */
+  .ch-hb[data-canopy] .ch-hb-card__h + [role='alert'] {
+    margin-top: 14px;
+  }
+
+  /* Home: two columns on one soft rule, sections a generous step apart. */
+  .ch-hb[data-canopy] .ch-hb-home {
+    gap: 0;
+    align-items: stretch;
+  }
+  .ch-hb[data-canopy] .ch-hb-col {
+    gap: 40px;
+  }
+  .ch-hb[data-canopy] .ch-hb-col:first-child {
+    padding-right: 32px;
+  }
+  .ch-hb[data-canopy] .ch-hb-col + .ch-hb-col {
+    padding-left: 32px;
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+
+  /* Announcements: entries on the canvas, ruled apart; the featured one hangs a gilt rule in the gutter so its
+     headline keeps the section edge. A title's figures (SerifText's spans) take the title's own sans. */
+  .ch-hb[data-canopy] .ch-hb-ann {
+    padding: 0;
+  }
+  .ch-hb[data-canopy] .ch-hb-ann h3 {
+    font-size: 26px;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-hb[data-canopy] .ch-hb-ann.is-featured {
+    margin-left: -22px;
+    padding: 2px 0 2px 22px;
+    box-shadow: inset 2px 0 0 var(--ch-champagne-500);
+  }
+  .ch-hb[data-canopy] .ch-hb-ann.is-featured h3 {
+    font-size: 30px;
+  }
+  .ch-hb[data-canopy] .ch-hb-ann h3 > span,
+  .ch-hb[data-canopy] .ch-hb-pass__main > b > span {
+    font-size: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+  }
+  .ch-hb[data-canopy] .ch-hb-ann__h {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-hb[data-canopy] .ch-hb-list {
+    gap: 0;
+  }
+  .ch-hb[data-canopy] .ch-hb-new {
+    margin-bottom: 32px;
+  }
+  .ch-hb[data-canopy] .ch-hb-ann + .ch-hb-ann {
+    margin-top: 32px;
+    padding-top: 32px;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+  }
+
+  /* Trips: the name in the heading sans, the facts under a soft rule, the plan beside them on a soft column rule. */
+  .ch-hb[data-canopy] .ch-hb-pass {
+    overflow: visible;
+  }
+  .ch-hb[data-canopy] .ch-hb-pass__main {
+    padding: 0;
+  }
+  .ch-hb[data-canopy] .ch-hb-pass__main > b {
+    font: 600 24px/1.15 var(--ch-font-sans);
+    letter-spacing: -0.022em;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-hb[data-canopy] .ch-hb-pass.is-big .ch-hb-pass__main {
+    padding-right: 32px;
+  }
+  .ch-hb[data-canopy] .ch-hb-pass.is-big .ch-hb-pass__main > b {
+    font-size: 30px;
+  }
+  .ch-hb[data-canopy] .ch-hb-pass__f,
+  .ch-hb[data-canopy] .ch-hb-plan li {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-hb[data-canopy] .ch-hb-plan li:first-child {
+    border-top: 0;
+  }
+  .ch-hb[data-canopy] .ch-hb-pass__stub {
+    padding: 0 0 0 32px;
+    border-left: 0;
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-hb[data-canopy] .ch-hb-pass__stub::before,
+  .ch-hb[data-canopy] .ch-hb-pass__stub::after {
+    content: none;
+  }
+  .ch-hb[data-canopy] .ch-hb-travel {
+    gap: 0;
+  }
+  .ch-hb[data-canopy] .ch-hb-travel__plan {
+    margin-bottom: 28px;
+  }
+  .ch-hb[data-canopy] .ch-hb-travel > .ch-hb-pass {
+    padding: 28px 0;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+  }
+
+  /* Documents: folders side by side a wide step apart; files are rows with soft seams on the folder's edges and a
+     hover tint that bleeds past them. */
+  .ch-hb[data-canopy] .ch-hb-docs {
+    gap: 40px;
+  }
+  .ch-hb[data-canopy] .ch-hb-files {
+    margin: 4px -10px 0;
+    padding: 0;
+  }
+  .ch-hb[data-canopy] .ch-hb-file {
+    position: relative;
+  }
+  .ch-hb[data-canopy] .ch-hb-file + .ch-hb-file::before {
+    position: absolute;
+    top: 0;
+    right: 10px;
+    left: 10px;
+    height: 1px;
+    background: var(--ch-ledger-rule-soft);
+    content: '';
+    pointer-events: none;
+  }
+  .ch-hb[data-canopy] .ch-hb-file__open:hover {
+    background: var(--ch-ledger-row-hover);
+  }
+
+  /* The route skeleton lays its bars flush, as the loaded sections are, and its tab strip is as tall as the tabs. */
+  .ch-hb[aria-busy='true'][data-canopy] .ch-hb-card {
+    padding: 0;
+  }
+  .ch-hb[aria-busy='true'][data-canopy] .ch-hb-tabs {
+    height: 34px;
+    align-items: center;
+  }
+
+  /* A narrow canvas stacks Home's columns and a trip's plan: the column rules give way. */
+  @container chhb (max-width: 900px) {
+    .ch-hb[data-canopy] .ch-hb-home {
+      gap: 40px;
+    }
+    .ch-hb[data-canopy] .ch-hb-col:first-child {
+      padding-right: 0;
+    }
+    .ch-hb[data-canopy] .ch-hb-col + .ch-hb-col {
+      padding-left: 0;
+      box-shadow: none;
+    }
+    .ch-hb[data-canopy] .ch-hb-pass.is-big .ch-hb-pass__main {
+      padding-right: 0;
+    }
+    .ch-hb[data-canopy] .ch-hb-pass__stub {
+      margin-top: 20px;
+      padding: 20px 0 0;
+      border-top: 0;
+      box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    }
   }
 }

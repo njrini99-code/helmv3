@@ -1,5 +1,20 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-07 — The Ledger: Team Hub sits flush on the canvas
+
+On desktop RSVPs, Updates, tasks and document folders lose their card: each is
+a heading over an engraved rule with its rows on soft seams, and Home's two
+columns part on a soft vertical rule. The latest announcement, the page's lead,
+keeps a gilt rule in the gutter instead of a card, its headline in forest ink
+on the section edge; in their own tab announcements are ruled apart. A trip is
+an entry rather than a boarding-pass card: its name in the heading sans, not
+the serif, and its plan beside it on a soft column rule. A section that didn't
+load keeps its notice a step under the rule. The composer line, the drop zone,
+the reply segments and the date chips keep their material. The route skeleton
+lays its bars flush, and its head and tab strip now match the loaded heights
+(158 and 34px), so nothing moves on load at 1440 or 1100 (WebKit). The phone is
+unchanged.
+
 ## 2026-10-07 — Digits in serif titles
 
 Data-fed serif titles set their digits in the sans (shared `SerifText`; see the

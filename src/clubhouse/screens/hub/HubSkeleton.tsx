@@ -11,9 +11,9 @@ export function HubSkeleton() {
       <header className="ch-hb-h" data-canopy-head="">
         <div>
           <Skeleton width={96} height={24} radius={12} />
-          <div style={{ height: 14 }} />
+          <div style={{ height: 4 }} />
           <Skeleton width={220} height={40} radius={10} />
-          <div style={{ height: 10 }} />
+          <div style={{ height: 12 }} />
           <Skeleton width={150} height={13} />
         </div>
       </header>
@@ -24,19 +24,19 @@ export function HubSkeleton() {
       </div>
       <div className="ch-hb-home">
         <div className="ch-hb-col">
-          <div className="ch-hb-card" style={{ padding: 18, display: 'grid', gap: 14 }}>
+          <div className="ch-hb-card" style={{ display: 'grid', gap: 14 }}>
             <Skeleton width={110} height={16} />
             <Skeleton width="100%" height={48} radius={10} />
             <Skeleton width="100%" height={48} radius={10} />
           </div>
-          <div className="ch-hb-card" style={{ padding: 18, display: 'grid', gap: 12 }}>
+          <div className="ch-hb-card" style={{ display: 'grid', gap: 12 }}>
             <Skeleton width="70%" height={22} radius={8} />
             <Skeleton width="100%" height={13} />
             <Skeleton width="85%" height={13} />
           </div>
         </div>
         <div className="ch-hb-col">
-          <div className="ch-hb-card" style={{ padding: 18, display: 'grid', gap: 12 }}>
+          <div className="ch-hb-card" style={{ display: 'grid', gap: 12 }}>
             <Skeleton width={90} height={16} />
             <Skeleton width="100%" height={36} radius={8} />
             <Skeleton width="100%" height={36} radius={8} />

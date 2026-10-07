@@ -98,7 +98,7 @@ its own boundary, so a crash stays inside the tab.
 | --- | --- | --- | --- | --- |
 | CH-5601 | Changing tabs | The underline slides to the new tab (260ms) | `layoutId` on `.ch-tab-t__bar` | preview |
 | CH-5602 | Opening Add focus area | The sheet rises and fades in (260ms) | `Modal` | preview |
-| CH-5604 | A new window's figures arrive | Each figure that changed crossfades to its new value with a 6px rise (base in, quick out), and each gauge's fill moves to its new length (base). No count-up. Instant with reduced motion | `Swap inline` in `FigureCard`, `.ch-fg__track i` | preview |
+| CH-5604 | A new window's figures arrive | Each figure that changed crossfades to its new value with a 6px rise (base in, quick out) (the gauges move with the data). No count-up. Instant with reduced motion | `Swap inline` in `FigureCard` | preview |
 | CH-5603 | The tab's panel swaps | The underline moves on the press and the panel renders just behind it (`useDeferredValue`); the new panel fades in with a 6px rise (base) while the old one fades out (quick), hidden from assistive tech. Instant with reduced motion; never on first paint | `Swap` (`ui/Swap.tsx`) | stats-player.test › CH-5201 51402 |
 
 ## 57xx Haptics

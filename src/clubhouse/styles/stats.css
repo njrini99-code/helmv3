@@ -3301,7 +3301,7 @@ a.ch-lg__r:focus-visible {
   .ch-st[data-canopy] .ch-pf-hero__av {
     align-self: start;
     margin-top: 4px;
-    box-shadow: 0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule), 0 10px 22px -12px rgb(11 58 37 / 0.4);
+    box-shadow: var(--ch-ledger-avatar-ring);
   }
   .ch-st[data-canopy] .ch-pf-hero__av .ch-avatar {
     font-size: 28px;
@@ -3383,9 +3383,4 @@ a.ch-lg__r:focus-visible {
   .ch-st[data-canopy] .ch-lg__tbl {
     padding: 0;
   }
-}
-
-/* A window change moves each gauge's fill to its new length (base, ease-out) rather than jumping (CH-5604, CH-4604). */
-.ch-fg__track i {
-  transition: left var(--ch-dur-base) var(--ch-ease), right var(--ch-dur-base) var(--ch-ease), width var(--ch-dur-base) var(--ch-ease);
 }

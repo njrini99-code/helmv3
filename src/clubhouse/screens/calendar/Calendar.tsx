@@ -569,7 +569,7 @@ export function Calendar({
 
       {notices}
       {data.eventsError ? (
-        <div className="ch-cal-surface" style={{ padding: 20 }}>
+        <div className="ch-cal-surface">
           <InlineNotice code="CH-6201" title="The calendar didn't load." body="Nothing was changed. Try again; the error has been reported." onRetry={refresh} />
         </div>
       ) : (

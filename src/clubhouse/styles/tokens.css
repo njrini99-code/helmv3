@@ -245,6 +245,8 @@
   --ch-ledger-ink: rgb(18 59 41 / 0.9);
   --ch-ledger-eyebrow: #7a6b3f;
   --ch-ledger-row-hover: rgb(110 98 62 / 0.05);
+  /* A portrait set into the page head: a canvas gap, a fine engraved ring, a soft green drop. */
+  --ch-ledger-avatar-ring: 0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule), 0 10px 22px -12px rgb(11 58 37 / 0.4);
   --ch-elevation-overlay: 0 4px 12px rgb(28 25 18 / 0.08), 0 16px 36px -12px rgb(28 25 18 / 0.16);
   --ch-elevation-sheet: 0 -4px 12px rgb(28 25 18 / 0.06), 0 -12px 32px -12px rgb(28 25 18 / 0.12);
   --ch-elevation-bubble: 0 1px 2px rgb(28 25 18 / 0.04);

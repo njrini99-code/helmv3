@@ -6,8 +6,8 @@ Switching the trend between Strokes gained and Scoring now crossfades the plot
 with a 6px rise (CH-4603, the shared `Swap`), where it used to swap in one
 frame. With reduced motion it is instant.
 
-A window change also moves the figure line (CH-4604). Each changed figure
-crossfades to its new value, and each gauge's fill moves to its new length.
+A window change also crossfades each changed figure to its new value
+(CH-4604).
 
 ## 2026-10-07 — Team stats on the Ledger
 

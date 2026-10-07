@@ -17,19 +17,25 @@ export function CalendarSkeleton() {
         </div>
       </header>
       <div className="ch-cal-bar">
-        <Skeleton width={330} height={38} radius={12} />
-        <Skeleton width={260} height={48} radius={14} />
-      </div>
-      <div className="ch-cal-body">
-        <div className="ch-cal-surface" style={{ padding: 16, display: 'grid', gap: 14 }}>
-          <Skeleton width="100%" height={48} radius={10} />
-          <Skeleton width="100%" height={520} radius={10} />
+        <Skeleton width={357} height={38} radius={12} />
+        <Skeleton width={313} height={48} radius={14} />
+        <div className="ch-cal-legend" aria-hidden="true">
+          <Skeleton width={333} height={18} radius={9} />
         </div>
-        <div className="ch-cal-surface" style={{ padding: 20, display: 'grid', gap: 14, alignContent: 'start' }}>
-          <Skeleton width={120} height={12} />
-          <Skeleton width={220} height={24} radius={8} />
-          <Skeleton width="100%" height={56} radius={12} />
-          <Skeleton width="100%" height={120} radius={12} />
+      </div>
+      {/* The view and the panel in the loaded page's own classes, so they sit flush on the Ledger like it does. */}
+      <div className="ch-cal-body">
+        <div className="ch-wk ch-cal-surface" style={{ display: 'grid', gap: 14 }}>
+          <Skeleton width="100%" height={48} radius={10} />
+          <Skeleton width="100%" height={820} radius={10} />
+        </div>
+        <div className="ch-in-wrap ch-cal-surface">
+          <div className="ch-in">
+            <Skeleton width={120} height={12} />
+            <Skeleton width={220} height={24} radius={8} />
+            <Skeleton width="100%" height={56} radius={12} />
+            <Skeleton width="100%" height={120} radius={12} />
+          </div>
         </div>
       </div>
       {/* The phone's shape (board: Coach · Loading): the month and view switch, the week, the day's rows. Switched in CSS, since this renders on the server. */}

@@ -10,13 +10,13 @@ while the old one fades out, hidden from assistive tech. With reduced motion
 the swap is instant, and it never runs on first paint.
 
 Changing the window (Last 10, Season, Qualifiers) now moves the figures too
-(CH-5604). Each figure that changed crossfades to its new value, and each
-gauge's fill moves to its new length, where both used to jump. Nothing counts
-up.
+(CH-5604): each figure that changed crossfades to its new value, where it
+used to jump. Nothing counts up.
 
 ## 2026-10-07 — The profile takes the page head
 
 On desktop, the profile's striped banner card is now the framed page head:
+
 - **Back row:** "Team stats" and the player pager sit above the double hairline.
 - **Identity:** an 84px avatar sits beside the status tag, then the name in
   the head's heavy sans, the class and hometown line, and the actions.

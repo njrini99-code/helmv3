@@ -85,7 +85,7 @@ component inside its own boundary, so a crash in one never reaches the page.
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-4601 | Focusing a player on the trend | Their line comes forward in green, the others fade back (180ms) | `TeamTrend` | preview |
-| CH-4604 | A new window's figures arrive | As on a player's profile (CH-5604): each changed figure crossfades to its new value and each gauge's fill moves to its new length (base). No count-up. Instant with reduced motion | `Swap inline` in `FigureCard`, `.ch-fg__track i` | preview |
+| CH-4604 | A new window's figures arrive | As on a player's profile (CH-5604): each changed figure crossfades to its new value (the gauges move with the data). No count-up. Instant with reduced motion | `Swap inline` in `FigureCard` | preview |
 | CH-4603 | Changing the trend's measure | Strokes gained and Scoring crossfade with a 6px rise (base in, quick out); the old plot is hidden from assistive tech while it fades. Instant with reduced motion | `Swap` in `TeamTrend` | strokes-gained.test › sorted by the window’s mean |
 | CH-4602 | Choosing a leg | The card takes the green ring and the grid column highlights (180ms) | `LegTrend`, `.is-col` | preview |
 

@@ -1,5 +1,20 @@
 # P006 — Calendar: changelog
 
+## 2026-10-07 — The Ledger: the calendar sits flush on the canvas
+
+On desktop the week, day, month and agenda views lose their card. The grid sits
+on the ivory canvas with its own lines in the ledger's rules: soft column and
+hour lines, an engraved rule under the all-day row and under the month's
+weekdays, and open sides. The agenda's days open on an engraved rule, with
+their events as rows on soft seams. The detail panel is a flush column behind
+one soft rule that runs the body's full height; on a narrow canvas it stacks
+under the view, below a rule. Event chips keep their tint, and the next-event
+plate, the overlap notice and the lanes keep their material. The now dot, the
+now label and a cascaded event's edge take the canvas tone, and the failed
+notice sits flush. The route skeleton draws the same flush shape (the toolbar
+with its legend, the week's full height, the panel column), so nothing moves
+on load at 1440, 1280 or 1100 (WebKit). The phone is unchanged.
+
 ## 2026-10-07 — Narrow cascaded events keep their time
 
 An event stepped in by an overlap can be under 50px wide. Its title wrapped to

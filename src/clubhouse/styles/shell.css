@@ -1723,6 +1723,11 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
   [data-ui='clubhouse'] main[data-canopy] h2 {
     color: var(--ch-ledger-ink);
   }
+  /* Digits that SerifText set apart inside a serif heading join the sans heading at its own size and weight. */
+  [data-ui='clubhouse'] main[data-canopy] .ch-serif-num {
+    font-size: inherit;
+    font-weight: inherit;
+  }
   [data-ui='clubhouse'] main[data-canopy] .ch-sheet {
     background: none;
     box-shadow: none;
