@@ -48,6 +48,13 @@ Canonical repo: `/Users/ricknini/Downloads/helmv3`. Start a task with
 - Files you did not create that are dirty belong to another session. Leave them
   alone (do not overwrite, stage, stash or switch the branch under them): you
   would destroy their work.
+- When the user asks you to work in a different worktree or branch, do it:
+  `cd` into that checkout (or use the EnterWorktree / ExitWorktree tools),
+  `git switch <branch>` in a clean checkout, or `git worktree add` for a branch
+  that has no checkout yet. The harness note "do not cd to the original
+  repository root" is a default for unattended work, not a rule the user cannot
+  override. Say which checkout and branch you are now in, and stay there until
+  asked to move again.
 - Worktrees share canonical env files, local credentials and the Vercel
   project. Never print credential values.
 - Disk is limited (a worktree with its own `node_modules` is about 4 GB). Prefer

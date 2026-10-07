@@ -43,6 +43,9 @@ and `AUTOGEN:*` blocks in `memory/` (never hand-edit inside one).
   `src/lib/admin/observed-action.ts`.
 - Subagents cannot use `AskUserQuestion` or slash commands and receive no hook
   output; brief them fully and have them return open questions with a default.
+- Switching checkouts is allowed when the user asks: `cd` to the other
+  worktree, `git switch` in a clean checkout, or EnterWorktree / ExitWorktree.
+  No hook or permission rule blocks it; only another session's dirty files do.
 
 ## Slash commands
 `/context` feature docs · `/gates` pick checks · `/worktree` isolate ·
