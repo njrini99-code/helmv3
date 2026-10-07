@@ -1683,7 +1683,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
     --ch-text-primary: var(--ch-on-green-ink);
     --ch-text-secondary: var(--ch-on-green-ink-soft);
     --ch-text-tertiary: var(--ch-on-green-ink-muted);
-    padding-bottom: 14px;
+    padding-bottom: 4px;
     /* The fade (owner, 2026-10-07: "number 1", smaller): the green is solid to just above the head's lower edge,
        then melts into the page over the first 84px below it. A border image painted outside the box is ink
        overflow, so it reaches the canvas edges and the top bar's band without adding scroll width, and the page's
@@ -1705,7 +1705,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
   /* The title is set in the display serif, large and unhurried: the classic voice of the page. */
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] h1 {
     font-family: var(--ch-font-serif);
-    font-size: 44px;
+    font-size: 34px;
     font-weight: 400;
     line-height: 1.02;
     letter-spacing: -0.012em;
@@ -1713,8 +1713,16 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
     color: var(--ch-on-green-ink);
     text-shadow: var(--ch-on-green-text-shadow);
   }
+  /* The compact hero (owner, 2026-10-07: "way smaller"): pages on the canopy start right under the top bar. */
+  [data-ui='clubhouse'] main[data-canopy].ch-st,
+  [data-ui='clubhouse'] main[data-canopy].ch-hl {
+    padding-top: 6px;
+  }
+  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] {
+    row-gap: 4px;
+  }
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] p {
-    font-size: 15.5px;
+    font-size: 14.5px;
     line-height: 1.5;
   }
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary {

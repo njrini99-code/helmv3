@@ -45,7 +45,8 @@
   padding-top: 0;
 }
 .ch-hl[data-canopy] > .ch-hl-h {
-  padding-top: 40px;
+  padding-top: 6px;
+  row-gap: 4px;
 }
 @media (min-width: 821px) {
   main[data-canopy] .ch-hl-role {

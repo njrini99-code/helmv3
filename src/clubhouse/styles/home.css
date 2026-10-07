@@ -85,7 +85,14 @@
   padding-top: 0;
 }
 .ch-h-main--desk[data-canopy] > .ch-h-head {
-  padding-top: 28px;
+  padding-top: 4px;
+  row-gap: 4px;
+}
+.ch-h-main--desk[data-canopy] > .ch-h-head h1 {
+  margin: 0;
+}
+.ch-h-main--desk[data-canopy] > .ch-h-head .ch-h-head__sub {
+  max-width: none;
 }
 
 /* The week and the latest round share one lit sheet, split by a seam. */
