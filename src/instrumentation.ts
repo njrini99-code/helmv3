@@ -76,6 +76,12 @@ const sharedIgnoreErrors = [
   /Could not find the function public\.helm_debug_record_agent_run/,
   /Could not find the function public\.helm_debug_list_agent_runs/,
   /Could not find the function public\.helm_debug_get_agent_run/,
+  // Same shape: golf_qualifier_selection_reasons comes with the HELD
+  // 20260929200000_golf_qualifier_db_hardening.sql. Every qualifier load calls it
+  // first (src/lib/golf/qualifier-selection-reasons.ts) and falls back to the
+  // column on PGRST202, so until the apply each load would raise one auto-captured
+  // event for a call that worked. Delete this line in the change that applies it.
+  /Could not find the function public\.golf_qualifier_selection_reasons\(/,
   /Refresh Token Not Found/,
   // Baseball expected control-flow throws. withBaseballAction already
   // classifies these as handled/expected (admin_events + Sentry warning with

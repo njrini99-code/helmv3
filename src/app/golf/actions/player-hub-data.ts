@@ -28,29 +28,10 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { isGolfTaskOverdueInZone } from '@/lib/golf/task-overdue';
+import { parsePlayerHubEvents } from '@/lib/golf/player-hub-events';
 
 /** Matches `dashboard-data.ts:292` — the team zone used when none is stored. */
 const DEFAULT_TEAM_TIME_ZONE = 'America/New_York';
-
-interface RawAssignment {
-  task_id: string;
-  status: string;
-  completed_at: string | null;
-}
-
-interface HubEventRow {
-  id: string;
-  event_id: string;
-  title: string;
-  event_type: string;
-  start_time: string;
-  end_time: string | null;
-  location: string | null;
-  is_mandatory: boolean;
-  rsvp_status: 'pending' | 'accepted' | 'declined' | 'tentative' | null;
-  going_count: number;
-  maybe_count: number;
-}
 
 export interface PlayerHubSummaryData {
   trips: TripData[];
@@ -141,17 +122,14 @@ async function getPlayerHubSummaryDataImpl(
       .order('departure_date', { ascending: true })
       .limit(100),
 
-    supabase
-      .from('golf_task_assignments' as 'golf_shots')
-      .select('task_id, status, completed_at')
-      .eq('player_id' as 'id', playerId) as unknown as Promise<{ data: RawAssignment[] | null; error: unknown }>,
+    supabase.from('golf_task_assignments').select('task_id, status, completed_at').eq('player_id', playerId),
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any).rpc('get_player_hub_events', {
+    // Typed by the generated Functions entry, which returns Json: the rows are checked by parsePlayerHubEvents below.
+    supabase.rpc('get_player_hub_events', {
       p_team_id: teamId,
       p_player_id: playerId,
       p_since: eventSince,
-    }) as Promise<{ data: HubEventRow[] | null; error: unknown }>,
+    }),
 
     getPlayerHubAnnouncements(teamId, playerId),
 
@@ -189,9 +167,13 @@ async function getPlayerHubSummaryDataImpl(
     );
   }
 
+  // A result that is not the documented array of events is a failed read too, never an empty hub.
+  const parsedEvents = eventsResult.error ? null : parsePlayerHubEvents(eventsResult.data);
+  const eventsShapeError = parsedEvents && !parsedEvents.ok ? new Error(`unexpected get_player_hub_events shape: ${parsedEvents.reason}`) : null;
+
   const failedLeg = (
     [
-      ['events', eventsResult.error],
+      ['events', eventsResult.error ?? eventsShapeError],
       ['travel', tripsResult.error],
       ['tasks', tasksRaw.error],
     ] as const
@@ -247,7 +229,7 @@ async function getPlayerHubSummaryDataImpl(
             : null,
   }));
 
-  const rawAssignments = (tasksRaw.data || []) as unknown as RawAssignment[];
+  const rawAssignments = tasksRaw.data ?? [];
   const assignmentMap = new Map(rawAssignments.map((a) => [a.task_id, a]));
   const taskIds = [...new Set(rawAssignments.map((a) => a.task_id))];
 
@@ -284,7 +266,7 @@ async function getPlayerHubSummaryDataImpl(
     });
   }
 
-  const events: EventInvite[] = (eventsResult.data ?? []).map((e) => ({
+  const events: EventInvite[] = (parsedEvents?.ok ? parsedEvents.rows : []).map((e) => ({
     id: e.id,
     event_id: e.event_id,
     title: e.title,

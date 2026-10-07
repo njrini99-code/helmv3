@@ -2222,6 +2222,56 @@ features:
         - npm run typecheck
         - npm run test -- --run src/test/lib/native-capabilities.test.ts src/test/lib/haptics-pref.test.ts
 
+  golf_clubhouse_ui:
+    name: GolfHelm Clubhouse UI
+    status: active
+    owner: golf/clubhouse
+    criticality: high
+    # Flags (config/feature-flags.yml): golf_clubhouse_ui (the coach/player
+    # switch in src/clubhouse/gate.ts, narrowed by the HELM_CLUBHOUSE_TEAMS
+    # allowlist) and golf_clubhouse_front_door (the entrance pages). The flag
+    # file itself is shared, so it is not listed as code here.
+    observability:
+      feature_keys: []
+      reason: >-
+        Clubhouse is a UI tree over existing features, not a feature of its
+        own. Its reads log through src/clubhouse/lib/track-server.ts under the
+        feature area of the screen (qualifiers, teams, coach_dashboard) and
+        tag ui=clubhouse, so the keys stay with the features that own the
+        data. Screen-specific files are also mapped by those entries
+        (qualifiers, recruiting, classes, messages).
+    docs:
+      feature: docs/clubhouse/README.md
+      flows:
+        - docs/clubhouse/SCREENS.md
+        - docs/clubhouse/SWAP_AUDIT.md
+      ui:
+        - docs/clubhouse/MOBILE.md
+        - .claude/rules/clubhouse.md
+      business_logic:
+        - docs/clubhouse/PROGRESS.md
+      incidents: []
+    code:
+      routes:
+        - src/app/clubhouse-preview/**
+        - src/app/golf/loading.tsx
+      components:
+        - src/clubhouse/**
+      api: []
+      actions: []
+      services: []
+      tests:
+        - src/clubhouse/__tests__/**
+    integrations:
+      - supabase
+    review:
+      required_docs:
+        - docs/clubhouse/README.md
+      required_checks:
+        - npm run typecheck
+        - npm run test:file -- src/clubhouse
+        - npm run clubhouse:check
+
 systems:
   supabase:
     docs: docs/setup/SUPABASE_MCP_SETUP.md

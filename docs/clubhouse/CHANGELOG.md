@@ -5,6 +5,15 @@ changelog (`docs/clubhouse/pages/<page>/CHANGELOG.md`) has the detail; decisions
 and the full verification log are in `docs/clubhouse/PROGRESS.md`. Nothing here
 is in production: Clubhouse is behind a flag that is off.
 
+## 2026-10-06 — Cold loading frame agrees with the gate
+
+With a team allowlist (`HELM_CLUBHOUSE_TEAMS`), the `/golf` loading boundary
+painted Clubhouse's frame before the team was known, so a team outside the
+allowlist saw Clubhouse flash and then swap to Fairway. `clubhouseLoadingFrame()`
+in `gate.ts` now answers for that boundary: Fairway with the flag off, Clubhouse
+with the flag on and no allowlist, and a neutral frame otherwise. No visible
+change with the flag off or with no allowlist.
+
 ## 2026-10-02 — Floating cards and stationary overlay backgrounds
 
 The owner rejected striped, outlined cards and unstable pull-up screens. Shared

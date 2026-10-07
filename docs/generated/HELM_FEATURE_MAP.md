@@ -339,6 +339,17 @@ is a second thing to keep true.
 - **Repair units:** none in the queue
 - **History:** `memory/ledgers/changes/ios_native_shell.md`
 
+## `golf_clubhouse_ui`
+
+**GolfHelm Clubhouse UI** · active · criticality high · owner golf/clubhouse
+
+- **Behaviour:** `docs/clubhouse/README.md`
+- **Code:** `src/app/clubhouse-preview/**`, `src/app/golf/loading.tsx`, `src/clubhouse/**`, `src/clubhouse/__tests__/**`
+- **Telemetry:** none. Clubhouse is a UI tree over existing features, not a feature of its own. Its reads log through src/clubhouse/lib/track-server.ts under the feature area of the screen (qualifiers, teams, coach_dashboard) and tag ui=clubhouse, so the keys stay with the features that own the data. Screen-specific files are also mapped by those entries (qualifiers, recruiting, classes, messages).
+- **Incidents:** none recorded
+- **Repair units:** none in the queue
+- **History:** no ledger yet
+
 ---
 
 ## Runtime keys with no semantic owner

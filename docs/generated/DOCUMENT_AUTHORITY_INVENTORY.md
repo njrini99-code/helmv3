@@ -34,7 +34,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Category | Files | Routed | Claims authority | Dead refs |
 | --- | --- | --- | --- | --- |
-| `POLICY` | 20 | 2 | 6 | 0 |
+| `POLICY` | 20 | 3 | 6 | 0 |
 | `AGENT_SKILL` | 131 | 0 | 7 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 13 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
@@ -43,13 +43,13 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 43 | 5 | 18 | 74 |
-| `AUDIT_SNAPSHOT` | 63 | 6 | 34 | 25 |
+| `AUDIT_SNAPSHOT` | 63 | 7 | 34 | 25 |
 | `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 49 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
-| `INDEX` | 25 | 1 | 8 | 5 |
-| `UNKNOWN` | 319 | 12 | 56 | 81 |
+| `INDEX` | 25 | 2 | 8 | 5 |
+| `UNKNOWN` | 319 | 15 | 56 | 81 |
 
 ## Files
 
@@ -58,7 +58,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | Dead |
 | --- | --- | --- | --- | --- | --- |
 | `.claude/rules/baseball-review.md` | current | - | - | yes | - |
-| `.claude/rules/clubhouse.md` | current | - | - | - | - |
+| `.claude/rules/clubhouse.md` | current | yes | - | - | - |
 | `.claude/rules/coachhelm-review.md` | current | - | - | - | - |
 | `.claude/rules/code-patterns.md` | current | - | - | - | - |
 | `.claude/rules/code-review-tooling.md` | current | - | - | - | - |
@@ -480,7 +480,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/DEPTH_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/HIGH_FIDELITY_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/INTUITIVE_SECONDARY_AUDIT.md` | current | - | - | - | - |
-| `docs/clubhouse/SWAP_AUDIT.md` | current | - | - | yes | - |
+| `docs/clubhouse/SWAP_AUDIT.md` | current | yes | - | yes | - |
 | `docs/clubhouse/foundation-v2/01_REPO_AUDIT_AND_RECOMMENDATION.md` | current | - | - | yes | - |
 | `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 3 |
 | `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | - |
@@ -632,7 +632,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `design/handoff/auth/README.md` | current | - | - | yes | - |
 | `design/handoff/mobile/README.md` | current | - | - | - | - |
 | `docs/README.md` | current | - | - | yes | 1 |
-| `docs/clubhouse/README.md` | current | - | - | - | - |
+| `docs/clubhouse/README.md` | current | yes | - | - | - |
 | `docs/clubhouse/catalog/README.md` | current | - | - | - | - |
 | `docs/db/drafts/README.md` | current | - | - | - | - |
 | `e2e/README.md` | current | - | - | yes | 2 |
@@ -740,11 +740,11 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/CHECKLIST_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/CLICKABLES.md` | current | - | - | - | - |
 | `docs/clubhouse/HANDOFF.md` | current | - | - | - | - |
-| `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
+| `docs/clubhouse/MOBILE.md` | current | yes | - | - | - |
 | `docs/clubhouse/PAGE_PERFORMANCE.md` | current | - | - | - | - |
-| `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
+| `docs/clubhouse/PROGRESS.md` | current | yes | - | - | - |
 | `docs/clubhouse/RELEASE_CANDIDATE.md` | current | - | - | yes | - |
-| `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
+| `docs/clubhouse/SCREENS.md` | current | yes | - | - | - |
 | `docs/clubhouse/UI_OWNERSHIP.md` | current | - | - | yes | - |
 | `docs/clubhouse/UX_OPTIMIZATION.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/auth.md` | current | - | - | - | - |

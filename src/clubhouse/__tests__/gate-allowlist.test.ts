@@ -19,7 +19,7 @@ vi.mock('../routes/team', () => ({
   },
 }));
 
-const { isClubhouseFor, isClubhouseForTeam, clubhouseTeamAllowlist } = await import('../gate');
+const { isClubhouseFor, isClubhouseForTeam, clubhouseTeamAllowlist, clubhouseLoadingFrame } = await import('../gate');
 
 beforeEach(() => {
   flag.on = true;
@@ -81,5 +81,27 @@ describe('isClubhouseForTeam: a link sent to someone else follows their team, no
     expect(isClubhouseForTeam('team-a')).toBe(true);
     expect(isClubhouseForTeam('team-z')).toBe(false);
     expect(isClubhouseForTeam(null)).toBe(false);
+  });
+});
+
+describe('clubhouseLoadingFrame (the /golf loading boundary)', () => {
+  it('agrees with isClubhouseFor whenever the answer does not depend on the team', async () => {
+    flag.on = false;
+    expect(clubhouseLoadingFrame()).toBe('fairway');
+    expect(await isClubhouseFor('coach')).toBe(false);
+    flag.on = true;
+    expect(clubhouseLoadingFrame()).toBe('clubhouse');
+    expect(await isClubhouseFor('coach')).toBe(true);
+  });
+
+  it('is neutral with an allowlist, where only the team decides', async () => {
+    process.env.HELM_CLUBHOUSE_TEAMS = 'team-a';
+    expect(clubhouseLoadingFrame()).toBe('neutral');
+    // Either answer is possible for the page, so the frame commits to neither.
+    expect(await isClubhouseFor('coach')).toBe(true);
+    team.current = { role: 'coach', teamId: 'team-z', coachId: 'c1' };
+    expect(await isClubhouseFor('coach')).toBe(false);
+    flag.on = false;
+    expect(clubhouseLoadingFrame()).toBe('fairway');
   });
 });
