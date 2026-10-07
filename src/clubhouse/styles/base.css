@@ -274,7 +274,9 @@
   font-family: var(--ch-font-sans);
   font-size: 0.84em;
   font-style: normal;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  /* Proportional figures at the serif's own weight: tabular figures padded every 1 to a full width, so "1.1" in a
+     headline read as a typewriter's, heavier than the words around it. Tables keep their tabular figures. */
+  font-weight: 400;
+  font-variant-numeric: lining-nums proportional-nums;
+  letter-spacing: -0.01em;
 }

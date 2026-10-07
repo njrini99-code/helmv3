@@ -1,5 +1,12 @@
 # Clubhouse changelog
 
+## 2026-10-07 — Digits in serif headings sit with the words
+
+The digits that `SerifText` sets in the sans inside a serif heading (`.ch-serif-num`) used tabular figures at weight 500.
+Every 1 was padded to a full figure width, so "Penalty strokes: 1.1 per round" read like typewriter digits, heavier than
+the serif around them. They now use proportional lining figures at the serif's weight (400). Tables and figure columns
+keep their own tabular figures.
+
 ## 2026-10-07 — One green for the primary action
 
 The primary button (`.ch-btn--primary`) was a second, brighter green (#1a6542) beside the field green of the sidebar
