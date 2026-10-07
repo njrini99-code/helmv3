@@ -1,5 +1,12 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-07 — Strokes gained lead folded onto the stat line (#2160)
+
+PR #2160's lead layout is merged into this branch. Strokes gained still reads first, with a larger value. The five
+supporting figures no longer share a card: they sit on the stat line beside the lead, divided by the same engraved seams.
+The lead reserves are re-measured with the stat-line padding: 212px at the widest canvas and 171px full width. Measured
+in WebKit at 1440 and 1000, the title, figures and trend card tops don't move between loading and loaded.
+
 ## 2026-10-07 — Loading reserves re-measured
 
 The figure line's reserves (`--ch-fg-h`) are re-measured for the stat-line padding (+4px). The loading title takes the serif title's 53px line, and the trend card's head the serif title's 95px. Measured in WebKit at 1440 and 1000: the title, figures and trend card tops don't move.
@@ -12,8 +19,7 @@ sit straight on the page, divided by engraved seams, between two fine gilt rules
 strokes-gained legs are one selector set the same way: quiet tiles, with the chosen leg a soft green key. The page
 title and the card and section titles are set in the display serif.
 
-PR #2160 also changes `FigureCards` (the strokes gained lead). Merge it with this branch's `.ch-fg` rules, which drop
-the card surface.
+PR #2160 also changes `FigureCards` (the strokes gained lead); it is folded in above.
 
 ## 2026-10-06 — Smooth scroll and materials
 
@@ -36,6 +42,16 @@ actions and 4 overlay/control call sites in the [all-page
 audit](../../ALL_PAGE_AUDIT.md#p004-stats-team). Approved handoffs and
 contract IDs are preserved; runtime gaps stay explicit.
 <!-- clubhouse:release-audit:end -->
+
+## 2026-10-06 — Strokes gained leads the figures
+
+The premium audit's P1 for this page: six equal floating cards gave the page no first read. On the
+owner's choice (lead and supporting), Team SG per round now sits on its own card with a 48px value, and
+the five supporting figures share one quieter surface divided by hairlines. Below a 900px canvas the
+supporting figures become rows (label and change left, value right) under a full-width strokes gained
+card. The loading skeleton draws the same layout, and the held heights were re-measured so the page
+below does not move when the figures land or the window changes. Values, deltas, notes, catalog codes
+and the player profile's figures are unchanged. See VERIFY.md for the measurements.
 
 ## 2026-10-02 — Keep charts steady when the period changes
 

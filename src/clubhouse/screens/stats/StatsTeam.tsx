@@ -133,6 +133,7 @@ function TeamFigures({ figures, cacheError }: { figures: ChTeamStats['figures'];
       )}
       <FigureCards
         hold
+        lead
         items={figures.map((x) => ({
           label: x.label,
           value: x.value == null ? NO_DATA : x.signed ? formatSigned(x.value, x.digits) : x.value.toFixed(x.digits),

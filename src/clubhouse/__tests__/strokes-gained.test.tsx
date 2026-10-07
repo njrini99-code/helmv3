@@ -226,8 +226,12 @@ describe('team stats · desktop', () => {
     expect(c.querySelector('.ch-delta')!.textContent).toBe('+0.4');
     expect(c.querySelector('.ch-delta')!.className).toContain('is-good');
     expect(c.querySelector('.ch-fg__n')!.textContent).toBe('vs Tour · 58 rounds with shots');
-    // Six cards, laid out in six columns.
-    expect((document.querySelector('.ch-fg') as HTMLElement).style.getPropertyValue('--ch-fg-n')).toBe('6');
+    // Strokes gained leads; the five supporting figures share the group beside it, five columns.
+    const fg = document.querySelector('.ch-fg') as HTMLElement;
+    expect(fg.className).toContain('ch-fg--lead');
+    expect(fg.firstElementChild!.className).toContain('ch-fg__c--lead');
+    expect(fg.querySelectorAll('.ch-fg__group > .ch-fg__c')).toHaveLength(5);
+    expect(fg.style.getPropertyValue('--ch-fg-n')).toBe('5');
   });
 
   it('CH-4311 no rounds with shots: a dash and what it needs, never a zero', () => {

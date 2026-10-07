@@ -175,6 +175,11 @@
 .ch-fg {
   --ch-fg-h: 200px;
 }
+/* With strokes gained leading (`.ch-fg--lead`), its larger value and two-line note set the row: 208px measured at a 1168px canvas (212px with the stat-line padding, 2026-10-07). The
+   narrower canvases below already reserve more than that. */
+.ch-fg--lead {
+  --ch-fg-h: 212px;
+}
 @container (min-width: 901px) and (max-width: 1116px) {
   .ch-fg {
     --ch-fg-h: 217px;
@@ -243,6 +248,32 @@
   .ch-fg--hold .ch-fg__n {
     min-height: calc(1.3 * 12.5px);
   }
+}
+/* Team stats (FigureCards `lead`, owner decision 2026-10-06): strokes gained is the first read, on its own card with a larger value;
+   the five supporting figures share one quieter surface, divided by hairlines rather than floating as five more cards. Each figure keeps
+   `.ch-fg__c`, so the loading reserve above (`--ch-fg-h`) holds for both. */
+.ch-fg--lead {
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 5fr);
+}
+/* On the stat line (no surfaces): the supporting figures sit on the page beside the lead, the group set off by a seam. */
+.ch-fg__group {
+  display: grid;
+  grid-template-columns: repeat(var(--ch-fg-n, 5), minmax(0, 1fr));
+  box-shadow: var(--ch-seam-y);
+}
+.ch-fg__group .ch-fg__c {
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-fg__group .ch-fg__c + .ch-fg__c {
+  box-shadow: var(--ch-seam-y);
+}
+.ch-fg__c--lead .ch-fg__l {
+  color: var(--ch-text-primary);
+}
+.ch-fg__c--lead .ch-fg__v {
+  font-size: 48px;
 }
 /* A strokes gained change against the previous 10: the chip, then the words. */
 .ch-sgchg {
@@ -1673,6 +1704,46 @@ a.ch-lg__r:focus-visible {
   }
   .ch-fg__c:nth-child(even):nth-child(n + 3) {
     box-shadow: var(--ch-seam-x), var(--ch-seam-y);
+  }
+  /* Strokes gained across the top (171px measured at a 769px canvas with the stat-line padding); the supporting figures as rows under it, the label and change on the
+     left and the value on the right, hairlines between rows. Each row holds one height so a window change moves nothing. */
+  .ch-fg--lead {
+    --ch-fg-h: 171px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ch-fg__group {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ch-fg__group .ch-fg__c {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'label value'
+      'change value';
+    align-items: center;
+    gap: 6px 16px;
+    min-height: 76px;
+    padding: 14px 18px;
+  }
+  .ch-fg__group .ch-fg__c + .ch-fg__c {
+    box-shadow: var(--ch-seam-x);
+  }
+  .ch-fg__group .ch-fg__l {
+    grid-area: label;
+  }
+  .ch-fg__group .ch-fg__v {
+    grid-area: value;
+    font-size: 30px;
+  }
+  .ch-fg__group .ch-fg__d {
+    grid-area: change;
+  }
+  .ch-fg--hold .ch-fg__group .ch-fg__d {
+    min-height: 22px;
+  }
+  /* The skeleton's value bar takes both rows, as the loaded value does. */
+  .ch-fg__group .ch-fg__c--skel > :nth-child(2) {
+    grid-row: span 2;
   }
   .ch-sgm-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
