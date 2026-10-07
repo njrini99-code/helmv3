@@ -33,7 +33,8 @@ convenient when available, not a prerequisite.
 
 ## Migrations are additive
 One shared production database serves Golf, Baseball and Lift Lab, no
-staging copy. Nothing blocks destructive SQL: a `DROP`, `TRUNCATE`, WHERE-less
+staging copy. No hook or permission rule blocks destructive SQL
+(`docs/CONTROL_PLANE_ENFORCEMENT.md`): a `DROP`, `TRUNCATE`, WHERE-less
 `DELETE`, or `DROP COLUMN` against production runs as typed. Rehearse those
 (and RLS, grants, type changes, backfills) on the local Docker stack first, and
 check the target and statement before sending them.

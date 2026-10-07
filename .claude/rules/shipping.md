@@ -14,8 +14,7 @@ is actually wired. `docs/TOOL_AUTHORITY_MATRIX.md` is a diagnostic inventory,
 not a tool allowlist; live connection results outrank its observations.
 
 Capture command exit codes; use `set -o pipefail` for piped checks. macOS has
-no built-in `timeout`. Quote shell variables next to colons in zsh. Recursive
-`rm` is not guarded: inspect and scope any cleanup before running it.
+no built-in `timeout`. Quote shell variables next to colons in zsh. Recursive `rm` is UNENFORCED: inspect and scope any cleanup before running it.
 
 Regenerate affected docs before committing. Push hooks must not rewrite the
 checkout.

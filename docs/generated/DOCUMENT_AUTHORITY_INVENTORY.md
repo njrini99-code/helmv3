@@ -47,7 +47,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 49 | 15 | 2 | 4 |
-| `ADR` | 5 | 0 | 3 | 1 |
+| `ADR` | 6 | 0 | 3 | 2 |
 | `INDEX` | 25 | 1 | 8 | 5 |
 | `UNKNOWN` | 321 | 12 | 70 | 83 |
 
@@ -628,6 +628,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/decisions/ADR-2026-09-03-control-plane-owner-decisions.md` | current | - | - | - | - |
 | `memory/decisions/ADR-2026-09-05-control-plane-reset.md` | current | - | - | yes | 1 |
 | `memory/decisions/ADR-2026-09-06-demo-seed-scope.md` | current | - | - | - | - |
+| `memory/decisions/ADR-2026-10-07-agent-autonomy.md` | current | - | - | - | 1 |
 
 ### `INDEX`
 

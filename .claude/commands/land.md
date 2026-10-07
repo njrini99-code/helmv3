@@ -11,7 +11,7 @@ npm run pr:land -- <pr>
 Check the PR's head and that its required checks are green, then land it (a red
 `CI aggregate` on a draft PR is expected; mark it ready first). Prefer this
 script for merge, canonical sync and worktree retirement. Fix red checks
-instead of bypassing them; never use `--admin`.
+instead of bypassing them.
 
 The script lands `agent/*` branches; pass `--any-branch` for another branch.
 Merging does not deploy (AGENTS.md "Production"): deploy afterwards if the

@@ -56,9 +56,11 @@ Canonical repo: `/Users/ricknini/Downloads/helmv3`. Start a task with
 - Stage explicit paths and push an explicit branch. Use `--force-with-lease`
   after rebasing your own branch. Fix red checks instead of bypassing them; if
   a check is broken by infrastructure, say so in the PR.
-- Clean up with `npm run worktrees:park` / `worktrees:retire`; `npm run pr:land`
-  retires the worktree itself. Do not delete other sessions' folders or branches
-  to satisfy a count.
+- Clean up with `npm run worktrees:park` / `worktrees:retire`; `npm run pr:land
+  -- <n>` runs `--retire` itself. STANDING OWNER AUTHORIZATION covers checkouts the
+  tool verdicts PARKABLE and branches it verdicts DELETE_MERGED_EXACT /
+  DELETE_MERGED_CONTENT. Do not delete other sessions' folders or branches to
+  satisfy a count.
 
 ## Context
 
@@ -75,8 +77,7 @@ Run the checks that fit the change (`/gates` picks them) once, keeping exit
 codes. Rerun only after a change or a failure. A changed `'use server'` surface
 needs `npm run build`; a migration or policy needs `npm run test:rls`; prose or
 config-only edits need the affected tooling tests, not the suite. Do not weaken,
-skip or delete a test, or raise a baseline, to get green. Reviewer agents are
-optional and risk-based.
+skip or delete a test, or raise a baseline, to get green. No hook blocks you from finishing a turn. Reviewer agents are optional and risk-based.
 
 ## Tools
 
@@ -105,15 +106,16 @@ does not deploy. Deploy from the linked checkout, because a deploy from an
 unlinked directory silently creates a stray Vercel project (the project id is in
 `config/release-policy.yml`):
 
-    ./node_modules/.bin/vercel deploy --prod --yes --archive=tgz \
-      --build-env NEXT_PUBLIC_SENTRY_RELEASE=$(git rev-parse HEAD)
+    SHA=$(git rev-parse HEAD); SCOPE=$(node -p 'require("./.vercel/project.json").orgId')
+    ./node_modules/.bin/vercel deploy --prod --yes --archive=tgz --scope "$SCOPE" \
+      --build-env "NEXT_PUBLIC_SENTRY_RELEASE=$SHA" --env "NEXT_PUBLIC_SENTRY_RELEASE=$SHA"
 
-The build-env stamp is what lets `release:status` and Sentry know the commit
-(`vercel deploy` leaves `VERCEL_GIT_COMMIT_SHA` empty), and `--archive=tgz`
-avoids the upload-size and stall problems seen before. To roll back, promote the
-previous deployment. Then run `npm run release:status -- --strict`, which
-compares the served commit with `origin/main`. Vercel reads, logs and previews
-are normal development work.
+The release stamp is what lets `release:status` and Sentry know the commit
+(`vercel deploy` leaves `VERCEL_GIT_COMMIT_SHA` empty), `--archive=tgz` avoids the
+upload-size and stall problems seen before, and `--scope` is required or the
+deploy fails as "Not authorized". Details and rollback: `docs/setup/DEPLOY.md`.
+Then run `npm run release:status -- --strict`, which compares the served commit
+with `origin/main`. Vercel reads, logs and previews are normal development work.
 
 ## Product conventions
 
@@ -132,5 +134,5 @@ reliability model: `memory/system/golfhelm-engineering-os.md`.
 GitHub branch protection requires the checks on `main` (`CI aggregate`,
 `Review Gate aggregate`, CodeQL, `block-historical-edits`; see
 `.claude/rules/code-review-tooling.md`), and the git hooks run `gitleaks` when it
-is installed. No permission rule or hook blocks Bash, Git, Supabase or Vercel.
-`docs/CONTROL_PLANE_ENFORCEMENT.md` lists what is wired.
+is installed. No permission rule or hook denies, asks for, or blocks Bash, Git, Supabase, or
+Vercel. `docs/CONTROL_PLANE_ENFORCEMENT.md` lists what is wired.

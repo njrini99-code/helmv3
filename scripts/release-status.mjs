@@ -15,7 +15,7 @@
  * HOW IT DETERMINES THE DEPLOYED COMMIT
  * -------------------------------------
  * Not from metadata. A deploy that sets NEXT_PUBLIC_SENTRY_RELEASE to the
- * commit (`vercel deploy --prod --build-env NEXT_PUBLIC_SENTRY_RELEASE=<sha>`)
+ * commit (`vercel deploy --prod --build-env NEXT_PUBLIC_SENTRY_RELEASE=<sha> --env NEXT_PUBLIC_SENTRY_RELEASE=<sha>`)
  * gets that value inlined by Next into the JS chunks, so the commit is IN THE
  * BYTES THE BROWSER RUNS. We fetch the live page, pull its chunk URLs, and walk main's history
  * backwards looking for the first SHA that appears in one.
@@ -137,5 +137,5 @@ for (const line of (sh('git', ['log', '--oneline', `${deployed}..${mainSha}`]) ?
   console.log(`   ${line}`);
 }
 console.log('\nThese are fixes users do not have yet.');
-console.log('Merging does not deploy (vercel.json disables Git deployments). Deploy with ./node_modules/.bin/vercel deploy --prod from the linked checkout; this script never deploys.');
+console.log('Merging does not deploy (vercel.json disables Git deployments). Deploy from the linked checkout with the stamped command in docs/setup/DEPLOY.md (AGENTS.md "Production"); this script never deploys.');
 process.exit(strict && behind > allow ? 1 : 0);
