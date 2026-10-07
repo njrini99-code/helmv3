@@ -18,22 +18,25 @@ function Line({ height, children }: { height: number; children: ReactNode }) {
  */
 export function StatsProfileSkeleton({ coach = false }: { coach?: boolean }) {
   return (
-    <main className="ch-st" aria-busy="true" aria-label="Loading player stats" data-ch-code="CH-5403">
+    <main className="ch-st" aria-busy="true" aria-label="Loading player stats" data-ch-code="CH-5403" data-canopy="">
       {coach && (
         <div className="ch-st-back" aria-hidden="true">
           <Skeleton width={112} height={30} radius={10} />
         </div>
       )}
-      <section className="ch-pf-hero" aria-hidden="true">
+      <section className="ch-pf-hero" aria-hidden="true" data-canopy-head="">
         <span className="ch-pf-hero__av">
-          <Skeleton width={112} height={112} radius={56} />
+          <Skeleton width={84} height={84} radius={42} />
         </span>
         <div className="ch-pf-hero__id">
-          {/* The name's serif display line (48px measured; was 35 before the serif title). */}
-          <Line height={49}>
+          <div className="ch-pf-hero__tags">
+            <Skeleton width={64} height={22} radius={11} />
+          </div>
+          {/* The name in the page head's heavy sans (44px at 1.08). */}
+          <Line height={47.5}>
             <Skeleton width={240} height={36} radius={10} />
           </Line>
-          <Line height={18}>
+          <Line height={24.8}>
             <Skeleton width={280} height={14} />
           </Line>
           {coach && (
@@ -48,7 +51,7 @@ export function StatsProfileSkeleton({ coach = false }: { coach?: boolean }) {
           {Array.from({ length: 4 }, (_, i) => (
             <div key={i}>
               <Skeleton width={72} height={12} />
-              <Skeleton width={56} height={24} radius={7} />
+              <Skeleton width={56} height={28} radius={7} />
               <Skeleton width={64} height={17} />
               {/* The strokes gained figure's change line (the loaded hero keeps it in every window). */}
               {i === 2 && <span className="ch-pf-hero__chg" style={{ display: 'block' }} />}

@@ -1,5 +1,14 @@
 # P002 — Home: changelog
 
+## 2026-10-07 — Home on the Ledger
+
+On desktop, the week and the latest round no longer share a lit sheet. They sit
+on the canvas, split by a soft hairline column. The leaderboard is rows on the
+canvas, aligned to the head's edge, with soft seams and a quiet hover tint. Its
+heading sits over the engraved rule. The section headings ("This week", "Latest
+round", "Leaderboard") are in the heavy sans. The scorecard keeps its green
+board, and the week strip keeps its well. The phone is unchanged.
+
 ## 2026-10-07 — Home in the framed page head
 
 Desktop Home's greeting block is the framed page head instead of the green

@@ -1,5 +1,26 @@
 # Clubhouse changelog
 
+## 2026-10-07 — The Ledger: sections flush on the canvas
+
+The owner asked for pages that are flush and less card-heavy, and chose the
+Ledger over one sheet per page or quieter cards. Inside the framed workspace on
+desktop (`main[data-canopy]`, 821px and wider), a section is now a heading over
+an engraved rule on the canvas, not a card. A real object keeps its material:
+the green scoreboards, wells, form fields, the composer, dialogs, segmented
+controls and chips.
+
+- **Shared rules (`shell.css`):** inside a framed page a `.ch-sheet` loses its
+  fill, shadow and radius. The serif type tokens map to the heavy sans (doctrine:
+  no serif), and section headings take forest ink.
+- **Tokens:** `--ch-ledger-rule`, `--ch-ledger-rule-soft`, `--ch-ledger-ink`,
+  `--ch-ledger-eyebrow` and `--ch-ledger-row-hover`.
+- **Components (`ui/Section.tsx`):** `Section` (heading, caption, actions and a
+  flush body over the rule) and `BackLink` (the way back above a sub-screen's
+  page head).
+
+Sub-screens take the same framed page head as the main pages, with a back link
+above it. The phone is unchanged.
+
 ## 2026-10-07 — Framed workspace and page head
 
 The shell and every main page's head now follow the owner's Coach Home handoff

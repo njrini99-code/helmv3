@@ -1,5 +1,12 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-07 — Team stats on the Ledger
+
+On desktop, the strokes gained chart, the leg trends, the player grid, team
+putting and season bests are no longer cards. Each is a heading over the
+engraved rule, with its body flush on the canvas, and the sections are spaced
+further apart. Headings are in the heavy sans. The phone is unchanged.
+
 ## 2026-10-07 — Gauges directly under the words
 
 At full width the gauges sat at the foot of each figure, so the supporting

@@ -1,5 +1,18 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-07 — The profile takes the page head
+
+On desktop, the profile's striped banner card is now the framed page head:
+- **Back row:** "Team stats" and the player pager sit above the double hairline.
+- **Identity:** an 84px avatar sits beside the status tag, then the name in
+  the head's heavy sans, the class and hometown line, and the actions.
+- **Figures:** the four figures sit on the canvas under a soft rule.
+
+The yardage cards (Scoring, Strokes gained by leg, "vs. team") lose their card
+and sit as Ledger sections, with 40px between them. The loading skeleton opts
+into the same head and holds it line for line: the hero and the tabs measured
+0px of shift in WebKit at 1440 and 1100. The phone is unchanged.
+
 ## 2026-10-07 — Chart card titles in the serif
 
 The yardage cards' titles (`YardagePage`: Scoring, Strokes gained by leg, Team
