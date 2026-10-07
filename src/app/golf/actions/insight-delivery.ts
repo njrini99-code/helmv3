@@ -239,27 +239,12 @@ const INSIGHT_SELECT = `
  * renders, just without feedback state, which is the safe degradation.
  */
 async function loadPlayerFeedbackByInsight(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   playerId: string,
 ): Promise<Map<string, InsightPlayerFeedback>> {
   const out = new Map<string, InsightPlayerFeedback>();
-  // The generated Database types don't include this table yet (applied via
-  // execute_sql), so cast the builder, not `supabase`.
-  const feedbackTable = supabase.from('golf_insight_player_feedback') as unknown as {
-    select: (cols: string) => {
-      eq: (col: string, val: string) => {
-        order: (
-          col: string,
-          opts: { ascending: boolean },
-        ) => Promise<{
-          data: Array<{ insight_id: string; rating: string; created_at: string }> | null;
-          error: { message: string } | null;
-        }>;
-      };
-    };
-  };
-
-  const { data, error } = await feedbackTable
+  const { data, error } = await supabase
+    .from('golf_insight_player_feedback')
     .select('insight_id, rating, created_at')
     .eq('player_id', playerId)
     .order('created_at', { ascending: false });
@@ -269,7 +254,7 @@ async function loadPlayerFeedbackByInsight(
   for (const row of data) {
     // Newest-first order means the FIRST row we see per insight is the latest.
     if (out.has(row.insight_id)) continue;
-    const rating = row.rating as InsightPlayerFeedback['rating'];
+    const rating = row.rating;
     if (
       rating === 'helpful' ||
       rating === 'not_helpful' ||

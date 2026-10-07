@@ -120,6 +120,29 @@ describe('getPlayerHubSummaryData — an unreadable hub must not look like an em
     ).toBe(true);
   });
 
+  it('throws when the events RPC answers with something other than its documented array', async () => {
+    rpcOutcome = { data: { unexpected: true }, error: null };
+
+    await expect(hub()).rejects.toThrow(/load your hub/i);
+    expect(
+      logServerError.mock.calls.some((call) => /events read failed.*unexpected get_player_hub_events shape/.test(String((call as unknown[])[0]))),
+    ).toBe(true);
+  });
+
+  it('maps the events RPC rows through the parser', async () => {
+    rpcOutcome = {
+      data: [
+        { id: 'e1', event_id: 'e1', title: 'Qualifier', event_type: 'tournament', start_time: '2026-10-05T12:00:00Z', end_time: null, location: null, is_mandatory: false, rsvp_status: 'attending', going_count: 3, maybe_count: 0 },
+      ],
+      error: null,
+    };
+
+    const data = await hub();
+    expect(data.events).toEqual([
+      { id: 'e1', event_id: 'e1', title: 'Qualifier', event_type: 'tournament', start_time: '2026-10-05T12:00:00Z', end_time: null, location: null, is_mandatory: false, rsvp_status: 'accepted', going_count: 3, maybe_count: 0 },
+    ]);
+  });
+
   it('throws rather than hiding the bus time when the travel read fails', async () => {
     outcomes.set('golf_travel_itineraries', { data: null, error: { message: 'permission denied', code: '42501' } });
 

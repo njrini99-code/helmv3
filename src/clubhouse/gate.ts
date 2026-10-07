@@ -40,6 +40,17 @@ export async function isClubhouseFor(role: 'coach' | 'player' | null | undefined
 }
 
 /**
+ * Which frame the `/golf` loading boundary paints while the dashboard layout resolves session, role and team. It
+ * must agree with `isClubhouseFor` and cannot await it: that boundary covers exactly those reads. The flag off is
+ * Fairway for everyone and the flag on with no allowlist is Clubhouse for everyone. With an allowlist the answer
+ * depends on the team, which is not known yet, so the frame is neutral: neither Clubhouse's nor Fairway's chrome.
+ */
+export function clubhouseLoadingFrame(): 'clubhouse' | 'fairway' | 'neutral' {
+  if (!isFlagEnabled('golf_clubhouse_ui')) return 'fairway';
+  return clubhouseTeamAllowlist() ? 'neutral' : 'clubhouse';
+}
+
+/**
  * Whether a team, rather than the signed-in user, is on Clubhouse: for a link
  * one user's action sends another (a coach's proposal emailed to a player).
  * The flag, then the allowlist by the recipient's team; no team reads as

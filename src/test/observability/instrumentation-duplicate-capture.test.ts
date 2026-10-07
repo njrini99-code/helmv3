@@ -258,3 +258,30 @@ describe('Sentry.init — vercelAIIntegration defaults to NOT recording prompts/
     vi.unstubAllEnvs();
   });
 });
+
+describe('sharedIgnoreErrors — a HELD migration RPC the app already falls back from', () => {
+  beforeEach(() => {
+    vi.stubEnv('NEXT_RUNTIME', 'nodejs');
+    mocks.init.mockClear();
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  function matches(ignoreErrors: unknown[], message: string): boolean {
+    return ignoreErrors.some((p) => (p instanceof RegExp ? p.test(message) : typeof p === 'string' && message.includes(p)));
+  }
+
+  it('drops the PGRST202 auto-capture for golf_qualifier_selection_reasons, and only that function', async () => {
+    await register();
+    const ignoreErrors = mocks.init.mock.calls[0]![0].ignoreErrors as unknown[];
+    expect(
+      matches(ignoreErrors, 'Could not find the function public.golf_qualifier_selection_reasons(p_qualifier_id) in the schema cache'),
+    ).toBe(true);
+    // A live RPC that goes missing must still page.
+    expect(
+      matches(ignoreErrors, 'Could not find the function public.get_player_hub_events(p_player_id, p_since, p_team_id) in the schema cache'),
+    ).toBe(false);
+    expect(matches(ignoreErrors, 'permission denied for function golf_qualifier_selection_reasons')).toBe(false);
+  });
+});
