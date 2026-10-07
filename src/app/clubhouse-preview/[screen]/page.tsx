@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation';
 import { ClubhouseFrame } from '@/clubhouse/shell/ClubhouseFrame';
+import { HeroToneProvider } from '@/clubhouse/ui/PageHero';
+import { heroToneFrom } from '@/clubhouse/ui/hero-tone';
 import { CoachHome } from '@/clubhouse/screens/home/CoachHome';
 import { PlayerHome } from '@/clubhouse/screens/home/PlayerHome';
 import { PreviewHub } from '@/clubhouse/preview/PreviewHub';
@@ -146,11 +148,13 @@ export default async function ClubhousePreview({
   searchParams,
 }: {
   params: Promise<{ screen: string }>;
-  searchParams: Promise<{ state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string }>;
+  searchParams: Promise<{ state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string }>;
 }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen } = await params;
-  const { state, view, date, event, bell, new: isNew, section, q, tab, teams } = await searchParams;
+  const { state, view, date, event, bell, new: isNew, section, q, tab, teams, tone } = await searchParams;
+  // The header lab (/clubhouse-preview/header-lab) renders a page with one of the hero tones.
+  const heroTone = heroToneFrom(tone);
   const qDetail = (role: 'coach' | 'player') => {
     const d = previewDetail(DETAIL_INDEX[q ?? 'live'] ?? 0, role);
     if (state === 'failed') return { ...d, entriesError: true, board: null, entrants: 0 };
@@ -454,7 +458,7 @@ export default async function ClubhousePreview({
   return (
     <PreviewBell state={bell}>
       <ClubhouseFrame userData={screen === 'coachhelm-player' || screen === 'coachhelm-views' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : user} shell={PREVIEW_SHELL} pathname={entry.path} forceRebuilt>
-        {entry.node}
+        <HeroToneProvider tone={heroTone}>{entry.node}</HeroToneProvider>
       </ClubhouseFrame>
     </PreviewBell>
   );

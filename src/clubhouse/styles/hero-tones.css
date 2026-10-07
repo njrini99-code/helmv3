@@ -1,0 +1,132 @@
+/* The header lab's tones (owner, 2026-10-07: "GolfHelm page header & dashboard framing concepts"). Each one is the
+   shared PageHero set a different way on the ivory workspace inside the green frame; the canopy (the green fade) lives
+   in shell.css. Green is architecture, brass is punctuation, the serif is identity. */
+.ch-hero[data-tone]:not([data-tone='canopy']) {
+  --ch-hero-ink: #19392d;
+  --ch-hero-brass: #8a6f37;
+  --ch-hero-rule: rgb(35 55 45 / 0.16);
+  position: relative;
+  column-gap: 32px;
+  row-gap: 6px;
+}
+.ch-hero[data-tone]:not([data-tone='canopy']) .ch-hero__eyebrow {
+  font: 600 11px/1.2 var(--ch-font-sans);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ch-hero-brass);
+}
+.ch-hero[data-tone]:not([data-tone='canopy']) .ch-hero__title {
+  margin: 2px 0 0;
+  font: 400 38px/1.05 var(--ch-font-serif);
+  letter-spacing: -0.008em;
+  color: var(--ch-hero-ink);
+}
+.ch-hero[data-tone]:not([data-tone='canopy']) .ch-hero__line {
+  font: 400 14px/1.45 var(--ch-font-sans);
+  color: #4f5a52;
+}
+
+/* Framed workspace: no plate; the title is part of the paper, closed by one rule. */
+.ch-hero[data-tone='framed'],
+.ch-hero[data-tone='topo'] {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--ch-hero-rule);
+}
+
+/* Archival mat: a lighter mat with a fine inner line, set like a museum caption. */
+.ch-hero[data-tone='archival'] {
+  padding: 24px 28px 26px;
+  border-radius: 14px;
+  background: #f7f4ea;
+  box-shadow: 0 0 0 1px var(--ch-hero-rule), inset 0 0 0 6px #f7f4ea, inset 0 0 0 7px rgb(157 130 73 / 0.32);
+}
+
+/* Clubhouse plaque: a mounted plate; a forest rule stands at the title. */
+.ch-hero[data-tone='plaque'] {
+  padding: 22px 26px 24px 30px;
+  border-radius: 16px;
+  background: #f2efe4;
+  box-shadow: 0 0 0 1px rgb(93 99 76 / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.8);
+}
+.ch-hero[data-tone='plaque'] .ch-hero__title {
+  padding-left: 14px;
+  box-shadow: inset 4px 0 0 var(--ch-green-800);
+}
+.ch-hero[data-tone='plaque'] .ch-hero__line,
+.ch-hero[data-tone='plaque'] .ch-hero__eyebrow {
+  padding-left: 18px;
+}
+
+/* Scorecard: ruled top and bottom like a club card, the bottom a double rule. */
+.ch-hero[data-tone='scorecard'] {
+  padding: 16px 0 18px;
+  border-top: 1px solid var(--ch-hero-rule);
+  border-bottom: 3px double rgb(35 55 45 / 0.3);
+}
+.ch-hero[data-tone='scorecard'] .ch-hero__title {
+  font-size: 34px;
+  letter-spacing: 0.01em;
+}
+
+/* Engraved topographic: framed, with a faint contour in the far corner that fades out before the title. */
+.ch-hero__motif {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  width: 60%;
+  height: calc(100% + 40px);
+  pointer-events: none;
+  fill: none;
+  stroke: #9d8249;
+  stroke-opacity: 0.16;
+  stroke-width: 1;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 45%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 45%);
+}
+.ch-hero__motif circle {
+  fill: #9d8249;
+  fill-opacity: 0.4;
+  stroke: none;
+}
+.ch-hero[data-tone='topo'] > :not(.ch-hero__motif) {
+  position: relative;
+}
+
+/* Tournament board: a thin forest rail, the title in engraved capitals, the page's numbers in the head. */
+.ch-hero[data-tone='board'] {
+  padding: 18px 0 18px;
+  border-bottom: 1px solid var(--ch-hero-rule);
+  box-shadow: inset 0 3px 0 var(--ch-green-800);
+}
+.ch-hero[data-tone='board'] .ch-hero__title {
+  font-size: 30px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.ch-hero__figs {
+  display: flex;
+  grid-column: 1;
+  gap: 28px;
+  margin: 8px 0 0;
+}
+.ch-hero__figs div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ch-hero__figs dt {
+  font: 600 10.5px/1 var(--ch-font-sans);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ch-hero-brass, #8a6f37);
+}
+.ch-hero__figs dd {
+  margin: 0;
+  font: 600 20px/1.1 var(--ch-font-sans);
+  color: var(--ch-hero-ink, #19392d);
+}
+@media (max-width: 820px) {
+  .ch-hero__motif {
+    display: none;
+  }
+}

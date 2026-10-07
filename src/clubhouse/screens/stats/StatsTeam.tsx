@@ -33,7 +33,17 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
   return (
     <StatsTeamFrame filter={data.filter} phone={<StatsTeamPhone data={data} />}>
       <PageHero
+        eyebrow="Team / Performance"
         title="Team stats"
+        figures={
+          data.roundsError
+            ? undefined
+            : [
+                { label: 'Rounds', value: data.roundCount },
+                { label: 'Players', value: data.activeCount },
+                { label: 'Window', value: data.window === 'season' ? 'Season' : data.window === 'qualifiers' ? 'Qualifiers' : 'Last 10' },
+              ]
+        }
         actions={
           /* Never export a half-loaded window. */
           <TeamHeadActions filter={data.filter} teamName={data.teamName} grid={data.roundsError ? null : data.grid} />

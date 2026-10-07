@@ -1,5 +1,6 @@
 'use client';
 
+import { useHeroTone } from '../../ui/PageHero';
 import { Download, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { createContext, useContext, useEffect, useMemo, useState, useTransition, type ReactNode } from 'react';
@@ -61,6 +62,7 @@ export function useShownWindow(): ChWindow {
 /** The page frame: changing the window or the filter dims the page and marks it busy until the new rounds land. */
 export function StatsTeamFrame({ filter: current, phone, children }: { filter: ChFilter; phone?: ReactNode; children: ReactNode }) {
   const isPhone = useChPhone() && phone != null;
+  const tone = useHeroTone();
   const router = useRouter();
   const toast = useToast();
   const delayedToast = useDelayedToast();
@@ -93,7 +95,7 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
   };
   return (
     <GoFilter.Provider value={{ filter: current, go, shown: (loading ?? current).window }}>
-      <main className={'ch-st' + (isPhone ? ' is-phone' : '')} aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined} data-canopy={isPhone ? undefined : ''}>
+      <main className={'ch-st' + (isPhone ? ' is-phone' : '')} aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined} data-canopy={isPhone || tone !== 'canopy' ? undefined : ''} data-hero-tone={tone}>
         {/* The server renders desktop; at phone width it stays hidden until the phone view takes over at hydration. */}
         {isPhone ? phone : <div className="ch-st-desk">{children}</div>}
       </main>
