@@ -12,6 +12,7 @@
  *   • hollow bars for a second series (Rounds: non-qualifiers), filled for
  *     the first
  *   • a dotted rolling average once there are more rounds than its window
+ *   • optionally, a shaded band behind the bars for the player's usual range
  *   • the latest round is named under the axis
  *
  * Numbers go through the display registry (`round_to_par`), so a bar's label
@@ -43,6 +44,14 @@ export interface RoundStripPoint {
   href?: string;
 }
 
+/** A shaded range behind the bars, e.g. "your usual". Edges are strokes to par, like `toPar`. */
+export interface RoundStripBand {
+  lo: number;
+  hi: number;
+  /** Short name drawn in the right gutter at the band's top edge, e.g. "Your usual". */
+  label?: string;
+}
+
 export interface RoundStripProps {
   /** Oldest → newest. Points without a finite `toPar` are skipped. */
   points: RoundStripPoint[];
@@ -54,6 +63,8 @@ export interface RoundStripProps {
   rollingWindow?: number;
   /** Above this many rounds the bars are too narrow to tap; they render as a picture. */
   maxLinkedBars?: number;
+  /** Optional shaded range drawn behind the bars. Omitted = the strip is unchanged. */
+  band?: RoundStripBand | null;
   className?: string;
 }
 
@@ -80,6 +91,7 @@ export function RoundStrip({
   height = 160,
   rollingWindow = 5,
   maxLinkedBars = 20,
+  band = null,
   className,
 }: RoundStripProps) {
   const rounds = points.filter(
@@ -101,9 +113,21 @@ export function RoundStrip({
     .filter((p): p is string => p !== null)
     .join(' ');
 
+  // The usual-range band, clamped to what the plot shows and placed with the same
+  // `parFrac - value / span` mapping the bars and the average line use.
+  const bandLo = band ? Math.max(Math.min(band.lo, band.hi), -maxDown) : 0;
+  const bandHi = band ? Math.min(Math.max(band.lo, band.hi), maxUp) : 0;
+  const bandBox =
+    band && bandHi > bandLo
+      ? { top: css2((parFrac - bandHi / span) * 100), height: css2(((bandHi - bandLo) / span) * 100) }
+      : null;
+
   const first = rounds[0]!;
   const latest = rounds[rounds.length - 1]!;
-  const summary = `${label}. Latest ${formatStripDate(latest.date)}: ${formatMetricText('round_to_par', latest.toPar)}.`;
+  const bandSummary = band
+    ? ` ${band.label ?? 'Usual range'}: ${formatMetricText('scoring_average_vs_par', Math.min(band.lo, band.hi))} to ${formatMetricText('scoring_average_vs_par', Math.max(band.lo, band.hi))}.`
+    : '';
+  const summary = `${label}. Latest ${formatStripDate(latest.date)}: ${formatMetricText('round_to_par', latest.toPar)}.${bandSummary}`;
 
   return (
     <figure data-slot="round-strip" className={cn('m-0 flex flex-col gap-2', className)}>
@@ -113,6 +137,23 @@ export function RoundStrip({
         role={linked ? 'group' : 'img'}
         aria-label={summary}
       >
+        {/* Usual range: shaded first so the par line, bars and average sit on top of it */}
+        {bandBox && band ? (
+          <div
+            aria-hidden="true"
+            data-slot="round-strip-band"
+            className="pointer-events-none absolute inset-x-0"
+            style={{ top: `${bandBox.top}%`, height: `${bandBox.height}%` }}
+          >
+            <div className="absolute inset-y-0 left-0 right-8 border-y border-border-subtle bg-surface" />
+            {band.label ? (
+              <span className="absolute right-0 top-0 w-8 text-right font-fw-sans text-caption leading-tight text-text-secondary">
+                {band.label}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+
         {/* Par line */}
         <div
           aria-hidden="true"

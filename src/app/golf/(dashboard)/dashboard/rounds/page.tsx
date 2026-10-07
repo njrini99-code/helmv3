@@ -14,6 +14,8 @@ import {
   FairwayRoundsLibrary,
   type RoundLibraryRound as FairwayRoundLibraryRound,
 } from '@/components/fairway/pages/rounds/FairwayRoundsLibrary';
+// REDESIGN-SCRATCH (docs/redesign/rounds): temporary direction switch, removed at Step 7.
+import { RedesignDirection, type RedesignHole } from '@/components/fairway/pages/rounds/redesign-rounds';
 
 export const metadata: Metadata = {
   title: 'Rounds',
@@ -31,7 +33,12 @@ interface RoundWithPlayer extends GolfRound {
   } | null;
 }
 
-export default async function RoundsPage() {
+export default async function RoundsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ __redesign?: string }>;
+}) {
+  const redesign = (await searchParams)?.__redesign?.toUpperCase();
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
 
@@ -324,6 +331,31 @@ export default async function RoundsPage() {
   // Reuses the SAME server queries + roundStats computed above verbatim —
   // this is a re-skin only. Renders in its own `.fairway-ds` scope on
   // bg-canvas.
+  // REDESIGN-SCRATCH: per-hole scores for the wildcard direction (C) only.
+  let redesignHoles: RedesignHole[] = [];
+  if (redesign === 'C' && rounds.length > 0) {
+    const { data } = await supabase
+      .from('golf_holes')
+      .select('round_id, hole_number, par, score')
+      .in('round_id', rounds.map((r) => r.id).slice(0, 60));
+    redesignHoles = (data ?? []) as RedesignHole[];
+  }
+  if (redesign === 'A' || redesign === 'B' || redesign === 'C') {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <RedesignDirection
+          direction={redesign}
+          rounds={rounds.map((r) => ({ ...r, countable: countableIds.has(r.id) })) as unknown as FairwayRoundLibraryRound[]}
+          inProgressRounds={inProgressRounds as unknown as FairwayRoundLibraryRound[]}
+          userRole={userRole as 'coach' | 'player'}
+          playerId={player?.id}
+          stats={roundStats}
+          holes={redesignHoles}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <FairwayRoundsLibrary
