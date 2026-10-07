@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, ChevronLeft, MapPin, TriangleAlert, Users, X } from 'lucide-react';
+import { Check, MapPin, TriangleAlert, Users, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChQFormData, ChQFormRoundCourse } from '../../data/qualifiers';
@@ -10,6 +10,7 @@ import { Checkbox } from '../../ui/Checkbox';
 import { EmptyState } from '../../ui/States';
 import { InlineNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
+import { BackLink } from '../../ui/Section';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { normalise, useAction } from '../../lib/use-action';
 import { chTrail } from '../../lib/track';
@@ -19,6 +20,7 @@ import { PhoneTop, usePhoneTabsHidden } from '../../shell/phone-chrome';
 import { PhoneTextAction } from '../../ui/PhoneBar';
 import { FIELD_ORDER, plural, validateForm, type ChQField, type ChQFormValues, type ChQProblem } from './model';
 import { CoursePicker, type ChQPickedCourse } from './CoursePicker';
+import { isPlainClick } from './return-state';
 import { LIVE_WRITES, type ChQEditPlan, type ChQWrites } from './writes';
 import '../../styles/qualifiers.css';
 
@@ -187,7 +189,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
   });
 
   return (
-    <main className="ch-qf ch-qf--form">
+    <main className="ch-qf ch-qf--form" data-canopy="">
       {phone && (
         <PhoneTop
           title={editing ? 'Edit qualifier' : 'New qualifier'}
@@ -199,12 +201,19 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
           }
         />
       )}
-      <div className="ch-qf-back">
-        <Button size="sm" variant="ghost" leftIcon={ChevronLeft} onClick={cancel}>
-          {editing ? 'Qualifier' : 'Qualifiers'}
-        </Button>
+      {/* The way back is Cancel's: with unsaved changes it asks first (CH-09502); otherwise it is the link, so a new tab still works. */}
+      <div
+        className="ch-qf-back"
+        onClickCapture={(e) => {
+          if (dirty && isPlainClick(e)) {
+            e.preventDefault();
+            setLeaving(true);
+          }
+        }}
+      >
+        <BackLink href={doneHref}>{editing ? 'Qualifier' : 'Qualifiers'}</BackLink>
       </div>
-      <header className="ch-qf-head">
+      <header className="ch-qf-head" data-canopy-head="">
         <div>
           <span className="ch-qf-eyebrow">{editing ? 'Edit qualifier' : 'New qualifier'}</span>
           <h1>{editing ? data.name : 'Create a qualifier'}</h1>

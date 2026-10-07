@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, ChevronLeft, Flag, ListChecks, Lock, Pencil, UserMinus, UserPlus, Users } from 'lucide-react';
+import { Check, Flag, ListChecks, Lock, Pencil, UserMinus, UserPlus, Users } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChQCandidate, ChQSelectionData } from '../../data/qualifiers';
@@ -10,6 +10,7 @@ import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
+import { BackLink } from '../../ui/Section';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useToast } from '../../ui/Toast';
 import { normalise, useAction, type ServerResult } from '../../lib/use-action';
@@ -213,14 +214,12 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   }
 
   return (
-    <main className="ch-qf ch-qfs">
+    <main className="ch-qf ch-qfs" data-canopy="">
       {phone && <PhoneTop title="Selections" back={{ label: 'Qualifier', onBack: back.onBack }} />}
       <div className="ch-qf-back" onClickCapture={back.onClickCapture}>
-        <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={detailHref}>
-          Qualifier
-        </Button>
+        <BackLink href={detailHref}>Qualifier</BackLink>
       </div>
-      <header className="ch-qf-head">
+      <header className="ch-qf-head" data-canopy-head="">
         <div>
           <span className="ch-qf-eyebrow">Manage selections</span>
           <h1>{data.name}</h1>

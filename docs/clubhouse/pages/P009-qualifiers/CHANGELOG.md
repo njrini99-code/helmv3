@@ -1,5 +1,45 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-07 — The Ledger: flush sections, sub-screens on the framed head
+
+On desktop the Qualifiers pages sit on the ivory canvas instead of in cards
+(owner: "flush, not so card heavy"). Phone layouts are unchanged.
+
+- **List:** the live qualifier leaves its card and sits on the canvas beside its
+  green leaders board, which stays. Its name is in the heavy sans and turns
+  green on hover. Active and Concluded take a section heading over an engraved
+  rule, and a row's hover tint reaches past the section's edge so its text stays
+  on it. The head's eyebrow is engraved and its counts no longer gap, and the
+  double rule under the head is one. On a narrow canvas the board moves under
+  the qualifier instead of squeezing its name and dates. A player's row keeps
+  its link at the right of the first line, with their standing under the row.
+- **A qualifier, the form and Manage selections** take the framed page head
+  (`data-canopy`, `data-canopy-head`): the shared `BackLink` above it, an
+  engraved eyebrow, the heavy sans title, the sentence and the actions. A
+  qualifier's status in its eyebrow is an engraved tag. The form's way back is a
+  link now; with unsaved changes it still asks first (CH-09502).
+- **Sections:** the leaderboard, round-by-round, Selections, Course per round,
+  Scoring rules, the form's fieldsets and Manage selections' lists lose their
+  cards: a heading over an engraved rule, the content flush. The two tables are
+  flush, with a seam under each row and no header band, and round-by-round
+  scrolls sideways when it is wider than its column. The facts lose the rule
+  above them; the head's rule serves. A coach's pick no longer stretches its
+  avatar and Pick badge across the row (desktop; the phone still does).
+- **Kept their material:** the green leaders board, an opened row's scorecard
+  tray, the form's fields, the one-round check and the squad readout, the steps
+  strip, the notes and the status chips.
+- **Loading skeletons:** `QualifierDetailSkeleton`, `QualifierFormSkeleton` and
+  `QualifierSelectionSkeleton` take the same data attributes and hold the framed
+  head line by line; their sections are flat, a heading placeholder over the
+  rule. The list's head holds 170.6px.
+
+  Measured in WebKit through `?state=loading` at 1440, 1300 and 1100: the heads
+  of the list, a qualifier, new and edit don't move, nor do the tools, facts and
+  form under them. Manage selections has no loading preview; its markup, drawn
+  in place of the loaded page, holds through the lists' top at 1440 and 1300 (at
+  1100 the note's sentence wraps, which the skeleton can't know). On the phone
+  every skeleton bar is where it was.
+
 ## 2026-10-07 — Desktop facts drawn on the stat line; panel titles serif; the qualifier loads in place
 
 - **Desktop facts:** the six facts leave their card and sit on the stat line,

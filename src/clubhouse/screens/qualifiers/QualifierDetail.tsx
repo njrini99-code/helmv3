@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, ChevronLeft, ChevronUp, Lock, LockOpen, Flag, Pencil, Users } from 'lucide-react';
+import { ChevronDown, ChevronUp, Lock, LockOpen, Flag, Pencil, Users } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChQDetailCore, ChQDetailSecondary } from '../../data/qualifiers';
@@ -13,6 +13,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
 import { ScoreMark } from '../../ui/ScoreMark';
 import { ScrollRegion } from '../../ui/ScrollRegion';
+import { BackLink } from '../../ui/Section';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { normalise, useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
@@ -160,13 +161,11 @@ export function QualifierDetail({
 
   return (
     <SecondaryProvider value={shown.source}>
-      <main className="ch-qf ch-qf--detail">
+      <main className="ch-qf ch-qf--detail" data-canopy="">
         <div className="ch-qf-back" onClickCapture={back.onClickCapture}>
-          <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={LIST_HREF}>
-            Qualifiers
-          </Button>
+          <BackLink href={LIST_HREF}>Qualifiers</BackLink>
         </div>
-        <header className="ch-qf-head">
+        <header className="ch-qf-head" data-canopy-head="">
           <div>
             <span className="ch-qf-eyebrow">
               <StatusPill status={status} />

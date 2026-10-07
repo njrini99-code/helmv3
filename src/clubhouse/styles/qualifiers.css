@@ -1023,6 +1023,26 @@
   flex-direction: column;
   gap: 10px;
 }
+:is(.ch-qf-panel, .ch-qf-side, .ch-qf-fs).ch-qf-skel {
+  padding: 20px;
+}
+/* A line held at its loaded height, its placeholder inside (QualifiersSkeleton's Held). The framed head's heights are
+   in the Ledger block at the end. */
+.ch-qf-held {
+  display: flex;
+  align-items: center;
+  max-width: 100%;
+}
+.ch-qf-held--name {
+  height: 53px;
+}
+.ch-qf-held--lede {
+  width: 72ch;
+  height: 25px;
+}
+.ch-qf-held--lede > .ch-skel + .ch-skel {
+  display: none;
+}
 
 @container (max-width: 844px) {
   .ch-qf-body {
@@ -1669,11 +1689,297 @@
   border-top-color: rgb(159 224 182 / 0.45);
 }
 
-/* Loading in the framed page head (desktop): the head holds the loaded head's measured height (WebKit 1440 and 1100,
-   2026-10-07: 171px with the eyebrow, the sans title and the line), so the tools and the hero don't move on load. */
+/* Loading in the framed page head (desktop): the list's head holds the loaded head's measured height (WebKit 1440 and
+   1100, 2026-10-07: 170.6px with the engraved eyebrow, the sans title and the line, and no border under the rule), so
+   the tools and the hero don't move on load. A qualifier's, the form's and Manage selections' hold line by line. */
 @media (min-width: 821px) {
-  .ch-qf[aria-busy='true'][data-canopy] > .ch-qf-head {
+  .ch-qf--list[aria-busy='true'][data-canopy] > .ch-qf-head {
     box-sizing: border-box;
-    min-height: 171px;
+    min-height: 170.62px;
+  }
+}
+
+/* The Ledger (owner, 2026-10-07: "flush, not so card heavy"; sub-screens take the page head). On desktop the live
+   qualifier, a qualifier's panels, the form's fieldsets and Manage selections' lists sit on the canvas: a heading over
+   an engraved rule, the content flush to the section's edge, rows divided by seams. Real objects keep their material:
+   the green leaders board, an opened row's scorecards, the form's fields and squad readout, the steps strip, the notes
+   and the status chips. */
+@media (min-width: 821px) {
+  /* The page head draws the one rule under it; its eyebrow is engraved, a status in it an engraved tag. */
+  .ch-qf[data-canopy] .ch-qf-head {
+    border-bottom: 0;
+  }
+  .ch-qf[data-canopy] .ch-qf-eyebrow {
+    gap: 10px;
+    font: 500 11px/1.3 var(--ch-font-sans);
+    letter-spacing: 0.14em;
+    color: var(--ch-ledger-eyebrow);
+  }
+  .ch-qf--list[data-canopy] .ch-qf-eyebrow {
+    display: block;
+  }
+  .ch-qf[data-canopy] .ch-qf-eyebrow .ch-badge {
+    background: none;
+    box-shadow: 0 0 0 1px var(--ch-ledger-rule);
+    letter-spacing: normal;
+  }
+  /* A sub-screen's way back sits just over the head's double hairline. */
+  .ch-qf[data-canopy] > :is(.ch-qf-back, .ch-qf-held--back) {
+    margin: -8px 0 -6px;
+  }
+
+  /* The list: the live qualifier on the canvas beside its green board, then Active and Concluded as ruled ledgers. */
+  .ch-qf--list[data-canopy] .ch-qf-hero {
+    gap: 48px;
+    padding: 12px 0 8px;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-qf--list[data-canopy] .ch-qf-hero h2 {
+    font: var(--ch-type-serif-l);
+    transition: color var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-qf--list[data-canopy] .ch-qf-hero:hover h2 {
+    color: var(--ch-green-700);
+  }
+  /* A narrow canvas puts the board under the qualifier rather than squeezing the name and dates beside it. */
+  @container (max-width: 760px) {
+    .ch-qf--list[data-canopy] .ch-qf-hero {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 24px;
+    }
+  }
+  .ch-qf--list[data-canopy] .ch-qf-sec {
+    gap: 0;
+    margin-top: 12px;
+  }
+  .ch-qf--list[data-canopy] .ch-qf-sec > h2 {
+    padding: 0 0 12px;
+    font: 600 19px/1.2 var(--ch-font-sans);
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger {
+    margin-inline: -12px;
+    border-top: 0;
+    border-bottom: 0;
+  }
+  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card {
+    position: relative;
+    padding: 18px 12px;
+    border-radius: var(--ch-radius-md);
+  }
+  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card + .ch-qf-card {
+    box-shadow: none;
+  }
+  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card + .ch-qf-card::before {
+    position: absolute;
+    top: 0;
+    right: 12px;
+    left: 12px;
+    height: 1px;
+    background: var(--ch-ledger-rule-soft);
+    content: '';
+    pointer-events: none;
+  }
+  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card:hover {
+    background: var(--ch-ledger-row-hover);
+  }
+  /* A player's row keeps its link at the right of the first line; their standing runs under the row. */
+  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-cta {
+    grid-area: 1 / 3;
+  }
+
+  /* A qualifier: the facts on the stat line under the head's rule, then the two columns of sections. */
+  .ch-qf[data-canopy] .ch-qf-facts {
+    padding: 20px 0;
+    border-top: 0;
+    border-bottom: 0;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-qf[data-canopy] .ch-qf-facts > div:first-child {
+    padding-left: 0;
+  }
+  .ch-qf[data-canopy] .ch-qf-facts > div + div {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-qf[data-canopy] .ch-qf-body {
+    gap: 40px 44px;
+    margin-top: 12px;
+  }
+  .ch-qf[data-canopy] .ch-qf-col {
+    gap: 40px;
+  }
+  .ch-qf[data-canopy] :is(.ch-qf-panel, .ch-qf-side) {
+    overflow: visible;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-qf[data-canopy] .ch-qf-side > *:not(.ch-qf-panel__head) {
+    margin-right: 0;
+    margin-left: 0;
+  }
+  .ch-qf[data-canopy] .ch-qf-panel__head {
+    align-items: flex-end;
+    margin-bottom: 12px;
+    padding: 0 0 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-qf[data-canopy] .ch-qf-panel > :is(.ch-empty, .ch-notice) {
+    margin: 0;
+  }
+  .ch-qf[data-canopy] .ch-qf-panel__head + .ch-qf-why {
+    margin-top: 0;
+  }
+  .ch-qf[data-canopy] .ch-qf-list li {
+    border-bottom-color: var(--ch-ledger-rule-soft);
+  }
+
+  /* The leaderboard and round-by-round: flush tables. A row's tint reaches 12px past the section's edge, so its text
+     stays on the edge; a seam under each row, the header's too. An opened row and its scorecards keep their tray. */
+  .ch-qf[data-canopy] .ch-qf-table {
+    margin-inline: -12px;
+    padding: 0;
+  }
+  .ch-qf[data-canopy] .ch-scroll.ch-qf-table {
+    overflow-x: auto;
+  }
+  .ch-qf[data-canopy] .ch-qf-row {
+    position: relative;
+    border-bottom: 0;
+    border-radius: var(--ch-radius-md);
+  }
+  .ch-qf[data-canopy] .ch-qf-row::after {
+    position: absolute;
+    right: 12px;
+    bottom: 0;
+    left: 12px;
+    height: 1px;
+    background: var(--ch-ledger-rule-soft);
+    content: '';
+    pointer-events: none;
+  }
+  .ch-qf[data-canopy] .ch-qf-row.is-open::after {
+    content: none;
+  }
+  .ch-qf[data-canopy] .ch-qf-row--head {
+    margin-bottom: 0;
+    background: none;
+  }
+  .ch-qf[data-canopy] .ch-qf-rowbtn:hover:not(.is-open) {
+    background: var(--ch-ledger-row-hover);
+  }
+  .ch-qf[data-canopy] .ch-qf-cap {
+    padding: 14px 0 0;
+    border-top: 0;
+  }
+
+  /* The form: each fieldset a section on the canvas; the fields, the one-round check and the squad readout keep
+     their material. The commit sits under a seam at the foot of the sticky column. */
+  .ch-qf--form[data-canopy] .ch-qf-form {
+    gap: 40px 44px;
+  }
+  .ch-qf--form[data-canopy] .ch-qf-fs {
+    gap: 16px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-qf--form[data-canopy] .ch-qf-fs__h {
+    margin-bottom: 2px;
+    padding: 0 0 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-qf--form[data-canopy] .ch-qf-fs__h h2 {
+    font: 600 19px/1.2 var(--ch-font-sans);
+  }
+  .ch-qf--form[data-canopy] .ch-qf-sticky {
+    gap: 24px;
+  }
+  .ch-qf--form[data-canopy] .ch-qf-formact {
+    margin-top: 0;
+    padding-top: 20px;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-qf--form[data-canopy] .ch-qf-players {
+    margin-inline: -8px;
+  }
+  .ch-qf--form[data-canopy] .ch-qf-prow:hover {
+    background: var(--ch-ledger-row-hover);
+  }
+  .ch-qf--form[data-canopy] .ch-qf-rc {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+
+  /* Manage selections: the lists flush under their headings, the picks divided by seams. */
+  .ch-qfs[data-canopy] .ch-qf-panel > .ch-qf-list {
+    padding: 0;
+  }
+  .ch-qfs[data-canopy] .ch-qfs-pick {
+    border-bottom-color: var(--ch-ledger-rule-soft);
+  }
+  /* A pick's name block grows; the rule for it above also caught the avatar and the Pick badge and stretched them. */
+  .ch-qfs[data-canopy] .ch-qfs-pick__who > .ch-avatar {
+    display: inline-grid;
+    flex: none;
+  }
+  .ch-qfs[data-canopy] .ch-qfs-pick__who > .ch-badge {
+    display: inline-flex;
+    flex: none;
+    flex-direction: row;
+  }
+
+  /* Loading: the sub-screens' heads held line by line at the loaded lines' heights (WebKit 1440, 2026-10-07: the way
+     back's line 24.8px, the eyebrow 14.3, the title 47.52, a sentence 24.8 a line; a qualifier's description runs two
+     lines at the head's 600px measure, so its actions sit beside it as loaded; Manage selections' one-line note 42.8).
+     The bar sizes are the component's inline ones, so the way back's takes !important, as the phone's overrides above.
+     The sections are flat too: a heading's placeholder over the engraved rule, the rows flush; the list's cards are its
+     ledger rows. */
+  .ch-qf[aria-busy='true'][data-canopy] > :is(.ch-qf-back, .ch-qf-held--back) > .ch-skel {
+    height: 24.8px !important;
+  }
+  .ch-qf[data-canopy] .ch-qf-held--eyebrow {
+    height: 14.3px;
+  }
+  .ch-qf[data-canopy] :is(.ch-qf-held--title, .ch-qf-held--name) {
+    height: 47.52px;
+  }
+  .ch-qf[data-canopy] .ch-qf-held--line {
+    height: 24.8px;
+  }
+  .ch-qf[data-canopy] .ch-qf-held--lede {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-around;
+    width: 600px;
+    height: 49.6px;
+  }
+  .ch-qf[data-canopy] .ch-qf-held--lede > .ch-skel + .ch-skel {
+    display: block;
+  }
+  .ch-qfs[aria-busy='true'][data-canopy] > .ch-qf-note {
+    box-sizing: border-box;
+    min-height: 42.8px;
+  }
+  .ch-qf[aria-busy='true'][data-canopy] :is(.ch-qf-panel, .ch-qf-side, .ch-qf-fs).ch-qf-skel {
+    background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 29px / 100% 1px no-repeat;
+  }
+  .ch-qf[aria-busy='true'][data-canopy] .ch-qf-skel > .ch-skel:first-child {
+    margin-bottom: 16px;
+  }
+  .ch-qf--list[aria-busy='true'][data-canopy] .ch-qf-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    margin-top: 12px;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+  }
+  .ch-qf--list[aria-busy='true'][data-canopy] .ch-qf-card {
+    padding: 18px 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
   }
 }
