@@ -45,6 +45,7 @@ vi.mock('@/app/golf/actions/player-feedback', () => ({
 
 vi.mock('@/app/golf/actions/v3/goals', () => ({
   createGoal: vi.fn(),
+  suggestGoalTarget: vi.fn(),
 }));
 
 // Kept as lightweight stand-ins (see file header) — everything else in this

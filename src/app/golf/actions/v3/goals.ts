@@ -28,7 +28,11 @@ import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
 import type { PgaOmissionReason } from '@/lib/coachhelm/v3/standing/types';
 import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
-import { computeTargetValue, isWorseThanAnchor } from '@/lib/coachhelm/v3/goals/suggestion-writer';
+import {
+  MIN_COHORT_N,
+  computeTargetValue,
+  isWorseThanAnchor,
+} from '@/lib/coachhelm/v3/goals/suggestion-writer';
 import {
   getMetricRenderConfig,
   type MetricRenderConfig,
@@ -308,9 +312,11 @@ export async function createGoal(input: CreateGoalInput): Promise<ActionResult> 
  * ----------------------------------------------------------------------------
  * The shared driver behind the create flow's auto-fill: given a metric, read
  * the player's LIVE standing and propose a target that aims halfway from their
- * current value to the Tour reference (computeTargetValue — the same midpoint
- * heuristic the engine's suggestion-writer uses, so manual + suggested goals
- * land on the same scale). Returns the baseline (current observed value) too,
+ * current value to their college/division cohort average (computeTargetValue,
+ * the same rule the engine's suggestion-writer uses, so manual + suggested
+ * goals land on the same scale). A player already at or past the cohort is
+ * aimed halfway to the Tour instead; the Tour is otherwise context only
+ * (owner decision, audit row 21). Returns the baseline (current observed value) too,
  * so the create flow can stamp `baseline_value` and the progress track has a
  * real starting tick from day one.
  *
@@ -332,8 +338,13 @@ export interface GoalTargetSuggestion {
   /** The player's current observed value on this metric → the goal baseline. */
   baseline: number | null;
   /** The (gender-anchored) Tour reference for this metric. Null when the
-   *  loader omitted it (`no_target_reason` says why). */
+   *  loader omitted it (`no_target_reason` says why). Context, not the anchor,
+   *  unless the player is already past their cohort. */
   pga_value: number | null;
+  /** College/division cohort average, when the cohort is big enough to count. */
+  cohort_value: number | null;
+  /** What `suggested_target` aims toward. */
+  anchor: 'cohort' | 'tour' | null;
   /** Midpoint-to-Tour suggested target, or null when no standing exists or
    *  no honest midpoint can be offered (see `no_target_reason`). */
   suggested_target: number | null;
@@ -365,6 +376,8 @@ async function suggestGoalTargetImpl(
     hasStanding: false,
     baseline: null,
     pga_value: null,
+    cohort_value: null,
+    anchor: null,
     suggested_target: null,
     no_target_reason: null,
   };
@@ -399,18 +412,42 @@ async function suggestGoalTargetImpl(
     const standing = await loadStandingForMetric(playerId, metricId);
     if (!standing) return { ...base, ok: true };
 
+    const cohortValue =
+      standing.level_avg != null &&
+      Number.isFinite(standing.level_avg) &&
+      (standing.level_n ?? 0) >= MIN_COHORT_N
+        ? standing.level_avg
+        : null;
+    const tourValue = standing.pga_omitted ? null : standing.pga_value;
+    const withStanding = {
+      ...base,
+      ok: true,
+      hasStanding: true,
+      baseline: standing.player_value,
+      pga_value: tourValue,
+      cohort_value: cohortValue,
+    };
+
+    // Anchor to the cohort when the player is behind it (audit row 21).
+    if (cohortValue != null && isWorseThanAnchor(standing.player_value, cohortValue, cfg.direction)) {
+      return {
+        ...withStanding,
+        anchor: 'cohort',
+        suggested_target: computeTargetValue({
+          playerValue: standing.player_value,
+          anchorValue: cohortValue,
+          metricId,
+        }),
+      };
+    }
+
     // The loader suppressed the Tour reference (women's row with no credible
     // anchor, or the approach-proximity basis mismatch — addendum A2). A
     // midpoint toward a number that is not comparable is not a target; return
     // the baseline alone and say why.
-    if (standing.pga_omitted) {
+    if (tourValue == null) {
       return {
-        ...base,
-        ok: true,
-        hasStanding: true,
-        baseline: standing.player_value,
-        pga_value: null,
-        suggested_target: null,
+        ...withStanding,
         no_target_reason: standing.pga_omitted_reason ?? 'no_womens_anchor',
       };
     }
@@ -418,27 +455,17 @@ async function suggestGoalTargetImpl(
     // Already at or past the anchor: the midpoint would sit on the wrong side
     // of the player's own number (a 22-ft player "aiming" for 26 ft). Offer no
     // auto-target; the modal asks for one to hold or extend.
-    if (!isWorseThanAnchor(standing.player_value, standing.pga_value, cfg.direction)) {
-      return {
-        ...base,
-        ok: true,
-        hasStanding: true,
-        baseline: standing.player_value,
-        pga_value: standing.pga_value,
-        suggested_target: null,
-        no_target_reason: 'already_ahead',
-      };
+    if (!isWorseThanAnchor(standing.player_value, tourValue, cfg.direction)) {
+      return { ...withStanding, no_target_reason: 'already_ahead' };
     }
 
+    // Past the cohort but behind the Tour: the next step is toward the Tour.
     return {
-      ...base,
-      ok: true,
-      hasStanding: true,
-      baseline: standing.player_value,
-      pga_value: standing.pga_value,
+      ...withStanding,
+      anchor: 'tour',
       suggested_target: computeTargetValue({
         playerValue: standing.player_value,
-        pgaValue: standing.pga_value,
+        anchorValue: tourValue,
         metricId,
       }),
     };
