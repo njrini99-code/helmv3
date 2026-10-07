@@ -1,5 +1,9 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-07 — Scoring line mean label off the line
+
+The phone scoring line (shared with Team stats) places its "Mean" label in a corner clear of the line, with a halo.
+
 ## 2026-10-07 — Loss amber and miss map contrast
 
 The loss amber is darker everywhere (4.5:1 on the darker page tone and in wells), and the miss map's counts hold 5:1 on

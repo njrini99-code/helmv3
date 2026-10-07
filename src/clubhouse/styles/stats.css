@@ -2062,6 +2062,11 @@ a.ch-lg__r:focus-visible {
     font: 500 10px/1 var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
     fill: var(--ch-text-tertiary);
+    /* A halo in the panel's ivory, should the line ever pass close by. */
+    paint-order: stroke;
+    stroke: var(--ch-ivory-25);
+    stroke-width: 3px;
+    stroke-linejoin: round;
   }
   .ch-stm-legs,
   .ch-stm-putt {

@@ -199,10 +199,37 @@ export function ScoreLine({ values, from, to, label }: { values: Array<number | 
   const y = (v: number) => pad + ((v - lo) / (hi - lo)) * (H - pad * 2 - 12);
   const d = pts.map((p, k) => `${k ? 'L' : 'M'}${x(p.i).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
   const last = pts[pts.length - 1]!;
+  // The mean's label goes in the corner the line keeps clear of (right or left end, above or below the dashed line),
+  // so it never sits on the data; the first clear corner wins, the right above first.
+  const lineAt = (px: number) => {
+    for (let k = 1; k < pts.length; k++) {
+      const a = pts[k - 1]!;
+      const b = pts[k]!;
+      if (px >= x(a.i) && px <= x(b.i)) return y(a.v) + ((px - x(a.i)) / Math.max(1e-6, x(b.i) - x(a.i))) * (y(b.v) - y(a.v));
+    }
+    return px < x(pts[0]!.i) ? y(pts[0]!.v) : y(last.v);
+  };
+  const labelW = 64;
+  const corners = [
+    { end: true, above: true },
+    { end: true, above: false },
+    { end: false, above: true },
+    { end: false, above: false },
+  ].map((c) => {
+    const ty = c.above ? y(mean) - 5 : y(mean) + 14;
+    const x0 = c.end ? W - pad - labelW : pad;
+    let clear = Infinity;
+    for (let px = x0; px <= x0 + labelW; px += 4) {
+      const ly = lineAt(px);
+      clear = Math.min(clear, ly < ty - 11 ? ty - 11 - ly : ly > ty + 3 ? ly - ty - 3 : 0);
+    }
+    return { ...c, ty, clear };
+  });
+  const spot = corners.find((c) => c.clear >= 4) ?? [...corners].sort((a, b) => b.clear - a.clear)[0]!;
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="ch-stm-chart" role="img" aria-label={label}>
       <line x1={pad} x2={W - pad} y1={y(mean)} y2={y(mean)} className="ch-stm-chart__mean" />
-      <text x={W - pad} y={y(mean) - 5} textAnchor="end" className="ch-stm-chart__t">
+      <text x={spot.end ? W - pad : pad} y={spot.ty} textAnchor={spot.end ? 'end' : 'start'} className="ch-stm-chart__t">
         Mean {formatFixed(mean)}
       </text>
       <path d={d} className="ch-stm-chart__line" />

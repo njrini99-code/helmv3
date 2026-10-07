@@ -1,5 +1,10 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-07 — Scoring trend mean label off the line
+
+On the phone, the scoring trend's "Mean" label sat on the line. It now goes in the first corner the line keeps clear of
+(right end above, right below, left above, left below), with an ivory halo as a backstop.
+
 ## 2026-10-07 — Phone figures on the stat line
 
 On the phone, the four team figures were bare numbers in one white sheet. They now sit on the stat line, as on the
