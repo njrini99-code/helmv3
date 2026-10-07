@@ -12,9 +12,8 @@
   margin-bottom: 32px;
 }
 .ch-set-head h1 {
-  font: 600 40px/1.08 var(--ch-font-sans);
-  letter-spacing: -0.026em;
-  font-variation-settings: 'wdth' 96;
+  font: 400 52px/1.02 var(--ch-font-serif);
+  letter-spacing: -0.01em;
   color: var(--ch-text-primary);
 }
 .ch-set-head p {

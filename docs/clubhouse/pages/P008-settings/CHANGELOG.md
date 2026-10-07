@@ -1,5 +1,9 @@
 # P008 — Settings: changelog
 
+## 2026-10-06 — Serif title
+
+The Settings title is set in the display serif, as on every Clubhouse page.
+
 ## 2026-10-06 — Smooth scroll and materials
 
 Returning to the top on a section change lands instantly through the canvas scroller, so the shared wheel easing never animates a page switch.

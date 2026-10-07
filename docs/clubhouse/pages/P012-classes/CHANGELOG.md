@@ -1,5 +1,9 @@
 # P012 — Classes: changelog
 
+## 2026-10-06 — Solid semester banner, serif title
+
+The semester banner is solid field green with no large gradient (which banded) and no deep cast shadow; its type takes the warm ivory used on green. The Classes title is set in the display serif.
+
 ## 2026-10-06 — Smooth scroll and materials
 
 Jumping to a class eases through the shared smooth scroll helper and stays instant with reduced motion.
