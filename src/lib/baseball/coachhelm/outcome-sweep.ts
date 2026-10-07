@@ -12,8 +12,8 @@ import 'server-only';
 //
 //   1. recordActionOutcomes (src/app/baseball/actions/coachhelm-actions.ts) —
 //      the manual / capability-gated server action (RLS client).
-//   2. The Inngest scheduled sweep (src/lib/inngest/functions.ts) — a daily
-//      durable job over every active team (service-role admin client).
+//   2. A scheduled sweep over every active team (service-role admin client) —
+//      NOT YET SCHEDULED: no cron route invokes it today.
 //   3. The postgame finalize path (src/app/baseball/actions/postgame.ts) — after
 //      a game is reviewed, immediately re-measure any open action whose target
 //      metric the just-played game could have moved (RLS client, scoped to the
@@ -53,8 +53,8 @@ import { logServerError } from '@/lib/server-error-logger';
 
 // A minimally-typed client so the sweep runs against either the RLS server
 // client or the service-role admin client (both expose `.from`). RLS still
-// applies to the RLS client; the admin client is only ever used by the trusted
-// Inngest cron, which scopes every query by team_id itself.
+// applies to the RLS client; the admin client is only ever used by a trusted
+// cron, which scopes every query by team_id itself.
 export type OutcomeSweepClient = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   from: (table: string) => any;

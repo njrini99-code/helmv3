@@ -20,7 +20,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  */
 const mocks = vi.hoisted(() => ({
   init: vi.fn(),
-  reportInngestCredentialFault: vi.fn(async (_trigger: string) => true),
   recordDeployMarker: vi.fn(async () => {}),
   registerProcessErrorHandlers: vi.fn(),
 }));
@@ -32,9 +31,6 @@ vi.mock('@sentry/nextjs', () => ({
   captureRequestError: vi.fn(),
 }));
 vi.mock('@supabase/supabase-js/tracing', () => ({}));
-vi.mock('@/lib/inngest/credentials', () => ({
-  reportInngestCredentialFault: mocks.reportInngestCredentialFault,
-}));
 vi.mock('@/lib/admin/deploy-marker', () => ({ recordDeployMarker: mocks.recordDeployMarker }));
 vi.mock('@/lib/observability/register-process-error-handlers', () => ({
   registerProcessErrorHandlers: mocks.registerProcessErrorHandlers,
@@ -65,8 +61,6 @@ describe('instrumentation fingerprinting (server) — Supabase legacy-key groupi
   beforeEach(() => {
     consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
     mocks.init.mockClear();
-    mocks.reportInngestCredentialFault.mockReset();
-    mocks.reportInngestCredentialFault.mockImplementation(async () => true);
     mocks.registerProcessErrorHandlers.mockClear();
   });
   afterEach(() => {

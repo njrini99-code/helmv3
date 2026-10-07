@@ -347,4 +347,4 @@ A key that nobody owns is *said* to be unowned. Leaving it off every list
 would be indistinguishable from an oversight, which is the whole failure this
 reconciliation removes.
 
-- `integrations` — **platform**. Inngest job execution. Infrastructure that carries other features' work, not a product feature with behaviour of its own to document.
+- `integrations` — **platform**. Third-party provider faults (the catch-all area for external-service credential and billing faults). Infrastructure that carries other features' work, not a product feature with behaviour of its own to document.

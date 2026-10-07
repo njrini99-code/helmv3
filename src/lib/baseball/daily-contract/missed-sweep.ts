@@ -60,7 +60,7 @@ import { logServerError } from '@/lib/server-error-logger';
 export { isoMinusDays } from '@/lib/baseball/daily-contract/contract-day';
 
 // A minimally-typed client so the sweep runs against the service-role admin client
-// (the trusted Inngest cron) the same way outcome-sweep.ts does. Every query is
+// (a trusted cron) the same way outcome-sweep.ts does. Every query is
 // scoped by team_id; the admin client is the only RLS-bypass path, reserved here
 // for a system-provenance roll-over.
 export type MissedSweepClient = {

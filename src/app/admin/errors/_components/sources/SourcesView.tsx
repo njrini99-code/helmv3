@@ -54,7 +54,7 @@ export const dynamic = 'force-dynamic';
  * A blind source is DANGER, not neutral.
  *
  * The one tone mapping here worth arguing about, so: elsewhere in the Bridge
- * "not configured" is neutral, because declining to wire up Inngest is a config
+ * "not configured" is neutral, because declining to wire up an optional integration is a config
  * decision rather than a fault. Here it is not. The claim this tab makes is
  * "these are the problems across your three sources"; a source that could not
  * be read makes that claim false, and rendering it as a calm grey chip is

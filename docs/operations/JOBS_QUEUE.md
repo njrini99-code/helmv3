@@ -10,7 +10,7 @@ stood. `HELM_QUEUE_ENABLED` still defaults to `false` (see `.env.example`) —
 flipping it is a separate, explicit owner step, independent of the migration.
 
 Until an owner flips `HELM_QUEUE_ENABLED`, every producer call in this repo
-(`enqueueJob`) still fails open to the exact inline/Inngest path that existed
+(`enqueueJob`) still fails open to the exact inline path that existed
 before this PR. Nothing in application behavior changes until that flag is
 set.
 
@@ -41,7 +41,7 @@ const result = await enqueueJob('coachhelm_analysis', { roundId, playerId }, {
 });
 if (!result.queued) {
   // result.reason is 'queue_disabled' | 'facade_missing' | 'enqueue_failed'
-  // — run your existing inline/Inngest fallback here. Never treat this as
+  // — run your existing inline fallback here. Never treat this as
   // an error condition; it is the expected default today.
 }
 ```
@@ -78,7 +78,7 @@ not reusable once archived/deleted).
 ## Disabling
 
 Set `HELM_QUEUE_ENABLED=false` (or unset it) — every producer immediately
-falls back to inline/Inngest on the next deploy; no migration rollback
+falls back to the inline path on the next deploy; no migration rollback
 needed. In-flight queued messages are simply not consumed until re-enabled
 (the consumer route itself has no flag gate, since reading an empty/off
 queue is a harmless no-op — but see "pg_cron alternative" below for the one
@@ -107,24 +107,21 @@ count, plus the dead-letter list with requeue. Renders an explicit empty
 state ("Queue not active") when the facade migration is not applied or the
 queue has never been used, rather than a blank or erroring section.
 
-## Inngest and the safety-net cron — NOT retired by this PR
+## Inngest (removed) and the safety-net cron — NOT retired
 
-This PR does not remove Inngest code or the 30-minute
-`coachhelm-safety-net` cron. The queue is checked FIRST (when
-`HELM_QUEUE_ENABLED=true`), Inngest second (when configured), the exact
-direct/inline call last — same fallback chain that existed before, with one
-more link added at the front. Retirement plan, in order:
+Inngest was removed 2026-10-06 (the `/api/inngest` handler, `src/lib/inngest/**`,
+the round-submit send branch and the `INNGEST_*` env vars). The round-submit
+fallback chain is now: the queue FIRST (when `HELM_QUEUE_ENABLED=true`), then
+the exact direct `postRoundTrigger` call. The 30-minute `coachhelm-safety-net`
+cron is unchanged and still the backstop. Retirement plan for the cron, in
+order:
 
 1. Apply the pgmq migration, flip `HELM_QUEUE_ENABLED=true`.
 2. Watch `helm_jobs_depth()` (Bridge panel above) for at least 7 consecutive
    days: dead-letter count should stay at/near zero and queue depth should
    drain promptly.
-3. Remove the Inngest send call in `src/app/golf/actions/golf.ts` (the
-   branch marked `DEPRECATED PATH` in this PR) and the corresponding
-   Inngest function in `src/lib/inngest/functions.ts`. Delete the
-   `INNGEST_EVENT_KEY`/`INNGEST_SIGNING_KEY` placeholders.
-4. Retire `coachhelm-safety-net` via `config/routines.yml` and
-   `vercel.json` once (3) has shipped and the queue has covered its role
+3. Retire `coachhelm-safety-net` via `config/routines.yml` and
+   `vercel.json` once (2) has shipped and the queue has covered its role
    for another full week — the safety net stays until the queue has proven
    it does not need a backstop, not until it merely exists.
 

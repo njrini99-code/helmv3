@@ -28,7 +28,6 @@ function jobsTab(overrides: Partial<JobsTab> = {}): JobsTab {
     unreadableJobs: [],
     integrity: [],
     logHealth: { adminEvents: 1, errorLogs: 1, jobLogs: 1 },
-    inngest: { status: 'activated', faultCode: null, faultLastSeenAt: null },
     selfHeal: [],
     selfHealStatus: 'ok',
     ...overrides,

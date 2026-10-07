@@ -1,7 +1,7 @@
 /**
  * Bridge Premium Phase 3 — Execution Waterfall for `/admin/jobs`.
  *
- * One row per registered cron/Inngest job; each recorded run renders as a
+ * One row per registered cron job; each recorded run renders as a
  * positioned bar (start offset + real duration) against one shared timeline,
  * so a 5-minute cron and a weekly one land on an axis an operator can compare
  * by eye. The existing `CronBoardTable`/`RecentRunsStrip` on this page show

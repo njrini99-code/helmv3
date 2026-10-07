@@ -6,8 +6,7 @@
  *
  * Designed for `after(() => postRoundTrigger(admin, args))` from the round
  * submit server action — see audit Finding 2 / A-NEW-6 — and reused
- * verbatim by the Inngest function, the pgmq consumer and the safety-net
- * cron, so every path stamps the round the same way.
+ * verbatim by the pgmq consumer and the safety-net cron, so every path stamps the round the same way.
  *
  * Closes:
  *   - the HTTP self-call hop (no internal `fetch` to `/api/coachhelm/...`)

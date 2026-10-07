@@ -215,7 +215,7 @@
   achieving nothing, `startCronCheckIn`/`finishCronCheckIn`, all fail-open)
   wired into `recordJobRun` (Vercel crons, `src/lib/admin/job-log.ts`, all
   3 exit paths — success, resolved 4xx/5xx Response, thrown error),
-  `withBridgeLogging` (Inngest, `src/lib/inngest/functions.ts`), and a new
+  `withBridgeLogging` (Inngest, the Inngest functions module, removed 2026-10-06), and a new
   dependency-injectable `scripts/lib/sentry-cron-checkin.mjs` for the
   launchd Repair script (`scripts/run-selfheal-repair.mjs`), which cannot
   import TS/`@/`-aliased modules. `src/lib/admin/cron-registry.ts` gained a
