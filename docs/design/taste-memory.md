@@ -1,0 +1,2 @@
+# Design taste memory (owner preferences, with context)
+- 2026-09-28 · GolfHelm settings redesign: owner chose Direction A (index of value-forward drill-in rows) over B (tabbed workbench) and C (scorecard "setup card", wildcard). Context: recommendation + blind critique both favoured A; C's changed-from-default marks were judged cryptic. No stated reason beyond taking the recommendation. Owner wants redesign PRs visual only: behaviour bugs found are reported, not fixed, unless asked.
