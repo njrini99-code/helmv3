@@ -1023,7 +1023,9 @@
   flex-direction: column;
   gap: 10px;
 }
-:is(.ch-qf-panel, .ch-qf-side, .ch-qf-fs).ch-qf-skel {
+.ch-qf-panel.ch-qf-skel,
+.ch-qf-side.ch-qf-skel,
+.ch-qf-fs.ch-qf-skel {
   padding: 20px;
 }
 /* A line held at its loaded height, its placeholder inside (QualifiersSkeleton's Held). The framed head's heights are
@@ -1149,7 +1151,8 @@
   align-items: center;
   gap: 10px;
 }
-.ch-qfs-pick__who > span:not(.ch-qf-list__slot) {
+/* The name block grows; the avatar and the Pick badge keep their size. */
+.ch-qfs-pick__who > span:not(.ch-qf-list__slot, .ch-avatar, .ch-badge) {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -1724,7 +1727,8 @@
     letter-spacing: normal;
   }
   /* A sub-screen's way back sits just over the head's double hairline. */
-  .ch-qf[data-canopy] > :is(.ch-qf-back, .ch-qf-held--back) {
+  .ch-qf[data-canopy] > .ch-qf-back,
+  .ch-qf[data-canopy] > .ch-qf-held--back {
     margin: -8px 0 -6px;
   }
 
@@ -1810,7 +1814,8 @@
   .ch-qf[data-canopy] .ch-qf-col {
     gap: 40px;
   }
-  .ch-qf[data-canopy] :is(.ch-qf-panel, .ch-qf-side) {
+  .ch-qf[data-canopy] .ch-qf-panel,
+  .ch-qf[data-canopy] .ch-qf-side {
     overflow: visible;
     padding: 0;
     border-radius: 0;
@@ -1827,7 +1832,8 @@
     padding: 0 0 12px;
     box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
   }
-  .ch-qf[data-canopy] .ch-qf-panel > :is(.ch-empty, .ch-notice) {
+  .ch-qf[data-canopy] .ch-qf-panel > .ch-empty,
+  .ch-qf[data-canopy] .ch-qf-panel > .ch-notice {
     margin: 0;
   }
   .ch-qf[data-canopy] .ch-qf-panel__head + .ch-qf-why {
@@ -1921,16 +1927,6 @@
   .ch-qfs[data-canopy] .ch-qfs-pick {
     border-bottom-color: var(--ch-ledger-rule-soft);
   }
-  /* A pick's name block grows; the rule for it above also caught the avatar and the Pick badge and stretched them. */
-  .ch-qfs[data-canopy] .ch-qfs-pick__who > .ch-avatar {
-    display: inline-grid;
-    flex: none;
-  }
-  .ch-qfs[data-canopy] .ch-qfs-pick__who > .ch-badge {
-    display: inline-flex;
-    flex: none;
-    flex-direction: row;
-  }
 
   /* Loading: the sub-screens' heads held line by line at the loaded lines' heights (WebKit 1440, 2026-10-07: the way
      back's line 24.8px, the eyebrow 14.3, the title 47.52, a sentence 24.8 a line; a qualifier's description runs two
@@ -1938,13 +1934,15 @@
      The bar sizes are the component's inline ones, so the way back's takes !important, as the phone's overrides above.
      The sections are flat too: a heading's placeholder over the engraved rule, the rows flush; the list's cards are its
      ledger rows. */
-  .ch-qf[aria-busy='true'][data-canopy] > :is(.ch-qf-back, .ch-qf-held--back) > .ch-skel {
+  .ch-qf[aria-busy='true'][data-canopy] > .ch-qf-back > .ch-skel,
+  .ch-qf[aria-busy='true'][data-canopy] > .ch-qf-held--back > .ch-skel {
     height: 24.8px !important;
   }
   .ch-qf[data-canopy] .ch-qf-held--eyebrow {
     height: 14.3px;
   }
-  .ch-qf[data-canopy] :is(.ch-qf-held--title, .ch-qf-held--name) {
+  .ch-qf[data-canopy] .ch-qf-held--title,
+  .ch-qf[data-canopy] .ch-qf-held--name {
     height: 47.52px;
   }
   .ch-qf[data-canopy] .ch-qf-held--line {
@@ -1964,7 +1962,9 @@
     box-sizing: border-box;
     min-height: 42.8px;
   }
-  .ch-qf[aria-busy='true'][data-canopy] :is(.ch-qf-panel, .ch-qf-side, .ch-qf-fs).ch-qf-skel {
+  .ch-qf[aria-busy='true'][data-canopy] .ch-qf-panel.ch-qf-skel,
+  .ch-qf[aria-busy='true'][data-canopy] .ch-qf-side.ch-qf-skel,
+  .ch-qf[aria-busy='true'][data-canopy] .ch-qf-fs.ch-qf-skel {
     background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 29px / 100% 1px no-repeat;
   }
   .ch-qf[aria-busy='true'][data-canopy] .ch-qf-skel > .ch-skel:first-child {
