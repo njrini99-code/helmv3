@@ -65,7 +65,7 @@ D-40 to D-43).
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-1601 | Moving to another page, or its first load | A navigation crossfades the page (180ms out, 180ms in) while the shell stays put (owner 2026-10-01; React `ViewTransition`). Content is visible at once: the staggered section rise was retired on 2026-10-01, and a refresh or in-page update never animates the page. Instant when motion is reduced or Animations is off (D-64) | `RouteFrame`, `shell.css` view-transition rules | preview |
+| CH-1601 | Moving to another page, or its first load | A navigation crossfades the page (180ms out, 180ms in) while the shell stays put (owner 2026-10-01; React `ViewTransition`). Content is visible at once: the staggered section rise ended on 2026-10-01, and a refresh or in-page update never animates the page. Instant when motion is reduced or Animations is off (D-64) | `RouteFrame`, `shell.css` view-transition rules | preview |
 | CH-1602 | Opening More on a phone | The sheet slides up (260ms) over a fading scrim (260ms); dragging it down closes it (CH-1611) | `TabBar`, `chTween('base')` | preview |
 | CH-1603 | Opening the bell or any menu | It scales out of its button (180ms) | `CH_POP` | preview |
 | CH-1604 | A toast arrives or leaves | Slides up 10px and fades (260ms); the stack reflows | `ToastProvider` | preview |
