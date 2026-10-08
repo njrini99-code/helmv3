@@ -372,7 +372,7 @@ export default async function ClubhousePreview({
     },
     'my-qualifiers': {
       path: '/golf/dashboard/my-qualifiers',
-      node: state === 'loading' ? <QualifiersSkeleton /> : <QualifiersList data={qList('player', 'mine')} />,
+      node: state === 'loading' ? <QualifiersSkeleton mode="mine" /> : <QualifiersList data={qList('player', 'mine')} />,
     },
     qualifier: {
       path: '/golf/dashboard/qualifiers',

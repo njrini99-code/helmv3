@@ -2,13 +2,14 @@ import type { ReactNode } from 'react';
 import { Skeleton } from '../../ui/States';
 import { SkeletonCoachActions } from './SkeletonCoachActions';
 import { SkeletonLede, SkeletonListAction, SkeletonMine } from './SkeletonListParts';
+import { FORM_HELP, FORM_LEDE, stageNoteText } from './model';
 import '../../styles/qualifiers.css';
 
 /**
- * Route loading for the Qualifiers list (and a player's /my-qualifiers): head, tools, the hero and a row of cards in their
- * final slots; on a phone, the list's own shape (below).
+ * Route loading for the Qualifiers list: head, tools, the hero and a row of cards in their final slots; on a phone, the
+ * list's own shape (below). `mode="mine"`: a player's own entries (/my-qualifiers), whose lede is another sentence.
  */
-export function QualifiersSkeleton() {
+export function QualifiersSkeleton({ mode = 'all' }: { mode?: 'all' | 'mine' }) {
   return (
     <main className="ch-qf ch-qf--list" aria-busy="true" aria-label="Loading qualifiers" data-ch-code="CH-09401" data-canopy="">
       <header className="ch-qf-head" data-canopy-head="">
@@ -17,7 +18,7 @@ export function QualifiersSkeleton() {
           <Skeleton width={300} height={38} radius={10} />
           <Skeleton width={380} height={16} />
           {/* The phone draws the lede as the reader's own sentence instead of the bar above (qualifiers.css). */}
-          <SkeletonLede />
+          <SkeletonLede mode={mode} />
         </div>
         <SkeletonListAction />
       </header>
@@ -300,6 +301,11 @@ export function QualifierSelectionSkeleton() {
       <div className="ch-qf-note">
         <Skeleton width={16} height={16} radius={8} />
         <Skeleton width="70%" height={14} />
+        {/* The phone draws the standings stage's sentence (the commonest way in) instead of the bar above, so the note
+            is as many lines as the page's. */}
+        <p className="ch-qf-skel-words" aria-hidden="true">
+          <span className="ch-skel">{stageNoteText(0, { topN: 4, picks: 1 })}</span>
+        </p>
       </div>
       <div className="ch-qf-body">
         <div className="ch-qf-col">
@@ -321,6 +327,50 @@ export function QualifierSelectionSkeleton() {
             <Skeleton width={110} height={16} />
             <Skeleton width="100%" height={64} radius={10} />
           </div>
+        </div>
+      </div>
+      {/* The phone's lists on the loaded page's own classes, each line at its loaded height (WebKit 390 and 430,
+          2026-10-08): the places on score and the rest of the field, four rows each (a five-player squad with one pick),
+          the picks, and the foot's one key. The desktop body above is hidden on the phone, and this on desktop. */}
+      <div className="ch-qf-skel-phone" aria-hidden="true">
+        <div className="ch-qf-body">
+          <div className="ch-qf-col">
+            {[118, 150].map((title) => (
+              <div key={title} className="ch-qf-panel">
+                <div className="ch-qf-panel__head">
+                  <div>
+                    <SkelHeading title={title} line={210} />
+                  </div>
+                </div>
+                <ol className="ch-qf-list">
+                  {Array.from({ length: 4 }, (_, i) => (
+                    <li key={i}>
+                      <Skeleton width={14} height={12} />
+                      <Skeleton width={26} height={26} radius={13} />
+                      <Skeleton width={120} height={13} />
+                      <Skeleton width={52} height={12} />
+                      <Skeleton width={18} height={14} />
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ))}
+          </div>
+          <div className="ch-qf-col">
+            <div className="ch-qf-side">
+              <div className="ch-qf-panel__head">
+                <div>
+                  <SkelHeading title={110} line={190} />
+                </div>
+              </div>
+              <Held height={62}>
+                <Skeleton width={160} height={13} />
+              </Held>
+            </div>
+          </div>
+        </div>
+        <div className="ch-qfs-foot">
+          <Skeleton width="100%" height={36} radius={10} />
         </div>
       </div>
     </main>
@@ -346,6 +396,10 @@ export function QualifierFormSkeleton() {
           <Held className="ch-qf-held--line">
             <Skeleton width={420} height={16} />
           </Held>
+          {/* The phone draws the lede as its sentence instead of the bar above, so it wraps where the page's does. */}
+          <p className="ch-qf-skel-words" aria-hidden="true">
+            <span className="ch-skel">{FORM_LEDE}</span>
+          </p>
         </div>
       </header>
       <div className="ch-qf-form">
@@ -364,7 +418,84 @@ export function QualifierFormSkeleton() {
           <Skeleton width="100%" height={44} radius={12} />
         </div>
       </div>
+      {/* The phone's form on the loaded page's own classes, each line at its loaded height and each help its own sentence
+          (WebKit 390 and 430, 2026-10-08): Basics, Schedule, and Course and rules down to its rounds and course (all a
+          tall phone shows; paired fields sit side by side once there is room, as the page's do), then the other parts as
+          placeholders under the double rule. The desktop form above is hidden on the phone, and this on desktop. */}
+      <div className="ch-qf-skel-phone" aria-hidden="true">
+        <div className="ch-qf-form">
+          <div className="ch-qf-col">
+            <div className="ch-qf-fs">
+              <div className="ch-qf-fs__h">
+                <SkelHeading title={64} line={190} />
+              </div>
+              <SkelField label={110} />
+              <SkelField label={92} control={92} help={FORM_HELP.description} />
+            </div>
+            <div className="ch-qf-fs">
+              <div className="ch-qf-fs__h">
+                <SkelHeading title={86} line={250} />
+              </div>
+              <div className="ch-qf-2">
+                <SkelField label={70} />
+                <SkelField label={76} help={FORM_HELP.endDate} />
+              </div>
+              <SkelField label={104} help={FORM_HELP.entryDeadline} />
+            </div>
+            <div className="ch-qf-fs">
+              <div className="ch-qf-fs__h">
+                <SkelHeading title={140} line={210} />
+              </div>
+              <div className="ch-qf-2">
+                <SkelField label={56} help={FORM_HELP.rounds} />
+                <SkelField label={52} />
+              </div>
+            </div>
+            <div className="ch-qf-fs ch-qf-skel">
+              <Skeleton width={120} height={16} />
+              <Skeleton width="100%" height={38} radius={10} />
+              <Skeleton width="100%" height={38} radius={10} />
+            </div>
+          </div>
+          <div className="ch-qf-fs ch-qf-skel">
+            <Skeleton width={120} height={16} />
+            <Skeleton width="100%" height={38} radius={10} />
+            <Skeleton width="100%" height={44} radius={12} />
+          </div>
+        </div>
+      </div>
     </main>
+  );
+}
+
+/** A heading at its loaded lines: the 19px title, then its caption 3px under it (a fieldset's, a list's). */
+function SkelHeading({ title, line }: { title: number; line: number }) {
+  return (
+    <>
+      <Held height={22.8}>
+        <Skeleton width={title} height={16} />
+      </Held>
+      <Held height={18.2} top={3}>
+        <Skeleton width={line} height={11} />
+      </Held>
+    </>
+  );
+}
+
+/** A form field at its loaded lines: the label, the control, and its help drawn as the form's own sentence. */
+function SkelField({ label, control = 38, help }: { label: number; control?: number; help?: string }) {
+  return (
+    <div className="ch-field">
+      <Held height={16.9}>
+        <Skeleton width={label} height={12} />
+      </Held>
+      <Skeleton width="100%" height={control} radius={10} />
+      {help && (
+        <span className="ch-field__help ch-qf-skel-words" aria-hidden="true">
+          <span className="ch-skel">{help}</span>
+        </span>
+      )}
+    </div>
   );
 }
 

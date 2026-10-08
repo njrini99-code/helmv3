@@ -19,7 +19,6 @@ vi.mock('@/hooks/golf/use-appearance-preferences', () => ({ useAppearancePrefere
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn(), back: vi.fn() }));
 vi.mock('next/navigation', () => ({
   useRouter: () => router,
-  usePathname: () => '/golf/dashboard/qualifiers',
   redirect: (to: string) => {
     throw new Error(`redirect:${to}`);
   },
@@ -2061,7 +2060,10 @@ describe('Qualifiers · Manage selections loads in its own shape (2026-10-01)', 
     expect(sk.classList.contains('ch-qfs')).toBe(true);
     expect(sk.querySelectorAll('.ch-qfs-steps > li')).toHaveLength(3);
     expect(sk.querySelector('.ch-qf-note')).not.toBeNull();
-    expect(sk.querySelectorAll('.ch-qf-body .ch-qf-panel')).toHaveLength(2);
+    expect(sk.querySelectorAll(':scope > .ch-qf-body .ch-qf-panel')).toHaveLength(2);
+    // The phone's own shape (hidden on desktop): the two lists at four rows each, the picks, and the foot's one key.
+    const phone = sk.querySelector('.ch-qf-skel-phone') as HTMLElement;
+    expect([phone.querySelectorAll('.ch-qf-body .ch-qf-panel').length, phone.querySelectorAll('.ch-qf-list > li').length, phone.querySelectorAll('.ch-qf-side').length, phone.querySelectorAll('.ch-qfs-foot').length]).toEqual([2, 8, 1, 1]);
     expect(sk.querySelector('.ch-qf-facts')).toBeNull();
     // The route's loading file draws it, not the qualifier's skeleton.
     const loading = readFileSync(join(process.cwd(), 'src/app/golf/(dashboard)/dashboard/qualifiers/[id]/selection/loading.tsx'), 'utf8');

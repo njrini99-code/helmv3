@@ -243,6 +243,32 @@ export function yearOf(d: string): string {
 
 export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
+/** The form's lede, creating or editing. Its skeleton draws the same sentence, so the lines wrap alike. */
+export const FORM_LEDE = 'Players enter rounds from their app. The leaderboard builds as they sign.';
+
+/** The help under the form's first fields, shared with its skeleton so each help wraps where the form's does. */
+export const FORM_HELP = {
+  description: 'What players should expect: format, stakes, vibe.',
+  endDate: 'For multi-day qualifiers.',
+  entryDeadline: 'Shown to players. On or before the start date.',
+  rounds: 'How many rounds count. Players can’t enter more than this.',
+} as const;
+
+/**
+ * What Manage selections is waiting for, by stage (0 standings, 1 picks, 2 confirmed). Its skeleton draws the standings
+ * stage's sentence, the commonest way in, so the note's lines wrap where the page's do.
+ */
+export function stageNoteText(stage: 0 | 1 | 2, o: { topN: number; picks: number; picksReady?: boolean; nobody?: boolean; tie?: number }): string {
+  const { topN, picks, picksReady = false, nobody = false, tie = 0 } = o;
+  if (stage === 1 && tie > 0) return `Players are level at the last place on score. Give ${plural(tie, 'more place', 'more places')} to confirm the squad.`;
+  if (stage === 0) return `Start selecting when the standings are where you want them.${picks ? ` Then choose ${plural(picks, 'coach’s pick', 'coach’s picks')}, each with a reason.` : ''} The top ${topN} on score are set when you confirm.`;
+  if (stage === 1) {
+    if (nobody) return 'Nobody has a score in and no pick is made yet, so there is no squad to confirm.';
+    return picksReady ? 'Every pick is made. Confirm the squad to tell the players.' : `Choose ${plural(picks, 'coach’s pick', 'coach’s picks')}, each with a reason, to confirm the squad.`;
+  }
+  return 'The squad is confirmed, and every entrant has been told whether they made it.';
+}
+
 /** The form's rules, run before anything is sent. Each problem carries its catalog number. */
 export interface ChQFormValues {
   name: string;

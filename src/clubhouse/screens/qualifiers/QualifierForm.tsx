@@ -20,7 +20,7 @@ import { useRefresh } from '../../lib/use-refresh';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop, usePhoneTabsHidden } from '../../shell/phone-chrome';
 import { PhoneTextAction } from '../../ui/PhoneBar';
-import { FIELD_ORDER, plural, validateForm, type ChQField, type ChQFormValues, type ChQProblem } from './model';
+import { FIELD_ORDER, FORM_HELP, FORM_LEDE, plural, validateForm, type ChQField, type ChQFormValues, type ChQProblem } from './model';
 import { CoursePicker, type ChQPickedCourse } from './CoursePicker';
 import { isPlainClick } from './return-state';
 import { LIVE_WRITES, type ChQEditPlan, type ChQWrites } from './writes';
@@ -234,7 +234,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
         <div>
           <span className="ch-qf-eyebrow">{editing ? 'Edit qualifier' : 'New qualifier'}</span>
           <h1>{editing ? data.name : 'Create a qualifier'}</h1>
-          <p>Players enter rounds from their app. The leaderboard builds as they sign.</p>
+          <p>{FORM_LEDE}</p>
         </div>
       </header>
 
@@ -299,7 +299,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                   aria-describedby="qf-desc-h"
                 />
                 <span id="qf-desc-h" className="ch-field__help">
-                  What players should expect: format, stakes, vibe.
+                  {FORM_HELP.description}
                 </span>
               </div>
             </fieldset>
@@ -322,16 +322,16 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                   <label htmlFor="qf-end" className="ch-field__label ch-qf-label">
                     End date <span className="ch-qf-optional">Optional</span>
                   </label>
-                  <input {...inputProps('endDate', 'For multi-day qualifiers.')} type="date" value={v.endDate} onChange={(e) => set('endDate', e.target.value)} />
-                  {fieldHelp('endDate', 'For multi-day qualifiers.')}
+                  <input {...inputProps('endDate', FORM_HELP.endDate)} type="date" value={v.endDate} onChange={(e) => set('endDate', e.target.value)} />
+                  {fieldHelp('endDate', FORM_HELP.endDate)}
                 </div>
               </div>
               <div className="ch-field">
                 <label htmlFor="qf-deadline" className="ch-field__label ch-qf-label">
                   Entry deadline <span className="ch-qf-optional">Optional</span>
                 </label>
-                <input {...inputProps('entryDeadline', 'Shown to players. On or before the start date.')} type="date" value={v.entryDeadline} onChange={(e) => set('entryDeadline', e.target.value)} />
-                {fieldHelp('entryDeadline', 'Shown to players. On or before the start date.')}
+                <input {...inputProps('entryDeadline', FORM_HELP.entryDeadline)} type="date" value={v.entryDeadline} onChange={(e) => set('entryDeadline', e.target.value)} />
+                {fieldHelp('entryDeadline', FORM_HELP.entryDeadline)}
               </div>
             </fieldset>
 
@@ -347,12 +347,12 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                     Rounds
                   </label>
                   <input
-                    {...inputProps('rounds', 'How many rounds count. Players can’t enter more than this.')}
+                    {...inputProps('rounds', FORM_HELP.rounds)}
                     inputMode="numeric"
                     value={v.rounds}
                     onChange={(e) => setV((cur) => ({ ...cur, rounds: e.target.value.replace(/\D/g, '').slice(0, 2), oneRoundAck: false }))}
                   />
-                  {fieldHelp('rounds', 'How many rounds count. Players can’t enter more than this.')}
+                  {fieldHelp('rounds', FORM_HELP.rounds)}
                 </div>
                 <div className="ch-field">
                   <label htmlFor="qf-course" className="ch-field__label ch-qf-label">

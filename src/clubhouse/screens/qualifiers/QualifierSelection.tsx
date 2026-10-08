@@ -18,7 +18,7 @@ import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
-import { plural } from './model';
+import { plural, stageNoteText } from './model';
 import { ToPar } from './parts';
 import { useStepBack } from './return-state';
 import { LIVE_SELECTION_WRITES, startSelecting, type ChQSelectionWrites } from './writes';
@@ -523,18 +523,7 @@ function Row({ c }: { c: ChQCandidate }) {
 }
 
 function StageNote({ stage, topN, picks, picksReady, nobody, tie = 0 }: { stage: 0 | 1 | 2; topN: number; picks: number; picksReady: boolean; nobody: boolean; tie?: number }) {
-  const text =
-    stage === 1 && tie > 0
-      ? `Players are level at the last place on score. Give ${plural(tie, 'more place', 'more places')} to confirm the squad.`
-      : stage === 0
-      ? `Start selecting when the standings are where you want them.${picks ? ` Then choose ${plural(picks, 'coach’s pick', 'coach’s picks')}, each with a reason.` : ''} The top ${topN} on score are set when you confirm.`
-      : stage === 1
-        ? nobody
-          ? 'Nobody has a score in and no pick is made yet, so there is no squad to confirm.'
-          : picksReady
-            ? 'Every pick is made. Confirm the squad to tell the players.'
-            : `Choose ${plural(picks, 'coach’s pick', 'coach’s picks')}, each with a reason, to confirm the squad.`
-        : 'The squad is confirmed, and every entrant has been told whether they made it.';
+  const text = stageNoteText(stage, { topN, picks, picksReady, nobody, tie });
   return (
     <div className="ch-qf-note" data-ch-code={stage === 2 ? 'CH-09903' : undefined}>
       <Icon icon={stage === 2 ? Lock : Users} size={16} />

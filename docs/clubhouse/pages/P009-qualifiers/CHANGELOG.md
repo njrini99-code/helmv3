@@ -65,10 +65,18 @@ too cardy"):
   the double rule with their rows. A qualifier's skeleton holds the status
   and dates, the name, the entrants line, the coach's two actions, the three
   figures and the leaderboard rows, instead of the desktop's. The form drops
-  the way back the phone never shows, and Manage selections' steps no longer
-  run past the screen; both hold their heads (and the steps) in place, but
-  their sections below are still generic placeholders that move when the
-  page lands.
+  the way back the phone never shows and draws its lede and each help line as
+  its own sentence, then Basics, Schedule, and Course and rules down to its
+  rounds and course (all a tall phone shows first); the parts below stay
+  placeholders. Manage selections draws its note as the standings stage's
+  sentence, the places on score and the rest of the field at four rows each,
+  the picks and the foot's one key, and its steps no longer run past the
+  screen. On the preview data both measure 0px at 375, 390 and 430 for
+  everything on the first screen; real lists, picks or a later stage can
+  still shift what sits below the note. The sentences come from model.ts
+  (`FORM_LEDE`, `FORM_HELP`, `stageNoteText`), so the page and its skeleton
+  can't drift apart. Each skeleton sentence is `aria-hidden` itself, so a
+  screen reader hears only "Loading".
 - **A qualifier's head and leaderboard:** the Live badge is centred on the
   leaderboard's heading, as on the board, so a live leaderboard's head is as
   tall as any other. Manage selections and Edit stay 36px drawn, with a 44px

@@ -93,5 +93,5 @@ function QualifierCardSkeleton() {
 
 /** Inside Clubhouse, the Clubhouse skeleton for this page; everywhere else the existing one. */
 export default function Loading() {
-  return <ClubhouseSwitch clubhouse={<QualifiersSkeleton />} fallback={<LegacyLoading />} />;
+  return <ClubhouseSwitch clubhouse={<QualifiersSkeleton mode="mine" />} fallback={<LegacyLoading />} />;
 }

@@ -1,6 +1,5 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
 import { useClubhouseRole } from '../../shell/context';
 import { Skeleton } from '../../ui/States';
 import { listLede } from './model';
@@ -18,14 +17,13 @@ export function SkeletonListAction() {
 
 /**
  * The phone lede: the reader's own sentence drawn as a bar under each of its lines, so it wraps where the page's does
- * at any width. A player's own entries (/my-qualifiers) have their own, shorter sentence.
+ * at any width. `mine`: a player's own entries (/my-qualifiers), whose sentence is shorter.
  */
-export function SkeletonLede() {
+export function SkeletonLede({ mode }: { mode: 'all' | 'mine' }) {
   const coach = useClubhouseRole() !== 'player';
-  const mine = usePathname()?.endsWith('/my-qualifiers') ?? false;
   return (
-    <p className="ch-qf-skel-lede" aria-hidden="true">
-      <span className="ch-skel">{listLede(coach, mine ? 'mine' : 'all')}</span>
+    <p className="ch-qf-skel-words" aria-hidden="true">
+      <span className="ch-skel">{listLede(coach, mode)}</span>
     </p>
   );
 }

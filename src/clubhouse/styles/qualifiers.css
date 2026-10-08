@@ -1317,7 +1317,7 @@
 .ch-qf-skel-phone {
   display: none;
 }
-.ch-qf-skel-lede {
+.ch-qf-skel-words {
   display: none;
 }
 .ch-qf-skel-desk {
@@ -2125,12 +2125,13 @@
   .ch-qf--list[aria-busy='true'] .ch-qf-head > div > .ch-skel:nth-child(3) {
     display: none;
   }
-  /* The lede in waiting is the reader's own sentence in the lede's place, its words clear on the shared shimmer with a
-     bar under each line (SkeletonLede), so it wraps where the page's does at any width and for any reader. */
-  .ch-qf-skel-lede {
+  /* A sentence in waiting (the list's lede, the form's, Manage selections' note) is the page's own sentence in its place,
+     its words clear on the shared shimmer with a bar under each line, so it wraps where the page's does at any width and
+     for any reader. */
+  .ch-qf-skel-words {
     display: block;
   }
-  .ch-qf-skel-lede > .ch-skel {
+  .ch-qf-skel-words > .ch-skel {
     display: inline;
     border-radius: 5px;
     color: transparent;
@@ -2216,11 +2217,21 @@
     flex: 0 1 auto;
     min-width: 0;
   }
-  .ch-qfs[aria-busy='true'] .ch-qf-panel.ch-qf-skel,
-  .ch-qfs[aria-busy='true'] .ch-qf-side.ch-qf-skel,
   .ch-qf--form[aria-busy='true'] .ch-qf-fs.ch-qf-skel {
     padding: 12px 0 0;
     border-top: var(--ch-ledger-rule-double);
+  }
+  /* The form and Manage selections draw their phone parts (QualifiersSkeleton) in place of the desktop's: the lede and the
+     stage note as their sentences, then the fieldsets and the lists on the loaded classes. */
+  .ch-qf--form[aria-busy='true'] .ch-qf-held--line,
+  .ch-qf--form[aria-busy='true'] > .ch-qf-form,
+  .ch-qfs[aria-busy='true'] > .ch-qf-note > .ch-skel:nth-child(2),
+  .ch-qfs[aria-busy='true'] > .ch-qf-body {
+    display: none;
+  }
+  /* The note's icon keeps its 16px, as the page's does, so the sentence has the page's measure. */
+  .ch-qfs[aria-busy='true'] > .ch-qf-note > .ch-skel:first-child {
+    flex: none;
   }
 }
 
