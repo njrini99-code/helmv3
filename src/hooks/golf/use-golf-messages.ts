@@ -6,6 +6,7 @@ import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfM
 import { isTransientNetworkErrorMessage, withOneTransportRetry } from '@/lib/transient-network-error';
 import type { GolfMessageRow } from '@/lib/types';
 import { logError } from '@/lib/error-logging';
+import { isClientDeadlineAbort } from '@/lib/client-deadline-abort';
 import { describeError, postgrestErrorContext, toPostgrestError } from '@/lib/utils/describe-error';
 import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
@@ -1335,7 +1336,11 @@ export async function loadGolfConversationRail(
     `)
     .eq('user_id', userId);
 
-  if (groupConvsError) {
+  // The browser client's request deadline on a slow connection (Bridge
+  // af4c2c9d, reopened 4x): the rail continues with the RPC rows and reloads
+  // on the next realtime change, so the deadline abort is not reported. Any
+  // other failure of this read is still logged.
+  if (groupConvsError && !isClientDeadlineAbort(groupConvsError)) {
     logError(
       toPostgrestError(groupConvsError),
       {

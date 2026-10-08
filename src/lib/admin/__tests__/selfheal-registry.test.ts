@@ -216,6 +216,21 @@ describe('selectStageHeartbeat — a retired runner cannot speak for the stage',
     expect(selectStageHeartbeat(triage, [vercel, cron])).toBe(vercel);
   });
 
+  it('recognises the retired task under a fourth spelling (claude-cloud-session, 2026-10-08)', () => {
+    // Production 2026-10-08 09:18Z: the same retired task wrote its failed row
+    // as `metadata.method = 'claude-cloud-session'`, outside the `claude-code-*`
+    // family. The board read it as Diagnose's heartbeat and painted the loop
+    // red from 09:22Z until the 15:17Z cron run, and STEP 0b's SQL filter let
+    // it through as well.
+    const cloudSession = {
+      started_at: '2026-10-08T09:18:00.000Z',
+      status: 'failed',
+      metadata: { method: 'claude-cloud-session' },
+    };
+    expect(selectStageHeartbeat(triage, [cloudSession, cron])).toBe(cron);
+    expect(selectStageHeartbeat(triage, [{ ...cloudSession, metadata: { runner: 'claude-cloud-session' } }, cron])).toBe(cron);
+  });
+
   it('still counts a row whose runner is a live one (e.g. the desktop routine)', () => {
     const desktop = { started_at: '2026-09-30T09:30:00.000Z', status: 'failed', metadata: { runner: 'desktop-routine' } };
     expect(selectStageHeartbeat(triage, [desktop, cron])).toBe(desktop);
