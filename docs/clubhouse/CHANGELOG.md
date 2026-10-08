@@ -1,10 +1,13 @@
 # Clubhouse changelog
 
-## 2026-10-08 — The Ask sheet keeps its mention key hidden
+## 2026-10-08 — The Ask sheet's @ picker offers the stats alone
 
-`styles/shell.css`. The composer's mention key is now named "Mention a player or stat" (P013 changelog, the cmdk
-picker), so the Ask sheet's rule that hides it (the sheet has no roster to mention from) follows the new name. No visible
-change.
+- `styles/shell.css`. The composer's mention key is now named "Mention a player or stat" (P013 changelog, the cmdk
+  picker), so the Ask sheet's rule that hides it (the sheet has no roster to mention from) follows the new name.
+- `shell/AskSheetBody.tsx`. The sheet passes `roster={false}`: typing `@` in it opens the picker with the stats
+  CoachHelm can read and no Players group, rather than "No active players" for a team that has players (desktop showed
+  that line before; the phone opened no picker). The list is capped to the room inside the sheet's panel, which clips
+  its overflow, so a short sheet never cuts it off.
 
 ## 2026-10-08 — Phone: large titles collapse into the bar; flat More sheet
 

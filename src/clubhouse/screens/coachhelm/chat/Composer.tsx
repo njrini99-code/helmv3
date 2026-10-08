@@ -89,6 +89,54 @@ export interface AskComposerProps {
   fresh?: boolean;
   /** Who and which chat the unsent text belongs to ("coach:chat"), so it comes back when the coach returns to this page; none, none kept. */
   draftKey?: string | null;
+  /**
+   * Whether `players` is the team's roster. The shell's Ask sheet loads none, so it passes false: its picker offers the
+   * stats alone, never a "No active players" that is not true of the team.
+   */
+  roster?: boolean;
+}
+
+/** Space kept between the picker and the edge that would cut it off. */
+const PICK_EDGE = 8;
+/** The gap between the box and the picker (`.ch-ask-pick`'s `calc(100% + 8px)`). */
+const PICK_GAP = 8;
+
+/**
+ * How tall the picker may be where it opens: from the box to the nearest edge that would clip it, on the side it opens
+ * to. That edge is the closest ancestor that clips its overflow (the Ask sheet's panel, a page's scroller) or the visible
+ * viewport (the phone's keyboard); the CSS caps take the smaller of this and their own height. Remeasured on a resize or
+ * the keyboard moving.
+ */
+function usePickerRoom(anchor: RefObject<HTMLElement | null>, open: boolean, below: boolean): number | null {
+  const [room, setRoom] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    if (!open) return;
+    const measure = () => {
+      const el = anchor.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const vv = window.visualViewport;
+      let top = vv ? vv.offsetTop : 0;
+      let bottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+      for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+        const s = getComputedStyle(p);
+        if (!/(hidden|clip|auto|scroll)/.test(`${s.overflow} ${s.overflowY}`)) continue;
+        const pr = p.getBoundingClientRect();
+        top = Math.max(top, pr.top);
+        bottom = Math.min(bottom, pr.bottom);
+      }
+      const space = below ? bottom - r.bottom : r.top - top;
+      setRoom(Math.max(0, Math.floor(space - PICK_GAP - PICK_EDGE)));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    window.visualViewport?.addEventListener('resize', measure);
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.visualViewport?.removeEventListener('resize', measure);
+    };
+  }, [anchor, open, below]);
+  return open ? room : null;
 }
 
 /**
@@ -105,7 +153,7 @@ export interface AskComposerProps {
  *  - Offline, Send is refused before anything is sent: an error toast (CH-1903) and the text stays.
  *  - A send that failed puts its text back (once, into an empty box); a card awaiting a decision disables Send.
  */
-export function AskComposer({ variant, phone, players, busy, failed, blocked, onSend, onStop, autoFocus, fresh = false, draftKey = null }: AskComposerProps) {
+export function AskComposer({ variant, phone, players, busy, failed, blocked, onSend, onStop, autoFocus, fresh = false, draftKey = null, roster = true }: AskComposerProps) {
   const refuseOffline = useRefuseOffline();
   const finePointer = useFinePointer();
   const hero = variant === 'hero';
@@ -114,6 +162,7 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
   const [dismissed, setDismissed] = useState(false);
   const [pickIds, setPickIds] = useState<PickerIds>({});
   const box = useRef<HTMLTextAreaElement>(null);
+  const frame = useRef<HTMLDivElement>(null);
   const cmd = useRef<HTMLDivElement>(null);
   const cmdList = useRef<HTMLDivElement>(null);
   const listId = useId();
@@ -145,9 +194,10 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
 
   const query = mentionQuery(value);
   const pickerOpen = query !== null && !dismissed;
-  const matches = useMemo(() => matchPlayers(players, query ?? '', value), [players, query, value]);
+  const matches = useMemo(() => (roster ? matchPlayers(players, query ?? '', value) : []), [roster, players, query, value]);
   const stats = useMemo(() => matchStats(ASK_STATS, query ?? '', value), [query, value]);
   const pickable = matches.length + stats.length > 0;
+  const room = usePickerRoom(frame, pickerOpen, hero && !phone);
 
   const focusEnd = useCallback(() => {
     // Focus inside the tap itself, so a phone raises its keyboard (or keeps it up); the caret goes to the end once the new
@@ -245,13 +295,15 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
     </button>
   );
 
-  // A fragment that matches nothing keeps one quiet line (in the Players group) rather than an empty panel.
-  const showPlayers = matches.length > 0 || !query || stats.length === 0;
+  // A fragment that matches nothing keeps one quiet line (in the Players group) rather than an empty panel. Without a
+  // roster (the shell's Ask sheet) there is no Players group at all, and the line stands alone.
+  const showPlayers = roster && (matches.length > 0 || !query || stats.length === 0);
   const noPlayers = players.length === 0 ? 'No active players' : query && stats.length === 0 ? 'No player or stat by that name' : 'No match on your roster';
+  const pickLabel = roster ? 'Mention a player or stat' : 'Mention a stat';
 
   return (
     <div className={'ch-ask-cmp is-' + variant + (phone ? ' is-phone' : '')}>
-      <div className="ch-ask-cmp__box">
+      <div className="ch-ask-cmp__box" ref={frame}>
         <label className="ch-ask-cmp__label" htmlFor={`${listId}-ta`}>
           {first ? 'Ask CoachHelm' : 'Reply to CoachHelm'}
         </label>
@@ -317,7 +369,13 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
         {pickerOpen && (
           // A press on the picker never moves the focus: the text box keeps it, and the phone its keyboard.
           // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- not a control; it only keeps the focus in the text box
-          <div className="ch-ask-pick" data-ch-code="CH-13821" onMouseDown={(e) => e.preventDefault()}>
+          <div
+            className="ch-ask-pick"
+            data-ch-code="CH-13821"
+            // The CSS caps the list by this, so a short sheet or a raised keyboard never cuts it off.
+            style={room === null ? undefined : { ['--ch-ask-pick-room' as string]: `${room}px` }}
+            onMouseDown={(e) => e.preventDefault()}
+          >
             <Command
               // A new fragment starts the list again, at its first row.
               key={query}
@@ -328,7 +386,12 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
               // The keys the text box hands over stop here, so nothing further up hears them twice.
               onKeyDown={(e) => e.stopPropagation()}
             >
-              <Command.List ref={cmdList} className="ch-ask-pick__list" label="Mention a player or stat">
+              <Command.List ref={cmdList} className="ch-ask-pick__list" label={pickLabel}>
+                {!roster && stats.length === 0 && (
+                  <Command.Item value="stats:none" disabled className="ch-ask-pick__none">
+                    No stat by that name
+                  </Command.Item>
+                )}
                 {showPlayers && (
                   <Command.Group heading="Players">
                     {matches.length === 0 ? (

@@ -734,7 +734,9 @@
   animation: none;
 }
 .ch-ask-pick__list {
-  max-height: 296px;
+  /* Never past the room the composer measures to the nearest clipping edge (the Ask sheet's panel, the viewport). */
+  box-sizing: border-box;
+  max-height: min(296px, var(--ch-ask-pick-room, 296px));
   padding: 6px;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -928,7 +930,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
      and a half rows, so the cut row says it scrolls, and never taller than two fifths of the space above the keyboard
      (an iPhone SE keeps its thread and its top bar in view). */
   .ch-ask-cmp.is-phone .ch-ask-pick__list {
-    max-height: min(212px, calc((100dvh - var(--keyboard-height, 0px)) * 0.4));
+    max-height: min(212px, calc((100dvh - var(--keyboard-height, 0px)) * 0.4), var(--ch-ask-pick-room, 212px));
     padding: 4px 6px;
   }
   .ch-ask-cmp.is-phone .ch-ask-pick__row {

@@ -19,6 +19,12 @@ Held items:     before and after screenshots (no dev server in this pass)
 - **Keys:** the arrows move and wrap, Enter and Tab pick, Esc closes; Shift+Enter is still a new line, and a closed
   picker never takes a key. VoiceOver hears cmdk's listbox through the box's `aria-controls` and
   `aria-activedescendant`, the two groups by their headings, and a fragment that matches nothing as one dimmed row.
+- **Never clipped:** the composer measures the room between its box and the nearest edge that would cut the list off
+  (a clipping ancestor such as the Ask sheet's panel, or the visible viewport above the keyboard) and the CSS caps the
+  list to the smaller of that and its own height (296px, the phone's 212px).
+- **Without a roster:** a host that loads no roster passes `roster={false}` (the shell's Ask sheet does); its picker
+  offers the stats alone, named "Mention a stat", with no Players group and no "No active players" that is not true of
+  the team. A fragment no stat matches is one dimmed row, "No stat by that name".
 - **Look:** rows are 44px everywhere (were 38px on the desktop): a player's initials coin or a stat's chart coin, then
   the name. The list floats on the overlay elevation with a 180ms fade and rise, none under reduced motion or with
   Animations off. A pick ticks the select haptic.

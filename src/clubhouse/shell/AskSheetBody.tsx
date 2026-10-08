@@ -157,6 +157,8 @@ export default function AskSheetBody({
                   variant="dock"
                   phone={phone}
                   players={[]}
+                  // No roster is loaded here, so the @ picker offers the stats alone (never a "No active players").
+                  roster={false}
                   busy={chat.busy}
                   failed={Boolean(chat.error)}
                   blocked={Boolean(pending)}
