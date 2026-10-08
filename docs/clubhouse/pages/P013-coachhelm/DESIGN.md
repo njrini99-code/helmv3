@@ -153,15 +153,15 @@ and Working are sections flush on the parchment, each heading under the double
 rule and their rows between soft seams; the pulse's glyphs are flat tinted keys.
 The one green card is the focus's claim (its category, its stance, the claim and
 its first sentence); its evidence, the week's drill and Why we think this follow
-flush beneath it, set off by rules, never a card inside a card. The player
-chips and the view chips are drawn with a hairline (the chosen one green), not
-as lifted plates. A view that is empty as a whole (Standing's and the Deep
-dive's first run) is the page's empty state, centred on the parchment like the
-Board's; an empty part of a view stays a line. Ask sits on the same parchment; its bar's title is ivory on
-the green, its suggestions are hairline chips, and a failed answer is a flush
-notice (the danger rule, the message in the danger ink, no fill). Kept as material: the view
-switch, the chips, the bars and the gauge, the pills, the buttons, the thread,
-the composer and the notices.
+flush beneath it, set off by rules, never a card inside a card. The player chips
+and the view chips are drawn with a hairline (the chosen one green), not as
+lifted plates. A view that is empty as a whole (Standing's and the Deep dive's
+first run) is the page's empty state, centred on the parchment like the Board's;
+an empty part of a view stays a line. Ask sits on the same parchment; its bar's
+title is ivory on the green, its suggestions are hairline chips, and a failed
+answer is a flush notice (the danger rule, the message in the danger ink, no
+fill). Kept as material: the view switch, the chips, the bars and the gauge, the
+pills, the buttons, the thread, the composer and the notices.
 
 ## Owner rules (2026-10-01)
 
@@ -270,13 +270,13 @@ again and is never drawn as nothing: the Deep dive's rounds, plans and category
 trends each fail on their own, in place, without taking the insights down (two
 or more are said once under the read's head with one Try again, CH-1209, each
 part keeping its title where it would be; Standing's two side reads the same),
-and "In your plan" is a dash rather than a zero while plans did not load. First run,
-early read and failed read are three different pages. A read from before the
-newest round says so (CH-13903). No sentence says strokes are being lost: a gain
-is "worth about 0.9 strokes a round" to the team's average, or to the Tour (the
-LPGA Tour for a women's team) when the cascade had no team average to anchor on,
-and says which. A movement is in the stat's own unit (points for a share), never
-a percent of a percentage.
+and "In your plan" is a dash rather than a zero while plans did not load. First
+run, early read and failed read are three different pages. A read from before
+the newest round says so (CH-13903). No sentence says strokes are being lost: a
+gain is "worth about 0.9 strokes a round" to the team's average, or to the Tour
+(the LPGA Tour for a women's team) when the cascade had no team average to
+anchor on, and says which. A movement is in the stat's own unit (points for a
+share), never a percent of a percentage.
 
 **States.** Skeleton at the page's final height (a view's own, drawn by the
 page's one Suspense on a hard load, because `coachhelm/loading.tsx` cannot read

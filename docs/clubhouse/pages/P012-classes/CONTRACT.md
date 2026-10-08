@@ -226,7 +226,12 @@ Nothing refreshes in the background, and a change that lands does not read the p
 
 Status: DEFINED
 
-Two motions of its own, both in `classes.css` on the v2 tokens (D-64): a hovering class takes the Ledger row tint on desktop and a deeper one on press, with no lift (CH-12601; owner Ledger, 2026-10-07), and a scan line sweeps the page while a schedule is read, still under reduced motion (CH-12602). Both are checked in the preview, not in a test. Every key press, sheet and skeleton fade is the shell's.
+Two motions of its own, both in `classes.css` on the v2 tokens (D-64): a
+hovering class takes the Ledger row tint on desktop and a deeper one on press,
+with no lift (CH-12601; owner Ledger, 2026-10-07), and a scan line sweeps the
+page while a schedule is read, still under reduced motion (CH-12602). Both are
+checked in the preview, not in a test. Every key press, sheet and skeleton fade
+is the shell's.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

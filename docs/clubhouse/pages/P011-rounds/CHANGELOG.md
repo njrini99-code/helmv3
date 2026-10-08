@@ -19,6 +19,13 @@ The states audit's Rounds findings and the owner's native-feel pass, verified in
 - **Loading at every phone width:** the round card's place follows the idle card as the phone widens (it was 20px too
   tall at 430): it grows with its two rows of hole squares (two ninths of the card's width, `cqw`) and drops its foot's
   second line from a 359px card, as the card does. Measured in WebKit from 355 to 445px; within 0.3px at 390 and 430.
+- **Copy:** the page's own words take the curly apostrophe: the list, the review,
+  setup and the round-review route ("Your rounds didn’t load", "Couldn’t check
+  for a round in progress", "This round isn’t here", "The round’s date can’t be
+  after today" and the rest). The catalog's quotes match, and the
+  copy-apostrophes guard now covers Rounds, its screens and its round-review,
+  round-new, round-continue and round-recover routes. Tee names and other words
+  from the server are shown as sent.
 
 ## 2026-10-08 — Phone: Mobile clubhouse pass
 

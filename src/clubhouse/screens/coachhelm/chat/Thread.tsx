@@ -158,7 +158,7 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
       await navigator.clipboard.writeText(text);
       toast({ title: 'Copied', code: 'CH-13950' });
     } catch {
-      toast({ title: "Couldn't copy", body: 'Select the answer and copy it instead.', tone: 'error', code: 'CH-13051' });
+      toast({ title: "Couldn’t copy", body: 'Select the answer and copy it instead.', tone: 'error', code: 'CH-13051' });
     }
   };
 

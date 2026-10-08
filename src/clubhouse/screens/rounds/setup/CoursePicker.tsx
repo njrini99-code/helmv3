@@ -85,7 +85,7 @@ function CourseList({ ports, onCourse, onAddCourse }: { ports: Pick<ChSetupPorts
         </div>
       )}
       {load.state === 'failed' && (
-        <InlineNotice code="CH-11209" title="The course library didn't load" body="Your round isn't started yet, so nothing is lost. Try again, or add the course by hand." onRetry={retry} />
+        <InlineNotice code="CH-11209" title="The course library didn’t load" body="Your round isn’t started yet, so nothing is lost. Try again, or add the course by hand." onRetry={retry} />
       )}
       {groups.map((g) => (
         <section key={g.key} className="ch-rsu-psec" aria-label={g.label}>
@@ -155,7 +155,7 @@ function TeeList({ course, ports, onBack, onPick }: { course: ChSetupCourse; por
           ))}
         </div>
       )}
-      {load.state === 'failed' && <InlineNotice code="CH-11208" title={`The tees at ${course.name} didn't load`} body="Try again, or add the course by hand." onRetry={retry} />}
+      {load.state === 'failed' && <InlineNotice code="CH-11208" title={`The tees at ${course.name} didn’t load`} body="Try again, or add the course by hand." onRetry={retry} />}
       {load.state === 'ok' && !tees.some((t) => !t.draft) && (
         <p className="ch-rsu-none" data-ch-code="CH-11311">
           {course.name} has no tees ready to play yet. A coach can finish them in the course library; for now, add the course by hand.

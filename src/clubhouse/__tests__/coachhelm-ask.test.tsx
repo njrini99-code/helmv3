@@ -221,7 +221,7 @@ describe('the new chat page (desktop)', () => {
     expect(screen.getByRole('heading', { name: 'What do you want to know about Finley University?' })).toBeInTheDocument();
     expect(screen.getByText('Answers come from your recorded rounds, signals and schedule.')).toBeInTheDocument();
     const pills = within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button');
-    expect(pills.map((b) => b.textContent)).toEqual(['Brief me on Finley University', 'Where is the team losing the most strokes?', 'Who is trending up this month?', "What's on this week?"]);
+    expect(pills.map((b) => b.textContent)).toEqual(['Brief me on Finley University', 'Where is the team losing the most strokes?', 'Who is trending up this month?', "What’s on this week?"]);
     await userEvent.click(pills[1]!);
     expect(chat.calls.send).toHaveBeenCalledWith('Where is the team losing the most strokes?');
     expect(hapticSpy).toHaveBeenCalledWith('select');
@@ -248,7 +248,7 @@ describe('the new chat page (desktop)', () => {
     expect(code('CH-13322')?.textContent).toMatch(/Nothing to report yet.*No player has a recorded round yet\. Findings show up here after the first rounds come in\. You can still ask about your roster and schedule\./);
     expect(document.querySelector('.ch-ask-find__grid')).toBeNull();
     expect(screen.getByRole('textbox', { name: 'Ask CoachHelm' })).toBeInTheDocument();
-    expect(within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button').map((b) => b.textContent)).toEqual(["What's on this week?"]);
+    expect(within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button').map((b) => b.textContent)).toEqual(["What’s on this week?"]);
   });
 
   it('CH-13325 a pulse with no findings but rounds says nothing is flagged, not that nothing has been recorded', () => {
@@ -475,7 +475,7 @@ describe('the new chat page (phone)', () => {
     const { chat } = show();
     expect(screen.getByRole('heading', { name: 'What do you want to know about Finley University?' })).toBeInTheDocument();
     const cards = within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button');
-    expect(cards.map((c) => c.textContent)).toEqual(['Brief meon Finley University', 'Losing strokeswhere the team loses most', 'Trending upwho\'s improving this month']);
+    expect(cards.map((c) => c.textContent)).toEqual(['Brief meon Finley University', 'Losing strokeswhere the team loses most', 'Trending upwho’s improving this month']);
     expect(document.querySelector('.ch-ask-pills')).toBeNull();
     expect(screen.queryByRole('region', { name: 'Since you were last here' })).toBeNull();
     expect(screen.getByTestId('probe')).toHaveAttribute('data-notabs', 'false');

@@ -30,10 +30,17 @@ The states audit's CoachHelm findings and the owner's native-feel pass, verified
   (layout never animates). Shown, the rail fades in over base while its content slides 12px in from the edge, inside
   the rail's own clip; hidden, it goes at once. Reduced motion and Animations off show it at once. The phone's drawer
   is unchanged.
-- **Copy:** the coach's no-team page (CH-13308, "You aren’t on a team yet") and Ask's send while offline (CH-13920,
-  "Couldn’t send: you’re offline") take the curly apostrophe, as the shell's offline line now does; a failed answer's
-  offline line (CH-1905) is the shared one (`OFFLINE_LINE`) instead of its own copy. Contract 130702 quotes the curly
-  line.
+- **Copy:** the page's words take the curly apostrophe, as the shell's offline
+  line now does: the coach's no-team page (CH-13308, "You aren’t on a team
+  yet"), Ask's send while offline (CH-13920, "Couldn’t send: you’re offline"),
+  "Couldn’t copy" (CH-13051), the evidence control's "See Jonah’s numbers" and
+  "See Jonah’s stats", and Ask's suggestions ("What’s on this week?", "who’s
+  improving this month", "what’s coming up"). A failed answer's offline line
+  (CH-1905) is the shared one (`OFFLINE_LINE`) instead of its own copy, contract
+  130702 quotes the curly line, and the copy-apostrophes guard covers CoachHelm.
+  Ask's failure sentences (`coachhelm-chat-error.ts`, identical to PR #2105
+  until it lands) and the server's note for a rejected turn (CH-13252) are shown
+  as the server words them.
 
 ## 2026-10-08 — Phone: Mobile clubhouse pass
 

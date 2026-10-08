@@ -982,7 +982,7 @@ describe('Classes, states', () => {
     show(PREVIEW_CLASSES_EMPTY);
     await expectCode(
       'CH-12301',
-      /Add your class schedule.*Import a screenshot of your schedule and we'll add every class\. Your coach can see when you're busy, so practice and travel get planned around class\./,
+      /Add your class schedule.*Import a screenshot of your schedule and we’ll add every class\. Your coach can see when you’re busy, so practice and travel get planned around class\./,
     );
     expect(document.querySelector('.ch-cl-h__a')).toBeNull();
     expect(document.querySelector('.ch-cl-tb')).toBeNull();
@@ -997,7 +997,7 @@ describe('Classes, states', () => {
   it('120407 121403 CH-12201 the classes do not load: it says so with a way to ask again, never "no classes", and the head keeps Import schedule and Add class', async () => {
     const user = userEvent.setup();
     show(PREVIEW_CLASSES_FAILED);
-    await expectCode('CH-12201', /Your classes didn't load.*Nothing is lost\. Your classes are still saved; try again in a moment\./);
+    await expectCode('CH-12201', /Your classes didn’t load.*Nothing is lost\. Your classes are still saved; try again in a moment\./);
     expect(code('CH-12301')).toBeNull();
     const head = document.querySelector('.ch-cl-h__a') as HTMLElement;
     expect(within(head).getByRole('button', { name: 'Import schedule' })).toBeTruthy();
@@ -1020,7 +1020,7 @@ describe('Classes, states', () => {
   it('CH-12202 the team’s events do not load: the classes show, the overlap card says it cannot tell, and no overlap is claimed anywhere', async () => {
     const user = userEvent.setup();
     show(PREVIEW_CLASSES_PARTIAL);
-    await expectCode('CH-12202', /The team's events didn't load.*Overlaps with practice and travel can't be checked right now/);
+    await expectCode('CH-12202', /The team’s events didn’t load.*Overlaps with practice and travel can’t be checked right now/);
     expect(names()).toHaveLength(5);
     expect(document.querySelector('.ch-cl-tb__over')).toBeNull();
     expect(document.querySelectorAll('.ch-cl-card .ch-cl-flag')).toHaveLength(0);
@@ -1377,7 +1377,7 @@ describe('Classes, add and edit', () => {
     await user.click(headerButton('Add class'));
     setField('Course code', 'MATH 232');
     await user.click(within(sheet()).getByRole('button', { name: 'Cancel' }));
-    await expectCode('CH-12502', /Discard your changes\?.*What you typed here isn't saved\./);
+    await expectCode('CH-12502', /Discard your changes\?.*What you typed here isn’t saved\./);
     expect(screen.queryByRole('dialog', { name: 'Add a class' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Keep editing' }));
     expect(await screen.findByRole('dialog', { name: 'Add a class' })).toBeTruthy();
@@ -1423,7 +1423,7 @@ describe('Classes, writes that fail', () => {
     const w = show(PREVIEW_CLASSES, { save });
     await fillGeog(user);
     await submitForm(user);
-    await expectCode('CH-12001', /Couldn't add GEOG 110.*Nothing was changed\. Check your connection and try again\./);
+    await expectCode('CH-12001', /Couldn’t add GEOG 110.*Nothing was changed\. Check your connection and try again\./);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     // The toast is in the open sheet, so Retry is where the person is looking.
     expect(sheet().contains(code('CH-12001'))).toBe(true);
@@ -1479,7 +1479,7 @@ describe('Classes, writes that fail', () => {
     await user.click(card(/^GEOG 110/));
     const detail = await screen.findByRole('dialog', { name: 'Global Environmental Change' });
     expect(within(detail).getByText('Not on your calendar')).toBeTruthy();
-    expect(within(detail).getByText(/The last sync failed, so your coach won't see this class on the team calendar yet\./)).toBeTruthy();
+    expect(within(detail).getByText(/The last sync failed, so your coach won’t see this class on the team calendar yet\./)).toBeTruthy();
     await user.click(within(detail).getByRole('button', { name: 'Retry sync' }));
     await waitFor(() => expect(sync).toHaveBeenCalledTimes(3));
     await waitFor(() => expect(within(detail).queryByText('Not on your calendar')).toBeNull());
@@ -1538,7 +1538,7 @@ describe('Classes, writes that fail', () => {
     hapticSpy.mockClear();
     await user.click(within(await screen.findByRole('dialog', { name: 'Probability and Statistics' })).getByRole('button', { name: 'Remove class' }));
     expect(hapticSpy.mock.calls.map((c) => c[0])[0]).toBe('warning');
-    await expectCode('CH-12501', /Remove this class\?.*STAT 201 comes off your schedule and your calendar\. This can't be undone\./);
+    await expectCode('CH-12501', /Remove this class\?.*STAT 201 comes off your schedule and your calendar\. This can’t be undone\./);
     expect(screen.queryByRole('dialog', { name: 'Probability and Statistics' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Keep it' }));
     expect(w.remove).not.toHaveBeenCalled();
@@ -1556,12 +1556,12 @@ describe('Classes, writes that fail', () => {
 
   it('121401 CH-12003 a remove that fails keeps the class and the question, says so, and Retry removes it', async () => {
     const user = userEvent.setup();
-    const remove = failing({ success: false, error: "Couldn't take this class off your calendar: events locked. The class was kept so you can try again." }, () => Promise.resolve({ success: true }));
+    const remove = failing({ success: false, error: "Couldn’t take this class off your calendar: events locked. The class was kept so you can try again." }, () => Promise.resolve({ success: true }));
     show(PREVIEW_CLASSES, { remove });
     await user.click(card(/^STAT 201/));
     await user.click(within(await screen.findByRole('dialog', { name: 'Probability and Statistics' })).getByRole('button', { name: 'Remove class' }));
     await user.click(await screen.findByRole('button', { name: 'Remove class' }));
-    await expectCode('CH-12003', /Couldn't remove STAT 201.*The class was kept so you can try again\./);
+    await expectCode('CH-12003', /Couldn’t remove STAT 201.*The class was kept so you can try again\./);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(names()).toContain('Probability and Statistics');
     expect(screen.getByRole('dialog', { name: 'Remove this class?' })).toBeTruthy();
@@ -1616,7 +1616,7 @@ describe('Classes, delete all', () => {
     hapticSpy.mockClear();
     await user.click(deleteAll());
     expect(hapticSpy.mock.calls.map((c) => c[0])[0]).toBe('warning');
-    await expectCode('CH-12503', /Delete all classes\?.*All 5 classes come off your schedule and your calendar\. This can't be undone\./);
+    await expectCode('CH-12503', /Delete all classes\?.*All 5 classes come off your schedule and your calendar\. This can’t be undone\./);
     await user.click(screen.getByRole('button', { name: 'Keep them' }));
     expect(w.removeAll).not.toHaveBeenCalled();
     expect(names()).toHaveLength(5);
@@ -1642,14 +1642,14 @@ describe('Classes, delete all', () => {
     const user = userEvent.setup();
     show(PREVIEW_CLASSES_MIXED);
     await user.click(deleteAll());
-    await expectCode('CH-12503', /All 7 classes come off your schedule and your calendar, including 1 from another term\. This can't be undone\./);
+    await expectCode('CH-12503', /All 7 classes come off your schedule and your calendar, including 1 from another term\. This can’t be undone\./);
   });
 
   it('CH-12503 with one class the question names it, and the done line says class', async () => {
     const user = userEvent.setup();
     const w = show(page1());
     await user.click(deleteAll());
-    await expectCode('CH-12503', /STAT 201 comes off your schedule and your calendar\. This can't be undone\./);
+    await expectCode('CH-12503', /STAT 201 comes off your schedule and your calendar\. This can’t be undone\./);
     await confirm(user);
     await waitFor(() => expect(w.removeAll).toHaveBeenCalledWith([STAT_ID]));
     expect(await screen.findByText('Class deleted')).toBeTruthy();
@@ -1705,7 +1705,7 @@ describe('Classes, delete all', () => {
     show(PREVIEW_CLASSES, { removeAll });
     await user.click(deleteAll());
     await confirm(user);
-    await expectCode('CH-12005', /Couldn't delete your classes.*None of them could be taken off your calendar, so all 5 were kept: Failed to remove class from calendar: events locked\. Try again\./);
+    await expectCode('CH-12005', /Couldn’t delete your classes.*None of them could be taken off your calendar, so all 5 were kept: Failed to remove class from calendar: events locked\. Try again\./);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(names()).toHaveLength(5);
     expect(question()).toBeTruthy();
@@ -1722,7 +1722,7 @@ describe('Classes, delete all', () => {
     show(page1(), { removeAll: vi.fn(async () => answer({ kept: [{ id: STAT_ID, reason: 'events locked' }] })) });
     await user.click(deleteAll());
     await confirm(user);
-    await expectCode('CH-12005', /Couldn't delete your classes.*It couldn't be taken off your calendar, so the class was kept: events locked\. Try again\./);
+    await expectCode('CH-12005', /Couldn’t delete your classes.*It couldn’t be taken off your calendar, so the class was kept: events locked\. Try again\./);
     expect(names()).toEqual(['Probability and Statistics']);
   });
 
@@ -1735,7 +1735,7 @@ describe('Classes, delete all', () => {
     show(PREVIEW_CLASSES, { removeAll });
     await user.click(deleteAll());
     await confirm(user);
-    await expectCode('CH-12005', /Couldn't delete your classes.*Nothing was deleted\. Check your connection and try again\./);
+    await expectCode('CH-12005', /Couldn’t delete your classes.*Nothing was deleted\. Check your connection and try again\./);
     expect(report).toHaveBeenCalled();
     expect(names()).toHaveLength(5);
     await user.click(within(code('CH-12005') as HTMLElement).getByRole('button', { name: 'Retry' }));
@@ -1752,7 +1752,7 @@ describe('Classes, delete all', () => {
     await confirm(user);
     await expectCode(
       'CH-12006',
-      /3 of 5 classes deleted.*ENGL 105 couldn't be taken off your calendar, so it was kept\. EXSS 188 is off your calendar but still on your schedule\. Retry to finish\./,
+      /3 of 5 classes deleted.*ENGL 105 couldn’t be taken off your calendar, so it was kept\. EXSS 188 is off your calendar but still on your schedule\. Retry to finish\./,
     );
     expect(code('CH-12005')).toBeNull();
     expect(hapticSpy).toHaveBeenCalledWith('error');
@@ -1777,7 +1777,7 @@ describe('Classes, delete all', () => {
     show(PREVIEW_CLASSES, { removeAll });
     await user.click(deleteAll());
     await confirm(user);
-    await expectCode('CH-12006', /Couldn't finish deleting your classes.*STAT 201, ECON 310, BUSI 401 and more are off your calendar but still on your schedule\. Retry to finish\./);
+    await expectCode('CH-12006', /Couldn’t finish deleting your classes.*STAT 201, ECON 310, BUSI 401 and more are off your calendar but still on your schedule\. Retry to finish\./);
     expect(names()).toHaveLength(5);
     expect(document.querySelector('.ch-cl-sync.is-failed')!.textContent).toContain('5 classes are not on your calendar');
   });
@@ -1882,7 +1882,7 @@ describe('Classes, import', () => {
     expect(w.sync.mock.calls.map((c) => c[0].code).sort()).toEqual(['ART 101', 'GEOG 110', 'MATH 232', 'PHIL 150']);
     expect(inSheet().getByText('4 classes imported')).toBeTruthy();
     // PHIL 150 has no days: it is saved, and the result says it isn't on the calendar and why, rather than "they're on your calendar".
-    expect(inSheet().getByText("3 of 4 are on your calendar and repeat weekly until Dec 15. Not on your calendar: PHIL 150 (no meeting days). Open the class to add what's missing.")).toBeTruthy();
+    expect(inSheet().getByText("3 of 4 are on your calendar and repeat weekly until Dec 15. Not on your calendar: PHIL 150 (no meeting days). Open the class to add what’s missing.")).toBeTruthy();
     expect([...importSheet().querySelectorAll('.ch-cl-ok__chips span')].map((s) => s.textContent)).toEqual(['GEOG 110', 'MATH 232', 'ART 101', 'PHIL 150']);
     await expectCode('CH-12109', /3 overlaps with the team this week\.GEOG 110 meets over Practice; GEOG 110 meets over Practice/);
     expect(hapticSpy).toHaveBeenCalledWith('success');
@@ -1903,7 +1903,7 @@ describe('Classes, import', () => {
     await pasteAndRead(user);
     await screen.findByRole('dialog', { name: 'Review your schedule' });
     await user.click(inSheet().getByRole('button', { name: 'Import 5 classes' }));
-    await expectCode('CH-12004', /Couldn't import your schedule.*Nothing was saved\. Check your connection and try again\./);
+    await expectCode('CH-12004', /Couldn’t import your schedule.*Nothing was saved\. Check your connection and try again\./);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(screen.getByRole('dialog', { name: 'Review your schedule' })).toBeTruthy();
     expect(names()).toHaveLength(5);
@@ -1960,14 +1960,14 @@ describe('Classes, import', () => {
     await user.click(inSheet().getByRole('button', { name: 'Import 4 classes' }));
     await expectCode('CH-12002', /1 of 4 classes are saved, but not on your calendar.*MATH 232: Could not determine semester dates\. Retry to try again\./);
     expect(
-      await inSheet().findByText("Some didn't reach your calendar. Use Retry sync on the Classes page. Not on your calendar: PHIL 150 (no meeting days). Open the class to add what's missing."),
+      await inSheet().findByText("Some didn’t reach your calendar. Use Retry sync on the Classes page. Not on your calendar: PHIL 150 (no meeting days). Open the class to add what’s missing."),
     ).toBeTruthy();
     expect(document.querySelector('.ch-cl-sync.is-failed')!.textContent).toContain('1 class is not on your calendar');
     broken = false;
     await user.click(within(code('CH-12002') as HTMLElement).getByRole('button', { name: 'Retry' }));
     await waitFor(() => expect(document.querySelector('.ch-cl-sync')).toBeNull());
     expect(
-      await inSheet().findByText("3 of 4 are on your calendar and repeat weekly until Dec 15. Not on your calendar: PHIL 150 (no meeting days). Open the class to add what's missing."),
+      await inSheet().findByText("3 of 4 are on your calendar and repeat weekly until Dec 15. Not on your calendar: PHIL 150 (no meeting days). Open the class to add what’s missing."),
     ).toBeTruthy();
   });
 
@@ -1981,7 +1981,7 @@ describe('Classes, import', () => {
     expect(hapticSpy).toHaveBeenCalledWith('error');
     await user.click(inSheet().getByRole('button', { name: 'Choose another file' }));
     chooseFile('schedule.docx', 'application/msword');
-    await expectCode('CH-12112', /We can't read that file type.*Use a PNG, JPG or WebP screenshot, a PDF or a TXT file, or paste the text\./);
+    await expectCode('CH-12112', /We can’t read that file type.*Use a PNG, JPG or WebP screenshot, a PDF or a TXT file, or paste the text\./);
     expect(w.read).not.toHaveBeenCalled();
     await user.click(inSheet().getByRole('button', { name: 'Paste text instead' }));
     expect(inSheet().getByLabelText('Paste your schedule')).toBeTruthy();
@@ -2010,7 +2010,7 @@ describe('Classes, import', () => {
     show(PREVIEW_CLASSES, { read: vi.fn().mockRejectedValue(new Error('boom')) });
     await openImport(user);
     chooseFile('schedule.png', 'image/png');
-    await expectCode('CH-12204', /Reading the schedule didn't finish.*Your schedule can still be added with Paste text\./);
+    await expectCode('CH-12204', /Reading the schedule didn’t finish.*Your schedule can still be added with Paste text\./);
     await user.click(inSheet().getByRole('button', { name: 'Paste text instead' }));
     expect(inSheet().getByLabelText('Paste your schedule')).toBeTruthy();
   });
@@ -2054,7 +2054,7 @@ describe('Classes, offline and slow', () => {
     setField('Room', '121');
     goOffline();
     await submitForm(user);
-    await expectCode('CH-1903', /Couldn't update STAT 201: you’re offline/);
+    await expectCode('CH-1903', /Couldn’t update STAT 201: you’re offline/);
     expect(w.save).not.toHaveBeenCalled();
     expect(within(sheet()).getByRole('button', { name: 'Save changes' })).toBeTruthy();
     expect(field('Room').value).toBe('121');
@@ -2070,7 +2070,7 @@ describe('Classes, offline and slow', () => {
     await user.click(within(await screen.findByRole('dialog', { name: 'Probability and Statistics' })).getByRole('button', { name: 'Remove class' }));
     goOffline();
     await user.click(await screen.findByRole('button', { name: 'Remove class' }));
-    await expectCode('CH-1903', /Couldn't remove STAT 201: you’re offline/);
+    await expectCode('CH-1903', /Couldn’t remove STAT 201: you’re offline/);
     expect(w.remove).not.toHaveBeenCalled();
     expect(names()).toContain('Probability and Statistics');
   });
@@ -2259,7 +2259,7 @@ describe('Classes, calendar sync in the background', () => {
     await waitFor(() => expect(w.sync).toHaveBeenCalledTimes(2));
     expect(starts()).toEqual({ 'GEOG 110': { semesterStartDate: '2026-10-19' }, 'MATH 232': undefined });
     // Each class repeats until the end of its own term, not one date for both.
-    expect(await inSheet().findByText("They're on your calendar and repeat weekly until the end of their terms, Dec 15 and May 15.")).toBeTruthy();
+    expect(await inSheet().findByText("They’re on your calendar and repeat weekly until the end of their terms, Dec 15 and May 15.")).toBeTruthy();
   });
 
   it('CH-12002 a schedule read in early summer for the fall goes on the calendar for the whole fall, never from a summer start', async () => {
@@ -2328,7 +2328,7 @@ describe('Classes, review fixes on screen', () => {
     await user.click(inSheet().getByRole('button', { name: 'Import 3 classes' }));
     expect(
       await inSheet().findByText(
-        "1 of 3 is on your calendar and repeats weekly until Dec 15. Not on your calendar: HIST 210 (no time set) and PHIL 150 (no meeting days). Open the class to add what's missing.",
+        "1 of 3 is on your calendar and repeats weekly until Dec 15. Not on your calendar: HIST 210 (no time set) and PHIL 150 (no meeting days). Open the class to add what’s missing.",
       ),
     ).toBeTruthy();
     expect(w.sync).toHaveBeenCalledTimes(3);

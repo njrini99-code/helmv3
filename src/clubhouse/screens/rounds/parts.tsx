@@ -92,7 +92,7 @@ export function UnfinishedCard({
   if (error) {
     return (
       <div className="ch-rd-unf is-idle">
-        <InlineNotice code="CH-11202" title="Couldn't check for a round in progress" body="Any round you started is still saved. Try again in a moment." onRetry={onRetry} retrying={retrying} />
+        <InlineNotice code="CH-11202" title="Couldn’t check for a round in progress" body="Any round you started is still saved. Try again in a moment." onRetry={onRetry} retrying={retrying} />
       </div>
     );
   }
@@ -144,12 +144,12 @@ export function UnfinishedCard({
       <b className="ch-rd-unf__c">{round.course}</b>
       <span className="ch-rd-unf__m">{[round.tee, round.type ? TYPE_LABEL[round.type] : null, `${round.holes} holes`].filter(Boolean).join(' · ')}</span>
       {round.holesError ? <GhostStrip holes={round.holes} /> : <Strip holes={round.holes} played={round.played} next={round.nextHole} />}
-      {round.holesError && <InlineNotice code="CH-11214" title="This round's scores didn't load" body="The round is saved. Try again to see how far you are." onRetry={onRetry} retrying={retrying} />}
+      {round.holesError && <InlineNotice code="CH-11214" title="This round’s scores didn’t load" body="The round is saved. Try again to see how far you are." onRetry={onRetry} retrying={retrying} />}
       {round.submitUnchecked && (
         <InlineNotice
           code="CH-11215"
-          title="Couldn't check whether this round was already posted"
-          body="Every hole is scored, but your posted rounds didn't load, so Submit isn't offered here yet. Try again."
+          title="Couldn’t check whether this round was already posted"
+          body="Every hole is scored, but your posted rounds didn’t load, so Submit isn’t offered here yet. Try again."
           onRetry={onRetry}
           retrying={retrying}
         />

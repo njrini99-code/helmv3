@@ -80,8 +80,8 @@ function StrokesGained({ review: r, onRetry, retrying }: { review: ChRoundReview
       {r.tourError && (
         <InlineNotice
           code="CH-11217"
-          title="Which Tour this is measured against didn't load"
-          body="The strokes gained numbers are the round's own; only the baseline's name is missing. Try again in a moment."
+          title="Which Tour this is measured against didn’t load"
+          body="The strokes gained numbers are the round’s own; only the baseline’s name is missing. Try again in a moment."
           onRetry={onRetry}
           retrying={retrying}
         />
@@ -239,7 +239,7 @@ function HoleCard({
       {/* The shots slide in the direction of travel (CH-11604). */}
       <Swap swapKey={hole.n} kind="slide" dir={dir}>
         {shotsError ? (
-          <InlineNotice code="CH-11205" title="The shots for this round didn't load" body="The scorecard is right; only the shot-by-shot detail is missing. Try again in a moment." onRetry={onRetry} retrying={retrying} />
+          <InlineNotice code="CH-11205" title="The shots for this round didn’t load" body="The scorecard is right; only the shot-by-shot detail is missing. Try again in a moment." onRetry={onRetry} retrying={retrying} />
         ) : hole.shots.length === 0 ? (
           <p className="ch-rv-none" data-ch-code="CH-11306">
             No shots were tracked on this hole. It was scored as a total.
@@ -373,7 +373,7 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
       {(r.teeError || r.playerError) && (
         <InlineNotice
           code="CH-11216"
-          title="Some details of this round didn't load"
+          title="Some details of this round didn’t load"
           body={missingDetails(r)}
           onRetry={refresh}
           retrying={refreshing}
@@ -385,9 +385,9 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
       </SectionBoundary>
 
       {r.holesError ? (
-        <InlineNotice code="CH-11204" title="The scorecard didn't load" body="The round's totals are right; the hole-by-hole card is missing. Try again in a moment." onRetry={refresh} retrying={refreshing} />
+        <InlineNotice code="CH-11204" title="The scorecard didn’t load" body="The round’s totals are right; the hole-by-hole card is missing. Try again in a moment." onRetry={refresh} retrying={refreshing} />
       ) : r.holes.length === 0 ? (
-        <EmptyState code="CH-11305" compact icon={Flag} title="Posted as a total" body="This round was posted with its score only, so there's no hole-by-hole card or shots to show." />
+        <EmptyState code="CH-11305" compact icon={Flag} title="Posted as a total" body="This round was posted with its score only, so there’s no hole-by-hole card or shots to show." />
       ) : (
         <>
           <SectionBoundary surface="rounds.review.card" label="The scorecard" code="CH-11203">
@@ -441,7 +441,7 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
                 <section className="ch-rv-card ch-rv-notes" aria-labelledby="ch-rv-notes-h">
                   <div className="ch-rv-card__h">
                     <div>
-                      <h3 id="ch-rv-notes-h">{r.playerName ? `${r.playerName.split(' ')[0]}'s notes` : coach ? 'The player’s notes' : 'Your notes'}</h3>
+                      <h3 id="ch-rv-notes-h">{r.playerName ? `${r.playerName.split(' ')[0]}’s notes` : coach ? 'The player’s notes' : 'Your notes'}</h3>
                       <span>Written when the round was posted</span>
                     </div>
                   </div>

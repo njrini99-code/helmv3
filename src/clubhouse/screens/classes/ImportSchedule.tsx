@@ -35,11 +35,11 @@ type Tab = 'file' | 'paste';
 
 /** The board's error views (`ERR` in classes.jsx), one per way a read can fail. */
 const FAIL: Record<ChReadFail, { icon: LucideIcon; title: string; code: string; body: string }> = {
-  notSchedule: { icon: FileX, title: "This doesn't look like a class schedule", code: 'CH-12113', body: 'Upload a screenshot of your class schedule from your student portal.' },
+  notSchedule: { icon: FileX, title: "This doesn’t look like a class schedule", code: 'CH-12113', body: 'Upload a screenshot of your class schedule from your student portal.' },
   tooLarge: { icon: FileWarning, title: 'That file is too large', code: 'CH-12111', body: 'Use a file under 12 MB. A screenshot of the schedule page is usually under 2 MB.' },
-  unsupported: { icon: FileQuestion, title: "We can't read that file type", code: 'CH-12112', body: 'Use a PNG, JPG or WebP screenshot, a PDF or a TXT file, or paste the text.' },
-  fault: { icon: CloudOff, title: "Reading the schedule didn't finish", code: 'CH-12204', body: 'Your schedule can still be added with Paste text.' },
-  none: { icon: SearchX, title: 'No classes found', code: 'CH-12114', body: "We read it but couldn't find course codes or times. Try pasting your schedule text." },
+  unsupported: { icon: FileQuestion, title: "We can’t read that file type", code: 'CH-12112', body: 'Use a PNG, JPG or WebP screenshot, a PDF or a TXT file, or paste the text.' },
+  fault: { icon: CloudOff, title: "Reading the schedule didn’t finish", code: 'CH-12204', body: 'Your schedule can still be added with Paste text.' },
+  none: { icon: SearchX, title: 'No classes found', code: 'CH-12114', body: "We read it but couldn’t find course codes or times. Try pasting your schedule text." },
   offline: { icon: WifiOff, title: 'You’re offline', code: 'CH-12901', body: 'Reading a screenshot needs a connection. Reconnect and try again, or paste the text, which works offline.' },
   empty: { icon: SearchX, title: 'Nothing to read', code: 'CH-12110', body: 'Paste your schedule text first.' },
 };
@@ -430,7 +430,7 @@ function ImportedView({ imported, syncState, term, week }: { imported: { classes
   // Each class repeats until the end of its own term; the classes of one import can be in more than one.
   const ends = [...new Set(onCalendar.map((c) => termEnd(c.semester, term)))].sort();
   const until = ends.length === 1 ? `until ${shortDay(ends[0]!)}` : `until the end of their terms, ${joinList(ends.map(shortDay))}`;
-  const lead = on === n ? (n === 1 ? "It's" : "They're") : on === 1 ? `1 of ${n} is` : `${on} of ${n} are`;
+  const lead = on === n ? (n === 1 ? "It’s" : "They’re") : on === 1 ? `1 of ${n} is` : `${on} of ${n} are`;
   return (
     <div className="ch-cl-ok" role="status">
       <span className="ch-cl-ok__ic">
@@ -443,12 +443,12 @@ function ImportedView({ imported, syncState, term, week }: { imported: { classes
         {syncState === 'syncing'
           ? 'Adding them to your calendar…'
           : syncState === 'failed'
-            ? "Some didn't reach your calendar. Use Retry sync on the Classes page."
+            ? "Some didn’t reach your calendar. Use Retry sync on the Classes page."
             : on > 0
               ? `${lead} on your calendar and ${on === 1 ? 'repeats' : 'repeat'} weekly ${until}.`
               : ''}
         {syncState !== 'syncing' && off.length > 0
-          ? ` Not on your calendar: ${joinList(off.map((c) => `${c.code || c.name} (${gapReason(calendarGap(c)!)})`))}. Open the class to add what's missing.`
+          ? ` Not on your calendar: ${joinList(off.map((c) => `${c.code || c.name} (${gapReason(calendarGap(c)!)})`))}. Open the class to add what’s missing.`
           : ''}
         {skipped > 0 ? ` ${skipped} already on your schedule and skipped.` : ''}
       </p>

@@ -90,8 +90,8 @@ export function buildAskSuggestions(input: { openers: readonly string[]; recentC
   const strokes = input.openers.find((o) => /losing the most strokes/i.test(o));
   if (brief) out.push({ id: 'brief', text: brief, title: 'Brief me', sub: (team) => `on ${team}` });
   if (strokes) out.push({ id: 'strokes', text: strokes, title: 'Losing strokes', sub: () => 'where the team loses most' });
-  if (input.recentCovered >= ASK_MIN_COVERED) out.push({ id: 'trending', text: 'Who is trending up this month?', title: 'Trending up', sub: () => "who's improving this month" });
-  if (input.rosterCount > 0) out.push({ id: 'week', text: "What's on this week?", title: 'This week', sub: () => "what's coming up" });
+  if (input.recentCovered >= ASK_MIN_COVERED) out.push({ id: 'trending', text: 'Who is trending up this month?', title: 'Trending up', sub: () => "who’s improving this month" });
+  if (input.rosterCount > 0) out.push({ id: 'week', text: "What’s on this week?", title: 'This week', sub: () => "what’s coming up" });
   return out.slice(0, 5);
 }
 

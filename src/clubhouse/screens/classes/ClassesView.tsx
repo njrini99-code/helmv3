@@ -151,7 +151,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
   };
   const save = useAction('classes.save', saveAction, (input: ChClassInput, editing: ChClass | null) => ({
     done: editing ? 'Class updated' : 'Class added',
-    failed: `Couldn't ${editing ? 'update' : 'add'} ${label({ code: input.code, name: input.name })}`,
+    failed: `Couldn’t ${editing ? 'update' : 'add'} ${label({ code: input.code, name: input.name })}`,
     hint: 'Nothing was changed. Check your connection and try again.',
     code: 'CH-12001',
   }));
@@ -172,7 +172,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
   };
   const remove = useAction('classes.remove', removeAction, (c: ChClass) => ({
     done: `${label(c)} removed`,
-    failed: `Couldn't remove ${label(c)}`,
+    failed: `Couldn’t remove ${label(c)}`,
     hint: 'It is still on your schedule and your calendar. Try again.',
     code: 'CH-12003',
   }));
@@ -202,7 +202,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
     removeAllAction,
     (ids: string[]) => ({
       done: `${ids.length === 1 ? 'Class' : `All ${ids.length} classes`} deleted`,
-      failed: "Couldn't delete your classes",
+      failed: "Couldn’t delete your classes",
       hint: 'Nothing was deleted. Check your connection and try again.',
       code: 'CH-12005',
     }),
@@ -219,15 +219,15 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
       // Nothing changed: every calendar removal failed, so every class was kept.
       if (!removed.length && !offCalendar.length) {
         const why = friendlyReason(kept[0]?.reason);
-        return { ...c, hint: `${kept.length === 1 ? "It couldn't" : 'None of them could'} be taken off your calendar, so ${kept.length === 1 ? 'the class was' : `all ${kept.length} were`} kept${why ? `: ${why}` : '.'} Try again.` };
+        return { ...c, hint: `${kept.length === 1 ? "It couldn’t" : 'None of them could'} be taken off your calendar, so ${kept.length === 1 ? 'the class was' : `all ${kept.length} were`} kept${why ? `: ${why}` : '.'} Try again.` };
       }
       // Half-way: say what is gone, what stayed and what is off the calendar but still saved.
       const parts = [
-        kept.length ? `${list(kept.map((k) => k.id))} couldn't be taken off your calendar, so ${kept.length === 1 ? 'it was' : 'they were'} kept.` : '',
+        kept.length ? `${list(kept.map((k) => k.id))} couldn’t be taken off your calendar, so ${kept.length === 1 ? 'it was' : 'they were'} kept.` : '',
         offCalendar.length ? `${list(offCalendar)} ${offCalendar.length === 1 ? 'is' : 'are'} off your calendar but still on your schedule.` : '',
         'Retry to finish.',
       ].filter(Boolean);
-      return { ...c, failed: removed.length ? `${removed.length} of ${total} classes deleted` : "Couldn't finish deleting your classes", hint: parts.join(' '), code: 'CH-12006' };
+      return { ...c, failed: removed.length ? `${removed.length} of ${total} classes deleted` : "Couldn’t finish deleting your classes", hint: parts.join(' '), code: 'CH-12006' };
     },
   );
 
@@ -250,7 +250,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
   };
   const doImport = useAction('classes.import', importAction, {
     done: '',
-    failed: "Couldn't import your schedule",
+    failed: "Couldn’t import your schedule",
     hint: 'Nothing was saved. Check your connection and try again.',
     code: 'CH-12004',
   });
@@ -358,14 +358,14 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
       </header>
 
       {data.classes.error ? (
-        <InlineNotice code="CH-12201" title="Your classes didn't load" body="Nothing is lost. Your classes are still saved; try again in a moment." onRetry={() => router.refresh()} />
+        <InlineNotice code="CH-12201" title="Your classes didn’t load" body="Nothing is lost. Your classes are still saved; try again in a moment." onRetry={() => router.refresh()} />
       ) : nothing ? (
         <EmptyState
           size="page"
           code="CH-12301"
           icon={GraduationCap}
           title="Add your class schedule"
-          body="Import a screenshot of your schedule and we'll add every class. Your coach can see when you're busy, so practice and travel get planned around class."
+          body="Import a screenshot of your schedule and we’ll add every class. Your coach can see when you’re busy, so practice and travel get planned around class."
           action={
             <Button variant="primary" leftIcon={Upload} onClick={startImport}>
               Import schedule
@@ -392,7 +392,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
             />
           </SectionBoundary>
           {phone && (
-            <SectionBoundary surface="classes.today" label="Today's classes" code="CH-12203">
+            <SectionBoundary surface="classes.today" label="Today’s classes" code="CH-12203">
               <TodayClasses classes={classes} term={term} todayIso={todayIso} onOpen={(x) => setOpenId(x.id)} />
             </SectionBoundary>
           )}
@@ -404,7 +404,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
                 {deck}
               </Section>
             </SectionBoundary>
-            <SectionBoundary surface="classes.side" label="This week's overlaps" code="CH-12203">
+            <SectionBoundary surface="classes.side" label="This week’s overlaps" code="CH-12203">
               <div className="ch-cl-side" id="ch-cl-overlaps">
                 <OverlapsCard groups={groups} error={week.error} onRetry={() => router.refresh()} />
                 <CoachNote />
@@ -456,7 +456,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
         icon={TriangleAlert}
         code="CH-12501"
         title="Remove this class?"
-        description={asking ? `${label(asking)} comes off your schedule and your calendar. This can't be undone.` : undefined}
+        description={asking ? `${label(asking)} comes off your schedule and your calendar. This can’t be undone.` : undefined}
         footer={
           <>
             <Button variant="ghost" onClick={() => setAsking(null)}>
@@ -485,8 +485,8 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
         title="Delete all classes?"
         description={
           classes.length === 1
-            ? `${classes[0] ? label(classes[0]) : 'This class'} comes off your schedule and your calendar. This can't be undone.`
-            : `All ${classes.length} classes come off your schedule and your calendar${inOtherTerm ? `, including ${inOtherTerm} from another term` : ''}. This can't be undone.`
+            ? `${classes[0] ? label(classes[0]) : 'This class'} comes off your schedule and your calendar. This can’t be undone.`
+            : `All ${classes.length} classes come off your schedule and your calendar${inOtherTerm ? `, including ${inOtherTerm} from another term` : ''}. This can’t be undone.`
         }
         footer={
           <>
