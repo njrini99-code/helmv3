@@ -1,5 +1,16 @@
 [
   {
+    "file": "PREMIUM_PASS_AUDIT.md",
+    "title": "Premium pass: owner answers and backlog",
+    "kind": "audit",
+    "date": "2026-10-08",
+    "scope": "All 15 families, desktop and phone: 135 look/feel/feature ideas, 189 findings, 120 owner questions with the owner's answers and the resulting build backlog.",
+    "status": "in_progress",
+    "note": "answered 2026-10-08; build after the release",
+    "allPages": true,
+    "pages": []
+  },
+  {
     "file": "AUDIT_PLAN.md",
     "title": "Swap audit: execution plan",
     "kind": "plan",
