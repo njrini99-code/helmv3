@@ -248,6 +248,28 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10613,
+    "page": "P001",
+    "category": 6,
+    "item": 13,
+    "name": "TWO_OR_MORE_SECTIONS_OF_A_PAGE",
+    "chCode": "CH-1210",
+    "meaning": "Two or more sections of a page crash in the browser",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 10614,
+    "page": "P001",
+    "category": 6,
+    "item": 14,
+    "name": "A_PAGES_ONE_READ_DOESNT_LOAD_SO",
+    "chCode": "CH-1211",
+    "meaning": "A page's one read doesn't load, so nothing can show under its head",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10701,
     "page": "P001",
     "category": 7,
@@ -287,7 +309,7 @@
     "item": 4,
     "name": "SOMEONE_PRESSES_TRY_AGAIN_ON_A_NOTICE",
     "chCode": "CH-1905",
-    "meaning": "Someone presses Try again on a notice while offline",
+    "meaning": "Someone presses Try again on a notice, or on a page that didn't load, while offline",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },

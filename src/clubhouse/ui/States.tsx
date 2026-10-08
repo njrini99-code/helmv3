@@ -1,14 +1,15 @@
-import type { LucideIcon } from 'lucide-react';
+import { CircleAlert, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Icon } from './Icon';
+import { PageRetry } from './Retry';
 
 /**
  * The honest states every Clubhouse surface needs, kept visually distinct:
- *   EmptyState   - the read worked and there is genuinely nothing yet
+ *   EmptyState   - the read worked and there is genuinely nothing yet; `tone="danger"` when the page's one read failed
  *   InlineNotice - a part of the page could not load (./Notices, client); PageNotice when several parts did
  *   Skeleton     - the page is on its way (route loading only), with SkelLine, SkelRows and SkelRule
- * A failed read is never rendered as an empty state. This file is
- * server-safe so server components can pass icons into it.
+ * A failed read is never drawn as an empty state: it takes the danger tone, with Try again. This file is server-safe
+ * so server components can pass icons into it.
  */
 
 /**
@@ -29,6 +30,7 @@ export function EmptyState({
   progress,
   compact = false,
   size = 'section',
+  tone,
   code,
 }: {
   icon?: LucideIcon;
@@ -48,18 +50,30 @@ export function EmptyState({
    * title that names what belongs, one or two sentences on how the space fills, one primary action).
    */
   size?: 'section' | 'page';
+  /**
+   * Page size only. `danger`: the page's one read failed, so nothing can show under its head (CH-1211). The route
+   * error's anatomy (a brick medallion, CircleAlert unless `icon` is given), as an alert, with Try again first: it
+   * re-runs the page's server render, or offline says so instead (CH-1905). `action` and `secondaryAction` follow it.
+   */
+  tone?: 'danger';
   /** Catalog number (docs/clubhouse/catalog). */
   code?: string;
 }) {
   const heading = stateTitle(title);
   if (size === 'page') {
+    const danger = tone === 'danger';
+    const glyph = icon ?? (danger ? CircleAlert : undefined);
     return (
-      <section className="ch-empty-page" data-ch-code={code}>
+      <section
+        className={'ch-empty-page' + (danger ? ' ch-empty-page--danger' : '')}
+        role={danger ? 'alert' : undefined}
+        data-ch-code={code ?? (danger ? 'CH-1211' : undefined)}
+      >
         <div className="ch-empty-page__in">
-          {icon && (
+          {glyph && (
             <span className="ch-empty-page__art" aria-hidden="true">
               <span className="ch-empty-page__ic">
-                <Icon icon={icon} size={26} />
+                <Icon icon={glyph} size={26} />
               </span>
             </span>
           )}
@@ -77,11 +91,18 @@ export function EmptyState({
               </span>
             </div>
           )}
-          {(action || secondaryAction) && (
-            <div className="ch-empty-page__a">
+          {danger ? (
+            <PageRetry>
               {action}
               {secondaryAction}
-            </div>
+            </PageRetry>
+          ) : (
+            (action || secondaryAction) && (
+              <div className="ch-empty-page__a">
+                {action}
+                {secondaryAction}
+              </div>
+            )
           )}
         </div>
       </section>

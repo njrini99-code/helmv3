@@ -783,9 +783,8 @@
     font-size: 15px;
   }
 }
-/* On the one green feature card (ui/Ledger.tsx) the notice takes the card's ivory inks and a light brick rule. */
+/* On the one green feature card (ui/Ledger.tsx) the notice takes the card's ivory body ink and a light brick. */
 .ch-feat .ch-notice--danger {
-  --ch-notice-rule: rgb(236 160 140 / 0.75);
   --ch-notice-ink: #f2c3b6;
   --ch-notice-body: var(--ch-on-green-ink-soft);
 }
@@ -1547,8 +1546,9 @@ button.ch-more__row[disabled] {
   overflow-y: auto;
   padding: 0 0 2px;
 }
+/* The notice draws no edge of its own, so it takes the rows' inset: its icon on their text edge. */
 .ch-bellp__body > .ch-notice {
-  margin: 4px 6px 6px;
+  margin: 10px 10px 12px;
 }
 .ch-bellp__day {
   /* .ch-popover__label */

@@ -39,8 +39,8 @@ Reduced motion and Animations off stay instant.
 The states audit (2026-10-07) found three empty-state anatomies, a pink boxed
 notice in the flush Ledger, a route error in a white card and skeletons drawn
 as filled cards. The shared layer (`ui/States.tsx`, `ui/Notices.tsx`,
-`ui/RefreshNotice.tsx` and their blocks in `styles/shell.css`) now draws one
-family:
+`ui/RefreshNotice.tsx`, `ui/Retry.tsx`, `ui/SectionBoundary.tsx` and their
+blocks in `styles/shell.css`) now draws one family:
 
 - **Section empty:** a flush line, left-aligned to the section's edge: an
   optional glyph in the forest ink, the title, one sentence and the action
@@ -48,20 +48,37 @@ family:
 - **Page empty:** in the Ledger it sits under the framed head with measured air
   (72px above, 88px below) instead of a viewport's height, so the action stays
   above the fold. Its title is the ledger ink everywhere, the phone included.
-- **Notice:** no pink box. A 2px danger rule at the left, the icon and title in
-  the danger ink and the body in the secondary ink. Try again sits beside the
-  words in a full-width notice, and under them in anything narrower than 640px
-  (a rail, a half column) and on the phone. A notice
-  on a dark or floating surface is restyled through `--ch-notice-rule`,
-  `--ch-notice-ink`, `--ch-notice-body` and `--ch-notice-fill`; on the
+- **Notice:** no pink box and no stripe. It sits between the section's own
+  engraved rules with no fill and no ring, its icon on the heading's edge; the
+  icon and title are in the danger ink and the body in the secondary ink. (A
+  2px danger stripe at its left was dropped the same day: our design guidance
+  avoids side stripes.) Try again sits beside the words in a full-width notice,
+  and under them in anything narrower than 640px (a rail, a half column) and on
+  the phone. A notice on a dark or floating surface is restyled through
+  `--ch-notice-ink`, `--ch-notice-body` and `--ch-notice-fill`
+  (`--ch-notice-rule` stays declared but is no longer drawn); on the
   FeatureCard it already takes the ivory inks.
 - **Several failed parts (CH-1209):** `PageNotice` and `PageRefreshNotice` say
   it once under the page head with one Try again. Each failed part's notice
   takes `covered` and keeps only its title. Pages adopt it as they are next
   touched.
+- **Several crashed sections (CH-1210):** a `SectionGroup` around a page's
+  rendered tree, with `SectionGroupNotice` under its head. Each failing
+  `SectionBoundary` inside it registers itself; at two or more, one notice
+  ("Some of this page couldn’t be shown") names them in reading order, its one
+  Try again tries them all again, and each crashed section keeps only its
+  title. It lives in the browser only, so server HTML and hydration are
+  unchanged; without a group a crash keeps its own notice, as before.
 - **Route error:** the page empty in a brick danger tone, with no card. Try
   again (or Reload) comes first, Back to Home sits beside it, and the reference
   is a quiet caption.
+- **A page whose one read failed (CH-1211):** `EmptyState size="page"
+  tone="danger"` draws the route error's anatomy under the page's own head, as
+  an alert, with Try again first (it re-runs the page) and the offline line
+  (CH-1905) when there is no connection. The offline handling is one hook now,
+  `useOfflineRetry` in `ui/Retry.tsx`, shared with the notice.
+- **PageIntro eyebrow:** 12px instead of 11px (`styles/ui.css`), the F09 phone
+  text floor.
 - **Skeletons:** a shade deeper, about 1.2:1 on the workspace. On desktop Ledger
   pages a fluid placeholder 56px or taller is a rule with two lines of type, not
   a filled card; `shape="solid"` keeps a real object filled. New shared shapes:
@@ -69,7 +86,7 @@ family:
 - **Copy:** a state's title renders without a trailing full stop
   (`stateTitle`). The shared components' own copy uses curly apostrophes.
 
-The four decisions behind this are recorded in P001 DESIGN.md as lead decisions
+The six decisions behind this are recorded in P001 DESIGN.md as lead decisions
 under the owner's full-auto brief, for the owner to confirm.
 
 ## 2026-10-08 — The phone chassis, and no serif anywhere

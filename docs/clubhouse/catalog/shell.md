@@ -34,9 +34,10 @@ D-40 to D-43).
 
 ## 12xx Didn't load
 
-Every notice is the flush Ledger notice (2026-10-08): a 2px danger rule at its left, the icon and title in the danger
-ink, the body in the secondary ink, and Try again beside the words in a full-width notice, or under them in anything
-narrower than 640px and on the phone. A state's title (a notice, an empty state, a route error) renders without a trailing full stop
+Every notice is the flush Ledger notice (2026-10-08): it sits between the section's own engraved rules with no fill,
+no ring and no stripe, its icon on the heading's edge, the icon and title in the danger ink, the body in the secondary
+ink, and Try again beside the words in a full-width notice, or under them in anything narrower than 640px and on the
+phone. A state's title (a notice, an empty state, a route error) renders without a trailing full stop
 (`stateTitle`, ui/States.tsx), so a page's catalog may quote a title with one that the screen does not show.
 
 | # | When | They see | How | Test |
@@ -50,6 +51,8 @@ narrower than 640px and on the phone. A state's title (a notice, an empty state,
 | CH-1207 | The sidebar's next event doesn't load | The next-event card is left out (never a wrong or empty card); the failure is logged as `clubhouse.shell.nextEvent` | `loadClubhouseShell` | shell.test › CH-1207 |
 | CH-1208 | The Roster badge's join requests don't load | The badge is left out rather than showing 0; logged as `clubhouse.shell.joinRequests` | `loadClubhouseShell` | shell.test › CH-1208 |
 | CH-1209 | Two or more parts of a page don't load | One notice under the page head, "Some of this page didn’t load", naming the parts in one sentence ("This week’s schedule, recent rounds and the leaderboard didn’t load. …"), with one Try again that re-runs the page. Each failed part keeps its heading and only its notice's title (covered), with no button and no second alert. One part failing keeps that part's own notice | `PageNotice`, `PageRefreshNotice`; `covered` on `InlineNotice` and `RefreshNotice`; the page passes the parts its render knows failed | states.test › CH-1209 |
+| CH-1210 | Two or more sections of a page crash in the browser | One notice under the page head, "Some of this page couldn’t be shown", naming the sections in reading order ("Team figures, the trend chart and season bests couldn’t be shown. The rest of the page is fine, and this has been reported automatically."), with one Try again that tries every one of them again. Each crashed section keeps only its notice's title (covered). One crash keeps its own notice and Try again; a section that fails again after Try again is told again. Each crash is still reported on its own surface | `SectionGroup` around the page's one rendered tree, `SectionGroupNotice` under its head (ui/SectionBoundary.tsx); browser-only, so the server HTML has none of it | states.test › CH-1210 |
+| CH-1211 | A page's one read doesn't load, so nothing can show under its head | The page empty in the danger tone, as the route error draws it: a brick medallion, the title and one or two sentences, Try again first (it re-runs the page), then the page's own action; an alert. Offline, Try again says so instead (CH-1905). The page passes its own number | `EmptyState size="page" tone="danger"` with `PageRetry` (ui/Retry.tsx) | states.test › CH-1211 |
 
 ## 13xx Empty
 
@@ -128,7 +131,7 @@ narrower than 640px and on the phone. A state's title (a notice, an empty state,
 | CH-1902 | A save takes longer than 5 seconds (forms, switches and CoachHelm settings) | "Still saving…" + "This is taking longer than usual. Keep this page open." (once per save) | `useAction`, `useInstantSave`, the CoachHelm queue; `CH_SLOW_SAVE_AFTER` | shell.test › CH-1902 |
 | CH-1903 | Someone saves while offline | "Couldn't save your profile: you're offline" (the action named) + "Reconnect, then try again. Nothing was changed." Nothing is sent and switches don't flip | `useAction`, `useInstantSave`, CoachHelm queue | shell.test › CH-1903 |
 | CH-1904 | Moving to another page | The new page opens at the top, never halfway down | `RouteFrame` resets the canvas scroll | preview |
-| CH-1905 | Someone presses Try again on a notice while offline | The notice adds "You’re offline. Reconnect, then try again." (warning haptic) and nothing is retried; the line leaves when the connection returns | `InlineNotice` | shell.test › CH-1905 |
+| CH-1905 | Someone presses Try again on a notice, or on a page that didn't load, while offline | The notice (or the page, above its actions) adds "You’re offline. Reconnect, then try again." (warning haptic) and nothing is retried; the line leaves when the connection returns | `useOfflineRetry` (ui/Retry.tsx) in `InlineNotice` and `PageRetry` | shell.test › CH-1905, states.test › CH-1211 |
 | CH-1906 | On the phone, the edge swipe or the browser's back while a screen is pushed | The top screen pops, as the back link would; the page stays put | `usePhoneStackHistory` | shell.test › CH-1906 |
 | CH-1907 | On the phone, tapping the tab that is already open | What a UIKit tab bar does: a pushed screen or section pops back to the tab's root (through history, CH-1906); a page below the tab's root goes back up to it; at the root the page scrolls to the top, smoothly (at once with reduced motion). No tick (CH-1701) | `TabBar` `retap` | motion-physics.test › CH-1907 |
 | CH-1908 | On iOS, a Back that Safari or the app's WebView animated itself (the edge swipe; `PopStateEvent.hasUAVisualTransition`, Safari 18 and later) | The Back shows once: a pushed screen leaves at once instead of sliding out again, and the page crossfade doesn't run after it. Elsewhere the flag never arrives and nothing changes. Needs a physical-iPhone check (Safari and the app) | `lib/ua-pop.ts`, `PhoneScreen`, `RouteFrame`, `html[data-ch-ua-pop]` in `shell.css` | motion-physics.test › CH-1908 |

@@ -104,7 +104,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Page | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | Total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P001 | 3 | 1 | 1 | 5 |  | 12 | 4 | 3 | 1 |  |  |  | 1 | 2 |  | 16 | 8 | 14 | 1 | 3 | 1 | 3 | 1 | 1 |  | 81 |
+| P001 | 3 | 1 | 1 | 5 |  | 14 | 4 | 3 | 1 |  |  |  | 1 | 2 |  | 16 | 8 | 14 | 1 | 3 | 1 | 3 | 1 | 1 |  | 83 |
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
 | P003 | 2 | 1 | 3 | 8 | 2 | 18 | 1 | 6 | 1 |  | 1 | 3 | 1 | 3 |  | 3 | 4 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 69 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
@@ -146,10 +146,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10610 | CH-1002 | 06 Server / system error | `SIGNING_OUT_FROM_THE_PHONES_MORE_SHEET` | implemented | Signing out from the phone's More sheet fails |
 | 10611 | CH-1003 | 06 Server / system error | `SWITCHING_TEAM_FAILS` | implemented | Switching team fails (a head coach on more than one team) |
 | 10612 | CH-1209 | 06 Server / system error | `TWO_OR_MORE_PARTS_OF_A_PAGE` | implemented | Two or more parts of a page don't load |
+| 10613 | CH-1210 | 06 Server / system error | `TWO_OR_MORE_SECTIONS_OF_A_PAGE` | implemented | Two or more sections of a page crash in the browser |
+| 10614 | CH-1211 | 06 Server / system error | `A_PAGES_ONE_READ_DOESNT_LOAD_SO` | implemented | A page's one read doesn't load, so nothing can show under its head |
 | 10701 | CH-1901 | 07 Network / offline | `THE_DEVICE_GOES_OFFLINE` | implemented | The device goes offline |
 | 10702 | CH-1902 | 07 Network / offline | `A_SAVE_TAKES_LONGER_THAN_5_SECONDS` | implemented | A save takes longer than 5 seconds (forms, switches and CoachHelm settings) |
 | 10703 | CH-1903 | 07 Network / offline | `SOMEONE_SAVES_WHILE_OFFLINE` | implemented | Someone saves while offline |
-| 10704 | CH-1905 | 07 Network / offline | `SOMEONE_PRESSES_TRY_AGAIN_ON_A_NOTICE` | implemented | Someone presses Try again on a notice while offline |
+| 10704 | CH-1905 | 07 Network / offline | `SOMEONE_PRESSES_TRY_AGAIN_ON_A_NOTICE` | implemented | Someone presses Try again on a notice, or on a page that didn't load, while offline |
 | 10801 |  | 08 Permission / authorization | `CLUBHOUSE_GATE` | implemented | Clubhouse renders only for a coach or a player, and only with golf_clubhouse_ui on (isClubhouseFor); everyone else gets the existing GolfHelm pages, and held server actions refuse through the same check. |
 | 10802 |  | 08 Permission / authorization | `ROLE_SCOPED_NAV` | implemented | Each role sees only its own navigation (D-66), and an address not rebuilt for the viewer's role shows the not-rebuilt notice inside the Clubhouse frame, never another role's page or a Fairway page. |
 | 10803 |  | 08 Permission / authorization | `TEAM_SWITCH_IS_A_HEAD_COACHS` | implemented | Only a head coach staffed on more than one team is offered the team switch (canSwitchTeams and two or more teams), the same gate setActiveTeam enforces: a coach on one team, an assistant on several, and a player see the team as a plain label, and a forged or unstaffed team id is refused by the server, so the switch can never be wider than the server's answer. |

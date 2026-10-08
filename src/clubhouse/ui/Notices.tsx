@@ -1,18 +1,18 @@
 'use client';
 
 import { CircleAlert, House, RotateCw } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Icon } from './Icon';
 import { Button } from './Button';
 import { stateTitle } from './States';
-import { haptic } from '../lib/haptics';
-import { isOffline } from '../lib/use-action';
+import { OFFLINE_LINE, useOfflineRetry } from './Retry';
 
 /**
  * A part of the page could not load (catalog kind 2). Flush in the Ledger (lead decision under the owner's full-auto
- * brief, 2026-10-08; owner to confirm): no fill and no ring, a 2px danger rule at its left, the icon and the title in
- * the danger ink, the body in the secondary ink, and Try again beside the words, or under them in a narrow rail and on
- * the phone (shell.css). The title is a headline, so it shows without a trailing full stop (`stateTitle`).
+ * brief, 2026-10-08, revised the same day; owner to confirm): it sits between the section's own rules with no fill,
+ * no ring and no stripe, the icon and the title in the danger ink, the body in the secondary ink, and Try again beside
+ * the words, or under them in a narrow rail and on the phone (shell.css). The title is a headline, so it shows without
+ * a trailing full stop (`stateTitle`).
  */
 export function InlineNotice({
   title,
@@ -36,22 +36,7 @@ export function InlineNotice({
   code?: string;
 }) {
   // Try again while offline would fail the same way: say so instead (CH-1905).
-  const [offline, setOffline] = useState(false);
-  useEffect(() => {
-    if (!offline) return;
-    const back = () => setOffline(false);
-    window.addEventListener('online', back);
-    return () => window.removeEventListener('online', back);
-  }, [offline]);
-  const retry = () => {
-    if (retrying) return;
-    if (isOffline()) {
-      haptic('warning');
-      setOffline(true);
-      return;
-    }
-    onRetry?.();
-  };
+  const { retry, offline } = useOfflineRetry(onRetry, retrying);
   return (
     <div
       className={'ch-notice ch-notice--danger' + (covered ? ' ch-notice--covered' : '')}
@@ -66,7 +51,7 @@ export function InlineNotice({
           {!covered && body && <p className="ch-notice__body">{body}</p>}
           {offline && (
             <p className="ch-notice__body" data-ch-code="CH-1905">
-              You’re offline. Reconnect, then try again.
+              {OFFLINE_LINE}
             </p>
           )}
         </div>
@@ -82,8 +67,8 @@ export function InlineNotice({
   );
 }
 
-/** "A, B and C", the first letter raised: the parts a PageNotice names, as the start of a sentence. */
-function partsSentence(parts: readonly string[]): string {
+/** "A, B and C", the first letter raised: the parts a page notice names, as the start of a sentence. */
+export function partsSentence(parts: readonly string[]): string {
   const list = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : (parts[0] ?? '');
   return list.charAt(0).toUpperCase() + list.slice(1);
 }
@@ -92,8 +77,9 @@ function partsSentence(parts: readonly string[]): string {
  * More than one part of a page could not load (CH-1209): the page says so once, under its head, with one Try again
  * that re-runs the whole page, and each failed part keeps its heading with a covered notice (`covered`) marking the
  * gap, without a button of its own. A single failed part keeps its own notice, so below two parts this renders
- * nothing. The page passes the parts its render already knows failed, as phrases that read inside a sentence ("this
- * week’s schedule", "recent rounds"); nothing registers at runtime, so nothing reflows after hydration.
+ * nothing. This is for reads the server render already knows failed: the page passes those parts, as phrases that
+ * read inside a sentence ("this week’s schedule", "recent rounds"), so nothing reflows after hydration. Sections that
+ * crash in the browser are told the same way by their SectionGroup instead (CH-1210, ui/SectionBoundary).
  */
 export function PageNotice({
   parts,

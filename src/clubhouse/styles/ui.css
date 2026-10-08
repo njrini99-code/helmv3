@@ -885,8 +885,9 @@
   padding-top: 14px;
   border-top: var(--ch-ledger-rule-double);
 }
+/* 12px, the phone text floor (F09): PageIntro opens a page on the phone (lead, 2026-10-08). */
 .ch-intro__eyebrow {
-  font: 500 11px/1.2 var(--ch-font-sans);
+  font: 500 12px/1.2 var(--ch-font-sans);
   letter-spacing: 0.14em;
   color: var(--ch-ledger-eyebrow);
 }

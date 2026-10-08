@@ -133,8 +133,8 @@ a short screen, for every role. The Home hero bar's team stays a label.
 The states audit (2026-10-07) found three empty-state anatomies, a pink boxed
 notice inside the flush Ledger, a route error in a white card and skeletons
 drawn as filled cards. The shared layer (`ui/States.tsx`, `ui/Notices.tsx`,
-`ui/RefreshNotice.tsx` and their blocks in `styles/shell.css`) now draws one
-family:
+`ui/RefreshNotice.tsx`, `ui/Retry.tsx`, `ui/SectionBoundary.tsx` and their
+blocks in `styles/shell.css`) now draws one family:
 
 - **Section empty** (`EmptyState`): a flush line on the Ledger, left-aligned to
   the section's edge. An optional 16px glyph in the forest ink, the title, one
@@ -143,20 +143,34 @@ family:
   Ledger it sits under the framed head with 72px above and 88px below, never a
   viewport's height, so its action stays above the fold. Its title is the
   ledger ink on every screen.
-- **Notice** (`InlineNotice`, `RefreshNotice`): flush, with a 2px danger rule at
-  its left, the icon and title in the danger ink and the body in the secondary
-  ink. Try again sits beside the words in a full-width notice, and under them
-  in anything narrower than 640px (a container query: a rail, a half column)
-  and on the phone, so notices side by side read alike. The inks and fill are local
-  properties (`--ch-notice-rule`, `--ch-notice-ink`, `--ch-notice-body`,
+- **Notice** (`InlineNotice`, `RefreshNotice`): flush, sitting between the
+  section's own engraved rules with no fill, no ring and no stripe, its icon on
+  the heading's edge. The icon and title are in the danger ink and the body in
+  the secondary ink. Try again sits beside the words in a full-width notice, and
+  under them in anything narrower than 640px (a container query: a rail, a half
+  column) and on the phone, so notices side by side read alike. The inks and
+  fill are local properties (`--ch-notice-ink`, `--ch-notice-body`,
   `--ch-notice-fill`), so a notice on a dark or floating surface is restyled in
-  one rule.
+  one rule; `--ch-notice-rule` stays declared as a hook but is no longer drawn.
 - **Several failed parts** (`PageNotice`, `PageRefreshNotice`, CH-1209): told
   once under the page head with one Try again; each failed part keeps its
-  heading and a covered notice (its title alone).
+  heading and a covered notice (its title alone). These are the reads the
+  server render knows failed.
+- **Several crashed sections** (`SectionGroup`, `SectionGroupNotice`,
+  CH-1210): the same telling for sections that crash in the browser. Each
+  failing `SectionBoundary` inside a group registers itself; at two or more,
+  the group's notice under the page head names them in reading order, its one
+  Try again tries them all again, and each crashed section keeps its title
+  alone. Browser-only, so the server HTML and hydration are unchanged. Without
+  a group, or without its notice on the page, every crash keeps its own notice.
 - **Route error** (`RouteErrorView`): the page empty in the danger tone (a brick
   medallion), Try again first, Back to Home beside it, and the reference as a
   caption. No card.
+- **A page whose one read failed** (`EmptyState size="page" tone="danger"`,
+  CH-1211): the route error's anatomy under the page's own head, as an alert,
+  with Try again first (it re-runs the page through `useRefresh`) and the
+  offline line (CH-1905) above the actions when there is no connection. It is
+  the same anatomy as the route error, not a fourth one.
 - **Skeletons**: a shade deeper on the parchment; on desktop Ledger pages a block
   placeholder is a rule with two lines of type, never a filled card. Pages build
   theirs from `Skeleton`, `SkelLine`, `SkelRows` and `SkelRule`.
@@ -167,11 +181,20 @@ family:
 Each is a lead decision under the owner's full-auto brief; owner to confirm.
 
 1. Notices drop the pink box in the Ledger. They become the flush notice above;
-   the semantic colour stays in the rule, the icon and the title.
+   the semantic colour stays in the icon and the title. Revised the same day:
+   the 2px danger stripe at the notice's left is dropped too, because our
+   design guidance avoids side stripes. The notice sits between the section's
+   engraved rules with no fill, no ring and no stripe of its own.
 2. A failed read keeps the page head and its primary action.
 3. Phone titles are the 600 sans in the ledger ink; the serif is retired.
 4. The route error keeps the reference id, as a quiet caption ("Reference …" in
    the tertiary ink), never in a card.
+5. The kit's PageIntro eyebrow (`.ch-intro__eyebrow`, `styles/ui.css`) is 12px,
+   not 11px, to meet the F09 phone text floor: PageIntro opens a page on the
+   phone (Calendar today).
+6. Crashes that happen together are told together (CH-1210), as failed reads
+   are (CH-1209); a page whose one read failed gets the danger page (CH-1211)
+   rather than a notice over an empty body.
 
 ## Accessibility
 

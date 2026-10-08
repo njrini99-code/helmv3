@@ -88,7 +88,7 @@ Status: N/A — the shell takes no typed input. Fields and their validation belo
 
 Status: DEFINED
 
-Mark all read fails (10601); a team switch fails (10611); the bell's list doesn't load (10602); the five route error views (10603 to 10607), each with its own words and recovery, drawn as the page empty in the danger tone; the two sidebar reads that hide rather than show something wrong (10608, 10609); and, for every page, one notice with one Try again when two or more of its parts fail (10612, `PageNotice`).
+Mark all read fails (10601); a team switch fails (10611); the bell's list doesn't load (10602); the five route error views (10603 to 10607), each with its own words and recovery, drawn as the page empty in the danger tone; the two sidebar reads that hide rather than show something wrong (10608, 10609); and, for every page, one notice with one Try again when two or more of its parts fail (10612, `PageNotice`) or two or more of its sections crash in the browser (10613, `SectionGroup` and `SectionGroupNotice`), and the danger page when its one read fails (10614, `EmptyState size="page" tone="danger"`).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -104,6 +104,8 @@ Mark all read fails (10601); a team switch fails (10611); the bell's list doesn'
 | 10610 | CH-1002 | `SIGNING_OUT_FROM_THE_PHONES_MORE_SHEET` | Signing out from the phone's More sheet fails |
 | 10611 | CH-1003 | `SWITCHING_TEAM_FAILS` | Switching team fails (a head coach on more than one team) |
 | 10612 | CH-1209 | `TWO_OR_MORE_PARTS_OF_A_PAGE` | Two or more parts of a page don't load |
+| 10613 | CH-1210 | `TWO_OR_MORE_SECTIONS_OF_A_PAGE` | Two or more sections of a page crash in the browser |
+| 10614 | CH-1211 | `A_PAGES_ONE_READ_DOESNT_LOAD_SO` | A page's one read doesn't load, so nothing can show under its head |
 
 ## 07 — Network / offline
 
@@ -122,7 +124,7 @@ remain four seconds and errors eight seconds.
 | 10701 | CH-1901 | `THE_DEVICE_GOES_OFFLINE` | The device goes offline |
 | 10702 | CH-1902 | `A_SAVE_TAKES_LONGER_THAN_5_SECONDS` | A save takes longer than 5 seconds (forms, switches and CoachHelm settings) |
 | 10703 | CH-1903 | `SOMEONE_SAVES_WHILE_OFFLINE` | Someone saves while offline |
-| 10704 | CH-1905 | `SOMEONE_PRESSES_TRY_AGAIN_ON_A_NOTICE` | Someone presses Try again on a notice while offline |
+| 10704 | CH-1905 | `SOMEONE_PRESSES_TRY_AGAIN_ON_A_NOTICE` | Someone presses Try again on a notice, or on a page that didn't load, while offline |
 
 ## 08 — Permission / authorization
 

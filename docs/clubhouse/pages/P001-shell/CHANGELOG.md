@@ -52,11 +52,18 @@ Clubhouse changelog):
 
 - The section empty is a left-aligned line.
 - The page empty keeps measured air under the framed head.
-- The notice has a danger rule in place of the pink box.
+- The notice drops the pink box and draws nothing of its own: no fill, ring or
+  stripe, its icon on the heading's edge, between the section's own rules (the
+  2px danger stripe was dropped the same day; side stripes are avoided). In the
+  bell it takes the rows' 10px inset.
 - The route error is the page empty in a brick danger tone, with no card.
 - On desktop Ledger pages, a skeleton block is a rule with two lines of type.
+- The kit's PageIntro eyebrow is 12px (`ui.css`), the F09 phone text floor.
 
-New: CH-1209, one notice with one Try again when several parts of a page fail.
+New: CH-1209, one notice with one Try again when several parts of a page fail;
+CH-1210, the same for sections that crash together (`SectionGroup`,
+`SectionGroupNotice`); CH-1211, the danger page for a page whose one read
+failed (`EmptyState size="page" tone="danger"`).
 
 ## 2026-10-08 — The tab bar in Safari is one toolbar with Safari's
 
