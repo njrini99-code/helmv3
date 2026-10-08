@@ -372,4 +372,3 @@ export function SinceYouLooked({ rounds, event, onOpenRound }: { rounds: ChLates
     </section>
   );
 }
-

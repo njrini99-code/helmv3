@@ -1103,4 +1103,3 @@ describe('Home · phone round rows peek (P003-C1)', () => {
     expect(bare.avg).toBeUndefined();
   });
 });
-
