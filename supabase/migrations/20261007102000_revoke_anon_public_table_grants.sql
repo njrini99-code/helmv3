@@ -47,6 +47,16 @@
 --       page ignore their errors or log them.
 --     * middleware reads of baseball_coaches, baseball_team_coach_staff,
 --       baseball_teams and baseball_program_settings run after a session check.
+--   Join and invite pages (/golf/join/[code], /baseball/join/[code]) redirect a
+--   signed-out visitor to signup before they read anything; the login, signup
+--   and welcome pages and sitemap.ts read no table as anon.
+--   Production REST logs cannot confirm this empirically. Over the last 24 h
+--   no request carried a decoded anon JWT, but requests made with the
+--   new-format publishable and secret keys log an empty role, so an anon read
+--   cannot be told from a service-role one. The 13,981 such requests are
+--   service-style (background_job_logs, helm_debug_*, crm_*, cron reads).
+--   PRECONDITION TO APPLY: watch Sentry for 42501 and PostgREST 401/403 on
+--   /rest/v1/* for the first hour, and keep the ROLLBACK below ready.
 --   No SECURITY INVOKER function that anon can execute needs a table grant
 --   for a legitimate anon flow: the only anon-executable functions in public
 --   are trigger bodies and report helpers that are already denied by RLS.

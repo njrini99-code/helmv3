@@ -114,14 +114,14 @@
 -- EXPLAIN evidence is in the PR body (production read-only plan for the old
 -- shape, read-only proxy for the new shape, local-stack plan if available).
 --
--- ROLLBACK: recreate the old policies. The full definitions are in this
--- file's header and in production until the migration is applied; the
--- authoritative text is the pg_policies dump in the PR body. Drop the five new
--- golf_holes/golf_shots policies first, then
---   DROP FUNCTION public.golf_readable_round_ids();
--- The old-policy DDL is embedded in the pgTAP oracle test
+-- ROLLBACK: recreate the old policies. This file's header only summarises
+-- them; the executable CREATE POLICY text (verbatim from production,
+-- 2026-10-07) is the "Swap the OLD helpers and policies back in" section of
 -- supabase/tests/rls/golf_holes_shots_policy_consolidation.sql, which can be
--- copied verbatim.
+-- copied as is. Drop the four new golf_holes policies, drop the four new
+-- golf_shots policies and restore golf_shots_select's old USING with ALTER
+-- POLICY, then
+--   DROP FUNCTION public.golf_readable_round_ids();
 --
 -- VERIFY: select 1 where (select count(*) from pg_policies where schemaname = 'public' and tablename = 'golf_holes') = 4;
 -- VERIFY: select 1 where (select count(*) from pg_policies where schemaname = 'public' and tablename = 'golf_shots') = 5;
@@ -132,6 +132,13 @@
 -- ---------------------------------------------------------------------------
 -- Once-per-statement lookup of the caller's readable rounds
 -- ---------------------------------------------------------------------------
+-- COUPLING: this function restates the golf_rounds SELECT predicate (own
+-- player, coached team, active member of the team). golf_holes and golf_shots
+-- used to inherit golf_rounds RLS through their subquery; they now copy its
+-- result through this function instead. A future change to who may see a
+-- golf_rounds row does not reach holes and shots unless this function changes
+-- with it. The oracle test fails if the two ever disagree for the covered
+-- personas.
 CREATE OR REPLACE FUNCTION public.golf_readable_round_ids()
 RETURNS SETOF uuid
 LANGUAGE sql

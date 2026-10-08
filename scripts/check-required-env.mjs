@@ -57,10 +57,14 @@ export function clubhouseFlagsOn(vercelEnv, flags) {
 function loadFlags() {
   try {
     return readFlagsFile(FLAGS_PATH);
-  } catch {
+  } catch (err) {
     // Without the registry the clubhouse rule cannot be evaluated. The flag
     // checker (npm run flags:check) owns a malformed registry; do not fail the
-    // build here for it.
+    // build here for it, but say so, so a skipped rule is visible in the log.
+    process.stderr.write(
+      `[check-required-env] could not read config/feature-flags.yml (${err instanceof Error ? err.message : err}); ` +
+        `the ${CLUBHOUSE_TEAMS_ENV} rule was skipped\n`
+    );
     return [];
   }
 }
