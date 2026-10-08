@@ -297,3 +297,23 @@
   font-variant-numeric: lining-nums proportional-nums;
   letter-spacing: -0.01em;
 }
+
+/* Dark: globals.css gives every h1–h6 Tailwind's warm-900 ink (near-black), which a Clubhouse heading with no colour of
+   its own inherits, at about 1:1 on the dark page. Here a bare heading takes its surroundings' ink instead. Zero
+   specificity beyond the element (the same as the global rule, which Clubhouse styles load after), so any .ch-* heading
+   colour still wins, and light mode is untouched. */
+:where(html[data-fw-theme='dark'] [data-ui='clubhouse']) h1,
+:where(html[data-fw-theme='dark'] [data-ui='clubhouse']) h2,
+:where(html[data-fw-theme='dark'] [data-ui='clubhouse']) h3,
+:where(html[data-fw-theme='dark'] [data-ui='clubhouse']) h4,
+:where(html[data-fw-theme='dark'] [data-ui='clubhouse']) h5,
+:where(html[data-fw-theme='dark'] [data-ui='clubhouse']) h6 {
+  color: inherit;
+}
+
+/* Dark: the app's global h1-h6 colour (globals.css, a near-black warm ink) would sink a Clubhouse heading that sets no
+   colour of its own into the night ground. At zero specificity it inherits instead; every .ch-* heading class still
+   wins, and light is untouched. */
+:where(html[data-fw-theme='dark'] [data-ui='clubhouse']) :is(h1, h2, h3, h4, h5, h6) {
+  color: inherit;
+}
