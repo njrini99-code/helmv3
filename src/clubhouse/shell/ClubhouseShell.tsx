@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
 import {
   GolfUserProvider,
@@ -33,6 +33,9 @@ export function ClubhouseShell({
   children: ReactNode;
 }) {
   const pathname = usePathname() ?? "/golf/dashboard";
+  // The query decides a few phone bars (a Settings section, a coach's player on Stats; CH-1402). The dashboard is
+  // rendered per request, so this reads the request's query on the server too.
+  const search = useSearchParams()?.toString() ?? "";
   return (
     <ChPhoneHintProvider phone={phone}>
       <SessionActivityProvider>
@@ -44,6 +47,7 @@ export function ClubhouseShell({
               userData={userData}
               shell={shell}
               pathname={pathname}
+              search={search}
             >
               {children}
             </ClubhouseFrame>

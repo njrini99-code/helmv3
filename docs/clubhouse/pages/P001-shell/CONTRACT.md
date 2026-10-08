@@ -50,12 +50,12 @@ The frame around every page (10102), a page change that opens the new page at th
 
 Status: DEFINED
 
-The bell's own skeleton rows (10201). Each page owns its route skeleton, built from the shared shapes (`Skeleton`, `SkelLine`, `SkelRows`, `SkelRule`); the shell fades it in over base as it mounts (11609; the 150ms hold ended with F-37), and on desktop Ledger pages draws a block placeholder as a rule with two lines of type, never a filled card. On the phone the shell draws a pushed page's bar from its address while the page loads and in the server's first paint (10202, since 2026-10-08): the back link and title stand where the page's own bar puts them, so nothing in the bar moves when it arrives.
+The bell's own skeleton rows (10201). Each page owns its route skeleton, built from the shared shapes (`Skeleton`, `SkelLine`, `SkelRows`, `SkelRule`); the shell fades it in over base as it mounts (11609; the 150ms hold ended with F-37), and on desktop Ledger pages draws a block placeholder as a rule with two lines of type, never a filled card. On the phone the shell draws a pushed page's bar from its address while the page loads and in the server's first paint (10202, since 2026-10-08): the back link and title stand where the page's own bar puts them, so nothing in the bar moves when it arrives. The query decides a Settings section's bar and a coach's player's on Stats, a form's back is its Cancel, and a full-screen flow hides the tab bar from its first frame.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 10201 | CH-1401 | `THE_BELL_IS_LOADING_ITS_LIST` | The bell is loading its list |
-| 10202 | CH-1402 | `A_PHONE_PAGE_OPENED_FROM_MORE_OR` | A phone page opened from More, or a page below another (a qualifier, its selections, a round, recovery), is loading or still arriving from the server |
+| 10202 | CH-1402 | `A_PHONE_PAGE_OPENED_FROM_MORE_OR` | A phone page opened from More, a page below another (a qualifier, its selections, a round, recovery), or a coach's full-page form (a new or edited qualifier) is loading or still arriving from the server |
 
 ## 03 — Background loading / refresh
 

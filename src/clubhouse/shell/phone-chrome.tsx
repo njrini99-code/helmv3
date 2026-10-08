@@ -144,7 +144,8 @@ export function useBackFromMore(): () => void {
  * The shell's stand-in for a pushed page's own top (CH-1402), drawn from the address (`phonePushedTop`) while the page
  * loads and in the server's first paint: the same back link and title in the same places, so the page's bar replaces
  * it without a jump. The title is plain text, not a heading: the page brings its own. Back works while it loads: to
- * wherever the user came from for a page opened from More, to the page above for one below it.
+ * wherever the user came from for a page opened from More, to the page above for one below it; a form's is its plain
+ * Cancel, which has nothing to lose yet.
  */
 export function PushedTopStandIn({ top }: { top: ChPhonePushedTop }) {
   const router = useRouter();
@@ -152,7 +153,7 @@ export function PushedTopStandIn({ top }: { top: ChPhonePushedTop }) {
   const { parent } = top;
   return (
     <PhoneBarParts
-      back={{ label: top.back, onBack: parent ? () => router.push(parent) : backFromMore }}
+      back={{ label: top.back, chevron: !top.form, onBack: parent ? () => router.push(parent) : backFromMore }}
       title={top.quiet ? <span className="ch-sr-only">{top.title}</span> : top.title}
       heading={false}
     />

@@ -177,6 +177,8 @@ before, after, baseline or evidence.
 | `P001__segmented-press__coach__390__held__evidence__d22efe2.png` | evidence | d22efe2 | segmented-press (coach), 390px, held |
 | `P001__sheet-close__coach__390__title-only__after__d22efe2.png` | after | d22efe2 | sheet-close (coach), 390px, title-only |
 | `P001__sheet-close__coach__390__title-only__before__96dcb84.png` | before | 96dcb84 | sheet-close (coach), 390px, title-only |
+| `P001__form-bar__coach__390x844__qualifier-new-loading__after__834fa2c.png` | after | 834fa2c | form-bar (coach), 390x844px, qualifier-new-loading; clubhouse-preview |
+| `P001__form-bar__coach__390x844__qualifier-new-loading__before__4141d68.png` | before | 4141d68 | form-bar (coach), 390x844px, qualifier-new-loading; clubhouse-preview |
 
 ## Historical verification gaps
 

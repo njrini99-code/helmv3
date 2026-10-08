@@ -1,5 +1,24 @@
 # P001 — Shell: changelog
 
+## 2026-10-08 — The pushed bar for forms, Settings sections and a coach's player
+
+- **Forms (CH-1402).** The coach's qualifier forms (new and edit) load under their own bar: the plain Cancel and the
+  form's title, where the form puts them, with the tab bar already hidden; the form adds Create or Save. They loaded
+  under the tab root's title and bell with the tab bar showing, then changed both. A player's new round and the round
+  itself keep their own chrome (the band's Back and the plain bar, P011 111903), and now hide the tab bar from their
+  first frame too (`phoneFullScreen`), so it no longer shows while they load and leaves as they arrive.
+- **The query (CH-1402).** `ClubhouseShell` hands the address's query to the frame (`useSearchParams`; the dashboard
+  renders per request, so the server reads it too). A Settings section named in the address (`?section=`, or the old
+  `/settings/notifications` and `/settings/coaching-intelligence`) loads under "‹ Settings", as SettingsPhone pushes
+  it; a coach's player on Stats (`?player=`) under "‹ Team" and "Player stats". Both used to load under the list's or
+  the team's bar and swap the back link when the page arrived.
+- Manage selections' bar is the coach's only: a player there meets the coach-only notice, under the plain bar.
+
+Checked in WebKit at 390 (touch): the new and edited qualifier, loading to loaded, Cancel and the title moved 0px with
+the tab bar hidden in both (before: the tab root's title and bell, the tab bar showing); Manage selections and the
+earlier routes unchanged. The Settings-section and player bars are checked in `shell.test` only: the preview hands the
+frame no query yet.
+
 ## 2026-10-08 — A pushed page's bar from its first frame, 44 by 44 keys, and choices that answer a press
 
 - **The pushed bar while a page loads (CH-1402).** On the phone a page opened from More (a coach's Roster,

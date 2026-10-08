@@ -10,7 +10,7 @@ import { liftHandoffCurtain } from '../lib/handoff';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { ToastProvider } from '../ui/Toast';
 import type { ChShellData } from '../data/shell';
-import { activeNavItem, isRebuilt, phonePushedTop, routeLabel } from './nav';
+import { activeNavItem, isRebuilt, phoneFullScreen, phonePushedTop, routeLabel } from './nav';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { OfflineBanner } from './OfflineBanner';
@@ -38,12 +38,15 @@ export function ClubhouseFrame({
   userData,
   shell,
   pathname,
+  search = '',
   forceRebuilt = false,
   children,
 }: {
   userData: GolfUserData;
   shell: ChShellData;
   pathname: string;
+  /** The address's query (`section=team`), for the phone bars it decides: a Settings section, a coach's player on Stats. */
+  search?: string;
   /** Preview only: render children even on a route that isn't in CH_REBUILT_ROUTES. */
   forceRebuilt?: boolean;
   children: ReactNode;
@@ -53,7 +56,9 @@ export function ClubhouseFrame({
   const item = activeNavItem(pathname, role);
   const rebuilt = forceRebuilt || isRebuilt(pathname, role);
   // A pushed page's bar, drawn by the shell until the page's own arrives (CH-1402); a page not rebuilt keeps the plain bar.
-  const pushed = rebuilt ? phonePushedTop(pathname, role) : null;
+  // A full-screen flow hides the tab bar from its first frame, as its page will.
+  const pushed = rebuilt ? phonePushedTop(pathname, role, search ? new URLSearchParams(search) : null) : null;
+  const fullScreen = rebuilt && phoneFullScreen(pathname, role);
   const { showAnimations } = useAppearancePreferences();
   // Smooth wheel scrolling on the desktop canvas (off on a phone, with reduced motion and with Animations off).
   useCanvasSmoothScroll();
@@ -67,7 +72,7 @@ export function ClubhouseFrame({
       <LazyMotion features={loadMaxFeatures} strict>
         <PhoneChromeProvider>
           {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
-          <FrameRoot motionOff={!showAnimations}>
+          <FrameRoot motionOff={!showAnimations} fullScreen={fullScreen}>
             <ToastProvider scope={userData.teamId ?? ''}>
               <CrumbProvider>
                 {/* The first Tab on any page: jump past the navigation to the page itself (CH-1607: it slides into view). */}
@@ -96,7 +101,7 @@ export function ClubhouseFrame({
 }
 
 /** `.ch-root`, marked while a pushed phone screen covers the page, so toasts sit above its composer instead of the hidden tab bar. */
-function FrameRoot({ motionOff, children }: { motionOff: boolean; children: ReactNode }) {
+function FrameRoot({ motionOff, fullScreen, children }: { motionOff: boolean; fullScreen: boolean; children: ReactNode }) {
   const { immersive, noTabs, hero } = usePhoneChromeState();
   usePhoneEdges(hero);
   return (
@@ -105,7 +110,7 @@ function FrameRoot({ motionOff, children }: { motionOff: boolean; children: Reac
       data-ui="clubhouse"
       data-motion={motionOff ? 'off' : undefined}
       data-phone-immersive={immersive ? '' : undefined}
-      data-phone-notabs={noTabs ? '' : undefined}
+      data-phone-notabs={noTabs || fullScreen ? '' : undefined}
       data-phone-hero={hero ? '' : undefined}
     >
       {children}

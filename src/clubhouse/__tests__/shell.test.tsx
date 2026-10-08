@@ -44,7 +44,7 @@ import { CH_SLOW_SAVE_AFTER, useAction } from '../lib/use-action';
 import { loadClubhouseShell, type ChShellData } from '../data/shell';
 import { ClubhouseFrame } from '../shell/ClubhouseFrame';
 import { badgeCount, Sidebar } from '../shell/Sidebar';
-import { CH_NAV_PLAYER, phonePushedTop } from '../shell/nav';
+import { CH_NAV_PLAYER, phoneFullScreen, phonePushedTop } from '../shell/nav';
 import { TabBar } from '../shell/TabBar';
 import { TopBar } from '../shell/TopBar';
 import { ClubhouseMarker } from '../shell/context';
@@ -890,9 +890,9 @@ describe('Shell · phone chrome', () => {
 
   it('CH-1402 each phone address draws the bar its page draws (kept in step with the pages\' PhoneTops)', () => {
     const uuid = '0b6f2c1e-8d1a-4c47-9a53-2f1e7b0c9d10';
-    const bar = (path: string, role: 'coach' | 'player') => {
-      const t = phonePushedTop(path, role);
-      return t && `${t.back} | ${t.title}${t.quiet ? ' (quiet)' : ''}${t.parent ? ` -> ${t.parent}` : ''}`;
+    const bar = (path: string, role: 'coach' | 'player', query?: string) => {
+      const t = phonePushedTop(path, role, query == null ? null : new URLSearchParams(query));
+      return t && `${t.back} | ${t.title}${t.quiet ? ' (quiet)' : ''}${t.parent ? ` -> ${t.parent}` : ''}${t.form ? ' (form)' : ''}`;
     };
     // Pages opened from the More sheet go back to More (D-41, D-66).
     expect(bar('/golf/dashboard/roster', 'coach')).toBe('More | Roster');
@@ -914,22 +914,100 @@ describe('Shell · phone chrome', () => {
     expect(bar(`/golf/dashboard/rounds/${uuid}`, 'coach')).toBe('Stats | Round -> /golf/dashboard/stats');
     expect(bar(`/golf/dashboard/rounds/${uuid}`, 'player')).toBe('Rounds | Round -> /golf/dashboard/rounds');
     expect(bar('/golf/dashboard/rounds/recover', 'player')).toBe('Rounds | Recover -> /golf/dashboard/rounds');
-    // Tab roots, the player's Messages (a tab root's title under More), full-page forms and the round itself draw their own.
-    for (const [path, role] of [
-      ['/golf/dashboard', 'coach'],
-      ['/golf/dashboard/coachhelm', 'coach'],
-      ['/golf/dashboard/calendar', 'coach'],
-      ['/golf/dashboard/stats', 'coach'],
-      ['/golf/dashboard/rounds', 'player'],
-      ['/golf/dashboard/team-hub', 'player'],
-      ['/golf/dashboard/messages', 'player'],
-      ['/golf/dashboard/qualifiers/new', 'coach'],
-      [`/golf/dashboard/qualifiers/${uuid}/edit`, 'coach'],
-      ['/golf/dashboard/rounds/new', 'player'],
-      [`/golf/dashboard/rounds/continue/${uuid}`, 'player'],
-      ['/golf/dashboard/settings/notifications', 'coach'],
+    // The coach's full-page forms: a plain Cancel back to where they came from (QualifierForm).
+    expect(bar('/golf/dashboard/qualifiers/new', 'coach')).toBe('Cancel | New qualifier -> /golf/dashboard/qualifiers (form)');
+    expect(bar(`/golf/dashboard/qualifiers/${uuid}/edit`, 'coach')).toBe(`Cancel | Edit qualifier -> /golf/dashboard/qualifiers/${uuid} (form)`);
+    // The query decides two bars. A Settings section named in the address opens pushed and goes back to the list (SettingsPhone),
+    // as an old Settings address does; an unknown section is the list. A coach's player on Stats goes back to the team.
+    expect(bar('/golf/dashboard/settings', 'coach', 'section=team')).toBe('Settings | Team (quiet) -> /golf/dashboard/settings');
+    expect(bar('/golf/dashboard/settings', 'player', 'section=golf')).toBe('Settings | Golf profile (quiet) -> /golf/dashboard/settings');
+    expect(bar('/golf/dashboard/settings', 'coach', 'section=golf')).toBe('More | Settings (quiet)');
+    expect(bar('/golf/dashboard/settings/notifications', 'coach')).toBe('Settings | Notifications (quiet) -> /golf/dashboard/settings');
+    expect(bar('/golf/dashboard/settings/coaching-intelligence', 'coach')).toBe('Settings | CoachHelm (quiet) -> /golf/dashboard/settings');
+    expect(bar('/golf/dashboard/settings/coaching-intelligence', 'player')).toBe('Settings | Account (quiet) -> /golf/dashboard/settings');
+    expect(bar('/golf/dashboard/settings/notifications', 'player', 'section=account')).toBe('Settings | Account (quiet) -> /golf/dashboard/settings');
+    expect(bar('/golf/dashboard/stats', 'coach', 'player=0b6f2c1e&window=season')).toBe('Team | Player stats -> /golf/dashboard/stats');
+    expect(bar('/golf/dashboard/stats', 'player', 'player=0b6f2c1e')).toBe('More | My stats');
+    // Tab roots, the player's Messages (a tab root's title under More), a new round, the round itself, and the coach's
+    // pages a player only meets as the coach-only notice draw their own.
+    for (const [path, role, query] of [
+      ['/golf/dashboard', 'coach', ''],
+      ['/golf/dashboard/coachhelm', 'coach', ''],
+      ['/golf/dashboard/calendar', 'coach', ''],
+      ['/golf/dashboard/stats', 'coach', 'window=season'],
+      ['/golf/dashboard/rounds', 'player', ''],
+      ['/golf/dashboard/team-hub', 'player', ''],
+      ['/golf/dashboard/messages', 'player', ''],
+      ['/golf/dashboard/rounds/new', 'player', ''],
+      [`/golf/dashboard/rounds/continue/${uuid}`, 'player', ''],
+      ['/golf/dashboard/qualifiers/new', 'player', ''],
+      [`/golf/dashboard/qualifiers/${uuid}/edit`, 'player', ''],
+      [`/golf/dashboard/qualifiers/${uuid}/selection`, 'player', ''],
     ] as const)
-      expect(bar(path, role)).toBeNull();
+      expect(bar(path, role, query)).toBeNull();
+  });
+
+  it('CH-1402 a full-screen flow hides the tab bar from its address, as its page will', () => {
+    const uuid = '0b6f2c1e-8d1a-4c47-9a53-2f1e7b0c9d10';
+    expect(phoneFullScreen('/golf/dashboard/qualifiers/new', 'coach')).toBe(true);
+    expect(phoneFullScreen(`/golf/dashboard/qualifiers/${uuid}/edit`, 'coach')).toBe(true);
+    expect(phoneFullScreen('/golf/dashboard/rounds/new', 'player')).toBe(true);
+    expect(phoneFullScreen(`/golf/dashboard/rounds/continue/${uuid}`, 'player')).toBe(true);
+    expect(phoneFullScreen(`/golf/dashboard/qualifiers/${uuid}`, 'coach')).toBe(false);
+    expect(phoneFullScreen('/golf/dashboard/qualifiers/new', 'player')).toBe(false);
+    expect(phoneFullScreen('/golf/dashboard/rounds', 'player')).toBe(false);
+    expect(phoneFullScreen('/golf/dashboard/rounds/new', 'coach')).toBe(false);
+  });
+
+  it('CH-1402 a form loads under its Cancel with the tab bar already hidden; a Settings section and a coach\'s player under their own back link', () => {
+    const { unmount, rerender } = render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/qualifiers/new" forceRebuilt>
+        <p aria-busy="true">Loading the form</p>
+      </ClubhouseFrame>,
+    );
+    const cancel = within(code('CH-1402') as HTMLElement).getByRole('button', { name: 'Cancel' });
+    expect(cancel.classList.contains('is-text')).toBe(true);
+    expect(cancel.querySelector('svg')).toBeNull();
+    expect(code('CH-1402')!.querySelector('.ch-pbar__title')!.textContent).toBe('New qualifier');
+    expect(document.querySelector('.ch-root')!.hasAttribute('data-phone-notabs')).toBe(true);
+    // The form arrives: its own Cancel and Create replace the stand-in; the tab bar stays hidden.
+    rerender(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/qualifiers/new" forceRebuilt>
+        <PhoneTop title="New qualifier" back={{ label: 'Cancel', chevron: false, onBack: () => {} }} action={<button type="button">Create</button>} />
+      </ClubhouseFrame>,
+    );
+    expect(code('CH-1402')).toBeNull();
+    expect(within(document.querySelector('.ch-topbar') as HTMLElement).getAllByRole('button', { name: 'Cancel' })).toHaveLength(1);
+    expect(document.querySelector('.ch-root')!.hasAttribute('data-phone-notabs')).toBe(true);
+    unmount();
+    const { unmount: off } = render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/settings" search="section=team" forceRebuilt>
+        <p aria-busy="true">Loading</p>
+      </ClubhouseFrame>,
+    );
+    expect(within(code('CH-1402') as HTMLElement).getByRole('button', { name: 'Back to Settings' })).toBeTruthy();
+    expect(code('CH-1402')!.querySelector('.ch-pbar__title')!.textContent).toBe('Team');
+    off();
+    render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/stats" search="player=0b6f2c1e" forceRebuilt>
+        <p aria-busy="true">Loading</p>
+      </ClubhouseFrame>,
+    );
+    expect(within(code('CH-1402') as HTMLElement).getByRole('button', { name: 'Back to Team' })).toBeTruthy();
+    expect(code('CH-1402')!.querySelector('.ch-pbar__title')!.textContent).toBe('Player stats');
+    expect(document.querySelector('.ch-root')!.hasAttribute('data-phone-notabs')).toBe(false);
+  });
+
+  it('CH-1402 a new round keeps its own band and the plain bar, with the tab bar hidden from its first frame', () => {
+    const player = { role: 'player', name: 'Jonah Okafor', teamName: 'Varsity' } as unknown as GolfUserData;
+    render(
+      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/rounds/new">
+        <p aria-busy="true">Loading the round</p>
+      </ClubhouseFrame>,
+    );
+    expect(code('CH-1402')).toBeNull();
+    expect(document.querySelector('.ch-topbar')!.getAttribute('data-phone')).toBe('root');
+    expect(document.querySelector('.ch-root')!.hasAttribute('data-phone-notabs')).toBe(true);
   });
 });
 
