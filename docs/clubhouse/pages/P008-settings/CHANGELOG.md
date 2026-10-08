@@ -1,5 +1,13 @@
 # P008 — Settings: changelog
 
+## 2026-10-08 — premium pass: send a test push, feel it, text size (P008-C3, C1; findings #1, #2, #4)
+
+- C3: once push is on for this device, "Send a test" sits beside Push on this device (desktop) or as a row under it (phone). It calls `POST /api/push-subscriptions/test` (D1-6), which sends a fixed "Test from Clubhouse" to the caller's own subscriptions only and removes dead ones, limited to 3 a minute. Done: "Test sent"; failures say why (CH-8029).
+- C1: Preferences gains "Feel it", which plays the haptic you chose, and a Text size row ("Automatic", native app only) saying that the phone's text size setting applies.
+- #1: on the phone, the weekly team email is in an Email group, not under This device.
+- #2: Quiet mode comes first on the phone, as on desktop.
+- #4: the desktop matrix's Push column carries "Off on this device" while push is off here; the phone notes it under Email and push.
+
 ## 2026-10-08 — dark: Clubhouse at night
 
 Settings follows GolfHelm's dark theme ("Clubhouse at night"), including the new Appearance control. The rail's selection is a light-green wash with the light text green; the team code and rank numbers lift off the ground; the phone's portrait coin and pills keep a filled green with ivory type; the phone switch uses the switch tokens (ivory thumb, never the dark ivory ramp); the action sheet's card and scrim are dark. Light mode is unchanged.

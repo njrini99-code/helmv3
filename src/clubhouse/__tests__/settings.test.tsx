@@ -165,6 +165,22 @@ describe('Settings · 80xx error toasts', () => {
     await expectCode('CH-8007', /Couldn’t turn on push here/);
   });
 
+  it('CH-8029 Send a test: only once push is on here; it says it was sent, or why it wasn’t', async () => {
+    const off = setup({ section: 'notifications', device: makeDevice({ test: vi.fn() }) });
+    expect(screen.queryByRole('button', { name: 'Send a test' })).toBeNull();
+    // With push off here, the Push column says so.
+    expect(screen.getByRole('columnheader', { name: /Push Off on this device/ })).toBeTruthy();
+    off.unmount();
+    const test = vi.fn().mockResolvedValueOnce({ ok: true, sent: 1 }).mockResolvedValueOnce({ ok: false, error: 'No device has push on yet.' });
+    const { user } = setup({ section: 'notifications', device: makeDevice({ status: 'subscribed', test }) });
+    await user.click(screen.getByRole('button', { name: 'Send a test' }));
+    expect(await screen.findByText('Test sent')).toBeTruthy();
+    expect(hapticSpy).toHaveBeenCalledWith('success');
+    await user.click(screen.getByRole('button', { name: 'Send a test' }));
+    await expectCode('CH-8029', /Couldn’t send a test/);
+    expect(test).toHaveBeenCalledTimes(2);
+  });
+
   it('CH-8008 a CoachHelm update switch fails (player)', async () => {
     const { user } = setup({ data: playerData(true), section: 'notifications', writes: { setRoutingCell: vi.fn(() => fail()) } });
     await user.click(screen.getByRole('switch', { name: 'New insight, push' }));
@@ -569,6 +585,22 @@ describe('Settings · motion, haptics, accessibility', () => {
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: vi.fn(() => Promise.resolve()) } });
     await user.click(screen.getByRole('button', { name: 'Copy link' }));
     await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('success'));
+  });
+
+  it('P008-C3 C1 Feel it plays one success haptic (off with Haptics), and Text size says it follows the iPhone; both only in the app', async () => {
+    const web = setup({ section: 'preferences', device: { ...makeDevice(), native: false } });
+    expect(screen.queryByRole('button', { name: 'Feel it' })).toBeNull();
+    expect(screen.queryByText(/Follows your iPhone’s text size/)).toBeNull();
+    web.unmount();
+    const { user } = setup({ section: 'preferences' });
+    hapticSpy.mockClear();
+    await user.click(screen.getByRole('button', { name: 'Feel it' }));
+    expect(hapticSpy.mock.calls).toEqual([['success']]);
+    expect(screen.getByText(/Follows your iPhone’s text size/)).toBeTruthy();
+    await user.click(screen.getByRole('switch', { name: 'Haptics' }));
+    expect((screen.getByRole('button', { name: 'Feel it' }) as HTMLButtonElement).disabled).toBe(true);
+    // The switch is saved on the device: put it back for the tests that follow.
+    await user.click(screen.getByRole('switch', { name: 'Haptics' }));
   });
 
   it('CH-8707 turning Haptics back on gives one more selection tick, and the switch is only in the app', async () => {

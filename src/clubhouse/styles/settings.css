@@ -425,6 +425,25 @@
   font: 400 12px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
+/* P008-C3: a row's switch with its test beside it (Send a test, Feel it). */
+.ch-set-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+/* P008 #4: the Push column says when push is off on this device (it still saves for the others). */
+.ch-set-matrix__row.is-head > [role='columnheader'] .ch-set-matrix__note {
+  display: block;
+  margin-top: 3px;
+  font: 400 11.5px/1.2 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-set-matrix__row.is-head > [role='columnheader']:has(.ch-set-matrix__note) {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
 .ch-set-bulk {
   display: flex;
   flex: none;
