@@ -1992,6 +1992,149 @@ a.ch-rd-sc:focus-visible {
   }
 }
 
+/* Dark ("Clubhouse at night"). The ivory ramp turns into the dark surfaces, so ivory type on a green band reads the
+   on-green ink, and the white wells, hairlines and lit tops written as literals above take their night values. */
+html[data-fw-theme='dark'] .ch-rd-unf,
+html[data-fw-theme='dark'] .ch-rd-unf__f b,
+html[data-fw-theme='dark'] .ch-rd-strip span.is-par,
+html[data-fw-theme='dark'] .ch-rv-hero,
+html[data-fw-theme='dark'] .ch-rv-shots__n,
+html[data-fw-theme='dark'] .ch-rv-recap {
+  color: var(--ch-on-green-ink);
+}
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-rd-unf__discard:hover {
+    color: var(--ch-on-green-ink);
+  }
+}
+html[data-fw-theme='dark'] .ch-rd-unf__cta {
+  background: linear-gradient(180deg, #e9e3d3, #d6cfbd);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.4),
+    var(--ch-elevation-control);
+}
+html[data-fw-theme='dark'] .ch-rd-rib line {
+  stroke: var(--ch-border-hairline);
+}
+html[data-fw-theme='dark'] .ch-rd-rib line.is-par {
+  stroke: rgb(237 231 216 / 0.45);
+}
+html[data-fw-theme='dark'] .ch-rd-rib__chip {
+  stroke: rgb(107 187 140 / 0.3);
+}
+/* Over par a warm grey (4.4:1 on the card), qualifiers the gilt, so the three bar kinds stay apart. */
+html[data-fw-theme='dark'] .ch-rd-rib rect.is-over,
+html[data-fw-theme='dark'] .ch-rd-season__lg i.is-over,
+:where(html[data-fw-theme='dark']) .ch-rv-dist__t i {
+  fill: #8a8373;
+  background: #8a8373;
+}
+html[data-fw-theme='dark'] .ch-rd-rib rect.is-q,
+html[data-fw-theme='dark'] .ch-rd-season__lg i.is-q {
+  fill: var(--ch-champagne-500);
+  background: var(--ch-champagne-500);
+}
+html[data-fw-theme='dark'] .ch-rd-season__lg i.is-under {
+  background: var(--ch-green-500);
+}
+html[data-fw-theme='dark'] .ch-rd-more__go,
+html[data-fw-theme='dark'] .ch-rd-pill.is-qualifier {
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.28);
+}
+html[data-fw-theme='dark'] .ch-rd-tee {
+  box-shadow: 0 0 0 1px rgb(237 231 216 / 0.3);
+}
+html[data-fw-theme='dark'] .ch-rd-tee--white {
+  background: #f1ece0;
+}
+html[data-fw-theme='dark'] .ch-rd-sc__grid {
+  box-shadow: 0 0 0 1px var(--ch-border-control);
+}
+html[data-fw-theme='dark'] .ch-rd-sc__grid > span {
+  background: var(--ch-ivory-50);
+}
+html[data-fw-theme='dark'] .ch-rd-sc__grid > span + span {
+  border-left-color: var(--ch-border-subtle);
+}
+html[data-fw-theme='dark'] .ch-rd-sc__grid .is-tot {
+  background: var(--ch-ivory-150);
+}
+html[data-fw-theme='dark'] .ch-rd-meter__t,
+html[data-fw-theme='dark'] .ch-rv-dist__t {
+  background: rgb(237 231 216 / 0.08);
+}
+html[data-fw-theme='dark'] .ch-rd-meter__t i {
+  background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-500));
+}
+html[data-fw-theme='dark'] .ch-rd-sc__s {
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.35);
+}
+html[data-fw-theme='dark'] .ch-rd-sc__s.is-under {
+  background: var(--ch-score-under-bg);
+  box-shadow: inset 0 0 0 2px var(--ch-score-under);
+}
+html[data-fw-theme='dark'] .ch-rv-back,
+html[data-fw-theme='dark'] .ch-rv-step button {
+  background: var(--ch-ivory-50);
+  box-shadow: 0 0 0 1px var(--ch-border-control);
+}
+html[data-fw-theme='dark'] .ch-rv-hero {
+  box-shadow:
+    0 0 0 1px var(--ch-green-900),
+    var(--ch-elevation-cast);
+}
+html[data-fw-theme='dark'] .ch-rv-figs {
+  background: linear-gradient(180deg, var(--ch-ivory-25), var(--ch-green-25));
+  box-shadow: 0 0 0 1px rgb(107 187 140 / 0.14);
+}
+html[data-fw-theme='dark'] .ch-rv-figs > div + div {
+  border-left-color: rgb(107 187 140 / 0.12);
+}
+html[data-fw-theme='dark'] .ch-rv-card {
+  box-shadow: var(--ch-elevation-reading);
+}
+html[data-fw-theme='dark'] .ch-rv-nine {
+  background: var(--ch-ivory-50);
+  box-shadow: 0 0 0 1px var(--ch-border-subtle);
+}
+html[data-fw-theme='dark'] .ch-rv-nine tr + tr > * {
+  border-top-color: var(--ch-border-hairline);
+}
+html[data-fw-theme='dark'] .ch-rv-nine thead button.is-sel {
+  background: var(--ch-green-fill-600);
+  color: var(--ch-text-on-accent);
+}
+html[data-fw-theme='dark'] .ch-rv-nine td.is-sel,
+html[data-fw-theme='dark'] .ch-rv-lie.is-fairway,
+html[data-fw-theme='dark'] .ch-rv-lie.is-green,
+html[data-fw-theme='dark'] .ch-rv-lie.is-hole {
+  background: var(--ch-bg-selected);
+}
+html[data-fw-theme='dark'] .ch-rv-yn.is-n {
+  box-shadow: inset 0 0 0 1.5px rgb(237 231 216 / 0.35);
+}
+html[data-fw-theme='dark'] .ch-rv-yn.is-na {
+  background: rgb(237 231 216 / 0.35);
+}
+html[data-fw-theme='dark'] .ch-rv-shots li:not(:last-child)::before {
+  background: rgb(107 187 140 / 0.22);
+}
+/* The off-fairway shot disc one step deeper, so its ivory number keeps 4.5:1. */
+html[data-fw-theme='dark'] .ch-rv-shots__n.is-rough,
+html[data-fw-theme='dark'] .ch-rv-shots__n.is-sand,
+html[data-fw-theme='dark'] .ch-rv-shots__n.is-other,
+html[data-fw-theme='dark'] .ch-rv-shots__n.is-penalty {
+  background: #75653f;
+}
+
+html[data-fw-theme='dark'] .ch-rd-sc__date {
+  color: var(--ch-green-700);
+}
+/* A holed shot's disc on the deep fill, so its ivory number keeps 4.5:1 (the 500 fill measured 4.4). */
+html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
+  background: var(--ch-green-fill-600);
+}
+
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
@@ -2424,3 +2567,4 @@ a.ch-rd-sc:focus-visible {
     margin: 0;
   }
 }
+

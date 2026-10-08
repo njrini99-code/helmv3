@@ -1770,6 +1770,146 @@
   }
 }
 
+/* Dark ("Clubhouse at night"). The class tones become deep tints with a lit ink of the same hue; ivory type on a green
+   card reads the on-green ink; the white cards, veils, hairlines and halos written as literals above take their night
+   values. */
+html[data-fw-theme='dark'] .ch-cl-t-mist {
+  --ch-cl-t: #232c2e;
+  --ch-cl-tf: #b9cacd;
+  --ch-cl-tb: #3b494c;
+}
+html[data-fw-theme='dark'] .ch-cl-t-clay {
+  --ch-cl-t: #30261f;
+  --ch-cl-tf: #e2c1af;
+  --ch-cl-tb: #503e33;
+}
+html[data-fw-theme='dark'] .ch-cl-t-sand {
+  --ch-cl-t: #2d2818;
+  --ch-cl-tf: #dccb9c;
+  --ch-cl-tb: #4c432a;
+}
+html[data-fw-theme='dark'] .ch-cl-t-stone {
+  --ch-cl-t: #292824;
+  --ch-cl-tf: #d0cabe;
+  --ch-cl-tb: #47443c;
+}
+html[data-fw-theme='dark'] .ch-cl-t-sage {
+  --ch-cl-t: #222c24;
+  --ch-cl-tf: #bdd0c0;
+  --ch-cl-tb: #3b4b3d;
+}
+html[data-fw-theme='dark'] .ch-cl-tb__over b,
+html[data-fw-theme='dark'] .ch-cl-tb__today em,
+html[data-fw-theme='dark'] .ch-cl-tb__one,
+html[data-fw-theme='dark'] .ch-cl-add__plus,
+html[data-fw-theme='dark'] .ch-cl-daypick button[aria-pressed='true'],
+html[data-fw-theme='dark'] .ch-cl-drop__art > span,
+html[data-fw-theme='dark'] .ch-cl-rv__sum,
+html[data-fw-theme='dark'] .ch-cl-ok__ic {
+  color: var(--ch-on-green-ink);
+}
+html[data-fw-theme='dark'] .ch-cl-tb__today {
+  background: var(--ch-on-green-ink);
+}
+/* The tinted card's veils: white at 35-60% turns a deep tint milky, so they lift by a whisper instead. */
+html[data-fw-theme='dark'] .ch-cl-card__cr,
+html[data-fw-theme='dark'] .ch-cl-card__term {
+  background: rgb(255 255 255 / 0.08);
+}
+html[data-fw-theme='dark'] .ch-cl-card__week > span,
+html[data-fw-theme='dark'] .ch-cl-card__flex {
+  background: rgb(255 255 255 / 0.04);
+}
+html[data-fw-theme='dark'] .ch-cl-card__week > span.is-on {
+  background: var(--ch-ivory-200);
+  box-shadow: var(--ch-elevation-control);
+}
+html[data-fw-theme='dark'] .ch-cl-card__week > span.is-today {
+  box-shadow:
+    0 0 0 1.5px var(--ch-green-500),
+    var(--ch-elevation-control);
+}
+html[data-fw-theme='dark'] .ch-cl-add {
+  border-color: var(--ch-border-control);
+}
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-cl-add:hover {
+    border-color: var(--ch-green-600);
+  }
+}
+html[data-fw-theme='dark'] .ch-cl-add__plus,
+html[data-fw-theme='dark'] .ch-cl-drop__art > span {
+  box-shadow: var(--ch-elevation-cast);
+}
+html[data-fw-theme='dark'] .ch-cl-drop__art > span {
+  box-shadow:
+    var(--ch-elevation-cast),
+    0 0 0 4px var(--ch-ivory-25);
+}
+html[data-fw-theme='dark'] .ch-cl-over__c,
+:where(html[data-fw-theme='dark']) .ch-cl-sync,
+html[data-fw-theme='dark'] .ch-cl-facts,
+html[data-fw-theme='dark'] .ch-cl-rv,
+html[data-fw-theme='dark'] .ch-cl-drop__tip {
+  background: var(--ch-bg-surface);
+}
+html[data-fw-theme='dark'] .ch-cl-sync__sp {
+  border-color: rgb(107 187 140 / 0.2);
+  border-top-color: var(--ch-green-600);
+}
+html[data-fw-theme='dark'] .ch-cl-daypick {
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.4);
+}
+html[data-fw-theme='dark'] .ch-cl-daypick button[aria-pressed='true'] {
+  box-shadow: var(--ch-elevation-control);
+}
+html[data-fw-theme='dark'] .ch-cl-meet li::before {
+  background: var(--ch-border-subtle);
+}
+:where(html[data-fw-theme='dark']) .ch-cl-meet i {
+  background: var(--ch-ivory-50);
+  box-shadow: inset 0 0 0 2px rgb(237 231 216 / 0.25);
+}
+html[data-fw-theme='dark'] .ch-cl-meet li.is-today i {
+  box-shadow: 0 0 0 3px rgb(107 187 140 / 0.25);
+}
+html[data-fw-theme='dark'] .ch-cl-drop {
+  border-color: rgb(107 187 140 / 0.3);
+  background: radial-gradient(60% 80% at 50% 0%, var(--ch-green-50), transparent 70%), var(--ch-ivory-25);
+}
+html[data-fw-theme='dark'] .ch-cl-drop.is-over {
+  border-color: var(--ch-green-600);
+  background: radial-gradient(60% 80% at 50% 0%, var(--ch-green-100), transparent 70%), var(--ch-ivory-25);
+}
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-cl-drop:hover {
+    border-color: var(--ch-green-600);
+    background: radial-gradient(60% 80% at 50% 0%, var(--ch-green-100), transparent 70%), var(--ch-ivory-25);
+  }
+}
+/* The import's drawn page stays paper: a light sheet with tinted lines, like the schedule being read. */
+html[data-fw-theme='dark'] .ch-cl-drop__art > i,
+html[data-fw-theme='dark'] .ch-cl-read__doc {
+  background: #e9e3d3;
+}
+html[data-fw-theme='dark'] .ch-cl-drop__art > i {
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.3),
+    var(--ch-elevation-cast);
+}
+html[data-fw-theme='dark'] .ch-cl-read__scan {
+  background: linear-gradient(180deg, rgb(107 187 140 / 0), rgb(107 187 140 / 0.2) 80%, var(--ch-green-600));
+}
+html[data-fw-theme='dark'] .ch-cl-err__ic {
+  box-shadow: 0 0 0 6px rgb(227 169 79 / 0.08);
+}
+html[data-fw-theme='dark'] .ch-cl-rv__r.is-check {
+  background: var(--ch-warning-100);
+}
+html[data-fw-theme='dark'] .ch-cl-ok__ic {
+  box-shadow: 0 0 0 8px var(--ch-green-50);
+}
+
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
