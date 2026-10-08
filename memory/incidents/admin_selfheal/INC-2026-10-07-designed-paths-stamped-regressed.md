@@ -12,7 +12,7 @@
 Two gaps, together:
 
 1. `classifyIncident` did not recognise `shot_not_found`, the stable
-   reconciliation code `updateShot`/`deleteShot` in `src/app/golf/actions/golf.ts`
+   reconciliation code `updateShot`/`deleteShot` in `src/app/golf/actions/shot-actions.ts` (split out of golf.ts in PR 2176)
    return on purpose when a client still holds the ID of a shot that another tab
    or an earlier retry already deleted. It fell to the severity ladder
    (warning → actionable degradation).
