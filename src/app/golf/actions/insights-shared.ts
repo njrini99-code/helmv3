@@ -173,7 +173,7 @@ export async function getCoachPhilosophy(
   let data: unknown;
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res = await (supabase as any)
+    const res = await (supabase as any) // nosemgrep: helmv3-server-action-missing-auth-check -- plain helper (no server directive, not an action); callers authenticate before calling it
       .from('golf_coach_philosophy')
       .select('*')
       .eq('coach_id', coachId)
