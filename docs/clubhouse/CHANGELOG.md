@@ -1,5 +1,16 @@
 # Clubhouse changelog
 
+## 2026-10-08 — Premium pass backlog: one light, peeks, the Ask sheet, a dock
+
+Approved by the owner on 2026-10-08 (owner review; docs/clubhouse/PREMIUM_PASS_AUDIT.md). Each page's part is in its own log.
+
+- **The global light** (`lib/light.ts`, `lib/sun.ts`, `shell/light.tsx`). One sun for the whole app, from the time of day and the team's course location (CH-8320, held migration) or its time zone. It lights the frame and the materials, never data.
+- **Peeks** (`ui/Peek.tsx`, `ui/PlayerPeek.tsx`). Hover on desktop, hold on the phone, a player's card from data the page already has.
+- **The Ask sheet and the thumb dock** (`shell/AskSheet.tsx`, `shell/AskSheetBody.tsx`, `shell/Dock.tsx`), plus deep links (`lib/deep-link.ts`, `shell/DeepLinks.tsx`).
+- **Dynamic Type** (`lib/dynamic-type.ts`). Type scales with the text size setting.
+- **Dialogs and bars** (`lib/dialog-lifetime.ts`, `ui/Modal.tsx`, `ui/PhoneBar.tsx`). A bar can leave the heading to its page (one h1 per screen). The frame, sidebar, tab bar and top bar take the light, and pad for the tab bar only while it shows.
+- **Route errors** (`shell/ClubhouseRouteError.tsx`). The preview routes get the shell's error view; a stale chunk recovers through the existing recovery coordinator.
+
 ## 2026-10-08 — A switch that stretches, trackpads left alone, a steady bar
 
 Approved by the owner on 2026-10-08 (the shell's part is in P001's log).
