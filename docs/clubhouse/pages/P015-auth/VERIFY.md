@@ -51,11 +51,33 @@ authentication test.
 | --- | --- |
 | `auth.test.tsx`, `auth-logic.test.ts`, `auth-server.test.tsx`, `auth-scene.test.tsx` (sign in and the welcome) | pass |
 | `auth-credentials.test.ts` (Q-98: the server's wrong-password text reads as the design's, attempts kept) | pass |
+| `auth-forgot.test.tsx` (2026-10-07: the reset form and check your email in the panel, CH-15020 to CH-15922, and a guard that today's reset page and the panel keep the same rules and words) | pass (8) |
+| `auth.test.tsx` › the sign-in micro-motion (2026-10-07: CH-15607 to CH-15611, including the glide's WebKit offsetParent case) | pass (6) |
+| `src/app/golf/(auth)/forgot-password/page.test.tsx` (today's reset page, unchanged) | pass |
 | `onboard.test.tsx` (20 cases: codes, the staff path, the account, after the account, request access, arriving) and `onboard-logic.test.ts` (15) | pass |
 | `handoff.test.tsx` (the curtain over the route change) | pass |
 | `src/components/auth/golf-sign-in-form.test.tsx` and `src/test/auth` (today's form unchanged) | pass |
 
 ## Looked at
+
+- 2026-10-07, WebKit at 1440x900 and 390x844 (touch), preview: every sign-in state
+  and welcome state before and after the polish pass.
+  - The reset form walked end to end: sign in → reset → a refusal → sending →
+    check your email → browser Back → Forward → "Remember it? Sign in".
+  - URL, focus and the live heading were right at each step, with no page errors.
+    A flip back within 60ms re-enters the same view.
+  - rAF frame samples for the key, the refusal glide and shake, the eye and the
+    view slide, with reduced motion and Animations off landing in one frame.
+  - The flag across the route change (3 bare frames before, none after).
+  - The Return hint's contrast measured on the fairway.
+  - Chromium Tab order and focus rings through the panel.
+  - The real `/golf/login` (the flag is on in development), history only, with
+    every POST blocked so no reset email could go.
+    - Forgot → Back → Forward → "Remember it? Sign in" stayed in one document
+      with no network request: no reload and no server refetch.
+    - A load straight onto `?view=forgot` opens the form.
+  - Not done: a real account round trip (no reset email was sent) and a physical
+    iPhone.
 
 - Every sign-up step at 1440 and 390 wide in `/clubhouse-preview/onboard`,
   against the design's screenshots.
@@ -91,25 +113,34 @@ before, after, baseline or evidence.
 | `P015__premium-audit__none__390__case-025-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (none), 390px, case-025-webkit-reduce; /clubhouse-preview/auth; synthetic preview |
 | `P015__premium-audit__none__390__case-165-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (none), 390px, case-165-chromium-normal; /clubhouse-preview/auth; synthetic preview |
 | `P015__signin__none__1440x900__key-off__before__e549642.png` | before | `e549642` | Before: Sign in off (password empty) is the shared 42% fade, a washed-out grey-green; the subtitle breaks "sign-" / "in." |
-| `P015__signin__none__1440x900__key-off__after__83d5721.png` | after | `83d5721` | After: the unlit key pressed into the paper, its word engraved (CH-15607); one subtitle sentence a line |
+| `P015__signin__none__1440x900__key-off__after__5a34505.png` | after | `5a34505` | After: the unlit key pressed into the paper, its word engraved (CH-15607); one subtitle sentence a line, 10px under the heading again |
 | `P015__signin__none__1440x900__key-in-flight__before__e549642.png` | before | `e549642` | Before: "Signing in…" drawn with the disabled fade, so the working key looked unavailable |
-| `P015__signin__none__1440x900__key-in-flight__after__83d5721.png` | after | `83d5721` | After: in flight the key stays the lit green with its spinner (CH-15402, CH-15607) |
+| `P015__signin__none__1440x900__key-in-flight__after__5a34505.png` | after | `5a34505` | After: in flight the key stays the lit green with its spinner (CH-15402, CH-15607) |
 | `P015__signin__none__1440x900__retry-in-flight__before__e549642.png` | before | `e549642` | Before: a retry cleared the refusal; the button jumped 38px up under the pointer |
-| `P015__signin__none__1440x900__retry-in-flight__after__83d5721.png` | after | `83d5721` | After: the last refusal stays at half strength while the retry is in flight; the button holds its place (CH-15608) |
+| `P015__signin__none__1440x900__retry-in-flight__after__5a34505.png` | after | `5a34505` | After: the last refusal stays at half strength while the retry is in flight; the button holds its place (CH-15608) |
 | `P015__signin__none__1440x900__refused-credentials__before__e549642.png` | before | `e549642` | Before: a credentials refusal, both fields marked, the key faded |
-| `P015__signin__none__1440x900__refused-credentials__after__83d5721.png` | after | `83d5721` | After: the same refusal with the unlit key; the glide and shake are motion (frame samples in CHANGELOG) |
+| `P015__signin__none__1440x900__refused-credentials__after__5a34505.png` | after | `5a34505` | After: the same refusal with the unlit key; the glide and shake are motion (frame samples in CHANGELOG) |
 | `P015__signin__none__1440x900__url-notice__before__e549642.png` | before | `e549642` | Before: the password-reset notice hugs the subtitle with a 48px gap under it |
-| `P015__signin__none__1440x900__url-notice__after__83d5721.png` | after | `83d5721` | After: the notice sits with 24px above and below |
+| `P015__signin__none__1440x900__url-notice__after__5a34505.png` | after | `5a34505` | After: the notice sits with 24px above and below |
 | `P015__welcome__coach__1440x900__return-hint__before__e549642.png` | before | `e549642` | Before: "or press Return" in secondary grey on the fairway (3.65 to 4.03:1 measured) |
-| `P015__welcome__coach__1440x900__return-hint__after__83d5721.png` | after | `83d5721` | After: the hint in ink (6.38 to 7.05:1 measured) |
+| `P015__welcome__coach__1440x900__return-hint__after__5a34505.png` | after | `5a34505` | After: the hint in ink (6.38 to 7.05:1 measured) |
 | `P015__signin__none__390x844__key-off__before__e549642.png` | before | `e549642` | Before: the phone sheet's faded Sign in key |
-| `P015__signin__none__390x844__key-off__after__83d5721.png` | after | `83d5721` | After: the phone sheet's unlit key (CH-15607) |
+| `P015__signin__none__390x844__key-off__after__5a34505.png` | after | `5a34505` | After: the phone sheet's unlit key (CH-15607) |
 | `P015__signin__none__390x844__retry-in-flight__before__e549642.png` | before | `e549642` | Before: a phone retry cleared the refusal; the button jumped 75px up |
-| `P015__signin__none__390x844__retry-in-flight__after__83d5721.png` | after | `83d5721` | After: the refusal steps back and the button holds its place (CH-15608) |
+| `P015__signin__none__390x844__retry-in-flight__after__5a34505.png` | after | `5a34505` | After: the refusal steps back and the button holds its place (CH-15608) |
 | `P015__signin__none__390x844__refused-empty__before__e549642.png` | before | `e549642` | Before: the preview drew the empty-email refusal with the email filled in |
-| `P015__signin__none__390x844__refused-empty__after__83d5721.png` | after | `83d5721` | After: the empty-email refusal over an empty Email row |
+| `P015__signin__none__390x844__refused-empty__after__5a34505.png` | after | `5a34505` | After: the empty-email refusal over an empty Email row |
 | `P015__welcome__coach__390x844__afternoon-greeting__before__e549642.png` | before | `e549642` | Before: "Good afternoon," broke over two lines at 50px, a three-line greeting |
-| `P015__welcome__coach__390x844__afternoon-greeting__after__83d5721.png` | after | `83d5721` | After: the greeting scales to 46.8px on a 390px phone and holds one line (measured 375 to 430px) |
+| `P015__welcome__coach__390x844__afternoon-greeting__after__5a34505.png` | after | `5a34505` | After: the greeting scales to 46.8px on a 390px phone and holds one line (measured 375 to 430px) |
+| `P015__reset__none__1440x900__ready__before__5a34505.png` | before | `5a34505` | Before: "Forgot password?" left the Clubhouse sign-in for today's reset page, another design (the seam) |
+| `P015__reset__none__390x844__ready__before__5a34505.png` | before | `5a34505` | Before: the same seam on a phone |
+| `P015__reset__none__1440x900__ready__after__5a34505.png` | after | `5a34505` | After: the reset form in the panel, the email carried and focused, course and lockup still (CH-15920; up for owner review) |
+| `P015__reset__none__1440x900__refused-invalid__after__5a34505.png` | after | `5a34505` | After: a malformed address refused before sending, the field marked (CH-15121) |
+| `P015__reset__none__1440x900__sending__after__5a34505.png` | after | `5a34505` | After: Send in flight, the lit key with "Sending reset link…" (CH-15420) |
+| `P015__reset__none__1440x900__check-email__after__5a34505.png` | after | `5a34505` | After: check your email with the address sent to, Back to sign in as the one action (CH-15921) |
+| `P015__reset__none__390x844__ready__after__5a34505.png` | after | `5a34505` | After: the reset form on the phone sheet (CH-15920) |
+| `P015__reset__none__390x844__refused-invalid__after__5a34505.png` | after | `5a34505` | After: the phone's refused address (CH-15121) |
+| `P015__reset__none__390x844__check-email__after__5a34505.png` | after | `5a34505` | After: check your email on the phone (CH-15921) |
 
 ## Historical verification gaps
 

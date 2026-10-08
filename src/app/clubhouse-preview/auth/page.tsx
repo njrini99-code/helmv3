@@ -8,7 +8,8 @@ import { PreviewAuth } from './PreviewAuth';
  *
  *   /clubhouse-preview/auth ?screen=signin | welcome
  *     signin:  &state=coach | player   &fail=empty | creds | unverified | rate | network | stale
- *     signin:  &pending=1 holds Sign in in flight, to look at the submitting state
+ *     signin:  &pending=1 holds Sign in (and Send reset link) in flight, to look at the submitting state
+ *     signin:  &view=forgot opens the reset form in the panel (Send answers after 700ms, then check your email)
  *     welcome: &state=coach | player | caughtup | first | failed | noname
  *     welcome: &go=1 makes Continue navigate into the preview dashboard, to watch the hand-off end to end
  *     either:  &hour=8.5   (the time of day, local; 6.4 sunrise, 12.5 midday, 18.6 golden hour, 22 night)

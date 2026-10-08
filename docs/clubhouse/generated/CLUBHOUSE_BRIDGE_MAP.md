@@ -83,6 +83,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | CH-14914 | 19 Responsive layout | Phone layout at 820px and below. |
 | CH-15004 | 07 Network / offline | The sign-in could not reach the server. |
 | CH-15402 | 03 Background loading / refresh | A sign-in in flight: work in progress on a shown page. |
+| CH-15420 | 03 Background loading / refresh | A reset link being asked for: work in progress on a shown form. |
 | CH-15901 | 12 State preservation | The invite returnTo and the demo ref are kept through the sign-in round trip: protects state that would otherwise be lost. |
 | CH-15902 | 08 Permission / authorization | Where a sign-in goes is decided by who the person is (onboarded, no profile yet, admin) and whether the returnTo is safe. |
 | CH-15903 | 08 Permission / authorization | A session the auth server has ruled invalid is sent back to sign in before anything is drawn. |
@@ -93,6 +94,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | CH-15908 | 23 Logging / observability | A failed read or a crash is logged with its surface. |
 | CH-15909 | 19 Responsive layout | Phone layout at 820px and below. |
 | CH-15910 | 20 Keyboard / input | Enter moves to the next field, signs in, or continues; the button scrolls into view above the keyboard. |
+| CH-15920 | 12 State preservation | Forgot password? opens the reset form in place with the typed address, the view kept in the URL so Back and a reload hold it. |
+| CH-15921 | 09 Success | A positive confirmation: the reset link was asked for. |
+| CH-15922 | 12 State preservation | Back to sign in brings the typed address back and pops the reset form's history entry rather than stacking one. |
 
 ## Count by page and category
 
@@ -112,7 +116,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 80 |
 | P013 | 7 | 12 |  | 29 | 1 | 36 | 22 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 156 |
 | P014 | 1 | 3 | 4 | 6 | 10 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 3 | 3 | 5 | 1 | 1 |  |  |  |  |  | 63 |
-| P015 |  | 2 | 1 | 3 | 4 | 14 | 4 | 2 | 1 |  |  | 1 |  | 1 |  | 12 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 63 |
+| P015 |  | 1 | 2 | 3 | 4 | 14 | 1 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 68 |
 
 ## P001 Shell
 
@@ -1545,8 +1549,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | Bridge ID | Code | Category | Name | Status | Meaning |
 | --- | --- | --- | --- | --- | --- |
 | 150201 | CH-15401 | 02 Initial loading / skeleton | `THE_WELCOME_IS_READING_WHO_YOU_ARE` | implemented | The welcome is reading who you are and what is new |
-| 150202 | CH-15420 | 02 Initial loading / skeleton | `RESET_PASSWORD_A_LINK_IS_BEING_ASKED` | implemented | Reset password: a link is being asked for |
 | 150301 | CH-15402 | 03 Background loading / refresh | `A_SIGN_IN_IS_IN_FLIGHT` | implemented | A sign-in is in flight (and stays so while it navigates away) |
+| 150302 | CH-15420 | 03 Background loading / refresh | `RESET_PASSWORD_A_LINK_IS_BEING_ASKED` | implemented | Reset password: a link is being asked for |
 | 150401 | CH-15301 | 04 Empty | `THERE_IS_AN_EARLIER_VISIT_AND_NOTHING` | implemented | There is an earlier visit and nothing new since |
 | 150402 | CH-15302 | 04 Empty | `NO_EARLIER_VISIT_ON_RECORD` | implemented | No earlier visit on record |
 | 150403 | CH-15303 | 04 Empty | `THE_NAME_COULD_NOT_BE_READ_OR` | implemented | The name could not be read, or sanitises to nothing |
@@ -1569,13 +1573,13 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 150613 | CH-15020 | 06 Server / system error | `RESET_PASSWORD_THE_SERVER_REFUSES_THE_REQUEST` | implemented | Reset password: the server refuses the request in its own words |
 | 150614 | CH-15021 | 06 Server / system error | `RESET_PASSWORD_ANYTHING_ELSE_THROWS` | implemented | Reset password: anything else throws (the request never reached the server) |
 | 150701 | CH-15004 | 07 Network / offline | `THE_SERVER_CANNOT_BE_REACHED` | implemented | The server cannot be reached |
-| 150702 | CH-15920 | 07 Network / offline | `FORGOT_PASSWORD_IS_CLICKED` | implemented | "Forgot password?" is clicked |
-| 150703 | CH-15921 | 07 Network / offline | `A_RESET_LINK_IS_ASKED_FOR_AND_2` | implemented | A reset link is asked for and the server accepts (its answer is the same whether or not the address has an account) |
-| 150704 | CH-15922 | 07 Network / offline | `BACK_TO_SIGN_IN` | implemented | Back to sign in ("Remember it? Sign in", Back to sign in, or the browser's Back) |
 | 150801 | CH-15902 | 08 Permission / authorization | `WHERE_A_SIGN_IN_GOES` | implemented | Where a sign-in goes |
 | 150802 | CH-15903 | 08 Permission / authorization | `THE_WELCOME_IS_OPENED_WITH_A_SESSION` | implemented | The welcome is opened with a session the auth server has ruled invalid |
 | 150901 | CH-15904 | 09 Success | `GOLF_LOGIN_MESSAGE_NAMES_A_NOTICE` | implemented | `/golf/login?message=` names a notice |
+| 150902 | CH-15921 | 09 Success | `A_RESET_LINK_IS_ASKED_FOR_AND_2` | implemented | A reset link is asked for and the server accepts (its answer is the same whether or not the address has an account) |
 | 151201 | CH-15901 | 12 State preservation | `THE_PERSON_CAME_FROM_AN_INVITE_LINK` | implemented | The person came from an invite link or a demo link |
+| 151202 | CH-15920 | 12 State preservation | `FORGOT_PASSWORD_IS_CLICKED` | implemented | "Forgot password?" is clicked |
+| 151203 | CH-15922 | 12 State preservation | `BACK_TO_SIGN_IN` | implemented | Back to sign in ("Remember it? Sign in", Back to sign in, or the browser's Back) |
 | 151401 | CH-15906 | 14 Retry / recovery | `THE_APP_UPDATED_BETWEEN_LOAD_AND_SIGN` | implemented | The app updated between load and sign in (a stale bundle: a server action answers with something Next cannot parse) |
 | 151601 | CH-15601 | 16 Micro animation | `FIRST_PAINT_THEN_A_SIGN_IN_LANDING` | implemented | First paint, then a sign-in landing |
 | 151602 | CH-15602 | 16 Micro animation | `THE_WELCOME_DRAWS` | implemented | The welcome draws |
@@ -1589,6 +1593,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 151610 | CH-15610 | 16 Micro animation | `THE_PASSWORD_EYE_IS_PRESSED` | implemented | The password eye is pressed |
 | 151611 | CH-15611 | 16 Micro animation | `THE_HOME_LINK_IS_HOVERED_OR_PRESSED` | implemented | The Home link is hovered or pressed |
 | 151612 | CH-15612 | 16 Micro animation | `THE_PANEL_MOVES_BETWEEN_SIGN_IN_THE` | implemented | The panel moves between sign in, the reset form and check your email |
+| 151613 | CH-15620 | 16 Micro animation | `SIGN_UP_ONE_QUESTION_GIVES_WAY_TO` | implemented | Sign up: one question gives way to the next (Continue, a choice, Back) |
+| 151614 | CH-15621 | 16 Micro animation | `SIGN_UP_THE_MEMBER_CARD_FILLS_IN` | implemented | Sign up: the member card fills in as answers arrive |
+| 151615 | CH-15622 | 16 Micro animation | `SIGN_UP_PROGRESS_MOVES` | implemented | Sign up: progress moves |
+| 151616 | CH-15623 | 16 Micro animation | `SIGN_UP_THE_MEMBER_CARD_IS_ISSUED` | implemented | Sign up: the member card is issued (done, staff done) |
+| 151617 | CH-15624 | 16 Micro animation | `SIGN_UP_AN_ANSWER_IS_TOUCHED_OR` | implemented | Sign up: an answer is touched or refused |
 | 151701 | CH-15701 | 17 Haptic | `SIGN_IN_IS_TAPPED` | implemented | Sign in is tapped |
 | 151702 | CH-15702 | 17 Haptic | `A_SIGN_IN_LANDS` | implemented | A sign-in lands |
 | 151703 | CH-15703 | 17 Haptic | `A_WARNING_TONED_REFUSAL` | implemented | A warning-toned refusal (an empty field, an unverified email, a rate limit; the reset form's missing or malformed address) |
@@ -1610,4 +1619,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 ## Tombstones
 
-None yet.
+- 150202: CH-15420 was minted in category 02 before its category override existed; re-minted in its own category the same day (2026-10-07, replaced by 150302)
+- 150702: CH-15920 was minted in category 07 before its category override existed; re-minted in its own category the same day (2026-10-07, replaced by 151202)
+- 150703: CH-15921 was minted in category 07 before its category override existed; re-minted in its own category the same day (2026-10-07, replaced by 150902)
+- 150704: CH-15922 was minted in category 07 before its category override existed; re-minted in its own category the same day (2026-10-07, replaced by 151203)

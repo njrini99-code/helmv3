@@ -29,6 +29,10 @@ const WELCOMES = {
 /** The design's two sign-in people. */
 const EMAIL = { coach: 'maya.reyes@university.edu', player: 'theo.marchetti@university.edu' } as const;
 
+/** The reset request answers as the server does (the same words whether or not the address has an account), after a beat. */
+const previewReset = (ms: number) => () =>
+  new Promise<{ success: boolean; message: string }>((resolve) => setTimeout(() => resolve({ success: true, message: 'If an account exists with this email, a password reset link will be sent.' }), ms));
+
 /**
  * The auth screens over sample data, with the clock held still (`hour=` picks
  * the time of day). No auth and no database: the sign-in form is handed a fake
@@ -52,6 +56,7 @@ export function PreviewAuth({ screen, state, fail, hour, go, pending }: { screen
       ) : (
         <SignIn
           signIn={pending ? () => new Promise<never>(() => {}) : go ? async () => ({ success: true, redirectTo: '/golf/dashboard' }) : async () => ({ success: false, error: 'Invalid login credentials' })}
+          requestReset={pending ? () => new Promise<never>(() => {}) : previewReset(700)}
           navigate={go ? () => router.push(`/clubhouse-preview/auth?screen=welcome&state=${state === 'player' ? 'player' : 'coach'}&go=1${hour !== undefined ? `&hour=${hour}` : ''}`) : undefined}
           // An empty-field refusal is drawn with the field it is about left empty.
           initial={{ email: fail === 'empty' ? '' : EMAIL[state === 'player' ? 'player' : 'coach'], failure: fail ? PREVIEW_FAILURES[fail] : undefined }}

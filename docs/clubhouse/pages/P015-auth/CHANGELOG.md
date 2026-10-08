@@ -1,5 +1,138 @@
 # P015 — Auth: changelog
 
+## 2026-10-07 — Reset password in the sign-in panel (up for owner review)
+
+```text
+Design package: none: owner decision (2026-10-07) via the team lead; no board, up for owner review
+PR/commit:      agent/clubhouse-frame-hero (uncommitted at writing)
+Contract IDs:   CH-15020, CH-15021, CH-15120, CH-15121, CH-15420, CH-15612, CH-15720, CH-15721, CH-15820,
+                CH-15920 to CH-15922 (new); CH-15609, CH-15703, CH-15704 widened to the reset form
+Actions:        requestPasswordResetAction (today's, unchanged)
+Data impact:    none
+Held items:     /golf/reset-password (the email's link) is still today's page
+```
+
+### Changed
+
+- "Forgot password?" opens a reset form in the panel instead of leaving the
+  Clubhouse sign-in for today's page (CH-15920). The course, the lockup and the
+  panel's chrome stay put; the view slides 12px the way the person is going and
+  crossfades, and the desktop stage glides to its new centre (CH-15612).
+- The reset form is today's page, redrawn:
+  - The same `requestPasswordResetAction`, which answers alike whether or not the
+    address has an account.
+  - The same trim-and-lowercase, the same refusals for a missing or malformed
+    address (CH-15120, CH-15121), cleared by editing.
+  - The same words.
+  - Send in flight is the lit key with "Sending reset link…" (CH-15420).
+  - A failed request says so, and one that throws is logged (CH-15020, CH-15021).
+- Check your email shows the address the link went to, with Back to sign in as the
+  one action (CH-15921). The address travels between the views.
+- The URL keeps `?view=forgot`, so the browser's Back returns to sign in and a
+  reload opens the form. The links keep today's page as their href, for a new tab
+  or no JavaScript (CH-15922).
+- Focus moves with the view: the reset form's Email, or the new heading. The
+  leaving view is hidden from assistive technology at once (CH-15820). Haptics:
+  light on Send, success when asked for (CH-15720, CH-15721).
+- The panel's paragraph spacing is the board's again. base.css's `.ch-root p
+  { margin: 0 }` had taken the 10px (6px on a phone) from between the heading and
+  the subtitle.
+- Registry: CH-15420, CH-15920, CH-15921 and CH-15922 were first minted in the
+  default categories (02 and 07) before their overrides existed. With the lead's
+  approval they now map to 03, 12, 09 and 12 (`category-map.json`). The four
+  first IDs are tombstoned and replaced: 150202 → 150302, 150702 → 151202,
+  150703 → 150902, 150704 → 151203.
+- The panel's text-link colour no longer reaches link keys (`.ch-au
+  a:where(:not(.ch-btn))`). It had drawn sign up's "Enter a team code" and "Go to
+  sign in" green on green.
+
+### Why
+
+The Clubhouse sign-in sent "Forgot password?" to today's page, a different design
+with a different frame: the one seam left in the front door. The owner chose to
+bring it into the panel; the reset link's own page stays today's because it
+builds the recovery session.
+
+### Verification
+
+- WebKit at 1440x900 and 390x844 (touch): sign in → reset → a refusal → sending →
+  check your email → browser Back → Forward → "Remember it? Sign in".
+  - URL, focus and live heading were right at each step.
+  - No page errors.
+- A flip back within 60ms re-enters the same copy, with the address carried and
+  focus on the heading.
+- rAF samples of the view change:
+  - Outgoing view: to 0 and −12px in about 180ms.
+  - Incoming view: from 12px to rest in about 260ms.
+  - Desktop stage: 190 to 219px, continuous.
+  - Under reduced motion: one frame.
+- auth-forgot.test: 8 tests, including a guard that today's page and the panel
+  keep the same rules and words.
+
+## 2026-10-07 — Sign in finished: the key, refusals and the form's motion
+
+```text
+Design package: design/handoff/auth (approved); no new board
+PR/commit:      agent/clubhouse-frame-hero (uncommitted at writing)
+Contract IDs:   CH-15607 to CH-15611 (new, motion); CH-15402, CH-15606 and the 150xx notes reworded
+Actions:        none
+Data impact:    none
+Held items:     forgot and reset password are still today's pages (not Clubhouse); reported to the lead
+```
+
+### Changed
+
+- The Sign in key, when off because a field is empty, is an unlit key pressed into
+  the paper (the soft well, its word engraved) instead of the shared 42% fade,
+  which read as a washed-out grey-green. Filling both fields lights it over the
+  quick beat. In flight it stays the lit green (it had faded with the disabled
+  look), and "Sign in" crossfades to "Signing in…" in the same cell (CH-15607).
+- A refusal keeps its place while the next attempt is in flight, at half
+  strength, and the answer replaces it. Before, Sign in cleared it, so the button
+  jumped up under the pointer (38px desktop, 75px phone) and back down on the
+  next refusal. Where a refusal does move things, they glide there on transform
+  only (CH-15608).
+- A refusal about the fields shakes them once, the sign-up code's shake
+  (CH-15609). The password eye crossfades between its glyphs (CH-15610). The
+  Home link has a pressed tint and its chevron leans back on hover (CH-15611).
+  Text links take a rounded focus ring.
+- Copy and spacing:
+  - The desktop subtitle no longer breaks "sign-" / "in.": one sentence a line.
+  - A URL notice ("Password reset successfully…") sits with even space above and
+    below.
+  - "Good afternoon," holds one line on a phone (the greeting scales between
+    40px and 50px).
+  - The welcome's "or press Return" is ink, not secondary grey, over the fairway.
+  - The legal links end on the footer hairline.
+  - The phone's invalid group ring uses the danger token.
+- The waving flags carry their resting shape, so the welcome's course no longer
+  shows a bare pole for about 120ms as it takes over from sign in's (CH-15606).
+- Preview: `&pending=1` holds Sign in in flight; `fail=empty` leaves the email
+  empty.
+
+### Why
+
+Owner direction (2026-10-07): production-ready, premium, all animations done. The
+team lead's pass on sign in named the disabled key, the motion between states
+and the rough edges.
+
+### Verification
+
+- WebKit captures at 1440x900 and 390x844 (touch), before and after; see VERIFY.
+- rAF frame sampling in WebKit:
+  - Key lighting: 128ms.
+  - Label crossfade: 187ms, with the key width constant at 360px.
+  - Refusal glide: button 593 to 631px and form 192 to 155px, continuous; phone
+    571 to 646px.
+  - Shake: ±5px, 380ms, and it restarts on a second refusal.
+  - Eye crossfade: 136ms.
+- Under `reducedMotion: 'reduce'` and with Animations off, every one of these
+  lands in a single frame.
+- Flag pixels across the sign in → welcome route change: 3 bare frames before,
+  none after.
+- Return hint contrast on the fairway: 3.65–4.03 before, 6.38–7.05 after.
+- Auth suites pass, with 6 new tests that carry the codes.
+
 ## 2026-10-06 — Display type relaxed
 
 The owner found the display type too compact. Display headings on this page

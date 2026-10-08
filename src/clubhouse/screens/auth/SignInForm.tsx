@@ -1,9 +1,10 @@
 'use client';
 
+import { useIsPresent } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent, type RefObject } from 'react';
 import { loginAction } from '@/app/golf/actions/auth';
 import { logError } from '@/lib/error-logging';
 import {
@@ -21,8 +22,10 @@ import {
 import { haptic } from '../../lib/haptics';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { Icon } from '../../ui/Icon';
+import { AuthKeyLabel } from './AuthKey';
 import { AuthNotice } from './AuthNotice';
 import { OPENING_MS } from './auth-motion';
+import { isPlainClick } from './ForgotPassword';
 import { failureFor, failureForServer, type SignInFailure } from './sign-in-state';
 import { useGlide, type Glider } from './use-glide';
 import { useQueryParam } from './use-query-param';
@@ -48,7 +51,27 @@ export interface SignInPreview {
  * `signIn` is the server action by default; the preview and the tests hand in their own. `initial` is for the
  * preview only: it draws a chosen failure without a round trip.
  */
-export function SignInForm({ onOpening, signIn = loginAction, initial, navigate }: { onOpening: () => void; signIn?: typeof loginAction; initial?: SignInPreview; /** The preview replaces where a successful sign-in goes. */ navigate?: (href: string) => void }) {
+export function SignInForm({
+  onOpening,
+  signIn = loginAction,
+  initial,
+  navigate,
+  onForgot,
+  focusOnMount = false,
+  stageRef,
+}: {
+  onOpening: () => void;
+  signIn?: typeof loginAction;
+  initial?: SignInPreview;
+  /** The preview replaces where a successful sign-in goes. */
+  navigate?: (href: string) => void;
+  /** CH-15920: "Forgot password?" opens the reset form in the panel, with what is typed in Email. Without it, the link navigates. */
+  onForgot?: (email: string) => void;
+  /** Come back to from the reset form (not first paint): the heading takes focus so the change is read out (CH-15820). */
+  focusOnMount?: boolean;
+  /** The centred stage the form sits in, which a refusal recentres (CH-15608). */
+  stageRef?: RefObject<HTMLElement | null>;
+}) {
   const [email, setEmail] = useState(initial?.email ?? '');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -62,13 +85,15 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const submitRef = useRef<HTMLButtonElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const submitRowRef = useRef<HTMLDivElement>(null);
   const forgotBelowRef = useRef<HTMLAnchorElement>(null);
   const reduced = useChReducedMotion();
   const router = useRouter();
-  // CH-15608: what a refusal moves (the button, the phone's forgot link and, on the desktop, the centred form) glides there.
-  const gliders = useMemo<Glider[]>(() => [{ ref: formRef }, { ref: submitRowRef, within: formRef }, { ref: forgotBelowRef, within: formRef }], []);
+  // CH-15608: what a refusal moves (the button, the phone's forgot link and, on the desktop, the centred stage) glides there.
+  const anchor = stageRef ?? formRef;
+  const gliders = useMemo<Glider[]>(() => [{ ref: anchor }, { ref: submitRowRef, within: anchor }, { ref: forgotBelowRef, within: anchor }], [anchor]);
   const glide = useGlide(reduced, gliders);
 
   // /golf/login?returnTo=/golf/join/ABC123, and ?ref=coach_nick_rini for demo-login tracing: kept for the round trip.
@@ -110,6 +135,16 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
   useLayoutEffect(() => {
     if (errorNonce > 0) glide.play();
   }, [errorNonce, glide]);
+  // In the panel's swap a view that comes back while it is still leaving is the same copy re-entering, not a new one: so
+  // focus follows presence (never into the leaving copy) and the carried address is taken whenever it changes.
+  const present = useIsPresent();
+  useEffect(() => {
+    if (present && focusOnMount) titleRef.current?.focus({ preventScroll: true });
+  }, [present, focusOnMount]);
+  const carriedEmail = initial?.email;
+  useEffect(() => {
+    if (carriedEmail !== undefined) setEmail(carriedEmail);
+  }, [carriedEmail]);
 
   // After a failed attempt focus moves to the first invalid field; role="alert" on the message covers the announcement.
   useEffect(() => {
@@ -210,8 +245,14 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
   // CH-15609: a refusal about the fields shakes them once (credentials, or an empty field). The name alternates so a second
   // refusal restarts the animation; reduced motion holds them still (the shake token is 1ms).
   const shake = errorNonce > 0 && field ? (errorNonce % 2 ? 'a' : 'b') : undefined;
+  const openForgot = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (!onForgot || !isPlainClick(e)) return;
+    e.preventDefault();
+    onForgot(email.trim());
+  };
+  // CH-15920: the href stays today's reset page, for a new tab and for no JavaScript; a plain click opens the panel's.
   const forgot = (cls: string, ref?: RefObject<HTMLAnchorElement | null>) => (
-    <Link ref={ref} href="/golf/forgot-password" className={`ch-au-forgot ${cls}`}>
+    <Link ref={ref} href="/golf/forgot-password" className={`ch-au-forgot ${cls}`} onClick={openForgot}>
       Forgot password?
     </Link>
   );
@@ -219,7 +260,6 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
   return (
     <form
       ref={formRef}
-      id="ch-au-form"
       className="ch-au-form"
       onSubmit={handleSubmit}
       // A password manager can fill fields without firing React's onChange, leaving a visibly filled form behind a disabled button.
@@ -228,13 +268,9 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
       noValidate
       aria-label="Sign in to GolfHelm"
     >
-      <div className="ch-au-lock">
-        <img src="/clubhouse/auth/helm-golf-mark.png" alt="" width={46} height={46} />
-        <span>
-          Golf<b>Helm</b>
-        </span>
-      </div>
-      <h1>Sign in</h1>
+      <h1 ref={titleRef} tabIndex={-1}>
+        Sign in
+      </h1>
       <p className="ch-au-sub">
         Coaches and players use the same <span className="ch-au-nowrap">sign-in.</span>
         <span className="ch-au-sub__more"> We’ll open the right clubhouse for you.</span>
@@ -329,17 +365,7 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
       )}
       <div className="ch-au-submit" ref={submitRowRef}>
         <button ref={submitRef} type="submit" className="ch-btn ch-btn--primary ch-btn--lg" disabled={!canSubmit || busy} aria-busy={busy || undefined} data-ch-code={busy ? 'CH-15402' : undefined}>
-          {/* CH-15607: both labels hold one cell and crossfade, so the key never reflows; the one not showing is hidden from
-              assistive technology, which reads "Sign in" or "Signing in…". */}
-          <span className="ch-au-key" data-busy={busy ? '' : undefined}>
-            <span className="ch-au-key__idle" aria-hidden={busy || undefined}>
-              Sign in
-            </span>
-            <span className="ch-au-key__busy" aria-hidden={!busy || undefined}>
-              <span className="ch-au-spin" aria-hidden="true" />
-              Signing in…
-            </span>
-          </span>
+          <AuthKeyLabel busy={busy} idle="Sign in" working="Signing in…" />
         </button>
       </div>
       {forgot('ch-au-forgot--below', forgotBelowRef)}

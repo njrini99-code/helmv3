@@ -62,6 +62,12 @@ haptic, field and number), `auth-motion` (the welcome's variants), `use-hour`
 (the viewer's clock, one shared store) and `use-query-param`. Data:
 `data/welcome.ts` (server only) with `data/welcome-shape.ts` (pure).
 
+Added 2026-10-07 for the reset form in the panel: `ResetForm` and `ResetSent`
+(`ForgotPassword.tsx`), `AuthKeyLabel` (a key's two labels in one cell),
+`useAuthView` (the panel's view, kept in `?view=forgot`), `useGlide` (transform-only
+FLIP for what a refusal or a view change moves) and `forgot-state` (today's reset
+rules and words).
+
 ### Modified components
 
 `src/components/auth/golf-sign-in-form.tsx` (the current form) now imports its messages, stale-bundle guard and
@@ -157,6 +163,24 @@ a named, pressed-state button. Text over the course holds contrast by day and fl
 - **Phone welcome advances after its choreography.** Desktop waits for Continue or Return.
 - **Scoped D-64 exception**, as above.
 
+## Reset password in the panel (2026-10-07, up for owner review)
+
+The owner chose to bring forgot password into the Clubhouse sign-in instead of sending people to today's page. There
+is no board for it, so it is drawn in the sign-in panel's own vocabulary and waits for owner review:
+
+- The course, the lockup and the panel's chrome (Home, the footer) stay put. Only the content under the lockup changes:
+  "Reset password", today's subtitle, one Email field (prefilled with what was typed on sign in), the key "Send reset
+  link", and a quiet "Remember it? Sign in" under it.
+- Check your email: today's heading, "We sent a reset link to" the address as sent, today's sentence on what to do
+  next, and "Back to sign in" as the one primary action.
+- It moves like navigation: the view slides 12px the way the person is going and crossfades, and on the desktop the
+  centred stage glides to its new centre (CH-15612).
+- It behaves like today's page: the same action and checks, the same words, the Send key on even when the field is
+  empty, a refusal cleared by editing. The URL keeps `?view=forgot`, so the browser's Back works. The links keep today's
+  page as their href.
+- Reset password itself (the email's link) is still today's `/golf/reset-password`: it builds the recovery session and
+  was left alone on purpose.
+
 ## Not built
 
 - The dashboard-side reveal after the hand-off (the README's dashboard lifting in behind the fold). The welcome folds the course
@@ -164,8 +188,13 @@ a named, pressed-state button. Text over the course holds contrast by day and fl
 - The card flying into the sidebar on the hand-off.
 - The phone's sheet-rise hand-off (the phone fades to ivory instead).
 - Sign up and onboarding (phase 2).
+- Reset password (the page the email links to) in Clubhouse; and, with the flag on, `/golf/forgot-password` sending
+  people to the panel's form (route integration, outside this page's files).
 
 ## Open owner questions
+
+- **The reset views (2026-10-07).** Built without a board. Are the panel's "Reset password" and "Check your email"
+  (VERIFY screenshots) right?
 
 - **Wrong password.** The design's "Incorrect email or password. Please check your credentials and try again." with both fields
   marked is built for the text the current form maps to that message. When the server answers with its own words (for example

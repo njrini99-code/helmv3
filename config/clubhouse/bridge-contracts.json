@@ -15565,17 +15565,6 @@
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
-    "id": 150202,
-    "page": "P015",
-    "category": 2,
-    "item": 2,
-    "name": "RESET_PASSWORD_A_LINK_IS_BEING_ASKED",
-    "chCode": "CH-15420",
-    "meaning": "Reset password: a link is being asked for",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/auth.md"
-  },
-  {
     "id": 150301,
     "page": "P015",
     "category": 3,
@@ -15583,6 +15572,17 @@
     "name": "A_SIGN_IN_IS_IN_FLIGHT",
     "chCode": "CH-15402",
     "meaning": "A sign-in is in flight (and stays so while it navigates away)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150302,
+    "page": "P015",
+    "category": 3,
+    "item": 2,
+    "name": "RESET_PASSWORD_A_LINK_IS_BEING_ASKED",
+    "chCode": "CH-15420",
+    "meaning": "Reset password: a link is being asked for",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
@@ -15829,39 +15829,6 @@
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
-    "id": 150702,
-    "page": "P015",
-    "category": 7,
-    "item": 2,
-    "name": "FORGOT_PASSWORD_IS_CLICKED",
-    "chCode": "CH-15920",
-    "meaning": "\"Forgot password?\" is clicked",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/auth.md"
-  },
-  {
-    "id": 150703,
-    "page": "P015",
-    "category": 7,
-    "item": 3,
-    "name": "A_RESET_LINK_IS_ASKED_FOR_AND_2",
-    "chCode": "CH-15921",
-    "meaning": "A reset link is asked for and the server accepts (its answer is the same whether or not the address has an account)",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/auth.md"
-  },
-  {
-    "id": 150704,
-    "page": "P015",
-    "category": 7,
-    "item": 4,
-    "name": "BACK_TO_SIGN_IN",
-    "chCode": "CH-15922",
-    "meaning": "Back to sign in (\"Remember it? Sign in\", Back to sign in, or the browser's Back)",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/auth.md"
-  },
-  {
     "id": 150801,
     "page": "P015",
     "category": 8,
@@ -15895,6 +15862,17 @@
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
+    "id": 150902,
+    "page": "P015",
+    "category": 9,
+    "item": 2,
+    "name": "A_RESET_LINK_IS_ASKED_FOR_AND_2",
+    "chCode": "CH-15921",
+    "meaning": "A reset link is asked for and the server accepts (its answer is the same whether or not the address has an account)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
     "id": 151201,
     "page": "P015",
     "category": 12,
@@ -15902,6 +15880,28 @@
     "name": "THE_PERSON_CAME_FROM_AN_INVITE_LINK",
     "chCode": "CH-15901",
     "meaning": "The person came from an invite link or a demo link",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151202,
+    "page": "P015",
+    "category": 12,
+    "item": 2,
+    "name": "FORGOT_PASSWORD_IS_CLICKED",
+    "chCode": "CH-15920",
+    "meaning": "\"Forgot password?\" is clicked",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151203,
+    "page": "P015",
+    "category": 12,
+    "item": 3,
+    "name": "BACK_TO_SIGN_IN",
+    "chCode": "CH-15922",
+    "meaning": "Back to sign in (\"Remember it? Sign in\", Back to sign in, or the browser's Back)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
@@ -16045,6 +16045,61 @@
     "name": "THE_PANEL_MOVES_BETWEEN_SIGN_IN_THE",
     "chCode": "CH-15612",
     "meaning": "The panel moves between sign in, the reset form and check your email",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151613,
+    "page": "P015",
+    "category": 16,
+    "item": 13,
+    "name": "SIGN_UP_ONE_QUESTION_GIVES_WAY_TO",
+    "chCode": "CH-15620",
+    "meaning": "Sign up: one question gives way to the next (Continue, a choice, Back)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151614,
+    "page": "P015",
+    "category": 16,
+    "item": 14,
+    "name": "SIGN_UP_THE_MEMBER_CARD_FILLS_IN",
+    "chCode": "CH-15621",
+    "meaning": "Sign up: the member card fills in as answers arrive",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151615,
+    "page": "P015",
+    "category": 16,
+    "item": 15,
+    "name": "SIGN_UP_PROGRESS_MOVES",
+    "chCode": "CH-15622",
+    "meaning": "Sign up: progress moves",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151616,
+    "page": "P015",
+    "category": 16,
+    "item": 16,
+    "name": "SIGN_UP_THE_MEMBER_CARD_IS_ISSUED",
+    "chCode": "CH-15623",
+    "meaning": "Sign up: the member card is issued (done, staff done)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151617,
+    "page": "P015",
+    "category": 16,
+    "item": 17,
+    "name": "SIGN_UP_AN_ANSWER_IS_TOUCHED_OR",
+    "chCode": "CH-15624",
+    "meaning": "Sign up: an answer is touched or refused",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },

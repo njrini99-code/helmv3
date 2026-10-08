@@ -17,12 +17,15 @@
   font-family: var(--ch-font-sans);
   -webkit-font-smoothing: antialiased;
 }
-.ch-au a {
+/* Text links only: a key that is a link (`<Button href>`, a .ch-btn) keeps its variant's ink. Unscoped, this out-ranked
+   .ch-btn--primary and drew a link key's word green on green (sign up's Enter a team code, Go to sign in). The :where
+   keeps the old weight, so the legal links' and the skip link's own colours still win. */
+.ch-au a:where(:not(.ch-btn)) {
   color: var(--ch-green-700);
   text-decoration: none;
 }
 @media (hover: hover) {
-  .ch-au a:hover {
+  .ch-au a:where(:not(.ch-btn)):hover {
     color: var(--ch-green-800);
     text-decoration: underline;
   }
@@ -402,11 +405,17 @@
   background: rgb(28 25 18 / 0.09);
   color: var(--ch-text-primary) !important;
 }
-.ch-au-form {
+/* The stage: the lockup over the panel's view (sign in, the reset form, check your email), centred in the panel. The
+   lockup stays put while the views slide under it (CH-15612). */
+.ch-au-stage {
   margin: auto;
   padding: 32px 0;
   width: 100%;
   max-width: 360px;
+  display: flex;
+  flex-direction: column;
+}
+.ch-au-form {
   display: flex;
   flex-direction: column;
 }
@@ -441,13 +450,55 @@
   color: var(--ch-text-primary);
 }
 .ch-au-sub {
-  margin: 10px 0 0;
   font: 400 15px/1.5 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
 .ch-au-nowrap {
   white-space: nowrap;
+}
+/* Paragraph spacing is written under .ch-au: base.css zeroes every .ch-root p, which had quietly taken the board's 10px
+   from under the heading. */
+.ch-au .ch-au-sub {
+  margin-top: 10px;
+}
+.ch-au .ch-au-alt {
+  margin-top: 20px;
+}
+.ch-au .ch-au-body {
+  margin-top: 14px;
+}
+/* The reset form's way back, a quiet line under its key (CH-15922). */
+.ch-au-alt {
+  text-align: center;
+  font: 400 14px/1.4 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-au-alt a {
+  position: relative;
+  font-weight: 500;
+  border-radius: 4px;
+  outline-offset: 3px;
+}
+/* 44px tall: 19.6px of line plus 12px above and below. */
+.ch-au-alt a::after {
+  content: '';
+  position: absolute;
+  inset: -12px -8px;
+}
+/* Check your email (CH-15921): the address it went to in ink, and today's sentence on what to do next. */
+.ch-au-sent .ch-au-sub b {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+  overflow-wrap: anywhere;
+}
+.ch-au-body {
+  font: 400 14.5px/1.55 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+  text-wrap: pretty;
+}
+.ch-au-sent .ch-au-submit {
+  margin-top: 28px;
 }
 /* One sentence a line on the desktop (the phone drops the second). */
 .ch-au-sub__more {
@@ -1159,10 +1210,25 @@
   .ch-au-lock {
     display: none;
   }
-  .ch-au-form {
+  .ch-au-stage {
     margin: 0;
     padding: 0;
     max-width: none;
+  }
+  .ch-au-alt {
+    font-size: 14.5px;
+  }
+  .ch-au .ch-au-alt {
+    margin-top: 18px;
+  }
+  .ch-au-body {
+    font-size: 14px;
+  }
+  .ch-au .ch-au-body {
+    margin-top: 12px;
+  }
+  .ch-au-sent .ch-au-submit {
+    margin-top: 22px;
   }
   .ch-au-form h1 {
     margin: 0;
@@ -1170,8 +1236,10 @@
     letter-spacing: -0.026em;
   }
   .ch-au-sub {
-    margin-top: 6px;
     font-size: 14.5px;
+  }
+  .ch-au .ch-au-sub {
+    margin-top: 6px;
   }
   .ch-au-sub__more {
     display: none;
