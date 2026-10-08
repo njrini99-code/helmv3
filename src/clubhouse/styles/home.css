@@ -2549,17 +2549,6 @@
     letter-spacing:.14em;
     color:#7A6B3F;
   }
-  .ch-hm-hero h1 {
-    margin:12px 0 10px;
-    color:#123B29;
-    font-size:30px;
-  }
-  .ch-hm-hero__brief {
-    margin:0 0 20px;
-    padding-bottom:18px;
-    border-bottom:1px solid rgb(110 98 62/.11);
-    color:#55524B;
-  }
   .ch-hm-hero__brief svg {
     color:#7A6B3F;
   }
@@ -2755,17 +2744,6 @@
     padding-left:20px;
     padding-right:20px;
   }
-  .ch-hm-hero h1 {
-    font-size:31px;
-    letter-spacing:-.038em;
-    margin:14px 0 12px;
-  }
-  .ch-hm-hero__brief {
-    font-size:14.5px;
-    line-height:1.5;
-    padding-bottom:20px;
-    margin-bottom:22px;
-  }
   .ch-hm-body {
     gap:32px;
     padding:26px 20px 32px;
@@ -2950,10 +2928,6 @@
     color:#0B3A25;
     background:#F4F1E8;
     box-shadow:none;
-  }
-  .ch-hm-hero__brief {
-    border-bottom:0;
-    padding-bottom:0;
   }
   .ch-hm-body {
     gap:36px;
