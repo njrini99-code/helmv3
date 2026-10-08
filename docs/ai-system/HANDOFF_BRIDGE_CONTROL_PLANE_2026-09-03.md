@@ -41,9 +41,9 @@ merge time, not before.
 
 - `main` tip when written: `75d3c761a` (+ #1775 and #1777 merging via auto-merge).
   Production serves `a9638cecf` (deployed 2026-09-02 17:42Z); the owner has not
-  yet said "deploy" for the 13+ commits since. Only the owner's explicit word
-  triggers a production promote (`scripts/deploy-prod.sh` from a clean `main`
-  checkout; a detached one is staged at `~/worktrees/helmv3/deploy-main`).
+  yet said "deploy" for the 13+ commits since. (At the time only the owner's
+  word triggered a promote through a deploy script; since 2026-10-07 agents
+  deploy directly with the command in AGENTS.md "Production".)
 - Merged tonight: #1765, #1769 (Flight Recorder real timings), #1770 + #1772
   (Postgres checkpoints migration, APPLIED to production with #1772 discharging
   the HELD rows), #1771 (Repair launchd config in repo), #1773 (tracer gaps),

@@ -42,15 +42,15 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 43 | 5 | 17 | 58 |
-| `AUDIT_SNAPSHOT` | 67 | 6 | 35 | 29 |
+| `PLAN` | 43 | 5 | 17 | 57 |
+| `AUDIT_SNAPSHOT` | 67 | 6 | 35 | 28 |
 | `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 49 | 15 | 2 | 4 |
 | `ADR` | 6 | 0 | 3 | 2 |
 | `INDEX` | 25 | 2 | 8 | 5 |
 | `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 321 | 13 | 70 | 85 |
+| `UNKNOWN` | 321 | 13 | 70 | 83 |
 
 ## Files
 
@@ -387,7 +387,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- |
 | `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md` | current | yes | - | - | - |
 | `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` | current | yes | - | yes | 14 |
-| `docs/ai-system/HANDOFF_BRIDGE_CONTROL_PLANE_2026-09-03.md` | current | - | - | yes | 2 |
+| `docs/ai-system/HANDOFF_BRIDGE_CONTROL_PLANE_2026-09-03.md` | current | - | - | yes | 1 |
 | `docs/ai-system/HELM_AUTONOMY_CONTROL_PLANE.md` | current | yes | - | yes | - |
 | `docs/architecture/COMPREHENSIVE_AUTH_SYSTEM_PLAN.md` | current | - | - | - | 4 |
 | `docs/baseball/stats-migration-plan.md` | current | - | - | yes | - |
@@ -484,7 +484,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/SWAP_AUDIT.md` | current | - | - | yes | - |
 | `docs/clubhouse/foundation-v2/01_REPO_AUDIT_AND_RECOMMENDATION.md` | current | - | - | yes | - |
 | `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 4 |
-| `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | 1 |
+| `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | - |
 | `docs/ui-audits/DESIGN_AUDIT_ASK_AND_CALENDAR_2026-08-15.md` | current | - | - | yes | - |
 | `docs/ui-audits/GOLF_UIUX_AUDIT_LEDGER_2026-09-24.md` | current | - | - | yes | - |
 | `docs/ui-audits/MOBILE_NATIVE_REBUILD_AUDIT_2026-09-03.md` | current | - | - | - | 1 |
@@ -750,9 +750,9 @@ them would bury everything above.
 | `docs/clubhouse/HANDOFF.md` | current | - | - | - | - |
 | `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
 | `docs/clubhouse/PAGE_PERFORMANCE.md` | current | - | - | - | - |
-| `docs/clubhouse/PROGRESS.md` | current | - | - | - | 1 |
+| `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
 | `docs/clubhouse/QUALITY_TOOLING.md` | current | - | - | - | - |
-| `docs/clubhouse/RELEASE_CANDIDATE.md` | current | - | - | yes | 1 |
+| `docs/clubhouse/RELEASE_CANDIDATE.md` | current | - | - | yes | - |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
 | `docs/clubhouse/UI_OWNERSHIP.md` | current | - | - | yes | - |
 | `docs/clubhouse/UX_OPTIMIZATION.md` | current | - | - | - | - |

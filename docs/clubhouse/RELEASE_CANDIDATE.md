@@ -153,9 +153,9 @@ introduced here.
 2. Decide the team allowlist, front-door behavior, required held migrations and
    deployment budget. Apply only reviewed, merged SQL through the documented
    production apply path, then verify its schema and data results.
-3. Request the merge through `npm run pr:land -- 2121`. Production release uses
-   `scripts/deploy-prod.sh` from clean, current canonical `main`, linked to
-   Vercel project `prj_qPgC4eErTUsaSmv40EiQMNuTpuEV`.
+3. Merge through `npm run pr:land -- 2121`. Production release uses the deploy
+   command in AGENTS.md "Production" from clean, current canonical `main`,
+   linked to Vercel project `prj_qPgC4eErTUsaSmv40EiQMNuTpuEV`.
 4. Verify `npm run release:status` reports the approved served SHA, then run
    authorized coach/player acceptance against the selected rollout teams.
 5. If acceptance fails, request rollback or promotion explicitly. Restore the
