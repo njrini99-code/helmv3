@@ -1,5 +1,11 @@
 # P015 — Auth: changelog
 
+## 2026-10-08 — premium pass: findings D6, D11
+
+- D6: the welcome card holds its news as rows between hairlines, not bordered, shadowed cards inside a card. A vertical hairline parts them side by side on a wide screen, a horizontal one when stacked. Empty and failed states are a flush notice.
+- D11: the preview's round reads "74 · +2 · Pine Needles", as Home's latest rounds do. The live welcome carries no score.
+- Not changed: D10. On the phone the field labels are visually hidden, so the placeholder is the only visible label; a "you@school.edu" placeholder would leave no visible "Email". This needs a design call first: show the labels on the phone, or keep the placeholders.
+
 ## 2026-10-08 — premium pass: Continue keeps honest time, and findings (P015-B3, D4, D5, D7)
 
 - B3: on the phone, where the welcome goes on by itself, a 1px gilt hairline draws across under Continue over the time left (transform only; held still under reduced motion), so the page says it will continue and a tap just goes now.
