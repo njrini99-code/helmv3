@@ -1,5 +1,7 @@
 # BASEBALLHELM PARALLEL EXECUTION PLAN
 
+> **STATUS: HISTORICAL — execution run order from 2026-07 that no longer matches the tree (about 20 paths it names are gone). Archived 2026-10-07; current direction: `docs/baseball/COHERENCE_RULING_2026-07-08.md` and `docs/baseball/BASEBALLHELM_PRODUCTION_ROADMAP.md`.**
+
 **Source of truth:** `docs/baseball/BASEBALLHELM_PRODUCTION_ROADMAP.md` (red-team-hardened, 7 phases). This document is the LITERAL RUN ORDER for a Sonnet-5 agent fleet — one git worktree per task, zero file collisions, zero unmet dependencies.
 
 | Metric | Value |

@@ -94,7 +94,8 @@ untrusted data.
    `supabase start` without the env var is the legacy Docker path.
    Our `supabase/config.toml` sets `auth.email.template.*.content_path`,
    which the native stack rejects (`ExperimentalStackStartError`); run it
-   against a scratch copy of `supabase/` with those lines removed (verified
+   against a scratch copy of `supabase/` with those lines removed
+   (`--workdir <copy>`) rather than editing the repo config (verified
    2026-10-03: all migrations and seeds apply natively, and all 85 pgTAP
    files pass). A native stack idles to `readiness: sleeping`, and
    `supabase test db --local` then fails with `LocalDbRunningError` even though
@@ -102,7 +103,6 @@ untrusted data.
    pointing at a wrapper that swaps `--local` for
    `--db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres` (the local
    default, not a secret).
-   (`--workdir <copy>`) rather than editing the repo config.
    Before pushing a migration, `npm run db:check:local` runs `supabase db
    advisors` + `db lint` against the local stack and fails only on findings
    missing from `supabase/local-db-checks-baseline.json` (a ratchet: fix
@@ -146,7 +146,7 @@ a missing skill connection is not a policy ban.
 
 ## Migration review
 For a shared or production migration, review the SQL and target with
-`.claude/rules/database-review.md` before applying, and rehearse risky kinds
+`.claude/rules/database.md` before applying, and rehearse risky kinds
 (RLS, grants, `DROP`, type changes, backfills) on the local Docker stack. A
 reviewer agent is optional and risk-based.
 

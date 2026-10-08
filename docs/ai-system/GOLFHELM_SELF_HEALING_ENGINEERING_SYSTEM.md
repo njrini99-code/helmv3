@@ -184,7 +184,7 @@ A daily reliability run MUST NOT deploy production.
 
 Pointers, not duplicates. One authority, many pointers.
 
-**Path-scoped Claude rule** `.claude/rules/golfhelm-engineering-os.md` with
+**Path-scoped Claude rule** `.claude/rules/golfhelm-engineering-os.md` (since removed; folded into `.claude/rules/golf.md`) with
 paths covering the actual verified GolfHelm/CoachHelm paths (audit first):
 src/app/golf/**, src/components/golf/**, src/lib/golf/**,
 src/lib/coachhelm/**, src/app/api/coachhelm/**, supabase/migrations/**,

@@ -39,7 +39,7 @@
 
 - [ ] `npm run lint` and `npm run typecheck` pass locally (no new ratchet regressions)
 - [ ] Unit/contract tests pass (`npm test`) and I added/updated tests for this change
-- [ ] **Migrations** are additive + idempotent (`IF NOT EXISTS` / `DROP POLICY IF EXISTS`), and were reviewed for shared golf-prod safety — no destructive `DELETE`/`DROP TABLE`/data rewrites
+- [ ] **Migrations** are additive + idempotent (`IF NOT EXISTS` / `DROP POLICY IF EXISTS`), and were reviewed for safety on the single production Supabase project shared by Golf, Baseball and Lift Lab — no destructive `DELETE`/`DROP TABLE`/data rewrites
 - [ ] **RLS:** any new/changed table has RLS enabled with one policy per command, anon is revoked where appropriate, and the pgTAP suite (`supabase/tests/rls/`) covers it
 - [ ] **No secrets** in the diff (keys, tokens, service-role creds, `.env` values) — push protection is on, don't bypass it
 - [ ] UI changes use design-system primitives (no raw `<button>`/`<input>`/arbitrary `px`/`bg-white`) and include before/after screenshots

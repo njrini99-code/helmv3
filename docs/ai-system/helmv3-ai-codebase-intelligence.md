@@ -117,8 +117,8 @@ Start with these because they cross product behavior, UI, database, and trust co
 this file". `scripts/knowledge/world-model.mjs` (2026-09-02) answers "what
 does touching this feature put at risk" — a generated graph
 (`docs/generated/WORLD_MODEL.json` + a readable `WORLD_MODEL.md` summary)
-over features, routes, actions, RPCs, tables, jobs (Vercel crons, Inngest
-functions, the self-heal launchd Repair job), named invariant registries
+over features, routes, actions, RPCs, tables, jobs (Vercel crons,
+the self-heal routines), named invariant registries
 (`qualifier-invariants.ts`, `operational-rule-engine.ts`), and the runtime
 `FeatureKey` (Sentry/`admin_events`) vocabulary.
 

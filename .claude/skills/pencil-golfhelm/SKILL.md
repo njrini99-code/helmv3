@@ -37,7 +37,7 @@ description: Supercharged Pencil design system for GolfHelm — UI mockups, mark
 | System | Location | Purpose |
 |--------|----------|---------|
 | **Product tokens** | `src/styles/design-tokens.css` + `.claude/rules/design-system.md` | Fairway tokens and rules (authoritative) |
-| **Design folder** | `docs/design/DESIGN-SYSTEM.md` | Legacy extracted tokens for Pencil (retired for product UI) |
+| **Design folder** | `docs/design/assets/` | Reference shots only. `docs/design/DESIGN-SYSTEM.md` is RETIRED; read the tokens file above |
 | **Screenshots** | `docs/design/assets/reference-shots/` | Captured UI for import into Pencil |
 
 ---

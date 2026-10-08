@@ -4,6 +4,8 @@ disable-model-invocation: true
 description: Analyzes features for completeness and suggests improvements to make them legendary. Product ideation, invoked by name — not the definition of done (that is finish-task). Applies the Feature Finisher Framework to assess features on a 4-layer scale (Functional → Complete → Polished → Legendary) and generates prioritized improvement roadmaps. Use for GolfHelm, BaseballHelm, or any feature that needs to go from "works" to "world-class".
 ---
 
+> **STATUS: ARCHIVED (2026-10-07)** — moved out of `.claude/skills/` because it was never auto-loaded and duplicated product-ideation work done in conversation. The definition of done is the `finish-task` skill. Kept for reference only.
+
 # Feature Finisher Skill
 
 ## Purpose

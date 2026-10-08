@@ -156,14 +156,6 @@ manually-triggered by design, or an actual gap, and guessing which
 would risk instrumenting something deliberately uninstrumented. Carried
 forward as an open question, not silently dropped.
 
-## 6. Inngest functions (REMOVED 2026-10-06)
-
-**Historical.** Inngest, its three functions (`weekly-health-ping`,
-`inngest-health-probe`, `coachhelm-round-submitted`) and the shared
-`withBridgeLogging` check-in wrapper were removed. Any `job-weekly-health-ping`,
-`job-inngest-health-probe` or `job-coachhelm-round-submitted` monitor still in
-Sentry is orphaned and can be deleted there (owner action).
-
 ## 7. launchd Repair job (RETIRED 2026-09-05)
 
 **Historical.** The launchd agent, `scripts/run-selfheal-repair.mjs`,

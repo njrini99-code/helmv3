@@ -107,11 +107,9 @@ count, plus the dead-letter list with requeue. Renders an explicit empty
 state ("Queue not active") when the facade migration is not applied or the
 queue has never been used, rather than a blank or erroring section.
 
-## Inngest (removed) and the safety-net cron — NOT retired
+## The safety-net cron — NOT retired
 
-Inngest was removed 2026-10-06 (the `/api/inngest` handler, `src/lib/inngest/**`,
-the round-submit send branch and the `INNGEST_*` env vars). The round-submit
-fallback chain is now: the queue FIRST (when `HELM_QUEUE_ENABLED=true`), then
+The round-submit fallback chain is: the queue FIRST (when `HELM_QUEUE_ENABLED=true`), then
 the exact direct `postRoundTrigger` call. The 30-minute `coachhelm-safety-net`
 cron is unchanged and still the backstop. Retirement plan for the cron, in
 order:

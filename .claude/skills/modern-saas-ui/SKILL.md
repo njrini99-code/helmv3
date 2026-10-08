@@ -9,6 +9,7 @@ description: >-
   them override anything here. For Fairway dashboard implementation prefer the
   rule plus the shipped components; for layout/overlay/breakpoint defects, reproduce
   and fix with the debugger agent.
+disable-model-invocation: true
 ---
 
 # Modern SaaS UI — App Enhancement Guide

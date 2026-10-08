@@ -14,7 +14,7 @@
     },
     {
       "author": "Helmv3",
-      "content": "Important docs: AGENTS.md, CLAUDE.md, docs/v3-master-plan.md, docs/v3-decisions.md, docs/v3-design-language.md, docs/v3-testing-standards.md, docs/v3-rls-template.md, docs/v3-research-golf-domain.md, docs/OBSERVABILITY.md, docs/SECURITY_AUDIT.md, memory/context/*.md, memory/projects/golfhelm.md, memory/glossary.md, and docs/ai-system/helmv3-ai-codebase-intelligence.md."
+      "content": "Important docs: AGENTS.md, CLAUDE.md, docs/v3-master-plan.md, docs/v3-decisions.md, src/styles/design-tokens.css, .claude/rules/design-system.md, docs/v3-rls-template.md, docs/v3-research-golf-domain.md, docs/OBSERVABILITY.md, docs/SECURITY_AUDIT.md, memory/context/*.md, memory/projects/golfhelm.md, memory/glossary.md, and docs/ai-system/helmv3-ai-codebase-intelligence.md."
     },
     {
       "author": "Helmv3",

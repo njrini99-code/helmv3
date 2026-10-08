@@ -86,6 +86,17 @@ needs `npm run build`; a migration or policy needs `npm run test:rls`; prose or
 config-only edits need the affected tooling tests, not the suite. Do not weaken,
 skip or delete a test, or raise a baseline, to get green. No hook blocks you from finishing a turn. Reviewer agents are optional and risk-based.
 
+New tests go next to the code in a `__tests__/` folder; the other test
+locations in the repo are legacy.
+
+## Session habits
+
+One task per session, and `/clear` between tasks. Use `/rename` on long
+sessions so they can be found again. If two corrections in a row did not fix
+the problem, restart with a sharper prompt instead of a third attempt. Run an
+approved plan in a fresh session. When compacting, keep the list of modified
+files and the test commands.
+
 ## Tools
 
 Use the tools present in this session. A missing tool or expired login is a

@@ -6,8 +6,8 @@
 
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
-**Node counts:** 29 features, 68 routes, 72 components, 30 apis, 94 actions, 120 services, 89 tests, 134 tables, 165 rpcs, 25 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
-**Edges:** 1061 (merged; an edge with more than one evidence kind is a stronger claim).
+**Node counts:** 31 features, 69 routes, 74 components, 27 apis, 94 actions, 121 services, 87 tests, 134 tables, 165 rpcs, 25 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
+**Edges:** 1071 (merged; an edge with more than one evidence kind is a stronger claim).
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
 
 ---
@@ -28,7 +28,7 @@ Admin Incidents · active · criticality high · owner platform
 
 Admin Platform · active · criticality high · owner platform
 
-- **Relations:** 13 doc/structurally-evidenced, 21 import-graph-only (weak)
+- **Relations:** 13 doc/structurally-evidenced, 22 import-graph-only (weak)
 - **Tables:** `admin_allowlist`, `admin_error_resolutions`, `baseball_ai_audit`, `baseball_staff_audit_events`, `baseball_strength_group_audit`, `billing_customers`, `billing_invoices`, `crm_stage_transitions`, `crm_unmatched_inbound`, `helm_debug`, `helm_lifting_group_audit`
 - **RPCs:** `admin_auto_resolve_error_fingerprint`, `admin_mark_error_regressed`, `get_active_sessions`, `get_admin_dashboard_rollup`, `get_crm_coach_stage_history`, `get_crm_email_stats`, `get_crm_events_in_range`, `get_crm_funnel`, `get_crm_stage_ages`, `get_crm_time_to_open`, `get_crm_weekly_kpis`, `get_feature_health`, `get_platform_health_stats`, `helm_debug_db_health_snapshot`, `helm_debug_db_lock_snapshot`, `helm_debug_get_agent_run`, `helm_debug_list_agent_runs`, `helm_debug_list_traces`, `helm_debug_prune_observability`, `helm_debug_read_statement_alert_state`, `helm_debug_record_agent_run`, `helm_debug_stat_statements_snapshot`, `is_super_admin`, `recalculate_round_strokes_gained`, `record_db_error_event`, `record_db_health_sample`, `record_db_lock_incident`, `record_db_platform_sample`, `record_db_stat_snapshot`, `record_db_statement_samples`, `refresh_player_stats_cache`, `revoke_user_sessions`
 - **Test surfaces:** 3
@@ -78,7 +78,7 @@ Admin SLO Center · active · criticality high · owner platform
 
 Auth Onboarding And Join · active · criticality high · owner platform
 
-- **Relations:** 1 doc/structurally-evidenced, 28 import-graph-only (weak)
+- **Relations:** 1 doc/structurally-evidenced, 29 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** `check_rate_limit_atomic`, `golf_team_by_join_code`
 - **Test surfaces:** 3
@@ -88,8 +88,8 @@ Auth Onboarding And Join · active · criticality high · owner platform
 
 BaseballHelm (recruiting + team management + Lift Lab) · active · criticality high · owner product
 
-- **Relations:** 1 doc/structurally-evidenced, 9 import-graph-only (weak)
-- **Tables:** `baseball_actions`, `baseball_ai_audit`, `baseball_availability_statuses`, `baseball_baserunning_events`, `baseball_batted_ball_events`, `baseball_bodyweight_entries`, `baseball_catching_events`, `baseball_class_conflicts`, `baseball_coach_notes`, `baseball_coach_player_notes`, `baseball_decision_log`, `baseball_demo_sessions`, `baseball_event_acknowledgements`, `baseball_exercises`, `baseball_fielding_events`, `baseball_import_field_mappings`, `baseball_import_runs`, `baseball_import_sources`, `baseball_integration_configs`, `baseball_legacy_backfill_manifest`, `baseball_lift_assignments`, `baseball_lift_days`, `baseball_lift_exercise_substitutions`, `baseball_lift_exercises`, `baseball_lift_import_rows`, `baseball_lift_import_runs`, `baseball_lift_prescriptions`, `baseball_lift_program_assignments`, `baseball_lift_programs`, `baseball_lift_results`, `baseball_lift_sections`, `baseball_lift_session_exercises`, `baseball_lift_sessions`, `baseball_lift_set_results`, `baseball_lift_weeks`, `baseball_meeting_items`, `baseball_pitch_events`, `baseball_plate_appearances`, `baseball_player_daily_contracts`, `baseball_player_development_metrics`, `baseball_player_external_ids`, `baseball_player_passport_settings`, `baseball_player_passport_share_tokens`, `baseball_player_timeline_events`, `baseball_postgame_review_items`, `baseball_postgame_reviews`, `baseball_practice_attendance`, `baseball_practice_block_objectives`, `baseball_practice_blocks`, `baseball_practice_effectiveness_reviews`, `baseball_practice_lineup_slots`, `baseball_practice_scrimmages`, `baseball_practices`, `baseball_program_settings`, `baseball_readiness_checkins`, `baseball_seasons`, `baseball_settings_audit_log`, `baseball_signals`, `baseball_soreness_maps`, `baseball_staff_audit_events`, `baseball_staff_invitations`, `baseball_stat_facts`, `baseball_stat_sources`, `baseball_stat_visual_views`, `baseball_strength_group_audit`, `baseball_strength_group_members`, `baseball_strength_groups`, `baseball_strength_maxes`, `baseball_strength_prs`, `baseball_swing_events`, `baseball_timeline_event_acks`, `baseball_video_events`, `baseball_workload_events`, `helm_lifting_athletes`, `helm_lifting_availability_statuses`, `helm_lifting_bodyweight_entries`, `helm_lifting_coach_assignments`, `helm_lifting_coach_invites`, `helm_lifting_coaches`, `helm_lifting_days`, `helm_lifting_exercise_substitutions`, `helm_lifting_exercises`, `helm_lifting_group_audit`, `helm_lifting_group_members`, `helm_lifting_groups`, `helm_lifting_import_rows`, `helm_lifting_import_runs`, `helm_lifting_maxes`, `helm_lifting_nutrition_plan_assignments`, `helm_lifting_nutrition_plans`, `helm_lifting_org_viewers`, `helm_lifting_prescriptions`, `helm_lifting_program_assignments`, `helm_lifting_programs`, `helm_lifting_prs`, `helm_lifting_readiness_checkins`, `helm_lifting_sections`, `helm_lifting_session_exercises`, `helm_lifting_sessions`, `helm_lifting_set_results`, `helm_lifting_soreness_check_requests`, `helm_lifting_soreness_check_schedules`, `helm_lifting_soreness_maps`, `helm_lifting_weeks`, `helm_lifting_weight_checkin_requests`, `helm_lifting_weight_checkin_schedules`
+- **Relations:** 1 doc/structurally-evidenced, 11 import-graph-only (weak)
+- **Tables:** `baseball_actions`, `baseball_ai_audit`, `baseball_availability_statuses`, `baseball_baserunning_events`, `baseball_batted_ball_events`, `baseball_bodyweight_entries`, `baseball_catching_events`, `baseball_class_conflicts`, `baseball_coach_notes`, `baseball_coach_player_notes`, `baseball_decision_log`, `baseball_demo_sessions`, `baseball_event_acknowledgements`, `baseball_exercises`, `baseball_fielding_events`, `baseball_import_field_mappings`, `baseball_import_runs`, `baseball_import_sources`, `baseball_integration_configs`, `baseball_legacy_backfill_manifest`, `baseball_lift_assignments`, `baseball_lift_days`, `baseball_lift_exercise_substitutions`, `baseball_lift_exercises`, `baseball_lift_import_rows`, `baseball_lift_import_runs`, `baseball_lift_prescriptions`, `baseball_lift_program_assignments`, `baseball_lift_programs`, `baseball_lift_results`, `baseball_lift_sections`, `baseball_lift_session_exercises`, `baseball_lift_sessions`, `baseball_lift_set_results`, `baseball_lift_weeks`, `baseball_meeting_items`, `baseball_pitch_events`, `baseball_plate_appearances`, `baseball_player_daily_contracts`, `baseball_player_development_metrics`, `baseball_player_external_ids`, `baseball_player_passport_settings`, `baseball_player_passport_share_tokens`, `baseball_player_timeline_events`, `baseball_postgame_review_items`, `baseball_postgame_reviews`, `baseball_practice_attendance`, `baseball_practice_block_objectives`, `baseball_practice_blocks`, `baseball_practice_effectiveness_reviews`, `baseball_practice_lineup_slots`, `baseball_practice_scrimmages`, `baseball_practices`, `baseball_program_settings`, `baseball_readiness_checkins`, `baseball_seasons`, `baseball_settings_audit_log`, `baseball_signals`, `baseball_soreness_maps`, `baseball_staff_audit_events`, `baseball_staff_invitations`, `baseball_stat_facts`, `baseball_stat_sources`, `baseball_stat_visual_views`, `baseball_strength_group_audit`, `baseball_strength_group_members`, `baseball_strength_groups`, `baseball_strength_maxes`, `baseball_strength_prs`, `baseball_swing_events`, `baseball_timeline_event_acks`, `baseball_video_events`, `baseball_workload_events`
 - **RPCs:** `find_baseball_player_by_email_for_roster`, `helm_lifting_mark_athlete_onboarded`, `helm_lifting_sync_org_athletes`, `recalculate_baseball_season_stats`, `recalculate_team_baseball_season_stats`, `save_baseball_full_box_score`
 - **Test surfaces:** 2
 - **Sentry/admin_events signals:** `baseball_academics`, `baseball_announcements`, `baseball_auth`, `baseball_calendar`, `baseball_camps`, `baseball_classes`, `baseball_coach_command_center`, `baseball_coachhelm`, `baseball_command_center`, `baseball_compare`, `baseball_decision_room`, `baseball_demo_access`, `baseball_demo_tracking`, `baseball_dev_plans`, `baseball_discover`, `baseball_documents`, `baseball_games`, `baseball_import`, `baseball_insights`, `baseball_interests`, `baseball_lift_onboarding`, `baseball_lifting`, `baseball_lineups`, `baseball_messages`, `baseball_notes`, `baseball_notifications`, `baseball_onboarding`, `baseball_philosophy`, `baseball_player_actions`, `baseball_player_peek`, `baseball_player_today`, `baseball_postgame`, `baseball_practice`, `baseball_profile`, `baseball_recruiting`, `baseball_recruiting_philosophy`, `baseball_roster`, `baseball_scout_packet`, `baseball_settings`, `baseball_signals`, `baseball_staff`, `baseball_stats`, `baseball_tasks`, `baseball_teams`, `baseball_timeline`, `baseball_travel`, `baseball_video`, `baseball_watchlist`
@@ -103,6 +103,16 @@ Calendar And Events · active · criticality high · owner product
 - **RPCs:** none
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `academics_classes`, `calendar_events`
+
+### `clubhouse`
+
+Clubhouse UI (flagged, off in production) · active · criticality medium · owner product
+
+- **Relations:** 0 doc/structurally-evidenced, 4 import-graph-only (weak)
+- **Tables:** none
+- **RPCs:** none
+- **Test surfaces:** 1
+- **Sentry/admin_events signals:** none
 
 ### `coach_intelligence_triage`
 
@@ -131,7 +141,7 @@ CRM Outreach (NCAA cold email) · active · criticality medium · owner founder
 - **Relations:** 0 doc/structurally-evidenced, 4 import-graph-only (weak)
 - **Tables:** `crm_stage_transitions`, `crm_unmatched_inbound`
 - **RPCs:** `refresh_crm_coach_engagement`
-- **Test surfaces:** 3
+- **Test surfaces:** 0
 - **Sentry/admin_events signals:** `crm_recruiting_pipeline`
 
 ### `email_outbound`
@@ -158,7 +168,7 @@ Feature Awareness System · active · criticality high · owner platform
 
 Golf Round Lifecycle · active · criticality high · owner product
 
-- **Relations:** 2 doc/structurally-evidenced, 24 import-graph-only (weak)
+- **Relations:** 2 doc/structurally-evidenced, 25 import-graph-only (weak)
 - **Tables:** `golf_course_edit_history`, `golf_course_tee_edit_history`, `golf_course_tee_holes`, `golf_course_tees`, `golf_demo_sessions`, `golf_round_recap_locks`, `golf_round_recap_provenance`, `golf_team_saved_courses`
 - **RPCs:** `reclassify_golf_round`, `record_round_coachhelm_terminal_state`, `save_partial_round_atomic`, `submit_round_atomic`
 - **Test surfaces:** 3
@@ -168,17 +178,27 @@ Golf Round Lifecycle · active · criticality high · owner product
 
 iOS Native Shell · active · criticality high · owner product
 
-- **Relations:** 0 doc/structurally-evidenced, 1 import-graph-only (weak)
+- **Relations:** 0 doc/structurally-evidenced, 2 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** none
 - **Test surfaces:** 3
+- **Sentry/admin_events signals:** none
+
+### `lift_lab`
+
+Lift Lab (helm_lifting_*) · active · criticality high · owner product
+
+- **Relations:** 0 doc/structurally-evidenced, 6 import-graph-only (weak)
+- **Tables:** `helm_lifting_athletes`, `helm_lifting_availability_statuses`, `helm_lifting_bodyweight_entries`, `helm_lifting_coach_assignments`, `helm_lifting_coach_invites`, `helm_lifting_coaches`, `helm_lifting_days`, `helm_lifting_exercise_substitutions`, `helm_lifting_exercises`, `helm_lifting_group_audit`, `helm_lifting_group_members`, `helm_lifting_groups`, `helm_lifting_import_rows`, `helm_lifting_import_runs`, `helm_lifting_maxes`, `helm_lifting_nutrition_plan_assignments`, `helm_lifting_nutrition_plans`, `helm_lifting_org_viewers`, `helm_lifting_prescriptions`, `helm_lifting_program_assignments`, `helm_lifting_programs`, `helm_lifting_prs`, `helm_lifting_readiness_checkins`, `helm_lifting_sections`, `helm_lifting_session_exercises`, `helm_lifting_sessions`, `helm_lifting_set_results`, `helm_lifting_soreness_check_requests`, `helm_lifting_soreness_check_schedules`, `helm_lifting_soreness_maps`, `helm_lifting_weeks`, `helm_lifting_weight_checkin_requests`, `helm_lifting_weight_checkin_schedules`
+- **RPCs:** none
+- **Test surfaces:** 1
 - **Sentry/admin_events signals:** none
 
 ### `observability_sentry`
 
 Sentry Observability — Telemetry Vocabulary · active · criticality medium · owner platform
 
-- **Relations:** 4 doc/structurally-evidenced, 9 import-graph-only (weak)
+- **Relations:** 4 doc/structurally-evidenced, 10 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** `helm_debug_finalize_trace`, `helm_debug_record_trace_step`, `helm_debug_start_trace`
 - **Test surfaces:** 2
@@ -198,7 +218,7 @@ Supabase Database Observability — Zero-Cost Error/Health Control Plane · acti
 
 Player CoachHelm And Development · active · criticality high · owner product
 
-- **Relations:** 1 doc/structurally-evidenced, 18 import-graph-only (weak)
+- **Relations:** 1 doc/structurally-evidenced, 19 import-graph-only (weak)
 - **Tables:** `golf_focus_area_criteria`, `golf_focus_area_practice_sessions`
 - **RPCs:** `ingest_external_round_atomic`, `sg_scale_for_player`
 - **Test surfaces:** 3
@@ -218,7 +238,7 @@ Player Hub · active · criticality high · owner product
 
 Qualifiers · active · criticality high · owner product
 
-- **Relations:** 1 doc/structurally-evidenced, 4 import-graph-only (weak)
+- **Relations:** 1 doc/structurally-evidenced, 5 import-graph-only (weak)
 - **Tables:** `golf_qualifier_round_courses`
 - **RPCs:** `golf_qualifier_selection_reasons`
 - **Test surfaces:** 5
@@ -288,7 +308,7 @@ Team Access Control And RLS · active · criticality high · owner platform
 
 Team Communications · active · criticality high · owner product
 
-- **Relations:** 0 doc/structurally-evidenced, 7 import-graph-only (weak)
+- **Relations:** 0 doc/structurally-evidenced, 8 import-graph-only (weak)
 - **Tables:** `golf_message_mentions`, `golf_message_reactions`, `golf_message_responses`
 - **RPCs:** `mark_golf_messages_read`
 - **Test surfaces:** 15
@@ -386,6 +406,7 @@ Team Operations · active · criticality high · owner product
 | `baseball_core` | `coachhelm_ai` | import_graph (weak) |
 | `baseball_core` | `crm_outreach` | import_graph (weak) |
 | `baseball_core` | `email_outbound` | import_graph (weak) |
+| `baseball_core` | `lift_lab` | import_graph (weak) |
 | `baseball_core` | `observability_sentry` | import_graph (weak) |
 | `baseball_core` | `team_communications` | import_graph (weak) |
 | `calendar_events` | `admin_platform` | import_graph (weak) |
@@ -414,6 +435,7 @@ Team Operations · active · criticality high · owner product
 | `golf_round_lifecycle` | `admin_platform` | import_graph (weak) |
 | `golf_round_lifecycle` | `auth_onboarding_join` | import_graph (weak) |
 | `golf_round_lifecycle` | `calendar_events` | import_graph (weak) |
+| `golf_round_lifecycle` | `clubhouse` | import_graph (weak) |
 | `golf_round_lifecycle` | `coach_intelligence_triage` | import_graph (weak) |
 | `golf_round_lifecycle` | `coachhelm_ai` | import_graph (weak) |
 | `golf_round_lifecycle` | `ios_native_shell` | import_graph (weak) |
@@ -422,6 +444,11 @@ Team Operations · active · criticality high · owner product
 | `golf_round_lifecycle` | `roster_team` | import_graph (weak) |
 | `golf_round_lifecycle` | `shot_tracking` | import_graph (weak) |
 | `golf_round_lifecycle` | `stats_analytics` | import_graph (weak) |
+| `lift_lab` | `admin_platform` | import_graph (weak) |
+| `lift_lab` | `auth_onboarding_join` | import_graph (weak) |
+| `lift_lab` | `baseball_core` | import_graph (weak) |
+| `lift_lab` | `ios_native_shell` | import_graph (weak) |
+| `lift_lab` | `observability_sentry` | import_graph (weak) |
 | `observability_sentry` | `admin_platform` | import_graph (weak) |
 | `observability_sentry` | `auth_onboarding_join` | feature_doc_contract, import_graph |
 | `observability_sentry` | `coachhelm_ai` | feature_doc_contract |
@@ -431,6 +458,7 @@ Team Operations · active · criticality high · owner product
 | `player_coachhelm_development` | `admin_platform` | import_graph (weak) |
 | `player_coachhelm_development` | `auth_onboarding_join` | import_graph (weak) |
 | `player_coachhelm_development` | `calendar_events` | import_graph (weak) |
+| `player_coachhelm_development` | `clubhouse` | import_graph (weak) |
 | `player_coachhelm_development` | `coach_intelligence_triage` | import_graph (weak) |
 | `player_coachhelm_development` | `coachhelm_ai` | import_graph (weak) |
 | `player_coachhelm_development` | `email_outbound` | import_graph (weak) |
@@ -446,6 +474,7 @@ Team Operations · active · criticality high · owner product
 | `player_hub` | `team_communications` | import_graph (weak) |
 | `qualifiers` | `admin_platform` | import_graph (weak) |
 | `qualifiers` | `auth_onboarding_join` | import_graph (weak) |
+| `qualifiers` | `clubhouse` | import_graph (weak) |
 | `qualifiers` | `email_outbound` | import_graph (weak) |
 | `qualifiers` | `player_coachhelm_development` | import_graph (weak) |
 | `recruiting` | `admin_platform` | import_graph (weak) |
@@ -469,6 +498,7 @@ Team Operations · active · criticality high · owner product
 | `stats_analytics` | `player_coachhelm_development` | import_graph (weak) |
 | `team_communications` | `admin_platform` | import_graph (weak) |
 | `team_communications` | `auth_onboarding_join` | import_graph (weak) |
+| `team_communications` | `clubhouse` | import_graph (weak) |
 | `team_communications` | `golf_round_lifecycle` | import_graph (weak) |
 | `team_communications` | `player_coachhelm_development` | import_graph (weak) |
 | `team_operations` | `admin_platform` | import_graph (weak) |

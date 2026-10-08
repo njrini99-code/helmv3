@@ -22,7 +22,7 @@ Served by: Qualifiers (`golf_qualifiers`, `golf_qualifier_entries`, `golf_qualif
 
 Competitive framing: `docs/v3-research-competitive-landscape.md:393` names the qualifying/travel-selection workflow "the most-painful, most-frequent, most-poorly-tooled workflow in college golf" and calls it a stated differentiator — no competitor (Clippd, Golfstat, Golf Genius) has built a coach-facing selection workspace. This job is the single highest-leverage job in the product; treat regressions here as severe regardless of surface area touched.
 
-Invariant tie-in: qualifier selection is a save/submit surface. Any change to how selections are written must use upsert/`ON CONFLICT`, never DELETE-then-INSERT (`.claude/rules/golf-review.md`) — a transient failure between the two statements has previously caused permanent data loss on save paths.
+Invariant tie-in: qualifier selection is a save/submit surface. Any change to how selections are written must use upsert/`ON CONFLICT`, never DELETE-then-INSERT (`.claude/rules/golf.md`) — a transient failure between the two statements has previously caused permanent data loss on save paths.
 
 ### 1.2 Know who is improving and why (Strokes Gained + CoachHelm insights)
 
@@ -32,7 +32,7 @@ Invariant tie-in: qualifier selection is a save/submit surface. Any change to ho
 
 Served by: Stats & Analytics (`golf_player_stats_cache`; §2), CoachHelm AI Engine — alerts, patterns, insights (§12–16), Coaching Intelligence Settings / philosophy weighting (§18).
 
-SG correctness stakes: SG is defined as `baseline_expected_strokes(start) - baseline_expected_strokes(end) - 1`, summed across four categories to SG:Total, and is **cached, not recomputed on read**, in `golf_player_stats_cache` (`.claude/rules/golf-review.md`, `docs/v3-master-plan.md:98`). Getting this number wrong doesn't just produce a bad chart — it undermines the entire "know who is improving and why" job and the core value prop against Clippd, whose own SG display users already find hard to interpret (competitive doc, §1 "what users complain about"). This is the single highest-scrutiny numeric surface in GolfHelm.
+SG correctness stakes: SG is defined as `baseline_expected_strokes(start) - baseline_expected_strokes(end) - 1`, summed across four categories to SG:Total, and is **cached, not recomputed on read**, in `golf_player_stats_cache` (`.claude/rules/golf.md`, `docs/v3-master-plan.md:98`). Getting this number wrong doesn't just produce a bad chart — it undermines the entire "know who is improving and why" job and the core value prop against Clippd, whose own SG display users already find hard to interpret (competitive doc, §1 "what users complain about"). This is the single highest-scrutiny numeric surface in GolfHelm.
 
 Known gap (be honest with the reviewer, not the user-facing doc): as of the last feature-registry pass, SG columns in the stats cache are populated as null in places — "SG framework exists but not populated from shot data" (`memory/context/golfhelm-features.md`, Round Tracking §1 and Stats & Analytics §2 gap tables). Any PR claiming to "fix stats" should be checked against whether it actually populates SG, not just whether it changes UI.
 
@@ -147,7 +147,7 @@ BaseballHelm and Lift Lab are actively being rebuilt at the time of writing; do 
 
 ## For the reviewer
 
-- Flag a PR when it changes qualifier-selection save/submit logic without preserving upsert/`ON CONFLICT` semantics — this is job 1.1 and a documented destructive-write incident class (`.claude/rules/golf-review.md`).
+- Flag a PR when it changes qualifier-selection save/submit logic without preserving upsert/`ON CONFLICT` semantics — this is job 1.1 and a documented destructive-write incident class (`.claude/rules/golf.md`).
 - Flag a PR when it touches SG calculation, `golf_player_stats_cache`, or round-review causal narrative and does not cite `docs/v3-research-golf-domain.md` for the underlying claim — this undermines jobs 1.2, 2.2, and 3.1 simultaneously.
 - Flag a PR that adds or changes CoachHelm LLM output (round review, coach chat, hero narrative) without going through the budget check in `src/lib/coachhelm/v3/llm/budget.ts` or without preserving the citation-verify-then-regenerate-once-then-template-fallback contract — this can silently break job 3.1 into either runaway cost or silent quality downgrade.
 - Flag a PR that changes round submission, roster writes, or any other save path to DELETE-then-INSERT — this directly threatens job 2.1 (a player's just-logged round) and the documented prior data-loss incident.

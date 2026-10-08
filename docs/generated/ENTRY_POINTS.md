@@ -13,6 +13,7 @@ Repo-local commands, agents, and skills — one line each, from each entry's own
 | `db-migration-reviewer` | Agent | Independent review of Supabase schema, RLS, function, trigger, grant, or migration changes before they reach the shared production database (Golf, Baseball, Lift Lab). Use for a migration or policy… |
 | `debugger` | Agent | Root-cause a failure whose cause is not obvious from reading code — failing or flaky tests, runtime errors, hydration mismatches (#418), hangs, races, regressions, or "the fix didn't work".… |
 | `helm-reader` | Agent | Read-only Helm investigator whose answers are cited (file:line) and labelled verified vs inferred, checked against Helm's generated truth (database.ts, AUTOGEN blocks, memory/registry.yml, live… |
+| `helm-ui-worker` | Agent | Premium frontend implementer for Helm UI work (GolfHelm Fairway design system). Takes one screen/tab brief with screenshots and owner notes, redesigns and implements it with high visual taste, runs… |
 | `helm-worker` | Agent | Delegated implementer for a bounded Helm slice — a clearly scoped change on named files or in a worktree, often run in parallel with other work. Implements, runs the checks that fit the change, and… |
 | `security-reviewer` | Agent | Security review of Helm changes touching auth, roles, RLS, service-role use, PII (including minors' data), server-to-client data exposure, API routes, webhooks, storage, or secrets. Use when a diff… |
 | `ui-polish-reviewer` | Agent | UI/UX review of Helm screens against the Fairway design system — hierarchy, density, loading/empty/error states, motion, accessibility, mobile behavior, and reuse of src/components/fairway… |
@@ -28,7 +29,6 @@ Repo-local commands, agents, and skills — one line each, from each entry's own
 | `apple-appstore-reviewer` | Skill | Review the iOS app for App Store rejection risks and listing optimizations. Use before an App Store submission or after a rejection. |
 | `capacitor-best-practices` | Skill | Best practices for Capacitor app development including project structure, plugin usage, performance optimization, security, and deployment. Use this skill when reviewing Capacitor code, setting up… |
 | `debugging-capacitor` | Skill |  |
-| `feature-finisher` | Skill | Analyzes features for completeness and suggests improvements to make them legendary. Product ideation, invoked by name — not the definition of done (that is finish-task). Applies the Feature Finisher… |
 | `finish-task` | Skill | Use when an implementation should be carried through to verified completion rather than stopping after the edits look right. Encodes this repo's gate sequence and the specific ways green gates have… |
 | `framer-motion` | Skill | Framer Motion performance optimization guidelines. This skill should be used when writing, reviewing, or refactoring React animations with Framer Motion to ensure optimal performance patterns.… |
 | `golfhelm-creative-engine` | Skill | Generate premium Instagram creatives, social media ads, and marketing mockups for GolfHelm — an AI-powered golf coaching SaaS for college teams. Use this skill whenever the user mentions Instagram… |
