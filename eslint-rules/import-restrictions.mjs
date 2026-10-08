@@ -28,12 +28,17 @@ import {
   LOGGING_IMPORT_ALLOWLIST,
 } from './import-allowlists.mjs';
 
-const TEST_FILE = /(^|\/)(__tests__|test)\/|\.(test|spec)\.[cm]?[jt]sx?$/;
+const TEST_FILE_NAME = /^.*\.(test|spec)\.[cm]?[jt]sx?$/;
+/** A test file: named *.test.* / *.spec.*, or inside a __tests__ or test directory. */
+function isTestFile(file) {
+  const dirs = file.split('/').slice(0, -1);
+  return dirs.includes('__tests__') || dirs.includes('test') || TEST_FILE_NAME.test(file);
+}
 const ROUTE_FILE = /^src\/app\/.*\/(page|layout|loading|error|not-found|route|template|default|global-error)\.(ts|tsx)$/;
 
 /** Files the existing golf render-path block covers (see eslint.config.mjs). */
 export function inGolfRenderScope(file) {
-  if (TEST_FILE.test(file)) return false;
+  if (isTestFile(file)) return false;
   if (file.startsWith('src/components/golf/calendar/')) return false;
   if (file.startsWith('src/app/golf/(dashboard)/dashboard/dev/haptics/')) return false;
   return (

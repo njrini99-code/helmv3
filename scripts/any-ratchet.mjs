@@ -32,7 +32,12 @@ import ts from 'typescript';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const BASELINE_PATH = resolve(ROOT, '.any-ratchet-baseline.json');
-const TEST_FILE = /(^|\/)(__tests__|test|tests)\/|\.(test|spec)\.[cm]?[jt]sx?$|\.d\.ts$/;
+const TEST_FILE_NAME = /^.*(\.(test|spec)\.[cm]?[jt]sx?|\.d\.ts)$/;
+/** Tests and declaration files: named *.test.* / *.spec.* / *.d.ts, or inside a __tests__, test or tests directory. */
+function isTestFile(file) {
+  const dirs = file.split('/').slice(0, -1);
+  return dirs.includes('__tests__') || dirs.includes('test') || dirs.includes('tests') || TEST_FILE_NAME.test(file);
+}
 
 export function listSourceFiles(root = ROOT) {
   // Tracked plus new-but-unstaged files, so a local run sees what CI will.
@@ -41,7 +46,7 @@ export function listSourceFiles(root = ROOT) {
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,
   });
-  return [...new Set(out.split('\0'))].filter((f) => /\.(ts|tsx)$/.test(f) && !TEST_FILE.test(f) && existsSync(resolve(root, f)));
+  return [...new Set(out.split('\0'))].filter((f) => /\.(ts|tsx)$/.test(f) && !isTestFile(f) && existsSync(resolve(root, f)));
 }
 
 /** Counts for one file's source text. Pure. */
