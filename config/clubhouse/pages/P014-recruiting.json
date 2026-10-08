@@ -164,7 +164,7 @@
       "label": "Upload a document to a prospect (coach)",
       "component": "src/clubhouse/screens/recruiting/Documents.tsx#Documents",
       "handler": "uploadAction",
-      "service": "src/app/golf/actions/recruit-documents.ts#uploadRecruitDocument",
+      "service": "src/app/golf/actions/recruit-documents.ts#prepareRecruitDocumentUpload",
       "data": [
         "golf_recruit_documents"
       ],

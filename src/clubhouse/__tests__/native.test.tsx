@@ -1,4 +1,4 @@
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -20,7 +20,7 @@ vi.mock('@/app/actions/notification-preferences', () => ({ updateNotificationPre
 vi.mock('@/app/golf/actions/v3/notification-prefs', () => ({ setAllChannels: vi.fn(), setCategoryChannel: vi.fn(), setQuietMode: vi.fn() }));
 vi.mock('@/app/golf/actions/coaching-philosophy', () => ({ revalidateCoachingPhilosophyPaths: vi.fn(), saveCoachingPhilosophy: vi.fn() }));
 vi.mock('@/app/golf/actions/teams', () => ({ cancelJoinRequest: vi.fn(), createTeamJoinRequest: vi.fn(), regenerateJoinCode: vi.fn() }));
-vi.mock('@/app/golf/actions/insights', () => ({ updateTeamCoachHelmSettings: vi.fn() }));
+vi.mock('@/app/golf/actions/insights-coachhelm', () => ({ updateTeamCoachHelmSettings: vi.fn() }));
 
 import { NativeSwipeBackBridge } from '@/components/golf/NativeSwipeBackBridge';
 import { haptic } from '../lib/haptics';

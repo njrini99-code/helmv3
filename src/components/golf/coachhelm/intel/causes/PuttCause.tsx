@@ -28,7 +28,7 @@
  *   layout only: they take whichever half-angle keeps them off the spots.
  */
 import { useId, useMemo, useRef, useState, type ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { EmptyState, PressTarget } from '@/components/fairway';
 import { DURATION, EASE_CINEMATIC, useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';

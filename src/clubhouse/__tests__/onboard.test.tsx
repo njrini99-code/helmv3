@@ -20,7 +20,7 @@ vi.mock('@/lib/supabase/client', () => ({ createClient: vi.fn() }));
 vi.mock('../screens/auth/SceneMount', () => ({ SceneMount: ({ camera }: { camera?: unknown }) => <div data-testid="scene" data-camera={String(camera)} /> }));
 // AuthFrame loads the animation features after first paint; here they resolve at once, so a test can wait for them deterministically.
 vi.mock('@/lib/motion/load-features', async () => {
-  const { domAnimation, domMax } = await import('framer-motion');
+  const { domAnimation, domMax } = await import('motion/react');
   return { loadFeatures: () => Promise.resolve(domAnimation), loadMaxFeatures: () => Promise.resolve(domMax) };
 });
 

@@ -2,7 +2,7 @@
 
 import { ClipboardList, Megaphone, Plane, Plus, User, UsersRound } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
 import { useDeferredValue, useMemo, useRef, useState } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChRsvp, ChTeamHub } from '../../data/hub';
 import { Button } from '../../ui/Button';

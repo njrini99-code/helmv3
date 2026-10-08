@@ -124,7 +124,7 @@ export async function GET() {
   // Exercise the full getAdminDashboardData path — this is what /golf/admin
   // actually calls. If this throws, the bug is in assembly or the
   // kept-calls block (platformHealth / shot telemetry).
-  const { getAdminDashboardData } = await import('@/app/golf/actions/admin-data');
+  const { getAdminDashboardData } = await import('@/app/golf/actions/admin-dashboard-data');
   const rFull = await step('getAdminDashboardData (full)', () => getAdminDashboardData());
   results.push(rFull);
 

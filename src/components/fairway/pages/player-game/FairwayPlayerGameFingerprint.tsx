@@ -56,7 +56,7 @@ import {
 import {
   acknowledgeInsight,
   dismissInsight,
-} from "@/app/golf/actions/insights";
+} from '@/app/golf/actions/insights-feed';
 import {
   createFocusAreaFromInsight,
   createPlayerFocusArea,

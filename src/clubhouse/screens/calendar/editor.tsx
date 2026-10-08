@@ -2,7 +2,7 @@
 
 import { CalendarPlus, Check, Copy, Pencil, RefreshCw, Rss, Trash2, TriangleAlert, CircleX } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
-import { createGolfEvent, deleteGolfEvent, updateGolfEvent } from '@/app/golf/actions/golf';
+import { createGolfEvent, deleteGolfEvent, updateGolfEvent } from '@/app/golf/actions/calendar-events';
 import { createRecurringEvent, deleteRecurringEvent, editRecurringEvent } from '@/app/golf/actions/recurring-events';
 import { createCalendarFeed, deleteCalendarFeed, getCalendarFeeds, regenerateCalendarFeed } from '@/app/golf/actions/calendar-feeds';
 import { serializeRecurrenceRule } from '@/lib/golf/recurrence';

@@ -1,6 +1,6 @@
 'use client';
 
-import { useIsPresent } from 'framer-motion';
+import { useIsPresent } from 'motion/react';
 import { Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';

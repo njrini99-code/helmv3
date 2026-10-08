@@ -200,7 +200,9 @@ export default defineConfig({
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
     : {
-        command: process.env.CI ? 'npm run start' : 'npm run dev',
+        // PORT=3000 pins the dev server to the port baseURL and `url` below name:
+        // `npm run dev` otherwise derives a per-worktree port (scripts/dev.mjs).
+        command: process.env.CI ? 'npm run start' : 'PORT=3000 npm run dev',
         url: 'http://localhost:3000',
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,

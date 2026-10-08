@@ -32,8 +32,8 @@
  * ```
  */
 import type { ReactNode } from 'react';
-import type { TargetAndTransition, Variants } from 'framer-motion';
-import { m, useReducedMotion } from 'framer-motion';
+import type { TargetAndTransition, Variants } from 'motion/react';
+import { m, useReducedMotion } from 'motion/react';
 import { inkSettles, STAGGER_STEP } from './motion';
 
 export interface RevealProps {

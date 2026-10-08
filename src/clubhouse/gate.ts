@@ -5,14 +5,17 @@ import { resolveClubhouseTeam } from './routes/team';
 
 /**
  * Teams Clubhouse is limited to while it is rolled out (owner, Q-131): a comma-separated list of golf_teams ids in
- * `HELM_CLUBHOUSE_TEAMS`. Unset or empty means no limit, so the flag alone decides, as before. A server-only env value,
- * so the canary is a configuration change, not a code change.
+ * `HELM_CLUBHOUSE_TEAMS`. Unset or empty means no limit, so the flag alone decides, as before. `*` also means no limit,
+ * written on purpose: scripts/check-required-env.mjs requires the variable to be set while a clubhouse flag is on in
+ * production, and `*` is how that setting says "every team". A server-only env value, so the canary is a configuration
+ * change, not a code change.
  */
 export function clubhouseTeamAllowlist(): Set<string> | null {
   const ids = (process.env.HELM_CLUBHOUSE_TEAMS ?? '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
+  if (ids.includes('*')) return null;
   return ids.length ? new Set(ids) : null;
 }
 

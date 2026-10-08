@@ -7,7 +7,10 @@
  *   scripts/worktree-lifecycle.mjs --retire        PARK + delete DELETE_MERGED_* branches
  *   scripts/worktree-lifecycle.mjs --gc-branches   delete DELETE_MERGED_* branches only
  *   ... --branch <name>                            limit report and actions to one branch
- *   scripts/worktree-lifecycle.mjs --json          machine-readable report
+ *   scripts/worktree-lifecycle.mjs --json          machine-readable report (npm run worktrees:json)
+ *   scripts/worktree-lifecycle.mjs --all           print every row (the table stops at 20)
+ *
+ * Progress goes to stderr, so stdout stays clean for --json and for pipes.
  *
  * This gathers facts. scripts/lib/worktree-lifecycle.mjs decides. The split is
  * so every verdict can be tested without building a git fixture per case, and
@@ -55,6 +58,7 @@ import {
   archiveBeforeDelete as archiveTag,
   contentInMain as contentInTrunk,
   gitIn,
+  hasLiveProcessIn,
   knownCopyPredicate,
   prFor as lookupPr,
   restoreCopies,
@@ -100,6 +104,10 @@ const args = process.argv.slice(2);
 const PARK = args.includes('--park') || args.includes('--retire');
 const GC = args.includes('--gc-branches') || args.includes('--retire');
 const JSON_OUT = args.includes('--json');
+const SHOW_ALL = args.includes('--all');
+/** Default table height. The report is for reading; `--all` and `--json` are for the rest. */
+const TABLE_ROWS = 20;
+const progress = (msg) => process.stderr.write(`[worktrees] ${msg}\n`);
 // --branch <name>: consider only that branch (its worktree, local ref and
 // remote ref). scripts/pr-land.mjs uses it to retire exactly the PR it landed
 // with one PR lookup instead of one per branch in the repository.
@@ -211,17 +219,10 @@ function dirtyFacts(path) {
   return effectiveDirty(statusPorcelain(gitIn(REPO), path), knownCopy(path));
 }
 
-function hasLiveProcess(path) {
-  try {
-    const out = execFileSync('/bin/sh', ['-c', `lsof +D ${JSON.stringify(path)} 2>/dev/null | awk '$4=="cwd"' | head -1`], {
-      encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    return out.trim().length > 0;
-  } catch {
-    // lsof absent or refused: we do not know. Do not answer "no".
-    return null;
-  }
-}
+// One `lsof -d cwd` scan for the whole run, matched per checkout (see
+// scripts/lib/worktree-facts.mjs). Null means lsof could not answer: we do not
+// know, and we never answer "no" for that.
+const hasLiveProcess = (path) => hasLiveProcessIn(path);
 
 function du(path) {
   try {
@@ -243,8 +244,14 @@ for (const w of wts) if (w.branch) byBranch.set(w.branch, w);
 
 const rows = [];
 
+progress(`${wts.length} worktree(s); scanning process working directories once…`);
+let scanned = 0;
+const scopeCount = wts.filter((w) => inScope(w.branch)).length;
+
 for (const w of wts) {
   if (!inScope(w.branch)) continue;
+  scanned += 1;
+  progress(`(${scanned}/${scopeCount}) ${w.branch ?? '(detached)'}`);
   const isCanonical = CANON !== null && resolve(w.path) === resolve(CANON);
   const localSha = w.branch ? git(['rev-parse', w.branch]) : git(['rev-parse', 'HEAD'], { cwd: w.path });
   const upstream = w.branch
@@ -349,6 +356,7 @@ for (const w of wts) {
 }
 
 // Branches with no worktree — the residue that accumulated invisibly.
+progress('classifying branches without a checkout (one PR lookup each)…');
 const allBranches = (git(['for-each-ref', '--format=%(refname:short)', 'refs/heads']) ?? '')
   .split('\n')
   .filter(Boolean);
@@ -467,7 +475,8 @@ const W = [34, 44, 6, 7, 7, 6, 9, 7, 32, 24, 14];
 const line = (c) => c.map((v, i) => String(v).padEnd(W[i])).join(' ');
 console.log(line(H));
 console.log('-'.repeat(W.reduce((a, b) => a + b + 1, 0)));
-for (const r of rows) {
+const shown = SHOW_ALL ? rows : rows.slice(0, TABLE_ROWS);
+for (const r of shown) {
   console.log(
     line([
       r.branch, r.worktree.replace(process.env.HOME ?? '~', '~'), r.size, r.dirty, r.processCwd,
@@ -490,6 +499,10 @@ const blockedByWorktree = rows.filter(
   (r) => AUTONOMOUS_BRANCH_VERDICTS.has(r.branchVerdict) && r.action === 'KEEP' && r.worktree !== 'none',
 );
 const unknowns = rows.filter((r) => String(r.branchVerdict).startsWith('UNKNOWN') || String(r.worktreeVerdict).startsWith('UNKNOWN'));
+
+if (shown.length < rows.length) {
+  console.log(`  +${rows.length - shown.length} more row(s) not shown (--all prints every row, --json is machine-readable). The summary below counts all ${rows.length}.`);
+}
 
 console.log('');
 console.log(`  ${parkable.length} worktree(s) parkable/retirable · ${deletable.length} branch(es) deletable now · ${unknowns.length} row(s) UNKNOWN`);

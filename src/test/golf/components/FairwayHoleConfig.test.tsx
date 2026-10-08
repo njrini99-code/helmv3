@@ -9,7 +9,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { FairwayHoleConfig } from '@/components/fairway/pages/rounds-new/FairwayHoleConfig';
 import type { HoleConfig } from '@/lib/types/golf-course';
 

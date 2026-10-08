@@ -12,6 +12,7 @@
 // event; an earlier draft of this file emitted that name, which no consumer
 // recognizes.
 
+import { execFileSync } from 'node:child_process';
 import { readFileSync, statSync, existsSync } from 'node:fs';
 import { scratchStatePath } from './save-session-state.mjs';
 
@@ -43,17 +44,48 @@ function emit(additionalContext) {
   );
 }
 
-/** Render the restored state as a single line of additionalContext, or null. */
-export function renderContext(state) {
+/**
+ * Render the restored state as a single line of additionalContext, or null.
+ *
+ * session-context.sh already prints the live branch, dirty count and distance
+ * from origin/main on every SessionStart, so this line adds only what that one
+ * cannot know: when the snapshot was taken, the open PRs it recorded, how much
+ * STATE tail was saved, and where the live checkout has MOVED since (branch or
+ * worktree differing from the snapshot). `live` is `{ branch, worktree }` as
+ * read now; without it nothing is claimed about drift.
+ */
+export function renderContext(state, live = {}) {
   if (!state) return null;
   const tailCount = Array.isArray(state.stateFileTail) ? state.stateFileTail.length : 0;
-  return (
-    `Restored pre-compaction session state (saved ${state.savedAt}): ` +
-    `branch=${state.branch}, worktree=${state.worktree}, ` +
-    `dirty=${state.dirtyFileCount ?? 'unknown'} file(s), ` +
-    `openPRsByAuthor=${state.openPrNumbersByAuthor ?? 'unknown'}, ` +
-    `stateTail=${tailCount} line(s).`
-  );
+  const parts = [];
+  if (live.branch && state.branch && live.branch !== state.branch) {
+    parts.push(`branch was ${state.branch} at save, now ${live.branch}`);
+  }
+  if (live.worktree && state.worktree && live.worktree !== state.worktree) {
+    parts.push(`worktree was ${state.worktree} at save`);
+  }
+  parts.push(`openPRsByAuthor=${state.openPrNumbersByAuthor ?? 'unknown'}`);
+  parts.push(`stateTail=${tailCount} line(s)`);
+  return `Restored pre-compaction session state (saved ${state.savedAt}): ${parts.join(', ')}.`;
+}
+
+function liveCheckout(cwd) {
+  if (!cwd) return {};
+  try {
+    const branch = execFileSync('git', ['-C', cwd, 'branch', '--show-current'], {
+      encoding: 'utf-8',
+      timeout: 3000,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    const worktree = execFileSync('git', ['-C', cwd, 'rev-parse', '--show-toplevel'], {
+      encoding: 'utf-8',
+      timeout: 3000,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    return { branch, worktree };
+  } catch {
+    return {};
+  }
 }
 
 async function run() {
@@ -72,7 +104,7 @@ async function run() {
       return;
     }
     const state = JSON.parse(readFileSync(statePath, 'utf-8'));
-    const context = renderContext(state);
+    const context = renderContext(state, liveCheckout(input?.cwd));
     if (context) emit(context);
   } catch {
     // SessionStart must never fail on a bad or missing state file.

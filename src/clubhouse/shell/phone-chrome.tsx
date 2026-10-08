@@ -1,6 +1,6 @@
 'use client';
 
-import { m, useMotionValue, useMotionValueEvent } from 'framer-motion';
+import { m, useMotionValue, useMotionValueEvent } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';

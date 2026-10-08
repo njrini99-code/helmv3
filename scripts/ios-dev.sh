@@ -2,8 +2,8 @@
 # Run the iOS app against this Mac's dev server, for testing Clubhouse on a
 # phone or the simulator (docs/clubhouse/MOBILE.md). Debug builds only.
 #
-#   terminal 1:  npm run dev -- -H 0.0.0.0
-#   terminal 2:  npm run ios:dev            (PORT=3000 by default)
+#   terminal 1:  npm run dev -- -H 0.0.0.0     (logs the port it picked)
+#   terminal 2:  npm run ios:dev               (same port: PORT, else this checkout's)
 #
 # The phone and the Mac must be on the same network. golf_clubhouse_ui is on in
 # development, so the phone gets Clubhouse. When `cap run` finishes, the
@@ -12,7 +12,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-port="${PORT:-3000}"
+port="${PORT:-$(node scripts/lib/dev-port.mjs)}"
 host="${CAP_DEV_HOST:-$(ipconfig getifaddr en0 || ipconfig getifaddr en1 || true)}"
 if [ -z "$host" ]; then
   echo "ios:dev: couldn't find this Mac's network address; set CAP_DEV_HOST=<ip>" >&2

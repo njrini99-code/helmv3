@@ -1,6 +1,6 @@
 'use client';
 
-import { m, useIsPresent } from 'framer-motion';
+import { m, useIsPresent } from 'motion/react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { chSpring, chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';

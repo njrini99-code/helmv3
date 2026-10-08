@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { Check, ChevronDown, ChevronRight, GraduationCap, Mail, Milestone, Phone, Plus } from 'lucide-react';
 import { useCallback, useState, type KeyboardEvent } from 'react';
 import { CH_SORTS, CH_STAGES, mailHref, rowLineOf, subtitleOf, telHref, type ChProspect, type ChStage } from '../../data/recruiting-shape';

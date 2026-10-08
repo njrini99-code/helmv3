@@ -23,6 +23,14 @@ import postgres from 'postgres';
 import { config as loadEnv } from 'dotenv';
 import { fileURLToPath } from 'node:url';
 import { resolve as resolvePath, dirname } from 'node:path';
+import { helpOnly } from '../lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/db/check-supabase-drift.mjs',
+  summary:
+    "Read-only drift guard for the Supabase, Baseball and Bridge projects.",
+  secrets: 'SUPABASE_ACCESS_TOKEN, SUPABASE_DB_PASSWORD, DATABASE_URL',
+});
 
 const POOLER_HOST = 'aws-0-us-east-1.pooler.supabase.com';
 

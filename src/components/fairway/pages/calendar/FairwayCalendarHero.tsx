@@ -43,7 +43,7 @@
 
 import * as React from 'react';
 import { endOfWeek, format, isSameDay, isSameMonth, isSameYear, startOfWeek } from 'date-fns';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { CalendarSurface } from '@/components/fairway/calendar';
 import {
   AlertTriangle,

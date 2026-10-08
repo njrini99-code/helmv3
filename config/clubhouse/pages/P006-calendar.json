@@ -55,7 +55,7 @@
       "label": "Publish a new event, once or repeating",
       "component": "src/clubhouse/screens/calendar/editor.tsx#EventEditor",
       "handler": "save (useAction calendar.saveEvent)",
-      "service": "src/app/golf/actions/golf.ts#createGolfEvent",
+      "service": "src/app/golf/actions/calendar-events.ts#createGolfEvent",
       "data": [
         "golf_events",
         "golf_event_attendance"
@@ -80,7 +80,7 @@
       "label": "Save or move an event (this event, this and following, or all in a series)",
       "component": "src/clubhouse/screens/calendar/editor.tsx#EventEditor",
       "handler": "save (useAction calendar.saveEvent)",
-      "service": "src/app/golf/actions/golf.ts#updateGolfEvent",
+      "service": "src/app/golf/actions/calendar-events.ts#updateGolfEvent",
       "data": [
         "golf_events",
         "golf_event_attendance"
@@ -107,7 +107,7 @@
       "label": "Cancel an event, or a series from a point on",
       "component": "src/clubhouse/screens/calendar/editor.tsx#CancelEvent",
       "handler": "cancel (useAction calendar.cancelEvent)",
-      "service": "src/app/golf/actions/golf.ts#deleteGolfEvent",
+      "service": "src/app/golf/actions/calendar-events.ts#deleteGolfEvent",
       "data": [
         "golf_events"
       ],
@@ -128,7 +128,7 @@
       "label": "Reply to an event (player)",
       "component": "src/clubhouse/screens/calendar/inspector.tsx#PlayerReply",
       "handler": "reply (useAction calendar.rsvp)",
-      "service": "src/app/golf/actions/golf.ts#respondToEvent",
+      "service": "src/app/golf/actions/calendar-events.ts#respondToEvent",
       "data": [
         "golf_event_attendance"
       ],
@@ -187,7 +187,7 @@
       "label": "Add busy time (coach)",
       "component": "src/clubhouse/screens/calendar/extras.tsx#BusySheet",
       "handler": "save (useAction calendar.addBusy)",
-      "service": "src/app/golf/actions/golf.ts#addCoachBlockedTime",
+      "service": "src/app/golf/actions/calendar-blocked-time.ts#addCoachBlockedTime",
       "data": [
         "golf_coach_blocked_time"
       ],
@@ -210,7 +210,7 @@
       "label": "Remove busy time, or the series (coach)",
       "component": "src/clubhouse/screens/calendar/extras.tsx#BusyDetail",
       "handler": "remove (useAction calendar.deleteBusy)",
-      "service": "src/app/golf/actions/golf.ts#deleteCoachBlockedTime",
+      "service": "src/app/golf/actions/calendar-blocked-time.ts#deleteCoachBlockedTime",
       "data": [
         "golf_coach_blocked_time"
       ],

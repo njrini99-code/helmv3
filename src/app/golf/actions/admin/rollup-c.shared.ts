@@ -6,7 +6,7 @@
 // the server file compliant while consumers (admin-data.ts, debug routes)
 // keep a single import surface.
 
-import type { AdminDashboardData } from '../admin-data';
+import type { AdminDashboardData } from '../admin-data-shared';
 
 export interface RollupC {
   userActivity: AdminDashboardData['userActivity'];

@@ -1,4 +1,4 @@
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { readFileSync } from 'node:fs';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -28,7 +28,6 @@ vi.mock('@/app/golf/actions/recruiting', () => ({
 }));
 vi.mock('@/app/golf/actions/recruit-documents', () => ({
   getRecruitDocuments: vi.fn(),
-  uploadRecruitDocument: vi.fn(),
   deleteRecruitDocument: vi.fn(),
   getRecruitDocumentUrl: vi.fn(),
   prepareRecruitDocumentUpload: actions.prepare,

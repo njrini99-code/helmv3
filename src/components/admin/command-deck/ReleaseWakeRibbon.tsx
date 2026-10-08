@@ -36,13 +36,27 @@ function Lane({ label, lane, href }: { label: string; lane: ReleaseWakeSnapshot[
   );
 }
 
+/** True when every lane the Bridge can measure read a confirmed zero. The two
+ *  lanes with no read model (latency, invariants) are always unknown and are
+ *  stated separately, so they neither block nor join this check. */
+function measuredLanesAllZero(wake: ReleaseWakeSnapshot): boolean {
+  const { incidents, userImpact, databaseErrors, selfHealActions } = wake.lanes;
+  return [incidents, userImpact, databaseErrors, selfHealActions].every((lane) => !lane.unknown && lane.count === 0);
+}
+
 /**
  * RELEASE WAKE ribbon (brief §12) — a compact, bucketed summary around the
  * last deploy. Raw incident lists live on `/admin/deploys`; this ribbon is
  * deliberately just counts + one watch verdict, per §41-43 ("raw events are
  * bucketed server-side, never spammed").
+ *
+ * `quiet` (set only under a granted page-level all-clear): when every
+ * measurable lane is a confirmed zero, six tiles of 0 / unknown become one
+ * sentence, and the two unmeasured lanes are still named, as unknown, never
+ * dropped. Any non-zero or unread lane renders the full ribbon.
  */
-export function ReleaseWakeRibbon({ wake }: { wake: ReleaseWakeSnapshot }) {
+export function ReleaseWakeRibbon({ wake, quiet = false }: { wake: ReleaseWakeSnapshot; quiet?: boolean }) {
+  const summarize = quiet && measuredLanesAllZero(wake);
   return (
     <div className="flex flex-wrap items-center gap-3">
       <div className="flex min-w-0 flex-col items-start gap-0.5">
@@ -50,14 +64,26 @@ export function ReleaseWakeRibbon({ wake }: { wake: ReleaseWakeSnapshot }) {
         <ReleaseWatchPosturePill state={wake.watchState} pulse />
         <span className="text-caption text-warm-500">{formatAge(wake.ageHours)}</span>
       </div>
-      <div className="flex flex-1 flex-wrap gap-2">
-        <Lane label="Incidents" lane={wake.lanes.incidents} href="/admin/errors" />
-        <Lane label="User impact" lane={wake.lanes.userImpact} href="/admin/errors" />
-        <Lane label="DB errors" lane={wake.lanes.databaseErrors} href="/admin/jobs" />
-        <Lane label="Latency" lane={wake.lanes.latency} />
-        <Lane label="Invariants" lane={wake.lanes.invariants} href="/admin/jobs" />
-        <Lane label="Self-heal" lane={wake.lanes.selfHealActions} href="/admin/errors?view=loop" />
-      </div>
+      {summarize ? (
+        <div className="min-w-0 flex-1 basis-60">
+          <p className="text-body-sm text-warm-800">
+            Nothing new since this release: no incidents, affected users, database errors or self-heal actions.
+          </p>
+          <p className="mt-0.5 text-caption text-warm-500">
+            Not measured yet: <UnknownInline label="latency" reason={wake.lanes.latency.unknownReason} />,{' '}
+            <UnknownInline label="invariants" reason={wake.lanes.invariants.unknownReason} />.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-1 flex-wrap gap-2">
+          <Lane label="Incidents" lane={wake.lanes.incidents} href="/admin/errors" />
+          <Lane label="User impact" lane={wake.lanes.userImpact} href="/admin/errors" />
+          <Lane label="DB errors" lane={wake.lanes.databaseErrors} href="/admin/jobs" />
+          <Lane label="Latency" lane={wake.lanes.latency} />
+          <Lane label="Invariants" lane={wake.lanes.invariants} href="/admin/jobs" />
+          <Lane label="Self-heal" lane={wake.lanes.selfHealActions} href="/admin/errors?view=loop" />
+        </div>
+      )}
       <Link href="/admin/deploys" className="shrink-0 text-caption text-accent-700 underline">
         Release Runway →
       </Link>

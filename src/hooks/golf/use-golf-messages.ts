@@ -1242,6 +1242,26 @@ export function applyPerViewerUnread(
 }
 
 /**
+ * True unless the client positively reports that there is no session.
+ *
+ * `auth.getSession()` reads the locally stored session, so this costs no
+ * network round trip. It is deliberately permissive about everything it cannot
+ * read: a missing `auth` object, a rejected call or an unexpected shape all
+ * count as "has a session", because the caller only wants to skip a request
+ * that is certain to be made as anon, never to turn a working rail into an
+ * empty one.
+ */
+export async function hasActiveSession(supabase: ReturnType<typeof createClient>): Promise<boolean> {
+  try {
+    const result = await supabase.auth?.getSession?.();
+    if (!result || !('data' in result)) return true;
+    return result.data?.session != null;
+  } catch {
+    return true;
+  }
+}
+
+/**
  * The conversation rail, resolved end to end for one viewer: the RPC, the
  * team-chat rows, unread counts, participant identities, sort. Pure with
  * respect to React so it can run from OUTSIDE the hook — the dashboard shell
@@ -1255,6 +1275,14 @@ export async function loadGolfConversationRail(
   supabase: ReturnType<typeof createClient>,
   userId: string,
 ): Promise<{ ok: true; rows: GolfConversationWithMeta[] } | { ok: false }> {
+  // No session means every read below runs as `anon`, which has no EXECUTE on
+  // get_golf_conversations_with_details or user_conversation_ids (the
+  // conversation policies call it) and, since the anon grants were revoked, no
+  // table access either. The answer would be a 42501 error that Sentry records
+  // as an incident and the rail shows as a backend failure. A signed-out
+  // viewer has no conversations, so say that and make no call.
+  if (!(await hasActiveSession(supabase))) return { ok: true, rows: [] };
+
   // Use optimized DB function - single query replaces N+1 pattern (was 50-60 queries)
   // Note: Function added in migration, types may need regeneration with `npm run db:types`
   // The active-team allow-list is independent of the RPC, so the two run in

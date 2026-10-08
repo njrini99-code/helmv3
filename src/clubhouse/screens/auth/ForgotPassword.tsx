@@ -1,6 +1,6 @@
 'use client';
 
-import { useIsPresent } from 'framer-motion';
+import { useIsPresent } from 'motion/react';
 import Link from 'next/link';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent, type RefObject } from 'react';
 import { requestPasswordResetAction } from '@/app/golf/actions/auth';

@@ -17,8 +17,8 @@
  * ========================================================================== */
 
 import * as React from "react";
-import { RadioGroup as BaseRadioGroup } from "@base-ui-components/react/radio-group";
-import { Radio as BaseRadio } from "@base-ui-components/react/radio";
+import { RadioGroup as BaseRadioGroup } from "@base-ui/react/radio-group";
+import { Radio as BaseRadio } from "@base-ui/react/radio";
 import { cn } from "@/lib/utils";
 import { fwHaptic } from "@/lib/fairway/haptics";
 

@@ -210,6 +210,22 @@ heights were re-measured so the page below does not move when the figures land
 or the window changes. Values, deltas, notes, catalog codes and the player
 profile's figures are unchanged. See VERIFY.md for the measurements.
 
+## 2026-10-06 — Motion import path moves to `motion/react`
+
+```text
+PR/commit:      #2153 (agent/deps-ui-upgrade)
+Design package: none; no visual or behavior change
+Contract IDs:   none
+Data impact:    none
+Held items:     none
+```
+
+Dependency upgrade only. `framer-motion` 13 is replaced by the `motion` 14
+package, so this page's animation imports change from `framer-motion` to
+`motion/react`. The animation API, durations, curves and reduced-motion gating
+are unchanged; Motion 14 only removed internal compatibility APIs this tree
+never used.
+
 ## 2026-10-02 — Keep charts steady when the period changes
 
 The measured phone Season switch moved the charts up by 64px: the comparison

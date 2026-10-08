@@ -10,6 +10,14 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync, writeFileSync } from 'node:fs';
+import { cliGuard, dryRunClient } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/insert-founding10-plain-template.mjs',
+  summary:
+    "Replaces the Founding 10 plain-text email template in crm_email_templates (updates the target, deletes duplicates, inserts when missing) on the project in .env.local.",
+  secrets: "NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (.env.local)",
+});
 
 const env = {};
 for (const file of ['../.env.local', '../.env']) {
@@ -49,7 +57,7 @@ const template = {
 const url = env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL;
 const key = env.SUPABASE_SERVICE_ROLE_KEY;
 if (!url || !key) { console.error('Missing Supabase URL / service role key'); process.exit(1); }
-const supa = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+const supa = dryRunClient(createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } }), cli);
 
 // Find this row OR the older '(Plain)' row to convert in place.
 const { data: rows, error: selErr } = await supa

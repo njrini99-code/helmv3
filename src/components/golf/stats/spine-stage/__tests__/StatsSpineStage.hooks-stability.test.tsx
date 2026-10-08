@@ -42,7 +42,7 @@ vi.mock('@/app/golf/actions/stats-dashboard', () => ({
 // (`ReturnType<typeof getPlayerPatterns>`), but it is a real value import at
 // runtime — the module pulls in server-only Supabase wiring, so it must be
 // stubbed for a jsdom render the same way the bundle action is.
-vi.mock('@/app/golf/actions/insights', () => ({
+vi.mock('@/app/golf/actions/insights-player-analysis', () => ({
   getPlayerPatterns: vi.fn(),
 }));
 

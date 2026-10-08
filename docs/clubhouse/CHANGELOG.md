@@ -501,6 +501,14 @@ same-tab updates and cross-tab changes still propagate, and a storage clear
 restores defaults. This changes no appearance, motion timing or server data.
 Focused regression evidence and remaining runtime checks are in the audit.
 
+## 2026-10-06 — Motion import path moves to `motion/react`
+
+Dependency upgrade (`framer-motion` 13 to `motion` 14). The shared pieces that
+animate (`lib/motion.ts`, `ui/Menu.tsx`, `ui/Segmented.tsx`, `ui/Toast.tsx`)
+import from `motion/react` instead of `framer-motion`. The API is the same, so
+durations, curves, the press and reduced-motion gating are unchanged, and
+nothing renders differently.
+
 ## 2026-10-02 — Floating cards and stationary overlay backgrounds
 
 The owner rejected striped, outlined cards and unstable pull-up screens. Shared

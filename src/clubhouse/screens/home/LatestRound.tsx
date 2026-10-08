@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatePresence, m } from 'framer-motion';
+import { AnimatePresence, m } from 'motion/react';
 import { ArrowRight, ChevronLeft, ChevronRight, Flag } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHoleScore } from '../../data/home';

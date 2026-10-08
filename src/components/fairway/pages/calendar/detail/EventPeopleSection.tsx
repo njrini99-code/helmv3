@@ -13,7 +13,7 @@ import { RefreshCw, Users } from 'lucide-react';
 import { Button, StatusPill, Skeleton } from '@/components/fairway';
 import type { FwStatusTone } from '@/components/fairway';
 import { cn } from '@/lib/utils';
-import { getEventRSVP, type RSVPStats } from '@/app/golf/actions/golf';
+import { getEventRSVP, type RSVPStats } from '@/app/golf/actions/calendar-events';
 
 type Attendee = RSVPStats['summary']['attendees'][number];
 

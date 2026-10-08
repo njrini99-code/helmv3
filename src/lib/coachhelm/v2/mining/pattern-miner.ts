@@ -13,6 +13,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { isCountableRound } from '@/lib/golf/round-countable';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { shouldEmit } from '@/lib/admin/emit-throttle';
 import { describeError, describeWriteFailure } from '@/lib/utils/describe-error';
 import type {
   MinedPattern,
@@ -139,6 +140,9 @@ export function joinConditionLabels(conditions: PatternCondition[]): string {
   });
   return [first, ...recast].join(' ');
 }
+
+/** Per-process window for the starvation telemetry line, per player. */
+const STARVATION_LOG_WINDOW_MS = 60 * 60 * 1000;
 
 const THRESHOLDS = {
   minSupport: 0.05,      // 5% of rounds — loosened from 0.08 so 11-round players aren't starved
@@ -465,9 +469,7 @@ export class PatternMiner {
     // The `[pattern-miner.thresholds]` prefix makes this discoverable in
     // production logs and admin trace dashboards.
     //
-    // Severity policy: the console line is WARN when the player has a lot of
-    // rounds (>= 16) and we still produced nothing (the thresholds may need
-    // re-tuning), INFO otherwise. The admin_events row is ALWAYS info: the
+    // Severity policy: always info, on the console and in admin_events. The
     // Bridge classifies `.starvation` as telemetry (incident-classification.ts
     // TELEMETRY_PHRASES; feature-registry "info+skipSentry"), so a 'warning'
     // row only joined the triage queue, was closed as telemetry, and re-fired
@@ -475,16 +477,19 @@ export class PatternMiner {
     // players; pattern-miner-starvation:e61da37b… closed 21:17Z, back 22:11Z
     // as 4 rows in 3s. The re-tuning question is a starvation RATE (shown on
     // the coachhelm_ai_engine drill-in), not an incident per player.
-    if (deduplicatedPatterns.length === 0 && this.rounds.length >= 10) {
+    //
+    // One line per player per hour per process: analyzePlayer and
+    // predictPerformance both mine the same player within one run, and the
+    // safety-net cron re-mines the same ~10 players nightly, so an unthrottled
+    // emit wrote 762 error_logs rows in 7 days for the same handful of players.
+    if (
+      deduplicatedPatterns.length === 0 &&
+      this.rounds.length >= 10 &&
+      shouldEmit(`miner-starvation-log:${this.playerId}`, STARVATION_LOG_WINDOW_MS)
+    ) {
       const scaledMinSample = effectiveMinSampleSize(this.rounds.length);
-      const severity: 'info' | 'warning' =
-        this.rounds.length >= 16 ? 'warning' : 'info';
       const message = `[pattern-miner.thresholds] 0 patterns produced for player ${this.playerId} despite ${this.rounds.length} rounds (minSupport=${THRESHOLDS.minSupport}, minConfidence=${THRESHOLDS.minConfidence}, scaledMinSampleSize=${scaledMinSample})`;
-      if (severity === 'warning') {
-        console.warn(message);
-      } else {
-        console.info(message);
-      }
+      console.info(message);
       try {
         await logServerEvent(
           message,

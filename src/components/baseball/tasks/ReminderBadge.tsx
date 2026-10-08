@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion } from 'motion/react';
 import { IconBell } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { Badge, type BadgeTone } from '@/components/ui/badge';

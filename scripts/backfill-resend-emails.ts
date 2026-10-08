@@ -23,6 +23,14 @@
 
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/backfill-resend-emails.ts',
+  summary:
+    "Backfill historical Resend emails into the `emails` + `email_events` tables.",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL, RESEND_API_KEY',
+});
 
 // ---------------------------------------------------------------------------
 // Env

@@ -1,5 +1,9 @@
 # Contract: the Repair stage (`selfheal-repair`)
 
+> **STATUS: STALE — the authority, approval and deploy sections are superseded by AGENTS.md (2026-10-07)** wherever this doc says agents
+> must not deploy, merge or migrate, or must wait for owner approval. Read it as
+> design history; `AGENTS.md` and `config/*.yml` are current.
+>
 > Runner (since 2026-09-23): the **Claude desktop health routine** on the
 > owner's Mac, a scheduled task running every 6h at :47 past 03/09/15/21 UTC
 > (30 minutes after Diagnose). Heartbeat `job_type`: `selfheal-repair`, with
@@ -311,9 +315,9 @@ npm run check:types-drift    # needs SUPABASE_ACCESS_TOKEN sourced from .env, ne
 npm run docs:check
 ```
 
-Do **not** run `npm run build` locally: CI's `Next build` job is the
-authoritative build gate (the next paragraph says why the local build cannot
-run in a workspace).
+Run `npm run build` when the repair changes a `'use server'` surface (the
+AGENTS.md "Verification" rule). If the workspace cannot run it, the next
+paragraph says why; report that and let CI's `Next build` job be the gate.
 
 Three things learned the hard way on 2026-08-27, each of which cost a full CI
 cycle:
@@ -338,8 +342,7 @@ cycle:
   Never `run_in_background`, never a trailing `&`, never end a turn
   "waiting for" anything.
 
-**`npm run build` may not be runnable in your workspace, and that is by
-design.** `.worktreeinclude` withholds `.env.local`, so the build fails on
+**`npm run build` may not be runnable in your workspace (no `.env.local`).** `.worktreeinclude` withholds `.env.local`, so the build fails on
 `NEXT_PUBLIC_SUPABASE_URL` before reaching any code path your change touched.
 Do not solve that by copying production env into the worktree. Report the local
 build as *not runnable under the workspace security model*, and let CI's

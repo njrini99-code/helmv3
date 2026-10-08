@@ -96,7 +96,7 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }));
 
-import { deleteInProgressRound } from '@/app/golf/actions/golf';
+import { deleteInProgressRound } from '@/app/golf/actions/round-partial';
 
 const ROUND_ID = '11111111-2222-4333-8444-555555555555';
 

@@ -39,7 +39,7 @@
  * AND push — to zero motion (handled inside useRouteRevealMotion).
  */
 
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
 import { useRouteRevealMotion } from '@/lib/motion/route-motion';
 import { isGolfLateralDestination } from '@/lib/golf/nav-registry';
 import { useInClubhouse } from '@/clubhouse/shell/context';

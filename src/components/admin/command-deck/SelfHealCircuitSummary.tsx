@@ -20,7 +20,28 @@ const CAPABILITY_LABEL: Readonly<Record<CircuitStage['capabilityState'], string>
   unknown: 'unknown',
 };
 
-function StageCard({ stage, isActive }: { stage: CircuitStage; isActive: boolean }) {
+/** An idle stage with nothing waiting and nothing stalled, so its two counts
+ *  can only ever read 0. */
+function isQuietStage(stage: CircuitStage): boolean {
+  return stage.state === 'idle' && stage.waiting === 0 && stage.stalled === 0;
+}
+
+function StageCard({ stage, isActive, compact = false }: { stage: CircuitStage; isActive: boolean; compact?: boolean }) {
+  if (compact) {
+    // Title, the state word and capability. "Waiting 0 / Stalled 0" restated
+    // IDLE as two more zeros; capability is the one fact still worth a line.
+    return (
+      <div className="flex min-w-[150px] flex-1 flex-col gap-0.5 rounded-lg border border-warm-200 bg-surface-sunken px-3 py-2">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-sm font-semibold text-warm-900">{stage.title}</span>
+          <span className={cn('text-eyebrow font-bold uppercase tracking-wide', STATE_TONE[stage.state])}>
+            {STATE_LABEL[stage.state]}
+          </span>
+        </div>
+        <span className="text-caption text-warm-600">Capability {CAPABILITY_LABEL[stage.capabilityState]}</span>
+      </div>
+    );
+  }
   return (
     <div
       className={cn(
@@ -78,10 +99,18 @@ function StageCard({ stage, isActive }: { stage: CircuitStage; isActive: boolean
 export function SelfHealCircuitSummary({
   summary,
   proofDebt = null,
+  quiet = false,
 }: {
   summary: CircuitSummary;
   proofDebt?: number | null;
+  /** Set only under a granted page-level all-clear. Idle stages drop their
+   *  zero counts, and a confirmed zero proof debt reads "No proof debt"
+   *  instead of a "0" chip linking to an empty lens. An unknown proof debt,
+   *  a non-zero one, or any stage with work waiting renders exactly as the
+   *  default does. */
+  quiet?: boolean;
 }) {
+  const compactStages = quiet && summary.verdict !== null && summary.stages.every(isQuietStage);
   return (
     <div className="space-y-2">
       {summary.verdict ? (
@@ -89,15 +118,19 @@ export function SelfHealCircuitSummary({
       ) : (
         <p className="text-caption text-fw-warning-ink">Self-heal board could not be read this refresh.</p>
       )}
-      <Link
-        href="/admin/errors?lens=awaiting-proof"
-        className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-full border border-warm-200 bg-surface-sunken px-3 py-1 text-caption text-warm-700 transition-colors hover:bg-warm-100"
-      >
-        <span className="font-fw-mono tabular-nums text-warm-900">
-          {proofDebt === null ? 'unknown' : proofDebt}
-        </span>
-        proof debt
-      </Link>
+      {quiet && proofDebt === 0 ? (
+        <p className="text-caption text-warm-600">No proof debt: no fix is waiting on evidence.</p>
+      ) : (
+        <Link
+          href="/admin/errors?lens=awaiting-proof"
+          className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-full border border-warm-200 bg-surface-sunken px-3 py-1 text-caption text-warm-700 transition-colors hover:bg-warm-100"
+        >
+          <span className="font-fw-mono tabular-nums text-warm-900">
+            {proofDebt === null ? 'unknown' : proofDebt}
+          </span>
+          proof debt
+        </Link>
+      )}
       <div className="flex flex-wrap gap-2 sm:flex-nowrap">
         {summary.stages.map((stage, i) => (
           // min-w-0 is load-bearing, not defensive. A flex item defaults to
@@ -109,8 +142,15 @@ export function SelfHealCircuitSummary({
           // 1534px viewport (measured on production 2026-09-03; /admin/errors
           // at the same width was 0). With min-w-0 the wrapper may shrink,
           // the card is bounded, and truncate finally does its job.
-          <div key={stage.stageId} className="flex min-w-0 flex-1 items-center gap-2">
-            <StageCard stage={stage} isActive={summary.activeStageId === stage.stageId} />
+          //
+          // `basis-full` below `sm`: with `flex-1` alone the three wrappers
+          // shrank to ~110px each on a 390px phone while each card kept its
+          // 150px minimum, so the cards overflowed the Surface and the
+          // `overflow-x: clip` on <html> cut their values off. Full-width rows
+          // on a phone; from `sm` up, `sm:basis-0` restores `flex-1`'s basis
+          // and the three-across row is exactly what it was.
+          <div key={stage.stageId} className="flex min-w-0 flex-1 basis-full items-center gap-2 sm:basis-0">
+            <StageCard stage={stage} isActive={summary.activeStageId === stage.stageId} compact={compactStages} />
             {i < summary.stages.length - 1 ? (
               <span aria-hidden className="hidden shrink-0 text-warm-300 sm:block">
                 →

@@ -220,7 +220,7 @@ budget — a NEW derived view over `error-budget.ts`, likewise owned by
 
 - The Reliability tab states source health BEFORE signals. A blind source
   renders as danger rather than the neutral tone "not configured" gets
-  elsewhere in the Bridge: opting out of Inngest is a config choice, whereas
+  elsewhere in the Bridge: opting out of an optional source is a config choice, whereas
   an unreadable source falsifies the tab's whole claim. Its empty state is
   split in two — "all sources read, nothing found" is an all-clear, "sources
   blind, nothing found" is explicitly not one — and a never-run collector

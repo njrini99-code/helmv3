@@ -117,8 +117,8 @@ Start with these because they cross product behavior, UI, database, and trust co
 this file". `scripts/knowledge/world-model.mjs` (2026-09-02) answers "what
 does touching this feature put at risk" — a generated graph
 (`docs/generated/WORLD_MODEL.json` + a readable `WORLD_MODEL.md` summary)
-over features, routes, actions, RPCs, tables, jobs (Vercel crons, Inngest
-functions, the self-heal launchd Repair job), named invariant registries
+over features, routes, actions, RPCs, tables, jobs (Vercel crons,
+the self-heal routines), named invariant registries
 (`qualifier-invariants.ts`, `operational-rule-engine.ts`), and the runtime
 `FeatureKey` (Sentry/`admin_events`) vocabulary.
 
@@ -153,7 +153,10 @@ npm run knowledge:context -- --files src/lib/coachhelm/v3/llm/compose.ts --task 
 npm run knowledge:check -- --files src/lib/coachhelm/v3/llm/compose.ts memory/context/coachhelm-ai.md
 ```
 
-The context pack is written to `/tmp/helmv3-context-pack.md` by default.
+The context pack is written to a per-run file, `helmv3-context-<pid>.md` in the
+system temp directory, and the command prints the path. Pass `--output <file>`
+to choose one. (It was a fixed `/tmp/helmv3-context-pack.md` until 2026-10-07,
+which two concurrent sessions overwrote.)
 
 Worktrees share canonical ignored environment files, Claude local preferences,
 and Vercel project identity through live links. The creator uses canonical MCP

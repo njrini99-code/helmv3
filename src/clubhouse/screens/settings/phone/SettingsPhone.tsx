@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatePresence, m, useIsPresent } from 'framer-motion';
+import { AnimatePresence, m, useIsPresent } from 'motion/react';
 import { Bell, ChevronRight, Flag, SlidersVertical, Sparkle, UserRound, Users, type LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type ReactNode, type Ref } from 'react';
 import { Icon } from '../../../ui/Icon';

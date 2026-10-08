@@ -1,4 +1,4 @@
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -44,11 +44,13 @@ const a = vi.hoisted(() => ({
   getAttendanceReport: vi.fn(),
   markAttendance: vi.fn(),
 }));
-vi.mock('@/app/golf/actions/golf', () => ({
+vi.mock('@/app/golf/actions/calendar-events', () => ({
   createGolfEvent: a.createGolfEvent,
   updateGolfEvent: a.updateGolfEvent,
   deleteGolfEvent: a.deleteGolfEvent,
   respondToEvent: a.respondToEvent,
+}));
+vi.mock('@/app/golf/actions/calendar-blocked-time', () => ({
   addCoachBlockedTime: a.addCoachBlockedTime,
   deleteCoachBlockedTime: a.deleteCoachBlockedTime,
 }));

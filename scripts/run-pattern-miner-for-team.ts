@@ -18,6 +18,16 @@
  */
 import { config as loadEnv } from 'dotenv';
 import { resolve } from 'path';
+import { cliGuard } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/run-pattern-miner-for-team.ts',
+  summary:
+    'Runs the CoachHelm round and shot pattern miners for the given players against PRODUCTION (reads .vercel/.env.production.local) and persists the mined patterns.',
+  usage: '[playerId ...]',
+  options: [['playerId', 'Players to mine (default: Larsen Gallimore)']],
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL (.vercel/.env.production.local)',
+});
 
 // Load production env BEFORE importing any module that reads process.env at
 // module init time (the admin client reads SUPABASE_SERVICE_ROLE_KEY on
@@ -98,8 +108,15 @@ async function runForPlayer(playerId: string): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const ids = process.argv.slice(2);
+  const ids = cli.positional;
   const playerIds = ids.length > 0 ? ids : DEFAULT_PLAYER_IDS;
+
+  if (!cli.apply) {
+    console.log(`[dry-run] would mine and persist patterns for ${playerIds.length} player(s) against the project in .vercel/.env.production.local:`);
+    for (const id of playerIds) console.log(`  [dry-run] ${id}`);
+    console.log('Re-run with --apply to do it.');
+    return;
+  }
 
   for (const id of playerIds) {
     try {

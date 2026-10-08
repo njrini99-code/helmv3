@@ -25,9 +25,9 @@
         "5": false,
         "10": false
       },
-      "irrelevant_chars": 50000,
-      "total_feature_doc_chars": 50000,
-      "included_doc_count": 13,
+      "irrelevant_chars": 15000,
+      "total_feature_doc_chars": 15000,
+      "included_doc_count": 6,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
     },
@@ -52,9 +52,9 @@
         "5": true,
         "10": true
       },
-      "irrelevant_chars": 23850,
-      "total_feature_doc_chars": 93850,
-      "included_doc_count": 22,
+      "irrelevant_chars": 3850,
+      "total_feature_doc_chars": 13850,
+      "included_doc_count": 6,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
     },
@@ -63,13 +63,10 @@
       "gold_feature": "golf_round_lifecycle",
       "predicted_features": [
         "golf_round_lifecycle",
-        "qualifiers",
         "shot_tracking"
       ],
       "feature_recall_hit": true,
-      "wrong_features": [
-        "qualifiers"
-      ],
+      "wrong_features": [],
       "gold_file_recall": 0,
       "gold_files_total": 2,
       "recall_at_k_full": {
@@ -80,9 +77,9 @@
         "5": true,
         "10": true
       },
-      "irrelevant_chars": 15000,
-      "total_feature_doc_chars": 70000,
-      "included_doc_count": 17,
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 15000,
+      "included_doc_count": 6,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
     },
@@ -127,8 +124,8 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 50000,
-      "included_doc_count": 13,
+      "total_feature_doc_chars": 15000,
+      "included_doc_count": 6,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
     },
@@ -158,27 +155,23 @@
       "id": "INC-2026-08-22-delete-shot-stale-id",
       "gold_feature": "shot_tracking",
       "predicted_features": [
-        "golf_round_lifecycle",
-        "qualifiers",
         "shot_tracking"
       ],
       "feature_recall_hit": true,
-      "wrong_features": [
-        "qualifiers"
-      ],
+      "wrong_features": [],
       "gold_file_recall": 0,
       "gold_files_total": 3,
       "recall_at_k_full": {
-        "5": false,
-        "10": false
+        "5": true,
+        "10": true
       },
       "recall_at_k_feature_docs_only": {
-        "5": false,
-        "10": false
+        "5": true,
+        "10": true
       },
-      "irrelevant_chars": 15000,
-      "total_feature_doc_chars": 70000,
-      "included_doc_count": 17,
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 15000,
+      "included_doc_count": 6,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
     },
@@ -209,26 +202,23 @@
       "gold_feature": "shot_tracking",
       "predicted_features": [
         "golf_round_lifecycle",
-        "qualifiers",
         "shot_tracking"
       ],
       "feature_recall_hit": true,
-      "wrong_features": [
-        "qualifiers"
-      ],
+      "wrong_features": [],
       "gold_file_recall": 0,
       "gold_files_total": 1,
       "recall_at_k_full": {
-        "5": false,
-        "10": false
+        "5": true,
+        "10": true
       },
       "recall_at_k_feature_docs_only": {
-        "5": false,
-        "10": false
+        "5": true,
+        "10": true
       },
-      "irrelevant_chars": 15000,
-      "total_feature_doc_chars": 70000,
-      "included_doc_count": 17,
+      "irrelevant_chars": 0,
+      "total_feature_doc_chars": 15000,
+      "included_doc_count": 6,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
     },
@@ -251,8 +241,8 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 35000,
-      "included_doc_count": 10,
+      "total_feature_doc_chars": 15000,
+      "included_doc_count": 6,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
     },
@@ -275,8 +265,8 @@
         "10": false
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 35000,
-      "included_doc_count": 10,
+      "total_feature_doc_chars": 15000,
+      "included_doc_count": 6,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
     },
@@ -303,9 +293,9 @@
         "5": false,
         "10": false
       },
-      "irrelevant_chars": 33850,
-      "total_feature_doc_chars": 70384,
-      "included_doc_count": 18,
+      "irrelevant_chars": 8850,
+      "total_feature_doc_chars": 13850,
+      "included_doc_count": 6,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
     },
@@ -329,9 +319,9 @@
         "5": false,
         "10": false
       },
-      "irrelevant_chars": 38850,
-      "total_feature_doc_chars": 38850,
-      "included_doc_count": 11,
+      "irrelevant_chars": 13850,
+      "total_feature_doc_chars": 13850,
+      "included_doc_count": 6,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
     },
@@ -354,10 +344,10 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
-      "included_doc_count": 21,
+      "total_feature_doc_chars": 10000,
+      "included_doc_count": 5,
       "stale_doc_count": 0,
-      "historical_analogue_hit": true
+      "historical_analogue_hit": false
     },
     {
       "id": "INC-2026-08-18-worktrees-inside-repo-duplicate-tree",
@@ -378,10 +368,10 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
-      "included_doc_count": 21,
+      "total_feature_doc_chars": 10000,
+      "included_doc_count": 5,
       "stale_doc_count": 0,
-      "historical_analogue_hit": true
+      "historical_analogue_hit": false
     },
     {
       "id": "INC-2026-08-19-codeql-matrix-rename-phantom-checks",
@@ -402,10 +392,10 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
-      "included_doc_count": 21,
+      "total_feature_doc_chars": 10000,
+      "included_doc_count": 5,
       "stale_doc_count": 0,
-      "historical_analogue_hit": true
+      "historical_analogue_hit": false
     },
     {
       "id": "INC-2026-08-29-disk-exhaustion-from-six-worktrees",
@@ -426,10 +416,10 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
-      "included_doc_count": 21,
+      "total_feature_doc_chars": 10000,
+      "included_doc_count": 5,
       "stale_doc_count": 0,
-      "historical_analogue_hit": true
+      "historical_analogue_hit": false
     },
     {
       "id": "INC-2026-08-30-worktree-removed-without-owner-consent",
@@ -450,10 +440,10 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
-      "included_doc_count": 21,
+      "total_feature_doc_chars": 10000,
+      "included_doc_count": 5,
       "stale_doc_count": 0,
-      "historical_analogue_hit": true
+      "historical_analogue_hit": false
     },
     {
       "id": "INC-2026-08-30-zsh-history-modifier-broke-pushes",
@@ -474,10 +464,10 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
-      "included_doc_count": 21,
+      "total_feature_doc_chars": 10000,
+      "included_doc_count": 5,
       "stale_doc_count": 0,
-      "historical_analogue_hit": true
+      "historical_analogue_hit": false
     },
     {
       "id": "INC-2026-08-31-vercel-upload-cap-vercelignore-fix",
@@ -498,10 +488,10 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
-      "included_doc_count": 21,
+      "total_feature_doc_chars": 10000,
+      "included_doc_count": 5,
       "stale_doc_count": 0,
-      "historical_analogue_hit": true
+      "historical_analogue_hit": false
     },
     {
       "id": "INC-2026-08-31-worktree-report-missed-remote-branches",
@@ -522,10 +512,10 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
-      "included_doc_count": 21,
+      "total_feature_doc_chars": 10000,
+      "included_doc_count": 5,
       "stale_doc_count": 0,
-      "historical_analogue_hit": true
+      "historical_analogue_hit": false
     },
     {
       "id": "INC-2026-09-02-ci-runner-slot-starvation-consolidation",
@@ -546,10 +536,10 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
-      "included_doc_count": 21,
+      "total_feature_doc_chars": 10000,
+      "included_doc_count": 5,
       "stale_doc_count": 0,
-      "historical_analogue_hit": true
+      "historical_analogue_hit": false
     },
     {
       "id": "INC-2026-09-02-vercel-cli-pipe-close-abort",
@@ -570,10 +560,10 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
-      "included_doc_count": 21,
+      "total_feature_doc_chars": 10000,
+      "included_doc_count": 5,
       "stale_doc_count": 0,
-      "historical_analogue_hit": true
+      "historical_analogue_hit": false
     },
     {
       "id": "INC-2026-09-04-automemory-user-scope-drift",
@@ -594,10 +584,10 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
-      "included_doc_count": 21,
+      "total_feature_doc_chars": 10000,
+      "included_doc_count": 5,
       "stale_doc_count": 0,
-      "historical_analogue_hit": true
+      "historical_analogue_hit": false
     },
     {
       "id": "INC-2026-09-04-golf-e2e-env-injection-skip",
@@ -618,10 +608,10 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
-      "included_doc_count": 21,
+      "total_feature_doc_chars": 10000,
+      "included_doc_count": 5,
       "stale_doc_count": 0,
-      "historical_analogue_hit": true
+      "historical_analogue_hit": false
     },
     {
       "id": "INC-2026-09-04-mcp-namespace-policy-contradiction",
@@ -642,10 +632,10 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
-      "included_doc_count": 21,
+      "total_feature_doc_chars": 10000,
+      "included_doc_count": 5,
       "stale_doc_count": 0,
-      "historical_analogue_hit": true
+      "historical_analogue_hit": false
     },
     {
       "id": "INC-2026-09-04-sandboxed-dev-server-false-ready",
@@ -666,10 +656,10 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
-      "included_doc_count": 21,
+      "total_feature_doc_chars": 10000,
+      "included_doc_count": 5,
       "stale_doc_count": 0,
-      "historical_analogue_hit": true
+      "historical_analogue_hit": false
     },
     {
       "id": "INC-2026-09-04-surface-registry-miscategorized-as-generated",
@@ -690,10 +680,10 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30082,
-      "included_doc_count": 21,
+      "total_feature_doc_chars": 10000,
+      "included_doc_count": 5,
       "stale_doc_count": 0,
-      "historical_analogue_hit": true
+      "historical_analogue_hit": false
     },
     {
       "id": "PR-1857-course-library-unpaginated-read",
@@ -714,8 +704,8 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 50000,
-      "included_doc_count": 13,
+      "total_feature_doc_chars": 15000,
+      "included_doc_count": 6,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
     },
@@ -738,8 +728,8 @@
         "10": true
       },
       "irrelevant_chars": 0,
-      "total_feature_doc_chars": 30000,
-      "included_doc_count": 9,
+      "total_feature_doc_chars": 15000,
+      "included_doc_count": 6,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
     }
@@ -747,15 +737,15 @@
   "aggregate": {
     "task_count": 30,
     "feature_recall": 0.7666666666666667,
-    "wrong_feature_rate": 0.23333333333333334,
+    "wrong_feature_rate": 0.13333333333333333,
     "gold_file_recall": 0.3333333333333333,
     "gold_file_recall_sample_size": 21,
-    "recall_at_5_full": 0.7,
-    "recall_at_10_full": 0.7,
-    "recall_at_5_feature_docs_only": 0.7,
-    "recall_at_10_feature_docs_only": 0.7,
-    "irrelevant_token_rate": 0.17189948255159676,
+    "recall_at_5_full": 0.7666666666666667,
+    "recall_at_10_full": 0.7666666666666667,
+    "recall_at_5_feature_docs_only": 0.7666666666666667,
+    "recall_at_10_feature_docs_only": 0.7666666666666667,
+    "irrelevant_token_rate": 0.12723932016536518,
     "stale_context_rate": 0,
-    "historical_analogue_retrieval_rate": 0.5
+    "historical_analogue_retrieval_rate": 0
   }
 }

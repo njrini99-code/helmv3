@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatePresence, m, useIsPresent } from 'framer-motion';
+import { AnimatePresence, m, useIsPresent } from 'motion/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Component, createRef, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';

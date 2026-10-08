@@ -15,7 +15,7 @@
  */
 
 import { useState } from 'react';
-import { m, AnimatePresence, LazyMotion, useReducedMotion } from 'framer-motion';
+import { m, AnimatePresence, LazyMotion, useReducedMotion } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { cn } from '@/lib/utils';
 import { formatTime } from '@/lib/calendar/premium-utils';

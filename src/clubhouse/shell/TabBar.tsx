@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { LinkPending } from './LinkPending';
-import { AnimatePresence, m } from 'framer-motion';
+import { AnimatePresence, m } from 'motion/react';
 import { ChevronRight, LayoutGrid, LifeBuoy, LogOut, Settings, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';

@@ -171,7 +171,7 @@ school, a last-contacted date, or a stage history. The monogram is the initials.
 (`src/app/golf/actions/recruiting.ts`) and `getRecruitDocuments`,
 `deleteRecruitDocument`, `getRecruitDocumentUrl` and, for an upload,
 `prepareRecruitDocumentUpload` then `completeRecruitDocumentUpload`
-(`recruit-documents.ts`; the current page keeps `uploadRecruitDocument`). Two
+(`recruit-documents.ts`; the Fairway page now uses the same two steps). Two
 additions on the server, both optional for the current page: `createRecruit`
 takes a request id, and the two upload steps send the file straight to Storage
 (a server action's body is capped far below a film). WIRING.md maps each.

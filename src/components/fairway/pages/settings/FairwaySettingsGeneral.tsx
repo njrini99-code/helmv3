@@ -40,7 +40,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Field } from '@base-ui-components/react/field';
+import { Field } from '@base-ui/react/field';
 
 import { createClient } from '@/lib/supabase/client';
 import { saveCoachingPhilosophy } from '@/app/golf/actions/coaching-philosophy';

@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { getAttendanceReport, markAttendance, type AttendanceMark } from '@/app/golf/actions/attendance';
-import { respondToEvent } from '@/app/golf/actions/golf';
+import { respondToEvent } from '@/app/golf/actions/calendar-events';
 import { readRsvpLockCode, rsvpLockMessage } from '@/hooks/useRSVP';
 import { Avatar } from '../../ui/Avatar';
 import { Badge, type BadgeTone } from '../../ui/Badge';

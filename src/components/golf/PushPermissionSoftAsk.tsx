@@ -2,7 +2,7 @@
 
 import { haptic } from '@/lib/haptics';
 import { useEffect, useState } from 'react';
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Button } from '@/components/ui/button';
 import {

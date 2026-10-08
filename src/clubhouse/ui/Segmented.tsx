@@ -1,6 +1,6 @@
 'use client';
 
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
 import { useId, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { haptic } from '../lib/haptics';
 import { chSpring } from '../lib/motion';

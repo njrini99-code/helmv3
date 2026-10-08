@@ -44,6 +44,20 @@ and show from first paint. On desktop both open under the page's framed head
 drop their full stop and take curly apostrophes ("You aren’t on a team yet",
 "Nothing on this day").
 
+## 2026-10-08 — Server-action imports follow the golf.ts split
+
+```text
+PR/commit:      #2176, agent/phase-7
+Design package: none
+Contract IDs:   none changed
+Data impact:    none
+Held items:     none
+```
+
+The screen's imports and test mocks now point at the files that own the server
+actions (calendar-events.ts and calendar-blocked-time.ts) after `golf.ts`, `insights.ts` and `admin-data.ts` were split
+by domain. No behavior change.
+
 ## 2026-10-07 — Views settle in; weeks slide
 
 Switching Day, Week, Month and Agenda (Day, Month and List on the phone) settles

@@ -28,6 +28,20 @@ const FILES: Record<string, number> = {
   'src/app/golf/actions/announcements.ts': 1,
 };
 
+// The former src/app/golf/actions/golf.ts, split by domain (plan phase 7a).
+const GOLF_TS_SPLIT_FILES = [
+  'src/app/golf/actions/round-submit.ts',
+  'src/app/golf/actions/round-partial.ts',
+  'src/app/golf/actions/shot-actions.ts',
+  'src/app/golf/actions/qualifier-actions.ts',
+  'src/app/golf/actions/saved-courses.ts',
+  'src/app/golf/actions/calendar-events.ts',
+  'src/app/golf/actions/calendar-notifications.ts',
+  'src/app/golf/actions/calendar-blocked-time.ts',
+  'src/app/golf/actions/team-management.ts',
+  'src/app/golf/actions/golf-action-shared.ts',
+];
+
 // .from('golf_players').select('id').eq('user_id', user.id).<terminal>()
 const LOOKUP =
   /\.from\('golf_players'\)\s*\.select\('id'\)\s*\.eq\('user_id',\s*user\.id\)\s*\.(single|maybeSingle)\(\)/g;
@@ -46,8 +60,8 @@ describe('golf_players lookup by user_id treats "no profile" as data, not an err
     });
   }
 
-  it('golf.ts saved-course player lookups use .maybeSingle()', () => {
-    const found = terminals('src/app/golf/actions/golf.ts');
+  it('the former golf.ts action files (split by domain) use .maybeSingle() for player lookups', () => {
+    const found = GOLF_TS_SPLIT_FILES.flatMap((file) => terminals(file));
     // respondToEvent (and stats.ts) keep `.single()` deliberately: they branch
     // on PGRST116 to tell "no profile" from a failed read.
     expect(found.filter((t) => t === 'single').length).toBeLessThanOrEqual(1);

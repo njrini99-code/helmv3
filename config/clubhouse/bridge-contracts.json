@@ -4933,7 +4933,7 @@
     "name": "SERVER_ACTIONS_ARE_THE_GATE",
     "meaning": "Every write is checked again by its server action and by row-level security, whatever the screen shows: creating, editing and cancelling an event and adding or removing busy time are for a coach, attendance for a coach on the event's team, a team calendar link for a coach, a reply for an active member of the event's team, and attaching or detaching a file for the event's team coaches. Read in this pass, not run: no test here forces a refusal.",
     "status": "reserved",
-    "where": "src/app/golf/actions/golf.ts; recurring-events.ts; attendance.ts; calendar-feeds.ts; event-documents.ts"
+    "where": "src/app/golf/actions/calendar-events.ts; calendar-blocked-time.ts; calendar-notifications.ts; recurring-events.ts; attendance.ts; calendar-feeds.ts; event-documents.ts"
   },
   {
     "id": 60807,
@@ -7237,7 +7237,7 @@
     "name": "TEAM_COACHHELM_HEAD_COACH_ONLY",
     "meaning": "The switch that turns CoachHelm off for the whole team can be changed only by the team's head coach: an assistant sees it disabled with 'Only the head coach can change this.', the loader never creates the team row for an assistant, and the server action refuses too. When the check itself fails the loader does not guess: it logs the failure and leaves the switch out, so a head coach is never told they may not change it.",
     "status": "implemented",
-    "where": "src/clubhouse/screens/settings/CoachHelm.tsx#PowerCard; src/clubhouse/data/settings.ts#loadCoachHelm; src/app/golf/actions/insights.ts#updateTeamCoachHelmSettings",
+    "where": "src/clubhouse/screens/settings/CoachHelm.tsx#PowerCard; src/clubhouse/data/settings.ts#loadCoachHelm; src/app/golf/actions/insights-coachhelm.ts#updateTeamCoachHelmSettings",
     "tests": [
       "src/clubhouse/__tests__/settings.test.tsx",
       "src/clubhouse/__tests__/settings-server.test.tsx"
@@ -8986,7 +8986,7 @@
     "name": "STATUS_ACTION_RECHECKS_THE_COACH",
     "meaning": "Close and Reopen check on the server that the caller's organisation owns the qualifier's team, so a player or another organisation's coach is refused as Unauthorized before anything is updated.",
     "status": "implemented",
-    "where": "src/app/golf/actions/golf.ts#updateQualifierStatus",
+    "where": "src/app/golf/actions/qualifier-actions.ts#updateQualifierStatus",
     "tests": [
       "src/app/golf/actions/__tests__/golf-qualifier-manual-close.test.ts"
     ]
@@ -11677,7 +11677,7 @@
     "name": "DISCARD_IS_CHECKED_AGAIN_BY_ITS_SERVER_ACTION",
     "meaning": "Discard is checked again by deleteInProgressRound, whatever the screen shows: it refuses an invalid id, a caller who is not signed in, a caller with no player profile, and a round that is not the caller's or is no longer in progress (it deletes by round, player and in-progress status, and tells a delete that matched nothing from a real one). Read in this pass, not run: no test here forces a refusal; the action is the legacy library's, unchanged.",
     "status": "reserved",
-    "where": "src/app/golf/actions/golf.ts#deleteInProgressRound; src/clubhouse/screens/rounds/writes.ts#LIVE_ROUNDS_WRITES"
+    "where": "src/app/golf/actions/round-partial.ts#deleteInProgressRound; src/clubhouse/screens/rounds/writes.ts#LIVE_ROUNDS_WRITES"
   },
   {
     "id": 110805,
@@ -14591,7 +14591,7 @@
     "name": "SERVER_ACTIONS_ARE_THE_GATE",
     "meaning": "Every write is checked again by its server action, whatever the board shows: dismissInsight and reactivateInsight refuse a caller who is not a coach of the insight's team (verifyInsightAccess; an insight with no team is refused) and update only that team's row; createFocusAreaFromInsightV2 refuses a caller who fails verifyPlayerAccess for the player (a coach of the player's team, or the player themself, whose own use would make an active focus with no proposal and is not reachable from this board) and refuses a second active focus on the same metric with ACTIVE_FOCUS_DUPLICATE_ERROR. Read in this pass, not run: no test here forces a refusal.",
     "status": "reserved",
-    "where": "src/app/golf/actions/insights.ts#dismissInsight; src/app/golf/actions/insights.ts#reactivateInsight; src/app/golf/actions/development.ts#createFocusAreaFromInsightV2; src/lib/auth/verify-player-access.ts#verifyInsightAccess"
+    "where": "src/app/golf/actions/insights-feed.ts#dismissInsight; src/app/golf/actions/insights-feed.ts#reactivateInsight; src/app/golf/actions/development.ts#createFocusAreaFromInsightV2; src/lib/auth/verify-player-access.ts#verifyInsightAccess"
   },
   {
     "id": 130805,

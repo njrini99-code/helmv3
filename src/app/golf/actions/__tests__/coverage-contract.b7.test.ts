@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { assertAreaFullyWrapped } from '@/lib/admin/__tests__/coverage-contract.shared';
+import {
+  assertAreaFullyWrapped,
+  excludeAcrossInsightsSplit,
+  INSIGHTS_SPLIT_ACTION_FILES,
+} from '@/lib/admin/__tests__/coverage-contract.shared';
 
 /**
  * W15 Batch 7 (coachhelm engine) — coverage-contract gate.
@@ -49,9 +53,9 @@ describe('coverage-contract — B7 coachhelm engine (coachhelm_ai_engine, alerts
           'src/app/golf/actions/player-fingerprint.ts',
           'src/app/golf/actions/alerts.ts',
           'src/app/golf/actions/pattern-management.ts',
-          'src/app/golf/actions/insights.ts',
+          ...INSIGHTS_SPLIT_ACTION_FILES,
         ],
-        { exclude: { 'src/app/golf/actions/insights.ts': INSIGHTS_TS_NON_B7_EXPORTS } },
+        { exclude: excludeAcrossInsightsSplit(INSIGHTS_TS_NON_B7_EXPORTS) },
       ),
     ).not.toThrow();
   });

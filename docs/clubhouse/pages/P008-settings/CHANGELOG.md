@@ -48,6 +48,20 @@ format, Event reminders, Golf details, Team, CoachHelm). Notice and empty
 titles drop their trailing period and take the curly apostrophe ("Your profile
 didn’t load", "You aren’t on a team yet"); "Check maya@…" loses its period.
 
+## 2026-10-08 — Server-action imports follow the golf.ts split
+
+```text
+PR/commit:      #2176, agent/phase-7
+Design package: none
+Contract IDs:   none changed
+Data impact:    none
+Held items:     none
+```
+
+The screen's imports and test mocks now point at the files that own the server
+actions (team-management.ts) after `golf.ts`, `insights.ts` and `admin-data.ts` were split
+by domain. No behavior change.
+
 ## 2026-10-07 — Sections press with a tint
 
 A section in the rail and a link row now deepen their tint over the press beat
@@ -138,6 +152,22 @@ IDs are preserved; runtime gaps stay explicit.
 <!-- clubhouse:release-audit:end -->
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
+
+## 2026-10-06 — Motion import path moves to `motion/react`
+
+```text
+PR/commit:      #2153 (agent/deps-ui-upgrade)
+Design package: none; no visual or behavior change
+Contract IDs:   none
+Data impact:    none
+Held items:     none
+```
+
+Dependency upgrade only. `framer-motion` 13 is replaced by the `motion` 14
+package, so this page's animation imports change from `framer-motion` to
+`motion/react`. The animation API, durations, curves and reduced-motion gating
+are unchanged; Motion 14 only removed internal compatibility APIs this tree
+never used.
 
 ## 2026-10-02 — End obsolete autosave feedback
 

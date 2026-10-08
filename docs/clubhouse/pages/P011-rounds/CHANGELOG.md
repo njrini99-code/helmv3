@@ -68,6 +68,20 @@ the green card (a round that would not finish) takes the card's ivory and coral
 inks, so the now-flush shared notice stays legible on green. No motion, copy,
 behaviour or catalog code changed.
 
+## 2026-10-08 — Server-action imports follow the golf.ts split
+
+```text
+PR/commit:      #2176, agent/phase-7
+Design package: none
+Contract IDs:   none changed
+Data impact:    none
+Held items:     none
+```
+
+The screen's imports and test mocks now point at the files that own the server
+actions (round-submit.ts, round-partial.ts and shot-actions.ts) after `golf.ts`, `insights.ts` and `admin-data.ts` were split
+by domain. No behavior change.
+
 ## 2026-10-07 — A round row answers the press
 
 On the desktop Ledger a round that opens its review now deepens to the row press

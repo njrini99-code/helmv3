@@ -23,7 +23,7 @@
  * ========================================================================== */
 
 import type { ComponentType } from 'react';
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { Surface } from '@/components/fairway/surfaces/surface';
 import { Badge } from '@/components/fairway/controls/badge';

@@ -28,7 +28,7 @@
 
 import { useState, useTransition, useCallback } from 'react';
 import Link from 'next/link';
-import { LazyMotion } from 'framer-motion';
+import { LazyMotion } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 
 import { Button } from '@/components/ui/button';

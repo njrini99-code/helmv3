@@ -425,7 +425,7 @@ only visible on the monitor's own page (linked above).
 ### Jobs & Integrations (`9931249`)
 - helm.job Started/Completed/Failed by job_name — `metrics`, table, grouped
 - helm.job Duration p50/p95 — `metrics`, line
-- Errors on /api/cron and /api/inngest — `error-events`, table, `(transaction:/api/cron/* OR transaction:/api/inngest/*)`
+- Errors on /api/cron — `error-events`, table, `(transaction:/api/cron/*)`
 - helm.push Delivery (attempt/delivered/failed) — `metrics`, line
 
 No cron check-in widget: same reasoning as the deferred cron detector above

@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatePresence, m, useIsPresent } from 'framer-motion';
+import { AnimatePresence, m, useIsPresent } from 'motion/react';
 import type { ReactNode } from 'react';
 import { CH_DUR, CH_EASE, chSpring } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';

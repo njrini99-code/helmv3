@@ -6,7 +6,7 @@
  * reduced motion. Used as the success toast icon.
  */
 
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { successCheckmark, useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 

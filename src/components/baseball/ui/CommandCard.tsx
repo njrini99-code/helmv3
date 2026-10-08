@@ -13,7 +13,7 @@
  * Spec: §5.4 of the BaseballHelm UI/UX Architecture master plan.
  */
 
-import { m, useReducedMotion } from 'framer-motion';
+import { m, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

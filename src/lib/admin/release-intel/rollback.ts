@@ -5,8 +5,7 @@
  * Compares the reliability-snapshot signal density in the candidate SHA's
  * window against the prior baseline window and outputs one of five
  * verdicts, with itemized evidence. It NEVER calls a deploy or rollback
- * API — matching `config/release-policy.yml`'s
- * `emergency.automatic_override: false` and this repo's `release:status`
+ * API — matching this repo's `release:status`
  * (`scripts/release-status.mjs`) precedent of reporting, never acting.
  *
  * No I/O here: `summarizeReliabilityWindow` folds raw `ReliabilityRun` rows

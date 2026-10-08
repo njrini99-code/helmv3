@@ -17,7 +17,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { LazyMotion, m, AnimatePresence } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { loadFeatures } from '@/lib/motion/load-features';

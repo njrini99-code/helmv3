@@ -2,7 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import type { GolfSessionProfile } from '@/lib/auth/session';
 import { getNotificationPreferences } from '@/app/actions/notification-preferences';
-import { getOrCreateTeamCoachHelmSettings, getTeamCoachHelmAccess } from '@/app/golf/actions/insights';
+import { getOrCreateTeamCoachHelmSettings, getTeamCoachHelmAccess } from '@/app/golf/actions/insights-coachhelm';
 import { getPlayerJoinRequests } from '@/app/golf/actions/teams';
 import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
 import { dbToTs, type PhilosophyDbRow } from '@/lib/coachhelm/philosophy-map';

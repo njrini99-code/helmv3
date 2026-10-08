@@ -16,7 +16,7 @@
 // =============================================================================
 
 import { useRef, useState, useTransition, type ChangeEvent, type FormEvent } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { toast } from 'sonner';
 import { logError } from '@/lib/error-logging';
 

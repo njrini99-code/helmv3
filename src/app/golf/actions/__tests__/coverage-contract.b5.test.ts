@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { assertAreaFullyWrapped } from '@/lib/admin/__tests__/coverage-contract.shared';
+import {
+  assertAreaFullyWrapped,
+  excludeAcrossGolfSplit,
+  GOLF_SPLIT_ACTION_FILES,
+} from '@/lib/admin/__tests__/coverage-contract.shared';
 
 /**
  * W15 Batch 5 (membership + auth + settings) — coverage-contract gate.
@@ -47,11 +51,11 @@ describe('coverage-contract — B5 membership + auth + settings (roster_manageme
           'src/app/golf/actions/demo-access.ts',
           'src/app/golf/actions/demo-tracking.ts',
           'src/app/golf/actions/v3/notification-prefs.ts',
-          'src/app/golf/actions/golf.ts',
+          ...GOLF_SPLIT_ACTION_FILES,
         ],
         {
           exclude: {
-            'src/app/golf/actions/golf.ts': GOLF_TS_NOT_YET_WRAPPED_EXPORTS,
+            ...excludeAcrossGolfSplit(GOLF_TS_NOT_YET_WRAPPED_EXPORTS),
           },
         },
       ),

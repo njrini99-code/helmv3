@@ -88,6 +88,20 @@ only where shared pieces changed in the same pass (the failed-read notice, the
 skeleton's tone and ruled blocks) and in the form's dates, which follow the
 day.
 
+## 2026-10-08 — Server-action imports follow the golf.ts split
+
+```text
+PR/commit:      #2176, agent/phase-7
+Design package: none
+Contract IDs:   none changed
+Data impact:    none
+Held items:     none
+```
+
+The screen's imports and test mocks now point at the files that own the server
+actions (qualifier-actions.ts) after `golf.ts`, `insights.ts` and `admin-data.ts` were split
+by domain. No behavior change.
+
 ## 2026-10-07 — Presses answer; a row's scorecards drop into place
 
 Pressing a status pill, a card or the live hero now answers with a deeper tint

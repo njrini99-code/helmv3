@@ -258,7 +258,7 @@ const getEventRSVP = vi.fn(
     data: { summary: { total: 0, accepted: 0, declined: 0, tentative: 0, pending: 0, attendees: [] }, acceptanceRate: 0, responseRate: 0 },
   }),
 );
-vi.mock('@/app/golf/actions/golf', () => ({
+vi.mock('@/app/golf/actions/calendar-events', () => ({
   getEventRSVP: (eventId: string) => getEventRSVP(eventId),
 }));
 
