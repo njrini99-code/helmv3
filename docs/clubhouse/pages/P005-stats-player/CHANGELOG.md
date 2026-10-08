@@ -1,5 +1,21 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-08 — Security: Add focus area trusts only the session
+
+`createFocusArea` (shared with Fairway) no longer trusts the browser. The coach
+on the new row is always the signed-in coach; a `coach_id` the page sends is
+ignored. The roster check now always runs: the coach's active team is resolved
+(a staffed team counts without an organisation), and a coach with no team, or
+a player without an active membership on that team, is refused before anything
+is written. A linked insight (`from_insight_id`) must be about that player, on
+that team or none, and the shared demo account is refused (`demoSafe`). The
+Add focus area sheet keeps its calls and its error copy. Tests:
+`src/test/golf/actions/development.team-id.test.ts` (spoofed coach id, no
+team, no organisation, not on the team, linked insight, demo, happy path).
+Still open: the row-level security insert policy does not pin `coach_id` to
+the caller, and a coach with no staff rows falls back to their organisation's
+team.
+
 ## 2026-10-08 — Copy: typographic apostrophes
 
 A player's stats write their apostrophes as ’ on desktop and the phone: the
@@ -702,7 +718,7 @@ Data impact:    none
 - `createFocusArea` (shared action, `actions/development.ts`): stores the
   `coach_id` the browser sends instead of the caller's own, and skips its roster
   check when the coach has no organisation or no active team (row-level security
-  remains the lock). Fix it in the action.
+  remains the lock). Fixed 2026-10-08, see the entry at the top.
 - The profile has no profile-shaped loading state: `stats/loading.tsx` cannot
   read the address, so it draws Team stats' shape, and a profile's taller hero
   moves it.
