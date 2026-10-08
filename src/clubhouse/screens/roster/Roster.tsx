@@ -280,7 +280,7 @@ export function Roster({ data }: { data: ChRoster }) {
   const covered = failed.length > 1;
   return (
     <main className="ch-rs" data-canopy="">
-      <header className="ch-rs-head" data-canopy-head="">
+      <header className="ch-rs-head" data-canopy-head="tight">
         <div>
           <span className="ch-rs-team">
             <span className="ch-rs-team__name">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>

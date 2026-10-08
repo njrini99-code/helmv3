@@ -1634,11 +1634,12 @@
 }
 
 /* Loading in the framed page head (desktop): the recruiting head holds the loaded head's measured height (WebKit 1440 and 1100,
-   2026-10-08: 174px with the one-line subtitle and the recruiting calendar line), so nothing under it moves on load. */
+   2026-10-08: 152px in the tight head with the one-line subtitle and the recruiting calendar line), so nothing under it
+   moves on load. */
 @media (min-width: 821px) {
   .ch-rec[aria-busy='true'][data-canopy] .ch-rec-head {
     box-sizing: border-box;
-    min-height: 174px;
+    min-height: 152px;
   }
 }
 

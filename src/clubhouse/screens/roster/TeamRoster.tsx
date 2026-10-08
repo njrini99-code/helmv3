@@ -68,7 +68,7 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
   return (
     // The coach's page material (P003 #1): the framed head and the Ledger, so player and coach read as one product.
     <main className="ch-rs" data-canopy="">
-      <header className="ch-rs-head" data-canopy-head="">
+      <header className="ch-rs-head" data-canopy-head="tight">
         <div>
           <span className="ch-rs-team">
             <span className="ch-rs-team__name">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>

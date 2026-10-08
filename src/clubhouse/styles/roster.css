@@ -1539,11 +1539,11 @@
 }
 
 /* Loading in the framed page head (desktop): the roster head holds the loaded head's measured height (WebKit 1440 and 1100,
-   2026-10-07: 186px once the Ledger dropped the head's second rule), so nothing under it moves on load. */
+   2026-10-08: 148px in the tight head, P003-A3), so nothing under it moves on load. */
 @media (min-width: 821px) {
   .ch-rs[aria-busy='true'][data-canopy] .ch-rs-head {
     box-sizing: border-box;
-    min-height: 186px;
+    min-height: 148px;
   }
 }
 

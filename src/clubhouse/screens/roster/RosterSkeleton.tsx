@@ -6,7 +6,7 @@ export function RosterSkeleton() {
   return (
     <main className="ch-rs" data-canopy="" aria-busy="true" aria-label="Loading roster" data-ch-code="CH-3401">
       <div className="ch-rs-skel-desk">
-        <header className="ch-rs-head" data-canopy-head="">
+        <header className="ch-rs-head" data-canopy-head="tight">
           <div>
             <Skeleton width={180} height={30} radius={15} />
             <Skeleton width={280} height={40} radius={10} />
