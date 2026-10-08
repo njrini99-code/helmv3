@@ -1454,11 +1454,14 @@ html[data-fw-theme='dark'] .ch-au-lock b,
 html[data-fw-theme='dark'] .ch-au-wl-mark b {
   color: var(--ch-green-600);
 }
-html[data-fw-theme='dark'] .ch-au-input:focus-within {
-  box-shadow: 0 0 0 1px var(--ch-green-600), 0 0 0 4px var(--ch-focus-halo);
-}
-html[data-fw-theme='dark'] .ch-au-input[data-invalid='true'] {
-  box-shadow: 0 0 0 1px var(--ch-danger-600), 0 0 0 4px rgb(239 133 118 / 0.14);
+/* Desktop only: the phone's grouped fields draw their own inset cues from dark-aware tokens. */
+@media (min-width: 821px) {
+  html[data-fw-theme='dark'] .ch-au-input:focus-within {
+    box-shadow: 0 0 0 1px var(--ch-green-600), 0 0 0 4px var(--ch-focus-halo);
+  }
+  html[data-fw-theme='dark'] .ch-au-input[data-invalid='true'] {
+    box-shadow: 0 0 0 1px var(--ch-danger-600), 0 0 0 4px rgb(239 133 118 / 0.14);
+  }
 }
 html[data-fw-theme='dark'] .ch-au-notice--positive {
   box-shadow: 0 0 0 1px rgb(107 187 140 / 0.22);
@@ -1501,6 +1504,9 @@ html[data-fw-theme='dark'] .ch-au[data-phase='leaving'] {
   }
   html[data-fw-theme='dark'] .ch-au-fields {
     box-shadow: 0 0 0 1px var(--ch-border-subtle);
+  }
+  html[data-fw-theme='dark'] .ch-au-fields[data-invalid] {
+    box-shadow: 0 0 0 1.5px var(--ch-danger-600);
   }
   html[data-fw-theme='dark'] .ch-au-field + .ch-au-field .ch-au-input::before {
     background: var(--ch-border-subtle);

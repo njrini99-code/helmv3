@@ -2240,6 +2240,9 @@ html[data-fw-theme='dark'] .ch-ox[data-phase='fold'] {
   background: var(--ch-frame);
 }
 @media (max-width: 820px) {
+  html[data-fw-theme='dark'] .ch-ox--full .ch-ox-side {
+    box-shadow: none;
+  }
   html[data-fw-theme='dark'] .ch-ox-stage {
     background: linear-gradient(165deg, rgb(27 32 28 / 0.94), rgb(22 27 23 / 0.92));
   }

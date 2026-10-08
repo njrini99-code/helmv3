@@ -1794,6 +1794,10 @@
     background: rgb(237 231 216 / 0.05);
   }
 }
+/* As in light: a press tints over hover, and the selected section keeps its own tint. */
+html[data-fw-theme='dark'] .ch-set-rail__i:active {
+  background: var(--ch-ledger-row-press);
+}
 html[data-fw-theme='dark'] .ch-set-rail__i.is-on {
   background: rgb(107 187 140 / 0.1);
 }
