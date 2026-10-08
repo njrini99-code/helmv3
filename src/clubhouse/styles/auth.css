@@ -1381,9 +1381,11 @@
   .ch-au-wl-body {
     margin-top: 34px;
   }
-  /* "Good afternoon," holds one line on a 375px phone: 50px only where it fits. */
+  /* The board's 50px from a 390px phone, scaling down below it. One width step narrower (94) is what lets "Good
+     afternoon," hold one line there at the relaxed tracking: 341px of 346px at 390, 328px of 331px at 375. */
   .ch-au-wl h1 {
-    font-size: clamp(40px, 12vw, 50px);
+    font-size: clamp(40px, 12.83vw, 50px);
+    font-variation-settings: 'wdth' 94;
     margin-top: 14px;
   }
   .ch-au-wl-card {

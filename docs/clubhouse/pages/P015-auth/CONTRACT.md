@@ -179,7 +179,8 @@ place with the address already typed. The view is kept in the URL
 (`?view=forgot`), so the browser's Back returns to sign in and a reload holds
 the view (CH-15920). Going back brings the address with it and pops the reset
 form's history entry rather than stacking one (CH-15922). Both are up for owner
-review.
+review. With the flag on, a signed-out visit to `/golf/forgot-password` is sent
+to `/golf/login?view=forgot`; a signed-in one keeps today's page (CH-15920).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

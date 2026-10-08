@@ -54,6 +54,7 @@ authentication test.
 | `auth-forgot.test.tsx` (2026-10-07: the reset form and check your email in the panel, CH-15020 to CH-15922, and a guard that today's reset page and the panel keep the same rules and words) | pass (8) |
 | `auth.test.tsx` › the sign-in micro-motion (2026-10-07: CH-15607 to CH-15611, including the glide's WebKit offsetParent case) | pass (6) |
 | `src/app/golf/(auth)/forgot-password/page.test.tsx` (today's reset page, unchanged) | pass |
+| `src/app/golf/(auth)/forgot-password/layout.test.tsx` (2026-10-08: flag on or off, signed in or out, and the auth server down with and without a cookie session; only flag on and signed out goes to `?view=forgot`, a degraded session counts as signed in) | pass (6) |
 | `onboard.test.tsx` (32 cases: codes, the staff path, the account, after the account, request access, arriving, and since 2026-10-07 the motion and feedback, CH-15620 to CH-15624) and `onboard-logic.test.ts` (17, with moving on, CH-15620) | pass |
 | `handoff.test.tsx` (the curtain over the route change) | pass |
 | `src/components/auth/golf-sign-in-form.test.tsx` and `src/test/auth` (today's form unchanged) | pass |
@@ -103,6 +104,20 @@ authentication test.
   page, now held by the curtain and
   lifted when the dashboard is drawn.
 
+- 2026-10-08, WebKit with isMobile and touch at 375, 390 and 430x844,
+  `/clubhouse-preview/auth?screen=welcome`: every greeting the welcome can
+  show (morning, afternoon and evening; coach, player, caught up, first visit,
+  failed and no name) holds one line inside its box with no horizontal scroll,
+  54 of 54. Not done: a physical iPhone, Safari.
+  - A long surname is a separate, earlier case. "Coach Christopherson."
+    wraps cleanly. A single word wider than the line, such as
+    "Vanderwesthuizen.", is clipped at every width, as it was before this
+    change.
+- 2026-10-08, WebKit, signed out, dev server with the flag on:
+  `/golf/forgot-password` ends on `/golf/login?view=forgot` with the reset form
+  showing. The layout's redirect streams behind `golf/loading.tsx`, so it
+  answers 200 with a client redirect and a meta refresh, not a 307.
+
 ## Screenshots
 
 Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
@@ -141,7 +156,14 @@ before, after, baseline or evidence.
 | `P015__signin__none__390x844__refused-empty__before__e549642.png` | before | `e549642` | Before: the preview drew the empty-email refusal with the email filled in |
 | `P015__signin__none__390x844__refused-empty__after__5a34505.png` | after | `5a34505` | After: the empty-email refusal over an empty Email row |
 | `P015__welcome__coach__390x844__afternoon-greeting__before__e549642.png` | before | `e549642` | Before: "Good afternoon," broke over two lines at 50px, a three-line greeting |
-| `P015__welcome__coach__390x844__afternoon-greeting__after__5a34505.png` | after | `5a34505` | After: the greeting scales to 46.8px on a 390px phone and holds one line (measured 375 to 430px) |
+| `P015__welcome__coach__390x844__afternoon-greeting__after__5a34505.png` | after | `5a34505` | After (superseded 2026-10-08): 46.8px on a 390px phone, the largest size one line allowed at width 96; now 50px at width 94 (rows below) |
+| `P015__welcome__coach__375x844__afternoon-greeting__before__51c58e8.png` | before | `51c58e8` | Before: the 375px greeting at 45px (width 96) |
+| `P015__welcome__coach__390x844__afternoon-greeting__before__51c58e8.png` | before | `51c58e8` | Before: the 390px greeting at 46.8px against the board's 50px |
+| `P015__welcome__coach__430x844__afternoon-greeting__before__51c58e8.png` | before | `51c58e8` | Before: the 430px greeting at 50px (width 96) |
+| `P015__welcome__coach__375x844__afternoon-greeting__after__51c58e8.png` | after | `51c58e8` | After: 48.1px at width 94, one line (328px of 331px) |
+| `P015__welcome__coach__390x844__afternoon-greeting__after__51c58e8.png` | after | `51c58e8` | After: the board's 50px at width 94, one line (341px of 346px) |
+| `P015__welcome__coach__430x844__afternoon-greeting__after__51c58e8.png` | after | `51c58e8` | After: 50px at width 94, one line |
+| `P015__reset__none__390x844__forgot-password-redirect__after__51c58e8.png` | after | `51c58e8` | After: a signed-out visit to `/golf/forgot-password` lands on the panel's reset form (`/golf/login?view=forgot`, CH-15920) |
 | `P015__reset__none__1440x900__ready__before__5a34505.png` | before | `5a34505` | Before: "Forgot password?" left the Clubhouse sign-in for today's reset page, another design (the seam) |
 | `P015__reset__none__390x844__ready__before__5a34505.png` | before | `5a34505` | Before: the same seam on a phone |
 | `P015__reset__none__1440x900__ready__after__5a34505.png` | after | `5a34505` | After: the reset form in the panel, the email carried and focused, course and lockup still (CH-15920; up for owner review) |

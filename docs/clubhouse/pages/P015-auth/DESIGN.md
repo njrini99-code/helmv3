@@ -141,7 +141,9 @@ One structure with the desktop's, switched in CSS at 820px (the same width as
 device. On the phone: the course on top and the form on a sheet from
 `clamp(200px, 42svh, 352px)`, grouped rows, the Forgot link under the button,
 every control at least 44px, and the welcome full screen with the hole centred
-and the list stacked. The keyboard scrolls the button above itself. The October
+and the list stacked. The phone greeting is the board's 50px from a 390px
+phone, scaling down below it, one width step narrower (94) so "Good afternoon,"
+holds one line at the relaxed tracking. The keyboard scrolls the button above itself. The October
 1 owner review explicitly calls for the hole after Sign in. The course poster
 uses the same wide and tall viewboxes as the animated scene so initial rendering
 and animation loading preserve that framing.
@@ -213,6 +215,10 @@ sign-in panel's own vocabulary and waits for owner review:
   Send key on even when the field is empty, a refusal cleared by editing. The
   URL keeps `?view=forgot`, so the browser's Back works. The links keep today's
   page as their href.
+- `/golf/forgot-password` itself (2026-10-08, owner's choice): with the flag
+  on, a signed-out visitor is sent to `/golf/login?view=forgot`. A signed-in
+  one keeps today's page, since sign in would send them to their dashboard.
+  Flag off, nothing changes.
 - Reset password itself (the email's link) is still today's
   `/golf/reset-password`: it builds the recovery session and was left alone on
   purpose.
@@ -227,9 +233,7 @@ sign-in panel's own vocabulary and waits for owner review:
 - Sign up's head-coach path, program code and role picker, and handedness and
   GPA (dropped by Q-96: the owner creates head coaches, the roster code is
   players only and assistants join with the staff code).
-- Reset password (the page the email links to) in Clubhouse; and, with the flag
-  on, `/golf/forgot-password` sending people to the panel's form (route
-  integration, outside this page's files).
+- Reset password (the page the email links to) in Clubhouse.
 
 ## Open owner questions
 

@@ -1,5 +1,28 @@
 # P015 — Auth: changelog
 
+## 2026-10-08 — Forgot password lands in the panel; the phone greeting at 50px
+
+```text
+Design package: design/handoff/auth (approved with Q-96); no new board
+PR/commit:      agent/clubhouse-frame-hero (uncommitted at writing)
+Contract IDs:   CH-15920 (extended); no new codes
+Actions:        none (the same requestPasswordResetAction)
+Data impact:    none
+Held items:     none
+```
+
+- With the flag on, a signed-out visit to `/golf/forgot-password` is sent to
+  `/golf/login?view=forgot`, the panel's reset form (owner's choice). The
+  check is the page's layout, on the server. A signed-in visitor keeps today's
+  page, and with the flag off nothing changes. Neither page reads an email from
+  the URL, so none is carried. Without JavaScript the panel still draws sign in
+  (the view is read after hydration); neither reset form can send without
+  JavaScript, today's included.
+- The phone greeting is the board's 50px on a 390px phone (it was 46.8px). It
+  scales down below 390 (48.1px at 375). One width step narrower (94, from 96)
+  keeps "Good afternoon," on one line at the relaxed tracking. It measures
+  341px of 346px at 390 and 328px of 331px at 375 in WebKit.
+
 ## 2026-10-07 — Sign up finished: handovers, the member card, progress and the issue
 
 ```text
