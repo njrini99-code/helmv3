@@ -38,13 +38,13 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AGENT_SKILL` | 131 | 0 | 8 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 14 | 0 |
 | `REFERENCE` | 52 | 15 | 20 | 0 |
-| `GENERATED_TRUTH` | 41 | 3 | 22 | 7 |
-| `PROCESS_CONTRACT` | 8 | 4 | 7 | 1 |
+| `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
+| `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
-| `DESIGN_SPEC` | 7 | 0 | 6 | 1 |
+| `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 43 | 5 | 17 | 63 |
 | `AUDIT_SNAPSHOT` | 67 | 6 | 35 | 35 |
-| `STATE_SNAPSHOT` | 7 | 2 | 6 | 2 |
+| `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 49 | 15 | 2 | 4 |
 | `ADR` | 6 | 0 | 3 | 2 |
@@ -335,9 +335,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | - |
-| `docs/generated/contracts/admin_platform.md` | generated | - | - | yes | 6 |
+| `docs/generated/contracts/admin_platform.md` | generated | - | - | yes | 4 |
 | `docs/generated/contracts/coachhelm_ai.md` | generated | - | - | - | - |
-| `docs/generated/contracts/golf_round_lifecycle.md` | generated | - | - | - | 1 |
+| `docs/generated/contracts/golf_round_lifecycle.md` | generated | - | - | - | - |
 | `docs/operations/GENERATED_FILE_POLICY.md` | generated | - | - | - | - |
 | `docs/operations/RETENTION.md` | generated | - | yes | - | - |
 | `memory/README.md` | generated | - | - | yes | - |
@@ -353,7 +353,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/ai-system/selfheal/README.md` | current | yes | - | yes | - |
 | `docs/ai-system/selfheal/repair-contract.md` | current | yes | - | yes | - |
 | `docs/ai-system/selfheal/triage-contract.md` | current | yes | - | yes | - |
-| `docs/architecture/coachhelm-evidence-contract.md` | current | yes | - | yes | 1 |
+| `docs/architecture/coachhelm-evidence-contract.md` | current | yes | - | yes | - |
 | `docs/superpowers/plans/2026-04-22-insight-delivery/00-design-contract.md` | superseded | - | - | yes | - |
 | `docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md` | superseded | - | - | yes | - |
 | `memory/system/golfhelm-engineering-os.md` | current | - | - | yes | - |
@@ -373,7 +373,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | Dead |
 | --- | --- | --- | --- | --- | --- |
-| `docs/superpowers/specs/2026-07-01-helm-bridge-command-center-design.md` | current | - | - | yes | 1 |
+| `docs/superpowers/specs/2026-07-01-helm-bridge-command-center-design.md` | current | - | - | yes | - |
 | `docs/superpowers/specs/2026-07-19-coachhelm-stats-redesign-design.md` | current | - | - | yes | - |
 | `docs/superpowers/specs/2026-08-17-coachhelm-instrumentation-design.md` | current | - | - | - | - |
 | `docs/superpowers/specs/2026-08-18-golf-team-operations-design.md` | current | - | - | yes | - |
@@ -507,10 +507,10 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- |
 | `docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md` | current | - | - | yes | - |
 | `docs/ai-system/briefs/SUPABASE_ZERO_COST_OBSERVABILITY_BRIEF_2026-09-03.md` | current | yes | - | yes | - |
-| `docs/ai-system/selfheal/STATE-2026-08-28.md` | current | yes | - | yes | 1 |
+| `docs/ai-system/selfheal/STATE-2026-08-28.md` | current | yes | - | yes | - |
 | `docs/baseball/COHERENCE_RULING_2026-07-08.md` | current | - | - | yes | - |
 | `docs/clubhouse/RELEASE_2026-09-30.md` | current | - | - | yes | - |
-| `docs/reports/HELM_OS_TRUTH_CONVERGENCE_2026-08-30.md` | current | - | - | yes | 1 |
+| `docs/reports/HELM_OS_TRUTH_CONVERGENCE_2026-08-30.md` | current | - | - | yes | - |
 | `docs/reports/MIGRATION_REPO_PROD_CLASSIFICATION_2026-08-30.md` | current | - | - | - | - |
 
 ### `HISTORY_LEDGER`
