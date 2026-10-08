@@ -5,7 +5,7 @@
 -- Apply: npm run db:apply --
 -- supabase/migrations/20261008150000_golf_team_settings_course_location.sql
 -- Risk: LOW. Three nullable columns with no default and no backfill (a catalog-only
--- change, no table rewrite), plus CHECKs every existing row passes because the
+-- change, no table rewrite), plus CHECKs (ranges, label length, both coordinates or neither) every existing row passes because the
 -- columns start NULL. golf_team_settings has one row per team.
 --
 -- Where the team's course is, for the sun the Clubhouse draws its light from. A coach
@@ -24,6 +24,7 @@
 -- existing ones are: coaches write, the team reads.
 --
 -- ROLLBACK: ALTER TABLE public.golf_team_settings
+--   DROP CONSTRAINT IF EXISTS golf_team_settings_course_point_pair,
 --   DROP CONSTRAINT IF EXISTS golf_team_settings_course_latitude_range,
 --   DROP CONSTRAINT IF EXISTS golf_team_settings_course_longitude_range,
 --   DROP CONSTRAINT IF EXISTS golf_team_settings_course_label_length,
@@ -35,6 +36,12 @@
 -- VERIFY: where table_schema = 'public' and table_name = 'golf_team_settings'
 -- VERIFY: and column_name in ('course_latitude', 'course_longitude', 'course_label')
 -- VERIFY: and is_nullable = 'YES';
+-- VERIFY: select count(*) = 4 from pg_constraint
+-- VERIFY: where conrelid = 'public.golf_team_settings'::regclass
+-- VERIFY: and conname in ('golf_team_settings_course_latitude_range', 'golf_team_settings_course_longitude_range',
+-- VERIFY:   'golf_team_settings_course_label_length', 'golf_team_settings_course_point_pair');
+
+SET lock_timeout = '3s';
 
 ALTER TABLE public.golf_team_settings
   ADD COLUMN IF NOT EXISTS course_latitude double precision,
@@ -43,17 +50,22 @@ ALTER TABLE public.golf_team_settings
 
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'golf_team_settings_course_latitude_range') THEN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'public.golf_team_settings'::regclass AND conname = 'golf_team_settings_course_latitude_range') THEN
     ALTER TABLE public.golf_team_settings
       ADD CONSTRAINT golf_team_settings_course_latitude_range CHECK (course_latitude BETWEEN -90 AND 90);
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'golf_team_settings_course_longitude_range') THEN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'public.golf_team_settings'::regclass AND conname = 'golf_team_settings_course_longitude_range') THEN
     ALTER TABLE public.golf_team_settings
       ADD CONSTRAINT golf_team_settings_course_longitude_range CHECK (course_longitude BETWEEN -180 AND 180);
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'golf_team_settings_course_label_length') THEN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'public.golf_team_settings'::regclass AND conname = 'golf_team_settings_course_label_length') THEN
     ALTER TABLE public.golf_team_settings
       ADD CONSTRAINT golf_team_settings_course_label_length CHECK (char_length(course_label) <= 80);
+  END IF;
+  -- A point is both coordinates or neither: half a location is no place for the sun.
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'public.golf_team_settings'::regclass AND conname = 'golf_team_settings_course_point_pair') THEN
+    ALTER TABLE public.golf_team_settings
+      ADD CONSTRAINT golf_team_settings_course_point_pair CHECK ((course_latitude IS NULL) = (course_longitude IS NULL));
   END IF;
 END $$;
 
