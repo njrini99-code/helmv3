@@ -299,6 +299,23 @@ describe('Round tracking: holing out', () => {
     expect(code('CH-11003')).toBeNull();
   });
 
+  it('CH-11901 the save line never says "Round saved" while the holed hole is saving or after its save failed', async () => {
+    let finish: (ok: boolean) => void = () => {};
+    const onHoleComplete = vi.fn(() => new Promise<boolean>((r) => (finish = r)));
+    const onAutoSave = vi.fn(async () => {});
+    const { user } = setup({ currentHoleIndex: 2, onHoleComplete, onAutoSave, autoSaveInterval: 10 });
+    await user.click(pick(/^Holed/));
+    await user.click(next());
+    await waitFor(() => expect(code('CH-11402')).toHaveTextContent('Saving hole 3'));
+    // The background save of the holed shot lands while the hole's own save is still running.
+    await waitFor(() => expect(onAutoSave).toHaveBeenCalled());
+    await act(async () => {});
+    expect(screen.queryByText('Round saved')).toBeNull();
+    await act(async () => finish(false));
+    expect(code('CH-11003')).toHaveTextContent('Hole 3 didn’t save');
+    expect(screen.queryByText('Round saved')).toBeNull();
+  });
+
   it('a finished hole looked back at offers the way back, and a shot opens to change or delete (CH-11505)', async () => {
     const holed = [
       shot({ shotNumber: 1, shotType: 'tee', lieBefore: 'tee', distanceToHoleBefore: 170, result: 'green', distanceToHoleAfter: 20, distanceUnitAfter: 'feet' }),

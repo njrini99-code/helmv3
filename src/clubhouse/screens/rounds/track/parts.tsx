@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { ChevronDown, Flag } from 'lucide-react';
 import type { DistancePreference } from '@/lib/golf/distance-units';
 import type { RoundHole, ShotRecord } from '@/lib/types/golf';
@@ -85,8 +85,9 @@ export function TrackStrip({ holes, current, onJump }: { holes: RoundHole[]; cur
   const stripRef = useRef<HTMLDivElement>(null);
   const placedRef = useRef(false);
   // A strip wider than the screen (18 holes, a round resumed on the back nine) brings the current hole to the middle:
-  // at once on first paint, eased after (instant with reduced motion). Only the strip scrolls, never the page.
-  useEffect(() => {
+  // placed before the first paint (a layout effect, so a round resumed on the back nine never flashes hole 1), eased
+  // after (instant with reduced motion). Only the strip scrolls, never the page.
+  useLayoutEffect(() => {
     const strip = stripRef.current;
     const chip = strip?.children[current] as HTMLElement | undefined;
     if (!strip || !chip || strip.scrollWidth <= strip.clientWidth) return;

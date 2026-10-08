@@ -31,8 +31,9 @@ Held items: none
   distance readout (and beside the holed score), as on the board's "Saved on this phone". The words and the states are
   the engine's, unchanged. New: "Round saved" now holds after the engine's two-second flash for as long as the shots
   on screen are exactly the ones the server acknowledged (same hole, same shot list); a new shot, an edit, an undo or
-  a hole change drops it until the next acknowledgement. Nothing is ever said before it is true, and nothing at all
-  when the device copy of a shot failed. On the desktop the line sits under the readout.
+  a hole change drops it until the next acknowledgement. While a holed hole is being saved (CH-11402) or after that
+  save failed (CH-11003, "kept on this device") the line never says "Round saved". Nothing is ever said before it is
+  true, and nothing at all when the device copy of a shot failed. On the desktop the line sits under the readout.
 - **The sheet on the dock (`styles/rounds-track.css`):** the entry card no longer floats over an empty band. The
   hero takes the slack instead, so the card sits directly on the Undo / Penalty / Next shot dock in every state
   (before and after a result, putting, the holed review). The drawn hole keeps its size at the top, so picking a
@@ -51,7 +52,10 @@ Held items: none
 
 - `round-tracking.test` (CH-11805: chip names, under-par marking, current and unplayed chips) and
   `round-save-status.test` (CH-11901: saving, retrying, held on the phone, placement in the hero, "Round saved" held
-  past the engine's two seconds and dropped by an undo, never carried over to a new unanswered shot).
+  past the engine's two seconds and dropped by an undo, never carried over to a new unanswered shot); and
+  `round-tracking.test` CH-11901 (no "Round saved" while the holed hole saves or after it failed).
+- Docs: the phone tracking notes (`docs/clubhouse/phone/rounds.md`), DESIGN and CONTRACT prose and the catalog rows
+  for CH-11805 and CH-11901.
 - Not verified: rendering on a phone or in a browser (no dev server in this change); screenshots pending.
 
 ## 2026-10-08 — Setup on the phone without cards

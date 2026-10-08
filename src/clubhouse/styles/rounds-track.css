@@ -2023,10 +2023,13 @@ button.ch-rt-strip__h {
     gap: 12px;
     min-width: 0;
   }
-  .ch-rt-hero__foot > .ch-rt-hero__dist,
-  .ch-rt-hero__foot > .ch-rt-hero__done {
+  .ch-rt-hero__foot > .ch-rt-hero__dist {
     flex: 1 1 auto;
     min-width: 0;
+  }
+  /* The holed score keeps its width (a "Double bogey" never rewraps as the line comes and goes); the line wraps. */
+  .ch-rt-hero__foot > .ch-rt-hero__done {
+    flex: 0 0 auto;
   }
   .ch-rt-sync {
     flex: 0 1 auto;

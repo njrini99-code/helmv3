@@ -92,7 +92,10 @@ export function RoundTracking(props: RoundTrackingProps) {
   const stats = holedOut ? calculateHoleStats(t.shotHistory, hole) : null;
   const far = heroDistance(t.distanceToHole, t.distanceUnit, distancePref);
   const liveState = t.autoSaveStatus !== 'idle' ? t.autoSaveStatus : t.autoSaveHeldOnDevice ? 'device' : t.autoSaveSyncing ? 'syncing' : 'idle';
-  const saveState = liveState === 'idle' && acked?.hole === hole.number && acked.shots === t.shotHistory ? 'saved' : liveState;
+  const heldSaved = liveState === 'idle' && acked?.hole === hole.number && acked.shots === t.shotHistory ? 'saved' : liveState;
+  // While a holed hole is being saved, or after that save failed ("kept on this device", CH-11003), the line never says
+  // "Round saved": the hole's own save is the truth then. Device, syncing and retrying still agree with it, so they stay.
+  const saveState = heldSaved === 'saved' && t.holeCheckpointStatus !== 'idle' ? 'idle' : heldSaved;
   const meta = [round.teeLabel && `${round.teeLabel} tees`, round.type && TYPE_LABEL[round.type]].filter(Boolean).join(' · ');
 
   return (

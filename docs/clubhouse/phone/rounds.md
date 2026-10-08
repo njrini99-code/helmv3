@@ -97,9 +97,10 @@ The round's own sheets (Exit, Scorecard, Round complete, Submitting) are `round-
 Board: `Player - Rounds - Mobile.html`, the tracking frames.
 
 - A round is full screen: the tab bar hides (`usePhoneTabsHidden`); Exit and the scorecard (an icon) are in the screen's own top bar.
-- The hole strip scrolls sideways at 34px a hole, edge to edge.
+- The hole strip is one row of compact chips (board 3): the score once played (red only under par), the hole number until then, the current hole lit ivory, each in a 44 x 44 hit area. It scrolls sideways edge to edge and keeps the current hole in view.
 - The hole stacks above the entry, with a smaller map and a 76px distance.
-- The action bar sits at the bottom of the entry, above the home indicator; quick distances fill the row at 44px.
+- The entry card sits directly on the action bar (Undo, Penalty, Next shot) at the foot, above the home indicator, in every state; the hero above takes the slack, so picking a result grows the card upward and the drawn hole does not move. Quick distances fill the row at 44px.
+- The round's save line (CH-11901) is a quiet line beside the distance readout (or the holed score), never a pill under the top bar.
 - Sheets (penalty, change a shot, leave this shot, exit, scorecard, round complete) are bottom sheets that drag to close.
 - Not yet: the numeric pad has no Done key on iOS (the Fairway screen adds a bar for it); an iPhone pass.
 

@@ -198,7 +198,7 @@ Status: DEFINED
 
 Discard and Start refuse while offline before anything is sent, with the shell's toast naming what did not happen, and
 Try again on a hole that did not save only warns while offline (110702, reserved: no P011 test forces offline). The
-shot screen's background save says "Saving round", "Round saved" or "Not synced yet, retrying" in a small pill
+shot screen's background save says "Saving round", "Round saved" or "Not synced yet, retrying" in a quiet line beside the distance readout
 (CH-11901); the engine retries on its own. Setup's course, tee and scorecard reads that fail, offline or not, say they
 did not load, with Try again (CH-11208 to CH-11210).
 
@@ -321,7 +321,7 @@ Status: DEFINED
 
 Nothing on the library is optimistic: Discard waits for the server, and the card leaves only on success (111301). The
 shot screen adds a shot to the hole at once, and the round screen's engine saves it in the background and retries on its own
-(the pill, CH-11901): that is the engine's contract, not an optimistic write of this page.
+(the save line, CH-11901): that is the engine's contract, not an optimistic write of this page.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

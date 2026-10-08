@@ -67,9 +67,10 @@ thought, and check a round afterwards. Coach: read a player's round, hole by hol
   (course card, open qualifier, Round details, the note; the scorecard) and the dock with the one thing stopping
   Start and Start round. One column below 860px.
 - **Shot screen** (`.ch-rt`, `chrt`): the top bar (Exit, the course and tee, Scorecard), the hole strip, the hole
-  hero (hole number, par, yards, shot number and the distance to the pin, the schematic map, the shot log), then
-  the entry panel with the action bar (Undo, Penalty, Next shot) at its foot. A holed-out hole swaps the entry for
-  the shot review.
+  hero (hole number, par, yards, shot number and the distance to the pin with the round's save line beside it, the
+  schematic map, the shot log), then the entry panel with the action bar (Undo, Penalty, Next shot) at its foot. A
+  holed-out hole swaps the entry for the shot review. On the phone (board 3) the strip is one row of compact chips,
+  and the hero takes the slack so the entry card always sits on the action bar.
 
 ## Components
 
