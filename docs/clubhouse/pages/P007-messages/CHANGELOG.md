@@ -1,5 +1,9 @@
 # P007 — Messages: changelog
 
+## 2026-10-08 — premium pass: a stale chunk reloads once, in Clubhouse's voice (D3)
+
+`ClubhouseRouteError` (`shell/ClubhouseRouteError.tsx`) is a route `error.tsx` body for Clubhouse screens, inside the shell or above it. On a ChunkLoadError ("Loading chunk …", stale assets after a deploy), the shared RouteErrorBoundary asks the one recovery coordinator (`lib/recovery/client`) for a reload. The coordinator reloads once, under the session's attempt budget and latch, and never over unsaved work; there is no second sessionStorage flag, because the coordinator's own doc forbids any other `location.reload()`. Any other error shows Clubhouse's route error (CH-1206). Above the shell it brings its own `.ch-root`, fonts and tokens. `/clubhouse-preview` now uses it, where the audit's crash fell through to the app's generic Helm page. The live Messages route already reached the same view through the shell.
+
 ## 2026-10-08 — premium pass: findings D1, D2, D4
 
 - D1: a thread is held at its newest message while it settles (`useThreadAnchor`, 700 ms). A push during hydration that resets the scroll under it no longer leaves it at the oldest message. The hold stops the moment the reader scrolls, touches or types.
