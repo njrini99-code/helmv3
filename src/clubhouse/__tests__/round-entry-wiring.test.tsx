@@ -29,12 +29,18 @@ const mocks = vi.hoisted(() => ({
 vi.mock('next/navigation', () => ({ useRouter: () => mocks.router, useSearchParams: () => mocks.search }));
 vi.mock('../lib/haptics', () => ({ haptic: mocks.haptic }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
-vi.mock('@/app/golf/actions/golf', () => ({
+vi.mock('@/app/golf/actions/round-submit', () => ({
   submitGolfRoundComprehensive: (...args: unknown[]) => mocks.submitGolfRoundComprehensive(...args),
+}));
+vi.mock('@/app/golf/actions/round-partial', () => ({
   savePartialRound: (...args: unknown[]) => mocks.savePartialRound(...args),
   deleteInProgressRound: (...args: unknown[]) => mocks.deleteInProgressRound(...args),
+}));
+vi.mock('@/app/golf/actions/qualifier-actions', () => ({
   getPlayerQualifiers: (...args: unknown[]) => mocks.getPlayerQualifiers(...args),
   getNextQualifierRoundNumber: (...args: unknown[]) => mocks.getNextQualifierRoundNumber(...args),
+}));
+vi.mock('@/app/golf/actions/saved-courses', () => ({
   getPlayerSavedCourses: vi.fn(async () => ({ success: true, data: [] })),
   getRecentCoursesForPlayer: vi.fn(async () => ({ success: true, data: [] })),
   savePlayerCourse: vi.fn(async () => ({ success: true, data: { id: 'sc-1' } })),

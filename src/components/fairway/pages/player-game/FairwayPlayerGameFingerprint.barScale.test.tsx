@@ -26,7 +26,7 @@ import type { PlayerFingerprint, SectionData } from '@/app/golf/actions/player-f
 import type { FingerprintSectionKey } from '@/app/golf/actions/player-fingerprint-types';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
-vi.mock('@/app/golf/actions/insights', () => ({
+vi.mock('@/app/golf/actions/insights-feed', () => ({
   acknowledgeInsight: vi.fn(async () => ({ success: true })),
   dismissInsight: vi.fn(async () => ({ success: true })),
 }));

@@ -35,7 +35,7 @@ import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types
 // the player's mined patterns (cause = description, effect = strokeImpact,
 // fix = recommendation), gated by verifyPlayerAccess + isCoachHelmEnabledForPlayer
 // inside the action.
-import type { getPlayerPatterns } from '@/app/golf/actions/insights';
+import type { getPlayerPatterns } from '@/app/golf/actions/insights-player-analysis';
 type CoachHelmPattern = NonNullable<
   Awaited<ReturnType<typeof getPlayerPatterns>>['patterns']
 >[number];

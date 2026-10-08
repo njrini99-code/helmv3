@@ -83,7 +83,8 @@ vi.mock('@/lib/notifications/push', () => ({
   sendBulkPushNotification: vi.fn(async () => {}),
 }));
 
-import { getNextQualifierRoundNumber, savePartialRound } from '../golf';
+import { getNextQualifierRoundNumber } from '../qualifier-actions';
+import { savePartialRound } from '../round-partial';
 
 type Row = Record<string, unknown>;
 interface SeedTables extends Record<string, Row[]> {

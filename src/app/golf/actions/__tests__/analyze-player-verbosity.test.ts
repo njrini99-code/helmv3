@@ -111,7 +111,7 @@ describe('analyzePlayer verbosity wiring (F061, regression #1571)', () => {
   });
 
   it('passes the coach\'s saved (non-default) insight verbosity into the engine', async () => {
-    const { analyzePlayer } = await import('@/app/golf/actions/insights');
+    const { analyzePlayer } = await import('@/app/golf/actions/insights-player-analysis');
 
     const result = await analyzePlayer('player-1');
 
@@ -128,7 +128,7 @@ describe('analyzePlayer verbosity wiring (F061, regression #1571)', () => {
       coachId: undefined,
     });
 
-    const { analyzePlayer } = await import('@/app/golf/actions/insights');
+    const { analyzePlayer } = await import('@/app/golf/actions/insights-player-analysis');
     await analyzePlayer('player-1');
 
     const options = analyzePlayerMock.mock.calls[0]?.[1] as { verbosity?: string } | undefined;

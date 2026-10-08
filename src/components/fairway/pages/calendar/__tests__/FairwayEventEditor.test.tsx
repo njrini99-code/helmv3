@@ -62,7 +62,7 @@ vi.mock('../FairwayCalendarMemberRail', () => ({
 
 const getEventRSVP = vi.fn();
 const checkScheduleConflicts = vi.fn();
-vi.mock('@/app/golf/actions/golf', () => ({
+vi.mock('@/app/golf/actions/calendar-events', () => ({
   getEventRSVP: (...args: unknown[]) => getEventRSVP(...args),
   checkScheduleConflicts: (...args: unknown[]) => checkScheduleConflicts(...args),
 }));

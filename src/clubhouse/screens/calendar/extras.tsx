@@ -2,7 +2,7 @@
 
 import { ChevronLeft, Clock, FileText, Lock, Paperclip, Repeat, Text, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { addCoachBlockedTime, deleteCoachBlockedTime } from '@/app/golf/actions/golf';
+import { addCoachBlockedTime, deleteCoachBlockedTime } from '@/app/golf/actions/calendar-blocked-time';
 import { attachDocumentToEvent, detachDocumentFromEvent, getEventDocuments } from '@/app/golf/actions/event-documents';
 import { getDocuments } from '@/app/golf/actions/documents';
 import { serializeRecurrenceRule } from '@/lib/golf/recurrence';

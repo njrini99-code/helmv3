@@ -43,7 +43,7 @@ import {
   PlayerIdentity,
 } from '@/components/fairway';
 import { Users, Flag, MapPin } from 'lucide-react';
-import { createGolfQualifier } from '@/app/golf/actions/golf';
+import { createGolfQualifier } from '@/app/golf/actions/qualifier-actions';
 // Reuse the SAME cloud course catalog picker the new-round flow uses (Stage A
 // course shelves → Stage B tee). We only need the picked course/tee identity, so
 // we read courseId / courseName / teeId off the returned TeeRoundDefaults.

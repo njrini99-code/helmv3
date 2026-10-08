@@ -12,7 +12,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: 
 vi.mock('@/app/golf/actions/insight-delivery', () => ({
   getInsightsForCoachWithMeta: (...args: unknown[]) => getInsightsForCoachWithMeta(...args),
 }));
-vi.mock('@/app/golf/actions/insights', () => ({
+vi.mock('@/app/golf/actions/insights-coachhelm', () => ({
   refreshPlayerAnalysisAsCoach: vi.fn(async () => ({ success: true })),
 }));
 vi.mock('@/app/golf/actions/development', () => ({

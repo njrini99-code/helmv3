@@ -12,7 +12,7 @@
  *     overlay) with the navigation + action items.
  *   • View Profile / View Stats / Message  → navigation (Link / router.push).
  *   • Change Status → opens a ModalShell with the four status options →
- *     updatePlayerStatus(playerId, status) from '@/app/golf/actions/golf'.
+ *     updatePlayerStatus(playerId, status) from '@/app/golf/actions/team-management'.
  *   • Remove from Team → opens a ModalShell CONFIRM → removePlayerFromTeam(playerId)
  *     from '@/app/golf/actions/roster'. DESTRUCTIVE, single scoped delete:
  *     gated behind an explicit confirm, NEVER auto-fired, Button variant="danger",
@@ -32,7 +32,7 @@ import { cn } from '@/lib/utils';
 
 // Server actions — imported VERBATIM by their exact paths, called unchanged.
 import { removePlayerFromTeam } from '@/app/golf/actions/roster';
-import { updatePlayerStatus } from '@/app/golf/actions/golf';
+import { updatePlayerStatus } from '@/app/golf/actions/team-management';
 
 import { PopoverPanel } from '@/components/fairway/overlays/PopoverPanel';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';

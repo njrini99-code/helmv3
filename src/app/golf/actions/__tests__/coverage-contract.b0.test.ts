@@ -16,7 +16,8 @@ describe('coverage-contract — B0 admin dogfood (admin_dashboard)', () => {
     expect(() =>
       assertAreaFullyWrapped([
         'src/app/golf/actions/admin-bi-data.ts',
-        'src/app/golf/actions/admin-data.ts',
+        'src/app/golf/actions/admin-dashboard-data.ts',
+        'src/app/golf/actions/admin-incidents-data.ts',
         'src/app/golf/actions/admin-people-data.ts',
         'src/app/golf/actions/admin-system-data.ts',
         'src/app/golf/actions/admin-tracer-data.ts',

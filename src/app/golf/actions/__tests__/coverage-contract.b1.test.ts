@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { assertAreaFullyWrapped } from '@/lib/admin/__tests__/coverage-contract.shared';
+import {
+  assertAreaFullyWrapped,
+  excludeAcrossGolfSplit,
+  GOLF_SPLIT_ACTION_FILES,
+} from '@/lib/admin/__tests__/coverage-contract.shared';
 
 /**
  * W15 Batch 1 (core play) — coverage-contract gate.
@@ -67,9 +71,9 @@ describe('coverage-contract — B1 core play (round_tracking, stats_analytics, q
           'src/app/golf/actions/shot-analytics.ts',
           'src/app/golf/actions/team-sg-baseline.ts',
           'src/app/golf/actions/v3/qualifying.ts',
-          'src/app/golf/actions/golf.ts',
+          ...GOLF_SPLIT_ACTION_FILES,
         ],
-        { exclude: { 'src/app/golf/actions/golf.ts': GOLF_TS_NON_B1_EXPORTS } },
+        { exclude: excludeAcrossGolfSplit(GOLF_TS_NON_B1_EXPORTS) },
       ),
     ).not.toThrow();
   });

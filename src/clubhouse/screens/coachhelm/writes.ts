@@ -1,7 +1,7 @@
 'use client';
 
 import { acceptFocusArea, createFocusAreaFromInsightV2, declineFocusArea } from '@/app/golf/actions/development';
-import { dismissInsight, reactivateInsight } from '@/app/golf/actions/insights';
+import { dismissInsight, reactivateInsight } from '@/app/golf/actions/insights-feed';
 import type { ChHelmLifecycle } from '../../data/coachhelm-shape';
 import type { ServerResult } from '../../lib/use-action';
 

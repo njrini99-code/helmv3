@@ -41,7 +41,7 @@ import {
   updateGolfQualifierDetails,
   setQualifierRoundCourses,
   type QualifierRoundCourse,
-} from '@/app/golf/actions/golf';
+} from '@/app/golf/actions/qualifier-actions';
 // Reuse the SAME cloud course catalog picker the create flow uses.
 import { FairwayCoursePicker } from '@/components/fairway/pages/rounds-new/FairwayCoursePicker';
 
