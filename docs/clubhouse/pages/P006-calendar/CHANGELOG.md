@@ -1,5 +1,9 @@
 # P006 — Calendar: changelog
 
+## 2026-10-08 — premium pass: swipe through days and weeks on the phone (P006-B2, D5)
+
+The phone Day view's agenda pages left and right with the phone's own momentum (scroll-snap, one day a page; `DayPager` in `CalendarPhone.tsx`), with one selection tick when a page settles (`scrollend`, or the scroll going quiet where WebKit lacks it). Past Saturday the strip turns to the next week. The neighbouring days are rendered for the swipe, clipped to the day's height, inert and hidden from assistive tech; a day outside the loaded window shows only its heading until its week arrives. A swipe doesn't also slide the agenda (CH-6606 still slides for a tap). ‹ › Previous week and Next week sit at the day heading's end, the same reach for VoiceOver and the keyboard (D5). They sit there rather than at the strip's ends so the seven day keys keep their width.
+
 ## 2026-10-08 — premium pass: coach-only meetings (D2-8, D7)
 
 A meeting with no invitees is the coach's own (a parent call, a staff meeting): the Calendar loader leaves it out of a player's payload, and the player's Home leaves it out of Up next and Today. Only once the invite list has loaded; when replies fail to load, nothing is hidden. No schema change.

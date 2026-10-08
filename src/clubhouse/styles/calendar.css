@@ -1882,6 +1882,48 @@
     margin-top: 14px;
   }
 
+  /* P006-B2: the day pages sideways with native momentum, one day a page. The neighbours take the day's height (the
+     pager measures it) so a long neighbour never leaves space under a short day. */
+  .ch-calm-pager {
+    display: flex;
+    align-items: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  .ch-calm-pager::-webkit-scrollbar {
+    display: none;
+  }
+  .ch-calm-page {
+    flex: 0 0 100%;
+    min-width: 0;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+  .ch-calm-page.is-side {
+    max-height: var(--ch-calm-page-h, none);
+    overflow: hidden;
+  }
+  .ch-calm-dayk.is-waiting h3 {
+    color: var(--ch-text-tertiary);
+  }
+  /* The week steps sit at the heading's end; the count wraps under the date. */
+  .ch-calm-weekstep {
+    display: inline-flex;
+    gap: 2px;
+    margin-left: auto;
+    align-self: center;
+  }
+  .ch-calm-dayk:has(.ch-calm-weekstep) {
+    flex-wrap: wrap;
+  }
+  .ch-calm-dayk:has(.ch-calm-weekstep) > .ch-num {
+    order: 3;
+    flex-basis: 100%;
+  }
+
   /* The day's events: rows on soft seams along Home's Today rail (time, a dot in the event's colour, the title and
      place). A press tints the row over the press beat and never scales it (CH-1606). A class or busy block stays an
      unlifted hatch, so time a player isn't free never reads as an event (Q-142); a row that has passed steps back by

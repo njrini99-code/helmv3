@@ -85,7 +85,8 @@ import './dialog-polyfill';
 /** A numbered element that is actually on screen: a closed <dialog> doesn't count. */
 const code = (c: string) => [...document.querySelectorAll(`[data-ch-code="${c}"]`)].find((el) => el.tagName !== 'DIALOG' || el.hasAttribute('open')) ?? null;
 /** The live copy of a swapped part (a view or a day): the leaving one is aria-hidden while it fades (CH-6604, CH-6606). */
-const live = (sel: string) => [...document.querySelectorAll(sel)].find((el) => !el.closest('.ch-swap__body[aria-hidden]')) ?? null;
+// What is on screen: not a view on its way out, nor the phone's neighbouring days (the day pager's hidden pages, P006-B2).
+const live = (sel: string) => [...document.querySelectorAll(sel)].find((el) => !el.closest('.ch-swap__body[aria-hidden], .ch-calm-page[aria-hidden]')) ?? null;
 async function expectCode(c: string, text?: RegExp) {
   await waitFor(() => expect(code(c)).not.toBeNull());
   if (text) expect(code(c)!.textContent).toMatch(text);
@@ -709,7 +710,7 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
       const { unmount } = wrap(cal());
       const lines = screen.getAllByRole('separator', { name: /^Now,/ });
       expect(lines).toHaveLength(1);
-      expect(document.querySelector('.ch-calm-agenda')!.lastElementChild!.contains(lines[0]!)).toBe(true);
+      expect(live('.ch-calm-agenda')!.lastElementChild!.contains(lines[0]!)).toBe(true);
       unmount();
       // 2:40 PM: the line sits before the first event still to start.
       vi.setSystemTime(new Date('2026-10-14T18:40:00Z'));
@@ -749,6 +750,25 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     expect(live('.ch-calm-dayk')!.textContent).toMatch(/Thu 15 October/);
     // The day that left is hidden from assistive tech while it fades.
     for (const h of screen.queryAllByRole('heading', { level: 3 })) expect(h.textContent).not.toMatch(/Wed 14 October/);
+  });
+
+  it('P006-B2 a swipe that settles on the next day turns to it with one tick; the week steps reach the weeks around', async () => {
+    const user = userEvent.setup();
+    wrap(cal());
+    const pager = document.querySelector('.ch-calm-pager') as HTMLElement;
+    Object.defineProperty(pager, 'clientWidth', { configurable: true, value: 350 });
+    hapticSpy.mockClear();
+    act(() => {
+      pager.scrollLeft = 700;
+      pager.dispatchEvent(new Event('scroll'));
+      pager.dispatchEvent(new Event('scrollend'));
+    });
+    await waitFor(() => expect(live('.ch-calm-dayk')!.textContent).toMatch(/Thu 15 October/));
+    expect(hapticSpy.mock.calls).toEqual([['select']]);
+    // The neighbouring days are there for the swipe, but hidden from assistive tech.
+    expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Thu 15 October']);
+    await user.click(screen.getByRole('button', { name: 'Next week' }));
+    await waitFor(() => expect(live('.ch-calm-dayk')!.textContent).toMatch(/Thu 22 October/));
   });
 
   it('CH-6308 a day with nothing on it says so', async () => {
