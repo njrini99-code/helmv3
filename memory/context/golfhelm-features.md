@@ -692,9 +692,9 @@ Filtering:
 ### Key Files
 | Type | Path |
 |------|------|
-| Route | `src/app/golf/(dashboard)/dashboard/alerts/page.tsx` |
+| Redirect | `next.config.mjs` `redirects()`: `/golf/dashboard/alerts` to `/golf/dashboard/intelligence?view=signals&filter=alerts` (the page was deleted in plan phase 7b) |
 | Actions | `src/app/golf/actions/alerts.ts` |
-| Components | `src/app/golf/(dashboard)/dashboard/alerts` |
+| Components | none (the route is a redirect now) |
 
 ### DB Tables
 | Table | Role |
@@ -730,9 +730,9 @@ Coach actions:
 ### Key Files
 | Type | Path |
 |------|------|
-| Route | `src/app/golf/(dashboard)/dashboard/patterns/page.tsx` |
+| Redirect | `next.config.mjs` `redirects()`: `/golf/dashboard/patterns` to `/golf/dashboard/intelligence?view=signals&filter=patterns` (the page was deleted in plan phase 7b) |
 | Actions | `src/app/golf/actions/pattern-management.ts` |
-| Components | `src/app/golf/(dashboard)/dashboard/patterns` |
+| Components | none (the route is a redirect now) |
 
 ### DB Tables
 | Table | Role |
@@ -768,7 +768,7 @@ Filters:
 ### Key Files
 | Type | Path |
 |------|------|
-| Route | `src/app/golf/(dashboard)/dashboard/insights/page.tsx` |
+| Redirect | `next.config.mjs` `redirects()`: `/golf/dashboard/insights` to `/golf/dashboard/intelligence?view=signals&filter=insights` (the page was deleted in plan phase 7b) |
 | Actions | `src/app/golf/actions/insight-management.ts`, `insight-evidence.ts` |
 | Components | `src/components/golf/coachhelm/insights/` (InsightCard, InsightListView, InsightFiltersPanel, InsightSearchBar, InsightBulkActions, InsightExportModal) |
 

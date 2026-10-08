@@ -925,9 +925,6 @@ features:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
       routes:
-        - src/app/golf/(dashboard)/dashboard/alerts/**
-        - src/app/golf/(dashboard)/dashboard/patterns/**
-        - src/app/golf/(dashboard)/dashboard/insights/**
         - src/app/golf/(dashboard)/dashboard/intelligence/**
         - src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**
         - src/app/golf/(dashboard)/dashboard/settings/coaching-intelligence/**
@@ -1011,9 +1008,7 @@ features:
     code:
       routes:
         - src/app/golf/(dashboard)/dashboard/coachhelm/**
-        - src/app/golf/(dashboard)/dashboard/my-insights/**
         - src/app/golf/(dashboard)/dashboard/my-development/**
-        - src/app/golf/(dashboard)/dashboard/development/**
         - src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**
       components:
         - src/components/golf/coachhelm/player/**
@@ -1189,7 +1184,6 @@ features:
         - src/app/golf/(dashboard)/dashboard/tasks/**
         - src/app/golf/(dashboard)/dashboard/documents/**
         - src/app/golf/(dashboard)/dashboard/travel/**
-        - src/app/golf/(dashboard)/dashboard/hub/**
         - src/app/golf/(dashboard)/dashboard/team-hub/**
       components:
         - src/components/fairway/pages/tasks/**
@@ -1486,8 +1480,7 @@ features:
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
-      routes:
-        - src/app/golf/(dashboard)/dashboard/hub/**
+      routes: []  # /golf/dashboard/hub is a next.config.mjs redirect now (page deleted in plan phase 7b)
       components: []
       api:
         - src/components/fairway/pages/hub/**
