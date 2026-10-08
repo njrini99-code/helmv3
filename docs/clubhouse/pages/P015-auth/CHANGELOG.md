@@ -1,5 +1,85 @@
 # P015 — Auth: changelog
 
+## 2026-10-07 — Sign up finished: handovers, the member card, progress and the issue
+
+```text
+Design package: design/handoff/auth (approved with Q-96); no new board
+PR/commit:      agent/clubhouse-frame-hero (uncommitted at writing)
+Contract IDs:   CH-15620 to CH-15624 (new, motion and feedback)
+Actions:        none (the same validateAccessCode, signupAction, completePlayerOnboarding, submitDemoRequest)
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- A question hands over to the next instead of cutting (CH-15620):
+  - The leaving one fades the way the flow goes (up on Continue, down on Back)
+    over the quick beat. It is held where it stood, out of the accessibility
+    tree and the tab order.
+  - The next rises 16px on the design's step curve, 60ms later. It no longer
+    blurs in (the welcome's October 2 rule for text).
+  - A long form scrolled down hands over at the top.
+- Fixed: a double tap on a class year skipped the account question. A double tap
+  on a request choice showed "We've got it" with nothing sent. A choice's timer
+  firing after Back moved the flow on again. A move is now asked by the question
+  on screen and is ignored once that question is gone. Back waits (held, in
+  place) while the account, the profile or a request is being written, so what
+  it makes lands where it belongs (CH-15620).
+- The member card fills in without flickering (CH-15621):
+  - A value's first appearance is still the design's brass flash. Later changes
+    (each letter, each handicap step) turn it brass again where it stands, and it
+    dries to ink once the answer rests. Each keystroke and slider step used to
+    restart it from invisible.
+  - The coin is green ink on the card's stock (the app's coin tones changed
+    colour with each letter typed). It settles in as it goes from the silhouette
+    to the monogram to the photo.
+  - The values are drawn at the design's 15px again: a label selector had
+    caught them at 11.5px. A long one ends in an ellipsis instead of a cut.
+- The felt tray fits the card and its caption instead of running the pane's
+  full height, with the light where the card rests. The card sits on the
+  Frame's gilt edge. At narrower windows the card and its seal stay inside the
+  tray.
+- Progress moves (CH-15622): the rail's felt thumb slides to the current
+  section and takes its width, and the labels turn ivory exactly under it. The
+  phone's "2 of 5" sits over a hairline that fills.
+- The issue is one reveal, on done and staff done only (CH-15623). It used to
+  play on the intro, a sent request and a failed join as well.
+  - Desktop: the card already on the tray lifts and is laid back, then the seal
+    presses in.
+  - Phone: the card arrives on the design's issue.
+  - A request says "Received today", not "Issued today".
+- Answers respond (CH-15624):
+  - Green choices lift onto the primary hover and set down when pressed; year
+    tiles sink when pressed; fields darken on hover.
+  - A refused field keeps a red halo, takes the cursor and fades its error in.
+  - A password rule met ticks in.
+  - Done's next steps are whole-row targets with hover and press.
+- Question headings take the owner's relaxed tracking (-0.026em) at 44px, so
+  the longest still fits one line. The subtitle sits 2px further down.
+- A Button drawn as a link keeps its ink: onboard.css's own link colour no
+  longer reaches `.ch-btn`. The same fix in auth.css is the sign-in worker's.
+
+### Why
+
+The owner's finish pass: "Get sign in, onboarding, and all animations done."
+Questions cut from one to the next, the card blinked on every keystroke, the
+tray read as unfinished, and two double-tap paths skipped a step.
+
+### Verification
+
+- onboard.test (32) and onboard-logic.test (17) pass. 13 new tests name
+  CH-15620 to CH-15624: the double taps, Back before a choice lands, Back held
+  while the account is made, reduced motion and the card's ink.
+- WebKit, every step plus the field and error states, before and after, at
+  1440x900 and 390x844 (touch); the tray also at 1280, 1100 and 1024.
+- rAF samples and 30fps video of the turn, the thumb, the card's ink and the
+  issue (desktop and phone). Under reduced motion each lands in one frame.
+- Each step change has one long frame (about 80 to 110ms) in headless WebKit,
+  with or without this change. Hiding the course removes it (30ms), so it is the
+  course behind the frosted pane, not the handover.
+- Not run: physical iPhone and Safari, VoiceOver.
+
 ## 2026-10-07 — Reset password in the sign-in panel (up for owner review)
 
 ```text

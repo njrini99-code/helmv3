@@ -23,12 +23,14 @@
   color: var(--ch-text-primary);
   -webkit-font-smoothing: antialiased;
 }
-.ch-ox a {
+/* Text links only: a Button drawn as a link (Enter a team code, Go to sign in) keeps its own ink. The :where keeps
+   the old weight, as auth.css does. */
+.ch-ox a:where(:not(.ch-btn)) {
   color: var(--ch-green-700);
   text-decoration: none;
 }
 @media (hover: hover) {
-  .ch-ox a:hover {
+  .ch-ox a:where(:not(.ch-btn)):hover {
     text-decoration: underline;
   }
 }
@@ -85,6 +87,7 @@
   height: 28px;
 }
 .ch-ox-rail {
+  position: relative;
   display: flex;
   gap: 2px;
   padding: 4px;
@@ -104,24 +107,65 @@
   font: 500 12.5px/1 var(--ch-font-sans);
   color: #6b6860;
   white-space: nowrap;
+  transition: color var(--ch-ox-t-quick) var(--ch-ox-out);
 }
 .ch-ox-rail__s[data-state='done'] {
   color: #155a39;
 }
-.ch-ox-rail__s[data-state='cur'] {
-  background: var(--ch-ox-felt);
-  color: var(--ch-ox-ivory);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
+/* The thumb (CH-15622): a felt-green layer with the same labels in ivory, clipped to the current section. Moving
+   it changes only the clip, so it slides and takes the next section's width without laying anything out again. */
+.ch-ox-rail__thumb {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  pointer-events: none;
+  background: linear-gradient(180deg, #145338, var(--ch-ox-felt) 70%);
+  clip-path: inset(4px calc(100% - var(--ch-ox-thumb-l, 0px) - var(--ch-ox-thumb-w, 0px)) 4px var(--ch-ox-thumb-l, 0px) round 999px);
+  opacity: 0;
 }
+.ch-ox-rail__thumb[data-on] {
+  opacity: 1;
+}
+.ch-ox-rail[data-armed] .ch-ox-rail__thumb {
+  transition: clip-path var(--ch-ox-t-rail) var(--ch-ox-ease), opacity var(--ch-ox-t-quick) var(--ch-ox-out);
+}
+.ch-ox-rail__thumb .ch-ox-rail__s {
+  color: var(--ch-ox-ivory);
+}
+/* The phone's "2 of 5", over a hairline that fills as the questions advance (CH-15622). */
 .ch-ox-rail__m {
   display: none;
+  position: relative;
   justify-self: end;
-  padding: 8px 14px;
+  padding: 7px 14px 11px;
   border-radius: 999px;
   background: rgb(251 250 246 / 0.9);
   box-shadow: 0 0 0 1px rgb(120 96 52 / 0.25);
   font: 500 12.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: #3a3833;
+}
+.ch-ox-rail__m::before,
+.ch-ox-rail__m::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 5px;
+  height: 2px;
+  border-radius: 1px;
+}
+.ch-ox-rail__m::before {
+  background: rgb(11 58 37 / 0.14);
+}
+.ch-ox-rail__m::after {
+  background: var(--ch-ox-felt);
+  transform: scaleX(var(--ch-ox-p, 0));
+  transform-origin: left center;
+  transition: transform var(--ch-ox-t-rail) var(--ch-ox-ease);
 }
 .ch-ox--full .ch-ox-rail,
 .ch-ox--full .ch-ox-rail__m {
@@ -214,13 +258,16 @@
   border-radius: 11px;
   box-shadow: none;
 }
+/* The column holds still while questions come and go: it fills the pane's height and centres the question inside
+   it (auto margins, so a tall question scrolls from its top), and a leaving question is held where it was. */
 .ch-ox-col {
   position: relative;
   justify-self: center;
-  align-self: center;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   max-width: 580px;
-  max-height: 100%;
   min-width: 0;
   overflow: auto;
   scrollbar-width: none;
@@ -231,19 +278,24 @@
 .ch-ox-col::-webkit-scrollbar {
   display: none;
 }
+.ch-ox-turn {
+  flex: none;
+  margin-block: auto;
+}
 .ch-ox-side {
   position: relative;
-  align-self: stretch;
-  height: 100%;
+  align-self: center;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 18px;
-  padding: 28px 18px;
+  gap: 22px;
+  padding: 46px 18px 30px;
   border-radius: 16px;
-  background: radial-gradient(70% 55% at 50% 38%, rgb(255 255 255 / 0.07), transparent 70%), var(--ch-ox-grain), linear-gradient(170deg, #11462d, var(--ch-ox-felt) 60%, #093220);
+  /* The felt tray holds the card and its caption and nothing else: it fits them rather than running the pane's full
+     height, with a pool of light where the card rests. */
+  background: radial-gradient(62% 50% at 50% 41%, rgb(255 255 255 / 0.085), transparent 72%), var(--ch-ox-grain), linear-gradient(170deg, #11462d, var(--ch-ox-felt) 60%, #093220);
   box-shadow: inset 0 0 0 1px #072a1a, inset 0 0 0 8px #0c3c27, inset 0 0 0 9px rgb(220 205 166 / 0.3), inset 0 3px 22px rgb(0 0 0 / 0.35), 0 1px 0 rgb(255 255 255 / 0.8);
 }
 .ch-ox-side__cap {
@@ -260,10 +312,15 @@
 .ch-ox-side__cap span {
   font: 400 12.5px/1.3 var(--ch-font-sans);
   color: #a9c0b1;
+  animation: chOxFade var(--ch-ox-t-quick) var(--ch-ox-out) both;
 }
 
 /* ── A question ──────────────────────────────────────────────────────────── */
 
+/* A question arriving (CH-15620): it rises 16px into place on the design's step curve, from below when moving on
+   and from above on Back. On a turn it starts a beat after the leaving one (Onboard's TURN, gone in the quick beat's
+   first third), so the two questions hand over in sequence instead of printing over each other. Text stays sharp
+   (no blur, as on the welcome). */
 .ch-ox-q {
   display: flex;
   flex-direction: column;
@@ -271,6 +328,9 @@
 }
 .ch-ox-q[data-dir='back'] {
   animation-name: chOxInBack;
+}
+.ch-ox-turn[data-turn] .ch-ox-q {
+  animation-delay: var(--ch-ox-turn-delay);
 }
 .ch-ox-back {
   all: unset;
@@ -287,10 +347,15 @@
   color: #55524b;
 }
 @media (hover: hover) {
-  .ch-ox-back:hover {
+  .ch-ox-back:hover:not(:disabled) {
     background: rgb(28 25 18 / 0.05);
     color: var(--ch-text-primary);
   }
+}
+/* Held while the account, the profile or the request is being written: it stays in place, quieter. */
+.ch-ox-back:disabled {
+  cursor: default;
+  opacity: 0.45;
 }
 .ch-ox-back:focus-visible,
 .ch-ox-link:focus-visible {
@@ -305,10 +370,11 @@
   font: 500 13.5px/1 var(--ch-font-sans);
   color: #155a39;
 }
+/* The owner's relaxed display tracking (2026-10-06) at a size that keeps the longest question on one line. */
 .ch-ox-h1 {
   margin: 14px 0 0;
-  font: 600 clamp(34px, 3.3vw, 46px) / 1.04 var(--ch-font-sans);
-  letter-spacing: -0.04em;
+  font: 600 clamp(32px, 3.1vw, 44px) / 1.04 var(--ch-font-sans);
+  letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 96;
   color: var(--ch-ox-ink);
   text-wrap: balance;
@@ -319,7 +385,7 @@
   letter-spacing: -0.026em;
 }
 .ch-ox-sub {
-  margin: 14px 0 0;
+  margin: 16px 0 0;
   max-width: 46ch;
   font: 400 16px/1.55 var(--ch-font-sans);
   color: #45423b;
@@ -438,28 +504,21 @@
   border-radius: 16px;
   color: var(--ch-ox-ivory);
   background: radial-gradient(110% 120% at 88% -10%, rgb(255 255 255 / 0.1), transparent 55%), var(--ch-ox-grain), linear-gradient(162deg, #165c3b, var(--ch-ox-felt) 68%, #093220);
-  box-shadow: var(--ch-elevation-reading-accent);
-  transition: transform var(--ch-ox-t-hover) var(--ch-ox-ease), box-shadow var(--ch-ox-t-hover);
-}
-.ch-ox-card::before {
-  content: '';
-  position: absolute;
-  inset: 6px;
-  border-radius: 11px;
-  pointer-events: none;
-  box-shadow: none;
-  transition: box-shadow var(--ch-ox-t-hover);
+  /* The primary button's green raised material: a lit top edge and a firm drop on the ivory pane. A hover lifts it
+     2px onto the primary hover's depth; a press sets it down (cards answer with their own press, never a scale). */
+  box-shadow: var(--ch-green-raised-shadow);
+  transition: transform var(--ch-ox-t-hover) var(--ch-ox-ease), box-shadow var(--ch-ox-t-hover) var(--ch-ox-out);
 }
 @media (hover: hover) {
   .ch-ox-card:hover {
     transform: translateY(-2px);
-    box-shadow: var(--ch-elevation-reading-accent);
+    box-shadow: var(--ch-elevation-primary-hover);
   }
 }
-@media (hover: hover) {
-  .ch-ox-card:hover::before {
-    box-shadow: none;
-  }
+.ch-ox-card:active {
+  transform: translateY(1px);
+  box-shadow: var(--ch-green-raised-shadow);
+  transition-duration: var(--ch-dur-press);
 }
 .ch-ox-card:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -467,7 +526,7 @@
 }
 .ch-ox-card[aria-checked='true'] {
   background: var(--ch-green-raised-bg);
-  box-shadow: var(--ch-elevation-reading-accent);
+  box-shadow: var(--ch-green-raised-shadow);
 }
 .ch-ox-card b {
   margin-top: 4px;
@@ -759,7 +818,7 @@
   border-radius: 16px;
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
-  transition: background var(--ch-ox-t-quick), box-shadow var(--ch-ox-t-quick);
+  transition: background var(--ch-ox-t-quick), box-shadow var(--ch-ox-t-quick), transform var(--ch-ox-t-quick) var(--ch-ox-out);
 }
 @media (hover: hover) {
   .ch-ox-tile:hover {
@@ -767,13 +826,18 @@
     box-shadow: var(--ch-raised-shadow);
   }
 }
+.ch-ox-tile:active {
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow);
+  transform: translateY(1px);
+}
 .ch-ox-tile:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }
 .ch-ox-tile b {
   font: 600 30px/1 var(--ch-font-sans);
-  letter-spacing: -0.04em;
+  letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 92;
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
@@ -833,11 +897,20 @@
   box-shadow: inset 0 0 0 1px var(--ch-border-control);
   transition: box-shadow var(--ch-ox-t-quick);
 }
+@media (hover: hover) {
+  .ch-ox-input:hover {
+    box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+  }
+}
 .ch-ox-input:focus-within {
   box-shadow: inset 0 0 0 1.5px var(--ch-green-600), 0 0 0 4px var(--ch-focus-halo);
 }
 .ch-ox-input[data-invalid] {
   box-shadow: inset 0 0 0 1.5px var(--ch-danger-600);
+}
+/* A refused field keeps its red edge while it is being corrected, with a red halo in place of the green. */
+.ch-ox-input[data-invalid]:focus-within {
+  box-shadow: inset 0 0 0 1.5px var(--ch-danger-600), 0 0 0 4px color-mix(in oklab, var(--ch-danger-600) 14%, transparent);
 }
 .ch-ox-input input,
 .ch-ox-input textarea {
@@ -882,6 +955,7 @@
 .ch-ox-error {
   font: 500 12.5px/1.4 var(--ch-font-sans);
   color: var(--ch-danger-600);
+  animation: chOxFade var(--ch-ox-t-err) var(--ch-ox-out) both;
 }
 .ch-ox-meter {
   display: grid;
@@ -922,6 +996,10 @@
 .ch-ox-rules li[data-ok] {
   color: var(--ch-green-700);
 }
+/* A rule met ticks in (CH-15624). */
+.ch-ox-rules li[data-ok] svg {
+  animation: chOxTick var(--ch-ox-t-key) var(--ch-ox-ease) both;
+}
 
 /* ── Your game ───────────────────────────────────────────────────────────── */
 
@@ -950,7 +1028,7 @@
 .ch-ox-hcp__val {
   min-width: 3.4ch;
   font: 600 64px/1 var(--ch-font-sans);
-  letter-spacing: -0.05em;
+  letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 92;
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
@@ -1197,14 +1275,17 @@
   box-shadow: var(--ch-sheet-shadow);
 }
 .ch-ox-list li {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
-  gap: 12px;
-  align-items: center;
-  padding: 10px 12px;
+  position: relative;
 }
-.ch-ox-list li + li {
-  box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+/* Rows part on a hairline that starts at the text, so each row's whole width stays one target. */
+.ch-ox-list li + li::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 58px;
+  right: 12px;
+  height: 1px;
+  background: var(--ch-border-hairline);
 }
 .ch-ox-list__ic {
   display: grid;
@@ -1233,23 +1314,37 @@
   box-sizing: border-box;
   cursor: pointer;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
   align-items: center;
-  column-gap: 8px;
-  min-height: 44px;
+  column-gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 12px;
+  border-radius: 12px;
   color: var(--ch-text-tertiary);
+  transition: background var(--ch-ox-t-quick) var(--ch-ox-out);
 }
-.ch-ox-nextstep b,
-.ch-ox-nextstep em {
-  grid-column: 1;
+.ch-ox-nextstep__t {
+  min-width: 0;
 }
-.ch-ox-nextstep svg {
-  grid-column: 2;
-  grid-row: 1 / span 2;
+.ch-ox-nextstep > svg {
+  transition: transform var(--ch-ox-t-hover) var(--ch-ox-ease);
+}
+@media (hover: hover) {
+  .ch-ox-nextstep:hover {
+    background: var(--ch-ledger-row-hover);
+    color: var(--ch-text-secondary);
+  }
+  .ch-ox-nextstep:hover > svg {
+    transform: translateX(2px);
+  }
+}
+.ch-ox-nextstep:active {
+  background: var(--ch-ledger-row-press);
 }
 .ch-ox-nextstep:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  border-radius: 8px;
+  outline-offset: -2px;
 }
 .ch-ox-sum {
   margin-top: 26px;
@@ -1278,9 +1373,13 @@
 
 /* ── The member card ─────────────────────────────────────────────────────── */
 
+/* The card is drawn at its design size and scaled to the tray (--ch-ox-mc-s); the margins hand the scaled size back
+   to the layout, so the tray fits the card it shows. */
 .ch-ox-mcw {
+  --ch-ox-mc-s: 1;
   position: relative;
-  scale: 1;
+  scale: var(--ch-ox-mc-s);
+  margin: calc((var(--ch-ox-mc-s) - 1) * 123.6px) calc((var(--ch-ox-mc-s) - 1) * 196px);
 }
 .ch-ox-mc {
   position: relative;
@@ -1294,7 +1393,8 @@
   border-radius: 10px;
   color: var(--ch-ox-felt);
   background: var(--ch-ox-grain), radial-gradient(120% 90% at 30% 20%, #fbf7ec, #f2ebd8 70%, #eae1ca);
-  box-shadow: var(--ch-elevation-overlay);
+  /* A card lifted off the green: the Frame's gilt edge and contact shadow, over the overlay's soft fall. */
+  box-shadow: var(--ch-elevation-on-frame), var(--ch-elevation-overlay);
 }
 .ch-ox-mc::before {
   content: '';
@@ -1378,6 +1478,17 @@
   --ch-av-size: 55px;
   font-size: 19px;
 }
+/* The monogram is green ink on the card's own stock whatever the name (the app's coin tones would change colour with
+   each letter typed). */
+.ch-ox-mc__coin .ch-avatar[data-tone] {
+  --ch-av-bg: #ede4cc;
+  --ch-av-fg: var(--ch-ox-felt);
+  --ch-av-ring: transparent;
+}
+/* The coin settles in when it changes: the silhouette to the monogram, the monogram to the photo (CH-15621). */
+.ch-ox-mc__coin[data-settle] > * {
+  animation: chOxCoin var(--ch-ox-t-coin) var(--ch-ox-ease) both;
+}
 .ch-ox-mc__blank {
   display: grid;
   place-items: center;
@@ -1414,7 +1525,9 @@
   gap: 5px;
   min-width: 0;
 }
-.ch-ox-mc__f span {
+/* The labels only: the values are spans too (the brass flash), and drawn at the label's size they lost the design's
+   15px. */
+.ch-ox-mc__f > div > span {
   font: 500 11.5px/1 var(--ch-font-sans);
   color: #7a6a47;
 }
@@ -1450,6 +1563,22 @@
   display: inline-block;
   animation: chOxFlash var(--ch-ox-t-flash) var(--ch-ox-out) both;
 }
+/* A value changed after it was first filled (CH-15621): brass again where it stands, drying to ink once the answer
+   rests. Two names for one animation, so each change restarts it. */
+.ch-ox-flash[data-wet='1'] {
+  animation: chOxWetA var(--ch-ox-t-wet) var(--ch-ox-out) both;
+}
+.ch-ox-flash[data-wet='0'] {
+  animation: chOxWetB var(--ch-ox-t-wet) var(--ch-ox-out) both;
+}
+/* A long value ends in an ellipsis rather than a hard cut. */
+.ch-ox-mc__name > .ch-ox-flash,
+.ch-ox-mc__f b > .ch-ox-flash {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .ch-ox-mc__stamp {
   position: absolute;
   z-index: 2;
@@ -1478,24 +1607,29 @@
 .ch-ox-mcw[data-issued] .ch-ox-mc__tag {
   margin-right: 56px;
 }
-.ch-ox--full .ch-ox-mcw {
-  animation: chOxIssue var(--ch-ox-t-issue) var(--ch-ox-ease) var(--ch-ox-issue-delay) both;
+/* The card issued (CH-15623), on done and staff done only. On the desktop the card the answers built is already on
+   the tray: it lifts and is laid back down, then the seal presses in. On the phone it arrives here, on the design's
+   issue (40px up and 4 degrees, onboard below). Motion is on translate and rotate: scale is the card's size. */
+.ch-ox-mcw[data-issued] {
+  animation: chOxLift var(--ch-ox-t-lift) var(--ch-ox-ease) var(--ch-ox-issue-delay) both;
 }
 
 @media (max-width: 1400px) {
   .ch-ox-mcw {
-    scale: 0.9;
+    --ch-ox-mc-s: 0.9;
   }
 }
+/* Narrower trays keep the card, and the seal that overhangs it, inside the felt. */
 @media (max-width: 1200px) {
   .ch-ox-stage {
     grid-template-columns: minmax(0, 1fr) 330px;
   }
   .ch-ox-mcw {
-    scale: 0.76;
+    --ch-ox-mc-s: 0.72;
   }
   .ch-ox-side {
-    gap: 0;
+    gap: 16px;
+    padding-top: 40px;
   }
 }
 @media (max-width: 1000px) {
@@ -1503,7 +1637,7 @@
     grid-template-columns: minmax(0, 1fr) 290px;
   }
   .ch-ox-mcw {
-    scale: 0.7;
+    --ch-ox-mc-s: 0.64;
   }
   .ch-ox-signin > span {
     display: none;
@@ -1649,8 +1783,20 @@
     max-width: 100%;
     aspect-ratio: auto;
   }
+  .ch-ox-mc__f b {
+    font-size: 13px;
+  }
   .ch-ox-mcw {
-    scale: 0.92;
+    --ch-ox-mc-s: 0.92;
+    margin: 0;
+  }
+  .ch-ox-mcw[data-issued] {
+    animation: chOxIssue var(--ch-ox-t-issue) var(--ch-ox-ease) var(--ch-ox-issue-delay) both;
+  }
+  /* A card that is not being issued (the intro, a request sent, a join that failed) rises in with its sheet when
+     the flow arrives there; on the first paint the sheet's own entrance carries it. */
+  .ch-ox[data-moved].ch-ox--full .ch-ox-side:not([data-issued]) {
+    animation: chOxCard var(--ch-ox-t-card) var(--ch-ox-ease) both;
   }
   .ch-ox-h1 {
     font-size: 30px;
@@ -1757,24 +1903,20 @@
   from {
     opacity: 0;
     transform: translateY(16px);
-    filter: blur(6px);
   }
   to {
     opacity: 1;
     transform: none;
-    filter: none;
   }
 }
 @keyframes chOxInBack {
   from {
     opacity: 0;
     transform: translateY(-16px);
-    filter: blur(6px);
   }
   to {
     opacity: 1;
     transform: none;
-    filter: none;
   }
 }
 @keyframes chOxFade {
@@ -1876,6 +2018,44 @@
     rotate: 0deg;
   }
 }
+@keyframes chOxLift {
+  0% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  42% {
+    translate: 0 -14px;
+    rotate: -1.4deg;
+  }
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+}
+@keyframes chOxWetA {
+  0%,
+  30% {
+    color: #9a7a3e;
+  }
+}
+@keyframes chOxWetB {
+  0%,
+  30% {
+    color: #9a7a3e;
+  }
+}
+@keyframes chOxCoin {
+  from {
+    opacity: 0;
+    transform: scale(0.86);
+  }
+}
+@keyframes chOxTick {
+  from {
+    opacity: 0.3;
+    transform: scale(0.6);
+  }
+}
 
 /* Reduced motion, or Animations off: the loops stop and the caret holds still. */
 [data-ui='clubhouse'][data-motion='off'] .ch-ox-spin,
@@ -1897,7 +2077,7 @@
   .ch-ox-crest[data-size='s'],
   .ch-ox-scale,
   .ch-ox-mc__tag,
-  .ch-ox-mc__f span,
+  .ch-ox-mc__f > div > span,
   .ch-ox-mc__stamp {
     font-size: 12px;
   }
