@@ -7,6 +7,13 @@
 // you can instead recapture on the iOS Simulator — but these are submittable.
 import { chromium, devices } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/gen-appstore-screenshots.mjs',
+  summary:
+    "Generates the App Store screenshots from the running app with headless Chrome. Writes image files locally only.",
+});
 
 const BASE = process.env.SHOT_BASE_URL || 'https://www.helmsportslabs.com';
 const EMAIL = process.env.SHOT_EMAIL || 'demo@golfhelmdemo.com';

@@ -28,6 +28,13 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { helpOnly } from '../lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/db/local-db-checks.mjs',
+  summary:
+    "Runs the local database checks against the LOCAL Supabase stack only (never production).",
+});
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const BASELINE_PATH = resolve(ROOT, 'supabase/local-db-checks-baseline.json');

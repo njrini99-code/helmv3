@@ -28,6 +28,14 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve as resolvePath, dirname } from 'node:path';
 import { buildRlsCoverageReport } from '../../src/lib/observability/supabase/rls-coverage.ts';
+import { helpOnly } from '../lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/db/rls-coverage.mjs',
+  summary:
+    "Census of RLS and grant coverage across the schema. Read-only.",
+  secrets: 'SUPABASE_ACCESS_TOKEN, SUPABASE_DB_PASSWORD, DATABASE_URL',
+});
 
 const POOLER_HOST = 'aws-0-us-east-1.pooler.supabase.com';
 const __dirname = dirname(fileURLToPath(import.meta.url));

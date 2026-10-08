@@ -5,6 +5,14 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { config } from 'dotenv';
+import { cliGuard } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/setup-admin.ts',
+  summary:
+    'Creates (or resets the password of) the admin auth user named by HELM_ADMIN_SETUP_EMAIL / HELM_ADMIN_SETUP_PASSWORD and upserts its public.users row on the project in .env.local. Run with `npx tsx scripts/setup-admin.ts`.',
+  secrets: 'NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, HELM_ADMIN_SETUP_EMAIL, HELM_ADMIN_SETUP_PASSWORD (.env.local)',
+});
 
 config({ path: '.env.local' });
 
@@ -30,6 +38,10 @@ async function setupAdmin() {
     },
   });
 
+  if (!cli.apply) {
+    console.log(`[dry-run] would create or update the admin user ${ADMIN_EMAIL} at ${url}. Re-run with --apply to do it.`);
+    return;
+  }
   console.log('Creating admin user...');
 
   // Check if user already exists

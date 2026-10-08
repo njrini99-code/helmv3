@@ -20,6 +20,15 @@ import { createClient } from '@supabase/supabase-js';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { resolve as pathResolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/inline-email-images-to-public.ts',
+  summary:
+    "Extracts inline base64 images from a CRM email template, saves them to `public/email/`, rewrites the template body to reference absolute URLs on https://helmsportslabs.com, and writes the new body back to the DB.",
+  guard: "its own --dry-run flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 const TEMPLATE_NAME = 'Editorial Launch v2 (HTML)';
 const PUBLIC_BASE_URL = 'https://helmsportslabs.com';

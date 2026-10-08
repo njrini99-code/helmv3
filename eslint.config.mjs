@@ -96,15 +96,26 @@ export default tseslint.config(
   },
   {
     // The GolfHelm Engineering OS's hooks (P2) are plain Node scripts, same
-    // shape as scripts/** above — `npm run lint` doesn't reach .claude/ (it
-    // targets src/**/*.{ts,tsx} only), but ad-hoc/future linting of these
-    // files should not report 50 fake `process`/`console` no-undef errors,
+    // shape as scripts/** above. `npm run lint` and CI's "ESLint (e2e, hooks,
+    // edge functions)" step reach them since 2026-10-07; without these
+    // globals they would report 50 fake `process`/`console` no-undef errors,
     // for the same reason the scripts/wf_*.js block above exists: that is
     // exactly how a directory ends up excluded from linting altogether.
     files: [".claude/hooks/**/*.{js,mjs,cjs}"],
     languageOptions: {
       globals: {
         ...globals.node,
+      },
+    },
+  },
+  {
+    // Supabase Edge Functions run on Deno, which injects `Deno`. `no-undef` is
+    // off for TypeScript so this is inert today; it keeps a .js/.mjs function,
+    // or a rule change, from reporting `Deno` as undefined.
+    files: ["supabase/functions/**/*.{ts,js,mjs}"],
+    languageOptions: {
+      globals: {
+        Deno: "readonly",
       },
     },
   },

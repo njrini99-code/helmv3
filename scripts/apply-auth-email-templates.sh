@@ -14,7 +14,11 @@
 #   PROVE it afterward with a full before/after diff (see the verify step).
 #
 # USAGE
-#   SUPABASE_ACCESS_TOKEN=sbp_xxx bash scripts/apply-auth-email-templates.sh
+#   SUPABASE_ACCESS_TOKEN=sbp_xxx bash scripts/apply-auth-email-templates.sh          # dry run
+#   SUPABASE_ACCESS_TOKEN=sbp_xxx bash scripts/apply-auth-email-templates.sh --apply  # PATCH
+#
+#   Default is a DRY RUN: it takes the backup snapshot (a read), builds the
+#   patch body and prints the field names, and sends no PATCH. --apply sends it.
 #
 #   Create a token at https://supabase.com/dashboard/account/tokens
 #   (Personal access token). Read from the env only; never stored, echoed,
@@ -26,6 +30,18 @@
 #
 set -euo pipefail
 umask 077   # backup/after/payload can contain secret-bearing auth config
+
+APPLY=0
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help)
+      sed -n '2,/^set -euo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    --apply) APPLY=1 ;;
+    *) echo "unknown argument: $arg (see --help)" >&2; exit 2 ;;
+  esac
+done
 
 REF="${SUPABASE_PROJECT_REF:-qmnssrrolpinvwjjnufo}"
 : "${SUPABASE_ACCESS_TOKEN:?Set SUPABASE_ACCESS_TOKEN to a Supabase PAT (https://supabase.com/dashboard/account/tokens). Never committed or printed.}"
@@ -65,6 +81,11 @@ for name, (subj_key, body_key) in FIELDS.items():
 json.dump(body, open(out, "w"))
 print("  fields:", ", ".join(sorted(body)))
 PY
+
+if [ "$APPLY" -ne 1 ]; then
+  echo "[dry-run] would PATCH $API with the fields above. Nothing was changed. Re-run with --apply to do it."
+  exit 0
+fi
 
 echo "→ PATCHing auth config (email templates only) …"
 curl -fsS -X PATCH \

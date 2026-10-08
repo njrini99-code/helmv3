@@ -7,6 +7,14 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync, writeFileSync } from 'node:fs';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/export-coach-prospects.mjs',
+  summary:
+    "Exports the cold-outreach prospect list (every coach not at a current customer school) from the CRM. Read-only.",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 const env = {};
 for (const file of ['../.env.local', '../.env']) {

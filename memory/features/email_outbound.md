@@ -77,7 +77,9 @@ they are on `main`, ungated, and are out of scope for this feature:
 - `src/app/golf/actions/crm-gmail-send.ts` — the Gmail-API cold-outreach
   transport.
 - `scripts/process-sequence-batch.mjs` and `scripts/send-coach-batch.mjs` —
-  operator CLI senders for CRM sequences/batches.
+  operator CLI senders for CRM sequences/batches. Both are a dry run unless
+  given `--apply` (`send-coach-batch.mjs [size]` takes a count, not a batch
+  number).
 - Anything else under `src/lib/crm/**` or with `crm`/`sequence`/`outreach`
   in its path.
 

@@ -21,6 +21,15 @@
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 import { resolveMx, resolve4 } from 'node:dns/promises';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/verify-coach-emails.mjs',
+  summary:
+    "Free, pre-send email hygiene check for crm_coaches \u2014 catches the bounces you can predict BEFORE you send (and before they hurt sender reputation), without a paid verification service.",
+  guard: "its own --apply flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 const env = {};
 for (const file of ['../.env.local', '../.env']) {

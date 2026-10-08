@@ -20,6 +20,15 @@
  */
 import { Resend } from 'resend';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/resend-import-crm-prospects.ts',
+  summary:
+    "Import GolfHelm CRM coaches into a dedicated Resend audience \u2014 but ONLY the ones who are not already registered users.",
+  guard: "its own --dry-run flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL, RESEND_API_KEY',
+});
 
 const AUDIENCE_NAME = 'GolfHelm Coach Demo — CRM prospects';
 
@@ -140,7 +149,7 @@ async function main() {
   console.log(`\nAUDIENCE_ID=${audienceId}`);
   console.log('Next: point the broadcast at it →');
   console.log(`  BROADCAST_ID=648592a9-94d9-4138-a8c2-294446ad08e2 RESEND_SEGMENT_ID=${audienceId} \\`);
-  console.log('    DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/resend-coach-broadcast.ts');
+  console.log('    DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/resend-coach-broadcast.ts --apply');
 }
 
 main().catch((err) => { console.error(err); process.exit(1); });

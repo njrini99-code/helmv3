@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { globSync, readFileSync } from 'node:fs';
 
 /**
  * Vitest config — root settings + project split.
@@ -21,6 +22,58 @@ import path from 'path';
  *   npm run test:rls         → just RLS
  *   npm run test:business    → just business contracts
  */
+/**
+ * REPO-WIDE STATIC GUARDS: they walk thousands of files, so they run in their
+ * own `guards` project (see below) with a long timeout and are subtracted from
+ * `unit`. Listed by hand on purpose: membership is a decision, not a pattern.
+ * Do not add ordinary unit tests here.
+ */
+const GUARD_TESTS = [
+  'scripts/__tests__/scripts-no-committed-secrets.test.mjs',
+  'scripts/__tests__/seed-recruiting-invariant.test.mjs',
+  'scripts/__tests__/baseball-demo-seed-contract.test.mjs',
+  'scripts/__tests__/icon-only-button-aria-label.test.mjs',
+  'scripts/__tests__/baseball-action-integrity.test.mjs',
+  'scripts/__tests__/baseball-stale-route-links.test.mjs',
+  'scripts/__tests__/no-glasscard-imports.test.mjs',
+  'scripts/__tests__/no-ios-ease-stats.test.mjs',
+  'scripts/__tests__/no-legacy-skeleton-imports.test.mjs',
+  'scripts/__tests__/no-tranwarm-typo.test.mjs',
+  'scripts/__tests__/radix-dropdown-sonner.test.mjs',
+  'scripts/__tests__/admin-tables-mobile.test.mjs',
+  'scripts/__tests__/no-arbitrary-text-px-fairway-pages.test.mjs',
+  'scripts/__tests__/check-migration-headers.test.mjs',
+  // Promoted 2026-10-07: a bare script that no runner executed. Walks src/ with
+  // `git grep`, so it belongs with the other repo sweeps.
+  'scripts/__tests__/no-stale-cream-hardcodes.test.mjs',
+];
+
+/**
+ * Every vitest-style test under scripts/, found by glob so a new test file runs
+ * the day it is added. Until 2026-10-07 this was a hand-maintained list, and a
+ * file missing from it executed never, silently.
+ *
+ * `node --test` files are the one thing a glob cannot tell apart by name, and
+ * they import `node:test`, which vitest cannot run. Detect them by content:
+ * `flags:check`, `clubhouse:check`, `test:janitor`, `test:mutation-gate` and
+ * `knowledge:*:test` run those. A test file whose source mentions neither
+ * runner is treated as vitest, so a new one is picked up here.
+ */
+function isNodeTestFile(file: string): boolean {
+  try {
+    return /from\s+['"]node:test['"]|require\(\s*['"]node:test['"]\s*\)/.test(readFileSync(file, 'utf8'));
+  } catch {
+    return false;
+  }
+}
+const SCRIPT_UNIT_TESTS: string[] = globSync('scripts/**/*.{test,spec}.{mjs,ts}', {
+  cwd: __dirname,
+  exclude: (name: string) => name === 'node_modules',
+})
+  .map((f) => f.split(path.sep).join('/'))
+  .filter((f) => !GUARD_TESTS.includes(f) && !isNodeTestFile(path.join(__dirname, f)))
+  .sort();
+
 const sharedTestConfig = {
   environment: 'jsdom' as const,
   globals: true,
@@ -101,347 +154,7 @@ export default defineConfig({
           // fails loudly ("document is not defined") — never silently.
           environment: 'node' as const,
           name: 'unit',
-          include: [
-            'src/**/*.test.ts',
-            'src/**/*.spec.ts',
-            // Named explicitly (not a `scripts/**/*.test.mjs` glob) so that
-            // `node --test` files are never swept in.
-            //
-            // Nothing references `node --test` — not a single npm script, not
-            // a single workflow — so a file under scripts/__tests__/ that is
-            // NOT listed below executes never, silently, and its guard is
-            // decorative. That is the fact worth knowing here.
-            //
-            // THE COUNT THAT USED TO LIVE HERE IS GONE, on purpose. It was
-            // hand-maintained, it carried an instruction to update it by hand,
-            // and it rotted anyway — twice. It first read "46 files … not
-            // wired into any CI job", was corrected 2026-08-20 to "of 51
-            // files, 32 run under vitest and 19 run nowhere", and by
-            // 2026-08-29 one of those files had been dropped without the
-            // number moving. Measured that day: 50 files, 31 promoted.
-            //
-            // A number you must remember to change is a number that will be
-            // wrong, and a wrong number here reads as current forever. Count
-            // it when you need it:
-            //
-            //   /bin/ls scripts/__tests__/ | grep -cE '\.(test|spec)\.(mjs|ts)$'
-            //   grep -cE "^\s*'scripts/__tests__/" vitest.config.ts
-            // Only the #516 secrets guard is promoted to vitest
-            // here, since it previously never ran under any mechanism at all.
-            // Named explicitly for the same reason. Guards extractEnums() in
-            // regen-docs.mjs, which rendered "**6 enums**" into memory/glossary.md
-            // for ~6 months while the schema had 18 — under a
-            // "DO NOT EDIT — regenerated" stamp, in the exact file CLAUDE.md
-            // routes sessions to for enum lookups. docs:check could not catch it
-            // (it re-runs the generator and diffs against itself), and the
-            // function was untestable until main() got an entrypoint guard.
-            'scripts/__tests__/regen-docs-enums.test.mjs',
-            // Promoted 2026-08-20 after a doctor pass found 22 files under
-            // scripts/__tests__/ that no runner executed. Of those, exactly
-            // these three PASSED when run manually, so wiring them is free
-            // coverage with no CI risk — and all three guard seed/demo data
-            // integrity, the worst class to leave unguarded. The other 19 fail
-            // against current main (e.g. 8 single-<h1> violations, 4+
-            // unconsolidated badges): they encode real drift that accumulated
-            // while they sat unrun, and wiring them would turn main red, so
-            // they stay out until someone fixes the underlying violations.
-            'scripts/__tests__/seed-baseball-stats.safety.test.mjs',
-            'scripts/__tests__/baseball-demo-seed-surfaces.test.mjs',
-            // Config-hardening hooks (2026-09-07): fixture-stdin subprocess
-            // tests for the PreToolUse/UserPromptSubmit/PreCompact/
-            // SessionStart/Stop hooks wired in .claude/settings.json. Same
-            // "named explicitly, not swept in" rule applies — an unlisted
-            // file under scripts/__tests__/ runs under nothing.
-            'scripts/__tests__/hooks/route-prompt.test.mjs',
-            'scripts/__tests__/hooks/session-state-compaction.test.mjs',
-            // db:apply preflight (2026-09-08). Same "named explicitly" rule.
-            // Both checks it covers were found broken while dry-running the
-            // September helm_debug/helm_jobs/pgaudit migrations (8 of the 9
-            // held that week are now applied in production; only
-            // 20260903150000_helm_debug_agent_runs is still HOLD): the
-            // reachability check threw ENOBUFS on every call (so it could
-            // never pass), and the HELD.md check missed every qualified
-            // `**HOLD — ...**` status and every grouped row — letting
-            // merged-but-held migrations through the hold gate.
-            'scripts/__tests__/db-apply-preflight.test.mjs',
-            // Named explicitly for the same reason as the line above (no
-            // `scripts/**` glob — the legacy `node --test` files must not be
-            // swept in). This one guards the transient-retry wrapper that sits
-            // in front of `Seed BaseballHelm CI accounts`, the step whose
-            // unretried Supabase call took main and every open PR red on
-            // 2026-07-29. A regression here is a repo-wide merge freeze.
-            'scripts/lib/__tests__/retrying-fetch.test.ts',
-            // The shared "did you mean to write HERE?" guard for the baseball
-            // seeds. Named here rather than swept in by a glob for the same
-            // reason as its neighbours. Unlike the source-text contract test
-            // below, this one EXECUTES the rules — the two typo-squat classes it
-            // covers (a look-alike domain resolving to the prod ref, `.local`
-            // accepted as a loopback suffix) both passed a grep happily.
-            'scripts/lib/__tests__/seed-target-guard.test.ts',
-            'scripts/repo-doctor/__tests__/repo-doctor.test.ts',
-            // Worktree/disk hygiene (A6): unmarked worktrees, canonical off
-            // main with no open PR, oversized .next caches, untracked bloat,
-            // and a stray harness auto-memory store. Failure-injection suites
-            // for repo:doctor's worktree.* and disk.* checks.
-            'scripts/repo-doctor/__tests__/worktree-hygiene.test.ts',
-            'scripts/repo-doctor/__tests__/disk-hygiene.test.ts',
-            // Routine registry (A6): config/routines.yml vs. undocumented
-            // launchd plists / Claude Code scheduled-task directories.
-            // Failure-injection suite for repo:doctor's routines.* checks.
-            'scripts/repo-doctor/__tests__/routines.test.ts',
-            // Phase 2 P4 (O17): node_modules/.package-lock.json vs
-            // package-lock.json drift. Failure-injection suite for
-            // repo:doctor's deps.lockfile-drift check — every seeded mismatch
-            // is written into a disposable fixture directory, never into the
-            // real lockfile or the real node_modules.
-            'scripts/repo-doctor/__tests__/deps.test.ts',
-            // Phase 3 Track E (Supabase observability certification). Named
-            // here for the same reason as every neighbour: a file under
-            // scripts/ that is NOT listed runs under nothing, and a guard that
-            // never executes is decorative. Both are failure-injection suites
-            // for their own detectors as much as for the code they check --
-            // the security one pins two measured false positives (a comment
-            // mentioning error_logs, and a getUser() call that refuses
-            // nobody), and the coverage one proves an UNKNOWN cell can never
-            // be silently upgraded to NO.
-            'scripts/lib/__tests__/db-observability-security.test.ts',
-            'scripts/lib/__tests__/db-observability-coverage.test.ts',
-            // MCP deny rules vs the connector ids the session actually exposes
-            // (config/mcp-connector-ids.json). Named here for the same reason as
-            // its neighbours; it is the failure-injection suite for the
-            // tools/mcp-deny-connector-ids verifier check.
-            'scripts/__tests__/mcp-deny-connector-ids.test.ts',
-            // W3A reduced-motion contract: every src file that imports
-            // framer-motion AND animates must honor prefers-reduced-motion
-            // (WCAG 2.3.3). Written during the W3A sweep but never named
-            // here and never given a `node --test` caller, so it ran nowhere.
-            'scripts/__tests__/motion-reduced-motion-coverage.test.mjs',
-            // Fixture-repo tests for .githooks/pre-push (the local pre-push
-            // gate wired by scripts/setup-hooks.mjs): the HELM_SKIP_PREPUSH
-            // escape hatch, pushed-range diff checks, and optional gitleaks
-            // invocation against disposable temp git repos.
-            'scripts/__tests__/pre-push-hook.test.mjs',
-            // Fixture-repo coverage for .githooks/pre-commit: staged gitleaks
-            // uses --redact, and migration commits only receive a reminder;
-            // the hook must not regenerate or stage database types.
-            'scripts/__tests__/pre-commit-hook.test.mjs',
-            // Settings ownership (A6): user-scope leaks of repo-specific
-            // rules, project-scope rules gating an uninstalled plugin
-            // namespace, and rule files naming an unrecorded connector id.
-            // Failure-injection suite for repo:doctor's settings-ownership.*
-            // checks (scripts/check-settings-ownership.mjs).
-            'scripts/__tests__/check-settings-ownership.test.mjs',
-            // The single-file apply body (scripts/db/apply.mjs). Named here for
-            // the same reason as its neighbours, and with more at stake than
-            // most: `--apply` is denied to agents and the DB password lives
-            // only in GitHub secrets, so this code path's FIRST real execution
-            // is against production. The pure body-builder is the only part
-            // testable off a live connection, and it is the part that would
-            // ship a wrong ledger row silently.
-            'scripts/__tests__/db-apply-single-file.test.mjs',
-            // CI's generated-artifact drift gate (2026-09-23): which drift
-            // fails a PR — introduced yes; inherited from main or merge skew
-            // no. Builds a throwaway git repo per run.
-            'scripts/__tests__/pr-drift-gate.test.mjs',
-            // Weekly control-plane report (A6): the pure decision functions
-            // behind control-plane-weekly.yml's four hard checks (secret
-            // scanning, Dependabot severity ceiling, full-history gitleaks
-            // summarization with no secret material retained, the static
-            // verifier) and its soft no-PR-ever branch listing.
-            'scripts/__tests__/control-plane-weekly-report.test.mjs',
-            // Protected-prefix (release/ios/android/capacitor) branch
-            // retention (A6): the pure classifier behind control-plane-
-            // verify.mjs's protected-prefix-branch-retention check, and the
-            // regression pin that hotfix/ was excluded because it gates
-            // nothing in either CI system.
-            'scripts/__tests__/protected-prefix-branch-retention.test.mjs',
-            // The anchored matcher behind the enforcement inventory's Vercel
-            // MCP deny-rule claim. Pinned so a rule naming a
-            // DIFFERENT tool with the same prefix can never count as cover.
-            'scripts/__tests__/enforcement-inventory-vercel-deny.test.ts',
-            // .vercelignore REPLACES the default ignore set; this is the matcher
-            // behind `npm run check:vercelignore` and repo:doctor's
-            // config.vercelignore-coverage, run against the live manifest.
-            'scripts/__tests__/vercelignore-coverage.test.ts',
-            // SessionStart's release line: live probe preferred and labelled,
-            // canonical marker as the labelled fallback, UNKNOWN otherwise.
-            // Real fixture repos, same shape as src/test/hooks/.
-            'scripts/__tests__/session-context-release.test.ts',
-            // The demo-seed guards. Same rationale as the secrets guard above:
-            // they were written for `node --test` and so ran under nothing, and
-            // what they protect — a script that creates auth users and deletes
-            // rows against a live project — is exactly the kind of thing that
-            // must not be guarded by a test nobody executes.
-            'scripts/__tests__/verify-baseball-demo-coverage-honesty.test.ts',
-            // The mobile touch-target / safe-area guard. Promoted for the same
-            // reason as its neighbours, with a sharper illustration of the cost:
-            // while it ran under nothing, it drifted twice without a murmur. It
-            // asserted 44pt putt-picker targets against
-            // `golf/ShotTrackingComprehensive.tsx`, which no longer renders
-            // anywhere — both round clients render `FairwayShotTracking` — so it
-            // was guarding dead code while the surface users actually touch went
-            // unguarded. And it read a `RoundStripGrid.tsx` that does not exist in
-            // main, so it would have failed on a missing file the instant anything
-            // executed it. Both are fixed; it now points at the live components.
-            'scripts/__tests__/drawers-mobile.test.mjs',
-            // The icon-only-button accessible-name guard. Promoted because it was
-            // not merely unrun — it was RIGHT, and silent. While it executed under
-            // nothing, an unlabeled icon-only dismiss button shipped in
-            // lifting/dashboard/import/import-client.tsx; a screen-reader user
-            // heard "button" with no indication of what it did. Fixed in the same
-            // change, and this line is what stops it coming back.
-            //
-            // Its own four self-checks (detection of labels vs placeholders,
-            // icon-only vs icon+text, and an end-to-end flag-one/pass-one) mean a
-            // green run here is evidence the detector works, not just that it
-            // found nothing.
-            // Guards the accessible-name derivation inside ui-audit-golf.mjs's
-            // PROBE. It has to fail in BOTH directions: too permissive loses the
-            // real /documents dead end, too strict resurrects the 18 phantom
-            // findings that a collapsed <details> produced on 2026-08-15.
-            'scripts/__tests__/ui-audit-accname.test.mjs',
-            // Promoted 2026-08 (issue #1194) — the second wave of
-            // previously-dead `node --test` guards, all verified passing
-            // before promotion. Named individually rather than swept in by
-            // a glob for the same reason as their neighbours above: the
-            // other 20 files still in scripts/__tests__/ FAIL today and
-            // need per-file triage before they can be trusted in CI.
-            //
-            // Merge-artifact guard for baseball server actions: duplicated
-            // top-level return keys, dead consecutive duplicate returns,
-            // stale "types will be regenerated" comments.
-            // Blocks reintroduction of the retired
-            // /baseball/dashboard/stats/games/new href now that middleware
-            // redirects it to /stats/games/create.
-            // Wave W7A nav primitives: <Breadcrumb>/<SecondaryNav> stay the
-            // canonical deep-route wayfinding surfaces.
-            'scripts/__tests__/breadcrumb-nav.test.mjs',
-            // Tier-1 motion-vocabulary files stay bound to the canonical
-            // v3 motion library (no locally re-declared eases/durations).
-            'scripts/__tests__/canonical-motion-tokens.test.mjs',
-            // Wave W5A chart primitives (<ChartShell>/<ChartTooltip>/
-            // <ChartLegend>/CHART_PALETTE) keep existing and exporting.
-            'scripts/__tests__/chartshell-exists.test.mjs',
-            // Migration-ledger reconciliation: every file on disk has a
-            // ledger entry and vice versa.
-            'scripts/__tests__/check-migration-ledger.test.mjs',
-            // D4 (db-tooling-drift): object-level drift — every CREATE
-            // TABLE/FUNCTION/POLICY an applied migration claims exists in
-            // the catalog, and every public table traces to a migration or
-            // supabase/schemas/** file.
-            'scripts/__tests__/check-ledger-vs-catalog.test.mjs',
-            // D4 (db-tooling-drift): pure tally/regression helpers behind
-            // the weekly Supabase advisor ratchet.
-            'scripts/__tests__/advisor-ratchet.test.mjs',
-            'scripts/__tests__/local-db-checks.test.mjs',
-            'scripts/__tests__/config-drift.test.mjs',
-            // Migration filename version prefixes are unique and
-            // well-formed (the #220 duplicate-version hazard class).
-            'scripts/__tests__/check-migration-versions.test.mjs',
-            // The Management API transport for db:drift:check — its read-only
-            // assertion is the only thing between a drift guard and a
-            // production write path, so it must actually run.
-            'scripts/__tests__/check-supabase-drift-transport.test.mjs',
-            // Required-env guard: canonical Supabase vars present and the
-            // URL isn't a placeholder, scoped per Vercel environment.
-            'scripts/__tests__/check-required-env.test.mjs',
-            // Every route-level error.tsx in golf/baseball routes Sentry
-            // errors through the canonical error-boundary wrapper instead
-            // of rendering {error.message} (and leaking Supabase errors).
-            'scripts/__tests__/error-boundary-coverage.test.mjs',
-            // Form-primitive a11y: Select-family labels are associated to
-            // their trigger via useId()/htmlFor, and every interactive form
-            // control carries a focus-visible ring.
-            'scripts/__tests__/form-a11y.test.mjs',
-            // Every golf page.tsx route has a sibling loading.tsx AND
-            // error.tsx (directly or via a covering parent segment) — the
-            // "no blank page during navigation" gate.
-            'scripts/__tests__/loading-error-pair-coverage.test.mjs',
-            // CoachHelm card-level empty states must route through the
-            // shared <EmptyState /> primitive, not bare <p>No X</p> markup.
-            'scripts/__tests__/no-bare-empty-text.test.mjs',
-            // Wave W2B card consolidation: GlassCard/GlassStatCard/
-            // PremiumGlassCard stay deleted and unimported.
-            // The golf /stats surface stays bound to the canonical v3
-            // motion library — no legacy IOS_EASE or ad-hoc springs.
-            // Wave W2C skeleton consolidation: the three legacy skeleton
-            // modules stay deleted and unimported.
-            // The 2026-05-28 `s/translate/tranwarm/g` typo-squat class
-            // never reappears (it silently killed 203 Tailwind utilities).
-            // Wave W2F: hand-rolled Dropdown/Toast primitives stay retired
-            // in favor of Radix DropdownMenu + Sonner.
-            // Smoke test for the Review Gate ast-grep rule pack (bare table
-            // names, process.env in edge functions, service-role leaks)
-            // against real src/ plus the synthetic positive fixture.
-            'scripts/__tests__/review-gate-rules.test.mjs',
-            // `npm run gates:review` (scripts/review-gate-local.mjs) exits 2
-            // INCOMPLETE, not "green", when a scanner was skipped for a
-            // missing tool, unless --allow-missing.
-            'scripts/__tests__/review-gate-local.test.mjs',
-            // Wave W2E header consolidation: canonical PageHeader still
-            // ships its four variants, and the six sibling header modules
-            // stay deleted or thinned to shims.
-            'scripts/__tests__/single-pageheader.test.mjs',
-            // tokens.css and globals.css never redeclare the same CSS
-            // custom property inside :root (the W0 silent-override class).
-            'scripts/__tests__/token-files-no-conflict.test.mjs',
-            // The unit project's own timeout, and the removal of the
-            // hand-maintained count above, must not silently revert.
-            'scripts/__tests__/vitest-sweep-timeout.test.mjs',
-            // Pure summarization functions behind `npm run flight-recorder:audit`
-            // (scripts/flight-recorder-audit.mjs) — the read-only script that
-            // proves the two in-flight Flight Recorder branches actually wrote
-            // real timings and postgres checkpoints after deploy. Named here for
-            // the same reason as its scripts/lib/__tests__ neighbours above (no
-            // scripts/** glob — this repo runs everything through vitest, never
-            // `node --test`, so an unlisted file here executes nowhere at all).
-            'scripts/lib/__tests__/flight-recorder-audit-lib.test.ts',
-            // The pure edge extractors and impact walk behind
-            // `scripts/knowledge/world-model.mjs` (the Helm World Model graph
-            // generator, admin_platform registry split, 2026-09-02): primary-
-            // feature resolution when a shell glob and a sub-capability glob
-            // both match a file, the doc-cross-reference extractor's negation
-            // guard (regression-pinned against the real "Not to be confused
-            // with `recruiting`" sentence in memory/features/crm_outreach.md,
-            // which is exactly the false-positive class this guard exists to
-            // reject), the qualifier-invariant extractor, and the blast-radius
-            // walk's weak/strong edge distinction. Named here for the same
-            // reason as its scripts/**/__tests__ neighbours — no scripts/**
-            // glob, so an unlisted file here executes nowhere at all.
-            'scripts/knowledge/__tests__/world-model-core.test.mjs',
-            // Pure-logic coverage for the --dead-refs/--lifecycle/--staleness
-            // flags added to document-inventory.mjs (docs reorg W4,
-            // 2026-09-06): the status-header parser, the living-category
-            // ratchet set, and the Anchor SHA / rev-list command regexes.
-            // Same reason as its neighbour above — no scripts/** glob, so an
-            // unlisted file here executes nowhere at all.
-            'scripts/knowledge/__tests__/document-inventory-lifecycle.test.mjs',
-            // The inline-array parsing bug in coerceScalar() that
-            // world-model.mjs's first real read of `observability.
-            // feature_keys` turned up (2026-09-02): a non-empty inline array
-            // (`feature_keys: [a, b]`, the form 16 pre-existing registry.yml
-            // entries use) fell through to the plain-scalar branch and
-            // became a literal string, which a naive `for...of` then
-            // iterated character by character. Fixed in the same change;
-            // this is the regression pin.
-            'scripts/knowledge/lib/__tests__/registry.test.mjs',
-            // The "one workspace door" change (2026-09-05): every worktree in
-            // this repo — scripts/new-worktree.sh, and the WorktreeCreate hook
-            // once wired — now goes through scripts/lib/create-workspace.mjs.
-            // Named here for the same reason as its neighbours: no scripts/**
-            // glob, so an unlisted file here executes nowhere at all. Also
-            // exercises .claude/hooks/worktree-create.mjs as a real
-            // subprocess against a disposable git fixture.
-            'scripts/__tests__/create-workspace.test.ts',
-            'scripts/__tests__/lint-results.test.mjs',
-            'scripts/__tests__/claude-launcher.test.mjs',
-            // Gate timing ledger (reorg Phase 7 / W3 Speed): the pure
-            // append-and-trim step in scripts/serialize.mjs that writes one
-            // row per gate run to memory/ledgers/gates.jsonl, exercised only
-            // against a disposable fake ledger path. Named here for the same
-            // reason as every neighbour above.
-            'scripts/__tests__/serialize-gate-timing.test.ts',
-          ],
+          include: ['src/**/*.test.ts', 'src/**/*.spec.ts', ...SCRIPT_UNIT_TESTS],
           exclude: [
             'node_modules',
             '.next',
@@ -504,30 +217,7 @@ export default defineConfig({
           // interpret WHY each one failed. Do not add ordinary unit tests here.
           environment: 'node' as const,
           name: 'guards',
-          include: [
-            'scripts/__tests__/scripts-no-committed-secrets.test.mjs',
-            'scripts/__tests__/seed-recruiting-invariant.test.mjs',
-            'scripts/__tests__/baseball-demo-seed-contract.test.mjs',
-            'scripts/__tests__/icon-only-button-aria-label.test.mjs',
-            'scripts/__tests__/baseball-action-integrity.test.mjs',
-            'scripts/__tests__/baseball-stale-route-links.test.mjs',
-            'scripts/__tests__/no-glasscard-imports.test.mjs',
-            'scripts/__tests__/no-ios-ease-stats.test.mjs',
-            'scripts/__tests__/no-legacy-skeleton-imports.test.mjs',
-            'scripts/__tests__/no-tranwarm-typo.test.mjs',
-            'scripts/__tests__/radix-dropdown-sonner.test.mjs',
-            // Promoted 2026-08-30. Both previously ran under `node --test`,
-            // which nothing invokes. Each failed only because its hardcoded
-            // path list named files deleted in the W1 Fairway consolidation
-            // (ffd0fd8ab) and the dead player-CoachHelm removal (a259fa296) —
-            // guard rot, not code drift. Lists repaired, both now green.
-            'scripts/__tests__/admin-tables-mobile.test.mjs',
-            'scripts/__tests__/no-arbitrary-text-px-fairway-pages.test.mjs',
-            // D3, Helm Database Plan (2026-09-06): a new migration that
-            // mutates data/DDL without a -- ROLLBACK:/-- VERIFY: header pair
-            // must fail the PR, not just be caught by a human reviewer.
-            'scripts/__tests__/check-migration-headers.test.mjs',
-          ],
+          include: GUARD_TESTS,
           exclude: ['node_modules', '.next', 'archive'],
           // Generous on purpose: this project is I/O bound by design. The runner
           // no longer depends on the bound being right, only on it being rare.
@@ -556,6 +246,11 @@ export default defineConfig({
             'src/**/*.contract.test.{ts,tsx}',
             'src/**/*-contract.test.{ts,tsx}',
           ],
+          // Same bound as `unit`: vitest's 5s default bounds machine load
+          // on the 2-core hosted runners, not what a component test asserts.
+          // `unit-dom` had no timeout of its own, so a slow runner turned a
+          // jsdom render into a failure indistinguishable from a real one.
+          testTimeout: 30_000,
         },
       },
       {

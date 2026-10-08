@@ -13,19 +13,19 @@ name: migration-lockdown
 # the job now always reports a conclusion, which is what a required check
 # needs.
 #
-# 2026-09-06: that "first STEP" now reads the shared detect-changes.yml
-# workflow's `migrations` output instead of running its own
-# changed-files.sh scan — see the `detect-changes` job and the
-# `block-historical-edits` job's `if:` guard below for how it stays
-# fail-closed even if the shared job errors.
+# 2026-10-07 (plan 5.10): the shared detect-changes.yml call is gone. It cost a
+# whole runner job per PR to compute one boolean this job's own `git diff`
+# already answers: the check below exits 0 on its own when no
+# supabase/migrations/*.sql file was added or modified. Nothing got weaker;
+# a git failure still stops the step loudly (`set -e`, no `|| true`).
+#
+# No merge_group trigger: there is no merge queue (see ci.yml's `on:`).
 on:
-  merge_group:
   # ready_for_review added so a draft->ready transition re-triggers a real
   # run. block-historical-edits still always runs as a JOB (per the
   # phantom-context note above) so the required context never goes missing
-  # while draft — only its one real step skips, via detect-changes.yml's
-  # migrations=false on a draft PR (owner decision, PR throughput), the same
-  # fail-open-to-skip path this step already uses for a non-migration PR.
+  # while draft — only its one real step skips (owner decision, PR
+  # throughput).
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
@@ -38,31 +38,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Reusable workflow (2026-09-06) — see .github/workflows/detect-changes.yml.
-  # Called unconditionally, with NO `if:` on this job — `block-historical-
-  # edits` below must always report a conclusion (that's this whole
-  # workflow's reason for running on every PR with no trigger-level `paths:`
-  # filter, per the top-of-file comment), so it cannot skip just because this
-  # helper job failed.
-  detect-changes:
-    name: Detect changes
-    uses: ./.github/workflows/detect-changes.yml
-
+  # NO job-level `if:` — this must always report a conclusion (that's this
+  # whole workflow's reason for running on every PR with no trigger-level
+  # `paths:` filter, per the top-of-file comment).
   block-historical-edits:
-    needs: detect-changes
-    # ALWAYS runs, even if `detect-changes` itself failed — see the comment
-    # on that job above. The one step gated on its output (below) treats a
-    # missing/failed `migrations` output as fail-closed true via `!= 'false'`
-    # rather than skipping.
-    if: always() && !cancelled()
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      # Same BASE_SHA/HEAD_SHA resolution review-gate.yml uses for its
-      # merge_group + pull_request triggers: pull_request reads the PR's own
-      # base/head; merge_group falls back to `before`/`sha`, and
-      # changed-files.sh further falls back to the immediate parent commit
-      # when BASE_SHA can't be resolved at all.
+      # Same BASE_SHA/HEAD_SHA resolution review-gate.yml uses: pull_request
+      # reads the PR's own base/head; anything else falls back to
+      # `before`/`sha`.
       BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
       HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
     steps:
@@ -71,16 +56,12 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      # Replaces the old "Detect changed migration files" step's own
-      # .github/scripts/changed-files.sh invocation — that boolean is now
-      # the shared detector's `migrations` output. `!= 'false'` (not
-      # `== 'true'`) is deliberate: an empty/missing output (detect-changes
-      # job failed outright) must still run the deep check below, matching
-      # this workflow's fail-closed posture — a security gate must not go
-      # quiet because its helper job errored.
+      # Skipped only while the PR is a draft (owner decision, PR throughput),
+      # exactly as before. On every other event it runs, and the `git diff`
+      # below is what decides there is nothing to check.
       - name: Detect edits to historical migrations
         id: check
-        if: needs.detect-changes.outputs.migrations != 'false'
+        if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
         run: |
           set -euo pipefail
           BASELINE="20260527120000"

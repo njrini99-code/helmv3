@@ -37,6 +37,14 @@ function readJsonIfPresent(path) {
 }
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { helpOnly } from '../lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/db/advisor-ratchet.mjs',
+  summary:
+    "Ratchet for the Supabase security and performance advisors: fails when a finding count rises above the baseline. Read-only.",
+  secrets: 'SUPABASE_ACCESS_TOKEN',
+});
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const BASELINE_PATH = resolve(ROOT, 'supabase-advisor-baseline.json');

@@ -3,7 +3,10 @@ name: Clubhouse presentation quality
 # Development fixtures, no credentials or database seeding. Authenticated
 # production and physical iPhone evidence remain separate release checks.
 on:
+  # ready_for_review plus the GitHub defaults: the job below skips while the PR
+  # is a draft (plan 5.4), so marking it ready needs its own event to run it.
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'src/clubhouse/**'
       - 'src/app/clubhouse-preview/**'
@@ -53,6 +56,11 @@ env:
 
 jobs:
   presentation:
+    # Skip while draft, like every gated job in ci.yml (owner decision, PR
+    # throughput): a draft cannot merge, so running a 35-minute browser suite on
+    # each draft push only burns runner slots. Written so workflow_dispatch,
+    # where there is no pull_request payload, still runs.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -60,11 +68,8 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: 24
-          cache: npm
-      - run: npm ci
+      - name: Setup Node and install dependencies
+        uses: ./.github/actions/setup-node-npm
       - run: node --test scripts/clubhouse/__tests__/*.test.mjs
       - name: Component catalog is current
         run: npm run clubhouse:catalog -- --check
