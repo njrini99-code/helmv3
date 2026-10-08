@@ -2150,7 +2150,10 @@
   padding: 0 4px 10px;
 }
 .ch-ms-comp__reply .ch-ms-quote { flex: 1; }
+/* The composer's notice floats over the thread, so it takes the sheet's fill (the flush notice has none of its own). */
 .ch-ms-comp > .ch-notice {
+  --ch-notice-fill: var(--ch-sheet-bg);
+  padding: 10px 12px;
   border-radius: 16px;
   box-shadow: var(--ch-elevation-floating);
 }
