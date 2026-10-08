@@ -1,5 +1,9 @@
 # P002 — Home: changelog
 
+## 2026-10-08 — premium pass: trend sparkline in the phone's Latest rounds (P002-C2)
+
+Each latest round on the coach's phone carries its player's last rounds as a 64x18 bare FormLine between the player and the score (from the leaderboard rows Home already loads; three rounds or more). It is decorative beside the figures (the trend itself lives in Stats), and absent when the leaderboard read failed.
+
 ## 2026-10-08 — premium pass: the coach's phone Home is the day (concept board 1)
 
 The coach's phone Home opens on one living green card for the next thing that matters (`screens/home/DayCard.tsx`, owner-approved phone concept board 1, "The day, not a dashboard"); desktop keeps its dashboard, and the player's phone keeps Up next.

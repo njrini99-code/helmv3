@@ -7,6 +7,7 @@ import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
+import { FormLine } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
@@ -94,7 +95,7 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
         )}
 
         <SectionBoundary surface="home.latestRound" label="Latest rounds" code="CH-2206">
-          <Rounds data={data.latestRounds} onOpen={setOpen} covered={covered} />
+          <Rounds data={data.latestRounds} trends={data.leaderboard.error ? null : data.leaderboard.rows} onOpen={setOpen} covered={covered} />
         </SectionBoundary>
       </div>
 
@@ -412,7 +413,12 @@ export function WeekStrip({ days, note, children, majorIcon = TYPE_ICON.tourname
   );
 }
 
-function Rounds({ data, onOpen, covered }: { data: ChCoachHome['latestRounds']; onOpen: (r: ChLatestRound) => void; covered: boolean }) {
+/**
+ * `trends`: the leaderboard's rows, for each player's last rounds as a word-sized line beside the score (P002-C2): who
+ * is slipping, read without a leaderboard on the phone. Null when that read failed: the rows keep their scores.
+ */
+function Rounds({ data, trends, onOpen, covered }: { data: ChCoachHome['latestRounds']; trends: ChCoachHome['leaderboard']['rows'] | null; onOpen: (r: ChLatestRound) => void; covered: boolean }) {
+  const trendOf = new Map((trends ?? []).map((p) => [p.playerId, p.trend]));
   const teamStats = rebuiltHref('/golf/dashboard/stats');
   return (
     <section className="ch-hm-sec" aria-labelledby="ch-hm-rounds">
@@ -447,6 +453,11 @@ function Rounds({ data, onOpen, covered }: { data: ChCoachHome['latestRounds']; 
                   <b>{r.playerName}</b>
                   <span>{r.meta.split(' · ').slice(0, 2).join(' · ')}</span>
                 </span>
+                {(trendOf.get(r.playerId)?.length ?? 0) >= 3 && (
+                  <span className="ch-hm-rd__spark" aria-hidden="true">
+                    <FormLine data={trendOf.get(r.playerId)!} width={64} height={18} earlyBelow={3} bare label={`${r.playerName}, last ${trendOf.get(r.playerId)!.length} rounds: ${trendOf.get(r.playerId)!.join(', ')}`} />
+                  </span>
+                )}
                 <span className={'ch-hm-score ch-num' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>
                   <b>{r.score}</b>
                   <em>{formatToPar(r.toPar)}</em>

@@ -3649,3 +3649,17 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     color: var(--ch-text-secondary);
   }
 }
+
+/* P002-C2: each latest round's player's last rounds as a word-sized line beside the score (FormLine, bare). */
+@media (max-width: 820px) {
+  .ch-hm-rd__spark {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    margin-left: auto;
+    padding-left: 8px;
+  }
+  .ch-hm-rd__spark + .ch-hm-score {
+    margin-left: 10px;
+  }
+}

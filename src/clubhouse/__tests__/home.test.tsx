@@ -377,6 +377,15 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     expect(screen.getByRole('link', { name: 'Player stats' }).getAttribute('href')).toBe('/golf/dashboard/stats?player=theo');
   });
 
+  it('P002-C2 each latest round carries its player’s trend beside the score, and none when the leaderboard failed', () => {
+    const { unmount } = wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
+    expect(document.querySelectorAll('.ch-hm-list .ch-hm-rd__spark svg')).toHaveLength(3);
+    unmount();
+    wrap(<CoachHome data={{ ...PREVIEW_HOME, leaderboard: { ...PREVIEW_HOME.leaderboard, error: true } }} now={PREVIEW_HOME_NOW} />);
+    expect(document.querySelector('.ch-hm-rd__spark')).toBeNull();
+    expect(screen.getByRole('button', { name: /Theo Marchetti/ })).toBeTruthy();
+  });
+
   it('CH-2303 a round posted as a total says so in its sheet', async () => {
     const user = userEvent.setup();
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
