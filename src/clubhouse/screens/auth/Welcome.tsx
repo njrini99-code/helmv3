@@ -206,6 +206,11 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
             <Button variant="primary" size="lg" rightIcon={ArrowRight} feel={null} onClick={proceed}>
               Continue
             </Button>
+            {/* P015-B3: on the phone the welcome goes on by itself; a gilt hairline draws across Continue over the time
+                left, so the page says it will continue, and a tap simply goes now. Still under reduced motion. */}
+            {phone && armed && !leaving && (
+              <span className="ch-au-wl-auto" style={{ ['--ch-au-auto' as string]: `${WELCOME_PHONE_AUTO_MS}ms` }} aria-hidden="true" data-reduced={reduced ? '' : undefined} />
+            )}
           </div>
         </m.div>
         {!phone && (

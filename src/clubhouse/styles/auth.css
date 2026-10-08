@@ -1528,3 +1528,31 @@ html[data-fw-theme='dark'] .ch-au[data-phase='leaving'] {
 html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
   color: var(--ch-text-primary);
 }
+
+/* P015-B3: the phone welcome's own countdown, as a 1px gilt hairline under Continue (not a loading bar): it draws across
+   over the time left before the welcome goes on by itself. Transform only; still with reduced motion or Animations off. */
+.ch-au-wl-cta {
+  position: relative;
+}
+.ch-au-wl-auto {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: -9px;
+  height: 1px;
+  background: var(--ch-champagne-500);
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation: chAuAuto var(--ch-au-auto, 3600ms) linear forwards;
+  pointer-events: none;
+}
+.ch-au-wl-auto[data-reduced] {
+  animation: none;
+  transform: scaleX(1);
+  opacity: 0.6;
+}
+@keyframes chAuAuto {
+  to {
+    transform: scaleX(1);
+  }
+}

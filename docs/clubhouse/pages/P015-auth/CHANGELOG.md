@@ -1,5 +1,13 @@
 # P015 — Auth: changelog
 
+## 2026-10-08 — premium pass: Continue keeps honest time, and findings (P015-B3, D4, D5, D7)
+
+- B3: on the phone, where the welcome goes on by itself, a 1px gilt hairline draws across under Continue over the time left (transform only; held still under reduced motion), so the page says it will continue and a tap just goes now.
+- D4: the welcome's date uses Home's style (en-GB, "Tuesday 14 October") in the viewer's own zone, not the browser's locale.
+- D5: the member seal reads "Member since 2026", in order.
+- D7: the password meter's empty steps are a visible track (`--ch-border-strong`).
+- Not changed: D8 (the onboarding felt tray inside the paper pane) is an approved material; dropping it is left to the owner.
+
 ## 2026-10-08 — premium pass: solar sky, paper in the room, one refusal anatomy, Sign in always there (P015-A1 to A3, D2, D3)
 
 - A1: the painted course's sky follows the sun, not the clock (`solarSkyHour` in `scene-sky.ts`, `useSkyHour` in `use-hour.ts`): the sun's altitude where the viewer is (their time zone's point from the global light's `lightPlace`, `lib/sun.ts`; no location prompt, no team before sign-in) picks the keyframe hour that shows it, so a December 5:30 pm is dusk and a June 7 pm is still bright. The sky, the type over it (sign in, welcome, onboarding) and the scene read it; the greetings stay on the clock. A preview's fixed `hour` still pins the sky.

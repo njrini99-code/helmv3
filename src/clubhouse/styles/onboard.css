@@ -966,7 +966,8 @@
 .ch-ox-meter i {
   height: 4px;
   border-radius: 2px;
-  background: var(--ch-ivory-200);
+  /* P015 D7: an empty step is a visible track (3:1 against the paper), not ivory on ivory. */
+  background: var(--ch-border-strong);
   transition: background var(--ch-ox-t-quick);
 }
 .ch-ox-meter[data-s='1'] i:nth-child(-n + 1),
