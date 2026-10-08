@@ -92,7 +92,7 @@ jobs:
         # Same as GitHub's default bash, plus a copy of each step's output in
         # $RUNNER_TEMP/step-logs/<id>.log so the aggregate at the end can quote
         # the failing step's first error (scripts/github/step-shell.sh).
-        shell: bash scripts/github/step-shell.sh {0}
+        shell: bash ${{ github.workspace }}/scripts/github/step-shell.sh {0}
     env:
       # Read by scripts/github/pr-drift-gate.mjs: on a pull_request, a failing
       # drift check is re-run on the base (main) and the PR head to tell
@@ -587,7 +587,7 @@ jobs:
       run:
         # See static-checks: GitHub's default bash plus a per-step output copy
         # for the aggregate's failing-step summary.
-        shell: bash scripts/github/step-shell.sh {0}
+        shell: bash ${{ github.workspace }}/scripts/github/step-shell.sh {0}
     env:
       HELM_ESLINT_REPORT_ID: ${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
     steps:

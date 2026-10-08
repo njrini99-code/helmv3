@@ -12,6 +12,12 @@ const ROOT = resolve(process.cwd());
 const WORKFLOWS = join(ROOT, '.github/workflows');
 const files = readdirSync(WORKFLOWS).filter((f) => f.endsWith('.yml'));
 
+/** The outputs a reusable workflow exposes, from its own `on.workflow_call.outputs`. */
+function calledOutputs(uses) {
+  const called = load(readFileSync(join(ROOT, uses), 'utf8'));
+  return (called.on ?? called[true])?.workflow_call?.outputs ?? {};
+}
+
 const asList = (v) => (v === undefined || v === null ? [] : Array.isArray(v) ? v : [v]);
 const refs = (text, re) => [...String(text).matchAll(re)].map((m) => m[1]);
 
@@ -52,9 +58,12 @@ describe.each(files)('%s', (file) => {
   it('every `needs.<job>.outputs.<name>` is declared by that job', () => {
     for (const [id, job] of Object.entries(jobs)) {
       for (const m of JSON.stringify(job).matchAll(/needs\.([A-Za-z0-9_-]+)\.outputs\.([A-Za-z0-9_-]+)/g)) {
-        const declared = jobs[m[1]]?.outputs;
-        // A job that calls a reusable workflow declares its outputs in that workflow.
-        if (jobs[m[1]]?.uses) continue;
+        const needed = jobs[m[1]];
+        // A job that calls a reusable workflow gets its outputs from that
+        // workflow's `workflow_call.outputs`; an output it no longer declares
+        // evaluates to an empty string at run time, which fails open or closed
+        // depending on the caller's expression.
+        const declared = needed?.uses ? calledOutputs(needed.uses) : needed?.outputs;
         expect(declared && m[2] in declared, `${file}: job ${id} reads needs.${m[1]}.outputs.${m[2]}, which is not declared`).toBe(true);
       }
     }
@@ -92,6 +101,18 @@ describe.each(files)('%s', (file) => {
       expect(m, `${file}: output ${name} has no jobs.<id>.outputs.<name> value`).not.toBeNull();
       expect(jobs[m[1]]?.outputs && m[2] in jobs[m[1]].outputs, `${file}: output ${name} points at an undeclared job output`).toBe(true);
     }
+  });
+});
+
+describe('codeql matrix', () => {
+  it('every matrix language names a detect-changes output (indexed reads are invisible to the regex checks)', () => {
+    const wf = load(readFileSync(join(WORKFLOWS, 'codeql.yml'), 'utf8'));
+    const outputs = calledOutputs(wf.jobs['detect-changes'].uses);
+    for (const leg of wf.jobs.analyze.strategy.matrix.include) {
+      if (leg.language === 'javascript-typescript') continue; // reads `code`
+      expect(leg.language in outputs, `no detect-changes output for the ${leg.language} leg`).toBe(true);
+    }
+    expect('code' in outputs).toBe(true);
   });
 });
 

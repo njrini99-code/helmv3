@@ -12,7 +12,7 @@
  *   - rpc refresh_player_stats_cache (per player)
  *   - scripts/recompute-sg-cache.ts          (correct SG, post-cache)
  *   - rpc refresh_player_standing            (team)
- *   - scripts/regen-coachhelm-from-corrected-stats.ts <TARGET_PLAYER_ID>
+ *   - scripts/regen-coachhelm-from-corrected-stats.ts <TARGET_PLAYER_ID> --apply
  *
  * Run:
  *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-demo-player.ts [--dry-run]

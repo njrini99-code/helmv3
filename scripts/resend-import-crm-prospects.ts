@@ -149,7 +149,7 @@ async function main() {
   console.log(`\nAUDIENCE_ID=${audienceId}`);
   console.log('Next: point the broadcast at it →');
   console.log(`  BROADCAST_ID=648592a9-94d9-4138-a8c2-294446ad08e2 RESEND_SEGMENT_ID=${audienceId} \\`);
-  console.log('    DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/resend-coach-broadcast.ts');
+  console.log('    DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/resend-coach-broadcast.ts --apply');
 }
 
 main().catch((err) => { console.error(err); process.exit(1); });

@@ -49,7 +49,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 49 | 15 | 2 | 4 |
 | `ADR` | 6 | 0 | 3 | 2 |
 | `INDEX` | 25 | 1 | 9 | 5 |
-| `UNKNOWN` | 321 | 12 | 70 | 90 |
+| `UNKNOWN` | 321 | 12 | 70 | 86 |
 
 ## Files
 
@@ -726,7 +726,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `design/handoff/design-system/components/surfaces/Surface.prompt.md` | current | - | - | - | - |
 | `design/handoff/design-system/readme.md` | current | - | - | - | 1 |
 | `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 20 |
-| `docs/CI_RUNBOOK.md` | current | - | - | yes | 5 |
+| `docs/CI_RUNBOOK.md` | current | - | - | yes | 1 |
 | `docs/HELM_OS.md` | current | - | - | yes | - |
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 2 |
 | `docs/OBSERVABILITY.md` | current | yes | - | yes | - |

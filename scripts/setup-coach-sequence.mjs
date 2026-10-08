@@ -270,4 +270,5 @@ const tierDist = activeScored.reduce((a, r) => (a[r.tier] = (a[r.tier] || 0) + 1
 console.log(`\nActive send queue by tier (warmest first): ${Object.entries(tierDist).sort().map(([t, n]) => `${t}=${n}`).join(', ')}`);
 console.log('Next up:');
 for (const r of activeScored.slice(0, 10)) console.log(`  [${r.tier} ${r.score}] ${r.coach?.name ?? '?'} — ${r.coach?.title ?? '?'} · ${r.coach?.school ?? '?'} (${r.coach?.program ?? '?'})`);
-console.log(`\nNO emails were sent. To send the next batch:  node scripts/process-sequence-batch.mjs 10`);
+console.log(`\nNO emails were sent. To send the next batch:  node scripts/process-sequence-batch.mjs 10 --apply`);
+if (!cli.apply) console.log('[dry-run] this run only reported the writes above and made none. Re-run with --apply to create the sequence and enrollments.');

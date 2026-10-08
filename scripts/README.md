@@ -29,6 +29,10 @@ insert 12 rows into crm_coaches`), and writes nothing. Pass `--apply` to do it.
     node scripts/send-coach-batch.mjs 10            # who would be emailed
     node scripts/send-coach-batch.mjs 10 --apply    # send
 
+The npm wrappers pass it through: `npm run coachhelm:refresh -- --apply`,
+`npm run coachhelm:regen -- --apply`. Without `--apply` they print what they would
+do and exit 0, so a green exit from one of these is not proof it wrote anything.
+
 `--apply` together with `--dry-run` is an error. Scripts that already had their
 own guard keep it, unchanged, and only gained `--help`: the BaseballHelm and
 demo seeders (`--confirm`, `--allow-prod`), `stripe-golfhelm-invoices.mjs`
