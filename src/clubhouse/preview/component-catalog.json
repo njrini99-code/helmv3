@@ -434,7 +434,8 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/home.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1021,7 +1022,8 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm.css",
-        "src/clubhouse/styles/home.css"
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1107,7 +1109,8 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/home.css"
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1369,7 +1372,8 @@
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
-        "src/clubhouse/styles/home.css"
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1434,7 +1438,8 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
-        "src/clubhouse/styles/qualifiers.css"
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1466,7 +1471,8 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
-        "src/clubhouse/styles/qualifiers.css"
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1497,6 +1503,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -1544,7 +1551,8 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/home.css",
-        "src/clubhouse/styles/qualifiers.css"
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1628,7 +1636,8 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/home.css",
-        "src/clubhouse/styles/qualifiers.css"
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1669,7 +1678,8 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
-        "src/clubhouse/styles/qualifiers.css"
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1706,7 +1716,8 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
-        "src/clubhouse/styles/qualifiers.css"
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2013,7 +2024,8 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/home.css",
-        "src/clubhouse/styles/qualifiers.css"
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2028,7 +2040,8 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/home.css",
-        "src/clubhouse/styles/qualifiers.css"
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2048,6 +2061,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
@@ -2083,7 +2097,8 @@
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
-        "src/clubhouse/styles/settings.css"
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2186,7 +2201,8 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/home.css",
-        "src/clubhouse/styles/qualifiers.css"
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2222,6 +2238,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
@@ -2343,7 +2360,8 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/recruiting.css"
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2355,7 +2373,8 @@
         "RecruitingSkeleton"
       ],
       "styles": [
-        "src/clubhouse/styles/recruiting.css"
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2368,7 +2387,8 @@
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
-        "src/clubhouse/styles/home.css"
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2395,7 +2415,8 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/recruiting.css"
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2442,7 +2463,8 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/home.css",
-        "src/clubhouse/styles/roster.css"
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2478,7 +2500,8 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/roster.css"
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2550,7 +2573,8 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/roster.css"
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2578,7 +2602,8 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2593,7 +2618,8 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2609,7 +2635,8 @@
       ],
       "styles": [
         "src/clubhouse/styles/rounds-recover.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2910,7 +2937,8 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/home.css",
-        "src/clubhouse/styles/rounds-track.css"
+        "src/clubhouse/styles/rounds-track.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3111,6 +3139,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -3287,7 +3316,8 @@
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/settings.css"
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3299,9 +3329,8 @@
         "SettingsPhone"
       ],
       "styles": [
-        "src/clubhouse/styles/base.css",
-        "src/clubhouse/styles/home.css",
-        "src/clubhouse/styles/settings.css"
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3492,6 +3521,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
@@ -3542,6 +3572,7 @@
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
@@ -3632,6 +3663,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
@@ -3705,6 +3737,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
@@ -4147,6 +4180,29 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/shell/large-title.tsx",
+      "group": "shell",
+      "exports": [
+        "CH_LARGE_TITLES"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/rounds-setup.css",
+        "src/clubhouse/styles/rounds-track.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/shell/light.tsx",
       "group": "shell",
       "exports": [
@@ -4379,6 +4435,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [
@@ -4743,7 +4800,8 @@
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
-        "src/clubhouse/styles/settings.css"
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [
         "Switch"
@@ -6144,6 +6202,9 @@
         "ch-ask-sheetlist__row",
         "ch-ask-sk",
         "ch-ask-sk__mid",
+        "ch-ask-sk__ph",
+        "ch-ask-sk__phgreet",
+        "ch-ask-sk__phrows",
         "ch-ask-sk__rows",
         "ch-ask-state",
         "ch-ask-state__alt",
@@ -7014,7 +7075,7 @@
         "ch-hm-sec__h",
         "ch-hm-sheet",
         "ch-hm-since__c",
-        "ch-hm-since__l",
+        "ch-hm-since__fig",
         "ch-hm-skel",
         "ch-hm-skel__bar",
         "ch-hm-skel__body",
@@ -7039,6 +7100,10 @@
         "ch-hm-week",
         "ch-hm-week__d",
         "ch-hm-week__n",
+        "ch-lgr__go",
+        "ch-lgr__lead",
+        "ch-lgr__meta",
+        "ch-lgr__title",
         "ch-nine",
         "ch-notice",
         "ch-ph-acts",
@@ -9252,6 +9317,7 @@
         "ch-hero__eyebrow",
         "ch-hero__line",
         "ch-hero__title",
+        "ch-hl-h__t",
         "ch-hl-role",
         "ch-iconbtn",
         "ch-identity",
@@ -9310,14 +9376,19 @@
         "ch-pscrim",
         "ch-ptr",
         "ch-ptr__spin",
+        "ch-qf-head",
+        "ch-rd-h",
+        "ch-recm-title",
         "ch-resume",
         "ch-resume__go",
         "ch-resume__ic",
         "ch-resume__m",
         "ch-resume__t",
         "ch-root",
+        "ch-rsm-title",
         "ch-scrim",
         "ch-serif-num",
+        "ch-setm-title",
         "ch-sheet",
         "ch-sidebar",
         "ch-sidebar__foot",
@@ -9329,6 +9400,8 @@
         "ch-skel-rows__t",
         "ch-skel-rule",
         "ch-skip",
+        "ch-sr-only",
+        "ch-stm-head",
         "ch-tab",
         "ch-tab__badge",
         "ch-tab__icon",
