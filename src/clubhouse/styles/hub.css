@@ -1083,8 +1083,8 @@
     min-width: 0;
   }
   .ch-hb-h .ch-hb-muted {
-    font: 500 11px/1.3 var(--ch-font-sans);
-    letter-spacing: 0.14em;
+    font: 500 12px/1.3 var(--ch-font-sans);
+    letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
   /* All five tabs sit on a 375px screen (the board draws them at 13px with no frame), on a hairline that runs edge to

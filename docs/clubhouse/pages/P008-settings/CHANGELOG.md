@@ -3,6 +3,7 @@
 ## 2026-10-08 — premium pass: send a test push, feel it, text size (P008-C3, C1; findings #1, #2, #4)
 
 - C3: once push is on for this device, "Send a test" sits beside Push on this device (desktop) or as a row under it (phone). It calls `POST /api/push-subscriptions/test` (D1-6), which sends a fixed "Test from Clubhouse" to the caller's own subscriptions only and removes dead ones, limited to 3 a minute. Done: "Test sent"; failures say why (CH-8029).
+- C1, type: every Settings type size is in `--ch-type-k` steps, so Settings follows Dynamic Type and a larger root size (a 130% root measured 31px → 40.3px on the title). It is pixel-identical at the default size.
 - C1: Preferences gains "Feel it", which plays the haptic you chose, and a Text size row ("Automatic", native app only) saying that the phone's text size setting applies.
 - #1: on the phone, the weekly team email is in an Email group, not under This device.
 - #2: Quiet mode comes first on the phone, as on desktop.

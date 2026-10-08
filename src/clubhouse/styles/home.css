@@ -3180,8 +3180,8 @@
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-h-main--first > .ch-h-head > .ch-h-head__date {
-    font: 500 12px/1.2 var(--ch-font-sans);
-    letter-spacing: 0.14em;
+    font: 500 13px/1.2 var(--ch-font-sans);
+    letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-h-main--first > .ch-h-head > h1 {
