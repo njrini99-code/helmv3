@@ -90,7 +90,7 @@ Parity pass (2026-09-30): `GameMore` (the five sections' More detail),
 `RoundLine`, `SectorGrid`) and `RoundsExtra` (the Rounds tab's line, bests and
 comparison) are new; `FieldTable` gains group headings, a signed format and the
 floor note; `ScoreMix` the holes behind each result. On the phone the Rounds
-panel gains the same three cards above the list, and each Game detail section's
+panel gains the same three sections above the list, and each Game detail section's
 More detail is a closed disclosure.
 
 ## Actions affected
@@ -136,6 +136,15 @@ stacked for the chosen section, the scoring line, five rounds then All N, and
 Development with Add focus area. The coach comparison table and previous or next
 player are desktop only (Q-68). The phone is a different structure, never the
 desktop shrunk.
+
+In the Mobile clubhouse pass (owner, 2026-10-08) the page is the parchment sheet
+with no cards: the head opens under the engraved double rule with the avatar in
+the Ledger's ring beside the name in the bold condensed sans; the three figures
+sit between hairlines as the Ledger's figure row; every panel, Game detail's
+chosen section among them, is flush under its double rule with its caption under
+the title; tiles (personal bests, scoring and outcomes by par, More detail's
+figures) read two by two between hairlines; the rounds and development lists are
+rows on seams. The chips, the window switch and the filter keep their material.
 
 ## Accessibility
 

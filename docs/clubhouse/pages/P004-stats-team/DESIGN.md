@@ -113,6 +113,13 @@ scoring line with its mean, strokes gained by leg as bars either side of zero, t
 Avg or SG (a row opens their profile), and Team putting. Season bests and Export stay on desktop
 (Q-68). The phone is a different structure, never the desktop shrunk.
 
+In the Mobile clubhouse pass (owner, 2026-10-08) the page is the parchment sheet with no cards. It
+opens on the Ledger's page intro: the team and its count as the eyebrow under the engraved double
+rule, Team stats in the bold condensed sans. The figures sit between hairlines as the Ledger's figure
+row, each still drawn against its reference. Every panel is a section flush under its double rule,
+its caption under the title, and the players are rows on seams that tint on press. The window switch,
+the filter and the sort keep their material.
+
 ## Accessibility
 
 The trend chart is an image with a written summary and the player list beside it is its values as

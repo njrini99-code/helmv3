@@ -1,5 +1,32 @@
 # P002 — Home: changelog
 
+## 2026-10-08 — Player Home on the phone: the Mobile clubhouse pass
+
+The player's phone Home follows the same board as the coach's (round 3, "fewer
+containers, one feature card"), carried to `m-player-home.jsx`:
+- the page is the chassis' parchment sheet from the greeting to the tab bar;
+- Up next with its countdown stays the one green feature card; Message coach
+  and Post a round under it are the shared buttons, Post a round the primary;
+- This week, My latest round, Scoring and Your game sit flush under engraved
+  double rules, their titles in the bold condensed sans. No white cards: the
+  latest round's GIR, putts and SG are the Ledger's figure row between
+  hairlines, Scoring's four figures sit two by two between hairlines, and the
+  four parts of the game are divided by soft rules. The scorecard keeps its
+  green board and the window picker its well;
+- the week strip draws today as the solid green key and a competition day as
+  a soft green tint with its flag, as the board does; Today's rows sit on the
+  section's edge and tint on press;
+- the first-run page opens on the Ledger's page intro (the date under the
+  double rule, the greeting in the bold sans).
+
+Fixed: when the week didn't load (CH-2201) its notice sat inside the green
+card and took the card's ivory ink, so its words were invisible; it now sits
+on the sheet. Home's phone skeleton (CH-2401, shared with the coach) draws the
+new page: the parchment, the date and greeting lines, the brief's lines, the
+green card and the first section under its rule, its hero held at 386px
+between the coach's (388) and the player's (382), so the first section lands
+within 3px. Desktop is unchanged.
+
 ## 2026-10-08 — Coach Home on the phone: the Mobile clubhouse pass
 
 Phone Home now follows the owner's "Coach - Home - Mobile v2" board

@@ -134,7 +134,7 @@ describe('The phone holds its panels across windows', () => {
       expect(container.querySelector('section[aria-labelledby="ch-stm-legs"]')!.classList.contains('ch-stm-panel--bars')).toBe(true);
     });
     expect(css).toMatch(/\.ch-stm-chart-hold\s*{[^}]*aspect-ratio: 340 \/ 120/);
-    expect(css).toMatch(/\.ch-stm-panel--bars\s*{\s*min-height: 250px/);
+    expect(css).toMatch(/\.ch-stm-panel--bars\s*{\s*min-height: 258px/);
   });
 
   it('a profile: one round keeps the trend\'s frame, and no strokes gained keeps the bars\' height', () => {

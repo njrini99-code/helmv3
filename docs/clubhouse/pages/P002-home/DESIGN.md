@@ -88,15 +88,25 @@ Coach: a 1280px canvas holds the header, then one lit sheet in two columns (the 
 Approved specs `docs/clubhouse/phone/home.md` (coach) and `docs/clubhouse/phone/home-player.md` (player), from the owner's v2 boards. The top bar turns green (`usePhoneHero`) over a hero holding the date, the greeting, the brief and Up next. At 820px and below the phone Home takes over from the desktop page; it is never the desktop shrunk (21901).
 
 The player's phone follows `Player - Home - Mobile.html` (`m-player-home.jsx`,
-`m-player-home.css`), not the coach's. Today is a small label inside This
-week, with no Calendar link (the week's days open it): the row under way reads
-Now, with none under way the next one reads Next, and a row that has passed
-keeps its ink with only its time stepping back. Scoring and By part of the
-game each have their title and one-line meta above their card; Scoring's card
-opens on the full-width Last 5 / Last 10 / Last 20 picker (always all three),
-then the line, the four figures (26px, green when the average fell or strokes
-gained is at or above zero, amber when worse, plain when it rounds to zero;
-the grey line under each only states the change), and the italic note. The
+`m-player-home.css`), not the coach's, in the Mobile clubhouse pass (owner,
+2026-10-08; the Coach Home board's round 3 carried over): the page is the
+parchment sheet, Up next with its countdown is the one green feature card,
+Message coach and Post a round under it are the shared buttons (Post a round
+the primary), and every section below sits flush under an engraved double rule
+with its title in the bold condensed sans, with no white cards. This week draws
+today as the solid green key and a competition day as a soft green tint with
+its flag. Today is a small label inside This week, with no Calendar link (the
+week's days open it); its rows sit on the section's edge and tint on press: the
+row under way reads Now, with none under way the next one reads Next, and a row
+that has passed keeps its ink with only its time stepping back. My latest round
+keeps its green scorecard; its GIR, putts and SG are the Ledger's figure row
+between hairlines. Scoring and Your game each have their title and one-line meta
+in the section's head; Scoring opens on the full-width Last 5 / Last 10 / Last 20
+picker (always all three), then the line, the four figures two by two between
+hairlines (22px bold sans, green when the average fell or strokes gained is at or
+above zero, amber when worse, plain when it rounds to zero; the grey line under
+each only states the change), and the italic note. The four parts of the game
+are divided by soft rules. The
 chart's dates are labelled once per day (a run of one date is labelled where
 it starts) and its score axis keeps to about six whole-stroke ticks; a round
 is marked under par against its own par, and the par line is drawn only when

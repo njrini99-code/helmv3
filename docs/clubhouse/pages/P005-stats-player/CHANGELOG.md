@@ -1,5 +1,28 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-08 — phone: Mobile clubhouse pass
+
+A player's stats on the phone follow the Coach Home "Mobile clubhouse pass"
+board (round 3). The page is the parchment sheet with no white cards:
+- the head opens under the engraved double rule: the avatar in the Ledger's
+  ring beside the name in the bold condensed sans (it was a regular-weight
+  display title);
+- the three figures sit between hairlines as the Ledger's figure row;
+- Strokes gained, Scoring trend, Score by round, Personal bests, This window
+  against the one before, Rounds and Development are sections flush under
+  their double rules, each caption under its title;
+- Game detail's chips open the section under its double rule; the chosen
+  section, its figures and its panels are flush on the sheet, divided by soft
+  rules (its panels had sat on a grey band). Personal bests, the scoring by
+  par, the outcomes by par and the More detail tiles lose their boxes and read
+  two by two between hairlines;
+- the rounds and the development lists are rows on seams;
+- a filter that matches nothing is the empty state alone on the sheet.
+
+Fixed on the phone: a ranked hole's figure (Toughest holes) sat on a third row
+under its rank; it is back at the right of its name. Band rows ("10–15 ft")
+read on one line. Desktop is unchanged.
+
 ## 2026-10-07 — Add focus area's sheet is on the record
 
 No visible change. CH-5602 now describes the shared Modal's entrance as it runs (a 6px rise from 98% on desktop, a

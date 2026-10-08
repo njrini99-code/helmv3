@@ -103,7 +103,8 @@ function PlayerFirstRun({ data }: { data: ChPlayerHome }) {
   const start = postRoundHref();
   const classes = rebuiltHref('/golf/dashboard/classes', 'player');
   return (
-    <main className="ch-h-main">
+    // `--first`: on the phone the head is the Ledger's page intro (home.css "Player Home on the phone").
+    <main className="ch-h-main ch-h-main--first">
       <header className="ch-h-head">
         <span className="ch-h-head__date">{data.todayLabel}</span>
         <h1 className="ch-display">{data.greeting}</h1>

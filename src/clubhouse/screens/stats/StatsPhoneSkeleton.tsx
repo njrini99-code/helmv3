@@ -41,8 +41,11 @@ function Figures({ count, line = false }: { count: number; line?: boolean }) {
           <dt>
             <Bar height={16.2}><Skeleton width={52} height={11} /></Bar>
           </dt>
+          {/* The value's 22px line (the trend's words share it, so every caption below starts level). */}
           <dd className={count === 3 && i === 2 ? 'is-words' : undefined}>
-            <Skeleton width={44} height={count === 3 && i === 2 ? 15 : 20} radius={6} />
+            <Bar height={22}>
+              <Skeleton width={44} height={count === 3 && i === 2 ? 16 : 20} radius={6} />
+            </Bar>
           </dd>
           <dd>
             <Skeleton width={36} height={11} />
@@ -56,11 +59,12 @@ function Figures({ count, line = false }: { count: number; line?: boolean }) {
 export function StatsTeamPhoneSkeleton() {
   return (
     <main className="ch-stm" aria-busy="true" aria-label="Loading stats" data-ch-code="CH-4401">
+      {/* The Ledger's page intro as loaded: the 11px eyebrow's line under the double rule, then the 31px title's. */}
       <header className="ch-stm-head" aria-hidden="true">
-        <Bar height={18.2}>
-          <Skeleton width={230} height={12} />
+        <Bar height={13.2}>
+          <Skeleton width={250} height={11} />
         </Bar>
-        <Bar height={30.8}>
+        <Bar height={33.5}>
           <Skeleton width={150} height={28} radius={8} />
         </Bar>
       </header>
@@ -82,11 +86,16 @@ export function StatsTeamPhoneSkeleton() {
 export function StatsPlayerPhoneSkeleton() {
   return (
     <main className="ch-stm" aria-busy="true" aria-label="Loading player stats" data-ch-code="CH-5403">
+      {/* As loaded: the avatar beside the 26px name's line and the caption's, under the double rule. */}
       <header className="ch-spm-head" aria-hidden="true">
         <Skeleton width={48} height={48} radius={24} />
-        <span style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <Skeleton width={160} height={22} radius={7} />
-          <Skeleton width={190} height={12} />
+        <span className="ch-spm-head__id">
+          <Bar height={28.6}>
+            <Skeleton width={160} height={22} radius={7} />
+          </Bar>
+          <Bar height={18.2}>
+            <Skeleton width={190} height={12} />
+          </Bar>
         </span>
       </header>
       {/* As on the loaded page: the header, the window and filter row, then the figures. */}

@@ -1,10 +1,10 @@
 'use client';
 
 import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, Flag, MessageSquare, Plus } from 'lucide-react';
-import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import type { ChPlayerHome } from '../../data/player-home';
 import { Button } from '../../ui/Button';
+import { FigureRow } from '../../ui/Ledger';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
 import { Nine } from '../../ui/Nine';
@@ -22,10 +22,12 @@ import { GirViz, PuttsViz, SgViz } from './RoundViz';
 
 /**
  * The player's phone Home (v2, design/handoff/Player - Home - Mobile.html,
- * m-player-home.jsx): the green hero with the day, the greeting, the brief,
- * Up next with its countdown, and Message coach / Post a round; then the week
- * with today's timeline, the latest round (paged, its card inline), scoring
- * and the parts of the game. Same loader and catalog as desktop.
+ * m-player-home.jsx), in the Mobile clubhouse pass (owner, 2026-10-08): on the
+ * parchment sheet, the day, the greeting, Up next with its countdown as the one
+ * green feature card, and Message coach / Post a round; then, flush under
+ * engraved rules, the week with today's timeline, the latest round (paged, its
+ * scorecard inline), scoring and the parts of the game. Same loader and
+ * catalog as desktop.
  */
 export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now?: string }) {
   usePhoneHero(true);
@@ -35,16 +37,15 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
   const post = postRoundHref();
 
   return (
-    <main className="ch-hm" aria-label="Home">
+    <main className="ch-hm ch-hm--player" aria-label="Home">
       {/* Owner, 2026-10-06: the CoachHelm brief no longer sits between the greeting and Up next on the player's phone. */}
       <header className="ch-hm-hero is-player">
         <span className="ch-hm-hero__date">{data.todayLabel}</span>
         <h1>{data.greeting}</h1>
         <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
           {data.week.error ? (
-            <div className="ch-hm-next is-static">
-              <RefreshNotice code="CH-2201" title="This week's schedule didn't load." body="Your events are safe. This is a display problem, and trying again usually clears it." />
-            </div>
+            // On the sheet, not in the green card: inside it the notice took the card's ivory ink and its words vanished.
+            <RefreshNotice code="CH-2201" title="This week's schedule didn't load." body="Your events are safe. This is a display problem, and trying again usually clears it." />
           ) : data.next ? (
             <UpNext e={data.next} now={now} kicker="Up next">
               {!data.next.allDay && <Countdown to={data.next.startIso} frozen={frozen} />}
@@ -69,16 +70,16 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
             </div>
           )}
         </SectionBoundary>
+        {/* On the parchment the hero's two keys are the shared buttons: Post a round the one primary, Message coach
+            the quiet one beside it (both tap lightly, D-70). */}
         <div className="ch-ph-acts">
-          <Link href={messageCoachHref(data.coachUserId)} className="ch-ph-act" onClick={() => haptic('press')}>
-            <Icon icon={MessageSquare} size={16} />
+          <Button size="lg" leftIcon={MessageSquare} href={messageCoachHref(data.coachUserId)} feel="press">
             Message coach
-          </Link>
+          </Button>
           {post && (
-            <Link href={post} className="ch-ph-act is-primary" onClick={() => haptic('press')}>
-              <Icon icon={Plus} size={16} />
+            <Button size="lg" variant="primary" leftIcon={Plus} href={post}>
               Post a round
-            </Link>
+            </Button>
           )}
         </div>
       </header>
@@ -109,7 +110,10 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
   );
 }
 
-/** My latest round (board "Latest"): paged through the last three, the card inline. */
+/** `changeTone`'s class as FigureRow's tone: a strokes gained that rounds to zero stays plain. */
+const figureTone = (t: string) => (t === 'is-gain' ? 'gain' : t === 'is-loss' ? 'loss' : undefined);
+
+/** My latest round (board "Latest"): paged through the last three, the scorecard inline. */
 function Latest({ data }: { data: ChPlayerHome['latest'] }) {
   const [i, setI] = useState(0);
   const r = data.rounds[i];
@@ -165,29 +169,14 @@ function Latest({ data }: { data: ChPlayerHome['latest'] }) {
               {data.holesError ? 'Hole-by-hole scores didn’t load for this round. The total is right.' : 'Posted as a total. Hole-by-hole scores weren’t recorded for this round.'}
             </p>
           )}
-          <dl className="ch-ph-strip">
-            <div>
-              <dt>GIR</dt>
-              <dd className="ch-num">{r.gir ?? NO_DATA}</dd>
-              <dd className="ch-ph-strip__viz">
-                <GirViz gir={r.gir} />
-              </dd>
-            </div>
-            <div>
-              <dt>Putts</dt>
-              <dd className="ch-num">{r.putts ?? NO_DATA}</dd>
-              <dd className="ch-ph-strip__viz">
-                <PuttsViz putts={r.putts} />
-              </dd>
-            </div>
-            <div>
-              <dt>SG</dt>
-              <dd className={'ch-num ' + changeTone(r.sg, false)}>{formatSigned(r.sg)}</dd>
-              <dd className="ch-ph-strip__viz">
-                <SgViz sg={r.sg} />
-              </dd>
-            </div>
-          </dl>
+          {/* The round's three figures between hairlines (the Ledger's FigureRow), each drawn under its value. */}
+          <FigureRow
+            items={[
+              { label: 'GIR', value: r.gir ?? NO_DATA, note: <GirViz gir={r.gir} /> },
+              { label: 'Putts', value: r.putts ?? NO_DATA, note: <PuttsViz putts={r.putts} /> },
+              { label: 'SG', value: formatSigned(r.sg), tone: figureTone(changeTone(r.sg, false)), note: <SgViz sg={r.sg} /> },
+            ]}
+          />
           {/* The board's "Open recap": the round's own review; My stats when it isn't rebuilt. */}
           <Button variant="ghost" rightIcon={ArrowRight} href={roundHref(r.id, 'player') ?? MY_STATS} className="ch-ph-card__more">
             {roundHref(r.id, 'player') ? 'Open recap' : 'My stats'}

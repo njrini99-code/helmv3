@@ -1,5 +1,25 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-08 — phone: Mobile clubhouse pass
+
+Team stats on the phone follows the Coach Home "Mobile clubhouse pass" board
+(round 3, "fewer containers, one feature card"). The page is the parchment
+sheet with no white cards:
+- it opens on the Ledger's page intro: "Varsity · 7 active · countable rounds"
+  as the eyebrow under the engraved double rule, Team stats in the bold
+  condensed sans (it was a regular-weight display title);
+- the four figures sit between hairlines as the Ledger's figure row, values in
+  the bold sans, each still drawn against its reference;
+- Scoring trend, Strokes gained by leg, Players and Team putting are sections
+  flush under their double rules, the caption under each title so a long one
+  never pushes the title onto two lines;
+- the players are rows on seams, on the section's edge, that tint on press;
+- a filter that matches nothing is the empty state alone on the sheet.
+
+The window switch, the filter and the sort keep their material. The empty bars
+panel holds the loaded section's new height (258px), and the skeleton draws the
+new head. Desktop is unchanged.
+
 ## 2026-10-07 — The trend brings a player forward; a leg re-sorts the grid in place
 
 Pointing at a player's name or line, or tabbing to the name, brings their line forward in green, drawn over the

@@ -742,7 +742,11 @@
   color: var(--ch-green-700);
 }
 
-/* Home's route skeleton on a phone (F-37): the hero's green band and the cards below it. */
+/* Home's route skeleton on a phone (F-37), in the Mobile clubhouse pass (2026-10-08): the loaded page's shape on the
+   parchment sheet, so the hand-off changes nothing but the words. The loading route can't know the role, so the hero
+   holds 386px, between the coach's (388 at 390 wide: the brief and Up next) and the player's (382: Up next with its
+   countdown, and the two keys); the first section then opens under its double rule within 3px of where both pages'
+   does (WebKit 390, 2026-10-08). */
 .ch-hm-skel {
   display: none;
 }
@@ -760,15 +764,42 @@
   .ch-hm-skel__hero {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    /* Between the coach hero (340px) and the player's (384px, with its two buttons): the loading route can't know the
-       role, and the old 273px dropped the page 67 to 111px when Home landed. Now it moves about 22px either way. */
     box-sizing: border-box;
-    min-height: 362px;
-    padding: 20px 18px 20px;
-    border-radius: 0 0 28px 28px;
-    background: linear-gradient(var(--ch-green-800), rgb(11 58 37 / 0) 72px),
-      radial-gradient(90% 60% at 100% 0%, rgb(123 199 154 / 0.16), transparent 60%), var(--ch-green-800);
+    min-height: 386px;
+    padding: 26px 20px 22px;
+  }
+  /* Each bar in a box the height of its loaded line: the date (11px under the double rule), the 31px greeting's line,
+     the brief's 14.5px lines. */
+  .ch-hm-skel__date {
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: 28px;
+    padding-top: 14px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-hm-skel__h1 {
+    display: flex;
+    align-items: center;
+    height: 33.5px;
+    margin: 14px 0 12px;
+  }
+  .ch-hm-skel__line {
+    display: flex;
+    align-items: center;
+    height: 21.75px;
+  }
+  .ch-hm-skel__card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-sizing: border-box;
+    height: 189px;
+    margin-top: 18px;
+    padding: 18px;
+    border-radius: 14px;
+    background: var(--ch-feature-bg);
+    box-shadow: var(--ch-elevation-feature);
   }
   .ch-hm-skel__bar {
     display: block;
@@ -776,20 +807,27 @@
     border-radius: var(--ch-radius-xs);
     background: rgb(244 241 232 / 0.12);
   }
-  .ch-hm-skel__card {
-    display: block;
-    height: 132px;
-    /* The brief's 18px above Up next (the hero's margin), so the placeholder grows with the page it stands in for. */
-    margin-top: 24px;
-    border-radius: 18px;
-    background: rgb(244 241 232 / 0.08);
-    box-shadow: inset 0 0 0 1px rgb(244 241 232 / 0.1);
-  }
   .ch-hm-skel__body {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 22px 16px;
+    padding: 30px 20px;
+  }
+  .ch-hm-skel__sec {
+    display: flex;
+    align-items: center;
+    height: 23px;
+    margin-bottom: 8px;
+    padding-top: 12px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-hm-skel__row {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    min-height: 58px;
+  }
+  .ch-hm-skel__row + .ch-hm-skel__row {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
   }
 }
 
@@ -1986,7 +2024,7 @@
   color: var(--ch-text-secondary);
 }
 
-/* Phone (m-player-home.css) */
+/* Phone (m-player-home.css). The hero's two keys are the shared buttons (PlayerHomePhone), side by side. */
 .ch-ph-acts {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1995,43 +2033,6 @@
 }
 .ch-ph-acts:has(> :only-child) {
   grid-template-columns: 1fr;
-}
-.ch-ph-act {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 46px;
-  border-radius: var(--ch-radius-lg);
-  background: var(--ch-on-dark-control-bg);
-  box-shadow: var(--ch-on-dark-control-shadow);
-  font: 600 14.5px/1 var(--ch-font-sans);
-  color: var(--ch-ivory-100);
-  text-decoration: none;
-  touch-action: manipulation;
-  transition: box-shadow var(--ch-dur-press) var(--ch-ease);
-}
-/* Press moves the control toward the hero: the lift collapses into a shallow recess. */
-.ch-ph-act:active {
-  box-shadow: var(--ch-on-dark-control-press-shadow);
-}
-.ch-ph-act svg {
-  color: var(--ch-hero-mint);
-}
-.ch-ph-act.is-primary {
-  background: linear-gradient(180deg, var(--ch-ivory-25), var(--ch-ivory-150));
-  box-shadow: var(--ch-on-dark-primary-shadow);
-  color: var(--ch-green-800);
-}
-.ch-ph-act.is-primary:active {
-  box-shadow: inset 0 1px 3px rgb(28 25 18 / 0.18), 0 0 0 1px rgb(2 18 10 / 0.12);
-}
-.ch-ph-act.is-primary svg {
-  color: var(--ch-green-700);
-}
-.ch-ph-act:focus-visible {
-  outline: 2px solid var(--ch-hero-mint);
-  outline-offset: 2px;
 }
 .ch-ph-pg {
   display: flex;
@@ -2125,38 +2126,6 @@
 }
 .ch-ph-nines.ch-scoreboard > .ch-nine + .ch-nine {
   box-shadow: inset 0 1px 0 var(--ch-board-rule);
-}
-/* The round's three figures (.mh-form__figs in the card): ruled in green, a rule between them, the figure over its label. */
-.ch-ph-strip {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  margin: 0;
-  padding-top: 2px;
-}
-.ch-ph-strip > div {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.ch-ph-strip > div + div {
-  padding-left: 12px;
-  border-left: 1px solid rgb(21 90 57 / 0.12);
-}
-.ch-ph-strip dt {
-  font: 500 11.5px/1 var(--ch-font-sans);
-  color: var(--ch-ink-600);
-}
-.ch-ph-strip dd {
-  margin: 0;
-  font: 500 18px/1 var(--ch-font-sans);
-  letter-spacing: -0.02em;
-  color: var(--ch-ink-950);
-}
-.ch-ph-strip dd.is-gain {
-  color: var(--ch-chart-gain);
-}
-.ch-ph-strip dd.is-loss {
-  color: var(--ch-chart-loss);
 }
 /* The card's onward link: a quiet green action at the foot, not a second raised button inside the card. */
 .ch-ph-card__more {
@@ -2305,7 +2274,6 @@
   .ch-hm-strip dt,
   .ch-cd em,
   .ch-ph-bench__k,
-  .ch-ph-strip dt,
   .ch-ph-game.is-phone .ch-ph-figs .ch-ph-figs__m {
     font-size: 12px;
   }
@@ -2332,12 +2300,6 @@
 }
 .ch-h-round__stats .ch-rviz {
   flex-basis: 100%;
-}
-.ch-ph-strip__viz {
-  margin: 0;
-}
-.ch-ph-strip__viz .ch-rviz {
-  width: 100%;
 }
 .ch-rviz--gir {
   display: flex;
@@ -3087,5 +3049,219 @@
   }
   .ch-hm-hero__brief svg {
     color: var(--ch-ledger-eyebrow);
+  }
+}
+
+/* Player Home on the phone: the "Mobile clubhouse pass" (owner, 2026-10-08), the Coach Home board's round 3 carried to
+   m-player-home.jsx. The page is the chassis' parchment sheet; Up next stays the one green feature card (shared with
+   the coach, above); every section below sits flush under its engraved double rule, with no white cards. Real objects
+   keep their material: the scorecard its green board, the window picker its well. Scoped to `.ch-hm--player`, so the
+   Coach Home blocks above are untouched. */
+@media (max-width: 820px) {
+  /* The chassis' parchment (shell.css) shows through, so the sheet has one tone from the greeting to the tab bar. */
+  .ch-hm--player {
+    background: none;
+  }
+  .ch-hm--player .ch-ph-acts {
+    gap: 10px;
+    margin-top: 14px;
+  }
+  /* Section heads in the Ledger's phone heading (ui.css `.ch-sec__title`): the bold condensed sans in forest ink. */
+  .ch-hm--player .ch-hm-sec {
+    gap: 14px;
+  }
+  .ch-hm--player .ch-hm-sec__h h2 {
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-hm--player .ch-hm-lab {
+    padding: 6px 0 0;
+    font: 600 14px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.01em;
+    color: var(--ch-ledger-ink);
+  }
+  /* This week as the board draws it (m-clubhouse.css round 2, m-player-home.css): today is the one solid green key, a
+     competition day a soft green tint with its flag, the other days flat on the sheet. */
+  .ch-hm--player .ch-hm-week .is-today .ch-hm-week__d {
+    background: var(--ch-green-600);
+    box-shadow: none;
+  }
+  .ch-hm--player .ch-hm-week .is-today .ch-hm-week__d em {
+    color: var(--ch-on-green-ink-soft);
+  }
+  .ch-hm--player .ch-hm-week .is-today .ch-hm-week__d b {
+    color: var(--ch-on-green-ink);
+  }
+  .ch-hm--player .ch-hm-week .is-today .ch-hm-week__d > span {
+    color: var(--ch-on-green-ink);
+  }
+  .ch-hm--player .ch-hm-week .is-today .ch-hm-week__d > span i {
+    background: var(--ch-on-green-ink-soft);
+  }
+  .ch-hm--player .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d {
+    background: var(--ch-green-50);
+    box-shadow: none;
+  }
+  /* The weekday letters hold 4.5:1 on their keys: the soft ivory on the green (5.5:1), green 500 on the tint (5.8:1). */
+  .ch-hm--player .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d em {
+    color: var(--ch-green-500);
+  }
+  .ch-hm--player .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d b {
+    font-weight: 600;
+    color: var(--ch-green-600);
+  }
+  .ch-hm--player .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d > span {
+    color: var(--ch-green-600);
+  }
+  .ch-hm--player .ch-hm-week .is-today.is-major .ch-hm-week__d {
+    box-shadow: 0 0 0 2px var(--ch-hero-mint-strong);
+  }
+  /* Today's rows sit on the section's edge like the Ledger's rows (ui.css `.ch-lgr__row.is-link`): the tap area runs
+     12px past the text on each side and a press tints it. */
+  .ch-hm--player .ch-hm-tl__a {
+    margin-inline: -12px;
+    padding-inline: 12px;
+    border-radius: var(--ch-radius-md);
+  }
+  .ch-hm--player .ch-hm-tl__a:active {
+    background: var(--ch-ledger-row-press);
+  }
+  .ch-hm--player .ch-hm-tl__a:focus-visible {
+    outline: 2px solid var(--ch-border-focus);
+    outline-offset: -2px;
+  }
+  /* The pager's keys sit on the sheet as hairline rings, not raised white coins; a press tints them. */
+  .ch-hm--player .ch-ph-pg button {
+    color: var(--ch-ledger-ink);
+  }
+  .ch-hm--player .ch-ph-pg button::before {
+    background: none;
+    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+  }
+  .ch-hm--player .ch-ph-pg button:active::before {
+    background: var(--ch-ledger-row-press);
+  }
+  .ch-hm--player .ch-ph-pg button:focus-visible::before {
+    box-shadow: 0 0 0 2px var(--ch-border-focus);
+  }
+  /* My latest round: no card. The round's line, its scorecard, its figures between hairlines, the way to the recap. */
+  .ch-hm--player .ch-ph-card {
+    gap: 16px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-hm--player .ch-ph-rd__b b {
+    color: var(--ch-text-primary);
+  }
+  .ch-hm--player .ch-ph-card .ch-fgr__note .ch-rviz {
+    width: 100%;
+  }
+  .ch-hm--player .ch-ph-card__more {
+    margin-top: -8px;
+  }
+  /* Scoring: the picker, the line and the reading flush on the sheet. The line's halo and its open dots take the
+     parchment, so the line reads cut out of the page. */
+  .ch-hm--player .ch-ph-game.is-phone {
+    gap: 16px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-hm--player .ch-ph-chart__halo {
+    stroke: var(--ch-workspace);
+  }
+  .ch-hm--player .ch-ph-chart__dot {
+    fill: var(--ch-workspace);
+  }
+  .ch-hm--player .ch-ph-chart__dot.is-under {
+    fill: var(--ch-green-600);
+  }
+  /* The four figures as the Ledger's figure row, two by two: hairlines above and below, soft rules between. */
+  .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs {
+    border-top: 1px solid var(--ch-ledger-rule);
+    border-bottom: 1px solid var(--ch-ledger-rule);
+  }
+  .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs > div {
+    gap: 5px;
+    padding: 14px 0;
+    box-shadow: none;
+  }
+  .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs > div:nth-child(even) {
+    padding-left: 14px;
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs > div:nth-child(n + 3) {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs > div:nth-child(even):nth-child(n + 3) {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft), inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs dt {
+    font: 500 12px/1.2 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs dd:not(.ch-ph-figs__m) {
+    font: 600 22px/1 var(--ch-font-sans);
+    letter-spacing: -0.03em;
+    font-variation-settings: normal;
+  }
+  .ch-hm--player .ch-ph-viz--avg i.is-now {
+    box-shadow: 0 0 0 2px var(--ch-workspace);
+  }
+  /* The reading follows the figure row's hairline, so it drops its own dashed rule. */
+  .ch-hm--player .ch-ph-game.is-phone .ch-ph-note {
+    padding-top: 0;
+    border-top: 0;
+  }
+  /* Your game: the four parts flush on the sheet, divided by soft rules. */
+  .ch-hm--player .ch-ph-legs-sec.is-phone .ch-ph-legs {
+    overflow: visible;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-hm--player .ch-ph-legs-sec.is-phone .ch-ph-leg {
+    padding: 18px 0;
+  }
+  .ch-hm--player .ch-ph-legs-sec.is-phone .ch-ph-leg:first-child {
+    padding-top: 4px;
+  }
+  .ch-hm--player .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
+    border-top: 1px solid var(--ch-ledger-rule-soft);
+  }
+  .ch-hm--player .ch-ph-legs-sec.is-phone .ch-ph-leg__h b {
+    font-size: 15px;
+    color: var(--ch-text-primary);
+  }
+  .ch-hm--player .ch-ph-spark__dot {
+    box-shadow: 0 0 0 3px var(--ch-workspace);
+  }
+  /* The first-run page (CH-2312): its head is the Ledger's page intro (ui/Ledger.tsx PageIntro), the date as the
+     eyebrow under the double rule and the greeting in the bold condensed sans, on the same 20px edge as Home. */
+  .ch-h-main--first {
+    padding: 26px 20px 48px;
+  }
+  .ch-h-main--first > .ch-h-head {
+    gap: 0;
+    max-width: none;
+    padding-top: 14px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-h-main--first > .ch-h-head > .ch-h-head__date {
+    font: 500 11px/1.2 var(--ch-font-sans);
+    letter-spacing: 0.14em;
+    color: var(--ch-ledger-eyebrow);
+  }
+  .ch-h-main--first > .ch-h-head > h1 {
+    margin: 14px 0 0;
+    font: 600 31px/1.08 var(--ch-font-sans);
+    letter-spacing: -0.038em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
   }
 }

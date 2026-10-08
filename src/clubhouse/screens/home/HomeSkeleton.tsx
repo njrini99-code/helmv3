@@ -14,18 +14,39 @@ export function HomeSkeleton() {
     // Desktop draws the loading page with the framed head, as the loaded page is, so nothing moves when the data lands.
     <main className="ch-h-main" aria-busy="true" aria-label="Loading Home" data-ch-code="CH-2401" data-canopy="">
       <SkeletonHeroBar />
-      {/* Phone: the page's own shape (green hero, then the Today and form cards), so the hand-off changes nothing but the words (F-37). */}
+      {/* Phone: the page's own shape in the Mobile clubhouse pass (the date under its double rule, the greeting, the
+          brief's lines, the green Up next card, then the first section under its rule and its rows), so the hand-off
+          changes nothing but the words (F-37). */}
       <div className="ch-hm-skel" aria-hidden="true">
         <div className="ch-hm-skel__hero">
-          <span className="ch-hm-skel__bar" style={{ width: 150, height: 13 }} />
-          <span className="ch-hm-skel__bar" style={{ width: 240, height: 32 }} />
-          <span className="ch-hm-skel__bar" style={{ width: '85%', height: 14 }} />
-          <span className="ch-hm-skel__card" />
+          <span className="ch-hm-skel__date">
+            <Skeleton width={150} height={11} />
+          </span>
+          <span className="ch-hm-skel__h1">
+            <Skeleton width={240} height={28} radius={8} />
+          </span>
+          <span className="ch-hm-skel__line">
+            <Skeleton width="85%" height={14} />
+          </span>
+          <span className="ch-hm-skel__line">
+            <Skeleton width="60%" height={14} />
+          </span>
+          <span className="ch-hm-skel__card">
+            <span className="ch-hm-skel__bar" style={{ width: 120, height: 12 }} />
+            <span className="ch-hm-skel__bar" style={{ width: 210, height: 23 }} />
+            <span className="ch-hm-skel__bar" style={{ width: 170, height: 14 }} />
+          </span>
         </div>
         <div className="ch-hm-skel__body">
-          <Skeleton width={80} height={17} />
-          <Skeleton width="100%" height={118} radius={16} />
-          <Skeleton width="100%" height={150} radius={16} />
+          <span className="ch-hm-skel__sec">
+            <Skeleton width={96} height={17} />
+          </span>
+          {[0, 1, 2].map((k) => (
+            <span key={k} className="ch-hm-skel__row">
+              <Skeleton width={34} height={13} />
+              <Skeleton width={k === 1 ? '46%' : '58%'} height={14} />
+            </span>
+          ))}
         </div>
       </div>
       {/* Desktop head, line for line as loaded (perf 2026-10-01, measured with `npm run clubhouse:perf`): the date, the greeting, a two-line sentence and the two actions. */}
