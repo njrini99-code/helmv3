@@ -14,8 +14,8 @@ export function RecruitingNoTeam() {
         size="page"
         code="CH-14306"
         icon={Users}
-        title="You aren't on a team yet"
-        body="Recruiting is your team's list of prospects. Create or join a team, then add the golfers you're following."
+        title="You aren’t on a team yet"
+        body="Recruiting is your team’s list of prospects. Create or join a team, then add the golfers you’re following."
         action={
           <Button variant="primary" href="/golf/dashboard/settings?section=team">
             Open team settings

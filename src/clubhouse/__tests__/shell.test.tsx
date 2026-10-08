@@ -346,7 +346,7 @@ describe('Shell · network', () => {
     const fn = vi.fn(() => Promise.resolve({ success: true }));
     wrap(<Saver fn={fn} />);
     act(() => screen.getByRole('button', { name: 'Save' }).click());
-    await expectCode('CH-1903', /you're offline/);
+    await expectCode('CH-1903', /you’re offline/);
     expect(fn).not.toHaveBeenCalled();
   });
 });

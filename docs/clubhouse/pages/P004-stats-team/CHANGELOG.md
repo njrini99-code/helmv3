@@ -2,11 +2,11 @@
 
 ## 2026-10-08 — Copy: typographic apostrophes
 
-Team stats writes its apostrophes as ’: the export's failure (CH-4001) and the
-window's and filter's offline refusals (CH-4901), shared with the profile. The
-catalog quotes them as shown, with the crash titles. The trend's strokes gained
-note ("The team's strokes gained are …") stays straight until
-strokes-gained.test moves with it.
+Team stats writes its apostrophes as ’: the export's failure (CH-4001), the
+window's and filter's offline refusals (CH-4901), shared with the profile, the
+trend's strokes gained note ("The team’s strokes gained are …") and the no-team
+page (CH-4309, the route's). The catalog quotes them as shown, with the crash
+titles.
 
 ## 2026-10-08 — The empty window is the page's empty state; failures and crashes told once
 

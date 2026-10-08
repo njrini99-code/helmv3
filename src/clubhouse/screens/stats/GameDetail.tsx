@@ -568,7 +568,7 @@ export function GameDetail({
             'Bars are the make rate; the tick is the Tour. Amber is below it.',
           )}
         >
-          {x.puttsError && <InlineNotice code="CH-5211" title="Putts past 20 feet didn't load." body="The curve stops at 20 feet. Try again; the error has been reported." onRetry={onRetry} />}
+          {x.puttsError && <InlineNotice code="CH-5211" title="Putts past 20 feet didn’t load." body="The curve stops at 20 feet. Try again; the error has been reported." onRetry={onRetry} />}
           {phone ? <MakeRows bands={curve} /> : <MakeCurve bands={curve} />}
         </Panel>
         <Panel title="How putts miss" wide>

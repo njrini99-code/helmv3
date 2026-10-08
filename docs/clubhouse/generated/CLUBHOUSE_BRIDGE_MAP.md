@@ -104,12 +104,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Page | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | Total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P001 | 3 | 1 | 1 | 5 |  | 14 | 4 | 3 | 1 |  |  |  | 1 | 2 |  | 16 | 8 | 14 | 1 | 3 | 1 | 3 | 1 | 1 |  | 83 |
+| P001 | 3 | 2 | 1 | 5 |  | 14 | 4 | 3 | 1 |  |  |  | 1 | 2 |  | 17 | 8 | 15 | 1 | 3 | 1 | 3 | 1 | 1 |  | 86 |
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
 | P003 | 2 | 1 | 3 | 8 | 2 | 18 | 1 | 6 | 1 |  | 1 | 3 | 1 | 3 |  | 3 | 4 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 69 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 2 | 2 | 22 | 2 | 18 | 3 | 6 | 1 |  |  | 2 |  | 1 | 1 | 4 | 3 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 85 |
-| P006 | 4 | 5 | 3 | 9 | 4 | 27 | 1 | 8 | 1 | 2 | 4 | 3 | 2 | 2 | 1 | 5 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 93 |
+| P006 | 4 | 5 | 3 | 9 | 4 | 27 | 1 | 8 | 1 | 2 | 4 | 3 | 2 | 2 | 1 | 6 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 94 |
 | P007 | 2 | 10 | 1 | 9 | 5 | 35 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 6 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 96 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 40 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 128 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 33 | 4 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 133 |
@@ -128,6 +128,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10102 |  | 01 Default / core UI | `SHELL_READY` | implemented | Every Clubhouse page opens in the frame: on wide screens the sidebar, the top bar with the bell and the page; on a phone the page with the role's tab bar and More sheet. |
 | 10103 |  | 01 Default / core UI | `TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN` | implemented | Switching teams sets the active team on the server (the same action Fairway uses), then refreshes the page so the layout, the sidebar's next event and Roster badge, and the page itself read for the new team; the route remounts for the new team, so a search, an open panel or a live feed the old team's screen held does not carry over, while a refresh for the same team keeps its state. |
 | 10201 | CH-1401 | 02 Initial loading / skeleton | `THE_BELL_IS_LOADING_ITS_LIST` | implemented | The bell is loading its list |
+| 10202 | CH-1402 | 02 Initial loading / skeleton | `A_PHONE_PAGE_OPENED_FROM_MORE_OR` | implemented | A phone page opened from More, a page below another (a qualifier, its selections, a round, recovery), or a coach's full-page form (a new or edited qualifier) is loading or still arriving from the server |
 | 10301 |  | 03 Background loading / refresh | `BELL_REFRESHES_ON_OPEN` | implemented | The bell reads its list again every time it opens; a list already shown stays on screen while the new one loads. |
 | 10401 | CH-1301 | 04 Empty | `A_PAGE_THAT_HASNT_BEEN_REBUILT_IN` | implemented | A page that hasn't been rebuilt in Clubhouse |
 | 10402 | CH-1302 | 04 Empty | `THE_BELL_HAS_NOTHING` | implemented | The bell has nothing |
@@ -175,6 +176,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 11614 | CH-1614 | 16 Micro animation | `A_FINGER_HOLDS_A_TOAST_OR_THROWS` | implemented | A finger holds a toast, or throws it |
 | 11615 | CH-1615 | 16 Micro animation | `A_SEGMENTED_CONTROLS_CHOICE_CHANGES` | implemented | A segmented control's choice changes |
 | 11616 | CH-1616 | 16 Micro animation | `CONTENT_SWAPS_INSIDE_A_FIXED_FRAME` | implemented | Content swaps inside a fixed frame (a tab's panel, a chart's mode, a window's figures, a pager) |
+| 11617 | CH-1617 | 16 Micro animation | `PRESSING_A_SEGMENTED_CONTROLS_OPTION_OR_A` | implemented | Pressing a segmented control's option or a pill that isn't on, or the kit's feature card as a link or a button |
 | 11701 | CH-1701 | 17 Haptic | `CHANGING_TABS` | implemented | Changing tabs (not tapping the tab they're on) |
 | 11702 | CH-1702 | 17 Haptic | `ANY_SAVE_OR_SEND_LANDS` | implemented | Any save or send lands |
 | 11703 | CH-1703 | 17 Haptic | `ANY_SAVE_OR_SEND_FAILS` | implemented | Any save or send fails |
@@ -197,6 +199,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 11812 | CH-1812 | 18 Accessibility | `A_TOAST_RAISED_WHILE_A_DIALOG_OR` | implemented | A toast raised while a dialog or sheet is open shows inside it (on the phone, from the top), so it is seen, announced and its Retry can be tapped; a modal dialog makes everything outside it inert, which had hidden them. When the dialog closes, open toasts move back to the page |
 | 11813 | CH-1813 | 18 Accessibility | `ON_A_DESKTOP_A_HEAD_COACH_ON` | implemented | On a desktop a head coach on more than one team sees the sidebar's team line as a menu button (the boards' up-down chevrons): it opens a listbox of the teams with the current one `aria-selected`; arrows, Home and End move, Enter or Space picks, Esc or Tab closes and focus returns to the button; a pick switches at once and every screen re-reads for the new team |
 | 11814 | CH-1814 | 18 Accessibility | `ON_THE_PHONE_THE_SAME_COACH_SEES` | implemented | On the phone the same coach sees their teams in the More sheet, under who they are, the current one marked (`aria-current`); a switch closes the sheet on the new team, a refused one leaves it open with the reason |
+| 11815 | CH-1815 | 18 Accessibility | `ON_THE_PHONE_EVERY_KEY_A_FINGER` | implemented | On the phone every key a finger uses reaches at least 44 by 44: the bar's back link and text action (a pushed screen's bar has the shell bar's 44px row, with no hairline), the hero bell (its 40px disc drawn inside a 44px key, where it was), a sheet's Close (its reach leans up into the header's padding, so a title-only header no longer clips it to 43), and the search field (36px drawn, 44px to the finger; its input and clear key take their own taps, and its 16px text keeps iOS from zooming the page on focus). Measured in WebKit at 390 on 2026-10-08 |
 | 11901 |  | 19 Responsive layout | `PHONE_CHROME` | implemented | On a phone the sidebar gives way to the role's tab bar (coach Home, CoachHelm, Calendar, Stats; player Home, CoachHelm, Rounds, Team Hub) and a More sheet with the rest. |
 | 12001 | CH-1906 | 20 Keyboard / input | `ON_THE_PHONE_THE_EDGE_SWIPE_OR` | implemented | On the phone, the edge swipe or the browser's back while a screen is pushed |
 | 12002 | CH-1907 | 20 Keyboard / input | `ON_THE_PHONE_TAPPING_THE_TAB_THAT` | implemented | On the phone, tapping the tab that is already open |
@@ -225,7 +228,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 20406 | CH-2306 | 04 Empty | `A_PLAYER_HAS_FEWER_THAN_THREE_ROUNDS` | implemented | A player has fewer than three rounds |
 | 20407 | CH-2307 | 04 Empty | `A_COACH_WITH_NO_ACTIVE_TEAM` | implemented | A coach with no active team |
 | 20408 | CH-2308 | 04 Empty | `A_TEAM_WITH_NOTHING_YET_NO_PLAYERS` | implemented | A team with nothing yet: no players, no events this week, no rounds, and every read answered |
-| 20409 | CH-2309 | 04 Empty | `NOTHING_ON_THE_CALENDAR_AHEAD` | implemented | Nothing on the calendar ahead (phone). A player: "Your coach's practices and events will show here with a countdown.", no quick adds |
+| 20409 | CH-2309 | 04 Empty | `NOTHING_ON_THE_CALENDAR_AHEAD` | implemented | Nothing on the calendar ahead (phone). A player: "Your coach’s practices and events will show here with a countdown.", no quick adds |
 | 20410 | CH-2310 | 04 Empty | `FEWER_THAN_TWO_18_HOLE_ROUNDS` | implemented | Fewer than two 18-hole rounds (player Home Scoring) |
 | 20411 | CH-2311 | 04 Empty | `NO_FAIRWAYS_GREENS_SCRAMBLING_OR_PUTTS_LOGGED` | implemented | No fairways, greens, scrambling or putts logged (player Home) |
 | 20412 | CH-2312 | 04 Empty | `A_NEW_PLAYER_NO_ROUNDS_NOTHING_ON` | implemented | A new player: no rounds, nothing on the calendar, every read answered (v2 first-run, D-71) |
@@ -591,6 +594,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 61603 | CH-6603 | 16 Micro animation | `THE_CURRENT_TIME` | implemented | The current time |
 | 61604 | CH-6604 | 16 Micro animation | `SWITCHING_BETWEEN_DAY_WEEK_MONTH_AND_AGENDA` | implemented | Switching between Day, Week, Month and Agenda (Day, Month and List on the phone) |
 | 61605 | CH-6605 | 16 Micro animation | `STEPPING_TO_ANOTHER_DAY_WEEK_OR_MONTH` | implemented | Stepping to another day, week or month (the arrows, the arrow keys, Today or a date) |
+| 61606 | CH-6606 | 16 Micro animation | `CHOOSING_ANOTHER_DAY_IN_THE_PHONES_WEEK` | implemented | Choosing another day in the phone's week strip |
 | 61701 | CH-6701 | 17 Haptic | `OPENING_AN_EVENT_A_DAY_OR_A` | implemented | Opening an event, a day or a panel item; changing view, week or players; each Find a time step |
 | 61702 | CH-6702 | 17 Haptic | `A_FORM_WITH_A_PROBLEM_OR_CLOSING` | implemented | A form with a problem, or closing the editor with changes |
 | 61703 | CH-6703 | 17 Haptic | `A_LINK_IS_COPIED` | implemented | A link is copied |
@@ -1260,7 +1264,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 120404 | CH-12304 | 04 Empty | `A_CLASS_WITH_TIMES_BUT_NO_DAYS` | implemented | A class with times but no days |
 | 120405 | CH-12305 | 04 Empty | `A_PLAYER_ON_NO_TEAM` | implemented | A player on no team |
 | 120406 | CH-12307 | 04 Empty | `AN_IMPORT_WHERE_EVERY_CLASS_IS_ALREADY` | implemented | An import where every class is already on the schedule |
-| 120407 |  | 04 Empty | `FIRST_RUN_ONLY_WHEN_THE_READ_ANSWERED` | implemented | The first-run page (CH-12301) shows only when the classes read answered and the list is empty. A read that failed shows CH-12201 in its place, with no Add class or Import schedule beside it, and the header offers neither. Removing the last class returns to the first-run page. |
+| 120407 |  | 04 Empty | `FIRST_RUN_ONLY_WHEN_THE_READ_ANSWERED` | implemented | The first-run page (CH-12301) shows only when the classes read answered and the list is empty. A read that failed shows CH-12201 in its place, and the header keeps Import schedule and Add class (a failed read keeps the head and its primary action, owner decision 2026-10-08). Removing the last class returns to the first-run page. |
 | 120408 | CH-12308 | 04 Empty | `PHONE_NO_CLASS_MEETS_TODAY` | implemented | Phone: no class meets today |
 | 120501 | CH-12101 | 05 Validation | `SAVE_WITH_NO_COURSE_CODE` | implemented | Save with no course code |
 | 120502 | CH-12102 | 05 Validation | `SAVE_WITH_NO_COURSE_NAME` | implemented | Save with no course name |

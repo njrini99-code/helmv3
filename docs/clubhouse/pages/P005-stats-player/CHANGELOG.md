@@ -3,12 +3,11 @@
 ## 2026-10-08 — Copy: typographic apostrophes
 
 A player's stats write their apostrophes as ’ on desktop and the phone: the
-failed reads (CH-5201 to CH-5203, CH-5209, CH-5210, CH-5212, CH-5213), the
-focus area's and the share's failures (CH-5001, CH-5002), the offline refusals
-(CH-5901), the share key's name, the early-read line and Game detail's panel
-notes. The catalog quotes them as shown. CH-5211 ("Putts past 20 feet didn't
-load") stays straight until strokes-gained.test moves with it, and the offline
-toast's ": you're offline" is the shared action hook's (lib/use-action.ts).
+failed reads (CH-5201 to CH-5203, CH-5209 to CH-5213), the focus area's and
+the share's failures (CH-5001, CH-5002), the offline refusals (CH-5901, and
+CH-1903's "you’re offline", which the shared action hook now writes), the share
+key's name, the early-read line, the trend's strokes gained note and Game
+detail's panel notes. The catalog quotes them as shown.
 
 ## 2026-10-08 — phone: every tap answers
 

@@ -1,5 +1,13 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-08 — Copy: the no-team page's apostrophes
+
+The no-team page (CH-14306) writes "You aren’t on a team yet" and "Recruiting
+is your team’s list of prospects … the golfers you’re following" with the
+typographic apostrophe, as Home, Stats and Calendar do. An offline write's
+toast (CH-14901) now ends "you’re offline" from the shared action hook
+(CH-1903); "Couldn't move …" before it is the page's own and unchanged.
+
 ## 2026-10-08 — States: first run stands alone
 
 From the states audit (2026-10-08, finding c2): with no prospects yet, the

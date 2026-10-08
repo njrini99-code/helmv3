@@ -248,7 +248,7 @@ describe('Stats player · empty', () => {
 
   it('CH-4309 no team yet', () => {
     wrap(<StatsNoTeam coach />);
-    expect(code('CH-4309')!.textContent).toMatch(/You aren't on a team yet/);
+    expect(code('CH-4309')!.textContent).toMatch(/You aren’t on a team yet/);
   });
 });
 
@@ -1150,7 +1150,7 @@ describe('Stats player · network', () => {
       await user.click(screen.getByRole('button', { name: 'Add focus area' }));
       await user.type(screen.getByRole('textbox', { name: 'What to work on' }), 'Lag putting');
       await user.click(screen.getByRole('button', { name: 'Propose focus area' }));
-      await expectCode('CH-1903', /Couldn’t add the focus area for Jonah: you['’]re offline/);
+      await expectCode('CH-1903', /Couldn’t add the focus area for Jonah: you’re offline/);
       expect(createFocusArea).not.toHaveBeenCalled();
       // The sheet stays open with the text, so the coach can send it once back online.
       expect((screen.getByRole('textbox', { name: 'What to work on' }) as HTMLInputElement).value).toBe('Lag putting');

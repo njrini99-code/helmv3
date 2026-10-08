@@ -278,7 +278,7 @@ describe('Recruiting · the loader, the route and the page', () => {
     expect(await loadRecruiting()).toEqual({ kind: 'noTeam' });
     session.current = { coach: { id: 'c1' } };
     render(<ToastProvider>{await ClubhouseRecruitingRoute()}</ToastProvider>);
-    expect(code('CH-14306')?.textContent).toMatch(/You aren't on a team yet/);
+    expect(code('CH-14306')?.textContent).toMatch(/You aren’t on a team yet/);
     expect(screen.getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');
   });
 
@@ -673,7 +673,7 @@ describe('Recruiting · desktop', () => {
     wrap(PREVIEW_RECRUITING, w);
     const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
     await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Committed' }));
-    await expectCode('CH-1903', /Couldn't move Mason Reilly to Committed: you're offline/);
+    await expectCode('CH-1903', /Couldn't move Mason Reilly to Committed: you’re offline/);
     expect(w.update).not.toHaveBeenCalled();
     expect(stageOf('Mason Reilly')).toBe('Offered');
     // Back online, Retry does it.

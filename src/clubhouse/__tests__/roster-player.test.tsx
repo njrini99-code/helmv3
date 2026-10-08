@@ -162,7 +162,7 @@ describe('Player roster · who gets it (30804)', () => {
         <RosterNoTeam viewer="player" />
       </div>,
     );
-    expect(code('CH-3308')!.textContent).toMatch(/You aren't on a team yet/);
+    expect(code('CH-3308')!.textContent).toMatch(/You aren’t on a team yet/);
     expect(code('CH-3308')!.textContent).toMatch(/Your teammates appear here once your coach approves your request to join\./);
   });
 

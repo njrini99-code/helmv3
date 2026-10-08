@@ -679,7 +679,7 @@ describe('Game detail · states', () => {
     expect(code('CH-5209')!.textContent).toContain('Toughest holes didn’t load');
     expect(code('CH-5210')!.textContent).toContain('Proximity against the Tour didn’t load');
     expect(codes('CH-5212')).toHaveLength(2);
-    expect(code('CH-5211')!.textContent).toContain("Putts past 20 feet didn't load");
+    expect(code('CH-5211')!.textContent).toContain('Putts past 20 feet didn’t load');
     // None of them is shown as "none logged".
     expect(code('CH-5311')).toBeNull();
     expect(code('CH-5316')).toBeNull();

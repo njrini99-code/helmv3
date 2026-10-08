@@ -268,13 +268,13 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
       if (!a || !b || a.i === b.i) return `${sel.p.first} has one week in this window so far.`;
       const d = b.v - a.v;
       return isSg
-        ? sgChangeNote(`${sel.p.first}'s`, a.v, b.v, data.weeks[a.i]!)
+        ? sgChangeNote(`${sel.p.first}’s`, a.v, b.v, data.weeks[a.i]!)
         : `${sel.p.first} is ${d <= 0 ? 'down' : 'up'} ${Math.abs(d).toFixed(1)} strokes across this window, now ${fmtEnd(b.v)}.`;
     }
     if (!tFirst || !tLast || tFirst.i === tLast.i) return 'The trend needs rounds in at least two weeks.';
     const d = tLast.v - tFirst.v;
     return isSg
-      ? sgChangeNote("The team's", tFirst.v, tLast.v, data.weeks[tFirst.i]!)
+      ? sgChangeNote('The team’s', tFirst.v, tLast.v, data.weeks[tFirst.i]!)
       : `Team scoring is ${d <= 0 ? 'down' : 'up'} ${Math.abs(d).toFixed(1)} from ${data.weeks[tFirst.i]} to ${data.weeks[tLast.i]}, now ${tLast.v.toFixed(1)}.`;
   })();
   const sorted = [...lines].sort((a, b) => {

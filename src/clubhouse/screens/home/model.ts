@@ -58,9 +58,9 @@ export interface ChSublineRow {
 function reason(r: ChSublineRow): string {
   const quiet = r.quietDays != null && r.quietDays >= QUIET_DAYS;
   const who = firstName(r.name);
-  if (r.status === 'slipping' && quiet) return `${who} is slipping and hasn't posted a round in ${r.quietDays} days`;
+  if (r.status === 'slipping' && quiet) return `${who} is slipping and hasn’t posted a round in ${r.quietDays} days`;
   if (r.status === 'slipping') return `${who} is slipping`;
-  return `${who} hasn't posted a round in ${r.quietDays} days`;
+  return `${who} hasn’t posted a round in ${r.quietDays} days`;
 }
 
 function list(parts: string[]): string {

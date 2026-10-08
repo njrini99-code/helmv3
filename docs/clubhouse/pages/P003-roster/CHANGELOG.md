@@ -1,5 +1,12 @@
 # P003 — Roster: changelog
 
+## 2026-10-08 — Copy: the no-team page's apostrophe
+
+"You aren’t on a team yet" (CH-3306 for a coach, CH-3308 for a player) uses the
+typographic apostrophe, as Home, Stats and Calendar do. The offline toast's
+"you’re offline" now comes curly from the shared action hook (CH-1903); the
+page's own "Couldn't …" words before it are unchanged.
+
 ## 2026-10-08 — States: one notice when two reads fail; titles without a full stop
 
 From the states audit (2026-10-08, findings c15 and b8), desktop and phone:

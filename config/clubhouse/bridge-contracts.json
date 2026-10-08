@@ -48,6 +48,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10202,
+    "page": "P001",
+    "category": 2,
+    "item": 2,
+    "name": "A_PHONE_PAGE_OPENED_FROM_MORE_OR",
+    "chCode": "CH-1402",
+    "meaning": "A phone page opened from More, a page below another (a qualifier, its selections, a round, recovery), or a coach's full-page form (a new or edited qualifier) is loading or still arriving from the server",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10301,
     "page": "P001",
     "category": 3,
@@ -581,6 +592,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 11617,
+    "page": "P001",
+    "category": 16,
+    "item": 17,
+    "name": "PRESSING_A_SEGMENTED_CONTROLS_OPTION_OR_A",
+    "chCode": "CH-1617",
+    "meaning": "Pressing a segmented control's option or a pill that isn't on, or the kit's feature card as a link or a button",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 11701,
     "page": "P001",
     "category": 17,
@@ -819,6 +841,17 @@
     "name": "ON_THE_PHONE_THE_SAME_COACH_SEES",
     "chCode": "CH-1814",
     "meaning": "On the phone the same coach sees their teams in the More sheet, under who they are, the current one marked (`aria-current`); a switch closes the sheet on the new team, a refused one leaves it open with the reason",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11815,
+    "page": "P001",
+    "category": 18,
+    "item": 15,
+    "name": "ON_THE_PHONE_EVERY_KEY_A_FINGER",
+    "chCode": "CH-1815",
+    "meaning": "On the phone every key a finger uses reaches at least 44 by 44: the bar's back link and text action (a pushed screen's bar has the shell bar's 44px row, with no hairline), the hero bell (its 40px disc drawn inside a 44px key, where it was), a sheet's Close (its reach leans up into the header's padding, so a title-only header no longer clips it to 43), and the search field (36px drawn, 44px to the finger; its input and clear key take their own taps, and its 16px text keeps iOS from zooming the page on focus). Measured in WebKit at 390 on 2026-10-08",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -1098,7 +1131,7 @@
     "item": 9,
     "name": "NOTHING_ON_THE_CALENDAR_AHEAD",
     "chCode": "CH-2309",
-    "meaning": "Nothing on the calendar ahead (phone). A player: \"Your coach's practices and events will show here with a countdown.\", no quick adds",
+    "meaning": "Nothing on the calendar ahead (phone). A player: \"Your coach’s practices and events will show here with a countdown.\", no quick adds",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
@@ -5088,6 +5121,17 @@
     "name": "STEPPING_TO_ANOTHER_DAY_WEEK_OR_MONTH",
     "chCode": "CH-6605",
     "meaning": "Stepping to another day, week or month (the arrows, the arrow keys, Today or a date)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61606,
+    "page": "P006",
+    "category": 16,
+    "item": 6,
+    "name": "CHOOSING_ANOTHER_DAY_IN_THE_PHONES_WEEK",
+    "chCode": "CH-6606",
+    "meaning": "Choosing another day in the phone's week strip",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
@@ -12443,7 +12487,7 @@
     "category": 4,
     "item": 7,
     "name": "FIRST_RUN_ONLY_WHEN_THE_READ_ANSWERED",
-    "meaning": "The first-run page (CH-12301) shows only when the classes read answered and the list is empty. A read that failed shows CH-12201 in its place, with no Add class or Import schedule beside it, and the header offers neither. Removing the last class returns to the first-run page.",
+    "meaning": "The first-run page (CH-12301) shows only when the classes read answered and the list is empty. A read that failed shows CH-12201 in its place, and the header keeps Import schedule and Add class (a failed read keeps the head and its primary action, owner decision 2026-10-08). Removing the last class returns to the first-run page.",
     "status": "implemented",
     "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (nothing, data.classes.error)",
     "tests": [

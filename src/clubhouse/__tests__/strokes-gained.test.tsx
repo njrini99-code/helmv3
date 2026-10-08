@@ -318,16 +318,16 @@ describe('team stats · desktop', () => {
     const user = userEvent.setup();
     showTeam(team());
     const note = () => document.querySelector('.ch-sgt > .ch-note')!.textContent!;
-    expect(note()).toBe("The team's strokes gained are up about 1.0 a round since Aug 30, a weekly average from −1.0 to 0.0.");
+    expect(note()).toBe('The team’s strokes gained are up about 1.0 a round since Aug 30, a weekly average from −1.0 to 0.0.');
     expect(note()).not.toMatch(/has gained|has lost/);
     // A player: Jonah went 0.8 to −0.9.
     await user.click(screen.getByRole('button', { name: /Jonah/ }));
-    expect(note()).toBe("Jonah's strokes gained are down about 1.7 a round since Aug 30, a weekly average from +0.8 to −0.9.");
+    expect(note()).toBe('Jonah’s strokes gained are down about 1.7 a round since Aug 30, a weekly average from +0.8 to −0.9.');
   });
 
   it('a flat line is flat, not a change', () => {
     showTeam(team({ team: { ...PREVIEW_TEAM_STATS.team, sg: [0.1, 0.1, 0.0, 0.1, 0.1, 0.0, 0.1] } }));
-    expect(document.querySelector('.ch-sgt > .ch-note')!.textContent).toBe("The team's strokes gained are flat since Aug 30.");
+    expect(document.querySelector('.ch-sgt > .ch-note')!.textContent).toBe('The team’s strokes gained are flat since Aug 30.');
   });
 
   it('the trend says what the dashed line is: the Tour baseline, or the women’s; the list is the window average', () => {
@@ -747,7 +747,7 @@ describe('make rate by distance (Game detail)', () => {
     const curve = document.querySelector('svg.ch-mk')!;
     expect(curve.getAttribute('aria-label')).toContain('15–20 feet');
     expect(curve.getAttribute('aria-label')).not.toContain('25');
-    expect(code('CH-5211')!.textContent).toContain("Putts past 20 feet didn't load");
+    expect(code('CH-5211')!.textContent).toContain('Putts past 20 feet didn’t load');
   });
 });
 

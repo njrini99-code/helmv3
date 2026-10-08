@@ -3027,7 +3027,7 @@ describe('Qualifiers · every write', () => {
         hapticSpy.mockClear();
         clearNav();
         const { c, view } = await drive(sc);
-        await expectCode('CH-1903', new RegExp(`^${sc.failed}: you're offline`));
+        await expectCode('CH-1903', new RegExp(`^${sc.failed}: you’re offline`));
         expect([sc.name, sc.write(c).mock.calls.length, hapticSpy.mock.calls.some(([kind]) => kind === 'error')]).toEqual([sc.name, 0, true]);
         expect([sc.name, router.push.mock.calls.length, router.replace.mock.calls.length, router.refresh.mock.calls.length]).toEqual([sc.name, 0, 0, 0]);
         view.unmount();

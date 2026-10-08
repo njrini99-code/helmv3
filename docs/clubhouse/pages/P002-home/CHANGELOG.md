@@ -5,9 +5,8 @@
 Home writes its apostrophes as ’ on desktop and the phone: the no-team pages
 (CH-2307, CH-2313), the empty leaderboard (CH-2304), the phone's hole-by-hole
 lines (CH-2203, CH-2303) and its empty week (CH-2309), "Theo’s stats", the
-scorecard's name and the team scoring chart's label. The catalog quotes them as
-shown. The coach brief's "hasn't posted" stays straight until logic.test moves
-with it.
+scorecard's name, the team scoring chart's label and the coach brief's line
+("Eli hasn’t posted a round in 9 days"). The catalog quotes them as shown.
 
 ## 2026-10-08 — Coach Home on the phone: the board as drawn; coach and player match
 

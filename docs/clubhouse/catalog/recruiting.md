@@ -71,7 +71,7 @@ A stage is saved the moment it is picked. The prospect moves at once and goes ba
 | CH-14303 | A prospect with no email and no phone | "No contact details yet" + "Add an email or phone number to reach Owen or their family from here." + Add (opens the form on Email). Email and Call appear once there is something to link to | `ContactSection`, `EmptyRow` | recruiting.test › CH-14303 CH-14304 |
 | CH-14304 | A prospect with no notes | "No notes yet" + "Where you saw them, what stood out, and what happens next." + Add a note (opens the form on Notes) | `NotesSection`, `EmptyRow` | recruiting.test › CH-14303 CH-14304 |
 | CH-14305 | A prospect with no documents | "No documents yet" + "Schedules, transcripts and film, private to your staff." + Upload | `Documents`, `EmptyRow` | recruiting.test › CH-14305 |
-| CH-14306 | A coach on no team the page can resolve | "You aren't on a team yet" + "Recruiting is your team's list of prospects. Create or join a team, then add the golfers you're following." + Open team settings. Not on the boards: built from the same pattern as Roster's no-team page | `RecruitingNoTeam`, for `getRecruits`' `no_team` answer | recruiting.test › CH-14306 |
+| CH-14306 | A coach on no team the page can resolve | "You aren’t on a team yet" + "Recruiting is your team’s list of prospects. Create or join a team, then add the golfers you’re following." + Open team settings. Not on the boards: built from the same pattern as Roster's no-team page | `RecruitingNoTeam`, for `getRecruits`' `no_team` answer | recruiting.test › CH-14306 |
 
 ## 144xx Loading
 
@@ -123,7 +123,7 @@ A stage is saved the moment it is picked. The prospect moves at once and goes ba
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-14901 | Any write while offline | The shell's toast, "Couldn't move Mason Reilly to Committed: you're offline" + "Reconnect, then try again. Nothing was changed." + Retry (CH-1903). Nothing is sent and nothing moves, so there is nothing to put back | `useAction`, before the action runs | recruiting.test › CH-14901 |
+| CH-14901 | Any write while offline | The shell's toast, "Couldn't move Mason Reilly to Committed: you’re offline" + "Reconnect, then try again. Nothing was changed." + Retry (CH-1903). Nothing is sent and nothing moves, so there is nothing to put back | `useAction`, before the action runs | recruiting.test › CH-14901 |
 | CH-14902 | A player opens Recruiting | They are sent Home before the page draws; the Clubhouse route itself draws nothing for a session with no coach | `page.tsx` (`redirect('/golf/dashboard')`), `ClubhouseRecruitingRoute` | recruiting.test › CH-14902 |
 | CH-14903 | The server refuses a write because the caller is not the team's coach | The server's sentence is the toast's reason: "Only this team's coaches can add recruit documents." | `useAction`'s `friendlyReason` | recruiting.test › CH-14903 |
 | CH-14904 | Recruiting opens | The header and its Add prospect, the pipeline with every stage's count and share, the list sorted by recently updated, and the first prospect's panel; the server read it all before first paint | `RecruitingDesktop`, `RecruitingPhone` (`main`) | recruiting.test › CH-14904 |
