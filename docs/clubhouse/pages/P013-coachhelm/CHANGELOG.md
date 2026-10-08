@@ -1,5 +1,34 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-08 — Ask: the @ picker is cmdk, and offers the stats
+
+```text
+Design package: none; no owner board draws the picker (phone spec note in docs/clubhouse/phone/coachhelm.md)
+Contract IDs:   CH-13821 (catalog row widened: stats, docked list, Tab, the select haptic)
+Data impact:    none; the stats are the agent's metric catalog (metrics-catalog.ts), no new read
+Held items:     before and after screenshots (no dev server in this pass)
+```
+
+- **One picker, phone and desktop:** typing `@` (or the `@` key, the Players chip, the Add player starter) opens a
+  cmdk list of the roster and, under it, the stats CoachHelm can read (the agent's own metric catalog, so a stat the
+  coach names is one the model can measure). Both narrow as the coach types; `@gir` and `@sg` find a metric by its short
+  name. A player or stat already in the question is not offered again.
+- **The phone's sheet is gone:** on the phone the list docks above the composer, about four and a half 44px rows tall
+  and never more than two fifths of the space the keyboard leaves. The text box keeps the focus throughout (the `@` key
+  and a row press never take it), so the keyboard stays up; the composer's keyboard-height layout is untouched.
+- **Keys:** the arrows move and wrap, Enter and Tab pick, Esc closes; Shift+Enter is still a new line, and a closed
+  picker never takes a key. VoiceOver hears cmdk's listbox through the box's `aria-controls` and
+  `aria-activedescendant`, the two groups by their headings, and a fragment that matches nothing as one dimmed row.
+- **Never clipped:** the composer measures the room between its box and the nearest edge that would cut the list off
+  (a clipping ancestor such as the Ask sheet's panel, or the visible viewport above the keyboard) and the CSS caps the
+  list to the smaller of that and its own height (296px, the phone's 212px).
+- **Without a roster:** a host that loads no roster passes `roster={false}` (the shell's Ask sheet does); its picker
+  offers the stats alone, named "Mention a stat", with no Players group and no "No active players" that is not true of
+  the team. A fragment no stat matches is one dimmed row, "No stat by that name".
+- **Look:** rows are 44px everywhere (were 38px on the desktop): a player's initials coin or a stat's chart coin, then
+  the name. The list floats on the overlay elevation with a 180ms fade and rise, none under reduced motion or with
+  Animations off. A pick ticks the select haptic.
+
 ## 2026-10-08 — the cardless pass: Ask on the phone
 
 Phone only; the desktop is unchanged.

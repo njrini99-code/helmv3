@@ -2834,7 +2834,7 @@ html[data-fw-theme='dark'] .ch-offline {
   display: none;
 }
 /* The sheet has no roster to mention from; the full Ask (Open in CoachHelm) has. */
-.ch-asks .ch-ask-cmp__round[aria-label='Mention a player'] {
+.ch-asks .ch-ask-cmp__round[aria-label='Mention a player or stat'] {
   display: none;
 }
 @media (max-width: 820px) {

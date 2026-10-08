@@ -695,77 +695,109 @@
 .ch-ask-cmp.is-phone .ch-ask-cmp__grow {
   display: none;
 }
-/* The roster picker (desktop): above the box */
+/* The mention picker (cmdk, CH-13821): the roster and the stats, a list docked on the box. Above the box in a thread and
+   on the phone, so it rises out of the composer the thumb is on; below the desktop's new-chat box, which sits high on
+   its page. It floats (the overlay elevation) because it covers the conversation for a moment, and nothing in it takes
+   the focus from the text box. */
 .ch-ask-pick {
   position: absolute;
-  right: 12px;
+  right: 0;
   bottom: calc(100% + 8px);
-  left: 12px;
+  left: 0;
   z-index: var(--ch-z-sticky);
-  max-height: 280px;
-  margin: 0;
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-elevation-overlay), 0 0 0 1px var(--ch-border-hairline);
+  overflow: hidden;
+  transform-origin: 50% 100%;
+  animation: ch-ask-pick-in var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-pick {
+  top: calc(100% + 8px);
+  bottom: auto;
+  transform-origin: 50% 0;
+  animation-name: ch-ask-pick-down;
+}
+@keyframes ch-ask-pick-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.985);
+  }
+}
+@keyframes ch-ask-pick-down {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.985);
+  }
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-ask-pick {
+  animation: none;
+}
+.ch-ask-pick__list {
+  /* Never past the room the composer measures to the nearest clipping edge (the Ask sheet's panel, the viewport). */
+  box-sizing: border-box;
+  max-height: min(296px, var(--ch-ask-pick-room, 296px));
   padding: 6px;
   overflow-y: auto;
-  list-style: none;
-  border-radius: 14px;
-  background: var(--ch-bg-surface);
-  box-shadow: var(--ch-shadow-md);
+  overscroll-behavior: contain;
+  scroll-padding-block: 6px;
 }
-.ch-ask-cmp.is-hero .ch-ask-pick {
-  bottom: auto;
-  top: calc(100% + 8px);
+/* Group headings: the quiet word over each kind of row, in sentence case. */
+.ch-ask-pick [cmdk-group-heading] {
+  padding: 10px 10px 4px;
+  font: 500 12.5px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-ask-pick [cmdk-group] + [cmdk-group] {
+  margin-top: 4px;
+  padding-top: 4px;
+  box-shadow: inset 0 1px 0 var(--ch-border-hairline);
 }
 .ch-ask-pick__row {
-  display: block;
-  width: 100%;
-  height: 38px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: var(--ch-radius-md);
-  background: none;
-  font: 400 14px/1 var(--ch-font-sans);
-  color: var(--ch-text-primary);
-  text-align: left;
-  cursor: pointer;
-}
-.ch-ask-pick__row.is-on {
-  background: var(--ch-bg-inset);
-}
-.ch-ask-pick__none {
-  padding: 10px 12px;
-  font: 400 13.5px/1.4 var(--ch-font-sans);
-  color: var(--ch-text-tertiary);
-  list-style: none;
-}
-.ch-ask-pick__find input {
-  width: 100%;
-  height: 42px;
-  padding: 0 12px;
-  box-sizing: border-box;
-  border: 0;
-  border-radius: 12px;
-  background: var(--ch-bg-inset);
-  font: 400 16px/1 var(--ch-font-sans);
-  color: var(--ch-text-primary);
-}
-.ch-ask-sheetlist {
-  margin: 8px 0 0;
-  padding: 0;
-  list-style: none;
-}
-.ch-ask-sheetlist__row {
   display: flex;
   align-items: center;
-  width: 100%;
+  gap: 10px;
   min-height: 44px;
   padding: 0 10px;
-  border: 0;
-  border-radius: 12px;
-  background: none;
-  font: 400 16px/1.2 var(--ch-font-sans);
+  border-radius: var(--ch-radius-md);
+  font: 400 14.5px/1.25 var(--ch-font-sans);
   color: var(--ch-text-primary);
-  text-align: left;
   cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--ch-dur-press) var(--ch-ease);
+}
+/* The row Enter would pick: the pointer's, or the arrow keys'. */
+.ch-ask-pick__row[data-selected='true'] {
+  background: var(--ch-bg-inset);
+}
+.ch-ask-pick__row:active {
+  background: var(--ch-ledger-row-press);
+}
+.ch-ask-pick__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* A stat's mark is the same coin a player's initials sit on, so the two kinds of row line up and read apart. */
+.ch-ask-pick__mark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--ch-bg-selected);
+  color: var(--ch-ledger-ink);
+}
+.ch-ask-pick__none {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 10px;
+  font: 400 13.5px/1.4 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
 }
 
 /* Loading */
@@ -892,6 +924,16 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   }
   .ch-ask-cmp.is-dock .ch-ask-cmp__ta,
   .ch-ask-cmp.is-phone .ch-ask-cmp__ta {
+    font-size: 16px;
+  }
+  /* On the phone the picker is a compact list docked above the composer, sized to what the keyboard leaves: about four
+     and a half rows, so the cut row says it scrolls, and never taller than two fifths of the space above the keyboard
+     (an iPhone SE keeps its thread and its top bar in view). */
+  .ch-ask-cmp.is-phone .ch-ask-pick__list {
+    max-height: min(212px, calc((100dvh - var(--keyboard-height, 0px)) * 0.4), var(--ch-ask-pick-room, 212px));
+    padding: 4px 6px;
+  }
+  .ch-ask-cmp.is-phone .ch-ask-pick__row {
     font-size: 16px;
   }
   /* The new chat on the phone (the cardless pass, 2026-10-08): the opener and its question rows sit together at the
