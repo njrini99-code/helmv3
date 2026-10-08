@@ -10,6 +10,7 @@ From the native-feel audit (docs/clubhouse/NATIVE_FEEL_PERF_AUDIT_2026-10-08.md,
 - **Push and pop** (`lib/nav-motion.ts`, `styles/shell.css`). On a phone, a drill-in (a More row, or a link into a detail) pushes: the new page slides in from the right edge on the smooth spring (462ms) while the old one draws back by 30%. A link up a level pops the same way in reverse. React commits a Back synchronously, without a view transition, so Back from a pushed page draws its own pop: a copy of the leaving page slides off to the right edge over the page beneath, which comes in from −30%. The pop is skipped after an iOS edge swipe, with reduced motion or Animations off, and on desktop. A tab change still crossfades.
 - **More leaves first** (`shell/TabBar.tsx`). A row that navigates hides the sheet and its scrim in the same tap, so neither appears in the page transition.
 - **Pushed screens pop on the spring** (`shell/PhoneScreen.tsx`, `shell/phone-chrome.tsx`; CH-1610, CH-1618). A pushed screen and the page beneath it now return on the smooth spring, not the 260ms ease-out. The pop had read as a 183ms jump; it now clears in about 350ms. The underlay shift stays at the owner-approved 24%.
+- **Hover card honors reduced motion** (`ui/Peek.tsx`, CH-1831). The desktop hover card's 4px rise now swaps in instantly under reduced motion or Animations off, like the phone peek already did.
 
 ## 2026-10-08 — Premium pass backlog: one light, peeks, the Ask sheet, a dock
 

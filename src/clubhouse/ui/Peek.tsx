@@ -8,6 +8,7 @@ import { createPortal } from 'react-dom';
 import { useDialogLifetime } from '../lib/dialog-lifetime';
 import { haptic } from '../lib/haptics';
 import { chSpring, chTween } from '../lib/motion';
+import { useChReducedMotion } from '../lib/reduced-motion';
 import { Icon } from './Icon';
 
 /**
@@ -240,6 +241,7 @@ function HoverCard({
   children: ReactNode;
 }) {
   const card = useRef<HTMLDivElement>(null);
+  const reduced = useChReducedMotion();
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   useLayoutEffect(() => {
     const h = card.current?.offsetHeight ?? 200;
@@ -259,9 +261,9 @@ function HoverCard({
       role="dialog"
       aria-label={label}
       style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0, width: CARD_W }}
-      initial={{ opacity: 0, y: 4 }}
+      initial={reduced ? false : { opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={chTween('quick')}
+      transition={reduced ? { duration: 0 } : chTween('quick')}
       onPointerEnter={onEnter}
       onPointerLeave={onLeave}
     >
