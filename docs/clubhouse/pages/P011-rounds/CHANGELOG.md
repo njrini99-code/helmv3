@@ -1,5 +1,59 @@
 # P011 — Rounds: changelog
 
+## 2026-10-08 — The shot screen toward board 3: chip strip, a save line by the readout, the sheet on the dock
+
+Toward the owner's phone concept "3 · On the course, glove on" (called "native, premium, modern"). Presentation only:
+the shot engine (`useShotTracking`, its save, resume, undo and checkpoint logic) is untouched. Phone (640px container
+and under) unless noted. Not yet reviewed by the owner; no screenshots were taken in this change (no dev server).
+
+```text
+Design package: owner concept board 3 (On the course, glove on)
+PR/commit: agent/track-polish
+Contract IDs: CH-11805, CH-11901
+Actions: none added or removed
+Data impact: none
+Held items: none
+```
+
+### Changed
+
+- **Hole strip (CH-11805, `track/parts.tsx` `TrackStrip`, `styles/rounds-track.css`):** one row of compact chips
+  instead of two-line tiles. A played hole shows its score as a bare numeral (red only under par, D-42, on the new
+  `--ch-score-under-on-green` / `--ch-score-under-on-ivory` tokens); the current hole is lit ivory with its number (or
+  its score when looking back at a finished hole); an unplayed hole is a hairline outline with a muted number. Each
+  chip (36 x 30) is drawn inside a 44 x 44 hit area; 18 holes scroll sideways and the strip brings the current hole to
+  the middle (at once on first paint, eased after, instant with reduced motion). Thru and to par stay at the end, on
+  one line. Desktop keeps its tiles.
+- **Names (CH-11805, all widths):** every chip is named by hole, score, to par and whether it is current: "Hole 2, 6,
+  2 over", "Hole 3, 2, 1 under", "Hole 1, 4, even", "Hole 4, current", "Hole 6" (was "Go to hole 1, 4 strokes" and
+  "Hole 2, current hole"). Buttons and marks keep their roles.
+- **Save line (CH-11901, `track/RoundTracking.tsx`):** moved from a pill under the top bar to a quiet line beside the
+  distance readout (and beside the holed score), as on the board's "Saved on this phone". The words and the states are
+  the engine's, unchanged. New: "Round saved" now holds after the engine's two-second flash for as long as the shots
+  on screen are exactly the ones the server acknowledged (same hole, same shot list); a new shot, an edit, an undo or
+  a hole change drops it until the next acknowledgement. Nothing is ever said before it is true, and nothing at all
+  when the device copy of a shot failed. On the desktop the line sits under the readout.
+- **The sheet on the dock (`styles/rounds-track.css`):** the entry card no longer floats over an empty band. The
+  hero takes the slack instead, so the card sits directly on the Undo / Penalty / Next shot dock in every state
+  (before and after a result, putting, the holed review). The drawn hole keeps its size at the top, so picking a
+  result grows the card upward and nothing above it moves; below the shot log the hole's dark rough carries on with a
+  few trees at the edges and settles into the field green where the card begins.
+- **Preview:** `/clubhouse-preview/track?state=saved | phone | saving | retrying` fake the round's save for the line's
+  states.
+
+### Why
+
+- The owner's board puts the round's progress in one quiet row, the persistence signal by the number the golfer is
+  reading, and the entry in one ivory sheet sitting on the dock; the old screen had bulky tiles, a pill at the top and
+  a sheet that floated until a result was chosen.
+
+### Verification
+
+- `round-tracking.test` (CH-11805: chip names, under-par marking, current and unplayed chips) and
+  `round-save-status.test` (CH-11901: saving, retrying, held on the phone, placement in the hero, "Round saved" held
+  past the engine's two seconds and dropped by an undo, never carried over to a new unanswered shot).
+- Not verified: rendering on a phone or in a browser (no dev server in this change); screenshots pending.
+
 ## 2026-10-08 — Setup on the phone without cards
 
 Owner direction (2026-10-08): the card is no longer the default unit of layout on the phone. Phone only (820px and

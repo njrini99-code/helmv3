@@ -1,11 +1,12 @@
 'use client';
 
-import { useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { ChevronDown, Flag } from 'lucide-react';
 import type { DistancePreference } from '@/lib/golf/distance-units';
 import type { RoundHole, ShotRecord } from '@/lib/types/golf';
 import { formatToPar } from '../../../lib/format';
 import { haptic } from '../../../lib/haptics';
+import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Icon } from '../../../ui/Icon';
 import { ScoreMark } from '../../../ui/ScoreMark';
 import { centerLine, holeShape, plotShots, pointAlong, ringRadius, type ChHoleFrame } from './hole-geometry';
@@ -61,29 +62,55 @@ export function Sec({ label, hint, tint, htmlFor, children }: { label: string; h
   );
 }
 
+/** A played hole against its par, in words: "2 over", "even", "1 under". */
+function toParWords(score: number, par: number): string {
+  const d = score - par;
+  return d === 0 ? 'even' : d > 0 ? `${d} over` : `${-d} under`;
+}
+
 /**
  * The hole strip under the top bar: each hole's score against par, the current
- * hole ringed, the round's score to par at the end. A hole you can go to is a
+ * hole lit, the round's score to par at the end. A hole you can go to is a
  * button (any earlier hole, a later one with a score, and the next unplayed);
- * the rest are marks. CH-11805: each is named "Hole 4, 5 strokes" or "Hole 6".
+ * the rest are marks. CH-11805: each is named by hole, score, to par and
+ * whether it is the one you're on ("Hole 2, 6, 2 over", "Hole 4, current",
+ * "Hole 6"). On the phone each is one compact chip (the score once played, the
+ * hole number until then) centred in a 44px hit area, and the strip keeps the
+ * current hole in view.
  */
 export function TrackStrip({ holes, current, onJump }: { holes: RoundHole[]; current: number; onJump?: (index: number) => void }) {
   const frontier = holes.findIndex((h) => h.score === null);
   const soFar = roundSoFar(holes);
+  const reduced = useChReducedMotion();
+  const stripRef = useRef<HTMLDivElement>(null);
+  const placedRef = useRef(false);
+  // A strip wider than the screen (18 holes, a round resumed on the back nine) brings the current hole to the middle:
+  // at once on first paint, eased after (instant with reduced motion). Only the strip scrolls, never the page.
+  useEffect(() => {
+    const strip = stripRef.current;
+    const chip = strip?.children[current] as HTMLElement | undefined;
+    if (!strip || !chip || strip.scrollWidth <= strip.clientWidth) return;
+    const left = Math.max(0, chip.offsetLeft - (strip.clientWidth - chip.offsetWidth) / 2);
+    const instant = reduced || !placedRef.current;
+    placedRef.current = true;
+    if (typeof strip.scrollTo === 'function') strip.scrollTo({ left, behavior: instant ? 'instant' : 'smooth' });
+    else strip.scrollLeft = left;
+  }, [current, reduced]);
   return (
-    <div className="ch-rt-strip" style={{ ['--ch-rt-holes' as string]: holes.length }}>
+    <div ref={stripRef} className="ch-rt-strip" style={{ ['--ch-rt-holes' as string]: holes.length }}>
       {holes.map((h, i) => {
-        const cls = 'ch-rt-strip__h' + (i === current ? ' is-cur' : '') + (h.score != null ? ' is-done' : '');
-        const name = `Hole ${h.number}${h.score != null ? `, ${h.score} strokes` : ''}${i === current ? ', current hole' : ''}`;
+        const score = h.score;
+        const cls = 'ch-rt-strip__h' + (i === current ? ' is-cur' : '') + (score != null ? ' is-done' : '') + (score != null && score < h.par ? ' is-under' : '');
+        const name = [`Hole ${h.number}`, score != null && `${score}`, score != null && toParWords(score, h.par), i === current && 'current'].filter(Boolean).join(', ');
         const inner = (
           <>
             <em>{h.number}</em>
-            {h.score != null ? <ScoreMark score={h.score} par={h.par} size="sm" /> : <b aria-hidden="true">{i === current ? '•' : ''}</b>}
+            {score != null ? <ScoreMark score={score} par={h.par} size="sm" /> : <b aria-hidden="true">{i === current ? '•' : ''}</b>}
           </>
         );
-        const canGo = !!onJump && i !== current && (i < current || h.score != null || i === frontier);
+        const canGo = !!onJump && i !== current && (i < current || score != null || i === frontier);
         return canGo ? (
-          <button key={h.number} type="button" className={cls} aria-label={`Go to hole ${h.number}${h.score != null ? `, ${h.score} strokes` : ''}`} onClick={() => onJump!(i)}>
+          <button key={h.number} type="button" className={cls} aria-label={name} onClick={() => onJump!(i)}>
             {inner}
           </button>
         ) : (

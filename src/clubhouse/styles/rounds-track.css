@@ -92,8 +92,13 @@
   font: 400 12.5px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
+/* The readout's foot: the distance (or the holed score) and the save line beside it. On the desktop it is no box at all,
+   so the hero's column keeps its own rhythm; the phone lays the two side by side (the phone block). */
+.ch-rt-hero__foot {
+  display: contents;
+}
 .ch-rt-sync {
-  align-self: center;
+  align-self: flex-start;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -2009,11 +2014,38 @@ button.ch-rt-strip__h {
   .ch-rt-top__c span {
     color: var(--ch-on-green-ink-soft);
   }
+  /* The save line (CH-11901), set quietly beside the readout (board 3: "Saved on this phone"). It wraps inside its own
+     column rather than crowd the distance, and holds its place at the foot's baseline. */
+  .ch-rt-hero__foot {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+  }
+  .ch-rt-hero__foot > .ch-rt-hero__dist,
+  .ch-rt-hero__foot > .ch-rt-hero__done {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
   .ch-rt-sync {
-    margin: 8px 0 0;
+    flex: 0 1 auto;
+    align-self: flex-end;
+    align-items: flex-start;
+    gap: 5px;
+    max-width: 46%;
+    margin: 0 0 3px;
     padding: 0;
+    border-radius: 0;
+    font: 500 12px/1.25 var(--ch-font-sans);
+    text-align: right;
     background: none;
     color: var(--ch-on-green-ink-soft);
+  }
+  .ch-rt-sync > svg,
+  .ch-rt-sync > .ch-rt-spin {
+    flex: none;
+    margin-top: 1px;
   }
   .ch-rt-sync.is-saving,
   .ch-rt-sync.is-error {
@@ -2021,70 +2053,127 @@ button.ch-rt-strip__h {
     color: var(--ch-champagne-300);
   }
 
-  /* The hole strip: a plate for each hole played (the scorecard's plate, A2), the hole you're on lit ivory. */
+  /* The hole strip (board 3): one row of compact chips. A played hole shows its score (red only under par, D-42), the
+     hole you're on is lit ivory, an unplayed hole is an outline with its number. Each chip is drawn inside a 44 x 44
+     hit area; the row scrolls sideways for 18 holes and keeps the current hole in view (TrackStrip). */
   .ch-rt-strip {
-    grid-template-columns: repeat(var(--ch-rt-holes, 18), 38px) 56px;
-    gap: 4px;
+    grid-template-columns: repeat(var(--ch-rt-holes, 18), 44px) auto;
+    gap: 0;
     overflow-x: auto;
-    margin: 8px -12px 0;
-    padding: 4px 12px;
+    margin: 6px -12px 0;
+    padding: 0 8px;
     border-radius: 0;
     background: none;
     box-shadow: none;
-    scroll-padding-inline: 12px;
+    scroll-padding-inline: 8px;
     scrollbar-width: none;
   }
   .ch-rt-strip::-webkit-scrollbar {
     display: none;
   }
-  .ch-rt-strip__h {
-    min-height: 46px;
-    justify-content: center;
-    gap: 2px;
-    padding: 4px 0;
-    border-radius: 10px;
-    background: rgb(244 238 221 / 0.08);
-    box-shadow: inset 0 0 0 1px rgb(244 238 221 / 0.14);
+  .ch-rt-strip__h,
+  .ch-rt-strip__h.is-done,
+  .ch-rt-strip__h.is-cur,
+  .ch-rt-strip__h.is-cur.is-done {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    -webkit-tap-highlight-color: transparent;
   }
-  .ch-rt-strip__h em {
+  .ch-rt-strip button.ch-rt-strip__h:hover {
+    background: none;
+  }
+  .ch-rt-strip__h::before {
+    position: absolute;
+    inset: 7px 4px;
+    border-radius: 9px;
+    background: transparent;
+    box-shadow: inset 0 0 0 1px rgb(244 238 221 / 0.18);
+    transition:
+      background-color var(--ch-dur-quick) var(--ch-ease),
+      box-shadow var(--ch-dur-quick) var(--ch-ease);
+    content: '';
+  }
+  .ch-rt-strip__h > * {
+    position: relative;
+    grid-area: 1 / 1;
+  }
+  .ch-rt-strip .ch-rt-strip__h em {
+    font: 500 14px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-on-green-ink-muted);
   }
   .ch-rt-strip__h b {
-    height: 20px;
-    font-size: 14px;
-    color: var(--ch-on-green-ink);
+    display: none;
   }
-  .ch-rt-strip__h.is-done {
-    background: var(--ch-ivory-100);
+  .ch-rt-strip__h.is-done::before {
+    background: rgb(244 238 221 / 0.1);
     box-shadow: none;
   }
   .ch-rt-strip__h.is-done em {
-    color: var(--ch-ink-600);
+    display: none;
   }
-  .ch-rt-strip__h.is-cur {
+  /* The score as a bare numeral: the scorecard's circle and square stay on the card (ScoreMark), not on the strip. */
+  .ch-rt-strip .ch-rt-strip__h .ch-score {
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    font: 600 15px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    background: none;
+    box-shadow: none;
+    color: var(--ch-on-green-ink);
+  }
+  .ch-rt-strip .ch-rt-strip__h.is-under .ch-score {
+    color: var(--ch-score-under-on-green);
+  }
+  .ch-rt-strip__h.is-cur::before,
+  .ch-rt-strip__h.is-cur.is-done::before {
     background: var(--ch-on-green-ink);
-    box-shadow:
-      0 0 0 2px var(--ch-green-900),
-      0 0 0 4px var(--ch-hero-mint);
+    box-shadow: none;
   }
-  .ch-rt-strip__h.is-cur em,
-  .ch-rt-strip__h.is-cur b {
-    color: var(--ch-green-900);
+  .ch-rt-strip .ch-rt-strip__h.is-cur em {
     font-weight: 700;
+    color: var(--ch-green-900);
   }
-  .ch-rt-strip__h.is-cur.is-done {
-    background: var(--ch-ivory-100);
-    box-shadow:
-      0 0 0 2px var(--ch-green-900),
-      0 0 0 4px var(--ch-hero-mint);
+  .ch-rt-strip .ch-rt-strip__h.is-cur .ch-score {
+    font-weight: 700;
+    color: var(--ch-green-900);
+  }
+  .ch-rt-strip .ch-rt-strip__h.is-cur.is-under .ch-score {
+    color: var(--ch-score-under-on-ivory);
+  }
+  .ch-rt-strip__h:focus-visible {
+    outline: none;
+  }
+  .ch-rt-strip__h:focus-visible::before {
+    outline: 2px solid var(--ch-champagne-300);
+    outline-offset: 2px;
   }
   .ch-rt-strip__tot {
-    border-left-color: rgb(244 238 221 / 0.16);
+    flex-direction: row;
+    align-items: baseline;
+    gap: 6px;
+    min-height: 44px;
+    margin-left: 4px;
+    padding: 0 6px 0 12px;
+    border-left: 1px solid rgb(244 238 221 / 0.16);
+    white-space: nowrap;
   }
   .ch-rt-strip__tot em {
+    align-self: center;
     color: var(--ch-on-green-ink-muted);
   }
   .ch-rt-strip__tot b {
+    align-self: center;
+    font-size: 15px;
     color: var(--ch-on-green-ink);
   }
 
@@ -2097,18 +2186,32 @@ button.ch-rt-strip__h {
     gap: 0;
     padding-top: 10px;
   }
+  /* The hero takes whatever height the entry leaves, so the entry sheet always sits on the dock (board 3) and never
+     floats over an empty band. The drawn hole keeps its own size at the top (picking a result grows the sheet upward
+     into this ground, and nothing above it moves); below the shot log the course carries on: the hole's dark rough,
+     a few trees at the edges, settling into the field green where the sheet begins. */
   .ch-rt-hero {
     position: static;
     display: grid;
+    flex: 1 0 auto;
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       'stage'
       'log';
+    align-content: start;
     gap: 0;
     margin: 0 -12px;
     padding: 0;
     border-radius: 0;
-    background: none;
+    background:
+      linear-gradient(180deg, transparent calc(100% - 56px), var(--ch-green-900)),
+      radial-gradient(circle at 3% calc(64.6cqi + 92px), #06210f 17px, transparent 18px),
+      radial-gradient(circle at 12% calc(64.6cqi + 128px), #06210f 12px, transparent 13px),
+      radial-gradient(circle at 97% calc(64.6cqi + 70px), #06210f 15px, transparent 16px),
+      radial-gradient(circle at 89% calc(64.6cqi + 118px), #06210f 19px, transparent 20px),
+      radial-gradient(circle at 99% calc(64.6cqi + 176px), #06210f 13px, transparent 14px),
+      radial-gradient(circle at 6% calc(64.6cqi + 206px), #06210f 15px, transparent 16px),
+      linear-gradient(180deg, rgb(9 46 30), var(--ch-green-900) calc(64.6cqi + 320px));
     box-shadow: none;
   }
   .ch-rt-hero__map {
@@ -2289,9 +2392,10 @@ button.ch-rt-strip__h {
     color: var(--ch-on-green-ink-soft);
   }
 
-  /* The ivory entry card. */
+  /* The ivory entry card, on the dock: the hero above takes the slack, so the card and the bar are one unit at the
+     bottom in every state (a short card before a result, the proximity row after, putting details, the holed review). */
   .ch-rt-panel {
-    flex: 1;
+    flex: none;
     margin-top: 10px;
     border-radius: 0;
     background: none;
