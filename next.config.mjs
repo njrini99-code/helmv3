@@ -51,7 +51,9 @@ const sentryRelease = process.env.NEXT_PUBLIC_SENTRY_RELEASE || process.env.VERC
 const nextConfig = {
   // Helm owns its agent instructions; dev startup must not rewrite them.
   agentRules: false,
-  allowedDevOrigins: ['127.0.0.1'],
+  // A phone on the same network can load the dev server for real-device checks (Safari on iPhone) when the host is
+  // named explicitly: HELM_DEV_LAN_ORIGIN=192.168.x.y npm run dev. Dev only; production ignores allowedDevOrigins.
+  allowedDevOrigins: ['127.0.0.1', ...(process.env.HELM_DEV_LAN_ORIGIN ? [process.env.HELM_DEV_LAN_ORIGIN] : [])],
   reactStrictMode: true, // Enable to catch potential issues
 
   // The dev server logs every server action with its arguments by default,
