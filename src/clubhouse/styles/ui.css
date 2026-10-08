@@ -1320,3 +1320,13 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-ppeek__line circle {
   fill: var(--ch-green-700);
 }
+
+/* Every button reaches 44 by 44 under a finger (P011-D9, P012-D2; HIG), however small it is drawn: an invisible hit box
+   centred on it, grown only on the side that is short (inset percentages read the button's own height and width). */
+@media (pointer: coarse) {
+  .ch-btn::after {
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+    content: '';
+  }
+}

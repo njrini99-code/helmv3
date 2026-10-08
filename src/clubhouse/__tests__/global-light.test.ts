@@ -105,3 +105,23 @@ describe('the light’s place and the shell’s variables', () => {
     expect(evening.warmth).toBeGreaterThan(0.3);
   });
 });
+
+describe('sunTimes', () => {
+  it('gives Pinehurst’s October sunrise, golden hour and sunset in Eastern time', async () => {
+    const { sunTimes } = await import('../lib/sun');
+    const t = sunTimes('2025-10-14', { lat: 35.19, lng: -79.47 }, 'America/New_York');
+    const local = (ms: number | null) => new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' }).format(ms!);
+    // Published: sunrise 7:21 am, sunset 6:42 pm EDT.
+    expect(local(t.sunrise)).toMatch(/^7:(1[89]|2[0-4]) AM$/);
+    expect(local(t.sunset)).toMatch(/^6:(39|4[0-5]) PM$/);
+    expect(t.goldenStart!).toBeLessThan(t.sunset!);
+    expect(t.sunset! - t.goldenStart!).toBeLessThan(60 * 60_000);
+  });
+
+  it('is null where the sun does not set (polar day)', async () => {
+    const { sunTimes } = await import('../lib/sun');
+    const t = sunTimes('2025-06-21', { lat: 78.2, lng: 15.6 }, 'Europe/Oslo');
+    expect(t.sunrise).toBeNull();
+    expect(t.sunset).toBeNull();
+  });
+});

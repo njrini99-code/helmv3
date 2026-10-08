@@ -1,10 +1,20 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { clubhouseLightAt, LIGHT_PERIOD_MS, lightVars, NEUTRAL_LIGHT, type ClubhouseLight } from '../lib/light';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { clubhouseLightAt, LIGHT_PERIOD_MS, lightPlace, lightVars, NEUTRAL_LIGHT, ZONE_POINTS, type ClubhouseLight } from '../lib/light';
 import type { LatLng } from '../lib/sun';
 
 const Light = createContext<ClubhouseLight>(NEUTRAL_LIGHT);
+
+/** Where the light's sun is (the course, or the team zone's point) and the team's zone, for day-length reads (sunTimes). */
+export interface ChLightPlace {
+  place: LatLng;
+  timeZone: string;
+  /** The place is the course the coach set, not the time zone's stand-in. */
+  fromCourse: boolean;
+}
+const DEFAULT_ZONE = 'America/New_York';
+const Place = createContext<ChLightPlace>({ place: ZONE_POINTS[DEFAULT_ZONE]!, timeZone: DEFAULT_ZONE, fromCourse: false });
 
 /**
  * The global light (P001-A1): one sun for the whole Clubhouse. It writes the --ch-sun-* numbers on <html>, so portaled
@@ -55,7 +65,23 @@ export function LightProvider({
     };
   }, [lat, lng, timeZone, at]);
 
-  return <Light.Provider value={light}>{children}</Light.Provider>;
+  const zone = timeZone || DEFAULT_ZONE;
+  const placeValue = useMemo<ChLightPlace>(() => {
+    const course = lat !== undefined && lng !== undefined ? { lat, lng } : null;
+    // The zone's stand-in point does not depend on the moment, except for an unlisted zone's offset (DST shifts it 15°).
+    return { place: lightPlace(course, zone, at ?? Date.now()), timeZone: zone, fromCourse: course !== null };
+  }, [lat, lng, zone, at]);
+
+  return (
+    <Place.Provider value={placeValue}>
+      <Light.Provider value={light}>{children}</Light.Provider>
+    </Place.Provider>
+  );
+}
+
+/** The light's place and the team's zone: `sunTimes(day, place, timeZone)` gives that day's sunrise and sunset. */
+export function useLightPlace(): ChLightPlace {
+  return useContext(Place);
 }
 
 /** The current global light, for TS consumers (a chart's paper, a drawn sun). Noon until the shell's effect has run. */

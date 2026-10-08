@@ -43,3 +43,60 @@ export function sunAt(when: Date | number, at: LatLng): SunPosition {
   );
   return { altitude, azimuth };
 }
+
+export interface SunTimes {
+  /** Epoch ms; null when the sun does not rise or set that day (polar day or night). */
+  sunrise: number | null;
+  sunset: number | null;
+  /** When the evening light turns golden (the sun at 6 degrees on its way down); null as above. */
+  goldenStart: number | null;
+}
+
+/** Midnight of a calendar day (YYYY-MM-DD) in a time zone, as epoch ms. */
+function zoneMidnight(dayYmd: string, timeZone: string): number {
+  const [y, m, d] = dayYmd.split('-').map(Number);
+  const utc = Date.UTC(y ?? 1970, (m ?? 1) - 1, d ?? 1);
+  // The zone's offset at that instant, read back from the formatter, then applied once more for a DST edge.
+  const offsetAt = (t: number): number => {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' }).formatToParts(t);
+    const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0);
+    return Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute')) - t;
+  };
+  const first = utc - offsetAt(utc);
+  return utc - offsetAt(first);
+}
+
+/** The instant the sun crosses `altitude` between `from` and `to` (altitudes on either side), by bisection to a second. */
+function crossing(from: number, to: number, at: LatLng, altitude: number): number {
+  let lo = from;
+  let hi = to;
+  const rising = sunAt(lo, at).altitude < altitude;
+  while (hi - lo > 1000) {
+    const mid = (lo + hi) / 2;
+    if (sunAt(mid, at).altitude < altitude === rising) lo = mid;
+    else hi = mid;
+  }
+  return Math.round((lo + hi) / 2);
+}
+
+/**
+ * Sunrise, sunset and the start of golden hour on a day, for a place, in its time zone (sunrise and sunset at the
+ * standard -0.833 degrees, refraction and the sun's radius). Pure and local, like `sunAt`.
+ */
+export function sunTimes(dayYmd: string, at: LatLng, timeZone: string): SunTimes {
+  const start = zoneMidnight(dayYmd, timeZone);
+  const step = 10 * 60_000;
+  const rise = -0.833;
+  let sunrise: number | null = null;
+  let sunset: number | null = null;
+  let goldenStart: number | null = null;
+  let prev = sunAt(start, at).altitude;
+  for (let t = start + step; t <= start + 24 * 3_600_000; t += step) {
+    const alt = sunAt(t, at).altitude;
+    if (sunrise === null && prev < rise && alt >= rise) sunrise = crossing(t - step, t, at, rise);
+    if (prev >= 6 && alt < 6 && goldenStart === null) goldenStart = crossing(t - step, t, at, 6);
+    if (prev >= rise && alt < rise) sunset = crossing(t - step, t, at, rise);
+    prev = alt;
+  }
+  return { sunrise, sunset, goldenStart };
+}
