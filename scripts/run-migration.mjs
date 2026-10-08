@@ -1,6 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'fs';
 import { config as loadEnv } from 'dotenv';
+import { cliGuard } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/run-migration.mjs',
+  summary:
+    'Posts the 20260214200000_create_crm_coaches migration to the production rpc/exec_sql endpoint with the service-role key. Legacy: production migrations go through `npm run db:apply -- <file>` (docs/operations/APPLY_PATH.md).',
+  secrets: 'NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (.env.local)',
+});
 
 loadEnv({ path: '.env.local' });
 
@@ -18,8 +26,13 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
 
 const sql = readFileSync('./supabase/migrations/20260214200000_create_crm_coaches.sql', 'utf8');
 
-console.log('Running CRM migration...');
+console.log('CRM migration file: supabase/migrations/20260214200000_create_crm_coaches.sql');
 console.log('SQL length:', sql.length, 'chars');
+if (!cli.apply) {
+  console.log(`[dry-run] would post the migration to ${supabaseUrl}/rest/v1/rpc/exec_sql. Re-run with --apply to do it.`);
+  process.exit(0);
+}
+console.log('Running CRM migration...');
 
 // Use the REST API to run SQL
 const response = await fetch(`${supabaseUrl}/rest/v1/rpc/exec_sql`, {

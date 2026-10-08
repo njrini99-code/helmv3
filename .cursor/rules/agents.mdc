@@ -4,8 +4,8 @@ globs:
 alwaysApply: true
 ---
 
-Read `AGENTS.md` before any work — it is the repo constitution and the only
-file that states rules. This adapter adds nothing; it points.
+Read `AGENTS.md` before any work: it is the operating guide for every agent in
+this repo. This adapter adds nothing; it points.
 
 - Design/UI work: the binding rule is `.claude/rules/design-system.md`; the
   canonical tokens are `src/styles/design-tokens.css`; the shipped components
@@ -15,6 +15,7 @@ file that states rules. This adapter adds nothing; it points.
   for every table and column; sport prefixes (`golf_`, `baseball_`,
   `helm_lifting_`) are load-bearing.
 - Branch: one active session may work on the currently checked-out branch
-  directly. A concurrent session takes its own worktree through the one
-  door — `scripts/new-worktree.sh <task>` — never a raw `git checkout -b`,
-  `git switch -c`, or `git worktree add`. Merging to main does not deploy.
+  directly. A concurrent session takes its own worktree with
+  `scripts/new-worktree.sh <task>` (it adds the workspace marker and the disk
+  and checkout checks a raw `git worktree add` skips). Merging to main does not
+  deploy; deploy from the linked checkout per AGENTS.md "Production".

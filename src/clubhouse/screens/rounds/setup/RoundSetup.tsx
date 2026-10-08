@@ -117,7 +117,7 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
       if (r.ok) onStarted(r.data.roundId);
       return r.ok ? { success: true, data: r } : { success: false, error: r.error, data: r };
     },
-    (f) => ({ done: '', failed: `Couldn't start your round at ${f.pick?.courseName ?? 'the course'}`, hint: 'Nothing was saved yet. Try again in a moment.', code: 'CH-11007', offline: isOffline }),
+    (f) => ({ done: '', failed: `Couldn’t start your round at ${f.pick?.courseName ?? 'the course'}`, hint: 'Nothing was saved yet. Try again in a moment.', code: 'CH-11007', offline: isOffline }),
     (result, c) => {
       const f = result.success ? null : (result.data as ChStartFailure | undefined);
       if (!f) return c;
@@ -293,7 +293,7 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
               </div>
               {form.type === 'qualifier' &&
                 (qualifiers === null ? (
-                  <InlineNotice code="CH-11211" title="Your qualifiers didn't load" body="Play it as a practice round, or come back in a moment." />
+                  <InlineNotice code="CH-11211" title="Your qualifiers didn’t load" body="Play it as a practice round, or come back in a moment." />
                 ) : !qualifiers.length ? (
                   // CH-11312: nothing to qualify in.
                   <p className="ch-rsu-none" data-ch-code="CH-11312">
@@ -344,7 +344,7 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
             <section className="ch-rsu-card ch-rsu-hc">
               <InlineNotice
                 code="CH-11210"
-                title="The scorecard didn't load"
+                title="The scorecard didn’t load"
                 body="Your course and tees are picked; only the pars and yardages are missing. Try again."
                 onRetry={() => lastTee && void loadHoles(lastTee)}
               />

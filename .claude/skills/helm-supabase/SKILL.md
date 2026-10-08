@@ -94,7 +94,8 @@ untrusted data.
    `supabase start` without the env var is the legacy Docker path.
    Our `supabase/config.toml` sets `auth.email.template.*.content_path`,
    which the native stack rejects (`ExperimentalStackStartError`); run it
-   against a scratch copy of `supabase/` with those lines removed (verified
+   against a scratch copy of `supabase/` with those lines removed
+   (`--workdir <copy>`) rather than editing the repo config (verified
    2026-10-03: all migrations and seeds apply natively, and all 85 pgTAP
    files pass). A native stack idles to `readiness: sleeping`, and
    `supabase test db --local` then fails with `LocalDbRunningError` even though
@@ -102,7 +103,6 @@ untrusted data.
    pointing at a wrapper that swaps `--local` for
    `--db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres` (the local
    default, not a secret).
-   (`--workdir <copy>`) rather than editing the repo config.
    Before pushing a migration, `npm run db:check:local` runs `supabase db
    advisors` + `db lint` against the local stack and fails only on findings
    missing from `supabase/local-db-checks-baseline.json` (a ratchet: fix
@@ -120,10 +120,10 @@ untrusted data.
    repo is public, so SMTP identity stays dashboard-only
    (`supabase/config-drift-baseline.json`).
 4. A Supabase preview branch (`create_branch`): schema only, no customer data,
-   and billed per hour while it exists, so it is an owner cost decision. Delete
-   it when done.
-OrioleDB, Multigres and Supabase Compute are platform/billing changes for the
-owner, not something a task enables.
+   and billed per hour while it exists: create it only when it earns its cost and
+   delete it when done.
+OrioleDB, Multigres and Supabase Compute are platform/billing changes; leave
+them alone unless the task is about them.
 
 ## Advisor output is large — filter by class
 A `get_advisors` pull returns every security/performance finding at once.
@@ -146,13 +146,12 @@ a missing skill connection is not a policy ban.
 
 ## Migration review
 For a shared or production migration, review the SQL and target with
-`.claude/rules/database-review.md` before applying. Local-only work can follow
-the task's normal verification. A reviewer agent is optional and risk-based;
-already-given task authorization does not need to be requested again.
+`.claude/rules/database.md` before applying, and rehearse risky kinds
+(RLS, grants, `DROP`, type changes, backfills) on the local Docker stack. A
+reviewer agent is optional and risk-based.
 
 ## Applying a migration
-Use the reviewed, task-authorized write-capable Supabase MCP or
-`npm run db:apply`, after confirming the target and SQL. A connected fallback
-is valid when it exposes the needed capability. Do not ask the user to repeat
-permission already granted for this task. Read-only `execute_sql` remains
-valid for diagnostics.
+Use the write-capable Supabase MCP or `npm run db:apply`, after confirming the
+target and SQL, then verify the schema. A connected fallback is valid when it
+exposes the needed capability. Read-only `execute_sql` remains valid for
+diagnostics.

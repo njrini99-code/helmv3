@@ -9,11 +9,12 @@ import { Avatar } from '../../ui/Avatar';
 import { Button, IconButton } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
-import { InlineNotice } from '../../ui/Notices';
+import { InlineNotice, PageNotice } from '../../ui/Notices';
 import { EmptyState } from '../../ui/States';
 import { SearchField } from '../../ui/SearchField';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
+import { Swap } from '../../ui/Swap';
 import { useNow } from '../../lib/use-now';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
@@ -306,6 +307,11 @@ export function Calendar({
   }, [coach, editor, cancelling, subs, busyOpen, view, anchor, insp, goToday, step]);
 
   const dates = view === 'day' ? [anchor] : weekDates(anchor);
+  // The day, week or month on show. Stepping to another slides the grid the way it went (CH-6605): a later period comes in
+  // from the right, an earlier one from the left.
+  const periodKey = view === 'week' ? weekDates(anchor)[0]! : view === 'month' ? monthKey(anchor) : view === 'day' ? anchor : 'agenda';
+  const [period, setPeriod] = useState<{ key: string; dir: 1 | -1 }>({ key: periodKey, dir: 1 });
+  if (period.key !== periodKey) setPeriod({ key: periodKey, dir: periodKey > period.key ? 1 : -1 });
   const title = viewTitle(view === 'agenda' ? 'month' : view, anchor);
   const away = view === 'day' ? anchor !== now.date : view === 'week' ? !weekDates(anchor).includes(now.date) : monthKey(anchor) !== monthKey(now.date);
   const inView = (d: string) => (view === 'day' || view === 'week' ? dates.includes(d) : monthKey(d) === monthKey(anchor));
@@ -315,6 +321,20 @@ export function Calendar({
     const e = data.events.find((x) => x.id === id && (!date || x.date === date)) ?? data.events.find((x) => x.id === id);
     if (e) setInsp({ kind: 'event', id: e.id, date: e.date });
   };
+
+  // More than one read failed: the page says so once with one Try again (the shell's CH-1209), and a part with a place
+  // of its own (the grid, the inspector) keeps only its title there (states audit b6, c10). The timezone, roster, busy
+  // time and classes have no place but this stack, so they fold into the page's notice instead of repeating it on the
+  // next line. One failure keeps its own notice and Try again.
+  const failedParts = [
+    data.eventsError && 'team events',
+    data.settingsError && 'your team’s timezone',
+    data.membersError && 'the roster',
+    data.busyError && 'your busy time',
+    data.classesError && (coach ? 'class schedules' : 'your classes'),
+    data.rsvpError && 'replies',
+  ].filter((part): part is string => !!part);
+  const covered = failedParts.length > 1;
 
   const ctx: InspCtx = {
     role: data.role,
@@ -326,6 +346,7 @@ export function Calendar({
     events: data.events,
     overlaps,
     rsvpError: data.rsvpError,
+    covered,
     preview,
     teamId: data.teamId,
     go: (n) => {
@@ -349,29 +370,30 @@ export function Calendar({
 
   const notices = (
     <>
-      {data.settingsError && (
+      <PageNotice parts={failedParts} onRetry={refresh} retrying={pending} />
+      {data.settingsError && !covered && (
         <InlineNotice
           code="CH-6212"
-          title="Your team's timezone didn't load."
+          title="Your team’s timezone didn’t load."
           body={`Times are shown in ${data.zoneLabel} until it does. Try again; the error has been reported.`}
           onRetry={refresh}
         />
       )}
-      {data.membersError && (
+      {data.membersError && !covered && (
         <InlineNotice
           code="CH-6213"
-          title="The roster didn't load."
-          body="Events are complete, but players can't be invited or picked until it does. Try again; the error has been reported."
+          title="The roster didn’t load."
+          body="Events are complete, but players can’t be invited or picked until it does. Try again; the error has been reported."
           onRetry={refresh}
         />
       )}
-      {data.busyError && (
-        <InlineNotice code="CH-6202" title="Your busy time didn't load." body="Team events are complete, but your own blocks aren't shown. Try again; the error has been reported." onRetry={refresh} />
+      {data.busyError && !covered && (
+        <InlineNotice code="CH-6202" title="Your busy time didn’t load." body="Team events are complete, but your own blocks aren’t shown. Try again; the error has been reported." onRetry={refresh} />
       )}
-      {data.classesError && (
+      {data.classesError && !covered && (
         <InlineNotice
           code="CH-6203"
-          title={coach ? "Class schedules didn't load." : "Your classes didn't load."}
+          title={coach ? "Class schedules didn’t load." : "Your classes didn’t load."}
           body={coach ? 'Team events are complete, but class overlaps may be missing. Try again; the error has been reported.' : 'Team events are complete. Try again; the error has been reported.'}
           onRetry={refresh}
         />
@@ -449,7 +471,7 @@ export function Calendar({
           notices={
             <>
               {notices}
-              {data.eventsError && <InlineNotice code="CH-6201" title="The calendar didn't load." body="Nothing was changed. Try again; the error has been reported." onRetry={refresh} />}
+              {data.eventsError && <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again; the error has been reported." onRetry={refresh} covered={covered} />}
             </>
           }
           onView={go}
@@ -477,8 +499,8 @@ export function Calendar({
   }
 
   return (
-    <main className="ch-cal" aria-busy={pending} /* CH-6406: busy while a view, week or save is on its way; the page dims */>
-      <header className="ch-cal-mast">
+    <main className="ch-cal" data-canopy="" aria-busy={pending} /* CH-6406: busy while a view, week or save is on its way; the page dims */>
+      <header className="ch-cal-mast" data-canopy-head="">
         <div className="ch-cal-mast__l">
           <button type="button" className="ch-cal-title" onClick={() => setJump(!jump)} aria-expanded={jump} aria-haspopup="dialog" aria-label={`${title.main}${title.year ? ` ${title.year}` : ''}. Jump to a date`}>
             <h1>{title.main}</h1>
@@ -486,7 +508,7 @@ export function Calendar({
             <Icon icon={ChevronDown} size={16} />
           </button>
           <div className="ch-cal-sub">
-            {data.eventsError ? "Events didn't load" : `${count} team ${count === 1 ? 'event' : 'events'}${view === 'week' ? ' this week' : view === 'day' ? '' : ' this month'}`} · {data.zoneLabel}
+            {data.eventsError ? "Events didn’t load" : `${count} team ${count === 1 ? 'event' : 'events'}${view === 'week' ? ' this week' : view === 'day' ? '' : ' this month'}`} · {data.zoneLabel}
           </div>
           {jump && (
             <JumpPanel
@@ -569,44 +591,50 @@ export function Calendar({
 
       {notices}
       {data.eventsError ? (
-        <div className="ch-cal-surface" style={{ padding: 20 }}>
-          <InlineNotice code="CH-6201" title="The calendar didn't load." body="Nothing was changed. Try again; the error has been reported." onRetry={refresh} />
+        <div className="ch-cal-surface">
+          <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again; the error has been reported." onRetry={refresh} covered={covered} />
         </div>
       ) : (
         <div className="ch-cal-body">
           <div style={{ minWidth: 0 }}>
             <SectionBoundary surface={`calendar.${view}`} label="The calendar" code="CH-6210">
-              {(view === 'week' || view === 'day') && (
-                <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} />
-              )}
-              {view === 'month' && (
-                <MonthView
-                  anchor={anchor}
-                  events={events}
-                  now={now}
-                  selDate={anchor}
-                  onPick={(d) => {
-                    setAnchor(d);
-                    window.history.replaceState(null, '', buildUrl('month', d, data.today));
-                    const firstEv = events.filter((e) => e.date === d && e.type !== 'class').sort((a, b) => (a.start ?? -1) - (b.start ?? -1))[0];
-                    if (firstEv) open(firstEv.id, d);
-                    else if (monthKey(d) !== monthKey(anchor)) go('month', d);
-                  }}
-                />
-              )}
-              {view === 'agenda' &&
-                (events.some((e) => e.date >= now.date) || events.length ? (
-                  <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} />
-                ) : (
-                  <div className="ch-cal-surface">
-                    <EmptyState
-                      code="CH-6301"
-                      icon={CalendarDays}
-                      title={sel.length ? 'Nothing on these players’ schedules in this range.' : 'Nothing on the calendar in this range.'}
-                      body={coach ? 'Events you publish show here, with replies and overlaps.' : 'Events your coach invites you to show here.'}
+              {/* CH-6604: another view settles in (base in, quick out); CH-6605: another day, week or month slides 12px the
+                  way it went. Both instant with reduced motion. */}
+              <Swap swapKey={view}>
+                <Swap swapKey={period.key} kind="slide" dir={period.dir}>
+                  {(view === 'week' || view === 'day') && (
+                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} />
+                  )}
+                  {view === 'month' && (
+                    <MonthView
+                      anchor={anchor}
+                      events={events}
+                      now={now}
+                      selDate={anchor}
+                      onPick={(d) => {
+                        setAnchor(d);
+                        window.history.replaceState(null, '', buildUrl('month', d, data.today));
+                        const firstEv = events.filter((e) => e.date === d && e.type !== 'class').sort((a, b) => (a.start ?? -1) - (b.start ?? -1))[0];
+                        if (firstEv) open(firstEv.id, d);
+                        else if (monthKey(d) !== monthKey(anchor)) go('month', d);
+                      }}
                     />
-                  </div>
-                ))}
+                  )}
+                  {view === 'agenda' &&
+                    (events.some((e) => e.date >= now.date) || events.length ? (
+                      <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} />
+                    ) : (
+                      <div className="ch-cal-surface">
+                        <EmptyState
+                          code="CH-6301"
+                          icon={CalendarDays}
+                          title={sel.length ? 'Nothing on these players’ schedules in this range.' : 'Nothing on the calendar in this range.'}
+                          body={coach ? 'Events you publish show here, with replies and overlaps.' : 'Events your coach invites you to show here.'}
+                        />
+                      </div>
+                    ))}
+                </Swap>
+              </Swap>
             </SectionBoundary>
           </div>
           <aside className="ch-in-wrap ch-cal-surface" aria-label="Details" aria-live="polite" /* CH-6802 */>

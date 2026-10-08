@@ -1,3 +1,4 @@
+// RETIRED SHIM — redirected by next.config.mjs; delete when the redirect entry is removed
 import { redirect } from 'next/navigation';
 
 // Legacy player insights route. Keep for backward compatibility and bookmarks.

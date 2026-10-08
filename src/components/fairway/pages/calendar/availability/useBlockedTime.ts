@@ -6,7 +6,7 @@
  * ----------------------------------------------------------------------------
  * SCREEN-BUILD-PLAN.md §2.7. Coach-only: wraps the EXISTING
  * `getCoachBlockedTime` / `addCoachBlockedTime` / `updateCoachBlockedTime` /
- * `deleteCoachBlockedTime` server actions (`src/app/golf/actions/golf.ts`,
+ * `deleteCoachBlockedTime` server actions (`src/app/golf/actions/calendar-blocked-time.ts`,
  * unchanged) with a fetch/mutate/retry state machine. No new server action,
  * no new table — this screen is exactly what the coach-only
  * `golf_coach_blocked_time` RLS ("Coaches can manage their own blocked time",
@@ -32,7 +32,8 @@
  */
 
 import * as React from 'react';
-import type { ActionResult, BlockedTimePeriod } from '@/app/golf/actions/golf';
+import type { ActionResult } from '@/app/golf/actions/golf-action-shared';
+import type { BlockedTimePeriod } from '@/app/golf/actions/calendar-blocked-time';
 
 /**
  * `BlockedTimePeriod` (golf.ts's exported type) omits `title`, `all_day`, and
@@ -88,12 +89,12 @@ export interface BlockedTimeActions {
 
 let cachedActions: Promise<BlockedTimeActions> | null = null;
 
-/** Code-split: golf.ts is a large shared action module — only load it once
+/** Code-split: calendar-blocked-time.ts is a server-action module — only load it once
  *  the coach actually opens the Busy time tab. Cached across calls/instances
  *  so re-opening the sheet doesn't re-import. */
 function loadBlockedTimeActions(): Promise<BlockedTimeActions> {
   if (!cachedActions) {
-    cachedActions = import('@/app/golf/actions/golf').then((mod) => ({
+    cachedActions = import('@/app/golf/actions/calendar-blocked-time').then((mod) => ({
       // See `CoachBlockedTimeRow`'s docblock — `getCoachBlockedTime` selects
       // `'*'`, so the row genuinely carries title/all_day/description; this
       // only widens the STATIC type to match that runtime reality.

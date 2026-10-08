@@ -10,6 +10,7 @@ import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { InlineNotice } from '../../ui/Notices';
+import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { FormLine } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { Menu, type MenuItem } from '../../ui/Menu';
@@ -17,6 +18,7 @@ import { Modal } from '../../ui/Modal';
 import { PillGroup, Segmented } from '../../ui/Segmented';
 import { SearchField } from '../../ui/SearchField';
 import { SectionBoundary } from '../../ui/SectionBoundary';
+import { Swap } from '../../ui/Swap';
 import { useToast } from '../../ui/Toast';
 import { useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
@@ -29,7 +31,7 @@ import { useJoinRequests } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
 import { RosterPeek } from './RosterPeek';
 import { RosterPhone } from './RosterPhone';
-import { formatHcp } from './format';
+import { formatHcp, rosterFailedParts } from './format';
 import '../../styles/roster.css';
 
 type Sort = 'avg' | 'hcp' | 'rounds' | 'name';
@@ -59,6 +61,9 @@ export function Roster({ data }: { data: ChRoster }) {
   const [show, setShow] = useChSessionState<Show>('show', 'active');
   const [sort, setSort] = useChSessionState<Sort>('sort', 'avg');
   const [view, setView] = useChSessionState<View>('view', 'faces');
+  // Counts the coach's own layout changes: the cards and the table swap with motion on those (CH-3603), never when the
+  // kept layout comes back as the page opens.
+  const [viewTurn, setViewTurn] = useState(0);
   const [sel, setSel] = useState<string | null>(null);
   const [invite, setInvite] = useState(false);
   const [removing, setRemoving] = useState<ChRosterPlayer | null>(null);
@@ -93,6 +98,7 @@ export function Roster({ data }: { data: ChRoster }) {
     // setView is useChSessionState's useState setter (stable), so this still runs once.
   }, [setView]);
   const changeView = (v: View) => {
+    if (v !== view) setViewTurn((n) => n + 1);
     setView(v);
     try {
       localStorage.setItem(VIEW_KEY, v);
@@ -146,7 +152,7 @@ export function Roster({ data }: { data: ChRoster }) {
     },
     (p) => ({
       done: `${p.name} removed from ${data.teamName}`,
-      failed: `Couldn't remove ${p.name}`,
+      failed: `Couldn’t remove ${p.name}`,
       hint: 'Nothing changed on the roster. Try again, or refresh if it keeps failing.',
       code: 'CH-3001',
     }),
@@ -176,7 +182,7 @@ export function Roster({ data }: { data: ChRoster }) {
       toast({ title: `Roster exported · ${rows.length} ${rows.length === 1 ? 'player' : 'players'}` });
     } catch {
       haptic('error');
-      toast({ tone: 'error', title: "Couldn't export the roster", body: 'Your browser blocked the download. Try again, or use a desktop browser.', code: 'CH-3005' });
+      toast({ tone: 'error', title: 'Couldn’t export the roster', body: 'Your browser blocked the download. Try again, or use a desktop browser.', code: 'CH-3005' });
     }
   };
 
@@ -255,9 +261,12 @@ export function Roster({ data }: { data: ChRoster }) {
     );
   }
 
+  // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
+  const failed = rosterFailedParts(data);
+  const covered = failed.length > 1;
   return (
-    <main className="ch-rs">
-      <header className="ch-rs-head">
+    <main className="ch-rs" data-canopy="">
+      <header className="ch-rs-head" data-canopy-head="">
         <div>
           <span className="ch-rs-team">
             <span className="ch-rs-team__stack" aria-hidden="true">
@@ -267,7 +276,7 @@ export function Roster({ data }: { data: ChRoster }) {
             </span>
             <span className="ch-rs-team__name">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
           </span>
-          <h1 className="ch-display">Your players.</h1>
+          <h1 className="ch-display">Your players</h1>
           {!data.playersError && (
             <p>
               <span className="ch-num">{players.length}</span> {players.length === 1 ? 'player' : 'players'} &middot;{' '}
@@ -296,16 +305,19 @@ export function Roster({ data }: { data: ChRoster }) {
         </div>
       </header>
 
+      <PageRefreshNotice parts={failed} />
+
       <SectionBoundary surface="roster.requests" label="Join requests" code="CH-3204">
-        <RosterRequests teamName={data.teamName} jr={jr} error={data.requestsError} onRetry={() => router.refresh()} />
+        <RosterRequests teamName={data.teamName} jr={jr} error={data.requestsError} covered={covered} onRetry={() => router.refresh()} />
       </SectionBoundary>
 
       {data.statsError && (
         <InlineNotice
           code="CH-3202"
-          title="Season stats didn't load."
+          title="Season stats didn’t load"
           body="The roster is complete, but averages, form and strokes gained are missing until the rounds load. The error has been reported."
           onRetry={() => router.refresh()}
+          covered={covered}
         />
       )}
 
@@ -325,9 +337,10 @@ export function Roster({ data }: { data: ChRoster }) {
       {data.playersError ? (
         <InlineNotice
           code="CH-3201"
-          title="The roster didn't load."
+          title="The roster didn’t load"
           body="Your players are safe. Try again, and if it keeps happening the error has already been reported."
           onRetry={() => router.refresh()}
+          covered={covered}
         />
       ) : players.length === 0 ? (
         <EmptyState
@@ -404,19 +417,23 @@ export function Roster({ data }: { data: ChRoster }) {
 
           <div className={'ch-rs-body' + (cur ? ' has-peek' : '')}>
             <SectionBoundary surface="roster.list" label="The roster" code="CH-3205">
-              <RosterList
-                rows={rows}
-                view={view}
-                sel={sel}
-                q={q}
-                show={show}
-                select={select}
-                menuFor={menuFor}
-                onShowEveryone={() => {
-                  setQ('');
-                  setShow('all');
-                }}
-              />
+              {/* CH-3603: Team view and List view settle in as the toggle moves (base in, quick out); instant with
+                  reduced motion. */}
+              <Swap swapKey={viewTurn}>
+                <RosterList
+                  rows={rows}
+                  view={view}
+                  sel={sel}
+                  q={q}
+                  show={show}
+                  select={select}
+                  menuFor={menuFor}
+                  onShowEveryone={() => {
+                    setQ('');
+                    setShow('all');
+                  }}
+                />
+              </Swap>
             </SectionBoundary>
             <SectionBoundary surface="roster.peek" label="The player panel" code="CH-3206">
               <RosterPeek p={cur} notesLocked={data.notesError} onClose={() => setSel(null)} onNoteSaved={noteSaved} />
@@ -453,6 +470,8 @@ function RosterList({
   menuFor: (p: ChRosterPlayer) => MenuItem[];
   onShowEveryone: () => void;
 }) {
+  // Every scored player's average, for the faces' team strip (where each player sits on the team).
+  const teamAvgs = rows.map((r) => r.avg).filter((v): v is number => v != null);
   return (
     <>
       {rows.length === 0 ? (
@@ -483,7 +502,8 @@ function RosterList({
             >
               <span className="ch-rs-face__top">
                 <span />
-                {/* CH-3802: the status is a word; the dot is decoration. CH-3602: the card lifts on hover and presses in. */}
+                {/* CH-3802: the status is a word; the dot is decoration. CH-3602: on desktop the cell takes the Ledger tint on
+                    hover and a deeper one on press; the phone's card lifts. */}
                 <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />
                 <span className="ch-sr-only">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
               </span>
@@ -495,20 +515,7 @@ function RosterList({
               <span className="ch-rs-face__form">
                 <FormLine data={p.trend} width={150} height={30} earlyBelow={3} label={`${p.name} form`} />
               </span>
-              <span className="ch-rs-face__figs">
-                <span>
-                  <b className="ch-num">{formatFixed(p.avg)}</b>Avg
-                </span>
-                <span>
-                  <b className={'ch-num' + (p.sgPerRound == null ? '' : p.sgPerRound >= 0 ? ' is-gain' : ' is-loss')}>
-                    {p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)}
-                  </b>
-                  SG
-                </span>
-                <span>
-                  <b className="ch-num">{formatHcp(p.handicap)}</b>HCP
-                </span>
-              </span>
+              <FaceFigures p={p} avgs={teamAvgs} />
               {p.attention && <span className={`ch-rs-face__note is-${p.attention.tone}`}>{p.attention.text}</span>}
             </button>
           ))}
@@ -642,7 +649,7 @@ function InviteModal({
       ) : codeFailed ? (
         <InlineNotice
           code="CH-3207"
-          title="The join code didn't load."
+          title="The join code didn’t load"
           body="Your code still works for players who have it. Try again to show it here."
           onRetry={onRetry}
         />
@@ -650,7 +657,7 @@ function InviteModal({
         <EmptyState
           code="CH-3304"
           compact
-          title="Your team has no join code yet."
+          title="Your team has no join code yet"
           body="Make one in Settings, then invite players here."
           action={
             <Button size="sm" href="/golf/dashboard/settings?section=team">
@@ -660,5 +667,50 @@ function InviteModal({
         />
       )}
     </Modal>
+  );
+}
+
+/**
+ * A roster card's figures, drawn (owner, 2026-10-06: no bare numbers). Scoring: the player's average among the
+ * team's on one strip, with their place. Strokes gained: a bar from zero, green for gained, amber for lost. Handicap
+ * reads as a labelled line.
+ */
+function FaceFigures({ p, avgs }: { p: { avg: number | null; sgPerRound: number | null; handicap: number | null }; avgs: number[] }) {
+  const lo = avgs.length ? Math.min(...avgs) : 0;
+  const hi = avgs.length ? Math.max(...avgs) : 0;
+  const at = (v: number) => (hi === lo ? 50 : ((v - lo) / (hi - lo)) * 100);
+  const place = p.avg == null ? null : avgs.filter((v) => v < p.avg!).length + 1;
+  const ord = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
+  const sg = p.sgPerRound;
+  const sgW = sg == null ? 0 : Math.min(50, (Math.abs(sg) / 3) * 50);
+  return (
+    <span className="ch-rs-figs">
+      <span className="ch-rs-fig">
+        <span className="ch-rs-fig__k">Scoring</span>
+        <b className="ch-num">{formatFixed(p.avg)}</b>
+        <span className="ch-rs-fig__m">{place != null && avgs.length > 1 ? `${ord(place)} of ${avgs.length}` : 'Avg'}</span>
+        {p.avg != null && avgs.length > 1 && (
+          <span className="ch-rs-strip" aria-hidden="true">
+            {avgs.map((v, k) => (
+              <i key={k} style={{ left: `${at(v)}%` }} />
+            ))}
+            <i className="is-me" style={{ left: `${at(p.avg)}%` }} />
+          </span>
+        )}
+      </span>
+      <span className="ch-rs-fig">
+        <span className="ch-rs-fig__k">Strokes gained</span>
+        <b className={'ch-num' + (sg == null ? '' : sg >= 0 ? ' is-gain' : ' is-loss')}>{sg == null ? NO_DATA : formatSigned(sg)}</b>
+        <span className="ch-rs-fig__m">a round</span>
+        {sg != null && (
+          <span className="ch-rs-sgbar" aria-hidden="true">
+            <i className={sg >= 0 ? 'is-gain' : 'is-loss'} style={sg >= 0 ? { left: '50%', width: `${sgW}%` } : { right: '50%', width: `${sgW}%` }} />
+          </span>
+        )}
+      </span>
+      <span className="ch-rs-face__hcp">
+        Handicap <b className="ch-num">{formatHcp(p.handicap)}</b>
+      </span>
+    </span>
   );
 }

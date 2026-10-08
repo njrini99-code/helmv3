@@ -28,12 +28,15 @@ function Row({ p, pos }: { p: ChLeaderRow; pos: number }) {
   const href = rebuiltHref(`/golf/dashboard/stats?player=${p.playerId}`);
   const cells = (
     <>
-      <span className="ch-h-lb__pos ch-num" role="cell">{pos}</span>
+      <span className={'ch-h-lb__pos ch-num' + (pos <= 3 ? ' is-top' : '') + (pos === 1 ? ' is-lead' : '')} role="cell">{pos}</span>
       <span className="ch-h-lb__who" role="cell">
         <Avatar name={p.name} size={28} />
         <span>
           <span className="ch-h-lb__name">{p.name}</span>
-          <span className="ch-h-lb__meta">{[p.classYear, statusText(p)].filter(Boolean).join(' · ')}</span>
+          <span className="ch-h-lb__meta">
+            {p.classYear && <>{p.classYear} &middot; </>}
+            <span className={'ch-h-lb__status is-' + (p.quietDays != null && p.quietDays >= QUIET_DAYS ? 'quiet' : p.status)}>{statusText(p)}</span>
+          </span>
         </span>
       </span>
       <span className="ch-h-lb__trend" role="cell">
@@ -55,6 +58,8 @@ function Row({ p, pos }: { p: ChLeaderRow; pos: number }) {
       </span>
     </>
   );
+  // CH-2602: on desktop the row takes the Ledger tint on hover (quick) as its chevron slides in (base), and a press
+  // deepens the tint (press). It never lifts or scales.
   return href ? (
     <Link href={href} className="ch-h-lb__row is-link" role="row">
       {cells}
@@ -67,7 +72,8 @@ function Row({ p, pos }: { p: ChLeaderRow; pos: number }) {
   );
 }
 
-export function Leaderboard({ data }: { data: ChCoachHome['leaderboard'] }) {
+/** `covered`: the page's notice (CH-1209) carries the one Try again, so a failed read keeps only its notice's title. */
+export function Leaderboard({ data, covered = false }: { data: ChCoachHome['leaderboard']; covered?: boolean }) {
   const rosterHref = rebuiltHref('/golf/dashboard/roster');
   return (
     <section aria-labelledby="ch-lb-title">
@@ -92,8 +98,9 @@ export function Leaderboard({ data }: { data: ChCoachHome['leaderboard'] }) {
       {data.error ? (
         <RefreshNotice
           code="CH-2204"
-          title="The leaderboard didn't load."
+          title="The leaderboard didn’t load"
           body="Scores are safe. Try again, and if it keeps happening the error has already been reported."
+          covered={covered}
         />
       ) : data.rosterSize === 0 ? (
         <div className="ch-h-lb ch-sheet">
@@ -101,7 +108,7 @@ export function Leaderboard({ data }: { data: ChCoachHome['leaderboard'] }) {
             code="CH-2304"
             icon={Users}
             title="No players on the roster yet."
-            body="Share your team's join code from Roster, and players appear here once you approve them."
+            body="Share your team’s join code from Roster, and players appear here once you approve them."
           />
         </div>
       ) : data.rows.length === 0 ? (
@@ -115,7 +122,7 @@ export function Leaderboard({ data }: { data: ChCoachHome['leaderboard'] }) {
         </div>
       ) : (
         <div className="ch-h-lb ch-sheet" role="table" aria-labelledby="ch-lb-title">
-          <div className="ch-h-lb__row ch-h-lb__head ch-well-soft" role="row">
+          <div className="ch-h-lb__row ch-h-lb__head" role="row">
             <span role="columnheader">
               <span className="ch-sr-only">Position</span>
             </span>

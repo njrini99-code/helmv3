@@ -1,4 +1,4 @@
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { cleanup, render, renderHook, screen, waitFor, within, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
@@ -35,7 +35,7 @@ vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: vi.fn() }));
 vi.mock('../routes/team', () => ({ resolveClubhouseTeam: vi.fn() }));
 const gate = vi.hoisted(() => ({ on: true }));
 vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: (role: string | null) => gate.on && (role === 'coach' || role === 'player') }));
-vi.mock('@/app/golf/actions/golf', () => ({
+vi.mock('@/app/golf/actions/qualifier-actions', () => ({
   createGolfQualifier: vi.fn(),
   setQualifierRoundCourses: vi.fn(),
   updateGolfQualifierDetails: vi.fn(),
@@ -469,7 +469,7 @@ describe('Qualifiers · a failed read is never an empty (owner rule 1, 2026-10-0
     wrap(<QualifiersList data={data} />);
     await expectCode('CH-09222', /Your qualifiers didn’t load/);
     expect(code('CH-09306')).toBeNull();
-    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('My qualifiers');
+    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('My qualifiers · — active · — concluded');
     router.refresh.mockClear();
     await user.click(within(code('CH-09222') as HTMLElement).getByRole('button', { name: /Try again/ }));
     expect(router.refresh).toHaveBeenCalledTimes(1);
@@ -634,6 +634,12 @@ describe('Qualifiers · one qualifier', () => {
     expect(fact('Rounds submitted')).toBe('Rounds submitted13of 24');
     expect(fact('Course')).toBe('CourseFinley GCPar by round');
     expect(fact('Spots')).toBe('Spots54 on score · 1 pick');
+    // Two facts drawn (decorative): 13 of 24 rounds along a bar, and five seats, four won on score and one pick.
+    const facts = document.querySelector('.ch-qf-facts')!;
+    expect((facts.querySelector('.ch-qf-bar i') as HTMLElement).style.width).toBe(`${(13 / 24) * 100}%`);
+    expect(facts.querySelectorAll('.ch-qf-seats i.is-score')).toHaveLength(4);
+    expect(facts.querySelectorAll('.ch-qf-seats i.is-pick')).toHaveLength(1);
+    for (const v of facts.querySelectorAll('.ch-qf-facts__viz')) expect(v.getAttribute('aria-hidden')).toBe('true');
     expect(screen.getByRole('heading', { level: 1, name: 'Pinehurst qualifier' })).toBeTruthy();
     for (const h of ['Leaderboard', 'Round-by-round scores', 'Selections', 'Course per round', 'Scoring rules']) expect(screen.getByRole('heading', { level: 2, name: h })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Manage selections' }).getAttribute('href')).toBe(`/golf/dashboard/qualifiers/${d.id}/selection`);
@@ -1503,7 +1509,7 @@ describe('Qualifiers · the list comes back as it was left, and Back is a real B
 
     // The qualifier opens at the top (a new page), the filter and the place are kept.
     view.rerender(tree(page(DETAIL, <QualifierDetail data={{ ...d, id: link.getAttribute('href')!.split('/').pop()! }} writes={fakeWrites()} live={false} />)));
-    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0 });
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' });
 
     // Back: a step back in history (a popstate), then the list again, restored once by the frame, with its filter and search.
     await user.click(backLink());
@@ -1513,7 +1519,7 @@ describe('Qualifiers · the list comes back as it was left, and Back is a real B
     });
     const sends = (canvas.scrollTo as Mock).mock.calls.length;
     view.rerender(tree(page(TEAM_LIST, <QualifiersList data={list()} />)));
-    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 520 });
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 520, behavior: 'instant' });
     expect(pill(/^Active/)).toBe('true');
     expect(searchBox().value).toBe('pine');
     // One restore, the frame's: it settled on the first try (the canvas reached 520), and the list sent nothing of its own.
@@ -1628,7 +1634,7 @@ describe('Qualifiers · create and edit', () => {
     expect(writes.create).toHaveBeenCalledTimes(1);
   });
 
-  it('CH-09002 CH-09902 91202 a partial edit save: the toast says it failed, the form keeps what saved and what to do', async () => {
+  it('CH-09902 91202 a partial edit save: the form’s notice says it failed, what saved and what to do, and no toast says it again', async () => {
     const api = {
       details: vi.fn(async () => ({ success: true as const, data: undefined })),
       rounds: vi.fn(async () => ({ success: true as const, data: undefined })),
@@ -1641,12 +1647,31 @@ describe('Qualifiers · create and edit', () => {
     const user = userEvent.setup();
     const writes = fakeWrites({ saveEdit: vi.fn(async () => res) });
     wrap(<QualifierForm data={previewEditForm()} writes={writes} />);
+    hapticSpy.mockClear();
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
-    await expectCode('CH-09002', /Couldn’t save the qualifier.*Check the form and save again/);
-    await expectCode('CH-09902', /Saved the details .* but not the players\. One player has a round.* Save again to finish\./);
+    await expectCode('CH-09902', /^Couldn’t save the qualifierSaved the details .* but not the players\. One player has a round.* Save again to finish\.$/);
+    // Told once: the notice over the form (lead, 2026-10-08), with the error haptic, and no toast saying the same words.
+    expect(code('CH-09002')).toBeNull();
+    expect(document.querySelector('.ch-toast')).toBeNull();
+    expect(screen.getAllByText('Couldn’t save the qualifier')).toHaveLength(1);
+    expect(hapticSpy).toHaveBeenCalledWith('error');
     writes.saveEdit.mockImplementation(async () => ({ success: true }));
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     await waitFor(() => expect(code('CH-09902')).toBeNull());
+  });
+
+  it('CH-09002 a save whose request fails with no reason is told by its toast, with Retry: there is no notice to tell it', async () => {
+    const user = userEvent.setup();
+    const writes = fakeWrites({
+      saveEdit: vi.fn(async () => {
+        throw new Error('network');
+      }),
+    });
+    wrap(<QualifierForm data={previewEditForm()} writes={writes} />);
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    await expectCode('CH-09002', /Couldn’t save the qualifier.*Check the form and save again/);
+    expect(code('CH-09902')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
   });
 
   it('90513 editing: a player with a round stays entered; a changed squad and entrants are sent, an unchanged one is not', async () => {
@@ -1669,12 +1694,32 @@ describe('Qualifiers · create and edit', () => {
     const { unmount } = wrap(<QualifierForm data={form({ playersError: true })} writes={fakeWrites()} />);
     expect(code('CH-09208')!.textContent).toMatch(/The roster didn’t load/);
     expect((screen.getByRole('button', { name: 'Create qualifier' }) as HTMLButtonElement).disabled).toBe(true);
+    // Said over the form, where the Create that is off is explained, with Try again; the Players section keeps the title
+    // alone, marking the gap, with no second alert or button (states audit c14).
+    const top = code('CH-09208') as HTMLElement;
+    expect(top.compareDocumentPosition(document.querySelector('.ch-qf-form')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(top).getByRole('button', { name: 'Try again' })).toBeTruthy();
+    const players = screen.getByRole('group', { name: 'Players' });
+    expect(players.querySelector('.ch-notice--covered')!.textContent).toBe('The roster didn’t load');
+    expect(within(players).queryByRole('button', { name: 'Try again' })).toBeNull();
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
     unmount();
     const u2 = wrap(<QualifierForm data={form({ players: [], initial: { ...form().initial, playerIds: [] } })} writes={fakeWrites()} />);
     expect(code('CH-09305')!.textContent).toMatch(/No active players on the roster/);
     u2.unmount();
     wrap(<QualifierForm data={{ ...previewEditForm(), coursesError: true, roundCourses: [] }} writes={fakeWrites()} />);
     expect(code('CH-09217')!.textContent).toMatch(/Saving keeps the courses already set/);
+  });
+
+  it('the squad readout wraps whole segments with its dots drawn between them, so no line ends on a dot (states audit c14)', () => {
+    wrap(<QualifierForm data={form()} writes={fakeWrites()} />);
+    const row = document.querySelector('.ch-qf-readout__in')!;
+    expect([...row.children].map((seg) => [seg.className, seg.textContent])).toEqual([
+      ['ch-qf-seg', '4 qualify on score'],
+      ['ch-qf-seg', '1 coach pick'],
+      ['ch-qf-seg', '5-player squad'],
+    ]);
+    expect(document.querySelector('.ch-qf-readout')!.textContent).not.toContain('·');
   });
 
   it('CH-09502 leaving with unsaved changes asks first', async () => {
@@ -1999,6 +2044,10 @@ describe('Qualifiers · loading', () => {
     expect(code('CH-09401')!.getAttribute('aria-busy')).toBe('true');
     expect(code('CH-09402')!.getAttribute('aria-label')).toBe('Loading the qualifier');
     expect(code('CH-09403')!.getAttribute('aria-label')).toBe('Loading the qualifier form');
+    // The detail's skeleton holds the loaded head and facts (measured 2026-10-07): a coach's three actions, and each fact's four lines.
+    const detailSk = code('CH-09402') as HTMLElement;
+    expect(detailSk.querySelector('.ch-qf-head .ch-qf-head__act')!.children).toHaveLength(3);
+    for (const f of detailSk.querySelectorAll('.ch-qf-facts > div')) expect(f.children).toHaveLength(4);
   });
 });
 
@@ -2011,7 +2060,10 @@ describe('Qualifiers · Manage selections loads in its own shape (2026-10-01)', 
     expect(sk.classList.contains('ch-qfs')).toBe(true);
     expect(sk.querySelectorAll('.ch-qfs-steps > li')).toHaveLength(3);
     expect(sk.querySelector('.ch-qf-note')).not.toBeNull();
-    expect(sk.querySelectorAll('.ch-qf-body .ch-qf-panel')).toHaveLength(2);
+    expect(sk.querySelectorAll(':scope > .ch-qf-body .ch-qf-panel')).toHaveLength(2);
+    // The phone's own shape (hidden on desktop): the two lists at four rows each, the picks, and the foot's one key.
+    const phone = sk.querySelector('.ch-qf-skel-phone') as HTMLElement;
+    expect([phone.querySelectorAll('.ch-qf-body .ch-qf-panel').length, phone.querySelectorAll('.ch-qf-list > li').length, phone.querySelectorAll('.ch-qf-side').length, phone.querySelectorAll('.ch-qfs-foot').length]).toEqual([2, 8, 1, 1]);
     expect(sk.querySelector('.ch-qf-facts')).toBeNull();
     // The route's loading file draws it, not the qualifier's skeleton.
     const loading = readFileSync(join(process.cwd(), 'src/app/golf/(dashboard)/dashboard/qualifiers/[id]/selection/loading.tsx'), 'utf8');
@@ -2347,6 +2399,11 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
     const facts = document.querySelector('.ch-qfm-facts')!;
     expect([...facts.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Rounds in', 'Spots', 'Deadline']);
     expect(facts.textContent).toMatch(/4\+1/);
+    // Drawn, decoratively: the rounds posted along the rounds due, and the squad's seats (four won on score, one pick).
+    expect(facts.querySelector('.ch-qf-bar i')).not.toBeNull();
+    expect(facts.querySelectorAll('.ch-qf-seats i.is-score')).toHaveLength(4);
+    expect(facts.querySelectorAll('.ch-qf-seats i.is-pick')).toHaveLength(1);
+    for (const v of facts.querySelectorAll('.ch-qfm-facts__viz')) expect(v.getAttribute('aria-hidden')).toBe('true');
     expect(screen.getByRole('link', { name: 'Manage selections' }).getAttribute('href')).toBe(`/golf/dashboard/qualifiers/${detail('live').id}/selection`);
     expect(document.querySelectorAll('.ch-qfm-lb__row').length).toBeGreaterThan(3);
     // Round-by-round stays on desktop (Q-20).
@@ -2737,9 +2794,11 @@ describe('Qualifiers · every write', () => {
     write: (c: Ctx) => Mock;
     render: (c: Ctx) => ReactNode;
     act: (user: User) => Promise<void>;
-    /** The toast that names what landed, and the toast that names what failed. */
+    /** The toast that names what landed, and the words that name what failed. */
     done: string;
     failed: string;
+    /** A refusal the server explains is told by this notice over the form, not by a toast (a save, CH-09902). */
+    notice?: string;
     /** Where the page goes once it lands, or null when it stays put. */
     goes: string | null;
     /** How it gets there: a form that has done its job is replaced (Back does not return to it), a step on is pushed. */
@@ -2781,6 +2840,7 @@ describe('Qualifiers · every write', () => {
       act: (user) => press(user, 'Save changes'),
       done: 'Qualifier saved',
       failed: 'Couldn’t save the qualifier',
+      notice: 'CH-09902',
       goes: `/golf/dashboard/qualifiers/${previewEditForm().id}`,
       via: 'replace',
       reads: true,
@@ -2891,6 +2951,12 @@ describe('Qualifiers · every write', () => {
     return { c, view };
   }
   const refuse = (write: Mock) => write.mockImplementation(async () => ({ success: false, error: 'nope' }));
+  /** A refused write is told once: by its failure toast, or by the form's notice with no toast saying it again. */
+  const toldOnce = async (sc: Scenario) => {
+    if (!sc.notice) return void (await screen.findByText(sc.failed, { selector: '.ch-toast *' }));
+    await screen.findByText(sc.failed, { selector: `[data-ch-code="${sc.notice}"] *` });
+    expect([sc.name, screen.getAllByText(sc.failed).length, document.querySelectorAll('.ch-toast').length]).toEqual([sc.name, 1, 0]);
+  };
 
   it('CH-09009 a squad confirmed while telling the players failed says so (Q-116)', async () => {
     const sc = scenarios.find((x) => x.name === 'confirm the squad')!;
@@ -2931,17 +2997,19 @@ describe('Qualifiers · every write', () => {
     landed.view.unmount();
     clearNav();
     const refused = await drive(sc, refuse);
-    await screen.findByText(sc.failed);
+    await toldOnce(sc);
     expect([sc.name, router.refresh.mock.calls.length, router.push.mock.calls.length, router.replace.mock.calls.length]).toEqual([sc.name, 0, 0, 0]);
     refused.view.unmount();
   });
 
-  it('91401 Retry in a failure toast runs the same write again with the same arguments, and everything a landed write does follows this time too', async () => {
+  it('91401 Retry in a failure toast (for a save, saving again under the form’s notice) runs the same write again with the same arguments, and everything a landed write does follows this time too', async () => {
     for (const sc of scenarios) {
       clearNav();
       const { c, view } = await drive(sc, (write) => write.mockResolvedValueOnce({ success: false, error: 'nope' }));
-      await screen.findByText(sc.failed);
-      await userEvent.setup().click(screen.getByRole('button', { name: 'Retry' }));
+      await toldOnce(sc);
+      // The notice has no Retry of its own: the coach saves again, which is the same write.
+      if (sc.notice) await sc.act(userEvent.setup());
+      else await userEvent.setup().click(screen.getByRole('button', { name: 'Retry' }));
       await waitFor(() => expect(sc.write(c)).toHaveBeenCalledTimes(2));
       expect([sc.name, sc.write(c).mock.calls[1]]).toEqual([sc.name, sc.write(c).mock.calls[0]]);
       await screen.findByText(sc.done);
@@ -2959,7 +3027,7 @@ describe('Qualifiers · every write', () => {
         hapticSpy.mockClear();
         clearNav();
         const { c, view } = await drive(sc);
-        await expectCode('CH-1903', new RegExp(`^${sc.failed}: you're offline`));
+        await expectCode('CH-1903', new RegExp(`^${sc.failed}: you’re offline`));
         expect([sc.name, sc.write(c).mock.calls.length, hapticSpy.mock.calls.some(([kind]) => kind === 'error')]).toEqual([sc.name, 0, true]);
         expect([sc.name, router.push.mock.calls.length, router.replace.mock.calls.length, router.refresh.mock.calls.length]).toEqual([sc.name, 0, 0, 0]);
         view.unmount();

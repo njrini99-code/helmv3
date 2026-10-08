@@ -96,6 +96,18 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-on-edit.mjs",
+            "timeout": 20
+          }
+        ]
+      }
     ]
   },
   "autoMemoryEnabled": false

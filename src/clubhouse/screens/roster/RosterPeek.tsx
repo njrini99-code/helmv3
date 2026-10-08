@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowRight, CalendarPlus, GraduationCap, Hash, MapPin, MessageSquare, School, X } from 'lucide-react';
-import { AnimatePresence, m } from 'framer-motion';
+import { AnimatePresence, m } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { setIntent } from '@/app/golf/actions/v3/intent';
 import type { ChRosterPlayer } from '../../data/roster';
@@ -229,7 +229,7 @@ export function CoachNote({ p, locked, onSaved }: { p: ChRosterPlayer; locked: b
     },
     {
       done: `Note saved for ${p.firstName}`,
-      failed: `Couldn't save your note about ${p.firstName}`,
+      failed: `Couldn’t save your note about ${p.firstName}`,
       hint: 'Your text is still in the field. Try again in a moment.',
       code: 'CH-3004',
     },

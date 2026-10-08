@@ -11,6 +11,7 @@ import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
 import { Button } from '../../ui/Button';
 import { InlineNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
+import { Section } from '../../ui/Section';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { ClassDetail } from './ClassDetail';
@@ -18,6 +19,8 @@ import { ClassForm } from './ClassForm';
 import { ImportSchedule } from './ImportSchedule';
 import { AddTile, ClassCard, CoachNote, OverlapsCard, SyncStatus, TermBar, TodayClasses } from './parts';
 import { newClassId, type ChClassesWrites, type ChRemoveAllData } from './writes';
+import { useChReducedMotion } from '../../lib/reduced-motion';
+import { chScrollIntoView } from '../../lib/smooth-scroll';
 
 const label = (c: { code: string; name: string }) => c.code || c.name;
 
@@ -39,6 +42,7 @@ const label = (c: { code: string; name: string }) => c.code || c.name;
 const offCalendar = (r: { success?: boolean; data?: unknown }) => !r.success && (r.data as { offCalendar?: boolean } | undefined)?.offCalendar === true;
 
 export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChClassesWrites }) {
+  const reduced = useChReducedMotion();
   const phone = useChPhone();
   const router = useRouter();
   const backFromMore = useBackFromMore();
@@ -147,7 +151,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
   };
   const save = useAction('classes.save', saveAction, (input: ChClassInput, editing: ChClass | null) => ({
     done: editing ? 'Class updated' : 'Class added',
-    failed: `Couldn't ${editing ? 'update' : 'add'} ${label({ code: input.code, name: input.name })}`,
+    failed: `Couldn’t ${editing ? 'update' : 'add'} ${label({ code: input.code, name: input.name })}`,
     hint: 'Nothing was changed. Check your connection and try again.',
     code: 'CH-12001',
   }));
@@ -168,7 +172,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
   };
   const remove = useAction('classes.remove', removeAction, (c: ChClass) => ({
     done: `${label(c)} removed`,
-    failed: `Couldn't remove ${label(c)}`,
+    failed: `Couldn’t remove ${label(c)}`,
     hint: 'It is still on your schedule and your calendar. Try again.',
     code: 'CH-12003',
   }));
@@ -198,7 +202,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
     removeAllAction,
     (ids: string[]) => ({
       done: `${ids.length === 1 ? 'Class' : `All ${ids.length} classes`} deleted`,
-      failed: "Couldn't delete your classes",
+      failed: "Couldn’t delete your classes",
       hint: 'Nothing was deleted. Check your connection and try again.',
       code: 'CH-12005',
     }),
@@ -215,15 +219,15 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
       // Nothing changed: every calendar removal failed, so every class was kept.
       if (!removed.length && !offCalendar.length) {
         const why = friendlyReason(kept[0]?.reason);
-        return { ...c, hint: `${kept.length === 1 ? "It couldn't" : 'None of them could'} be taken off your calendar, so ${kept.length === 1 ? 'the class was' : `all ${kept.length} were`} kept${why ? `: ${why}` : '.'} Try again.` };
+        return { ...c, hint: `${kept.length === 1 ? "It couldn’t" : 'None of them could'} be taken off your calendar, so ${kept.length === 1 ? 'the class was' : `all ${kept.length} were`} kept${why ? `: ${why}` : '.'} Try again.` };
       }
       // Half-way: say what is gone, what stayed and what is off the calendar but still saved.
       const parts = [
-        kept.length ? `${list(kept.map((k) => k.id))} couldn't be taken off your calendar, so ${kept.length === 1 ? 'it was' : 'they were'} kept.` : '',
+        kept.length ? `${list(kept.map((k) => k.id))} couldn’t be taken off your calendar, so ${kept.length === 1 ? 'it was' : 'they were'} kept.` : '',
         offCalendar.length ? `${list(offCalendar)} ${offCalendar.length === 1 ? 'is' : 'are'} off your calendar but still on your schedule.` : '',
         'Retry to finish.',
       ].filter(Boolean);
-      return { ...c, failed: removed.length ? `${removed.length} of ${total} classes deleted` : "Couldn't finish deleting your classes", hint: parts.join(' '), code: 'CH-12006' };
+      return { ...c, failed: removed.length ? `${removed.length} of ${total} classes deleted` : "Couldn’t finish deleting your classes", hint: parts.join(' '), code: 'CH-12006' };
     },
   );
 
@@ -246,7 +250,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
   };
   const doImport = useAction('classes.import', importAction, {
     done: '',
-    failed: "Couldn't import your schedule",
+    failed: "Couldn’t import your schedule",
     hint: 'Nothing was saved. Check your connection and try again.',
     code: 'CH-12004',
   });
@@ -267,7 +271,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
   const failedList = classes.filter((c) => failedSync.has(c.id));
   const importedNow = imported && { ...imported, classes: imported.classes.map((c) => classes.find((x) => x.id === c.id) ?? c) };
   const importSync = sync.pending ? 'syncing' : importedNow?.classes.some((c) => failedSync.has(c.id)) ? 'failed' : 'ok';
-  // First run. A load that failed is checked before this wherever it matters (the notice is drawn first, and the header offers nothing), so an empty list from a failed read is never called "no classes".
+  // First run. A load that failed is checked before this wherever it matters (the notice is drawn first), so an empty list from a failed read is never called "no classes".
   const nothing = classes.length === 0;
 
   const startAdd = () => {
@@ -286,12 +290,50 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
     setOpenId(null);
     setAsking(c);
   };
+  const deck = (
+    <>
+      {/* CH-12801: the page is labelled by "Classes"; each card is one button. */}
+      <div className="ch-cl-deck">
+        {classes.map((c) => (
+          <ClassCard
+            key={c.id}
+            c={c}
+            todayIso={todayIso}
+            term={term}
+            overlaps={conflicts.filter((x) => x.classId === c.id)}
+            unsynced={failedSync.has(c.id)}
+            onOpen={(x) => {
+              chTrail('classes open');
+              setOpenId(x.id);
+            }}
+          />
+        ))}
+        <AddTile onAdd={startAdd} />
+      </div>
+      {/* CH-12503: the way out of a whole schedule, quiet and below the deck, red because it deletes (D-42). The warning comes before the question (CH-12704). */}
+      <div className="ch-cl-delall">
+        <Button
+          variant="ghost"
+          className="ch-cl-danger"
+          leftIcon={Trash2}
+          feel="warning"
+          disabled={busy}
+          onClick={() => {
+            chTrail('classes delete all');
+            setAskingAll(true);
+          }}
+        >
+          Delete all classes
+        </Button>
+      </div>
+    </>
+  );
 
   return (
-    <main className={'ch-cl' + (phone ? ' is-phone' : '')} aria-labelledby={phone ? undefined : 'ch-cl-title'} aria-label={phone ? 'Classes' : undefined}>
+    <main className={'ch-cl' + (phone ? ' is-phone' : '')} aria-labelledby={phone ? undefined : 'ch-cl-title'} aria-label={phone ? 'Classes' : undefined} data-canopy={phone ? undefined : ''}>
       {/* Phone: Classes opens from More (D-66), so the top bar goes back there. */}
       {phone && <PhoneTop title="Classes" back={{ label: 'More', onBack: backFromMore }} />}
-      <header className="ch-cl-h">
+      <header className="ch-cl-h" data-canopy-head={phone ? undefined : ''}>
         <div>
           <span className="ch-cl-k">
             {term.label} · {shortDay(term.start)} – {shortDay(term.end)}
@@ -299,10 +341,12 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
           {/* Phone: the top bar is the page's one heading (iPhone brief: no second "Classes" under it). */}
           {!phone && <h1 id="ch-cl-title">Classes</h1>}
         </div>
-        {/* Neither list is offered while the classes didn't load: an add or an import would land beside a schedule the page can't show (CH-12201). */}
-        {!nothing && !data.classes.error && (
+        {/* The head keeps its actions when the classes didn't load (owner decision, 2026-10-08: a failed read keeps the head and its
+            primary action, CH-12201). Only a first run has none here, because its empty state carries them; Delete all classes stays
+            out until the classes are on the page (CH-12503). */}
+        {(data.classes.error || !nothing) && (
           <div className="ch-cl-h__a">
-            <SyncStatus failed={failedList.length} syncing={sync.pending} onRetry={() => void syncClasses(failedList)} />
+            {!data.classes.error && <SyncStatus failed={failedList.length} syncing={sync.pending} onRetry={() => void syncClasses(failedList)} />}
             <Button leftIcon={Upload} onClick={startImport}>
               Import schedule
             </Button>
@@ -314,14 +358,14 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
       </header>
 
       {data.classes.error ? (
-        <InlineNotice code="CH-12201" title="Your classes didn't load" body="Nothing is lost. Your classes are still saved; try again in a moment." onRetry={() => router.refresh()} />
+        <InlineNotice code="CH-12201" title="Your classes didn’t load" body="Nothing is lost. Your classes are still saved; try again in a moment." onRetry={() => router.refresh()} />
       ) : nothing ? (
         <EmptyState
           size="page"
           code="CH-12301"
           icon={GraduationCap}
           title="Add your class schedule"
-          body="Import a screenshot of your schedule and we'll add every class. Your coach can see when you're busy, so practice and travel get planned around class."
+          body="Import a screenshot of your schedule and we’ll add every class. Your coach can see when you’re busy, so practice and travel get planned around class."
           action={
             <Button variant="primary" leftIcon={Upload} onClick={startImport}>
               Import schedule
@@ -344,52 +388,23 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
               overlaps={conflicts.length}
               overlapsError={week.error}
               compact={phone}
-              onOverlaps={() => document.getElementById('ch-cl-overlaps')?.scrollIntoView({ block: 'start' })}
+              onOverlaps={() => chScrollIntoView(document.getElementById('ch-cl-overlaps'), reduced)}
             />
           </SectionBoundary>
           {phone && (
-            <SectionBoundary surface="classes.today" label="Today's classes" code="CH-12203">
+            <SectionBoundary surface="classes.today" label="Today’s classes" code="CH-12203">
               <TodayClasses classes={classes} term={term} todayIso={todayIso} onOpen={(x) => setOpenId(x.id)} />
             </SectionBoundary>
           )}
           <div className="ch-cl-grid">
             <SectionBoundary surface="classes.deck" label="Your classes" code="CH-12203">
-              {/* CH-12801: the page is labelled by "Classes"; each card is one button. */}
-              <div className="ch-cl-deck">
-                {classes.map((c) => (
-                  <ClassCard
-                    key={c.id}
-                    c={c}
-                    todayIso={todayIso}
-                    term={term}
-                    overlaps={conflicts.filter((x) => x.classId === c.id)}
-                    unsynced={failedSync.has(c.id)}
-                    onOpen={(x) => {
-                      chTrail('classes open');
-                      setOpenId(x.id);
-                    }}
-                  />
-                ))}
-                <AddTile onAdd={startAdd} />
-              </div>
-              {/* CH-12503: the way out of a whole schedule, quiet and below the deck, red because it deletes (D-42). The warning comes before the question (CH-12704). */}
-              <div className="ch-cl-delall">
-                <Button
-                  variant="ghost"
-                  className="ch-cl-danger"
-                  leftIcon={Trash2}
-                  feel="warning"
-                  disabled={busy}
-                  onClick={() => {
-                    chTrail('classes delete all');
-                    setAskingAll(true);
-                  }}
-                >
-                  Delete all classes
-                </Button>
-              </div>
+              {/* The deck is a section under its heading, its classes rows: on the desktop Ledger, and on the phone under the double rule (the
+                  Mobile clubhouse pass, 2026-10-08). */}
+              <Section id="ch-cl-deck" title="Your classes" className="ch-cl-sec">
+                {deck}
+              </Section>
             </SectionBoundary>
-            <SectionBoundary surface="classes.side" label="This week's overlaps" code="CH-12203">
+            <SectionBoundary surface="classes.side" label="This week’s overlaps" code="CH-12203">
               <div className="ch-cl-side" id="ch-cl-overlaps">
                 <OverlapsCard groups={groups} error={week.error} onRetry={() => router.refresh()} />
                 <CoachNote />
@@ -441,7 +456,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
         icon={TriangleAlert}
         code="CH-12501"
         title="Remove this class?"
-        description={asking ? `${label(asking)} comes off your schedule and your calendar. This can't be undone.` : undefined}
+        description={asking ? `${label(asking)} comes off your schedule and your calendar. This can’t be undone.` : undefined}
         footer={
           <>
             <Button variant="ghost" onClick={() => setAsking(null)}>
@@ -470,8 +485,8 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
         title="Delete all classes?"
         description={
           classes.length === 1
-            ? `${classes[0] ? label(classes[0]) : 'This class'} comes off your schedule and your calendar. This can't be undone.`
-            : `All ${classes.length} classes come off your schedule and your calendar${inOtherTerm ? `, including ${inOtherTerm} from another term` : ''}. This can't be undone.`
+            ? `${classes[0] ? label(classes[0]) : 'This class'} comes off your schedule and your calendar. This can’t be undone.`
+            : `All ${classes.length} classes come off your schedule and your calendar${inOtherTerm ? `, including ${inOtherTerm} from another term` : ''}. This can’t be undone.`
         }
         footer={
           <>

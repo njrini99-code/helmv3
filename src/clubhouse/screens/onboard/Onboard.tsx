@@ -1,11 +1,11 @@
 'use client';
 
-import { Check } from 'lucide-react';
+import { AnimatePresence, m, useIsPresent } from 'motion/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Icon } from '../../ui/Icon';
+import { Component, createRef, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { haptic } from '../../lib/haptics';
+import { CH_DUR, CH_EASE } from '../../lib/motion';
 import { useChPhone } from '../../lib/use-phone';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { isNativeApp } from '@/lib/utils/capacitor';
@@ -17,6 +17,7 @@ import { dropHandoffCurtain } from '../../lib/handoff';
 import { useFlow, type Draft } from './flow';
 import { FULL_STEPS, codeFromSearch, railOf, zoomOf, type OnboardStep } from './logic';
 import { MemberCard, cardOf, seasonLabel } from './MemberCard';
+import { Rail } from './Rail';
 import { STEPS } from './Steps';
 import '../../styles/onboard-tokens.css';
 import '../../styles/onboard.css';
@@ -29,6 +30,63 @@ const NAVIGATE_MS = 1000;
 const REDUCED_NAVIGATE_MS = 240;
 
 type Phase = 'lift' | 'fold' | null;
+
+/**
+ * A question leaving (CH-15620): it goes the way the flow goes, up when moving on and down on Back, on the app's
+ * quick beat, while the next question rises in on the design's step curve (`.ch-ox-q` in onboard.css). Reduced
+ * motion and Animations off replace it at once.
+ */
+const TURN = {
+  shown: { opacity: 1, y: 0 },
+  leave: (dir: 'fwd' | 'back') => ({ opacity: 0, y: dir === 'back' ? 10 : -10, transition: { duration: CH_DUR.quick, ease: CH_EASE } }),
+};
+const TURN_INSTANT = {
+  shown: { opacity: 1, y: 0 },
+  leave: { opacity: 0, transition: { duration: 0 } },
+};
+
+type Spot = { top: number; left: number; width: number };
+
+/**
+ * Holds a leaving question where it stood, out of the flow, so the next one is laid out (and centred) on its own.
+ * Measured before the commit that brings the next question in, and pinned before that commit is painted. Framer's
+ * popLayout does the same through an injected stylesheet, which costs the whole painted course a style pass on
+ * every turn; one element's inline style costs nothing.
+ */
+class Hold extends Component<{ present: boolean; turn: boolean; children: ReactNode }> {
+  el = createRef<HTMLDivElement>();
+  override getSnapshotBeforeUpdate(prev: { present: boolean }): Spot | null {
+    const el = this.el.current;
+    if (!el || !prev.present || this.props.present) return null;
+    return { top: el.offsetTop, left: el.offsetLeft, width: el.offsetWidth };
+  }
+  override componentDidUpdate(_p: unknown, _s: unknown, spot: Spot | null) {
+    const el = this.el.current;
+    if (!el || !spot) return;
+    Object.assign(el.style, { position: 'absolute', top: `${spot.top}px`, left: `${spot.left}px`, width: `${spot.width}px`, margin: '0' });
+  }
+  override render() {
+    return (
+      <div ref={this.el} className="ch-ox-turn" data-turn={this.props.turn ? '' : undefined}>
+        {this.props.children}
+      </div>
+    );
+  }
+}
+
+/** One question on the pane. Leaving, it keeps its pixels for the fade but leaves the accessibility tree and the focus order at once. */
+function Turn({ turn, reduced, children }: { turn: boolean; reduced: boolean; children: ReactNode }) {
+  const present = useIsPresent();
+  return (
+    <Hold present={present} turn={turn}>
+      <m.div variants={reduced ? TURN_INSTANT : TURN} initial={false} animate="shown" exit="leave">
+        <div className="ch-ox-turn__body" aria-hidden={present ? undefined : true} inert={!present}>
+          {children}
+        </div>
+      </m.div>
+    </Hold>
+  );
+}
 
 /**
  * Sign up and onboarding, full screen: one question at a time on a stationery
@@ -50,7 +108,8 @@ export function Onboard({ start = 'intro', seed = {}, preview = false, fixedHour
   const [phase, setPhase] = useState<Phase>(null);
   const [signInHref, setSignInHref] = useState('/golf/login');
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const headRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLElement>(null);
+  const colRef = useRef<HTMLDivElement>(null);
 
   // Today's sign-up behaviour, kept: the iOS app is for existing members, and an invite link's code is carried in.
   useEffect(() => {
@@ -76,11 +135,20 @@ export function Onboard({ start = 'intro', seed = {}, preview = false, fixedHour
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
+  // A long form scrolled down hands over to the next question at its top, before it is painted (the phone scrolls
+  // the sheet, the desktop the column).
+  useLayoutEffect(() => {
+    if (f.n === 0) return;
+    if (stageRef.current) stageRef.current.scrollTop = 0;
+    if (colRef.current) colRef.current.scrollTop = 0;
+  }, [f.n]);
+
   // Each new question takes focus at its heading, so a screen reader hears it and Tab starts from the top of it.
   useEffect(() => {
     if (f.n === 0) return;
-    const h = headRef.current?.querySelector<HTMLElement>('.ch-ox-h1');
-    const field = headRef.current?.querySelector<HTMLElement>('input[autofocus], input:not([type=hidden]):not([hidden])');
+    const live = colRef.current?.querySelector<HTMLElement>('.ch-ox-turn__body:not([aria-hidden])');
+    const h = live?.querySelector<HTMLElement>('.ch-ox-h1');
+    const field = live?.querySelector<HTMLElement>('input[autofocus], input:not([type=hidden]):not([hidden])');
     if (!phone && field && field.closest('.ch-ox-code, .ch-ox-names, .ch-ox-fields')) return;
     h?.focus({ preventScroll: true });
   }, [f.n, phone]);
@@ -110,20 +178,25 @@ export function Onboard({ start = 'intro', seed = {}, preview = false, fixedHour
   );
 
   const step = f.step;
+  // Moving on is asked by the question on screen: a double tap, or a choice's timer after Back, moves nothing.
+  const { next: flowNext } = f;
+  const next = useCallback((patch?: Partial<Draft>, to?: OnboardStep) => flowNext(patch, to, step), [flowNext, step]);
   const full = FULL_STEPS.has(step);
   const dark = full && hour !== null && isDarkSky(hour);
   const issued = (step === 'done' || step === 'staffdone' || step === 'sent') && f.d.joinedTeam !== false;
+  const request = f.path === 'request';
   const rail = railOf(f.path, step);
   const Step = STEPS[step];
   const face = cardOf(f.d, f.path, step, now);
   const season = seasonLabel(now);
+  const note = issued ? (request ? 'Received today' : 'Issued today') : step === 'intro' ? 'Fills in as you go' : 'Updates as you answer';
 
   return (
     <AuthFrame screen="signup" phase={phase ? 'leaving' : 'login'}>
-      <div className={`ch-ox${full ? ' ch-ox--full' : ''}${dark ? ' ch-ox--dark' : ''}`} data-phase={phase ?? undefined}>
+      <div className={`ch-ox${full ? ' ch-ox--full' : ''}${dark ? ' ch-ox--dark' : ''}`} data-phase={phase ?? undefined} data-moved={f.n > 0 ? '' : undefined}>
         <div className="ch-ox-canvas">
           <div className="ch-ox-land" aria-hidden="true">
-            <SceneMount camera={phase === 'fold' ? 'leave' : zoomOf(f.path, step)} play={issued && f.path !== 'request'} hour={fixedHour} />
+            <SceneMount camera={phase === 'fold' ? 'leave' : zoomOf(f.path, step)} play={issued && !request} hour={fixedHour} />
           </div>
           <div className="ch-ox-paper" aria-hidden="true" />
           <div className="ch-ox-seal" aria-hidden="true">
@@ -134,17 +207,7 @@ export function Onboard({ start = 'intro', seed = {}, preview = false, fixedHour
               <img src={MARK} alt="" width={28} height={28} />
               GolfHelm
             </span>
-            <nav className="ch-ox-rail" aria-label="Progress">
-              {rail.sections.map((s, i) => (
-                <span key={s} className="ch-ox-rail__s" data-state={i === rail.current ? 'cur' : i < rail.current ? 'done' : undefined} aria-current={i === rail.current ? 'step' : undefined}>
-                  {i < rail.current && <Icon icon={Check} size={12} />}
-                  {s}
-                </span>
-              ))}
-            </nav>
-            <span className="ch-ox-rail__m" aria-hidden={full ? true : undefined}>
-              {rail.current >= 0 ? `${rail.current + 1} of ${rail.sections.length}` : ''}
-            </span>
+            <Rail sections={rail.sections} current={rail.current} full={full} />
             {!issued && !f.d.accountMade ? (
               <div className="ch-ox-signin">
                 <span>Already a member?</span>
@@ -154,28 +217,32 @@ export function Onboard({ start = 'intro', seed = {}, preview = false, fixedHour
               <span />
             )}
           </header>
-          <main className="ch-ox-stage">
-            <div className="ch-ox-col" key={f.n} ref={headRef}>
-              <Step
-                d={f.d}
-                hist={f.hist}
-                up={f.up}
-                next={f.next}
-                back={f.canBack && !issued ? f.back : null}
-                dir={f.dir}
-                path={f.path}
-                hour={hour}
-                now={now}
-                phone={phone}
-                finish={finish}
-                signInHref={signInHref}
-              />
+          <main className="ch-ox-stage" ref={stageRef}>
+            <div className="ch-ox-col" ref={colRef}>
+              <AnimatePresence initial={false} custom={f.dir}>
+                <Turn key={f.n} turn={f.n > 0} reduced={reduced}>
+                  <Step
+                    d={f.d}
+                    hist={f.hist}
+                    up={f.up}
+                    next={next}
+                    back={f.canBack && !issued ? f.back : null}
+                    dir={f.dir}
+                    path={f.path}
+                    hour={hour}
+                    now={now}
+                    phone={phone}
+                    finish={finish}
+                    signInHref={signInHref}
+                  />
+                </Turn>
+              </AnimatePresence>
             </div>
-            <aside className="ch-ox-side" aria-label={f.path === 'request' ? 'Your request' : 'Your member card'}>
-              <MemberCard face={face} issued={issued && f.path !== 'request'} season={season} />
+            <aside className="ch-ox-side" aria-label={request ? 'Your request' : 'Your member card'} data-issued={issued && !request ? '' : undefined}>
+              <MemberCard face={face} issued={issued && !request} season={season} />
               <div className="ch-ox-side__cap">
-                <b>{f.path === 'request' ? 'Your request' : 'Your member card'}</b>
-                <span>{issued ? 'Issued today' : step === 'intro' ? 'Fills in as you go' : 'Updates as you answer'}</span>
+                <b>{request ? 'Your request' : 'Your member card'}</b>
+                <span key={note}>{note}</span>
               </div>
             </aside>
           </main>

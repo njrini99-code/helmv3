@@ -8,7 +8,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
  * `page.tsx` here (my-game-profile/page.tsx:1-20) is a pure
  * `permanentRedirect` shim: My Game Profile stopped being a standalone
  * surface and is now the `profile` drill of the Player CoachHelm Spine &
- * Stage home (`.claude/rules/golf-feature-ownership.md` — "My Game Profile"
+ * Stage home (`.claude/rules/golf.md` — "My Game Profile"
  * → `…/coachhelm?view=profile`). `surface-registry.ts`'s
  * `my-game-profile-tab` entry is `legacy: true, hidden: true`, and
  * `next.config.mjs` (`redirects()`) additionally intercepts this path at

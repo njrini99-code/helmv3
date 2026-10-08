@@ -29,7 +29,8 @@ npm run build           # catches SSR / prerender breakage
 
 - Migrations live in `supabase/migrations/` and must be **additive and
   idempotent** (`IF NOT EXISTS`, `DROP POLICY IF EXISTS … CREATE POLICY …`).
-  They run against a **shared golf-prod** database — no destructive writes.
+  They run against the **single production Supabase project** (`qmnssrrolpinvwjjnufo`),
+  shared by Golf, Baseball and Lift Lab — no destructive writes.
 - Every table needs RLS enabled with **one policy per command** and `anon`
   revoked unless intentionally public. Add/extend a pgTAP suite under
   `supabase/tests/rls/`; the `Supabase lint + RLS tests` job runs them all.

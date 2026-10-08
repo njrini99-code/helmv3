@@ -14,7 +14,7 @@
  * ========================================================================== */
 
 import * as React from "react";
-import { Fieldset } from "@base-ui-components/react/fieldset";
+import { Fieldset } from "@base-ui/react/fieldset";
 import { cn } from "@/lib/utils";
 
 export interface FormSectionProps

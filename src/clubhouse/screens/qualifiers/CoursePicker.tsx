@@ -111,7 +111,7 @@ export function CoursePicker({
           <>
             <SearchField value={q} onChange={setQ} placeholder="Search courses" label="Search courses" />
             {coursesFailed ? (
-              <InlineNotice code="CH-09209" title="Courses didn’t load." body="Nothing was changed. Try again." onRetry={() => setAttempt((n) => n + 1)} />
+              <InlineNotice code="CH-09209" title="Courses didn’t load" body="Nothing was changed. Try again." onRetry={() => setAttempt((n) => n + 1)} />
             ) : courses == null ? (
               <div className="ch-qf-skel" role="status" aria-busy="true" aria-label="Loading courses" data-ch-code="CH-09407">
                 {Array.from({ length: 5 }, (_, i) => (
@@ -153,7 +153,7 @@ export function CoursePicker({
               </Button>
             </div>
             {teesFailed ? (
-              <InlineNotice code="CH-09210" title="Tees didn’t load." body="Nothing was changed. Try again." onRetry={() => loadTees(course)} />
+              <InlineNotice code="CH-09210" title="Tees didn’t load" body="Nothing was changed. Try again." onRetry={() => loadTees(course)} />
             ) : tees == null ? (
               <div className="ch-qf-skel" role="status" aria-busy="true" aria-label="Loading tees" data-ch-code="CH-09407">
                 {Array.from({ length: 3 }, (_, i) => (
@@ -161,7 +161,7 @@ export function CoursePicker({
                 ))}
               </div>
             ) : tees.length === 0 ? (
-              <EmptyState compact code="CH-09314" title="This course has no tee sets yet." body="Add its tees from the course library, or pick another course." />
+              <EmptyState compact code="CH-09314" title="This course has no tee sets yet" body="Add its tees from the course library, or pick another course." />
             ) : (
               <div className="ch-qf-picker__list" role="list" aria-label="Tees">
                 {tees.map((t) => (

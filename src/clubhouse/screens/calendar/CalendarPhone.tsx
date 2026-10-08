@@ -1,7 +1,7 @@
 'use client';
 
 import { CalendarDays, Plus, Rss, TriangleAlert } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { ChCalendarData } from '../../data/calendar';
 import { Badge } from '../../ui/Badge';
 import { EmptyState } from '../../ui/States';
@@ -9,9 +9,10 @@ import { Icon } from '../../ui/Icon';
 import { PhoneIconAction } from '../../ui/PhoneBar';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
+import { Swap } from '../../ui/Swap';
 import { haptic } from '../../lib/haptics';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
-import { dayNum, dowOf, fmtHour, isMajor, monthCells, monthName, weekDates, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
+import { dayNum, dowOf, fmtHour, isMajor, monthCells, monthName, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
 import { AgendaView, eventTitle, type ChNow } from './views';
 
 /** The phone's three views (board: Day, Month, List); the desktop's week is the phone's Day. */
@@ -71,38 +72,54 @@ export function CalendarPhone({
       ) : (
         <PhoneTop title="Calendar" back={{ label: 'More', onBack: backFromMore }} action={<PhoneIconAction icon={Rss} label="Add to calendar app" onClick={onSubscribe} />} />
       )}
-      <div className="ch-calm-head">
-        <h2 className="ch-calm-title">{monthName(anchor)}</h2>
-        <Segmented<ChCalPhoneView>
-          size="sm"
-          label="View"
-          value={pv}
-          onChange={setPv}
-          options={[
-            { value: 'day', label: 'Day' },
-            { value: 'month', label: 'Month' },
-            { value: 'list', label: 'List' },
-          ]}
-        />
-      </div>
+      {/* The page's opening (the Ledger kit's PageIntro, as an h2: the bar holds the page's h1): the year and the team's
+          timezone engraved over the month, and the view switch beside it. */}
+      <header className="ch-intro ch-calm-head">
+        <span className="ch-intro__eyebrow ch-num">
+          {yearOf(anchor)} · {data.zoneLabel}
+        </span>
+        <span className="ch-intro__row">
+          <h2 className="ch-intro__title ch-calm-title">{monthName(anchor)}</h2>
+          <span className="ch-intro__action">
+            <Segmented<ChCalPhoneView>
+              size="sm"
+              label="View"
+              value={pv}
+              onChange={setPv}
+              options={[
+                { value: 'day', label: 'Day' },
+                { value: 'month', label: 'Month' },
+                { value: 'list', label: 'List' },
+              ]}
+            />
+          </span>
+        </span>
+      </header>
       {notices}
       {!data.eventsError && (
         <SectionBoundary surface={`calendar.phone.${pv}`} label="The calendar" code="CH-6210">
-          {pv === 'day' && <DayView anchor={anchor} events={events} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} />}
-          {pv === 'month' && <MonthGrid anchor={anchor} events={events} now={now} onPick={(d) => onView('day', d)} />}
-          {pv === 'list' &&
-            (events.some((e) => e.date >= now.date) ? (
-              <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={(id) => onOpen(id, events.find((e) => e.id === id)?.date ?? anchor)} />
-            ) : (
-              <EmptyState code="CH-6301" icon={CalendarDays} title="Nothing on the calendar in this range." body={coach ? 'Events you publish show here, with replies and overlaps.' : 'Events your coach invites you to show here.'} />
-            ))}
+          {/* CH-6604: Day, Month and List settle in as the switch moves (base in, quick out); instant with reduced motion. */}
+          <Swap swapKey={pv}>
+            {pv === 'day' && <DayView anchor={anchor} events={events} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} />}
+            {pv === 'month' && <MonthGrid anchor={anchor} events={events} now={now} onPick={(d) => onView('day', d)} />}
+            {pv === 'list' &&
+              (events.some((e) => e.date >= now.date) ? (
+                <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={(id) => onOpen(id, events.find((e) => e.id === id)?.date ?? anchor)} />
+              ) : (
+                <EmptyState code="CH-6301" icon={CalendarDays} title="Nothing on the calendar in this range" body={coach ? 'Events you publish show here, with replies and overlaps.' : 'Events your coach invites you to show here.'} />
+              ))}
+          </Swap>
         </SectionBoundary>
       )}
     </main>
   );
 }
 
-/** The week strip, then the chosen day's agenda: classes in their place, the now line on today. */
+/**
+ * The week strip, then the chosen day's agenda: classes in their place, the now line on today. The chosen day is one
+ * green plate that glides along the strip to the day you tap, and the day's agenda slides 12px the way the day went
+ * (CH-6606). Both are instant with reduced motion and with Animations off (the duration tokens are zero there).
+ */
 function DayView({
   anchor,
   events,
@@ -125,6 +142,9 @@ function DayView({
   coach: boolean;
 }) {
   const week = weekDates(anchor);
+  // The day on show and the way it went: a later day comes in from the right, an earlier one from the left.
+  const [day, setDay] = useState<{ key: string; dir: 1 | -1 }>({ key: anchor, dir: 1 });
+  if (day.key !== anchor) setDay({ key: anchor, dir: anchor > day.key ? 1 : -1 });
   const list = events.filter((e) => e.date === anchor).sort(byStart);
   const team = list.filter((e) => e.type !== 'class' && e.type !== 'busy');
   const blocks = list.length - team.length;
@@ -139,7 +159,7 @@ function DayView({
   );
   return (
     <>
-      <ol className="ch-calm-week" aria-label="This week">
+      <ol className="ch-calm-week" aria-label="This week" style={{ ['--ch-calm-at' as string]: Math.max(0, week.indexOf(anchor)) }}>
         {week.map((d) => {
           const n = events.filter((e) => e.date === d && e.type !== 'class' && e.type !== 'busy').length;
           return (
@@ -166,57 +186,63 @@ function DayView({
           );
         })}
       </ol>
-      <div className="ch-calm-dayk">
-        <b>
-          {dowOf(anchor)} {dayNum(anchor)} {monthName(anchor)}
-        </b>
-        <span className="ch-num">
-          {team.length} {team.length === 1 ? 'event' : 'events'}
-          {blocks > 0 ? ` · ${blocks} ${coach ? (blocks === 1 ? 'class or busy block' : 'classes or busy blocks') : blocks === 1 ? 'class' : 'classes'}` : ''}
-        </span>
-      </div>
-      {!list.length ? (
-        <EmptyState compact code="CH-6308" icon={CalendarDays} title="Nothing on this day." body={coach ? 'Tap + to plan something for the team.' : 'Events your coach invites you to show here.'} />
-      ) : (
-        <ol className="ch-calm-agenda">
-          {list.map((e, i) => {
-            const past = isToday && !e.allDay && (e.end ?? 0) <= now.hour;
-            const live = isToday && !e.allDay && (e.start ?? 0) <= now.hour && (e.end ?? 0) > now.hour;
-            const block = e.type === 'class' || e.type === 'busy';
-            return (
-              <li key={`${e.id}${e.date}`}>
-                {i === nowAt && nowLine}
-                <button
-                  type="button"
-                  className={`ch-calm-ev is-${e.type}` + (past ? ' is-past' : '') + (selId === e.id ? ' is-sel' : '') + (e.cancelled ? ' is-cancelled' : '')}
-                  aria-label={`${eventTitle(e, people)}, ${e.allDay ? 'all day' : `${fmtHour(e.start!)} to ${fmtHour(e.end!)}`}${flagged.has(e.id) ? ', schedule overlap' : ''}${e.cancelled ? ', cancelled' : ''}`}
-                  onClick={() => {
-                    haptic('select');
-                    onOpen(e.id, e.date);
-                  }}
-                >
-                  <span className="ch-calm-ev__t ch-num">
-                    {e.allDay ? 'All day' : fmtHour(e.start!, false)}
-                    {!e.allDay && <em>{fmtHour(e.end!, false)}</em>}
-                  </span>
-                  <span className="ch-calm-ev__b">
-                    <b>{eventTitle(e, people)}</b>
-                    <span>{block ? (e.busyOnly ? 'Busy' : e.type === 'busy' ? 'Your busy time' : [e.title, e.location].filter(Boolean).join(' · ')) : (e.location ?? '')}</span>
-                  </span>
-                  {flagged.has(e.id) ? (
-                    <span className="ch-calm-ev__w" aria-hidden="true">
-                      <Icon icon={TriangleAlert} size={13} />
+      <Swap swapKey={day.key} kind="slide" dir={day.dir} className="ch-calm-dayswap">
+        <div className="ch-calm-dayk">
+          <h3>
+            {dowOf(anchor)} {dayNum(anchor)} {monthName(anchor)}
+          </h3>
+          <span className="ch-num">
+            {team.length} {team.length === 1 ? 'event' : 'events'}
+            {blocks > 0 ? ` · ${blocks} ${coach ? (blocks === 1 ? 'class or busy block' : 'classes or busy blocks') : blocks === 1 ? 'class' : 'classes'}` : ''}
+          </span>
+        </div>
+        {!list.length ? (
+          <EmptyState compact code="CH-6308" icon={CalendarDays} title="Nothing on this day" body={coach ? 'Tap + to plan something for the team.' : 'Events your coach invites you to show here.'} />
+        ) : (
+          <ol className="ch-calm-agenda">
+            {list.map((e, i) => {
+              const past = isToday && !e.allDay && (e.end ?? 0) <= now.hour;
+              const live = isToday && !e.allDay && (e.start ?? 0) <= now.hour && (e.end ?? 0) > now.hour;
+              const block = e.type === 'class' || e.type === 'busy';
+              return (
+                <li key={`${e.id}${e.date}`}>
+                  {i === nowAt && nowLine}
+                  <button
+                    type="button"
+                    className={`ch-calm-ev is-${e.type}` + (past ? ' is-past' : '') + (live ? ' is-live' : '') + (selId === e.id ? ' is-sel' : '') + (e.cancelled ? ' is-cancelled' : '')}
+                    aria-label={`${eventTitle(e, people)}, ${e.allDay ? 'all day' : `${fmtHour(e.start!)} to ${fmtHour(e.end!)}`}${flagged.has(e.id) ? ', schedule overlap' : ''}${e.cancelled ? ', cancelled' : ''}`}
+                    onClick={() => {
+                      haptic('select');
+                      onOpen(e.id, e.date);
+                    }}
+                  >
+                    <span className="ch-calm-ev__t ch-num">
+                      {e.allDay ? 'All day' : fmtHour(e.start!, false)}
+                      {!e.allDay && <em>{fmtHour(e.end!, false)}</em>}
                     </span>
-                  ) : live ? (
-                    <Badge tone="accent">Now</Badge>
-                  ) : null}
-                </button>
-                {nowLast && i === list.length - 1 && nowLine}
-              </li>
-            );
-          })}
-        </ol>
-      )}
+                    {/* The day's rail, as on Home's Today: a dot in the event's colour, a ring for time that isn't free. */}
+                    <span className="ch-calm-ev__rail" aria-hidden="true">
+                      <i className={`ch-dot-${e.type}`} />
+                    </span>
+                    <span className="ch-calm-ev__b">
+                      <b>{eventTitle(e, people)}</b>
+                      <span>{block ? (e.busyOnly ? 'Busy' : e.type === 'busy' ? 'Your busy time' : [e.title, e.location].filter(Boolean).join(' · ')) : (e.location ?? '')}</span>
+                    </span>
+                    {flagged.has(e.id) ? (
+                      <span className="ch-calm-ev__w" aria-hidden="true">
+                        <Icon icon={TriangleAlert} size={13} />
+                      </span>
+                    ) : live ? (
+                      <Badge tone="accent">Now</Badge>
+                    ) : null}
+                  </button>
+                  {nowLast && i === list.length - 1 && nowLine}
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </Swap>
     </>
   );
 }

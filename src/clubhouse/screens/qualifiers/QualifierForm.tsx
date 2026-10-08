@@ -1,7 +1,7 @@
 'use client';
 
-import { Check, ChevronLeft, MapPin, TriangleAlert, Users, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Check, MapPin, TriangleAlert, Users, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChQFormData, ChQFormRoundCourse } from '../../data/qualifiers';
 import { Avatar } from '../../ui/Avatar';
@@ -10,15 +10,19 @@ import { Checkbox } from '../../ui/Checkbox';
 import { EmptyState } from '../../ui/States';
 import { InlineNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
+import { BackLink } from '../../ui/Section';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { normalise, useAction } from '../../lib/use-action';
-import { chTrail } from '../../lib/track';
+import { chReport, chTrail } from '../../lib/track';
+import { haptic } from '../../lib/haptics';
+import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useRefresh } from '../../lib/use-refresh';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop, usePhoneTabsHidden } from '../../shell/phone-chrome';
 import { PhoneTextAction } from '../../ui/PhoneBar';
-import { FIELD_ORDER, plural, validateForm, type ChQField, type ChQFormValues, type ChQProblem } from './model';
+import { FIELD_ORDER, FORM_HELP, FORM_LEDE, plural, validateForm, type ChQField, type ChQFormValues, type ChQProblem } from './model';
 import { CoursePicker, type ChQPickedCourse } from './CoursePicker';
+import { isPlainClick } from './return-state';
 import { LIVE_WRITES, type ChQEditPlan, type ChQWrites } from './writes';
 import '../../styles/qualifiers.css';
 
@@ -127,7 +131,13 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
       };
       setSaveNote(null);
       const res = await writes.saveEdit(data.id as string, plan);
-      if (!res.success && res.error) setSaveNote(res.error);
+      if (!res.success && res.error) {
+        // The form's notice tells this one (CH-09902), so the action's toast stays quiet (below); its error haptic and
+        // its report are kept here.
+        setSaveNote(res.error);
+        haptic('error');
+        chReport(new Error(res.error), { surface: 'qualifiers', action: 'qualifiers.save', severity: 'low' });
+      }
       if (normalise(res).success) {
         // Replaced, not pushed: Back from the qualifier goes to where the coach came from, not into the form they just saved.
         router.replace(doneHref);
@@ -136,6 +146,9 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
       return res;
     },
     { done: 'Qualifier saved', failed: 'Couldn’t save the qualifier', hint: 'Check the form and save again.', code: 'CH-09002' },
+    // A refusal the server explained is told once, by the notice over the form (lead, 2026-10-08), not by a toast as well.
+    // A failure with no reason (the request itself failed) has no notice, so its toast and Retry stay (CH-09002).
+    (result, c) => (!result.success && result.error ? { ...c, quiet: true } : c),
   );
   const pending = create.pending || save.pending;
 
@@ -151,6 +164,12 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
     if (editing) await save.run();
     else await create.run();
   };
+
+  // The notice sits over the form, so a save refused from the foot of a long form brings it into view.
+  const reduced = useChReducedMotion();
+  useEffect(() => {
+    if (saveNote) document.querySelector('[data-ch-code="CH-09902"]')?.scrollIntoView?.({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
+  }, [saveNote, reduced]);
 
   const phone = useChPhone();
   // Phone (docs/clubhouse/phone/qualifiers.md, board 04): Cancel and the submit sit in the top bar, so the
@@ -187,7 +206,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
   });
 
   return (
-    <main className="ch-qf ch-qf--form">
+    <main className="ch-qf ch-qf--form" data-canopy="">
       {phone && (
         <PhoneTop
           title={editing ? 'Edit qualifier' : 'New qualifier'}
@@ -199,28 +218,48 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
           }
         />
       )}
-      <div className="ch-qf-back">
-        <Button size="sm" variant="ghost" leftIcon={ChevronLeft} onClick={cancel}>
-          {editing ? 'Qualifier' : 'Qualifiers'}
-        </Button>
+      {/* The way back is Cancel's: with unsaved changes it asks first (CH-09502); otherwise it is the link, so a new tab still works. */}
+      <div
+        className="ch-qf-back"
+        onClickCapture={(e) => {
+          if (dirty && isPlainClick(e)) {
+            e.preventDefault();
+            setLeaving(true);
+          }
+        }}
+      >
+        <BackLink href={doneHref}>{editing ? 'Qualifier' : 'Qualifiers'}</BackLink>
       </div>
-      <header className="ch-qf-head">
+      <header className="ch-qf-head" data-canopy-head="">
         <div>
           <span className="ch-qf-eyebrow">{editing ? 'Edit qualifier' : 'New qualifier'}</span>
           <h1>{editing ? data.name : 'Create a qualifier'}</h1>
-          <p>Players enter rounds from their app. The leaderboard builds as they sign.</p>
+          <p>{FORM_LEDE}</p>
         </div>
       </header>
+
+      {/* Without the players a save could enter or drop someone by mistake, so Create waits: said here, over the form,
+          with Try again, where it explains the key that is off; the Players section keeps the title alone (states audit
+          c14). */}
+      {data.playersError && (
+        <InlineNotice
+          code="CH-09208"
+          title={editing ? 'The players didn’t load' : 'The roster didn’t load'}
+          body="Saving waits until they load, so nobody is entered or taken out by mistake."
+          onRetry={refresh}
+          retrying={refreshing}
+        />
+      )}
 
       {problems.length > 0 && (
         <InlineNotice
           code="CH-09110"
-          title={editing ? 'Couldn’t save the qualifier.' : 'Couldn’t create the qualifier.'}
+          title={editing ? 'Couldn’t save the qualifier' : 'Couldn’t create the qualifier'}
           body={problems.length === 1 ? problems[0]!.text : `Fix the ${problems.length} highlighted fields below.`}
         />
       )}
 
-      {saveNote && problems.length === 0 && <InlineNotice code="CH-09902" title="Couldn’t save the qualifier." body={saveNote} />}
+      {saveNote && problems.length === 0 && <InlineNotice code="CH-09902" title="Couldn’t save the qualifier" body={saveNote} />}
 
       <SectionBoundary surface="qualifiers.form" label="The qualifier form" code="CH-09216">
         <form
@@ -260,7 +299,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                   aria-describedby="qf-desc-h"
                 />
                 <span id="qf-desc-h" className="ch-field__help">
-                  What players should expect: format, stakes, vibe.
+                  {FORM_HELP.description}
                 </span>
               </div>
             </fieldset>
@@ -283,16 +322,16 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                   <label htmlFor="qf-end" className="ch-field__label ch-qf-label">
                     End date <span className="ch-qf-optional">Optional</span>
                   </label>
-                  <input {...inputProps('endDate', 'For multi-day qualifiers.')} type="date" value={v.endDate} onChange={(e) => set('endDate', e.target.value)} />
-                  {fieldHelp('endDate', 'For multi-day qualifiers.')}
+                  <input {...inputProps('endDate', FORM_HELP.endDate)} type="date" value={v.endDate} onChange={(e) => set('endDate', e.target.value)} />
+                  {fieldHelp('endDate', FORM_HELP.endDate)}
                 </div>
               </div>
               <div className="ch-field">
                 <label htmlFor="qf-deadline" className="ch-field__label ch-qf-label">
                   Entry deadline <span className="ch-qf-optional">Optional</span>
                 </label>
-                <input {...inputProps('entryDeadline', 'Shown to players. On or before the start date.')} type="date" value={v.entryDeadline} onChange={(e) => set('entryDeadline', e.target.value)} />
-                {fieldHelp('entryDeadline', 'Shown to players. On or before the start date.')}
+                <input {...inputProps('entryDeadline', FORM_HELP.entryDeadline)} type="date" value={v.entryDeadline} onChange={(e) => set('entryDeadline', e.target.value)} />
+                {fieldHelp('entryDeadline', FORM_HELP.entryDeadline)}
               </div>
             </fieldset>
 
@@ -308,12 +347,12 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                     Rounds
                   </label>
                   <input
-                    {...inputProps('rounds', 'How many rounds count. Players can’t enter more than this.')}
+                    {...inputProps('rounds', FORM_HELP.rounds)}
                     inputMode="numeric"
                     value={v.rounds}
                     onChange={(e) => setV((cur) => ({ ...cur, rounds: e.target.value.replace(/\D/g, '').slice(0, 2), oneRoundAck: false }))}
                   />
-                  {fieldHelp('rounds', 'How many rounds count. Players can’t enter more than this.')}
+                  {fieldHelp('rounds', FORM_HELP.rounds)}
                 </div>
                 <div className="ch-field">
                   <label htmlFor="qf-course" className="ch-field__label ch-qf-label">
@@ -367,15 +406,9 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                 </p>
               </div>
               {data.playersError ? (
-                <InlineNotice
-                  code="CH-09208"
-                  title={editing ? 'The players didn’t load.' : 'The roster didn’t load.'}
-                  body="Saving waits until they load, so nobody is entered or taken out by mistake."
-                  onRetry={refresh}
-                  retrying={refreshing}
-                />
+                <InlineNotice title={editing ? 'The players didn’t load' : 'The roster didn’t load'} covered />
               ) : data.players.length === 0 ? (
-                <EmptyState compact code="CH-09305" icon={Users} title="No active players on the roster." body="A qualifier needs at least one entrant. Add players to the roster first." />
+                <EmptyState compact code="CH-09305" icon={Users} title="No active players on the roster" body="A qualifier needs at least one entrant. Add players to the roster first." />
               ) : (
                 <div className="ch-qf-players">
                   {data.players.map((p, i) => {
@@ -442,16 +475,17 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
               </div>
               {data.squadLocked && <p className="ch-field__help">The squad is confirmed, so its size is fixed.</p>}
               <div className="ch-qf-readout ch-well-soft ch-num" aria-live="polite">
-                <span className="ch-qf-seg">
-                  <b>{Math.max(0, squad - picks)}</b> qualify on score
-                </span>
-                <span>·</span>
-                <span className="ch-qf-seg">
-                  <b>{picks}</b> coach {picks === 1 ? 'pick' : 'picks'}
-                </span>
-                <span>·</span>
-                <span className="ch-qf-seg">
-                  <b>{squad}</b>-player squad
+                {/* The segments wrap whole, and a dot only ever sits between two on one line (qualifiers.css). */}
+                <span className="ch-qf-readout__in">
+                  <span className="ch-qf-seg">
+                    <b>{Math.max(0, squad - picks)}</b> qualify on score
+                  </span>
+                  <span className="ch-qf-seg">
+                    <b>{picks}</b> coach {picks === 1 ? 'pick' : 'picks'}
+                  </span>
+                  <span className="ch-qf-seg">
+                    <b>{squad}</b>-player squad
+                  </span>
                 </span>
               </div>
             </fieldset>
@@ -511,7 +545,7 @@ function RoundCourses({
         Course per round
       </span>
       {failed ? (
-        <InlineNotice code="CH-09217" title="The round courses didn’t load." body="Saving keeps the courses already set; change them once they load." />
+        <InlineNotice code="CH-09217" title="The round courses didn’t load" body="Saving keeps the courses already set; change them once they load." />
       ) : (
         <div className="ch-qf-rcs" role="list" aria-labelledby="qf-rc-l">
           {Array.from({ length: rounds }, (_, i) => {

@@ -7,16 +7,19 @@ Repo-local commands, agents, and skills — one line each, from each entry's own
 
 | Name | Type | When to use |
 | --- | --- | --- |
+| `clubhouse-design-reviewer` | Agent | Evidence-driven premium Clubhouse review across coach/player, semantic materials, composition, complete interaction states and native ergonomics. Read-only; does not certify a release from… |
+| `clubhouse-polish-reviewer` | Agent | Review Clubhouse hierarchy, depth, interaction, motion, states, accessibility and phone behavior against current scoped tokens, shared owners, page contracts and the owner handoff. Optional and… |
 | `code-reviewer` | Agent | Fresh-context correctness review of a Helm diff before PR or landing — logic errors, broken caller/callee contracts, missed call sites, Supabase query shape, loading/empty/error states, and… |
 | `db-migration-reviewer` | Agent | Independent review of Supabase schema, RLS, function, trigger, grant, or migration changes before they reach the shared production database (Golf, Baseball, Lift Lab). Use for a migration or policy… |
 | `debugger` | Agent | Root-cause a failure whose cause is not obvious from reading code — failing or flaky tests, runtime errors, hydration mismatches (#418), hangs, races, regressions, or "the fix didn't work".… |
 | `helm-reader` | Agent | Read-only Helm investigator whose answers are cited (file:line) and labelled verified vs inferred, checked against Helm's generated truth (database.ts, AUTOGEN blocks, memory/registry.yml, live… |
+| `helm-ui-worker` | Agent | Premium frontend implementer for Helm UI work (GolfHelm Fairway design system). Takes one screen/tab brief with screenshots and owner notes, redesigns and implements it with high visual taste, runs… |
 | `helm-worker` | Agent | Delegated implementer for a bounded Helm slice — a clearly scoped change on named files or in a worktree, often run in parallel with other work. Implements, runs the checks that fit the change, and… |
 | `security-reviewer` | Agent | Security review of Helm changes touching auth, roles, RLS, service-role use, PII (including minors' data), server-to-client data exposure, API routes, webhooks, storage, or secrets. Use when a diff… |
 | `ui-polish-reviewer` | Agent | UI/UX review of Helm screens against the Fairway design system — hierarchy, density, loading/empty/error states, motion, accessibility, mobile behavior, and reuse of src/components/fairway… |
 | `verifier` | Agent | Independent check that a completion claim is true — reads the diff and runs the fitting gates itself instead of trusting the implementer's summary. Use before reporting a risky, broad, schema, auth,… |
 | `/cleanup-db` | Command | Report (never change) Supabase tables and columns with no references in code, SQL, or infra |
-| `/context` | Command | Build a feature-context pack for the given files/task and load the mapped docs |
+| `/context` | Command | Build a feature-context pack for the given files/task and load the first mapped doc |
 | `/gates` | Command | Run the checks relevant to the changed behavior and report real exit codes |
 | `/held` | Command | List migrations still on HOLD in supabase/migrations/HELD.md (read-only) |
 | `/land` | Command | Land a PR through the sole landing script and report the result |
@@ -26,7 +29,6 @@ Repo-local commands, agents, and skills — one line each, from each entry's own
 | `apple-appstore-reviewer` | Skill | Review the iOS app for App Store rejection risks and listing optimizations. Use before an App Store submission or after a rejection. |
 | `capacitor-best-practices` | Skill | Best practices for Capacitor app development including project structure, plugin usage, performance optimization, security, and deployment. Use this skill when reviewing Capacitor code, setting up… |
 | `debugging-capacitor` | Skill |  |
-| `feature-finisher` | Skill | Analyzes features for completeness and suggests improvements to make them legendary. Product ideation, invoked by name — not the definition of done (that is finish-task). Applies the Feature Finisher… |
 | `finish-task` | Skill | Use when an implementation should be carried through to verified completion rather than stopping after the edits look right. Encodes this repo's gate sequence and the specific ways green gates have… |
 | `framer-motion` | Skill | Framer Motion performance optimization guidelines. This skill should be used when writing, reviewing, or refactoring React animations with Framer Motion to ensure optimal performance patterns.… |
 | `golfhelm-creative-engine` | Skill | Generate premium Instagram creatives, social media ads, and marketing mockups for GolfHelm — an AI-powered golf coaching SaaS for college teams. Use this skill whenever the user mentions Instagram… |

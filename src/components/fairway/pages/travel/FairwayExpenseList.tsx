@@ -26,7 +26,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { m, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'motion/react';
 import type { ComponentType, SVGAttributes } from 'react';
 import {
   IconEdit,

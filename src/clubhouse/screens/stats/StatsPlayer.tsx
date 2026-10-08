@@ -2,8 +2,8 @@
 
 import { CalendarPlus, Check, ChevronLeft, ChevronRight, Info, MessageSquare, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
-import { m } from 'framer-motion';
-import { useEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from 'react';
+import { m } from 'motion/react';
+import { useDeferredValue, useEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';
 import type { ChPlayerProfile } from '../../data/stats-player';
@@ -17,6 +17,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { Segmented } from '../../ui/Segmented';
+import { Swap } from '../../ui/Swap';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { ScrollRegion } from '../../ui/ScrollRegion';
 import { useDelayedToast, useToast } from '../../ui/Toast';
@@ -50,7 +51,7 @@ const TABS: readonly Tab[] = ['overview', 'game', 'rounds', 'dev'];
 
 /** Form over the plotted rounds (oldest first): the newer half against the older half, in strokes. */
 export function formNote(first: string, scores: number[]): string {
-  if (scores.length < 3) return `Early read. ${first}'s form shows after three rounds.`;
+  if (scores.length < 3) return `Early read. ${first}’s form shows after three rounds.`;
   const half = Math.floor(scores.length / 2);
   const m = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
   const c = m(scores.slice(scores.length - half)) - m(scores.slice(0, half));
@@ -71,6 +72,8 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   const [keptTab, setKeptTab] = useChSessionState<Tab>('profile-tab', 'overview');
   const named = useRef<Tab | undefined>(TABS.find((t) => t === initialTab));
   const tab = named.current ?? keptTab;
+  // The underline and the selected tab move on the press; the panel (the heavy part) renders just behind them.
+  const shownTab = useDeferredValue(tab);
   const setTab = (t: Tab) => {
     named.current = undefined;
     setKeptTab(t);
@@ -182,7 +185,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   // `is-desk`: the server renders desktop; at phone width it stays hidden until the phone view takes over at hydration.
   return (
     <>
-      <main className="ch-st is-desk" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined}>
+      <main className="ch-st is-desk" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined} data-canopy="">
         {coach && (
           <div className="ch-st-back">
             <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={href(null, data.filter)}>
@@ -204,9 +207,9 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
           </div>
         )}
 
-        <section className="ch-pf-hero" aria-label={data.name}>
+        <section className="ch-pf-hero" aria-label={data.name} data-canopy-head="">
           <span className="ch-pf-hero__av">
-            <Avatar name={data.name} size={112} />
+            <Avatar name={data.name} size={84} />
           </span>
           <div className="ch-pf-hero__id">
             <div className="ch-pf-hero__tags">
@@ -290,55 +293,58 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
           </div>
         )}
         {data.roundsError && (
-          <InlineNotice code="CH-5201" title="Rounds didn't load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they're hidden. Try again; the error has been reported." onRetry={() => router.refresh()} />
+          <InlineNotice code="CH-5201" title="Rounds didn’t load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they’re hidden. Try again; the error has been reported." onRetry={() => router.refresh()} />
         )}
 
-        <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="ch-st-panel">
-          {emptyFilter && tab !== 'dev' && <FilterEmpty code={filterCodes.empty} onClear={() => changeFilter(clearFilters(data.filter))} />}
+        {/* The tab's panel swaps (CH-5603) behind the underline that already moved (CH-5601). */}
+        <Swap swapKey={shownTab}>
+          <div role="tabpanel" id={`panel-${shownTab}`} aria-labelledby={`tab-${shownTab}`} className="ch-st-panel">
+            {emptyFilter && shownTab !== 'dev' && <FilterEmpty code={filterCodes.empty} onClear={() => changeFilter(clearFilters(data.filter))} />}
 
-          {tab === 'overview' && !emptyFilter && !failed && (
-            <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
-              {data.cacheError && <InlineNotice code="CH-5213" title={CACHE_ERROR.title} body={CACHE_ERROR.body} onRetry={() => router.refresh()} />}
-              <Overview data={data} coach={coach} />
-            </SectionBoundary>
-          )}
+            {shownTab === 'overview' && !emptyFilter && !failed && (
+              <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
+                {data.cacheError && <InlineNotice code="CH-5213" title={CACHE_ERROR.title} body={CACHE_ERROR.body} onRetry={() => router.refresh()} />}
+                <Overview data={data} coach={coach} />
+              </SectionBoundary>
+            )}
 
-          {tab === 'game' && !emptyFilter && !failed && (
-            <SectionBoundary surface="stats.player.game" label="Game detail" code="CH-5205">
-              {data.statsError ? (
-                <InlineNotice
-                  code="CH-5202"
-                  title="Shot-level detail didn't load."
-                  body="Scores and rounds above are correct. Try again; the error has been reported."
-                  onRetry={() => router.refresh()}
-                />
-              ) : data.stats && data.stats.roundsPlayed > 0 ? (
-                <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} onRetry={() => router.refresh()} />
-              ) : (
-                <div className="ch-st-card">
-                  <EmptyState code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
-                </div>
-              )}
-            </SectionBoundary>
-          )}
+            {shownTab === 'game' && !emptyFilter && !failed && (
+              <SectionBoundary surface="stats.player.game" label="Game detail" code="CH-5205">
+                {data.statsError ? (
+                  <InlineNotice
+                    code="CH-5202"
+                    title="Shot-level detail didn’t load."
+                    body="Scores and rounds above are correct. Try again; the error has been reported."
+                    onRetry={() => router.refresh()}
+                  />
+                ) : data.stats && data.stats.roundsPlayed > 0 ? (
+                  <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} onRetry={() => router.refresh()} />
+                ) : (
+                  <div className="ch-st-card">
+                    <EmptyState code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
+                  </div>
+                )}
+              </SectionBoundary>
+            )}
 
-          {tab === 'rounds' && !emptyFilter && !failed && (
-            <SectionBoundary surface="stats.player.rounds" label="The rounds table" code="CH-5206">
-              {data.rounds.length > 0 && (
-                <div className="ch-st-grid2">
-                  <RoundsExtra x={data.extra} filter={data.filter} />
-                </div>
-              )}
-              <RoundsTable rounds={data.rounds} role={coach ? 'coach' : 'player'} tour={data.tour} holes={data.filter.holes} />
-            </SectionBoundary>
-          )}
+            {shownTab === 'rounds' && !emptyFilter && !failed && (
+              <SectionBoundary surface="stats.player.rounds" label="The rounds table" code="CH-5206">
+                {data.rounds.length > 0 && (
+                  <div className="ch-st-grid2">
+                    <RoundsExtra x={data.extra} filter={data.filter} />
+                  </div>
+                )}
+                <RoundsTable rounds={data.rounds} role={coach ? 'coach' : 'player'} tour={data.tour} holes={data.filter.holes} />
+              </SectionBoundary>
+            )}
 
-          {tab === 'dev' && (
-            <SectionBoundary surface="stats.player.development" label="Development" code="CH-5207">
-              <Development data={data} coach={coach} first={first} onAdd={coach && coachId ? () => setFocusOpen(true) : null} />
-            </SectionBoundary>
-          )}
-        </div>
+            {shownTab === 'dev' && (
+              <SectionBoundary surface="stats.player.development" label="Development" code="CH-5207">
+                <Development data={data} coach={coach} first={first} onAdd={coach && coachId ? () => setFocusOpen(true) : null} />
+              </SectionBoundary>
+            )}
+          </div>
+        </Swap>
 
         {sheet}
       </main>
@@ -372,6 +378,9 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
       lowerIsBetter: c?.lowerIsBetter,
       context: ref == null ? `${holeCount} ${holeCount === 1 ? 'round' : 'rounds'}` : `vs. ${coach ? 'team' : 'Tour'} ${ref.toFixed(c?.digits ?? 0)}${c?.unit ?? ''}`,
       note: coverage ?? undefined,
+      // Drawn against the same reference the words name: a rate on 0–100 with the team's or the Tour's mark, putts against 36.
+      n: c?.you ?? null,
+      gauge: label === 'Putts per round' ? ({ kind: 'putts' } as const) : ({ kind: 'rate', ref: ref ?? null, refLabel: coach ? 'Team' : 'Tour' } as const),
     };
   };
   // Best round: one length at a time (a 9-hole score and an 18-hole score are not the same best): the 9-hole rounds when that is all
@@ -379,6 +388,8 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
   const bestHoles = data.filter.holes === '9' ? 9 : 18;
   const bestPool = data.rounds.filter((r) => r.holes === bestHoles);
   const best = bestPool.length ? Math.min(...bestPool.map((r) => r.score)) : null;
+  // The best round's own score against par, for its gauge.
+  const bestToPar = best == null ? null : (bestPool.find((r) => r.score === best)?.toPar ?? null);
   const trendRounds = [...data.rounds].reverse().slice(-10).map((r) => ({ label: r.date, score: per18(r.score, r.holes), toPar: r.toPar == null ? null : per18(r.toPar, r.holes), holes: r.holes }));
   const legs = [
     { label: 'Off the tee', value: w.sgLegs.tee },
@@ -398,12 +409,13 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
   return (
     <>
       <FigureCards
+        profile
         items={[
           fig('Fairways hit', 'Fairways hit'),
           fig('Greens in regulation', 'Greens in regulation'),
           fig('Putts per round', 'Putts per round'),
           fig('Scrambling', 'Scrambling'),
-          { label: 'Best round', value: best == null ? NO_DATA : String(best), context: bestHoles === 18 && data.filter.holes === '18' ? `${w.rounds} rounds in window` : `${bestPool.length} ${bestHoles}-hole ${bestPool.length === 1 ? 'round' : 'rounds'} in window` },
+          { label: 'Best round', value: best == null ? NO_DATA : String(best), n: best, gauge: { kind: 'par', toPar: bestToPar }, context: bestHoles === 18 && data.filter.holes === '18' ? `${w.rounds} rounds in window` : `${bestPool.length} ${bestHoles}-hole ${bestPool.length === 1 ? 'round' : 'rounds'} in window` },
         ]}
       />
       <div className="ch-st-grid2">
@@ -421,7 +433,7 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
       <YardagePage
         title={coach ? `${first} vs. team` : 'You vs. the Tour'}
         meta={coach ? `Same window, active players · strokes gained ${baseline.vs}` : `Tour averages where the benchmark exists · strokes gained ${baseline.vs}`}
-        note={`${coverage ? `${coverage}; the scoring average and the pressure gap read all ${w.rounds}. ` : ''}${coach ? "Team values are pooled from the active players' rounds in the same window, where the round cache has the figure. " : ''}Bands need 10 shots or putts. Par scoring is strokes a hole; the pressure gap (tournament and qualifier rounds against practice) and the opening hole are strokes to par, and lower is better.`}
+        note={`${coverage ? `${coverage}; the scoring average and the pressure gap read all ${w.rounds}. ` : ''}${coach ? 'Team values are pooled from the active players’ rounds in the same window, where the round cache has the figure. ' : ''}Bands need 10 shots or putts. Par scoring is strokes a hole; the pressure gap (tournament and qualifier rounds against practice) and the opening hole are strokes to par, and lower is better.`}
       >
         <FieldTable rows={data.comparisons} showTeam={coach} />
       </YardagePage>
@@ -500,7 +512,7 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
   const router = useRouter();
   return (
     <>
-      {data.devError && <InlineNotice code="CH-5203" title="Some development items didn't load." body="Try again; the error has been reported." onRetry={() => router.refresh()} />}
+      {data.devError && <InlineNotice code="CH-5203" title="Some development items didn’t load." body="Try again; the error has been reported." onRetry={() => router.refresh()} />}
       <div className="ch-st-grid2">
         <section className="ch-st-card">
           <div className="ch-st-card__head">
@@ -609,7 +621,7 @@ function FocusAreaSheet({ open, onClose, playerId, coachId, first }: { open: boo
       }),
     {
       done: `Focus area proposed to ${first}. It starts when ${first} accepts.`,
-      failed: `Couldn't add the focus area for ${first}`,
+      failed: `Couldn’t add the focus area for ${first}`,
       hint: 'Your text is still here. Try again in a moment.',
       code: 'CH-5001',
     },
@@ -631,6 +643,8 @@ function FocusAreaSheet({ open, onClose, playerId, coachId, first }: { open: boo
       router.refresh();
     }
   };
+  // CH-5602: the shared Modal's entrance: on desktop the sheet rises 6px and fades in from 98% (base), on the phone it
+  // rises from the bottom edge (base) and drags down to close (CH-1611). Instant with reduced motion or Animations off.
   return (
     <Modal
       open={open}

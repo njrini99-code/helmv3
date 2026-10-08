@@ -1,4 +1,4 @@
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
@@ -322,6 +322,16 @@ describe('the Standing screen', () => {
     expect(code('CH-13371')).toBeNull();
     expect(screen.getByRole('heading', { name: 'Putts made, 3–5 ft', level: 4 })).toBeTruthy();
     await userEvent.click(within(code('CH-13271') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('CH-13271 and CH-13272 both beside the rows: said once with one Try again (CH-1209), each keeping its title and no button', async () => {
+    show(standingLoad({ ...PREVIEW_STANDING_NOBASELINE, cohortFailed: true }));
+    expect(code('CH-1209')!.textContent).toMatch(/Your scoring average and your team’s Tour didn’t load/);
+    expect(code('CH-13271')!.textContent).toMatch(/Your projections didn’t load/);
+    expect(code('CH-13272')!.textContent).toMatch(/Your team’s Tour couldn’t be confirmed/);
+    for (const c of ['CH-13271', 'CH-13272']) expect(within(code(c) as HTMLElement).queryByRole('button', { name: /Try again/ })).toBeNull();
+    await userEvent.click(within(code('CH-1209') as HTMLElement).getByRole('button', { name: /Try again/ }));
     expect(router.refresh).toHaveBeenCalledTimes(1);
   });
 

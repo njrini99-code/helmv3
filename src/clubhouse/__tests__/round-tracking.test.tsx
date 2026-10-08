@@ -13,7 +13,7 @@ Element.prototype.scrollIntoView ??= function () {};
 
 const deleteShot = vi.fn();
 const updateShot = vi.fn();
-vi.mock('@/app/golf/actions/golf', () => ({
+vi.mock('@/app/golf/actions/shot-actions', () => ({
   deleteShot: (...a: unknown[]) => deleteShot(...a),
   updateShot: (...a: unknown[]) => updateShot(...a),
 }));

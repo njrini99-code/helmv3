@@ -29,7 +29,7 @@
 // =============================================================================
 
 import { useState, useTransition } from 'react';
-import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 
 import { Button } from '@/components/ui/button';

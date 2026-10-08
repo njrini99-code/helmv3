@@ -1,6 +1,6 @@
 'use client';
 
-import { animate, useMotionValue, useMotionValueEvent } from 'framer-motion';
+import { animate, useMotionValue, useMotionValueEvent } from 'motion/react';
 import { useEffect, useId, useLayoutEffect, useMemo, useRef } from 'react';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { BALL_AT_REST, BALL_TOTAL_MS, ballAt, type BallFrame } from './scene-ball';

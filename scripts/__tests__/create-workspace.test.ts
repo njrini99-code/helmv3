@@ -9,8 +9,7 @@
 //
 // These tests exercise the library function directly against a real,
 // disposable git repo — a bare origin plus a seed clone, same shape as
-// src/test/scripts/worktree-lifecycle.test.ts and
-// scripts/__tests__/deploy-prod-verify.test.ts — and the hook as a real
+// src/test/scripts/worktree-lifecycle.test.ts — and the hook as a real
 // subprocess against the same fixture. Nothing here mocks git.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';

@@ -33,16 +33,19 @@ function Panel({ rows, chart = false, height, title }: { rows: number; chart?: b
 }
 
 /** The strip's second line (a change or a caption) is in the loaded strip on Last 10, the window a page opens on. */
-function Figures({ count }: { count: number }) {
+function Figures({ count, line = false }: { count: number; line?: boolean }) {
   return (
-    <dl className={'ch-stm-figs' + (count === 3 ? ' is-three' : '')} aria-hidden="true">
+    <dl className={'ch-stm-figs' + (count === 3 ? ' is-three' : '') + (line ? ' is-line' : '')} aria-hidden="true">
       {Array.from({ length: count }, (_, i) => (
         <div key={i}>
           <dt>
             <Bar height={16.2}><Skeleton width={52} height={11} /></Bar>
           </dt>
+          {/* The value's 22px line (the trend's words share it, so every caption below starts level). */}
           <dd className={count === 3 && i === 2 ? 'is-words' : undefined}>
-            <Skeleton width={44} height={count === 3 && i === 2 ? 15 : 20} radius={6} />
+            <Bar height={22}>
+              <Skeleton width={44} height={count === 3 && i === 2 ? 16 : 20} radius={6} />
+            </Bar>
           </dd>
           <dd>
             <Skeleton width={36} height={11} />
@@ -56,18 +59,23 @@ function Figures({ count }: { count: number }) {
 export function StatsTeamPhoneSkeleton() {
   return (
     <main className="ch-stm" aria-busy="true" aria-label="Loading stats" data-ch-code="CH-4401">
+      {/* The Ledger's page intro as loaded: the 11px eyebrow's line under the double rule, then the 31px title's. */}
       <header className="ch-stm-head" aria-hidden="true">
-        <Bar height={18.2}>
-          <Skeleton width={230} height={12} />
+        <Bar height={14.4}>
+          <Skeleton width={250} height={11} />
         </Bar>
-        <Bar height={30.8}>
+        <Bar height={33.5}>
           <Skeleton width={150} height={28} radius={8} />
         </Bar>
       </header>
       <div className="ch-stm-controls" aria-hidden="true">
         <Skeleton width="100%" height={44} radius={12} />
       </div>
-      <Figures count={4} />
+      {/* The team's stat line: the figures, then the gauge row's height held empty. */}
+      <div className="ch-stm-line" aria-hidden="true">
+        <Figures count={4} line />
+        <div className="ch-stm-gauges" />
+      </div>
       <p className="ch-stm-cover" aria-hidden="true"><Skeleton width={180} height={12} /></p>
       <Panel rows={0} chart height={0} title="Scoring trend" />
       <Panel rows={5} height={266} title="Strokes gained by leg" />
@@ -78,11 +86,16 @@ export function StatsTeamPhoneSkeleton() {
 export function StatsPlayerPhoneSkeleton() {
   return (
     <main className="ch-stm" aria-busy="true" aria-label="Loading player stats" data-ch-code="CH-5403">
+      {/* As loaded: the avatar beside the 26px name's line and the caption's, under the double rule. */}
       <header className="ch-spm-head" aria-hidden="true">
         <Skeleton width={48} height={48} radius={24} />
-        <span style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <Skeleton width={160} height={22} radius={7} />
-          <Skeleton width={190} height={12} />
+        <span className="ch-spm-head__id">
+          <Bar height={28.6}>
+            <Skeleton width={160} height={22} radius={7} />
+          </Bar>
+          <Bar height={18.2}>
+            <Skeleton width={190} height={12} />
+          </Bar>
         </span>
       </header>
       {/* As on the loaded page: the header, the window and filter row, then the figures. */}
@@ -90,7 +103,9 @@ export function StatsPlayerPhoneSkeleton() {
         <Skeleton width="100%" height={44} radius={12} />
       </div>
       <div className="ch-stm-overview" aria-hidden="true">
-        <Figures count={3} />
+        {/* The stat line: the figures, then the gauge row's height held empty (as Team stats). */}
+        <Figures count={3} line />
+        <div className="ch-stm-gauges" />
         <div className="ch-stm-overview__meta">
           <Bar height={20.3}><Skeleton width={180} height={12} /></Bar>
           <Bar height={20.3}><Skeleton width={140} height={12} /></Bar>

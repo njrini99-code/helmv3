@@ -105,7 +105,8 @@ function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigat
 
 /**
  * The standing History panel (desktop, 280px): the team's name, Hide chats, New chat, then the list. It stays mounted
- * while collapsed, so the width can animate over base (CH-13620); a collapsed panel is inert.
+ * while collapsed, and a collapsed panel is inert. Its column switches at once (layout never animates); shown again, the
+ * panel fades in with its content sliding from the edge, and hidden it goes at once (CH-13620, coachhelm-ask.css).
  */
 export function HistoryPanel(props: AskHistoryProps & { open: boolean; onHide: () => void; heading: string }) {
   const { open, onHide, heading, onNew } = props;

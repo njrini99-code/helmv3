@@ -160,6 +160,13 @@ function formatCoverageSummary(coverage: CoverageSummary): string {
   return `${base} · oldest reading ${formatAge(coverage.oldestAgeMs)}`;
 }
 
+/** "oldest reading 4m ago", or null when no non-blind source has a dated
+ *  reading. The vintage half of `SourceCoverageSummaryLine`, for a surface
+ *  (the all-clear banner) that states the source count its own way. */
+export function oldestReadingLabel(coverage: CoverageSummary): string | null {
+  return coverage.oldestAgeMs === null ? null : `oldest reading ${formatAge(coverage.oldestAgeMs)}`;
+}
+
 /** Duration formatting, not a timestamp — pure arithmetic on a millisecond
  *  count, so unlike `LocalTime`/`RelativeTime` there is no server-vs-client
  *  timezone divergence to guard against here. */

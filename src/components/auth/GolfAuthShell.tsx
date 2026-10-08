@@ -10,7 +10,7 @@
  */
 
 import { useState, type ReactNode } from 'react';
-import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { HelmMark } from '@/components/brand/HelmMark';
 import { CoastalScene } from '@/components/golf/scenes/CoastalScene';

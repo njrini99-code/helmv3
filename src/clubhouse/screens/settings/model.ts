@@ -143,6 +143,13 @@ export const HANDICAP_OPTIONS = [
 ] as const;
 
 /** The distance a shot or a hole shows in. Display only: shots are stored in yards and feet either way. */
+/** Appearance (the GolfHelm theme, `golf_theme`): System follows the phone or computer. */
+export const THEME_OPTIONS = [
+  { value: 'system', label: 'System' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+] as const;
+
 export const DISTANCE_OPTIONS = [
   { value: 'yards', label: 'Yards' },
   { value: 'meters', label: 'Meters' },
@@ -190,7 +197,7 @@ export function profileProblem(role: 'coach' | 'player', p: { fullName: string; 
 export function passwordProblem(current: string, next: string, confirm: string): ChProblem | null {
   if (!current) return problem('CH-8105', 'Enter your current password.');
   if (next.length < 8) return problem('CH-8106', 'Use at least 8 characters.');
-  if (next !== confirm) return problem('CH-8107', "The new passwords don't match.");
+  if (next !== confirm) return problem('CH-8107', "The new passwords don’t match.");
   return null;
 }
 

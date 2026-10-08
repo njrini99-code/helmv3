@@ -6,6 +6,14 @@
 
 import { config as loadEnv } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
+import { cliGuard } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/fix-auth.mjs',
+  summary:
+    'Auth and RLS diagnostic against the project in .env.local: reads the core tables, then (with --apply) creates a throwaway auth user to test the handle_new_user trigger and deletes it again. The dry run only does the reads.',
+  secrets: 'NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (.env.local)',
+});
 
 loadEnv({ path: '.env.local' });
 
@@ -160,6 +168,10 @@ async function main() {
 
   await checkTables();
 
+  if (!cli.apply) {
+    console.log('\n[dry-run] would create a throwaway auth user to test the signup trigger and delete it. Re-run with --apply to do it.');
+    return;
+  }
   const testUser = await testSignupFlow();
 
   if (testUser) {

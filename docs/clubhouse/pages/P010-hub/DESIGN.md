@@ -46,7 +46,8 @@ Header (role, title, team and season, the coach's one primary action), the tab
 strip, then the panel. Home is two columns on a wide canvas (RSVPs, the newest
 post and the next trip; Updates and a player's tasks) and one below a 900px
 container; below 640px the RSVP rows stack their buttons. On the phone the title
-moves to the top bar, the tabs are a strip under it and the cards stack.
+moves to the top bar, the tabs are a strip under it and the sections stack flush
+(see Phone).
 
 ## Components
 
@@ -103,6 +104,23 @@ Approved spec `docs/clubhouse/phone/team-hub.md`: a player reaches Team Hub from
 the tab bar and a coach from More (a "‹ More" top bar); the tabs are a strip
 under the top bar; compose, trip and task forms and the Delete question are
 bottom sheets.
+
+The look follows the owner's "Mobile clubhouse pass" board (2026-10-08, carried
+from Coach Home): no cards. The page opens under the engraved double rule with
+the role chip and the team line as the engraved eyebrow, then a coach's New
+announcement and the tabs on a hairline that runs edge to edge, all five of a
+coach's fitting from 375px. RSVPs, Updates, tasks and each folder
+are sections on their own double rule with the heading in the 19px bold sans,
+their rows on soft seams (the date in a quiet engraved tile; the reply segments
+keep their material). The latest announcement is the screen's one green
+feature card, its byline, menu, Got it (an ivory key) and reads bar kept in
+the on-green inks. A trip is an entry on its double rule with its facts between
+two hairlines like the kit's figure row and its plan under them; a later trip is
+a row. Announcements are entries ruled apart under the composer line, and the
+drop zone keeps its dashed material. Rows that go somewhere press with the
+Ledger's tint and never scale. Tab empties sit flush at the panel's edge with no
+card; with more than one read failed, the page says so once under its head with
+one Try again (the shell's CH-1209) and each section keeps only its title.
 
 ## Accessibility
 

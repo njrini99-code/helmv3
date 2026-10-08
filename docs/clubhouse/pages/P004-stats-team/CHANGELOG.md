@@ -1,5 +1,185 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-08 — Copy: typographic apostrophes
+
+Team stats writes its apostrophes as ’: the export's failure (CH-4001), the
+window's and filter's offline refusals (CH-4901), shared with the profile, the
+trend's strokes gained note ("The team’s strokes gained are …") and the no-team
+page (CH-4309, the route's). The catalog quotes them as shown, with the crash
+titles.
+
+## 2026-10-08 — The empty window is the page's empty state; failures and crashes told once
+
+Fixes from the states audit, on desktop and the phone:
+
+- no rounds in the window (CH-4301) or no qualifier rounds (CH-4302) is the
+  whole page body, so it is now the page's empty state, not a section's: the
+  medallion (a chart, or the qualifiers' medal), the title, its sentence and
+  Show the season as the one primary action. On desktop it sits under the
+  framed head with its own air; the section card around it is gone;
+- when two or more parts fail (team figures, team putting, the longest putt),
+  the page says so once under the head with one Try again (CH-1209), and each
+  part keeps only its notice's title. One failed part keeps its own notice;
+- a failed rounds read (CH-4201) is the page's failure (CH-1211) as its whole
+  body: the brick medallion, "Team rounds didn’t load", one sentence and Try
+  again first, instead of a notice over a blank page;
+- the notices' Try again now says so while it runs, and their titles end
+  without a full stop;
+- on the phone a player row's press tint waits a beat after the finger lands
+  (CH-1606), so a scroll that starts on a row never flashes it; the window
+  switch and the Avg / SG switch glide and land in one frame with reduced
+  motion (WebKit as an iPhone at 390);
+- sections that crash together (CH-4204 to CH-4208) are told once under the
+  head (CH-1210, the page's sections one `SectionGroup`), with one Try again
+  that tries them all, and each keeps only its title;
+- on the phone the head's eyebrow is 12px, the phone text floor, as the kit's
+  PageIntro draws it (the skeleton's line moves with it);
+- a filter that matches no round (CH-4313) leaves the whole body empty under
+  the filter row, so it is the page's empty state too: the filter glyph's
+  medallion, "No rounds match these filters", its sentence and Clear filters
+  as the one primary action. The profile's (CH-5320) stands in for a tab's
+  content beside Development, so it stays a section's.
+
+New tests: stats-team.test › CH-1209 (several and one, desktop and phone),
+CH-4301 as the page's empty state on desktop and the phone, CH-4201 as the
+page's failure, CH-1210 for sections that crash together;
+stats-filter-ui.test › CH-4313 as the page's empty state, CH-5320 as a
+section's.
+
+## 2026-10-08 — phone: Mobile clubhouse pass
+
+Team stats on the phone follows the Coach Home "Mobile clubhouse pass" board
+(round 3, "fewer containers, one feature card"). The page is the parchment
+sheet with no white cards:
+
+- it opens on the Ledger's page intro: "Varsity · 7 active · countable rounds"
+  as the eyebrow under the engraved double rule, Team stats in the bold
+  condensed sans (it was a regular-weight display title);
+- the four figures sit between hairlines as the Ledger's figure row, values in
+  the bold sans, each still drawn against its reference;
+- Scoring trend, Strokes gained by leg, Players and Team putting are sections
+  flush under their double rules, the caption under each title so a long one
+  never pushes the title onto two lines;
+- the players are rows on seams, on the section's edge, that tint on press;
+- a filter that matches nothing is the empty state alone on the sheet.
+
+The window switch, the filter and the sort keep their material. The empty bars
+panel holds the loaded section's new height (258px), and the skeleton draws the
+new head. Desktop is unchanged.
+
+## 2026-10-07 — The trend brings a player forward; a leg re-sorts the grid in place
+
+Pointing at a player's name or line, or tabbing to the name, brings their line
+forward in green, drawn over the others, while the others fade back to 0.2, all
+over quick; moving away returns to the chosen player, and a press chooses them,
+as before (CH-4601). Each line takes the pointer along a 12px band. Choosing a
+leg keeps the card's ring and now settles the re-sorted grid in with its column
+ringed (base in, quick out) instead of the rows jumping (CH-4602). A grid row
+presses with the row press tint. New tests: stats-team.test › CH-4601, CH-4602.
+
+## 2026-10-07 — The trend crossfades between measures
+
+Switching the trend between Strokes gained and Scoring now crossfades the plot
+with a 6px rise (CH-4603, the shared `Swap`), where it used to swap in one
+frame. With reduced motion it is instant.
+
+A window change also crossfades each changed figure to its new value
+(CH-4604).
+
+## 2026-10-07 — Team stats on the Ledger
+
+On desktop, the strokes gained chart, the leg trends, the player grid, team
+putting and season bests are no longer cards. Each is a heading over the
+engraved rule, with its body flush on the canvas, and the sections are spaced
+further apart. Headings are in the heavy sans. The phone is unchanged.
+
+## 2026-10-07 — Gauges directly under the words
+
+At full width the gauges sat at the foot of each figure, so the supporting
+figures had a gap of about 80px between their words and their drawing. Now:
+
+- **Values:** every value sits on the lead's 48px line, sharing its baseline.
+- **Gauges:** every gauge follows its words directly, so all six share one line.
+- **Lead note:** the lead's note ("vs Tour · 58 rounds with shots") moves below
+  its gauge.
+
+The rows layout below 900px is unchanged. Measured in WebKit at 1440, 1300, 1180
+and 1000, the row holds its height (248px) and nothing moves between loading and
+loaded.
+
+## 2026-10-07 — Chart card titles in the serif
+
+The yardage cards' titles (`YardagePage`: Scoring, Strokes gained by leg, Team
+putting, and "Jonah vs. team") were a 15px semibold sans next to serif panel
+titles. They now use the display serif (`--ch-type-serif-s`), with any digits in
+the sans (`SerifText`).
+
+## 2026-10-07 — Scoring trend mean label off the line
+
+On the phone, the scoring trend's "Mean" label sat on the line. It now goes in
+the first corner the line keeps clear of (right end above, right below, left
+above, left below), with an ivory halo as a backstop.
+
+## 2026-10-07 — Phone figures on the stat line
+
+On the phone, the four team figures were bare numbers in one white sheet. They
+now sit on the stat line, as on the desktop: no surface, a gilt rule above,
+seams between the columns, and a row of gauges under them (par, the Tour's
+greens mark, 36 putts, scrambling 0–100) closed by a second gilt rule. The
+skeleton holds the gauge row's 39px.
+
+## 2026-10-07 — Every figure drawn against its reference
+
+The owner's rule is no bare numbers. Each figure on the stat line now carries a
+small gauge under its words:
+
+- strokes gained from the Tour's zero;
+- the scoring average from par;
+- greens along 0–100% with the Tour's mark;
+- putts against two on every green (36);
+- scrambling along 0–100%;
+- birdies as holes out of 18.
+
+The references come from the data, and a figure with no value draws nothing. The
+gauges sit at the foot of each figure, so the line keeps one baseline. Below
+900px they sit between the words and the value, aligned down the list. Reserves
+are re-measured: the lead row is 248px above 900px and 208px full width, with no
+shift at 1440, 1300, 1180 or 1000.
+
+## 2026-10-07 — Strokes gained lead folded onto the stat line (#2160)
+
+PR #2160's lead layout is merged into this branch. Strokes gained still reads
+first, with a larger value. The five supporting figures no longer share a card:
+they sit on the stat line beside the lead, divided by the same engraved seams.
+The lead reserves are re-measured with the stat-line padding: 212px at the
+widest canvas and 171px full width. Measured in WebKit at 1440 and 1000, the
+title, figures and trend card tops don't move between loading and loaded.
+
+## 2026-10-07 — Loading reserves re-measured
+
+The figure line's reserves (`--ch-fg-h`) are re-measured for the stat-line
+padding (+4px). The loading title takes the serif title's 53px line, and the
+trend card's head the serif title's 95px. Measured in WebKit at 1440 and 1000:
+the title, figures and trend card tops don't move.
+
+## 2026-10-07 — Figures as a stat line, legs on the page, serif titles
+
+The owner called the figure row "card heavy", then said "even worse" when a
+single sheet was placed around it. The figures (`.ch-fg`, which Team stats, a
+player's stats and the player profile share) now have no surface at all. They
+sit straight on the page, divided by engraved seams, between two fine gilt rules
+like a printed stat line. The four strokes-gained legs are one selector set the
+same way: quiet tiles, with the chosen leg a soft green key. The page title and
+the card and section titles are set in the display serif.
+
+PR #2160 also changes `FigureCards` (the strokes gained lead); it is folded in
+above.
+
+## 2026-10-06 — Smooth scroll and materials
+
+In-page jumps on the phone player stats view ease through the shared smooth
+scroll helper and stay instant with reduced motion.
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
 
@@ -17,6 +197,34 @@ actions and 4 overlay/control call sites in the [all-page
 audit](../../ALL_PAGE_AUDIT.md#p004-stats-team). Approved handoffs and
 contract IDs are preserved; runtime gaps stay explicit.
 <!-- clubhouse:release-audit:end -->
+
+## 2026-10-06 — Strokes gained leads the figures
+
+The premium audit's P1 for this page: six equal floating cards gave the page no
+first read. On the owner's choice (lead and supporting), Team SG per round now
+sits on its own card with a 48px value, and the five supporting figures share
+one quieter surface divided by hairlines. Below a 900px canvas the supporting
+figures become rows (label and change left, value right) under a full-width
+strokes gained card. The loading skeleton draws the same layout, and the held
+heights were re-measured so the page below does not move when the figures land
+or the window changes. Values, deltas, notes, catalog codes and the player
+profile's figures are unchanged. See VERIFY.md for the measurements.
+
+## 2026-10-06 — Motion import path moves to `motion/react`
+
+```text
+PR/commit:      #2153 (agent/deps-ui-upgrade)
+Design package: none; no visual or behavior change
+Contract IDs:   none
+Data impact:    none
+Held items:     none
+```
+
+Dependency upgrade only. `framer-motion` 13 is replaced by the `motion` 14
+package, so this page's animation imports change from `framer-motion` to
+`motion/react`. The animation API, durations, curves and reduced-motion gating
+are unchanged; Motion 14 only removed internal compatibility APIs this tree
+never used.
 
 ## 2026-10-02 — Keep charts steady when the period changes
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { Sparkles, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import type { ChAskData, ChAskFinding, ChAskSuggestion } from '../../../data/coachhelm-chat-shape';
@@ -9,19 +9,10 @@ import { haptic } from '../../../lib/haptics';
 import { Icon } from '../../../ui/Icon';
 import { RefreshNotice } from '../../../ui/RefreshNotice';
 
-/** The Ask mark: the dark tile with the mint spark (mockup Main, PhoneHome). */
-export function AskMark() {
-  return (
-    <span className="ch-ask-mark" aria-hidden="true">
-      <Icon icon={Sparkles} size={22} />
-    </span>
-  );
-}
-
 function Greeting({ team, phone, children }: { team: string; phone: boolean; children?: ReactNode }) {
   return (
     <div className="ch-ask-greet">
-      <AskMark />
+      {/* The mockup's spark tile was dropped (owner, 2026-10-06: no stock AI marks); the serif question carries it. */}
       <h2>What do you want to know about {team}?</h2>
       <p>Answers come from your recorded rounds, signals and schedule.</p>
       {phone && children}

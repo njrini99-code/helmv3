@@ -7,6 +7,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { SearchField } from '../../ui/SearchField';
 import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
+import { Swap } from '../../ui/Swap';
 import { EmptyState } from '../../ui/States';
 import type { RecCtx } from './ctx';
 import { Documents } from './Documents';
@@ -21,11 +22,11 @@ import { Pipeline } from './Pipeline';
 export function RecruitingDesktop({ c }: { c: RecCtx }) {
   const nothing = c.total === 0;
   return (
-    <main className="ch-rec" aria-labelledby="ch-rec-title" data-ch-code="CH-14904">
-      <header className="ch-rec-head">
+    <main className="ch-rec" data-canopy="" aria-labelledby="ch-rec-title" data-ch-code="CH-14904">
+      <header className="ch-rec-head" data-canopy-head="">
         <div>
           <h1 id="ch-rec-title">Recruiting</h1>
-          <p>Prospects you&apos;re following, from first look to commitment. Only coaches see this page.</p>
+          <p>Prospects you’re following, from first look to commitment. Only coaches see this page.</p>
         </div>
         {/* One primary per screen: first run carries Add your first prospect in the page below. */}
         {(!nothing || c.error) && (
@@ -38,22 +39,26 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
       {c.error ? (
         <InlineNotice
           code="CH-14201"
-          title="Your prospects didn't load"
-          body="Nothing was lost; this page just couldn't reach them. Check your connection and try again."
+          title="Your prospects didn’t load"
+          body="Nothing was lost; this page just couldn’t reach them. Check your connection and try again."
           onRetry={c.tryAgain}
         />
       ) : (
         <>
-          <SectionBoundary surface="recruiting.pipeline" label="The pipeline" code="CH-14203">
-            <Pipeline counts={c.counts} shares={c.shares} total={c.total} stage={c.stage} onPick={c.setStage} onShowAll={() => c.setStage(null)} />
-          </SectionBoundary>
+          {/* With nobody yet, four empty stages say nothing the page empty doesn't: it stands alone under the head, with
+              its Add first, as on the phone (states audit c2). */}
+          {!nothing && (
+            <SectionBoundary surface="recruiting.pipeline" label="The pipeline" code="CH-14203">
+              <Pipeline counts={c.counts} shares={c.shares} total={c.total} stage={c.stage} onPick={c.setStage} onShowAll={() => c.setStage(null)} />
+            </SectionBoundary>
+          )}
           {nothing ? (
             <EmptyState
               size="page"
               code="CH-14301"
               icon={GraduationCap}
               title="Your prospect list starts here"
-              body="Add the golfers you're watching. Keep their contact details, notes and documents in one place, and move them through Watched, Recruiting, Offered and Committed."
+              body="Add the golfers you’re watching. Keep their contact details, notes and documents in one place, and move them through Watched, Recruiting, Offered and Committed."
               action={
                 <Button variant="primary" leftIcon={Plus} onClick={c.startAdd}>
                   Add your first prospect
@@ -70,7 +75,10 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
                       <Segmented size="sm" label="Sort prospects" value={c.sort} onChange={c.setSort} options={CH_SORTS.map((s) => ({ value: s.value, label: s.label }))} />
                     )}
                   </div>
-                  {c.rows.length === 0 ? <NoMatch query={c.query} stage={c.stage} onClear={() => c.setQuery('')} onAll={() => c.setStage(null)} /> : <ProspectTable c={c} />}
+                  {/* CH-14603: a stage picked or let go settles the list in (base in, quick out); typing a search does not. */}
+                  <Swap swapKey={c.stageTurn}>
+                    {c.rows.length === 0 ? <NoMatch query={c.query} stage={c.stage} onClear={() => c.setQuery('')} onAll={() => c.setStage(null)} /> : <ProspectTable c={c} />}
+                  </Swap>
                 </section>
               </SectionBoundary>
               <SectionBoundary surface="recruiting.panel" label="The prospect panel" code="CH-14203">
@@ -88,7 +96,7 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
 export function NoMatch({ query, stage, onClear, onAll, phone = false }: { query: string; stage: ChStage | null; onClear: () => void; onAll: () => void; phone?: boolean }) {
   const q = query.trim();
   const inStage = stage ? ` in ${stageMeta(stage).label}` : '';
-  const title = q ? (phone ? `No match for "${q}"${inStage}` : `No prospects match "${q}"${inStage}`) : `No prospects${inStage}`;
+  const title = q ? (phone ? `No match for “${q}”${inStage}` : `No prospects match “${q}”${inStage}`) : `No prospects${inStage}`;
   const body = q
     ? phone
       ? `Try another word${stage ? ', or look across every stage' : ''}.`
@@ -195,7 +203,7 @@ function ProspectPanel({ p, c }: { p: ChProspect; c: RecCtx }) {
       </div>
       <footer className="ch-rec-panel__foot">
         <MetaLine p={p} now={c.now} tz={c.tz} />
-        <button type="button" className="ch-rec-del" onClick={() => c.askDelete(p)}>
+        <button type="button" className="ch-rec-danger" onClick={() => c.askDelete(p)}>
           Delete prospect
         </button>
       </footer>

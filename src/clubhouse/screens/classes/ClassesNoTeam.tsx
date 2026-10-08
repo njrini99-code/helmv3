@@ -11,8 +11,8 @@ import { EmptyState } from '../../ui/States';
 export function ClassesNoTeam() {
   const settings = rebuiltHref('/golf/dashboard/settings?section=team', 'player');
   return (
-    <main className="ch-cl" aria-labelledby="ch-cl-title">
-      <header className="ch-cl-h">
+    <main className="ch-cl is-noteam" aria-labelledby="ch-cl-title" data-canopy="">
+      <header className="ch-cl-h" data-canopy-head="">
         <div>
           <h1 id="ch-cl-title">Classes</h1>
         </div>
@@ -21,8 +21,8 @@ export function ClassesNoTeam() {
         size="page"
         code="CH-12305"
         icon={Users}
-        title="You aren't on a team yet"
-        body="Your classes go on your team's calendar so your coach can plan around them. Join a team, then add your classes."
+        title="You aren’t on a team yet"
+        body="Your classes go on your team’s calendar so your coach can plan around them. Join a team, then add your classes."
         action={
           settings ? (
             <Button variant="primary" href={settings}>

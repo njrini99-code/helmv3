@@ -25,6 +25,13 @@
  *     node scripts/db/notify-drift.mjs "<subject>" "<body text>"
  */
 import { Resend } from 'resend';
+import { helpOnly } from '../lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/db/notify-drift.mjs',
+  summary:
+    "Sends one owner-only alert for a failed DB drift or advisor check through the admin ops-digest transport.",
+});
 
 const DEFAULT_FROM = 'Cup of Helm <bridge@helmsportslabs.com>';
 

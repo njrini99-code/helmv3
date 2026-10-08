@@ -93,8 +93,9 @@ All 25 (CONTRACT.md).
 ## Motion intent
 
 The player panel slides in 16px and fades in 260ms, and switching players
-cross-fades (CH-3601). Cards and rows lift on hover and shrink about 6px on
-press, then spring back (CH-3602). Nothing counts up and nothing staggers except
+cross-fades (CH-3601). On desktop the faces sit in a ruled grid on the canvas
+(the Ledger, 2026-10-07): a cell takes a tint on hover and press rather than
+lifting (CH-3602). Nothing counts up and nothing staggers except
 the shell's first-paint reveal. On the phone the profile is pushed with the
 shell's slide (CH-1610). All from the v2 tokens (D-64).
 
@@ -121,6 +122,15 @@ then Inactive, and a pushed profile with Message, Plan 1:1, figures, trend,
 recent rounds, About and the coach's note. Its ⋯ opens View stats and Remove
 from team. The phone is a different structure, never the desktop shrunk
 (RosterPhone below 820px).
+
+Its look is the Coach Home "Mobile clubhouse pass" board (owner, 2026-10-08:
+round 3, "fewer containers, one feature card"): the page opens on the engraved
+double rule with the team and count as the tracked eyebrow and Roster in the
+bold condensed sans; join requests are the one green feature card; the players
+are rows on seams on the parchment, Inactive a section under the double rule.
+The profile puts its figures between two hairlines and each part flush under
+the double rule; the sheets list requests and actions on seams. No white
+cards, no serif.
 
 ## The player's view
 

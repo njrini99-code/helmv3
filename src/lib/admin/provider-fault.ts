@@ -95,8 +95,7 @@ const FAULT_RULES: readonly FaultRule[] = [
   { kind: 'plan_gated_model', pattern: /free tier users do not have access|do not have access to this model|model_not_found|unknown model|does not exist or you do not have access/i },
   // "404 Event key not found" is what Inngest returns for a key that is set but
   // no longer valid — a rotated or wrong-environment key. It is an INVALID
-  // credential, not a missing one: `isInngestConfigured()` sees the env var and
-  // reports the integration as configured, so "missing" would send an operator
+  // credential, not a missing one: the env var is set, so "missing" would send an operator
   // looking for an unset variable that is in fact set.
   { kind: 'invalid_credential', pattern: /invalid[_ ]api[_ ]key|incorrect api key|authentication[_ ]error|unauthorized.*api key|invalid signing key|signature verification failed|(?:event|signing|api) key not found/i },
   { kind: 'missing_credential', pattern: /no api key|api key (?:is )?(?:not set|missing)|missing (?:the )?(?:api|event|signing) key|(?:event|signing) key (?:is )?(?:not set|missing)|failed to find [a-z ]*key/i },

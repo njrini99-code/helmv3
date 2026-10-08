@@ -1,6 +1,6 @@
 'use client';
 
-import { LazyMotion } from 'framer-motion';
+import { LazyMotion } from 'motion/react';
 import { loadMaxFeatures } from '@/lib/motion/load-features';
 import { useEffect, type ReactNode } from 'react';
 import type { GolfUserData } from '@/contexts/golf-user-context';
@@ -10,22 +10,24 @@ import { liftHandoffCurtain } from '../lib/handoff';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { ToastProvider } from '../ui/Toast';
 import type { ChShellData } from '../data/shell';
-import { activeNavItem, isRebuilt, routeLabel } from './nav';
+import { activeNavItem, isRebuilt, phoneFullScreen, phonePushedTop, routeLabel } from './nav';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { OfflineBanner } from './OfflineBanner';
 import { TabBar } from './TabBar';
 import { RouteFrame } from './RouteFrame';
+import { PullToRefresh } from './PullToRefresh';
 import { teamSwitchFor } from './team-switch';
 import { NotRebuilt } from './NotRebuilt';
 import { ClubhouseMarker } from './context';
 import { CrumbProvider } from './crumbs';
-import { PhoneChromeProvider, usePhoneChromeState } from './phone-chrome';
+import { PhoneChromeProvider, PhoneUnderlay, usePhoneChromeState } from './phone-chrome';
 import '../styles/tokens.css';
 import '../styles/base.css';
 import '../styles/ui.css';
 import '../styles/shell.css';
 import '../styles/controls.css';
+import { useCanvasSmoothScroll } from '../lib/smooth-scroll';
 
 /**
  * The Clubhouse frame, UI only: a green frame with an inset ivory canvas
@@ -37,12 +39,15 @@ export function ClubhouseFrame({
   userData,
   shell,
   pathname,
+  search = '',
   forceRebuilt = false,
   children,
 }: {
   userData: GolfUserData;
   shell: ChShellData;
   pathname: string;
+  /** The address's query (`section=team`), for the phone bars it decides: a Settings section, a coach's player on Stats. */
+  search?: string;
   /** Preview only: render children even on a route that isn't in CH_REBUILT_ROUTES. */
   forceRebuilt?: boolean;
   children: ReactNode;
@@ -51,7 +56,13 @@ export function ClubhouseFrame({
   const teamSwitch = teamSwitchFor(userData);
   const item = activeNavItem(pathname, role);
   const rebuilt = forceRebuilt || isRebuilt(pathname, role);
+  // A pushed page's bar, drawn by the shell until the page's own arrives (CH-1402); a page not rebuilt keeps the plain bar.
+  // A full-screen flow hides the tab bar from its first frame, as its page will.
+  const pushed = rebuilt ? phonePushedTop(pathname, role, search ? new URLSearchParams(search) : null) : null;
+  const fullScreen = rebuilt && phoneFullScreen(pathname, role);
   const { showAnimations } = useAppearancePreferences();
+  // Smooth wheel scrolling on the desktop canvas (off on a phone, with reduced motion and with Animations off).
+  useCanvasSmoothScroll();
   useEffect(() => chTagSession(), []);
   // Arriving from the welcome or onboarding: the curtain holding the fold's last frame lifts now the frame is here.
   useEffect(() => liftHandoffCurtain(), []);
@@ -62,7 +73,7 @@ export function ClubhouseFrame({
       <LazyMotion features={loadMaxFeatures} strict>
         <PhoneChromeProvider>
           {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
-          <FrameRoot motionOff={!showAnimations}>
+          <FrameRoot motionOff={!showAnimations} fullScreen={fullScreen}>
             <ToastProvider scope={userData.teamId ?? ''}>
               <CrumbProvider>
                 {/* The first Tab on any page: jump past the navigation to the page itself (CH-1607: it slides into view). */}
@@ -72,7 +83,7 @@ export function ClubhouseFrame({
                 <div className="ch-app">
                   <Sidebar userData={userData} shell={shell} pathname={pathname} teamSwitch={teamSwitch} />
                   <div className="ch-canvas" id="ch-canvas">
-                    <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} />
+                    <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} pushed={pushed} />
                     <OfflineBanner />
                     {/* A new team is a new page: the route remounts, so nothing the old team's screen held (a search, an open panel, a live feed) carries over. */}
                     <RouteFrame routeKey={`${pathname}\u0000${userData.teamId ?? ''}`}>
@@ -81,6 +92,8 @@ export function ClubhouseFrame({
                   </div>
                 </div>
                 <TabBar pathname={pathname} shell={shell} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null }} teamSwitch={teamSwitch} />
+                {/* The iPhone app's pull to refresh (CH-1909); nothing in a browser. */}
+                <PullToRefresh pathname={pathname} />
               </CrumbProvider>
             </ToastProvider>
           </FrameRoot>
@@ -91,7 +104,7 @@ export function ClubhouseFrame({
 }
 
 /** `.ch-root`, marked while a pushed phone screen covers the page, so toasts sit above its composer instead of the hidden tab bar. */
-function FrameRoot({ motionOff, children }: { motionOff: boolean; children: ReactNode }) {
+function FrameRoot({ motionOff, fullScreen, children }: { motionOff: boolean; fullScreen: boolean; children: ReactNode }) {
   const { immersive, noTabs, hero } = usePhoneChromeState();
   usePhoneEdges(hero);
   return (
@@ -100,10 +113,12 @@ function FrameRoot({ motionOff, children }: { motionOff: boolean; children: Reac
       data-ui="clubhouse"
       data-motion={motionOff ? 'off' : undefined}
       data-phone-immersive={immersive ? '' : undefined}
-      data-phone-notabs={noTabs ? '' : undefined}
+      data-phone-notabs={noTabs || fullScreen ? '' : undefined}
       data-phone-hero={hero ? '' : undefined}
     >
       {children}
+      {/* The dim over the page while a phone screen is pushed, and what draws the page back with it (CH-1618). */}
+      <PhoneUnderlay />
     </div>
   );
 }
@@ -151,8 +166,18 @@ function usePhoneEdges(hero: boolean) {
     };
     sync();
     phone.addEventListener('change', sync);
+    // A theme change (Settings > Appearance, or the system flipping) changes the tokens read above. useGolfTheme rewrites
+    // the theme-color tag in the same task, so this runs a frame later and has the last word on the phone.
+    let frame = 0;
+    const themed = new MutationObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(sync);
+    });
+    themed.observe(html, { attributes: true, attributeFilter: ['data-fw-theme'] });
     return () => {
       phone.removeEventListener('change', sync);
+      themed.disconnect();
+      cancelAnimationFrame(frame);
       restore?.();
     };
   }, [hero]);

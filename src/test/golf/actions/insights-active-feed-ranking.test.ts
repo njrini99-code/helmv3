@@ -33,7 +33,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({ from: () => ({}) }),
 }));
 
-import { getActiveInsights } from '@/app/golf/actions/insights';
+import { getActiveInsights } from '@/app/golf/actions/insights-feed';
 
 function row(id: string, priority: string, created_at: string, strokes_impact: number, confidence: number) {
   return {

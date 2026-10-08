@@ -1,5 +1,13 @@
 import { config as loadEnv } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/diagnose-rls.ts',
+  summary:
+    "Probes RLS behaviour on the project in .env.local with the service-role and anon keys. Read-only.",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY',
+});
 
 loadEnv({ path: '.env.local' });
 

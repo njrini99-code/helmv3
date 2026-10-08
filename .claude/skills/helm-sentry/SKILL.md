@@ -5,7 +5,7 @@ description: "Investigate a Sentry issue, alert email, production error, or a 'w
 
 # helm-sentry
 
-Read-only investigation path for a Sentry issue. Every step below names the
+Investigation path for a Sentry issue (read-only by default). Every step below names the
 exact tool or file to use — do not re-derive any of this by hand or from
 memory; the underlying implementations change and this skill can drift.
 
@@ -17,9 +17,9 @@ memory; the underlying implementations change and this skill can drift.
   `sport`, `feature`, `pg_code`, and `supabase_key_error`. These four are the
   ones this codebase deliberately sets (see step 5); anything else is
   Sentry's own default tagging.
-- `search_events` is the companion tool for raw event-level queries (e.g.
-  "how many of these in the last hour") when the issue-level counts aren't
-  enough.
+- `search_errors` (raw error events, e.g. "how many of these in the last
+  hour") and `search_logs` are the companions when the issue-level counts
+  aren't enough.
 
 ## 2. Code: map the culprit to a file
 
@@ -38,7 +38,7 @@ memory; the underlying implementations change and this skill can drift.
 - Do not claim "this release caused it" from the issue's first-seen
   timestamp alone — classify the relationship first. An issue that pre-dates
   the release, or that fires from a deploy-adjacent but unrelated cause
-  (e.g. the Supabase legacy-key incident below, which was an owner config
+  (e.g. the Supabase legacy-key incident below, which was a config
   change, not a code deploy), looks superficially release-shaped without
   being it.
 
@@ -83,18 +83,11 @@ An issue's event count under either rule is "how many times this class of
 failure fired," not "how many distinct bugs exist" — do not report the count
 as if every occurrence were independently investigated.
 
-## 6. What not to do
+## 6. Acting on what you find
 
-- **No mutators.** Never call `update_issue` or `analyze_issue_with_seer` —
-  both are Sentry MCP write/analysis actions outside this skill's read-only
-  scope. If a mutation is genuinely warranted, say so and let the owner run
-  it.
-- **No Seer.** Root-cause analysis via Seer is the owner's call, not
-  something to trigger from this investigation.
-- **No threshold edits.** Detector/workflow thresholds and routing
-  (`docs/operations/SENTRY_MONITORS.md`, `docs/operations/SENTRY_ALERT_ROUTING.md`)
-  are owner-run; the four-step detector dance documented there is not
-  something to reproduce or modify here.
-- **No `update_issue` without the owner** — resolving, ignoring, or
-  reassigning an issue changes what pages next time; that decision belongs
-  to whoever owns the alert routing, not to this investigation.
+Investigating reads only. Once you have shipped a fix, `update_issue`
+(resolve, ignore, assign) is fine, but it changes what pages next, so say what
+you changed in your report. `analyze_issue_with_seer` is available when the
+root cause is not obvious from the event. Detector and routing changes
+(`docs/operations/SENTRY_MONITORS.md`, `docs/operations/SENTRY_ALERT_ROUTING.md`)
+follow the documented steps there; don't improvise them.

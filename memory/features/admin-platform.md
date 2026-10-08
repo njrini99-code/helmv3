@@ -164,7 +164,7 @@ them would have broken those routes, not the dead one.
 
 ### Actions And Services
 
-- `src/app/golf/actions/admin-data.ts`
+- `src/app/golf/actions/admin-dashboard-data.ts`, `admin-incidents-data.ts`, `admin-dashboard-assemble.ts`, `admin-data-shared.ts` (split out of the former `admin-data.ts`)
 - `src/app/golf/actions/admin-people-data.ts`
 - `src/app/golf/actions/admin-system-data.ts`
 - `src/app/golf/actions/admin-tracer-data.ts`
@@ -283,9 +283,7 @@ them would have broken those routes, not the dead one.
   duplicating this. Fail-open throughout: a Sentry outage never blocks or
   fails a cron. Full job table, monitor slug conventions, and the
   `automaticVercelMonitors:false` decision record live in
-  `docs/observability/SENTRY_CRON_MONITORS.md`. The Inngest durable-function
-  path (`withBridgeLogging`, `src/lib/inngest/functions.ts`) gets the same
-  check-in treatment through its own call site, not through `recordJobRun`.
+  `docs/observability/SENTRY_CRON_MONITORS.md`.
   (The launchd Repair script and its own Sentry check-in helper —
   scripts/lib/sentry-cron-checkin.mjs no longer exists — were removed 2026-09-05
   along with the rest of the launchd Repair path — see `memory/features/admin-selfheal.md`;
@@ -543,10 +541,7 @@ them would have broken those routes, not the dead one.
   `requestId`. Wired into `observed-action.ts`, `observe-action-result.ts`
   (which now returns a promise), `job-log.ts`, `integration-health.ts`
   (`reportIntegrationFault` is async and its callers `await` it — a `void`ed
-  bounded await is still a promise nobody holds) and
-  `src/lib/inngest/credentials.ts`; `instrumentation.ts`'s `register()`
-  AWAITS the start-up credential report, after starting the process-handler
-  import so a slow Bridge cannot delay the catch-all. The process-level handlers
+  bounded await is still a promise nobody holds). The process-level handlers
   (`register-process-error-handlers.ts`) have no request scope, so they import
   the logger statically, hand the write to the Vercel request context's
   `waitUntil` when one exists (`vercel-wait-until.ts` — `@sentry/core`'s own
@@ -582,29 +577,16 @@ them would have broken those routes, not the dead one.
   `metadata.metadata.collapsed_count`. Sentry still gets every occurrence. A
   row that does not land gives the window back (`releaseEmit`). Every other
   trace writes exactly as before.
-- **In production a MISSING Inngest credential is a fault, not a config
-  state.** `integration-health.ts`'s "never report unconfigured" is right for
-  an optional Bridge reader and wrong for Inngest, on which round analysis,
-  reminders and the reliability automation depend. `src/lib/inngest/
-  credentials.ts` classifies both keys by SHAPE (`signkey-<env>-<hex>`; an
-  opaque event key of >= 20 chars — an 11-character placeholder is
-  `malformed`, not configured) and, when `VERCEL_ENV === 'production'`, writes
-  `provider_inngest_missing_credential` on feature `integrations` from three
-  triggers: process start (`instrumentation.ts`), every `isInngestConfigured()`
-  that answers false (the round-submit routing branch and the Jobs board), and
-  every SIGNED inbound request to `/api/inngest` when the signing key is
-  unusable (the SDK answers 500 there, so the route's 401 mismatch diagnosis
-  never fires). Throttled per process, collapsed across processes, one
-  incident — and the throttle window is a promise to write, not a record of
-  one: a write that does not land (rejected, timed out on the awaited path,
-  or failed inside the `after()` task) gives the window and its drained count
-  back via `releaseEmit`, so a frozen start-up cannot silence the next
-  trigger for 60s. With one fingerprint the med tier lands on AMBER — the honest
-  reading of one known fault; RED needs two consecutive 24h windows. The
-  registry entry still carries NO heartbeat, deliberately: silence between a
-  Monday cron and a round submit is normal, and `scripts/inngest-health-check.mjs`
-  is the active proof. Setting the variables in Vercel Production and
-  redeploying is an OWNER action.
+- **Inngest was removed (2026-10-06).** The Inngest client, the
+  `/api/inngest` handler, its credential reporter
+  (`provider_inngest_missing_credential`), the Jobs tab's Inngest tile and the
+  `INNGEST_*` env checks are gone; durable background work is the pgmq queue
+  plus Vercel crons, and the post-round CoachHelm trigger runs via the queue or
+  the direct `postRoundTrigger` call with the safety-net cron as backstop. The
+  `integrations` registry entry stays as the provider-fault catch-all area
+  (label "Integrations", no heartbeat, quiet renders NEUTRAL). The provider-fault
+  and incident classifiers keep their Inngest string rules, inert, so
+  historical rows still classify.
 - **Feature attribution aliases `feature` too, not only `featureArea`.**
   `resolveFeatureKey` used to return an explicit `feature` untouched, so
   `feature: 'coachhelm_chat'` landed unregistered while the same string as
@@ -627,7 +609,7 @@ them would have broken those routes, not the dead one.
   identical `usableSecret()` (treated Sentry as configured, so every local
   read failed soft and silently). `src/lib/admin/credential-shape.mjs` is the
   single implementation — `.mjs` so the plain-node script and the TS readers
-  (`sentry-api.ts`, `vercel-api.ts`, `inngest/credentials.ts`) import the same
+  (`sentry-api.ts`, `vercel-api.ts`) import the same
   code — and it never returns or prints a value it was not given. Shape is not
   validity: a rotated key still passes; the runtime diagnosis and the health
   probe are what detect that.
@@ -664,6 +646,26 @@ them would have broken those routes, not the dead one.
   feature-health rollup are promoted out of it, always visible, directly
   below the Deck. Each KPI still carries its own source note — the provenance
   is per-tile, not a separate panel.
+- **A calm Bridge says so once (deliberate all-clear, 2026-10-07).** "All clear"
+  is a page-level claim, granted only by `deriveAllClear`
+  (`src/lib/admin/incidents/all-clear.ts`, pure, tested in `all-clear.test.ts`),
+  and `AllClearBanner` renders only a granted claim, so the honesty rule lives
+  in one function and not in whichever screen draws a check mark. The verdict
+  requires every source READING (partial and unknown refuse), zero open
+  incidents in the window (actionable, regressions, repairable, stalled), a
+  healthy posture and an empty attention list where the screen has them, no
+  release alarm (`degraded`, `regression-detected`, `rollback-recommended`),
+  and a READ older backlog. Readable with older unresolved errors is a
+  `window-clear` ("Nothing new in N hours", neutral check, backlog link);
+  an unreadable backlog makes no claim. The Overview leads with `DeckHeadline`
+  (banner when granted, the posture sentence otherwise, never both) and the
+  Deck panels render a `quiet` variant. `/admin/errors` replaces its four-zero
+  summary line with the banner only in an un-narrowed view (no sport,
+  severity, source or feature filter), scopes the empty queue sentence to the
+  view it rendered, and under a granted claim collapses the org-wide Sentry
+  backlog behind a disclosure and the zero KPI tiles and breakdowns into one
+  line each. Every refusal keeps the ordinary counts and posture exactly as
+  before; `PanelAllClear` gained an opt-in `inline` variant, default unchanged.
 - Feature health renders through one component wherever it appears (Overview
   rollup, Health grid, per-app pages). Status thresholds, two-window hysteresis,
   and knownGaps annotations belong to the data layer, never to a view.
@@ -1599,11 +1601,6 @@ assumed it would:
 - `src/lib/admin/__tests__/durable-collapse.test.ts` and the durable-collapse
   block of `src/lib/__tests__/server-error-logger-bridge.test.ts` — provider
   faults bump the open row across processes; unreadable lookups fail open.
-- `src/lib/inngest/__tests__/credentials.test.ts`,
-  `src/lib/inngest/__tests__/is-inngest-configured.test.ts`,
-  `src/test/api/inngest-signature-diagnosis.test.ts` — a missing/malformed
-  Inngest credential is a production fault named as MISSING, never as a
-  mismatch, and never off production.
 - `src/lib/admin/__tests__/feature-aliases.test.ts` — every alias resolves to
   a registered key; `crm` and `lifting-onboarding` deliberately do not.
 - `src/lib/admin/__tests__/credential-shape.test.ts`,

@@ -1,11 +1,11 @@
 'use client';
 
-import { AnimatePresence, m } from 'framer-motion';
+import { AnimatePresence, m } from 'motion/react';
 import { Check } from 'lucide-react';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
-import { InlineNotice } from '../../ui/Notices';
+import { InlineNotice, PageNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
 import { Switch } from '../../ui/Switch';
 import { chTween } from '../../lib/motion';
@@ -171,13 +171,53 @@ export function SaveBar({
   );
 }
 
-/** A section whose read failed: says so, keeps the form away, offers a reload. */
-export function ReadFailed({ what, onRetry, code }: { what: string; onRetry: () => void; code: string }) {
-  return (
-    <div className="ch-surface ch-set-failed">
-      <InlineNotice code={code} title={`${what} didn't load.`} body="Nothing was changed. Reload to try again; the error has been reported." onRetry={onRetry} />
-    </div>
-  );
+/**
+ * A section whose read failed: says so, keeps the form away, offers a reload. With `title` it keeps the section's own
+ * heading and caption, so the page reads the same with the notice where the rows would be (states audit c13). `bare`
+ * is the notice alone, for a phone group that already carries the heading. `covered`: the section's ReadsFailed notice
+ * carries the one Try again, so only the title stays here.
+ */
+export function ReadFailed({
+  what,
+  onRetry,
+  code,
+  title,
+  description,
+  bare = false,
+  covered = false,
+}: {
+  what: string;
+  onRetry: () => void;
+  code: string;
+  title?: string;
+  description?: ReactNode;
+  bare?: boolean;
+  covered?: boolean;
+}) {
+  const notice = <InlineNotice code={code} title={`${what} didn’t load`} body="Nothing was changed. Reload to try again; the error has been reported." onRetry={onRetry} covered={covered} />;
+  if (bare) return notice;
+  if (title) {
+    return (
+      <Card title={title} description={description}>
+        {notice}
+      </Card>
+    );
+  }
+  return <div className="ch-surface ch-set-failed">{notice}</div>;
+}
+
+/**
+ * The reads of one section that failed, by name ("team details"), from `[failed, name]` pairs. With two or more the
+ * section says so once at its top with one Try again (ReadsFailed, the shell's CH-1209), and each part's ReadFailed is
+ * `covered` (states audit b6). One failure keeps its own notice and Try again.
+ */
+export function failedReads(reads: ReadonlyArray<readonly [boolean | undefined, string]>): string[] {
+  return reads.filter(([failed]) => !!failed).map(([, name]) => name);
+}
+
+/** The section-level notice for two or more failed reads (renders nothing below two). */
+export function ReadsFailed({ parts, onRetry }: { parts: readonly string[]; onRetry: () => void }) {
+  return <PageNotice parts={parts} onRetry={onRetry} />;
 }
 
 /**
@@ -223,7 +263,7 @@ export function useUnsavedGuard(dirty: boolean) {
       code="CH-8506"
       onClose={() => setPendingHref(null)}
       title="Leave without saving?"
-      description="Your changes on this page haven't been saved."
+      description="Your changes on this page haven’t been saved."
       footer={
         <>
           <Button variant="secondary" onClick={() => setPendingHref(null)}>
@@ -329,7 +369,7 @@ export function useInstantSave(surface: string) {
     if (isOffline()) {
       // CH-1903: refuse at once while offline, instead of flipping and flipping back.
       haptic('error');
-      toast({ tone: 'error', title: `${op.failed}: you're offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903' });
+      toast({ tone: 'error', title: `${op.failed}: you’re offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903' });
       return false;
     }
     op.apply();

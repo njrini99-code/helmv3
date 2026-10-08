@@ -9,7 +9,6 @@ import { pendingApproval, type EvidenceFocus } from '../../../data/coachhelm-cha
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneIconAction } from '../../../ui/PhoneBar';
 import { Icon } from '../../../ui/Icon';
-import { Modal } from '../../../ui/Modal';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { PhoneTop, usePhoneTabsHidden } from '../../../shell/phone-chrome';
 import { AskComposer, useRefuseOffline } from './Composer';
@@ -319,15 +318,9 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
       {phone && (
         <>
           <HistoryDrawer {...histProps} open={drawer} onClose={() => setDrawer(false)} />
-          <Modal open={evidenceOpen} onClose={() => setEvidence(null)} title="Evidence">
-            {evidence && (
-              // The sheet's body scrolls, so it needs something a keyboard can reach inside it (axe: scrollable-region-focusable).
-              // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-              <div tabIndex={0} role="region" aria-label="Evidence" className="ch-ask-evsheet" data-ch-code="CH-13820">
-                <AskEvidencePanel focus={evidence} messages={chat.messages} phone onClose={() => setEvidence(null)} />
-              </div>
-            )}
-          </Modal>
+          {/* On the phone the evidence panel is its own sheet (EvidencePanel, CH-13851); wrapping it in a second Modal here
+              stacked an empty Evidence sheet in front of the real one. */}
+          {evidenceOpen && evidence && <AskEvidencePanel focus={evidence} messages={chat.messages} phone onClose={() => setEvidence(null)} />}
         </>
       )}
     </main>

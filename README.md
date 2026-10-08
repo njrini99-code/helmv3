@@ -34,7 +34,7 @@ Running database audits from your machine:
 [`docs/setup/RUN_ON_YOUR_MACHINE.md`](docs/setup/RUN_ON_YOUR_MACHINE.md).
 
 AI agents working in this repo: [`AGENTS.md`](AGENTS.md) is the operating
-policy; [`CLAUDE.md`](CLAUDE.md) adds Claude Code specifics (launch with `h`).
+guide; [`CLAUDE.md`](CLAUDE.md) adds Claude Code specifics (launch with `h`).
 
 For the full documentation map, see [`docs/README.md`](docs/README.md).
 

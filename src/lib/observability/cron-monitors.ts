@@ -1,7 +1,6 @@
 /**
  * Sentry Cron Monitor check-ins for every scheduled job this codebase runs —
- * Vercel crons via `recordJobRun` (job-log.ts) and Inngest functions
- * (functions.ts). (The Self-Heal Repair job used to check in here too, via a
+ * Vercel crons via `recordJobRun` (job-log.ts). (The Self-Heal Repair job used to check in here too, via a
  * separate launchd agent and its own standalone helper
  * (scripts/lib/sentry-cron-checkin.mjs); both were retired 2026-09-05 —
  * Repair now runs as .github/workflows/selfheal-repair.yml and reports
@@ -27,7 +26,7 @@
  * MONITOR SLUG. `api-cron-<path segments>` — the cron route path with
  * slashes turned into dashes, e.g. `/api/cron/log-retention` ->
  * `api-cron-log-retention`. For a jobType that has no CRON_REGISTRY entry
- * (an Inngest function id, a launchd job, or a route not wired into
+ * (a launchd job, or a route not wired into
  * vercel.json — see docs/observability/SENTRY_CRON_MONITORS.md for the
  * current list), the slug falls back to `<prefix>-<jobType>` so every job
  * still gets a stable, collision-resistant slug even without a registered
@@ -44,8 +43,8 @@
  * ambiguity is exactly the failure mode this file refuses to risk —
  * instrumentation that silently achieves nothing is worse than no
  * instrumentation, because it reports success. So a jobType with a real
- * `CRON_REGISTRY` entry gets its real crontab schedule; everything else (an
- * Inngest function id, a launchd job, a manually-triggered route, or a
+ * `CRON_REGISTRY` entry gets its real crontab schedule; everything else (a
+ * launchd job, a manually-triggered route, or a
  * sub-step like `selfheal-close` that runs inside another job's single
  * invocation) gets a deliberately GENEROUS fallback interval
  * (`FALLBACK_SCHEDULE_DAYS`) wide enough that no legitimate gap in usage
@@ -101,7 +100,7 @@ export function shouldEmitCronCheckIns(): boolean {
 
 /**
  * `/api/cron/log-retention` -> `api-cron-log-retention`.
- * A jobType with no matching path (Inngest function id, launchd job, an
+ * A jobType with no matching path (launchd job, an
  * unregistered route) becomes `job-<jobType>` instead — still stable, still
  * unique, never collides with a real path-derived slug (no real path segment
  * is ever literally `job`).

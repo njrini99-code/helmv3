@@ -2,7 +2,7 @@
  * PublicMotionScope.tsx tests — deliberately NOT mocking framer-motion (unlike
  * Reveal.test.tsx / HoverReveal.test.tsx), because the bug this file guards
  * against IS framer-motion's real `m`-without-`LazyMotion` behavior, and a
- * `vi.mock('framer-motion', ...)` Proxy would render everything visible
+ * `vi.mock('motion/react', ...)` Proxy would render everything visible
  * regardless, masking the exact regression a mock would hide.
  *
  * Both assertions exercise the REAL Masthead atom + REAL framer-motion:

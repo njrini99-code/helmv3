@@ -2,7 +2,7 @@
 
 import { ChevronLeft, Clock, FileText, Lock, Paperclip, Repeat, Text, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { addCoachBlockedTime, deleteCoachBlockedTime } from '@/app/golf/actions/golf';
+import { addCoachBlockedTime, deleteCoachBlockedTime } from '@/app/golf/actions/calendar-blocked-time';
 import { attachDocumentToEvent, detachDocumentFromEvent, getEventDocuments } from '@/app/golf/actions/event-documents';
 import { getDocuments } from '@/app/golf/actions/documents';
 import { serializeRecurrenceRule } from '@/lib/golf/recurrence';
@@ -51,7 +51,7 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
     },
     {
       done: `Removed · ${e.title}`,
-      failed: `Couldn't remove ${e.title}`,
+      failed: `Couldn’t remove ${e.title}`,
       code: 'CH-6005',
     },
   );
@@ -160,7 +160,7 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
       if (normalise(res).success) onSaved(date);
       return res;
     },
-    () => ({ done: `Busy time added · ${title.trim()}`, failed: "Couldn't add your busy time", hint: 'Your entry is still here. Try again.', code: 'CH-6006' }),
+    () => ({ done: `Busy time added · ${title.trim()}`, failed: "Couldn’t add your busy time", hint: 'Your entry is still here. Try again.', code: 'CH-6006' }),
   );
   return (
     <Modal
@@ -279,7 +279,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
     // Same rule as every save (CH-1903): offline, nothing is sent and nothing changes.
     if (isOffline()) {
       haptic('error');
-      toast({ tone: 'error', title: `Couldn't remove ${f.title}: you're offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903' });
+      toast({ tone: 'error', title: `Couldn’t remove ${f.title}: you’re offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903' });
       return;
     }
     const prev = files;
@@ -292,7 +292,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
       const undoFailed = (why: string, err: unknown) => {
         chReport(err instanceof Error ? err : new Error(why), { surface: 'calendar.files', action: 'calendar.undoDetach', severity: 'low' });
         haptic('error');
-        toast({ tone: 'error', title: `Couldn't put ${f.title} back`, body: 'Attach it again from Documents.', code: 'CH-6009' });
+        toast({ tone: 'error', title: `Couldn’t put ${f.title} back`, body: 'Attach it again from Documents.', code: 'CH-6009' });
       };
       toast({
         title: `Removed · ${f.title}`,
@@ -301,7 +301,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
           run: () => {
             if (isOffline()) {
               haptic('error');
-              toast({ tone: 'error', title: `Couldn't put ${f.title} back: you're offline`, body: 'Reconnect, then attach it again from Documents. Nothing was changed.', code: 'CH-1903' });
+              toast({ tone: 'error', title: `Couldn’t put ${f.title} back: you’re offline`, body: 'Reconnect, then attach it again from Documents. Nothing was changed.', code: 'CH-1903' });
               return;
             }
             attachDocumentToEvent(eventId, f.id, f.note ?? undefined)
@@ -317,7 +317,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
       setFiles(prev);
       chReport(err, { surface: 'calendar.files', action: 'calendar.detachFile' });
       haptic('error');
-      toast({ tone: 'error', title: `Couldn't remove ${f.title}`, body: 'It’s still attached. Try again in a moment.', code: 'CH-6008' });
+      toast({ tone: 'error', title: `Couldn’t remove ${f.title}`, body: 'It’s still attached. Try again in a moment.', code: 'CH-6008' });
     }
   };
 
@@ -335,7 +335,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
         )}
       </div>
       {failed ? (
-        <InlineNotice code="CH-6207" title="Files didn't load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+        <InlineNotice code="CH-6207" title="Files didn’t load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
       ) : !files ? (
         <div aria-busy="true" data-ch-code="CH-6403">
           <Skeleton height={36} />
@@ -433,7 +433,7 @@ function FilePicker({ open, teamId, eventId, attached, preview, onClose, onAttac
     },
     (id) => ({
       done: `Attached · ${docs?.find((d) => d.id === id)?.title ?? 'file'}`,
-      failed: "Couldn't attach the file",
+      failed: "Couldn’t attach the file",
       code: 'CH-6007',
     }),
   );
@@ -444,7 +444,7 @@ function FilePicker({ open, teamId, eventId, attached, preview, onClose, onAttac
       width={520}
       icon={Paperclip}
       title="Attach a file"
-      description="From your team's Documents. Everyone invited can open it."
+      description="From your team’s Documents. Everyone invited can open it."
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
@@ -465,7 +465,7 @@ function FilePicker({ open, teamId, eventId, attached, preview, onClose, onAttac
       <div style={{ display: 'grid', gap: 12 }}>
         <SearchField value={q} onChange={setQ} placeholder="Find a document" label="Find a document" />
         {failed ? (
-          <InlineNotice code="CH-6208" title="Documents didn't load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+          <InlineNotice code="CH-6208" title="Documents didn’t load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
         ) : !docs ? (
           <div style={{ display: 'grid', gap: 8 }} aria-busy="true" data-ch-code="CH-6404">
             <Skeleton height={44} />

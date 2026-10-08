@@ -18,7 +18,7 @@ Last updated: 2026-07-04
 | `main` | **No** — deploy manually when you ship a milestone |
 | All other branches | **No** — skipped |
 
-Production is updated on demand only: `scripts/deploy-prod.sh` (AGENTS.md "Production"), or promote an existing deployment in the Vercel dashboard. Cron jobs keep running against the current production deployment regardless. To go back to auto-deploying `main` on every push, add `"main": true` under `git.deploymentEnabled` in `vercel.json`.
+Production is updated on demand only: `./node_modules/.bin/vercel deploy --prod` from the linked checkout (`docs/setup/DEPLOY.md`), or promote an existing deployment in the Vercel dashboard. Cron jobs keep running against the current production deployment regardless. To go back to auto-deploying `main` on every push, add `"main": true` under `git.deploymentEnabled` in `vercel.json`.
 
 ### How it is enforced (defense in depth)
 
@@ -61,7 +61,7 @@ These branches must **not** trigger automatic Vercel preview builds. With the po
 | Workflow | Runs when | What it does |
 |----------|-----------|--------------|
 | **`CI`** (`.github/workflows/ci.yml`) | Every PR | typecheck, lint, unit tests, build, RLS tests |
-| **`Playwright PR smoke (a11y)`** (`pr-smoke-a11y` job in `.github/workflows/ci.yml`, folded in from the now-deleted `pr-smoke.yml` on 2026-09-06) | Push to `main`, `workflow_dispatch`, or a PR labelled `ci:e2e` (2026-09-23; every code PR before) | Public **accessibility** Playwright only when src/e2e paths change (~12 min max); downloads `ci.yml`'s own `next-build` artifact instead of rebuilding |
+| **`Playwright PR smoke (a11y)`** (`pr-smoke-a11y` job in `.github/workflows/nightly.yml`, folded in from the now-deleted `pr-smoke.yml` on 2026-09-06, moved out of `ci.yml` 2026-10-07) | Nightly and `workflow_dispatch` (push to `main`, dispatch or a `ci:e2e` PR from 2026-09-23; every code PR before) | Public **accessibility** Playwright (~12 min max); downloads the nightly workflow's own `next-build` artifact instead of rebuilding |
 | **`Review Gate`** | Every PR | Static analyzers (fast) |
 | **`Playwright E2E`** (`.github/workflows/playwright.yml`) | Manual only (since 2026-09-02) | Full Chromium suite on `workflow_dispatch`. The **Smoke checks** build job it carried on every PR was a duplicate of CI's `Next build` and is gone; the job now downloads `ci.yml`'s `next-build` artifact for the same commit when one exists, building only as a fallback. |
 
@@ -112,7 +112,7 @@ no CI cost from it to control.
 
 ```
 PR (paths: src/e2e/…)
-  └─ ci.yml (pr-smoke-a11y job) → accessibility.spec.ts only
+  └─ (no a11y job on PRs since 2026-10-07; nightly.yml's pr-smoke-a11y job runs nightly)
 
 main push
   └─ ci.yml → typecheck, lint, test, build

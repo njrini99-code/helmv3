@@ -43,12 +43,22 @@ write changes.
 
 Status: DEFINED
 
-Home is `/golf/dashboard`, and it is two pages. A coach with the Clubhouse flag on gets Coach Home (20101): the date, the greeting and a one-sentence brief; Message team and New event; the week beside the latest round in one sheet; and the season leaderboard. A player gets Player Home (20102): the date, the greeting and a sentence from their own rounds; Message coach; the week, with Up next and its countdown, beside My latest round; then Scoring and the four parts of the game. Both are read on the server, so the first paint has its data. A team with nothing yet gets the first-run page (20408 for a coach, 20412 for a player, D-71). Every link Home hands out is 20103. Home reads no Clubhouse query parameter: the Fairway dashboard's `?range=` is ignored here, and there is no deep link into Home.
+Home is `/golf/dashboard`, and it is two pages. A coach with the Clubhouse flag
+on gets Coach Home (20101): the date, the greeting and a one-sentence brief;
+Message team and New event; the week beside the latest round in one sheet; and
+the season leaderboard. A player gets Player Home (20102): the date and the
+greeting, with no brief line under it (owner, 2026-10-06); Message coach; the
+week beside Up next with its countdown and My latest round; then Scoring and the
+four parts of the game. Both are read on the server, so the first paint has its
+data. A team with nothing yet gets the first-run page (20408 for a coach, 20412
+for a player, D-71). Every link Home hands out is 20103. Home reads no Clubhouse
+query parameter: the Fairway dashboard's `?range=` is ignored here, and there is
+no deep link into Home.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 20101 | — | `COACH_HOME_READY` | Coach Home opens with the date, the greeting and the brief, Message team and New event, the week beside the latest round in one sheet, and the season leaderboard, all read on the server for the first paint; a team with nothing yet gets the first-run page (CH-2308), and on a phone the same data is drawn as the phone Home (21901). |
-| 20102 | — | `PLAYER_HOME_READY` | Player Home opens with the date, the greeting and one sentence from the player's own rounds, Message coach, the week beside My latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901). |
+| 20102 | — | `PLAYER_HOME_READY` | Player Home opens with the date and the greeting (no brief line: owner, 2026-10-06), Message coach, the week beside Up next and My latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901). |
 | 20103 | — | `LINKS_OPEN_WHAT_THEY_NAME` | Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, and Message coach the coach's thread (?user=); a link to a screen not yet rebuilt for the viewer's role is not drawn. |
 
 From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
@@ -89,7 +99,7 @@ First-run states and section empties. Home has no filter or search, so there is 
 | 20406 | CH-2306 | `A_PLAYER_HAS_FEWER_THAN_THREE_ROUNDS` | A player has fewer than three rounds |
 | 20407 | CH-2307 | `A_COACH_WITH_NO_ACTIVE_TEAM` | A coach with no active team |
 | 20408 | CH-2308 | `A_TEAM_WITH_NOTHING_YET_NO_PLAYERS` | A team with nothing yet: no players, no events this week, no rounds, and every read answered |
-| 20409 | CH-2309 | `NOTHING_ON_THE_CALENDAR_AHEAD` | Nothing on the calendar ahead (phone). A player: "Your coach's practices and events will show here with a countdown.", no quick adds |
+| 20409 | CH-2309 | `NOTHING_ON_THE_CALENDAR_AHEAD` | Nothing on the calendar ahead (phone). A player: "Your coach’s practices and events will show here with a countdown.", no quick adds |
 | 20410 | CH-2310 | `FEWER_THAN_TWO_18_HOLE_ROUNDS` | Fewer than two 18-hole rounds (player Home Scoring) |
 | 20411 | CH-2311 | `NO_FAIRWAYS_GREENS_SCRAMBLING_OR_PUTTS_LOGGED` | No fairways, greens, scrambling or putts logged (player Home) |
 | 20412 | CH-2312 | `A_NEW_PLAYER_NO_ROUNDS_NOTHING_ON` | A new player: no rounds, nothing on the calendar, every read answered (v2 first-run, D-71) |
@@ -134,7 +144,7 @@ Status: DEFINED
 
 Home has no saves, so a slow save (10702) and a save refused offline (10703) never fire here. What applies is the shell's: the offline banner (10701), and Try again on a notice while offline, which says so and asks nothing (10704; proved on Home's own notices by the 21402 test). Following a link while offline is the browser's, not tested here.
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
 
 ## 08 — Permission / authorization
 
@@ -212,14 +222,20 @@ The page is `force-dynamic` and a new visit reads afresh (going back or forward 
 
 Status: DEFINED
 
-Home's own motion is two states, both seen in the preview only: paging the latest round slides the card 12px out and the next in from that side, or fades when motion is reduced (21601), and a leaderboard row lifts on hover and shrinks on press (21602). The player's countdown ticks in place (20301). The shell's: the v2 press, the first-paint reveal, sheets and skeletons (11601 to 11612, D-64).
+Home's own motion is two states, both seen in the preview only: paging the
+latest round slides the card 12px out and the next in from that side, instantly
+when motion is reduced (21601), and on desktop a leaderboard row takes the
+Ledger tint on hover as its chevron slides in, and a deeper tint on press, never
+a lift or a scale (21602). The player's countdown ticks in place (20301). The
+shell's: the page crossfade, the press on keys, sheets and skeletons (11601 to
+11613, D-64); there is no first-paint rise.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 21601 | CH-2601 | `PAGING_THE_LATEST_ROUND` | Paging the latest round |
 | 21602 | CH-2602 | `HOVERING_OR_PRESSING_A_LEADERBOARD_ROW` | Hovering or pressing a leaderboard row |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -233,7 +249,7 @@ Home's catalogued haptics: a selection tick when paging the latest round (21701)
 | 21702 | CH-2702 | `NEW_EVENT` | New event (button or the N key) |
 | 21703 | — | `TAPS_FOLLOW_THE_GRAMMAR` | Home's taps follow the haptic grammar: a selection tick for paging the latest round, opening a round's card, choosing a quick event type and choosing the Scoring window, the light tap for New event (button or N), Add event and, on the phone, Message coach, and nothing for Message team; Home makes no change, so none of its own controls fires a success or error haptic. |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
 
 ## 18 — Accessibility
 
@@ -251,7 +267,7 @@ Home's own (21801 to 21806): N opens a new event but never while typing or in a 
 | 21806 | CH-2806 | `ON_A_PHONE_THE_SCORECARD_SCROLLS_SIDEWAYS` | On a phone the scorecard scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it |
 | 21807 | — | `COUNTDOWN_IS_A_NAMED_TIMER` | The player's countdown is a timer named for a screen reader as Starts in N days, N hours and N minutes (singular at one), and its digits, the ticking seconds included, are hidden from a screen reader, so it is heard once, not every second. |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
 
 ## 19 — Responsive layout
 

@@ -1,4 +1,8 @@
 # GolfHelm Self-Healing Engineering System — Master Design Specification
+
+> **STATUS: STALE — the authority, approval and deploy sections are superseded by AGENTS.md (2026-10-07)** wherever this doc says agents
+> must not deploy, merge or migrate, or must wait for owner approval. Read it as
+> design history; `AGENTS.md` and `config/*.yml` are current.
 <!-- markdownlint-disable MD033 -->
 
 > Supplied by the owner 2026-08-21 as the implementation prompt for wiring the
@@ -180,7 +184,7 @@ A daily reliability run MUST NOT deploy production.
 
 Pointers, not duplicates. One authority, many pointers.
 
-**Path-scoped Claude rule** `.claude/rules/golfhelm-engineering-os.md` with
+**Path-scoped Claude rule** `.claude/rules/golfhelm-engineering-os.md` (since removed; folded into `.claude/rules/golf.md`) with
 paths covering the actual verified GolfHelm/CoachHelm paths (audit first):
 src/app/golf/**, src/components/golf/**, src/lib/golf/**,
 src/lib/coachhelm/**, src/app/api/coachhelm/**, supabase/migrations/**,

@@ -139,11 +139,29 @@ evidence and drill are the same component for both roles.
 
 Approved spec `docs/clubhouse/phone/coachhelm.md`: CoachHelm is a phone tab for
 both roles. The top bar is the shell's "CoachHelm" and the page keeps its own
-header; the focus card takes less padding; the coach's players are a row of
-pills (the "By player" heading stays for screen readers); Assign as focus and
-Dismiss share a row; on the player's page, choosing a row brings the focus into
-view, and each proposed focus area is a row with its two 44px buttons
-underneath, side by side.
+header; the coach's players are a row of pills (the "By player" heading stays
+for screen readers); Assign as focus and Dismiss share a row; on the player's
+page, choosing a row brings the focus into view, and each proposed focus area is
+a row with its two 44px buttons underneath, side by side.
+
+**The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy, too vibe
+coded"; the Coach Home board's round 3, "fewer containers, one feature card").**
+The page opens on the Ledger's intro under the engraved double rule: the role as
+the tracked brown eyebrow, "CoachHelm" in the 600 sans (no regular-weight
+title), the live line. The program pulse, Proposed for you, Also worth knowing
+and Working are sections flush on the parchment, each heading under the double
+rule and their rows between soft seams; the pulse's glyphs are flat tinted keys.
+The one green card is the focus's claim (its category, its stance, the claim and
+its first sentence); its evidence, the week's drill and Why we think this follow
+flush beneath it, set off by rules, never a card inside a card. The player chips
+and the view chips are drawn with a hairline (the chosen one green), not as
+lifted plates. A view that is empty as a whole (Standing's and the Deep dive's
+first run) is the page's empty state, centred on the parchment like the Board's;
+an empty part of a view stays a line. Ask sits on the same parchment; its bar's
+title is ivory on the green, its suggestions are hairline chips, and a failed
+answer is a flush notice (the danger rule, the message in the danger ink, no
+fill). Kept as material: the view switch, the chips, the bars and the gauge, the
+pills, the buttons, the thread, the composer and the notices.
 
 ## Owner rules (2026-10-01)
 
@@ -193,8 +211,11 @@ off no view is drawn and no strip is: every view answers with the board's own
 
 **Look.** One page grammar, in the Clubhouse tokens (`--ch-*`) and the darker
 ivory page: each view opens on a deep-green feature card (the persona, where
-they stand, what CoachHelm has found) with its figures in mint and champagne,
-then white cards on the ivory with a hairline ring and a soft green shadow.
+they stand, what CoachHelm has found) with its figures in mint and champagne.
+On desktop the rest sits on the Ledger's canvas under engraved rules; on the
+phone (the Mobile clubhouse pass, 2026-10-08) the opener is the view's one green
+card and every section after it is flush on the parchment under the double
+rule, its rows between soft seams.
 Numbers are never plain ink where they say something: green for ahead or
 working, amber for behind or worth watching (red stays for under par and the
 flag, D-42), tertiary ink only for a number that is neutral. Hierarchy is one
@@ -246,27 +267,36 @@ control and no write: nothing to assign, dismiss or accept.
 
 **Honesty rules (all three).** A read that failed is its own notice with Try
 again and is never drawn as nothing: the Deep dive's rounds, plans and category
-trends each fail on their own, in place, without taking the insights down, and
-"In your plan" is a dash rather than a zero while plans did not load. First run,
-early read and failed read are three different pages. A read from before the
-newest round says so (CH-13903). No sentence says strokes are being lost: a gain
-is "worth about 0.9 strokes a round" to the team's average, or to the Tour (the
-LPGA Tour for a women's team) when the cascade had no team average to anchor on,
-and says which. A movement is in the stat's own unit (points for a share), never
-a percent of a percentage.
+trends each fail on their own, in place, without taking the insights down (two
+or more are said once under the read's head with one Try again, CH-1209, each
+part keeping its title where it would be; Standing's two side reads the same),
+and "In your plan" is a dash rather than a zero while plans did not load. First
+run, early read and failed read are three different pages. A read from before
+the newest round says so (CH-13903). No sentence says strokes are being lost: a
+gain is "worth about 0.9 strokes a round" to the team's average, or to the Tour
+(the LPGA Tour for a women's team) when the cascade had no team average to
+anchor on, and says which. A movement is in the stat's own unit (points for a
+share), never a percent of a percentage.
 
 **States.** Skeleton at the page's final height (a view's own, drawn by the
 page's one Suspense on a hard load, because `coachhelm/loading.tsx` cannot read
 `?view=`), first run, early or partial read, failed read, off, and the data
 states above. **Switching view** (Board, Ask, Game profile, Standing, Deep dive)
 draws no skeleton: the strip moves on the tap, the view on screen stays, dimmed
-and not tappable, and is replaced once by the next one.
+and not tappable, and is replaced once by the next one. A coach with players and
+no signal yet sees the pulse and, under it, the players' section with its empty
+line and View roster, not an empty page under the pulse (CH-13306). Ask sits on
+the Ledger's canvas; a conversation that is not available is the page's empty
+state, and a program or a conversation that did not load stands where the
+welcome would be (states audit, 2026-10-08).
 
 **Phone (DRAFT).** The owner's phone boards
 (`docs/clubhouse/phone/coachhelm.md`) cover the board only; these layouts are
-built on the phone grammar (the shell's top bar, the chips, cards, a pushed
-screen with a back link, 44px targets) and are to be replaced if the owner draws
-them. The Deep dive's pushed screen slides in over the page (the page under it
+built on the phone grammar (the shell's top bar, the chips, the Ledger's flush
+sections with one feature card, a pushed screen with a back link, 44px targets)
+and are to be replaced if the owner draws them. A read's pushed screen opens on
+its own feature card (category, stance, claim), its parts flush under the double
+rule. The Deep dive's pushed screen slides in over the page (the page under it
 inert), is a history entry so the iOS back swipe pops it, and fades with reduced
 motion. `?insight=<id>` opens on a read, checked against the player's own list.
 

@@ -21,7 +21,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
-import type { AdminDashboardData } from '../admin-data';
+import type { AdminDashboardData } from '../admin-data-shared';
 import {
   filterToGolfLinkedUsers,
   computeDemoExclusions,

@@ -10,7 +10,7 @@ import { FairwayHubSubNav } from '@/components/fairway/app-shell/FairwayHubSubNa
 import type { GolfSubTab } from '@/lib/golf/nav-registry';
 
 vi.mock('next/navigation', () => ({ usePathname: () => '/golf/dashboard/team' }));
-vi.mock('framer-motion', () => ({
+vi.mock('motion/react', () => ({
   motion: new Proxy(
     {},
     {

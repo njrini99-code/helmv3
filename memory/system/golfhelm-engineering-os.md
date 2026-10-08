@@ -63,32 +63,19 @@ a thousand tickets.
 
 ## Scheduled reliability vs. release
 
-A **scheduled reliability routine** (unattended) may observe, investigate,
-reproduce, write regression tests, and prepare or merge verified low-risk
-repairs as `config/release-policy.yml` allows. It never deploys, promotes, or
-rolls back production, applies production migrations, mutates production
-data, rotates secrets, or spends the release budget. For such a routine, a
-quiet day with no commits is success.
+A **scheduled reliability routine** (unattended) observes, investigates,
+reproduces, writes regression tests, and prepares or merges verified low-risk
+repairs; its remit is whatever `config/release-policy.yml` lists for it. A quiet
+day with no commits is success for such a routine.
 
-**Daily may never:** deploy or promote or roll back production, apply
-production migrations, mutate production data, rotate secrets, change release
-policy, or spend the release budget. A healthy day ends with zero commits and
-zero artifacts of activity — that is success, not failure.
-
-**Release** (skill: `golfhelm-release-manager`, planned): happens only when
-the owner asks, through the path in AGENTS.md "Production", within the weekly
-ceiling in `config/release-policy.yml` (America/New_York; a ceiling, not a
-target). Every release, once the release scripts land: exact candidate SHA on
-main → `release:budget` → `release:prepare` → `release:check -- --sha <sha>`
-→ **owner approval** → one deploy → post-deploy verification →
-`memory/ledgers/deployments.md` + release-queue state updates. Until then,
-merging to `main` does not deploy (`vercel.json` disables Git deployments):
-production changes only when the owner says to deploy and runs
-`scripts/deploy-prod.sh` from a clean, current `main` — see
-`memory/ledgers/deployments.md` for history. A release is not live until
-`npm run release:status` shows its SHA. If the budget is spent and a P0
-lands, prepare everything and present it — the owner decides on any
-override, never the system.
+A **release** is a deploy of a verified `main` SHA (AGENTS.md "Production",
+`docs/setup/DEPLOY.md`): confirm the candidate SHA is on `main` and green,
+deploy, verify the served SHA with `npm run release:status`, then update
+`memory/ledgers/deployments.md` and the release-queue state. Merging to `main`
+does not deploy (`vercel.json` disables Git deployments). A release is not live
+until `release:status` shows its SHA. The weekly deploy count in
+`config/release-policy.yml` is a budget signal; if it is spent and a P0 lands,
+deploy the fix anyway and note it in the ledger.
 
 ## Release queue
 

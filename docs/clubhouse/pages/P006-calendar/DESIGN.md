@@ -103,6 +103,24 @@ a sheet (the desktop panel), and New event as a sheet (the full desktop editor).
 the tab root with New event (D-66); a player reaches Calendar from More and has Add to calendar app.
 Differences from the board are Q-67.
 
+The look follows the owner's "Mobile clubhouse pass" board (2026-10-08, carried
+from Coach Home): no cards. The month opens under the engraved double rule as
+the Ledger kit's intro (an engraved eyebrow with the year and the team's
+timezone, the month in the 31px bold sans, an h2 because the bar holds the
+page's h1) with the Day, Month and List switch beside it. The week is flush on
+the parchment, with one green plate on the chosen day that glides to the day you
+tap (CH-6606) and a green numeral for today. The chosen day is a section on its
+own double rule (the day as an h3 in the 19px heading sans, its counts beside
+it), and its events are rows on soft seams along Home's Today rail: the time, a
+dot in the event's colour (a ring for a class or busy block), the title and
+place, and the overlap mark or Now. A class or busy block keeps its hatch (inset
+to the column) so time a player isn't free never reads as an event; a row that
+has passed steps back by its ink. Month is the grid flush under the weekdays'
+engraved rule (today the green disc, the chosen day a green ring); List is each
+day on its double rule, today's heading in green, with its events as rows on
+seams. Rows, days and month cells answer a press with the Ledger's tint and
+never scale. The event and New event sheets keep their material.
+
 ## Accessibility
 
 Each event is a button named with its title and time and, when it has one, "schedule overlap"; each day

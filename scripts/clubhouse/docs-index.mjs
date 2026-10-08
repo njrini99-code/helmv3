@@ -25,7 +25,7 @@ export const auditsFor = (audits, m) => audits.filter((a) => (a.pages ?? []).inc
 export function renderRelatedBlock({ m, audits, exists }) {
   const from = `${pageDir(m)}/PAGE.md`;
   const row = (label, cells) => (cells.length ? `| ${label} | ${cells.join(' · ')} |\n` : '');
-  const code = [m.implementation?.root, m.implementation?.loader, m.implementation?.route, m.implementation?.styles].filter(Boolean);
+  const code = [m.implementation?.root, m.implementation?.loader, m.implementation?.route, m.implementation?.styles, ...(m.implementation?.also ?? [])].filter(Boolean);
   const named = auditsFor(audits, m).map((a) => link(from, `docs/clubhouse/${a.file}`, a.file.replace(/\.md$/, '')));
   if (audits.some((a) => a.allPages)) named.push(link(from, 'docs/clubhouse/AUDITS.md', 'all audits'));
   let out = `${RELATED_START}\n## Related\n\n| | |\n| --- | --- |\n`;

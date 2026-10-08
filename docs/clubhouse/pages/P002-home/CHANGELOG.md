@@ -1,5 +1,217 @@
 # P002 — Home: changelog
 
+## 2026-10-08 — Copy: typographic apostrophes
+
+Home writes its apostrophes as ’ on desktop and the phone: the no-team pages
+(CH-2307, CH-2313), the empty leaderboard (CH-2304), the phone's hole-by-hole
+lines (CH-2203, CH-2303) and its empty week (CH-2309), "Theo’s stats", the
+scorecard's name, the team scoring chart's label and the coach brief's line
+("Eli hasn’t posted a round in 9 days"). The catalog quotes them as shown.
+
+## 2026-10-08 — Coach Home on the phone: the board as drawn; coach and player match
+
+The coach's phone Home now matches its "Mobile v2" board where the port had
+drifted, and the coach's and the player's share one set of rules:
+
+- section titles (Today, This week, Latest rounds) are the Ledger's phone
+  heading, the bold condensed sans in forest ink; they were the old 17px black,
+  because the board styled h3s and the page's titles are h2s;
+- This week draws today as the solid green key and a competition day as a soft
+  green tint with its trophy; the board's rules put the classes on the key,
+  the strip puts them on the day, so they never applied;
+- Today's rows and the latest rounds sit on the section's edge (the time at the
+  edge, as the board sets it) between soft seams, and tint on press;
+- the sheet is the canvas' own parchment, so a short page has no seam where
+  the darker sheet used to end;
+- the week's notice sits on the sheet under the greeting, outside the green
+  card (as the player's), and the coach's first run opens on the page intro;
+- every control answers a press (CH-1606): Up next deepens, the week's keys
+  and rows tint, the quick event types shrink, Add event darkens, Calendar and
+  Team stats dim;
+- the date is the page intro's 12px eyebrow (the phone text floor) on both
+  roles, 10px above the greeting as the kit's PageIntro sets it.
+
+The skeleton's phone hero and the date's new line move together: skeleton to
+page stays within half a pixel for both roles. On desktop, the leaderboard's
+notice now sits 18px under its head's rule (it touched it). Measured in WebKit
+as an iPhone at 390 wide.
+
+## 2026-10-08 — Player Home on the phone: every tap answers; the skeleton is the reader's own
+
+Measured in WebKit as an iPhone at 390 wide (touch, no hover), every control on
+the player's phone Home now answers a press, with no tap flash:
+
+- Up next deepens its green (a large card answers with a tint, never a scale,
+  CH-1606); a day in the week strip tints its key, today's green key deepens;
+- Today's rows, the latest round's pager and its keys tint a beat after the
+  finger lands (the CH-1606 delay, so a scroll that starts on them never
+  flashes), and the pager's keys shrink as every button does;
+- the Scoring window switch glides (36 frames over about 300ms) and lands in
+  one frame with reduced motion.
+
+The route skeleton's phone hero follows the shell's role (SkeletonPhoneHero):
+the player's has no brief, its Up next card sits under the greeting with the two
+keys under it, and the coach's draws the brief as three lines over the coach's
+shorter card. Skeleton to page now moves nothing by more than half a pixel for
+either role (it was 61px for the player's card and 20px for the coach's).
+
+## 2026-10-08 — Home's states: one notice for several failed reads, and the framed first run
+
+Fixes from the states audit, on desktop and the phone, for both roles:
+
+- when two or more of Home's reads fail, the page says so once, under the head
+  (CH-1209): "Some of this page didn’t load", naming the parts ("This week’s
+  schedule, recent rounds and the leaderboard didn’t load"), with one Try
+  again. Each failed part keeps only its notice's title under its heading, with
+  no button of its own. One failed read keeps its own notice and Try again, as
+  before. The player's latest round and scoring read the same rounds, so the
+  notice names them by their sections ("your latest round and your scoring");
+- on the coach's phone the week's notice (CH-2201) is out of the green Up next
+  card, on the sheet under the greeting, as on the player's;
+- the first-run pages (CH-2308, CH-2312) open under the loaded page's framed
+  head on desktop (the double rule, the engraved date, the greeting in forest
+  ink, set where the loaded Home sets them), and the coach's phone first run
+  opens on the Ledger's page intro, as the player's does;
+- the notices' titles end without a full stop and use the curly apostrophe of
+  the page notice beside them.
+
+New tests: home.test › CH-1209 (several and one), the phone's CH-1209 and
+CH-2201 outside the card, CH-2308's framed head; player-home.test › CH-1209 on
+desktop and the phone.
+
+## 2026-10-08 — Player Home on the phone: the Mobile clubhouse pass
+
+The player's phone Home follows the same board as the coach's (round 3, "fewer
+containers, one feature card"), carried to `m-player-home.jsx`:
+
+- the page is the chassis' parchment sheet from the greeting to the tab bar;
+- Up next with its countdown stays the one green feature card; Message coach
+  and Post a round under it are the shared buttons, Post a round the primary;
+- This week, My latest round, Scoring and Your game sit flush under engraved
+  double rules, their titles in the bold condensed sans. No white cards: the
+  latest round's GIR, putts and SG are the Ledger's figure row between
+  hairlines, Scoring's four figures sit two by two between hairlines, and the
+  four parts of the game are divided by soft rules. The scorecard keeps its
+  green board and the window picker its well;
+- the week strip draws today as the solid green key and a competition day as
+  a soft green tint with its flag, as the board does; Today's rows sit on the
+  section's edge and tint on press;
+- the first-run page opens on the Ledger's page intro (the date under the
+  double rule, the greeting in the bold sans).
+
+Fixed: when the week didn't load (CH-2201) its notice sat inside the green
+card and took the card's ivory ink, so its words were invisible; it now sits
+on the sheet. Home's phone skeleton (CH-2401, shared with the coach) draws the
+new page: the parchment, the date and greeting lines, the brief's lines, the
+green card and the first section under its rule, its hero held at 386px
+between the coach's (388) and the player's (382), so the first section lands
+within 3px. Desktop is unchanged.
+
+## 2026-10-08 — Coach Home on the phone: the Mobile clubhouse pass
+
+Phone Home now follows the owner's "Coach - Home - Mobile v2" board
+(`m-clubhouse.css`, ported in order so its third round wins):
+
+- the green chassis bar over the parchment sheet;
+- the greeting in the bold 31px sans in forest ink, with the brief under it;
+- Up next as the screen's one green feature card;
+- Today, the team's scoring, This week and Latest rounds flush under engraved
+  double rules, with rows on seams instead of white cards.
+
+The board's own hero drew the bar and the sheet's lip; in the app the shell's
+phone chassis draws both, so the hero here is the sheet itself.
+
+## 2026-10-07 — A leaderboard row answers the press
+
+On desktop a leaderboard row keeps its Ledger tint and sliding chevron on hover,
+and a press now deepens the tint (`--ch-ledger-row-press`) and nudges the
+chevron 2px on over the press beat, easing back over quick. Before, the press
+tint was masked by the hover rule. The row never lifts or scales; CH-2602 now
+says so and is referenced in `Leaderboard.tsx`. CH-2601's reduced-motion wording
+is corrected: paging is instant, not a fade. Frame-sampled in WebKit at 1440
+(tint 180ms, chevron 260ms).
+
+## 2026-10-07 — Home on the Ledger
+
+On desktop, the week and the latest round no longer share a lit sheet. They sit
+on the canvas, split by a soft hairline column. The leaderboard is rows on the
+canvas, aligned to the head's edge, with soft seams and a quiet hover tint. Its
+heading sits over the engraved rule. The section headings ("This week", "Latest
+round", "Leaderboard") are in the heavy sans. The scorecard keeps its green
+board, and the week strip keeps its well. On the player's Home, Scoring runs on
+from the week with no card, at the head's edge. "Your game" is four figures on
+the canvas divided by soft rules, not four cards, and the up-next board keeps
+its green. The phone is unchanged.
+
+## 2026-10-07 — Home in the framed page head
+
+Desktop Home's greeting block is the framed page head instead of the green
+canopy: the date as an engraved line, "Good morning" as the heavy sans title in
+forest ink, the brief, and the actions on the right. The loading screen draws
+the same head line for line (183px at 1440).
+
+## 2026-10-07 — Loading holds the loaded page
+
+Desktop Home loading draws on the canopy, with the title block in the loaded
+grid: the actions sit beside the brief and the serif greeting's line is 71px.
+The sheet panes hold 623px. Measured in WebKit at 1440: the title, sheet and
+leaderboard tops don't move when the page lands.
+
+## 2026-10-07 — Figures drawn, not stated
+
+Owner: no bare numbers. Each Scoring figure is now drawn against a reference
+that is real:
+
+- **Average:** the current window's average beside the previous window's, as two
+  marks on one track.
+- **Strokes gained:** a bar from a zero tick.
+- **Under par:** one mark per round, red under par and pale green at par.
+
+The latest round's GIR, Putts and SG (desktop and phone) carry small drawings
+(`RoundViz.tsx`): greens hit out of those played, putts against two on every
+green (36), and strokes gained from zero. Each drawing sits in its caption's dd,
+so every figure stays one dt with its value and caption dd pair.
+
+## 2026-10-07 — Home on the canopy
+
+Desktop Home moves from the green band card onto the shared canopy: a serif
+greeting, the brief in larger type, and the actions set level with the brief.
+Section titles (This week, Latest round, Leaderboard, Scoring, Your game) and
+the phone hero greeting are set in the display serif.
+
+## 2026-10-06 — Desktop hero band, leaderboard and scoreboard
+
+Desktop Home, coach and player, verified in Safari 27 at 1440×1000.
+
+- **Hero band:** the page opens on a deep green band, the desktop twin of the
+  phone hero. It has ivory type, a mint date, on-dark actions set at the right
+  and a faint drifting contour pattern; the drift is off with reduced motion or
+  Animations off. The week sheet follows the band and is never tucked under it.
+- **Recent rounds (coach):** the latest-round pane closes with Recent rounds, a
+  picker over the same rounds as the pager, so the pane no longer ends in empty
+  space.
+- **Leaderboard:** now one reading sheet:
+  - a quiet column-label row instead of a header well, and seams between
+    players;
+  - podium position keys, with the leader's in green, and a state dot before
+    each form word;
+  - the season average as each row's figure;
+  - a tinted hover with a sliding chevron instead of a card-in-card hover.
+- **Scorecards:** both the desktop and the phone scorecard use the new green
+  scoreboard.
+- **Contrast:** stronger text in the week strip and scorecard.
+
+## 2026-10-06 — Premium materials pass
+
+Player Home premium pass (owner, Safari 27 desktop and iPhone emulation). The
+CoachHelm brief line is removed. Up next opens the latest-round pane, and the
+week, latest round and Scoring join in one surface with engraved seams. The
+today key in the desktop week strip is a frosted, higher-contrast key. "By part
+of the game" becomes "Your game" with more space above it; the legs drop their
+icon tiles and show a full-width trend line with an Improving/Steady/Slipping
+caption. Score marks, the countdown well, hero actions and the scorecard well
+use the shared materials. All Home radii are on the scale.
+
 ## 2026-10-06 — Owner rejects excessive card depth
 
 The owner described the large stacked shadows as looking poor and artificially
@@ -36,6 +248,22 @@ are preserved; runtime gaps stay explicit.
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
+
+## 2026-10-06 — Motion import path moves to `motion/react`
+
+```text
+PR/commit:      #2153 (agent/deps-ui-upgrade)
+Design package: none; no visual or behavior change
+Contract IDs:   none
+Data impact:    none
+Held items:     none
+```
+
+Dependency upgrade only. `framer-motion` 13 is replaced by the `motion` 14
+package, so this page's animation imports change from `framer-motion` to
+`motion/react`. The animation API, durations, curves and reduced-motion gating
+are unchanged; Motion 14 only removed internal compatibility APIs this tree
+never used.
 
 ## 2026-10-02 — Partial data keeps its meaning
 

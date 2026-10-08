@@ -15,7 +15,7 @@ import './dialog-polyfill';
 
 Element.prototype.scrollIntoView ??= function () {};
 
-vi.mock('@/app/golf/actions/golf', () => ({ deleteShot: vi.fn(), updateShot: vi.fn() }));
+vi.mock('@/app/golf/actions/shot-actions', () => ({ deleteShot: vi.fn(), updateShot: vi.fn() }));
 
 const HOLES: RoundHole[] = [
   { number: 1, par: 4, yardage: 420, score: null },

@@ -24,7 +24,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { AlertCircle, Loader2, Send } from 'lucide-react';
-import { AnimatePresence, m } from 'framer-motion';
+import { AnimatePresence, m } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import { AttachmentButton } from '@/components/golf/messages/AttachmentButton';

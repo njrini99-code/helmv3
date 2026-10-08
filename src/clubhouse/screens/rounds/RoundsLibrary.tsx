@@ -90,7 +90,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
   };
   const discard = useAction('rounds.discard', discardRound, (r: ChUnfinishedRound) => ({
     done: 'Round discarded',
-    failed: `Couldn't discard the round at ${r.course}`,
+    failed: `Couldn’t discard the round at ${r.course}`,
     hint: 'It is still saved. Try again, or continue it instead.',
     code: 'CH-11001',
   }));
@@ -111,9 +111,9 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
   const [current, ...more] = unfinished;
 
   return (
-    <main className={'ch-rd' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rd-title" aria-busy={refreshing || undefined}>
+    <main className={'ch-rd' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rd-title" aria-busy={refreshing || undefined} data-canopy={phone ? undefined : ''}>
       {phone && <PhoneTop start title="Rounds" />}
-      <header className="ch-rd-h">
+      <header className="ch-rd-h" data-canopy-head={phone ? undefined : ''}>
         <div>
           <span className="ch-rd-k">{counted ? `Since August 1 · ${counted} counted ${counted === 1 ? 'round' : 'rounds'}` : 'Since August 1'}</span>
           {/* CH-11410: a refresh with the page on screen keeps it and says it is updating (a Try again is the usual cause). */}
@@ -130,7 +130,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
       </header>
 
       {stale && (
-        <InlineNotice code="CH-11213" title="Your rounds may be out of date" body="We couldn't refresh them just now. This is what loaded last time." onRetry={refresh} retrying={refreshing} />
+        <InlineNotice code="CH-11213" title="Your rounds may be out of date" body="We couldn’t refresh them just now. This is what loaded last time." onRetry={refresh} retrying={refreshing} />
       )}
 
       {nothing ? (
@@ -166,7 +166,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
               />
             </SectionBoundary>
             {data.rounds.error ? (
-              <InlineNotice code="CH-11201" title="Your rounds didn't load" body="Nothing is lost. Your posted rounds are still saved; try again in a moment." onRetry={refresh} retrying={refreshing} />
+              <InlineNotice code="CH-11201" title="Your rounds didn’t load" body="Nothing is lost. Your posted rounds are still saved; try again in a moment." onRetry={refresh} retrying={refreshing} />
             ) : (
               <SectionBoundary surface="rounds.season" label="Season scoring" code="CH-11203">
                 <SeasonCard season={data.season} phone={phone} />
@@ -271,7 +271,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
         icon={TriangleAlert}
         code="CH-11501"
         title="Discard this round?"
-        description={asking ? `Every shot from ${asking.course} on ${shortDay(asking.date)} is deleted. This can't be undone.` : undefined}
+        description={asking ? `Every shot from ${asking.course} on ${shortDay(asking.date)} is deleted. This can’t be undone.` : undefined}
         footer={
           <>
             <Button variant="ghost" onClick={() => setAsking(null)}>

@@ -45,7 +45,7 @@ vi.mock('@/lib/server-error-logger', () => ({
   logServerEvent: vi.fn(async () => {}),
 }));
 
-import { deleteShot, updateShot, getRoundShotDetails } from '../golf';
+import { deleteShot, updateShot, getRoundShotDetails } from '../shot-actions';
 
 // updateShot validates its payload BEFORE it checks auth — correct ordering,
 // and it means the payload here must be genuinely valid or the test never

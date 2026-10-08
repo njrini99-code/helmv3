@@ -1,6 +1,7 @@
 'use client';
 
 import { UserRound } from 'lucide-react';
+import { useState } from 'react';
 import { Avatar } from '../../ui/Avatar';
 import { Icon } from '../../ui/Icon';
 import type { Draft } from './flow';
@@ -67,6 +68,51 @@ export function cardOf(d: Draft, path: OnboardPath, step: OnboardStep, now: Date
 /** The season printed on the card: fall from July, spring before. */
 export const seasonLabel = (now: Date): string => (now.getMonth() >= 6 ? `Fall ${now.getFullYear()}` : `Spring ${now.getFullYear()}`);
 
+/**
+ * How many times `v` has changed since this mounted, kept while rendering (React's "information from previous
+ * renders" pattern), so nothing waits a frame on an effect.
+ */
+function useChanges<T>(v: T): number {
+  const [s, setS] = useState({ v, n: 0 });
+  if (!Object.is(s.v, v)) setS({ v, n: s.n + 1 });
+  return Object.is(s.v, v) ? s.n : s.n + 1;
+}
+
+/**
+ * A value on the card filling in (CH-15621). The first time it is filled it rises into place in brass and dries to
+ * ink (the design's 900ms flash). Each change after that, a keystroke or a step of the handicap, wets it again where
+ * it stands: the brass holds while the answer is moving and dries once it rests. It never fades from nothing again,
+ * never moves under the reader's eye, and never counts.
+ */
+function Ink({ v }: { v: string }) {
+  const n = useChanges(v);
+  return (
+    <span className="ch-ox-flash" data-wet={n === 0 ? undefined : n % 2}>
+      {v}
+    </span>
+  );
+}
+
+/** The coin: an empty silhouette, then the monogram once there is a name, then the photo. Each change settles in. */
+function Coin({ name, photo }: { name: string; photo: string | null }) {
+  const kind = photo ? 'photo' : name ? 'mono' : 'blank';
+  const n = useChanges(kind);
+  return (
+    <span className="ch-ox-mc__coin" key={kind} data-settle={n === 0 ? undefined : ''}>
+      {photo ? (
+        <img src={photo} alt="" />
+      ) : name ? (
+        <Avatar name={name} size={55} />
+      ) : (
+        <span className="ch-ox-mc__blank">
+          <Icon icon={UserRound} size={20} />
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** `issued` (done and staff done only) plays the one reveal: the card lifted and laid back on the desktop, arriving on the phone, then the seal (CH-15623). */
 export function MemberCard({ face, issued, season }: { face: CardFace; issued: boolean; season: string }) {
   const label = `GolfHelm member card${face.name ? ` for ${face.name}` : ''}`;
   return (
@@ -91,27 +137,17 @@ export function MemberCard({ face, issued, season }: { face: CardFace; issued: b
           </span>
         </div>
         <div className="ch-ox-mc__who">
-          <span className="ch-ox-mc__coin">
-            {face.photo ? (
-              <img src={face.photo} alt="" />
-            ) : face.name ? (
-              <Avatar name={face.name} size={55} />
-            ) : (
-              <span className="ch-ox-mc__blank">
-                <Icon icon={UserRound} size={20} />
-              </span>
-            )}
-          </span>
+          <Coin name={face.name} photo={face.photo} />
           <span className="ch-ox-mc__name" data-blank={face.name ? undefined : ''} key={face.name ? 'n' : 'b'}>
-            {face.name ? <span className="ch-ox-flash">{face.name}</span> : 'Your name'}
+            {face.name ? <Ink v={face.name} /> : 'Your name'}
           </span>
         </div>
         <div className="ch-ox-mc__f">
           {face.fields.map(([k, v]) => (
             <div key={k}>
               <span>{k}</span>
-              <b data-blank={v ? undefined : ''} key={v || '-'}>
-                {v ? <span className="ch-ox-flash">{v}</span> : '—'}
+              <b data-blank={v ? undefined : ''} key={v ? 'v' : '-'}>
+                {v ? <Ink v={v} /> : '—'}
               </b>
             </div>
           ))}

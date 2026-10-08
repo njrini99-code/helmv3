@@ -43,7 +43,7 @@ vi.mock('next/navigation', () => ({
 // Flatten framer-motion so the launcher's enter/exit animation doesn't gate
 // mount/unmount assertions on real animation-frame timing — same approach as
 // DrillSheet.test.tsx.
-vi.mock('framer-motion', async () => {
+vi.mock('motion/react', async () => {
   const React = await import('react');
   return {
     useReducedMotion: () => false,

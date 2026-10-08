@@ -1,4 +1,4 @@
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -19,7 +19,7 @@ vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
 vi.mock('@/app/golf/actions/development', () => ({ createFocusAreaFromInsightV2: vi.fn(), acceptFocusArea: vi.fn(), declineFocusArea: vi.fn() }));
-vi.mock('@/app/golf/actions/insights', () => ({ dismissInsight: vi.fn(), reactivateInsight: vi.fn() }));
+vi.mock('@/app/golf/actions/insights-feed', () => ({ dismissInsight: vi.fn(), reactivateInsight: vi.fn() }));
 const delivery = vi.hoisted(() => ({ feed: vi.fn(), heads: vi.fn(), themes: vi.fn() }));
 vi.mock('@/app/golf/actions/insight-delivery', () => ({ getInsightsForPlayer: delivery.feed, getTopInsightsForPlayers: delivery.heads, getThemesForPlayer: delivery.themes }));
 vi.mock('@/lib/coachhelm/v3/goals/loader', () => ({ loadActiveGoals: vi.fn(async () => []), loadRecentlyAchievedGoals: vi.fn(async () => []) }));
@@ -250,6 +250,16 @@ describe('the coach’s board, with a read beside the top card failed', () => {
       show(d);
       expect(screen.getByText(/have not responded for Hilltop/)).not.toBeNull();
       expect(code('CH-13206')?.textContent).toMatch(/may be incomplete/);
+    });
+
+    it('the held space says "Nothing else is flagged" only when every read came in, never over a gap', async () => {
+      pulseRead.pulse.mockResolvedValue(pulseOf([rsvp, noRounds], { failed: ['rounds'] }));
+      show(await load());
+      expect(document.querySelector('.ch-hl-pulse__clear')).toBeNull();
+      cleanup();
+      pulseRead.pulse.mockResolvedValue(pulseOf([rsvp], {}));
+      show(await load());
+      expect(document.querySelector('.ch-hl-pulse__clear')?.textContent).toBe('Nothing else is flagged across the program.');
     });
 
     it('CH-13203 a roster read that failed under the pulse: it is the pulse not loading, never "Nothing is flagged" over a roster nobody read', async () => {

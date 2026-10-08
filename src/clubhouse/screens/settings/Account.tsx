@@ -16,7 +16,7 @@ import { Card, Field, ReadFailed, Row, SaveBar, useDraft, useReportDirty, useSav
 export function AccountSection({ data, writes, onDeleted }: { data: ChSettingsData; writes: ChSettingsWrites; onDeleted: () => void }) {
   return (
     <>
-      {data.profile.error ? <ReadFailed what="Your profile" code="CH-8201" onRetry={writes.refresh} /> : <ProfileCard data={data} profile={data.profile.value} writes={writes} />}
+      {data.profile.error ? <ReadFailed what="Your profile" code="CH-8201" onRetry={writes.refresh} title="Profile" description={data.role === 'coach' ? 'How players and staff see you across GolfHelm.' : 'How your coaches and teammates see you.'} /> : <ProfileCard data={data} profile={data.profile.value} writes={writes} />}
       <EmailCard email={data.email} writes={writes} />
       <PasswordCard writes={writes} hasEmail={!!data.email} />
       <HelpCard />
@@ -127,7 +127,7 @@ function EmailCard({ email, writes }: { email: string | null; writes: ChSettings
         <span className="ch-set-value">{email ?? 'No email on file'}</span>
       </Row>
       {sentTo && (
-        <InlineNotice title={`Check ${sentTo}.`} body="Open the link in that inbox to finish the change. Your current email works until then." />
+        <InlineNotice title={`Check ${sentTo}`} body="Open the link in that inbox to finish the change. Your current email works until then." />
       )}
       <form
         className="ch-set-inline"
@@ -175,7 +175,7 @@ function PasswordCard({ writes, hasEmail }: { writes: ChSettingsWrites; hasEmail
     <Card
       id="set-password"
       title="Password"
-      description="You'll confirm your current password first."
+      description="You’ll confirm your current password first."
       aside={<Icon icon={KeyRound} size={16} />}
       foot={
         <>
@@ -270,7 +270,7 @@ function SessionCard({ writes, onDeleted }: { writes: ChSettingsWrites; onDelete
         <div className="ch-set-row">
           <div className="ch-set-row__txt">
             <span className="ch-set-row__l">Delete account</span>
-            <span className="ch-set-row__h">Removes your account and everything tied to it. This can&apos;t be undone.</span>
+            <span className="ch-set-row__h">Removes your account and everything tied to it. This can’t be undone.</span>
           </div>
           <Button
             size="sm"
@@ -295,7 +295,7 @@ function SessionCard({ writes, onDeleted }: { writes: ChSettingsWrites; onDelete
         onClose={() => !del.pending && setConfirming(false)}
         icon={UserRound}
         title="Delete your account?"
-        description="This permanently deletes your account and the data tied to it. This can't be undone."
+        description="This permanently deletes your account and the data tied to it. This can’t be undone."
         footer={
           <>
             <Button variant="secondary" disabled={del.pending} onClick={() => setConfirming(false)}>

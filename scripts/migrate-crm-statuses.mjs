@@ -23,6 +23,14 @@
 
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
+import { cliGuard, dryRunClient } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/migrate-crm-statuses.mjs',
+  summary:
+    "Rewrites legacy crm_coaches.status values to the current pipeline vocabulary on the project in .env.local.",
+  secrets: "NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (.env.local)",
+});
 
 dotenv.config({ path: '.env.local' });
 
@@ -34,7 +42,7 @@ if (!supabaseUrl || !supabaseServiceKey) {
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const supabase = dryRunClient(createClient(supabaseUrl, supabaseServiceKey), cli);
 
 const STATUS_MAPPING = {
   // Keep as-is

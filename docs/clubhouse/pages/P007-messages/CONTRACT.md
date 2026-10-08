@@ -56,7 +56,7 @@ that loads on its own. v2 timing: nothing for 150ms, then a fade (the shell's
 | 70209 | CH-7409 | `THE_SHARED_FILES_ARE_LOADING` | The shared files are loading (Details) |
 | 70210 | CH-7410 | `THE_ADD_SHEETS_LIST_IS_LOADING` | The Add sheet's list is loading |
 
-From the shell (P001): 10201 CH-1401.
+From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 ## 03 — Background loading / refresh
 
@@ -165,7 +165,7 @@ CH-1905.
 | --- | --- | --- | --- |
 | 70701 | CH-7005 | `THE_NETWORK_DROPS_MID_SEND` | The network drops mid-send |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
 
 ## 08 — Permission / authorization
 
@@ -269,11 +269,15 @@ A send the client can't confirm says to check the thread before sending again
 
 Status: DEFINED
 
-Messages' own motion (71601 to 71604), and the shell's: v2 press, reveal, sheets
-and pushes (11601 to 11612, D-64).
-
-CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609
-CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
+Messages' own motion (71601 to 71606): a message appears in place, the typing
+dots (never under a thread that didn't load), details and the reaction bar
+opening from their buttons, the phone's message sheet, on desktop another
+conversation or announcement settling in over the last (never the first one a
+visit opens), and on the phone another inbox filter: the chosen chip's tint and
+ink cross over the quick beat and the list settles in under it. A row's press is
+a tint on the press beat, never a scale. The shell's: the page crossfade, the
+press on keys, sheets and pushes (11601 to 11613, D-64); there is no first-paint
+rise. Reduced motion and Animations off make every swap instant.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -281,8 +285,10 @@ CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
 | 71602 | CH-7602 | `SOMEONE_IS_TYPING` | Someone is typing |
 | 71603 | CH-7603 | `OPENING_DETAILS_OR_A_REACTION_BAR` | Opening details or a reaction bar |
 | 71604 | CH-7604 | `A_LONG_PRESS_ON_A_MESSAGE` | A long press on a message (phone) |
+| 71605 | CH-7605 | `OPENING_ANOTHER_CONVERSATION_OR_ANNOUNCEMENT` | Opening another conversation or announcement (desktop) |
+| 71606 | CH-7606 | `CHANGING_THE_INBOX_FILTER_ON_THE_PHONE` | Changing the inbox filter on the phone (All, Unread, Groups) |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -300,7 +306,7 @@ CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
 | 71703 | CH-7703 | `PICKING_A_REACTION_A_FILTER_OR_A` | Picking a reaction, a filter or a conversation |
 | 71704 | CH-7704 | `A_LONG_PRESS_ON_A_MESSAGE_2` | A long press on a message (phone) |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
 
 ## 18 — Accessibility
 
@@ -321,7 +327,7 @@ CH-1814.
 | 71803 | CH-7803 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, 1280px and 390px |
 | 71804 | CH-7804 | `PHONE_A_MESSAGES_ACTIONS_HAVE_A_PATH` | Phone: a message's actions have a path besides the long press (a "Message actions" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes ("Back to Messages", "Back to Chat") |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
 
 ## 19 — Responsive layout
 
@@ -346,7 +352,7 @@ back pop a pushed screen (12001).
 | --- | --- | --- | --- |
 | 72001 | — | `ENTER_TO_SEND` | In the composer Enter sends, Shift+Enter adds a line, and Enter while an IME is composing is left to the IME. |
 
-From the shell (P001): 12001 CH-1906.
+From the shell (P001): 12001 CH-1906, 12002 CH-1907, 12003 CH-1908.
 
 ## 21 — Performance
 

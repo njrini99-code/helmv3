@@ -164,7 +164,7 @@ Players create rounds with shot-by-shot tracking. Rounds populate stats, trigger
 | Route (continue) | `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/page.tsx` |
 | Client wizard | `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx` |
 | Shot tracking | `src/components/fairway/pages/rounds-tracking/` (FairwayShotTracking.tsx) |
-| Actions | `src/app/golf/actions/golf.ts` (submit, save, delete) |
+| Actions | `src/app/golf/actions/round-submit.ts`, `round-partial.ts`, `shot-actions.ts` (submit, save, delete) |
 | Drafts | `src/app/golf/actions/round-drafts.ts` |
 | Reviews | `src/app/golf/actions/round-reviews.ts` |
 | Shot analytics | `src/app/golf/actions/shot-analytics.ts` |
@@ -278,7 +278,7 @@ Display: getQualifierLeaderboard() → positions, ties, totals
 | Route (list) | `src/app/golf/(dashboard)/dashboard/qualifiers/page.tsx` |
 | Route (detail) | `src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx` |
 | Route (new) | `src/app/golf/(dashboard)/dashboard/qualifiers/new/page.tsx` |
-| Actions | `src/app/golf/actions/golf.ts` (qualifier functions) |
+| Actions | `src/app/golf/actions/qualifier-actions.ts` (qualifier functions) |
 | Components | `src/components/fairway/pages/qualifiers/` |
 | Hook | `src/hooks/golf/use-qualifier-realtime.ts` |
 
@@ -1315,7 +1315,7 @@ Features:
 | Type | Path |
 |------|------|
 | Route | `src/app/admin/page.tsx` (Helm Bridge — the `/golf/admin` shell was removed 2026-08-26) |
-| Actions | `src/app/golf/actions/admin-data.ts` |
+| Actions | `src/app/golf/actions/admin-dashboard-data.ts`, `admin-incidents-data.ts` (split out of the former `admin-data.ts`) |
 
 ### DB Tables
 Reads from ALL major tables: users, golf_coaches, golf_players, golf_teams, golf_team_members, golf_rounds, golf_shots, golf_announcements, golf_conversations, golf_messages, golf_tasks, golf_events, golf_event_attendance, golf_coach_philosophy, golf_patterns_v2, golf_predictions, golf_round_reviews, golf_insights

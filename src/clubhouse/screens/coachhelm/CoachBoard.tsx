@@ -14,6 +14,7 @@ import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
+import { Section } from '../../ui/Section';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState, Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
@@ -196,20 +197,23 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
       {data.roster.error || data.players.error ? (
         <RefreshNotice code="CH-13202" title="Your players’ insights didn’t load" body="Nothing is lost. Every insight is still saved; try again in a moment." />
       ) : !cur ? (
-        <EmptyState
-          size="page"
-          code="CH-13306"
-          icon={Sparkles}
-          title="No signals yet"
-          body="CoachHelm reads posted rounds. Each player’s insights appear once they’ve posted enough rounds to find a pattern."
-          action={
-            rosterHref ? (
-              <Button variant="primary" leftIcon={Users} href={rosterHref}>
-                View roster
-              </Button>
-            ) : undefined
-          }
-        />
+        // The pulse is on the page, so this is the players' section with nothing in it yet, not an empty page: its line
+        // and View roster sit right under the heading, in view on the desktop and the phone (states audit, 2026-10-08).
+        <Section id="ch-hl-none" title="Your players">
+          <EmptyState
+            code="CH-13306"
+            icon={Sparkles}
+            title="No signals yet"
+            body="CoachHelm reads posted rounds. Each player’s insights appear once they’ve posted enough rounds to find a pattern."
+            action={
+              rosterHref ? (
+                <Button variant="primary" leftIcon={Users} href={rosterHref}>
+                  View roster
+                </Button>
+              ) : undefined
+            }
+          />
+        </Section>
       ) : (
         <>
           {data.missing && <BoardPartial missing={data.missing} what="board" focus={false} />}
@@ -332,11 +336,12 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
   // With CoachHelm off (CH-13305), Ask is off too, so the strip that leads there is not drawn.
   const tabs = data.off ? null : <CoachHelmTabs active={sw.shown} onGo={sw.go} />;
   return (
-    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined}>
+    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''}>
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone && tabs}
-      <Head who="Coach">{players.length > 0 && !data.off ? playersLine(playersOpen) : 'CoachHelm reads the rounds your players post.'}</Head>
-      {!phone && tabs}
+      <Head who="Coach" aside={!phone ? tabs : undefined}>
+        {players.length > 0 && !data.off ? playersLine(playersOpen) : 'CoachHelm reads the rounds your players post.'}
+      </Head>
       {body}
     </main>
   );
@@ -361,6 +366,14 @@ function PulseBody({ pulse }: { pulse: ChPulse }) {
   return (
     <>
       {pulse.rows.length > 0 && <PulseList rows={pulse.rows} />}
+      {/* Every read came in (no gaps), so what is not listed was checked and is clear: say so in the card's held space
+          instead of leaving it empty. Up to four items, the two rows the desktop's reserve leaves room under. */}
+      {!gaps && pulse.rows.length > 0 && pulse.rows.length <= 4 && (
+        <p className="ch-hl-pulse__clear">
+          <Icon icon={Check} size={13} />
+          Nothing else is flagged across the program.
+        </p>
+      )}
       {/* CH-13206: a read the pulse is made from failed, so what is not listed was not checked: never "nothing is flagged". */}
       {gaps && pulse.missing && (
         <RefreshNotice

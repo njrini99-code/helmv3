@@ -31,7 +31,8 @@ vi.mock('@/lib/notifications', () => ({ notifyQualifierCreated: vi.fn(async () =
 vi.mock('@/lib/notifications/email', () => ({ sendEmailNotification: vi.fn(async () => ({ success: true })) }));
 vi.mock('@/lib/notifications/push', () => ({ sendBulkPushNotification: vi.fn(async () => {}) }));
 
-import { submitGolfRoundComprehensive, savePartialRound } from '../golf';
+import { submitGolfRoundComprehensive } from '../round-submit';
+import { savePartialRound } from '../round-partial';
 import { logServerError } from '@/lib/server-error-logger';
 
 const COURSE = '11111111-1111-4111-8111-111111111111';

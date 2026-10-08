@@ -48,6 +48,14 @@ import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import postgres from 'postgres';
 import { config as loadEnv } from 'dotenv';
+import { helpOnly } from '../lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/db/migration-ledger-drift.mjs',
+  summary:
+    "Ratchet for local versus production migration drift. Read-only.",
+  secrets: 'SUPABASE_ACCESS_TOKEN, SUPABASE_DB_PASSWORD, DATABASE_URL',
+});
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const BASELINE_PATH = resolve(ROOT, '.migration-drift-baseline.json');

@@ -534,8 +534,8 @@ describe('PuttingZoom — WAVE D: season make% context ("your season") in the pu
 
 describe('PuttingZoom — reduced motion', () => {
   it('renders the same dots/tooltip data with the landing-pulse ring skipped', async () => {
-    vi.doMock('framer-motion', async (importOriginal) => {
-      const actual = await importOriginal<typeof import('framer-motion')>();
+    vi.doMock('motion/react', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('motion/react')>();
       return { ...actual, useReducedMotion: () => true };
     });
     vi.resetModules();
@@ -554,7 +554,7 @@ describe('PuttingZoom — reduced motion', () => {
     fireEvent.focus(dots[0]!);
     expect(await findByText(/from pin/)).toBeInTheDocument();
 
-    vi.doUnmock('framer-motion');
+    vi.doUnmock('motion/react');
     vi.resetModules();
   });
 });

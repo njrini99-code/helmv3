@@ -34,7 +34,7 @@ not recorded" gap.
    schema files and diffs it against your local dev db (built from
    `supabase/migrations/**`), writing the delta as a new migration.
 3. Review the generated migration like any other SQL change (see
-   `.claude/rules/database-review.md`), especially for a lock/rewrite on a
+   `.claude/rules/database.md`), especially for a lock/rewrite on a
    large table — Squawk (below) catches the common cases but not intent.
 4. Write or run the matching pgTAP test under `supabase/tests/rls/` if the
    change touches RLS.

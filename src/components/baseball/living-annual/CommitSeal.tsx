@@ -13,7 +13,7 @@
  * thin convenience wrapper for it. Reduced motion → the seal is shown pressed,
  * without the press or bleed animation.
  */
-import { m, useReducedMotion } from 'framer-motion';
+import { m, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { inkBleed, stampPress } from './motion';
 

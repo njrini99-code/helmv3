@@ -14,7 +14,7 @@
  */
 
 import * as React from 'react';
-import type { Variants, Transition } from 'framer-motion';
+import type { Variants, Transition } from 'motion/react';
 
 /* ── Escalation rule (documented, lightest wins) ────────────────────────────
  *

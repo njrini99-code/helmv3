@@ -1,4 +1,4 @@
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -226,8 +226,50 @@ describe('team stats · desktop', () => {
     expect(c.querySelector('.ch-delta')!.textContent).toBe('+0.4');
     expect(c.querySelector('.ch-delta')!.className).toContain('is-good');
     expect(c.querySelector('.ch-fg__n')!.textContent).toBe('vs Tour · 58 rounds with shots');
-    // Six cards, laid out in six columns.
-    expect((document.querySelector('.ch-fg') as HTMLElement).style.getPropertyValue('--ch-fg-n')).toBe('6');
+    // Strokes gained leads; the five supporting figures share the group beside it, five columns.
+    const fg = document.querySelector('.ch-fg') as HTMLElement;
+    expect(fg.className).toContain('ch-fg--lead');
+    expect(fg.firstElementChild!.className).toContain('ch-fg__c--lead');
+    expect(fg.querySelectorAll('.ch-fg__group > .ch-fg__c')).toHaveLength(5);
+    expect(fg.style.getPropertyValue('--ch-fg-n')).toBe('5');
+  });
+
+  it('every team figure is drawn against a real reference: Tour zero, par, the Tour mark, 36 putts, 18 holes', () => {
+    showTeam(team());
+    const g = (label: string) => card(label).querySelector('.ch-fg__gauge') as HTMLElement;
+    // Strokes gained −0.5: an amber bar left of the Tour's zero, a sixth of the way to its three-stroke end.
+    const sg = g('Team SG per round').querySelector('i')!;
+    expect(sg.className).toBe('is-loss');
+    expect(sg.style.right).toBe('50%');
+    expect(sg.style.width).toBe(`${(0.5 / 3) * 50}%`);
+    expect(g('Team SG per round').querySelector('em')!.textContent).toBe('Tour');
+    // Scoring +1.6 to par: amber, right of par.
+    expect(g('Scoring average').querySelector('i')!.className).toBe('is-loss');
+    expect(g('Scoring average').querySelector('i')!.style.left).toBe('50%');
+    expect(g('Scoring average').querySelector('em')!.textContent).toBe('Par');
+    // Greens 61% with the Tour's 66% marked.
+    expect(g('Greens in regulation').querySelector('i')!.style.width).toBe('61%');
+    expect(g('Greens in regulation').querySelector('b')!.style.left).toBe('66%');
+    // Putts 30.4 under the two-putt 36.
+    expect(g('Putts per round').querySelector('i')!.className).toBe('is-gain');
+    expect(g('Putts per round').querySelector('em')!.textContent).toBe('36');
+    // Scrambling has no Tour figure, so no mark is claimed.
+    expect(g('Scrambling').querySelector('b')).toBeNull();
+    // Birdies 2.6: two holes full, the third 60% filled, of 18.
+    const holes = g('Birdies per round').querySelectorAll('i');
+    expect(holes).toHaveLength(18);
+    expect(holes[2]!.style.getPropertyValue('--ch-fg-part')).toMatch(/^60(\.0+\d*)?%$|^59\.9+\d*%$/);
+    // Decorative: the value and its words say it.
+    expect(g('Putts per round').getAttribute('aria-hidden')).toBe('true');
+    // The lead draws its gauge before its note, so its gauge sits on the supporting figures' line.
+    const lead = card('Team SG per round');
+    expect(lead.querySelector('.ch-fg__gauge + .ch-fg__n')).not.toBeNull();
+  });
+
+  it('a figure with no value draws no gauge', () => {
+    const [sg, ...rest] = PREVIEW_TEAM_STATS.figures;
+    showTeam(team({ figures: [{ ...sg!, value: null, delta: null, context: 'Needs rounds with shots', state: 'empty' }, ...rest] }));
+    expect(card('Team SG per round').querySelector('.ch-fg__gauge')).toBeNull();
   });
 
   it('CH-4311 no rounds with shots: a dash and what it needs, never a zero', () => {
@@ -260,7 +302,7 @@ describe('team stats · desktop', () => {
     // A gained 0.5 a round over the window but lost strokes in the last week; B is the reverse.
     showTeam(team({ players: [mk('B', [-1, 1], -0.2, [74, 75], 72.6), mk('A', [1, -1], 0.5, [72, 71], 73.4)] }));
     // Each entry is a name and the number beside it.
-    const ends = () => [...document.querySelectorAll('.ch-sgt__end')].map((e) => `${e.children[1]!.textContent}${e.querySelector('b')!.textContent}`);
+    const ends = () => [...document.querySelectorAll('.ch-sgt__end')].filter((e) => !e.closest('.ch-swap__body[aria-hidden]')).map((e) => `${e.children[1]!.textContent}${e.querySelector('b')!.textContent}`);
     expect(ends()).toEqual(['A+0.5', 'B−0.2']);
     // Scoring: B's mean 72.6 is lower (better) than A's 73.4, though B's last week (75) is worse than A's (71).
     await user.click(screen.getByRole('radio', { name: 'Scoring' }));
@@ -276,16 +318,16 @@ describe('team stats · desktop', () => {
     const user = userEvent.setup();
     showTeam(team());
     const note = () => document.querySelector('.ch-sgt > .ch-note')!.textContent!;
-    expect(note()).toBe("The team's strokes gained are up about 1.0 a round since Aug 30, a weekly average from −1.0 to 0.0.");
+    expect(note()).toBe('The team’s strokes gained are up about 1.0 a round since Aug 30, a weekly average from −1.0 to 0.0.');
     expect(note()).not.toMatch(/has gained|has lost/);
     // A player: Jonah went 0.8 to −0.9.
     await user.click(screen.getByRole('button', { name: /Jonah/ }));
-    expect(note()).toBe("Jonah's strokes gained are down about 1.7 a round since Aug 30, a weekly average from +0.8 to −0.9.");
+    expect(note()).toBe('Jonah’s strokes gained are down about 1.7 a round since Aug 30, a weekly average from +0.8 to −0.9.');
   });
 
   it('a flat line is flat, not a change', () => {
     showTeam(team({ team: { ...PREVIEW_TEAM_STATS.team, sg: [0.1, 0.1, 0.0, 0.1, 0.1, 0.0, 0.1] } }));
-    expect(document.querySelector('.ch-sgt > .ch-note')!.textContent).toBe("The team's strokes gained are flat since Aug 30.");
+    expect(document.querySelector('.ch-sgt > .ch-note')!.textContent).toBe('The team’s strokes gained are flat since Aug 30.');
   });
 
   it('the trend says what the dashed line is: the Tour baseline, or the women’s; the list is the window average', () => {
@@ -647,7 +689,7 @@ describe('player profile · phone', () => {
 
   it('CH-5309 no strokes gained yet: the panel says what it needs instead of bars of dashes', () => {
     showPlayerPhone(player({ win: { ...PREVIEW_PLAYER.win, sgPerRound: null, sgRounds: 0, sgLegs: { tee: null, approach: null, around: null, putting: null } } }));
-    expect(code('CH-5309')!.textContent).toContain('No strokes gained in this window.');
+    expect(code('CH-5309')!.textContent).toContain('No strokes gained in this window');
     expect(panel().querySelector('.ch-stm-leg')).toBeNull();
   });
 
@@ -659,7 +701,9 @@ describe('player profile · phone', () => {
     const footer = overview.querySelector('.ch-stm-overview__meta')!;
     expect(figures.parentElement).toBe(overview);
     expect(footer.parentElement).toBe(overview);
-    expect(figures.nextElementSibling).toBe(footer);
+    // The figures, their gauge row, then the footer: the change still sits directly under the figures' drawing.
+    expect(figures.nextElementSibling!.className).toBe('ch-stm-gauges');
+    expect(figures.nextElementSibling!.nextElementSibling).toBe(footer);
     const change = footer.querySelector('.ch-sgchg')!;
     expect(change.querySelector('.ch-delta')!.textContent).toBe('−1.3');
     expect(change.lastElementChild!.textContent).toBe('vs. previous 10');
@@ -703,7 +747,7 @@ describe('make rate by distance (Game detail)', () => {
     const curve = document.querySelector('svg.ch-mk')!;
     expect(curve.getAttribute('aria-label')).toContain('15–20 feet');
     expect(curve.getAttribute('aria-label')).not.toContain('25');
-    expect(code('CH-5211')!.textContent).toContain("Putts past 20 feet didn't load.");
+    expect(code('CH-5211')!.textContent).toContain('Putts past 20 feet didn’t load');
   });
 });
 

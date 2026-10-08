@@ -60,7 +60,7 @@ Three route skeletons in the page's own shapes: the list (90201: head, tools, he
 | 90206 | CH-09409 | `MANAGE_SELECTIONS_IS_LOADING` | Manage selections is loading |
 | 90207 | CH-09410 | `A_QUALIFIERS_COURSES_AND_SCORECARDS_ARE_STILL` | A qualifier's courses and scorecards are still streaming in behind its standings |
 
-From the shell (P001): 10201 CH-1401.
+From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 ## 03 — Background loading / refresh
 
@@ -124,7 +124,19 @@ Checked in the form before anything is sent. Each problem sits under its field (
 
 Status: DEFINED
 
-Every write has its own failure toast naming what did not happen and what to do: create, save, close and reopen (90601 to 90604) and the four selection writes (90623 to 90626). Every section that can fail to load has its own notice with Try again (90605 to 90614, 90621, 90627), and a crash stays in its section (90615 to 90620, 90628; SectionBoundary). A save that lands in part says which part (90622). A failed read of the qualifier itself (detail or form), or of a player's team, throws to the route error view (the shell's 10603 to 10607) instead of claiming "not found"; Manage selections tells a failed read apart in its own notice (90627). Try again has the server read the page again (91402), and Retry runs the write again (91401).
+Every write has its own failure toast naming what did not happen and what to do:
+create, save, close and reopen (90601 to 90604) and the four selection writes
+(90623 to 90626). The one exception is a save the server refused with a reason:
+the notice over the form tells it (CH-09902), with the error haptic, and no
+toast says the same words again (lead, 2026-10-08); a save whose request itself
+failed keeps its toast and Retry (CH-09002). Every section that can fail to load
+has its own notice with Try again (90605 to 90614, 90621, 90627), and a crash
+stays in its section (90615 to 90620, 90628; SectionBoundary). A save that lands
+in part says which part (90622). A failed read of the qualifier itself (detail
+or form), or of a player's team, throws to the route error view (the shell's
+10603 to 10607) instead of claiming "not found"; Manage selections tells a
+failed read apart in its own notice (90627). Try again has the server read the
+page again (91402), and Retry runs the write again (91401).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -175,7 +187,7 @@ Offline, no write is sent: the shell's toast names what did not happen, the erro
 | 90703 | CH-09904 | `THE_LISTS_FILTER_AND_SEARCH` | The list's filter and search |
 | 90704 | CH-09905 | `RETURNING_TO_THE_LIST_FROM_A_QUALIFIER` | Returning to the list from a qualifier |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
 
 ## 08 — Permission / authorization
 
@@ -271,7 +283,14 @@ None. Every write waits for the server: the status pill, the picks and the steps
 
 Status: DEFINED
 
-The failure toast's Retry runs the same write again with the same arguments and, when it lands, does everything the button would have done: the pill changes, the question closes, the qualifier opens (91401; until 2026-09-30 it only re-sent the write, see the changelog). Try again on a notice that failed to load has the server read the whole page again; the course picker retries only its own list, and the edit form's round courses offer no retry, because a re-read would drop the coach's changes (91402).
+The failure toast's Retry runs the same write again with the same arguments and,
+when it lands, does everything the button would have done: the pill changes, the
+question closes, the qualifier opens (91401; until 2026-09-30 it only re-sent
+the write, see the changelog). A save the server refused has no toast: saving
+again under the form's notice is that same write (91401). Try again on a notice
+that failed to load has the server read the whole page again; the course picker
+retries only its own list, and the edit form's round courses offer no retry,
+because a re-read would drop the coach's changes (91402).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -294,14 +313,24 @@ After a write lands, the server reads the page again so the page shows the serve
 
 Status: DEFINED
 
-Pressing a card, the hero or a status pill (91601), and a leaderboard row's scorecards appearing in place at their final state, with no count-up or stagger and a static Live dot (91602, D-33). Both are preview-checked; their catalog rows are marked preview and no test forces them. Everything uses the v2 tokens (D-64).
+Pressing a card, the hero or a status pill answers with a deeper tint, never a
+scale; on the phone the live qualifier (the list's one green feature card)
+darkens under a shade and the rows take the row press tint (91601). Opening a
+leaderboard row turns its chevron and drops its scorecards into place as they
+fade in, at their final state, with no count-up or stagger and a static Live
+dot; closing is instant (91602, D-33). On the phone, choosing a round in a
+player's rounds sheet fades the chosen chip's raised face in as the old one's
+fades out, at once with reduced motion (91603, CH-09603). All three are
+preview-checked; their catalog rows are marked preview and no test forces them.
+Everything uses the v2 tokens (D-64).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 91601 | CH-09601 | `PRESSING_A_CARD_THE_HERO_OR_A` | Pressing a card, the hero or a status pill |
 | 91602 | CH-09602 | `OPENING_A_LEADERBOARD_ROW` | Opening a leaderboard row |
+| 91603 | CH-09603 | `CHOOSING_A_ROUND_IN_A_PLAYERS_ROUNDS` | Choosing a round in a player's rounds sheet (phone) |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -315,7 +344,7 @@ Qualifiers' own haptics (91701 to 91703) on the v2 grammar (D-70): select for a 
 | 91702 | CH-09702 | `CLOSE_QUALIFIER_DISCARD` | Close qualifier, Discard |
 | 91703 | CH-09703 | `START_SELECTING_CONFIRM_SQUAD_REMOVE_A_PICK` | Start selecting, Confirm squad, Remove a pick |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
 
 ## 18 — Accessibility
 
@@ -330,7 +359,7 @@ The leaderboard and round-by-round are tables (rows, column headers, a row heade
 | 91803 | CH-09803 | `A_LIVE_UPDATE_TO_THE_STANDINGS_IS` | A live update to the standings is announced |
 | 91804 | — | `FIELD_PROBLEMS_ARE_ALERTS` | Each problem in the form or the pick dialog is an alert tied to its field by aria-describedby, the field is marked aria-invalid, and a field with no problem is not. |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
 
 ## 19 — Responsive layout
 
@@ -359,7 +388,7 @@ Enter in a form field submits the form (92002), and a problem takes focus at its
 | 92002 | — | `ENTER_SUBMITS_THE_FORM` | Enter in a field of the form submits it, and a form with a problem shows the problem instead of sending. |
 | 92003 | — | `SCORECARDS_OPEN_FROM_THE_KEYBOARD` | A leaderboard row's scorecards open from a button that takes Enter and Space and says whether it is expanded; the row itself is not a tab stop. |
 
-From the shell (P001): 12001 CH-1906.
+From the shell (P001): 12001 CH-1906, 12002 CH-1907, 12003 CH-1908.
 
 ## 21 — Performance
 

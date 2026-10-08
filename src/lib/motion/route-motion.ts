@@ -37,7 +37,7 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import type { Transition } from 'framer-motion';
+import type { Transition } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 // --fw-ease-glide = cubic-bezier(0.16, 1, 0.3, 1) — the iOS out-quint used

@@ -27,11 +27,12 @@ export function PlayerHelmFrame({ view, line, off = false, covered = false, afte
   const tabs = off ? null : <PlayerHelmTabs active={sw.shown} onGo={sw.go} />;
   return (
     <>
-      <main className={'ch-hl ch-hv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" data-ch-view={view} aria-busy={sw.pending || undefined} inert={covered || undefined}>
+      <main className={'ch-hl ch-hv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" data-ch-view={view} data-canopy={phone ? undefined : ''} aria-busy={sw.pending || undefined} inert={covered || undefined}>
         {phone && <PhoneTop start title="CoachHelm" />}
         {phone && tabs}
-        <Head who="Player">{line}</Head>
-        {!phone && tabs}
+        <Head who="Player" aside={!phone ? tabs : undefined}>
+          {line}
+        </Head>
         {children}
       </main>
       {after}

@@ -409,6 +409,8 @@ before, after, baseline or evidence.
 | `P011__premium-audit__coach__1280__case-117-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-117-chromium-normal; /clubhouse-preview/rounds; synthetic preview |
 | `P011__premium-audit__coach__390__case-017-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-017-webkit-reduce; /clubhouse-preview/rounds; synthetic preview |
 | `P011__premium-audit__coach__390__case-117-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-117-chromium-normal; /clubhouse-preview/rounds; synthetic preview |
+| `P011__page__player__1280x948__default__after__77e553a.png` | after | 77e553a | page (player), 1280x948px, default |
+| `P011__page__player__390x792__default__after__77e553a.png` | after | 77e553a | page (player), 390x792px, default |
 
 ## 2026-10-02 — Narrow setup layout and course selection
 

@@ -1,17 +1,18 @@
 version: 1
 
 production:
-  routine_max_deploys_per_calendar_week: 2
-  timezone: America/New_York
-  # calendar week = ISO week: Monday 00:00:00 through Sunday 23:59:59 in this timezone
-  # The one linked helmv3 Vercel project (Vercel audit §1). Git deployments
-  # are disabled (vercel.json); releases go through scripts/deploy-prod.sh
-  # (AGENTS.md "Production"). The id is the guard against
-  # helmv3-golf-reliability-release-20260825 / helmv3-main-release-c350 —
-  # `vercel deploy` runs from an unlinked directory that silently created a
-  # NEW project named after the cwd — for any tool that reads the linked project.
+  # The one linked helmv3 Vercel project. Git deployments are disabled
+  # (vercel.json), so production changes only when an agent deploys:
+  # `./node_modules/.bin/vercel deploy --prod` (AGENTS.md "Production").
+  # Deploys MUST run from the checkout linked to this project
+  # (.vercel/project.json projectId == this id). `vercel deploy` from an
+  # unlinked directory does not fail: it silently creates a NEW project named
+  # after the cwd (that is how helmv3-golf-reliability-release-20260825 and
+  # helmv3-main-release-c350 came to exist). Verify the link before deploying.
   vercel_project_id: prj_qPgC4eErTUsaSmv40EiQMNuTpuEV
 
+# Vocabulary reused by src/lib/admin/autonomy/policy.ts (AUTONOMY_TIERS and
+# AUTONOMY_CEILING): which steps the reliability loop may take on its own.
 daily_reliability:
   may_observe: true
   may_investigate: true
@@ -20,18 +21,6 @@ daily_reliability:
   may_prepare_repairs: true
   may_open_or_update_repair_prs: true
   may_merge_verified_low_risk_repairs: true
-  may_deploy_production: false
-
-release:
-  human_approval_required: true
-  automatic_production_deploy: false
-  deploy_from_verified_sha_only: true
-  require_release_candidate_report: true
-  require_production_budget_check: true
-
-emergency:
-  automatic_override: false
-  owner_decision_required: true
 
 security:
   # Read by .github/workflows/control-plane-weekly.yml's hard check: the

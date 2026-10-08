@@ -21,6 +21,14 @@
  * credential is not a crash.
  */
 import { config as loadEnv } from 'dotenv';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/db-observability-metrics-names.mjs',
+  summary:
+    "Read-only discovery of the Supabase Metrics API metric names.",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 loadEnv({ path: '.env.local', quiet: true });
 

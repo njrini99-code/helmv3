@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, ChevronLeft, ChevronUp, Lock, LockOpen, Flag, Pencil, Users } from 'lucide-react';
+import { ChevronDown, Lock, LockOpen, Flag, Pencil, Users } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChQDetailCore, ChQDetailSecondary } from '../../data/qualifiers';
@@ -13,6 +13,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
 import { ScoreMark } from '../../ui/ScoreMark';
 import { ScrollRegion } from '../../ui/ScrollRegion';
+import { BackLink } from '../../ui/Section';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { normalise, useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
@@ -160,13 +161,11 @@ export function QualifierDetail({
 
   return (
     <SecondaryProvider value={shown.source}>
-      <main className="ch-qf ch-qf--detail">
+      <main className="ch-qf ch-qf--detail" data-canopy="">
         <div className="ch-qf-back" onClickCapture={back.onClickCapture}>
-          <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={LIST_HREF}>
-            Qualifiers
-          </Button>
+          <BackLink href={LIST_HREF}>Qualifiers</BackLink>
         </div>
-        <header className="ch-qf-head">
+        <header className="ch-qf-head" data-canopy-head="">
           <div>
             <span className="ch-qf-eyebrow">
               <StatusPill status={status} />
@@ -272,23 +271,48 @@ function parLine(s: ChQDetailSecondary): string {
 }
 
 function Facts({ data, topScore }: { data: ChQDetailCore; topScore: number }) {
-  const facts: Array<[string, string, ReactNode]> = [
+  const due = data.entrants * data.numRounds;
+  const facts: Array<[string, string, ReactNode, ReactNode?]> = [
     // A date never splits from its day; the range wraps at the dash (D-33: the fact wraps, never truncates).
     ['Dates', shortRange(data.startDate, data.endDate).replace(/ (?=\d)/g, '\u00a0'), `${yearOf(data.startDate)} · ${plural(data.numRounds, 'round')}`],
     ['Entry deadline', data.deadline ? dayLabel(data.deadline) : '—', data.deadline ? yearOf(data.deadline) : 'Not set'],
     ['Entrants', data.entriesError ? '—' : String(data.entrants), 'players'],
-    ['Rounds submitted', data.board ? String(data.board.submitted) : '—', data.entriesError ? '' : `of ${data.entrants * data.numRounds}`],
+    [
+      'Rounds submitted',
+      data.board ? String(data.board.submitted) : '—',
+      data.entriesError ? '' : `of ${due}`,
+      data.board && due > 0 && !data.entriesError ? (
+        <span className="ch-qf-bar">
+          <i style={{ width: `${Math.min(100, (data.board.submitted / due) * 100)}%` }} />
+        </span>
+      ) : null,
+    ],
     // The par comes from the tees, which stream in behind the page: the line holds its place until they do.
     ['Course', data.course ?? '—', <Streamed key="par" fallback={<ParLineSkeleton />}>{(s) => parLine(s) || ' '}</Streamed>],
-    ['Spots', String(data.squad), `${topScore} on score · ${plural(data.picks, 'pick')}`],
+    [
+      'Spots',
+      String(data.squad),
+      `${topScore} on score · ${plural(data.picks, 'pick')}`,
+      data.squad > 0 && data.squad <= 12 ? (
+        <span className="ch-qf-seats">
+          {Array.from({ length: data.squad }, (_, i) => (
+            <i key={i} className={i < topScore || !data.picks ? 'is-score' : 'is-pick'} />
+          ))}
+        </span>
+      ) : null,
+    ],
   ];
   return (
     <dl className="ch-qf-facts">
-      {facts.map(([k, v, s]) => (
+      {facts.map(([k, v, s, viz]) => (
         <div key={k}>
           <dt>{k}</dt>
           <dd>{v}</dd>
           <dd className="ch-qf-facts__sub">{typeof s === 'string' ? s || ' ' : s}</dd>
+          {/* Every fact keeps the drawing's line, so the row shares one baseline (decorative). */}
+          <dd className="ch-qf-facts__viz" aria-hidden="true">
+            {viz}
+          </dd>
         </div>
       ))}
     </dl>
@@ -332,11 +356,11 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
       <section className="ch-qf-panel" aria-labelledby="ch-qf-lb">
         {head}
         {data.entriesError ? (
-          <InlineNotice code="CH-09203" title="The field didn’t load." body="Standings wait until the entrants load, so nobody reads a wrong order." onRetry={refresh} retrying={refreshing} />
+          <InlineNotice code="CH-09203" title="The field didn’t load" body="Standings wait until the entrants load, so nobody reads a wrong order." onRetry={refresh} retrying={refreshing} />
         ) : (
           <InlineNotice
             code="CH-09204"
-            title="Scores didn’t load."
+            title="Scores didn’t load"
             body="The field isn’t shown without its scores, so nobody reads a wrong order. The error has been reported."
             onRetry={refresh}
             retrying={refreshing}
@@ -354,7 +378,7 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
         <EmptyState
           code="CH-09304"
           icon={Flag}
-          title="Awaiting first round."
+          title="Awaiting first round"
           body={`${plural(data.entrants, 'player')} entered. Standings appear once a player submits a round.`}
         />
       </section>
@@ -453,11 +477,14 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
                           toggle(r);
                         }}
                       >
-                        <Icon icon={isOpen ? ChevronUp : ChevronDown} size={15} />
+                        {/* One chevron that turns over base (CH-09602), not two that swap. */}
+                        <Icon icon={ChevronDown} size={15} />
                       </button>
                     )}
                   </span>
                 </div>
+                {/* CH-09602: the row turns selected (quick) and its scorecards drop 6px into place as they fade in (base),
+                    at their final values; closing takes the tray away at once. */}
                 {isOpen && (
                   <div role="row" id={`ch-qf-tray-${r.playerId}`}>
                     <div role="cell" className="ch-qf-tray">
@@ -542,7 +569,7 @@ function TrayCards({ row, s }: { row: ChQRow; s: ChQDetailSecondary }) {
   return (
     <>
       {s.holesError && (
-        <InlineNotice code="CH-09205" title="Scorecards didn’t load." body="The totals above are right; the hole-by-hole cards are missing until they load." onRetry={refresh} retrying={refreshing} />
+        <InlineNotice code="CH-09205" title="Scorecards didn’t load" body="The totals above are right; the hole-by-hole cards are missing until they load." onRetry={refresh} retrying={refreshing} />
       )}
       {row.rounds.map((rd) => (
         <Scorecard key={rd.id} round={rd} holes={s.holesError ? undefined : (s.holes[rd.id] ?? [])} />

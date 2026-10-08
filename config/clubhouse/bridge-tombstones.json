@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "id": 150202,
+    "removedAt": "2026-10-07",
+    "reason": "CH-15420 was minted in category 02 before its category override existed; re-minted in its own category the same day",
+    "replacement": 150302
+  },
+  {
+    "id": 150702,
+    "removedAt": "2026-10-07",
+    "reason": "CH-15920 was minted in category 07 before its category override existed; re-minted in its own category the same day",
+    "replacement": 151202
+  },
+  {
+    "id": 150703,
+    "removedAt": "2026-10-07",
+    "reason": "CH-15921 was minted in category 07 before its category override existed; re-minted in its own category the same day",
+    "replacement": 150902
+  },
+  {
+    "id": 150704,
+    "removedAt": "2026-10-07",
+    "reason": "CH-15922 was minted in category 07 before its category override existed; re-minted in its own category the same day",
+    "replacement": 151203
+  }
+]

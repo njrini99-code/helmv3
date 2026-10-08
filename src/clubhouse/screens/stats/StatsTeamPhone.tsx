@@ -1,19 +1,20 @@
 'use client';
 
-import { ChevronRight, Users } from 'lucide-react';
+import { ChartColumn, ChevronRight, Medal, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo } from 'react';
 import type { ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
 import { Avatar } from '../../ui/Avatar';
 import { EmptyState } from '../../ui/States';
+import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { Icon } from '../../ui/Icon';
-import { SectionBoundary } from '../../ui/SectionBoundary';
+import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
 import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
-import { SgBars } from './charts';
+import { FigureGauge, SgBars } from './charts';
 import { teamPlayerHref } from './links';
 import { LinkPending } from '../../shell/LinkPending';
 import { puttingNote } from './notes';
@@ -43,64 +44,87 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
   const nineOnly = noRounds && nineRoundsInWindow(data.filter, data.filterOptions);
   const filtered = isFiltered(data.filter);
   const showFilter = !data.roundsError && (data.filterOptions.total > 0 || filtered);
+  // Two or more parts that didn't load are told once, under the head, with one Try again; each keeps its title (CH-1209).
+  const failed: string[] = [];
+  if (!data.roundsError && !noRounds) {
+    if (data.cacheError) failed.push('some team figures');
+    if (data.puttsError) failed.push('team putting');
+  }
+  const covered = failed.length > 1;
   return (
-    <div className="ch-stm">
-      <header className="ch-stm-head">
-        <span className="ch-num">
-          {data.teamName} · {data.roundsError ? '' : `${data.activeCount} active · `}countable rounds
-        </span>
-        <h1>Team stats</h1>
-      </header>
-      {/* The window and the filter share one row (F-42): the board has no row of its own for the filter. */}
-      <div className="ch-stm-controls">
-        <WindowSwitch value={shown} onChange={go} custom={hasRange(data.filter)} />
-        {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone />}
+    // Sections that crash together are told once, under the controls (CH-1210).
+    <SectionGroup>
+      <div className="ch-stm">
+        <header className="ch-stm-head">
+          <span className="ch-num">
+            {data.teamName} · {data.roundsError ? '' : `${data.activeCount} active · `}countable rounds
+          </span>
+          <h1>Team stats</h1>
+        </header>
+        {/* The window and the filter share one row (F-42): the board has no row of its own for the filter. */}
+        <div className="ch-stm-controls">
+          <WindowSwitch value={shown} onChange={go} custom={hasRange(data.filter)} />
+          {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone />}
+        </div>
+        {/* The page's one read failed, so the page says so as its whole body (CH-1211), not a notice over a blank page. */}
+        {data.roundsError && (
+          <EmptyState
+            size="page"
+            tone="danger"
+            code="CH-4201"
+            title="Team rounds didn’t load"
+            body="Every figure would be incomplete, so none is shown. The error has been reported."
+          />
+        )}
+        <PageRefreshNotice parts={failed} />
+        <SectionGroupNotice />
+        {filtered && data.roundCount > 0 && data.roundsEffective < 3 && <EarlyRead code="CH-4314" count={data.roundCount} whole={data.roundsEffective} />}
+        {noRounds && !filtered && <NineHint code="CH-4319" filter={data.filter} options={data.filterOptions} who="This team has" />}
+        {noRounds && filtered ? (
+          <TeamFilterEmpty />
+        ) : noRounds && data.window === 'season' && !nineOnly ? (
+          <StatsTeamFirstRun />
+        ) : noRounds ? (
+          // The whole page body is empty, so it is the page's empty state, not a section's (states audit, 2026-10-08).
+          <EmptyState
+            size="page"
+            code={data.window === 'qualifiers' ? 'CH-4302' : 'CH-4301'}
+            icon={data.window === 'qualifiers' ? Medal : ChartColumn}
+            title={data.window === 'qualifiers' ? 'No qualifier rounds this season yet' : 'No 18-hole rounds in this window yet'}
+            body={data.window === 'qualifiers' ? 'Qualifier rounds appear here once they are posted as qualifying.' : 'Team stats fill in as players post countable rounds.'}
+            action={data.window !== 'season' ? <ShowSeason /> : undefined}
+          />
+        ) : (
+          !data.roundsError && (
+            <>
+              <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
+                {data.cacheError && (
+                  <RetryNotice code="CH-4202" title="Some team figures didn’t load" body="Scoring is correct; greens, putts and scrambling are missing. The error has been reported." covered={covered} />
+                )}
+                <Figures figures={data.figures} />
+                {/* The phone's cards draw no caption of their own: greens, putts and scrambling read the rounds with their holes (Q-123), and this says how many. */}
+                {(() => {
+                  const coverage = data.holeRoundCount == null ? null : holeCoverage(data.holeRoundCount, data.roundCount);
+                  return <p className="ch-stm-cover" aria-hidden={coverage ? undefined : true}>{coverage}</p>;
+                })()}
+              </SectionBoundary>
+              <SectionBoundary surface="stats.team.trend" label="Scoring trend" code="CH-4205">
+                <Trend data={data} />
+              </SectionBoundary>
+              <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
+                <Legs data={data} />
+              </SectionBoundary>
+              <SectionBoundary surface="stats.team.players" label="Players" code="CH-4206">
+                <Players data={data} />
+              </SectionBoundary>
+              <SectionBoundary surface="stats.team.putting" label="Team putting" code="CH-4207">
+                <Putting data={data} covered={covered} />
+              </SectionBoundary>
+            </>
+          )
+        )}
       </div>
-      {data.roundsError && <RetryNotice code="CH-4201" title="Team rounds didn't load." body="Every figure below would be incomplete, so they're hidden. Try again; the error has been reported." />}
-      {filtered && data.roundCount > 0 && data.roundsEffective < 3 && <EarlyRead code="CH-4314" count={data.roundCount} whole={data.roundsEffective} />}
-      {noRounds && !filtered && <NineHint code="CH-4319" filter={data.filter} options={data.filterOptions} who="This team has" />}
-      {noRounds && filtered ? (
-        <TeamFilterEmpty />
-      ) : noRounds && data.window === 'season' && !nineOnly ? (
-        <StatsTeamFirstRun />
-      ) : noRounds ? (
-        <EmptyState
-          code={data.window === 'qualifiers' ? 'CH-4302' : 'CH-4301'}
-          icon={Users}
-          title={data.window === 'qualifiers' ? 'No qualifier rounds this season yet.' : 'No 18-hole rounds in this window yet.'}
-          body={data.window === 'qualifiers' ? 'Qualifier rounds appear here once they are posted as qualifying.' : 'Team stats fill in as players post countable rounds.'}
-          action={data.window !== 'season' ? <ShowSeason /> : undefined}
-        />
-      ) : (
-        !data.roundsError && (
-          <>
-            <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
-              {data.cacheError && (
-                <RetryNotice code="CH-4202" title="Some team figures didn't load." body="Scoring is correct; greens, putts and scrambling are missing. The error has been reported." />
-              )}
-              <Figures figures={data.figures} />
-              {/* The phone's cards draw no caption of their own: greens, putts and scrambling read the rounds with their holes (Q-123), and this says how many. */}
-              {(() => {
-                const coverage = data.holeRoundCount == null ? null : holeCoverage(data.holeRoundCount, data.roundCount);
-                return <p className="ch-stm-cover" aria-hidden={coverage ? undefined : true}>{coverage}</p>;
-              })()}
-            </SectionBoundary>
-            <SectionBoundary surface="stats.team.trend" label="Scoring trend" code="CH-4205">
-              <Trend data={data} />
-            </SectionBoundary>
-            <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
-              <Legs data={data} />
-            </SectionBoundary>
-            <SectionBoundary surface="stats.team.players" label="Players" code="CH-4206">
-              <Players data={data} />
-            </SectionBoundary>
-            <SectionBoundary surface="stats.team.putting" label="Team putting" code="CH-4207">
-              <Putting data={data} />
-            </SectionBoundary>
-          </>
-        )
-      )}
-    </div>
+    </SectionGroup>
   );
 }
 
@@ -115,17 +139,26 @@ function Figures({ figures }: { figures: ChTeamStats['figures'] }) {
   const shown = figures.filter((f) => !f.signed).slice(0, 4);
   // Keep the comparison row's geometry across windows; absence stays hidden from assistive technology.
   const anyDelta = shown.some((f) => f.delta != null);
+  // On the stat line, as on the desktop: no surface, gilt rules, seams, and each figure drawn against its reference
+  // in a row under the words (decorative; the figures say it).
   return (
-    <dl className="ch-stm-figs">
-      {shown.map((f) => (
-        <div key={f.label}>
-          <dt>{short[f.label] ?? f.label}</dt>
-          <dd className="ch-num">{f.value == null ? NO_DATA : `${f.value.toFixed(f.digits)}${f.unit}`}</dd>
-          {/* A change that rounds to zero ("0.0") is no change: neutral, not amber (F-54). */}
-          <dd aria-hidden={!anyDelta || f.delta == null ? true : undefined} className={'ch-num ' + (f.delta == null || Math.abs(f.delta) < 0.5 * 10 ** -(f.digits ?? 1) ? '' : f.delta < 0 === f.lowerIsBetter ? 'ch-gain' : 'ch-loss')}>{f.delta == null ? null : formatSigned(f.delta, f.digits)}</dd>
-        </div>
-      ))}
-    </dl>
+    <div className="ch-stm-line">
+      <dl className="ch-stm-figs is-line">
+        {shown.map((f) => (
+          <div key={f.label}>
+            <dt>{short[f.label] ?? f.label}</dt>
+            <dd className="ch-num">{f.value == null ? NO_DATA : `${f.value.toFixed(f.digits)}${f.unit}`}</dd>
+            {/* A change that rounds to zero ("0.0") is no change: neutral, not amber (F-54). */}
+            <dd aria-hidden={!anyDelta || f.delta == null ? true : undefined} className={'ch-num ' + (f.delta == null || Math.abs(f.delta) < 0.5 * 10 ** -(f.digits ?? 1) ? '' : f.delta < 0 === f.lowerIsBetter ? 'ch-gain' : 'ch-loss')}>{f.delta == null ? null : formatSigned(f.delta, f.digits)}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="ch-stm-gauges" aria-hidden="true">
+        {shown.map((f) => (
+          <span key={f.label}>{f.gauge && f.value != null && <FigureGauge gauge={f.gauge} n={f.value} />}</span>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -190,10 +223,37 @@ export function ScoreLine({ values, from, to, label }: { values: Array<number | 
   const y = (v: number) => pad + ((v - lo) / (hi - lo)) * (H - pad * 2 - 12);
   const d = pts.map((p, k) => `${k ? 'L' : 'M'}${x(p.i).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
   const last = pts[pts.length - 1]!;
+  // The mean's label goes in the corner the line keeps clear of (right or left end, above or below the dashed line),
+  // so it never sits on the data; the first clear corner wins, the right above first.
+  const lineAt = (px: number) => {
+    for (let k = 1; k < pts.length; k++) {
+      const a = pts[k - 1]!;
+      const b = pts[k]!;
+      if (px >= x(a.i) && px <= x(b.i)) return y(a.v) + ((px - x(a.i)) / Math.max(1e-6, x(b.i) - x(a.i))) * (y(b.v) - y(a.v));
+    }
+    return px < x(pts[0]!.i) ? y(pts[0]!.v) : y(last.v);
+  };
+  const labelW = 64;
+  const corners = [
+    { end: true, above: true },
+    { end: true, above: false },
+    { end: false, above: true },
+    { end: false, above: false },
+  ].map((c) => {
+    const ty = c.above ? y(mean) - 5 : y(mean) + 14;
+    const x0 = c.end ? W - pad - labelW : pad;
+    let clear = Infinity;
+    for (let px = x0; px <= x0 + labelW; px += 4) {
+      const ly = lineAt(px);
+      clear = Math.min(clear, ly < ty - 11 ? ty - 11 - ly : ly > ty + 3 ? ly - ty - 3 : 0);
+    }
+    return { ...c, ty, clear };
+  });
+  const spot = corners.find((c) => c.clear >= 4) ?? [...corners].sort((a, b) => b.clear - a.clear)[0]!;
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="ch-stm-chart" role="img" aria-label={label}>
       <line x1={pad} x2={W - pad} y1={y(mean)} y2={y(mean)} className="ch-stm-chart__mean" />
-      <text x={W - pad} y={y(mean) - 5} textAnchor="end" className="ch-stm-chart__t">
+      <text x={spot.end ? W - pad : pad} y={spot.ty} textAnchor={spot.end ? 'end' : 'start'} className="ch-stm-chart__t">
         Mean {formatFixed(mean)}
       </text>
       <path d={d} className="ch-stm-chart__line" />
@@ -295,8 +355,8 @@ function Players({ data }: { data: ChTeamStats }) {
 }
 
 /** Make rate by distance: a bar per band, the Tour rate as a mark, a band under it in amber. */
-function Putting({ data }: { data: ChTeamStats }) {
-  if (data.puttsError) return <RetryNotice code="CH-4203" title="Team putting didn't load." body="Try again; the error has been reported." />;
+function Putting({ data, covered }: { data: ChTeamStats; covered: boolean }) {
+  if (data.puttsError) return <RetryNotice code="CH-4203" title="Team putting didn’t load" body="Try again; the error has been reported." covered={covered} />;
   if (!data.putting) return <EmptyState compact code="CH-4306" title="No putts logged in this window." body="Putting fills in from rounds posted with putt distances." />;
   const bands = data.putting.bands.slice(0, 5);
   const drawn = bands.reduce((a, b) => a + b.attempts, 0);

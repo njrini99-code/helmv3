@@ -1,6 +1,116 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-08 — dark: Clubhouse at night
+
+Team Hub follows GolfHelm's dark theme ("Clubhouse at night"). Row rules, the pass's perforation, task checkboxes, RSVP and read tracks become ivory hairlines; the tab underline and Going in the RSVP bar take the light green; ivory type on a filled green (RSVP choice, task tick, upload mark, audience choice, step) takes the on-green ink; the featured announcement is unchanged. Light mode is unchanged.
+
+## 2026-10-08 — phone: Mobile clubhouse pass
+
+Phone Team Hub follows the owner's "Mobile clubhouse pass" board (carried from
+Coach Home), with no cards:
+
+- the page opens under the engraved double rule, the role chip beside the team
+  line set as the engraved eyebrow, then a coach's New announcement and the tabs
+  on a hairline;
+- RSVPs, Updates, tasks and folders are sections on their own double rule, the
+  heading in the 19px bold sans, their rows on soft seams (the event's line, an
+  update and a file press with the Ledger tint, never a scale);
+- the latest announcement ("Latest", or "Needs your reply") is the screen's one
+  green feature card, with Got it as an ivory key and the reads bar in
+  champagne;
+- a trip is an entry with its facts between two hairlines and its plan under
+  them, the boarding-pass card and its notches gone; announcements are entries
+  ruled apart; the drop zone and the reply segments keep their material.
+
+The phone route skeleton has its own shape in the loaded page's classes: for a
+player the head, the tabs, the first section heading and its first row land with
+0px shift (WebKit 390). The skeleton can't know the role, so a coach's tabs
+still move down by the New announcement key (50px).
+
+## 2026-10-08 — The tab strip runs edge to edge; the skeleton takes the role's shape; curly apostrophes
+
+On a phone the tab strip's hairline now runs edge to edge and all five of a
+coach's tabs fit from 375px: the strip bleeds past the page's gutters but kept a
+100% width cap that held it 40px short, which cut Tasks at 390. The route
+skeleton draws the signed-in role's opening (a coach's New announcement under
+the role chip) and tab count, from the shell's role, so the page lands where it
+stood for either role: 0px at 390 (a coach's tabs moved 52px before). Every line
+the page writes, its toasts and the no-team page included, takes the curly
+apostrophe, and a title a toast quotes sits in curly quotes (Posted “Waiver”)
+(states audit b8, held by `copy-apostrophes.test.ts`).
+
+## 2026-10-08 — One notice when several reads fail; tab empties flush; one New announcement
+
+With more than one read failed, the page says so once under its head, naming the
+parts, with one Try again that reads the page again (the shell's CH-1209); each
+failed section keeps only its title under its heading. One failed read keeps its
+own notice and Try again. The tabs' empties (announcements, trips, documents)
+lose their card and sit flush at the panel's edge like Tasks', and their titles
+drop the full stop (states audit c5, b8). A coach's first-run page no longer
+repeats New announcement under the head's: the empty offers Plan a trip (b9).
+
+## 2026-10-07 — A file row presses with a tint
+
+A file row's tint now eases (quick), and on desktop a press deepens it to the
+row press tint over the press beat.
+
+## 2026-10-07 — Tabs that move
+
+The tabs' underline is now one bar that slides to the chosen tab on the press
+(CH-10602), where an inset rule used to jump. The panel renders just behind it
+and fades in with a 6px rise while the old one fades out (CH-10603, the shared
+`Swap`). With reduced motion both are instant.
+
+## 2026-10-07 — The Ledger: Team Hub sits flush on the canvas
+
+On desktop RSVPs, Updates, tasks and document folders lose their card: each is
+a heading over an engraved rule with its rows on soft seams, and Home's two
+columns part on a soft vertical rule. The latest announcement, the page's lead,
+keeps a gilt rule in the gutter instead of a card, its headline in forest ink
+on the section edge; in their own tab announcements are ruled apart. A trip is
+an entry rather than a boarding-pass card: its name in the heading sans, not
+the serif, and its plan beside it on a soft column rule. A section that didn't
+load keeps its notice a step under the rule. The composer line, the drop zone,
+the reply segments and the date chips keep their material. The route skeleton
+lays its bars flush, and its head and tab strip now match the loaded heights
+(158 and 34px), so nothing moves on load at 1440 or 1100 (WebKit). The phone is
+unchanged.
+
+## 2026-10-07 — Digits in serif titles
+
+Data-fed serif titles set their digits in the sans (shared `SerifText`; see the
+cross-page log), so a name or title with figures reads cleanly.
+
+## 2026-10-07 — Serif titles, readable RSVP bars
+
+Team Hub reads like a club bulletin. The page title, card titles (RSVPs,
+Updates), the latest announcement's headline and the trip name are set in the
+display serif; body, data and controls stay sans. The coach's RSVP bars widen
+from 110 to 180px at 8px tall, so the going, maybe, can't and no-reply split
+reads at a glance beside its line.
+
+## 2026-10-06 — Display type relaxed
+
+The owner found the display type too compact. Display headings on this page
+widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on
+every Clubhouse page. Layout and content are unchanged.
+
 <!-- clubhouse:release-audit:start -->
+
+## 2026-10-08 — Server-action imports follow the golf.ts split
+
+```text
+PR/commit:      #2176, agent/phase-7
+Design package: none
+Contract IDs:   none changed
+Data impact:    none
+Held items:     none
+```
+
+The screen's imports and test mocks now point at the files that own the server
+actions (calendar-events.ts) after `golf.ts`, `insights.ts` and `admin-data.ts` were split
+by domain. No behavior change.
+
 ## 2026-10-06 — Whole-app release audit
 
 Reconciled page purpose, design acceptance, contract status, wiring and

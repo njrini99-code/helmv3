@@ -62,11 +62,12 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
   // With CoachHelm off (CH-13304) nothing is read and the views lead nowhere, so the strip is not drawn, as the coach's is not (CH-13305).
   const tabs = data.off ? null : <PlayerHelmTabs active={sw.shown} onGo={sw.go} />;
   return (
-    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined}>
+    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''}>
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone && tabs}
-      <Head who="Player">One thing to work on this week, based on the rounds you’ve posted.</Head>
-      {!phone && tabs}
+      <Head who="Player" aside={!phone ? tabs : undefined}>
+        One thing to work on this week, based on the rounds you’ve posted.
+      </Head>
 
       {!data.off && <Proposals proposals={data.proposals} writes={writes} />}
       {/* CH-13208: a read beside the cards failed (the Tour's values, the drills, which cards have a focus, how current each read is). */}

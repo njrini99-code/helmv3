@@ -404,8 +404,8 @@ describe('HoleShotPath — strip controlled `active` draw-in', () => {
 
 describe('HoleShotPath — reduced motion', () => {
   it('renders the tooltip normally but skips the traveling ball-marker motion entirely', async () => {
-    vi.doMock('framer-motion', async (importOriginal) => {
-      const actual = await importOriginal<typeof import('framer-motion')>();
+    vi.doMock('motion/react', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('motion/react')>();
       return { ...actual, useReducedMotion: () => true };
     });
     vi.resetModules();
@@ -429,13 +429,13 @@ describe('HoleShotPath — reduced motion', () => {
     expect(await findByText(/Shot 1 of 2/)).toBeInTheDocument();
     expect(await findByText(/Driver/)).toBeInTheDocument();
 
-    vi.doUnmock('framer-motion');
+    vi.doUnmock('motion/react');
     vi.resetModules();
   });
 
   it('renders a fully-drawn static strip path with reduced motion even when `active` is true', () => {
-    vi.doMock('framer-motion', async (importOriginal) => {
-      const actual = await importOriginal<typeof import('framer-motion')>();
+    vi.doMock('motion/react', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('motion/react')>();
       return { ...actual, useReducedMotion: () => true };
     });
     vi.resetModules();
@@ -453,7 +453,7 @@ describe('HoleShotPath — reduced motion', () => {
       for (const p of Array.from(paths)) {
         expect(p.hasAttribute('pathLength')).toBe(false);
       }
-      vi.doUnmock('framer-motion');
+      vi.doUnmock('motion/react');
       vi.resetModules();
     });
   });

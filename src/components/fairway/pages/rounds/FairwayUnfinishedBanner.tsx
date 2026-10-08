@@ -41,7 +41,7 @@ import { Play, Send } from 'lucide-react';
 import { Surface, Inset } from '@/components/fairway/surfaces/surface';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
 import { Button } from '@/components/fairway/controls/button';
-import { deleteInProgressRound } from '@/app/golf/actions/golf';
+import { deleteInProgressRound } from '@/app/golf/actions/round-partial';
 import { clearEmergencySave } from '@/lib/utils/emergency-save';
 import type { RoundLibraryRound } from './FairwayRoundsLibrary';
 

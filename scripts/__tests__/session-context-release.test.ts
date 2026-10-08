@@ -1,7 +1,7 @@
 // SessionStart's release line must say WHERE its answer came from.
 //
 // On 2026-09-01 the canonical marker read 53ae81a4c while production served
-// fb425aa2b, because deploy-prod.sh had written the marker into the worktree
+// fb425aa2b, because the deploy step had written the marker into the worktree
 // it deployed from and the hook read the canonical copy. Every session opened
 // with "16 unreleased commits" against a real figure of 1, and nothing in the
 // text distinguished a verified number from a stale file. These fixtures pin:

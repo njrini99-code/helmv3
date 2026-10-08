@@ -54,7 +54,7 @@ The route skeleton (CH-12401) is the Clubhouse one for a player inside the shell
 | 120202 | CH-12402 | `A_SCHEDULE_IS_BEING_READ` | A schedule is being read |
 | 120203 | CH-12403 | `CLASSES_ARE_BEING_PUT_ON_THE_CALENDAR` | Classes are being put on the calendar |
 
-From the shell (P001): 10201 CH-1401.
+From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 ## 03 — Background loading / refresh
 
@@ -74,7 +74,7 @@ First run is the whole-page empty state (CH-12301), which offers Import schedule
 | 120404 | CH-12304 | `A_CLASS_WITH_TIMES_BUT_NO_DAYS` | A class with times but no days |
 | 120405 | CH-12305 | `A_PLAYER_ON_NO_TEAM` | A player on no team |
 | 120406 | CH-12307 | `AN_IMPORT_WHERE_EVERY_CLASS_IS_ALREADY` | An import where every class is already on the schedule |
-| 120407 | — | `FIRST_RUN_ONLY_WHEN_THE_READ_ANSWERED` | The first-run page (CH-12301) shows only when the classes read answered and the list is empty. A read that failed shows CH-12201 in its place, with no Add class or Import schedule beside it, and the header offers neither. Removing the last class returns to the first-run page. |
+| 120407 | — | `FIRST_RUN_ONLY_WHEN_THE_READ_ANSWERED` | The first-run page (CH-12301) shows only when the classes read answered and the list is empty. A read that failed shows CH-12201 in its place, and the header keeps Import schedule and Add class (a failed read keeps the head and its primary action, owner decision 2026-10-08). Removing the last class returns to the first-run page. |
 | 120408 | CH-12308 | `PHONE_NO_CLASS_MEETS_TODAY` | Phone: no class meets today |
 
 ## 05 — Validation
@@ -135,7 +135,7 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 120702 | CH-12902 | `A_READ_IS_SLOW` | A read is slow |
 | 120703 | — | `WRITES_REFUSE_OFFLINE` | Every write on the page (saving a class, removing one, importing a schedule and putting classes on the calendar) is refused while the browser is offline, before anything is sent, with the shell's toast naming what did not happen (CH-1903) and the error haptic; an edit keeps the form as typed, and the toast's Retry sends it once back online. A class saved just as the connection went stays in the list, flagged as not on the calendar (CH-12002). Reading a screenshot offline is CH-12901; pasted text and a TXT file are read on the device. |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
 
 ## 08 — Permission / authorization
 
@@ -226,14 +226,19 @@ Nothing refreshes in the background, and a change that lands does not read the p
 
 Status: DEFINED
 
-Two motions of its own, both in `classes.css` on the v2 tokens (D-64): a hovering class lifts 2px (CH-12601) and a scan line sweeps the page while a schedule is read, still under reduced motion (CH-12602). Both are checked in the preview, not in a test, and CH-12602 stays `reserved` because its code appears only in the stylesheet. Every press, sheet and skeleton fade is the shell's.
+Two motions of its own, both in `classes.css` on the v2 tokens (D-64): a
+hovering class takes the Ledger row tint on desktop and a deeper one on press,
+with no lift (CH-12601; owner Ledger, 2026-10-07), and a scan line sweeps the
+page while a schedule is read, still under reduced motion (CH-12602). Both are
+checked in the preview, not in a test. Every key press, sheet and skeleton fade
+is the shell's.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 121601 | CH-12601 | `HOVERING_A_CLASS` | Hovering a class |
 | 121602 | CH-12602 | `A_SCHEDULE_IS_BEING_READ_2` | A schedule is being read |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -249,7 +254,7 @@ On the v2 grammar (D-70): a tick for opening a class, choosing or clearing a day
 | 121704 | CH-12705 | `THE_IMPORT_SWITCHES_BETWEEN_A_FILE_AND` | The import switches between a file and pasted text |
 | 121705 | CH-12704 | `DELETE_ALL_CLASSES_IS_TAPPED` | Delete all classes is tapped |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
 
 ## 18 — Accessibility
 
@@ -266,7 +271,7 @@ The page is labelled "Classes" and each class is one button named for its code, 
 | 121805 | CH-12805 | `THE_IMPORTS_DROP_ZONE` | The import's drop zone |
 | 121806 | — | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations on the six preview states (the board's Fall 2026, empty, failed, partial, no team and loading) at 1280px and 390px, run by npm run clubhouse:a11y from the entries in scripts/clubhouse/a11y.mjs. Reserved: it ran clean on 2026-09-30 (12 of 12), but it is a dev-server run, not a test, so no test names it. |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
 
 ## 19 — Responsive layout
 

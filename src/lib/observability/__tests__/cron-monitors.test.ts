@@ -108,7 +108,7 @@ describe('resolveCronMonitorSlug', () => {
   });
 
   it('falls back to job-<jobType> for a jobType with no CRON_REGISTRY entry', () => {
-    // e.g. an Inngest function id, a launchd job, or selfheal-close (a
+    // e.g. a launchd job, or selfheal-close (a
     // sub-step inside log-retention's single invocation, not itself scheduled).
     expect(resolveCronMonitorSlug('selfheal-close')).toBe('job-selfheal-close');
     expect(resolveCronMonitorSlug('onCoachHelmRoundSubmitted')).toBe('job-onCoachHelmRoundSubmitted');

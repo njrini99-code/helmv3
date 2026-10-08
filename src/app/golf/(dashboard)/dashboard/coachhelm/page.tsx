@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
-import { getPlayerCoachHelmDashboard } from '@/app/golf/actions/insights';
+import { getPlayerCoachHelmDashboard } from '@/app/golf/actions/insights-coachhelm';
 import { getPlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
 import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint-types';
 import {

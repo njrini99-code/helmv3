@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+/* global document -- provided by the jsdom environment above */
 import { describe, it, expect, beforeAll } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';

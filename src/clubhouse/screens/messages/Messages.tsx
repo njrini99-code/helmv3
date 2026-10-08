@@ -117,7 +117,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
       if (!person) {
         toast({
           tone: 'error',
-          title: "Couldn't open that conversation",
+          title: "Couldn’t open that conversation",
           body: player ? 'That player isn’t on your team, or hasn’t set up their account yet.' : 'That person isn’t on your team, or hasn’t set up their account yet.',
           code: 'CH-7001',
         });
@@ -160,7 +160,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     async (surface: string, copy: { failed: string; hint: string; code: string }, fn: () => Promise<boolean | void>): Promise<boolean> => {
       if (isOffline()) {
         haptic('error');
-        toast({ tone: 'error', title: `${copy.failed}: you're offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903' });
+        toast({ tone: 'error', title: `${copy.failed}: you’re offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903' });
         return false;
       }
       const stopSlow = delayedToast({ title: 'Still saving…', body: 'This is taking longer than usual. Keep this page open.', code: 'CH-1902' }, CH_SLOW_SAVE_AFTER);
@@ -183,7 +183,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         setSelectedId(existing.id);
         return true;
       }
-      return attempt('startDirect', { failed: "Couldn't start the conversation", hint: 'Try again in a moment.', code: 'CH-7002' }, async () => {
+      return attempt('startDirect', { failed: "Couldn’t start the conversation", hint: 'Try again in a moment.', code: 'CH-7002' }, async () => {
         chTrail('messages start direct');
         const res = await createGolfConversation([userId], data.teamId);
         if (!('conversationId' in res) || !res.conversationId) throw new Error('error' in res ? String(res.error) : 'Could not start the conversation');
@@ -197,7 +197,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
 
   const createGroup = useCallback(
     async (userIds: string[], title: string): Promise<boolean> => {
-      return attempt('createGroup', { failed: "Couldn't create the group", hint: 'Try again in a moment.', code: 'CH-7003' }, async () => {
+      return attempt('createGroup', { failed: "Couldn’t create the group", hint: 'Try again in a moment.', code: 'CH-7003' }, async () => {
         chTrail('messages create group');
         const res =
           data.role === 'coach'
@@ -223,7 +223,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
           chReport(new Error(`${missed.length} coach(es) not added to a new group`), { surface: 'messages.createGroup', severity: 'low' });
           haptic('warning');
           const names = missed.map((u) => firstName(people.get(u)?.name ?? 'A coach')).join(', ');
-          toast({ tone: 'error', title: `Group created, but ${names} ${missed.length === 1 ? "wasn't" : "weren't"} added`, body: 'Add them from Details.', code: 'CH-7019' });
+          toast({ tone: 'error', title: `Group created, but ${names} ${missed.length === 1 ? "wasn’t" : "weren’t"} added`, body: 'Add them from Details.', code: 'CH-7019' });
         }
       });
     },
@@ -476,7 +476,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     retryPendingAttachmentSend: async () => {
       if (!selectedId) return 'unknown';
       if (isOffline()) {
-        toast({ tone: 'error', title: "Couldn't check this send: you're offline", body: 'Reconnect, then retry the same send.', code: 'CH-1903' });
+        toast({ tone: 'error', title: "Couldn’t check this send: you’re offline", body: 'Reconnect, then retry the same send.', code: 'CH-1903' });
         return 'unknown';
       }
       try {
@@ -499,7 +499,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         return true;
       } catch (err) {
         const unknown = /network|fetch|timeout|aborted/i.test(err instanceof Error ? err.message : '');
-        fail('send', err, unknown ? "Couldn't confirm this message sent" : "Couldn't send the message", unknown ? 'It is in the thread: check it, then Retry from there if it did not arrive.' : 'It is in the thread, marked Not sent. Retry from there.', unknown ? 'CH-7005' : 'CH-7004');
+        fail('send', err, unknown ? "Couldn’t confirm this message sent" : "Couldn’t send the message", unknown ? 'It is in the thread: check it, then Retry from there if it did not arrive.' : 'It is in the thread, marked Not sent. Retry from there.', unknown ? 'CH-7005' : 'CH-7004');
         return false;
       }
     },
@@ -508,7 +508,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
       const bad = files.map((f) => ({ f, v: validateFile(f) })).find((x) => !x.v.valid);
       if (bad) {
         haptic('warning');
-        toast({ tone: 'error', title: `Can't attach ${bad.f.name}`, body: bad.v.error ?? 'That file type or size isn’t supported.', code: 'CH-7101' });
+        toast({ tone: 'error', title: `Can’t attach ${bad.f.name}`, body: bad.v.error ?? 'That file type or size isn’t supported.', code: 'CH-7101' });
         return false;
       }
       const pending: PendingAttachment[] = files.map((file, i) => ({
@@ -527,13 +527,13 @@ export function Messages({ data }: { data: ChMessagesData }) {
       let partial = false;
       let unknown = false;
       let checked = false;
-      const ok = await attempt('sendFiles', { failed: "Couldn't send the attachment", hint: 'Your message and files are still in the box. Try again.', code: 'CH-7006' }, async () => {
+      const ok = await attempt('sendFiles', { failed: "Couldn’t send the attachment", hint: 'Your message and files are still in the box. Try again.', code: 'CH-7006' }, async () => {
         const res = await sendMessageWithAttachments({ conversationId: selectedId, content: text, attachments: pending, ...(replyToId ? { replyToId } : {}) });
         if (res.cancelled) return false;
         checked = true;
         if (res.sendOutcome === 'unknown') {
           unknown = true;
-          toast({ tone: 'error', title: "Couldn't confirm this send", body: 'Your draft and files are kept. Retry send checks the same attempt before sending again.', code: 'CH-7023' });
+          toast({ tone: 'error', title: "Couldn’t confirm this send", body: 'Your draft and files are kept. Retry send checks the same attempt before sending again.', code: 'CH-7023' });
           return true;
         }
         if (!res.success) throw new Error(res.error || 'Attachment send failed');
@@ -548,13 +548,13 @@ export function Messages({ data }: { data: ChMessagesData }) {
     retry: (id) => void msgs.retryMessage(id),
     discard: (id) => msgs.discardFailedMessage(id),
     edit: (id, text) =>
-      attempt('edit', { failed: "Couldn't edit the message", hint: 'Your edit is still in the box. Try again.', code: 'CH-7007' }, async () => {
+      attempt('edit', { failed: "Couldn’t edit the message", hint: 'Your edit is still in the box. Try again.', code: 'CH-7007' }, async () => {
         await msgs.editMessage(id, text);
         haptic('success');
         toast({ title: 'Message edited' });
       }),
     remove: async (id) => {
-      const ok = await attempt('remove', { failed: "Couldn't delete the message", hint: 'It’s back in the thread. Try again in a moment.', code: 'CH-7008' }, async () => {
+      const ok = await attempt('remove', { failed: "Couldn’t delete the message", hint: 'It’s back in the thread. Try again in a moment.', code: 'CH-7008' }, async () => {
         await msgs.removeMessage(id);
         haptic('success');
         toast({ title: 'Message deleted' });
@@ -567,7 +567,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
       const emoji = EMOJI_BY_KEY[key];
       // The hook takes one reaction at a time; a tap while one is saving is dropped, not reported as a failure.
       if (!emoji || reactions.pending) return;
-      void attempt('react', { failed: "Couldn't save the reaction", hint: 'Try again in a moment.', code: 'CH-7009' }, async () => {
+      void attempt('react', { failed: "Couldn’t save the reaction", hint: 'Try again in a moment.', code: 'CH-7009' }, async () => {
         // setReaction answers false (session gone, write refused) and never throws: that is a failure too.
         if ((await reactions.setReaction(messageId, emoji, active)) === false) throw new Error('Reaction was not saved');
       });
@@ -578,7 +578,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     retryMembers: () => setMembersAttempt((n) => n + 1),
     leave: async () => {
       if (!selectedId) return false;
-      return attempt('leave', { failed: "Couldn't leave the group", hint: 'Try again in a moment.', code: 'CH-7010' }, async () => {
+      return attempt('leave', { failed: "Couldn’t leave the group", hint: 'Try again in a moment.', code: 'CH-7010' }, async () => {
         const res = await leaveGolfGroup(selectedId);
         if ('error' in res) throw new Error(res.error);
         haptic('success');
@@ -589,7 +589,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     },
     addCandidates,
     addMember: (userId, name) =>
-      attempt('addMember', { failed: `Couldn't add ${firstName(name)}`, hint: 'Try again in a moment.', code: 'CH-7018' }, async () => {
+      attempt('addMember', { failed: `Couldn’t add ${firstName(name)}`, hint: 'Try again in a moment.', code: 'CH-7018' }, async () => {
         if (!selectedId) throw new Error('No conversation open');
         const res = await addGolfGroupMember(selectedId, userId);
         if ('error' in res) throw new Error(res.error);
@@ -613,7 +613,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     retryMute: () => setMuteAttempt((n) => n + 1),
     setMute: async (muted, hours) => {
       if (!selectedId) return false;
-      return attempt('mute', { failed: muted ? "Couldn't mute the conversation" : "Couldn't turn notifications back on", hint: 'Try again in a moment.', code: 'CH-7011' }, async () => {
+      return attempt('mute', { failed: muted ? "Couldn’t mute the conversation" : "Couldn’t turn notifications back on", hint: 'Try again in a moment.', code: 'CH-7011' }, async () => {
         const r = await setGolfConversationMute(selectedId, muted, hours);
         if (!r.success) throw new Error(r.error);
         setMuteState(r.data);
@@ -636,7 +636,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     },
     announcementDetail,
     acknowledge: (id) =>
-      attempt('acknowledge', { failed: "Couldn't send your acknowledgement", hint: 'Try again in a moment.', code: 'CH-7012' }, async () => {
+      attempt('acknowledge', { failed: "Couldn’t send your acknowledgement", hint: 'Try again in a moment.', code: 'CH-7012' }, async () => {
         const r = await acknowledgeAnnouncement(id);
         if (!r.success) throw new Error(r.error || 'acknowledge failed');
         haptic('success');
@@ -644,7 +644,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         await loadAnns();
       }),
     completeTask: (_announcementId, taskId) =>
-      attempt('completeTask', { failed: "Couldn't mark the task done", hint: 'Try again in a moment.', code: 'CH-7013' }, async () => {
+      attempt('completeTask', { failed: "Couldn’t mark the task done", hint: 'Try again in a moment.', code: 'CH-7013' }, async () => {
         const r = await completeAnnouncementTask(taskId);
         if (!r.success) throw new Error(r.error || 'task update failed');
         haptic('success');
@@ -652,7 +652,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         await loadAnns();
       }),
     createAnnouncement: ({ title, body, urgent, ack }) =>
-      attempt('createAnnouncement', { failed: "Couldn't post the announcement", hint: 'Your text is still here. Try again.', code: 'CH-7014' }, async () => {
+      attempt('createAnnouncement', { failed: "Couldn’t post the announcement", hint: 'Your text is still here. Try again.', code: 'CH-7014' }, async () => {
         chTrail('messages post announcement');
         const r = await createEnrichedAnnouncement({ title, body, urgency: urgent ? 'urgent' : 'normal', requiresAcknowledgement: ack, recipientPlayerIds: null, documentIds: [], inlineTasks: [] });
         if (!r.success || !r.data) throw new Error(r.error || 'announcement failed');

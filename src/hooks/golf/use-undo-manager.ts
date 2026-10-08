@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import type { ShotRecord, HoleStats, RoundHole } from '@/lib/types/golf';
-import { deleteShot } from '@/app/golf/actions/golf';
+import { deleteShot } from '@/app/golf/actions/shot-actions';
 import type { ShotTrackingState, ShotAction } from './use-shot-state-machine';
 import { endsWithErrantStrokePair } from './use-penalty-handler';
 

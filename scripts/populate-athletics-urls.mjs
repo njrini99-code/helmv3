@@ -4,6 +4,14 @@
  * athletics golf coaches page.
  */
 import { createClient } from '@supabase/supabase-js';
+import { cliGuard, dryRunClient } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/populate-athletics-urls.mjs',
+  summary:
+    "Looks up each coach school athletics site through a web search and writes crm_coaches.athletics_url on the project in .env.local.",
+  secrets: "NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (node --env-file=.env.local)",
+});
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -13,7 +21,7 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
   process.exit(1);
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = dryRunClient(createClient(SUPABASE_URL, SUPABASE_KEY), cli);
 
 async function searchDDG(school) {
   const query = encodeURIComponent(`${school} men's golf coaches athletics site`);

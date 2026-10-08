@@ -24,6 +24,14 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { helpOnly } from '../lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/db/config-drift.mjs',
+  summary:
+    "Reports whether production Auth, API, DB and Storage config has drifted from supabase/config.toml. Read-only.",
+  secrets: 'SUPABASE_ACCESS_TOKEN',
+});
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const BASELINE_PATH = resolve(ROOT, 'supabase/config-drift-baseline.json');
