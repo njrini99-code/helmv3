@@ -44,6 +44,7 @@ export function CalendarPhone({
   selId,
   notices,
   onView,
+  onStep,
   onOpen,
   onNew,
   onSubscribe,
@@ -59,6 +60,8 @@ export function CalendarPhone({
   /** The failed-read notices, shared with desktop. */
   notices: ReactNode;
   onView: (view: ChCalView, anchor: string) => void;
+  /** The Calendar's step (its arrow keys): one day, week or month on from where the page is headed, with a tick. */
+  onStep: (dir: 1 | -1) => void;
   onOpen: (id: string, date: string) => void;
   onNew: (date: string) => void;
   onSubscribe: () => void;
@@ -104,7 +107,7 @@ export function CalendarPhone({
           {/* CH-6604: Day, Month and List settle in as the switch moves (base in, quick out); instant with reduced motion. */}
           <Swap swapKey={pv}>
             {pv === 'day' && <DayView anchor={anchor} events={events} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} range={data.range} />}
-            {pv === 'month' && <MonthGrid anchor={anchor} events={events} now={now} onPick={(d) => onView('day', d)} onMonth={(d) => onView('month', d)} />}
+            {pv === 'month' && <MonthGrid anchor={anchor} events={events} now={now} onPick={(d) => onView('day', d)} onStep={onStep} onMonth={(d) => onView('month', d)} />}
             {pv === 'list' &&
               (events.some((e) => e.date >= now.date) ? (
                 <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={(id) => onOpen(id, events.find((e) => e.id === id)?.date ?? anchor)} />

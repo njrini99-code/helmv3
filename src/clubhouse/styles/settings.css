@@ -1255,8 +1255,9 @@
     background: var(--ch-bg-inset);
     box-shadow: var(--ch-well-soft-shadow);
   }
+  /* Transparent, not hidden: the handle a keyboard lifted keeps its focus and its place for VoiceOver. */
   .ch-setm-rank__i.is-held > * {
-    visibility: hidden;
+    opacity: 0;
   }
   .ch-setm-rank__i.is-held::before {
     display: none;

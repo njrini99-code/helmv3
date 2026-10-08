@@ -889,6 +889,29 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
       expect(title()).toBe('October');
       expect(hapticSpy.mock.calls.filter((c) => c[0] === 'select')).toHaveLength(2);
     });
+
+    it('60302 a month past the loaded window is asked for; a second swipe or Page Down while it loads steps on from it, as the arrows do', async () => {
+      const user = userEvent.setup();
+      // The fixture's window ends on 25 November, so November's whole weeks are not loaded yet.
+      wrap(cal({ view: 'month', anchor: '2026-10-14' }));
+      const swipeLeft = (target: Element) =>
+        act(() => {
+          target.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, isPrimary: true, pointerType: 'touch', clientX: 300, clientY: 300 }));
+          target.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, isPrimary: true, pointerType: 'touch', clientX: 200, clientY: 300 }));
+        });
+      swipeLeft(day(/^Wed 14 October/));
+      await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
+      expect(router.push).toHaveBeenLastCalledWith(expect.stringContaining('date=2026-11-01'), { scroll: false });
+      // The page still shows October while November is on its way: the next turn asks for December, not November again.
+      expect(title()).toBe('October');
+      swipeLeft(day(/^Wed 14 October/));
+      await waitFor(() => expect(router.push).toHaveBeenCalledTimes(2));
+      expect(router.push).toHaveBeenLastCalledWith(expect.stringContaining('date=2026-12-01'), { scroll: false });
+      day(/^Wed 14 October/).focus();
+      await user.keyboard('{PageDown}');
+      await waitFor(() => expect(router.push).toHaveBeenCalledTimes(3));
+      expect(router.push).toHaveBeenLastCalledWith(expect.stringContaining('date=2027-01-01'), { scroll: false });
+    });
   });
 
   it('CH-6606 choosing a day moves the strip’s green plate to it and swaps in its agenda under a day heading', async () => {

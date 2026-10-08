@@ -636,6 +636,7 @@ export function Calendar({
             </>
           }
           onView={go}
+          onStep={step}
           onOpen={open}
           onNew={(d) => setEditor({ event: null, date: d })}
           onSubscribe={() => setSubs(true)}

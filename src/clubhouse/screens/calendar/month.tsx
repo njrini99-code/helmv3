@@ -112,21 +112,25 @@ function MonthDay({ day, modifiers, className, children, ...rest }: DayButtonPro
 }
 
 /**
- * The month grid with the legend. A day opens its Day view; the month turns with a swipe across the grid, with the
- * keyboard inside it (the arrows past either end, Page Up and Page Down), and with the Calendar's own arrow keys from
- * outside it (Calendar.tsx `step`), all through `onMonth` and each with one selection tick.
+ * The month grid with the legend. A day opens its Day view. The month turns a month at a time with a swipe across the
+ * grid, with the keyboard inside it (the arrows past either end, Page Up and Page Down) and with the Calendar's arrow
+ * keys from outside it, all through the Calendar's own `step` (one tick, and a second turn while the next window loads
+ * steps on from the month it is headed to). A longer jump from the keyboard (Shift with Page Up or Down, a year) goes
+ * straight to that month.
  */
 export function MonthGrid({
   anchor,
   events,
   now,
   onPick,
+  onStep,
   onMonth,
 }: {
   anchor: string;
   events: ChCalEvent[];
   now: ChNow;
   onPick: (date: string) => void;
+  onStep: (dir: 1 | -1) => void;
   onMonth: (date: string) => void;
 }) {
   const marks = useMemo(() => {
@@ -139,6 +143,8 @@ export function MonthGrid({
     return by;
   }, [events]);
   const turn = (date: string) => {
+    if (date === addMonths(anchor, 1)) return onStep(1);
+    if (date === addMonths(anchor, -1)) return onStep(-1);
     haptic('select');
     onMonth(date);
   };
@@ -163,7 +169,7 @@ export function MonthGrid({
         const dx = e.clientX - s.x;
         if (Math.abs(dx) < SWIPE_PX || Math.abs(dx) < Math.abs(e.clientY - s.y) * 1.5) return;
         swiped.current = true;
-        turn(addMonths(anchor, dx < 0 ? 1 : -1));
+        onStep(dx < 0 ? 1 : -1);
       }}
       onPointerCancel={() => {
         swipe.current = null;
