@@ -16,8 +16,9 @@ Held items: none
 - Phone only; desktop Team stats is unchanged. The page is recomposed, not re-sourced: same loader, window
   change, filter sheet, notices, empty and failure states, and catalog codes.
 - The head is the team's context line in plain sentence case (it was letter-spaced) over a 34px large title.
-- One hero figure: the scoring average at 64px with its change and what the loader says it is against; its trend
-  sits directly under it. The trend is Recharts on its own chunk (never loaded on desktop): the mean dashed, lower
+- One hero figure: the scoring average at 64px with its change and what the loader says it is against, and
+  where it sits against par (the stat line's par gauge, as words); its trend sits directly under it. Readings
+  under the trend and the groups hold two lines, so a wrap never moves what follows. The trend is Recharts on its own chunk (never loaded on desktop): the mean dashed, lower
   scores higher, a finger on it reads a round day; the page keeps the written reading and the 340:120 box.
 - Greens, putts and scrambling are an iOS inset group (no chevrons: nothing to open), each with its reference
   where the data has one; the hole-coverage line sits under the group.

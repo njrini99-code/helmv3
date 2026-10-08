@@ -9832,6 +9832,7 @@
         "ch-stm-head",
         "ch-stm-hero",
         "ch-stm-hero__c",
+        "ch-stm-hero__par",
         "ch-stm-hero__v",
         "ch-stm-leg",
         "ch-stm-leg__bar",
@@ -9997,7 +9998,7 @@
           "name": "--ch-stm-inset",
           "value": "64px",
           "scope": "@media (max-width: 820px) → .ch-stm.is-team .ch-stm-list",
-          "line": 4484
+          "line": 4500
         }
       ]
     },

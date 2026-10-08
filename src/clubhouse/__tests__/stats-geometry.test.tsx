@@ -223,6 +223,10 @@ describe('Skeletons draw the loaded page\'s lines', () => {
     expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-figrow\s*{[^}]*height: 60px/);
     expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-sgfig\s*{[^}]*height: 64px/);
     expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-leg\s*{[^}]*height: 44px/);
+    // The trend's hold is the plot's own box (the same bleed), and its reading holds the two lines it wraps to beside the mean's key.
+    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-plot\s*{[^}]*aspect-ratio: 340 \/ 120;\s*margin-inline: -4px/);
+    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-trend \.ch-stm-chart-hold\s*{\s*margin-inline: -4px/);
+    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-trend \.ch-stm-note\s*{[^}]*min-height: calc\(2 \* 1\.4 \* 14px\)/);
     // A profile's three figures take the stat line and gauge row.
     const profilePhone = render(<StatsPlayerPhoneSkeleton />);
     expect(profilePhone.container.querySelector('.ch-stm-overview > .ch-stm-figs.is-three.is-line + .ch-stm-gauges')).not.toBeNull();

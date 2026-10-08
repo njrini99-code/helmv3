@@ -4166,7 +4166,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   .ch-stm.is-team .ch-stm-hero {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
-    grid-template-areas: 'k k' 'v c';
+    grid-template-areas: 'k p' 'v c';
     align-items: baseline;
     column-gap: 12px;
     row-gap: 6px;
@@ -4176,6 +4176,12 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     grid-area: k;
     font: 500 15px/1.3 var(--ch-font-sans);
     color: var(--ch-text-secondary);
+  }
+  /* Against par, over the change: the two lines of context share the column to the value's right. */
+  .ch-stm.is-team .ch-stm-hero__par {
+    grid-area: p;
+    font: 400 15px/1.3 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
   }
   .ch-stm.is-team .ch-stm-hero dd {
     margin: 0;
@@ -4236,11 +4242,17 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   .ch-stm.is-team .ch-stm-tip b {
     font: 600 16px/1.1 var(--ch-font-sans);
   }
+  /* The hold (one round day, and the skeleton) is the plot's own box: the same bleed past the trend's inset. */
+  .ch-stm.is-team .ch-stm-trend .ch-stm-chart-hold {
+    margin-inline: -4px;
+  }
+  /* The reading wraps beside the mean's key on a 390px phone, so its line pair is held in every state. */
   .ch-stm.is-team .ch-stm-trend .ch-stm-note {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: 12px;
+    min-height: calc(2 * 1.4 * 14px);
   }
   .ch-stm.is-team .ch-stm-mean {
     display: inline-flex;
@@ -4262,6 +4274,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   .ch-stm.is-team .ch-stm-panel > .ch-stm-cover {
     margin: 0;
     padding-inline: 16px;
+  }
+  /* A group's reading is one line or two ("Approach is the only leg losing strokes, 0.7 a round."); it holds two. */
+  .ch-stm.is-team .ch-stm-panel > .ch-stm-note {
+    min-height: calc(2 * 1.4 * 14px);
   }
   .ch-stm.is-team .ch-stm-cover {
     min-height: 1.4em;
@@ -4474,9 +4490,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     transition: translate var(--ch-dur-base) var(--ch-ease);
   }
   /* The empty window holds the loaded section's height: a 19px header, the 64px figure and five 44px rows in their
-     group, the one-line note, and the gaps between. */
+     group (294px with its padding), the note's two held lines (39.2px), and the two 8px gaps. */
   .ch-stm.is-team .ch-stm-panel--bars {
-    min-height: 349px;
+    min-height: 369px;
   }
 
   /* The players: an inset list, the separator starting at the name. */

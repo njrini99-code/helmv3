@@ -15,7 +15,7 @@ import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { Icon } from '../../ui/Icon';
 import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
-import { changeTone, formatFixed, formatSigned, MINUS, NO_DATA } from '../../lib/format';
+import { changeTone, formatFixed, formatSigned, formatToPar, MINUS, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { CH_DUR, CH_EASE } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
@@ -196,9 +196,12 @@ const figureValue = (f: ChFigure) => (f.value == null ? NO_DATA : `${f.value.toF
 function Hero({ figure: f }: { figure: ChFigure | undefined }) {
   if (!f) return null;
   const none = f.delta == null;
+  // What the average is against par a round (the loader's, per 18 holes), over the change: no bare number (2026-10-07).
+  const toPar = f.gauge?.kind === 'par' ? f.gauge.toPar : null;
   return (
     <dl className="ch-stm-hero">
       <dt>{f.label}</dt>
+      {toPar != null && <dd className="ch-stm-hero__par ch-num">{formatToPar(toPar, 1) === 'E' ? 'Even par' : `${formatToPar(toPar, 1)} to par`}</dd>}
       <dd className="ch-stm-hero__v ch-num">{figureValue(f)}</dd>
       <dd className="ch-stm-hero__c" aria-hidden={none ? true : undefined}>
         {!none && (

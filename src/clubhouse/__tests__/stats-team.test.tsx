@@ -524,6 +524,8 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     const hero = document.querySelector('.ch-stm-hero')!;
     expect(hero.querySelector('dt')!.textContent).toBe('Scoring average');
     expect(hero.querySelector('.ch-stm-hero__v')!.textContent).toBe('73.6');
+    // Drawn against par, as the stat line's gauge drew it (no bare numbers).
+    expect(hero.querySelector('.ch-stm-hero__par')!.textContent).toBe('+1.6 to par');
     expect(hero.querySelector('.ch-stm-hero__c')!.textContent).toBe('−0.9 vs. previous 10');
     // Scoring down 0.9 is better (green); putts up 0.3 is worse (amber).
     expect(hero.querySelector('.ch-stm-hero__c b')!.className).toMatch(/ch-gain/);
