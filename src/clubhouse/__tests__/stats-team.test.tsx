@@ -40,6 +40,7 @@ import { StatsSkeleton } from '../screens/stats/StatsSkeleton';
 import { ToastProvider } from '../ui/Toast';
 import { PREVIEW_PLAYER, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
 import { filterFor } from '../data/stats-filter';
+import { ScoreLine } from '../screens/stats/StatsTeamPhone';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 async function expectCode(c: string, text?: RegExp) {
@@ -97,7 +98,7 @@ describe('Stats team · saves that fail', () => {
     };
     wrap(stats());
     await user.click(screen.getByRole('button', { name: 'Export' }));
-    await expectCode('CH-4001', /Couldn't export team stats/);
+    await expectCode('CH-4001', /Couldn’t export team stats/);
     expect(reportSpy).toHaveBeenCalledWith(expect.any(Error), { surface: 'stats.team.export', severity: 'low' });
     expect(hapticSpy).toHaveBeenCalledWith('error');
     url.createObjectURL = prev;
@@ -111,7 +112,10 @@ describe('Stats team · reads that fail', () => {
     expect(data.roundsError).toBe(true);
     expect(logServer).toHaveBeenCalledWith('stats', 'rounds', expect.anything());
     wrap(data);
-    await expectCode('CH-4201', /Team rounds didn't load/);
+    await expectCode('CH-4201', /Team rounds didn’t load/);
+    // The page's one read failed: the page's failure (CH-1211) is its whole body, an alert, never a notice over a blank page.
+    expect(code('CH-4201')!.classList.contains('ch-empty-page--danger')).toBe(true);
+    expect(code('CH-4201')!.getAttribute('role')).toBe('alert');
     expect(screen.queryByText('Scoring average')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Export' })).toBeNull();
     expect(code('CH-4301')).toBeNull();
@@ -125,11 +129,11 @@ describe('Stats team · reads that fail', () => {
     expect(logServer).toHaveBeenCalledWith('stats', 'members', expect.anything(), 'teams');
     expect(data.roundsError).toBe(true);
     wrap(data);
-    await expectCode('CH-4201', /Team rounds didn't load/);
+    await expectCode('CH-4201', /Team rounds didn’t load/);
     expect(code('CH-4301')).toBeNull();
     // A roster that did not load is not "0 active players".
-    expect(document.querySelector('.ch-st-head p')!.textContent).toBe('Varsity · countable rounds only');
-    expect(document.querySelector('.ch-st-head')!.textContent).not.toMatch(/\b0 active/);
+    expect(document.querySelector('.ch-hero .ch-hero__line')!.textContent).toBe('Varsity · countable rounds only');
+    expect(document.querySelector('.ch-hero')!.textContent).not.toMatch(/\b0 active/);
   });
 
   it('CH-4211 the season’s longest putt does not load: Season bests says so beside the other bests, never "No season bests yet" and never a quiet gap', async () => {
@@ -144,7 +148,7 @@ describe('Stats team · reads that fail', () => {
     expect(data.longestError).toBe(true);
     expect(data.roundsError).toBe(false);
     wrap(data);
-    await expectCode('CH-4211', /The longest putt didn't load/);
+    await expectCode('CH-4211', /The longest putt didn’t load/);
     expect(code('CH-4307')).toBeNull();
     expect(screen.getByText('Low round')).toBeTruthy();
     await userEvent.setup().click(within(code('CH-4211') as HTMLElement).getByRole('button', { name: 'Try again' }));
@@ -164,7 +168,7 @@ describe('Stats team · reads that fail', () => {
     expect(data.figures.find((f) => f.label === 'Greens in regulation')!.value).toBeNull();
     expect(logServer).toHaveBeenCalledWith('stats', 'roundCache', expect.anything());
     wrap(data);
-    await expectCode('CH-4202', /Some team figures didn't load/);
+    await expectCode('CH-4202', /Some team figures didn’t load/);
   });
 
   it('CH-4203 putting does not load', async () => {
@@ -173,7 +177,23 @@ describe('Stats team · reads that fail', () => {
     expect(data.puttsError).toBe(true);
     expect(logServer).toHaveBeenCalledWith('stats', 'putts', expect.anything(), 'stats_analytics');
     wrap(data);
-    await expectCode('CH-4203', /Team putting didn't load/);
+    await expectCode('CH-4203', /Team putting didn’t load/);
+  });
+
+  it('CH-1209 figures and putting that both fail are told once under the head, with one Try again', async () => {
+    wrap(stats({ cacheError: true, puttsError: true, longestError: true }));
+    await expectCode('CH-1209', /Some team figures, team putting and the longest putt didn’t load/);
+    expect(document.querySelectorAll('[role="alert"]')).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    for (const c of ['CH-4202', 'CH-4203', 'CH-4211']) expect(within(code(c) as HTMLElement).queryByRole('button')).toBeNull();
+    await userEvent.setup().click(within(code('CH-1209') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalled();
+  });
+
+  it('CH-1209 one part failing keeps its own Try again, with no page notice', () => {
+    wrap(stats({ puttsError: true }));
+    expect(code('CH-1209')).toBeNull();
+    expect(within(code('CH-4203') as HTMLElement).getByRole('button', { name: 'Try again' })).toBeTruthy();
   });
 
   it('CH-4204 CH-4205 CH-4206 CH-4207 CH-4208 42301 a section that crashes stays inside its section, and is reported high with its section', () => {
@@ -190,6 +210,15 @@ describe('Stats team · reads that fail', () => {
     for (const surface of ['stats.team.figures', 'stats.team.trend', 'stats.team.legs', 'stats.team.putting', 'stats.team.bests'])
       expect(reportSpy).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface, severity: 'high' }));
     expect(screen.getByRole('heading', { name: 'Team stats' })).toBeTruthy();
+    quiet.mockRestore();
+  });
+
+  it('CH-1210 sections that crash together are told once under the head, with one Try again; each keeps its title', async () => {
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    wrap(stats({ figures: null as never, players: null as never, legWeeks: null as never, putting: { putts: 1, bands: null as never }, bests: null as never }));
+    await expectCode('CH-1210', /Team figures, the trend chart, strokes gained by leg, team putting and season bests couldn’t be shown/);
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    for (const c of ['CH-4204', 'CH-4205', 'CH-4206', 'CH-4207', 'CH-4208']) expect(within(code(c) as HTMLElement).queryByRole('button')).toBeNull();
     quiet.mockRestore();
   });
 
@@ -250,6 +279,8 @@ describe('Stats team · empty', () => {
     const user = userEvent.setup();
     wrap(empty({ window: 'last10' }));
     await expectCode('CH-4301', /No 18-hole rounds in this window yet/);
+    // The whole body is empty, so it is the page's empty state (states audit, 2026-10-08), not a section's.
+    expect(code('CH-4301')!.classList.contains('ch-empty-page')).toBe(true);
     await user.click(screen.getByRole('button', { name: 'Show the season' }));
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?window=season', { scroll: false });
   });
@@ -302,7 +333,7 @@ describe('Stats team · network', () => {
     const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
     wrap(stats({ window: 'last10' }));
     await user.click(screen.getByRole('radio', { name: 'Season' }));
-    await expectCode('CH-4901', /Couldn't open the season: you're offline/);
+    await expectCode('CH-4901', /Couldn’t open the season: you’re offline/);
     expect(code('CH-4901')!.textContent).toMatch(/still the last 10 rounds/);
     expect(router.push).not.toHaveBeenCalled();
     expect(hapticSpy).toHaveBeenCalledWith('error');
@@ -495,6 +526,10 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     const deltas = [...figs.querySelectorAll('dd:last-of-type')];
     expect(deltas[0]!.className).toMatch(/ch-gain/);
     expect(deltas[2]!.className).toMatch(/ch-loss/);
+    // Each figure drawn against its reference under it (par, the Tour's greens mark, 36 putts, scrambling's 0–100), decorative.
+    const gauges = document.querySelector('.ch-stm-gauges')!;
+    expect(gauges.getAttribute('aria-hidden')).toBe('true');
+    expect([...gauges.children].map((g) => g.querySelector('em')?.textContent ?? null)).toEqual(['Par', 'Tour', '36', null]);
     for (const h of ['Scoring trend', 'Strokes gained by leg', 'Players', 'Team putting']) expect(screen.getByRole('heading', { level: 2, name: h })).toBeTruthy();
     expect(screen.getByRole('img', { name: /Team scoring average by round day, from 74\.8 to 73\.4\. Down 1\.4 strokes since Aug 30/ })).toBeTruthy();
     expect(screen.getByText('2 legs are losing strokes: Approach, Putting.')).toBeTruthy();
@@ -573,6 +608,18 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     wrap(stats({ puttsError: true }));
     expect(code('CH-4203')).not.toBeNull();
     expect(screen.getByRole('heading', { level: 2, name: 'Players' })).toBeTruthy();
+  });
+
+  it('CH-1209 on the phone figures and putting that both fail are told once, with one Try again', () => {
+    wrap(stats({ cacheError: true, puttsError: true }));
+    expect(code('CH-1209')!.textContent).toMatch(/Some team figures and team putting didn’t load/);
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+  });
+
+  it('CH-4301 on the phone the empty window is the page’s empty state, with Show the season as its one action', () => {
+    wrap(empty());
+    expect(code('CH-4301')!.classList.contains('ch-empty-page')).toBe(true);
+    expect(screen.getByRole('button', { name: 'Show the season' }).className).toMatch(/ch-btn--primary/);
   });
 });
 
@@ -785,6 +832,41 @@ describe('Stats team · the page', () => {
     expect(document.querySelector('.ch-sgt__end.is-sel')!.textContent).toMatch(/Theo/);
   });
 
+  it('CH-4601 pointing at a player brings their line forward and fades the others without choosing them; a press chooses, and moving away returns to the choice', async () => {
+    const user = userEvent.setup();
+    wrap(stats());
+    const front = () => document.querySelector('.ch-sgt__front');
+    const faded = () => document.querySelectorAll('.ch-sgt__line[stroke-opacity="0.2"]').length;
+    const theo = screen.getAllByRole('button', { name: /Theo/ })[0]!;
+    expect(front()).toBeNull();
+    expect(faded()).toBe(0);
+    await user.hover(theo);
+    expect(front()).not.toBeNull();
+    expect(faded()).toBeGreaterThan(0);
+    expect(theo.getAttribute('aria-pressed')).toBe('false');
+    await user.unhover(theo);
+    expect(front()).toBeNull();
+    expect(faded()).toBe(0);
+    await user.click(theo);
+    await user.unhover(theo);
+    expect(theo.getAttribute('aria-pressed')).toBe('true');
+    expect(front()).not.toBeNull();
+    expect(faded()).toBeGreaterThan(0);
+  });
+
+  it('CH-4602 choosing a leg settles the re-sorted grid in, its column ringed; the old order leaves the accessibility tree at once', async () => {
+    const user = userEvent.setup();
+    wrap(stats());
+    const leaving = () => document.querySelector('.ch-lg .ch-swap__body[aria-hidden]');
+    expect(leaving()).toBeNull();
+    await user.click(screen.getByRole('button', { name: /^Putting/ }));
+    // The Approach order fades out behind the Putting one (jsdom never finishes the fade).
+    expect(leaving()?.querySelector('[role="columnheader"].is-col')?.textContent).toBe('Approach');
+    const grids = screen.getAllByRole('table', { name: 'Strokes gained by leg per player' });
+    expect(grids).toHaveLength(1);
+    expect(grids[0]!.querySelector('[role="columnheader"].is-col')?.textContent).toBe('Putting');
+  });
+
   it('42001 the window switch moves with the arrow keys, a leg card takes Enter, and a grid row focuses its player', async () => {
     const user = userEvent.setup();
     wrap(stats({ window: 'last10' }));
@@ -959,5 +1041,25 @@ describe('Stats team · the figures by hand (swap audit §10)', () => {
     tables.current = { ...seasonTables(), golf_rounds: { data: [{ ...round('r1', 'p1', 1, 72, 0), total_score: 73, score_to_par: 1 }] } };
     const data = await loadTeamStats({ teamId: 't1', window: 'last10' });
     expect(data.figures.find((f) => f.label === 'Scoring average')!.value).toBe(72);
+  });
+});
+
+describe('ScoreLine · the mean label keeps off the line', () => {
+  const at = (values: number[]) => {
+    const { container, unmount } = render(<ScoreLine values={values} from="Aug 30" to="Oct 12" label="Scoring" />);
+    const t = container.querySelector('.ch-stm-chart__t')!;
+    const out = { anchor: t.getAttribute('text-anchor'), y: Number(t.getAttribute('y')), mean: Number(container.querySelector('.ch-stm-chart__mean')!.getAttribute('y1')) };
+    unmount();
+    return out;
+  };
+  it('a line ending above its mean (a better finish) puts the label below the mean at the right end', () => {
+    const r = at([74.8, 74.6, 74.2, 74.4, 73.9, 73.8, 73.1, 73.5, 73.6, 73.4]);
+    expect(r.anchor).toBe('end');
+    expect(r.y).toBeGreaterThan(r.mean);
+  });
+  it('a line ending below its mean keeps the label above it at the right end', () => {
+    const r = at([73.0, 73.2, 73.4, 73.8, 74.6, 74.8]);
+    expect(r.anchor).toBe('end');
+    expect(r.y).toBeLessThan(r.mean);
   });
 });

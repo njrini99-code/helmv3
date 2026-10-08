@@ -23,11 +23,11 @@ import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
 import { InlineNotice } from '../ui/Notices';
 import { Menu } from '../ui/Menu';
-import { Skeleton } from '../ui/States';
+import { EmptyState, Skeleton } from '../ui/States';
 import { haptic } from '../lib/haptics';
-import { CH_POP, chTween } from '../lib/motion';
+import { CH_POP, chSpring, chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
-import { useSheetDrag } from '../lib/sheet-drag';
+import { chThrownExit, takeSheetFling, useSheetDrag } from '../lib/sheet-drag';
 import { OverlayScrollLock } from '../lib/overlay-scroll';
 import { useChPhone } from '../lib/use-phone';
 import { chReport, chTrail } from '../lib/track';
@@ -123,6 +123,20 @@ export function Bell() {
   }, []);
   const closeSheet = useCallback(() => close(), [close]);
   const drag = useSheetDrag(panel, closeSheet, { enabled: phone && !reduced });
+  // CH-1612: on the phone the sheet rises on the smooth spring and leaves on it, as More does (CH-1602), at the speed
+  // it was thrown when swiped shut (CH-1611). Read as the exit begins, since the sheet's props are fixed once removed.
+  const sheetMotion = {
+    shown: { y: 0, opacity: 1, transition: chSpring('smooth', reduced) },
+    gone: (_custom: unknown, current: { y?: unknown }) => {
+      if (reduced) return { y: 0, opacity: 0, transition: { duration: 0 } };
+      const travel = panel.current?.offsetHeight ?? 0;
+      if (!travel) return { y: '100%', transition: chTween('base') };
+      // From where it is now (mid rise, when closed early), plus the frame a throw has already carried it.
+      const from = typeof current?.y === 'number' ? current.y : 0;
+      const out = chThrownExit(takeSheetFling(panel.current, { peek: true }), travel - from);
+      return { y: [from + out.lead, travel], transition: { duration: out.ms / 1000, ease: out.ease } };
+    },
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -209,6 +223,10 @@ export function Bell() {
   };
 
   const unread = api.unread;
+  // The count is the badge's. While the list hasn't loaded the panel can't show what it counts, so its head says nothing
+  // of it and offers no Mark all read (the button keeps its badge).
+  const listFailed = failed && !items?.length;
+  const shownUnread = listFailed ? 0 : unread;
   const list = items ?? [];
   const counts = countByCategory(list);
   const cats = NOTIFICATION_CATEGORY_IDS.filter((c) => counts[c] > 0);
@@ -248,8 +266,8 @@ export function Bell() {
   );
   const body = (
     <div className="ch-bellp__body">
-      {failed && !items?.length ? (
-        <InlineNotice code="CH-1201" title="Notifications didn't load." body="Try again; the error has been reported." onRetry={() => setAttempt((x) => x + 1)} />
+      {listFailed ? (
+        <InlineNotice code="CH-1201" title="Notifications didn’t load" body="Try again; the error has been reported." onRetry={() => setAttempt((x) => x + 1)} />
       ) : items === null ? (
         <div className="ch-bellp__skel" aria-busy="true" aria-label="Loading notifications" data-ch-code="CH-1401">
           {[0, 1, 2, 3].map((k) => (
@@ -263,16 +281,21 @@ export function Bell() {
           ))}
         </div>
       ) : groups.length === 0 ? (
-        <div className="ch-bellp__empty" data-ch-code={filter === 'all' ? 'CH-1302' : 'CH-1303'}>
-          <Icon icon={BellOff} size={18} />
-          <b>{filter === 'all' ? "You're all caught up." : 'Nothing of this kind.'}</b>
-          <span>{filter === 'all' ? 'Messages, events, reminders and CoachHelm updates show up here.' : 'Clear the filter to see everything.'}</span>
-          {filter !== 'all' && (
-            <Button size="sm" variant="secondary" onClick={() => setFilter('all')}>
-              Show all
-            </Button>
-          )}
-        </div>
+        // The shared section empty (states audit, 2026-10-08): a flush line at the rows' inset, not a centred block.
+        <EmptyState
+          compact
+          icon={BellOff}
+          code={filter === 'all' ? 'CH-1302' : 'CH-1303'}
+          title={filter === 'all' ? 'You’re all caught up' : 'Nothing of this kind'}
+          body={filter === 'all' ? 'Messages, events, reminders and CoachHelm updates show up here.' : 'Clear the filter to see everything.'}
+          action={
+            filter !== 'all' && (
+              <Button size="sm" variant="secondary" onClick={() => setFilter('all')}>
+                Show all
+              </Button>
+            )
+          }
+        />
       ) : (
         groups.map((g) => (
           <section key={g.bucket} aria-label={DAY_BUCKET_LABEL[g.bucket]}>
@@ -361,22 +384,22 @@ export function Bell() {
                 className="ch-bellp ch-bellp--sheet"
                 data-ui="clubhouse"
                 initial={reduced ? { opacity: 0 } : { y: '100%' }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={reduced ? { y: 0, opacity: 0 } : { y: '100%' }}
-                transition={reduced ? { duration: 0 } : chTween('base')}
+                variants={sheetMotion}
+                animate="shown"
+                exit="gone"
               >
                 <OverlayScrollLock />
                 <div className="ch-bellp__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
                 <div className="ch-bellp__shead" onPointerDown={drag.onPointerDown}>
                   <span className="ch-bellp__stitle">
                     <b>Notifications</b>
-                    {unread > 0 && <span className="ch-num">{unread} unread</span>}
+                    {shownUnread > 0 && <span className="ch-num">{shownUnread} unread</span>}
                   </span>
                   <button type="button" className="ch-bellp__x" aria-label="Close" onClick={() => close()}>
                     <Icon icon={X} size={16} />
                   </button>
                 </div>
-                {(filterMenu || unread > 0) && (
+                {(filterMenu || shownUnread > 0) && (
                   <div className="ch-bellp__tools">
                     {filterMenu || <span />}
                     {markAllButton}
@@ -401,10 +424,10 @@ export function Bell() {
                 <div className="ch-bellp__head">
                   <b>
                     Notifications
-                    {unread > 0 && <span className="ch-num"> · {unread} unread</span>}
+                    {shownUnread > 0 && <span className="ch-num"> · {shownUnread} unread</span>}
                   </b>
                   {filterMenu}
-                  {markAllButton}
+                  {!listFailed && markAllButton}
                 </div>
                 {body}
               </m.div>

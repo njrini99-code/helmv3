@@ -23,24 +23,36 @@ import {
   type ChTeamInfo,
 } from './model';
 import { SAVE_COPY, useInvite } from './hooks';
-import { Card, Field, ReadFailed, Row, SaveBar, SettingSwitch, useDraft, useReportDirty, useSaveAction } from './parts';
+import { Card, Field, failedReads, ReadFailed, ReadsFailed, Row, SaveBar, SettingSwitch, useDraft, useReportDirty, useSaveAction } from './parts';
 import { StaffCards } from './Staff';
+
+/** Team's reads that failed, for its one section notice (shared with TeamPhone). */
+export const teamReadsFailed = (data: ChSettingsData) =>
+  failedReads([
+    [data.joinCode?.error, 'your invite code'],
+    [data.team?.error, 'team details'],
+    [data.scoring?.error, 'scoring settings'],
+    [data.reminders?.error, 'event reminders'],
+  ]);
 
 export function TeamSection({ data, writes }: { data: ChSettingsData; writes: ChSettingsWrites }) {
   if (!data.teamId) {
     return (
       <div className="ch-surface ch-set-failed">
-        <EmptyState code="CH-8301" title="You aren't on a team yet." body="Team settings appear once your program is set up and you're on its staff." />
+        <EmptyState code="CH-8301" title="You aren’t on a team yet" body="Team settings appear once your program is set up and you’re on its staff." />
       </div>
     );
   }
+  const failed = teamReadsFailed(data);
+  const covered = failed.length > 1;
   return (
     <>
-      {data.team?.error ? <ReadFailed what="Team details" code="CH-8205" onRetry={writes.refresh} /> : data.team && <TeamCard team={data.team.value} writes={writes} />}
-      {data.joinCode?.error ? <ReadFailed what="Your invite code" code="CH-8206" onRetry={writes.refresh} /> : data.joinCode && <InviteCard code={data.joinCode.value} writes={writes} />}
+      <ReadsFailed parts={failed} onRetry={writes.refresh} />
+      {data.team?.error ? <ReadFailed what="Team details" code="CH-8205" onRetry={writes.refresh} title="Team details" description="Shown to your players, and on invites and exports." covered={covered} /> : data.team && <TeamCard team={data.team.value} writes={writes} />}
+      {data.joinCode?.error ? <ReadFailed what="Your invite code" code="CH-8206" onRetry={writes.refresh} title="Invite players" description="Players join with this code, then you approve them from Roster." covered={covered} /> : data.joinCode && <InviteCard code={data.joinCode.value} writes={writes} />}
       <StaffCards coachId={data.coachId} writes={writes} />
-      {data.scoring?.error ? <ReadFailed what="Scoring settings" code="CH-8207" onRetry={writes.refresh} /> : data.scoring && <ScoringCard scoring={data.scoring.value} writes={writes} />}
-      {data.reminders?.error ? <ReadFailed what="Event reminders" code="CH-8208" onRetry={writes.refresh} /> : data.reminders && <RemindersCard reminders={data.reminders.value} writes={writes} />}
+      {data.scoring?.error ? <ReadFailed what="Scoring settings" code="CH-8207" onRetry={writes.refresh} title="Scoring and format" description="Defaults for new rounds and events. The timezone sets when every event and reminder happens." covered={covered} /> : data.scoring && <ScoringCard scoring={data.scoring.value} writes={writes} />}
+      {data.reminders?.error ? <ReadFailed what="Event reminders" code="CH-8208" onRetry={writes.refresh} title="Event reminders" description="Players who haven’t replied get a nudge before each event." covered={covered} /> : data.reminders && <RemindersCard reminders={data.reminders.value} writes={writes} />}
     </>
   );
 }
@@ -125,7 +137,7 @@ function InviteCard({ code: initial, writes }: { code: string; writes: ChSetting
         onClose={() => setConfirm(false)}
         icon={RefreshCw}
         title="Replace your invite code?"
-        description={`${code} stops working as soon as the new code is made. Share the new one with anyone who hasn't joined yet.`}
+        description={`${code} stops working as soon as the new code is made. Share the new one with anyone who hasn’t joined yet.`}
         footer={
           <>
             <Button variant="secondary" onClick={() => setConfirm(false)}>
@@ -207,7 +219,7 @@ function RemindersCard({ reminders, writes }: { reminders: ChReminders; writes: 
     <Card
       id="set-reminders"
       title="Event reminders"
-      description="Players who haven't replied get a nudge before each event."
+      description="Players who haven’t replied get a nudge before each event."
       foot={
         <SaveBar
           dirty={f.dirty}

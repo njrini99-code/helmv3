@@ -152,7 +152,7 @@ describe('112401 Rounds library, on screen', () => {
 
   it('CH-11304 with no round in progress: the idle card and the last round', async () => {
     show(PREVIEW_ROUNDS_IDLE);
-    await expectCode('CH-11304', /No round in progress.*Ready when you are\..*Last round Sep 26 · Finley GC/);
+    await expectCode('CH-11304', /No round in progress.*Ready when you are(?!\.).*Last round Sep 26 · Finley GC/);
     expect(document.querySelectorAll('.ch-rd-strip.is-ghost span')).toHaveLength(18);
   });
 
@@ -167,7 +167,7 @@ describe('112401 Rounds library, on screen', () => {
   it('111402 CH-11201 the posted rounds fail to load: said so, Try again asks the server again, never "no rounds"', async () => {
     const user = userEvent.setup();
     show(PREVIEW_ROUNDS_FAILED);
-    await expectCode('CH-11201', /Your rounds didn't load/);
+    await expectCode('CH-11201', /Your rounds didn’t load/);
     expect(screen.queryByText('No rounds yet')).toBeNull();
     expect(screen.queryByRole('searchbox')).toBeNull();
     // The round in progress still shows: it loaded.
@@ -178,14 +178,14 @@ describe('112401 Rounds library, on screen', () => {
 
   it('110413 CH-11201 a failed list with no round in progress is still the error, never the first-run page', async () => {
     show({ ...PREVIEW_ROUNDS_FAILED, unfinished: { list: [], error: false } });
-    await expectCode('CH-11201', /Your rounds didn't load/);
+    await expectCode('CH-11201', /Your rounds didn’t load/);
     expect(code('CH-11301')).toBeNull();
   });
 
   it('CH-11202 the round-in-progress check fails: said in place of the card, with Try again', async () => {
     const user = userEvent.setup();
     show(PREVIEW_ROUNDS_UNFINISHED_FAILED);
-    await expectCode('CH-11202', /Couldn't check for a round in progress/);
+    await expectCode('CH-11202', /Couldn’t check for a round in progress/);
     expect(screen.queryByText('No round in progress')).toBeNull();
     await user.click(within(code('CH-11202') as HTMLElement).getByRole('button', { name: /Try again/ }));
     expect(router.refresh).toHaveBeenCalled();
@@ -195,7 +195,7 @@ describe('112401 Rounds library, on screen', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     // A season whose ribbon can't be read throws inside SeasonCard only.
     show({ ...PREVIEW_ROUNDS, season: { ...PREVIEW_ROUNDS.season, ribbon: null as never } });
-    await expectCode('CH-11203', /Season scoring couldn’t be shown\./);
+    await expectCode('CH-11203', /Season scoring couldn’t be shown/);
     expect(screen.getByText('In progress')).toBeTruthy();
     expect(screen.getByRole('searchbox')).toBeTruthy();
     quiet.mockRestore();
@@ -295,7 +295,7 @@ describe('Rounds library: never a false empty or a wrong figure', () => {
 
   it('CH-11201 a failed list with no round in progress: the idle card does not say "No rounds posted yet" or name a last round', async () => {
     show({ ...PREVIEW_ROUNDS_FAILED, unfinished: { list: [], error: false } });
-    await expectCode('CH-11201', /Your rounds didn't load/);
+    await expectCode('CH-11201', /Your rounds didn’t load/);
     // The card is the verified empty of the in-progress read (nothing in progress); what it says about posted rounds is nothing.
     expect(code('CH-11304')).not.toBeNull();
     expect(screen.queryByText('No rounds posted yet')).toBeNull();
@@ -307,7 +307,7 @@ describe('Rounds library: never a false empty or a wrong figure', () => {
     const user = userEvent.setup();
     const unread = { ...PREVIEW_UNFINISHED, played: [], toParThru: null, readyToSubmit: false, holesError: true };
     show({ ...PREVIEW_ROUNDS, unfinished: { list: [unread], error: false } });
-    await expectCode('CH-11214', /This round's scores didn't load/);
+    await expectCode('CH-11214', /This round’s scores didn’t load/);
     expect(screen.queryByText('Set up, no holes scored yet')).toBeNull();
     // The strip draws numbers only: nothing is marked scored, and the next hole is not claimed.
     const strip = document.querySelector('.ch-rd-unf .ch-rd-strip')!;
@@ -331,7 +331,7 @@ describe('Rounds library: never a false empty or a wrong figure', () => {
     const all = Array.from({ length: 18 }, (_, i) => ({ n: i + 1, score: 4, par: 4 }));
     const finished = { ...PREVIEW_UNFINISHED, played: all, toParThru: 0, nextHole: null, readyToSubmit: false, submitUnchecked: true };
     show({ ...PREVIEW_ROUNDS_FAILED, unfinished: { list: [finished], error: false } });
-    await expectCode('CH-11215', /Couldn't check whether this round was already posted/);
+    await expectCode('CH-11215', /Couldn’t check whether this round was already posted/);
     expect(screen.queryByRole('link', { name: /Submit/ })).toBeNull();
     expect(screen.queryByText('Ready to submit')).toBeNull();
     expect(screen.getByRole('link', { name: 'Continue' })).toBeTruthy();
@@ -404,7 +404,7 @@ describe('Discarding an unfinished round', () => {
     const w = show(PREVIEW_ROUNDS);
     await user.click(screen.getByRole('button', { name: 'Discard the round at Finley GC' }));
     expect(hapticSpy).toHaveBeenNthCalledWith(1, 'warning');
-    await expectCode('CH-11501', /Discard this round\?.*Every shot from Finley GC on Oct 14 is deleted\. This can't be undone\./);
+    await expectCode('CH-11501', /Discard this round\?.*Every shot from Finley GC on Oct 14 is deleted\. This can’t be undone\./);
     await user.click(screen.getByRole('button', { name: 'Discard round' }));
     expect(w.discard).toHaveBeenCalledWith(PREVIEW_UNFINISHED.id, 'p1');
     await waitFor(() => expect(screen.getByText('No round in progress')).toBeTruthy());
@@ -427,7 +427,7 @@ describe('Discarding an unfinished round', () => {
     show(PREVIEW_ROUNDS, { discard });
     await user.click(screen.getByRole('button', { name: 'Discard the round at Finley GC' }));
     await user.click(await screen.findByRole('button', { name: 'Discard round' }));
-    await expectCode('CH-11001', /Couldn't discard the round at Finley GC/);
+    await expectCode('CH-11001', /Couldn’t discard the round at Finley GC/);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(screen.getByText('In progress')).toBeTruthy();
     await user.click(within(code('CH-11001') as HTMLElement).getByRole('button', { name: 'Retry' }));

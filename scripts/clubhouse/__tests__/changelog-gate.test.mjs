@@ -90,3 +90,28 @@ test('a shared piece needs the cross-page log, not the page logs', () => {
   // An owned page file still needs its own log, and the cross-page log does not stand in for it.
   assert.equal(checkChangelogs(all, ['src/clubhouse/styles/messages.css', CROSS_PAGE_LOG], 'base').length, 1);
 });
+
+test("implementation.also: a second surface is the page's own, so its files need the page log, not the cross-page one", () => {
+  const auth = {
+    id: 'P015',
+    name: 'Auth',
+    slug: 'auth',
+    implementation: {
+      root: 'src/clubhouse/screens/auth',
+      styles: 'src/clubhouse/styles/auth.css',
+      also: ['src/clubhouse/screens/onboard', 'src/clubhouse/routes/onboard.tsx', 'src/clubhouse/styles/onboard.css', 'src/clubhouse/styles/onboard-tokens.css'],
+    },
+  };
+  const changed = ['src/clubhouse/screens/onboard/Steps.tsx', 'src/clubhouse/styles/onboard.css', 'src/clubhouse/styles/onboard-tokens.css', 'src/clubhouse/__tests__/onboard.test.tsx'];
+  assert.ok(implementationPaths(auth).includes('src/clubhouse/screens/onboard'));
+  assert.deepEqual(pagesTouched([...all, auth], changed).get('P015').files, changed.slice(0, 3), 'the test is never a trigger');
+  assert.deepEqual(sharedTouched([...all, auth], changed), [], 'an owned stylesheet under styles/ is not a shared piece');
+  const v = checkChangelogs([...all, auth], changed, 'base');
+  assert.equal(v.length, 1);
+  assert.ok(v[0].startsWith('P015 Auth:') && v[0].includes('docs/clubhouse/pages/P015-auth/CHANGELOG.md'));
+  assert.deepEqual(checkChangelogs([...all, auth], [...changed, 'docs/clubhouse/pages/P015-auth/CHANGELOG.md'], 'base'), []);
+  // Without it, the same stylesheet is a shared piece and the screens are no page's.
+  const bare = { ...auth, implementation: { root: auth.implementation.root, styles: auth.implementation.styles } };
+  assert.deepEqual(sharedTouched([...all, bare], changed), ['src/clubhouse/styles/onboard.css', 'src/clubhouse/styles/onboard-tokens.css']);
+  assert.equal(pagesTouched([...all, bare], changed).size, 0);
+});

@@ -62,7 +62,7 @@ The route's loading state is the Stats skeleton (CH-4401, Bridge 40201 on Team s
 | 50201 | CH-5403 | `A_PLAYERS_STATS_ARE_LOADING_THEIR_OWN` | A player's stats are loading: their own, or a coach's `?player=` |
 | 50202 | CH-5404 | `A_PLAYERS_ANSWER_TO_A_PROPOSED_FOCUS` | A player's answer to a proposed focus area is being sent |
 
-From the shell (P001): 10201 CH-1401.
+From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 ## 03 — Background loading / refresh
 
@@ -168,7 +168,7 @@ confirmations remain 4 seconds and errors 8 seconds. The offline banner
 | 50702 | CH-5902 | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | A window or filter change takes longer than 5 seconds |
 | 50703 | CH-5903 | `A_WINDOW_OR_FILTER_CHANGE_IS_IN` | A window or filter change is in flight (after a beat of 150 ms; one that lands at once never shows it) |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
 
 ## 08 — Permission / authorization
 
@@ -180,7 +180,7 @@ A player may open only their own stats, and a coach the team and any player on i
 - A coach's ?player= is read against the coach's own team from the session (50804): an active or inactive player opens; another team's player, a pending or removed member, and an id that is not shaped like an id all open "That player isn't on your team" (50801), and the last makes no read.
 - A player with no active team sees "You aren't on a team yet" (40409); "Your stats aren't available" (50802) shows only when the team resolved but the roster has no row for the player when the profile is read.
 - A second lock sits behind the route. Every read but the shot-level detail uses the caller's own database session, so row-level security applies. Shot-level detail goes through getDetailedStats, which checks first that the caller is the player or their coach and answers empty otherwise; it then reads on the service role, so that check is the lock. An empty answer shows as "didn't load", never as zeros (50805).
-- Only a coach proposes focus areas (50806): the button and the sheet exist for a coach only, and the server action refuses a caller who is not a coach (read from the action, not tested). Found and not fixed, in the shared action: createFocusArea stores the coach id the browser sends, and skips its roster check when the coach has no organisation or no active team; row-level security remains the lock.
+- Only a coach proposes focus areas (50806): the button and the sheet exist for a coach only, and the server action refuses a caller who is not a coach (read from the action, not tested). The shared action writes the signed-in coach's id (a coach id the page sends is ignored) and refuses a coach with no team or a player not active on the coach's team (fixed 2026-10-08; `development.team-id.test.ts`).
 - The whole Clubhouse is gated by the shell (10801) and each role sees its own navigation (10802).
 
 | Bridge ID | Code | Name | Meaning |
@@ -253,14 +253,20 @@ After a proposal lands the page is read again, so Development lists it as propos
 
 Status: DEFINED
 
-The profile's own motion is the tab underline and the focus-area sheet (51601, 51602), and the busy dim of a window change or paging (50302). Everything else is the shell's: v2 press, reveal, sheets and pushes (11601 to 11612, D-64).
+The profile's own motion is the tab underline, the tab panel's swap, a new
+window's figures and the focus-area sheet, which is the shared Modal's entrance
+(51601, 51603, 51604, 51602), and the busy dim of a window change or paging
+(50302). Everything else is the shell's: the page crossfade, the press on keys,
+sheets and pushes (11601 to 11613, D-64); there is no first-paint rise.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 51601 | CH-5601 | `CHANGING_TABS` | Changing tabs |
 | 51602 | CH-5602 | `OPENING_ADD_FOCUS_AREA` | Opening Add focus area |
+| 51603 | CH-5603 | `THE_TABS_PANEL_SWAPS` | The tab's panel swaps |
+| 51604 | CH-5604 | `A_NEW_WINDOWS_FIGURES_ARRIVE` | A new window's figures arrive |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -274,7 +280,7 @@ The profile's own haptics (51701, 51702) on the v2 grammar (D-70): a selection t
 | 51702 | CH-5702 | `PROPOSING_A_FOCUS_AREA_WITH_NO_NAME` | Proposing a focus area with no name |
 | 51703 | CH-5703 | `CHOOSING_A_ROUND_TYPE_A_LENGTH_A` | Choosing a round type, a length (18 holes, 9 holes, Both), a course or a round in the filter sheet, choosing a window or a pick mode there, or removing a chip / Clear |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
 
 ## 18 — Accessibility
 
@@ -294,7 +300,7 @@ The profile's own (51801 to 51807): real tabs with their panels, "Stats › name
 | 51808 | CH-5808 | `IN_THE_ROUNDS_TABLE_EACH_COURSE_OPENS` | In the Rounds table each course opens that round's review (for a coach and the player), named "Finley GC, Oct 14: open the round"; where the review isn't rebuilt, it stays text |
 | 51809 | CH-5809 | `THE_ROUND_FILTER_AS_ON_TEAM_STATS` | The round filter, as on Team stats (CH-4806): the Filter button opens a labelled dialog, each chip is "Remove filter: …", Clear is "Clear filters", the count line is a polite status region, choices (round type, holes, pick mode) are toggle buttons and courses and rounds are checkboxes, all in labelled groups, and the date fields carry their error as their description |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
 
 ## 19 — Responsive layout
 

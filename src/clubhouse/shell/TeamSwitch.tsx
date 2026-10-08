@@ -116,7 +116,7 @@ export function BrandTeamSwitch({ model, teamName }: { model: ChTeamSwitch; team
           }
         }}
       >
-        <img src="/helm-main-logo-transparent-white-trim.png" alt="" width={32} height={32} />
+        <img src="/clubhouse/auth/helm-golf-mark.png" alt="" width={32} height={32} />
         <span className="ch-brand__txt">
           <span className="ch-brand__word">GolfHelm</span>
           {/* The board's team line: the name, then the up-down chevrons that say it opens. */}

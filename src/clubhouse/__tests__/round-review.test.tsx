@@ -179,14 +179,14 @@ describe('112401 Round review, on screen', () => {
   it('110102 a coach viewing: the player’s name in the kicker, "Jonah’s notes", and back to that player’s rounds on Stats', () => {
     show(PREVIEW_REVIEW_COACH);
     expect(within(screen.getByRole('banner')).getByText('Jonah Okafor · Wed Oct 14 · Practice')).toBeTruthy();
-    expect(screen.getByRole('heading', { name: "Jonah's notes" })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: "Jonah’s notes" })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Jonah Okafor/ }).getAttribute('href')).toBe('/golf/dashboard/stats?player=preview-player&tab=rounds');
   });
 
   it('CH-11204 the card fails to load: said so with Try again; the hero and figures stay', async () => {
     const user = userEvent.setup();
     show(PREVIEW_REVIEW_NO_HOLES);
-    await expectCode('CH-11204', /The scorecard didn't load/);
+    await expectCode('CH-11204', /The scorecard didn’t load/);
     expect(screen.getByRole('heading', { level: 1, name: 'Finley GC' })).toBeTruthy();
     expect(screen.queryByRole('table')).toBeNull();
     await user.click(within(code('CH-11204') as HTMLElement).getByRole('button', { name: /Try again/ }));
@@ -195,7 +195,7 @@ describe('112401 Round review, on screen', () => {
 
   it('CH-11205 the shots fail to load: said in the hole card; the card still shows', async () => {
     show(PREVIEW_REVIEW_NO_SHOTS);
-    await expectCode('CH-11205', /The shots for this round didn't load/);
+    await expectCode('CH-11205', /The shots for this round didn’t load/);
     expect(screen.getAllByRole('table')).toHaveLength(2);
     expect(code('CH-11306')).toBeNull();
   });
@@ -363,7 +363,7 @@ describe('Round review: never a wrong figure or a silent difference', () => {
     expect(r.kind === 'ok' && [r.review.teeError, r.review.teeFacts]).toEqual([true, '73.1 / 133']);
     if (r.kind !== 'ok') return;
     show(r.review);
-    await expectCode('CH-11216', /Some details of this round didn't load.*The tee’s yardage is missing; the scores are right/);
+    await expectCode('CH-11216', /Some details of this round didn’t load.*The tee’s yardage is missing; the scores are right/);
     expect(heroScore()).toBe('74');
     await user.click(within(code('CH-11216') as HTMLElement).getByRole('button', { name: /Try again/ }));
     expect(router.refresh).toHaveBeenCalledTimes(1);
@@ -419,7 +419,7 @@ describe('Round review: never a wrong figure or a silent difference', () => {
     expect(failed.kind === 'ok' && [failed.review.tour, failed.review.tourError]).toEqual([null, true]);
     if (failed.kind !== 'ok') return;
     const { unmount } = show(failed.review);
-    await expectCode('CH-11217', /Which Tour this is measured against didn't load/);
+    await expectCode('CH-11217', /Which Tour this is measured against didn’t load/);
     await user.click(within(code('CH-11217') as HTMLElement).getByRole('button', { name: /Try again/ }));
     expect(router.refresh).toHaveBeenCalledTimes(1);
     unmount();
@@ -488,7 +488,7 @@ describe('Round review route', () => {
     teamOf.current = { role: 'player', teamId: 'team1', playerId: 'p2' };
     tables.current = { golf_rounds: { data: { ...PREVIEW_REVIEW_ROUND, player_id: 'p1', status: 'completed', is_test: false } } };
     wrap(await ClubhouseRoundReviewRoute({ id: PREVIEW_REVIEW_ROUND.id }));
-    await expectCode('CH-11307', /This round isn't here.*It may have been deleted, or it isn’t one of your rounds\./);
+    await expectCode('CH-11307', /This round isn’t here.*It may have been deleted, or it isn’t one of your rounds\./);
     expect(screen.getByRole('link', { name: 'Go to your rounds' }).getAttribute('href')).toBe('/golf/dashboard/rounds');
   });
 
@@ -507,7 +507,7 @@ describe('Round review route', () => {
     teamOf.current = null;
     tables.current = { golf_rounds: { error: { message: 'boom' } } };
     wrap(await ClubhouseRoundReviewRoute({ id: PREVIEW_REVIEW_ROUND.id }));
-    await expectCode('CH-11206', /This round didn't load/);
+    await expectCode('CH-11206', /This round didn’t load/);
     await user.click(screen.getByRole('button', { name: /Try again/ }));
     expect(router.refresh).toHaveBeenCalled();
   });

@@ -174,7 +174,7 @@ export function RoundLine({ points, unit = '', digits = 0, label }: { points: Ar
   const all = points.length <= 12;
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="ch-gx-line" role="img" aria-label={`${label}: ${points.map((p) => `${p.label} ${f(p.value)}`).join(', ')}`}>
-      <line x1={pad} x2={w - pad} y1={y(avg)} y2={y(avg)} stroke="rgb(28 25 18 / .35)" strokeDasharray="2 3" />
+      <line x1={pad} x2={w - pad} y1={y(avg)} y2={y(avg)} stroke="var(--ch-st-mean-rule)" strokeDasharray="2 3" />
       <text x={w - pad} y={y(avg) - 5} textAnchor="end" className="ch-ax">
         avg {f(avg)}
       </text>

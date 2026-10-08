@@ -32,7 +32,7 @@ export function StaffPhone({ coachId, writes }: { coachId: string | null; writes
         </Group>
       )}
       {requestsFailed ? (
-        <Group title="Assistant coach requests" code="CH-8213" note="Requests didn't load. Nothing was changed; the error has been reported.">
+        <Group title="Assistant coach requests" code="CH-8213" note="Requests didn’t load. Nothing was changed; the error has been reported.">
           <ActionRow label="Try again" onClick={staff.retry} />
         </Group>
       ) : (

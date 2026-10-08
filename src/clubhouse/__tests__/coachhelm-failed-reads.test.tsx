@@ -252,6 +252,16 @@ describe('the coach’s board, with a read beside the top card failed', () => {
       expect(code('CH-13206')?.textContent).toMatch(/may be incomplete/);
     });
 
+    it('the held space says "Nothing else is flagged" only when every read came in, never over a gap', async () => {
+      pulseRead.pulse.mockResolvedValue(pulseOf([rsvp, noRounds], { failed: ['rounds'] }));
+      show(await load());
+      expect(document.querySelector('.ch-hl-pulse__clear')).toBeNull();
+      cleanup();
+      pulseRead.pulse.mockResolvedValue(pulseOf([rsvp], {}));
+      show(await load());
+      expect(document.querySelector('.ch-hl-pulse__clear')?.textContent).toBe('Nothing else is flagged across the program.');
+    });
+
     it('CH-13203 a roster read that failed under the pulse: it is the pulse not loading, never "Nothing is flagged" over a roster nobody read', async () => {
       // The pulse resolves its own chat context. With the roster unread that context's roster is empty, and the real `getProgramPulse`
       // answers an empty program with no `failed` at all: that gap is what is under test, so it runs here, over the fake client.

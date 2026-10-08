@@ -48,6 +48,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10202,
+    "page": "P001",
+    "category": 2,
+    "item": 2,
+    "name": "A_PHONE_PAGE_OPENED_FROM_MORE_OR",
+    "chCode": "CH-1402",
+    "meaning": "A phone page opened from More, a page below another (a qualifier, its selections, a round, recovery), or a coach's full-page form (a new or edited qualifier) is loading or still arriving from the server",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10301,
     "page": "P001",
     "category": 3,
@@ -237,6 +248,39 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10612,
+    "page": "P001",
+    "category": 6,
+    "item": 12,
+    "name": "TWO_OR_MORE_PARTS_OF_A_PAGE",
+    "chCode": "CH-1209",
+    "meaning": "Two or more parts of a page don't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 10613,
+    "page": "P001",
+    "category": 6,
+    "item": 13,
+    "name": "TWO_OR_MORE_SECTIONS_OF_A_PAGE",
+    "chCode": "CH-1210",
+    "meaning": "Two or more sections of a page crash in the browser",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 10614,
+    "page": "P001",
+    "category": 6,
+    "item": 14,
+    "name": "A_PAGES_ONE_READ_DOESNT_LOAD_SO",
+    "chCode": "CH-1211",
+    "meaning": "A page's one read doesn't load, so nothing can show under its head",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10701,
     "page": "P001",
     "category": 7,
@@ -276,7 +320,18 @@
     "item": 4,
     "name": "SOMEONE_PRESSES_TRY_AGAIN_ON_A_NOTICE",
     "chCode": "CH-1905",
-    "meaning": "Someone presses Try again on a notice while offline",
+    "meaning": "Someone presses Try again on a notice, or on a page that didn't load, while offline",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 10705,
+    "page": "P001",
+    "category": 7,
+    "item": 5,
+    "name": "IN_THE_IPHONE_APP_PULLING_A_PHONE",
+    "chCode": "CH-1909",
+    "meaning": "In the iPhone app, pulling a phone page down from its top",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -433,7 +488,7 @@
     "item": 6,
     "name": "PRESSING_ANY_BUTTON_ROW_OR_TAB",
     "chCode": "CH-1606",
-    "meaning": "Pressing any button, row, tab or link",
+    "meaning": "Pressing a key (a `.ch-btn`, or anything marked `data-ch-press`, up to 240px wide)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -488,7 +543,7 @@
     "item": 11,
     "name": "SOMEONE_DRAGS_A_PHONE_SHEET_DOWN_BY",
     "chCode": "CH-1611",
-    "meaning": "Someone drags a phone sheet (More, the bell, or any `Modal`) down by its grab or header",
+    "meaning": "Someone drags a phone sheet (More, the bell, any `Modal`, and the pages' own sheets) by its grab or header, or by its body once that is scrolled to the top",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -500,6 +555,116 @@
     "name": "OPENING_THE_BELL_ON_A_PHONE",
     "chCode": "CH-1612",
     "meaning": "Opening the bell on a phone",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11613,
+    "page": "P001",
+    "category": 16,
+    "item": 13,
+    "name": "CHANGING_PAGES_FROM_THE_SIDEBAR",
+    "chCode": "CH-1613",
+    "meaning": "Changing pages from the sidebar",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11614,
+    "page": "P001",
+    "category": 16,
+    "item": 14,
+    "name": "A_FINGER_HOLDS_A_TOAST_OR_THROWS",
+    "chCode": "CH-1614",
+    "meaning": "A finger holds a toast, or throws it",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11615,
+    "page": "P001",
+    "category": 16,
+    "item": 15,
+    "name": "A_SEGMENTED_CONTROLS_CHOICE_CHANGES",
+    "chCode": "CH-1615",
+    "meaning": "A segmented control's choice changes",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11616,
+    "page": "P001",
+    "category": 16,
+    "item": 16,
+    "name": "CONTENT_SWAPS_INSIDE_A_FIXED_FRAME",
+    "chCode": "CH-1616",
+    "meaning": "Content swaps inside a fixed frame (a tab's panel, a chart's mode, a window's figures, a pager)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11617,
+    "page": "P001",
+    "category": 16,
+    "item": 17,
+    "name": "PRESSING_A_SEGMENTED_CONTROLS_OPTION_OR_A",
+    "chCode": "CH-1617",
+    "meaning": "Pressing a segmented control's option or a pill that isn't on, or the kit's feature card as a link or a button",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11618,
+    "page": "P001",
+    "category": 16,
+    "item": 18,
+    "name": "THE_PAGE_BENEATH_A_PHONE_SCREEN_AS",
+    "chCode": "CH-1618",
+    "meaning": "The page beneath a phone screen as the screen is pushed or popped (a thread, details, a profile, a prospect, a read)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11619,
+    "page": "P001",
+    "category": 16,
+    "item": 19,
+    "name": "A_PAGE_ARRIVES_IN_PLACE_OF_ITS",
+    "chCode": "CH-1619",
+    "meaning": "A page arrives in place of its route skeleton after a navigation",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11620,
+    "page": "P001",
+    "category": 16,
+    "item": 20,
+    "name": "A_FINGER_OR_THE_POINTER_HOLDS_A",
+    "chCode": "CH-1620",
+    "meaning": "A finger or the pointer holds a switch",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11621,
+    "page": "P001",
+    "category": 16,
+    "item": 21,
+    "name": "SCROLLING_THE_DESKTOP_CANVAS_WITH_A_MAC",
+    "chCode": "CH-1621",
+    "meaning": "Scrolling the desktop canvas with a Mac trackpad",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11622,
+    "page": "P001",
+    "category": 16,
+    "item": 22,
+    "name": "PULLING_A_PHONE_PAGE_DOWN_FROM_ITS",
+    "chCode": "CH-1622",
+    "meaning": "Pulling a phone page down from its top, in the iPhone app (CH-1909)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -577,6 +742,28 @@
     "name": "PICKING_ANOTHER_TEAM_IN_THE_SWITCHER",
     "chCode": "CH-1707",
     "meaning": "Picking another team in the switcher",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11708,
+    "page": "P001",
+    "category": 17,
+    "item": 8,
+    "name": "A_FINGER_SCRUBS_A_SLIDER",
+    "chCode": "CH-1708",
+    "meaning": "A finger scrubs a slider",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11709,
+    "page": "P001",
+    "category": 17,
+    "item": 9,
+    "name": "A_PULL_TO_REFRESH_PASSES_ITS_TRIGGER",
+    "chCode": "CH-1709",
+    "meaning": "A pull to refresh passes its trigger (the iPhone app, CH-1909)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -735,6 +922,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 11815,
+    "page": "P001",
+    "category": 18,
+    "item": 15,
+    "name": "ON_THE_PHONE_EVERY_KEY_A_FINGER",
+    "chCode": "CH-1815",
+    "meaning": "On the phone every key a finger uses reaches at least 44 by 44: the bar's back link and text action (a pushed screen's bar has the shell bar's 44px row, with no hairline), the hero bell (its 40px disc drawn inside a 44px key, where it was), a sheet's Close (its reach leans up into the header's padding, so a title-only header no longer clips it to 43), and the search field (36px drawn, 44px to the finger; its input and clear key take their own taps, and its 16px text keeps iOS from zooming the page on focus). Measured in WebKit at 390 on 2026-10-08",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 11901,
     "page": "P001",
     "category": 19,
@@ -755,6 +953,28 @@
     "name": "ON_THE_PHONE_THE_EDGE_SWIPE_OR",
     "chCode": "CH-1906",
     "meaning": "On the phone, the edge swipe or the browser's back while a screen is pushed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 12002,
+    "page": "P001",
+    "category": 20,
+    "item": 2,
+    "name": "ON_THE_PHONE_TAPPING_THE_TAB_THAT",
+    "chCode": "CH-1907",
+    "meaning": "On the phone, tapping the tab that is already open",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 12003,
+    "page": "P001",
+    "category": 20,
+    "item": 3,
+    "name": "ON_IOS_A_BACK_THAT_SAFARI_OR",
+    "chCode": "CH-1908",
+    "meaning": "On iOS, a Back that Safari or the app's WebView animated itself (the edge swipe; `PopStateEvent.hasUAVisualTransition`, Safari 18 and later)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -847,7 +1067,7 @@
     "category": 1,
     "item": 2,
     "name": "PLAYER_HOME_READY",
-    "meaning": "Player Home opens with the date, the greeting and one sentence from the player's own rounds, Message coach, the week beside My latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901).",
+    "meaning": "Player Home opens with the date and the greeting (no brief line: owner, 2026-10-06), Message coach, the week beside Up next and My latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901).",
     "status": "implemented",
     "where": "src/clubhouse/screens/home/PlayerHome.tsx#PlayerHome; src/clubhouse/data/player-home.ts#loadPlayerHome",
     "tests": [
@@ -988,7 +1208,7 @@
     "item": 9,
     "name": "NOTHING_ON_THE_CALENDAR_AHEAD",
     "chCode": "CH-2309",
-    "meaning": "Nothing on the calendar ahead (phone). A player: \"Your coach's practices and events will show here with a countdown.\", no quick adds",
+    "meaning": "Nothing on the calendar ahead (phone). A player: \"Your coach’s practices and events will show here with a countdown.\", no quick adds",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
@@ -1347,7 +1567,7 @@
     "name": "PAGING_THE_LATEST_ROUND",
     "chCode": "CH-2601",
     "meaning": "Paging the latest round",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
@@ -1358,7 +1578,7 @@
     "name": "HOVERING_OR_PRESSING_A_LEADERBOARD_ROW",
     "chCode": "CH-2602",
     "meaning": "Hovering or pressing a leaderboard row",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
@@ -2142,6 +2362,17 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 31603,
+    "page": "P003",
+    "category": 16,
+    "item": 3,
+    "name": "SWITCHING_BETWEEN_TEAM_VIEW_AND_LIST_VIEW",
+    "chCode": "CH-3603",
+    "meaning": "Switching between Team view and List view",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 31701,
     "page": "P003",
     "category": 17,
@@ -2848,7 +3079,7 @@
     "name": "FOCUSING_A_PLAYER_ON_THE_TREND",
     "chCode": "CH-4601",
     "meaning": "Focusing a player on the trend",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
@@ -2859,7 +3090,29 @@
     "name": "CHOOSING_A_LEG",
     "chCode": "CH-4602",
     "meaning": "Choosing a leg",
-    "status": "reserved",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
+    "id": 41603,
+    "page": "P004",
+    "category": 16,
+    "item": 3,
+    "name": "CHANGING_THE_TRENDS_MEASURE",
+    "chCode": "CH-4603",
+    "meaning": "Changing the trend's measure",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-team.md"
+  },
+  {
+    "id": 41604,
+    "page": "P004",
+    "category": 16,
+    "item": 4,
+    "name": "A_NEW_WINDOWS_FIGURES_ARRIVE",
+    "chCode": "CH-4604",
+    "meaning": "A new window's figures arrive",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
@@ -3777,7 +4030,7 @@
     "name": "CHANGING_TABS",
     "chCode": "CH-5601",
     "meaning": "Changing tabs",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
@@ -3788,7 +4041,29 @@
     "name": "OPENING_ADD_FOCUS_AREA",
     "chCode": "CH-5602",
     "meaning": "Opening Add focus area",
-    "status": "reserved",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 51603,
+    "page": "P005",
+    "category": 16,
+    "item": 3,
+    "name": "THE_TABS_PANEL_SWAPS",
+    "chCode": "CH-5603",
+    "meaning": "The tab's panel swaps",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 51604,
+    "page": "P005",
+    "category": 16,
+    "item": 4,
+    "name": "A_NEW_WINDOWS_FIGURES_ARRIVE",
+    "chCode": "CH-5604",
+    "meaning": "A new window's figures arrive",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
@@ -4905,6 +5180,39 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 61604,
+    "page": "P006",
+    "category": 16,
+    "item": 4,
+    "name": "SWITCHING_BETWEEN_DAY_WEEK_MONTH_AND_AGENDA",
+    "chCode": "CH-6604",
+    "meaning": "Switching between Day, Week, Month and Agenda (Day, Month and List on the phone)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61605,
+    "page": "P006",
+    "category": 16,
+    "item": 5,
+    "name": "STEPPING_TO_ANOTHER_DAY_WEEK_OR_MONTH",
+    "chCode": "CH-6605",
+    "meaning": "Stepping to another day, week or month (the arrows, the arrow keys, Today or a date)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61606,
+    "page": "P006",
+    "category": 16,
+    "item": 6,
+    "name": "CHOOSING_ANOTHER_DAY_IN_THE_PHONES_WEEK",
+    "chCode": "CH-6606",
+    "meaning": "Choosing another day in the phone's week strip",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 61701,
     "page": "P006",
     "category": 17,
@@ -5943,6 +6251,28 @@
     "name": "A_LONG_PRESS_ON_A_MESSAGE",
     "chCode": "CH-7604",
     "meaning": "A long press on a message (phone)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 71605,
+    "page": "P007",
+    "category": 16,
+    "item": 5,
+    "name": "OPENING_ANOTHER_CONVERSATION_OR_ANNOUNCEMENT",
+    "chCode": "CH-7605",
+    "meaning": "Opening another conversation or announcement (desktop)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 71606,
+    "page": "P007",
+    "category": 16,
+    "item": 6,
+    "name": "CHANGING_THE_INBOX_FILTER_ON_THE_PHONE",
+    "chCode": "CH-7606",
+    "meaning": "Changing the inbox filter on the phone (All, Unread, Groups)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -7261,7 +7591,7 @@
     "item": 1,
     "name": "SWITCHING_SECTION",
     "chCode": "CH-8601",
-    "meaning": "Switching section",
+    "meaning": "Switching section (desktop)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -7339,6 +7669,17 @@
     "name": "ANIMATIONS_TURNED_OFF_IN_PREFERENCES",
     "chCode": "CH-8608",
     "meaning": "Animations turned off in Preferences",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 81609,
+    "page": "P008",
+    "category": 16,
+    "item": 9,
+    "name": "PHONE_OPENING_A_SECTION_FROM_THE_LIST",
+    "chCode": "CH-8609",
+    "meaning": "Phone: opening a section from the list, and Back",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -8841,7 +9182,7 @@
     "name": "PRESSING_A_CARD_THE_HERO_OR_A",
     "chCode": "CH-09601",
     "meaning": "Pressing a card, the hero or a status pill",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
@@ -8852,6 +9193,17 @@
     "name": "OPENING_A_LEADERBOARD_ROW",
     "chCode": "CH-09602",
     "meaning": "Opening a leaderboard row",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 91603,
+    "page": "P009",
+    "category": 16,
+    "item": 3,
+    "name": "CHOOSING_A_ROUND_IN_A_PLAYERS_ROUNDS",
+    "chCode": "CH-09603",
+    "meaning": "Choosing a round in a player's rounds sheet (phone)",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
@@ -9998,6 +10350,28 @@
     "tests": [
       "src/clubhouse/__tests__/hub.test.tsx"
     ]
+  },
+  {
+    "id": 101601,
+    "page": "P010",
+    "category": 16,
+    "item": 1,
+    "name": "CHANGING_TABS",
+    "chCode": "CH-10602",
+    "meaning": "Changing tabs",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
+  },
+  {
+    "id": 101602,
+    "page": "P010",
+    "category": 16,
+    "item": 2,
+    "name": "THE_TABS_PANEL_SWAPS",
+    "chCode": "CH-10603",
+    "meaning": "The tab's panel swaps",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/hub.md"
   },
   {
     "id": 101701,
@@ -11702,7 +12076,7 @@
     "name": "HOVERING_A_ROUND_THAT_OPENS_ITS_REVIEW",
     "chCode": "CH-11601",
     "meaning": "Hovering a round that opens its review",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
@@ -11724,6 +12098,17 @@
     "name": "SUBMITTING_THE_ROUND",
     "chCode": "CH-11603",
     "meaning": "Submitting the round",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111604,
+    "page": "P011",
+    "category": 16,
+    "item": 4,
+    "name": "STEPPING_THROUGH_A_ROUNDS_HOLES",
+    "chCode": "CH-11604",
+    "meaning": "Stepping through a round's holes",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -12179,7 +12564,7 @@
     "category": 4,
     "item": 7,
     "name": "FIRST_RUN_ONLY_WHEN_THE_READ_ANSWERED",
-    "meaning": "The first-run page (CH-12301) shows only when the classes read answered and the list is empty. A read that failed shows CH-12201 in its place, with no Add class or Import schedule beside it, and the header offers neither. Removing the last class returns to the first-run page.",
+    "meaning": "The first-run page (CH-12301) shows only when the classes read answered and the list is empty. A read that failed shows CH-12201 in its place, and the header keeps Import schedule and Add class (a failed read keeps the head and its primary action, owner decision 2026-10-08). Removing the last class returns to the first-run page.",
     "status": "implemented",
     "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (nothing, data.classes.error)",
     "tests": [
@@ -13932,7 +14317,7 @@
     "category": 7,
     "item": 2,
     "name": "WRITES_REFUSE_OFFLINE",
-    "meaning": "Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you're offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes.",
+    "meaning": "Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you’re offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes.",
     "status": "reserved",
     "where": "src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (assign, dismiss, undo)",
     "tests": [
@@ -14390,7 +14775,7 @@
     "name": "HOVERING_AN_INSIGHT_ROW_OR_A_PLAYER",
     "chCode": "CH-13602",
     "meaning": "Hovering an insight row or a player",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -15301,6 +15686,28 @@
     "catalog": "docs/clubhouse/catalog/recruiting.md"
   },
   {
+    "id": 141603,
+    "page": "P014",
+    "category": 16,
+    "item": 3,
+    "name": "PICKING_A_STAGE_IN_THE_PIPELINE_OR",
+    "chCode": "CH-14603",
+    "meaning": "Picking a stage in the pipeline, or letting it go",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/recruiting.md"
+  },
+  {
+    "id": 141604,
+    "page": "P014",
+    "category": 16,
+    "item": 4,
+    "name": "PRESSING_A_ROW_OR_A_KEY_ON",
+    "chCode": "CH-14604",
+    "meaning": "Pressing a row or a key on the phone",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/recruiting.md"
+  },
+  {
     "id": 141701,
     "page": "P014",
     "category": 17,
@@ -15433,6 +15840,17 @@
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
+    "id": 150302,
+    "page": "P015",
+    "category": 3,
+    "item": 2,
+    "name": "RESET_PASSWORD_A_LINK_IS_BEING_ASKED",
+    "chCode": "CH-15420",
+    "meaning": "Reset password: a link is being asked for",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
     "id": 150401,
     "page": "P015",
     "category": 4,
@@ -15484,6 +15902,28 @@
     "name": "SIGN_UP_THE_TEAM_CODE_MATCHES_NO",
     "chCode": "CH-15110",
     "meaning": "Sign up: the team code matches no team (or the gate is throttled, which the server reports the same way on purpose, Q-99)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150503,
+    "page": "P015",
+    "category": 5,
+    "item": 3,
+    "name": "RESET_PASSWORD_SEND_WITH_NO_ADDRESS",
+    "chCode": "CH-15120",
+    "meaning": "Reset password: Send with no address",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150504,
+    "page": "P015",
+    "category": 5,
+    "item": 4,
+    "name": "RESET_PASSWORD_AN_ADDRESS_THAT_IS_NOT",
+    "chCode": "CH-15121",
+    "meaning": "Reset password: an address that is not one",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
@@ -15620,6 +16060,28 @@
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
+    "id": 150613,
+    "page": "P015",
+    "category": 6,
+    "item": 13,
+    "name": "RESET_PASSWORD_THE_SERVER_REFUSES_THE_REQUEST",
+    "chCode": "CH-15020",
+    "meaning": "Reset password: the server refuses the request in its own words",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150614,
+    "page": "P015",
+    "category": 6,
+    "item": 14,
+    "name": "RESET_PASSWORD_ANYTHING_ELSE_THROWS",
+    "chCode": "CH-15021",
+    "meaning": "Reset password: anything else throws (the request never reached the server)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
     "id": 150701,
     "page": "P015",
     "category": 7,
@@ -15664,6 +16126,17 @@
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
+    "id": 150902,
+    "page": "P015",
+    "category": 9,
+    "item": 2,
+    "name": "A_RESET_LINK_IS_ASKED_FOR_AND_2",
+    "chCode": "CH-15921",
+    "meaning": "A reset link is asked for and the server accepts (its answer is the same whether or not the address has an account)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
     "id": 151201,
     "page": "P015",
     "category": 12,
@@ -15671,6 +16144,28 @@
     "name": "THE_PERSON_CAME_FROM_AN_INVITE_LINK",
     "chCode": "CH-15901",
     "meaning": "The person came from an invite link or a demo link",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151202,
+    "page": "P015",
+    "category": 12,
+    "item": 2,
+    "name": "FORGOT_PASSWORD_IS_CLICKED",
+    "chCode": "CH-15920",
+    "meaning": "\"Forgot password?\" is clicked",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151203,
+    "page": "P015",
+    "category": 12,
+    "item": 3,
+    "name": "BACK_TO_SIGN_IN",
+    "chCode": "CH-15922",
+    "meaning": "Back to sign in (\"Remember it? Sign in\", Back to sign in, or the browser's Back)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
@@ -15752,6 +16247,127 @@
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
+    "id": 151607,
+    "page": "P015",
+    "category": 16,
+    "item": 7,
+    "name": "THE_SIGN_IN_KEY_CHANGES_STATE_OFF",
+    "chCode": "CH-15607",
+    "meaning": "The Sign in key changes state: off (a field is empty), ready, in flight",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151608,
+    "page": "P015",
+    "category": 16,
+    "item": 8,
+    "name": "A_REFUSAL_APPEARS_OR_THE_NEXT_ONE",
+    "chCode": "CH-15608",
+    "meaning": "A refusal appears, or the next one replaces it",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151609,
+    "page": "P015",
+    "category": 16,
+    "item": 9,
+    "name": "A_REFUSAL_IS_ABOUT_THE_FIELDS",
+    "chCode": "CH-15609",
+    "meaning": "A refusal is about the fields (the credentials, an empty field, or the reset form's address)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151610,
+    "page": "P015",
+    "category": 16,
+    "item": 10,
+    "name": "THE_PASSWORD_EYE_IS_PRESSED",
+    "chCode": "CH-15610",
+    "meaning": "The password eye is pressed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151611,
+    "page": "P015",
+    "category": 16,
+    "item": 11,
+    "name": "THE_HOME_LINK_IS_HOVERED_OR_PRESSED",
+    "chCode": "CH-15611",
+    "meaning": "The Home link is hovered or pressed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151612,
+    "page": "P015",
+    "category": 16,
+    "item": 12,
+    "name": "THE_PANEL_MOVES_BETWEEN_SIGN_IN_THE",
+    "chCode": "CH-15612",
+    "meaning": "The panel moves between sign in, the reset form and check your email",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151613,
+    "page": "P015",
+    "category": 16,
+    "item": 13,
+    "name": "SIGN_UP_ONE_QUESTION_GIVES_WAY_TO",
+    "chCode": "CH-15620",
+    "meaning": "Sign up: one question gives way to the next (Continue, a choice, Back)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151614,
+    "page": "P015",
+    "category": 16,
+    "item": 14,
+    "name": "SIGN_UP_THE_MEMBER_CARD_FILLS_IN",
+    "chCode": "CH-15621",
+    "meaning": "Sign up: the member card fills in as answers arrive",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151615,
+    "page": "P015",
+    "category": 16,
+    "item": 15,
+    "name": "SIGN_UP_PROGRESS_MOVES",
+    "chCode": "CH-15622",
+    "meaning": "Sign up: progress moves",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151616,
+    "page": "P015",
+    "category": 16,
+    "item": 16,
+    "name": "SIGN_UP_THE_MEMBER_CARD_IS_ISSUED",
+    "chCode": "CH-15623",
+    "meaning": "Sign up: the member card is issued (done, staff done)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151617,
+    "page": "P015",
+    "category": 16,
+    "item": 17,
+    "name": "SIGN_UP_AN_ANSWER_IS_TOUCHED_OR",
+    "chCode": "CH-15624",
+    "meaning": "Sign up: an answer is touched or refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
     "id": 151701,
     "page": "P015",
     "category": 17,
@@ -15780,7 +16396,7 @@
     "item": 3,
     "name": "A_WARNING_TONED_REFUSAL",
     "chCode": "CH-15703",
-    "meaning": "A warning-toned refusal (an empty field, an unverified email, a rate limit)",
+    "meaning": "A warning-toned refusal (an empty field, an unverified email, a rate limit; the reset form's missing or malformed address)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
@@ -15791,7 +16407,7 @@
     "item": 4,
     "name": "A_DANGER_TONED_REFUSAL",
     "chCode": "CH-15704",
-    "meaning": "A danger-toned refusal (the credentials, the network, a stale bundle, anything unexpected)",
+    "meaning": "A danger-toned refusal (the credentials, the network, a stale bundle, anything unexpected; a reset request that fails)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
@@ -15803,6 +16419,28 @@
     "name": "CONTINUE_ON_THE_WELCOME",
     "chCode": "CH-15705",
     "meaning": "Continue on the welcome",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151706,
+    "page": "P015",
+    "category": 17,
+    "item": 6,
+    "name": "SEND_RESET_LINK_IS_TAPPED",
+    "chCode": "CH-15720",
+    "meaning": "Send reset link is tapped",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151707,
+    "page": "P015",
+    "category": 17,
+    "item": 7,
+    "name": "A_RESET_LINK_IS_ASKED_FOR_AND",
+    "chCode": "CH-15721",
+    "meaning": "A reset link is asked for and the server accepts",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
@@ -15858,6 +16496,17 @@
     "name": "THE_PASSWORD_EYE_IS_A_NAMED_PRESSED",
     "chCode": "CH-15805",
     "meaning": "The password eye is a named, pressed-state button with a hit area past 44px; every other control is at least 44px on the phone",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151806,
+    "page": "P015",
+    "category": 18,
+    "item": 6,
+    "name": "THE_PANELS_VIEW_CHANGES",
+    "chCode": "CH-15820",
+    "meaning": "The panel's view changes",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },

@@ -92,10 +92,11 @@ beforeEach(() => {
 const stopNavigation = (e: Event) => e.preventDefault();
 
 describe('Player Home · desktop (Player - Home.html)', () => {
-  it('20102 20103 the day, the brief, Message coach to the coach’s thread; Post a round opens round entry', () => {
+  it('20102 20103 the day, no brief line, Message coach to the coach’s thread; Post a round opens round entry', () => {
     show();
     expect(screen.getByRole('heading', { level: 1, name: 'Good afternoon, Theo.' })).toBeTruthy();
-    expect(screen.getByText(/Off the tee is gaining you 0\.8 strokes a round/)).toBeTruthy();
+    // Owner, 2026-10-06: the CoachHelm brief no longer sits under the greeting.
+    expect(screen.queryByText(/Off the tee is gaining you 0\.8 strokes a round/)).toBeNull();
     expect(screen.getByRole('link', { name: 'Message coach' }).getAttribute('href')).toBe('/golf/dashboard/messages?user=coach-maya');
     // Round entry is rebuilt for players (P011), so the button leads there.
     expect(screen.getByRole('link', { name: 'Post a round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
@@ -182,7 +183,21 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     for (const c of ['CH-2201', 'CH-2202', 'CH-2215']) expect(code(c)).not.toBeNull();
     expect(code('CH-2301')).toBeNull();
     expect(code('CH-2310')).toBeNull();
-    expect(screen.queryByRole('heading', { name: 'By part of the game' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Your game' })).toBeNull();
+  });
+
+  it('CH-1209 the reads that fail are told once under the head, naming the sections, with one Try again', () => {
+    show(PREVIEW_PLAYER_HOME_FAILED);
+    expect(code('CH-1209')!.textContent).toMatch(/This week’s schedule, your latest round and your scoring didn’t load/);
+    expect(document.querySelectorAll('[role="alert"]')).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    for (const c of ['CH-2201', 'CH-2202', 'CH-2215']) expect(within(code(c) as HTMLElement).queryByRole('button')).toBeNull();
+  });
+
+  it('CH-1209 one part failing keeps its own Try again, with no page notice', () => {
+    show(home({ legs: { ...PREVIEW_PLAYER_HOME.legs!, cacheError: true } }));
+    expect(code('CH-1209')).toBeNull();
+    expect(within(code('CH-2216') as HTMLElement).getByRole('button', { name: 'Try again' })).toBeTruthy();
   });
 
   it('CH-2216 scrambling didn’t load: the notice, the other parts stay', () => {
@@ -226,7 +241,7 @@ describe('Player Home · desktop (Player - Home.html)', () => {
 
   it('CH-2313 a player on no team', () => {
     wrap(<PlayerHomeNoTeam />);
-    expect(code('CH-2313')!.textContent).toMatch(/aren't on a team yet/);
+    expect(code('CH-2313')!.textContent).toMatch(/aren’t on a team yet/);
   });
 });
 
@@ -237,6 +252,14 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
   });
   afterEach(() => {
     window.matchMedia = real;
+  });
+
+  it('CH-1209 CH-2201 on the phone the reads that fail are told once under the greeting, with one Try again', () => {
+    show(PREVIEW_PLAYER_HOME_FAILED);
+    expect(code('CH-1209')!.textContent).toMatch(/This week’s schedule, your latest round and your scoring didn’t load/);
+    expect(code('CH-1209')!.closest('.ch-hm-hero')).not.toBeNull();
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    expect(code('CH-2201')!.closest('.ch-hm-next')).toBeNull();
   });
 
   it('shows an all-day event without the midnight countdown on the phone too', () => {
@@ -260,7 +283,7 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
 
   it('CH-2309 nothing ahead: the empty card, with no Add event (a player can’t add team events)', () => {
     show(home({ next: null }));
-    expect(code('CH-2309')!.textContent).toMatch(/Your coach's practices and events will show here/);
+    expect(code('CH-2309')!.textContent).toMatch(/Your coach’s practices and events will show here/);
     expect(screen.queryByRole('link', { name: /Add event/ })).toBeNull();
   });
 
@@ -515,13 +538,15 @@ describe('Player Home · the page’s own contracts (desktop)', () => {
     vi.restoreAllMocks();
   });
 
-  it('20102 Player Home opens with its header, the week beside My latest round, and Scoring and the parts of the game', () => {
+  it('20102 Player Home opens with its header, the week beside Up next and My latest round, and Scoring and the parts of the game', () => {
     show();
     expect(screen.getByRole('heading', { level: 1, name: PREVIEW_PLAYER_HOME.greeting })).toBeTruthy();
     expect(document.body.textContent).toContain(PREVIEW_PLAYER_HOME.todayLabel);
-    expect(screen.getByText(PREVIEW_PLAYER_HOME.brief!)).toBeTruthy();
+    expect(screen.queryByText(PREVIEW_PLAYER_HOME.brief!)).toBeNull();
+    // Up next opens the latest round's pane, so the two columns balance.
+    expect(document.querySelector('[aria-labelledby="ch-round-title"] > .ch-ph-next:first-child')).not.toBeNull();
     const headings = [...document.querySelectorAll('h2')].map((h) => h.textContent);
-    expect(headings).toEqual(['This week', 'My latest round', 'Scoring', 'By part of the game']);
+    expect(headings).toEqual(['This week', 'My latest round', 'Scoring', 'Your game']);
     // The phone Home is not drawn on a wide canvas.
     expect(document.querySelector('.ch-hm')).toBeNull();
   });
@@ -585,7 +610,7 @@ describe('Player Home · the phone, the page’s own contracts', () => {
     const main = document.querySelector('main.ch-hm')!;
     expect(main.getAttribute('aria-label')).toBe('Home');
     const headings = [...main.querySelectorAll('h2')].map((h) => h.textContent);
-    expect(headings.filter((h) => ['This week', 'Today', 'My latest round', 'Scoring', 'By part of the game'].includes(h!))).toEqual(['This week', 'Today', 'My latest round', 'Scoring', 'By part of the game']);
+    expect(headings.filter((h) => ['This week', 'Today', 'My latest round', 'Scoring', 'Your game'].includes(h!))).toEqual(['This week', 'Today', 'My latest round', 'Scoring', 'Your game']);
     expect(document.querySelector('.ch-h-main')).toBeNull();
   });
 

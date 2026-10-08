@@ -156,7 +156,8 @@ export function TermBar({
  * A class with days but no start and end time says so, and that it isn't on the calendar, as one with times but no days does.
  * CH-12801: the whole card is one button named for the class and when it meets.
  * CH-12802: the week strip is drawing, so it is hidden from screen readers.
- * CH-12701: opening a class is a selection tap. CH-12601: hovering lifts the card (quick).
+ * CH-12701: opening a class is a selection tap. CH-12601: on the desktop Ledger it takes the row tint on hover (quick)
+ * and a deeper one on press, no lift.
  */
 export function ClassCard({
   c,
@@ -226,13 +227,13 @@ export function ClassCard({
           </span>
         )}
         {noDays && (
-          <span className="ch-cl-flag" data-ch-code="CH-12304" title="Times are set but no days, so it isn't on your calendar. Edit the class to add them.">
+          <span className="ch-cl-flag" data-ch-code="CH-12304" title="Times are set but no days, so it isn’t on your calendar. Edit the class to add them.">
             <Icon icon={TriangleAlert} size={12} />
             No meeting days, not on your calendar
           </span>
         )}
         {noTime && (
-          <span className="ch-cl-flag" title="Days are set but not a start and an end time, so it isn't on your calendar. Edit the class to add them.">
+          <span className="ch-cl-flag" title="Days are set but not a start and an end time, so it isn’t on your calendar. Edit the class to add them.">
             <Icon icon={TriangleAlert} size={12} />
             No meeting time, not on your calendar
           </span>
@@ -274,8 +275,8 @@ export function OverlapsCard({ groups, error, onRetry }: { groups: readonly ChCo
     return (
       <InlineNotice
         code="CH-12202"
-        title="The team's events didn't load"
-        body="Overlaps with practice and travel can't be checked right now. Nothing has changed. Try again in a moment."
+        title="The team’s events didn’t load"
+        body="Overlaps with practice and travel can’t be checked right now. Nothing has changed. Try again in a moment."
         onRetry={onRetry}
       />
     );
@@ -336,7 +337,7 @@ export function CoachNote() {
       <Icon icon={Eye} size={16} />
       <div>
         <b>What your coach sees</b>
-        <span>Your coach can see your classes, when they meet and where, so practice and travel are planned around them. Your teammates don&apos;t see them.</span>
+        <span>Your coach can see your classes, when they meet and where, so practice and travel are planned around them. Your teammates don’t see them.</span>
       </div>
     </section>
   );

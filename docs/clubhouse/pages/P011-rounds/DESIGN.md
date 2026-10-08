@@ -44,14 +44,23 @@ thought, and check a round afterwards. Coach: read a player's round, hole by hol
 
 ## Visual hierarchy
 
-- **Library** (`.ch-rd`, a container named `chrd`): the header (the season kicker, "Your rounds", New round when
-  it is drawn), then the round card beside the season card, "N more unfinished rounds" when there are any, the
-  search and grouping tools, and the book by month or by course. The card and the season stack below 860px, the
-  book's meters hide below 1000px, and at 640px (the phone) the book drops Out · In · Tot to a date tile, the
-  course and tee, and the to-par box, and a group's header drops its average and low.
-- **Review** (`.ch-rv`, `chrv`): Back, the hero (kicker, course, tee facts, the score with its to par), the
-  five figures, the scorecard as two captioned nines, then two columns (the picked hole's shots; the scoring
-  distribution, the recap and the notes). One column below 900px; the figures wrap to three below 640px.
+- **Library** (`.ch-rd`, a container named `chrd`): the header (on desktop the
+  framed page head: the season kicker, "Your rounds", New round when it is
+  drawn), then the round in progress beside the season (on desktop two Ledger
+  panes under engraved rules, split by a soft column rule; the hole strip keeps
+  its small board), "N more unfinished rounds" when there are any, the search
+  and grouping tools, and the book by month or by course. The card and the
+  season stack below 860px, the book's meters hide below 1000px, and on the
+  phone the book drops Out · In · Tot: each round is a flush row of the date
+  (the day over its weekday, no tile), the course and tee, and the to par over
+  the score (no box), and a group's header drops its average and low.
+- **Review** (`.ch-rv`, `chrv`): Back, the hero (on desktop the framed page
+  head: kicker as the eyebrow, the course in the heavy sans, tee facts, the
+  score with its to par in forest ink; on the phone the screen's one green
+  feature card, the course in the 600 sans), the five figures (flush on desktop;
+  between hairlines on the phone), the scorecard as two captioned nines, then
+  two columns (the picked hole's shots; the scoring distribution, the recap and
+  the notes). One column below 900px; the figures wrap to three below 640px.
 - **Setup** (`.ch-rsu`, `chrs`): the green band with its steps (Course, Scorecard, Track) and Back, then two columns
   (course card, open qualifier, Round details, the note; the scorecard) and the dock with the one thing stopping
   Start and Start round. One column below 860px.
@@ -98,11 +107,13 @@ All 25 (CONTRACT.md).
 
 ## Motion intent
 
-v2 (D-64), from the `--ch-dur-*` tokens and the v2 ease curves; nothing counts up. Rounds adds the
-book row's hover lift (1px, ring turns green, quick; CH-11601, preview only), the shot log's chevron turn (base;
-CH-11602), the scoring distribution's bar width (base), and the submit spinner, which stops with reduced
-motion (CH-11603, and `prefers-reduced-motion` turns off the chevron, the choice buttons' fade and the spinner).
-Presses are the shell's (`useChPress`); sheets and skeleton fades are the shell's.
+v2 (D-64), from the `--ch-dur-*` tokens and the v2 ease curves; nothing counts
+up. Rounds adds the book row's hover tint (the Ledger row tint, no lift, quick;
+CH-11601, preview only), the shot log's chevron turn (base; CH-11602), the
+scoring distribution's bar width (base), and the submit spinner, which stops
+with reduced motion (CH-11603, and `prefers-reduced-motion` turns off the
+chevron, the choice buttons' fade and the spinner). Presses are the shell's
+(`useChPress`); sheets and skeleton fades are the shell's.
 
 ## Haptic intent
 
@@ -125,6 +136,24 @@ root ("Rounds", no back link); the review's top bar is "Round" with "‹ Rounds"
 and the shot screen hide the tab bar (`usePhoneTabsHidden`), with the dock above the home indicator and the
 distance box at 76px; sheets (penalty, change a shot, leave this shot, exit, scorecard, round complete, the picker,
 Add a course) are bottom sheets that drag to close. Not yet: the iOS number pad's Done bar, and an iPhone pass.
+
+**The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy, too vibe
+coded"; the Coach Home board's round 3, "fewer containers, one feature card").**
+The library opens on the Ledger's intro under the engraved double rule: the
+season line as the tracked brown eyebrow across the page, "Your rounds" in the
+600 sans (no regular-weight title), New round at the end of the title's line.
+The round in progress, or the idle card, is the page's one green feature card
+and keeps its hole strip. Season scoring is a section flush on the parchment:
+its heading under the double rule, the average, the three drawn figures between
+hairlines, then the ribbon. "More unfinished rounds" and each month are sections
+under the double rule, and every round is a row between soft seams that deepens
+to the row press tint. A round's review opens on its green hero; the figures sit
+between hairlines; strokes gained, the scorecard, the hole, the distribution and
+the notes are sections under the double rule; the recap is a passage under a
+rule with its kicker in green, not a second green card. Kept as material: the
+hole strip, the scorecard's grid, the search, the grouping control, the hole
+steps and the notices. The route skeletons draw the same shapes at the phone's
+width.
 
 ## Accessibility
 

@@ -41,7 +41,7 @@ import { NOTE_MAX } from '../screens/roster/RosterPeek';
 import { nameList, useJoinRequests } from '../screens/roster/useJoinRequests';
 import { ToastProvider } from '../ui/Toast';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
-import { PREVIEW_ROSTER, PREVIEW_ROSTER_PARTIAL } from '../preview/fixtures-roster';
+import { PREVIEW_ROSTER, PREVIEW_ROSTER_FAILED, PREVIEW_ROSTER_PARTIAL } from '../preview/fixtures-roster';
 import './dialog-polyfill';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
@@ -99,7 +99,7 @@ describe('Roster · saves that fail', () => {
     await openRemove(user);
     await expectCode('CH-3501', /Remove Theo Marchetti from Varsity\?/);
     await user.click(screen.getByRole('button', { name: 'Remove player' }));
-    await expectCode('CH-3001', /Couldn't remove Theo Marchetti/);
+    await expectCode('CH-3001', /Couldn’t remove Theo Marchetti/);
     expect(code('CH-3501')).not.toBeNull();
     expect(screen.getAllByText(theo.name).length).toBeGreaterThan(0);
   });
@@ -110,7 +110,7 @@ describe('Roster · saves that fail', () => {
     wrap(roster());
     const req = PREVIEW_ROSTER.requests[0]!;
     await user.click(within(screen.getByRole('region', { name: 'Join requests' })).getAllByRole('button', { name: 'Approve' })[0]!);
-    await expectCode('CH-3002', new RegExp(`Couldn't approve ${req.name}`));
+    await expectCode('CH-3002', new RegExp(`Couldn’t approve ${req.name}`));
     expect(screen.getByText(req.name)).toBeTruthy();
   });
 
@@ -122,7 +122,7 @@ describe('Roster · saves that fail', () => {
       wrapper: ({ children }) => <ToastProvider>{children}</ToastProvider>,
     });
     await act(() => result.current.approveAll());
-    await expectCode('CH-3007', /Couldn't approve Owen Park and Sam Reyes/);
+    await expectCode('CH-3007', /Couldn’t approve Owen Park and Sam Reyes/);
     expect(code('CH-3007')!.textContent).toMatch(/1 of 3 added to Varsity/);
     expect(result.current.reqs.map((r) => r.id)).toEqual(['r2', 'r3']);
     expect(actions.accept.mock.calls.map((c) => c[0])).toEqual(['r1', 'r2', 'r3']);
@@ -155,7 +155,7 @@ describe('Roster · saves that fail', () => {
     wrap(roster());
     const req = PREVIEW_ROSTER.requests[0]!;
     await user.click(within(screen.getByRole('region', { name: 'Join requests' })).getAllByRole('button', { name: 'Decline' })[0]!);
-    await expectCode('CH-3003', new RegExp(`Couldn't decline ${req.name}`));
+    await expectCode('CH-3003', new RegExp(`Couldn’t decline ${req.name}`));
     expect(screen.getByText(req.name)).toBeTruthy();
   });
 
@@ -168,7 +168,7 @@ describe('Roster · saves that fail', () => {
     await user.clear(note);
     await user.type(note, 'Work on lag putting');
     await user.tab();
-    await expectCode('CH-3004', /Couldn't save your note about Theo/);
+    await expectCode('CH-3004', /Couldn’t save your note about Theo/);
     expect((note as HTMLTextAreaElement).value).toBe('Work on lag putting');
   });
 
@@ -181,7 +181,7 @@ describe('Roster · saves that fail', () => {
     };
     wrap(roster());
     await user.click(screen.getByRole('button', { name: 'Export' }));
-    await expectCode('CH-3005', /Couldn't export the roster/);
+    await expectCode('CH-3005', /Couldn’t export the roster/);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     url.createObjectURL = prev;
   });
@@ -192,7 +192,7 @@ describe('Roster · saves that fail', () => {
     wrap(roster());
     await user.click(screen.getAllByRole('button', { name: 'Invite players' })[0]!);
     await user.click((await screen.findAllByRole('button', { name: 'Copy' }))[0]!);
-    await expectCode('CH-3006', /Couldn't copy the join code/);
+    await expectCode('CH-3006', /Couldn’t copy the join code/);
   });
 });
 
@@ -212,7 +212,7 @@ describe('Roster · reads that fail', () => {
   it('CH-3201 the roster does not load: a notice, never "no players"', async () => {
     const user = userEvent.setup();
     wrap(roster({ playersError: true, players: [] }));
-    await expectCode('CH-3201', /The roster didn't load/);
+    await expectCode('CH-3201', /The roster didn’t load/);
     expect(code('CH-3301')).toBeNull();
     await user.click(within(code('CH-3201') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalled();
@@ -220,16 +220,29 @@ describe('Roster · reads that fail', () => {
 
   it('CH-3202 season stats do not load: the roster stays, figures read as missing', async () => {
     wrap(PREVIEW_ROSTER_PARTIAL);
-    await expectCode('CH-3202', /Season stats didn't load/);
+    await expectCode('CH-3202', /Season stats didn’t load/);
     expect(screen.getAllByText(theo.name).length).toBeGreaterThan(0);
   });
 
   it('CH-3203 join requests do not load: Try again re-reads', async () => {
     const user = userEvent.setup();
     wrap(roster({ requestsError: true, requests: [] }));
-    await expectCode('CH-3203', /Join requests didn't load/);
+    await expectCode('CH-3203', /Join requests didn’t load/);
     await user.click(within(code('CH-3203') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalled();
+  });
+
+  it('CH-1209 the roster and join requests both failing are told once under the head, with one Try again; each part keeps its title', async () => {
+    const user = userEvent.setup();
+    wrap(PREVIEW_ROSTER_FAILED);
+    await expectCode('CH-1209', /Some of this page didn’t load.*The roster and join requests didn’t load/);
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    for (const [c, title] of [['CH-3201', 'The roster didn’t load'], ['CH-3203', 'Join requests didn’t load']] as const) {
+      expect(code(c)!.textContent).toBe(title);
+    }
+    await user.click(within(code('CH-1209') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
   });
 
   it('CH-3204 CH-3205 CH-3206 a crash stays inside its section', async () => {
@@ -241,7 +254,7 @@ describe('Roster · reads that fail', () => {
     wrap(roster({ requests: null as never, players: PREVIEW_ROSTER.players.map((p) => (p.id === 'jonah' ? broken : p)) }));
     expect(code('CH-3204')!.textContent).toMatch(/Join requests couldn’t be shown/);
     expect(code('CH-3205')!.textContent).toMatch(/The roster couldn’t be shown/);
-    expect(screen.getByRole('heading', { name: 'Your players.' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Your players' })).toBeTruthy();
     await user.click(within(screen.getByRole('region', { name: 'Needs a look' })).getByRole('button', { name: /Jonah/ }));
     await expectCode('CH-3206', /The player panel couldn’t be shown/);
     quiet.mockRestore();
@@ -255,7 +268,7 @@ describe('Roster · reads that fail', () => {
     const user = userEvent.setup();
     wrap(roster({ teamError: true, joinCode: null }));
     await user.click(screen.getAllByRole('button', { name: 'Invite players' })[0]!);
-    await expectCode('CH-3207', /The join code didn't load/);
+    await expectCode('CH-3207', /The join code didn’t load/);
     expect(code('CH-3304')).toBeNull();
   });
 
@@ -333,7 +346,7 @@ describe('Roster · empty', () => {
     render(<>{await ClubhouseRosterRoute()}</>);
     const el = code('CH-3306') as HTMLElement;
     expect(el.classList.contains('ch-empty-page')).toBe(true);
-    expect(within(el).getByRole('heading', { level: 2, name: "You aren't on a team yet" })).toBeTruthy();
+    expect(within(el).getByRole('heading', { level: 2, name: 'You aren’t on a team yet' })).toBeTruthy();
     expect(el.textContent).toMatch(/Your players appear here once your team is set up/);
     expect(el.textContent).not.toMatch(/Home/);
     expect(code('CH-2307')).toBeNull();
@@ -623,13 +636,20 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
 
   it('CH-3203 join requests that did not load say so in the banner slot', () => {
     phone(roster({ requestsError: true, requests: [] }));
-    expect(code('CH-3203')!.textContent).toMatch(/Join requests didn't load/);
+    expect(code('CH-3203')!.textContent).toMatch(/Join requests didn’t load/);
+  });
+
+  it('CH-1209 on the phone, the roster and join requests failing are one notice under the head with one Try again', () => {
+    phone(PREVIEW_ROSTER_FAILED);
+    expect(code('CH-1209')!.textContent).toMatch(/Some of this page didn’t load.*The roster and join requests didn’t load/);
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    expect([code('CH-3201')!.textContent, code('CH-3203')!.textContent]).toEqual(['The roster didn’t load', 'Join requests didn’t load']);
   });
 
   it('CH-3202 season stats that did not load: the profile says so instead of "no rounds"', () => {
     window.history.replaceState(null, '', '/golf/dashboard/roster?player=theo');
     phone(roster({ statsError: true, players: PREVIEW_ROSTER.players.map((p) => ({ ...p, avg: null, sgPerRound: null, trend: [], recent: [], rounds: 0, form: 'early', attention: null })) }));
-    expect(screen.getAllByText(/Season stats didn't load/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Season stats didn’t load/).length).toBeGreaterThan(0);
     expect(code('CH-3305')).toBeNull();
   });
 
@@ -667,8 +687,13 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
 
   it('30101 Roster opens on the active players by average, with the team line, Needs a look and the join requests', () => {
     wrap(roster());
-    expect(screen.getByRole('heading', { level: 1, name: 'Your players.' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Your players' })).toBeTruthy();
     expect(document.querySelector('.ch-rs-team__name')!.textContent).toBe('Varsity · Fall 2026');
+    // The card's team strip has its own class: the header's avatar row (.ch-rs-team) never takes the strip's bar styles.
+    expect(document.querySelector('.ch-rs-head .ch-rs-strip')).toBeNull();
+    const rosterCss = readFileSync(resolve(process.cwd(), 'src/clubhouse/styles/roster.css'), 'utf8');
+    expect(rosterCss).not.toMatch(/\.ch-rs-team,\s*\.ch-rs-sgbar/);
+    expect(rosterCss).toMatch(/\.ch-rs-strip,\s*\.ch-rs-sgbar/);
     expect(document.querySelector('.ch-rs-head p')!.textContent).toBe('8 players · 7 active. Team average 73.6 over the season.');
     expect(cardNames()).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Jonah Okafor', 'Eli Brandt', 'Priya Natarajan', 'Luca Ferraro']);
     expect(screen.getByRole('button', { name: 'Active · 7' }).getAttribute('aria-pressed')).toBe('true');
@@ -692,7 +717,8 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
   it('30303 31402 Try again asks the server again, and what comes back replaces the first copy: an approved player appears, and a failed read never turns into "No players yet"', async () => {
     const user = userEvent.setup();
     const view = render(tree(roster({ playersError: true, players: [], requestsError: true, requests: [] })));
-    await user.click(within(code('CH-3201') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    // Two failed reads: the page's one notice carries the Try again (CH-1209).
+    await user.click(within(code('CH-1209') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalledTimes(1);
     // The server's answer arrives as new props.
     view.rerender(tree(roster()));
@@ -719,18 +745,18 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     url.revokeObjectURL = () => {};
     wrap(roster());
     await user.click(within(region()).getAllByRole('button', { name: 'Approve' })[0]!);
-    expect(await screen.findByText("Couldn't approve Grace Liu: you're offline")).toBeTruthy();
+    expect(await screen.findByText('Couldn’t approve Grace Liu: you’re offline')).toBeTruthy();
     await user.click(within(region()).getAllByRole('button', { name: 'Decline' })[1]!);
-    expect(await screen.findByText("Couldn't decline Owen Park's request: you're offline")).toBeTruthy();
+    expect(await screen.findByText('Couldn’t decline Owen Park’s request: you’re offline')).toBeTruthy();
     expect(requestNames()).toEqual(['Grace Liu', 'Owen Park']);
     await openPeek(user);
     await user.type(noteField(), 'x');
     await user.tab();
-    expect(await screen.findByText("Couldn't save your note about Theo: you're offline")).toBeTruthy();
+    expect(await screen.findByText('Couldn’t save your note about Theo: you’re offline')).toBeTruthy();
     expect(noteField().value).toBe('x');
     await openRemove(user);
     await user.click(screen.getByRole('button', { name: 'Remove player' }));
-    expect(await screen.findByText("Couldn't remove Theo Marchetti: you're offline")).toBeTruthy();
+    expect(await screen.findByText('Couldn’t remove Theo Marchetti: you’re offline')).toBeTruthy();
     expect(screen.getByRole('button', { name: `Actions for ${theo.name}` })).toBeTruthy();
     expect((code('CH-3501') as HTMLDialogElement).hasAttribute('open')).toBe(true);
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
@@ -925,6 +951,21 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     window.removeEventListener('error', caught);
     // The refusal is handled inside Roster, not left to surface as an uncaught error.
     expect(errors).toEqual([]);
+  });
+
+  it('CH-3603 the kept layout comes back in place; only the coach’s own toggle swaps it, the old layout leaving the accessibility tree at once', async () => {
+    const user = userEvent.setup();
+    const leaving = () => document.querySelector('.ch-rs-body .ch-swap__body[aria-hidden]');
+    localStorage.setItem('ch-roster-view', 'list');
+    wrap(roster());
+    expect(await screen.findByRole('table', { name: 'Roster' })).toBeTruthy();
+    // Restoring the kept layout draws it in place: nothing is left fading behind it.
+    expect(leaving()).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Team view' }));
+    // The table fades out behind the cards (jsdom never finishes the fade), hidden from assistive tech while it does.
+    expect(leaving()?.querySelector('[role="table"]')).not.toBeNull();
+    expect(screen.queryByRole('table', { name: 'Roster' })).toBeNull();
+    expect(screen.getAllByRole('button', { name: new RegExp(theo.name) }).length).toBeGreaterThan(0);
   });
 
   it('31203 a saved note reads back: close the player and open them again, and the new text is there', async () => {

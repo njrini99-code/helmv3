@@ -44,7 +44,8 @@ phone section):
 - The bell is a sheet on the phone (CH-1811, CH-1612).
 
 Open: the check on a real iPhone through `npm run ios:dev`, with haptics felt (the owner). The push
-soft ask and pull to refresh wait for a drawing (D-43).
+soft ask waits for a drawing (D-43). Pull to refresh is built for the app
+(owner-approved 2026-10-08).
 
 ## Design versus device chrome
 
@@ -196,7 +197,7 @@ The prototype responds to clicks only. The drawing shows none of these gestures;
 | Drag a sheet down past the threshold | Sheets | `press` (built, CH-1611) |
 | Long press | A message bubble (Messages) | `press` when the menu opens |
 | Destructive confirm | Leave group, Delete message | `warning` on the destructive button, then `commit` |
-| Pull to refresh | Lists | Light, at the threshold. Still waits for a drawing (D-43) |
+| Pull to refresh | Every phone page, at its top (the app only) | Medium, at the trigger (owner-approved 2026-10-08, CH-1709) |
 
 ## Motion
 
@@ -272,6 +273,8 @@ The owner answered each one on 2026-09-29. The decision is in brackets.
    already does for its danger buttons. Decided: red now also means a destructive action.
 9. **Pull to refresh and the push soft ask (D-43).** D-22 says both wait for the foundation design.
    The design draws neither. Decided: both keep waiting for a design.
+   On 2026-10-08 the owner approved pull to refresh in the app as built
+   (CH-1909); the soft ask still waits.
 10. **What the old draft said that the design doesn't show:**
     - Details and New message opening as sheets. The design pushes both as screens.
     - Swipe actions on list rows.

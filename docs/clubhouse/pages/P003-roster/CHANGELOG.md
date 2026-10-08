@@ -1,5 +1,141 @@
 # P003 — Roster: changelog
 
+## 2026-10-08 — Copy: typographic apostrophes
+
+Roster writes its apostrophes as ’ on desktop and the phone, as Home, Stats and
+Calendar do: the no-team page (CH-3306 for a coach, CH-3308 for a player), the
+failed reads (CH-3201 to CH-3203, CH-3207, CH-3210), and the failures of a
+removal, an approval or decline, a note, the export and a copy (CH-3001 to
+CH-3007), so an offline refusal reads "Couldn’t approve Grace Liu: you’re
+offline" (CH-1903) with one kind of mark. The catalog quotes them as shown, and
+copy-apostrophes.test now covers the page.
+
+## 2026-10-08 — States: one notice when two reads fail; titles without a full stop
+
+From the states audit (2026-10-08, findings c15 and b8), desktop and phone:
+
+- **Two failed reads, one notice (CH-1209):** when the roster and join
+  requests (or the season stats) both fail, the page says so once under its
+  head, "Some of this page didn't load", with one Try again that asks the
+  server again (`PageRefreshNotice`). Each failed part keeps its title alone
+  in its place, marking the gap, with no second alert or button. One failed
+  read keeps its own notice, as before.
+- **Titles:** the desktop head reads "Your players", and the state titles
+  ("The roster didn't load", "Join requests didn't load", "Season stats didn't
+  load", the join code's) have no trailing full stop in the source either.
+- **Phone eyebrow:** the team and count are 12px, the phone text floor (F09)
+  and the kit's PageIntro eyebrow; the skeleton holds the new line (WebKit 390
+  and 430: no movement). The title was already the 600 sans at 31px.
+
+## 2026-10-08 — Phone: the Mobile clubhouse pass
+
+The phone Roster follows the Coach Home board (round 3, "fewer containers, one
+feature card"), carried to every phone screen (owner: "phone too cardy"):
+
+- **Head:** the page opens on the engraved double rule, the team and count as
+  the tracked eyebrow and Roster in the bold condensed sans (no serif).
+- **Join requests** are the screen's one green feature card: a gilt coin, the
+  count and the names in ivory. A press darkens it under a shade for the press
+  beat; it never scales (CH-3602).
+- **Players:** no white card. The list hangs from a hairline under the sort,
+  one row per seam, and a press tints the row 12px past its text (CH-3602).
+  Inactive opens under the double rule with its heading. Avatars sit on the
+  parchment with a champagne ring.
+- **Profile (pushed):** the player at the top, the three figures between two
+  hairlines (the Ledger's figure row), then Scoring trend, Recent rounds,
+  About and the coach's note, each flush under the double rule. About's facts
+  are rows on seams, not a box. The All link keeps its 44px reach over the
+  first round.
+- **Sheets:** each join request is a row on a seam inside the sheet, not a card
+  inside a card. The ⋯ sheet's actions are rows on seams that tint under the
+  finger. The team code keeps its well.
+- **States:** the empty and no-team pages stay centred on the parchment; the
+  failed reads are notices flush under the head. Loading draws the phone page
+  on its own classes (the double rule, the eyebrow, the title, the sort and
+  the rows), so nothing moves when it lands (WebKit 390 and 430). Join
+  requests are the exception: the skeleton can't know of them, so when some
+  are waiting their card arrives above the list and moves it down by the
+  card's height (99px); most days there are none.
+- The player's phone roster takes the same head and rows.
+
+Desktop is unchanged: every new rule sits in the phone block, and the
+skeleton's phone parts are hidden there (1440 captures before and after
+match).
+
+## 2026-10-07 — Team view and List view settle in
+
+Toggling Team view and List view now settles the new layout in with a 6px rise
+(base) while the old one fades out (quick), hidden from assistive tech (CH-3603,
+the shared `Swap`). It runs only on the coach's own toggle: the kept layout
+coming back as the page opens draws in place. A face or a list row's name
+presses with the row press tint (`--ch-ledger-row-press`) over the press beat,
+never a scale (CH-3602). New test: roster.test › CH-3603.
+
+## 2026-10-07 — Roster on the Ledger
+
+On desktop, Roster now sits on the canvas instead of in cards (owner: "flush,
+not so card heavy"):
+
+- **Join requests:** the request count is the section heading, set over an
+  engraved rule, with each request as a row below it and hairlines between rows.
+- **Players:** the toolbar heads the players with an engraved rule. The faces
+  hang from that rule on a ruled page: hairlines between cells, and no card,
+  lift or shadow. A hover or press now tints the cell instead of lifting a card
+  (CH-3602). The open player's cell takes a green tint and its coin a green
+  ring. The figures sit in the cell, not in a well.
+- **Table:** the header well is now a quiet label row. Rows have seams and sit
+  on the canvas.
+- **Player panel:** a column beside the players behind a hairline, or under them
+  behind a rule once they stack. Its sections sit under rules, without the
+  tinted band or the facts box.
+- **Head:** the old champagne border that doubled the page head's rule is gone.
+  With nobody active, the empty avatar row no longer indents the team line.
+
+The loading screen draws the same ruled faces and holds the head at 186px
+(WebKit, 1440 and 1100), so the head doesn't move when the page lands. Avatars,
+chips, controls and the note field keep their material. The phone and the
+player's roster are unchanged.
+
+With a player open beside the list view's table, the table drops its form
+column (the panel draws that player's form), so Rounds and the row menu fit
+without a sideways scroll. The column returns once the panel stacks under the
+table.
+
+## 2026-10-07 — The header's team row restored
+
+The card team strip from earlier tonight reused the class `.ch-rs-team`, which
+already names the header's avatar row ("Varsity · Fall 2026"). The strip's 10px
+height and tint landed on the header: the avatars overlapped the team name over
+a grey bar, for coach and player. The strip is now `.ch-rs-strip`, and the
+header is back to its own row. No other class added tonight exists on `main`;
+`ch-rd-season` is reused on purpose within its own component.
+
+## 2026-10-07 — Phone title in the serif
+
+The phone Roster title was a 28px semibold sans. It now uses the display serif
+at 34px, matching every other phone page title.
+
+## 2026-10-07 — Drawn card figures, serif title
+
+The coach's player cards no longer end in a pill of three bare numbers (owner:
+no bare numbers). The figures are drawn:
+
+- **Scoring:** the season average with the player's place (for example "1st of
+  7") and a strip showing every teammate's average, with this player's dot lit
+  in the field green.
+- **Strokes gained:** the figure per round with a bar running from a zero tick,
+  green for gained and amber for lost.
+- **Handicap:** reads as a labelled line.
+
+The card is a solid reading sheet, and "Your players." is set in the display
+serif. The player's own roster keeps handicap only, as before.
+
+## 2026-10-06 — Display type relaxed
+
+The owner found the display type too compact. Display headings on this page
+widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on
+every Clubhouse page. Layout and content are unchanged.
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
 

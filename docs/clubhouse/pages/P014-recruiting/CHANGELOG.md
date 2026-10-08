@@ -1,5 +1,106 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-08 — Copy: typographic apostrophes and quotes
+
+Recruiting writes its apostrophes as ’, as Home, Stats and Calendar do: the
+no-team page (CH-14306), the failed reads (CH-14201, CH-14202), the first run,
+the delete confirmations (CH-14501, CH-14502), the failed writes (CH-14001 to
+CH-14007) and the upload's own reasons, so an offline write reads "Couldn’t
+move Mason Reilly to Committed: you’re offline" (CH-14901). A search that
+matches nothing quotes the words in curly quotes: No prospects match “Tampa”
+(CH-14302). What the server sends is shown as it sent it ("Only this team's
+coaches can add recruit documents."). The catalog quotes them as shown, and
+copy-apostrophes.test now covers the page.
+
+## 2026-10-08 — States: first run stands alone
+
+From the states audit (2026-10-08, finding c2): with no prospects yet, the
+desktop page no longer draws the pipeline's four empty stages above the page
+empty. "Your prospect list starts here" stands alone under the head, so Add
+your first prospect sits well above the fold, as on the phone (CH-14301).
+
+## 2026-10-08 — Phone: the Mobile clubhouse pass
+
+The phone Recruiting follows the Coach Home board (round 3, "fewer containers,
+one feature card"), carried to every phone screen (owner: "phone too cardy"):
+
+- **Head:** the page opens on the engraved double rule with Recruiting in the
+  bold condensed sans (no serif). No green feature card: nothing on this list
+  outranks the rest.
+- **Timeline:** the compact pipeline sits between two hairlines instead of in a
+  box; a stage's coin takes the row press tint under the finger (CH-14601).
+- **Prospects:** rows on seams under a hairline, with no card; a press tints the
+  row 12px past its text (CH-14604). The sort's trigger tints the same way.
+- **No match** is centred on the parchment, with no box around it.
+- **Search** keeps the kit's field, 36px drawn with a 44px reach; the input
+  and its clear key still take their own taps. A stale override that lost the
+  cascade to the kit's field (a 40px grey well) is gone, so the field no
+  longer depends on stylesheet order.
+- **A prospect (pushed):** the name in the bold condensed sans; Stage, Email and
+  Call are keys drawn on the parchment (a hairline ring; the stage key keeps
+  its stage's fill); with no contact yet, Stage is a row between seams. Notes
+  and Documents open under the double rule with their headings; a part with
+  nothing in it yet is one row on a seam, and such rows run on as one ledger.
+  Documents are rows on seams. Every key, row and action tints under the
+  finger (CH-14604). Upload keeps its full 44px reach over the first
+  document under it.
+- **Loading** draws the phone page on its own classes (the double rule, the
+  title, the search, the timeline between its hairlines, the count and the
+  rows), so nothing moves when it lands.
+- The add and edit sheets, the stage picker and the delete sheet keep their
+  material: they are sheets and forms.
+- The upload bar's fill now slides by transform instead of growing its width
+  (doctrine: never animate layout). It looks the same.
+
+Desktop is otherwise unchanged: every other new rule sits in the phone
+block, and the skeleton's phone parts are hidden there. 1440 captures before
+and after match, apart from the loading page, where the shared skeleton's tone
+and ruled blocks changed in the same pass.
+
+## 2026-10-07 — A stage settles the list in
+
+Picking a stage in the pipeline, or letting it go, settles the prospect list in
+with a 6px rise (base) while the old one fades out (quick), hidden from
+assistive tech (CH-14603, desktop and phone). Typing a search and the kept stage
+coming back as the page opens stay in place. A prospect row presses with the row
+press tint. CH-14602 is corrected: with reduced motion the prospect settles at
+once. New test: recruiting.test › CH-14603.
+
+## 2026-10-07 — Recruiting on the Ledger
+
+On desktop, Recruiting now sits on the canvas instead of in cards (owner:
+"flush, not so card heavy"):
+
+- **Pipeline:** "Pipeline" and its count are the section heading, set over an
+  engraved rule. The four stages are now columns divided by hairlines rather
+  than a timeline. Each coin has its stage, blurb and share beside it, or under
+  it on a narrower canvas. A stage is still a filter, and the stage being shown
+  takes a green tint.
+- **Prospect list:** the search and sort head the list over an engraved rule.
+  The table's rows have seams and sit on the canvas. A row's hover and selected
+  tints are drawn as one box, so Safari leaves no hairline gaps between columns.
+- **Prospect panel:** a column beside the list behind a hairline, or under it
+  behind a rule once they stack. Contact rows and documents have seams, the
+  notes are plain text, and an empty part is a row with an engraved icon instead
+  of a card.
+- **Delete prospect** is red, as in the handoff (D-42). It had no style and
+  drew as black text.
+
+The loading screen draws the same pipeline line for line. The list used to drop
+27px at 1440 when the data landed; it now moves 0px (WebKit, 1440 and 1100).
+The lede no longer leaves "page." alone on its last line. Coins, stage chips, the
+search field, segmented controls and dialogs keep their material. The phone is
+unchanged.
+
+## 2026-10-07 — Phone title in the serif
+
+The phone Recruiting large title was a 34px semibold sans. It now uses the
+display serif at 38px, matching every other phone page title.
+
+## 2026-10-07 — Serif title
+
+The Recruiting title is set in the display serif, as on every Clubhouse page.
+
 ## 2026-10-06 — Popup text and height corrections
 
 ```text

@@ -10,9 +10,9 @@
   padding: 30px 34px;
   border-radius: 22px;
   overflow: hidden;
-  color: var(--ch-ivory-100);
-  background: radial-gradient(120% 140% at 92% -30%, rgb(255 255 255 / 0.1), transparent 55%), var(--ch-green-800);
-  box-shadow: var(--ch-elevation-reading-accent);
+  color: var(--ch-text-primary);
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-hd-hero__main {
   display: flex;
@@ -22,23 +22,26 @@
 }
 .ch-hd-hero__k {
   font: 600 12px/1.2 var(--ch-font-sans);
-  color: var(--ch-hero-mint);
+  color: var(--ch-green-600);
 }
 .ch-hd-hero h2 {
   max-width: 28ch;
-  font: 600 31px/1.15 var(--ch-font-sans);
-  letter-spacing: -0.03em;
-  font-variation-settings: 'wdth' 88;
-  color: var(--ch-ivory-25);
+  font: var(--ch-type-serif-l);
+  letter-spacing: -0.008em;
+  color: var(--ch-field-green);
   text-wrap: balance;
 }
 .ch-hd-hero__n {
-  color: var(--ch-hero-mint);
+  color: var(--ch-green-500);
+  font-family: var(--ch-font-sans);
+  font-size: 0.84em;
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
 .ch-hd-hero__sub {
   max-width: 56ch;
   font: 400 13.5px/1.55 var(--ch-font-sans);
-  color: rgb(244 241 232 / 0.76);
+  color: var(--ch-text-tertiary);
   text-wrap: pretty;
 }
 .ch-hd-hero__f {
@@ -54,12 +57,12 @@
   min-width: 104px;
   padding: 16px 18px 14px;
   border-radius: 16px;
-  background: rgb(255 255 255 / 0.06);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.09);
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow);
 }
 .ch-hd-hero__f dt {
   font: 500 12px/1.2 var(--ch-font-sans);
-  color: rgb(244 241 232 / 0.72);
+  color: var(--ch-text-tertiary);
 }
 .ch-hd-hero__f dd {
   margin: 0;
@@ -67,13 +70,13 @@
   letter-spacing: -0.03em;
 }
 .ch-hd-hero__f .is-needs dd {
-  color: var(--ch-champagne-300);
+  color: var(--ch-warning-600);
 }
 .ch-hd-hero__f .is-working dd {
-  color: var(--ch-hero-mint);
+  color: var(--ch-green-600);
 }
 .ch-hd-hero__f .is-plan dd {
-  color: var(--ch-ivory-25);
+  color: var(--ch-field-green);
 }
 
 /* The list and the read */
@@ -163,8 +166,10 @@
 .ch-hd-it.is-stale {
   --ch-hd-ink: var(--ch-text-tertiary);
 }
-.ch-hd-it:hover {
-  background: rgb(28 25 18 / 0.035);
+@media (hover: hover) {
+  .ch-hd-it:hover {
+    background: rgb(28 25 18 / 0.035);
+  }
 }
 .ch-hd-it.is-on {
   background: var(--ch-green-50);
@@ -231,10 +236,10 @@
   gap: 14px;
 }
 .ch-hd-dos h2 {
-  font: 600 30px/1.14 var(--ch-font-sans);
-  letter-spacing: -0.03em;
+  font: var(--ch-type-serif-l);
+  letter-spacing: -0.008em;
   text-wrap: balance;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-hd-sec {
   display: flex;
@@ -279,7 +284,7 @@
 }
 .ch-hd-meas__v b {
   font: 600 44px/1 var(--ch-font-sans);
-  letter-spacing: -0.035em;
+  letter-spacing: -0.026em;
   color: var(--ch-hd-fig);
 }
 .ch-hd-meas__v span {
@@ -412,8 +417,10 @@
 .ch-hd-rounds li:first-child .ch-hd-r {
   border-top: 0;
 }
-.ch-hd-r.is-link:hover {
-  background: rgb(28 25 18 / 0.035);
+@media (hover: hover) {
+  .ch-hd-r.is-link:hover {
+    background: rgb(28 25 18 / 0.035);
+  }
 }
 .ch-hd-r.is-link:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -570,8 +577,10 @@
 .ch-hd-plan__i.is-link {
   grid-template-columns: 34px minmax(0, 1fr) auto 16px;
 }
-.ch-hd-plan__i.is-link:hover {
-  background: var(--ch-green-25);
+@media (hover: hover) {
+  .ch-hd-plan__i.is-link:hover {
+    background: var(--ch-green-25);
+  }
 }
 .ch-hd-plan__i.is-link:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -810,6 +819,425 @@ p.ch-hd-none {
   padding: 14px 14px calc(24px + env(safe-area-inset-bottom));
 }
 
+/* The Ledger (owner, 2026-10-07: "flush, not so card heavy"). On desktop what CoachHelm has found is a section on the
+   canvas: its label over one engraved rule, the headline beside the three counts, which are one figure line split by
+   soft rules. The reads and the open read are two columns whose heads share a ruled line, as the Board's do; the
+   read's parts follow on soft rules, and only the week's drill keeps its well. The loading shapes flatten the same
+   way. */
+@media (min-width: 821px) {
+  main[data-canopy] :is(.ch-hd-hero, .ch-hd-rail, .ch-hd-dos, .ch-hd-dx, .ch-hd-plan__i, .ch-hd-sk__hero, .ch-hd-sk__dos) {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  main[data-canopy] .ch-hd-hero {
+    gap: 14px 40px;
+    align-items: start;
+    overflow: visible;
+  }
+  main[data-canopy] .ch-hd-hero__main {
+    display: contents;
+  }
+  main[data-canopy] .ch-hd-hero__k {
+    grid-column: 1 / -1;
+    margin-bottom: 4px;
+    padding-bottom: 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  @container chhl (min-width: 901px) {
+    main[data-canopy] .ch-hd-hero {
+      grid-template-rows: auto auto 1fr;
+    }
+    main[data-canopy] .ch-hd-hero__main > :is(h2, .ch-hd-hero__sub) {
+      grid-column: 1;
+    }
+    main[data-canopy] .ch-hd-hero__f {
+      grid-column: 2;
+      grid-row: 2 / span 2;
+      align-self: center;
+    }
+  }
+  main[data-canopy] .ch-hd-hero__f {
+    gap: 0;
+  }
+  main[data-canopy] .ch-hd-hero__f > div {
+    min-width: 0;
+    padding: 2px 28px;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  main[data-canopy] .ch-hd-hero__f > div:first-child {
+    padding-left: 0;
+  }
+  main[data-canopy] .ch-hd-hero__f > div:last-child {
+    padding-right: 0;
+  }
+  main[data-canopy] .ch-hd-hero__f > div + div {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+
+  /* The list of reads keeps its own scroll. Its padding sits outside the column, so the heads align with the column's
+     edge and a read's tint reaches 10px past it without being clipped. */
+  main[data-canopy] .ch-hd {
+    gap: 44px;
+  }
+  main[data-canopy] .ch-hd-rail {
+    gap: 28px;
+    margin-inline: -10px;
+    padding: 0 10px 10px;
+  }
+  main[data-canopy] .ch-hd-grp {
+    gap: 0;
+  }
+  main[data-canopy] .ch-hd-grp__h {
+    align-items: center;
+    min-height: 34px;
+    padding: 0 0 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  main[data-canopy] .ch-hd-grp > p {
+    padding: 10px 0 6px;
+  }
+  main[data-canopy] .ch-hd-it {
+    width: calc(100% + 20px);
+    margin-inline: -10px;
+  }
+  @media (hover: hover) {
+    main[data-canopy] .ch-hd-it:hover {
+      background: var(--ch-ledger-row-hover);
+    }
+  }
+  main[data-canopy] .ch-hd-it.is-on {
+    background: color-mix(in oklab, var(--ch-green-600) 7%, transparent);
+    box-shadow: none;
+  }
+  @media (hover: hover) {
+    main[data-canopy] .ch-hd-it.is-on:hover {
+      background: color-mix(in oklab, var(--ch-green-600) 9%, transparent);
+    }
+  }
+  /* A press deepens a row's tint over the press beat (the shell's CH-1606: a row never scales). */
+  main[data-canopy] .ch-hd-it:active {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
+  }
+
+  /* The open read: its head is the Board's ruled category line; its parts on soft rules; the plan as rows, as the
+     rounds are. */
+  main[data-canopy] .ch-hd-dos__h {
+    gap: 18px;
+  }
+  main[data-canopy] :is(.ch-hd-sec, .ch-hd-tr > li, .ch-hd-r, .ch-hd-dx__d > div) {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  @media (hover: hover) {
+    main[data-canopy] .ch-hd-r.is-link:hover {
+      background: var(--ch-ledger-row-hover);
+    }
+  }
+  main[data-canopy] .ch-hd-r.is-link:active {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
+  }
+  main[data-canopy] .ch-hd-plan {
+    gap: 0;
+  }
+  main[data-canopy] .ch-hd-plan__i {
+    padding: 12px 8px;
+    border-radius: 10px;
+  }
+  main[data-canopy] .ch-hd-plan > li + li .ch-hd-plan__i {
+    border-top: 1px solid var(--ch-ledger-rule-soft);
+  }
+  @media (hover: hover) {
+    main[data-canopy] .ch-hd-plan__i.is-link:hover {
+      background: var(--ch-ledger-row-hover);
+    }
+  }
+  main[data-canopy] .ch-hd-plan__i.is-link:active {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
+  }
+
+  /* Loading holds the loaded sections (WebKit 1440, 2026-10-07: what CoachHelm has found 156px) and draws each head's
+     rule where the page draws it: the hero's, each group's in the list, and the open read's. */
+  main[data-canopy] .ch-hd-sk__hero {
+    align-items: start;
+    min-height: 156px;
+    background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 25px / 100% 1px no-repeat;
+  }
+  main[data-canopy] .ch-hd-sk__hero > .ch-skel {
+    margin-top: 64px;
+  }
+  main[data-canopy] .ch-hd-sk__col > .ch-skel:first-child {
+    margin: 2px 0 17px;
+  }
+  main[data-canopy] :is(.ch-hd-sk__grp, .ch-hd-sk__dos) {
+    background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 33px / 100% 1px no-repeat;
+  }
+  main[data-canopy] .ch-hd-sk__grp > .ch-skel {
+    margin: 9px 0 57px;
+  }
+  main[data-canopy] .ch-hd-sk__it {
+    margin-inline: -10px;
+  }
+  main[data-canopy] .ch-hd-sk__dos > .ch-skel:first-child {
+    margin: 11px 0 12px;
+  }
+}
+
+/* The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy"; the Coach Home board, round 3: "fewer containers,
+   one feature card"). On the phone what CoachHelm has found is the view's one green feature card, its three counts a
+   figure line on the green; Needs work and Working are sections flush on the parchment under the engraved double rule,
+   their reads rows between soft seams. A read's pushed screen opens on its own feature card (the category, the stance,
+   the claim), and its parts follow flush under the double rule: no box around the figures, the trend, the diagnosis,
+   the drill or the plan, which are rows. The round's to-par key and the stance pills keep their material. */
+@media (max-width: 820px) {
+  .ch-hd-hero {
+    gap: 16px;
+    padding: 18px;
+    border-radius: 14px;
+    color: var(--ch-on-green-ink);
+    background: var(--ch-feature-bg);
+    box-shadow: var(--ch-elevation-feature);
+  }
+  .ch-hd-hero__main {
+    gap: 10px;
+  }
+  .ch-hd-hero__k {
+    font: 500 12.5px/1.3 var(--ch-font-sans);
+    color: var(--ch-hero-mint);
+  }
+  .ch-hd-hero h2 {
+    font: 600 23px/1.15 var(--ch-font-sans);
+    letter-spacing: -0.03em;
+    color: var(--ch-on-green-ink);
+  }
+  .ch-hd-hero__n {
+    font-size: 1em;
+    font-weight: 600;
+    color: var(--ch-hero-mint);
+  }
+  .ch-hd-hero__f {
+    gap: 0;
+    padding-top: 14px;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+  }
+  .ch-hd-hero__f > div {
+    padding: 0 14px;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-hd-hero__f > div:first-child {
+    padding-left: 0;
+  }
+  .ch-hd-hero__f > div + div {
+    box-shadow: inset 1px 0 0 rgb(255 255 255 / 0.1);
+  }
+  .ch-hd-hero__f dt {
+    color: var(--ch-on-green-ink-muted);
+  }
+  .ch-hd-hero__f .is-needs dd {
+    color: var(--ch-champagne-300);
+  }
+  .ch-hd-hero__f .is-working dd {
+    color: var(--ch-hero-mint);
+  }
+  .ch-hd-hero__f .is-plan dd {
+    color: var(--ch-on-green-ink);
+  }
+
+  /* The list: each group a section; its reads rows. */
+  :is(.ch-hl.is-phone) .ch-hd-rail {
+    align-items: stretch;
+    gap: 30px;
+  }
+  :is(.ch-hl.is-phone) .ch-hd-grp {
+    gap: 0;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  :is(.ch-hl.is-phone) .ch-hd-grp__h {
+    align-items: baseline;
+    padding: 12px 0 0;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  :is(.ch-hl.is-phone) .ch-hd-grp h3 {
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  :is(.ch-hl.is-phone) .ch-hd-grp > p {
+    padding: 4px 0 4px;
+  }
+  :is(.ch-hl.is-phone) .ch-hd-it {
+    padding: 10px 0;
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  :is(.ch-hl.is-phone) .ch-hd-it:active {
+    background: var(--ch-ledger-row-press);
+  }
+  :is(.ch-hl.is-phone) .ch-hd-sk__it {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+
+  /* The read on its pushed screen. */
+  .ch-hd-scroll {
+    padding: 16px 20px calc(28px + env(safe-area-inset-bottom));
+  }
+  .ch-hd-dos {
+    gap: 28px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-hd-dos__h {
+    gap: 8px;
+    padding: 18px;
+    border-radius: 14px;
+    color: var(--ch-on-green-ink);
+    background: var(--ch-feature-bg);
+    box-shadow: var(--ch-elevation-feature);
+  }
+  .ch-hd-dos__h .ch-hl-focus__k {
+    margin-bottom: 4px;
+    font: 500 12.5px/1.2 var(--ch-font-sans);
+    color: var(--ch-on-green-ink-muted);
+  }
+  .ch-hd-dos h2 {
+    font: 600 23px/1.15 var(--ch-font-sans);
+    letter-spacing: -0.03em;
+    color: var(--ch-on-green-ink);
+  }
+  .ch-hd-dos__h .ch-hl-lede {
+    font: 400 14px/1.5 var(--ch-font-sans);
+    color: var(--ch-on-green-ink-soft);
+  }
+  .ch-hd-dos__h .ch-hl-stale {
+    padding: 10px 0 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+    color: var(--ch-on-green-ink-muted);
+  }
+  .ch-hd-dos__h .ch-hl-pri {
+    background: rgb(255 255 255 / 0.09);
+    color: var(--ch-on-green-ink);
+    box-shadow: none;
+  }
+  .ch-hd-dos__h .ch-hl-pri.is-high {
+    background: var(--ch-warning-100);
+    color: var(--ch-warning-600);
+  }
+  .ch-hd-dos__h .ch-hl-pri.is-medium {
+    background: var(--ch-champagne-300);
+    color: var(--ch-green-800);
+  }
+  .ch-hd-dos__h .ch-hl-pri.is-ok {
+    background: var(--ch-positive-100);
+    color: var(--ch-positive-600);
+  }
+  .ch-hd-sec {
+    gap: 12px;
+    padding-top: 12px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-hd-sec h3 {
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-hd-scroll .ch-hl-ev {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-hd-scroll .ch-hl-ev__f {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-hd-scroll .ch-hl-g__you {
+    background: var(--ch-workspace);
+  }
+  .ch-hd-tr > li {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-hd-strip__dot {
+    fill: var(--ch-workspace);
+  }
+  .ch-hd-r {
+    padding-inline: 0;
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-hd-r.is-link:active {
+    background: var(--ch-ledger-row-press);
+  }
+  .ch-hd-dx {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-hd-dx__d > div {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-hd-scroll .ch-hl-drill {
+    padding: 16px 0 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+  }
+  .ch-hd-plan {
+    gap: 0;
+  }
+  .ch-hd-plan__i {
+    padding: 12px 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-hd-plan > li + li .ch-hd-plan__i {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-hd-plan__i.is-link:active {
+    background: var(--ch-ledger-row-press);
+  }
+  .ch-hd-none {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  /* Loading (CH-13480) in the same shapes: the feature card's place, then each group's head and rows. */
+  .ch-hd-sk__hero {
+    min-height: 0;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  :is(.ch-hl.is-phone) .ch-hd-sk__grp {
+    gap: 0;
+    padding-top: 12px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  :is(.ch-hl.is-phone) .ch-hd-sk__it {
+    padding: 0;
+  }
+  :is(.ch-hl.is-phone) .ch-hd-sk__grp > .ch-hv-sk-head + .ch-hd-sk__it {
+    border-top-color: transparent;
+  }
+}
+
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
@@ -820,4 +1248,32 @@ p.ch-hd-none {
   .ch-hd-plan__w {
     font-size: 12px;
   }
+}
+
+/* Dark (Clubhouse at night): ink hairlines and hover tints turn to ivory ink at the same weight; the hypothesis ink
+   moves to the night champagne. `:where()` keeps each at its light rule's specificity. */
+:where(html[data-fw-theme='dark']) .ch-hd-it.is-medium {
+  --ch-hd-ink: var(--ch-champagne-300);
+}
+:where(html[data-fw-theme='dark']) .ch-hd-dx__lvl.is-hypothesis {
+  color: var(--ch-champagne-300);
+}
+@media (hover: hover) {
+  :where(html[data-fw-theme='dark']) .ch-hd-it:hover,
+  :where(html[data-fw-theme='dark']) .ch-hd-r.is-link:hover {
+    background: rgb(237 231 216 / 0.04);
+  }
+}
+:where(html[data-fw-theme='dark']) .ch-hd-sec,
+:where(html[data-fw-theme='dark']) .ch-hd-tr > li,
+:where(html[data-fw-theme='dark']) .ch-hd-r,
+:where(html[data-fw-theme='dark']) .ch-hd-dx__d > div,
+:where(html[data-fw-theme='dark']) :is(.ch-hl.is-phone) .ch-hd-it,
+:where(html[data-fw-theme='dark']) :is(.ch-hl.is-phone) .ch-hd-sk__it {
+  border-top-color: var(--ch-border-hairline);
+}
+:where(html[data-fw-theme='dark']) .ch-hd-dx,
+:where(html[data-fw-theme='dark']) .ch-hd-plan__i,
+:where(html[data-fw-theme='dark']) .ch-hd-none {
+  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
 }

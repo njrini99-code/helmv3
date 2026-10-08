@@ -235,7 +235,7 @@ describe('112401 Round entry: a start the engine refuses (CH-11514, CH-11007, CH
     mocks.savePartialRound.mockResolvedValueOnce({ success: false, error: 'The server is busy' });
     const user = renderNew();
     await startRound(user);
-    await waitFor(() => expect(code('CH-11007')).toHaveTextContent("Couldn't start your round at Finley GC"));
+    await waitFor(() => expect(code('CH-11007')).toHaveTextContent("Couldn’t start your round at Finley GC"));
     await user.click(toastAction('CH-11007', 'Retry')!);
     await screen.findByTestId('tracking');
     expect(startCalls()).toHaveLength(2);

@@ -221,7 +221,7 @@ describe('the new chat page (desktop)', () => {
     expect(screen.getByRole('heading', { name: 'What do you want to know about Finley University?' })).toBeInTheDocument();
     expect(screen.getByText('Answers come from your recorded rounds, signals and schedule.')).toBeInTheDocument();
     const pills = within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button');
-    expect(pills.map((b) => b.textContent)).toEqual(['Brief me on Finley University', 'Where is the team losing the most strokes?', 'Who is trending up this month?', "What's on this week?"]);
+    expect(pills.map((b) => b.textContent)).toEqual(['Brief me on Finley University', 'Where is the team losing the most strokes?', 'Who is trending up this month?', "What’s on this week?"]);
     await userEvent.click(pills[1]!);
     expect(chat.calls.send).toHaveBeenCalledWith('Where is the team losing the most strokes?');
     expect(hapticSpy).toHaveBeenCalledWith('select');
@@ -248,7 +248,7 @@ describe('the new chat page (desktop)', () => {
     expect(code('CH-13322')?.textContent).toMatch(/Nothing to report yet.*No player has a recorded round yet\. Findings show up here after the first rounds come in\. You can still ask about your roster and schedule\./);
     expect(document.querySelector('.ch-ask-find__grid')).toBeNull();
     expect(screen.getByRole('textbox', { name: 'Ask CoachHelm' })).toBeInTheDocument();
-    expect(within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button').map((b) => b.textContent)).toEqual(["What's on this week?"]);
+    expect(within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button').map((b) => b.textContent)).toEqual(["What’s on this week?"]);
   });
 
   it('CH-13325 a pulse with no findings but rounds says nothing is flagged, not that nothing has been recorded', () => {
@@ -374,7 +374,7 @@ describe('the composer', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }));
     expect(chat.calls.send).not.toHaveBeenCalled();
     await waitFor(() => expect(code('CH-1903')).not.toBeNull());
-    expect(code('CH-1903')!.textContent).toMatch(/Couldn't send: you're offline.*Reconnect, then try again\. Nothing was sent\./);
+    expect(code('CH-1903')!.textContent).toMatch(/Couldn’t send: you’re offline.*Reconnect, then try again\. Nothing was sent\./);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(hapticSpy).not.toHaveBeenCalledWith('press');
     expect(box().value).toBe('Brief me');
@@ -475,7 +475,7 @@ describe('the new chat page (phone)', () => {
     const { chat } = show();
     expect(screen.getByRole('heading', { name: 'What do you want to know about Finley University?' })).toBeInTheDocument();
     const cards = within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button');
-    expect(cards.map((c) => c.textContent)).toEqual(['Brief meon Finley University', 'Losing strokeswhere the team loses most', 'Trending upwho\'s improving this month']);
+    expect(cards.map((c) => c.textContent)).toEqual(['Brief meon Finley University', 'Losing strokeswhere the team loses most', 'Trending upwho’s improving this month']);
     expect(document.querySelector('.ch-ask-pills')).toBeNull();
     expect(screen.queryByRole('region', { name: 'Since you were last here' })).toBeNull();
     expect(screen.getByTestId('probe')).toHaveAttribute('data-notabs', 'false');
@@ -721,11 +721,13 @@ describe('the container', () => {
     phoneState.on = true;
     show(ready({ thread: { id: 'c', title: 't', messages: ASK_MSGS_ANSWER } }), fakeChat());
     await userEvent.click(screen.getByRole('button', { name: 'stub evidence' }));
-    const sheet = document.querySelector('dialog[open]') as HTMLElement;
-    expect(within(sheet).getByTestId('evidence')).toHaveAttribute('data-phone', 'true');
-    expect(within(sheet).getByRole('region', { name: 'Evidence' })).toHaveAttribute('tabindex', '0');
-    await userEvent.click(within(sheet).getByRole('button', { name: 'stub close evidence' }));
+    // The panel owns its sheet on the phone (its dialog is tested in coachhelm-thread-ui › the evidence panel); Ask
+    // renders it once, with no Modal of its own around it, so only one Evidence sheet ever opens.
+    expect(screen.getAllByTestId('evidence')).toHaveLength(1);
+    expect(screen.getByTestId('evidence')).toHaveAttribute('data-phone', 'true');
     expect(document.querySelector('dialog[open]')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'stub close evidence' }));
+    expect(screen.queryByTestId('evidence')).toBeNull();
   });
 });
 
@@ -735,7 +737,7 @@ describe('CH-13225 a section that crashes leaves the rest of the page usable', (
     crash.on = true;
     show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ANSWER } }), fakeChat());
     const notice = code('CH-13225') as HTMLElement;
-    expect(notice.textContent).toMatch(/The conversation couldn’t be shown\..*The rest of the page is fine\. This has been reported automatically\./);
+    expect(notice.textContent).toMatch(/The conversation couldn’t be shown.*The rest of the page is fine\. This has been reported automatically\./);
     expect(within(screen.getByRole('complementary', { name: 'Chats' })).getAllByRole('link').length).toBeGreaterThan(0);
     expect(screen.getByRole('textbox', { name: 'Reply to CoachHelm' })).toBeInTheDocument();
     crash.on = false;
@@ -754,9 +756,11 @@ describe('the states that stand in for the thread', () => {
     expect(screen.queryByRole('textbox')).toBeNull();
   });
 
-  it('CH-13221 a program that did not load is a notice with Try again and no composer, and Try again refreshes the page', async () => {
+  it('CH-13221 CH-1211 a program that did not load is the page failure (an alert in the danger tone) with Try again and no composer, and Try again refreshes the page', async () => {
     show({ status: 'failed' });
     expect(code('CH-13221')?.textContent).toMatch(/Ask CoachHelm couldn’t load your program/);
+    expect(code('CH-13221')).toHaveAttribute('role', 'alert');
+    expect(code('CH-13221')).toHaveClass('ch-empty-page--danger');
     expect(screen.queryByRole('textbox')).toBeNull();
     await userEvent.click(within(code('CH-13221') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalled();

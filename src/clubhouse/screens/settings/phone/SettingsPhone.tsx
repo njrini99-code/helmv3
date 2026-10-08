@@ -1,11 +1,11 @@
 'use client';
 
-import { AnimatePresence, m } from 'motion/react';
+import { AnimatePresence, m, useIsPresent } from 'motion/react';
 import { Bell, ChevronRight, Flag, SlidersVertical, Sparkle, UserRound, Users, type LucideIcon } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode, type Ref } from 'react';
 import { Icon } from '../../../ui/Icon';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
-import { CH_ROUTE, chTween } from '../../../lib/motion';
+import { chTween } from '../../../lib/motion';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { initials } from '../../../lib/format';
 import { chTrail } from '../../../lib/track';
@@ -19,6 +19,8 @@ import { NotificationsPhone } from './NotificationsPhone';
 import { PreferencesPhone } from './PreferencesPhone';
 import { TeamPhone } from './TeamPhone';
 import { ActionRow, Group, LinkRow, NavRow } from './ui';
+import { canvasScrollNow } from '../../../lib/smooth-scroll';
+import { poppedByUA } from '../../../lib/ua-pop';
 
 const ICON: Record<ChSettingsSection, LucideIcon> = {
   account: UserRound,
@@ -28,6 +30,42 @@ const ICON: Record<ChSettingsSection, LucideIcon> = {
   coachhelm: Sparkle,
   preferences: SlidersVertical,
 };
+
+/**
+ * The push (CH-8609), by which way the stack moved: a section arrives from the right edge and the list fades under it; on
+ * Back the section leaves the same way and the list fades back in. `0` swaps at once (reduced motion, Animations off, or
+ * a pop the native back-swipe already animated).
+ */
+const PUSH = {
+  enter: (d: 1 | -1 | 0) => (d === 1 ? { x: '100%', opacity: 1 } : d === -1 ? { x: 0, opacity: 0 } : { x: 0, opacity: 1 }),
+  shown: { x: 0, opacity: 1 },
+  leave: (d: 1 | -1 | 0) => (d === 1 ? { x: 0, opacity: 0 } : d === -1 ? { x: '100%', opacity: 1 } : { x: 0, opacity: 0, transition: { duration: 0 } }),
+};
+
+/**
+ * One page of the stack (the list, or a section) in its CH-8609 move. While it leaves it is hidden from assistive tech
+ * and out of the focus order, as `Swap`'s leaving copy is, so only the page arriving is read. The ref reaches the
+ * element for AnimatePresence's popLayout, which lifts the leaving page out of flow.
+ */
+function PushPage({ ref, sub, way, reduced, children }: { ref?: Ref<HTMLDivElement>; sub: boolean; way: 1 | -1 | 0; reduced: boolean; children: ReactNode }) {
+  const present = useIsPresent();
+  return (
+    <m.div
+      ref={ref}
+      className={'ch-setm-page' + (sub ? ' is-sub' : ' is-root')}
+      custom={way}
+      variants={PUSH}
+      initial="enter"
+      animate="shown"
+      exit="leave"
+      transition={chTween('base', reduced)}
+      aria-hidden={present ? undefined : true}
+      inert={!present}
+    >
+      {children}
+    </m.div>
+  );
+}
 
 /** What each row on the list says about its section (the design's short summaries). */
 const SUMMARY: Record<'coach' | 'player', Partial<Record<ChSettingsSection, string>>> = {
@@ -75,17 +113,30 @@ export function SettingsPhone({
   const [sentTo, setSentTo] = useState<string | null>(null);
   const current = sections.find((s) => s.id === section);
 
+  // Which way the last move went, for CH-8609: 1 a push, -1 Back, 0 no slide (a pop the native back-swipe already
+  // drew). Safari 18+ marks a popstate whose back gesture it animated itself; sliding the section off again would show
+  // it come back and leave a second time (the shell's CH-1908, lib/ua-pop.ts, read before the stack pops).
+  const [dir, setDir] = useState<1 | -1 | 0>(1);
+
   // A section is a history entry, so the iOS edge swipe and the browser's back pop it (CH-1906).
   const popTo = useCallback((level: number) => {
-    if (level < 1) setSection(null);
+    if (level >= 1) return;
+    setDir(poppedByUA() ? 0 : -1);
+    setSection(null);
   }, []);
   usePhoneStackHistory(section ? 1 : 0, popTo);
 
   const open = (id: ChSettingsSection) => {
     chTrail(`settings section ${id}`);
+    setDir(1);
     setSection(id);
-    document.getElementById('ch-canvas')?.scrollTo({ top: 0 });
+    canvasScrollNow(0);
   };
+  const back = () => {
+    setDir(-1);
+    setSection(null);
+  };
+  const way = reduced ? 0 : dir;
   // A screen that is pushed or popped starts VoiceOver on its title.
   const moved = useRef(false);
   useEffect(() => {
@@ -101,20 +152,15 @@ export function SettingsPhone({
   return (
     <main className="ch-setm" aria-label="Settings">
       <PhoneTop
-        back={section ? { label: 'Settings', onBack: () => setSection(null) } : { label: 'More', onBack: backFromMore }}
+        back={section ? { label: 'Settings', onBack: back } : { label: 'More', onBack: backFromMore }}
         // The design draws the large title in the page and nothing in the bar; the bar's is the screen's heading for VoiceOver.
         title={<span className="ch-sr-only">{current?.label ?? 'Settings'}</span>}
         titleId="ch-setm-title"
       />
-      <AnimatePresence mode="popLayout" initial={false}>
-        <m.div
-          key={section ?? 'root'}
-          className="ch-setm-page"
-          initial={reduced ? false : CH_ROUTE.initial}
-          animate={reduced ? { opacity: 1 } : CH_ROUTE.animate}
-          exit={{ opacity: 0, transition: { duration: 0 } }}
-          transition={chTween('base', reduced)}
-        >
+      {/* CH-8609: a section pushes in from the right over the list, which fades under it, and Back slides it off the
+          same way; base duration, instant with reduced motion or Animations off. */}
+      <AnimatePresence mode="popLayout" initial={false} custom={way}>
+        <PushPage key={section ?? 'root'} sub={!!section} way={way} reduced={reduced}>
           <p className="ch-setm-title" aria-hidden="true">
             {current?.label ?? 'Settings'}
           </p>
@@ -140,7 +186,7 @@ export function SettingsPhone({
               {section === 'preferences' && <PreferencesPhone device={device} />}
             </SectionBoundary>
           )}
-        </m.div>
+        </PushPage>
       </AnimatePresence>
 
       {/* Hosted here, because the identity row opens Profile from the list, and Change email opens over it. */}
@@ -189,15 +235,17 @@ function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; write
         </div>
       </nav>
 
-      <Group>
+      <Group title="Help and legal">
         <ActionRow label="Report a problem" disabled={opening} onClick={() => void report()} />
         <LinkRow label="Privacy policy" href="/privacy" />
         <LinkRow label="Terms of service" href="/terms" />
       </Group>
 
-      <button type="button" className="ch-setm-signout is-danger" disabled={signingOut} onClick={() => void signOut()}>
-        {signingOut ? 'Signing out…' : 'Sign out'}
-      </button>
+      <div className="ch-setm-group is-end">
+        <button type="button" className="ch-setm-signout is-danger" disabled={signingOut} onClick={() => void signOut()}>
+          {signingOut ? 'Signing out…' : 'Sign out'}
+        </button>
+      </div>
     </>
   );
 }

@@ -181,7 +181,7 @@ describe('CH-13251 a failed answer', () => {
   it('CH-1905 offline: Try again is held and the line says why', () => {
     show({ messages: coachAsked, error: ASK_ERRORS.rate, offline: true });
     const alert = screen.getByRole('alert');
-    expect(code('CH-1905')?.textContent).toBe("You're offline. Reconnect, then try again.");
+    expect(code('CH-1905')?.textContent).toBe('You’re offline. Reconnect, then try again.');
     expect((within(alert).getByRole('button', { name: 'Try again' }) as HTMLButtonElement).disabled).toBe(true);
   });
   it('says "Nothing was changed." only when it is true of the turn', () => {
@@ -229,7 +229,7 @@ describe('Copy, follow-ups and the coach\'s line', () => {
     vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'));
     show();
     await user.click(screen.getByRole('button', { name: 'Copy' }));
-    expect(await screen.findByText("Couldn't copy")).toBeTruthy();
+    expect(await screen.findByText("Couldn’t copy")).toBeTruthy();
     expect(code('CH-13051')).not.toBeNull();
   });
   it('CH-13752 a follow-up sends its text with a selection tick, on the last answer only, and not while it works', async () => {
@@ -416,7 +416,7 @@ describe('CH-13851 the evidence control', () => {
   });
   it("phone: a row that reads See Jonah's numbers", () => {
     show({ messages: ASK_MSGS_ACTION, phone: true });
-    expect(screen.getByRole('button', { name: /See Jonah's numbers/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /See Jonah’s numbers/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Evidence' })).toBeNull();
   });
   it("when the conversation has no figures for that player, it links to their stats instead", () => {
@@ -425,7 +425,7 @@ describe('CH-13851 the evidence control', () => {
       { type: 'data-action-proposal', id: 'proposal-k', data: { ...ASK_PROPOSAL, idempotency_key: 'k', affects: [{ kind: 'player', id: 'p-ava', label: 'Ava Lindqvist' }] } },
     ]);
     show({ messages: [m] });
-    const link = screen.getByRole('link', { name: "See Ava's stats" }) as HTMLAnchorElement;
+    const link = screen.getByRole('link', { name: "See Ava’s stats" }) as HTMLAnchorElement;
     expect(link.getAttribute('href')).toBe('/golf/dashboard/stats?player=p-ava');
     expect(screen.queryByRole('button', { name: 'Evidence' })).toBeNull();
   });

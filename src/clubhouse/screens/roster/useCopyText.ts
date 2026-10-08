@@ -15,7 +15,7 @@ export function useCopyText() {
         toast({ title: `${what} copied` });
       } catch {
         haptic('error');
-        toast({ tone: 'error', title: `Couldn't copy the ${what.toLowerCase()}`, body: 'Select it and copy it by hand.', code: 'CH-3006' });
+        toast({ tone: 'error', title: `Couldn’t copy the ${what.toLowerCase()}`, body: 'Select it and copy it by hand.', code: 'CH-3006' });
       }
     },
     [toast],

@@ -116,7 +116,7 @@ describe('Settings · 80xx error toasts', () => {
     await user.clear(name);
     await user.type(name, 'Maya R');
     await user.click(within(card('Profile')).getByRole('button', { name: 'Save changes' }));
-    await expectCode('CH-8001', /Couldn't save your profile/);
+    await expectCode('CH-8001', /Couldn’t save your profile/);
   });
 
   it('CH-8002 photo upload is rejected', async () => {
@@ -132,7 +132,7 @@ describe('Settings · 80xx error toasts', () => {
     const { user } = setup({ writes: { changeEmail: vi.fn(() => fail()) } });
     await user.type(screen.getByLabelText('New email'), 'new@unc.edu');
     await user.click(screen.getByRole('button', { name: 'Send confirmation' }));
-    await expectCode('CH-8003', /Couldn't start the email change/);
+    await expectCode('CH-8003', /Couldn’t start the email change/);
   });
 
   it('CH-8004 password change fails with the reason', async () => {
@@ -149,7 +149,7 @@ describe('Settings · 80xx error toasts', () => {
     const sw = screen.getByRole('switch', { name: 'Messages by email' });
     expect(sw).toBeChecked();
     await user.click(sw);
-    await expectCode('CH-8005', /Couldn't change messages email/);
+    await expectCode('CH-8005', /Couldn’t change messages email/);
     expect(screen.getByRole('switch', { name: 'Messages by email' })).toBeChecked();
   });
 
@@ -162,7 +162,7 @@ describe('Settings · 80xx error toasts', () => {
   it('CH-8007 push on this device fails', async () => {
     const { user } = setup({ section: 'notifications', device: makeDevice({ subscribe: vi.fn(() => Promise.resolve({ ok: false, error: 'Blocked by the browser.' })) }) });
     await user.click(screen.getByRole('switch', { name: 'Push on this device' }));
-    await expectCode('CH-8007', /Couldn't turn on push here/);
+    await expectCode('CH-8007', /Couldn’t turn on push here/);
   });
 
   it('CH-8008 a CoachHelm update switch fails (player)', async () => {
@@ -174,7 +174,7 @@ describe('Settings · 80xx error toasts', () => {
   it('CH-8009 mute push fails (player)', async () => {
     const { user } = setup({ data: playerData(true), section: 'notifications', writes: { setRoutingAll: vi.fn(() => fail()) } });
     await user.click(screen.getByRole('button', { name: 'Mute push' }));
-    await expectCode('CH-8009', /Couldn't mute push/);
+    await expectCode('CH-8009', /Couldn’t mute push/);
   });
 
   it('CH-8010 CoachHelm quiet mode fails (player)', async () => {
@@ -202,7 +202,7 @@ describe('Settings · 80xx error toasts', () => {
     const { user } = setup({ section: 'team' });
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: vi.fn(() => Promise.reject(new Error('denied'))) } });
     await user.click(screen.getByRole('button', { name: 'Copy code' }));
-    await expectCode('CH-8013', /Couldn't copy/);
+    await expectCode('CH-8013', /Couldn’t copy/);
   });
 
   it('CH-8014 scoring save fails', async () => {
@@ -268,7 +268,7 @@ describe('Settings · 80xx error toasts', () => {
     await user.click(sw);
     await expectCode('CH-8022', /CoachHelm setting/);
     expect(screen.getByRole('switch', { name: 'Performance plateau' })).not.toBeChecked();
-    expect(code('CH-8405')!.textContent).toMatch(/didn't save/);
+    expect(code('CH-8405')!.textContent).toMatch(/didn’t save/);
   });
 
   it('CH-8023 deleting the account fails', async () => {
@@ -321,7 +321,7 @@ describe('Settings · 81xx validation', () => {
   it.each([
     ['CH-8105', '', 'new-password', 'new-password', /current password/],
     ['CH-8106', 'old', 'short', 'short', /8 characters/],
-    ['CH-8107', 'old', 'new-password', 'other-password', /don't match/],
+    ['CH-8107', 'old', 'new-password', 'other-password', /don’t match/],
   ])('%s password checks', async (c, cur, next, confirm, text) => {
     const { user, writes } = setup();
     if (cur) await user.type(screen.getByLabelText('Current password'), cur);
@@ -371,23 +371,23 @@ describe('Settings · 81xx validation', () => {
 
 describe('Settings · 82xx didn\'t load', () => {
   it.each([
-    ['CH-8201', 'account', { profile: failedRead }, /Your profile didn't load/],
-    ['CH-8202', 'notifications', { delivery: failedRead }, /email and push settings didn't load/],
-    ['CH-8204', 'notifications', { digest: failedRead }, /didn't load/],
-    ['CH-8205', 'team', { team: failedRead }, /Team details didn't load/],
-    ['CH-8206', 'team', { joinCode: failedRead }, /invite code didn't load/],
-    ['CH-8207', 'team', { scoring: failedRead }, /Scoring settings didn't load/],
-    ['CH-8208', 'team', { reminders: failedRead }, /Event reminders didn't load/],
-    ['CH-8211', 'coachhelm', { coachhelm: failedRead }, /CoachHelm settings didn't load/],
+    ['CH-8201', 'account', { profile: failedRead }, /Your profile didn’t load/],
+    ['CH-8202', 'notifications', { delivery: failedRead }, /email and push settings didn’t load/],
+    ['CH-8204', 'notifications', { digest: failedRead }, /didn’t load/],
+    ['CH-8205', 'team', { team: failedRead }, /Team details didn’t load/],
+    ['CH-8206', 'team', { joinCode: failedRead }, /invite code didn’t load/],
+    ['CH-8207', 'team', { scoring: failedRead }, /Scoring settings didn’t load/],
+    ['CH-8208', 'team', { reminders: failedRead }, /Event reminders didn’t load/],
+    ['CH-8211', 'coachhelm', { coachhelm: failedRead }, /CoachHelm settings didn’t load/],
   ] as const)('%s coach section read fails', async (c, section, patch, text) => {
     setup({ data: { ...coachData(), ...patch }, section });
     await expectCode(c, text);
   });
 
   it.each([
-    ['CH-8203', 'notifications', { playerRouting: failedRead }, /CoachHelm update settings didn't load/],
-    ['CH-8209', 'golf', { golf: failedRead }, /golf details didn't load/],
-    ['CH-8210', 'golf', { membership: failedRead }, /team membership didn't load/],
+    ['CH-8203', 'notifications', { playerRouting: failedRead }, /CoachHelm update settings didn’t load/],
+    ['CH-8209', 'golf', { golf: failedRead }, /golf details didn’t load/],
+    ['CH-8210', 'golf', { membership: failedRead }, /team membership didn’t load/],
   ] as const)('%s player section read fails', async (c, section, patch, text) => {
     setup({ data: { ...playerData(true), ...patch }, section });
     await expectCode(c, text);
@@ -406,7 +406,7 @@ describe('Settings · 82xx didn\'t load', () => {
 describe('Settings · 83xx empty', () => {
   it('CH-8301 a coach without a team', async () => {
     setup({ data: { ...coachData(), teamId: null, team: null, joinCode: null, scoring: null, reminders: null }, section: 'team' });
-    await expectCode('CH-8301', /aren't on a team yet/);
+    await expectCode('CH-8301', /aren’t on a team yet/);
   });
   it('CH-8302 a player without a team can ask to join', async () => {
     setup({ data: playerData(false, false), section: 'golf' });
@@ -963,7 +963,7 @@ describe('Settings · what the person is told about standing conditions', () => 
       const setDelivery = vi.fn(okw);
       const notifications = setup({ section: 'notifications', writes: { setDelivery } });
       await notifications.user.click(screen.getByRole('switch', { name: 'Tasks by push' }));
-      await expectCode('CH-1903', /you're offline/);
+      await expectCode('CH-1903', /you’re offline/);
       expect(setDelivery).not.toHaveBeenCalled();
       expect(screen.getByRole('switch', { name: 'Tasks by push' })).toBeChecked();
       expect(hapticSpy).toHaveBeenCalledWith('error');
@@ -1024,17 +1024,17 @@ describe('Settings · Team · the coaching staff', () => {
       decline: vi.fn<ChStaffWrites['decline']>(() => refused('We could not decline that request.')),
     };
     setup({ section: 'team', writes: { staff } });
-    await expectCode('CH-8213', /Requests didn't load/);
+    await expectCode('CH-8213', /Requests didn’t load/);
     await user.click(within(code('CH-8213') as HTMLElement).getByRole('button', { name: 'Try again' }));
     const requests = await screen.findByRole('region', { name: 'Assistant coach requests' });
     await user.click(within(requests).getByRole('button', { name: 'Approve' }));
-    await expectCode('CH-8026', /Couldn't approve Avery Lee/);
+    await expectCode('CH-8026', /Couldn’t approve Avery Lee/);
     expect(staff.approve).toHaveBeenCalledWith('avery');
     await user.click(within(requests).getByRole('button', { name: 'Decline' }));
-    await expectCode('CH-8027', /Couldn't decline Avery Lee/);
+    await expectCode('CH-8027', /Couldn’t decline Avery Lee/);
     expect(staff.decline).toHaveBeenCalledWith('avery');
     await user.click(within(await screen.findByRole('region', { name: 'Staff invitations' })).getByRole('button', { name: 'Create invite' }));
-    await expectCode('CH-8028', /Couldn't make the assistant coach invite/);
+    await expectCode('CH-8028', /Couldn’t make the assistant coach invite/);
     expect(staff.invite).toHaveBeenCalledWith('coach');
   });
 });
@@ -1396,7 +1396,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     const sheet = dialog('Messages');
     expect(within(sheet).getByRole('switch', { name: 'Push' })).toBeChecked();
     await user.click(within(sheet).getByRole('switch', { name: 'Push' }));
-    await expectCode('CH-8005', /Couldn't change messages push/);
+    await expectCode('CH-8005', /Couldn’t change messages push/);
     expect(setDelivery).toHaveBeenCalledWith('push_messages', false);
     await waitFor(() => expect(within(dialog('Messages')).getByRole('switch', { name: 'Push' })).toBeChecked());
     expect(hapticSpy).toHaveBeenCalledWith('error');
@@ -1406,9 +1406,20 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
   it('81901 CH-8202 CH-8203 a section whose read failed says so in its place, with Try again', async () => {
     const { user, writes } = phone({ data: { ...playerData(true), delivery: failedRead, playerRouting: failedRead } });
     await openRow(user, /^Notifications/);
-    await expectCode('CH-8202', /email and push settings didn't load/);
-    await expectCode('CH-8203', /CoachHelm update settings didn't load/);
+    await expectCode('CH-8202', /email and push settings didn’t load/);
+    await expectCode('CH-8203', /CoachHelm update settings didn’t load/);
     expect(screen.queryByRole('switch', { name: 'Push' })).toBeNull();
+    // Two failed: the section says so once (CH-1209) with the one Try again; each part keeps its line.
+    expect(within(code('CH-8202') as HTMLElement).queryByRole('button', { name: 'Try again' })).toBeNull();
+    await user.click(within(code('CH-1209') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(writes.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('81901 CH-8202 one failed read keeps its own Try again', async () => {
+    const { user, writes } = phone({ data: { ...playerData(true), delivery: failedRead } });
+    await openRow(user, /^Notifications/);
+    await expectCode('CH-8202', /email and push settings didn’t load/);
+    expect(code('CH-1209')).toBeNull();
     await user.click(within(code('CH-8202') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(writes.refresh).toHaveBeenCalledTimes(1);
   });
@@ -1416,14 +1427,14 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
   it('81901 CH-8201 a profile that did not load opens Account from the identity row, with the notice and no edit sheet', async () => {
     const { user } = phone({ data: { ...coachData(), profile: failedRead } });
     await user.click(screen.getByRole('button', { name: /^maya\.reyes@unc\.edu/ }));
-    await expectCode('CH-8201', /profile didn't load/);
+    await expectCode('CH-8201', /profile didn’t load/);
     expect(screen.queryByRole('dialog', { name: 'Profile' })).toBeNull();
   });
 
   it('81901 CH-8204 the weekly team email that did not load is disabled with its reason; push on this device keeps its blocked reason', async () => {
     const { user } = phone({ data: { ...coachData(), digest: failedRead }, device: makeDevice({ status: 'denied' }) });
     await openRow(user, /^Notifications/);
-    await expectCode('CH-8204', /didn't load/);
+    await expectCode('CH-8204', /didn’t load/);
     expect(screen.getByRole('switch', { name: 'Weekly team email' })).toBeDisabled();
     expect(screen.getByRole('switch', { name: 'Push on this device' })).toBeDisabled();
     expect(screen.getByText(/blocked for GolfHelm/)).toBeTruthy();
@@ -1537,9 +1548,9 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       const before = labels();
       screen.getByRole('button', { name: `Reorder ${before[1]}` }).focus();
       await user.keyboard('{ArrowUp}');
-      await expectCode('CH-8022', /Couldn't save that CoachHelm setting/);
+      await expectCode('CH-8022', /Couldn’t save that CoachHelm setting/);
       expect(labels()).toEqual(before);
-      expect(code('CH-8405')!.textContent).toMatch(/didn't save/);
+      expect(code('CH-8405')!.textContent).toMatch(/didn’t save/);
     });
   });
 
@@ -1615,7 +1626,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       expect(within(sheet).getByRole('button', { name: 'Save' })).toBeDisabled();
       await user.type(within(sheet).getByLabelText('First name'), 'Jon');
       await user.click(within(sheet).getByRole('button', { name: 'Save' }));
-      await expectCode('CH-8001', /Couldn't save your profile/);
+      await expectCode('CH-8001', /Couldn’t save your profile/);
       expect(within(dialog('Profile')).getByLabelText('First name')).toHaveValue('Jon');
     });
 
@@ -1705,7 +1716,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       await waitFor(() => expect(document.documentElement.dataset.chGuard).toBeUndefined());
     });
 
-    it("81901 Change on the profile sheet's Email row opens Change email over it, and closing that returns to the profile", async () => {
+    it("81901 Change on the profile sheet’s Email row opens Change email over it, and closing that returns to the profile", async () => {
       const { user } = phone();
       const sheet = await openProfile(user);
       await user.type(within(sheet).getByLabelText('Full name'), ' Jr');
@@ -1744,7 +1755,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       await user.type(within(sheet).getByLabelText('Confirm new password'), 'other-password');
       hapticSpy.mockClear();
       await user.click(within(sheet).getByRole('button', { name: 'Update' }));
-      await expectCode('CH-8107', /don't match/);
+      await expectCode('CH-8107', /don’t match/);
       expect(hapticSpy).toHaveBeenCalledWith('warning');
       expect(writes.changePassword).not.toHaveBeenCalled();
       await user.clear(within(sheet).getByLabelText('Confirm new password'));
@@ -1939,7 +1950,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       const scoring = await screen.findByRole('region', { name: 'Scoring and format' });
       await user.click(within(scoring).getByRole('button', { name: /^Default tees/ }));
       await user.click(within(dialog('Default tees')).getByRole('radio', { name: 'Gold' }));
-      await expectCode('CH-8014', /Couldn't save scoring settings/);
+      await expectCode('CH-8014', /Couldn’t save scoring settings/);
       await waitFor(() => expect(within(scoring).getByRole('button', { name: /^Default tees Blue/ })).toBeTruthy());
     });
 
@@ -2002,16 +2013,16 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     it('81901 CH-8301 a coach with no team sees why Team is empty', async () => {
       const { user } = phone({ data: { ...coachData(), teamId: null, teamName: null, team: null, joinCode: null, scoring: null, reminders: null } });
       await openRow(user, /^Team/);
-      await expectCode('CH-8301', /aren't on a team yet/);
+      await expectCode('CH-8301', /aren’t on a team yet/);
     });
 
     it('81901 CH-8205 CH-8207 CH-8206 CH-8208 a read that failed is named in its place, and the rest of Team still works', async () => {
       const { user } = phone({ data: { ...coachData(), team: failedRead, scoring: failedRead, joinCode: failedRead, reminders: failedRead } });
       await openRow(user, /^Team/);
-      await expectCode('CH-8205', /Team details didn't load/);
-      await expectCode('CH-8206', /invite code didn't load/);
-      await expectCode('CH-8207', /Scoring settings didn't load/);
-      await expectCode('CH-8208', /Event reminders didn't load/);
+      await expectCode('CH-8205', /Team details didn’t load/);
+      await expectCode('CH-8206', /invite code didn’t load/);
+      await expectCode('CH-8207', /Scoring settings didn’t load/);
+      await expectCode('CH-8208', /Event reminders didn’t load/);
       expect(screen.queryByRole('button', { name: 'Share' })).toBeNull();
     });
 
@@ -2036,7 +2047,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       expect(hapticSpy).toHaveBeenCalledWith('success');
       writeText.mockImplementationOnce(() => Promise.reject(new Error('denied')));
       await second.user.click(screen.getByRole('button', { name: 'Share' }));
-      await expectCode('CH-8013', /Couldn't copy/);
+      await expectCode('CH-8013', /Couldn’t copy/);
     });
   });
 
@@ -2083,7 +2094,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     it('81901 CH-8211 a CoachHelm read that failed says so with Try again, and shows none of the controls', async () => {
       const { user, writes } = phone({ data: { ...coachData(), coachhelm: failedRead } });
       await openRow(user, /^CoachHelm/);
-      await expectCode('CH-8211', /CoachHelm settings didn't load/);
+      await expectCode('CH-8211', /CoachHelm settings didn’t load/);
       expect(screen.queryByRole('list', { name: 'Priorities, most important first' })).toBeNull();
       await user.click(within(code('CH-8211') as HTMLElement).getByRole('button', { name: 'Try again' }));
       expect(writes.refresh).toHaveBeenCalledTimes(1);
@@ -2117,8 +2128,8 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     it('81901 CH-8209 CH-8210 golf details and membership reads that failed are named in their place', async () => {
       const { user } = phone({ data: { ...playerData(true), golf: failedRead, membership: failedRead } });
       await openRow(user, /^Golf profile/);
-      await expectCode('CH-8209', /golf details didn't load/);
-      await expectCode('CH-8210', /team membership didn't load/);
+      await expectCode('CH-8209', /golf details didn’t load/);
+      await expectCode('CH-8210', /team membership didn’t load/);
     });
   });
 

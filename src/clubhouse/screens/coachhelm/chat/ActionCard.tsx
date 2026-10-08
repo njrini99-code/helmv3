@@ -54,12 +54,12 @@ export function AskActionCard({
 
   const evidenceControl = !focus ? null : hasEvidence ? (
     <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm ch-th-act__ev" aria-pressed={evidenceOpen} data-ch-code="CH-13851" onClick={() => onOpenEvidence(focus)}>
-      <span>{phone ? `See ${firstName(who?.label ?? '')}'s numbers` : 'Evidence'}</span>
+      <span>{phone ? `See ${firstName(who?.label ?? '')}’s numbers` : 'Evidence'}</span>
       {phone && <Icon icon={ArrowRight} size={14} />}
     </button>
   ) : statsHref ? (
     <Button variant="secondary" size="sm" href={statsHref} className="ch-th-act__ev">
-      {`See ${firstName(who?.label ?? '')}'s stats`}
+      {`See ${firstName(who?.label ?? '')}’s stats`}
     </Button>
   ) : null;
 

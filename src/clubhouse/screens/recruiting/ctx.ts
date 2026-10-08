@@ -18,6 +18,8 @@ export interface RecCtx {
   setQuery: (q: string) => void;
   stage: ChStage | null;
   setStage: (s: ChStage | null) => void;
+  /** Counts the stage changes the coach makes (not the kept stage coming back as the page opens): the list swaps on it (CH-14603). */
+  stageTurn: number;
   sort: ChSort;
   setSort: (s: ChSort) => void;
   /** The prospect whose panel (desktop) or detail (phone) is open. */

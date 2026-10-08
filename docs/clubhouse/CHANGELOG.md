@@ -1,5 +1,415 @@
 # Clubhouse changelog
 
+## 2026-10-08 — A switch that stretches, trackpads left alone, a steady bar
+
+Approved by the owner on 2026-10-08 (the shell's part is in P001's log).
+
+- **The switch** (`controls.css`, `ui/Switch.tsx`; P001 CH-1620). Held, a
+  switch's thumb stretches about a fifth of its width toward where it would
+  travel, as UISwitch's does, and settles round as it slides across. It grows
+  from the edge it rests on, on the scale property, so nothing reflows. The
+  track is a size container, so Settings' larger switch finds its edge without
+  a rule of its own. A disabled or saving switch stays round; so does every
+  switch with reduced motion or Animations off. WebKit, 2026-10-08: 19 to 22.8px
+  wide and back (27 to 32.4px in Settings), the far edge still to the pixel.
+- **Smooth scrolling** (`lib/smooth-scroll.ts`; P001 CH-1621). On a Mac a
+  trackpad gesture scrolls the desktop canvas natively, on its own momentum; a
+  notched wheel still eases. The first wheel event of a gesture decides: whole
+  pixels or a sideways part mean a trackpad, fractional line steps a wheel. A
+  glide a wheel started stops where it is when the fingers take over. Other
+  platforms ease every wheel, as before.
+- **The scroll lock** (`lib/overlay-scroll.ts`; P001 CH-1618). The body is
+  clipped rather than hidden while a sheet or a pushed screen is up, and the
+  phone's canvas is left alone, so the sticky top bar stays on screen over a
+  page scrolled down. Before, it left the screen until the overlay closed.
+- **Haptics** (`lib/haptics.ts`). The medium tap's grammar adds the app's pull
+  to refresh at its trigger (P001 CH-1709).
+
+## 2026-10-08 — The kit for pages, a search field with its own reach, choices that answer a press
+
+- **The Ledger kit** (`ui/Ledger.tsx`) is ready for the phone pages:
+  `LedgerRow`, `FigureRow`, `FeatureCard`, `PageIntro` and `LedgerList` take
+  `className`, `code` (as `data-ch-code`) and `label` (the accessible name,
+  where ARIA allows one: a plain row's on its list item, a plain feature card's
+  as a named group). `FeatureCard` takes `onClick` (a button); a `LedgerRow`
+  with both `href` and `onClick` runs the click as the link is followed;
+  `PageIntro` takes `level={2}` for an intro under a phone bar that already
+  holds the h1. What already rendered renders the same.
+- **The search field** (`ui/SearchField.tsx`, `controls.css`) carries its own
+  reach on the phone (P001 CH-1815): 36px drawn, 44px to the finger, its input
+  and clear key above the reach, and 16px text so iOS doesn't zoom the page on
+  focus. Every `SearchField` gets it without a rule of its own (checked in
+  Rounds and Recruiting at 390); Recruiting's and Qualifiers' own reach rules
+  are now redundant.
+- **Choices answer a press** (P001 CH-1617): a segmented option or a pill that
+  isn't on takes the press tint over the press beat, after the 50ms delay a
+  UIKit cell waits; nothing scales. The kit's feature card, as a link or a
+  button, answers with a shade over its green instead of a 0.985 scale (cards
+  never scale, owner 2026-10-01).
+- **`PhoneBarParts`** takes `heading={false}`, for the shell's stand-in bar
+  (P001 CH-1402).
+
+## 2026-10-08 — The shell's own states join the family
+
+- **The bell:** its empty ("You’re all caught up", "Nothing of this kind") is the
+  shared section empty at the rows' inset, not a centred block of its own. When
+  its list doesn't load, the panel's head no longer says "3 unread" or offers
+  Mark all read beside "Notifications didn’t load"; the bell keeps its count.
+- **Not rebuilt:** the placeholder for a route not rebuilt yet is the page
+  empty's anatomy (an hourglass medallion, Back to Home), no longer a white
+  card.
+- **The route error's way back** goes where the route's error boundary says
+  (`homePath`) and is named for it: Back to Home, or Back to Rounds after a
+  round crashes. It always went to Home before.
+- **On-green notice inks** are tokens, `--ch-notice-on-green-ink` and
+  `--ch-notice-on-green-body`, so a notice on the green takes them instead of
+  copying the colours.
+
+## 2026-10-08 — Springs, thrown sheets and the gestures iOS has
+
+Motion gains real springs on D-64's durations. This is a lead decision under the
+owner's full-auto brief, which the owner confirmed on 2026-10-08.
+
+- `CH_SPRINGS` in `lib/motion.ts`: `smooth` (base, bounce 0) for anchored parts,
+  and `settle` (base, bounce 0.1, about 0.15% past the mark) for a free part
+  arriving.
+- `chSpring` hands framer the same spring as stiffness and damping. framer 13
+  drops the velocity of a spring given as a duration and a bounce, so this is
+  what lets a retarget or a throw keep its speed.
+- `chSpringCurve` samples the spring for Web Animations and CSS:
+  `--ch-ease-spring-smooth` and `--ch-dur-spring-smooth`, behind `@supports`,
+  with the Animations-off zero. The phone `Modal` sheet now rises on it
+  (`controls.css`), as More and the bell do. The pages' own sheets keep their
+  ease-out until their owners adopt it.
+
+Reduced motion and Animations off stay instant.
+
+- **Sheets** (`lib/sheet-drag.ts`, every phone sheet), CH-1611. Pulled up, a
+  sheet gives like a rubber band over a floor of its own colour. Let go, it
+  springs back from the speed it was moving. Thrown back up hard, it carries on
+  a little past its open position over the same floor, and a finger can catch it
+  on the way. The coach chat's history drawer and the sidebar plate hold at
+  their mark instead (`hold`): sent at it too fast to stop there, they start
+  slower rather than pass it. It drags from its body once that is at the top and
+  the first move is down, and the row a drag started on doesn't open. A throw
+  carries its speed into the close (`takeSheetFling`, then
+  `lib/dialog-lifetime.ts` or the sheet's exit). A dialog sheet closed without a
+  throw keeps the base ease-out; More and the bell leave on the spring either
+  way.
+- **Toasts** (`ui/Toast.tsx`), CH-1614. Held, a toast's clock stops; let go, it
+  stays at least 1.5 seconds. Thrown toward its edge past 40px or on a flick, it
+  goes on at the throw's speed and fades.
+- **The segmented pill and swaps.** The pill (CH-1615) and a swap's incoming
+  copy (CH-1616) arrive on the settle spring.
+- **Slider scrub** (CH-1708). A finger scrubbing a slider warms the Taptic
+  Engine as it lands, ticks each step it crosses, and lets the engine idle on
+  release (`hapticScrub`).
+- **Row press tint** (CH-1606). A row's tint waits `--ch-dur-press-delay`
+  (50ms), so a scroll that starts on a row never flashes it. It also holds with
+  reduced motion.
+- **iOS Back** (CH-1908). A Back that iOS animated itself is not animated again
+  (`lib/ua-pop.ts`).
+- **The iOS shell** sets `CADisableMinimumFrameDurationOnPhone`, so native
+  layers (scrolling, the edge swipe) can run at 120Hz on ProMotion iPhones.
+  WebKit page rendering in the WebView stays near 60fps (WebKit bug 294338).
+
+## 2026-10-08 — Empty, failed and loading states, one family
+
+The states audit (2026-10-07) found three empty-state anatomies, a pink boxed
+notice in the flush Ledger, a route error in a white card and skeletons drawn
+as filled cards. The shared layer (`ui/States.tsx`, `ui/Notices.tsx`,
+`ui/RefreshNotice.tsx`, `ui/Retry.tsx`, `ui/SectionBoundary.tsx` and their
+blocks in `styles/shell.css`) now draws one family:
+
+- **Section empty:** a flush line, left-aligned to the section's edge: an
+  optional glyph in the forest ink, the title, one sentence and the action
+  under them. No well, no centring.
+- **Page empty:** in the Ledger it sits under the framed head with measured air
+  (72px above, 88px below) instead of a viewport's height, so the action stays
+  above the fold. Its title is the ledger ink everywhere, the phone included.
+- **Notice:** no pink box and no stripe. It sits between the section's own
+  engraved rules with no fill and no ring, its icon on the heading's edge; the
+  icon and title are in the danger ink and the body in the secondary ink. (A
+  2px danger stripe at its left was dropped the same day: our design guidance
+  avoids side stripes.) Try again sits beside the words in a full-width notice,
+  and under them in anything narrower than 640px (a rail, a half column) and on
+  the phone. A notice on a dark or floating surface is restyled through
+  `--ch-notice-ink`, `--ch-notice-body` and `--ch-notice-fill`
+  (`--ch-notice-rule` stays declared but is no longer drawn); on the
+  FeatureCard it already takes the ivory inks.
+- **Several failed parts (CH-1209):** `PageNotice` and `PageRefreshNotice` say
+  it once under the page head with one Try again. Each failed part's notice
+  takes `covered` and keeps only its title. Pages adopt it as they are next
+  touched.
+- **Several crashed sections (CH-1210):** a `SectionGroup` around a page's
+  rendered tree, with `SectionGroupNotice` under its head. Each failing
+  `SectionBoundary` inside it registers itself; at two or more, one notice
+  ("Some of this page couldn’t be shown") names them in reading order, its one
+  Try again tries them all again, and each crashed section keeps only its
+  title. It lives in the browser only, so server HTML and hydration are
+  unchanged; without a group a crash keeps its own notice, as before.
+- **Route error:** the page empty in a brick danger tone, with no card. Try
+  again (or Reload) comes first, Back to Home sits beside it, and the reference
+  is a quiet caption.
+- **A page whose one read failed (CH-1211):** `EmptyState size="page"
+  tone="danger"` draws the route error's anatomy under the page's own head, as
+  an alert, with Try again first (it re-runs the page) and the offline line
+  (CH-1905) when there is no connection. The offline handling is one hook now,
+  `useOfflineRetry` in `ui/Retry.tsx`, shared with the notice.
+- **PageIntro eyebrow:** 12px instead of 11px (`styles/ui.css`), the F09 phone
+  text floor.
+- **Skeletons:** a shade deeper, about 1.2:1 on the workspace. On desktop Ledger
+  pages a fluid placeholder 56px or taller is a rule with two lines of type, not
+  a filled card; `shape="solid"` keeps a real object filled. New shared shapes:
+  `SkelLine`, `SkelRows` and `SkelRule`.
+- **Copy:** a state's title renders without a trailing full stop
+  (`stateTitle`). The shared components' own copy uses curly apostrophes.
+
+The six decisions behind this are recorded in P001 DESIGN.md as lead decisions
+under the owner's full-auto brief, which the owner confirmed on 2026-10-08.
+
+## 2026-10-08 — The phone chassis, and no serif anywhere
+
+The owner approved carrying the Coach Home "Mobile clubhouse pass" board to
+every phone screen.
+
+**Phone chassis (`shell.css`).** The bar under the status bar is the frame's
+green, with ivory type. The page is the parchment sheet (`--ch-workspace`),
+and its top corners round into the green where it meets the bar, as on the
+board. Pushed screens' bars follow.
+
+**No serif.** The title tokens (`--ch-type-serif-*`) now resolve to the heavy
+sans (600), and `--ch-font-serif` points at the sans. This follows the owner's
+2026-10-07 choice of bold sans titles and the Clubhouse doctrine. Digits that
+SerifText set apart take the title's own size and weight.
+
+## 2026-10-07 — A page can own a second surface (`implementation.also`)
+
+A page manifest's `implementation` takes an optional `also`: further paths the
+page owns beside its root, loader, route and styles. The changelog gate, the
+registry's path check and PAGE.md's Related block read it. P015 (Auth) uses it
+for sign up and onboarding (`screens/onboard`, `data/onboard.ts`,
+`routes/onboard.tsx`, `onboard.css` and `onboard-tokens.css`): until now
+`onboard.css` was gated as a shared piece in this log, and the screens were
+gated nowhere. Tests: changelog-gate, registry and docs-index.
+
+## 2026-10-07 — Rows press with a tint; the motion notes say what runs
+
+Every flush Ledger row a coach can open now answers a press with
+`--ch-ledger-row-press` over the press beat, never a scale (Home, Qualifiers,
+Rounds, Classes, CoachHelm, Recruiting, Calendar's agenda, Stats' grid, Team
+Hub's files, Settings' rail and links), as the shell's CH-1606 describes.
+Content that used to swap in one frame now settles in through the shared `Swap`:
+Calendar's views and periods, Roster's layouts, Recruiting's stage, a desktop
+Messages thread and Team stats' leg grid. The motion comments in
+`styles/tokens.css` and `lib/motion.ts` no longer describe the staggered
+first-paint reveal as live or say every tappable shrinks. No values changed.
+
+## 2026-10-07 — An unavailable key is unlit
+
+A disabled primary key (Save changes before an edit, Continue before a step is
+complete) is now drawn unlit: the same shape pressed into the paper, its word
+engraved, matching Sign in (CH-15607). It used to be a 42% fade of the green.
+A key in flight (`aria-busy`) stays lit, since it is working rather than
+unavailable.
+
+## 2026-10-07 — Hover belongs to a pointer
+
+On a touch screen a tap used to leave a row's tint, a card's lift or a key's
+hover face behind until the next tap elsewhere. 168 hover-only rules across 24
+stylesheets now sit inside `@media (hover: hover)`, so they apply only where a
+pointer can hover. This includes a trackpad on an iPad, but not a finger on an
+iPhone. Press (`:active`), keyboard focus and selected states are untouched,
+and a selector that mixes hover with focus or press stays where it was. The
+hover shadows that moved are now depth tokens (`--ch-elevation-*-hover`).
+
+## 2026-10-07 — Motion: swaps, tabs and keys that glide
+
+A shared `Swap` (`ui/Swap.tsx`) runs a content swap inside a fixed frame:
+
+- **Settle:** the new content fades in with a 6px rise (base) while the old
+  fades out (quick).
+- **Slide:** the new content moves 12px in the direction of travel.
+
+The leaving copy is hidden from assistive tech and focus at once. Nothing
+animates on first paint, and reduced motion or Animations off swaps instantly.
+It runs on:
+
+- the profile's and Team Hub's tab panels;
+- Team stats' trend measure;
+- a round's hole stepping;
+- each figure's value when the window changes (inline).
+
+Tabs answer on the press: the underline moves first and the panel renders just
+behind it (`useDeferredValue`). The primary and secondary keys' hover now glides
+between faces (one gradient twice the key's height, sliding on
+`background-position`) instead of snapping, since a gradient itself cannot be
+transitioned.
+
+## 2026-10-07 — The Ledger: sections flush on the canvas
+
+The owner asked for pages that are flush and less card-heavy, and chose the
+Ledger over one sheet per page or quieter cards. Inside the framed workspace on
+desktop (`main[data-canopy]`, 821px and wider), a section is now a heading over
+an engraved rule on the canvas, not a card. A real object keeps its material:
+the green scoreboards, wells, form fields, the composer, dialogs, segmented
+controls and chips.
+
+- **Shared rules (`shell.css`):** inside a framed page a `.ch-sheet` loses its
+  fill, shadow and radius. The serif type tokens map to the heavy sans (doctrine:
+  no serif), and section headings take forest ink.
+- **Tokens:** `--ch-ledger-rule`, `--ch-ledger-rule-soft`, `--ch-ledger-ink`,
+  `--ch-ledger-eyebrow` and `--ch-ledger-row-hover`.
+- **Components (`ui/Section.tsx`):** `Section` (heading, caption, actions and a
+  flush body over the rule) and `BackLink` (the way back above a sub-screen's
+  page head).
+
+Sub-screens take the same framed page head as the main pages, with a back link
+above it. The phone is unchanged.
+
+## 2026-10-07 — Framed workspace and page head
+
+The shell and every main page's head now follow the owner's Coach Home handoff
+(the "Coach - Home" design bundle). The frame and sidebar are the frame green
+(`--ch-shell` is `--ch-frame`), the brand sits in its own panel, and the
+selected row is an ivory plate with a fine edge. The desktop canvas is a warmer
+parchment (`--ch-workspace`) with a faint green bleed along its left edge, a
+soft green mist at the top left and a fine frame edge
+(`--ch-elevation-framed`).
+
+The green canopy band is gone. `main[data-canopy]` now opts a page into the
+framed page head: a double hairline above, one below, a small engraved date or
+section line, a heavy 44px sans title in forest ink with a letterpress edge, one
+sentence, and the actions on the right. Home, CoachHelm, Team stats, Roster,
+Qualifiers, Calendar, Team Hub, Recruiting and Settings use it, and their
+loading screens hold the same head heights (measured in WebKit at 1440 and
+1100), so nothing moves when the data lands. The shared `PageHero` component
+renders the head for Team stats and takes a tone for the header lab
+(`/clubhouse-preview/header-lab`). The phone is unchanged.
+
+## 2026-10-07 — Digits in serif headings sit with the words
+
+The digits that `SerifText` sets in the sans inside a serif heading
+(`.ch-serif-num`) used tabular figures at weight 500. Every 1 was padded to a
+full figure width, so "Penalty strokes: 1.1 per round" read like typewriter
+digits, heavier than the serif around them. They now use proportional lining
+figures at the serif's weight (400). Tables and figure columns keep their own
+tabular figures.
+
+## 2026-10-07 — One green for the primary action
+
+The primary button (`.ch-btn--primary`) was a second, brighter green (#1a6542)
+beside the field green of the sidebar selection, the canopy and the scoreboard;
+the owner's rule is one green. It is now the field green, with a faint lift at
+its top edge, and its words are the warm on-green ink with the small engraved
+shadow, never pure white. Hover and press step darker within the same hue.
+
+## 2026-10-07 — Contrast after the darker page tone
+
+The accessibility audit found text that fell under 4.5:1 once the page and wells
+darkened. The loss amber (`--ch-chart-loss`) is now #865608 (5.1:1 on the page
+tone, 4.7:1 on a soft well), and inside a well it takes the darker on-tint
+amber. Rounds' unplayed hole numbers and the Classes timeline labels use the
+muted on-green ink, and the labels go up to the 12px floor. The player stats
+miss map's counts are darker. `clubhouse:a11y` is clean on Rounds, Classes and
+both stats pages. The component catalog is regenerated.
+
+## 2026-10-07 — Digits in serif headings, phone text floor
+
+Display-serif headings that come from data set their digits in the sans
+(`SerifText`, `.ch-serif-num`): the serif's 1 has no flag, so 11 read as ll.
+This covers CoachHelm's insight and deep-dive titles, Team Hub's announcement
+and trip names, and the live qualifier's name. The Standing and Deep dive counts
+inside serif headlines use the same sans figures. New captions under 12px (the
+Rounds range ends and date day, the Roster figure labels) are raised to 12px,
+the phone text floor.
+
+## 2026-10-07 — More contrast
+
+The owner said there wasn't a lot of contrast. The desktop's secondary and
+tertiary inks move one step darker, to the phone's values
+(`--ch-ink-600` `#46433d`, `--ch-ink-500` `#5f5c55`). Reading sheets are
+brighter (`#fdfbf7`) and
+their edge ring firmer, at 0.085 at rest and 0.1 on hover.
+
+## 2026-10-07 — No banding: solid sheets, no canvas wash
+
+The owner saw the ivory as grainy in its gradients. Large, gentle ivory
+gradients band on 8-bit displays, so reading sheets (`--ch-sheet-bg`) are now
+solid ivory; their lit top edge remains the elevation's inset highlight. The
+canvas wash is removed. Small keys and wells keep their gradients, because they
+are too short to band.
+
+## 2026-10-07 — Classic direction: ivory shell, canopy, serif titles
+
+Owner direction, live in review: aim for a Masters, old-money look; an ivory
+sidebar with green only on the selected row ("way too much green"); and one
+green throughout ("it's not even the same green"). The owner noted the overall
+direction may be revisited later.
+
+- **Shell:** the sidebar and the frame around the canvas are ivory
+  (`--ch-shell`). The selected row is a green key in `--ch-field-green`, and the
+  brand uses the green golf mark with a serif wordmark. The next-event card is a
+  light sheet.
+- **Canopy (`main[data-canopy]`, desktop):**
+  - The page's title block paints an edge-to-edge field in the one Clubhouse
+    green, closed by a fine gilt rule. There's no box: the fill is a spread
+    box-shadow clipped at the title block's lower edge, so it ends where the
+    title does on every page.
+  - The title is ivory with an engraved shadow.
+  - On scroll the title folds away and the top bar settles from clear-on-green
+    to the ivory glass (scroll-driven; off with reduced motion or Animations
+    off).
+  - Researched against Apple Sports, Health and Journal navigation fields.
+- **Serif titles:** Instrument Serif (`--ch-font-serif`, `--ch-type-serif-*`)
+  sets page and section titles only. Data, controls and body text stay sans.
+- **Scoreboard:** shares the one green.
+
+## 2026-10-06 — Tone, type and scoreboard (owner direction)
+
+Owner direction, given live while reviewing in Safari. The page is a slightly
+deeper ivory, about midway between the earlier ivory and the darker trial, with
+a faint green-and-champagne light across its top. Cards return to a light ivory
+that stands off it ("too much white", then "make the cards lighter", then
+"somewhere in between").
+
+- **Display type:** relaxed everywhere. The width axis goes from 88 to 96 and
+  the tightest tracking eases to -0.026em, after the owner called the display
+  type "too compact".
+- **Wells:** a step darker with a crisper edge. Muted text inside any well steps
+  up one ink, so dates and scores never sit ivory on ivory.
+- **New scoreboard material (`.ch-scoreboard`):** scorecards are set on a deep
+  green board with ivory numerals. Board finishes for the marks: a red disc
+  under par, a ringed disc for eagle, an ivory outline over par, and a solid
+  ivory tile for double or worse.
+- **Type on green:** the hero band and scoreboard set type in a warm ivory
+  (`--ch-on-green-ink`) with a soft engraved shadow, never white (owner: "more
+  ivory and text depth").
+- **Shadows and radii:** this pass's component shadows are now tokens, and the
+  shared nine table radius is on the scale.
+
+## 2026-10-06 — Premium materials, seams, radius scale and smooth scroll
+
+Owner-directed pass on shared materials, verified in Safari 27 (desktop 1440 and
+iPhone emulation). Reading surfaces regain a layered light: a lit top edge, a
+contact shadow and a soft ambient shadow. Dark and branded surfaces use a
+shadow-only cast. New on-dark materials (raised, well, control) serve the green
+hero. Joins inside one surface use an engraved seam, an ink line beside a lit
+line (`--ch-seam-x`, `--ch-seam-y`), in place of faint hairlines. Score marks
+(birdie, eagle, bogey, double) share one raised construction with an edge and
+depth. The secondary button ring is softer with a firmer lift. The phone tab bar
+floats as a glass capsule above the safe area.
+
+Radii snap to the scale (owner choice): wells and segmented tracks 14px, sheets
+20px, raised chips 10px; inner pieces are concentric (track radius less its
+padding). Sidebar brand, nav item and next-event radii follow.
+
+Desktop canvas scrolling eases mouse-wheel steps (Lenis, `CH_SCROLL_DUR`); touch
+pointers, phone layouts, reduced motion and Animations off keep native scroll.
+Route changes and Back restoration jump instantly; in-page jumps ease. Safari
+audit on player Home: no console errors, no failed requests, viewport and safe
+areas correct, no off-scale radii left on the page.
+
 ## 2026-10-06 — Shared component playground
 
 Added a development-only workspace for original/candidate shared components,

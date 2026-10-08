@@ -1043,6 +1043,30 @@ the new system. Nothing here is applied by an agent. Each file's status stays in
   reveal steps through a page's top-level sections, so a page whose body is one
   wrapper rises as one block. The `motion` gates of Stats (team) and Qualifiers
   went back to `doing`: their evidence was against the old timings.
+- D-64 extension (2026-10-08, a lead decision under the owner's full-auto brief,
+  owner-confirmed): what moves and can be interrupted or thrown runs on real
+  springs, Apple's duration-and-bounce model (WWDC23 "Animate with springs"), on
+  D-64's durations. `smooth` (base, bounce 0) is for anchored parts, which never
+  pass their mark from rest: sheets, pushed screens, the nav plate. Thrown at
+  its mark, a part keeps its speed and may pass once, as a real one would: a
+  sheet over its own floor. The drawer and the nav plate hold, passing by at
+  most half a pixel (`chSpringCurve`'s `hold`). `settle` (base, bounce 0.1,
+  about 0.15% past the mark) is for a free part arriving: the segmented pill, a
+  swap's incoming copy. The bounce stays between 0 and 0.1 (Masters restraint).
+  `CH_SPRINGS`, `chSpring` and `chSpringCurve` live in `lib/motion.ts`. framer
+  gets each spring as stiffness and damping, converted with framer's own
+  formula, so the curve is identical (motion-dom `spring.mjs`: ω = 2π / (1.2 ×
+  duration), stiffness ω², damping 2ζω, ζ = 1 − bounce). The reason: framer 13.4
+  sets a duration-and-bounce spring's velocity to 0, both on a retarget and when
+  a velocity is passed in. A second tap or a thrown sheet would then restart
+  from rest. `--ch-ease-spring-smooth` and `--ch-dur-spring-smooth` are for a
+  one-shot CSS entry, behind `@supports`. With it, sheets rubber-band, spring
+  back from the finger's speed and carry a throw into the close (CH-1611);
+  toasts swipe away and wait while held (CH-1614); a slider scrub warms the
+  Taptic Engine (CH-1708); a row's tint waits 50ms (CH-1606). Reduced motion and
+  Animations off stay instant. The bezier curves, the press and the page
+  crossfade are unchanged. A dialog sheet closed without a throw is unchanged
+  too; More and the bell leave on the spring either way.
 - D-67 (2026-09-29, owner): After the gold standard, the v2 order is: phone
   versions of the built screens (Home, Calendar, Stats, Qualifiers), then player
   Home, Team Hub (coach and player), CoachHelm (coach and player), Classes, then

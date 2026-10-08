@@ -1,5 +1,176 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-08 — Security: Add focus area trusts only the session
+
+`createFocusArea` (shared with Fairway) no longer trusts the browser. The coach
+on the new row is always the signed-in coach; a `coach_id` the page sends is
+ignored. The roster check now always runs: the coach's active team is resolved
+(a staffed team counts without an organisation), and a coach with no team, or
+a player without an active membership on that team, is refused before anything
+is written. A linked insight (`from_insight_id`) must be about that player, on
+that team or none, and the shared demo account is refused (`demoSafe`). The
+Add focus area sheet keeps its calls and its error copy. Tests:
+`src/test/golf/actions/development.team-id.test.ts` (spoofed coach id, no
+team, no organisation, not on the team, linked insight, demo, happy path).
+Still open: the row-level security insert policy does not pin `coach_id` to
+the caller, and a coach with no staff rows falls back to their organisation's
+team.
+
+## 2026-10-08 — Copy: typographic apostrophes
+
+A player's stats write their apostrophes as ’ on desktop and the phone: the
+failed reads (CH-5201 to CH-5203, CH-5209 to CH-5213), the focus area's and
+the share's failures (CH-5001, CH-5002), the offline refusals (CH-5901, and
+CH-1903's "you’re offline", which the shared action hook now writes), the share
+key's name, the early-read line, the trend's strokes gained note and Game
+detail's panel notes. The catalog quotes them as shown.
+
+## 2026-10-08 — phone: every tap answers
+
+Measured in WebKit as an iPhone at 390 wide (touch, no hover): the Message key
+in the head, All N rounds and Game detail's "How this is measured" now answer a
+press (a tint a beat after the finger lands, CH-1606; the key and the button
+shrink as every button does), with no tap flash. The window switch glides and
+lands in one frame with reduced motion; the phone skeleton still measures
+identical to the loaded page. Game detail's section chips (the shared pill) and
+the shared switch's other options answer with the shared press tint (CH-1617,
+controls.css; measured the same way).
+
+## 2026-10-08 — phone: Mobile clubhouse pass
+
+A player's stats on the phone follow the Coach Home "Mobile clubhouse pass"
+board (round 3). The page is the parchment sheet with no white cards:
+
+- the head opens under the engraved double rule: the avatar in the Ledger's
+  ring beside the name in the bold condensed sans (it was a regular-weight
+  display title);
+- the three figures sit between hairlines as the Ledger's figure row;
+- Strokes gained, Scoring trend, Score by round, Personal bests, This window
+  against the one before, Rounds and Development are sections flush under
+  their double rules, each caption under its title;
+- Game detail's chips open the section under its double rule; the chosen
+  section, its figures and its panels are flush on the sheet, divided by soft
+  rules (its panels had sat on a grey band). Personal bests, the scoring by
+  par, the outcomes by par and the More detail tiles lose their boxes and read
+  two by two between hairlines;
+- the rounds and the development lists are rows on seams;
+- a filter that matches nothing is the empty state alone on the sheet.
+
+Fixed on the phone: a ranked hole's figure (Toughest holes) sat on a third row
+under its rank; it is back at the right of its name. Band rows ("10–15 ft")
+read on one line. Desktop is unchanged.
+
+## 2026-10-07 — Add focus area's sheet is on the record
+
+No visible change. CH-5602 now describes the shared Modal's entrance as it runs
+(a 6px rise from 98% on desktop, a rise from the bottom edge on the phone,
+instant with reduced motion or Animations off) and is referenced at
+`FocusAreaSheet`.
+
+## 2026-10-07 — Tabs answer on the press
+
+The underline and the selected tab move as soon as you press. The panel, the
+heavy part, renders just behind them (`useDeferredValue`): in a WebKit dev
+build the underline starts at 24ms instead of 95ms. The panel then swaps
+through the shared `Swap` (CH-5603): the new panel fades in with a 6px rise
+while the old one fades out, hidden from assistive tech. With reduced motion
+the swap is instant, and it never runs on first paint.
+
+Changing the window (Last 10, Season, Qualifiers) now moves the figures too
+(CH-5604): each figure that changed crossfades to its new value, where it
+used to jump. Nothing counts up.
+
+## 2026-10-07 — The profile takes the page head
+
+On desktop, the profile's striped banner card is now the framed page head:
+
+- **Back row:** "Team stats" and the player pager sit above the double hairline.
+- **Identity:** an 84px avatar sits beside the status tag, then the name in
+  the head's heavy sans, the class and hometown line, and the actions.
+- **Figures:** the four figures sit on the canvas under a soft rule.
+
+The yardage cards (Scoring, Strokes gained by leg, "vs. team") lose their card
+and sit as Ledger sections, with 40px between them. The loading skeleton opts
+into the same head and holds it line for line: the hero and the tabs measured
+0px of shift in WebKit at 1440 and 1100. The phone is unchanged.
+
+## 2026-10-07 — Chart card titles in the serif
+
+The yardage cards' titles (`YardagePage`: Scoring, Strokes gained by leg, Team
+putting, and "Jonah vs. team") were a 15px semibold sans next to serif panel
+titles. They now use the display serif (`--ch-type-serif-s`), with any digits in
+the sans (`SerifText`).
+
+## 2026-10-07 — Phone overview on the stat line
+
+The phone overview's three figures were bare numbers inside one white sheet.
+They now sit on the stat line with no surface, as on Team stats, and carry a row
+of gauges:
+
+- the scoring average from par, per 18 holes over the window's rounds that
+  record par;
+- strokes gained from the Tour's zero;
+- no gauge under the trend, which is already words.
+
+The phone skeleton holds the gauge row (39px).
+
+## 2026-10-07 — The profile holds still while it loads
+
+The profile's loading skeleton now matches the loaded page from the hero down
+through the figures:
+
+- **Figure row:** the skeleton now holds the overview's five figures. Both the
+  skeleton and the loaded cards keep the measured row height
+  (`.ch-fg--profile`): 169px, or 194px in the middle band where a label wraps.
+- **Name:** the name line takes the serif title's 48px.
+- **Window switch:** it has its loaded width (216px) and its 8px foot.
+- **Strokes gained change:** the words stay on one line. On a 680–770px canvas
+  they used to wrap and grow the hero by 24px.
+
+Measured in WebKit through the new preview state
+`/clubhouse-preview/player?state=loading`, at 1440, 1300, 1180, 1050, 1000, 900
+and 840: the hero, tabs, filter bar and figure row don't move between loading
+and loaded. This closes the gap noted in the entry below.
+
+## 2026-10-07 — Overview figures drawn against their reference
+
+The overview's five figures carry the same gauges as Team stats, each against
+the reference its words name. Fairways, greens and scrambling sit on a 0–100
+track with the team's mark for a coach, or the Tour's mark for a player (none
+when the tour is unknown). Putts are drawn against 36, and the best round
+against par. Not measured for load shift: the profile skeleton
+(`StatsProfileSkeleton`) has never held the figure row (it goes from the filter
+bar to a chart placeholder), and the preview has no profile loading state. That
+gap predates this change and is still open.
+
+## 2026-10-07 — Scoring line mean label off the line
+
+The phone scoring line (shared with Team stats) places its "Mean" label in a
+corner clear of the line, with a halo.
+
+## 2026-10-07 — Loss amber and miss map contrast
+
+The loss amber is darker everywhere (4.5:1 on the darker page tone and in
+wells), and the miss map's counts hold 5:1 on the heaviest fill.
+`clubhouse:a11y` is clean on the phone stats panels.
+
+## 2026-10-07 — Hero figures on the hero
+
+The profile hero's four figures (Scoring avg, Handicap, SG / round, Rounds) no
+longer sit on a card inside the hero. They run in one row across the hero's
+foot, under a seam, divided by seams, at every width.
+
+## 2026-10-07 — Figures as a stat line, serif titles
+
+The figure row uses the shared stat line (no cards; seams between gilt rules;
+see P004). The player's name and the section titles, on the phone and desktop,
+are set in the display serif.
+
+## 2026-10-06 — Smooth scroll and materials
+
+In-page jumps on the phone view ease through the shared smooth scroll helper and
+stay instant with reduced motion.
+
 ## 2026-10-06 — Premium interaction corrections
 
 ```text
@@ -563,7 +734,7 @@ Data impact:    none
 - `createFocusArea` (shared action, `actions/development.ts`): stores the
   `coach_id` the browser sends instead of the caller's own, and skips its roster
   check when the coach has no organisation or no active team (row-level security
-  remains the lock). Fix it in the action.
+  remains the lock). Fixed 2026-10-08, see the entry at the top.
 - The profile has no profile-shaped loading state: `stats/loading.tsx` cannot
   read the address, so it draws Team stats' shape, and a profile's taller hero
   moves it.

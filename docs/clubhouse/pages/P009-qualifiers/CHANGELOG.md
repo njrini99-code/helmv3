@@ -1,5 +1,93 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-08 — States: a failed read keeps the head; one save failure, said once
+
+From the states audit (2026-10-08, findings c14 and b8) and the lead's
+decision on the save failure, desktop and phone:
+
+- **The list didn't load (CH-09201, CH-09222):** the head stays, Create
+  qualifier with it, and its counts read "— active · — concluded": never a
+  zero, and on the phone never a blank eyebrow line.
+- **A new or edited qualifier whose roster didn't load (CH-09208):** the
+  notice, with Try again, now sits over the form under its head, where it
+  explains why Create is off, instead of far down in Players. Players keeps
+  the title alone, marking the gap.
+- **A save the server refused (CH-09902, CH-09002):** told once, by the notice
+  over the form, with the error haptic; it comes into view if Save was pressed
+  further down. The toast that said the same words at the same moment is gone.
+  A save whose request itself failed has no notice to tell it, so its toast and
+  Retry stay.
+- **The squad readout** wraps whole segments with a dot only between two on
+  one line, so a narrow column never ends a line on "·".
+- **Titles:** state titles have no trailing full stop in the source either.
+- **Phone eyebrows** are 12px, the phone text floor (F09) and the kit's
+  PageIntro eyebrow; the skeletons hold the new line.
+
+## 2026-10-08 — Phone: the Mobile clubhouse pass
+
+The phone Qualifiers follows the Coach Home board (round 3, "fewer
+containers, one feature card"), carried to every phone screen (owner: "phone
+too cardy"):
+
+- **Heads:** the list, the form and Manage selections open on the engraved
+  double rule, the eyebrow tracked in the board's brown, the title in the bold
+  condensed sans (no serif, no regular-weight display titles). A qualifier's
+  name is the same sans at 28px, under its status and dates.
+- **The list:** the live qualifier is the screen's one green feature card: its
+  status chip, name and dates in ivory, the three leaders as rows on the green
+  (no green board inside a card), the player's own standing in gilt and the
+  link at the card's foot. A press darkens it under a shade (CH-09601). Active
+  and Concluded open under the double rule, their qualifiers rows on seams
+  that tint under the finger. No match for the filters is centred with no box.
+  The search keeps the kit's field, 36px drawn with a 44px reach.
+- **A qualifier:** the three figures between two hairlines (the Ledger's figure
+  row, each still drawn); the closed note flush between seams; the
+  leaderboard, the squad, Course per round and Scoring rules each flush under
+  the double rule. A leaderboard row sits on a seam and tints under the
+  finger; its rounds, average and total are plain figures under the name, not
+  a grey well. The viewer's own row keeps its tint.
+- **The rounds sheet:** the chosen round's chip takes the raised face, which
+  now fades in as the old one's fades out (CH-09603); a chip tints under the
+  finger.
+- **The form and Manage selections:** each fieldset and each list is a section
+  flush under the double rule; the fields, the squad readout, the one-round
+  note, the steps and the keys keep their material. A player in the form and
+  a pick's player tint under the finger (CH-09601).
+- **Loading:** the list and a qualifier draw the phone's own shape at the
+  loaded lines' heights, so nothing moves when they land (a coach's list and
+  qualifier, a player's list and /my-qualifiers, measured in WebKit at 390 and
+  430: 0px). The list's lede is the reader's own
+  sentence drawn as a bar under each of its lines, so it wraps where the
+  page's does at any width, for a coach, a player and /my-qualifiers alike;
+  Create qualifier is held only for a coach; then the live
+  qualifier's place (its status, name, dates, three leaders and their
+  caption, a player's standing and the link) and Active and Concluded under
+  the double rule with their rows. A qualifier's skeleton holds the status
+  and dates, the name, the entrants line, the coach's two actions, the three
+  figures and the leaderboard rows, instead of the desktop's. The form drops
+  the way back the phone never shows and draws its lede and each help line as
+  its own sentence, then Basics, Schedule, and Course and rules down to its
+  rounds and course (all a tall phone shows first); the parts below stay
+  placeholders. Manage selections draws its note as the standings stage's
+  sentence, the places on score and the rest of the field at four rows each,
+  the picks and the foot's one key, and its steps no longer run past the
+  screen. On the preview data both measure 0px at 375, 390 and 430 for
+  everything on the first screen; real lists, picks or a later stage can
+  still shift what sits below the note. The sentences come from model.ts
+  (`FORM_LEDE`, `FORM_HELP`, `stageNoteText`), so the page and its skeleton
+  can't drift apart. Each skeleton sentence is `aria-hidden` itself, so a
+  screen reader hears only "Loading".
+- **A qualifier's head and leaderboard:** the Live badge is centred on the
+  leaderboard's heading, as on the board, so a live leaderboard's head is as
+  tall as any other. Manage selections and Edit stay 36px drawn, with a 44px
+  reach for the finger.
+
+Desktop is unchanged: every new rule sits in the phone block, and the
+skeleton's phone parts are hidden there. 1440 captures before and after differ
+only where shared pieces changed in the same pass (the failed-read notice, the
+skeleton's tone and ruled blocks) and in the form's dates, which follow the
+day.
+
 ## 2026-10-08 — Server-action imports follow the golf.ts split
 
 ```text
@@ -13,6 +101,111 @@ Held items:     none
 The screen's imports and test mocks now point at the files that own the server
 actions (qualifier-actions.ts) after `golf.ts`, `insights.ts` and `admin-data.ts` were split
 by domain. No behavior change.
+
+## 2026-10-07 — Presses answer; a row's scorecards drop into place
+
+Pressing a status pill, a card or the live hero now answers with a deeper tint
+over the press beat, never a scale: a pill darkens, a Ledger row takes the row
+press tint, the desktop hero's title deepens to forest and the phone's live card
+darkens its face (CH-09601). Opening a leaderboard row turns one chevron (base)
+instead of swapping two icons, and the scorecards drop 6px into place as they
+fade in (base) at their final values; closing is instant (CH-09602). A
+leaderboard row presses with the row press tint. The list rows' hover tint now
+eases (quick).
+
+## 2026-10-07 — The Ledger: flush sections, sub-screens on the framed head
+
+On desktop the Qualifiers pages sit on the ivory canvas instead of in cards
+(owner: "flush, not so card heavy"). Phone layouts are unchanged.
+
+- **List:** the live qualifier leaves its card and sits on the canvas beside its
+  green leaders board, which stays. Its name is in the heavy sans and turns
+  green on hover. Active and Concluded take a section heading over an engraved
+  rule, and a row's hover tint reaches past the section's edge so its text stays
+  on it. The head's eyebrow is engraved and its counts no longer gap, and the
+  double rule under the head is one. On a narrow canvas the board moves under
+  the qualifier instead of squeezing its name and dates. A player's row keeps
+  its link at the right of the first line, with their standing under the row.
+- **A qualifier, the form and Manage selections** take the framed page head
+  (`data-canopy`, `data-canopy-head`): the shared `BackLink` above it, an
+  engraved eyebrow, the heavy sans title, the sentence and the actions. A
+  qualifier's status in its eyebrow is an engraved tag. The form's way back is a
+  link now; with unsaved changes it still asks first (CH-09502).
+- **Sections:** the leaderboard, round-by-round, Selections, Course per round,
+  Scoring rules, the form's fieldsets and Manage selections' lists lose their
+  cards: a heading over an engraved rule, the content flush. The two tables are
+  flush, with a seam under each row and no header band, and round-by-round
+  scrolls sideways when it is wider than its column. The facts lose the rule
+  above them; the head's rule serves. A coach's pick no longer stretches its
+  avatar and Pick badge across the row (desktop; the phone still does).
+- **Kept their material:** the green leaders board, an opened row's scorecard
+  tray, the form's fields, the one-round check and the squad readout, the steps
+  strip, the notes and the status chips.
+- **Loading skeletons:** `QualifierDetailSkeleton`, `QualifierFormSkeleton` and
+  `QualifierSelectionSkeleton` take the same data attributes and hold the framed
+  head line by line; their sections are flat, a heading placeholder over the
+  rule. The list's head holds 170.6px.
+
+  Measured in WebKit through `?state=loading` at 1440, 1300 and 1100: the heads
+  of the list, a qualifier, new and edit don't move, nor do the tools, facts and
+  form under them. Manage selections has no loading preview; its markup, drawn
+  in place of the loaded page, holds through the lists' top at 1440 and 1300 (at
+  1100 the note's sentence wraps, which the skeleton can't know). On the phone
+  every skeleton bar is where it was.
+
+## 2026-10-07 — Desktop facts drawn on the stat line; panel titles serif; the qualifier loads in place
+
+- **Desktop facts:** the six facts leave their card and sit on the stat line,
+  between gilt rules and divided by seams. Rounds submitted and Spots are drawn
+  as on the phone, with the bar and seats shared as `.ch-qf-bar` and
+  `.ch-qf-seats`.
+- **Panel titles:** Leaderboard, Selections and Course per round use the display
+  serif.
+- **Loading skeleton** (`QualifierDetailSkeleton`): it now holds the loaded
+  layout.
+  - The head holds the eyebrow, the serif name, the sentence at its measure and,
+    for a coach only, the three actions (`SkeletonCoachActions`).
+  - The facts hold their four lines.
+
+  Measured in WebKit through `?state=loading`: the head, facts and body tops
+  don't move at 1440, 1300 and 1100. At 1000 a long description can wrap to a
+  second line, which the skeleton can't know.
+
+## 2026-10-07 — Phone facts drawn on the stat line
+
+On the phone qualifier page, the three facts were bare numbers in a card. They
+now sit on the stat line, between gilt rules and divided by seams, and two of
+them are drawn:
+
+- **Rounds in:** a bar of the rounds posted against the rounds due.
+- **Spots:** the squad's seats. Seats won on score are filled green; the coach's
+  picks are open gilt rings.
+
+The deadline stays a date.
+
+## 2026-10-07 — Phone qualifier name in the serif
+
+On the phone qualifier page, the qualifier's name now uses the display serif at
+32px, as the list's names do. Its digits stay in the sans (`SerifText`).
+
+## 2026-10-07 — Digits in serif titles
+
+Data-fed serif titles set their digits in the sans (shared `SerifText`; see the
+cross-page log), so a name or title with figures reads cleanly.
+
+## 2026-10-07 — Leaders on the scoreboard, ledger lists, serif titles
+
+The live qualifier's leaders sit on the green scoreboard, a tournament board,
+with ivory names, red under par and the top-score line in mint. Active and
+concluded qualifiers are no longer grids of cards: each is a ledger row on the
+page between gilt rules, separated by seams, with a tinted hover. The page title
+and the live qualifier's name are set in the display serif.
+
+## 2026-10-06 — Display type relaxed
+
+The owner found the display type too compact. Display headings on this page
+widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on
+every Clubhouse page. Layout and content are unchanged.
 
 ## 2026-10-06 — Course-picker loading accessibility
 

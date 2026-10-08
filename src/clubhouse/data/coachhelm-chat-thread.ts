@@ -272,6 +272,8 @@ export function followUpsFor(envelopes: ToolEnvelope[]): string[] {
   return [...new Set(out)].slice(0, 3);
 }
 
+/** The server's own sentence for a rejected turn (`STREAM_INCOMPLETE_NOTE`, src/lib/coachhelm/v3/chat/verdict.ts), for a
+ * verdict that arrives without it: word for word, straight apostrophes included, as what the server sends is shown as sent. */
 export const REJECTED_TURN_NOTE = "This answer didn't finish coming through, so it isn't being shown. Please ask again.";
 
 /** Bold markers and list markers out, for Copy. */

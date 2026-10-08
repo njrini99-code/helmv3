@@ -3,7 +3,7 @@
 import { m } from 'motion/react';
 import { useId, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { haptic } from '../lib/haptics';
-import { chTween } from '../lib/motion';
+import { chSpring } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 
 export interface SegOption<V extends string> {
@@ -15,8 +15,9 @@ export interface SegOption<V extends string> {
 
 /**
  * The recessed well with a raised, pressed chip: the owner's "depth like the
- * toggles". The chip slides between options (220ms). Arrow keys move the
- * selection like a native segmented control, with a detent haptic on change.
+ * toggles". The chip slides between options on the settle spring (base, bounce 0.1; CH-1615), so it arrives and
+ * settles rather than stopping on a curve. Arrow keys move the selection like a native segmented control, with a
+ * detent haptic on change. Reduced motion and Animations off move it at once.
  */
 export function Segmented<V extends string>({
   label,
@@ -72,7 +73,7 @@ export function Segmented<V extends string>({
               <m.span
                 className="ch-seg__pill"
                 layoutId={reduced ? undefined : `seg-${id}`}
-                transition={chTween('base', reduced)}
+                transition={chSpring('settle', reduced)}
                 aria-hidden="true"
               />
             )}

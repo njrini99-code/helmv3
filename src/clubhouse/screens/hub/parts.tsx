@@ -12,6 +12,7 @@ import { Menu } from '../../ui/Menu';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { haptic } from '../../lib/haptics';
 import { useAction, type ActionCopy, type ActionResult, type ServerResult } from '../../lib/use-action';
+import { SerifText } from '../../ui/SerifText';
 
 /*
  * Team Hub's sections (design/handoff/hub.jsx). Each takes what it shows and
@@ -49,6 +50,7 @@ export function Rsvps({
   isPending,
   onReply,
   compact = false,
+  covered = false,
 }: {
   role: ChTeamHub['role'];
   data: ChTeamHub['rsvps'];
@@ -57,6 +59,8 @@ export function Rsvps({
   onReply: (r: ChHubRsvp, status: Exclude<ChRsvp, 'pending'>) => Promise<ServerResult>;
   /** The phone build: a reply line that leaves out the counts that are zero. */
   compact?: boolean;
+  /** The page's notice carries the one Try again (CH-1209): this section keeps only its title under the heading. */
+  covered?: boolean;
 }) {
   const coach = role === 'coach';
   const mine = (r: ChHubRsvp) => replies.get(r.eventId) ?? r.mine ?? 'pending';
@@ -68,7 +72,7 @@ export function Rsvps({
         {!data.error && data.rows.length > 0 && <span className="ch-hb-muted">{coach ? 'This week' : open === 0 ? 'All answered' : `${open} need${open === 1 ? 's' : ''} a reply`}</span>}
       </div>
       {data.error ? (
-        <RefreshNotice code="CH-10201" title={coach ? "This week's replies didn't load." : "Your events didn't load."} body="Nothing was lost. Try again; the error has been reported." />
+        <RefreshNotice code="CH-10201" title={coach ? "This week’s replies didn’t load." : "Your events didn’t load."} body="Nothing was lost. Try again; the error has been reported." covered={covered} />
       ) : !data.rows.length ? (
         <EmptyState
           compact
@@ -132,8 +136,8 @@ function ReplyChoices({ r, mine, pending, onReply }: {
   onReply: (r: ChHubRsvp, status: Exclude<ChRsvp, 'pending'>) => Promise<ServerResult>;
 }) {
   const save = useAction('hub.reply', onReply, (event, answer) => ({
-    done: answer === 'accepted' ? `You're going to ${event.title}` : answer === 'tentative' ? `Marked maybe for ${event.title}` : `Your coach knows you can't make ${event.title}`,
-    failed: `Couldn't send your reply for ${event.title}`,
+    done: answer === 'accepted' ? `You’re going to ${event.title}` : answer === 'tentative' ? `Marked maybe for ${event.title}` : `Your coach knows you can’t make ${event.title}`,
+    failed: `Couldn’t send your reply for ${event.title}`,
     code: 'CH-10001',
   }), quietBusy);
   return (
@@ -158,7 +162,7 @@ function Acknowledgement({ a, acked, pending, onAck }: {
   pending: boolean;
   onAck: (a: ChHubAnnouncement) => Promise<ServerResult>;
 }) {
-  const save = useAction('hub.acknowledge', onAck, (post) => ({ done: '', failed: `Couldn't acknowledge "${post.title}"`, code: 'CH-10002' }), quietBusy);
+  const save = useAction('hub.acknowledge', onAck, (post) => ({ done: '', failed: `Couldn’t acknowledge “${post.title}”`, code: 'CH-10002' }), quietBusy);
   if (pending) return <span className="ch-hb-saving" role="status" data-ch-code="CH-10409">Acknowledging {a.title}…</span>;
   if (acked) return <span className="ch-hb-acked"><Icon icon={Check} size={13} />Acknowledged</span>;
   return <Button size="sm" variant="primary" onClick={() => void save.run(a)}>Got it</Button>;
@@ -188,7 +192,9 @@ export function Announcement({
   return (
     <article className={'ch-hb-ann' + (featured ? ' is-featured' : '')} aria-labelledby={`ch-hb-ann-${a.id}`}>
       {featured && <span className="ch-hb-eyebrow">{coach ? 'Latest' : a.needAck && !acked ? 'Needs your reply' : 'Latest from your coaches'}</span>}
-      <h3 id={`ch-hb-ann-${a.id}`}>{a.title}</h3>
+      <h3 id={`ch-hb-ann-${a.id}`}>
+        <SerifText text={a.title} />
+      </h3>
       {a.body && <p>{a.body}</p>}
       <div className="ch-hb-ann__h">
         <Avatar name={a.by} size={32} />
@@ -279,7 +285,9 @@ export function TripPass({
             />
           )}
         </div>
-        <b id={`ch-hb-trip-${t.id}`}>{t.name}</b>
+        <b id={`ch-hb-trip-${t.id}`}>
+          <SerifText text={t.name} />
+        </b>
         {t.destination && <span className="ch-hb-muted">{t.destination}</span>}
         <dl className="ch-hb-pass__f">
           <div>
@@ -334,7 +342,7 @@ export function TripPass({
   );
 }
 
-export function Updates({ data }: { data: ChTeamHub['updates'] }) {
+export function Updates({ data, covered = false }: { data: ChTeamHub['updates']; covered?: boolean }) {
   const unread = data.rows.filter((n) => n.unread).length;
   return (
     <section className="ch-hb-card ch-hb-feed" aria-labelledby="ch-hb-updates">
@@ -343,9 +351,9 @@ export function Updates({ data }: { data: ChTeamHub['updates'] }) {
         {unread > 0 && <span className="ch-hb-muted ch-num">{unread} new</span>}
       </div>
       {data.error ? (
-        <RefreshNotice code="CH-10202" title="Updates didn't load." body="Your notifications are safe; the bell may still have them. Try again." />
+        <RefreshNotice code="CH-10202" title="Updates didn’t load." body="Your notifications are safe; the bell may still have them. Try again." covered={covered} />
       ) : !data.rows.length ? (
-        <EmptyState compact code="CH-10302" title="Nothing new." body="Posts, trips, tasks and qualifier moves show here as they happen." />
+        <EmptyState compact code="CH-10302" title="Nothing new" body="Posts, trips, tasks and qualifier moves show here as they happen." />
       ) : (
         <ol>
           {data.rows.map((n: ChHubUpdate) => (
@@ -390,6 +398,7 @@ export function Tasks({
   onToggle,
   onAssign,
   onDelete,
+  covered = false,
 }: {
   role: ChTeamHub['role'];
   data: ChTeamHub['tasks'];
@@ -398,6 +407,8 @@ export function Tasks({
   onToggle: (t: ChHubTask, nextDone: boolean) => Promise<ServerResult>;
   onAssign?: () => void;
   onDelete?: (t: ChHubTask) => void;
+  /** The page's notice carries the one Try again (CH-1209): this section keeps only its title under the heading. */
+  covered?: boolean;
 }) {
   const coach = role === 'coach';
   const open = data.rows.filter((t) => !isDone(t)).length;
@@ -414,9 +425,9 @@ export function Tasks({
         )}
       </div>
       {data.error ? (
-        <RefreshNotice code="CH-10203" title={coach ? "Tasks didn't load." : "Your tasks didn't load."} body="Nothing was lost. Try again; the error has been reported." />
+        <RefreshNotice code="CH-10203" title={coach ? "Tasks didn’t load." : "Your tasks didn’t load."} body="Nothing was lost. Try again; the error has been reported." covered={covered} />
       ) : !data.rows.length ? (
-        <EmptyState compact code="CH-10303" title={coach ? 'No tasks assigned.' : 'No tasks right now.'} body={coach ? 'Assign a task and see who has done it.' : 'Tasks your coaches assign show here with their due date.'} />
+        <EmptyState compact code="CH-10303" title={coach ? 'No tasks assigned' : 'No tasks right now'} body={coach ? 'Assign a task and see who has done it.' : 'Tasks your coaches assign show here with their due date.'} />
       ) : (
         <div className="ch-hb-tasks">
           {data.rows.map((t) => <TaskRow key={t.id} t={t} coach={coach} d={isDone(t)} pending={isPending(t)} onToggle={onToggle} onDelete={onDelete} />)}
@@ -446,7 +457,7 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete }: {
     onToggle,
     (task, nextDone) => ({
       done: nextDone ? `${task.title} done` : `${task.title} is open again`,
-      failed: nextDone ? `Couldn't mark ${task.title} done` : `Couldn't reopen ${task.title}`,
+      failed: nextDone ? `Couldn’t mark ${task.title} done` : `Couldn’t reopen ${task.title}`,
       code: nextDone ? 'CH-10003' : 'CH-10011',
     }),
     quietBusy,
@@ -493,6 +504,7 @@ export function Documents({
   onOpen,
   onUpload,
   onDelete,
+  covered = false,
 }: {
   role: ChTeamHub['role'];
   data: ChTeamHub['documents'];
@@ -501,6 +513,8 @@ export function Documents({
   onOpen: (f: ChHubFile) => void;
   onUpload: (files: File[]) => void;
   onDelete: (f: ChHubFile) => void;
+  /** The page's notice carries the one Try again (CH-1209): this section keeps only its title. */
+  covered?: boolean;
 }) {
   const coach = role === 'coach';
   const input = useRef<HTMLInputElement>(null);
@@ -550,11 +564,9 @@ export function Documents({
         </>
       )}
       {data.error ? (
-        <RefreshNotice code="CH-10204" title="Documents didn't load." body="Your files are safe. Try again; the error has been reported." />
+        <RefreshNotice code="CH-10204" title="Documents didn’t load." body="Your files are safe. Try again; the error has been reported." covered={covered} />
       ) : !data.folders.length ? (
-        <div className="ch-hb-card">
-          <EmptyState compact code="CH-10304" icon={Folder} title="No documents yet." body={coach ? 'Files you share show here in folders.' : 'Files your coaches share show here.'} />
-        </div>
+        <EmptyState compact code="CH-10304" icon={Folder} title="No documents yet" body={coach ? 'Files you share show here in folders.' : 'Files your coaches share show here.'} />
       ) : (
         data.folders.map((f) => (
           <section key={f.name} className="ch-hb-card ch-hb-folder" aria-labelledby={`ch-hb-f-${f.name}`}>

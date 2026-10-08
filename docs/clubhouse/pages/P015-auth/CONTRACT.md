@@ -19,10 +19,20 @@ catalog code on the element and in the test (`docs/clubhouse/catalog/auth.md`).
 Every contract on this page has a catalog code. The category map routes the page's rows to their
 categories (`config/clubhouse/category-map.json`). `clubhouse:check` holds this file to the registry.
 
-Two screens on two routes, drawn for a visitor with no role behind the flag `golf_clubhouse_front_door`
-(off in production): sign in (`/golf/login`), then the welcome (`/golf/welcome`). Sign up and onboarding are
-the next phase and join this contract when they are built. The auth screens sit outside the dashboard frame,
-so the shell's contracts (P001) do not apply and none are inherited.
+Two screens on two routes, drawn for a visitor with no role behind the flag
+`golf_clubhouse_front_door` (off in production): sign in (`/golf/login`), then
+the welcome (`/golf/welcome`). The sign-in panel also holds the reset form and
+its check-your-email (`?view=forgot`; owner, 2026-10-07). They have no board, so
+every contract for them is up for owner review. They call today's
+`requestPasswordResetAction` with today's checks and words. The reset link in
+the email still lands on today's `/golf/reset-password`. Sign up and onboarding
+are built behind the same flag over today's server actions (2026-09-30): sign up
+at `/golf/signup` (the intro, the team code, the questions, the account, the
+staff path and Request access) and a new player's questions after the account at
+`/golf/player` (your game, the photo, the member card). Their contracts are the
+rows below named for sign up, onboarding and Request access. The auth screens
+sit outside the dashboard frame, so the shell's contracts (P001) do not apply
+and none are inherited.
 
 ## 01 — Default / core UI
 
@@ -43,13 +53,18 @@ The welcome draws its frame and the painted course at once and streams the greet
 Status: DEFINED
 
 A sign-in in flight: the button says "Signing in…", is off and is `aria-busy`,
-and stays so while the page navigates away (CH-15402). Repeated submissions send
-one request even before the busy button commits; failure permits another
-attempt.
+and stays so while the page navigates away (CH-15402). It stays the lit green
+(only a key that is off because a field is empty is drawn unlit). Repeated
+submissions send one request even before the busy button commits; failure
+permits another attempt, and the last refusal stays, stepped back, until that
+attempt answers. The reset form's Send in flight is the same lit key reading
+"Sending reset link…", `aria-busy` and off; a second Send sends nothing
+(CH-15420, up for owner review).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 150301 | CH-15402 | `A_SIGN_IN_IS_IN_FLIGHT` | A sign-in is in flight (and stays so while it navigates away) |
+| 150302 | CH-15420 | `RESET_PASSWORD_A_LINK_IS_BEING_ASKED` | Reset password: a link is being asked for |
 
 ## 04 — Empty
 
@@ -67,18 +82,30 @@ The welcome card has three empty states, each true to what was read: nothing new
 
 Status: DEFINED
 
-A sign-in submitted with an empty email or password is refused before anything is sent (CH-15101). The button is off until both are filled, so this is the belt and braces for a pre-hydration submit.
+A sign-in submitted with an empty email or password is refused before anything
+is sent (CH-15101). The button is off until both are filled, so this is the belt
+and braces for a pre-hydration submit. The reset form refuses a missing address
+(CH-15120) or one that is not an address (CH-15121) before anything is sent, as
+today's page does; editing clears it.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 150501 | CH-15101 | `SUBMITTED_WITH_AN_EMPTY_EMAIL_OR_PASSWORD` | Submitted with an empty email or password (the button is off until both are filled, so this is the belt and braces for a pre-hydration submit) |
 | 150502 | CH-15110 | `SIGN_UP_THE_TEAM_CODE_MATCHES_NO` | Sign up: the team code matches no team (or the gate is throttled, which the server reports the same way on purpose, Q-99) |
+| 150503 | CH-15120 | `RESET_PASSWORD_SEND_WITH_NO_ADDRESS` | Reset password: Send with no address |
+| 150504 | CH-15121 | `RESET_PASSWORD_AN_ADDRESS_THAT_IS_NOT` | Reset password: an address that is not one |
 
 ## 06 — Server / system error
 
 Status: DEFINED
 
-Each refusal has its own words (the current form's `getErrorMessage`, unchanged), tone, haptic and number: the credentials (CH-15001), an unconfirmed email (CH-15002), too many attempts (CH-15003), a stale bundle after its one reload (CH-15005), anything unexpected (CH-15006) and the server's own words such as a lockout (CH-15007). The welcome's notifications read failing is CH-15201.
+Each refusal has its own words (the current form's `getErrorMessage`,
+unchanged), tone, haptic and number: the credentials (CH-15001), an unconfirmed
+email (CH-15002), too many attempts (CH-15003), a stale bundle after its one
+reload (CH-15005), anything unexpected (CH-15006) and the server's own words
+such as a lockout (CH-15007). The welcome's notifications read failing is
+CH-15201. A reset request the server refuses in its own words (CH-15020), or one
+that throws and is logged (CH-15021), says so and can be sent again.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -94,6 +121,8 @@ Each refusal has its own words (the current form's `getErrorMessage`, unchanged)
 | 150610 | CH-15013 | `ONBOARDING_THE_PHOTO_DID_NOT_UPLOAD_OR` | Onboarding: the photo did not upload, or the profile did not save |
 | 150611 | CH-15014 | `REQUEST_ACCESS_COULD_NOT_BE_SENT` | Request access could not be sent |
 | 150612 | CH-15201 | `THE_WELCOMES_NOTIFICATIONS_READ_FAILS` | The welcome's notifications read fails |
+| 150613 | CH-15020 | `RESET_PASSWORD_THE_SERVER_REFUSES_THE_REQUEST` | Reset password: the server refuses the request in its own words |
+| 150614 | CH-15021 | `RESET_PASSWORD_ANYTHING_ELSE_THROWS` | Reset password: anything else throws (the request never reached the server) |
 
 ## 07 — Network / offline
 
@@ -120,11 +149,17 @@ Where a sign-in goes depends on who the person is and is decided once, for this 
 
 Status: DEFINED
 
-The notices `/golf/login?message=` names: password reset, account created, signed out, session expired (CH-15904). A sign-in that lands has no message: the page leaves (its feel is CH-15702, the hand-off CH-15604).
+The notices `/golf/login?message=` names: password reset, account created,
+signed out, session expired (CH-15904). A sign-in that lands has no message: the
+page leaves (its feel is CH-15702, the hand-off CH-15604). A reset link asked
+for moves the panel on to check your email, which shows the address it went to
+(CH-15921, up for owner review). The server answers the same whether or not the
+address has an account, so the page never says one exists.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 150901 | CH-15904 | `GOLF_LOGIN_MESSAGE_NAMES_A_NOTICE` | `/golf/login?message=` names a notice |
+| 150902 | CH-15921 | `A_RESET_LINK_IS_ASKED_FOR_AND_2` | A reset link is asked for and the server accepts (its answer is the same whether or not the address has an account) |
 
 ## 10 — Warning
 
@@ -138,11 +173,20 @@ Status: N/A — nothing on these screens deletes or discards anything.
 
 Status: DEFINED
 
-The invite returnTo and the demo ref survive the round trip through sign in, and are cleared once used (CH-15901).
+The invite returnTo and the demo ref survive the round trip through sign in, and
+are cleared once used (CH-15901). "Forgot password?" opens the reset form in
+place with the address already typed. The view is kept in the URL
+(`?view=forgot`), so the browser's Back returns to sign in and a reload holds
+the view (CH-15920). Going back brings the address with it and pops the reset
+form's history entry rather than stacking one (CH-15922). Both are up for owner
+review. With the flag on, a signed-out visit to `/golf/forgot-password` is sent
+to `/golf/login?view=forgot`; a signed-in one keeps today's page (CH-15920).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 151201 | CH-15901 | `THE_PERSON_CAME_FROM_AN_INVITE_LINK` | The person came from an invite link or a demo link |
+| 151202 | CH-15920 | `FORGOT_PASSWORD_IS_CLICKED` | "Forgot password?" is clicked |
+| 151203 | CH-15922 | `BACK_TO_SIGN_IN` | Back to sign in ("Remember it? Sign in", Back to sign in, or the browser's Back) |
 
 ## 13 — Optimistic UI
 
@@ -166,7 +210,28 @@ Status: N/A — the welcome's card is read once per visit on the server; nothing
 
 Status: DEFINED
 
-The design's own choreography (a scoped exception to D-64, DESIGN.md): the form leaving and the course taking the frame (CH-15601), the greeting and the card (CH-15602), the camera push and the ball (CH-15603), the hand-off fold (CH-15604), reduced motion (CH-15605) and the loops pausing when the tab is hidden (CH-15606).
+The design's own choreography (a scoped exception to D-64, DESIGN.md): the form
+leaving and the course taking the frame (CH-15601), the greeting and the card
+(CH-15602), the camera push and the ball (CH-15603), the hand-off fold
+(CH-15604), reduced motion (CH-15605) and the loops pausing when the tab is
+hidden (CH-15606). The form's own micro-motion is on the v2 scale (quick and
+base): the Sign in key lighting when both fields are filled and crossfading to
+"Signing in…" without reflowing (CH-15607), a refusal arriving with what it
+moves gliding there on transform only, the last one stepped back while the next
+attempt is in flight (CH-15608), the fields shaking once for a refusal about
+them (CH-15609, the sign-up code's 380ms shake), the password eye crossfading
+between its glyphs (CH-15610) and the Home link's chevron leaning back on hover
+(CH-15611). The panel moving between sign in, the reset form and check your
+email slides the view 12px the way the person is going and crossfades under a
+still lockup, the desktop stage gliding to its new centre (CH-15612, up for
+owner review). Reduced motion and Animations off make every one of them instant.
+Sign up keeps the design's step curve on its own tokens: a question gives way to
+the next in the direction of travel, the leaving one held in place and out of
+the accessibility tree (CH-15620), the member card inks in as answers arrive
+without flickering on each keystroke (CH-15621), the rail's thumb and the
+phone's hairline move with progress (CH-15622), the card is issued once on done
+with its seal (CH-15623), and an answer touched or refused answers with its own
+lift, press, halo and focus (CH-15624); reduced motion makes them instant too.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -176,26 +241,47 @@ The design's own choreography (a scoped exception to D-64, DESIGN.md): the form 
 | 151604 | CH-15604 | `CONTINUE_IS_PRESSED` | Continue is pressed (or Return) |
 | 151605 | CH-15605 | `REDUCED_MOTION_OR_SETTINGS_PREFERENCES_ANIMATIONS_OFF` | Reduced motion, or Settings > Preferences > Animations off |
 | 151606 | CH-15606 | `THE_TAB_IS_HIDDEN` | The tab is hidden |
+| 151607 | CH-15607 | `THE_SIGN_IN_KEY_CHANGES_STATE_OFF` | The Sign in key changes state: off (a field is empty), ready, in flight |
+| 151608 | CH-15608 | `A_REFUSAL_APPEARS_OR_THE_NEXT_ONE` | A refusal appears, or the next one replaces it |
+| 151609 | CH-15609 | `A_REFUSAL_IS_ABOUT_THE_FIELDS` | A refusal is about the fields (the credentials, an empty field, or the reset form's address) |
+| 151610 | CH-15610 | `THE_PASSWORD_EYE_IS_PRESSED` | The password eye is pressed |
+| 151611 | CH-15611 | `THE_HOME_LINK_IS_HOVERED_OR_PRESSED` | The Home link is hovered or pressed |
+| 151612 | CH-15612 | `THE_PANEL_MOVES_BETWEEN_SIGN_IN_THE` | The panel moves between sign in, the reset form and check your email |
+| 151613 | CH-15620 | `SIGN_UP_ONE_QUESTION_GIVES_WAY_TO` | Sign up: one question gives way to the next (Continue, a choice, Back) |
+| 151614 | CH-15621 | `SIGN_UP_THE_MEMBER_CARD_FILLS_IN` | Sign up: the member card fills in as answers arrive |
+| 151615 | CH-15622 | `SIGN_UP_PROGRESS_MOVES` | Sign up: progress moves |
+| 151616 | CH-15623 | `SIGN_UP_THE_MEMBER_CARD_IS_ISSUED` | Sign up: the member card is issued (done, staff done) |
+| 151617 | CH-15624 | `SIGN_UP_AN_ANSWER_IS_TOUCHED_OR` | Sign up: an answer is touched or refused |
 
 ## 17 — Haptic
 
 Status: DEFINED
 
-The README's haptic table, through `haptics.ts`: sign in tapped (CH-15701), a sign-in landing (CH-15702), warnings (CH-15703), errors (CH-15704) and Continue (CH-15705).
+The README's haptic table, through `haptics.ts`: sign in tapped (CH-15701), a
+sign-in landing (CH-15702), warnings (CH-15703), errors (CH-15704) and Continue
+(CH-15705). The reset form: Send tapped is light (CH-15720), a link asked for is
+success (CH-15721), and its refusals are the same warning and error.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 151701 | CH-15701 | `SIGN_IN_IS_TAPPED` | Sign in is tapped |
 | 151702 | CH-15702 | `A_SIGN_IN_LANDS` | A sign-in lands |
-| 151703 | CH-15703 | `A_WARNING_TONED_REFUSAL` | A warning-toned refusal (an empty field, an unverified email, a rate limit) |
-| 151704 | CH-15704 | `A_DANGER_TONED_REFUSAL` | A danger-toned refusal (the credentials, the network, a stale bundle, anything unexpected) |
+| 151703 | CH-15703 | `A_WARNING_TONED_REFUSAL` | A warning-toned refusal (an empty field, an unverified email, a rate limit; the reset form's missing or malformed address) |
+| 151704 | CH-15704 | `A_DANGER_TONED_REFUSAL` | A danger-toned refusal (the credentials, the network, a stale bundle, anything unexpected; a reset request that fails) |
 | 151705 | CH-15705 | `CONTINUE_ON_THE_WELCOME` | Continue on the welcome |
+| 151706 | CH-15720 | `SEND_RESET_LINK_IS_TAPPED` | Send reset link is tapped |
+| 151707 | CH-15721 | `A_RESET_LINK_IS_ASKED_FOR_AND` | A reset link is asked for and the server accepts |
 
 ## 18 — Accessibility
 
 Status: DEFINED
 
-A skip link (CH-15801), refusals announced with focus on the first invalid field (CH-15802), the welcome announced once (CH-15803), the decorative course hidden from assistive technology (CH-15804) and named, pressed, 44px controls (CH-15805).
+A skip link (CH-15801), refusals announced with focus on the first invalid field
+(CH-15802), the welcome announced once (CH-15803), the decorative course hidden
+from assistive technology (CH-15804) and named, pressed, 44px controls
+(CH-15805). When the panel's view changes, focus moves with it (the reset form's
+Email, or the new heading) and the leaving view is hidden from assistive
+technology at once (CH-15820).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -204,6 +290,7 @@ A skip link (CH-15801), refusals announced with focus on the first invalid field
 | 151803 | CH-15803 | `THE_WELCOME_ANNOUNCES_ITS_SENTENCE_ONCE_WHEN` | The welcome announces its sentence once, when it is final ("Good morning, Coach Reyes."): `role="status"`, `aria-live="polite"`, atomic; the `h1` holds the same words |
 | 151804 | CH-15804 | `THE_PAINTED_COURSE_THE_TAGLINE_AND_THE` | The painted course, the tagline and the marks over it are decorative and hidden from assistive technology |
 | 151805 | CH-15805 | `THE_PASSWORD_EYE_IS_A_NAMED_PRESSED` | The password eye is a named, pressed-state button with a hit area past 44px; every other control is at least 44px on the phone |
+| 151806 | CH-15820 | `THE_PANELS_VIEW_CHANGES` | The panel's view changes |
 
 ## 19 — Responsive layout
 

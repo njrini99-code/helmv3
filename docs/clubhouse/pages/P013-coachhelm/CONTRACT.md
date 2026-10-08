@@ -86,7 +86,19 @@ Status: N/A — CoachHelm has no realtime, polling or pull to refresh: the serve
 
 Status: DEFINED
 
-First run is a whole-page empty state for each role and each way of having nothing: a player with no round posted (CH-13301), with rounds and no insight yet (CH-13302), with only strengths (CH-13303) and with CoachHelm off (CH-13304); a coach with CoachHelm off (CH-13305), with players and no signal (CH-13306), with no players (CH-13307) and with no team (CH-13308). Two smaller states sit in the page: nothing flagged in the pulse (CH-13309) and the count of players with no insight yet (CH-13310). A failed read is never shown as empty (130411): the delivery actions answer an empty list when a read fails, so the loaders read the insights table themselves to tell the two apart. CoachHelm has no search or filter, so it has no filtered empty state.
+First run is a whole-page empty state for each role and each way of having
+nothing: a player with no round posted (CH-13301), with rounds and no insight
+yet (CH-13302), with only strengths (CH-13303) and with CoachHelm off
+(CH-13304); a coach with CoachHelm off (CH-13305), with no players (CH-13307)
+and with no team (CH-13308). A coach with players and no signal yet has the
+pulse on the page, so that one is the players' section with nothing in it: its
+empty line and View roster under the section's heading, in view without
+scrolling (CH-13306; states audit, 2026-10-08). Two smaller states sit in the
+page: nothing flagged in the pulse (CH-13309) and the count of players with no
+insight yet (CH-13310). A failed read is never shown as empty (130411): the
+delivery actions answer an empty list when a read fails, so the loaders read the
+insights table themselves to tell the two apart. CoachHelm has no search or
+filter, so it has no filtered empty state.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -184,7 +196,7 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 130701 | CH-13901 | `AN_INSIGHT_IS_DISMISSED` | An insight is dismissed |
-| 130702 | — | `WRITES_REFUSE_OFFLINE` | Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you're offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes. |
+| 130702 | — | `WRITES_REFUSE_OFFLINE` | Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you’re offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes. |
 | 130703 | CH-13902 | `A_PROPOSED_FOCUS_AREA_IS_ACCEPTED_OR` | A proposed focus area is accepted or declined |
 | 130704 | CH-13920 | `ASK_SEND_WHILE_OFFLINE` | Ask: Send while offline |
 | 130705 | CH-13921 | `ASK_A_SEND_FAILS` | Ask: A send fails |
@@ -290,7 +302,10 @@ Nothing refreshes in the background: the page is as fresh as its last read (1315
 
 Status: DEFINED
 
-The Assigned chip and the dismissed notice rise in once (CH-13601), still with reduced motion or Animations off; hovering a row or a player tints it (CH-13602, preview only). Everything else is the shell's (D-64).
+The Assigned chip and the dismissed notice rise in once, and appear at once with
+reduced motion or Animations off (CH-13601); on desktop hovering a row or a
+player takes the Ledger row tint and a press deepens it (CH-13602, preview
+only). Everything else is the shell's (D-64).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -299,7 +314,7 @@ The Assigned chip and the dismissed notice rise in once (CH-13601), still with r
 | 131603 | CH-13620 | `ASK_HIDE_CHATS` | Ask: Hide chats |
 | 131604 | CH-13621 | `ASK_THE_PHONE_DRAWER_IS_DRAGGED` | Ask: The phone drawer is dragged |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -317,7 +332,7 @@ On the v2 grammar (D-70): selection for choosing a player or an insight (CH-1370
 | 131706 | CH-13752 | `ASK_A_FOLLOW_UP_IS_TAPPED` | Ask: A follow-up is tapped |
 | 131707 | CH-13780 | `DEEP_DIVE_A_READ_IN_THE_LIST` | Deep dive: a read in the list, or a round or a plan under it, is tapped |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
 
 ## 18 — Accessibility
 
@@ -346,7 +361,7 @@ The page is labelled by its title and each section is a labelled region (CH-1380
 | 131817 | CH-13880 | `STANDING_A_SCREEN_READER_MOVES_THROUGH_THE` | Standing: a screen reader moves through the page |
 | 131818 | CH-13890 | `DEEP_DIVE_A_SCREEN_READER_MOVES_THROUGH` | Deep dive: a screen reader moves through the page |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
 
 ## 19 — Responsive layout
 

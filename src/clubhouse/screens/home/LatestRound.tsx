@@ -2,7 +2,7 @@
 
 import { AnimatePresence, m } from 'motion/react';
 import { ArrowRight, ChevronLeft, ChevronRight, Flag } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHoleScore } from '../../data/home';
 import { Avatar } from '../../ui/Avatar';
 import { Button, IconButton } from '../../ui/Button';
@@ -16,6 +16,7 @@ import { chSwap } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { changeTone, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { RefreshNotice } from '../../ui/RefreshNotice';
+import { GirViz, PuttsViz, SgViz } from './RoundViz';
 
 function Nine({ label, holes }: { label: string; holes: ChHoleScore[] }) {
   const par = holes.every((h) => h.par != null) ? holes.reduce((a, h) => a + (h.par ?? 0), 0) : null;
@@ -57,7 +58,11 @@ const statsHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${id
  * `mine`: the player's Home ("My latest round", Player - Home.html): a flag in
  * place of the avatar, and My stats in place of the player's stats.
  */
-export function LatestRound({ data, mine = false }: { data: ChCoachHome['latestRounds']; mine?: boolean }) {
+/**
+ * `lead`: what opens the pane above the round (the player's Up next on desktop, so the two columns balance).
+ * `covered`: the page's notice (CH-1209) carries the one Try again, so a failed read keeps only its notice's title.
+ */
+export function LatestRound({ data, mine = false, lead, covered = false }: { data: ChCoachHome['latestRounds']; mine?: boolean; lead?: ReactNode; covered?: boolean }) {
   const [i, setI] = useState(0);
   const [dir, setDir] = useState<1 | -1>(1);
   const reduced = useChReducedMotion();
@@ -71,6 +76,7 @@ export function LatestRound({ data, mine = false }: { data: ChCoachHome['latestR
 
   return (
     <section className="ch-h-pane" aria-labelledby="ch-round-title">
+      {lead}
       <div className="ch-h-pane__head">
         <h2 id="ch-round-title">{mine ? 'My latest round' : 'Latest round'}</h2>
         {rounds.length > 1 && (
@@ -87,8 +93,9 @@ export function LatestRound({ data, mine = false }: { data: ChCoachHome['latestR
       {data.error ? (
         <RefreshNotice
           code="CH-2202"
-          title="Recent rounds didn't load."
+          title="Recent rounds didn’t load"
           body="Posted rounds are safe. Try again, and if it keeps happening the error has already been reported."
+          covered={covered}
         />
       ) : !r ? (
         <EmptyState
@@ -99,6 +106,7 @@ export function LatestRound({ data, mine = false }: { data: ChCoachHome['latestR
         />
       ) : (
         <div className="ch-h-round-frame">
+          {/* Paging rounds slides 12px in the direction of travel (CH-2601). */}
           <AnimatePresence mode="popLayout" initial={false} custom={dir}>
             <m.div
               key={r.id}
@@ -129,7 +137,7 @@ export function LatestRound({ data, mine = false }: { data: ChCoachHome['latestR
               </div>
 
               {r.holes ? (
-                <ScrollRegion label={mine ? 'Your scorecard' : `${r.playerName}'s scorecard`} className="ch-h-card ch-well-soft">
+                <ScrollRegion label={mine ? 'Your scorecard' : `${r.playerName}’s scorecard`} className="ch-h-card ch-scoreboard">
                   <Nine label="Out" holes={r.holes.slice(0, 9)} />
                   <Nine label="In" holes={r.holes.slice(9)} />
                 </ScrollRegion>
@@ -146,14 +154,17 @@ export function LatestRound({ data, mine = false }: { data: ChCoachHome['latestR
                   <span>
                     <em>GIR</em>
                     {r.gir ?? NO_DATA}
+                    <GirViz gir={r.gir} />
                   </span>
                   <span>
                     <em>Putts</em>
                     {r.putts ?? NO_DATA}
+                    <PuttsViz putts={r.putts} />
                   </span>
                   <span>
                     <em>SG</em>
                     <b className={changeTone(r.sg, false) || undefined}>{formatSigned(r.sg)}</b>
+                    <SgViz sg={r.sg} />
                   </span>
                 </div>
                 {roundHref(r.id, mine ? 'player' : 'coach') ? (
@@ -170,13 +181,47 @@ export function LatestRound({ data, mine = false }: { data: ChCoachHome['latestR
                   statsHref(r.playerId) && (
                     // The review isn't rebuilt for this role; this opens the player's stats, and says so.
                     <Button href={statsHref(r.playerId)!} variant="ghost" size="sm" rightIcon={ArrowRight} className="ch-h-round__more">
-                      {firstName(r.playerName)}&apos;s stats
+                      {firstName(r.playerName)}’s stats
                     </Button>
                   )
                 )}
               </div>
             </m.div>
           </AnimatePresence>
+        </div>
+      )}
+
+      {/* Coach desktop: the week beside this pane runs longer, so the other recent rounds fill the pane's foot as a
+          picker (same rounds as the pager); a tap shows that round above. */}
+      {!mine && !lead && !data.error && rounds.length > 1 && (
+        <div className="ch-h-rail" role="group" aria-label="Recent rounds">
+          <h3 className="ch-h-rail__title">Recent rounds</h3>
+          <ul>
+            {rounds.map((x, j) => (
+              <li key={x.id}>
+                <button
+                  type="button"
+                  className={'ch-h-rail__item' + (j === i ? ' is-on' : '')}
+                  aria-pressed={j === i}
+                  onClick={() => {
+                    if (j === i) return;
+                    setDir(j > i ? 1 : -1);
+                    setI(j);
+                  }}
+                >
+                  <Avatar name={x.playerName} size={26} />
+                  <span className="ch-h-rail__who">
+                    <span className="ch-h-rail__name">{x.playerName}</span>
+                    <span className="ch-h-rail__meta">{x.meta.split(' · ').slice(0, 2).join(' · ')}</span>
+                  </span>
+                  <span className="ch-h-rail__score ch-num">{x.score}</span>
+                  <span className={'ch-h-rail__par ch-num' + (x.toPar != null && x.toPar < 0 ? ' is-under' : '')}>
+                    {formatToPar(x.toPar)}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </section>

@@ -18,15 +18,27 @@ vi.mock('@/app/golf/actions/onboarding', () => ({ completePlayerOnboarding: vi.f
 vi.mock('@/app/actions/demo-request', () => ({ submitDemoRequest: vi.fn() }));
 vi.mock('@/lib/supabase/client', () => ({ createClient: vi.fn() }));
 vi.mock('../screens/auth/SceneMount', () => ({ SceneMount: ({ camera }: { camera?: unknown }) => <div data-testid="scene" data-camera={String(camera)} /> }));
+// AuthFrame loads the animation features after first paint; here they resolve at once, so a test can wait for them deterministically.
+vi.mock('@/lib/motion/load-features', async () => {
+  const { domAnimation, domMax } = await import('motion/react');
+  return { loadFeatures: () => Promise.resolve(domAnimation), loadMaxFeatures: () => Promise.resolve(domMax) };
+});
 
 import { Onboard } from '../screens/onboard/Onboard';
 import { DRAFT_KEY, type Draft } from '../screens/onboard/flow';
 import type { OnboardStep } from '../screens/onboard/logic';
 import { OnboardWritesContext, type OnboardWrites } from '../screens/onboard/writes-context';
 
-const setMedia = (phone = false) =>
+/** Lets AuthFrame's LazyMotion take the animation features it was handed (until then a question is simply replaced). */
+const featuresLoaded = () =>
+  act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+
+const setMedia = (phone = false, reduce = false) =>
   vi.stubGlobal('matchMedia', (query: string) => ({
-    matches: query.includes('max-width') ? phone : false,
+    matches: query.includes('reduce') ? reduce : query.includes('max-width') ? phone : false,
     media: query,
     addEventListener: () => {},
     removeEventListener: () => {},
@@ -293,5 +305,151 @@ describe('arriving', () => {
     mount(makeWrites(), 'intro');
     expect(screen.getByRole('link', { name: 'Sign in' }).getAttribute('href')).toBe('/golf/login?returnTo=%2Fgolf%2Fjoin%2FK7PQX4MN');
     window.history.replaceState(null, '', '/');
+  });
+});
+
+describe('motion and feedback (CH-15620 to CH-15624)', () => {
+  const MATCHED: Partial<Draft> = { intent: 'code', code: 'K7PQX4MN', kind: 'roster', teamName: 'Varsity Golf' };
+  const bodies = () => [...document.querySelectorAll('.ch-ox-turn__body')];
+
+  it('CH-15620 the question leaving is out of the accessibility tree and the tab order while it fades, then gone', async () => {
+    mount(makeWrites(), 'code', MATCHED);
+    await featuresLoaded();
+    fireEvent.click(screen.getByRole('button', { name: /Continue/ }));
+    expect(bodies()).toHaveLength(2);
+    const leaving = bodies().find((b) => b.getAttribute('aria-hidden') === 'true');
+    expect(leaving?.hasAttribute('inert')).toBe(true);
+    expect(leaving?.textContent).toContain('Welcome to Varsity Golf.');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('First, what should we call you?');
+    await waitFor(() => expect(bodies()).toHaveLength(1));
+    expect(bodies()[0]!.hasAttribute('aria-hidden')).toBe(false);
+  });
+
+  it('CH-15620 reduced motion replaces the question at once', async () => {
+    setMedia(false, true);
+    mount(makeWrites(), 'code', MATCHED);
+    await featuresLoaded();
+    fireEvent.click(screen.getByRole('button', { name: /Continue/ }));
+    // Well inside the 180ms the leaving question takes otherwise.
+    await act(() => new Promise((r) => setTimeout(r, 50)));
+    expect(bodies()).toHaveLength(1);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('First, what should we call you?');
+  });
+
+  it('CH-15620 a choice moves on once: a second tap does not skip the next question', async () => {
+    const w = makeWrites();
+    mount(w, 'grad', { ...PLAYER, grad: null });
+    const tile = screen.getAllByRole('radio')[1]!;
+    fireEvent.click(tile);
+    fireEvent.click(tile);
+    // The tick shows at once, before the question moves on.
+    expect(tile.getAttribute('aria-checked')).toBe('true');
+    expect(await screen.findByText('Create your account, Theo.')).toBeTruthy();
+    await act(() => new Promise((r) => setTimeout(r, 400)));
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Create your account, Theo.');
+    expect(w.createAccount).not.toHaveBeenCalled();
+  });
+
+  it('CH-15620 a request choice tapped twice asks for the details, and sends nothing', async () => {
+    const w = makeWrites();
+    mount(w, 'rwho', { intent: 'request' });
+    const ad = screen.getByRole('radio', { name: /Athletic director/ });
+    fireEvent.click(ad);
+    fireEvent.click(ad);
+    expect(await screen.findByText('Tell us about your department.')).toBeTruthy();
+    await act(() => new Promise((r) => setTimeout(r, 400)));
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Tell us about your department.');
+    expect(w.sendRequest).not.toHaveBeenCalled();
+  });
+
+  it('CH-15620 Back waits while the account is being made, so the staff access it grants is where you land', async () => {
+    let answer: (v: Awaited<ReturnType<OnboardWrites['createAccount']>>) => void = () => {};
+    const createAccount = vi.fn(() => new Promise<Awaited<ReturnType<OnboardWrites['createAccount']>>>((r) => (answer = r)));
+    mount(makeWrites({ createAccount }), 'account', { intent: 'code', code: 'S4VN8QRT', kind: 'staff', first: 'Dana', last: 'Whitfield' });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'd@school.edu' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Fairway#26' } });
+    fireEvent.click(screen.getByRole('button', { name: /Create account/ }));
+    const back = screen.getByRole('button', { name: 'Back' }) as HTMLButtonElement;
+    expect(back.disabled).toBe(true);
+    fireEvent.click(back);
+    await act(async () => answer({ ok: true, redirectTo: '/golf/dashboard', staffJoined: true }));
+    expect(await screen.findByText('You’re on staff, Coach Whitfield.')).toBeTruthy();
+  });
+
+  it('CH-15620 Back before a choice lands keeps you where Back took you', async () => {
+    mount(makeWrites(), 'grad', { ...PLAYER, grad: null });
+    fireEvent.click(screen.getAllByRole('radio')[0]!);
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('First, what should we call you?');
+    await act(() => new Promise((r) => setTimeout(r, 400)));
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('First, what should we call you?');
+  });
+
+  it('CH-15621 the card fills in as you type: the name inks in once, then each letter re-wets it in place', () => {
+    mount(makeWrites(), 'name', { ...PLAYER, first: '', last: '' });
+    const first = screen.getByPlaceholderText('First');
+    const coin = () => document.querySelector('.ch-ox-mc__coin')!;
+    expect(coin().hasAttribute('data-settle')).toBe(false);
+    fireEvent.change(first, { target: { value: 'T' } });
+    const ink = document.querySelector('.ch-ox-mc__name .ch-ox-flash')!;
+    expect(ink.textContent).toBe('T');
+    expect(ink.hasAttribute('data-wet')).toBe(false);
+    // The silhouette gives way to the monogram, and settles in.
+    expect(coin().hasAttribute('data-settle')).toBe(true);
+    expect(coin().querySelector('.ch-avatar')).toBeTruthy();
+    fireEvent.change(first, { target: { value: 'Th' } });
+    expect(document.querySelector('.ch-ox-mc__name .ch-ox-flash')).toBe(ink);
+    expect(ink.getAttribute('data-wet')).toBe('1');
+    fireEvent.change(first, { target: { value: 'The' } });
+    expect(ink.getAttribute('data-wet')).toBe('0');
+    expect(screen.getByRole('img', { name: 'GolfHelm member card for The' })).toBeTruthy();
+  });
+
+  it('CH-15621 the handicap on the card follows the steppers without fading out, and never counts', () => {
+    mount(makeWrites(), 'game', { ...PLAYER, accountMade: true, hcp: null });
+    const hcp = () => [...document.querySelectorAll('.ch-ox-mc__f > div')].find((d) => d.firstElementChild?.textContent === 'Handicap')!.querySelector('.ch-ox-flash');
+    expect(hcp()).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'I have one' }));
+    const el = hcp()!;
+    expect(el.textContent).toBe('8.0');
+    expect(el.hasAttribute('data-wet')).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Higher' }));
+    expect(hcp()).toBe(el);
+    expect(el.textContent).toBe('8.1');
+    expect(el.getAttribute('data-wet')).toBe('1');
+  });
+
+  it('CH-15622 progress: the current section is marked, the sliding thumb is decorative, and the phone count fills', () => {
+    mount(makeWrites(), 'grad', PLAYER);
+    const nav = screen.getByRole('navigation', { name: 'Progress' });
+    expect(nav.querySelector('[aria-current="step"]')?.textContent).toBe('You');
+    expect(nav.querySelector('.ch-ox-rail__thumb')?.getAttribute('aria-hidden')).toBe('true');
+    const count = document.querySelector<HTMLElement>('.ch-ox-rail__m')!;
+    expect(count.textContent).toBe('2 of 5');
+    expect(count.style.getPropertyValue('--ch-ox-p')).toBe('0.4');
+  });
+
+  it('CH-15623 the card is issued on done and only there: a request is received, not issued', () => {
+    mount(makeWrites(), 'done', { ...PLAYER, accountMade: true, joinedTeam: true });
+    expect(document.querySelector('.ch-ox-mcw[data-issued]')).toBeTruthy();
+    expect(document.querySelector('.ch-ox-mc__stamp')).toBeTruthy();
+    expect(screen.getByText('Issued today')).toBeTruthy();
+    cleanup();
+    mount(makeWrites(), 'sent', { intent: 'request', req: { who: 'ad', first: 'Jordan', last: 'Ellis', school: 'Oakmont', coach: '', email: 'j@oakmont.edu', note: '' } });
+    expect(document.querySelector('.ch-ox-mcw[data-issued]')).toBeNull();
+    expect(screen.getByText('Received today')).toBeTruthy();
+    cleanup();
+    mount(makeWrites(), 'intro');
+    expect(document.querySelector('.ch-ox-mcw[data-issued]')).toBeNull();
+  });
+
+  it('CH-15624 a refused answer puts the cursor in the field it names', async () => {
+    mount(makeWrites(), 'account', PLAYER);
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'theo@' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Fairway#26' } });
+    screen.getByLabelText('Password').focus();
+    fireEvent.click(screen.getByRole('button', { name: /Create account/ }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Email')));
+    expect(screen.getByLabelText('Email').getAttribute('aria-invalid')).toBe('true');
   });
 });

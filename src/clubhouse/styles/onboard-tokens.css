@@ -35,6 +35,14 @@
   --ch-ox-home-delay: 900ms;
   --ch-ox-slot-step: 40ms;
   --ch-ox-seal-delay: 200ms;
+  /* October 7 finish (CH-15620 to CH-15624): the next question starts this beat after the leaving one; the rail's
+     thumb and the phone's hairline; a value re-wetted on the card dries over this; the coin settles; the card
+     already on the desktop tray lifts and is laid back as it is issued. */
+  --ch-ox-turn-delay: 60ms;
+  --ch-ox-t-rail: 520ms;
+  --ch-ox-t-wet: 1100ms;
+  --ch-ox-t-coin: 420ms;
+  --ch-ox-t-lift: 900ms;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -64,6 +72,11 @@
     --ch-ox-home-delay: 0ms;
     --ch-ox-slot-step: 0ms;
     --ch-ox-seal-delay: 0ms;
+    --ch-ox-turn-delay: 0ms;
+    --ch-ox-t-rail: 1ms;
+    --ch-ox-t-wet: 1ms;
+    --ch-ox-t-coin: 1ms;
+    --ch-ox-t-lift: 1ms;
   }
 }
 [data-ui='clubhouse'][data-motion='off'] {
@@ -92,4 +105,9 @@
   --ch-ox-home-delay: 0ms;
   --ch-ox-slot-step: 0ms;
   --ch-ox-seal-delay: 0ms;
+  --ch-ox-turn-delay: 0ms;
+  --ch-ox-t-rail: 1ms;
+  --ch-ox-t-wet: 1ms;
+  --ch-ox-t-coin: 1ms;
+  --ch-ox-t-lift: 1ms;
 }

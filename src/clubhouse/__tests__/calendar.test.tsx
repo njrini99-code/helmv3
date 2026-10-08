@@ -84,6 +84,8 @@ import './dialog-polyfill';
 
 /** A numbered element that is actually on screen: a closed <dialog> doesn't count. */
 const code = (c: string) => [...document.querySelectorAll(`[data-ch-code="${c}"]`)].find((el) => el.tagName !== 'DIALOG' || el.hasAttribute('open')) ?? null;
+/** The live copy of a swapped part (a view or a day): the leaving one is aria-hidden while it fades (CH-6604, CH-6606). */
+const live = (sel: string) => [...document.querySelectorAll(sel)].find((el) => !el.closest('.ch-swap__body[aria-hidden]')) ?? null;
 async function expectCode(c: string, text?: RegExp) {
   await waitFor(() => expect(code(c)).not.toBeNull());
   if (text) expect(code(c)!.textContent).toMatch(text);
@@ -148,7 +150,7 @@ describe('Calendar · saves that fail', () => {
     await user.type(screen.getByRole('textbox', { name: 'Event title' }), 'Short game');
     await user.type(screen.getByPlaceholderText('Practice green, Finley GC'), 'Range bay 2');
     await user.click(screen.getByRole('button', { name: 'Publish event' }));
-    await expectCode('CH-6001', /Couldn't publish Short game/);
+    await expectCode('CH-6001', /Couldn’t publish Short game/);
     expect((screen.getByRole('textbox', { name: 'Event title' }) as HTMLInputElement).value).toBe('Short game');
     expect((screen.getByPlaceholderText('Practice green, Finley GC') as HTMLInputElement).value).toBe('Range bay 2');
     expect(document.querySelector('dialog[open]')).not.toBeNull();
@@ -163,7 +165,7 @@ describe('Calendar · saves that fail', () => {
     wrap(cal(), { initialNew: true });
     await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Short game');
     await user.click(screen.getByRole('button', { name: 'Publish event' }));
-    await expectCode('CH-6001', /Couldn't publish Short game/);
+    await expectCode('CH-6001', /Couldn’t publish Short game/);
     // Pressing Publish again, then the toast's Retry: the same event, so the same id.
     await user.click(screen.getByRole('button', { name: 'Publish event' }));
     await waitFor(() => expect(a.createGolfEvent).toHaveBeenCalledTimes(2));
@@ -190,7 +192,7 @@ describe('Calendar · saves that fail', () => {
     await user.click(screen.getByRole('radio', { name: 'Weekly' }));
     await user.click(screen.getByRole('button', { name: 'Publish event' }));
     await waitFor(() => expect(a.createRecurringEvent).toHaveBeenCalledTimes(1));
-    await expectCode('CH-6001', /Couldn't publish Lifting/);
+    await expectCode('CH-6001', /Couldn’t publish Lifting/);
     await user.click(screen.getByRole('button', { name: 'Publish event' }));
     await waitFor(() => expect(a.createRecurringEvent).toHaveBeenCalledTimes(2));
     const sent = a.createRecurringEvent.mock.calls.map((c) => (c[0] as { requestId?: string }).requestId);
@@ -207,7 +209,7 @@ describe('Calendar · saves that fail', () => {
     await user.click(screen.getByRole('button', { name: 'Publish event' }));
     await waitFor(() => expect(a.createGolfEvent).toHaveBeenCalledTimes(1));
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toMatch(/Published · Short game · invitations didn't go out/);
+    expect(alert.textContent).toMatch(/Published · Short game · invitations didn’t go out/);
     expect(alert.textContent).toMatch(/invite them again/);
     expect(screen.queryByText(/players notified/)).toBeNull();
   });
@@ -247,7 +249,7 @@ describe('Calendar · saves that fail', () => {
     expect(hapticSpy).toHaveBeenCalledWith('warning');
   });
 
-  it("a class's Compare schedules (coach) opens New event on the class's day with only its player invited, so Find a time sets them side by side", async () => {
+  it("a class’s Compare schedules (coach) opens New event on the class’s day with only its player invited, so Find a time sets them side by side", async () => {
     const user = userEvent.setup();
     wrap(cal(), { initialEvent: 'c2' });
     await user.click(await screen.findByRole('button', { name: 'Compare schedules' }));
@@ -258,7 +260,7 @@ describe('Calendar · saves that fail', () => {
     expect(invited[0]).toMatch(/Jonah/);
   });
 
-  it("Duplicate opens New event with the event's title, type, day, time, place and invitees, and publishes a new event", async () => {
+  it("Duplicate opens New event with the event’s title, type, day, time, place and invitees, and publishes a new event", async () => {
     const user = userEvent.setup();
     a.createGolfEvent.mockResolvedValue({ success: true });
     wrap(cal(), { initialEvent: 'e9' });
@@ -281,7 +283,7 @@ describe('Calendar · saves that fail', () => {
     await eventMenu(user, 'Cancel event');
     await expectCode('CH-6501', /Cancel Travel briefing\?/);
     await user.click(screen.getByRole('button', { name: 'Cancel event' }));
-    await expectCode('CH-6002', /Couldn't cancel Travel briefing/);
+    await expectCode('CH-6002', /Couldn’t cancel Travel briefing/);
   });
 
   it('CH-6501 61101 cancelling one event keeps its replies, but the series scopes delete the events, and the question says which', async () => {
@@ -312,11 +314,11 @@ describe('Calendar · saves that fail', () => {
     a.getCalendarFeeds.mockResolvedValueOnce({ success: false, error: 'x' });
     await user.click(screen.getByRole('button', { name: /More/ }));
     await user.click(await screen.findByRole('menuitem', { name: /Add to calendar app/ }));
-    await expectCode('CH-6206', /Your calendar links didn't load/);
+    await expectCode('CH-6206', /Your calendar links didn’t load/);
     a.createCalendarFeed.mockImplementation(fail);
     await user.click(within(code('CH-6206') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await user.click((await screen.findAllByRole('button', { name: 'Create link' }))[0]!);
-    await expectCode('CH-6003', /Couldn't create the calendar link/);
+    await expectCode('CH-6003', /Couldn’t create the calendar link/);
   });
 
   // The links' own checks (what is sent, what shows after, a player's one link) are in calendar-feed-manage.test.tsx.
@@ -332,12 +334,12 @@ describe('Calendar · saves that fail', () => {
     await expectCode('CH-6504', /current link stops working right away/);
     expect(a.regenerateCalendarFeed).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Make a new link' }));
-    await expectCode('CH-6013', /Couldn't make a new Team schedule link/);
+    await expectCode('CH-6013', /Couldn’t make a new Team schedule link/);
     expect(a.regenerateCalendarFeed).toHaveBeenCalledWith('team');
     await user.click(await screen.findByRole('button', { name: 'Remove' }));
     await expectCode('CH-6505', /link stops working right away/);
     await user.click(screen.getByRole('button', { name: 'Remove link' }));
-    await expectCode('CH-6014', /Couldn't remove the Team schedule link/);
+    await expectCode('CH-6014', /Couldn’t remove the Team schedule link/);
     expect(a.deleteCalendarFeed).toHaveBeenCalledWith('team');
   });
 
@@ -349,7 +351,7 @@ describe('Calendar · saves that fail', () => {
     await user.click(screen.getByRole('button', { name: /More/ }));
     await user.click(await screen.findByRole('menuitem', { name: /Add to calendar app/ }));
     await user.click(await screen.findByRole('button', { name: 'Copy link' }));
-    await expectCode('CH-6004', /Couldn't copy the link/);
+    await expectCode('CH-6004', /Couldn’t copy the link/);
   });
 
   it('CH-6502 CH-6005 removing busy time asks first; a failed remove says so', async () => {
@@ -360,7 +362,7 @@ describe('Calendar · saves that fail', () => {
     await expectCode('CH-6502', /Remove Recruiting call\?/);
     const confirm = within(code('CH-6502') as HTMLElement).getAllByRole('button', { name: 'Remove' });
     await user.click(confirm[confirm.length - 1]!);
-    await expectCode('CH-6005', /Couldn't remove Recruiting call/);
+    await expectCode('CH-6005', /Couldn’t remove Recruiting call/);
   });
 
   it('CH-6103 CH-6104 CH-6006 61202 busy time needs a name and a sane time; a failed add keeps the sheet and what was typed', async () => {
@@ -378,7 +380,7 @@ describe('Calendar · saves that fail', () => {
     await user.type(d.getByPlaceholderText('Recruiting call'), 'Film');
     fireEvent.change(d.getByLabelText('End time'), { target: { value: '20:00' } });
     await user.click(d.getByRole('button', { name: 'Add busy time' }));
-    await expectCode('CH-6006', /Couldn't add your busy time/);
+    await expectCode('CH-6006', /Couldn’t add your busy time/);
     expect((d.getByPlaceholderText('Recruiting call') as HTMLInputElement).value).toBe('Film');
     expect(dialog.hasAttribute('open')).toBe(true);
   });
@@ -391,7 +393,7 @@ describe('Calendar · saves that fail', () => {
     view.unmount();
     a.getEventDocuments.mockResolvedValueOnce({ success: false, error: 'x' });
     const v2 = wrap(cal(), { initialEvent: 'e9' });
-    await expectCode('CH-6207', /Files didn't load/);
+    await expectCode('CH-6207', /Files didn’t load/);
     v2.unmount();
     a.getEventDocuments.mockResolvedValueOnce({ success: true, data: [] });
     const v3 = wrap(cal(), { initialEvent: 'e9' });
@@ -401,7 +403,7 @@ describe('Calendar · saves that fail', () => {
     a.detachDocumentFromEvent.mockImplementation(fail);
     wrap(cal(), { initialEvent: 'e9' });
     await user.click(await screen.findByRole('button', { name: 'Remove Local rules' }));
-    await expectCode('CH-6008', /Couldn't remove Local rules/);
+    await expectCode('CH-6008', /Couldn’t remove Local rules/);
     expect(screen.getByText('Local rules')).toBeTruthy();
   });
 
@@ -413,7 +415,7 @@ describe('Calendar · saves that fail', () => {
     wrap(cal(), { initialEvent: 'e9' });
     await user.click(await screen.findByRole('button', { name: 'Remove Local rules' }));
     await user.click(await screen.findByRole('button', { name: 'Undo' }));
-    await expectCode('CH-6009', /Couldn't put Local rules back/);
+    await expectCode('CH-6009', /Couldn’t put Local rules back/);
   });
 
   it('CH-6007 CH-6208 CH-6404 CH-6304 attaching: loading, failing, empty, and a failed attach', async () => {
@@ -426,7 +428,7 @@ describe('Calendar · saves that fail', () => {
     await cancel();
     a.getDocuments.mockResolvedValueOnce({ success: false, error: 'x' });
     await user.click(screen.getByRole('button', { name: 'Attach' }));
-    await expectCode('CH-6208', /Documents didn't load/);
+    await expectCode('CH-6208', /Documents didn’t load/);
     a.getDocuments.mockResolvedValueOnce({ success: true, data: [] });
     await user.click(within(code('CH-6208') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-6304', /no documents yet/);
@@ -437,7 +439,7 @@ describe('Calendar · saves that fail', () => {
     await user.click(await screen.findByText('Pairings'));
     const dlg = within(screen.getByRole('heading', { name: 'Attach a file' }).closest('dialog') as HTMLElement);
     await user.click(dlg.getByRole('button', { name: 'Attach' }));
-    await expectCode('CH-6007', /Couldn't attach the file/);
+    await expectCode('CH-6007', /Couldn’t attach the file/);
   });
 
   it('CH-6010 a player reply that fails goes back to what it was', async () => {
@@ -445,7 +447,7 @@ describe('Calendar · saves that fail', () => {
     a.respondToEvent.mockImplementation(fail);
     wrap(PREVIEW_CALENDAR_PLAYER, { initialEvent: 'e13' });
     await user.click(await screen.findByRole('radio', { name: 'Going' }));
-    await expectCode('CH-6010', /Couldn't send your reply for Round review/);
+    await expectCode('CH-6010', /Couldn’t send your reply for Round review/);
     expect(screen.getByRole('radio', { name: 'Going' }).getAttribute('aria-checked')).toBe('false');
   });
 
@@ -454,7 +456,7 @@ describe('Calendar · saves that fail', () => {
     a.respondToEvent.mockRejectedValueOnce(new Error('Failed to fetch'));
     wrap(PREVIEW_CALENDAR_PLAYER, { initialEvent: 'e13' });
     await user.click(await screen.findByRole('radio', { name: 'Going' }));
-    await expectCode('CH-6010', /Couldn't send your reply for Round review/);
+    await expectCode('CH-6010', /Couldn’t send your reply for Round review/);
     expect(screen.getByRole('radio', { name: 'Going' }).getAttribute('aria-checked')).toBe('false');
   });
 
@@ -467,13 +469,13 @@ describe('Calendar · saves that fail', () => {
     await user.click(screen.getByRole('button', { name: 'Travel briefing' }));
     a.getAttendanceReport.mockResolvedValueOnce({ success: false, error: 'x' });
     await user.click(await screen.findByRole('button', { name: 'Attendance' }));
-    await expectCode('CH-6209', /Attendance didn't load/);
+    await expectCode('CH-6209', /Attendance didn’t load/);
     a.getAttendanceReport.mockResolvedValue({ success: true, data: { attendance: [] } });
     a.markAttendance.mockImplementation(fail);
     await user.click(within(code('CH-6209') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await user.click(await screen.findByRole('button', { name: 'Mark all present' }));
     await user.click(screen.getByRole('button', { name: /Save attendance/ }));
-    await expectCode('CH-6011', /Couldn't save attendance/);
+    await expectCode('CH-6011', /Couldn’t save attendance/);
   });
 
   it('CH-6012 copying the event link fails', async () => {
@@ -481,7 +483,7 @@ describe('Calendar · saves that fail', () => {
     vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'));
     wrap(cal(), { initialEvent: 'e9' });
     await eventMenu(user, 'Copy link');
-    await expectCode('CH-6012', /Couldn't copy the link/);
+    await expectCode('CH-6012', /Couldn’t copy the link/);
   });
 });
 
@@ -538,22 +540,33 @@ describe('Calendar · reads that fail', () => {
   it('CH-6201 events do not load: a notice, never an empty calendar', async () => {
     const user = userEvent.setup();
     wrap(cal({ eventsError: true, events: [] }));
-    await expectCode('CH-6201', /The calendar didn't load/);
+    await expectCode('CH-6201', /The calendar didn’t load/);
     await user.click(within(code('CH-6201') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalled();
   });
 
   it('CH-6202 CH-6203 CH-6212 busy time, classes and the timezone each say so', () => {
+    for (const [c, failed, words] of [
+      ['CH-6202', { busyError: true }, /Your busy time didn’t load/],
+      ['CH-6203', { classesError: true }, /Class schedules didn’t load/],
+      ['CH-6212', { settingsError: true }, /Times are shown in Eastern time/],
+    ] as const) {
+      const one = wrap(cal(failed));
+      expect([c, code(c)?.textContent]).toEqual([c, expect.stringMatching(words)]);
+      expect(code('CH-1209')).toBeNull();
+      one.unmount();
+    }
+    // Several at once: the page says so once (CH-1209), naming each; with no place of their own but that stack, the
+    // three fold into it rather than repeat it on the next line.
     wrap(cal({ busyError: true, classesError: true, settingsError: true }));
-    expect(code('CH-6202')!.textContent).toMatch(/Your busy time didn't load/);
-    expect(code('CH-6203')!.textContent).toMatch(/Class schedules didn't load/);
-    expect(code('CH-6212')!.textContent).toMatch(/Times are shown in Eastern time/);
+    expect(code('CH-1209')!.textContent).toMatch(/Your team’s timezone, your busy time and class schedules didn’t load/);
+    for (const c of ['CH-6202', 'CH-6203', 'CH-6212']) expect([c, code(c)]).toEqual([c, null]);
   });
 
   it('CH-6213 the roster does not load: the page says so, and the editor never claims an empty roster or "0 of 0"', async () => {
     const user = userEvent.setup();
     wrap(cal({ people: [], membersError: true }));
-    expect(code('CH-6213')!.textContent).toMatch(/The roster didn't load/);
+    expect(code('CH-6213')!.textContent).toMatch(/The roster didn’t load/);
     await user.click(screen.getByRole('button', { name: /New event/ }));
     await waitFor(() => expect(document.querySelectorAll('[data-ch-code="CH-6213"]').length).toBe(2));
     expect(screen.queryByText(/No active players on the roster yet/)).toBeNull();
@@ -563,11 +576,11 @@ describe('Calendar · reads that fail', () => {
   it('CH-6204 CH-6205 replies do not load: a notice with Try again, in the summary and on the event', async () => {
     const user = userEvent.setup();
     wrap(cal({ rsvpError: true }));
-    await expectCode('CH-6204', /Replies didn't load/);
+    await expectCode('CH-6204', /Replies didn’t load/);
     await user.click(within(code('CH-6204') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalled();
     wrap(cal({ rsvpError: true }), { initialEvent: 'e9' });
-    await expectCode('CH-6205', /Replies didn't load/);
+    await expectCode('CH-6205', /Replies didn’t load/);
   });
 
   it('CH-6210 a crash in the calendar grid is contained', () => {
@@ -654,7 +667,7 @@ describe('Calendar · no team', () => {
     const { unmount } = render(<CalendarNoTeam coach />);
     const el = code('CH-6307')!;
     expect(el.classList.contains('ch-empty-page')).toBe(true);
-    expect(within(el as HTMLElement).getByRole('heading', { level: 2, name: "You aren't on a team yet" })).toBeTruthy();
+    expect(within(el as HTMLElement).getByRole('heading', { level: 2, name: 'You aren’t on a team yet' })).toBeTruthy();
     expect(el.textContent).toMatch(/once your team is set up/);
     unmount();
     render(<CalendarNoTeam coach={false} />);
@@ -678,13 +691,13 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     const strip = screen.getByRole('list', { name: 'This week' });
     expect(within(strip).getAllByRole('button')).toHaveLength(7);
     expect(within(strip).getByRole('button', { name: /^Wed 14/ }).getAttribute('aria-pressed')).toBe('true');
-    expect(document.querySelector('.ch-calm-dayk')!.textContent).toMatch(/Wed 14 October/);
+    expect(live('.ch-calm-dayk')!.textContent).toMatch(/Wed 14 October/);
     expect(screen.getByRole('button', { name: /^Short-game block, 3:30 PM to 5:00 PM/ })).toBeTruthy();
     // Coaches see a class in its slot, with its owner.
     expect(screen.getByRole('button', { name: /^Priya · STAT 201/ })).toBeTruthy();
     await user.click(within(strip).getByRole('button', { name: /^Thu 15/ }));
     expect(hapticSpy).toHaveBeenCalledWith('select');
-    expect(document.querySelector('.ch-calm-dayk')!.textContent).toMatch(/Thu 15 October/);
+    expect(live('.ch-calm-dayk')!.textContent).toMatch(/Thu 15 October/);
     expect(screen.getByRole('button', { name: /^Travel briefing/ })).toBeTruthy();
   });
 
@@ -722,7 +735,20 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     await user.click(screen.getByRole('radio', { name: 'Month' }));
     const day = await screen.findByRole('button', { name: /^Fri 16 October: .*competition/ });
     await user.click(day);
-    expect(document.querySelector('.ch-calm-dayk')!.textContent).toMatch(/Fri 16 October/);
+    expect(live('.ch-calm-dayk')!.textContent).toMatch(/Fri 16 October/);
+  });
+
+  it('CH-6606 choosing a day moves the strip’s green plate to it and swaps in its agenda under a day heading', async () => {
+    const user = userEvent.setup();
+    wrap(cal());
+    const strip = screen.getByRole('list', { name: 'This week' });
+    expect(strip.style.getPropertyValue('--ch-calm-at')).toBe('3');
+    expect(screen.getByRole('heading', { level: 3, name: 'Wed 14 October' })).toBeTruthy();
+    await user.click(within(strip).getByRole('button', { name: /^Thu 15/ }));
+    expect(strip.style.getPropertyValue('--ch-calm-at')).toBe('4');
+    expect(live('.ch-calm-dayk')!.textContent).toMatch(/Thu 15 October/);
+    // The day that left is hidden from assistive tech while it fades.
+    for (const h of screen.queryAllByRole('heading', { level: 3 })) expect(h.textContent).not.toMatch(/Wed 14 October/);
   });
 
   it('CH-6308 a day with nothing on it says so', async () => {
@@ -761,7 +787,7 @@ describe('Calendar · Print and the jump panel', () => {
   beforeEach(freezeClock);
   afterEach(() => vi.useRealTimers());
 
-  it("More › Print week prints what is on screen (the board's Print week), and names the view it prints", async () => {
+  it("More › Print week prints what is on screen (the board’s Print week), and names the view it prints", async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const print = vi.spyOn(window, 'print').mockImplementation(() => {});
     try {
@@ -807,7 +833,7 @@ describe('Calendar · the failure toast’s Retry', () => {
       name: 'publishing an event',
       code: 'CH-6001',
       write: () => a.createGolfEvent,
-      failed: /Couldn't publish Short game/,
+      failed: /Couldn’t publish Short game/,
       done: 'Published · Short game · players notified',
       drive: async (user) => {
         wrap(cal(), { initialNew: true });
@@ -827,7 +853,7 @@ describe('Calendar · the failure toast’s Retry', () => {
       name: 'cancelling an event',
       code: 'CH-6002',
       write: () => a.deleteGolfEvent,
-      failed: /Couldn't cancel Travel briefing/,
+      failed: /Couldn’t cancel Travel briefing/,
       done: 'Cancelled · Travel briefing · attendees notified',
       drive: async (user) => {
         wrap(cal(), { initialEvent: 'e9' });
@@ -848,7 +874,7 @@ describe('Calendar · the failure toast’s Retry', () => {
       name: 'creating a calendar-app link',
       code: 'CH-6003',
       write: () => a.createCalendarFeed,
-      failed: /Couldn't create the calendar link/,
+      failed: /Couldn’t create the calendar link/,
       done: 'Team schedule link ready',
       drive: async (user) => {
         a.getCalendarFeeds.mockResolvedValueOnce({ success: true, data: [] }).mockResolvedValue({ success: true, data: [{ id: 'f1', name: 'Team', type: 'team', url: 'https://x/feed.ics' }] });
@@ -869,7 +895,7 @@ describe('Calendar · the failure toast’s Retry', () => {
       name: 'removing busy time',
       code: 'CH-6005',
       write: () => a.deleteCoachBlockedTime,
-      failed: /Couldn't remove Recruiting call/,
+      failed: /Couldn’t remove Recruiting call/,
       done: 'Removed · Recruiting call',
       drive: async (user) => {
         wrap(cal(), { initialEvent: 'b1' });
@@ -893,7 +919,7 @@ describe('Calendar · the failure toast’s Retry', () => {
       name: 'adding busy time',
       code: 'CH-6006',
       write: () => a.addCoachBlockedTime,
-      failed: /Couldn't add your busy time/,
+      failed: /Couldn’t add your busy time/,
       done: 'Busy time added · Film',
       drive: async (user) => {
         wrap(cal());
@@ -915,7 +941,7 @@ describe('Calendar · the failure toast’s Retry', () => {
       name: 'attaching a file',
       code: 'CH-6007',
       write: () => a.attachDocumentToEvent,
-      failed: /Couldn't attach the file/,
+      failed: /Couldn’t attach the file/,
       done: 'Attached · Pairings',
       drive: async (user) => {
         a.getDocuments.mockResolvedValue({ success: true, data: [{ id: 'd9', title: 'Pairings', file_size: 1000, category: 'Tournament' }] });
@@ -938,7 +964,7 @@ describe('Calendar · the failure toast’s Retry', () => {
       name: 'a player’s reply',
       code: 'CH-6010',
       write: () => a.respondToEvent,
-      failed: /Couldn't send your reply for Round review/,
+      failed: /Couldn’t send your reply for Round review/,
       done: 'You’re going to Round review',
       drive: async (user) => {
         wrap(PREVIEW_CALENDAR_PLAYER, { initialEvent: 'e13' });
@@ -1399,6 +1425,23 @@ describe('Calendar · moving around', () => {
     replace.mockRestore();
   });
 
+  it('CH-6605 CH-6604 another week slides in and another view settles in; the one before leaves the accessibility tree at once', async () => {
+    const user = userEvent.setup();
+    wrap(cal());
+    const leaving = () => [...document.querySelectorAll('.ch-cal-body .ch-swap__body[aria-hidden]')];
+    expect(leaving()).toHaveLength(0);
+    await user.click(screen.getByRole('button', { name: 'Next week' }));
+    // The week before slides out behind the next one (jsdom never finishes the fade).
+    expect(leaving()).toHaveLength(1);
+    expect(leaving()[0]!.querySelector('.ch-wk')).not.toBeNull();
+    await user.click(screen.getByRole('radio', { name: 'Month' }));
+    // The week view as a whole now fades out behind the month (the outer swap's leaving copy).
+    const outer = leaving().filter((e) => !e.parentElement!.closest('.ch-swap__body[aria-hidden]'));
+    expect(outer.some((e) => e.querySelector('.ch-wk'))).toBe(true);
+    const live = [...document.querySelectorAll('.ch-cal-body .ch-mo')].filter((e) => !e.closest('.ch-swap__body[aria-hidden]'));
+    expect(live).toHaveLength(1);
+  });
+
   it('60303 when the server sends a new view or day, the screen follows it', () => {
     const view = wrap(cal());
     expect(title()).toBe('Oct 11 – 17');
@@ -1412,7 +1455,7 @@ describe('Calendar · moving around', () => {
     const view = wrap(cal(), { initialEvent: 'e9' });
     expect(screen.getByRole('heading', { level: 2, name: 'Travel briefing' })).toBeTruthy();
     view.rerender(tree(cal({ events: PREVIEW_CALENDAR.events.filter((e) => e.id !== 'e9') }), { initialEvent: 'e9' }));
-    expect(code('CH-6305')!.textContent).toMatch(/This event isn't in the loaded range anymore/);
+    expect(code('CH-6305')!.textContent).toMatch(/This event isn’t in the loaded range anymore/);
     view.unmount();
     wrap(cal(), { initialEvent: 'not-an-event' });
     expect(code('CH-6305')).toBeNull();
@@ -1456,12 +1499,27 @@ describe('Calendar · moving around', () => {
 
   it('61402 Try again on a page notice has the server read the page again; on a section it reads only that section', async () => {
     const user = userEvent.setup();
-    const view = wrap(cal({ busyError: true, classesError: true, settingsError: true, rsvpError: true }));
-    for (const c of ['CH-6202', 'CH-6203', 'CH-6212', 'CH-6204']) {
+    // One part failed: its own notice reads the page again.
+    for (const [c, failed] of [
+      ['CH-6202', { busyError: true }],
+      ['CH-6203', { classesError: true }],
+      ['CH-6212', { settingsError: true }],
+      ['CH-6204', { rsvpError: true }],
+    ] as const) {
+      const one = wrap(cal(failed));
       router.refresh.mockClear();
       await user.click(within(code(c) as HTMLElement).getByRole('button', { name: 'Try again' }));
       expect([c, router.refresh.mock.calls.length]).toEqual([c, 1]);
+      one.unmount();
     }
+    // Several: one Try again, on the page's notice (CH-1209). Replies keep their line in the inspector without a button
+    // of their own; the page-wide parts fold into the notice.
+    const view = wrap(cal({ busyError: true, classesError: true, settingsError: true, rsvpError: true }));
+    expect(within(code('CH-6204') as HTMLElement).queryByRole('button', { name: 'Try again' })).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    router.refresh.mockClear();
+    await user.click(within(code('CH-1209') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
     view.unmount();
     router.refresh.mockClear();
     // The calendar-app links.
@@ -1540,7 +1598,7 @@ describe('Calendar · changes that show at once, and changes that are kept', () 
     wrap(cal(), { initialEvent: 'e9' });
     await user.click(await screen.findByRole('button', { name: 'Remove Local rules' }));
     await user.click(await screen.findByRole('button', { name: 'Undo' }));
-    await expectCode('CH-6009', /Couldn't put Local rules back/);
+    await expectCode('CH-6009', /Couldn’t put Local rules back/);
     expect(vi.mocked(chReport)).toHaveBeenCalledWith(expect.any(Error), { surface: 'calendar.files', action: 'calendar.undoDetach', severity: 'low' });
     expect(hapticSpy).toHaveBeenLastCalledWith('error');
   });
@@ -1553,7 +1611,7 @@ describe('Calendar · changes that show at once, and changes that are kept', () 
     try {
       wrap(cal(), { initialEvent: 'e9' });
       await user.click(await screen.findByRole('button', { name: 'Remove Local rules' }));
-      await screen.findByText(/Couldn't remove Local rules: you're offline/);
+      await screen.findByText(/Couldn’t remove Local rules: you’re offline/);
       expect(a.detachDocumentFromEvent).not.toHaveBeenCalled();
       expect(screen.getByText('Local rules')).toBeTruthy();
       expect(hapticSpy).toHaveBeenLastCalledWith('error');
@@ -1563,7 +1621,7 @@ describe('Calendar · changes that show at once, and changes that are kept', () 
       const undo = await screen.findByRole('button', { name: 'Undo' });
       line.mockReturnValue(false);
       await user.click(undo);
-      await screen.findByText(/Couldn't put Local rules back: you're offline/);
+      await screen.findByText(/Couldn’t put Local rules back: you’re offline/);
       expect(a.attachDocumentToEvent).not.toHaveBeenCalled();
     } finally {
       line.mockRestore();

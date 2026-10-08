@@ -218,7 +218,7 @@ did not load, with Try again (CH-11208 to CH-11210).
 | 110712 | CH-11911 | `OPENED_FROM_A_SUBMIT_THAT_COULDNT_REACH` | Opened from a submit that couldn't reach the server (`?from=submit`) |
 | 110713 | CH-11912 | `BACK_FROM_A_ROUND_TO_THE_LIBRARY` | Back from a round to the library |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
 
 ## 08 — Permission / authorization
 
@@ -364,17 +364,22 @@ zone (America/New_York for a player with no team).
 
 Status: DEFINED
 
-Rounds adds a little motion of its own, all on the v2 tokens (D-64): a round in the book lifts 1px on hover (CH-11601, preview
-only), the shot log's chevron turns (CH-11602) and the submit spinner turns and holds still with reduced motion
-(CH-11603). Presses, sheets and skeleton fades are the shell's. Nothing counts up.
+Rounds adds a little motion of its own, all on the v2 tokens (D-64): a round in
+the book takes the Ledger row tint on hover on desktop and a deeper one on
+press, with no lift (CH-11601, preview only; owner Ledger, 2026-10-07), the shot
+log's chevron turns (CH-11602) and the submit spinner turns and holds still with
+reduced motion (CH-11603); a hole's shots slide in the direction of travel when
+stepping holes (CH-11604). Key presses, sheets and skeleton fades are the
+shell's. Nothing counts up.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 111601 | CH-11601 | `HOVERING_A_ROUND_THAT_OPENS_ITS_REVIEW` | Hovering a round that opens its review |
 | 111602 | CH-11602 | `THE_SHOT_LOG_OPENS` | The shot log opens |
 | 111603 | CH-11603 | `SUBMITTING_THE_ROUND` | Submitting the round |
+| 111604 | CH-11604 | `STEPPING_THROUGH_A_ROUNDS_HOLES` | Stepping through a round's holes |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -397,7 +402,7 @@ without it (CH-11707); success and error come from the shell for every write.
 | 111708 | CH-11708 | `THE_SECOND_TAP_OF_A_DISCARD_IN` | The second tap of a discard in round entry: the saved shots, the round already in progress, or the closed-qualifier round |
 | 111709 | CH-11709 | `A_FAILURE_APPEARS_IN_ROUND_ENTRY_AN` | A failure appears in round entry: an inline line, a toast or a banner (CH-11008 to CH-11013, CH-11902) |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
 
 ## 18 — Accessibility
 
@@ -424,7 +429,7 @@ the choices, the distance box and the hole map are named in words (CH-11805 to C
 | 111810 | — | `THE_SCORECARD_SCROLLS_IN_A_FOCUSABLE_REGION` | The scorecard on the shot screen's sheets (Scorecard and Round complete) scrolls sideways inside a labelled, focusable region (role region, tabIndex 0, "Scorecard"), so the keyboard can scroll it (axe scrollable-region-focusable). Found and fixed on 2026-09-30 by clubhouse:a11y; no vitest test asserts the region. |
 | 111811 | — | `FIGURES_ARE_DEFINITION_LISTS` | The season and review figures are description lists in which a term is followed by its value and then its sub-line as a second description (label, figure, then "avg · +1.9 to par" or "+1"), never a bare span inside the list (axe definition-list). |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
 
 ## 19 — Responsive layout
 
@@ -456,7 +461,7 @@ stop), and the iOS number pad's Done bar on the distance box. No shortcuts of it
 | --- | --- | --- | --- |
 | 112001 | — | `SHEETS_CLOSE_ON_ESC_AND_FOCUS_RETURNS` | Every sheet and question on the page (Discard, the course picker, Add a course, Penalty, Change a shot, Leave this shot, Exit, Scorecard, Round complete) is the shell's Modal on the native dialog: Esc closes it and focus goes back to the button that opened it. No P011 test presses Esc. Not built: arrow keys inside the radio groups (each choice is its own Tab stop) and the iOS number pad's Done bar. |
 
-From the shell (P001): 12001 CH-1906.
+From the shell (P001): 12001 CH-1906, 12002 CH-1907, 12003 CH-1908.
 
 ## 21 — Performance
 

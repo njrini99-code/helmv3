@@ -13,20 +13,48 @@ browser checks do not replace physical keyboard, gesture or
 assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
-Routes: `/golf/login` (sign in), `/golf/welcome` (the greeting after it), `/golf/signup` (the code, and the questions before the account) and `/golf/player` (a new player's questions after it). Sign up follows Q-96: a roster code signs up a player, a staff code an assistant coach (instantly, no role picker), there is no head-coach path, and Request access reaches the owner's inbound list. It changes presentation only: the same `validateAccessCode`, `signupAction`, `completePlayerOnboarding` and `submitDemoRequest`, with the rules in `docs/clubhouse/drafts/auth-onboarding-ground-truth.md`. They are drawn for a visitor with no role, so they sit outside the dashboard frame and outside `isClubhouseFor`: the owner's design (`design/handoff/auth/`, approved with Q-96) is drawn behind its own flag, `golf_clubhouse_front_door`, which is off in production until the owner says so. With it off, the current pages render exactly as before. The flag chooses the page that is drawn and nothing else: both call the same server action (`loginAction`, which resets the shared idle marker in the response that sets the session cookies) and follow the same redirects.
+Routes: `/golf/login` (sign in, and in its panel the reset form and check your
+email at `?view=forgot`, owner 2026-10-07, up for owner review; the reset link
+in the email still lands on today's `/golf/reset-password`), `/golf/welcome`
+(the greeting after it), `/golf/signup` (the code, and the questions before the
+account) and `/golf/player` (a new player's questions after it). Sign up follows
+Q-96: a roster code signs up a player, a staff code an assistant coach
+(instantly, no role picker), there is no head-coach path, and Request access
+reaches the owner's inbound list. It changes presentation only: the same
+`validateAccessCode`, `signupAction`, `completePlayerOnboarding` and
+`submitDemoRequest`, with the rules in
+`docs/clubhouse/drafts/auth-onboarding-ground-truth.md`. They are drawn for a
+visitor with no role, so they sit outside the dashboard frame and outside
+`isClubhouseFor`: the owner's design (`design/handoff/auth/`, approved with
+Q-96) is drawn behind its own flag, `golf_clubhouse_front_door`, which is off in
+production until the owner says so. With it off, the current pages render
+exactly as before. The flag chooses the page that is drawn and nothing else:
+both call the same server action (`loginAction`, which resets the shared idle
+marker in the response that sets the session cookies) and follow the same
+redirects.
 
 The screens: the painted clubhouse hole (a seeded SVG course whose sky follows the viewer's own clock), the form on an ivory panel (a sheet on the phone), and then the welcome: the course fills the frame, the camera pushes to the pin, a ball lands, the greeting focuses in and a card says what has happened since the last visit. There is no auto-advance: the welcome waits for Continue (or Return), then folds the course into the app canvas and hands over.
 
 Where things live:
-- Code: `src/clubhouse/screens/auth/` (`SignIn`, `SignInForm`, `Welcome`, `WelcomeStage`, `AuthFrame`, `AuthNotice`, `SceneMount`, `GolfScene`, `SceneLayers`, `scene-sky`, `scene-geometry`, `scene-ball`, `sign-in-state`, `auth-motion`, `use-hour`, `use-query-param`)
+- Code: `src/clubhouse/screens/auth/` (`SignIn`, `SignInForm`, `ForgotPassword`
+  (`ResetForm`, `ResetSent`), `AuthKey`, `auth-view`, `forgot-state`,
+  `use-glide`, `Welcome`, `WelcomeStage`, `AuthFrame`, `AuthNotice`,
+  `SceneMount`, `GolfScene`, `SceneLayers`, `scene-sky`, `scene-geometry`,
+  `scene-ball`, `sign-in-state`, `auth-motion`, `use-hour`, `use-query-param`)
 - Shared rules: `src/lib/auth/golf-sign-in-logic.ts` (the six messages, the destination, the stale-bundle guard), used by the current form and this one so they cannot drift
 - Loader: `src/clubhouse/data/welcome.ts` (`loadWelcome`), with the pure rules in `welcome-shape.ts` (who is greeted, what the card lists, the last-visit wording)
 - Routes: `src/clubhouse/routes/auth.tsx`, chosen by `src/app/golf/(auth)/login/layout.tsx` and `welcome/layout.tsx` through `isClubhouseFrontDoor`
-- Tests: `src/clubhouse/__tests__/auth.test.tsx`, `auth-logic.test.ts`, `auth-server.test.tsx`, `auth-scene.test.tsx`
+- Tests: `src/clubhouse/__tests__/auth.test.tsx`, `auth-forgot.test.tsx`,
+  `auth-logic.test.ts`, `auth-server.test.tsx`, `auth-scene.test.tsx`
 - Sign up: `src/clubhouse/screens/onboard/` (`Onboard`, `Steps`, `MemberCard`, `flow`, `logic`, `writes`, `writes-context`), `src/clubhouse/data/onboard.ts`, `src/clubhouse/routes/onboard.tsx`, chosen by `signup/layout.tsx` and `(onboarding)/player/layout.tsx`; tests `onboard.test.tsx`, `onboard-logic.test.ts`
 - The hand-off curtain: `src/clubhouse/lib/handoff.ts` (the fold's last frame held over the route change, lifted by `ClubhouseFrame`); test `handoff.test.tsx`
 - Sign-up preview: `/clubhouse-preview/onboard` (`?step=`, `&who=`, `&sim=`, `&hour=`)
-- Preview: `/clubhouse-preview/auth` (`?screen=signin|welcome`; sign in `&state=coach|player&fail=empty|creds|unverified|rate|network|stale`; welcome `&state=coach|player|caughtup|first|failed|noname`; `&hour=8.5` picks the time of day)
+- Preview: `/clubhouse-preview/auth` (`?screen=signin|welcome`; sign in
+  `&state=coach|player&fail=empty|creds|unverified|rate|network|stale`,
+  `&view=forgot` (the reset form; Send answers after 700ms), `&pending=1` (Sign
+  in and Send held in flight); welcome
+  `&state=coach|player|caughtup|first|failed|noname`; `&hour=8.5` picks the time
+  of day)
 
 The time of day is read from the viewer's clock after hydration (the server draws a neutral sky and reserved lines, so nothing mismatches), every 30 seconds and when the tab comes back, in the viewer's own timezone. The greeting word follows the hour: morning 4:30 to 12, afternoon 12 to 17, evening otherwise.
 
@@ -34,7 +62,10 @@ The time of day is read from the viewer's clock after hydration (the server draw
 
 ## 150xx Error toasts
 
-These are notices under the form, not toasts: a sign-in that is refused is about the form, and it stays put until the next attempt. The words are the current form's `getErrorMessage`, unchanged.
+These are notices under the form, not toasts: a sign-in that is refused is about
+the form, and it stays put until the next attempt answers. While that attempt is
+in flight it steps back to half strength, and the answer replaces it in place
+(CH-15608). The words are the current form's `getErrorMessage`, unchanged.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
@@ -50,6 +81,8 @@ These are notices under the form, not toasts: a sign-in that is refused is about
 | CH-15012 | Sign up: the account could not be made for any other reason (the server's rate limit, a breached password, the gate expired) | The server's own sentence as it arrives (a breached password on the Password field), otherwise in a danger notice. Nothing typed is lost. Felt: error | `accountErrorFor`, `Account` | onboard.test › CH-15012 |
 | CH-15013 | Onboarding: the photo did not upload, or the profile did not save | "That photo didn't upload. Try again, or skip it for now." / "Unable to reach the server…" in a danger notice; Finish setup stays available. Felt: error | `uploadPhoto`, `finishPlayer`, `Photo` | onboard.test › CH-15013 |
 | CH-15014 | Request access could not be sent | "Unable to reach the server. Your details are still here. Check your connection and try again." in a danger notice; every field keeps what was typed. Felt: error | `sendRequest`, `RDetails` | onboard.test › request access |
+| CH-15020 | Reset password: the server refuses the request in its own words | Those words in a danger notice under the field; the field is not marked and Send is on again. The action answers the same whether or not the address has an account (no enumeration), so this is rare. Felt: error (CH-15704). Up for owner review (no board) | `ResetForm` | auth-forgot.test › CH-15020 |
+| CH-15021 | Reset password: anything else throws (the request never reached the server) | "An unexpected error occurred. Please try again." in a danger notice, reported with `logError`; Send is on again. Felt: error. Up for owner review (no board) | `ResetForm` | auth-forgot.test › CH-15021 |
 
 ## 151xx Validation
 
@@ -57,6 +90,8 @@ These are notices under the form, not toasts: a sign-in that is refused is about
 | --- | --- | --- | --- | --- |
 | CH-15101 | Submitted with an empty email or password (the button is off until both are filled, so this is the belt and braces for a pre-hydration submit) | "Enter your email and password to sign in." in a danger notice, the empty field marked and focused. Nothing is sent: an empty pair would record a failed attempt against a blank identity. Felt: warning (CH-15703) | `handleSubmit` in `SignInForm` | auth.test › CH-15101 |
 | CH-15110 | Sign up: the team code matches no team (or the gate is throttled, which the server reports the same way on purpose, Q-99) | The slots shake and turn red, "That code didn't match a team" under them, and a danger notice "Check the code with your coach and try again. Assistant coaches use the staff code from their head coach." Felt: error. A code of 8 checks itself after a pause; any other length (production has 6 and 9) is checked on Continue | `checkCode`, `codeAutoChecks`, `Code` | onboard.test › CH-15110 |
+| CH-15120 | Reset password: Send with no address | "Enter your email address." in a danger notice; the field marked, focused and shaken once (CH-15609); nothing is sent. Editing the address clears it (today's page). Felt: warning (CH-15703). Up for owner review (no board) | `resetEmailProblem`, `ResetForm` | auth-forgot.test › CH-15120 |
+| CH-15121 | Reset password: an address that is not one | "Enter a valid email address." the same way. A malformed address never reaches the server (the 2026-09-02 audit's false "sent" screen). Up for owner review (no board) | `resetEmailProblem` | auth-forgot.test › CH-15121 |
 
 ## 152xx Didn't load
 
@@ -77,11 +112,16 @@ These are notices under the form, not toasts: a sign-in that is refused is about
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-15401 | The welcome is reading who you are and what is new | The frame and the course already up and moving, with no text yet: the step from sign in is never an empty page, and the course does not restart when the greeting streams in | `WelcomeStage`, with the greeting in a Suspense boundary | auth.test › CH-15401 |
-| CH-15402 | A sign-in is in flight (and stays so while it navigates away) | The button reads "Signing in…" with a spinner, `aria-busy`, and is off | `SignInForm` | auth.test › CH-15402 |
+| CH-15402 | A sign-in is in flight (and stays so while it navigates away) | The button reads "Signing in…" with a spinner, `aria-busy`, and is off. It stays the lit green: off-because-empty is the unlit key (CH-15607), in flight is the key working | `SignInForm` | auth.test › CH-15402 |
+| CH-15420 | Reset password: a link is being asked for | The key reads "Sending reset link…" with its spinner in the same cell (CH-15607), lit, `aria-busy` and off; a second Send sends nothing. Up for owner review (no board) | `ResetForm` | auth-forgot.test › CH-15420 |
 
 ## 156xx Motion
 
-The design's own easings, durations and delays apply on these screens only (a scoped exception to D-64, recorded in `pages/P015-auth/DESIGN.md`). They are tokens in `styles/auth-tokens.css` and variants in `screens/auth/auth-motion.ts`. Nothing else in Clubhouse changes.
+The design's own easings, durations and delays apply on these screens only (a
+scoped exception to D-64, recorded in `pages/P015-auth/DESIGN.md`). They are
+tokens in `styles/auth-tokens.css` and variants in
+`screens/auth/auth-motion.ts`; sign up's are tokens in
+`styles/onboard-tokens.css`. Nothing else in Clubhouse changes.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
@@ -90,7 +130,18 @@ The design's own easings, durations and delays apply on these screens only (a sc
 | CH-15603 | The welcome's scene plays | The camera pushes toward the pin (scale 1.34, 5.2s; 1.2 on a short window; the phone slides 180 units and scales 1.06 to centre the clubhouse). The foreground pine and bough move out of frame. A ball flies in on a curve (1.65s), hops once and rolls to the cup. The camera is a CSS transform on one wrapper and the ball is a motion value written to two attributes: nothing re-renders | `GolfScene`, `ballAt` | auth.test › CH-15603; auth-logic.test › CH-15603 |
 | CH-15604 | Continue is pressed (or Return) | The text slides left and fades (420ms), the course clips to the app canvas (240px from the left, 880ms), the ivory paper fades in over it and the camera pushes to 1.5, then the destination is asked for (1s). Only when the destination is a dashboard page and Clubhouse; otherwise the welcome just leaves (520ms). On the phone the screen fades to ivory. Idempotent: a second tap, or Return on the focused button, starts nothing | `Welcome.proceed`, `WelcomeStage`, `HANDOFF_MS` | auth.test › CH-15604 |
 | CH-15605 | Reduced motion, or Settings > Preferences > Animations off | Every transition is 1ms, every loop is paused (the flag holds still, the clouds stop), the camera stops short (1.2), the ball is already on the green, the welcome lands at once and the hand-off is a quick fade (240ms) | `useChReducedMotion`, `auth-tokens.css`, `GolfScene` | auth.test › CH-15605; auth-logic.test › CH-15605 |
-| CH-15606 | The tab is hidden | Every loop holds still (CSS animations and the flag's SMIL) and starts again when it is back | `GolfScene` `visibilitychange` | auth.test › CH-15606 |
+| CH-15606 | The tab is hidden | Every loop holds still (CSS animations and the flag's SMIL) and starts again when it is back. The waving flags carry their resting shape, so a scene that mounts (the welcome's taking over from sign in's) never draws a bare pole before the wave starts | `GolfScene` `visibilitychange`, `restOf` in `SceneLayers` | auth.test › CH-15606 |
+| CH-15607 | The Sign in key changes state: off (a field is empty), ready, in flight | Off, it is an unlit key pressed into the paper (the soft well, its word engraved in quiet ink), not a faded, desaturated green. Filling both fields lifts that face away and the word takes the green's ink (quick, 180ms). Tapped, "Sign in" leaves upward and "Signing in…" with its spinner rises into the same cell (quick fade, base travel), so the key never reflows; in flight it stays the lit green, `aria-busy` and off, and only the showing label is read. Reduced motion and Animations off: at once | `.ch-au-key`, `.ch-au-submit .ch-btn::before` in `auth.css` | auth.test › CH-15607 |
+| CH-15608 | A refusal appears, or the next one replaces it | The notice fades in under the fields (220ms) and what it moves glides there instead of jumping: the button and the phone's forgot link slide down, and on the desktop the centred form rises half as far (a transform-only FLIP over the base beat, 260ms; height is never animated). While the next attempt is in flight the last refusal stays, at half strength, so the button never jumps up under the pointer; the answer replaces it in place and is announced again. Reduced motion and Animations off: the new layout at once | `useGlide` (`use-glide.ts`), `SignInForm`, `.ch-au-err[data-stale]` | auth.test › CH-15608 |
+| CH-15609 | A refusal is about the fields (the credentials, an empty field, or the reset form's address) | The fields shake once, 5px either way over 380ms, as a wrong team code does on sign up; a second refusal shakes them again. A refusal that marks no field (an unverified email, a rate limit, the network) does not. Reduced motion and Animations off: still (`--ch-au-t-shake` is 1ms) | `data-shake` on `.ch-au-fields`, `--ch-au-t-shake` | auth.test › CH-15609 |
+| CH-15610 | The password eye is pressed | The eye and the slashed eye share one cell and crossfade (quick), the leaving one shrinking and turning away (base); the field itself flips between dots and text at once | `.ch-au-eye__show`, `.ch-au-eye__hide` | auth.test › CH-15610 |
+| CH-15611 | The Home link is hovered or pressed | Where a pointer can hover, the paper behind it tints and the chevron leans 2px back, the way the link goes (quick); pressed, a deeper tint. Links do not scale (CH-1606) | `.ch-au-back` in `auth.css` | auth.test › CH-15611 |
+| CH-15612 | The panel moves between sign in, the reset form and check your email | The course, the lockup and the panel's chrome stay put. The view slides 12px the way the person is going (on to the reset form and the email; back to sign in) and crossfades, the incoming over base (260ms) and the outgoing over quick (180ms); on the desktop the centred stage glides to its new centre on transform. The leaving view is hidden from assistive technology at once. Reduced motion and Animations off: at once. Up for owner review (no board) | `Swap` (`kind="slide"`), `useAuthView`, `useGlide` | auth-forgot.test › CH-15612 |
+| CH-15620 | Sign up: one question gives way to the next (Continue, a choice, Back) | The question leaving goes the way the flow goes, 10px up when moving on and 10px down on Back, fading over the app's quick beat (180ms), held where it stood so nothing beside it moves. The next rises 16px into place from below (from above on Back) on the design's step curve (720ms), starting 60ms after, so the two hand over in sequence rather than printing over each other; text never blurs. The leaving question leaves the accessibility tree and the tab order at once, and the new one takes focus at its heading. A move is asked by the question on screen, so a second tap on a choice, or a choice's timer after Back, moves nothing (a double tap used to skip the account), and Back waits while the account, the profile or a request is being written, so what it makes lands where it belongs. A long form scrolled down hands over at the top. Reduced motion and Animations off: replaced at once | `Turn`, `Hold` and `TURN` in `Onboard`, `.ch-ox-q`, `reduceFlow` (`from`) | onboard.test › CH-15620; onboard-logic.test › moving on (CH-15620) |
+| CH-15621 | Sign up: the member card fills in as answers arrive | A value's first appearance is the design's flash: it rises into place in brass and dries to green ink (900ms). Each change after that, a letter typed or a step of the handicap, wets it again in brass where it stands, and it dries once the answer rests (1.1s): typing never flickers it out, nothing moves under the reader's eye and nothing counts. The coin settles in (420ms) as it goes from the silhouette to the monogram, green ink on the card's stock, to the photo. A long value ends in an ellipsis. Reduced motion and Animations off: ink at once | `Ink`, `Coin` and `useChanges` in `MemberCard`, `.ch-ox-flash[data-wet]` | onboard.test › CH-15621 |
+| CH-15622 | Sign up: progress moves | Desktop: one felt-green thumb slides along the rail to the current section and takes its width (520ms on the step curve); the labels turn ivory exactly under it (a clipped layer, so nothing is laid out again), and a section passed keeps its tick. Phone: "2 of 5" over a hairline that fills to the same point. The thumb and the hairline are decorative; the current section is `aria-current="step"`. Reduced motion and Animations off: at once | `Rail` (`Rail.tsx`), `.ch-ox-rail__thumb`, `.ch-ox-rail__m` | onboard.test › CH-15622 |
+| CH-15623 | Sign up: the member card is issued (done, staff done) | One deliberate reveal, no confetti. Desktop: the card the answers built is already on the tray; it lifts 14px with a slight turn and is laid back down (900ms), then the seal presses in at 1.1s. Phone: the card arrives here, rising 40px with 4 degrees of turn (the design's issue, 1.1s), then the seal. Only an issued card plays it: the intro, a request received ("Received today") and a join that failed do not; on the phone their card rises in with its sheet. Reduced motion and Animations off: issued and sealed at once | `.ch-ox-mcw[data-issued]`, `chOxLift`, `chOxIssue`, `.ch-ox-mc__stamp` | onboard.test › CH-15623 |
+| CH-15624 | Sign up: an answer is touched or refused | Where a pointer can hover, the green choices lift 2px onto the primary hover's depth, a field's edge darkens, and a next step tints with its chevron leaning 2px on; pressed, a choice sets down 1px and a year tile sinks into its well (none of them scale). A refused field keeps its red edge with a red halo and takes the cursor once its error is drawn; the error line fades in (220ms), and a password rule met ticks in (260ms). Reduced motion and Animations off: at once | `.ch-ox-card`, `.ch-ox-tile`, `.ch-ox-input`, `.ch-ox-nextstep`, `focusField` in `Steps`, `.ch-ox-rules` | onboard.test › CH-15624 |
 
 ## 157xx Haptics
 
@@ -100,9 +151,11 @@ Only through `src/clubhouse/lib/haptics.ts`. On the web they do nothing.
 | --- | --- | --- | --- | --- |
 | CH-15701 | Sign in is tapped | Light (`press`) | `SignInForm` | auth.test › CH-15701 |
 | CH-15702 | A sign-in lands | Success | `SignInForm` | auth.test › CH-15702 |
-| CH-15703 | A warning-toned refusal (an empty field, an unverified email, a rate limit) | Warning | `failureFor` | auth.test › CH-15703 |
-| CH-15704 | A danger-toned refusal (the credentials, the network, a stale bundle, anything unexpected) | Error | `failureFor` | auth.test › CH-15704 |
+| CH-15703 | A warning-toned refusal (an empty field, an unverified email, a rate limit; the reset form's missing or malformed address) | Warning | `failureFor` | auth.test › CH-15703 |
+| CH-15704 | A danger-toned refusal (the credentials, the network, a stale bundle, anything unexpected; a reset request that fails) | Error | `failureFor` | auth.test › CH-15704 |
 | CH-15705 | Continue on the welcome | Medium (`commit`) | `Welcome.proceed` | auth.test › CH-15705 |
+| CH-15720 | Send reset link is tapped | Light (`press`) | `ResetForm` | auth-forgot.test › CH-15720 |
+| CH-15721 | A reset link is asked for and the server accepts | Success | `ResetForm` | auth-forgot.test › CH-15721 |
 
 ## 158xx Accessibility
 
@@ -113,6 +166,7 @@ Only through `src/clubhouse/lib/haptics.ts`. On the web they do nothing.
 | CH-15803 | The welcome announces its sentence once, when it is final ("Good morning, Coach Reyes."): `role="status"`, `aria-live="polite"`, atomic; the `h1` holds the same words | `Welcome` | auth.test › CH-15803 |
 | CH-15804 | The painted course, the tagline and the marks over it are decorative and hidden from assistive technology | `aria-hidden` on `.ch-au-photo` | auth.test › CH-15804 |
 | CH-15805 | The password eye is a named, pressed-state button with a hit area past 44px; every other control is at least 44px on the phone | `ch-au-eye`, `auth.css` | auth.test › CH-15805; a11y scan |
+| CH-15820 | The panel's view changes | Focus moves with it: to the reset form's Email (today's page focuses it), and to the "Check your email" and "Sign in" headings, so the change is read out. The leaving view is hidden from assistive technology and focus at once; first paint moves nothing. A view that comes back while it is still leaving re-enters as the same copy, so focus follows presence. `useIsPresent` in each view, `Swap` | auth-forgot.test › CH-15920, CH-15921, CH-15922 |
 
 ## 159xx Network and UX
 
@@ -127,4 +181,7 @@ Only through `src/clubhouse/lib/haptics.ts`. On the web they do nothing.
 | CH-15907 | Either screen loads, on a slow phone or a fast desktop | The form is in the server HTML and is usable before the course exists. The course (and the animation features) load in their own chunks after first paint, the server draws a flat sky in their place, and every moving thing is on its own layer (the flag, the water, the oaks, the clouds, the birds, the stars), so the landscape is painted once and a loop never repaints it. The camera is one transform and `will-change` is set only while it moves | `next/dynamic` (`ssr: false`), `SceneLayers`, `GolfScene` | auth.test › CH-15907 |
 | CH-15908 | A read fails, or the course crashes | A failed read on the welcome is logged (`chLogServer('auth', 'welcome.<read>')`); a crash in the course leaves the flat sky and the form untouched and is reported (`chReport`, surface `auth.scene`, low) | `loadWelcome`, `SceneBoundary` | auth-server.test › CH-15908; auth-scene.test › CH-15908 |
 | CH-15909 | The window is 820px wide or less (a phone) | The course on top (392px) and the form on a sheet from 352px, grouped rows, the forgot link under the button, the welcome full screen with the clubhouse centred and the list stacked. One structure with the desktop's, switched in CSS at the same width as `useChPhone`, so nothing is chosen by sniffing the device and the server HTML fits both | `@media (max-width: 820px)` in `auth.css` | auth.test › CH-15909 |
-| CH-15910 | The keyboard | Enter in Email moves to Password (the keyboard's "next" key); Enter in Password signs in; Return on the welcome continues (CH-15604); focusing a field scrolls the button into view above the keyboard after the keyboard has come up | `SignInForm` (`onKeyDown`, `revealSubmit`), `Welcome` | auth.test › CH-15910 |
+| CH-15910 | The keyboard | Enter in Email moves to Password (the keyboard's "next" key); Enter in Password signs in; Return on the welcome continues (CH-15604); focusing a field scrolls the button into view above the keyboard after the keyboard has come up. On the reset form, Enter in Email sends (the keyboard's "send" key) and Send is brought above the keyboard the same way | `SignInForm` (`onKeyDown`, `revealSubmit`), `ResetForm`, `Welcome` | auth.test › CH-15910 |
+| CH-15920 | "Forgot password?" is clicked | The reset form opens in the panel with what was typed in Email. The URL gains `?view=forgot`, so the browser's Back returns to sign in and a reload or a link opens the form (the server always draws sign in; the URL is read after hydration). Both links keep today's page as their href, for a new tab, a modified click or no JavaScript. With the flag on, that page sends a signed-out visitor to `/golf/login?view=forgot` (a server redirect in its layout); a signed-in one keeps it. Up for owner review (no board) | `useAuthView`, `SignInForm`, `forgot-password/layout.tsx` | auth-forgot.test › CH-15920 |
+| CH-15921 | A reset link is asked for and the server accepts (its answer is the same whether or not the address has an account) | "Check your email", "We sent a reset link to" the address as it was sent (trimmed and lowercased), and today's sentence on what to do next, with Back to sign in as the one action. Up for owner review (no board) | `ResetSent` | auth-forgot.test › CH-15921 |
+| CH-15922 | Back to sign in ("Remember it? Sign in", Back to sign in, or the browser's Back) | Sign in, with the address carried back. The history entry the reset form pushed is popped, not stacked. Reset password itself (the link in the email) is still today's page | `useAuthView` | auth-forgot.test › CH-15922 |

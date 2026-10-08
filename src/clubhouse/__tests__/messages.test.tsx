@@ -202,7 +202,7 @@ describe('Messages · actions that fail', () => {
   it('CH-7001 a deep link to a player who is not on the team', async () => {
     params.current = new URLSearchParams('player=nobody');
     show();
-    await expectCode('CH-7001', /Couldn't open that conversation/);
+    await expectCode('CH-7001', /Couldn’t open that conversation/);
   });
 
   it('CH-7001 ?user= (a player’s Message coach) starts the thread with that person, or says they aren’t on the team', async () => {
@@ -223,7 +223,7 @@ describe('Messages · actions that fail', () => {
     a.createGolfConversation.mockResolvedValue({ error: 'nope' });
     params.current = new URLSearchParams('player=p-eli');
     show();
-    await expectCode('CH-7002', /Couldn't start the conversation/);
+    await expectCode('CH-7002', /Couldn’t start the conversation/);
   });
 
   it('CH-7004 CH-7005 71201 a send that throws points to its bubble (the box stays empty); a network error says to check first', async () => {
@@ -232,11 +232,11 @@ describe('Messages · actions that fail', () => {
     show();
     const box = await screen.findByRole('textbox', { name: /Message Varsity team/ });
     await user.type(box, 'Bring rain gear{Enter}');
-    await expectCode('CH-7004', /Couldn't send the message/);
+    await expectCode('CH-7004', /Couldn’t send the message/);
     expect((box as HTMLTextAreaElement).value).toBe('');
     live.msgs.sendMessage.mockRejectedValueOnce(new Error('network timeout'));
     await user.type(box, 'Bus at 6{Enter}');
-    await expectCode('CH-7005', /Couldn't confirm this message sent/);
+    await expectCode('CH-7005', /Couldn’t confirm this message sent/);
   });
 
   it('CH-7007 CH-7501 CH-7008 editing and deleting fail; deleting asks first', async () => {
@@ -249,12 +249,12 @@ describe('Messages · actions that fail', () => {
     const edit = within(screen.getByRole('heading', { name: 'Edit message' }).closest('dialog') as HTMLElement);
     await user.type(edit.getByRole('textbox'), ' sharp');
     await user.click(edit.getByRole('button', { name: /Save/ }));
-    await expectCode('CH-7007', /Couldn't edit the message/);
+    await expectCode('CH-7007', /Couldn’t edit the message/);
     await user.click(edit.getByRole('button', { name: 'Cancel' }));
     await messageMenu(user, 'Delete');
     await expectCode('CH-7501', /Delete this message\?/);
     await user.click(within(code('CH-7501') as HTMLElement).getByRole('button', { name: /^Delete/ }));
-    await expectCode('CH-7008', /Couldn't delete the message/);
+    await expectCode('CH-7008', /Couldn’t delete the message/);
   });
 
   it('CH-7009 a reaction that fails', async () => {
@@ -264,7 +264,7 @@ describe('Messages · actions that fail', () => {
     await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
     await user.click(screen.getByRole('button', { name: 'React' }));
     await user.click(screen.getAllByRole('menuitem', { name: /^React / })[0]!);
-    await expectCode('CH-7009', /Couldn't save the reaction/);
+    await expectCode('CH-7009', /Couldn’t save the reaction/);
   });
 
   it('desktop: a right click on a message opens its reaction bar, as the React button does', async () => {
@@ -286,7 +286,7 @@ describe('Messages · actions that fail', () => {
     await user.click(await screen.findByRole('button', { name: 'Leave group' }));
     await expectCode('CH-7502', /Leave Varsity team\?/);
     await user.click(within(code('CH-7502') as HTMLElement).getByRole('button', { name: 'Leave group' }));
-    await expectCode('CH-7010', /Couldn't leave the group/);
+    await expectCode('CH-7010', /Couldn’t leave the group/);
   });
 
   it('CH-1902 the Messages progress notice ends when mute settles and its failure stays visible', async () => {
@@ -302,7 +302,7 @@ describe('Messages · actions that fail', () => {
       act(() => vi.advanceTimersByTime(5001));
       await expectCode('CH-1902', /Still saving/);
       await act(async () => finish({ success: false, error: 'nope' }));
-      await expectCode('CH-7011', /Couldn't mute the conversation/);
+      await expectCode('CH-7011', /Couldn’t mute the conversation/);
       await waitFor(() => expect(code('CH-1902')).toBeNull());
       expect(a.setGolfConversationMute).toHaveBeenCalledTimes(1);
       expect(code('CH-7011')).not.toBeNull();
@@ -317,7 +317,7 @@ describe('Messages · actions that fail', () => {
     show();
     await openDetails(user);
     await user.click(await screen.findByRole('button', { name: 'Mute 8 hours' }));
-    await expectCode('CH-7011', /Couldn't mute the conversation/);
+    await expectCode('CH-7011', /Couldn’t mute the conversation/);
   });
 
   it('CH-1903 an action while offline is refused and nothing is sent', async () => {
@@ -327,7 +327,7 @@ describe('Messages · actions that fail', () => {
     const mute = await screen.findByRole('button', { name: 'Mute 8 hours' });
     setOnline(false);
     await user.click(mute);
-    await expectCode('CH-1903', /Couldn't mute the conversation: you're offline/);
+    await expectCode('CH-1903', /Couldn’t mute the conversation: you’re offline/);
     expect(a.setGolfConversationMute).not.toHaveBeenCalled();
   });
 });
@@ -338,7 +338,7 @@ describe('Messages · reads that fail', () => {
     live.convs.conversations = [];
     live.convs.error = new Error('boom');
     show();
-    await expectCode('CH-7201', /Conversations didn't load/);
+    await expectCode('CH-7201', /Conversations didn’t load/);
     await user.click(within(code('CH-7201') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(live.convs.refetch).toHaveBeenCalled();
   });
@@ -347,7 +347,7 @@ describe('Messages · reads that fail', () => {
     live.msgs.messages = [];
     live.msgs.error = new Error('boom');
     show();
-    await expectCode('CH-7202', /This conversation didn't load/);
+    await expectCode('CH-7202', /This conversation didn’t load/);
   });
 
   it('CH-7216 a conversation that fails to refresh keeps its messages and says they may be out of date', async () => {
@@ -363,7 +363,7 @@ describe('Messages · reads that fail', () => {
     a.searchGolfMessages.mockRejectedValueOnce(new Error('boom'));
     show();
     await user.type(screen.getByRole('searchbox', { name: /Search conversations and messages/ }), 'bus');
-    await expectCode('CH-7203', /Message search didn't load/);
+    await expectCode('CH-7203', /Message search didn’t load/);
     await user.click(within(code('CH-7203') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-7303', /No messages mention “bus”/);
   });
@@ -373,7 +373,7 @@ describe('Messages · reads that fail', () => {
     a.getGolfConversationParticipantIdentities.mockResolvedValueOnce({ error: 'boom' });
     show();
     await openDetails(user);
-    await expectCode('CH-7204', /Members didn't load/);
+    await expectCode('CH-7204', /Members didn’t load/);
     await user.click(within(code('CH-7204') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(a.getGolfConversationParticipantIdentities).toHaveBeenCalledTimes(2));
   });
@@ -382,7 +382,7 @@ describe('Messages · reads that fail', () => {
     const user = userEvent.setup();
     show({ ...data, directoryError: true, directory: [] });
     await user.click(screen.getAllByRole('button', { name: 'New message' })[0]!);
-    await expectCode('CH-7205', /Your team list didn't load/);
+    await expectCode('CH-7205', /Your team list didn’t load/);
     await user.click(within(code('CH-7205') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalled();
   });
@@ -392,7 +392,7 @@ describe('Messages · reads that fail', () => {
     a.getGolfConversationMute.mockResolvedValueOnce({ success: false, error: 'boom' });
     show();
     await openDetails(user);
-    await expectCode('CH-7208', /The mute setting didn't load/);
+    await expectCode('CH-7208', /The mute setting didn’t load/);
   });
 
   it('CH-7212 a crash in the thread is contained; the rail stays', async () => {
@@ -522,7 +522,7 @@ describe('Messages · more actions that fail', () => {
     await user.type(dlg.getByRole('textbox', { name: 'Group name' }), 'Travel');
     await user.click(dlg.getByRole('option', { name: /Jonah Okafor/ }));
     await user.click(dlg.getByRole('button', { name: 'Create group' }));
-    await expectCode('CH-7003', /Couldn't create the group/);
+    await expectCode('CH-7003', /Couldn’t create the group/);
   });
 
   it('CH-7101 CH-7006 a file of the wrong type is refused; a failed attachment send says so', async () => {
@@ -533,12 +533,12 @@ describe('Messages · more actions that fail', () => {
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     await user.upload(input, new File(['x'], 'setup.exe', { type: 'application/x-msdownload' }));
     await user.click(screen.getByRole('button', { name: 'Send' }));
-    await expectCode('CH-7101', /Can't attach setup\.exe/);
+    await expectCode('CH-7101', /Can’t attach setup\.exe/);
     expect(live.files.sendMessageWithAttachments).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Remove setup.exe' }));
     await user.upload(input, new File(['x'], 'plan.pdf', { type: 'application/pdf' }));
     await user.click(screen.getByRole('button', { name: 'Send' }));
-    await expectCode('CH-7006', /Couldn't send the attachment/);
+    await expectCode('CH-7006', /Couldn’t send the attachment/);
   });
 
   it('CH-7406 CH-7012 the details load behind the announcement; a failed acknowledgement says so', async () => {
@@ -550,7 +550,7 @@ describe('Messages · more actions that fail', () => {
     await openAnnouncement(user);
     await expectCode('CH-7406');
     await user.click(screen.getByRole('button', { name: 'Acknowledge' }));
-    await expectCode('CH-7012', /Couldn't send your acknowledgement/);
+    await expectCode('CH-7012', /Couldn’t send your acknowledgement/);
   });
 
   it('CH-7013 marking a task done fails', async () => {
@@ -561,7 +561,7 @@ describe('Messages · more actions that fail', () => {
     show(player);
     await openAnnouncement(user);
     await user.click(await screen.findByRole('button', { name: 'Mark done' }));
-    await expectCode('CH-7013', /Couldn't mark the task done/);
+    await expectCode('CH-7013', /Couldn’t mark the task done/);
   });
 
   it('CH-7102 CH-7103 CH-7014 an announcement needs a title and a body; a failed post says so', async () => {
@@ -577,7 +577,7 @@ describe('Messages · more actions that fail', () => {
     await user.type(dlg.getByRole('textbox', { name: /^Title/ }), 'Bus times');
     await user.type(dlg.getByRole('textbox', { name: /^Message/ }), 'Bus leaves at 6:15.');
     await post();
-    await expectCode('CH-7014', /Couldn't post the announcement/);
+    await expectCode('CH-7014', /Couldn’t post the announcement/);
   });
 
   it('CH-7015 an open conversation that disappears says so', async () => {
@@ -594,7 +594,7 @@ describe('Messages · more actions that fail', () => {
     await screen.findByRole('textbox', { name: /Message Varsity team/ });
     live.convs.conversations = [{ ...team, id: 'other', title: 'Travel' }];
     view.rerender(tree());
-    await expectCode('CH-7015', /That conversation isn't available/);
+    await expectCode('CH-7015', /That conversation isn’t available/);
   });
 });
 
@@ -603,7 +603,7 @@ describe('Messages · more reads that fail', () => {
     const user = userEvent.setup();
     a.getAnnouncementsWithMeta.mockResolvedValue({ success: false, error: 'boom' });
     show();
-    await expectCode('CH-7206', /Announcements didn't load/);
+    await expectCode('CH-7206', /Announcements didn’t load/);
     await user.click(within(code('CH-7206') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(a.getAnnouncementsWithMeta).toHaveBeenCalledTimes(2));
   });
@@ -614,7 +614,7 @@ describe('Messages · more reads that fail', () => {
     a.getAnnouncementDetail.mockResolvedValue({ success: false, error: 'boom' });
     show(player);
     await openAnnouncement(user);
-    await expectCode('CH-7207', /The details didn't load/);
+    await expectCode('CH-7207', /The details didn’t load/);
     await user.click(within(code('CH-7207') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(a.getAnnouncementDetail).toHaveBeenCalledTimes(2));
   });
@@ -627,7 +627,7 @@ describe('Messages · more reads that fail', () => {
     await expectCode('CH-7408');
     view.unmount();
     show();
-    await expectCode('CH-7209', /Attachment didn't load/);
+    await expectCode('CH-7209', /Attachment didn’t load/);
     await user.click(code('CH-7209') as HTMLElement);
     await waitFor(() => expect(a.getGolfMessageAttachments).toHaveBeenCalledTimes(3));
   });
@@ -701,7 +701,7 @@ describe('Messages · group members (D-45, D-47)', () => {
     await user.click(await screen.findByRole('button', { name: /^Add$/ }));
     await expectCode('CH-7410');
     first.resolve({ error: 'nope' });
-    await expectCode('CH-7215', /team list didn't load/);
+    await expectCode('CH-7215', /team list didn’t load/);
     await user.click(within(code('CH-7215') as HTMLElement).getByRole('button', { name: /Try again/ }));
     await expectCode('CH-7307', /Everyone on the team is already in this group/);
   });
@@ -714,7 +714,7 @@ describe('Messages · group members (D-45, D-47)', () => {
     await openDetails(user);
     await user.click(await screen.findByRole('button', { name: /^Add$/ }));
     await user.click(await screen.findByRole('button', { name: 'Add Nora Castillo' }));
-    await expectCode('CH-7018', /Couldn't add Nora/);
+    await expectCode('CH-7018', /Couldn’t add Nora/);
     await user.click(screen.getByRole('button', { name: 'Add Nora Castillo' }));
     expect(await screen.findByText(/Added Nora to Varsity team/)).toBeTruthy();
     expect(a.addGolfGroupMember).toHaveBeenLastCalledWith('team', 'nora');
@@ -730,7 +730,7 @@ describe('Messages · group members (D-45, D-47)', () => {
     await user.click(dlg.getByRole('option', { name: /Jonah Okafor/ }));
     await user.click(dlg.getByRole('option', { name: /Dan Whitfield/ }));
     await user.click(dlg.getByRole('button', { name: 'Create group' }));
-    await expectCode('CH-7019', /Group created, but Dan wasn't added/);
+    await expectCode('CH-7019', /Group created, but Dan wasn’t added/);
     expect(a.createGolfTeamBroadcast).toHaveBeenCalledWith({ teamId: 't1', title: 'Travel', selectedPlayerIds: ['p-jonah'] });
     expect(a.addGolfGroupMember).toHaveBeenCalledWith('g1', 'dan');
   });
@@ -1112,7 +1112,7 @@ describe('Messages · phone', () => {
     const thread = await openThread(user);
     await user.click(within(thread).getByRole('button', { name: 'Message actions' }));
     await user.click(within(code('CH-7604') as HTMLElement).getByRole('button', { name: 'Copy' }));
-    await expectCode('CH-7020', /Couldn't copy the message/);
+    await expectCode('CH-7020', /Couldn’t copy the message/);
   });
 
   it('CH-7409 CH-7306 CH-7214 Details files load, say when there are none, and fail with Try again', async () => {
@@ -1129,7 +1129,7 @@ describe('Messages · phone', () => {
     showPhone();
     const again = await openThread(user);
     await user.click(within(again).getByRole('button', { name: 'Details' }));
-    await expectCode('CH-7214', /Files didn't load/);
+    await expectCode('CH-7214', /Files didn’t load/);
     await user.click(within(code('CH-7214') as HTMLElement).getByRole('button', { name: /Try again/ }));
     await expectCode('CH-7306');
   });
@@ -1142,7 +1142,7 @@ describe('Messages · phone', () => {
     const thread = await openThread(user);
     await user.click(within(thread).getByRole('button', { name: 'Details' }));
     await user.click(await screen.findByRole('button', { name: /Room list\.pdf/ }));
-    await expectCode('CH-7021', /Couldn't open Room list\.pdf/);
+    await expectCode('CH-7021', /Couldn’t open Room list\.pdf/);
     expect(a.getGolfMessageAttachments).toHaveBeenCalledWith('m1');
   });
 
@@ -1178,7 +1178,7 @@ describe('Messages · phone', () => {
     await user.click(within(newMsg).getByRole('option', { name: /Jonah Okafor/ }));
     await user.type(within(newMsg).getByRole('textbox', { name: 'Message Jonah' }), '5 works. Bay 4.');
     await user.click(within(newMsg).getByRole('button', { name: 'Next' }));
-    await expectCode('CH-7004', /Couldn't send the message/);
+    await expectCode('CH-7004', /Couldn’t send the message/);
     expect(live.msgs.sendMessage).toHaveBeenCalledWith('5 works. Bay 4.');
     const box = await screen.findByRole('textbox', { name: /Message Jonah/ });
     expect((box as HTMLTextAreaElement).value).toBe('');
@@ -1232,7 +1232,7 @@ describe('Messages · phone', () => {
       const { newMsg, input } = await newMessageTo(user);
       await user.upload(input, new File(['x'], 'setup.exe', { type: 'application/x-msdownload' }));
       await user.click(within(newMsg).getByRole('button', { name: 'Next' }));
-      await expectCode('CH-7101', /Can't attach setup\.exe/);
+      await expectCode('CH-7101', /Can’t attach setup\.exe/);
       expect(live.files.sendMessageWithAttachments).not.toHaveBeenCalled();
       const thread = await screen.findByRole('region', { name: /Jonah/ });
       expect(within(thread).getByRole('button', { name: 'Remove setup.exe' })).toBeTruthy();
@@ -1283,7 +1283,7 @@ describe('Messages · desktop Schedule and shared files (clickables 10, 13)', ()
     show();
     await screen.findByRole('textbox', { name: /Message Varsity team/ });
     await openDetails(user);
-    await expectCode('CH-7214', /Files didn't load/);
+    await expectCode('CH-7214', /Files didn’t load/);
     await user.click(within(code('CH-7214') as HTMLElement).getByRole('button', { name: /Try again/ }));
     await expectCode('CH-7306');
     expect(a.getGolfConversationFiles).toHaveBeenCalledTimes(3);
@@ -1314,7 +1314,7 @@ describe('Messages · desktop Schedule and shared files (clickables 10, 13)', ()
     await screen.findByRole('textbox', { name: /Message Varsity team/ });
     await openDetails(user);
     await user.click(await screen.findByRole('button', { name: /Room list\.pdf/ }));
-    await expectCode('CH-7021', /Couldn't open Room list\.pdf/);
+    await expectCode('CH-7021', /Couldn’t open Room list\.pdf/);
   });
 });
 
@@ -1364,6 +1364,21 @@ describe('Messages · behaviour contracts (P007, docs/clubhouse/pages/P007-messa
     expect(((await screen.findByRole('textbox', { name: /Message Varsity team/ })) as HTMLTextAreaElement).value).toBe('Half-written note');
   });
 
+  it('CH-7605 the first thread opens in place; another settles in over it, the last leaving the accessibility tree at once', async () => {
+    const user = userEvent.setup();
+    live.convs.conversations = [team, dm];
+    show();
+    const leaving = () => document.querySelector('.ch-ms-pane .ch-swap__body[aria-hidden]');
+    await screen.findByRole('textbox', { name: /Message Varsity team/ });
+    expect(leaving()).toBeNull();
+    await user.click(screen.getAllByRole('button', { name: /Jonah Okafor/ })[0]!);
+    await screen.findByRole('textbox', { name: /Message Jonah$/ });
+    // Varsity team fades out behind Jonah's thread (jsdom never finishes the fade), hidden from assistive tech.
+    expect(leaving()?.querySelector('[aria-label="Conversation with Varsity team"]')).not.toBeNull();
+    expect(screen.queryByRole('region', { name: 'Conversation with Varsity team' })).toBeNull();
+    expect(screen.getByRole('region', { name: 'Conversation with Jonah Okafor' })).toBeTruthy();
+  });
+
   it('72301 a failed change is reported with its messages surface before the toast', async () => {
     const { chReport } = await import('../lib/track');
     vi.mocked(chReport).mockClear();
@@ -1381,6 +1396,6 @@ describe('Messages · no team', () => {
     render(<MessagesNoTeam />);
     const el = code('CH-7308')!;
     expect(el.classList.contains('ch-empty-page')).toBe(true);
-    expect(within(el as HTMLElement).getByRole('heading', { level: 2, name: "You aren't on a team yet" })).toBeTruthy();
+    expect(within(el as HTMLElement).getByRole('heading', { level: 2, name: "You aren’t on a team yet" })).toBeTruthy();
   });
 });

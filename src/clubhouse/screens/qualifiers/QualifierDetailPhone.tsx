@@ -23,6 +23,7 @@ import { dayLabel, plural, positionLabel, shortRange, type ChQRound, type ChQRow
 import { StateBadge, StatusPill, ToPar } from './parts';
 import { Courses, Selections, StaleStandings } from './QualifierSections';
 import { NinesSkeleton, Streamed } from './streamed';
+import { SerifText } from '../../ui/SerifText';
 
 const LIST = '/golf/dashboard/qualifiers';
 
@@ -64,9 +65,30 @@ export function QualifierDetailPhone({
   const topScore = Math.max(0, data.squad - data.picks);
   const peeked = peek && b ? (b.rows.find((r) => r.playerId === peek) ?? null) : null;
 
-  const facts: Array<[string, string]> = [
-    ['Rounds in', b ? `${b.submitted}/${data.entrants * data.numRounds}` : '—'],
-    ['Spots', data.picks ? `${topScore}+${data.picks}` : String(data.squad)],
+  // Each figure drawn (owner, 2026-10-07: no bare numbers; decorative, the figure says it): the rounds posted along the
+  // rounds due, and the squad's seats, the ones won on score filled and the coach's picks open.
+  const due = data.entrants * data.numRounds;
+  const facts: Array<[string, string, ReactNode?]> = [
+    [
+      'Rounds in',
+      b ? `${b.submitted}/${due}` : '—',
+      b && due > 0 ? (
+        <span className="ch-qf-bar">
+          <i style={{ width: `${Math.min(100, (b.submitted / due) * 100)}%` }} />
+        </span>
+      ) : null,
+    ],
+    [
+      'Spots',
+      data.picks ? `${topScore}+${data.picks}` : String(data.squad),
+      data.squad > 0 && data.squad <= 12 ? (
+        <span className="ch-qf-seats">
+          {Array.from({ length: data.squad }, (_, i) => (
+            <i key={i} className={i < topScore || !data.picks ? 'is-score' : 'is-pick'} />
+          ))}
+        </span>
+      ) : null,
+    ],
     ['Deadline', data.deadline ? dayLabel(data.deadline) : '—'],
   ];
 
@@ -85,7 +107,9 @@ export function QualifierDetailPhone({
           <StatusPill status={status} />
           <span className="ch-num">{shortRange(data.startDate, data.endDate)}</span>
         </span>
-        <h1>{data.name}</h1>
+        <h1>
+          <SerifText text={data.name} />
+        </h1>
         <p>{[data.entriesError ? null : plural(data.entrants, 'entrant'), data.course].filter(Boolean).join(' · ')}</p>
       </header>
 
@@ -113,10 +137,13 @@ export function QualifierDetailPhone({
       )}
 
       <dl className="ch-qfm-facts">
-        {facts.map(([k, v]) => (
+        {facts.map(([k, v, viz]) => (
           <div key={k}>
             <dt>{k}</dt>
             <dd className="ch-num">{v}</dd>
+            <dd className="ch-qfm-facts__viz" aria-hidden="true">
+              {viz}
+            </dd>
           </div>
         ))}
       </dl>
@@ -224,9 +251,9 @@ function Board({ data, status, stale, onPeek }: { data: ChQDetailCore; status: C
       <section className="ch-qf-panel" aria-labelledby="ch-qfm-lb">
         {head}
         {data.entriesError ? (
-          <InlineNotice code="CH-09203" title="The field didn’t load." body="Standings wait until the entrants load, so nobody reads a wrong order." onRetry={refresh} retrying={refreshing} />
+          <InlineNotice code="CH-09203" title="The field didn’t load" body="Standings wait until the entrants load, so nobody reads a wrong order." onRetry={refresh} retrying={refreshing} />
         ) : (
-          <InlineNotice code="CH-09204" title="Scores didn’t load." body="The field isn’t shown without its scores, so nobody reads a wrong order. The error has been reported." onRetry={refresh} retrying={refreshing} />
+          <InlineNotice code="CH-09204" title="Scores didn’t load" body="The field isn’t shown without its scores, so nobody reads a wrong order. The error has been reported." onRetry={refresh} retrying={refreshing} />
         )}
       </section>
     );
@@ -236,7 +263,7 @@ function Board({ data, status, stale, onPeek }: { data: ChQDetailCore; status: C
       <section className="ch-qf-panel" aria-labelledby="ch-qfm-lb">
         {head}
         {stale && <StaleStandings />}
-        <EmptyState code="CH-09304" icon={Flag} title="Awaiting first round." body={`${plural(data.entrants, 'player')} entered. Standings appear once a player submits a round.`} />
+        <EmptyState code="CH-09304" icon={Flag} title="Awaiting first round" body={`${plural(data.entrants, 'player')} entered. Standings appear once a player submits a round.`} />
       </section>
     );
   }
@@ -434,7 +461,7 @@ function PlayerRoundCard({ round, n, s }: { round: ChQRound; n: number; s: ChQDe
   return (
     <PlayerRoundHead round={round} course={course}>
       {s.holesError ? (
-        <InlineNotice code="CH-09205" title="Scorecards didn’t load." body="The totals are right; the hole-by-hole card is missing until it loads." onRetry={refresh} retrying={refreshing} />
+        <InlineNotice code="CH-09205" title="Scorecards didn’t load" body="The totals are right; the hole-by-hole card is missing until it loads." onRetry={refresh} retrying={refreshing} />
       ) : holes && holes.length ? (
         <>
           <Nine holes={holes.filter((h) => h.n <= 9)} label="Out" caption={`Round ${n}, front nine`} />

@@ -674,18 +674,28 @@ describe('the Deep dive screen', () => {
     expect(within(article()).getByText('Out of date')).toBeTruthy();
   });
 
-  it('CH-13281, CH-13282 and CH-13283 each part that did not load says so in its own place, with Try again; the read itself is still drawn', async () => {
+  it('CH-13281, CH-13282 and CH-13283 each part that did not load is marked in its own place, and the read says so once with one Try again (CH-1209); the read itself is still drawn', async () => {
     show(diveLoad(PREVIEW_DIVE_PARTS_FAILED));
     expect(article().querySelector('.ch-hd-meas__v b')!.textContent).toBe('23 pts');
     expect(code('CH-13283')!.textContent).toMatch(/Your category trends didn’t load/);
     expect(code('CH-13281')!.textContent).toMatch(/The rounds behind this read didn’t load/);
     expect(code('CH-13282')!.textContent).toMatch(/Your focus areas and goals didn’t load/);
+    // Each keeps its title where the part would be, with no Try again of its own: the read's notice carries the one.
+    for (const c of ['CH-13281', 'CH-13282', 'CH-13283']) expect(within(code(c) as HTMLElement).queryByRole('button', { name: /Try again/ })).toBeNull();
+    expect(code('CH-1209')!.textContent).toMatch(/Your category trends, the rounds behind this read and your focus areas and goals didn’t load/);
     // Not one of them is said as if it were nothing.
     expect(code('CH-13383')).toBeNull();
     expect(code('CH-13382')).toBeNull();
     expect(code('CH-13384')).toBeNull();
     // "In your plan" is a dash, never a zero, while plans did not load.
     expect(screen.getByText('In your plan').nextElementSibling!.textContent).toBe('—');
+    await userEvent.click(within(code('CH-1209') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('CH-13281 one part that did not load keeps its own Try again, and the read draws no page notice', async () => {
+    show(diveLoad({ ...PREVIEW_DIVE, roundsFailed: true }));
+    expect(code('CH-1209')).toBeNull();
     await userEvent.click(within(code('CH-13281') as HTMLElement).getByRole('button', { name: /Try again/ }));
     expect(router.refresh).toHaveBeenCalledTimes(1);
   });

@@ -1,11 +1,13 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 /** The iOS app shell: what Clubhouse owes the native layer (docs/clubhouse/MOBILE.md). */
 
 vi.mock('../lib/haptics', () => ({ haptic: vi.fn() }));
+const pulled = vi.hoisted(() => ({ refresh: vi.fn() }));
+vi.mock('../lib/use-refresh', () => ({ useRefresh: () => ({ refresh: pulled.refresh, refreshing: false }) }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 vi.mock('@/contexts/notification-badge-context', () => ({ useNotificationBadges: () => ({ notificationsUnread: 0, calendarNotifications: 0, refetch: vi.fn() }) }));
 
@@ -21,6 +23,8 @@ vi.mock('@/app/golf/actions/teams', () => ({ cancelJoinRequest: vi.fn(), createT
 vi.mock('@/app/golf/actions/insights-coachhelm', () => ({ updateTeamCoachHelmSettings: vi.fn() }));
 
 import { NativeSwipeBackBridge } from '@/components/golf/NativeSwipeBackBridge';
+import { haptic } from '../lib/haptics';
+import { PullToRefresh } from '../shell/PullToRefresh';
 import { createLiveWrites } from '../screens/settings/writes';
 import { TabBar } from '../shell/TabBar';
 import { PREVIEW_SHELL } from '../preview/fixtures';
@@ -55,6 +59,39 @@ describe('Clubhouse in the iOS app', () => {
     await waitFor(() => expect(postMessage).toHaveBeenLastCalledWith({ overlayOpen: false }));
     await user.click(screen.getByRole('button', { name: 'More' }));
     await waitFor(() => expect(postMessage).toHaveBeenLastCalledWith({ overlayOpen: true }));
+  });
+
+  it('a pull from the top of a phone page reads it again with the medium tap; a browser draws no pull (CH-1909)', () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({ matches: query.includes('max-width: 820px'), media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as unknown as MediaQueryList);
+    const page = () => {
+      document.body.innerHTML = '<div class="ch-root" data-ui="clubhouse"><div class="ch-canvas" id="ch-canvas"><main><p class="row">Row</p></main></div><div class="host"></div></div>';
+      render(<PullToRefresh pathname="/golf/dashboard" />, { container: document.querySelector<HTMLElement>('.host')! });
+      return document.querySelector('.row')!;
+    };
+    const drag = (row: Element) => {
+      const fire = (type: string, y: number) => {
+        const e = new Event(type, { bubbles: true, cancelable: true });
+        Object.defineProperty(e, 'touches', { value: type === 'touchend' ? [] : [{ clientX: 100, clientY: y }] });
+        act(() => void row.dispatchEvent(e));
+        return e;
+      };
+      fire('touchstart', 300);
+      const moves = [1, 2, 3, 4, 5, 6].map((i) => fire('touchmove', 300 + i * 40));
+      fire('touchend', 540);
+      return moves;
+    };
+    expect(drag(page()).some((m) => m.defaultPrevented)).toBe(false);
+    expect(pulled.refresh).not.toHaveBeenCalled();
+    cleanup();
+    document.body.classList.add('capacitor', 'capacitor-ios');
+    try {
+      expect(drag(page()).every((m) => m.defaultPrevented)).toBe(true);
+      expect(pulled.refresh).toHaveBeenCalledTimes(1);
+      expect(haptic).toHaveBeenCalledWith('commit');
+    } finally {
+      document.body.className = '';
+      vi.restoreAllMocks();
+    }
   });
 });
 

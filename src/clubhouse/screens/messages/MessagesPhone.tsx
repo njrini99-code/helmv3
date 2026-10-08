@@ -39,6 +39,7 @@ import { Modal } from "../../ui/Modal";
 import { PhoneBar, PhoneIconAction, PhoneTextAction } from "../../ui/PhoneBar";
 import { SearchField } from "../../ui/SearchField";
 import { SectionBoundary } from "../../ui/SectionBoundary";
+import { Swap } from "../../ui/Swap";
 import { Switch } from "../../ui/Switch";
 import { useToast } from "../../ui/Toast";
 import { haptic } from "../../lib/haptics";
@@ -208,10 +209,10 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
     ["earlier", "Earlier"],
   ];
   return (
-    <div className="ch-msp-page">
+    <div className="ch-msp-page ch-msp-home">
       {/* With nothing to search or filter the page is the first-run empty alone (board: Empty state), not controls over nothing. */}
       {!isMessagesFirstRun(api) && (
-        <>
+        <div className="ch-msp-tools">
           <SearchField value={q} onChange={setQ} placeholder="Search messages" label="Search conversations and messages" className="ch-msp-search" />
           <div className="ch-msp-chips" role="group" aria-label="Filter conversations">
             {(
@@ -235,27 +236,33 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
               </button>
             ))}
           </div>
-        </>
+        </div>
       )}
       {api.convsError ? (
         <InlineNotice
           code="CH-7201"
-          title="Conversations didn't load."
+          title="Conversations didn’t load"
           body="Your messages are safe. Try again; the error has been reported."
           onRetry={api.refetchConvs}
         />
       ) : (api.convsLoading && !api.convs.length) || api.annLoading ? (
-        <div className="ch-ms-sec__card" aria-busy="true" data-ch-code="CH-7402">
-          {Array.from({ length: 5 }, (_, i) => (
-            <div key={i} className="ch-ms-row" style={{ cursor: "default" }}>
-              <Skeleton width={44} height={44} radius={22} />
-              <span style={{ display: "grid", gap: 7 }}>
-                <Skeleton width="60%" height={13} />
-                <Skeleton width="85%" height={12} />
-              </span>
-            </div>
-          ))}
-        </div>
+        // The loaded inbox's shape: a section under its double rule, then rows on seams, so nothing moves when it lands.
+        <section className="ch-ms-sec" aria-busy="true" data-ch-code="CH-7402">
+          <div className="ch-ms-sec__l">
+            <Skeleton width={150} height={18} radius={6} />
+          </div>
+          <div className="ch-ms-sec__card">
+            {Array.from({ length: 5 }, (_, i) => (
+              <div key={i} className="ch-ms-row" style={{ cursor: "default" }}>
+                <Skeleton width={44} height={44} radius={22} />
+                <span style={{ display: "grid", gap: 8 }}>
+                  <Skeleton width="60%" height={14} />
+                  <Skeleton width="85%" height={12} />
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
       ) : isMessagesFirstRun(api) ? (
         <MessagesFirstRun coach={api.viewer.role === "coach"} onNew={onNew} />
       ) : !api.convs.length ? (
@@ -263,7 +270,7 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
           code="CH-7301"
           compact
           icon={MessageSquare}
-          title="No conversations yet."
+          title="No conversations yet"
           body={api.viewer.role === "coach" ? "Start one with a player, or create a team group." : "Message a coach or a teammate to start."}
           action={
             <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm" onClick={onNew}>
@@ -272,13 +279,14 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
           }
         />
       ) : (
-        <>
+        // CH-7606: another filter's list settles in (base in, quick out); typing in Search filters in place.
+        <Swap swapKey={filter} className="ch-msp-list">
           {filter !== "groups" && <AnnouncementsSection api={api} q={q} />}
           {sections.map(([k, l]) => {
             const rows = list.filter((c) => sectionOf(c.lastAt, api.now, api.timeZone) === k);
             if (!rows.length) return null;
             return (
-              <section key={k} className="ch-ms-sec" aria-label={l}>
+              <section key={k} className="ch-ms-sec is-date" aria-label={l}>
                 <h2 className="ch-ms-sec__l">{l}</h2>
                 <div className="ch-ms-sec__card">
                   {rows.map((c) => (
@@ -294,7 +302,7 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
             </div>
           )}
           <MessageHits api={api} q={q} />
-        </>
+        </Swap>
       )}
     </div>
   );
@@ -359,7 +367,7 @@ function PhoneThread({
       toast({ title: "Copied" });
     } catch {
       haptic("error");
-      toast({ tone: "error", title: "Couldn't copy the message", body: "Try again in a moment.", code: "CH-7020" });
+      toast({ tone: "error", title: "Couldn’t copy the message", body: "Try again in a moment.", code: "CH-7020" });
     }
   };
   return (
@@ -385,15 +393,15 @@ function PhoneThread({
             {api.msgsStale && (
               <InlineNotice
                 code="CH-7216"
-                title="This conversation may be out of date."
-                body="It didn't refresh. What's here is what was last loaded. Try again; the error has been reported."
+                title="This conversation may be out of date"
+                body="It didn’t refresh. What’s here is what was last loaded. Try again; the error has been reported."
                 onRetry={api.refetchMsgs}
               />
             )}
             {api.msgsError ? (
               <InlineNotice
                 code="CH-7202"
-                title="This conversation didn't load."
+                title="This conversation didn’t load"
                 body="Nothing was lost. Try again; the error has been reported."
                 onRetry={api.refetchMsgs}
               />
@@ -433,7 +441,8 @@ function PhoneThread({
                 ),
               )
             )}
-            {api.typing && (
+            {/* CH-7602, as on desktop: no dots under a thread that didn't load or is still loading. */}
+            {api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (
               <div className="ch-ms-msg is-first">
                 <span className="ch-ms-msg__av">{!conv.group && <Avatar name={conv.title} size={30} />}</span>
                 <div className="ch-ms-msg__col">
@@ -534,7 +543,7 @@ function SheetRow({ icon, label, onClick, danger, disabled }: { icon: typeof Cop
 
 function Panel({ title, action, children, code }: { title?: string; action?: ReactNode; children: ReactNode; code?: string }) {
   return (
-    <section className="ch-msp-panel" aria-label={title} data-ch-code={code}>
+    <section className={"ch-msp-panel" + (title ? "" : " is-plain")} aria-label={title} data-ch-code={code}>
       {title && (
         <div className="ch-msp-panel__h">
           <h3>{title}</h3>
@@ -617,7 +626,7 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
                 }
               >
                 {api.membersError ? (
-                  <InlineNotice code="CH-7204" title="Members didn't load." body="Try again; the error has been reported." onRetry={api.retryMembers} />
+                  <InlineNotice code="CH-7204" title="Members didn’t load" body="Try again; the error has been reported." onRetry={api.retryMembers} />
                 ) : !api.members ? (
                   <div className="ch-msp-pad" aria-busy="true" data-ch-code="CH-7405">
                     <Skeleton height={36} />
@@ -658,7 +667,7 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
 
             <Panel>
               {api.muteError ? (
-                <InlineNotice code="CH-7208" title="The mute setting didn't load." body="Try again; the error has been reported." onRetry={api.retryMute} />
+                <InlineNotice code="CH-7208" title="The mute setting didn’t load" body="Try again; the error has been reported." onRetry={api.retryMute} />
               ) : !api.mute ? (
                 <div className="ch-msp-pad" aria-busy="true" data-ch-code="CH-7407">
                   <Skeleton height={30} />
@@ -721,7 +730,7 @@ function FilesPanel({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
       action={files && files.length > 0 ? <span className="ch-msp-count ch-num">{files.length}</span> : undefined}
     >
       {failed ? (
-        <InlineNotice code="CH-7214" title="Files didn't load." body="Your messages are fine. Try again; the error has been reported." onRetry={retry} />
+        <InlineNotice code="CH-7214" title="Files didn’t load" body="Your messages are fine. Try again; the error has been reported." onRetry={retry} />
       ) : !files ? (
         <div className="ch-msp-pad" aria-busy="true" data-ch-code="CH-7409">
           <Skeleton height={36} />
@@ -857,7 +866,7 @@ function PhoneNewMessage({
         <div className="ch-msp-page">
           {touched && needsName && (
             <p className="ch-field__help is-error" data-ch-code="CH-7104" role="alert">
-              Name the group so players know what it&apos;s for.
+              Name the group so players know what it’s for.
             </p>
           )}
           {coach && !q && (
@@ -909,7 +918,7 @@ function PhoneNewMessage({
           )}
           <h2 className="ch-ms-sec__l">{q ? "Results" : "People"}</h2>
           {api.directoryError ? (
-            <InlineNotice code="CH-7205" title="Your team list didn't load." body="Try again; the error has been reported." onRetry={api.retryDirectory} />
+            <InlineNotice code="CH-7205" title="Your team list didn’t load" body="Try again; the error has been reported." onRetry={api.retryDirectory} />
           ) : (
             <div className="ch-msp-panel" role="listbox" aria-multiselectable={coach} aria-label="People">
               {people.map((p) => {

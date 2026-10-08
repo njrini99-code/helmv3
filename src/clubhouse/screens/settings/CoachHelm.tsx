@@ -21,7 +21,7 @@ export type Phil = CoachPhilosophy & { id: string | null };
 
 export function CoachHelmSection({ data, writes }: { data: ChSettingsData; writes: ChSettingsWrites }) {
   if (!data.coachhelm) return null;
-  if (data.coachhelm.error) return <ReadFailed what="Your CoachHelm settings" code="CH-8211" onRetry={writes.refresh} />;
+  if (data.coachhelm.error) return <ReadFailed what="Your CoachHelm settings" code="CH-8211" onRetry={writes.refresh} title="CoachHelm" description="The AI coaching assistant on your dashboards." />;
   return <CoachHelmBody initial={data.coachhelm.value} writes={writes} />;
 }
 
@@ -66,7 +66,7 @@ export function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
       // CH-1903: nothing is sent while offline; put the control back and say so.
       setP((x) => ({ ...x, ...before }));
       haptic('error');
-      toast({ tone: 'error', title: "Couldn't save that CoachHelm setting: you're offline", body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903' });
+      toast({ tone: 'error', title: "Couldn’t save that CoachHelm setting: you’re offline", body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903' });
       return;
     }
     inflight.current += 1;
@@ -96,7 +96,7 @@ export function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
       setStatus('failed');
       haptic('error');
       if (error) chReport(new Error(error), { surface: 'settings.coachhelm', action: 'savePhilosophy', severity: 'low' });
-      toast({ tone: 'error', title: "Couldn't save that CoachHelm setting", body: "It's back where it was. Check your connection and try again.", code: 'CH-8022' });
+      toast({ tone: 'error', title: "Couldn’t save that CoachHelm setting", body: "It’s back where it was. Check your connection and try again.", code: 'CH-8022' });
     });
   };
 
@@ -127,7 +127,7 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
   const floor = confidenceFloorForSensitivity(p.alertSensitivity);
   const alertsOn = ALERT_GROUPS.reduce((n, g) => n + g.alerts.filter((a) => p[a.key as keyof CoachPhilosophy]).length, 0);
   const alertsTotal = ALERT_GROUPS.reduce((n, g) => n + g.alerts.length, 0);
-  const statusText = status === 'saving' ? 'Saving…' : status === 'saved' ? 'All changes saved' : status === 'failed' ? "A change didn't save" : 'Changes save as you make them';
+  const statusText = status === 'saving' ? 'Saving…' : status === 'saved' ? 'All changes saved' : status === 'failed' ? "A change didn’t save" : 'Changes save as you make them';
 
   return (
     <>
@@ -206,7 +206,7 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
             description={
               p.minInsightConfidence <= floor
                 ? `Your sensitivity already requires ${Math.round(floor * 100)}%, so this only matters above that.`
-                : `Above your sensitivity's ${Math.round(floor * 100)}% floor, so this is the number in effect.`
+                : `Above your sensitivity’s ${Math.round(floor * 100)}% floor, so this is the number in effect.`
             }
             value={p.minInsightConfidence}
             {...SIGNAL_CONTROL_RANGES.minInsightConfidence}
@@ -267,7 +267,7 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
         </Row>
       </Card>
 
-      <Card id="set-display" title="Display" description="What CoachHelm shows on your dashboards. The strokes-gained baseline follows your team: the Tour for men's teams, the women's tour for women's.">
+      <Card id="set-display" title="Display" description="What CoachHelm shows on your dashboards. The strokes-gained baseline follows your team: the Tour for men’s teams, the women’s tour for women’s.">
         <Row label="Strokes gained">
           <SettingSwitch label="Show strokes gained" hideLabel checked={p.showStrokesGained} onChange={(v) => change({ showStrokesGained: v })} />
         </Row>
@@ -348,19 +348,19 @@ function PowerCard({ initial, writes }: { initial: ChCoachHelmSettings; writes: 
           hideLabel
           checked={coach.enabled}
           busy={pending.has('enabled')}
-          onChange={(v) => (v ? void setC({ enabled: true }, "Couldn't turn CoachHelm on") : setConfirmOff(true))}
+          onChange={(v) => (v ? void setC({ enabled: true }, "Couldn’t turn CoachHelm on") : setConfirmOff(true))}
         />
       </Row>
       {coach.enabled && (
         <>
           <Row label="Insights" help="Coaching notes on what changed and why.">
-            <SettingSwitch label="Insights" hideLabel checked={coach.showInsights} busy={pending.has('showInsights')} onChange={(v) => void setC({ showInsights: v }, "Couldn't change insights")} />
+            <SettingSwitch label="Insights" hideLabel checked={coach.showInsights} busy={pending.has('showInsights')} onChange={(v) => void setC({ showInsights: v }, "Couldn’t change insights")} />
           </Row>
-          <Row label="Predictions" help="Where each player's scoring is heading.">
-            <SettingSwitch label="Predictions" hideLabel checked={coach.showPredictions} busy={pending.has('showPredictions')} onChange={(v) => void setC({ showPredictions: v }, "Couldn't change predictions")} />
+          <Row label="Predictions" help="Where each player’s scoring is heading.">
+            <SettingSwitch label="Predictions" hideLabel checked={coach.showPredictions} busy={pending.has('showPredictions')} onChange={(v) => void setC({ showPredictions: v }, "Couldn’t change predictions")} />
           </Row>
           <Row label="Patterns" help="Leaks and habits that repeat across rounds.">
-            <SettingSwitch label="Patterns" hideLabel checked={coach.showPatterns} busy={pending.has('showPatterns')} onChange={(v) => void setC({ showPatterns: v }, "Couldn't change patterns")} />
+            <SettingSwitch label="Patterns" hideLabel checked={coach.showPatterns} busy={pending.has('showPatterns')} onChange={(v) => void setC({ showPatterns: v }, "Couldn’t change patterns")} />
           </Row>
         </>
       )}
@@ -380,7 +380,7 @@ function PowerCard({ initial, writes }: { initial: ChCoachHelmSettings; writes: 
               variant="primary"
               onClick={() => {
                 setConfirmOff(false);
-                void setC({ enabled: false }, "Couldn't turn CoachHelm off");
+                void setC({ enabled: false }, "Couldn’t turn CoachHelm off");
               }}
             >
               Turn off

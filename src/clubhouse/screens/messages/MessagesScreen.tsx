@@ -23,7 +23,7 @@ export function MessagesView({ api }: { api: ChMessagesApi }) {
     if (api.selectedId && !conv && !api.convsLoading && api.convs.length) {
       toast({
         tone: "error",
-        title: "That conversation isn't available",
+        title: "That conversation isn’t available",
         body: "You may have left it, or it belongs to another team.",
         code: "CH-7015",
       });

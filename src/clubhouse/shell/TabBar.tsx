@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { LinkPending } from './LinkPending';
 import { AnimatePresence, m } from 'motion/react';
 import { ChevronRight, LayoutGrid, LifeBuoy, LogOut, Settings, X } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { Avatar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
@@ -12,8 +12,8 @@ import { useToast } from '../ui/Toast';
 import { chSignOut } from '../lib/sign-out';
 import { chReport } from '../lib/track';
 import { haptic } from '../lib/haptics';
-import { chTween } from '../lib/motion';
-import { useSheetDrag } from '../lib/sheet-drag';
+import { chSpring, chTween } from '../lib/motion';
+import { chThrownExit, takeSheetFling, useSheetDrag } from '../lib/sheet-drag';
 import { OverlayScrollLock } from '../lib/overlay-scroll';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import type { ChShellData } from '../data/shell';
@@ -76,6 +76,37 @@ export function TabBar({
   const sheet = useRef<HTMLDivElement>(null);
   const closeMore = useCallback(() => setMoreOpen(false), []);
   const drag = useSheetDrag(sheet, closeMore, { enabled: !reduced });
+  // CH-1602: More rises on the smooth spring and leaves on it too, at the speed it was thrown when swiped shut (CH-1611),
+  // ending as it leaves sight. Read as the exit begins, since the sheet's props are fixed once it is removed.
+  const sheetMotion = {
+    shown: { y: 0, opacity: 1, transition: chSpring('smooth', reduced) },
+    gone: (_custom: unknown, current: { y?: unknown }) => {
+      if (reduced) return { y: 0, opacity: 0, transition: { duration: 0 } };
+      const travel = sheet.current?.offsetHeight ?? 0;
+      if (!travel) return { y: '100%', transition: chTween('base') };
+      // From where it is now (mid rise, when closed early), plus the frame a throw has already carried it.
+      const from = typeof current?.y === 'number' ? current.y : 0;
+      const out = chThrownExit(takeSheetFling(sheet.current, { peek: true }), travel - from);
+      return { y: [from + out.lead, travel], transition: { duration: out.ms / 1000, ease: out.ease } };
+    },
+  };
+
+  /**
+   * CH-1907: tapping the tab already open does what a UIKit tab bar does, silently (CH-1701). It pops a pushed phone
+   * screen or section back to the tab's root (each level is a history entry, CH-1906), a page below the tab's root
+   * goes back up to it (the link itself), and at the root the page scrolls to the top.
+   */
+  const retap = (e: MouseEvent<HTMLAnchorElement>, href: string) => {
+    const level = (window.history.state as { chPhone?: unknown } | null)?.chPhone;
+    if (typeof level === 'number' && level > 0) {
+      e.preventDefault();
+      window.history.go(-level);
+      return;
+    }
+    if (pathname !== href) return;
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: reduced ? 'instant' : 'smooth' });
+  };
 
   useEffect(() => setMoreOpen(false), [pathname]);
   // The sheet is modal: focus moves into it, Tab stays inside, Esc closes it,
@@ -120,7 +151,7 @@ export function TabBar({
               className="ch-tab"
               // CH-1803: the current tab is marked; CH-1701: changing tabs ticks, tapping the current one does not.
               aria-current={active ? 'page' : undefined}
-              onClick={() => !active && haptic('select')}
+              onClick={(e) => (active ? retap(e, t.href) : haptic('select'))}
             >
               <span className="ch-tab__icon">
                 <Icon icon={t.icon} size={21} />
@@ -186,9 +217,9 @@ export function TabBar({
               aria-label="More"
               className="ch-more"
               initial={reduced ? { opacity: 0 } : { y: '100%' }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={reduced ? { y: 0, opacity: 0 } : { y: '100%' }}
-              transition={reduced ? { duration: 0 } : chTween('base')}
+              variants={sheetMotion}
+              animate="shown"
+              exit="gone"
             >
               <OverlayScrollLock />
               <div className="ch-more__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />

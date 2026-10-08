@@ -47,21 +47,55 @@ Coach: read the day in one glance, then act (message the team, add an event). Pl
 
 ## Visual hierarchy
 
-Coach desktop: header (date, greeting, brief, two actions); one sheet holding the week and the latest round side by side; the leaderboard below. Coach phone: a green hero (day, greeting, brief, Up next), then Today, the team's scoring form, This week and Latest rounds, each round opening a card in a sheet. Player desktop: header (date, greeting, brief, Message coach); the sheet with the week (Up next and its countdown between the days and the agenda) beside My latest round; Scoring; By part of the game. Player phone: the hero with Up next, its countdown and the two actions, then This week, Today, My latest round (paged, its card inline), Scoring and the parts of the game.
+Coach desktop: header (date, greeting, brief, two actions); one sheet holding
+the week and the latest round side by side; the leaderboard below. Coach phone:
+on the parchment sheet under the green chassis, the date, the greeting and the
+brief, Up next as the one green card, then Today, the team's scoring, This week
+and Latest rounds flush under engraved double rules, each round opening a card
+in a sheet. Player desktop: header (date, greeting, brief, Message coach); the
+sheet with the week (Up next and its countdown between the days and the agenda)
+beside My latest round; Scoring; By part of the game. Player phone: the hero
+with Up next, its countdown and the two actions, then This week, Today, My
+latest round (paged, its card inline), Scoring and the parts of the game.
 
 ## Components
 
 ### Reused Clubhouse primitives
 
-`Avatar`, `Badge`, `Button`, `IconButton`, `Icon`, `Modal` (a sheet on the phone), `EmptyState` (section and page, D-71), `Skeleton`, `RefreshNotice` (on `InlineNotice`), `SectionBoundary`, `Segmented`, `ScoreMark`, `ScrollRegion`, `FormLine`, `Nine`, `usePhoneHero` (the shell's phone chrome), `useChPhone`, `useChReducedMotion`, `useNow`, `chSwap`. Home also imports the event type label and icon from Calendar's screens (`calendar/model`, `calendar/views`) and the handicap format from Roster's (`roster/format`).
+`Avatar`, `Badge`, `Button`, `IconButton`, `Icon`, `Modal` (a sheet on the
+phone), `EmptyState` (section and page, D-71), `Skeleton`, `RefreshNotice` (on
+`InlineNotice`) and `PageRefreshNotice` (CH-1209: two or more failed reads told
+once under the head with one Try again, each failed part's notice `covered`, its
+title alone; the parts are named by `coachFailedParts` / `playerFailedParts` in
+`model.ts`, from the same flags that draw each part's notice),
+`SectionBoundary`, `Segmented`, `ScoreMark`, `ScrollRegion`, `FormLine`, `Nine`,
+`usePhoneHero` (the shell's phone chrome), `useChPhone`, `useChReducedMotion`,
+`useNow`, `chSwap`. Home also imports the event type label and icon from
+Calendar's screens (`calendar/model`, `calendar/views`) and the handicap format
+from Roster's (`roster/format`).
 
 ### New Clubhouse components
 
-Coach: `CoachHome` (with `HomeFirstRun` and `CoachHomeNoTeam`), `HomeActions`, `Week`, `LatestRound`, `Leaderboard`, `HomeSkeleton`, and the phone's `HomePhone` with `UpNext`, `NoEvents`, `Today`, `Form`, `WeekStrip`, `Rounds` and `RoundSheet`. Player: `PlayerHome` (with `DeskNext`, `PlayerFirstRun` and `PlayerHomeNoTeam`), `PlayerHomePhone` (with its paged `Latest`), `PlayerGame` (`Scoring`, `ScoreChart`, `Legs`, `Leg`, `Spark`) and `Countdown`. `Week`, `LatestRound` (with a `mine` mode), and the phone's `UpNext`, `Today` and `WeekStrip` are shared by both roles.
+Coach: `CoachHome` (with `HomeFirstRun` and `CoachHomeNoTeam`), `HomeActions`,
+`Week`, `LatestRound`, `Leaderboard`, `HomeSkeleton` (shared by both roles; its
+phone hero is `SkeletonPhoneHero`, drawn in the reader's own shape from the
+shell's role), and the phone's `HomePhone` with `UpNext`, `NoEvents`, `Today`,
+`Form`, `WeekStrip`, `Rounds` and `RoundSheet`. Player: `PlayerHome` (with
+`DeskNext`, `PlayerFirstRun` and `PlayerHomeNoTeam`), `PlayerHomePhone` (with
+its paged `Latest`), `PlayerGame` (`Scoring`, `ScoreChart`, `Legs`, `Leg`,
+`Spark`) and `Countdown`. `Week`, `LatestRound` (with a `mine` mode), and the
+phone's `UpNext`, `Today` and `WeekStrip` are shared by both roles.
 
 ### Modified Clubhouse components
 
-`ui/Nine` became the shared phone scorecard nine (Qualifiers moved onto it); the page empty state (D-71) and `usePhoneHero` are the foundation's. Nothing else outside `screens/home` changed for this page.
+`ui/Nine` became the shared phone scorecard nine (Qualifiers moved onto it); the
+page empty state (D-71) and `usePhoneHero` are the foundation's. Nothing else
+outside `screens/home` changed for this page. `Week`, `LatestRound`,
+`Leaderboard` and `PlayerGame` take `covered` for the page notice; the first-run
+pages (`HomeFirstRun`, `PlayerFirstRun`) open under the loaded page's framed
+head on desktop (`main[data-canopy]`, the head `data-canopy-head`, held where
+the loaded Home sets its date and greeting) and under the Ledger's page intro on
+the phone (`ch-h-main--first`).
 
 ## Actions affected
 
@@ -85,25 +119,61 @@ Coach: a 1280px canvas holds the header, then one lit sheet in two columns (the 
 
 ## Phone
 
-Approved specs `docs/clubhouse/phone/home.md` (coach) and `docs/clubhouse/phone/home-player.md` (player), from the owner's v2 boards. The top bar turns green (`usePhoneHero`) over a hero holding the date, the greeting, the brief and Up next. At 820px and below the phone Home takes over from the desktop page; it is never the desktop shrunk (21901).
+Approved specs `docs/clubhouse/phone/home.md` (coach) and
+`docs/clubhouse/phone/home-player.md` (player), from the owner's v2 boards. The
+top bar is the green chassis (`usePhoneHero`) over the parchment sheet that
+holds the date, the greeting, the brief and Up next. At 820px and below the
+phone Home takes over from the desktop page; it is never the desktop shrunk
+(21901).
+
+The coach's phone follows the owner's "Coach - Home - Mobile v2" board
+(`m-clubhouse.css`, the Mobile clubhouse pass, its three rounds in order). The
+sheet is the canvas' own parchment (`--ch-workspace`) from the greeting to the
+tab bar, so a short page has no seam. The date is the page intro's eyebrow
+(12px, the phone text floor) under the engraved double rule, the greeting the
+bold condensed sans in forest ink, the brief under it. Up next is the screen's
+one green feature card: the event's type, the countdown chip, the title, the
+time and place and who is going; with nothing ahead it is the card's empty, with
+the quick event types and Add event. Today, the team's scoring, This week and
+Latest rounds sit flush under their double rules, their titles in the Ledger's
+phone heading (600 19px, forest). Today's rows and the latest rounds sit on the
+section's edge between soft seams, the time at the edge as the board sets it;
+This week draws today as the solid green key and a competition day as a soft
+green tint with its trophy, as the player's does. Every control answers a press
+a beat after the finger lands (CH-1606): rows and the week's keys tint, Up next
+deepens its green, the quick types and Plan shrink as keys, the section links
+dim. A week that did not load says so on the sheet under the greeting, never
+inside the green card, and two or more failed reads are told once (CH-1209). The
+board's rules that the app's markup never matched (its titles were h3s; it put
+today and the competition day on the key, the strip puts them on the day) were
+rewritten for the markup, not kept as dead code.
 
 The player's phone follows `Player - Home - Mobile.html` (`m-player-home.jsx`,
-`m-player-home.css`), not the coach's. Today is a small label inside This
-week, with no Calendar link (the week's days open it): the row under way reads
-Now, with none under way the next one reads Next, and a row that has passed
-keeps its ink with only its time stepping back. Scoring and By part of the
-game each have their title and one-line meta above their card; Scoring's card
-opens on the full-width Last 5 / Last 10 / Last 20 picker (always all three),
-then the line, the four figures (26px, green when the average fell or strokes
-gained is at or above zero, amber when worse, plain when it rounds to zero;
-the grey line under each only states the change), and the italic note. The
-chart's dates are labelled once per day (a run of one date is labelled where
-it starts) and its score axis keeps to about six whole-stroke ticks; a round
-is marked under par against its own par, and the par line is drawn only when
-every round in the window was played to the same par. The hero's greeting,
-brief and Up next sit apart by margins that carry more than one selector,
-because base.css zeroes every heading's and paragraph's margin and a one-class rule
-lost that tie (the brief hugged Up next).
+`m-player-home.css`), not the coach's, in the Mobile clubhouse pass (owner,
+2026-10-08; the Coach Home board's round 3 carried over): the page is the
+parchment sheet, Up next with its countdown is the one green feature card,
+Message coach and Post a round under it are the shared buttons (Post a round the
+primary), and every section below sits flush under an engraved double rule with
+its title in the bold condensed sans, with no white cards. This week draws today
+as the solid green key and a competition day as a soft green tint with its flag.
+Today is a small label inside This week, with no Calendar link (the week's days
+open it); its rows sit on the section's edge and tint on press: the row under
+way reads Now, with none under way the next one reads Next, and a row that has
+passed keeps its ink with only its time stepping back. My latest round keeps its
+green scorecard; its GIR, putts and SG are the Ledger's figure row between
+hairlines. Scoring and Your game each have their title and one-line meta in the
+section's head; Scoring opens on the full-width Last 5 / Last 10 / Last 20
+picker (always all three), then the line, the four figures two by two between
+hairlines (22px bold sans, green when the average fell or strokes gained is at
+or above zero, amber when worse, plain when it rounds to zero; the grey line
+under each only states the change), and the italic note. The four parts of the
+game are divided by soft rules. The chart's dates are labelled once per day (a
+run of one date is labelled where it starts) and its score axis keeps to about
+six whole-stroke ticks; a round is marked under par against its own par, and the
+par line is drawn only when every round in the window was played to the same
+par. The hero's greeting, brief and Up next sit apart by margins that carry more
+than one selector, because base.css zeroes every heading's and paragraph's
+margin and a one-class rule lost that tie (the brief hugged Up next).
 
 ## Accessibility
 

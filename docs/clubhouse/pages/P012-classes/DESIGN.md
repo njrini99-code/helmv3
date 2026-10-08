@@ -24,7 +24,8 @@ Status:   approved (the owner's v2 boards are the spec, D-22; docs/clubhouse/pho
 
 ## Design objective
 
-One calm page for a player's term: the term at a glance, every class as a card,
+One calm page for a player's term: the term at a glance, every class as a row of
+a timetable (the Ledger, with no cards, on desktop and on the phone),
 and the week's overlaps with the team's events, so a coach can plan around class
 and a player can see it. The schedule is quick to enter (a screenshot is read
 and reviewed row by row) and honest about what reached the team calendar.
@@ -42,13 +43,17 @@ and see whether any of them meets over practice or travel this week.
 
 ## Visual hierarchy
 
-Header (the term and its dates, the title, the sync status, Import schedule and
-Add class), the term overview, then the deck of class cards beside a side column
-(this week's overlaps, and what the coach sees). Below a 1000px container the
-side column goes under the deck; below 640px the deck is one column, the
-overview stacks (the week tile beside the credits and the bar, the overlap count
-on its own row) and the two header buttons share the row. On the phone the
-shell's top bar holds "Classes" with "‹ More" and the page keeps its own header.
+Header (the framed page head on desktop: the term and its dates, the title, the
+sync status, Import schedule and Add class), the term overview (on desktop three
+figures between column rules, not a green band), then "Your classes": a ruled
+list where each class keeps only its department key in its tone and the day keys
+align down the list (on the phone the same rows, its week of day keys under the
+name), beside a side column (this week's overlaps, and what the coach sees).
+Below a 1000px container the side column goes under the deck; below 640px the
+deck is one column, the overview stacks (the week tile beside the credits and
+the bar, the overlap count on its own row) and the two header buttons share the
+row. On the phone the shell's top bar holds "Classes" with "‹ More" and the page
+keeps its own header.
 
 ## Components
 
@@ -85,10 +90,11 @@ All 25 (CONTRACT.md).
 
 ## Motion intent
 
-Two of its own, on the v2 tokens (D-64): a hovering class lifts 2px at the quick
-duration (CH-12601), and a scan line sweeps down the page while a schedule is
-read (CH-12602; it stops when Animations is off). Every press, sheet, toast and
-skeleton fade, and the first-paint rise, is the shell's; nothing counts up.
+Two of its own, on the v2 tokens (D-64): a hovering class takes the Ledger row
+tint at the quick duration, with no lift (CH-12601), and a scan line sweeps down
+the page while a schedule is read (CH-12602; it stops when Animations is off).
+Every press, sheet, toast and skeleton fade, and the first-paint rise, is the
+shell's; nothing counts up.
 
 ## Haptic intent
 
@@ -108,6 +114,21 @@ follows the canvas, not the window: the deck (cards of at least 260px) beside a
 Approved spec `docs/clubhouse/phone/classes.md`: Classes opens from More (D-66);
 the class's sheet, the form, the import and both questions are bottom sheets
 that drag to close; the tab bar stays with More on.
+
+**The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy, too vibe
+coded"; the Coach Home board's round 3, "fewer containers, one feature card").**
+The top bar stays the page's one heading (the iPhone brief). The term and its
+dates are the tracked brown eyebrow under the engraved double rule, over Import
+schedule and Add class. The term card is the page's one green feature card. Today,
+this week's overlaps and "Your classes" are sections flush on the parchment under
+the double rule, their entries rows between soft seams that deepen to the row
+press tint: a class keeps only its department key in its tone, the name over the
+instructor, its week of day keys (the days it meets raised, today ringed green)
+and the room and flags; Add a class is the last row. What the coach sees is a line
+under a soft rule. A player on no team sees the calm empty page under the top bar
+with no second "Classes" title. The route skeleton draws the same shapes at the
+phone's width. Kept as material: the tone keys, the day keys, the flags, the
+buttons, the notices and every sheet.
 
 ## Accessibility
 

@@ -56,7 +56,7 @@ The route's loading state is the Stats skeleton (40201, CH-4401), in Team stats'
 | --- | --- | --- | --- |
 | 40201 | CH-4401 | `STATS_IS_LOADING` | Team stats are loading (a player's profile is CH-5403) |
 
-From the shell (P001): 10201 CH-1401.
+From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 ## 03 — Background loading / refresh
 
@@ -149,7 +149,7 @@ The offline banner (10701) and Try again while offline (10704) are the shell's.
 | 40702 | CH-4902 | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | A window or filter change takes longer than 5 seconds |
 | 40703 | CH-4903 | `A_WINDOW_OR_FILTER_CHANGE_IS_IN` | A window or filter change is in flight (after a beat of 150 ms; one that lands at once never shows it) |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
 
 ## 08 — Permission / authorization
 
@@ -214,14 +214,21 @@ Status: N/A — Team stats has no live data and no write to reconcile: every fig
 
 Status: DEFINED
 
-Team stats' own motion is the trend focus and the leg choice (41601, 41602), and the busy dim of a window change (40301). Everything else is the shell's: v2 press, reveal, sheets and pushes (11601 to 11612, D-64).
+Team stats' own motion is the trend focus (a player pointed at, tabbed to or
+chosen comes forward in green while the others fade back), the leg choice (the
+card's ring, and the re-sorted grid settling in), the trend's measure swap and a
+new window's figures (41601, 41602, 41603, 41604), and the busy dim of a window
+change (40301). Everything else is the shell's: the page crossfade, the press on
+keys, sheets and pushes (11601 to 11613, D-64); there is no first-paint rise.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 41601 | CH-4601 | `FOCUSING_A_PLAYER_ON_THE_TREND` | Focusing a player on the trend |
 | 41602 | CH-4602 | `CHOOSING_A_LEG` | Choosing a leg |
+| 41603 | CH-4603 | `CHANGING_THE_TRENDS_MEASURE` | Changing the trend's measure |
+| 41604 | CH-4604 | `A_NEW_WINDOWS_FIGURES_ARRIVE` | A new window's figures arrive |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -236,7 +243,7 @@ Team stats' own haptics (41701 to 41703) on the v2 grammar (D-70): a selection t
 | 41703 | CH-4703 | `SORTING_THE_PHONES_PLAYERS_BY_AVG_OR` | Sorting the phone's players by Avg or SG |
 | 41704 | CH-4704 | `CHOOSING_A_ROUND_TYPE_A_LENGTH_A` | Choosing a round type, a length (18 holes, 9 holes, Both), a course or a round in the filter sheet, choosing a window or a pick mode there, or removing a chip / Clear |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
 
 ## 18 — Accessibility
 
@@ -253,7 +260,7 @@ Team stats' own (41801 to 41805): the trend chart has a written summary and its 
 | 41805 | CH-4805 | `THE_PHONES_SCORING_LINE_IS_AN_IMAGE` | The phone's scoring line is an image with a written reading ("Team scoring average by week, from 74.8 to 73.4. Down 1.4 strokes…"); each player row is one link read as name, rounds, average and strokes gained ("Early read" under three rounds) |
 | 41806 | CH-4806 | `THE_ROUND_FILTER_THE_FILTER_BUTTON_SAYS` | The round filter: the Filter button says it opens a dialog and how many filters are on; each chip is a button named "Remove filter: Tournament"; Clear is "Clear filters"; the count line is a polite status region; the sheet is a labelled dialog whose groups (Round type, Holes, Time, Course, Pick rounds) are labelled, round type, holes and pick mode are toggle buttons (`aria-pressed`), courses and rounds are checkboxes in labelled lists, and the dates are labelled inputs whose error is their description |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
 
 ## 19 — Responsive layout
 
@@ -277,7 +284,7 @@ The window switch is a radio group that moves and chooses with the arrow keys, t
 | --- | --- | --- | --- |
 | 42001 | — | `KEYBOARD_PATH` | The window switch moves and chooses with the arrow keys, a leg card takes Enter, and a grid row is a link that marks its player on the trend when it takes focus. |
 
-From the shell (P001): 12001 CH-1906.
+From the shell (P001): 12001 CH-1906, 12002 CH-1907, 12003 CH-1908.
 
 ## 21 — Performance
 

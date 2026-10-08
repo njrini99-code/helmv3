@@ -8,6 +8,7 @@ import { Avatar } from "../ui/Avatar";
 import { Icon } from "../ui/Icon";
 import type { ChShellData } from "../data/shell";
 import { activeNavItem, CH_NAV_SECTIONS, navFor, type ChNavItem } from "./nav";
+import { NavPlate } from "./NavPlate";
 import { NextEventCard } from "./NextEventCard";
 import { BrandTeamSwitch } from "./TeamSwitch";
 import type { ChTeamSwitch } from "./team-switch";
@@ -53,7 +54,7 @@ export function Sidebar({
       ) : (
         <div className="ch-brand">
           <img
-            src="/helm-main-logo-transparent-white-trim.png"
+            src="/clubhouse/auth/helm-golf-mark.png"
             alt=""
             width={32}
             height={32}
@@ -70,6 +71,7 @@ export function Sidebar({
       )}
 
       <nav className="ch-nav" aria-label="Main">
+        <NavPlate />
         {sections.map((section) => {
           const items = nav.filter((i) => i.section === section);
           if (!items.length) return null;

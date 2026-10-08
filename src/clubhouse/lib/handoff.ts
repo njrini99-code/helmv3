@@ -11,8 +11,8 @@ import { CH_DUR, CH_EASE } from './motion';
  * change after it cannot animate by itself (the welcome unmounts, the dashboard
  * renders on the server), so for the moment in between this draws that same
  * still frame outside React, on top of everything. When the dashboard's frame
- * has mounted and its fonts are in, it fades away over the reveal beat and the
- * dashboard's own first-paint reveal plays underneath. Nothing ever shows an
+ * has mounted and its fonts are in, it fades away over the reveal beat onto the
+ * dashboard, which is already in place (there is no first-paint reveal). Nothing ever shows an
  * empty page, and nothing jumps: the frame is the same geometry on both sides.
  *
  * If the dashboard never says it is there (a different destination, an error
@@ -41,6 +41,8 @@ export function dropHandoffCurtain(): void {
   const page = token(from, '--ch-bg-page', '#f7f5ef');
   const sidebarW = token(from, '--ch-sidebar-w', '240px');
   const phone = window.matchMedia(PHONE).matches;
+  // At night the fold's strip is the flat frame (auth.css, onboard.css), so the curtain is too.
+  const dark = document.documentElement.getAttribute('data-fw-theme') === 'dark';
 
   const curtain = document.createElement('div');
   curtain.id = ID;
@@ -51,7 +53,7 @@ export function dropHandoffCurtain(): void {
     zIndex: '2147483000',
     pointerEvents: 'none',
     // The sidebar's own gradient, so the sidebar text simply appears on the green it will sit on.
-    background: phone ? page : `linear-gradient(180deg, #0e4029, ${frame})`,
+    background: phone ? page : dark ? frame : `linear-gradient(180deg, #0e4029, ${frame})`,
   });
   if (!phone) {
     const canvas = document.createElement('div');
