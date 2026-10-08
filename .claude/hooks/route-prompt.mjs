@@ -10,10 +10,14 @@
 //    `/worktree`, `/gates`, `/held`, the `helm-sentry` skill, and the
 //    `helm-supabase` skill for Supabase/migration work. No subprocess, no I/O — a handful of regex tests.
 //
-// 2. FEATURE-DOC MAPPING (pre-existing) — if the prompt text names a
-//    repo-relative path under src/, supabase/, scripts/, memory/, or docs/,
-//    run `node scripts/knowledge/map-changed-files.mjs --files <paths>`
-//    (10s timeout) and surface the mapped feature docs.
+// 2. FEATURE-DOC MAPPING — if the prompt text names a repo-relative path
+//    under src/, supabase/, scripts/, memory/, or docs/, run
+//    `node scripts/knowledge/map-changed-files.mjs --files <paths>` (10s
+//    timeout) and surface at most MAX_DOCS mapped docs, primary first, with
+//    docs whose STATUS banner says STALE / HISTORICAL / SUPERSEDED / RETIRED
+//    skipped (the mapper's `contextDocs`). Paths inside pasted blocks
+//    (`<pasted_content ...>`) are ignored: they are quoted material, not the
+//    files the user is asking about.
 //
 // If neither fires, exit 0 silently. Never fails the prompt — any error here
 // degrades to a silent no-op, never a blocked submission.
@@ -48,9 +52,23 @@ function readStdinJson() {
   });
 }
 
+/** Upper bound on docs the router will surface for one prompt. */
+export const MAX_DOCS = 3;
+
+// `<pasted_content ...> ... </pasted_content ...>`, tolerating an id carried
+// either as an attribute or as a name suffix. An opening tag with no closing
+// tag drops everything after it: ignoring too much is the safe failure.
+const PASTED_BLOCK_RE = /<(pasted_content[\w-]*)\b[^>]*>[\s\S]*?<\/\1\b[^>]*>/gi;
+const PASTED_OPEN_RE = /<pasted_content[\w-]*\b[^>]*>[\s\S]*$/i;
+
+/** The prompt text with pasted blocks removed. */
+export function stripPastedBlocks(text) {
+  return String(text || '').replace(PASTED_BLOCK_RE, ' ').replace(PASTED_OPEN_RE, ' ');
+}
+
 /** Repo-relative paths named in free text, deduplicated, in order. */
 export function extractPaths(text) {
-  const matches = String(text || '').match(PATH_RE) || [];
+  const matches = stripPastedBlocks(text).match(PATH_RE) || [];
   // Strip trailing punctuation a sentence would attach (".", ",", ")", etc).
   const cleaned = matches.map((m) => m.replace(/[.,;:)\]]+$/, ''));
   return [...new Set(cleaned)];
@@ -74,6 +92,14 @@ export function matchDoorHints(text) {
   return DOOR_HINTS.filter((h) => h.re.test(t)).map((h) => h.door);
 }
 
+/** Capped, primary-first, STATUS-filtered docs from the mapper's JSON. */
+export function pickDocs(parsed) {
+  if (Array.isArray(parsed?.contextDocs?.docs)) return parsed.contextDocs.docs.slice(0, MAX_DOCS);
+  // Older mapper output: no shortlist. Fall back to the first few mapped docs.
+  const all = [...new Set((parsed?.impactedFeatures ?? []).flatMap((f) => f.docs ?? []))];
+  return all.slice(0, MAX_DOCS);
+}
+
 function emit(additionalContext) {
   process.stdout.write(
     JSON.stringify({
@@ -87,7 +113,7 @@ async function run() {
   const prompt = input?.prompt ?? input?.user_prompt ?? '';
   const lines = [];
 
-  const doors = matchDoorHints(prompt);
+  const doors = matchDoorHints(stripPastedBlocks(prompt));
   if (doors.length > 0) {
     lines.push(`This prompt looks like it belongs at: ${doors.join(', ')}.`);
   }
@@ -111,9 +137,7 @@ async function run() {
     if (result && !result.error && result.status === 0 && result.stdout) {
       try {
         const parsed = JSON.parse(result.stdout);
-        const featureDocs = [
-          ...new Set((parsed.impactedFeatures ?? []).flatMap((f) => f.docs ?? [])),
-        ];
+        const featureDocs = pickDocs(parsed);
         if (featureDocs.length > 0) {
           lines.push(`Mapped feature docs for the paths in this prompt: ${featureDocs.join(', ')}`);
         }

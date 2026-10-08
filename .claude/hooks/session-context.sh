@@ -168,16 +168,18 @@ fi
 WT=$(git worktree list 2>/dev/null | wc -l | tr -d ' ')
 if [ "${WT:-1}" -gt 1 ]; then
   CTX="${CTX}
-- worktrees: ${WT} (work may be happening in another checkout of this repo)"
+- worktrees: ${WT} (advisory count: other checkouts exist, not proof anyone is writing in them)"
 fi
 
-# Branch policy is AGENTS.md canonicality: work on the currently checked-out
+# Informational only, and only for the canonical checkout: a worktree on a task
+# branch is the normal state and gets no note. Work on the currently checked-out
 # branch; never switch unless asked. A push to main ships nothing (vercel.json
 # deploymentEnabled all-false; production changes only when an agent deploys).
 if [ "$BRANCH" != "main" ] && [ "$(pwd -P)" = "$CANON_ROOT" ]; then
   CTX="${CTX}
-- NOTE: the canonical checkout should rest on main. It is on '${BRANCH}';
-  if that is not a task you are doing, say so before editing."
+- note (informational): this is the canonical checkout and it is on '${BRANCH}', not main.
+  If it is not your task, another session may own it: use your own worktree
+  (scripts/new-worktree.sh <task>)."
 fi
 
 jq -nc --arg ctx "$CTX" \

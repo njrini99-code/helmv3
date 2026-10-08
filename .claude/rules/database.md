@@ -8,7 +8,7 @@ paths:
 <!-- markdownlint-disable MD022 MD012 -->
 # Database rules
 Loads automatically when you touch SQL, migrations, or Supabase client code.
-Review checklist for a migration/policy PR: `.claude/rules/database-review.md`.
+Includes the review checklist for a migration/policy PR (last section).
 
 ## Where the truth is
 - **Columns**: `memory/context/golfhelm-database.md`, the `AUTOGEN:columns`
@@ -75,3 +75,60 @@ is the broader comparison.
 when `SUPABASE_ACCESS_TOKEN` is absent). Run `node scripts/regen-docs.mjs`
 afterwards to refresh the columns doc. For client/query work, load the
 `helm-supabase` skill.
+
+## Review checklist (migration or policy PR)
+
+`supabase/schemas/**` is the declarative source of truth for current shape
+(Database Plan D2); edit it, then `supabase db diff -f <name>` to generate
+the matching migration — see `docs/operations/DECLARATIVE_SCHEMA.md`.
+
+This is a multi-tenant college-athletics SaaS holding minors' academic +
+athletic PII. **Database safety IS product safety** — a cross-tenant leak
+is the worst-case, business-ending failure. Patterns + required tests:
+`docs/v3-rls-template.md`. Schema: `memory/context/{golfhelm,baseballhelm}-database.md`.
+
+### Always check on a migration / policy PR
+
+- **RLS on every table** — `CREATE TABLE` ships with `ENABLE ROW LEVEL
+  SECURITY` + at least one `CREATE POLICY` in the same migration.
+- **No cross-team `USING (true)` on PII tables** — a SELECT policy that
+  returns every row to any authenticated user (e.g. on `baseball_players`,
+  `golf_*` player/roster tables) is a cross-tenant PII exposure. Read
+  access must gate through the canonical helpers (`is_team_coach`,
+  `is_team_player`, `is_baseball_team_staff`, `current_player_id`,
+  `can_view_baseball_player`, …).
+- **Forward-only migrations** — never edit a migration with timestamp
+  prefix <= `20260527120000`. Fix replay failures with a new migration.
+- **Service-role stays server-only** — no service-role logic outside
+  `src/lib/supabase/admin*` / `src/app/api/**/admin/**`.
+- **SECURITY DEFINER hygiene** — every `SECURITY DEFINER` function pins
+  `SET search_path = ''` (or `'public'` per existing convention).
+- **Indexes** — every FK column and every column used in an RLS predicate
+  has an index. Enum additions ship in a separate migration BEFORE the
+  migration that uses them (Postgres 55P04). One purpose per migration.
+- **No destructive writes / idempotent imports** — no DELETE-then-INSERT
+  in save/submit/sync SQL; importers update/merge, never duplicate, and
+  preserve source/timestamp/confidence.
+- **Verify + rollback** — a data/DDL migration carries `-- ROLLBACK:` and
+  `-- VERIFY:` blocks (`npm run check:migration-headers`); `IF [NOT] EXISTS` guards; `DO $$…$$`
+  around renames. A migration file being present does NOT mean it's
+  applied in prod — verify against `information_schema`.
+
+### Block if
+
+- a new table lacks RLS or a policy; a policy allows cross-team access or
+  is a bare `USING (true)` on PII;
+- a migration edits historical (baseline) migrations instead of adding a
+  forward one;
+- service-role capability leaks outside admin/server-only paths;
+- a destructive delete/insert can lose user data;
+- a new FK or RLS-predicate column lacks an index;
+- a `SECURITY DEFINER` function omits `search_path`.
+
+### Suggest (non-blocking) enhancements
+
+- A missing positive/negative/cross-team/transfer RLS test for a new
+  policy (`docs/v3-rls-template.md` testing section).
+- An index that a new RLS predicate or hot query will need.
+- Capturing source/timestamp/confidence columns on a new import target so
+  later automation and dedup are possible.

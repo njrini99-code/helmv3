@@ -34,22 +34,23 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Category | Files | Routed | Claims authority | Dead refs |
 | --- | --- | --- | --- | --- |
-| `POLICY` | 20 | 2 | 6 | 0 |
-| `AGENT_SKILL` | 133 | 0 | 8 | 0 |
+| `POLICY` | 16 | 3 | 6 | 0 |
+| `AGENT_SKILL` | 131 | 0 | 8 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 14 | 0 |
 | `REFERENCE` | 52 | 15 | 20 | 0 |
 | `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 44 | 5 | 18 | 78 |
-| `AUDIT_SNAPSHOT` | 67 | 6 | 35 | 29 |
+| `PLAN` | 43 | 5 | 17 | 57 |
+| `AUDIT_SNAPSHOT` | 67 | 6 | 35 | 28 |
 | `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 49 | 15 | 2 | 4 |
 | `ADR` | 6 | 0 | 3 | 2 |
-| `INDEX` | 25 | 1 | 9 | 5 |
-| `UNKNOWN` | 321 | 12 | 70 | 86 |
+| `INDEX` | 25 | 2 | 9 | 5 |
+| `ARCHIVE` | 4 | 0 | 1 | 20 |
+| `UNKNOWN` | 321 | 13 | 70 | 83 |
 
 ## Files
 
@@ -58,17 +59,13 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | Dead |
 | --- | --- | --- | --- | --- | --- |
 | `.claude/rules/baseball-review.md` | current | - | - | yes | - |
-| `.claude/rules/clubhouse.md` | current | - | - | - | - |
+| `.claude/rules/clubhouse.md` | current | yes | - | - | - |
 | `.claude/rules/coachhelm-review.md` | current | - | - | - | - |
 | `.claude/rules/code-patterns.md` | current | - | - | - | - |
 | `.claude/rules/code-review-tooling.md` | current | - | - | - | - |
-| `.claude/rules/database-review.md` | current | - | - | yes | - |
-| `.claude/rules/database.md` | current | - | - | - | - |
+| `.claude/rules/database.md` | current | - | - | yes | - |
 | `.claude/rules/design-system.md` | current | - | - | yes | - |
-| `.claude/rules/file-structure.md` | current | - | - | - | - |
-| `.claude/rules/golf-feature-ownership.md` | current | - | - | - | - |
-| `.claude/rules/golf-review.md` | current | - | - | - | - |
-| `.claude/rules/golfhelm-engineering-os.md` | current | - | - | - | - |
+| `.claude/rules/golf.md` | current | - | - | - | - |
 | `.claude/rules/integrations.md` | current | - | - | - | - |
 | `.claude/rules/quality-gates.md` | current | - | - | - | - |
 | `.claude/rules/shipping.md` | current | - | - | - | - |
@@ -88,6 +85,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/agents/db-migration-reviewer.md` | current | - | - | yes | - |
 | `.claude/agents/debugger.md` | current | - | - | - | - |
 | `.claude/agents/helm-reader.md` | current | - | - | - | - |
+| `.claude/agents/helm-ui-worker.md` | current | - | - | - | - |
 | `.claude/agents/helm-worker.md` | current | - | - | - | - |
 | `.claude/agents/security-reviewer.md` | current | - | - | yes | - |
 | `.claude/agents/ui-polish-reviewer.md` | current | - | - | - | - |
@@ -102,9 +100,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/skills/app-store-screenshots/SKILL.md` | current | - | - | - | - |
 | `.claude/skills/capacitor-best-practices/SKILL.md` | current | - | - | - | - |
 | `.claude/skills/debugging-capacitor/SKILL.md` | current | - | - | - | - |
-| `.claude/skills/feature-finisher/GOLFHELM_FEATURES.md` | current | - | - | - | - |
-| `.claude/skills/feature-finisher/QUICKSTART.md` | current | - | - | - | - |
-| `.claude/skills/feature-finisher/SKILL.md` | current | - | - | - | - |
 | `.claude/skills/finish-task/SKILL.md` | current | - | - | - | - |
 | `.claude/skills/golfhelm-creative-engine/SKILL.md` | current | - | - | yes | - |
 | `.claude/skills/golfhelm-creative-engine/references/creative-rules.md` | current | - | - | - | - |
@@ -268,7 +263,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/features/SHOT_TRACKING_DATA_FLOW.md` | current | yes | - | - | - |
 | `docs/features/SHOT_TRACKING_VERIFICATION.md` | current | yes | - | - | - |
 | `docs/features/coachhelm/COACHHELM_PRODUCTION_ALIGNMENT_2026-03-11.md` | current | - | - | - | - |
-| `docs/lifting-lab/HELM_LIFTING_LAB_BLUEPRINT.md` | current | - | - | - | - |
+| `docs/lifting-lab/HELM_LIFTING_LAB_BLUEPRINT.md` | current | yes | - | - | - |
 | `docs/research/coach-outreach-legal-and-best-practices.md` | current | - | - | - | - |
 | `docs/security/DEPENDABOT_TRIAGE_2026-09-06.md` | current | - | - | - | - |
 | `docs/security/GITHUB_APPS_2026-09-06.md` | current | - | - | - | - |
@@ -285,17 +280,17 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/setup/RUN_ON_YOUR_MACHINE.md` | current | - | - | - | - |
 | `docs/setup/SUPABASE_MCP_SETUP.md` | current | - | - | - | - |
 | `docs/v3-decisions.md` | current | yes | - | yes | - |
-| `docs/v3-design-language.md` | current | yes | - | yes | - |
+| `docs/v3-design-language.md` | current | - | - | yes | - |
 | `docs/v3-research-golf-domain.md` | current | yes | - | yes | - |
 | `docs/v3-rls-template.md` | current | yes | - | yes | - |
-| `docs/v3-testing-standards.md` | current | yes | - | - | - |
+| `docs/v3-testing-standards.md` | current | - | - | - | - |
 | `docs/v3-wave-sequence.md` | superseded | - | - | yes | - |
 | `memory/brand/logos.md` | current | - | - | - | - |
 | `memory/context/agent-operations.md` | current | yes | - | - | - |
 | `memory/context/agent-traps.md` | current | yes | - | - | - |
 | `memory/context/baseballhelm-database.md` | current | yes | - | yes | - |
 | `memory/context/baseballhelm-features.md` | current | yes | - | yes | - |
-| `memory/context/baseballhelm-workflows.md` | current | - | - | yes | - |
+| `memory/context/baseballhelm-workflows.md` | current | yes | - | yes | - |
 | `memory/context/coachhelm-ai.md` | current | yes | - | yes | - |
 | `memory/context/engineering-methodology.md` | current | yes | - | yes | - |
 | `memory/context/golfhelm-features.md` | historical | - | - | yes | - |
@@ -392,10 +387,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- |
 | `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md` | current | yes | - | - | - |
 | `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` | current | yes | - | yes | 14 |
-| `docs/ai-system/HANDOFF_BRIDGE_CONTROL_PLANE_2026-09-03.md` | current | - | - | yes | 2 |
+| `docs/ai-system/HANDOFF_BRIDGE_CONTROL_PLANE_2026-09-03.md` | current | - | - | yes | 1 |
 | `docs/ai-system/HELM_AUTONOMY_CONTROL_PLANE.md` | current | yes | - | yes | - |
 | `docs/architecture/COMPREHENSIVE_AUTH_SYSTEM_PLAN.md` | current | - | - | - | 4 |
-| `docs/baseball/BASEBALLHELM_EXECUTION_PLAN.md` | current | - | - | yes | 20 |
 | `docs/baseball/stats-migration-plan.md` | current | - | - | yes | - |
 | `docs/baseball/ui-migration-execution-plan.md` | current | - | - | yes | 4 |
 | `docs/clubhouse/AUDIT_PLAN.md` | current | - | - | - | - |
@@ -490,7 +484,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/SWAP_AUDIT.md` | current | - | - | yes | - |
 | `docs/clubhouse/foundation-v2/01_REPO_AUDIT_AND_RECOMMENDATION.md` | current | - | - | yes | - |
 | `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 4 |
-| `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | 1 |
+| `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | - |
 | `docs/ui-audits/DESIGN_AUDIT_ASK_AND_CALENDAR_2026-08-15.md` | current | - | - | yes | - |
 | `docs/ui-audits/GOLF_UIUX_AUDIT_LEDGER_2026-09-24.md` | current | - | - | yes | - |
 | `docs/ui-audits/MOBILE_NATIVE_REBUILD_AUDIT_2026-09-03.md` | current | - | - | - | 1 |
@@ -640,7 +634,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `design/handoff/auth/README.md` | current | - | - | yes | - |
 | `design/handoff/mobile/README.md` | current | - | - | - | - |
 | `docs/README.md` | current | - | - | yes | 1 |
-| `docs/clubhouse/README.md` | current | - | - | - | - |
+| `docs/clubhouse/README.md` | current | yes | - | - | - |
 | `docs/clubhouse/catalog/README.md` | current | - | - | - | - |
 | `docs/db/drafts/README.md` | current | - | - | - | - |
 | `e2e/README.md` | current | - | - | yes | 2 |
@@ -659,6 +653,12 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `tools/README.md` | current | - | - | yes | - |
 | `tools/baseballhelm-command-center/vendor/README.md` | current | - | - | - | - |
 | `tools/continuous-improvement/README.md` | current | - | - | - | 2 |
+
+### `ARCHIVE`
+
+4 file(s) under `docs/archive/` — historical evidence only, listed
+by count rather than by name because none of them is a reference and enumerating
+them would bury everything above.
 
 ### `UNKNOWN`
 
@@ -734,7 +734,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/REPO_MAP.md` | superseded | - | - | yes | 2 |
 | `docs/ai-system/FEATURE_FLAGS.md` | current | yes | - | yes | - |
 | `docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md` | current | yes | - | yes | 9 |
-| `docs/ai-system/GOLFHELM_SELF_HEALING_ENGINEERING_SYSTEM.md` | current | - | - | yes | 11 |
+| `docs/ai-system/GOLFHELM_SELF_HEALING_ENGINEERING_SYSTEM.md` | current | - | - | yes | 12 |
 | `docs/ai-system/helmv3-ai-codebase-intelligence.md` | current | yes | - | yes | - |
 | `docs/baseball/BASEBALLHELM_PRODUCTION_ROADMAP.md` | current | - | - | yes | 2 |
 | `docs/baseball/COACH_NAV_8TAB_PROPOSAL.md` | current | - | - | yes | 1 |
@@ -750,9 +750,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/HANDOFF.md` | current | - | - | - | - |
 | `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
 | `docs/clubhouse/PAGE_PERFORMANCE.md` | current | - | - | - | - |
-| `docs/clubhouse/PROGRESS.md` | current | - | - | - | 1 |
+| `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
 | `docs/clubhouse/QUALITY_TOOLING.md` | current | - | - | - | - |
-| `docs/clubhouse/RELEASE_CANDIDATE.md` | current | - | - | yes | 1 |
+| `docs/clubhouse/RELEASE_CANDIDATE.md` | current | - | - | yes | - |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
 | `docs/clubhouse/UI_OWNERSHIP.md` | current | - | - | yes | - |
 | `docs/clubhouse/UX_OPTIMIZATION.md` | current | - | - | - | - |
@@ -969,7 +969,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/operations/context/PRODUCT_CONTEXT_PACK.md` | current | - | - | yes | - |
 | `docs/operations/context/SYSTEMS_AND_DATA_MAP.md` | current | - | - | yes | - |
 | `docs/operations/context/TELEMETRY_BASELINE.md` | current | - | - | yes | - |
-| `docs/operations/context/TOOLS_AND_SERVICES_REGISTRY.md` | current | - | - | yes | 6 |
+| `docs/operations/context/TOOLS_AND_SERVICES_REGISTRY.md` | current | - | - | yes | 4 |
 | `docs/seed/BASEBALLHELM_DEMO_DATA_CONTRACT.md` | current | - | - | yes | - |
 | `docs/testing/IOS_SIMULATOR_QA_HARNESS.md` | current | - | - | - | - |
 | `ios/appstore/RELEASE_CANDIDATE_2.0-9.md` | current | yes | - | - | - |
@@ -977,7 +977,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | - |
 | `public/courses/CREDITS.md` | current | - | - | - | - |
 | `scripts/ops/MAC_MINI_HEADLESS_RUNBOOK.md` | current | - | - | - | - |
-| `src/clubhouse/AGENTS.md` | current | - | - | - | - |
+| `src/clubhouse/AGENTS.md` | current | yes | - | - | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 6 |
 | `supabase/migrations/HELD.md` | current | - | - | yes | 1 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | - |

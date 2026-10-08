@@ -1,6 +1,8 @@
 # GolfHelm v3 Design Language
 
-> **RETIRED / legacy (2026-10-07).** This doc teaches the glass/cream language
+> **STATUS: RETIRED — superseded by src/styles/design-tokens.css and .claude/rules/design-system.md (2026-10-07)**
+>
+> This doc teaches the glass/cream language
 > that the live product no longer uses. Use `.claude/rules/design-system.md`,
 > `src/styles/design-tokens.css` and `src/components/fairway/**` (Fairway), or
 > `.claude/rules/clubhouse.md` for `src/clubhouse/**`. Kept for history only.

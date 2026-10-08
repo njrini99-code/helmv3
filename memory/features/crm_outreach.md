@@ -129,8 +129,7 @@ reads it), `background_job_logs`.
   deliberately disabled
 - **DNS TXT** — SPF/DKIM/DMARC self-check (`src/lib/crm/domain-auth-check.ts`)
 
-Cron is **Vercel Cron, not Inngest** — this feature registers no Inngest
-functions.
+Background work is **Vercel Cron** only.
 
 ## Known Risk Areas
 

@@ -56,6 +56,39 @@ describe('AttentionStack', () => {
     expect(screen.getByRole('link', { name: 'Open →' })).toHaveAttribute('href', '/admin/errors/inc-1');
   });
 
+  // `quiet` is passed only under a granted page-level all-clear. It may only
+  // shrink the CALM empty state; the unreadable state and real rows are
+  // untouched by it.
+  it('quiet: the calm empty state is one inline row, not a second green block', () => {
+    const { container } = render(
+      <AttentionStack rows={[]} total={0} checkedAt={CHECKED_AT} canClaimAllClear impactByKey={new Map()} quiet />,
+    );
+    expect(screen.getByText('Nothing needs attention')).toBeInTheDocument();
+    expect(container.querySelector('[data-slot="panel-all-clear"]')).toHaveAttribute('data-variant', 'inline');
+  });
+
+  it('default: the calm empty state keeps the full block', () => {
+    const { container } = render(
+      <AttentionStack rows={[]} total={0} checkedAt={CHECKED_AT} canClaimAllClear impactByKey={new Map()} />,
+    );
+    expect(container.querySelector('[data-slot="panel-all-clear"]')).toHaveAttribute('data-variant', 'block');
+  });
+
+  it('quiet never turns an unreadable empty list into an all-clear', () => {
+    const { container } = render(
+      <AttentionStack
+        rows={[]}
+        total={0}
+        checkedAt={CHECKED_AT}
+        canClaimAllClear={false}
+        impactByKey={new Map()}
+        quiet
+      />,
+    );
+    expect(screen.getByText('Could not fully compute what needs attention')).toBeInTheDocument();
+    expect(container.querySelector('[data-slot="panel-all-clear"]')).toBeNull();
+  });
+
   it('states how many more rows exist beyond the displayed slice', () => {
     render(
       <AttentionStack rows={[row()]} total={4} checkedAt={CHECKED_AT} canClaimAllClear={false} impactByKey={new Map()} />,

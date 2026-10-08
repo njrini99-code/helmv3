@@ -73,7 +73,7 @@ the incidents/feature-doc edits committed alongside this record).
 | O5 | Uninstall the CodeRabbit GitHub App and the seven other idle GitHub Apps that have never posted a check. |
 | O6 | Run the prepared SQL in `supabase/migrations/HELD.md` (ledger rows, the read-only repair role, disabling `pg_graphql`, the avatars-bucket policy check, the definer-view dismissal list). |
 | O7 | Restore the admin role the daily drift job reports a listed `admin_allowlist` user has lost in production. |
-| O8 | Set `INNGEST_SIGNING_KEY` in Vercel's production environment. |
+| O8 | ~~Set `INNGEST_SIGNING_KEY` in Vercel's production environment.~~ Superseded: Inngest was removed 2026-10-06. |
 | O9 | Confirm in the CircleCI dashboard that the weekly pipeline trigger (`run-weekly=true`) exists. |
 
 ## Where the evidence lives

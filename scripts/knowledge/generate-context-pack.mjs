@@ -2,18 +2,17 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { loadRegistry, mapFilesToFeatures, fileExists } from './lib/registry.mjs';
+import { loadRegistry, mapFilesToFeatures, fileExists, selectContextDocs } from './lib/registry.mjs';
 
 const args = parseArgs(process.argv.slice(2));
 const repoRoot = process.cwd();
 const registry = await loadRegistry(repoRoot);
 const impactedFeatures = mapFilesToFeatures(registry, args.files);
-const docPaths = [
-  'AGENTS.md',
-  'CLAUDE.md',
-  'memory/registry.yml',
-  ...impactedFeatures.flatMap((feature) => feature.docs),
-];
+// The fixed preamble is always included. Feature docs are capped (three,
+// primary first) and docs whose STATUS banner says STALE / HISTORICAL /
+// SUPERSEDED / RETIRED are left out and listed below instead.
+const contextDocs = selectContextDocs(impactedFeatures, repoRoot);
+const docPaths = ['AGENTS.md', 'CLAUDE.md', 'memory/registry.yml', ...contextDocs.docs];
 const uniqueDocPaths = [...new Set(docPaths)];
 
 const sections = [];
@@ -21,6 +20,11 @@ sections.push(`# Helmv3 Context Pack`);
 sections.push(`## Task\n\n${args.task || 'No task provided.'}`);
 sections.push(`## Changed Files\n\n${renderList(args.files)}`);
 sections.push(`## Impacted Features\n\n${renderFeatures(impactedFeatures)}`);
+if (contextDocs.skipped.length > 0) {
+  sections.push(
+    `## Skipped Docs\n\n${contextDocs.skipped.map((d) => `- \`${d.path}\` (${d.status})`).join('\n')}`,
+  );
+}
 
 for (const docPath of uniqueDocPaths) {
   if (!fileExists(repoRoot, docPath)) {

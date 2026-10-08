@@ -118,18 +118,31 @@ describe('save-session-state', () => {
 });
 
 describe('restore-session-state', () => {
-  it('renderContext produces a line naming branch/worktree/dirty count', () => {
-    const line = renderContext({
-      savedAt: '2026-09-06T00:00:00.000Z',
-      branch: 'agent/config-hardening',
-      worktree: '/tmp/x',
-      dirtyFileCount: 3,
-      openPrNumbersByAuthor: null,
-      stateFileTail: ['a', 'b'],
-    });
-    expect(line).toMatch(/agent\/config-hardening/);
-    expect(line).toMatch(/dirty=3/);
+  const savedState = {
+    savedAt: '2026-09-06T00:00:00.000Z',
+    branch: 'agent/config-hardening',
+    worktree: '/tmp/x',
+    dirtyFileCount: 3,
+    openPrNumbersByAuthor: null,
+    stateFileTail: ['a', 'b'],
+  };
+
+  it('renderContext does not repeat the live branch or dirty count session-context prints', () => {
+    const line = renderContext(savedState, { branch: 'agent/config-hardening', worktree: '/tmp/x' });
+    expect(line).toMatch(/saved 2026-09-06/);
     expect(line).toMatch(/stateTail=2/);
+    expect(line).not.toMatch(/agent\/config-hardening/);
+    expect(line).not.toMatch(/dirty/);
+  });
+
+  it('renderContext reports drift when the live checkout moved since the snapshot', () => {
+    const line = renderContext(savedState, { branch: 'main', worktree: '/tmp/y' });
+    expect(line).toMatch(/branch was agent\/config-hardening at save, now main/);
+    expect(line).toMatch(/worktree was \/tmp\/x at save/);
+  });
+
+  it('renderContext claims nothing about drift without live info', () => {
+    expect(renderContext(savedState)).not.toMatch(/branch was/);
   });
 
   it('prints additionalContext under hookEventName SessionStart when a fresh state file exists', () => {

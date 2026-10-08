@@ -65,6 +65,7 @@ multi-agent PR review · `/helm-fix-ci` red CI on agent PRs.
 | --- | --- |
 | `helm-reader` | cited, read-only investigation (instead of Explore for Helm questions) |
 | `helm-worker` | bounded or parallel implementation in an assigned checkout |
+| `helm-ui-worker` | one Fairway screen redesign and implementation, in its own worktree |
 | `debugger` | a failure whose cause isn't obvious after a first look |
 | `verifier` | an independent check of a done-claim on risky work |
 | `code-reviewer` | fresh-context review of a non-trivial diff |

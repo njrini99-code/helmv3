@@ -660,7 +660,8 @@ the new system. Nothing here is applied by an agent. Each file's status stays in
    3. `20260928230000_v3_attribution_control_interval.sql`
    4. `20260928160000_golf_sg_shot_end_is_next_shot_start.sql`, then the strokes
       gained recompute
-2. **Deploy.** Run `scripts/deploy-prod.sh`; the owner runs it.
+2. **Deploy.** Run the deploy command in AGENTS.md "Production" (agents deploy
+   directly since 2026-10-07; the old deploy script is gone).
 3. **After the deploy:** the cleanup SQL, the insight regeneration, and the
    review backfill (169 rounds).
 4. **Flag:** turn on `coachhelm_chat_claim_gate`.
@@ -1956,7 +1957,7 @@ decision named.
   made, test rounds out), one sand-save figure, one penalty count, test rounds
   excluded everywhere, the 100-round cap after the countable filter, honest band
   labels. Built as its own PR off main (not on #2102), with before and after
-  numbers; nothing ships until the owner deploys.
+  numbers; nothing ships until it is deployed (AGENTS.md "Production").
 - Q-92 (owner reviewed the list 2026-09-30 and asked for no change: kept as
   built) (open, 2026-09-30; built the reversible choice) Round entry wiring
   (56870a897, e05744909): (a) Recover sends to Rounds (CH-11905, CH-11512):

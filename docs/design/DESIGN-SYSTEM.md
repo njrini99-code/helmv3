@@ -1,7 +1,9 @@
 # Helm Sports Labs — Design System Reference
 # For use with Pencil and any design tooling
 
-> **RETIRED / legacy (2026-10-07).** These tokens describe the glass/cream
+> **STATUS: RETIRED — superseded by src/styles/design-tokens.css and .claude/rules/design-system.md (2026-10-07)**
+>
+> These tokens describe the glass/cream
 > language that the live product no longer uses. Product UI follows
 > `.claude/rules/design-system.md` and `src/styles/design-tokens.css`
 > (Fairway); Clubhouse follows `.claude/rules/clubhouse.md`. Use this file only
