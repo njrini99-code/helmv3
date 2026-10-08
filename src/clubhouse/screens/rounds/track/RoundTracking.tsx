@@ -6,7 +6,7 @@ import { useShotTracking, type ShotTrackingPorts, type ShotTrackingProps } from 
 import { calculateHoleStats } from '@/lib/utils/shot-helpers';
 import type { ChRoundType, ChTeeColor } from '../../../data/rounds-shape';
 import { haptic } from '../../../lib/haptics';
-import { usePhoneTabsHidden } from '../../../shell/phone-chrome';
+import { usePhoneImmersive, usePhoneTabsHidden } from '../../../shell/phone-chrome';
 import { Icon } from '../../../ui/Icon';
 import { ScoreMark } from '../../../ui/ScoreMark';
 import { TeeSwatch, TYPE_LABEL } from '../parts';
@@ -58,8 +58,10 @@ const SAVE_WORDS = {
 export function RoundTracking(props: RoundTrackingProps) {
   const { round, holes, currentHoleIndex, onExit, onNavigateToHole, onOpenScorecard, onAutoSave, statusSlot } = props;
   const t = useShotTracking(props, PORTS);
-  // A round is a full-screen flow on the phone: Exit and Scorecard are in its own top bar.
+  // A round is a full-screen flow on the phone (P011-D1): Exit and Scorecard are in its own top bar, so the shell's top
+  // bar and bell go (rounds-track.css hides them while this is up) and the tab bar goes.
   usePhoneTabsHidden(true);
+  usePhoneImmersive(true);
   const { distancePref } = useDistanceUnits();
   const hole = t.currentHole;
 
@@ -92,7 +94,10 @@ export function RoundTracking(props: RoundTrackingProps) {
             <span />
           )}
           <div className="ch-rt-top__c">
-            <b>{round.course}</b>
+            <h1>
+              {round.course}
+              <span className="ch-sr-only">, hole {hole.number}</span>
+            </h1>
             {meta && (
               <span>
                 <TeeSwatch color={round.teeColor} />

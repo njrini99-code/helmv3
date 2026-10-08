@@ -6,7 +6,7 @@ import { ArrowRight, ChartColumn, ChevronLeft, MapPin, Medal, Search } from 'luc
 import type { ChRoundType } from '../../../data/rounds-shape';
 import { haptic } from '../../../lib/haptics';
 import { useAction } from '../../../lib/use-action';
-import { usePhoneTabsHidden } from '../../../shell/phone-chrome';
+import { usePhoneImmersive, usePhoneTabsHidden } from '../../../shell/phone-chrome';
 import { Icon } from '../../../ui/Icon';
 import { InlineNotice } from '../../../ui/Notices';
 import { TeeSwatch, TYPE_LABEL } from '../parts';
@@ -66,6 +66,8 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
   const set = (patch: Partial<ChSetupForm>) => setForm((f) => ({ ...f, ...patch }));
   // A new round is a full-screen flow on the phone: the dock holds Start, and Back is in the band.
   usePhoneTabsHidden(true);
+  // P011-D1: the band is the screen's own top bar (Back, the step), so the shell's top bar and bell go too.
+  usePhoneImmersive(true);
 
   // The holes of the tee the player chose last (CoursePicker's `useRead` does the same): a slow read for a tee left behind must never
   // put its holes under the new tee, nor over holes the player typed in by hand (Add a course). Each choice takes a number; an answer
@@ -154,8 +156,9 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
           <Icon icon={ChevronLeft} size={16} />
           Rounds
         </Link>
-        <span className="ch-rsu-k">New round · {p ? 'Scorecard' : 'Setup'}</span>
-        <h1>{p ? `Your round at ${p.courseName}` : 'Track every shot of this round.'}</h1>
+        <span className="ch-rsu-k">{p ? 'New round · Scorecard' : 'Setup'}</span>
+        {/* P011-D11: the screen's one h1 names it, not a tagline. */}
+        <h1>{p ? `Your round at ${p.courseName}` : 'New round'}</h1>
         <p>
           {p
             ? form.baseline

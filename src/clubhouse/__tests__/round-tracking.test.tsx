@@ -5,6 +5,7 @@ import type { RoundHole, ShotRecord } from '@/lib/types/golf';
 import { RoundTracking, type RoundTrackingProps } from '../screens/rounds/track/RoundTracking';
 import { ExitSheet, RoundCompleteSheet, ScorecardSheet, SubmitOverlay } from '../screens/rounds/track/round-sheets';
 import { heroDistance, quickPicks, roundSoFar, scoreName, shotLine, shotTitle } from '../screens/rounds/track/labels';
+import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 
@@ -366,5 +367,27 @@ describe('Round tracking: the round sheets', () => {
     expect(code('CH-11005')).toHaveTextContent('The round didn’t submit');
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(onRetry).toHaveBeenCalled();
+  });
+});
+
+describe('P011-D1 Round tracking: full screen on the phone', () => {
+  it('marks the shell immersive and hides its tabs while the shot screen is up, and names the screen with one h1', () => {
+    let state: ReturnType<typeof usePhoneChromeState> | null = null;
+    function Probe() {
+      state = usePhoneChromeState();
+      return null;
+    }
+    const { unmount } = render(
+      <ToastProvider>
+        <PhoneChromeProvider>
+          <Probe />
+          <RoundTracking round={ROUND} holes={HOLES} currentHoleIndex={0} onHoleComplete={vi.fn(async () => true)} />
+        </PhoneChromeProvider>
+      </ToastProvider>,
+    );
+    expect(state!.immersive).toBe(true);
+    expect(state!.noTabs).toBe(true);
+    expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual(['Finley GC, hole 1']);
+    unmount();
   });
 });
