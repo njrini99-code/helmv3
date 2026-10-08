@@ -314,6 +314,11 @@
 /* Dark: the app's global h1-h6 colour (globals.css, a near-black warm ink) would sink a Clubhouse heading that sets no
    colour of its own into the night ground. At zero specificity it inherits instead; every .ch-* heading class still
    wins, and light is untouched. */
-:where(html[data-fw-theme='dark'] [data-ui='clubhouse']) :is(h1, h2, h3, h4, h5, h6) {
+:where(html[data-fw-theme='dark'] [data-ui='clubhouse']) h1,
+:where(html[data-fw-theme='dark'] [data-ui='clubhouse']) h2,
+:where(html[data-fw-theme='dark'] [data-ui='clubhouse']) h3,
+:where(html[data-fw-theme='dark'] [data-ui='clubhouse']) h4,
+:where(html[data-fw-theme='dark'] [data-ui='clubhouse']) h5,
+:where(html[data-fw-theme='dark'] [data-ui='clubhouse']) h6 {
   color: inherit;
 }

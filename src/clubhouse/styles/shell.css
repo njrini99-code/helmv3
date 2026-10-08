@@ -2387,6 +2387,10 @@ html[data-fw-theme='dark'] .ch-navitem:has(.ch-lp) {
   color: var(--ch-on-green-ink);
 }
 @media (min-width: 821px) {
+  /* The frame is darker than the workspace at night: a faint ivory hairline keeps the join reading as an edge. */
+  html[data-fw-theme='dark'] .ch-canvas {
+    box-shadow: var(--ch-elevation-framed), 0 0 0 1px rgb(237 231 216 / 0.07);
+  }
   html[data-fw-theme='dark'] .ch-topbar {
     border-bottom-color: var(--ch-border-hairline);
     background: color-mix(in oklab, var(--ch-workspace) 88%, transparent);

@@ -3439,6 +3439,10 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
   html[data-fw-theme='dark'] .ch-hm-tl__rail::before {
     background: rgb(205 187 142 / 0.16);
   }
+  /* The soft ivory measured 4.1:1 on the night fill green: the weekday letter takes the full ink. */
+  html[data-fw-theme='dark'] .ch-hm-week .is-today .ch-hm-week__d em {
+    color: var(--ch-on-green-ink);
+  }
   html[data-fw-theme='dark'] .ch-hm-week__d > span i {
     background: rgb(237 231 216 / 0.3);
   }
