@@ -42,7 +42,8 @@ describe('Rows that open another page', () => {
     // The grid row's name is its link (P004-D4); its hit area covers the row.
     expect(inside('a.ch-lg__a').length).toBe(PREVIEW_TEAM_STATS.grid.length);
     expect(inside('a.ch-who').length).toBe(PREVIEW_TEAM_STATS.bests.length);
-    expect(inside('a.ch-h-lb__row').length).toBeGreaterThan(0);
+    // A leaderboard row holds its link, the player's name (P002 D3).
+    expect(inside('a.ch-h-lb__go').length).toBeGreaterThan(0);
     for (const link of container.querySelectorAll('a.ch-lg__a')) expect(link.querySelector('[role="status"]')!.textContent).toBe('Loading');
     pending.value = false;
   });

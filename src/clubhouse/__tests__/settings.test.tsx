@@ -2232,7 +2232,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
 describe('Settings · this file', () => {
   it('82401 every catalog row of kinds 0 to 5 is named by a test here, and so is every Bridge ID this page proves', () => {
     const root = process.cwd();
-    const tests = ['settings.test.tsx', 'settings-server.test.tsx'].map((f) => readFileSync(join(root, 'src/clubhouse/__tests__', f), 'utf8'));
+    const tests = ['settings.test.tsx', 'settings-server.test.tsx', 'course-location.test.tsx'].map((f) => readFileSync(join(root, 'src/clubhouse/__tests__', f), 'utf8'));
     const all = tests.join('\n');
     const catalog = readFileSync(join(root, 'docs/clubhouse/catalog/settings.md'), 'utf8');
     const missing = [...catalog.matchAll(/^\|\s*CH-(80|81|82|83|84|85)(\d{2})\s*\|.*$/gm)]
