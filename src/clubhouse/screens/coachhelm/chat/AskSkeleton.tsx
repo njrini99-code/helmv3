@@ -32,6 +32,24 @@ export function AskSkeleton({ chained }: { chained?: boolean } = {}) {
             <Skeleton width="40%" height={14} />
             <Skeleton width="100%" height={112} radius={24} />
           </div>
+          {/* The phone's shape (CSS shows one or the other): the opener and its three question rows at the foot, over the
+              composer, as the new chat draws them. */}
+          <div className="ch-ask-sk__ph" aria-hidden="true">
+            <div className="ch-ask-sk__phgreet">
+              <Skeleton width="86%" height={26} radius={7} />
+              <Skeleton width="58%" height={26} radius={7} />
+              <Skeleton width="72%" height={13} />
+            </div>
+            <ul className="ch-ask-sk__phrows">
+              {[34, 46, 40].map((w, i) => (
+                <li key={i}>
+                  <Skeleton width={`${w}%`} height={14} />
+                  <Skeleton width={`${w + 22}%`} height={11} />
+                </li>
+              ))}
+            </ul>
+            <Skeleton width="100%" height={60} radius={24} />
+          </div>
         </section>
       </div>
     </main>

@@ -3617,57 +3617,37 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
   span.ch-hm-tl__a {
     cursor: default;
   }
-  /* Since you last looked: small figures on chips, in a row that scrolls sideways with the thumb. */
-  .ch-hm-since__l {
-    display: flex;
-    gap: 8px;
-    margin: 0 -16px;
-    padding: 2px 16px 4px;
-    overflow-x: auto;
-    list-style: none;
-    scrollbar-width: none;
-    overscroll-behavior-x: contain;
+  /* Since you last looked (the cardless pass, 2026-10-08): Ledger rows (ui.css .ch-lgr) set to Later today's measure.
+     The figure stands in the lead, 68px wide so each title starts where Later today's titles do (its 48px time, 14px
+     rail and their gaps); the titles and lines take that list's sizes. */
+  .ch-hm-since__c .ch-lgr__lead {
+    min-width: 68px;
   }
-  .ch-hm-since__l::-webkit-scrollbar {
-    display: none;
-  }
-  .ch-hm-since__c {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 132px;
-    min-height: 44px;
-    padding: 10px 14px;
-    border: 0;
-    border-radius: 14px;
-    background: var(--ch-bg-inset);
+  .ch-hm-since__fig {
+    font: 600 17px/1 var(--ch-font-sans);
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-primary);
-    text-align: left;
-    text-decoration: none;
-    cursor: pointer;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    white-space: nowrap;
   }
-  .ch-hm-since__c:active {
-    background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
-  }
-  .ch-hm-since__c:focus-visible {
-    outline: 2px solid var(--ch-border-focus);
-    outline-offset: 2px;
-  }
-  .ch-hm-since__c b {
-    font: 600 20px/1.1 var(--ch-font-sans);
-    font-variation-settings: 'wdth' 92;
-  }
-  .ch-hm-since__c em {
+  .ch-hm-since__fig em {
+    font-size: 13px;
     font-style: normal;
+    letter-spacing: 0;
+    color: var(--ch-text-secondary);
   }
-  .ch-hm-since__c em.is-under {
+  .ch-hm-since__fig em.is-under {
     color: var(--ch-score-under);
   }
-  .ch-hm-since__c span {
+  .ch-hm-since__c .ch-lgr__title {
+    font-size: 14.5px;
+  }
+  .ch-hm-since__c .ch-lgr__meta {
     font: 400 12.5px/1.3 var(--ch-font-sans);
-    color: var(--ch-text-secondary);
+  }
+  /* Home's lists open on a tap without a chevron (Later today, Latest rounds); these rows read the same way. */
+  .ch-hm-since__c .ch-lgr__go {
+    display: none;
   }
 }
 
