@@ -56,6 +56,12 @@ class Boundary extends Component<Props & { group: Group | null }, { failed: bool
     this.props.group?.add(this.id, { label: this.props.label, reset: this.reset });
   }
 
+  // StrictMode (dev) and <Activity> detach a mounted boundary and attach it again without catching again, and a section
+  // can crash in the commit that mounts it (the phone tree mounts after hydration): a failed one tells its group again.
+  override componentDidMount() {
+    if (this.state.failed) this.props.group?.add(this.id, { label: this.props.label, reset: this.reset });
+  }
+
   override componentDidUpdate(_props: unknown, prev: { failed: boolean }) {
     if (prev.failed && !this.state.failed) this.props.group?.remove(this.id);
   }

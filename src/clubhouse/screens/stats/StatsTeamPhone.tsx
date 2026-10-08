@@ -10,7 +10,7 @@ import { EmptyState } from '../../ui/States';
 import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { Icon } from '../../ui/Icon';
-import { SectionBoundary } from '../../ui/SectionBoundary';
+import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
 import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
@@ -52,75 +52,79 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
   }
   const covered = failed.length > 1;
   return (
-    <div className="ch-stm">
-      <header className="ch-stm-head">
-        <span className="ch-num">
-          {data.teamName} · {data.roundsError ? '' : `${data.activeCount} active · `}countable rounds
-        </span>
-        <h1>Team stats</h1>
-      </header>
-      {/* The window and the filter share one row (F-42): the board has no row of its own for the filter. */}
-      <div className="ch-stm-controls">
-        <WindowSwitch value={shown} onChange={go} custom={hasRange(data.filter)} />
-        {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone />}
+    // Sections that crash together are told once, under the controls (CH-1210).
+    <SectionGroup>
+      <div className="ch-stm">
+        <header className="ch-stm-head">
+          <span className="ch-num">
+            {data.teamName} · {data.roundsError ? '' : `${data.activeCount} active · `}countable rounds
+          </span>
+          <h1>Team stats</h1>
+        </header>
+        {/* The window and the filter share one row (F-42): the board has no row of its own for the filter. */}
+        <div className="ch-stm-controls">
+          <WindowSwitch value={shown} onChange={go} custom={hasRange(data.filter)} />
+          {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone />}
+        </div>
+        {/* The page's one read failed, so the page says so as its whole body (CH-1211), not a notice over a blank page. */}
+        {data.roundsError && (
+          <EmptyState
+            size="page"
+            tone="danger"
+            code="CH-4201"
+            title="Team rounds didn’t load"
+            body="Every figure would be incomplete, so none is shown. The error has been reported."
+          />
+        )}
+        <PageRefreshNotice parts={failed} />
+        <SectionGroupNotice />
+        {filtered && data.roundCount > 0 && data.roundsEffective < 3 && <EarlyRead code="CH-4314" count={data.roundCount} whole={data.roundsEffective} />}
+        {noRounds && !filtered && <NineHint code="CH-4319" filter={data.filter} options={data.filterOptions} who="This team has" />}
+        {noRounds && filtered ? (
+          <TeamFilterEmpty />
+        ) : noRounds && data.window === 'season' && !nineOnly ? (
+          <StatsTeamFirstRun />
+        ) : noRounds ? (
+          // The whole page body is empty, so it is the page's empty state, not a section's (states audit, 2026-10-08).
+          <EmptyState
+            size="page"
+            code={data.window === 'qualifiers' ? 'CH-4302' : 'CH-4301'}
+            icon={data.window === 'qualifiers' ? Medal : ChartColumn}
+            title={data.window === 'qualifiers' ? 'No qualifier rounds this season yet' : 'No 18-hole rounds in this window yet'}
+            body={data.window === 'qualifiers' ? 'Qualifier rounds appear here once they are posted as qualifying.' : 'Team stats fill in as players post countable rounds.'}
+            action={data.window !== 'season' ? <ShowSeason /> : undefined}
+          />
+        ) : (
+          !data.roundsError && (
+            <>
+              <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
+                {data.cacheError && (
+                  <RetryNotice code="CH-4202" title="Some team figures didn’t load" body="Scoring is correct; greens, putts and scrambling are missing. The error has been reported." covered={covered} />
+                )}
+                <Figures figures={data.figures} />
+                {/* The phone's cards draw no caption of their own: greens, putts and scrambling read the rounds with their holes (Q-123), and this says how many. */}
+                {(() => {
+                  const coverage = data.holeRoundCount == null ? null : holeCoverage(data.holeRoundCount, data.roundCount);
+                  return <p className="ch-stm-cover" aria-hidden={coverage ? undefined : true}>{coverage}</p>;
+                })()}
+              </SectionBoundary>
+              <SectionBoundary surface="stats.team.trend" label="Scoring trend" code="CH-4205">
+                <Trend data={data} />
+              </SectionBoundary>
+              <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
+                <Legs data={data} />
+              </SectionBoundary>
+              <SectionBoundary surface="stats.team.players" label="Players" code="CH-4206">
+                <Players data={data} />
+              </SectionBoundary>
+              <SectionBoundary surface="stats.team.putting" label="Team putting" code="CH-4207">
+                <Putting data={data} covered={covered} />
+              </SectionBoundary>
+            </>
+          )
+        )}
       </div>
-      {/* The page's one read failed, so the page says so as its whole body (CH-1211), not a notice over a blank page. */}
-      {data.roundsError && (
-        <EmptyState
-          size="page"
-          tone="danger"
-          code="CH-4201"
-          title="Team rounds didn’t load"
-          body="Every figure would be incomplete, so none is shown. Try again; the error has been reported."
-        />
-      )}
-      <PageRefreshNotice parts={failed} />
-      {filtered && data.roundCount > 0 && data.roundsEffective < 3 && <EarlyRead code="CH-4314" count={data.roundCount} whole={data.roundsEffective} />}
-      {noRounds && !filtered && <NineHint code="CH-4319" filter={data.filter} options={data.filterOptions} who="This team has" />}
-      {noRounds && filtered ? (
-        <TeamFilterEmpty />
-      ) : noRounds && data.window === 'season' && !nineOnly ? (
-        <StatsTeamFirstRun />
-      ) : noRounds ? (
-        // The whole page body is empty, so it is the page's empty state, not a section's (states audit, 2026-10-08).
-        <EmptyState
-          size="page"
-          code={data.window === 'qualifiers' ? 'CH-4302' : 'CH-4301'}
-          icon={data.window === 'qualifiers' ? Medal : ChartColumn}
-          title={data.window === 'qualifiers' ? 'No qualifier rounds this season yet' : 'No 18-hole rounds in this window yet'}
-          body={data.window === 'qualifiers' ? 'Qualifier rounds appear here once they are posted as qualifying.' : 'Team stats fill in as players post countable rounds.'}
-          action={data.window !== 'season' ? <ShowSeason /> : undefined}
-        />
-      ) : (
-        !data.roundsError && (
-          <>
-            <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
-              {data.cacheError && (
-                <RetryNotice code="CH-4202" title="Some team figures didn’t load" body="Scoring is correct; greens, putts and scrambling are missing. The error has been reported." covered={covered} />
-              )}
-              <Figures figures={data.figures} />
-              {/* The phone's cards draw no caption of their own: greens, putts and scrambling read the rounds with their holes (Q-123), and this says how many. */}
-              {(() => {
-                const coverage = data.holeRoundCount == null ? null : holeCoverage(data.holeRoundCount, data.roundCount);
-                return <p className="ch-stm-cover" aria-hidden={coverage ? undefined : true}>{coverage}</p>;
-              })()}
-            </SectionBoundary>
-            <SectionBoundary surface="stats.team.trend" label="Scoring trend" code="CH-4205">
-              <Trend data={data} />
-            </SectionBoundary>
-            <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
-              <Legs data={data} />
-            </SectionBoundary>
-            <SectionBoundary surface="stats.team.players" label="Players" code="CH-4206">
-              <Players data={data} />
-            </SectionBoundary>
-            <SectionBoundary surface="stats.team.putting" label="Team putting" code="CH-4207">
-              <Putting data={data} covered={covered} />
-            </SectionBoundary>
-          </>
-        )
-      )}
-    </div>
+    </SectionGroup>
   );
 }
 

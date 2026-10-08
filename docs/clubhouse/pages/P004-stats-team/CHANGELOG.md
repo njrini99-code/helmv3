@@ -1,6 +1,6 @@
 # P004 — Stats (team): changelog
 
-## 2026-10-08 — The empty window is the page's empty state; several failed parts, one notice
+## 2026-10-08 — The empty window is the page's empty state; failures and crashes told once
 
 Fixes from the states audit, on desktop and the phone:
 - no rounds in the window (CH-4301) or no qualifier rounds (CH-4302) is the
@@ -19,14 +19,16 @@ Fixes from the states audit, on desktop and the phone:
 - on the phone a player row's press tint waits a beat after the finger lands
   (CH-1606), so a scroll that starts on a row never flashes it; the window
   switch and the Avg / SG switch glide and land in one frame with reduced
-  motion (WebKit as an iPhone at 390).
-
-Not changed yet: a page whose sections all crash still shows one notice per
-section (CH-4204 to CH-4208); collapsing them needs a shared boundary group.
+  motion (WebKit as an iPhone at 390);
+- sections that crash together (CH-4204 to CH-4208) are told once under the
+  head (CH-1210, the page's sections one `SectionGroup`), with one Try again
+  that tries them all, and each keeps only its title;
+- on the phone the head's eyebrow is 12px, the phone text floor, as the kit's
+  PageIntro draws it (the skeleton's line moves with it).
 
 New tests: stats-team.test › CH-1209 (several and one, desktop and phone),
 CH-4301 as the page's empty state on desktop and the phone, CH-4201 as the
-page's failure.
+page's failure, CH-1210 for sections that crash together.
 
 ## 2026-10-08 — phone: Mobile clubhouse pass
 

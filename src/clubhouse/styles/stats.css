@@ -3449,8 +3449,9 @@ a.ch-lg__r:focus-visible {
     padding: 14px 0 0;
     border-top: var(--ch-ledger-rule-double);
   }
+  /* The eyebrow at 12px, the phone text floor, as the kit's PageIntro draws it. */
   .ch-stm .ch-stm-head span {
-    font: 500 11px/1.2 var(--ch-font-sans);
+    font: 500 12px/1.2 var(--ch-font-sans);
     letter-spacing: 0.14em;
     color: var(--ch-ledger-eyebrow);
   }

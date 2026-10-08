@@ -61,7 +61,7 @@ export function StatsTeamPhoneSkeleton() {
     <main className="ch-stm" aria-busy="true" aria-label="Loading stats" data-ch-code="CH-4401">
       {/* The Ledger's page intro as loaded: the 11px eyebrow's line under the double rule, then the 31px title's. */}
       <header className="ch-stm-head" aria-hidden="true">
-        <Bar height={13.2}>
+        <Bar height={14.4}>
           <Skeleton width={250} height={11} />
         </Bar>
         <Bar height={33.5}>

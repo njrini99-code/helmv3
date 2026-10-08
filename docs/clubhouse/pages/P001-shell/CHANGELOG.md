@@ -83,6 +83,11 @@ loaded, the panel's head drops its unread count and Mark all read. Not rebuilt
 honours the route's `homePath` and names it (CH-1206). The on-green notice inks
 are tokens (`--ch-notice-on-green-ink`, `--ch-notice-on-green-body`).
 
+CH-1210 also holds on the phone in development: a section that crashes in the
+commit that mounts it (the phone tree mounts after hydration) tells its group
+again when StrictMode, or React's `<Activity>`, detaches and reattaches it
+(`componentDidMount`). Found by phone-a on stats__crash at 390.
+
 ## 2026-10-08 — Springs in the shell, and a tab that answers a second tap
 
 More and the bell now rise on the smooth spring (base, no bounce) and leave on it. Swiped shut, they leave at the

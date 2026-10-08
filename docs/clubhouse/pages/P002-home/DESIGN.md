@@ -47,7 +47,7 @@ Coach: read the day in one glance, then act (message the team, add an event). Pl
 
 ## Visual hierarchy
 
-Coach desktop: header (date, greeting, brief, two actions); one sheet holding the week and the latest round side by side; the leaderboard below. Coach phone: a green hero (day, greeting, brief, Up next), then Today, the team's scoring form, This week and Latest rounds, each round opening a card in a sheet. Player desktop: header (date, greeting, brief, Message coach); the sheet with the week (Up next and its countdown between the days and the agenda) beside My latest round; Scoring; By part of the game. Player phone: the hero with Up next, its countdown and the two actions, then This week, Today, My latest round (paged, its card inline), Scoring and the parts of the game.
+Coach desktop: header (date, greeting, brief, two actions); one sheet holding the week and the latest round side by side; the leaderboard below. Coach phone: on the parchment sheet under the green chassis, the date, the greeting and the brief, Up next as the one green card, then Today, the team's scoring, This week and Latest rounds flush under engraved double rules, each round opening a card in a sheet. Player desktop: header (date, greeting, brief, Message coach); the sheet with the week (Up next and its countdown between the days and the agenda) beside My latest round; Scoring; By part of the game. Player phone: the hero with Up next, its countdown and the two actions, then This week, Today, My latest round (paged, its card inline), Scoring and the parts of the game.
 
 ## Components
 
@@ -85,7 +85,22 @@ Coach: a 1280px canvas holds the header, then one lit sheet in two columns (the 
 
 ## Phone
 
-Approved specs `docs/clubhouse/phone/home.md` (coach) and `docs/clubhouse/phone/home-player.md` (player), from the owner's v2 boards. The top bar turns green (`usePhoneHero`) over a hero holding the date, the greeting, the brief and Up next. At 820px and below the phone Home takes over from the desktop page; it is never the desktop shrunk (21901).
+Approved specs `docs/clubhouse/phone/home.md` (coach) and `docs/clubhouse/phone/home-player.md` (player), from the owner's v2 boards. The top bar is the green chassis (`usePhoneHero`) over the parchment sheet that holds the date, the greeting, the brief and Up next. At 820px and below the phone Home takes over from the desktop page; it is never the desktop shrunk (21901).
+
+The coach's phone follows the owner's "Coach - Home - Mobile v2" board (`m-clubhouse.css`, the Mobile clubhouse
+pass, its three rounds in order). The sheet is the canvas' own parchment (`--ch-workspace`) from the greeting to the
+tab bar, so a short page has no seam. The date is the page intro's eyebrow (12px, the phone text floor) under the
+engraved double rule, the greeting the bold condensed sans in forest ink, the brief under it. Up next is the screen's
+one green feature card: the event's type, the countdown chip, the title, the time and place and who is going; with
+nothing ahead it is the card's empty, with the quick event types and Add event. Today, the team's scoring, This week
+and Latest rounds sit flush under their double rules, their titles in the Ledger's phone heading (600 19px, forest).
+Today's rows and the latest rounds sit on the section's edge between soft seams, the time at the edge as the board
+sets it; This week draws today as the solid green key and a competition day as a soft green tint with its trophy, as
+the player's does. Every control answers a press a beat after the finger lands (CH-1606): rows and the week's keys
+tint, Up next deepens its green, the quick types and Plan shrink as keys, the section links dim. A week that did not
+load says so on the sheet under the greeting, never inside the green card, and two or more failed reads are told
+once (CH-1209). The board's rules that the app's markup never matched (its titles were h3s; it put today and the
+competition day on the key, the strip puts them on the day) were rewritten for the markup, not kept as dead code.
 
 The player's phone follows `Player - Home - Mobile.html` (`m-player-home.jsx`,
 `m-player-home.css`), not the coach's, in the Mobile clubhouse pass (owner,

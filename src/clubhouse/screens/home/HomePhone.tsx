@@ -183,7 +183,7 @@ function NoEvents() {
       </div>
       <div className="ch-hm-none__q">
         {QUICK.map((t) => (
-          <Link key={t} href={newEventHref(t)} className="ch-hm-none__chip" onClick={() => haptic('select')}>
+          <Link key={t} href={newEventHref(t)} className="ch-hm-none__chip" onClick={() => haptic('select')} data-ch-press="">
             <Icon icon={TYPE_ICON[t]} size={13} />
             {TYPE_LABEL[t]}
           </Link>

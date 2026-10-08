@@ -768,13 +768,13 @@
     box-sizing: border-box;
     padding: 26px 20px 22px;
   }
-  /* Each bar in a box the height of its loaded line: the date (11px under the double rule), the 31px greeting's line,
-     the brief's 14.5px lines. */
+  /* Each bar in a box the height of its loaded line: the date (12px, its 14.4px line under the double rule), the 31px
+     greeting's line, the brief's 14.5px lines. */
   .ch-hm-skel__date {
     display: flex;
     align-items: center;
     box-sizing: border-box;
-    height: 28px;
+    height: 31.4px;
     padding-top: 14px;
     border-top: var(--ch-ledger-rule-double);
   }
@@ -782,7 +782,7 @@
     display: flex;
     align-items: center;
     height: 33.5px;
-    margin: 14px 0 12px;
+    margin: 10px 0 12px;
   }
   .ch-hm-skel__line {
     display: flex;
@@ -2519,7 +2519,7 @@
   .ch-hm-hero__date {
     padding-top:14px;
     border-top:3px double rgb(110 98 62/.2);
-    font:500 11px/1 var(--ch-font-sans);
+    font:500 12px/1.2 var(--ch-font-sans);
     letter-spacing:.14em;
     color:#7A6B3F;
   }
@@ -2607,10 +2607,6 @@
     gap:28px;
     padding:22px 16px 28px;
   }
-  .ch-hm-sec__h h3 {
-    color:#1C1B18;
-    font-size:16.5px;
-  }
   .ch-hm-link {
     color:#155A39;
   }
@@ -2658,13 +2654,6 @@
   .ch-hm-week__d {
     border-radius:8px;
   }
-  .ch-hm-week__d.is-today {
-    background:#FFFEFA;
-    box-shadow:0 0 0 1px rgb(110 98 62/.18);
-  }
-  .ch-hm-week__d.is-major {
-    background:#0B3A25;
-  }
   .ch-hm-list {
     position:relative;
   }
@@ -2677,12 +2666,6 @@
     top:0;
     height:2px;
     background:#155A39;
-  }
-  .ch-hm-rd+.ch-hm-rd {
-    border-top-color:rgb(110 98 62/.08);
-  }
-  .ch-hm-rd:active {
-    background:rgb(110 98 62/.04);
   }
   .ch-hm-score {
     border-radius:8px;
@@ -2730,10 +2713,6 @@
     gap:12px;
     padding:0 0 10px;
     border-bottom:1px solid rgb(110 98 62/.16);
-  }
-  .ch-hm-sec__h h3 {
-    font:600 15.5px/1 var(--ch-font-sans);
-    letter-spacing:-.012em;
   }
   .ch-hm-link {
     font-size:13px;
@@ -2787,35 +2766,6 @@
   .ch-hm-week__d {
     border-radius:8px;
     padding:10px 0 9px;
-  }
-  .ch-hm-week__d.is-today {
-    background:#155A39;
-    box-shadow:none;
-  }
-  .ch-hm-week__d.is-today em {
-    color:rgb(255 255 255/.7);
-  }
-  .ch-hm-week__d.is-today b {
-    color:#fff;
-  }
-  .ch-hm-week__d.is-today>span i {
-    background:rgb(255 255 255/.6);
-  }
-  .ch-hm-week__d.is-today>span {
-    color:#fff;
-  }
-  .ch-hm-week__d.is-major:not(.is-today) {
-    background:rgb(21 90 57/.07);
-  }
-  .ch-hm-week__d.is-major:not(.is-today) em {
-    color:#3F7556;
-  }
-  .ch-hm-week__d.is-major:not(.is-today) b {
-    color:#155A39;
-    font-weight:600;
-  }
-  .ch-hm-week__d.is-major:not(.is-today)>span {
-    color:#155A39;
   }
   .ch-hm-week__n {
     font-size:12.5px;
@@ -2915,12 +2865,6 @@
     border-bottom:0;
     border-top:3px double rgb(110 98 62/.22);
   }
-  .ch-hm-sec__h h3 {
-    font:600 19px/1.1 var(--ch-font-sans);
-    letter-spacing:-.025em;
-    font-variation-settings:"wdth" 88;
-    color:#123B29;
-  }
   .ch-hm-tl,
   .ch-hm-list,
   .ch-hm-form,
@@ -2958,9 +2902,6 @@
   .ch-hm-rd {
     padding:12px 0;
     min-height:64px;
-  }
-  .ch-hm-rd+.ch-hm-rd {
-    border-top:1px solid rgb(110 98 62/.1);
   }
   .ch-hm-score b {
     font-size:20px;
@@ -3047,9 +2988,11 @@
     color: var(--ch-text-primary);
     text-shadow: none;
   }
+  /* The date and the greeting sit as the kit's PageIntro sets its eyebrow and title: 12px (the phone text floor, F09),
+     then 10px to the greeting. */
   .ch-hm > .ch-hm-hero > h1,
   .ch-hm > .ch-hm-hero.is-player > h1 {
-    margin: 14px 0 12px;
+    margin: 10px 0 12px;
     font: 600 31px/1.08 var(--ch-font-sans);
     letter-spacing: -0.038em;
     font-variation-settings: 'wdth' 88;
@@ -3064,96 +3007,83 @@
   }
 }
 
-/* Player Home on the phone: the "Mobile clubhouse pass" (owner, 2026-10-08), the Coach Home board's round 3 carried to
-   m-player-home.jsx. The page is the chassis' parchment sheet; Up next stays the one green feature card (shared with
-   the coach, above); every section below sits flush under its engraved double rule, with no white cards. Real objects
-   keep their material: the scorecard its green board, the window picker its well. Scoped to `.ch-hm--player`, so the
-   Coach Home blocks above are untouched. */
+/* Home on the phone, both roles (owner, 2026-10-08: the coach's and the player's Home match): the parts the coach's
+   board and the player's share, in the Mobile clubhouse pass. The sheet is the canvas' own parchment from the greeting
+   to the tab bar, so a short page has no seam; section titles are the Ledger's phone heading; This week's keys, Today's
+   rows and the latest rounds sit on the section's edge and answer a press a beat after the finger lands (CH-1606); Up
+   next is the one green card. The board's sections keep its 6px under the title where their rows carry their own air
+   (Today, Latest rounds); the player's open on content without it and take 14px (the player's block). */
 @media (max-width: 820px) {
-  /* The chassis' parchment (shell.css) shows through, so the sheet has one tone from the greeting to the tab bar. */
-  .ch-hm--player {
-    background: none;
+  .ch-hm {
+    background: var(--ch-workspace);
   }
-  .ch-hm--player .ch-ph-acts {
-    gap: 10px;
-    margin-top: 14px;
-  }
-  /* Section heads in the Ledger's phone heading (ui.css `.ch-sec__title`): the bold condensed sans in forest ink. */
-  .ch-hm--player .ch-hm-sec {
-    gap: 14px;
-  }
-  .ch-hm--player .ch-hm-sec__h h2 {
+  /* Section titles in the Ledger's phone heading (ui.css `.ch-sec__title`): the bold condensed sans in forest ink. */
+  .ch-hm-sec__h h2 {
     font: 600 19px/1.2 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
-  .ch-hm--player .ch-hm-lab {
-    padding: 6px 0 0;
-    font: 600 14px/1.2 var(--ch-font-sans);
-    letter-spacing: -0.01em;
-    color: var(--ch-ledger-ink);
-  }
   /* This week as the board draws it (m-clubhouse.css round 2, m-player-home.css): today is the one solid green key, a
      competition day a soft green tint with its flag, the other days flat on the sheet. */
-  .ch-hm--player .ch-hm-week .is-today .ch-hm-week__d {
+  .ch-hm-week .is-today .ch-hm-week__d {
     background: var(--ch-green-600);
     box-shadow: none;
   }
-  .ch-hm--player .ch-hm-week .is-today .ch-hm-week__d em {
+  .ch-hm-week .is-today .ch-hm-week__d em {
     color: var(--ch-on-green-ink-soft);
   }
-  .ch-hm--player .ch-hm-week .is-today .ch-hm-week__d b {
+  .ch-hm-week .is-today .ch-hm-week__d b {
     color: var(--ch-on-green-ink);
   }
-  .ch-hm--player .ch-hm-week .is-today .ch-hm-week__d > span {
+  .ch-hm-week .is-today .ch-hm-week__d > span {
     color: var(--ch-on-green-ink);
   }
-  .ch-hm--player .ch-hm-week .is-today .ch-hm-week__d > span i {
+  .ch-hm-week .is-today .ch-hm-week__d > span i {
     background: var(--ch-on-green-ink-soft);
   }
-  .ch-hm--player .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d {
+  .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d {
     background: var(--ch-green-50);
     box-shadow: none;
   }
   /* The weekday letters hold 4.5:1 on their keys: the soft ivory on the green (5.5:1), green 500 on the tint (5.8:1). */
-  .ch-hm--player .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d em {
+  .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d em {
     color: var(--ch-green-500);
   }
-  .ch-hm--player .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d b {
+  .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d b {
     font-weight: 600;
     color: var(--ch-green-600);
   }
-  .ch-hm--player .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d > span {
+  .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d > span {
     color: var(--ch-green-600);
   }
-  .ch-hm--player .ch-hm-week .is-today.is-major .ch-hm-week__d {
+  .ch-hm-week .is-today.is-major .ch-hm-week__d {
     box-shadow: 0 0 0 2px var(--ch-hero-mint-strong);
   }
   /* A day is a link to it in the calendar: a press tints its key a beat after the finger lands, so a scroll that starts
      on the strip never flashes it, and letting go clears it at once (CH-1606). Today's green key and the competition
      day's tint deepen instead. */
-  .ch-hm--player .ch-hm-week__d {
+  .ch-hm-week__d {
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm--player .ch-hm-week__d:active {
+  .ch-hm-week__d:active {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
   }
-  .ch-hm--player .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d:active {
+  .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d:active {
     background: var(--ch-green-100);
   }
-  .ch-hm--player .ch-hm-week .is-today .ch-hm-week__d:active {
+  .ch-hm-week .is-today .ch-hm-week__d:active {
     background: var(--ch-green-700);
   }
   /* Up next is a link: a press deepens the card's green the same beat later (CH-1606: a large surface answers with a
      deeper tint, never a scale). The card isolates its own stacking context, so the shade's negative layer paints over
      the green and under the words whatever the hero's rules give its children. */
-  .ch-hm--player a.ch-hm-next {
+  a.ch-hm-next {
     position: relative;
     isolation: isolate;
   }
-  .ch-hm--player a.ch-hm-next::after {
+  a.ch-hm-next::after {
     position: absolute;
     inset: 0;
     z-index: -1;
@@ -3164,25 +3094,117 @@
     pointer-events: none;
     transition: opacity var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm--player a.ch-hm-next:active::after {
+  a.ch-hm-next:active::after {
     opacity: 0.38;
     transition-delay: var(--ch-dur-press-delay);
   }
   /* Today's rows sit on the section's edge like the Ledger's rows (ui.css `.ch-lgr__row.is-link`): the tap area runs
      12px past the text on each side and a press tints it. */
-  .ch-hm--player .ch-hm-tl__a {
+  .ch-hm-tl__a {
     margin-inline: -12px;
     padding-inline: 12px;
     border-radius: var(--ch-radius-md);
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm--player .ch-hm-tl__a:active {
+  .ch-hm-tl__a:active {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
   }
-  .ch-hm--player .ch-hm-tl__a:focus-visible {
+  .ch-hm-tl__a:focus-visible {
     outline: 2px solid var(--ch-border-focus);
     outline-offset: -2px;
+  }
+  /* The latest rounds (the coach's): rows on the section's edge between soft seams; the tap area runs 12px past the
+     words on each side and a press tints it (CH-1606), as Today's rows do. */
+  .ch-hm-list {
+    overflow: visible;
+  }
+  .ch-hm-list li + li {
+    border-top: 0;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-hm-rd {
+    width: calc(100% + 24px);
+    margin-inline: -12px;
+    padding-inline: 12px;
+    border-radius: var(--ch-radius-md);
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-hm-rd:active {
+    background: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
+  }
+  .ch-hm-rd:focus-visible {
+    outline: 2px solid var(--ch-border-focus);
+    outline-offset: -2px;
+  }
+  /* A section's text link (Calendar, Team stats) dims while pressed, as a plain text button does on iOS; Up next's
+     quick event types tint on the green and shrink as keys (`data-ch-press`), and Add event darkens its ivory. Each
+     waits the same beat after the finger lands (CH-1606). */
+  .ch-hm-link {
+    transition: opacity var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-hm-link:active {
+    opacity: 0.55;
+    transition-delay: var(--ch-dur-press-delay);
+  }
+  .ch-hm-none__chip,
+  .ch-hm-none__add {
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-hm-none__chip:active {
+    background: rgb(255 255 255 / 0.16);
+    transition-delay: var(--ch-dur-press-delay);
+  }
+  .ch-hm-none__add:active {
+    background: var(--ch-ivory-200);
+    transition-delay: var(--ch-dur-press-delay);
+  }
+  /* The first-run pages (CH-2308, CH-2312): the head is the Ledger's page intro (ui/Ledger.tsx PageIntro), the date as
+     the eyebrow under the double rule and the greeting in the bold condensed sans, on the same 20px edge as Home. */
+  .ch-h-main--first {
+    padding: 26px 20px 48px;
+  }
+  .ch-h-main--first > .ch-h-head {
+    gap: 0;
+    max-width: none;
+    padding-top: 14px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-h-main--first > .ch-h-head > .ch-h-head__date {
+    font: 500 12px/1.2 var(--ch-font-sans);
+    letter-spacing: 0.14em;
+    color: var(--ch-ledger-eyebrow);
+  }
+  .ch-h-main--first > .ch-h-head > h1 {
+    margin: 10px 0 0;
+    font: 600 31px/1.08 var(--ch-font-sans);
+    letter-spacing: -0.038em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+}
+
+/* Player Home on the phone: the "Mobile clubhouse pass" (owner, 2026-10-08), the Coach Home board's round 3 carried to
+   m-player-home.jsx. The page is the chassis' parchment sheet; Up next stays the one green feature card (shared with
+   the coach, above); every section below sits flush under its engraved double rule, with no white cards. Real objects
+   keep their material: the scorecard its green board, the window picker its well. What both roles share (the sheet,
+   the section titles, the week's keys, Today's rows, Up next's press, the first run) is in the block above; this one
+   is the player's own, scoped to `.ch-hm--player`. */
+@media (max-width: 820px) {
+  .ch-hm--player .ch-ph-acts {
+    gap: 10px;
+    margin-top: 14px;
+  }
+  /* Section heads in the Ledger's phone heading (ui.css `.ch-sec__title`): the bold condensed sans in forest ink. */
+  .ch-hm--player .ch-hm-sec {
+    gap: 14px;
+  }
+  .ch-hm--player .ch-hm-lab {
+    padding: 6px 0 0;
+    font: 600 14px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.01em;
+    color: var(--ch-ledger-ink);
   }
   /* The pager's keys sit on the sheet as hairline rings, not raised white coins; a press tints them. */
   .ch-hm--player .ch-ph-pg button {
@@ -3295,29 +3317,6 @@
   .ch-hm--player .ch-ph-spark__dot {
     box-shadow: 0 0 0 3px var(--ch-workspace);
   }
-  /* The first-run pages (CH-2308, CH-2312): the head is the Ledger's page intro (ui/Ledger.tsx PageIntro), the date as
-     the eyebrow under the double rule and the greeting in the bold condensed sans, on the same 20px edge as Home. */
-  .ch-h-main--first {
-    padding: 26px 20px 48px;
-  }
-  .ch-h-main--first > .ch-h-head {
-    gap: 0;
-    max-width: none;
-    padding-top: 14px;
-    border-top: var(--ch-ledger-rule-double);
-  }
-  .ch-h-main--first > .ch-h-head > .ch-h-head__date {
-    font: 500 11px/1.2 var(--ch-font-sans);
-    letter-spacing: 0.14em;
-    color: var(--ch-ledger-eyebrow);
-  }
-  .ch-h-main--first > .ch-h-head > h1 {
-    margin: 14px 0 0;
-    font: 600 31px/1.08 var(--ch-font-sans);
-    letter-spacing: -0.038em;
-    font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
-  }
 }
 
 /* Home's page notice (CH-1209, ui/RefreshNotice.tsx): two or more failed reads are told once, under the head, with one
@@ -3330,6 +3329,10 @@
 .ch-h-main--desk > .ch-notice + .ch-h-sheet,
 .ch-h-main--desk > .ch-notice + .ch-h-flow {
   margin-top: 36px;
+}
+/* The leaderboard's notice sits under its head's rule with the panes' 18px rhythm, as the week's does under its title. */
+.ch-h-sec + .ch-notice {
+  margin-top: 18px;
 }
 @media (max-width: 820px) {
   .ch-hm-hero > .ch-notice + .ch-notice,

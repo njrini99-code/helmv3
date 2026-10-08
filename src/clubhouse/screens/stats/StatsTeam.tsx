@@ -9,7 +9,7 @@ import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { nineRoundsInWindow } from '../../data/stats-filter';
 import { EarlyRead, NineHint } from './StatsFilter';
 import { PageHero } from '../../ui/PageHero';
-import { SectionBoundary } from '../../ui/SectionBoundary';
+import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/SectionBoundary';
 import { formatSigned, NO_DATA } from '../../lib/format';
 import { FigureCards, PuttingRings, YardagePage } from './charts';
 import { teamPlayerHref } from './links';
@@ -40,99 +40,103 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
   const covered = failed.length > 1;
 
   return (
+    // One group per rendered tree (the phone view groups its own): sections that crash together are told once (CH-1210).
     <StatsTeamFrame filter={data.filter} phone={<StatsTeamPhone data={data} />}>
-      <PageHero
-        eyebrow="Team / Performance"
-        title="Team stats"
-        figures={
-          data.roundsError
-            ? undefined
-            : [
-                { label: 'Rounds', value: data.roundCount },
-                { label: 'Players', value: data.activeCount },
-                { label: 'Window', value: data.window === 'season' ? 'Season' : data.window === 'qualifiers' ? 'Qualifiers' : 'Last 10' },
-              ]
-        }
-        actions={
-          /* Never export a half-loaded window. */
-          <TeamHeadActions filter={data.filter} teamName={data.teamName} grid={data.roundsError ? null : data.grid} />
-        }
-      >
-        {data.teamName}
-        {/* A roster that did not load is not "0 active players". */}
-        {!data.roundsError && (
-          <>
-            {' '}
-            &middot; <span className="ch-num">{data.activeCount}</span> active {data.activeCount === 1 ? 'player' : 'players'}
-          </>
-        )}{' '}
-        &middot; countable rounds only
-      </PageHero>
+      <SectionGroup>
+        <PageHero
+          eyebrow="Team / Performance"
+          title="Team stats"
+          figures={
+            data.roundsError
+              ? undefined
+              : [
+                  { label: 'Rounds', value: data.roundCount },
+                  { label: 'Players', value: data.activeCount },
+                  { label: 'Window', value: data.window === 'season' ? 'Season' : data.window === 'qualifiers' ? 'Qualifiers' : 'Last 10' },
+                ]
+          }
+          actions={
+            /* Never export a half-loaded window. */
+            <TeamHeadActions filter={data.filter} teamName={data.teamName} grid={data.roundsError ? null : data.grid} />
+          }
+        >
+          {data.teamName}
+          {/* A roster that did not load is not "0 active players". */}
+          {!data.roundsError && (
+            <>
+              {' '}
+              &middot; <span className="ch-num">{data.activeCount}</span> active {data.activeCount === 1 ? 'player' : 'players'}
+            </>
+          )}{' '}
+          &middot; countable rounds only
+        </PageHero>
 
-      {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} />}
+        {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} />}
 
-      {/* The page's one read failed, so the page says so as its whole body (CH-1211), not a notice over a blank page. */}
-      {data.roundsError && (
-        <EmptyState
-          size="page"
-          tone="danger"
-          code="CH-4201"
-          title="Team rounds didn’t load"
-          body="Every figure would be incomplete, so none is shown. Try again; the error has been reported."
-        />
-      )}
-      <PageRefreshNotice parts={failed} />
+        {/* The page's one read failed, so the page says so as its whole body (CH-1211), not a notice over a blank page. */}
+        {data.roundsError && (
+          <EmptyState
+            size="page"
+            tone="danger"
+            code="CH-4201"
+            title="Team rounds didn’t load"
+            body="Every figure would be incomplete, so none is shown. The error has been reported."
+          />
+        )}
+        <PageRefreshNotice parts={failed} />
+        <SectionGroupNotice />
 
-      {filtered && data.roundCount > 0 && data.roundsEffective < 3 && <EarlyRead code="CH-4314" count={data.roundCount} whole={data.roundsEffective} />}
-      {noRounds && !filtered && <NineHint code="CH-4319" filter={data.filter} options={data.filterOptions} who="This team has" />}
+        {filtered && data.roundCount > 0 && data.roundsEffective < 3 && <EarlyRead code="CH-4314" count={data.roundCount} whole={data.roundsEffective} />}
+        {noRounds && !filtered && <NineHint code="CH-4319" filter={data.filter} options={data.filterOptions} who="This team has" />}
 
-      {noRounds && filtered ? (
-        <TeamFilterEmpty />
-      ) : noRounds && data.window === 'season' && !nineOnly ? (
-        <StatsTeamFirstRun />
-      ) : noRounds ? (
-        // The whole page body is empty, so it is the page's empty state, not a section's (states audit, 2026-10-08).
-        <EmptyState
-          size="page"
-          code={data.window === 'qualifiers' ? 'CH-4302' : 'CH-4301'}
-          icon={data.window === 'qualifiers' ? Medal : ChartColumn}
-          title={data.window === 'qualifiers' ? 'No qualifier rounds this season yet' : 'No 18-hole rounds in this window yet'}
-          body={data.window === 'qualifiers' ? 'Qualifier rounds appear here once they are posted as qualifying.' : 'Team stats fill in as players post countable rounds.'}
-          action={data.window !== 'season' ? <ShowSeason /> : undefined}
-        />
-      ) : (
-        !data.roundsError && (
-          <>
-            <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
-              <TeamFigures figures={data.figures} cacheError={data.cacheError} covered={covered} />
-            </SectionBoundary>
-
-            <TeamCharts
-              data={{
-                window: data.window,
-                filter: data.filter,
-                weeks: data.weeks,
-                team: data.team,
-                players: data.players,
-                legWeeks: data.legWeeks,
-                grid: data.grid,
-                legTotals: data.legTotals,
-                tour: data.tour,
-                roundCount: data.roundCount,
-              }}
-            />
-
-            <div className="ch-st-grid2">
-              <SectionBoundary surface="stats.team.putting" label="Team putting" code="CH-4207">
-                <TeamPutting putting={data.putting} failed={data.puttsError} covered={covered} />
+        {noRounds && filtered ? (
+          <TeamFilterEmpty />
+        ) : noRounds && data.window === 'season' && !nineOnly ? (
+          <StatsTeamFirstRun />
+        ) : noRounds ? (
+          // The whole page body is empty, so it is the page's empty state, not a section's (states audit, 2026-10-08).
+          <EmptyState
+            size="page"
+            code={data.window === 'qualifiers' ? 'CH-4302' : 'CH-4301'}
+            icon={data.window === 'qualifiers' ? Medal : ChartColumn}
+            title={data.window === 'qualifiers' ? 'No qualifier rounds this season yet' : 'No 18-hole rounds in this window yet'}
+            body={data.window === 'qualifiers' ? 'Qualifier rounds appear here once they are posted as qualifying.' : 'Team stats fill in as players post countable rounds.'}
+            action={data.window !== 'season' ? <ShowSeason /> : undefined}
+          />
+        ) : (
+          !data.roundsError && (
+            <>
+              <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
+                <TeamFigures figures={data.figures} cacheError={data.cacheError} covered={covered} />
               </SectionBoundary>
-              <SectionBoundary surface="stats.team.bests" label="Season bests" code="CH-4208">
-                <SeasonBests bests={data.bests} filter={data.filter} longestError={data.longestError} covered={covered} />
-              </SectionBoundary>
-            </div>
-          </>
-        )
-      )}
+
+              <TeamCharts
+                data={{
+                  window: data.window,
+                  filter: data.filter,
+                  weeks: data.weeks,
+                  team: data.team,
+                  players: data.players,
+                  legWeeks: data.legWeeks,
+                  grid: data.grid,
+                  legTotals: data.legTotals,
+                  tour: data.tour,
+                  roundCount: data.roundCount,
+                }}
+              />
+
+              <div className="ch-st-grid2">
+                <SectionBoundary surface="stats.team.putting" label="Team putting" code="CH-4207">
+                  <TeamPutting putting={data.putting} failed={data.puttsError} covered={covered} />
+                </SectionBoundary>
+                <SectionBoundary surface="stats.team.bests" label="Season bests" code="CH-4208">
+                  <SeasonBests bests={data.bests} filter={data.filter} longestError={data.longestError} covered={covered} />
+                </SectionBoundary>
+              </div>
+            </>
+          )
+        )}
+      </SectionGroup>
     </StatsTeamFrame>
   );
 }

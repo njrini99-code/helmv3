@@ -213,6 +213,15 @@ describe('Stats team · reads that fail', () => {
     quiet.mockRestore();
   });
 
+  it('CH-1210 sections that crash together are told once under the head, with one Try again; each keeps its title', async () => {
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    wrap(stats({ figures: null as never, players: null as never, legWeeks: null as never, putting: { putts: 1, bands: null as never }, bests: null as never }));
+    await expectCode('CH-1210', /Team figures, the trend chart, strokes gained by leg, team putting and season bests couldn’t be shown/);
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    for (const c of ['CH-4204', 'CH-4205', 'CH-4206', 'CH-4207', 'CH-4208']) expect(within(code(c) as HTMLElement).queryByRole('button')).toBeNull();
+    quiet.mockRestore();
+  });
+
   it('CH-4204 CH-4205 CH-4206 CH-4207 CH-4208 a section that crashes on the server render leaves the page standing', async () => {
     const { renderToString } = await import('react-dom/server');
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});

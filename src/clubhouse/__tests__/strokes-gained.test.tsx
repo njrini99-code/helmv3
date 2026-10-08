@@ -689,7 +689,7 @@ describe('player profile · phone', () => {
 
   it('CH-5309 no strokes gained yet: the panel says what it needs instead of bars of dashes', () => {
     showPlayerPhone(player({ win: { ...PREVIEW_PLAYER.win, sgPerRound: null, sgRounds: 0, sgLegs: { tee: null, approach: null, around: null, putting: null } } }));
-    expect(code('CH-5309')!.textContent).toContain('No strokes gained in this window.');
+    expect(code('CH-5309')!.textContent).toContain('No strokes gained in this window');
     expect(panel().querySelector('.ch-stm-leg')).toBeNull();
   });
 
@@ -747,7 +747,7 @@ describe('make rate by distance (Game detail)', () => {
     const curve = document.querySelector('svg.ch-mk')!;
     expect(curve.getAttribute('aria-label')).toContain('15–20 feet');
     expect(curve.getAttribute('aria-label')).not.toContain('25');
-    expect(code('CH-5211')!.textContent).toContain("Putts past 20 feet didn't load.");
+    expect(code('CH-5211')!.textContent).toContain("Putts past 20 feet didn't load");
   });
 });
 

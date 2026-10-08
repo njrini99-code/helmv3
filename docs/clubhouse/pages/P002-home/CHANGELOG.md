@@ -1,5 +1,32 @@
 # P002 — Home: changelog
 
+## 2026-10-08 — Coach Home on the phone: the board as drawn; coach and player match
+
+The coach's phone Home now matches its "Mobile v2" board where the port had
+drifted, and the coach's and the player's share one set of rules:
+- section titles (Today, This week, Latest rounds) are the Ledger's phone
+  heading, the bold condensed sans in forest ink; they were the old 17px black,
+  because the board styled h3s and the page's titles are h2s;
+- This week draws today as the solid green key and a competition day as a soft
+  green tint with its trophy; the board's rules put the classes on the key,
+  the strip puts them on the day, so they never applied;
+- Today's rows and the latest rounds sit on the section's edge (the time at the
+  edge, as the board sets it) between soft seams, and tint on press;
+- the sheet is the canvas' own parchment, so a short page has no seam where
+  the darker sheet used to end;
+- the week's notice sits on the sheet under the greeting, outside the green
+  card (as the player's), and the coach's first run opens on the page intro;
+- every control answers a press (CH-1606): Up next deepens, the week's keys
+  and rows tint, the quick event types shrink, Add event darkens, Calendar and
+  Team stats dim;
+- the date is the page intro's 12px eyebrow (the phone text floor) on both
+  roles, 10px above the greeting as the kit's PageIntro sets it.
+
+The skeleton's phone hero and the date's new line move together: skeleton to
+page stays within half a pixel for both roles. On desktop, the leaderboard's
+notice now sits 18px under its head's rule (it touched it). Measured in WebKit
+as an iPhone at 390 wide.
+
 ## 2026-10-08 — Player Home on the phone: every tap answers; the skeleton is the reader's own
 
 Measured in WebKit as an iPhone at 390 wide (touch, no hover), every control on

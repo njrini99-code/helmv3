@@ -4,7 +4,7 @@ import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ChartColumn, Users } from 'lucide-react';
 import { renderToString } from 'react-dom/server';
-import type { ReactNode } from 'react';
+import { StrictMode, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
@@ -275,6 +275,21 @@ describe('CH-1210 sections that crash together are told once', () => {
     await userEvent.click(within(alone).getByRole('button', { name: 'Try again' }));
     expect(screen.getByText('trend is here')).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('in StrictMode, sections that crash as they first mount are still told together', () => {
+    // StrictMode (dev) and <Activity> detach a mounted boundary and attach it again without catching again; the phone
+    // tree mounts after hydration, so its boundaries catch in the commit that mounts them.
+    broken.add('figures');
+    broken.add('rsvps');
+    render(
+      <StrictMode>
+        <SectionGroup>{page()}</SectionGroup>
+      </StrictMode>,
+    );
+    expect(screen.getAllByRole('alert').map((n) => n.getAttribute('data-ch-code'))).toEqual(['CH-1210']);
+    expect(screen.getByRole('alert').querySelector('.ch-notice__body')!.textContent).toMatch(/^Team figures and RSVPs couldn’t be shown\. /);
+    expect([...document.querySelectorAll('.ch-notice--covered')].map((n) => n.getAttribute('data-ch-code'))).toEqual(['CH-4204', 'CH-4206']);
   });
 
   it('one crash keeps its own notice, and the group notice says nothing', () => {
