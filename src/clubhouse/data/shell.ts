@@ -22,6 +22,8 @@ export interface ChShellData {
   pendingJoinRequests: number | null;
   /** The team's time zone: where the global light's sun is until the course location is set (P001-A1). */
   timezone?: string;
+  /** The team's course location (Settings > Team), the global light's place; null until set or before its migration. */
+  course?: { lat: number; lng: number } | null;
   /** CoachHelm is on for the signed-in coach (the global, team and coach switches), so the shell offers the Ask sheet. */
   askAvailable?: boolean;
   /** The signed-in player's round in progress, touched in the last 12 hours (P001-C1): the Resume accessory. */
@@ -46,7 +48,7 @@ export const ROUND_IN_PROGRESS_FRESH_MS = 12 * 60 * 60_000;
 export async function loadClubhouseShell(teamId: string | undefined, playerId?: string | null, coachId?: string | null): Promise<ChShellData> {
   if (!teamId) return { nextEvent: null, pendingJoinRequests: null };
   const supabase = await createClient();
-  const [eventRes, joinRes, tzRes, roundRes, askOn] = await Promise.all([
+  const [eventRes, joinRes, tzRes, roundRes, askOn, courseRes] = await Promise.all([
     supabase
       .from('golf_events')
       .select('id, title, start_time, all_day, location, event_type, description')
@@ -87,6 +89,12 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
           },
         )
       : Promise.resolve(false),
+    // The light's place (migration 20261008150000, held for the owner's apply). Its own read, so a missing column only
+    // leaves the light on the time zone: it never touches the reads above. The generated types gain the columns at db:types.
+    (supabase.from('golf_team_settings') as unknown as CourseQuery)
+      .select('course_latitude, course_longitude')
+      .eq('team_id', teamId)
+      .maybeSingle(),
   ]);
   // A failed timezone read falls back to the product default, same as dashboard-data.
   const timezone = (!tzRes.error && tzRes.data?.timezone) || 'America/New_York';
@@ -117,6 +125,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     pendingJoinRequests: joinRes.error ? null : (joinRes.count ?? 0),
     timezone,
     askAvailable: askOn,
+    course: courseOf(courseRes),
     roundInProgress: round ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null } : null,
   };
 }
@@ -142,4 +151,21 @@ function describeEvent(
     : new Intl.DateTimeFormat('en-US', { timeZone: timezone, hour: 'numeric', minute: '2-digit' }).format(start);
   const metaLabel = [date, time, e.location].filter(Boolean).join(' \u00b7 ');
   return { id: e.id, title: e.title, whenLabel, metaLabel };
+}
+
+type CourseRow = { course_latitude: number | null; course_longitude: number | null };
+type CourseQuery = {
+  select(cols: string): { eq(c: string, v: string): { maybeSingle(): Promise<{ data: CourseRow | null; error: { code?: string; message?: string } | null }> } };
+};
+
+/** The course point, or null: unset, unread, or the columns not there yet (42703 / PGRST204, logged only when it is something else). */
+function courseOf(res: { data: CourseRow | null; error: { code?: string; message?: string } | null }): { lat: number; lng: number } | null {
+  if (res.error) {
+    const missing = res.error.code === '42703' || res.error.code === 'PGRST204';
+    if (!missing) chLogServer('shell', 'courseLocation', res.error, 'teams');
+    return null;
+  }
+  const lat = res.data?.course_latitude;
+  const lng = res.data?.course_longitude;
+  return lat != null && lng != null ? { lat, lng } : null;
 }

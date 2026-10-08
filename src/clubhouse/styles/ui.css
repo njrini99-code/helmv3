@@ -1330,3 +1330,51 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
     content: '';
   }
 }
+
+/* The course location (screens/settings/course-location.tsx, CH-8320): where the global light's sun is. Here with the light it serves, not in settings.css. */
+.ch-set-course {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ch-set-course__where {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  font: var(--ch-type-body);
+  color: var(--ch-text-primary);
+}
+.ch-set-course__where > svg {
+  color: var(--ch-text-tertiary);
+}
+.ch-set-course__where .ch-btn {
+  margin-left: auto;
+}
+.ch-root .ch-set-course__problem {
+  margin: 0;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-secondary);
+}
+.ch-set-course__state {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-set-course__acts {
+  display: inline-flex;
+  gap: 8px;
+  margin-left: auto;
+}
+.ch-set-course__pin {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: none;
+  color: var(--ch-text-primary);
+  font: var(--ch-type-body);
+  text-align: right;
+}
+.ch-set-course__save {
+  color: var(--ch-green-700);
+  font-weight: 600;
+}

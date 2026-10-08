@@ -79,7 +79,7 @@ export function ClubhouseFrame({
     <ClubhouseMarker role={role}>
       {/* The animation features (domMax, for layoutId slides) load in their own chunk, after first paint (D-25). */}
       <LazyMotion features={loadMaxFeatures} strict>
-        <LightProvider timeZone={shell.timezone ?? null} at={lightAt}>
+        <LightProvider course={shell.course ?? null} timeZone={shell.timezone ?? null} at={lightAt}>
           <PhoneChromeProvider>
             {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
             <FrameRoot motionOff={!showAnimations} fullScreen={fullScreen} homeRoot={rebuilt && pathname.replace(/\/$/, '') === '/golf/dashboard'}>

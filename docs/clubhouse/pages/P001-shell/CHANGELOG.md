@@ -1,5 +1,26 @@
 # P001 — Shell: changelog
 
+## 2026-10-08 — The course location sets the sun (P001-A1, D3-1)
+
+- **Settings > Team, Course location (CH-8320).** A coach can set where the team
+  plays, with the browser's Geolocation ("Use this device's location"), rounded
+  to two decimals (about 1 km), plus a short name. There is no geocoding
+  service. They can also clear it. Desktop shows a card, the phone a group
+  (`screens/settings/course-location.tsx`).
+- **The light takes its sun from there.** Once the course is set, the shell
+  reads it (`loadClubhouseShell` → `LightProvider course`). Until then the light
+  follows the team's time zone.
+- **Held migration.** The columns arrive with
+  `supabase/migrations/20261008150000_golf_team_settings_course_location.sql`
+  (HELD.md, awaiting the owner's apply). Until then the select that names them
+  fails as a missing column, the Team row draws nothing and the light stays on
+  the time zone; nothing else in Team is touched. The fields are typed locally
+  until `npm run db:types` runs after the apply.
+- **For the light's other readers:**
+  - `sunTimes(day, place, timeZone)` (`lib/sun.ts`) gives sunrise, sunset and
+    the start of golden hour.
+  - `useLightPlace()` (`shell/light.tsx`) gives the place and the zone.
+
 ## 2026-10-08 — Primitive fixes before pages adopt them
 
 - **Peek (CH-1830).** The hold opens the peek with the finger still down. The
