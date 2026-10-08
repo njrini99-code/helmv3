@@ -274,11 +274,12 @@
 /* Digits inside a display-serif heading (SerifText): the sans, a step smaller so its figures sit on the serif's x-height. */
 .ch-serif-num {
   font-family: var(--ch-font-sans);
-  font-size: 0.84em;
+  /* Titles are sans now (2026-10-07), so the digits SerifText sets apart take the title's own size and weight. */
+  font-size: inherit;
   font-style: normal;
   /* Proportional figures at the serif's own weight: tabular figures padded every 1 to a full width, so "1.1" in a
      headline read as a typewriter's, heavier than the words around it. Tables keep their tabular figures. */
-  font-weight: 400;
+  font-weight: inherit;
   font-variant-numeric: lining-nums proportional-nums;
   letter-spacing: -0.01em;
 }

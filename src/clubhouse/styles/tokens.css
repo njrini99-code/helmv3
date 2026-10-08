@@ -166,12 +166,15 @@
 
   /* Type */
   --ch-font-sans: var(--ch-font-instrument), ui-sans-serif, -apple-system, 'Segoe UI', system-ui, sans-serif;
-  --ch-font-serif: var(--ch-font-instrument-serif), 'Iowan Old Style', Georgia, serif;
+  /* No serif (owner, 2026-10-07: "bold sans, like the bundle"; the Mobile clubhouse pass board): the serif slot now
+     resolves to the sans, so any title still naming it reads in the house sans. */
+  --ch-font-serif: var(--ch-font-sans);
   --ch-font-mono: var(--ch-font-jetbrains), ui-monospace, 'SF Mono', Menlo, monospace;
-  /* Serif titles (owner, 2026-10-06: classic, old money): page and section titles only, never data or controls. */
-  --ch-type-serif-l: 400 42px/1.06 var(--ch-font-serif);
-  --ch-type-serif-m: 400 31px/1.1 var(--ch-font-serif);
-  --ch-type-serif-s: 400 25px/1.15 var(--ch-font-serif);
+  /* Title steps (once the serif titles; the owner moved titles to the heavy sans on 2026-10-07): page and section titles
+     only, never data or controls. The names stay so every consumer follows. */
+  --ch-type-serif-l: 600 36px/1.08 var(--ch-font-sans);
+  --ch-type-serif-m: 600 24px/1.15 var(--ch-font-sans);
+  --ch-type-serif-s: 600 20px/1.2 var(--ch-font-sans);
   --ch-type-display-l: 600 36px/1.08 var(--ch-font-sans);
   --ch-type-display-s: 600 22px/1.2 var(--ch-font-sans);
   --ch-type-title: 600 15px/1.35 var(--ch-font-sans);

@@ -1966,3 +1966,59 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
     padding-bottom: calc(var(--ch-tabbar-h) + env(safe-area-inset-bottom) + 16px);
   }
 }
+
+/* The phone chassis (owner, 2026-10-08: the Coach Home "Mobile clubhouse pass" board, carried to every phone screen):
+   the bar under the status bar is the frame's green, its type ivory, and the page below is the parchment sheet, its
+   top corners rounded into the green the way the board's sheet meets its chassis. Pushed screens' bars follow. */
+@media (max-width: 820px) {
+  [data-ui='clubhouse'] {
+    --ch-phone-bar-bg: var(--ch-frame);
+  }
+  [data-ui='clubhouse'] .ch-canvas {
+    background: var(--ch-workspace);
+  }
+  [data-ui='clubhouse'] .ch-topbar {
+    border-bottom: 0;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  /* The sheet's lip: two green corner pieces under the bar, so the parchment below reads as a sheet with rounded top
+     corners set into the green; the middle is open, so content scrolls up under the bar as before. */
+  [data-ui='clubhouse'] .ch-topbar::after,
+  [data-ui='clubhouse'] .ch-pbar::after {
+    position: absolute;
+    right: 0;
+    bottom: -16px;
+    left: 0;
+    height: 16px;
+    background: var(--ch-frame);
+    -webkit-mask: radial-gradient(16px at 16px 16px, transparent 97%, #000 100%) left top / 16px 16px no-repeat,
+      radial-gradient(16px at 0 16px, transparent 97%, #000 100%) right top / 16px 16px no-repeat;
+    mask: radial-gradient(16px at 16px 16px, transparent 97%, #000 100%) left top / 16px 16px no-repeat,
+      radial-gradient(16px at 0 16px, transparent 97%, #000 100%) right top / 16px 16px no-repeat;
+    content: '';
+    pointer-events: none;
+  }
+  [data-ui='clubhouse'] .ch-topbar__ptitle {
+    color: var(--ch-on-green-ink);
+  }
+  [data-ui='clubhouse'] .ch-topbar .ch-iconbtn {
+    color: var(--ch-on-green-ink-soft);
+  }
+  [data-ui='clubhouse'] .ch-pbar__title {
+    color: var(--ch-on-green-ink);
+  }
+  [data-ui='clubhouse'] .ch-pbar__back,
+  [data-ui='clubhouse'] .ch-pbar__text {
+    color: var(--ch-champagne-300);
+  }
+  [data-ui='clubhouse'] .ch-pbar__icon {
+    color: var(--ch-on-green-ink-soft);
+  }
+  [data-ui='clubhouse'] .ch-pbar__icon:active {
+    background: rgb(255 255 255 / 0.08);
+  }
+  [data-ui='clubhouse'] .ch-pbar__text[aria-disabled='true'] {
+    color: var(--ch-on-green-ink-muted);
+  }
+}

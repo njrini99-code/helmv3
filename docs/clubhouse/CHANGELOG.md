@@ -1,5 +1,29 @@
 # Clubhouse changelog
 
+## 2026-10-08 — The phone chassis, and no serif anywhere
+
+The owner approved carrying the Coach Home "Mobile clubhouse pass" board to
+every phone screen.
+
+**Phone chassis (`shell.css`).** The bar under the status bar is the frame's
+green, with ivory type. The page is the parchment sheet (`--ch-workspace`),
+and its top corners round into the green where it meets the bar, as on the
+board. Pushed screens' bars follow.
+
+**No serif.** The title tokens (`--ch-type-serif-*`) now resolve to the heavy
+sans (600), and `--ch-font-serif` points at the sans. This follows the owner's
+2026-10-07 choice of bold sans titles and the Clubhouse doctrine. Digits that
+SerifText set apart take the title's own size and weight.
+
+## 2026-10-07 — Rows press with a tint; the motion notes say what runs
+
+Every flush Ledger row a coach can open now answers a press with `--ch-ledger-row-press` over the press beat, never
+a scale (Home, Qualifiers, Rounds, Classes, CoachHelm, Recruiting, Calendar's agenda, Stats' grid, Team Hub's files,
+Settings' rail and links), as the shell's CH-1606 describes. Content that used to swap in one frame now settles in
+through the shared `Swap`: Calendar's views and periods, Roster's layouts, Recruiting's stage, a desktop Messages
+thread and Team stats' leg grid. The motion comments in `styles/tokens.css` and `lib/motion.ts` no longer describe
+the staggered first-paint reveal as live or say every tappable shrinks. No values changed.
+
 ## 2026-10-07 — An unavailable key is unlit
 
 A disabled primary key (Save changes before an edit, Continue before a step is
