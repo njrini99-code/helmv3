@@ -188,7 +188,8 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.nativeEvent.isComposing) return;
+    // 229: a soft keyboard (iOS autocorrect, an IME) still has the key; the event handed to cmdk would lose that mark.
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
     // The picker's keys go to cmdk's root. It sits beside the box, not around it, so a closed picker never takes Enter,
     // the arrows or a Shift+Enter from the text. Tab picks as Enter does.
     if (pickerOpen && pickable && PICKER_KEYS.has(e.key) && !e.shiftKey && !e.altKey && !e.metaKey && !e.ctrlKey) {
