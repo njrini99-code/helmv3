@@ -29,6 +29,7 @@ export async function resolveCourseId(supabase: any, courseName: string, provide
   if (providedCourseId) return providedCourseId;
   if (!courseName) return null;
 
+  // nosemgrep: helmv3-server-action-missing-auth-check -- plain helper (no server directive, not an action); the course lookup is by name and the caller is already authenticated
   const { data } = await supabase
     .from('golf_courses')
     .select('id')
@@ -194,6 +195,7 @@ export async function getPlayerTeamId(
   // can always see their own rounds, has no way to notice. A read that failed
   // and a player who genuinely has no team produce the identical null, so
   // without these logs there is nothing to tell them apart afterwards.
+  // nosemgrep: helmv3-server-action-missing-auth-check -- plain helper (no server directive, not an action); every caller has already authenticated and passes the user id
   const { data: active, error: activeError } = await supabase
     .from('golf_team_members')
     .select('team_id')
@@ -221,6 +223,7 @@ export async function getPlayerTeamId(
   // player's most recent membership so the round stays coach-visible. This does
   // NOT loosen RLS (no cross-team leak): the round only carries the player's own
   // real team_id, which only that team's coach can read.
+  // nosemgrep: helmv3-server-action-missing-auth-check -- plain helper (no server directive, not an action); every caller has already authenticated and passes the user id
   const { data: anyMembership, error: anyError } = await supabase
     .from('golf_team_members')
     .select('team_id')
