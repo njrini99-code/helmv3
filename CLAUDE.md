@@ -22,6 +22,8 @@ and `AUTOGEN:*` blocks in `memory/` (never hand-edit inside one).
     // Client: createClient() from '@/lib/supabase/client', with 'use client'
     // Tables are sport-prefixed: golf_*, baseball_*, helm_lifting_*.
     // Anything with useState/useEffect/onClick starts with 'use client'.
+    // Tests: new ones go in __tests__/ next to the code (AGENTS.md); src/test/** is
+    // legacy and its count may only fall (npm run lint:test-location).
 
 ## Commands
     npm run dev / typecheck / typecheck:fast / lint / test / test:all
