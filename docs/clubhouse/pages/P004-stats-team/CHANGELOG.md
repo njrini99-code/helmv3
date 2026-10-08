@@ -1,5 +1,13 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-08 — Copy: typographic apostrophes
+
+Team stats writes its apostrophes as ’: the export's failure (CH-4001) and the
+window's and filter's offline refusals (CH-4901), shared with the profile. The
+catalog quotes them as shown, with the crash titles. The trend's strokes gained
+note ("The team's strokes gained are …") stays straight until
+strokes-gained.test moves with it.
+
 ## 2026-10-08 — The empty window is the page's empty state; failures and crashes told once
 
 Fixes from the states audit, on desktop and the phone:
@@ -24,11 +32,18 @@ Fixes from the states audit, on desktop and the phone:
   head (CH-1210, the page's sections one `SectionGroup`), with one Try again
   that tries them all, and each keeps only its title;
 - on the phone the head's eyebrow is 12px, the phone text floor, as the kit's
-  PageIntro draws it (the skeleton's line moves with it).
+  PageIntro draws it (the skeleton's line moves with it);
+- a filter that matches no round (CH-4313) leaves the whole body empty under
+  the filter row, so it is the page's empty state too: the filter glyph's
+  medallion, "No rounds match these filters", its sentence and Clear filters
+  as the one primary action. The profile's (CH-5320) stands in for a tab's
+  content beside Development, so it stays a section's.
 
 New tests: stats-team.test › CH-1209 (several and one, desktop and phone),
 CH-4301 as the page's empty state on desktop and the phone, CH-4201 as the
-page's failure, CH-1210 for sections that crash together.
+page's failure, CH-1210 for sections that crash together;
+stats-filter-ui.test › CH-4313 as the page's empty state, CH-5320 as a
+section's.
 
 ## 2026-10-08 — phone: Mobile clubhouse pass
 

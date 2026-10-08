@@ -69,7 +69,7 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
                 </span>
                 <span>
                   <h2>No events scheduled</h2>
-                  <p>Your coach&apos;s practices and events will show here with a countdown.</p>
+                  <p>Your coach’s practices and events will show here with a countdown.</p>
                 </span>
               </div>
             </div>

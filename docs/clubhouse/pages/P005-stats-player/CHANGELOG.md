@@ -1,5 +1,15 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-08 — Copy: typographic apostrophes
+
+A player's stats write their apostrophes as ’ on desktop and the phone: the
+failed reads (CH-5201 to CH-5203, CH-5209, CH-5210, CH-5212, CH-5213), the
+focus area's and the share's failures (CH-5001, CH-5002), the offline refusals
+(CH-5901), the share key's name, the early-read line and Game detail's panel
+notes. The catalog quotes them as shown. CH-5211 ("Putts past 20 feet didn't
+load") stays straight until strokes-gained.test moves with it, and the offline
+toast's ": you're offline" is the shared action hook's (lib/use-action.ts).
+
 ## 2026-10-08 — phone: every tap answers
 
 Measured in WebKit as an iPhone at 390 wide (touch, no hover): the Message key
@@ -8,7 +18,8 @@ press (a tint a beat after the finger lands, CH-1606; the key and the button
 shrink as every button does), with no tap flash. The window switch glides and
 lands in one frame with reduced motion; the phone skeleton still measures
 identical to the loaded page. Game detail's section chips (the shared pill) and
-the shared switch have no press look of their own yet.
+the shared switch's other options answer with the shared press tint (CH-1617,
+controls.css; measured the same way).
 
 ## 2026-10-08 — phone: Mobile clubhouse pass
 

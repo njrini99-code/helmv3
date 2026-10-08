@@ -149,8 +149,8 @@ export function PlayerHomeNoTeam() {
         size="page"
         code="CH-2313"
         icon={Users}
-        title="You aren't on a team yet"
-        body="Ask your coach for your team's code or an invite. Once you join, Home shows your week, your rounds and your stats."
+        title="You aren’t on a team yet"
+        body="Ask your coach for your team’s code or an invite. Once you join, Home shows your week, your rounds and your stats."
       />
     </main>
   );

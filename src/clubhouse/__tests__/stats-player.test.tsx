@@ -108,7 +108,7 @@ describe('Stats player · saves', () => {
     expect(createFocusArea).not.toHaveBeenCalled();
     await user.type(screen.getByRole('textbox', { name: 'What to work on' }), 'Lag putting');
     await user.click(screen.getByRole('button', { name: 'Propose focus area' }));
-    await expectCode('CH-5001', /Couldn't add the focus area for/);
+    await expectCode('CH-5001', /Couldn’t add the focus area for/);
     expect((screen.getByRole('textbox', { name: 'What to work on' }) as HTMLInputElement).value).toBe('Lag putting');
     expect(screen.getByRole('dialog', { name: 'Add a focus area for Jonah' })).toBeTruthy();
     expect(reportSpy).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface: 'stats', action: 'stats.addFocusArea', severity: 'low' }));
@@ -130,7 +130,7 @@ describe('Stats player · reads that fail', () => {
   it('CH-5201 51401 rounds do not load; Try again asks the server for the whole page again', async () => {
     const user = userEvent.setup();
     show(player({ roundsError: true }));
-    await expectCode('CH-5201', /Rounds didn't load/);
+    await expectCode('CH-5201', /Rounds didn’t load/);
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalled();
   });
@@ -139,14 +139,14 @@ describe('Stats player · reads that fail', () => {
     const user = userEvent.setup();
     show(player({ statsError: true }));
     await openTab(user, /Game detail/);
-    await expectCode('CH-5202', /Shot-level detail didn't load/);
+    await expectCode('CH-5202', /Shot-level detail didn’t load/);
   });
 
   it('CH-5203 development items do not load', async () => {
     const user = userEvent.setup();
     show(player({ devError: true }));
     await openTab(user, /Development/);
-    await expectCode('CH-5203', /Some development items didn't load/);
+    await expectCode('CH-5203', /Some development items didn’t load/);
   });
 
   it('CH-5204 CH-5206 CH-5207 52301 a crash stays inside its tab, and is reported high with its section', async () => {
@@ -436,11 +436,11 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     const user = userEvent.setup();
     phone(player());
     const copy = vi.spyOn(navigator.clipboard, 'writeText');
-    await user.click(within(top()).getByRole('button', { name: "Share Jonah's stats" }));
+    await user.click(within(top()).getByRole('button', { name: 'Share Jonah’s stats' }));
     await waitFor(() => expect(copy).toHaveBeenCalledWith(`${window.location.origin}/golf/dashboard/stats?player=jonah`));
     expect(await screen.findByText('Link copied')).toBeTruthy();
     copy.mockRejectedValueOnce(new Error('blocked'));
-    await user.click(within(top()).getByRole('button', { name: "Share Jonah's stats" }));
+    await user.click(within(top()).getByRole('button', { name: 'Share Jonah’s stats' }));
     await expectCode('CH-5002', /Couldn.t share the link/);
     expect(hapticSpy).toHaveBeenCalledWith('error');
   });
@@ -759,7 +759,7 @@ describe('Stats player · the loader', () => {
     expect(profile.cacheError).toBe(true);
     expect(logServer).toHaveBeenCalledWith('stats', 'roundCache', expect.anything());
     show(player({ cacheError: true }));
-    await expectCode('CH-5213', /Some round figures didn't load/);
+    await expectCode('CH-5213', /Some round figures didn’t load/);
     cleanup();
     tables.current = profileTables();
     expect((await loadAs())!.cacheError).toBe(false);
@@ -1038,7 +1038,7 @@ describe('Stats player · network', () => {
     const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
     show(player());
     await user.click(screen.getByRole('radio', { name: 'Season' }));
-    await expectCode('CH-5901', /Couldn't open the season: you're offline/);
+    await expectCode('CH-5901', /Couldn’t open the season: you’re offline/);
     expect(code('CH-5901')!.textContent).toMatch(/still the last 10 rounds/);
     expect(router.push).not.toHaveBeenCalled();
     expect(hapticSpy).toHaveBeenCalledWith('error');
@@ -1150,7 +1150,7 @@ describe('Stats player · network', () => {
       await user.click(screen.getByRole('button', { name: 'Add focus area' }));
       await user.type(screen.getByRole('textbox', { name: 'What to work on' }), 'Lag putting');
       await user.click(screen.getByRole('button', { name: 'Propose focus area' }));
-      await expectCode('CH-1903', /Couldn't add the focus area for Jonah: you're offline/);
+      await expectCode('CH-1903', /Couldn’t add the focus area for Jonah: you['’]re offline/);
       expect(createFocusArea).not.toHaveBeenCalled();
       // The sheet stays open with the text, so the coach can send it once back online.
       expect((screen.getByRole('textbox', { name: 'What to work on' }) as HTMLInputElement).value).toBe('Lag putting');
@@ -1171,7 +1171,7 @@ describe('Stats player · network', () => {
         </PhoneChromeProvider>,
       );
       await user.click(screen.getByRole('radio', { name: /Season/ }));
-      await expectCode('CH-5901', /you're offline/);
+      await expectCode('CH-5901', /you’re offline/);
       expect(router.push).not.toHaveBeenCalled();
     } finally {
       online.mockRestore();

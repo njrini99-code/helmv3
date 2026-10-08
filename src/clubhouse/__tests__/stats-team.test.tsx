@@ -98,7 +98,7 @@ describe('Stats team · saves that fail', () => {
     };
     wrap(stats());
     await user.click(screen.getByRole('button', { name: 'Export' }));
-    await expectCode('CH-4001', /Couldn't export team stats/);
+    await expectCode('CH-4001', /Couldn’t export team stats/);
     expect(reportSpy).toHaveBeenCalledWith(expect.any(Error), { surface: 'stats.team.export', severity: 'low' });
     expect(hapticSpy).toHaveBeenCalledWith('error');
     url.createObjectURL = prev;
@@ -333,7 +333,7 @@ describe('Stats team · network', () => {
     const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
     wrap(stats({ window: 'last10' }));
     await user.click(screen.getByRole('radio', { name: 'Season' }));
-    await expectCode('CH-4901', /Couldn't open the season: you're offline/);
+    await expectCode('CH-4901', /Couldn’t open the season: you’re offline/);
     expect(code('CH-4901')!.textContent).toMatch(/still the last 10 rounds/);
     expect(router.push).not.toHaveBeenCalled();
     expect(hapticSpy).toHaveBeenCalledWith('error');

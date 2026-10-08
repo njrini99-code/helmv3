@@ -32,7 +32,7 @@ function ByRound({ points, unit, digits, label, what }: { points: Array<{ label:
 /** A shot read that failed is said, not shown as none logged. */
 function Shots({ error, code, what, onRetry, children }: { error: boolean; code: string; what: string; onRetry?: () => void; children: ReactNode }) {
   if (!error) return <>{children}</>;
-  return <InlineNotice code={code} title={`${what} didn't load.`} body="The rest of Game detail is correct. Try again; the error has been reported." onRetry={onRetry} />;
+  return <InlineNotice code={code} title={`${what} didn’t load.`} body="The rest of Game detail is correct. Try again; the error has been reported." onRetry={onRetry} />;
 }
 
 export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra; onRetry?: () => void }) {
@@ -72,7 +72,7 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
           ]}
         />
       </Panel>
-      <Panel title="Outcomes by par" wide note="Share of that par's holes, with the average to par a hole.">
+      <Panel title="Outcomes by par" wide note="Share of that par’s holes, with the average to par a hole.">
         <div className="ch-gx-pars">
           {parMix.map(({ p, d }) =>
             d.total === 0 ? (
@@ -119,7 +119,7 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
           )}
         </div>
       </Panel>
-      <Panel title="By round type" note={mixed ? "Average score per 18 holes of each type's rounds in this window: a 9-hole score counts as half a round." : 'Average score of 18-hole rounds of each type in this window.'}>
+      <Panel title="By round type" note={mixed ? 'Average score per 18 holes of each type’s rounds in this window: a 9-hole score counts as half a round.' : 'Average score of 18-hole rounds of each type in this window.'}>
         <Tiles
           label="Scoring by round type"
           items={types.map(([l, avg, n]) => ({
@@ -449,7 +449,7 @@ export function PuttingMore({ s, x, sixBands }: { s: GolfStats; x: ChProfileExtr
           <Empty code={NOTHING}>No putts with a break are logged in this window.</Empty>
         )}
       </Panel>
-      <Panel title="Short, low and high misses by break" note="Share of the missed putts on each break. Low is a miss that didn't break enough; high broke too much.">
+      <Panel title="Short, low and high misses by break" note="Share of the missed putts on each break. Low is a miss that didn’t break enough; high broke too much.">
         {missRows.length ? (
           <DataTable label="Putt misses by break" cols={['Break', 'Short', 'Low', 'High']} rows={missRows.map(({ k, label, b }) => ({ key: k, head: label, cells: [pct(b.missShortPct), pct(b.missLowPct), pct(b.missHighPct)] }))} />
         ) : (

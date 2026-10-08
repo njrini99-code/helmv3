@@ -322,7 +322,7 @@ function Form({ form }: { form: ChTeamForm }) {
         </span>
       </div>
       {pts.length > 1 && (
-        <svg viewBox={`0 0 ${W} ${H}`} className="ch-hm-form__svg" role="img" aria-label={`Team scoring, the team's average on each of its last ${pts.length} round days, from ${formatFixed(pts[0]!)} to ${formatFixed(pts[pts.length - 1]!)}`}>
+        <svg viewBox={`0 0 ${W} ${H}`} className="ch-hm-form__svg" role="img" aria-label={`Team scoring, the team’s average on each of its last ${pts.length} round days, from ${formatFixed(pts[0]!)} to ${formatFixed(pts[pts.length - 1]!)}`}>
           <path d={`${d} L${x(pts.length - 1)},${H} L${x(0)},${H} Z`} className="ch-hm-form__fill" />
           <path d={d} className="ch-hm-form__line" />
           <circle cx={x(pts.length - 1)} cy={y(pts[pts.length - 1]!)} r="3.6" className="ch-hm-form__dot" />
@@ -491,7 +491,7 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
           </dl>
           {holesError ? (
             <p className="ch-hm-muted" data-ch-code="CH-2203">
-              Hole-by-hole scores didn&apos;t load for this round. The total is right.
+              Hole-by-hole scores didn’t load for this round. The total is right.
             </p>
           ) : round.holes ? (
             <>
@@ -500,7 +500,7 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
             </>
           ) : (
             <p className="ch-hm-muted" data-ch-code="CH-2303">
-              Posted as a total. Hole-by-hole scores weren&apos;t recorded for this round.
+              Posted as a total. Hole-by-hole scores weren’t recorded for this round.
             </p>
           )}
         </div>

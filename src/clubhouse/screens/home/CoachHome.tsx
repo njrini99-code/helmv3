@@ -111,7 +111,7 @@ export function CoachHomeNoTeam() {
         size="page"
         code="CH-2307"
         icon={Users}
-        title="You aren't on a team yet"
+        title="You aren’t on a team yet"
         body="Once your head coach adds you to the program, or you finish setting up your team, Home shows your week, rounds and leaderboard."
       />
     </main>

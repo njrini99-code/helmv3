@@ -224,7 +224,8 @@ One filter for every figure, shared with the player profile (P005) and kept in t
   with the player named) and "Only these" / "Exclude these" choose among the ones matching the other choices.
 - **Links and export.** A grid row, a Season best and a phone row open the player's profile with the filter kept. The
   CSV is named for the filter ("varsity-stats-last10-filtered.csv").
-- **States.** No round matches: "No rounds match these filters" with Clear filters (CH-4313), in place of the first-run
+- **States.** No round matches: "No rounds match these filters" with Clear filters (CH-4313), the whole page body under
+  the filter row, so the page's empty state as CH-4301 is (the filter glyph's medallion), in place of the first-run
   page and of CH-4301 / CH-4302; fewer than three whole rounds: an early-read note above the figures (CH-4314); the sheet's
   range error (CH-4101), nothing to pick from (CH-4315), a list cut at 200 (CH-4316); nine-hole rounds in: the per-18 note
   (CH-4318); no 18-hole round but 9-hole ones posted: where they are (CH-4319), above CH-4301. D-71's first-run page is for

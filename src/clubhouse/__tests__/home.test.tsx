@@ -244,7 +244,7 @@ describe('Home · empty', () => {
 
   it('CH-2307 a coach with no team', () => {
     wrap(<CoachHomeNoTeam />);
-    expect(code('CH-2307')!.textContent).toMatch(/You aren't on a team yet/);
+    expect(code('CH-2307')!.textContent).toMatch(/You aren’t on a team yet/);
   });
 });
 
@@ -340,7 +340,7 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     expect(form.querySelector('.ch-hm-delta')!.className).toMatch(/is-gain/);
     // Putts up 0.3 is worse.
     expect([...form.querySelectorAll('dd.is-loss')].map((d) => d.textContent)).toEqual(['+0.3']);
-    expect(screen.getByRole('img', { name: /Team scoring, the team's average on each of its last \d+ round days/ })).toBeTruthy();
+    expect(screen.getByRole('img', { name: /Team scoring, the team’s average on each of its last \d+ round days/ })).toBeTruthy();
   });
 
   it('CH-2701 20103 21703 a latest round opens its card in a sheet: the figures, both nines, Message and the player’s stats', async () => {
@@ -825,7 +825,7 @@ describe('Home · Coach Home’s own contracts', () => {
     const [first, ...others] = PREVIEW_HOME.latestRounds.rounds;
     wrap(<CoachHome data={{ ...PREVIEW_HOME, latestRounds: { ...PREVIEW_HOME.latestRounds, rounds: [{ ...first!, id: '5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c' }, ...others] } }} />);
     expect(screen.getByRole('link', { name: 'Open recap' }).getAttribute('href')).toBe('/golf/dashboard/rounds/5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c');
-    expect(screen.queryByRole('link', { name: "Theo's stats" })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Theo’s stats' })).toBeNull();
   });
 
   it('20103 links out of Coach Home open what they name', () => {
@@ -834,7 +834,7 @@ describe('Home · Coach Home’s own contracts', () => {
     expect(href(/Message team/)).toBe('/golf/dashboard/messages?conversation=c-team');
     expect(href(/New event/)).toBe('/golf/dashboard/calendar?new=1');
     expect(href('Full roster')).toBe('/golf/dashboard/roster');
-    expect(href("Theo's stats")).toBe('/golf/dashboard/stats?player=theo');
+    expect(href('Theo’s stats')).toBe('/golf/dashboard/stats?player=theo');
     // A leaderboard row is a link (its role is row, for the table), to that player's stats.
     expect(document.querySelector('a.ch-h-lb__row')!.getAttribute('href')).toBe('/golf/dashboard/stats?player=theo');
   });

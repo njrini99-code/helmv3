@@ -124,7 +124,7 @@ export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; 
     } catch (err) {
       chReport(err, { surface: 'stats.team.export', severity: 'low' });
       haptic('error');
-      toast({ tone: 'error', title: "Couldn't export team stats", body: 'Your browser blocked the download. Try a desktop browser.', code: 'CH-4001' });
+      toast({ tone: 'error', title: 'Couldn’t export team stats', body: 'Your browser blocked the download. Try a desktop browser.', code: 'CH-4001' });
     }
   };
   return (
@@ -157,10 +157,10 @@ export function TeamFilter({ filter, options, count, phone = false }: { filter: 
   return <StatsFilter filter={filter} options={options} count={count} onChange={go} phone={phone} team codes={{ empty: 'CH-4313', pickEmpty: 'CH-4315', pickCap: 'CH-4316', range: 'CH-4101', holes: 'CH-4318' }} />;
 }
 
-/** The filter leaves no round: CH-4313, and Clear filters is the way back. */
+/** The filter leaves no round: CH-4313, the whole page body, so the page's empty state; Clear filters is the way back. */
 export function TeamFilterEmpty() {
   const { filter, go } = useContext(GoFilter);
-  return <FilterEmpty code="CH-4313" onClear={() => go(clearFilters(filter))} />;
+  return <FilterEmpty page code="CH-4313" onClear={() => go(clearFilters(filter))} />;
 }
 
 /**

@@ -51,7 +51,7 @@ const TABS: readonly Tab[] = ['overview', 'game', 'rounds', 'dev'];
 
 /** Form over the plotted rounds (oldest first): the newer half against the older half, in strokes. */
 export function formNote(first: string, scores: number[]): string {
-  if (scores.length < 3) return `Early read. ${first}'s form shows after three rounds.`;
+  if (scores.length < 3) return `Early read. ${first}’s form shows after three rounds.`;
   const half = Math.floor(scores.length / 2);
   const m = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
   const c = m(scores.slice(scores.length - half)) - m(scores.slice(0, half));
@@ -293,7 +293,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
           </div>
         )}
         {data.roundsError && (
-          <InlineNotice code="CH-5201" title="Rounds didn't load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they're hidden. Try again; the error has been reported." onRetry={() => router.refresh()} />
+          <InlineNotice code="CH-5201" title="Rounds didn’t load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they’re hidden. Try again; the error has been reported." onRetry={() => router.refresh()} />
         )}
 
         {/* The tab's panel swaps (CH-5603) behind the underline that already moved (CH-5601). */}
@@ -313,7 +313,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
                 {data.statsError ? (
                   <InlineNotice
                     code="CH-5202"
-                    title="Shot-level detail didn't load."
+                    title="Shot-level detail didn’t load."
                     body="Scores and rounds above are correct. Try again; the error has been reported."
                     onRetry={() => router.refresh()}
                   />
@@ -433,7 +433,7 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
       <YardagePage
         title={coach ? `${first} vs. team` : 'You vs. the Tour'}
         meta={coach ? `Same window, active players · strokes gained ${baseline.vs}` : `Tour averages where the benchmark exists · strokes gained ${baseline.vs}`}
-        note={`${coverage ? `${coverage}; the scoring average and the pressure gap read all ${w.rounds}. ` : ''}${coach ? "Team values are pooled from the active players' rounds in the same window, where the round cache has the figure. " : ''}Bands need 10 shots or putts. Par scoring is strokes a hole; the pressure gap (tournament and qualifier rounds against practice) and the opening hole are strokes to par, and lower is better.`}
+        note={`${coverage ? `${coverage}; the scoring average and the pressure gap read all ${w.rounds}. ` : ''}${coach ? 'Team values are pooled from the active players’ rounds in the same window, where the round cache has the figure. ' : ''}Bands need 10 shots or putts. Par scoring is strokes a hole; the pressure gap (tournament and qualifier rounds against practice) and the opening hole are strokes to par, and lower is better.`}
       >
         <FieldTable rows={data.comparisons} showTeam={coach} />
       </YardagePage>
@@ -512,7 +512,7 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
   const router = useRouter();
   return (
     <>
-      {data.devError && <InlineNotice code="CH-5203" title="Some development items didn't load." body="Try again; the error has been reported." onRetry={() => router.refresh()} />}
+      {data.devError && <InlineNotice code="CH-5203" title="Some development items didn’t load." body="Try again; the error has been reported." onRetry={() => router.refresh()} />}
       <div className="ch-st-grid2">
         <section className="ch-st-card">
           <div className="ch-st-card__head">
@@ -621,7 +621,7 @@ function FocusAreaSheet({ open, onClose, playerId, coachId, first }: { open: boo
       }),
     {
       done: `Focus area proposed to ${first}. It starts when ${first} accepts.`,
-      failed: `Couldn't add the focus area for ${first}`,
+      failed: `Couldn’t add the focus area for ${first}`,
       hint: 'Your text is still here. Try again in a moment.',
       code: 'CH-5001',
     },

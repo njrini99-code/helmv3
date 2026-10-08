@@ -241,7 +241,7 @@ describe('Player Home · desktop (Player - Home.html)', () => {
 
   it('CH-2313 a player on no team', () => {
     wrap(<PlayerHomeNoTeam />);
-    expect(code('CH-2313')!.textContent).toMatch(/aren't on a team yet/);
+    expect(code('CH-2313')!.textContent).toMatch(/aren’t on a team yet/);
   });
 });
 
@@ -283,7 +283,7 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
 
   it('CH-2309 nothing ahead: the empty card, with no Add event (a player can’t add team events)', () => {
     show(home({ next: null }));
-    expect(code('CH-2309')!.textContent).toMatch(/Your coach's practices and events will show here/);
+    expect(code('CH-2309')!.textContent).toMatch(/Your coach’s practices and events will show here/);
     expect(screen.queryByRole('link', { name: /Add event/ })).toBeNull();
   });
 

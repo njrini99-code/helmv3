@@ -108,7 +108,7 @@ export function Leaderboard({ data, covered = false }: { data: ChCoachHome['lead
             code="CH-2304"
             icon={Users}
             title="No players on the roster yet."
-            body="Share your team's join code from Roster, and players appear here once you approve them."
+            body="Share your team’s join code from Roster, and players appear here once you approve them."
           />
         </div>
       ) : data.rows.length === 0 ? (
