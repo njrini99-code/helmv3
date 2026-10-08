@@ -1031,3 +1031,15 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     display: none;
   }
 }
+
+/* Dark (Clubhouse at night). The stop key is the ink-filled one, which is ivory at night, so its icon takes the dark
+   surface; the drawer's scrim deepens to read over a dark page. */
+:where(html[data-fw-theme='dark']) .ch-ask-cmp__send.is-stop {
+  color: var(--ch-bg-surface);
+}
+:where(html[data-fw-theme='dark']) .ch-ask-cmp__send:disabled {
+  color: var(--ch-ink-400);
+}
+:where(html[data-fw-theme='dark']) .ch-ask-drawer::backdrop {
+  background: rgb(5 8 6 / 0.6);
+}

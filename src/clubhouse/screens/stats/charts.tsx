@@ -217,19 +217,19 @@ export function ScoreBoardTrend({ rounds }: { rounds: Array<{ label: string; sco
       <svg viewBox={`0 0 ${w} ${h}`} role="img" aria-label={`Scores: ${rounds.map((r) => r.score).join(', ')}`}>
         {ticks.map((t) => (
           <g key={t}>
-            <line x1={0} x2={w} y1={y(t)} y2={y(t)} stroke="rgb(28 25 18 / .1)" />
+            <line x1={0} x2={w} y1={y(t)} y2={y(t)} stroke="var(--ch-border-subtle)" />
             <text x={4} y={y(t) - 4} className="ch-ax">
               {t}
             </text>
           </g>
         ))}
-        <line x1={0} x2={w} y1={y(avg)} y2={y(avg)} stroke="rgb(28 25 18 / .35)" strokeDasharray="2 3" />
+        <line x1={0} x2={w} y1={y(avg)} y2={y(avg)} stroke="var(--ch-st-mean-rule)" strokeDasharray="2 3" />
         <text x={padX} y={y(avg) + 14} className="ch-ax">
           avg {avg.toFixed(1)}
         </text>
-        {pts.length > 1 && <path d={monotonePath(pts)} fill="none" stroke="#1c1b18" strokeWidth={1.5} strokeLinecap="round" />}
+        {pts.length > 1 && <path d={monotonePath(pts)} fill="none" stroke="var(--ch-ink-900)" strokeWidth={1.5} strokeLinecap="round" />}
         {pts.map(([px, py], i) => (
-          <circle key={i} cx={px} cy={py} r={i === pts.length - 1 ? 4.5 : 3.5} fill={i === pts.length - 1 ? '#1c1b18' : '#fbf8ef'} stroke="#1c1b18" strokeWidth={1.5} />
+          <circle key={i} cx={px} cy={py} r={i === pts.length - 1 ? 4.5 : 3.5} fill={i === pts.length - 1 ? 'var(--ch-ink-900)' : 'var(--ch-st-dot-paper)'} stroke="var(--ch-ink-900)" strokeWidth={1.5} />
         ))}
       </svg>
       <div className="ch-board" style={{ ['--ch-n' as string]: rounds.length }}>
@@ -669,7 +669,7 @@ export function GreenMiss({ m }: { m: Record<'ll' | 'lg' | 'lr' | 'l' | 'r' | 's
             <em>Green</em>
           </span>
         ) : (
-          <span key={l} className="ch-gmiss__c" style={{ background: `rgb(154 101 18 / ${0.05 + ((v ?? 0) / max) * 0.32})` }}>
+          <span key={l} className="ch-gmiss__c" style={{ background: `color-mix(in srgb, var(--ch-st-miss-heat) ${(5 + ((v ?? 0) / max) * 32).toFixed(1)}%, transparent)` }}>
             <b className="ch-num">{v == null ? NO_DATA : `${Math.round(v)}%`}</b>
             <em>{l}</em>
           </span>

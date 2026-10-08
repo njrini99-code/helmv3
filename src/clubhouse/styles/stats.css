@@ -467,14 +467,14 @@
   height: 0;
   margin-right: 6px;
   vertical-align: 3px;
-  border-top: 3px solid var(--ch-green-800);
+  border-top: 3px solid var(--ch-st-team-line);
   border-radius: 2px;
 }
 .ch-sgt__legend i.is-sel {
   border-top: 2px solid var(--ch-green-600);
 }
 .ch-sgt__legend i.is-other {
-  border-top: 1.5px solid var(--ch-ink-300);
+  border-top: 1.5px solid var(--ch-st-other-line);
 }
 .ch-sgt__plot {
   display: grid;
@@ -3816,4 +3816,188 @@ a.ch-lg__r:focus-visible {
   .ch-stm .ch-gx-tbl td {
     border-top-color: var(--ch-ledger-rule-soft);
   }
+}
+
+/* Dark (Clubhouse at night). The tokens carry most of the page; these are the literals that were drawn for ivory paper:
+   ink hairlines and tracks turn to ivory ink at the same weight, mint tints to the dark selected green, the fairway
+   figures to the night chart greens. `:where()` keeps each override at its light rule's specificity, so hover and
+   selected states still win as they do in light. The properties below are read by the trend charts' SVG. */
+[data-ui='clubhouse'] {
+  --ch-st-mean-rule: rgb(28 25 18 / 0.35);
+  --ch-st-dot-paper: #fbf8ef;
+  --ch-st-miss-heat: rgb(154 101 18);
+  --ch-st-team-line: var(--ch-green-800);
+  --ch-st-other-line: var(--ch-ink-300);
+}
+html[data-fw-theme='dark'] [data-ui='clubhouse'] {
+  --ch-st-mean-rule: rgb(237 231 216 / 0.4);
+  --ch-st-dot-paper: var(--ch-chart-paper);
+  --ch-st-miss-heat: var(--ch-warning-600);
+  /* Lighter than the lit player line (green-600) by lightness, not hue alone. */
+  --ch-st-team-line: #b4dfc4;
+  --ch-st-other-line: var(--ch-ink-400);
+}
+:where(html[data-fw-theme='dark']) .ch-st-updating {
+  color: var(--ch-bg-surface);
+}
+:where(html[data-fw-theme='dark']) .ch-st-head {
+  border-bottom-color: var(--ch-champagne-rule);
+}
+:where(html[data-fw-theme='dark']) .ch-fg__track {
+  background: rgb(237 231 216 / 0.09);
+  box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.35);
+}
+:where(html[data-fw-theme='dark']) .ch-fg__gauge--holes i {
+  background: linear-gradient(90deg, var(--ch-chart-gain) var(--ch-fg-part, 100%), rgb(237 231 216 / 0.1) var(--ch-fg-part, 100%));
+}
+:where(html[data-fw-theme='dark']) .ch-delta.is-good {
+  color: var(--ch-text-on-accent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+}
+:where(html[data-fw-theme='dark']) .ch-delta.is-bad,
+:where(html[data-fw-theme='dark']) .ch-pf-early {
+  box-shadow: inset 0 0 0 1px rgb(227 169 79 / 0.24);
+}
+:where(html[data-fw-theme='dark']) .ch-sgt__team b,
+:where(html[data-fw-theme='dark']) .ch-sgt__end.is-sel,
+:where(html[data-fw-theme='dark']) .ch-sgm[aria-pressed='true'],
+:where(html[data-fw-theme='dark']) .ch-board__n.is-even,
+:where(html[data-fw-theme='dark']) .ch-pf-tag,
+:where(html[data-fw-theme='dark']) .ch-tab-t[aria-selected='true'],
+:where(html[data-fw-theme='dark']) .ch-tab-t[aria-selected='true'] .ch-tab-t__n,
+:where(html[data-fw-theme='dark']) .ch-fws__z.is-fw,
+:where(html[data-fw-theme='dark']) .ch-cup__lbl {
+  color: var(--ch-green-700);
+}
+:where(html[data-fw-theme='dark']) .ch-sgt__end.is-sel,
+:where(html[data-fw-theme='dark']) .ch-sf__chip {
+  background: var(--ch-bg-selected);
+}
+@media (hover: hover) {
+  :where(html[data-fw-theme='dark']) .ch-sgm:hover {
+    background: rgb(237 231 216 / 0.04);
+  }
+  :where(html[data-fw-theme='dark']) .ch-sf__chip:hover {
+    background: var(--ch-green-100);
+  }
+}
+:where(html[data-fw-theme='dark']) .ch-sgm[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.22), inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+:where(html[data-fw-theme='dark']) .ch-lg__cell.is-col {
+  box-shadow: inset 0 0 0 1.5px rgb(107 187 140 / 0.4);
+}
+:where(html[data-fw-theme='dark']) .ch-yb__head {
+  border-bottom-color: var(--ch-border-subtle);
+}
+:where(html[data-fw-theme='dark']) .ch-board__n {
+  background: var(--ch-ivory-100);
+  box-shadow: 0 0 0 1px var(--ch-border-subtle), var(--ch-elevation-bubble);
+}
+:where(html[data-fw-theme='dark']) .ch-ft td,
+:where(html[data-fw-theme='dark']) .ch-ft__g th {
+  border-top-color: var(--ch-border-subtle);
+}
+:where(html[data-fw-theme='dark']) .ch-ft__you span {
+  background: rgb(107 187 140 / 0.1);
+}
+:where(html[data-fw-theme='dark']) .ch-pg-leader {
+  stroke: var(--ch-st-mean-rule);
+}
+:where(html[data-fw-theme='dark']) .ch-pf-hero::before {
+  background: repeating-linear-gradient(90deg, var(--ch-chart-fairway) 0 42px, var(--ch-chart-fairway-alt) 42px 84px);
+  box-shadow: inset 0 -1px 0 rgb(107 187 140 / 0.18);
+}
+:where(html[data-fw-theme='dark']) .ch-pf-hero::after {
+  background: linear-gradient(180deg, rgb(0 0 0 / 0.25), transparent);
+}
+:where(html[data-fw-theme='dark']) .ch-pf-hero__av {
+  box-shadow: 0 0 0 4px var(--ch-ivory-25), 0 0 0 5px rgb(107 187 140 / 0.3), var(--ch-elevation-cast);
+}
+:where(html[data-fw-theme='dark']) .ch-pf-tag {
+  background: rgb(27 32 28 / 0.85);
+  box-shadow: 0 0 0 1px rgb(107 187 140 / 0.22);
+}
+:where(html[data-fw-theme='dark']) .ch-tab-t__n {
+  background: linear-gradient(180deg, var(--ch-ivory-200), var(--ch-ivory-150));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), inset 0 0 0 1px var(--ch-border-hairline);
+}
+:where(html[data-fw-theme='dark']) .ch-tab-t[aria-selected='true'] .ch-tab-t__n {
+  background: linear-gradient(180deg, var(--ch-green-100), var(--ch-green-50));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), inset 0 0 0 1px rgb(107 187 140 / 0.22);
+}
+:where(html[data-fw-theme='dark']) .ch-pf-bar,
+:where(html[data-fw-theme='dark']) .ch-cmp__bar {
+  box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.35);
+}
+:where(html[data-fw-theme='dark']) .ch-pf-goal__c {
+  color: var(--ch-text-on-accent);
+}
+:where(html[data-fw-theme='dark']) .ch-gd__nav {
+  background: rgb(17 21 18 / 0.86);
+}
+:where(html[data-fw-theme='dark']) .ch-gm__ic {
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.16);
+}
+:where(html[data-fw-theme='dark']) .ch-mix__bar,
+:where(html[data-fw-theme='dark']) .ch-par3__t,
+:where(html[data-fw-theme='dark']) .ch-lad__col,
+:where(html[data-fw-theme='dark']) .ch-cup__split .is-high,
+:where(html[data-fw-theme='dark']) .ch-gx-tiles > div,
+:where(html[data-fw-theme='dark']) .ch-gx-sec__c,
+:where(html[data-fw-theme='dark']) .ch-gx-pm {
+  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+}
+/* The score mix keeps its order by lightness as well as hue: eagle the deep red, birdie the light one, then par, bogey
+   and double stepping up from the card. */
+:where(html[data-fw-theme='dark']) .ch-mix__s + .ch-mix__s {
+  box-shadow: inset 1px 0 0 rgb(17 21 18 / 0.9);
+}
+:where(html[data-fw-theme='dark']) .ch-mix .is-eagle {
+  background: #b0473a;
+}
+:where(html[data-fw-theme='dark']) .ch-mix .is-par {
+  background: var(--ch-ivory-300);
+}
+:where(html[data-fw-theme='dark']) .ch-mix .is-bogey {
+  background: #7a7569;
+}
+:where(html[data-fw-theme='dark']) .ch-fws__z.is-rough {
+  background: repeating-linear-gradient(135deg, var(--ch-chart-rough) 0 6px, #2e3529 6px 7px);
+  color: var(--ch-text-secondary);
+}
+:where(html[data-fw-theme='dark']) .ch-fws__z.is-fw {
+  background: repeating-linear-gradient(90deg, var(--ch-chart-fairway) 0 18px, var(--ch-chart-fairway-alt) 18px 36px);
+}
+:where(html[data-fw-theme='dark']) .ch-lad__fill.is-gain,
+:where(html[data-fw-theme='dark']) .ch-lad__fill.is-neutral {
+  background: linear-gradient(180deg, #84c9a0, var(--ch-chart-gain));
+}
+:where(html[data-fw-theme='dark']) .ch-lad__fill.is-loss {
+  background: linear-gradient(180deg, #edc07a, var(--ch-chart-loss));
+}
+:where(html[data-fw-theme='dark']) .ch-gmiss__c b {
+  color: var(--ch-text-primary);
+}
+:where(html[data-fw-theme='dark']) .ch-gmiss__g {
+  background: radial-gradient(circle at 50% 50%, var(--ch-chart-fairway) 0 60%, var(--ch-chart-fairway-alt) 61%);
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.24);
+}
+:where(html[data-fw-theme='dark']) .ch-cup__ring {
+  background: radial-gradient(circle, #2a4a36 0 40%, var(--ch-chart-fairway) 41% 70%, var(--ch-chart-fairway-alt) 71%);
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.22);
+}
+:where(html[data-fw-theme='dark']) .ch-cup__hole {
+  background: #070908;
+  box-shadow: inset 0 2px 3px rgb(0 0 0 / 0.6), 0 0 0 3px var(--ch-ink-700);
+}
+:where(html[data-fw-theme='dark']) .ch-cup__split .is-low {
+  background: rgb(227 169 79 / 0.16);
+  color: var(--ch-chart-loss-on-tint);
+}
+:where(html[data-fw-theme='dark']) .ch-gx-sec__c.is-top {
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.24);
+}
+:where(html[data-fw-theme='dark']) .ch-sf__chip {
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.32);
 }

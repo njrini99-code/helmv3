@@ -236,3 +236,11 @@
     padding-bottom: 8px;
   }
 }
+
+/* Dark (Clubhouse at night): the picked view keeps ivory ink on its deep green; rows rule in ivory ink. */
+:where(html[data-fw-theme='dark']) .ch-hv-chip[aria-pressed='true'] {
+  color: var(--ch-text-on-accent);
+}
+:where(html[data-fw-theme='dark']) .ch-hv-link {
+  border-top-color: var(--ch-border-hairline);
+}

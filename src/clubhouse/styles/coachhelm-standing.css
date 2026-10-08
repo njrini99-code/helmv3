@@ -622,3 +622,12 @@
     font-size: 12px;
   }
 }
+
+/* Dark (Clubhouse at night): ink hairlines and the comparison track turn to ivory ink at the same weight. */
+:where(html[data-fw-theme='dark']) .ch-hs-r,
+:where(html[data-fw-theme='dark']) .ch-hs-sk__r {
+  border-top-color: var(--ch-border-hairline);
+}
+:where(html[data-fw-theme='dark']) .ch-hs-tr {
+  background: rgb(237 231 216 / 0.1);
+}

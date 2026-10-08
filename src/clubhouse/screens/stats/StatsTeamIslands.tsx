@@ -356,7 +356,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                     key={p.id}
                     d={d}
                     className="ch-sgt__line"
-                    stroke={on ? 'var(--ch-green-600)' : 'var(--ch-ink-300)'}
+                    stroke={on ? 'var(--ch-green-600)' : 'var(--ch-st-other-line)'}
                     strokeOpacity={on ? 1 : litId ? 0.2 : 0.45}
                     strokeWidth={on ? 2.25 : 1.25}
                   />
@@ -366,8 +366,8 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               {litPath && (
                 <path key={`front-${litId}`} d={litPath} className="ch-sgt__front" fill="none" stroke="var(--ch-green-600)" strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round" />
               )}
-              {teamPath && <path d={teamPath} fill="none" stroke="var(--ch-green-800)" strokeWidth={3} strokeLinecap="round" />}
-              {tLast && <circle cx={x(tLast.i)} cy={y(tLast.v)} r={4.5} fill="var(--ch-ivory-25)" stroke="var(--ch-green-800)" strokeWidth={2.5} />}
+              {teamPath && <path d={teamPath} fill="none" stroke="var(--ch-st-team-line)" strokeWidth={3} strokeLinecap="round" />}
+              {tLast && <circle cx={x(tLast.i)} cy={y(tLast.v)} r={4.5} fill="var(--ch-ivory-25)" stroke="var(--ch-st-team-line)" strokeWidth={2.5} />}
               {litEnd && <circle key={`end-${litId}`} className="ch-sgt__front" cx={x(litEnd.i)} cy={y(litEnd.v)} r={4} fill="var(--ch-ivory-25)" stroke="var(--ch-green-600)" strokeWidth={2} />}
               {/* A line is 1.25px: each takes the pointer along a wider invisible band, over everything drawn. */}
               {lines.map(({ p, v }) => {

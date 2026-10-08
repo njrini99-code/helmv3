@@ -1460,3 +1460,50 @@
     font-size: 12px;
   }
 }
+
+/* Dark (Clubhouse at night): ink hairlines, tracks and tints drawn for ivory paper turn to ivory ink at the same weight;
+   the warm and green gauge fills start from their night colours. `:where()` keeps each at its light rule's specificity. */
+:where(html[data-fw-theme='dark']) .ch-hl-pri.is-high {
+  box-shadow: inset 0 0 0 1px rgb(227 169 79 / 0.3);
+}
+:where(html[data-fw-theme='dark']) .ch-hl-pri.is-medium {
+  color: var(--ch-champagne-300);
+}
+:where(html[data-fw-theme='dark']) .ch-hl-ev {
+  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+}
+:where(html[data-fw-theme='dark']) .ch-hl-bars__t,
+:where(html[data-fw-theme='dark']) .ch-hl-g__t {
+  background: rgb(237 231 216 / 0.09);
+}
+:where(html[data-fw-theme='dark']) .ch-hl-g__f {
+  background: linear-gradient(90deg, rgb(227 169 79 / 0.2), var(--ch-chart-loss));
+}
+:where(html[data-fw-theme='dark']) .ch-hl-g.is-good .ch-hl-g__f {
+  background: linear-gradient(90deg, rgb(107 187 140 / 0.2), var(--ch-green-600));
+}
+:where(html[data-fw-theme='dark']) .ch-hl-ev__f,
+:where(html[data-fw-theme='dark']) .ch-hl-why,
+:where(html[data-fw-theme='dark']) .ch-hl-row,
+:where(html[data-fw-theme='dark']) .ch-hl-prop__r,
+:where(html[data-fw-theme='dark']) .ch-hl-pulse .ch-hl-pulse__clear,
+:where(html[data-fw-theme='dark']) .ch-hl-pulse__skrow {
+  border-top-color: var(--ch-border-hairline);
+}
+:where(html[data-fw-theme='dark']) .ch-hl-conf__d i {
+  background: rgb(237 231 216 / 0.16);
+}
+@media (hover: hover) {
+  :where(html[data-fw-theme='dark']) .ch-hl-row:hover,
+  :where(html[data-fw-theme='dark']) .ch-hl-pl:hover {
+    background: rgb(237 231 216 / 0.04);
+  }
+}
+:where(html[data-fw-theme='dark']) .ch-hl-pl.is-on .ch-hl-pl__c {
+  color: var(--ch-text-on-accent);
+}
+@container chhl (max-width: 640px) {
+  :where(html[data-fw-theme='dark']) .ch-hl-pl.is-on b {
+    color: var(--ch-on-green-ink);
+  }
+}

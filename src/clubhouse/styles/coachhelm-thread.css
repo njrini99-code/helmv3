@@ -961,3 +961,16 @@
     font-size: 12px;
   }
 }
+
+/* Dark (Clubhouse at night). The action icon's ink stays ivory on its fill (the ivory ramp is the dark surfaces here);
+   a cancelled action's fill steps down to a raised surface so that ink still reads. */
+:where(html[data-fw-theme='dark']) .ch-th-pill {
+  box-shadow: 0 0 0 1px var(--ch-border-control);
+}
+:where(html[data-fw-theme='dark']) .ch-th-act__icon {
+  color: var(--ch-text-on-accent);
+}
+:where(html[data-fw-theme='dark']) .ch-th-act[data-status='cancelled'] .ch-th-act__icon,
+:where(html[data-fw-theme='dark']) .ch-th-act[data-status='abandoned'] .ch-th-act__icon {
+  background: var(--ch-ivory-400);
+}

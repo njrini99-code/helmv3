@@ -716,3 +716,27 @@
     font-size: 12px;
   }
 }
+
+/* Dark (Clubhouse at night): the measure cards' washes start from a faint night green or amber, and ink hairlines and
+   tracks turn to ivory ink. `:where()` keeps each at its light rule's specificity. */
+:where(html[data-fw-theme='dark']) .ch-hg-m.is-good {
+  background: linear-gradient(180deg, rgb(107 187 140 / 0.09), var(--ch-ivory-25) 46%);
+}
+:where(html[data-fw-theme='dark']) .ch-hg-m.is-warn {
+  background: linear-gradient(180deg, rgb(227 169 79 / 0.09), var(--ch-ivory-25) 46%);
+}
+:where(html[data-fw-theme='dark']) .ch-hg-m.is-locked {
+  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+}
+:where(html[data-fw-theme='dark']) .ch-hg-tag.is-good {
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.24);
+}
+:where(html[data-fw-theme='dark']) .ch-hg-tag.is-warn {
+  box-shadow: inset 0 0 0 1px rgb(227 169 79 / 0.28);
+}
+:where(html[data-fw-theme='dark']) .ch-hg-m__f {
+  border-top-color: var(--ch-border-hairline);
+}
+:where(html[data-fw-theme='dark']) .ch-hg-sc__t {
+  background: rgb(237 231 216 / 0.1);
+}

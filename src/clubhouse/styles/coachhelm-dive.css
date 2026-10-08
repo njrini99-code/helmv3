@@ -1249,3 +1249,31 @@ p.ch-hd-none {
     font-size: 12px;
   }
 }
+
+/* Dark (Clubhouse at night): ink hairlines and hover tints turn to ivory ink at the same weight; the hypothesis ink
+   moves to the night champagne. `:where()` keeps each at its light rule's specificity. */
+:where(html[data-fw-theme='dark']) .ch-hd-it.is-medium {
+  --ch-hd-ink: var(--ch-champagne-300);
+}
+:where(html[data-fw-theme='dark']) .ch-hd-dx__lvl.is-hypothesis {
+  color: var(--ch-champagne-300);
+}
+@media (hover: hover) {
+  :where(html[data-fw-theme='dark']) .ch-hd-it:hover,
+  :where(html[data-fw-theme='dark']) .ch-hd-r.is-link:hover {
+    background: rgb(237 231 216 / 0.04);
+  }
+}
+:where(html[data-fw-theme='dark']) .ch-hd-sec,
+:where(html[data-fw-theme='dark']) .ch-hd-tr > li,
+:where(html[data-fw-theme='dark']) .ch-hd-r,
+:where(html[data-fw-theme='dark']) .ch-hd-dx__d > div,
+:where(html[data-fw-theme='dark']) :is(.ch-hl.is-phone) .ch-hd-it,
+:where(html[data-fw-theme='dark']) :is(.ch-hl.is-phone) .ch-hd-sk__it {
+  border-top-color: var(--ch-border-hairline);
+}
+:where(html[data-fw-theme='dark']) .ch-hd-dx,
+:where(html[data-fw-theme='dark']) .ch-hd-plan__i,
+:where(html[data-fw-theme='dark']) .ch-hd-none {
+  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+}

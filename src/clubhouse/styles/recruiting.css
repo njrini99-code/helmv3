@@ -1943,3 +1943,61 @@
     }
   }
 }
+
+/* Dark (Clubhouse at night). The pipeline still deepens stage by stage, now by stepping lighter and greener off the
+   dark page; offered stages and avatars take the night greens with the light text green; ink rings, scrims and the
+   phone action sheet move to their night tones. `:where()` keeps each at its light rule's specificity. */
+:where(html[data-fw-theme='dark']) .ch-rec-pipe__seg.is-1 {
+  background: var(--ch-ivory-300);
+}
+:where(html[data-fw-theme='dark']) .ch-rec-pipe__seg.is-2 {
+  background: #2f5a41;
+}
+:where(html[data-fw-theme='dark']) .ch-rec-pipe__seg.is-3 {
+  background: #4f9a6e;
+}
+:where(html[data-fw-theme='dark']) .ch-rec-pipe__dot {
+  --ch-rec-ring: var(--ch-ivory-400);
+  box-shadow: 0 0 0 2px var(--ch-rec-ring), var(--ch-elevation-bubble);
+}
+:where(html[data-fw-theme='dark']) .ch-rec-pipe__stage.is-recruiting > .ch-rec-pipe__dot {
+  --ch-rec-ring: #3d7a56;
+}
+:where(html[data-fw-theme='dark']) .ch-rec-pipe__stage.is-offered > .ch-rec-pipe__dot {
+  --ch-rec-ring: var(--ch-green-400);
+}
+:where(html[data-fw-theme='dark']) .ch-rec-pipe__stage[aria-pressed='true'] .ch-rec-pipe__dot {
+  box-shadow: 0 0 0 2px var(--ch-rec-ring), 0 0 0 6px rgb(107 187 140 / 0.2), var(--ch-elevation-bubble);
+}
+:where(html[data-fw-theme='dark']) .ch-rec-pipe__stage.is-offered > .ch-rec-pipe__dot,
+:where(html[data-fw-theme='dark']) .ch-rec-chip.is-offered {
+  background: var(--ch-green-100);
+  color: var(--ch-green-700);
+}
+:where(html[data-fw-theme='dark']) .ch-rec-av {
+  background: var(--ch-green-50);
+  color: var(--ch-green-700);
+}
+:where(html[data-fw-theme='dark']) .ch-rec-rows,
+:where(html[data-fw-theme='dark']) .ch-rec-docs {
+  box-shadow: 0 0 0 1px var(--ch-border-subtle);
+}
+:where(html[data-fw-theme='dark']) .ch-rec-drop {
+  background: rgb(21 36 27 / 0.94);
+}
+@media (max-width: 820px) {
+  :where(html[data-fw-theme='dark']) .ch-recm-tile.is-stage.is-offered {
+    background: var(--ch-green-100);
+    color: var(--ch-green-700);
+  }
+  :where(html[data-fw-theme='dark']) .ch-rec-dlg::backdrop {
+    background: rgb(5 8 6 / 0.6);
+  }
+  :where(html[data-fw-theme='dark']) .ch-rec-form.is-phone .ch-textarea {
+    box-shadow: 0 0 0 1px var(--ch-border-control);
+  }
+  :where(html[data-fw-theme='dark']) .ch-rec-act__group,
+  :where(html[data-fw-theme='dark']) .ch-rec-act__b.is-cancel {
+    background: rgb(36 42 37 / 0.97);
+  }
+}
