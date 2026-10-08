@@ -54,6 +54,8 @@
     "CH-09902": { "category": 6, "why": "An edit saved only in part, or not at all: the server refused a step." },
     "CH-1904": { "category": 1, "why": "Core navigation behaviour: a new page opens at the top." },
     "CH-1906": { "category": 20, "why": "An input gesture (edge swipe, browser back) pops the pushed screen." },
+    "CH-1907": { "category": 20, "why": "An input gesture: a second tap on the open tab pops to its root, then scrolls it to the top." },
+    "CH-1908": { "category": 20, "why": "An input gesture: the edge swipe's Back, already animated by iOS, pops once." },
     "CH-1951": { "category": 22, "why": "An experience signal (rage click) recorded for analysis, with nothing on screen." },
     "CH-1952": { "category": 22, "why": "An experience signal (dead click) recorded for analysis, with nothing on screen." },
     "CH-1953": { "category": 22, "why": "An experience signal (slow click) recorded for analysis, with nothing on screen." },

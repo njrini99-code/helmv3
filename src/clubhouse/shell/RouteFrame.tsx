@@ -5,6 +5,8 @@ import { useChPress } from '../lib/press';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { markAppRunning, RouteScope } from '../lib/session-state';
 import { canvasScrollNow } from '../lib/smooth-scroll';
+// Registers the Back that iOS animated itself, which turns off the crossfade for that one Back (CH-1908, shell.css).
+import '../lib/ua-pop';
 
 /**
  * The page frame. Each page mounts fresh on navigation (keyed by route) and is shown as soon as it is ready: the
@@ -15,6 +17,7 @@ import { canvasScrollNow } from '../lib/smooth-scroll';
  * keyed by route makes the old page and the new one an exit/enter pair, and `.ch-page`
  * (shell.css) fades them; the sidebar, top bar and tab bar are anchored and never move. Navigations are transitions,
  * so this runs on every in-app route change and on nothing else. Reduced motion and Settings › Animations off render without it: the page swaps at once. CH-1601.
+ * A Back that iOS already played with its own edge swipe swaps at once too, rather than fade a second time (CH-1908).
  */
 /** Where each page was scrolled, by route and team, for Back and Forward (this tab only). */
 const scrolled = new Map<string, { canvas: number; win: number }>();
@@ -43,6 +46,13 @@ export function RouteFrame({ routeKey, children }: { routeKey: string; children:
   useChPress(!reduced);
   const first = useRef(true);
   useEffect(() => markAppRunning(), []);
+  // iOS WebKit paints :active on a touch only where a touch listener is registered. The press (useChPress) is off with
+  // reduced motion, so a row's pressed tint (--ch-ledger-row-press, CH-1606) gets its own listener, whatever the motion.
+  useEffect(() => {
+    const touch = () => {};
+    document.addEventListener('touchstart', touch, { passive: true });
+    return () => document.removeEventListener('touchstart', touch);
+  }, []);
   // A new page opens at the top (CH-1904); Back or Forward returns to where that page was left (PAGE_PERFORMANCE.md
   // rule 1). Positions are recorded as the coach scrolls, so leaving never has to read a page already swapped out.
   useEffect(() => {

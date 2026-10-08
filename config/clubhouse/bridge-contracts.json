@@ -237,6 +237,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10612,
+    "page": "P001",
+    "category": 6,
+    "item": 12,
+    "name": "TWO_OR_MORE_PARTS_OF_A_PAGE",
+    "chCode": "CH-1209",
+    "meaning": "Two or more parts of a page don't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10701,
     "page": "P001",
     "category": 7,
@@ -488,7 +499,7 @@
     "item": 11,
     "name": "SOMEONE_DRAGS_A_PHONE_SHEET_DOWN_BY",
     "chCode": "CH-1611",
-    "meaning": "Someone drags a phone sheet (More, the bell, or any `Modal`) down by its grab or header",
+    "meaning": "Someone drags a phone sheet (More, the bell, any `Modal`, and the pages' own sheets) by its grab or header, or by its body once that is scrolled to the top",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -511,6 +522,39 @@
     "name": "CHANGING_PAGES_FROM_THE_SIDEBAR",
     "chCode": "CH-1613",
     "meaning": "Changing pages from the sidebar",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11614,
+    "page": "P001",
+    "category": 16,
+    "item": 14,
+    "name": "A_FINGER_HOLDS_A_TOAST_OR_THROWS",
+    "chCode": "CH-1614",
+    "meaning": "A finger holds a toast, or throws it",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11615,
+    "page": "P001",
+    "category": 16,
+    "item": 15,
+    "name": "A_SEGMENTED_CONTROLS_CHOICE_CHANGES",
+    "chCode": "CH-1615",
+    "meaning": "A segmented control's choice changes",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11616,
+    "page": "P001",
+    "category": 16,
+    "item": 16,
+    "name": "CONTENT_SWAPS_INSIDE_A_FIXED_FRAME",
+    "chCode": "CH-1616",
+    "meaning": "Content swaps inside a fixed frame (a tab's panel, a chart's mode, a window's figures, a pager)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -588,6 +632,17 @@
     "name": "PICKING_ANOTHER_TEAM_IN_THE_SWITCHER",
     "chCode": "CH-1707",
     "meaning": "Picking another team in the switcher",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11708,
+    "page": "P001",
+    "category": 17,
+    "item": 8,
+    "name": "A_FINGER_SCRUBS_A_SLIDER",
+    "chCode": "CH-1708",
+    "meaning": "A finger scrubs a slider",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -766,6 +821,28 @@
     "name": "ON_THE_PHONE_THE_EDGE_SWIPE_OR",
     "chCode": "CH-1906",
     "meaning": "On the phone, the edge swipe or the browser's back while a screen is pushed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 12002,
+    "page": "P001",
+    "category": 20,
+    "item": 2,
+    "name": "ON_THE_PHONE_TAPPING_THE_TAB_THAT",
+    "chCode": "CH-1907",
+    "meaning": "On the phone, tapping the tab that is already open",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 12003,
+    "page": "P001",
+    "category": 20,
+    "item": 3,
+    "name": "ON_IOS_A_BACK_THAT_SAFARI_OR",
+    "chCode": "CH-1908",
+    "meaning": "On iOS, a Back that Safari or the app's WebView animated itself (the edge swipe; `PopStateEvent.hasUAVisualTransition`, Safari 18 and later)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -6046,6 +6123,17 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 71606,
+    "page": "P007",
+    "category": 16,
+    "item": 6,
+    "name": "CHANGING_THE_INBOX_FILTER_ON_THE_PHONE",
+    "chCode": "CH-7606",
+    "meaning": "Changing the inbox filter on the phone (All, Unread, Groups)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 71701,
     "page": "P007",
     "category": 17,
@@ -7360,7 +7448,7 @@
     "item": 1,
     "name": "SWITCHING_SECTION",
     "chCode": "CH-8601",
-    "meaning": "Switching section",
+    "meaning": "Switching section (desktop)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -7438,6 +7526,17 @@
     "name": "ANIMATIONS_TURNED_OFF_IN_PREFERENCES",
     "chCode": "CH-8608",
     "meaning": "Animations turned off in Preferences",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 81609,
+    "page": "P008",
+    "category": 16,
+    "item": 9,
+    "name": "PHONE_OPENING_A_SECTION_FROM_THE_LIST",
+    "chCode": "CH-8609",
+    "meaning": "Phone: opening a section from the list, and Back",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -8952,6 +9051,17 @@
     "chCode": "CH-09602",
     "meaning": "Opening a leaderboard row",
     "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 91603,
+    "page": "P009",
+    "category": 16,
+    "item": 3,
+    "name": "CHOOSING_A_ROUND_IN_A_PLAYERS_ROUNDS",
+    "chCode": "CH-09603",
+    "meaning": "Choosing a round in a player's rounds sheet (phone)",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
@@ -15441,6 +15551,17 @@
     "chCode": "CH-14603",
     "meaning": "Picking a stage in the pipeline, or letting it go",
     "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/recruiting.md"
+  },
+  {
+    "id": 141604,
+    "page": "P014",
+    "category": 16,
+    "item": 4,
+    "name": "PRESSING_A_ROW_OR_A_KEY_ON",
+    "chCode": "CH-14604",
+    "meaning": "Pressing a row or a key on the phone",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/recruiting.md"
   },
   {

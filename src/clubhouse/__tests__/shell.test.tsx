@@ -296,7 +296,7 @@ describe('Shell · network', () => {
     wrap(<InlineNotice code="CH-2201" title="This week's schedule didn't load." onRetry={retry} />);
     setOnline(false);
     await user.click(screen.getByRole('button', { name: 'Try again' }));
-    await expectCode('CH-1905', /You're offline/);
+    await expectCode('CH-1905', /You’re offline\. Reconnect, then try again\./);
     expect(retry).not.toHaveBeenCalled();
     expect(hapticSpy).toHaveBeenCalledWith('warning');
     setOnline(true);

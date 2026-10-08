@@ -1,4 +1,4 @@
-import { isNativeApp, triggerHaptic, triggerSelectionHaptic } from '@/lib/utils/capacitor';
+import { isNativeApp, selectionChanged, selectionEnd, selectionStart, triggerHaptic, triggerSelectionHaptic } from '@/lib/utils/capacitor';
 import { areHapticsEnabled } from '@/lib/utils/haptics-pref';
 
 /**
@@ -12,6 +12,7 @@ import { areHapticsEnabled } from '@/lib/utils/haptics-pref';
  *   success - Post, Save, Import, Publish, Send, Share, Assign, Got it: a write that landed
  *   warning - Remove, Delete, Discard, Dismiss, and a refused retry while offline
  *   error   - a write, import or sync that failed
+ *   scrub   - a continuous scrub (a slider): selection detents with the Taptic Engine kept warm, see hapticScrub
  *
  * Signature (Core Haptics) patterns are not used here: they are not approved
  * for product flows until the owner's on-device pass.
@@ -20,15 +21,20 @@ export type ChHaptic = 'select' | 'press' | 'commit' | 'success' | 'warning' | '
 
 let lastSelectAt = 0;
 
+/** Selection ticks are repeatable, but not faster than the eye can follow. */
+function selectTickDue(): boolean {
+  const now = Date.now();
+  if (now - lastSelectAt < 40) return false;
+  lastSelectAt = now;
+  return true;
+}
+
 export function haptic(kind: ChHaptic): void {
   if (!isNativeApp() || !areHapticsEnabled()) return;
   const run = async () => {
     switch (kind) {
       case 'select': {
-        // Selection ticks are repeatable, but not faster than the eye can follow.
-        const now = Date.now();
-        if (now - lastSelectAt < 40) return;
-        lastSelectAt = now;
+        if (!selectTickDue()) return;
         await triggerSelectionHaptic();
         return;
       }
@@ -42,5 +48,18 @@ export function haptic(kind: ChHaptic): void {
         await triggerHaptic(kind);
     }
   };
+  run().catch(() => {});
+}
+
+/**
+ * A continuous scrub (a slider's thumb, CH-1708): `start` as the finger lands warms the Taptic Engine, so the first
+ * detent isn't late, `step` ticks each detent crossed (the same selection tick, at most every 40ms), `end` lets the
+ * engine idle again. UIKit's selection generator, through the bridge's selectionStart/Changed/End. Native only and
+ * preference-gated, like every haptic here.
+ */
+export function hapticScrub(phase: 'start' | 'step' | 'end'): void {
+  if (!isNativeApp() || !areHapticsEnabled()) return;
+  if (phase === 'step' && !selectTickDue()) return;
+  const run = phase === 'start' ? selectionStart : phase === 'step' ? selectionChanged : selectionEnd;
   run().catch(() => {});
 }

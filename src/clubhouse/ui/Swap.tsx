@@ -2,16 +2,17 @@
 
 import { AnimatePresence, m, useIsPresent } from 'framer-motion';
 import type { ReactNode } from 'react';
-import { CH_DUR, CH_EASE } from '../lib/motion';
+import { CH_DUR, CH_EASE, chSpring } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 
 /**
  * A content swap inside a fixed frame (owner, 2026-10-07: "super duper premium" motion). When `swapKey` changes the
  * old content leaves and the new arrives in the same place: `settle` crossfades with a 6px rise (a tab's panel, a
  * chart's mode, a window's figures); `slide` moves 12px in the direction of travel (a pager, the next hole). The
- * incoming copy takes the base duration and the outgoing the quick one, so the new content is always the one being
- * read. First paint never animates (`initial={false}`), reduced motion and Animations off swap instantly, and the
- * leaving copy is hidden from assistive tech and focus while it fades.
+ * incoming copy fades in over base and travels on the settle spring (base, bounce 0.1; CH-1616), the outgoing fades
+ * over the quick one, so the new content is always the one being read. First paint never animates
+ * (`initial={false}`), reduced motion and Animations off swap instantly, and the leaving copy is hidden from assistive
+ * tech and focus while it fades.
  */
 export function Swap({
   swapKey,
@@ -63,7 +64,7 @@ function Leaving({ inline, children }: { inline: boolean; children: ReactNode })
   );
 }
 
-const IN = { duration: CH_DUR.base, ease: CH_EASE };
+const IN = { ...chSpring('settle'), opacity: { duration: CH_DUR.base, ease: CH_EASE } };
 const OUT = { duration: CH_DUR.quick, ease: CH_EASE };
 
 const SETTLE = {

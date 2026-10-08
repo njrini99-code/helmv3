@@ -128,6 +128,51 @@ they are, as a captioned "Team" list in the sheet's own rows: the current team
 is ticked, and a switch closes the sheet on the new team. The sheet scrolls on
 a short screen, for every role. The Home hero bar's team stays a label.
 
+## Shared states (2026-10-08)
+
+The states audit (2026-10-07) found three empty-state anatomies, a pink boxed
+notice inside the flush Ledger, a route error in a white card and skeletons
+drawn as filled cards. The shared layer (`ui/States.tsx`, `ui/Notices.tsx`,
+`ui/RefreshNotice.tsx` and their blocks in `styles/shell.css`) now draws one
+family:
+
+- **Section empty** (`EmptyState`): a flush line on the Ledger, left-aligned to
+  the section's edge. An optional 16px glyph in the forest ink, the title, one
+  sentence, and the action under them; no well and no centring.
+- **Page empty** (`EmptyState size="page"`): the medallion anatomy. In the
+  Ledger it sits under the framed head with 72px above and 88px below, never a
+  viewport's height, so its action stays above the fold. Its title is the
+  ledger ink on every screen.
+- **Notice** (`InlineNotice`, `RefreshNotice`): flush, with a 2px danger rule at
+  its left, the icon and title in the danger ink and the body in the secondary
+  ink. Try again sits beside the words in a full-width notice, and under them
+  in anything narrower than 640px (a container query: a rail, a half column)
+  and on the phone, so notices side by side read alike. The inks and fill are local
+  properties (`--ch-notice-rule`, `--ch-notice-ink`, `--ch-notice-body`,
+  `--ch-notice-fill`), so a notice on a dark or floating surface is restyled in
+  one rule.
+- **Several failed parts** (`PageNotice`, `PageRefreshNotice`, CH-1209): told
+  once under the page head with one Try again; each failed part keeps its
+  heading and a covered notice (its title alone).
+- **Route error** (`RouteErrorView`): the page empty in the danger tone (a brick
+  medallion), Try again first, Back to Home beside it, and the reference as a
+  caption. No card.
+- **Skeletons**: a shade deeper on the parchment; on desktop Ledger pages a block
+  placeholder is a rule with two lines of type, never a filled card. Pages build
+  theirs from `Skeleton`, `SkelLine`, `SkelRows` and `SkelRule`.
+- **Titles** never end in a full stop (`stateTitle`).
+
+### Decisions from the states audit
+
+Each is a lead decision under the owner's full-auto brief; owner to confirm.
+
+1. Notices drop the pink box in the Ledger. They become the flush notice above;
+   the semantic colour stays in the rule, the icon and the title.
+2. A failed read keeps the page head and its primary action.
+3. Phone titles are the 600 sans in the ledger ink; the serif is retired.
+4. The route error keeps the reference id, as a quiet caption ("Reference …" in
+   the tertiary ink), never in a card.
+
 ## Accessibility
 
 Skip to content on the first Tab, named landmarks, the current page marked,

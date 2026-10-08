@@ -37,6 +37,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | CH-09902 | 06 Server / system error | An edit saved only in part, or not at all: the server refused a step. |
 | CH-1904 | 01 Default / core UI | Core navigation behaviour: a new page opens at the top. |
 | CH-1906 | 20 Keyboard / input | An input gesture (edge swipe, browser back) pops the pushed screen. |
+| CH-1907 | 20 Keyboard / input | An input gesture: a second tap on the open tab pops to its root, then scrolls it to the top. |
+| CH-1908 | 20 Keyboard / input | An input gesture: the edge swipe's Back, already animated by iOS, pops once. |
 | CH-1951 | 22 Analytics | An experience signal (rage click) recorded for analysis, with nothing on screen. |
 | CH-1952 | 22 Analytics | An experience signal (dead click) recorded for analysis, with nothing on screen. |
 | CH-1953 | 22 Analytics | An experience signal (slow click) recorded for analysis, with nothing on screen. |
@@ -102,20 +104,20 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Page | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | Total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P001 | 3 | 1 | 1 | 5 |  | 11 | 4 | 3 | 1 |  |  |  | 1 | 2 |  | 13 | 7 | 14 | 1 | 1 | 1 | 3 | 1 | 1 |  | 74 |
+| P001 | 3 | 1 | 1 | 5 |  | 12 | 4 | 3 | 1 |  |  |  | 1 | 2 |  | 16 | 8 | 14 | 1 | 3 | 1 | 3 | 1 | 1 |  | 81 |
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
 | P003 | 2 | 1 | 3 | 8 | 2 | 18 | 1 | 6 | 1 |  | 1 | 3 | 1 | 3 |  | 3 | 4 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 69 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 2 | 2 | 22 | 2 | 18 | 3 | 6 | 1 |  |  | 2 |  | 1 | 1 | 4 | 3 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 85 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 27 | 1 | 8 | 1 | 2 | 4 | 3 | 2 | 2 | 1 | 5 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 93 |
-| P007 | 2 | 10 | 1 | 9 | 5 | 35 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 5 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 95 |
-| P008 | 2 | 1 | 3 | 5 | 15 | 40 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 127 |
-| P009 | 7 | 7 | 4 | 13 | 14 | 33 | 4 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 132 |
+| P007 | 2 | 10 | 1 | 9 | 5 | 35 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 6 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 96 |
+| P008 | 2 | 1 | 3 | 5 | 15 | 40 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 128 |
+| P009 | 7 | 7 | 4 | 13 | 14 | 33 | 4 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 133 |
 | P010 | 2 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 89 |
 | P011 | 14 | 11 |  | 16 | 10 | 37 | 13 | 5 | 2 |  | 20 | 2 | 1 | 4 | 3 | 4 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 169 |
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 80 |
 | P013 | 7 | 12 |  | 29 | 1 | 36 | 22 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 156 |
-| P014 | 1 | 3 | 4 | 6 | 10 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 3 | 3 | 5 | 1 | 1 |  |  |  |  |  | 63 |
+| P014 | 1 | 3 | 4 | 6 | 10 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 5 | 1 | 1 |  |  |  |  |  | 64 |
 | P015 |  | 1 | 2 | 3 | 4 | 14 | 1 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 68 |
 
 ## P001 Shell
@@ -143,6 +145,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10609 | CH-1208 | 06 Server / system error | `THE_ROSTER_BADGES_JOIN_REQUESTS_DONT_LOAD` | implemented | The Roster badge's join requests don't load |
 | 10610 | CH-1002 | 06 Server / system error | `SIGNING_OUT_FROM_THE_PHONES_MORE_SHEET` | implemented | Signing out from the phone's More sheet fails |
 | 10611 | CH-1003 | 06 Server / system error | `SWITCHING_TEAM_FAILS` | implemented | Switching team fails (a head coach on more than one team) |
+| 10612 | CH-1209 | 06 Server / system error | `TWO_OR_MORE_PARTS_OF_A_PAGE` | implemented | Two or more parts of a page don't load |
 | 10701 | CH-1901 | 07 Network / offline | `THE_DEVICE_GOES_OFFLINE` | implemented | The device goes offline |
 | 10702 | CH-1902 | 07 Network / offline | `A_SAVE_TAKES_LONGER_THAN_5_SECONDS` | implemented | A save takes longer than 5 seconds (forms, switches and CoachHelm settings) |
 | 10703 | CH-1903 | 07 Network / offline | `SOMEONE_SAVES_WHILE_OFFLINE` | implemented | Someone saves while offline |
@@ -164,9 +167,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 11608 | CH-1608 | 16 Micro animation | `ANIMATIONS_OFF_IN_SETTINGS_OR_THE_OS` | implemented | Animations off in Settings, or the OS asks for reduced motion |
 | 11609 | CH-1609 | 16 Micro animation | `A_PAGE_OR_SECTION_IS_LOADING` | implemented | A page or section is loading |
 | 11610 | CH-1610 | 16 Micro animation | `A_PHONE_SCREEN_IS_PUSHED_OR_POPPED` | implemented | A phone screen is pushed (a thread, details, a new message) or popped |
-| 11611 | CH-1611 | 16 Micro animation | `SOMEONE_DRAGS_A_PHONE_SHEET_DOWN_BY` | implemented | Someone drags a phone sheet (More, the bell, or any `Modal`) down by its grab or header |
+| 11611 | CH-1611 | 16 Micro animation | `SOMEONE_DRAGS_A_PHONE_SHEET_DOWN_BY` | implemented | Someone drags a phone sheet (More, the bell, any `Modal`, and the pages' own sheets) by its grab or header, or by its body once that is scrolled to the top |
 | 11612 | CH-1612 | 16 Micro animation | `OPENING_THE_BELL_ON_A_PHONE` | implemented | Opening the bell on a phone |
 | 11613 | CH-1613 | 16 Micro animation | `CHANGING_PAGES_FROM_THE_SIDEBAR` | implemented | Changing pages from the sidebar |
+| 11614 | CH-1614 | 16 Micro animation | `A_FINGER_HOLDS_A_TOAST_OR_THROWS` | implemented | A finger holds a toast, or throws it |
+| 11615 | CH-1615 | 16 Micro animation | `A_SEGMENTED_CONTROLS_CHOICE_CHANGES` | implemented | A segmented control's choice changes |
+| 11616 | CH-1616 | 16 Micro animation | `CONTENT_SWAPS_INSIDE_A_FIXED_FRAME` | implemented | Content swaps inside a fixed frame (a tab's panel, a chart's mode, a window's figures, a pager) |
 | 11701 | CH-1701 | 17 Haptic | `CHANGING_TABS` | implemented | Changing tabs (not tapping the tab they're on) |
 | 11702 | CH-1702 | 17 Haptic | `ANY_SAVE_OR_SEND_LANDS` | implemented | Any save or send lands |
 | 11703 | CH-1703 | 17 Haptic | `ANY_SAVE_OR_SEND_FAILS` | implemented | Any save or send fails |
@@ -174,6 +180,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 11705 | CH-1705 | 17 Haptic | `OPENING_THE_BELL_A_NOTIFICATION_OR_A` | implemented | Opening the bell, a notification, or a menu item |
 | 11706 | CH-1706 | 17 Haptic | `THE_CONNECTION_DROPS` | implemented | The connection drops |
 | 11707 | CH-1707 | 17 Haptic | `PICKING_ANOTHER_TEAM_IN_THE_SWITCHER` | implemented | Picking another team in the switcher |
+| 11708 | CH-1708 | 17 Haptic | `A_FINGER_SCRUBS_A_SLIDER` | implemented | A finger scrubs a slider |
 | 11801 | CH-1801 | 18 Accessibility | `THE_FIRST_TAB_ON_ANY_PAGE_OFFERS` | implemented | The first Tab on any page offers "Skip to content", which jumps past the navigation to the page |
 | 11802 | CH-1802 | 18 Accessibility | `THE_PHONE_MORE_SHEET_IS_MODAL_FOCUS` | implemented | The phone More sheet is modal: focus moves in without scrolling, Tab stays inside, Esc closes it and focus returns to More without scrolling. The underlying page stays stationary until the full exit completes |
 | 11803 | CH-1803 | 18 Accessibility | `THE_CURRENT_PAGE_IS_MARKED_IN_THE` | implemented | The current page is marked in the sidebar and tab bar; the sidebar and its navigation are named landmarks; breadcrumbs mark the current page |
@@ -190,6 +197,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 11814 | CH-1814 | 18 Accessibility | `ON_THE_PHONE_THE_SAME_COACH_SEES` | implemented | On the phone the same coach sees their teams in the More sheet, under who they are, the current one marked (`aria-current`); a switch closes the sheet on the new team, a refused one leaves it open with the reason |
 | 11901 |  | 19 Responsive layout | `PHONE_CHROME` | implemented | On a phone the sidebar gives way to the role's tab bar (coach Home, CoachHelm, Calendar, Stats; player Home, CoachHelm, Rounds, Team Hub) and a More sheet with the rest. |
 | 12001 | CH-1906 | 20 Keyboard / input | `ON_THE_PHONE_THE_EDGE_SWIPE_OR` | implemented | On the phone, the edge swipe or the browser's back while a screen is pushed |
+| 12002 | CH-1907 | 20 Keyboard / input | `ON_THE_PHONE_TAPPING_THE_TAB_THAT` | implemented | On the phone, tapping the tab that is already open |
+| 12003 | CH-1908 | 20 Keyboard / input | `ON_IOS_A_BACK_THAT_SAFARI_OR` | implemented | On iOS, a Back that Safari or the app's WebView animated itself (the edge swipe; `PopStateEvent.hasUAVisualTransition`, Safari 18 and later) |
 | 12101 | CH-1954 | 21 Performance | `THE_PAGE_IS_SLOW_TO_RESPOND_OR` | implemented | The page is slow to respond or shifts after loading (INP, CLS, LCP) |
 | 12201 | CH-1951 | 22 Analytics | `SOMEONE_CLICKS_THE_SAME_THING_OVER_AND` | implemented | Someone clicks the same thing over and over (rage click) |
 | 12202 | CH-1952 | 22 Analytics | `A_CLICK_THAT_DOES_NOTHING` | implemented | A click that does nothing (dead click) |
@@ -678,6 +687,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 71603 | CH-7603 | 16 Micro animation | `OPENING_DETAILS_OR_A_REACTION_BAR` | implemented | Opening details or a reaction bar |
 | 71604 | CH-7604 | 16 Micro animation | `A_LONG_PRESS_ON_A_MESSAGE` | implemented | A long press on a message (phone) |
 | 71605 | CH-7605 | 16 Micro animation | `OPENING_ANOTHER_CONVERSATION_OR_ANNOUNCEMENT` | implemented | Opening another conversation or announcement (desktop) |
+| 71606 | CH-7606 | 16 Micro animation | `CHANGING_THE_INBOX_FILTER_ON_THE_PHONE` | implemented | Changing the inbox filter on the phone (All, Unread, Groups) |
 | 71701 | CH-7701 | 17 Haptic | `A_CHANGE_FAILS` | implemented | A change fails |
 | 71702 | CH-7702 | 17 Haptic | `A_CHANGE_LANDS` | implemented | A change lands (edited, deleted, muted, group created; acknowledging uses the success pattern) |
 | 71703 | CH-7703 | 17 Haptic | `PICKING_A_REACTION_A_FILTER_OR_A` | implemented | Picking a reaction, a filter or a conversation |
@@ -796,7 +806,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 81401 |  | 14 Retry / recovery | `TRY_AGAIN_READS_THE_PAGE` | implemented | Try again on a section that did not load reads the whole page again on the server (router.refresh); the fresh read replaces the page's copy, so the notice becomes the card, and the open section and any unsaved edits in other cards stay; it does not re-read only that section. |
 | 81402 |  | 14 Retry / recovery | `RETRY_FINISHES_THE_SAVE` | implemented | Retry on a failed save's toast finishes it the way its button would: a form card is clean and the page refreshes, a new invite code shows, a dialog closes, and a switch flips again and sends the same value. |
 | 81501 |  | 15 Data freshness / sync | `SERVER_VIEW_REFRESHED_AFTER_SAVE` | implemented | A save that changes what the server renders (profile, team details, leaving a team, asking to join) asks for a fresh server read (router.refresh) after it lands, and a failed save does not. |
-| 81601 | CH-8601 | 16 Micro animation | `SWITCHING_SECTION` | implemented | Switching section |
+| 81601 | CH-8601 | 16 Micro animation | `SWITCHING_SECTION` | implemented | Switching section (desktop) |
 | 81602 | CH-8602 | 16 Micro animation | `SAVE_STATUS_CHANGES` | implemented | Save status changes |
 | 81603 | CH-8603 | 16 Micro animation | `FLIPPING_A_SWITCH` | implemented | Flipping a switch |
 | 81604 | CH-8604 | 16 Micro animation | `A_CONFIRM_OPENS` | implemented | A confirm opens |
@@ -804,6 +814,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 81606 | CH-8606 | 16 Micro animation | `MOVING_A_COACHHELM_PRIORITY` | implemented | Moving a CoachHelm priority |
 | 81607 | CH-8607 | 16 Micro animation | `PRESSING_A_SECTION_OR_BUTTON` | implemented | Pressing a section or button |
 | 81608 | CH-8608 | 16 Micro animation | `ANIMATIONS_TURNED_OFF_IN_PREFERENCES` | implemented | Animations turned off in Preferences |
+| 81609 | CH-8609 | 16 Micro animation | `PHONE_OPENING_A_SECTION_FROM_THE_LIST` | implemented | Phone: opening a section from the list, and Back |
 | 81701 | CH-8701 | 17 Haptic | `PICKING_A_SECTION_FLIPPING_A_SWITCH_CHOOSING` | implemented | Picking a section, flipping a switch, choosing a segment, each slider step |
 | 81702 | CH-8702 | 17 Haptic | `A_SAVE_LANDS` | implemented | A Save changes that lands |
 | 81703 | CH-8703 | 17 Haptic | `A_SAVE_FAILS_OR_A_PHOTO_IS` | implemented | A save fails or a photo is rejected |
@@ -940,6 +951,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 91501 |  | 15 Data freshness / sync | `WRITES_RE_READ_THE_PAGE` | implemented | A landed close, reopen, save, start selecting, save a pick, remove a pick or confirm has the server read the page again so it shows the server's state (a create opens the new qualifier instead), and a write that fails re-reads nothing. |
 | 91601 | CH-09601 | 16 Micro animation | `PRESSING_A_CARD_THE_HERO_OR_A` | implemented | Pressing a card, the hero or a status pill |
 | 91602 | CH-09602 | 16 Micro animation | `OPENING_A_LEADERBOARD_ROW` | implemented | Opening a leaderboard row |
+| 91603 | CH-09603 | 16 Micro animation | `CHOOSING_A_ROUND_IN_A_PLAYERS_ROUNDS` | reserved | Choosing a round in a player's rounds sheet (phone) |
 | 91701 | CH-09701 | 17 Haptic | `A_STATUS_PILL_A_LEADERBOARD_ROW_A` | reserved | A status pill, a leaderboard row, a player checkbox, a course, a tee, or a player in the pick dialog |
 | 91702 | CH-09702 | 17 Haptic | `CLOSE_QUALIFIER_DISCARD` | reserved | Close qualifier, Discard |
 | 91703 | CH-09703 | 17 Haptic | `START_SELECTING_CONFIRM_SQUAD_REMOVE_A_PICK` | reserved | Start selecting, Confirm squad, Remove a pick |
@@ -1533,6 +1545,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 141601 | CH-14601 | 16 Micro animation | `HOVERING_OR_PRESSING_A_STAGE_IN_THE` | implemented | Hovering or pressing a stage in the pipeline |
 | 141602 | CH-14602 | 16 Micro animation | `A_PROSPECT_OPENS_ON_THE_PHONE` | implemented | A prospect opens on the phone |
 | 141603 | CH-14603 | 16 Micro animation | `PICKING_A_STAGE_IN_THE_PIPELINE_OR` | implemented | Picking a stage in the pipeline, or letting it go |
+| 141604 | CH-14604 | 16 Micro animation | `PRESSING_A_ROW_OR_A_KEY_ON` | reserved | Pressing a row or a key on the phone |
 | 141701 | CH-14701 | 17 Haptic | `A_STAGE_IS_PICKED_AS_THE_FILTER` | implemented | A stage is picked, as the filter or as a prospect's stage; a row is opened; a sort is chosen |
 | 141702 | CH-14702 | 17 Haptic | `DELETE_PROSPECT_IS_TAPPED` | implemented | Delete prospect is tapped |
 | 141703 | CH-14703 | 17 Haptic | `STORAGE_TURNS_A_FILE_DOWN` | implemented | Storage turns a file down (CH-14107, CH-14108) |

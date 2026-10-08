@@ -50,7 +50,7 @@ The frame around every page (10102), a page change that opens the new page at th
 
 Status: DEFINED
 
-The bell's own skeleton rows (10201). Each page owns its route skeleton; the shell holds it back for 150ms and then fades it in (11609), so a fast load never flashes.
+The bell's own skeleton rows (10201). Each page owns its route skeleton, built from the shared shapes (`Skeleton`, `SkelLine`, `SkelRows`, `SkelRule`); the shell fades it in over base as it mounts (11609; the 150ms hold ended with F-37), and on desktop Ledger pages draws a block placeholder as a rule with two lines of type, never a filled card.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -88,7 +88,7 @@ Status: N/A — the shell takes no typed input. Fields and their validation belo
 
 Status: DEFINED
 
-Mark all read fails (10601); a team switch fails (10611); the bell's list doesn't load (10602); the five route error views (10603 to 10607), each with its own words and recovery; and the two sidebar reads that hide rather than show something wrong (10608, 10609).
+Mark all read fails (10601); a team switch fails (10611); the bell's list doesn't load (10602); the five route error views (10603 to 10607), each with its own words and recovery, drawn as the page empty in the danger tone; the two sidebar reads that hide rather than show something wrong (10608, 10609); and, for every page, one notice with one Try again when two or more of its parts fail (10612, `PageNotice`).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -103,6 +103,7 @@ Mark all read fails (10601); a team switch fails (10611); the bell's list doesn'
 | 10609 | CH-1208 | `THE_ROSTER_BADGES_JOIN_REQUESTS_DONT_LOAD` | The Roster badge's join requests don't load |
 | 10610 | CH-1002 | `SIGNING_OUT_FROM_THE_PHONES_MORE_SHEET` | Signing out from the phone's More sheet fails |
 | 10611 | CH-1003 | `SWITCHING_TEAM_FAILS` | Switching team fails (a head coach on more than one team) |
+| 10612 | CH-1209 | `TWO_OR_MORE_PARTS_OF_A_PAGE` | Two or more parts of a page don't load |
 
 ## 07 — Network / offline
 
@@ -186,7 +187,7 @@ Status: N/A — the shell keeps no data that can go stale on screen: the bell re
 
 Status: DEFINED
 
-v2 motion (D-64) for every page: the route reveal, the More sheet, menus and the bell, toasts, the offline banner, the press, the focus ring, reduced motion, the skeleton delay, pushed screens, sheet drags, the phone bell and the sidebar's gliding plate (11601 to 11613).
+v2 motion (D-64) for every page: the route reveal, the More sheet, menus and the bell, toasts, the offline banner, the press, the focus ring, reduced motion, the skeleton delay, pushed screens, sheet drags, the phone bell, the sidebar's gliding plate, a toast held or thrown, the segmented pill and content swaps (11601 to 11616). Since 2026-10-08 (a D-64 extension, a lead decision under the owner's full-auto brief; owner to confirm), what moves and can be interrupted or thrown rides the D-64 springs (`CH_SPRINGS`, bounce 0 to 0.1): the More and bell sheets, pushed screens, the plate, the pill and a swap's incoming copy. Sheets rubber-band past their open position, spring back from the finger's speed, drag from their body at the top, and carry a throw into the close (11611).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -200,15 +201,18 @@ v2 motion (D-64) for every page: the route reveal, the More sheet, menus and the
 | 11608 | CH-1608 | `ANIMATIONS_OFF_IN_SETTINGS_OR_THE_OS` | Animations off in Settings, or the OS asks for reduced motion |
 | 11609 | CH-1609 | `A_PAGE_OR_SECTION_IS_LOADING` | A page or section is loading |
 | 11610 | CH-1610 | `A_PHONE_SCREEN_IS_PUSHED_OR_POPPED` | A phone screen is pushed (a thread, details, a new message) or popped |
-| 11611 | CH-1611 | `SOMEONE_DRAGS_A_PHONE_SHEET_DOWN_BY` | Someone drags a phone sheet (More, the bell, or any `Modal`) down by its grab or header |
+| 11611 | CH-1611 | `SOMEONE_DRAGS_A_PHONE_SHEET_DOWN_BY` | Someone drags a phone sheet (More, the bell, any `Modal`, and the pages' own sheets) by its grab or header, or by its body once that is scrolled to the top |
 | 11612 | CH-1612 | `OPENING_THE_BELL_ON_A_PHONE` | Opening the bell on a phone |
 | 11613 | CH-1613 | `CHANGING_PAGES_FROM_THE_SIDEBAR` | Changing pages from the sidebar |
+| 11614 | CH-1614 | `A_FINGER_HOLDS_A_TOAST_OR_THROWS` | A finger holds a toast, or throws it |
+| 11615 | CH-1615 | `A_SEGMENTED_CONTROLS_CHOICE_CHANGES` | A segmented control's choice changes |
+| 11616 | CH-1616 | `CONTENT_SWAPS_INSIDE_A_FIXED_FRAME` | Content swaps inside a fixed frame (a tab's panel, a chart's mode, a window's figures, a pager) |
 
 ## 17 — Haptic
 
 Status: DEFINED
 
-v2 haptics (D-70) for every page: a tab change, a save that lands, a failure, the More sheet, the bell and menus, the connection dropping, and picking another team (11701 to 11707).
+v2 haptics (D-70) for every page: a tab change, a save that lands, a failure, the More sheet, the bell and menus, the connection dropping, picking another team, and a finger scrubbing a slider, with the Taptic Engine warmed as it lands (11701 to 11708).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -219,6 +223,7 @@ v2 haptics (D-70) for every page: a tab change, a save that lands, a failure, th
 | 11705 | CH-1705 | `OPENING_THE_BELL_A_NOTIFICATION_OR_A` | Opening the bell, a notification, or a menu item |
 | 11706 | CH-1706 | `THE_CONNECTION_DROPS` | The connection drops |
 | 11707 | CH-1707 | `PICKING_ANOTHER_TEAM_IN_THE_SWITCHER` | Picking another team in the switcher |
+| 11708 | CH-1708 | `A_FINGER_SCRUBS_A_SLIDER` | A finger scrubs a slider |
 
 ## 18 — Accessibility
 
@@ -257,11 +262,13 @@ On a phone the sidebar gives way to the role's tab bar and the More sheet (11901
 
 Status: DEFINED
 
-On the phone the edge swipe and the browser's back pop a pushed screen, as its back link would (12001). Esc closes the More sheet and the bell (11802, 11805).
+On the phone the edge swipe and the browser's back pop a pushed screen, as its back link would (12001); a Back that iOS already animated itself pops once, with no second slide or crossfade (12003). Tapping the tab already open pops back to its root, then scrolls it to the top, silently (12002). Esc closes the More sheet and the bell (11802, 11805).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 12001 | CH-1906 | `ON_THE_PHONE_THE_EDGE_SWIPE_OR` | On the phone, the edge swipe or the browser's back while a screen is pushed |
+| 12002 | CH-1907 | `ON_THE_PHONE_TAPPING_THE_TAB_THAT` | On the phone, tapping the tab that is already open |
+| 12003 | CH-1908 | `ON_IOS_A_BACK_THAT_SAFARI_OR` | On iOS, a Back that Safari or the app's WebView animated itself (the edge swipe; `PopStateEvent.hasUAVisualTransition`, Safari 18 and later) |
 
 ## 21 — Performance
 

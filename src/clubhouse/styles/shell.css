@@ -478,29 +478,36 @@
   white-space: pre-wrap;
 }
 
-/* States */
+/* States. The section empty (EmptyState size="section"; states audit, 2026-10-08): a line set on the Ledger, flush
+   with the section's edge and read from the left like its rows. An optional glyph in the forest ink, the title, one
+   sentence and the action under them; no well, no card, no centring. */
 .ch-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 36px 20px;
-  text-align: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  row-gap: 3px;
+  padding: 18px 0 10px;
+  text-align: left;
+}
+.ch-empty--icon {
+  grid-template-columns: 16px minmax(0, 1fr);
+  column-gap: 12px;
+}
+.ch-empty > :not(.ch-empty__icon) {
+  grid-column: -2 / -1;
 }
 .ch-empty--compact {
-  padding: 20px 12px;
-}
-.ch-empty__action {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
+  padding: 12px 0 6px;
 }
 
 /* The v2 page empty state (gh-polish.css .gh-empty): the whole page body is
    empty. A medallion on faint rings, a title that names what belongs, one or
-   two sentences, one primary action. Its parts rise in once, 55ms apart. */
+   two sentences, one primary action. The block fades in once over base. The
+   route error (RouteErrorView) is the same anatomy in the danger tone. */
 .ch-empty-page {
+  --ch-medallion-bg: var(--ch-green-800);
+  --ch-medallion-ink: #f4f1e8;
+  --ch-medallion-rings: rgb(21 90 57 / 0.1);
   display: grid;
   place-items: center;
   min-height: calc(100vh - 140px);
@@ -530,7 +537,7 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: repeating-radial-gradient(circle at center, rgb(21 90 57 / 0.1) 0 1px, transparent 1.5px 17px);
+  background: repeating-radial-gradient(circle at center, var(--ch-medallion-rings) 0 1px, transparent 1.5px 17px);
   -webkit-mask: radial-gradient(circle, #000 30%, transparent 70%);
   mask: radial-gradient(circle, #000 30%, transparent 70%);
 }
@@ -541,16 +548,19 @@
   width: 64px;
   height: 64px;
   border-radius: 22px;
-  background: var(--ch-green-800);
-  color: #f4f1e8;
+  background: var(--ch-medallion-bg);
+  color: var(--ch-medallion-ink);
   box-shadow: 0 16px 30px -14px rgb(11 58 37 / 0.75), inset 0 1px 0 rgb(255 255 255 / 0.1);
 }
+/* The title is the Ledger's forest ink on every screen, set here rather than left to the canopy's h2 rule, so a page
+   without the framed head and the phone read the same (lead decision under the owner's full-auto brief; owner to
+   confirm). */
 .ch-empty-page__title {
   margin: 0;
   font: 600 26px/1.15 var(--ch-font-sans);
   font-variation-settings: 'wdth' 96;
   letter-spacing: -0.028em;
-  color: var(--ch-ink-950);
+  color: var(--ch-ledger-ink);
   text-wrap: balance;
 }
 .ch-empty-page__body {
@@ -591,12 +601,49 @@
   gap: 8px;
   margin-top: 12px;
 }
-[data-ui='clubhouse'][data-motion='off'] .ch-empty-page__in > *,
-[data-motion='off'] [data-ui='clubhouse'] .ch-empty-page__in > * {
+/* The route error's quiet lines: how often it has tried, and the error's reference for support (lead decision under
+   the owner's full-auto brief, 2026-10-08; owner to confirm: shown, as a caption, never in a card). */
+.ch-empty-page__note,
+.ch-empty-page__ref {
+  margin: 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-empty-page__ref {
+  margin-top: 6px;
+}
+.ch-empty-page .ch-notyet__dev {
+  align-self: stretch;
+  text-align: left;
+}
+/* The danger tone (the route error): a brick medallion on brick rings; the title keeps the forest ink. */
+.ch-empty-page--danger {
+  --ch-medallion-bg: linear-gradient(180deg, #8d4235 0%, #74352b 100%);
+  --ch-medallion-ink: #f8ede8;
+  --ch-medallion-rings: rgb(126 59 48 / 0.12);
+}
+.ch-empty-page--danger .ch-empty-page__ic {
+  box-shadow: var(--ch-elevation-cast), inset 0 1px 0 rgb(255 255 255 / 0.12);
+}
+/* The error page centres the view itself, so the anatomy adds no air of its own there. */
+.ch-notyet > .ch-empty-page {
+  min-height: 0;
+  padding: 0;
+}
+@media (min-width: 821px) {
+  /* In the Ledger a page empty sits under the framed head with its own measured air, not a viewport's height, so the
+     medallion and its action stay near the head and above the fold (states audit, 2026-10-08). */
+  [data-ui='clubhouse'] main[data-canopy] .ch-empty-page {
+    min-height: 0;
+    padding-block: 72px 88px;
+  }
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-empty-page__in,
+[data-motion='off'] [data-ui='clubhouse'] .ch-empty-page__in {
   animation: none;
 }
 @media (prefers-reduced-motion: reduce) {
-  .ch-empty-page__in > * {
+  .ch-empty-page__in {
     animation: none !important;
   }
 }
@@ -627,66 +674,197 @@
 }
 .ch-empty__icon {
   display: grid;
+  grid-row: 1;
+  grid-column: 1;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  margin-bottom: 4px;
-  color: var(--ch-text-tertiary);
+  height: 16px;
+  margin-top: 2px;
+  color: var(--ch-ledger-ink);
 }
 .ch-empty__title {
+  max-width: 60ch;
+  margin: 0;
   font: var(--ch-type-title);
+  letter-spacing: -0.012em;
   color: var(--ch-text-primary);
+  text-wrap: balance;
 }
 .ch-empty__body {
-  max-width: 44ch;
+  max-width: 56ch;
+  margin: 0;
   font: var(--ch-type-body-s);
-  color: var(--ch-text-tertiary);
+  color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
 .ch-empty__action {
-  margin-top: 8px;
-}
-.ch-notice {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px 12px 12px 14px;
-  border-radius: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 11px;
+}
+
+/* The notice (InlineNotice, PageNotice): a part of the page could not load. Flush in the Ledger (lead decision under
+   the owner's full-auto brief, 2026-10-08; owner to confirm): no fill and no ring. A 2px rule at its left, the icon
+   and the title carry the danger ink, the body the secondary ink. Try again sits beside the words, or under them in a
+   narrow rail (the notice is its own size container) and on the phone. The inks and the fill are local properties,
+   so a notice on a dark or a floating surface is restyled in one rule. */
+.ch-notice {
+  --ch-notice-rule: var(--ch-ledger-rule);
+  --ch-notice-ink: var(--ch-text-primary);
+  --ch-notice-body: var(--ch-text-secondary);
+  --ch-notice-fill: none;
+  container: ch-notice / inline-size;
+  align-self: stretch;
+  justify-self: stretch;
+  padding: 1px 0 1px 14px;
+  border-left: 2px solid var(--ch-notice-rule);
+  background: var(--ch-notice-fill);
 }
 .ch-notice--danger {
-  background: #f7ece8;
-  box-shadow: inset 0 0 0 1px rgb(126 59 48 / 0.16);
+  --ch-notice-rule: var(--ch-danger-600);
+  --ch-notice-ink: var(--ch-danger-600);
 }
-.ch-notice--danger .ch-notice__icon {
-  flex: none;
-  margin-top: 1px;
-  color: #7e3b30;
+.ch-notice__in {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 30rem) auto;
+  justify-content: start;
+  align-items: start;
+  gap: 10px 12px;
+}
+.ch-notice .ch-notice__icon {
+  margin-top: 1.5px;
+  color: var(--ch-notice-ink);
 }
 .ch-notice__txt {
   display: flex;
-  flex: 1;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
 }
-.ch-notice__title {
-  font: 600 13.5px/1.35 var(--ch-font-sans);
-  color: var(--ch-text-primary);
+.ch-notice .ch-notice__title {
+  margin: 0;
+  font: 600 14px/1.35 var(--ch-font-sans);
+  letter-spacing: -0.01em;
+  color: var(--ch-notice-ink);
+  text-wrap: pretty;
 }
-.ch-notice__body {
+.ch-notice .ch-notice__body {
+  margin: 0;
   font: var(--ch-type-body-s);
-  color: var(--ch-text-secondary);
+  color: var(--ch-notice-body);
+  text-wrap: pretty;
 }
+/* Beside the words (a full-width notice), Try again sits at the end of their measure, centred on them. */
+.ch-notice__act {
+  align-self: center;
+}
+/* A rail or a half column (a notice under 640px) and the phone: Try again goes under the words, at their edge, so
+   notices side by side read alike and a narrow one never squeezes its words beside a button. */
+@container ch-notice (max-width: 40rem) {
+  .ch-notice__in {
+    grid-template-columns: 16px minmax(0, 1fr);
+  }
+  .ch-notice__act {
+    grid-column: 2;
+    align-self: start;
+    margin-top: 3px;
+  }
+}
+@media (max-width: 820px) {
+  .ch-notice__in {
+    grid-template-columns: 16px minmax(0, 1fr);
+  }
+  .ch-notice__act {
+    grid-column: 2;
+    align-self: start;
+    margin-top: 3px;
+  }
+  .ch-notice .ch-notice__title {
+    font-size: 15px;
+  }
+}
+/* On the one green feature card (ui/Ledger.tsx) the notice takes the card's ivory inks and a light brick rule. */
+.ch-feat .ch-notice--danger {
+  --ch-notice-rule: rgb(236 160 140 / 0.75);
+  --ch-notice-ink: #f2c3b6;
+  --ch-notice-body: var(--ch-on-green-ink-soft);
+}
+
 /* One sweep shared by every block on the page (a viewport-fixed gradient,
    v2 .gh-sk). iOS WebKit may ignore the fixed attachment, so on the phone
-   each block can sweep on its own (noted under D-64). */
+   each block can sweep on its own (noted under D-64). A shade deeper than the
+   first pass (states audit, 2026-10-08: the bars all but vanished on the
+   parchment): about 1.2:1 on the workspace, with a soft sheen. */
 .ch-skel {
   display: block;
-  background: linear-gradient(100deg, #ebe7dc 42%, #f3f0e8 50%, #ebe7dc 58%) 0 0 / 200vw 100% fixed;
+  background: linear-gradient(100deg, #e2dbca 42%, #ece6d8 50%, #e2dbca 58%) 0 0 / 200vw 100% fixed;
   animation: ch-shimmer var(--ch-dur-shimmer) linear infinite;
 }
-/* Animations off in Settings: skeletons hold still. */
-.ch-root[data-motion='off'] .ch-skel {
+@media (min-width: 821px) {
+  /* A block in waiting (a fluid Skeleton from 56px tall, or shape="block") is drawn in the Ledger as the Ledger draws
+     what it stands for: a rule along its top and two lines of type under it, not a filled card. It keeps its box, so
+     nothing moves when the page lands; a real object that loads filled asks for shape="solid". */
+  [data-ui='clubhouse'] main[data-canopy] .ch-skel--block {
+    position: relative;
+    border-radius: 0 !important;
+    background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 0 / 100% 1px no-repeat;
+    animation: none;
+  }
+  [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::before,
+  [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::after {
+    position: absolute;
+    left: 0;
+    border-radius: 6px;
+    background: linear-gradient(100deg, #e2dbca 42%, #ece6d8 50%, #e2dbca 58%) 0 0 / 200vw 100% fixed;
+    animation: ch-shimmer var(--ch-dur-shimmer) linear infinite;
+    content: '';
+  }
+  [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::before {
+    top: 20px;
+    width: min(36%, 240px);
+    height: 13px;
+  }
+  [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::after {
+    top: 44px;
+    width: min(58%, 400px);
+    height: 10px;
+  }
+}
+/* The shared shapes a page's skeleton is built from (States.tsx): a line's box with its bar, Ledger rows on their
+   seams, and a rule. */
+.ch-skel-ln {
+  display: flex;
+  align-items: center;
+}
+.ch-skel-rule {
+  display: block;
+  height: 1px;
+  background: var(--ch-ledger-rule);
+}
+.ch-skel-rows {
+  display: block;
+}
+.ch-skel-rows__r {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 58px;
+  padding: 10px 0;
+}
+.ch-skel-rows__r + .ch-skel-rows__r {
+  box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+}
+.ch-skel-rows__t {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+/* Animations off in Settings: skeletons hold still (a Ledger block's lines too). */
+.ch-root[data-motion='off'] .ch-skel,
+.ch-root[data-motion='off'] main[data-canopy] .ch-skel--block::before,
+.ch-root[data-motion='off'] main[data-canopy] .ch-skel--block::after {
   animation: none;
 }
 @keyframes ch-shimmer {
@@ -698,7 +876,9 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ch-skel {
+  .ch-skel,
+  .ch-skel--block::before,
+  .ch-skel--block::after {
     animation: none !important;
   }
 }
@@ -809,8 +989,10 @@
 .ch-more__row:first-child {
   border-top: 0;
 }
+/* As a ledger row (CH-1606): the tint waits a beat, so a drag or a scroll that starts on a row never flashes it. */
 .ch-more__row:active {
   background: var(--ch-bg-hover);
+  transition-delay: var(--ch-dur-press-delay);
 }
 .ch-more__ic {
   display: grid;
@@ -1589,6 +1771,13 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
     animation: none !important;
   }
 }
+/* A Back that iOS already played with its own edge swipe (CH-1908, lib/ua-pop.ts) swaps at once: the page had slid off
+   under the finger, so a fade after it would show the same Back twice. */
+html[data-ch-ua-pop]:has([data-ui='clubhouse'])::view-transition-group(*),
+html[data-ch-ua-pop]:has([data-ui='clubhouse'])::view-transition-old(*),
+html[data-ch-ua-pop]:has([data-ui='clubhouse'])::view-transition-new(*) {
+  animation: none !important;
+}
 
 /* -- A nav tap before its page arrives (LinkPending) -----------------------------------------------------------------
    The tapped row or tab takes the selected look on the first frame; the hairline at the top of the page only fades in
@@ -1914,8 +2103,9 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
 }
 
 /* The selected plate as one gliding object (CH-1613, shell/NavPlate.tsx). Once the plate has measured, the nav carries
-   .ch-nav--plate and the rows stop drawing their own plate: the plate sits behind them and travels on the transform;
-   a row's ink follows it at the same pace. Before then (and without script) each row keeps its own plate. */
+   .ch-nav--plate and the rows stop drawing their own plate: the plate sits behind them and travels on the transform,
+   on the smooth spring that NavPlate runs itself (a CSS transition on the transform would override it); a row's ink
+   follows it at the base pace. Before then (and without script) each row keeps its own plate. */
 .ch-nav {
   position: relative;
 }
@@ -1929,7 +2119,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
   box-shadow: var(--ch-elevation-on-frame);
   opacity: 0;
   pointer-events: none;
-  transition: transform var(--ch-dur-base) var(--ch-ease), opacity var(--ch-dur-quick) var(--ch-ease);
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-nav--plate .ch-navitem {
   position: relative;

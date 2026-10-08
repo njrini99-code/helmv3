@@ -360,6 +360,10 @@
   font: 500 13.5px/1.4 var(--ch-font-sans);
   box-shadow: 0 0 0 1px rgb(0 0 0 / 0.4), 0 12px 32px -8px rgb(0 0 0 / 0.35);
   pointer-events: auto;
+  /* It follows the finger toward its edge (CH-1614): a drag on it is the toast's, not the page's scroll. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .ch-toast__icon {
   flex: none;
@@ -707,8 +711,11 @@
   cursor: pointer;
   transition: background var(--ch-dur-press) var(--ch-ease);
 }
+/* The tint waits a beat after the finger lands, so a scroll that starts on a row never flashes it; letting go clears it
+   at once, since only the pressed state carries the delay (CH-1606). */
 .ch-lgr__row.is-link:active {
   background: var(--ch-ledger-row-press);
+  transition-delay: var(--ch-dur-press-delay);
 }
 @media (hover: hover) {
   .ch-lgr__row.is-link:hover {

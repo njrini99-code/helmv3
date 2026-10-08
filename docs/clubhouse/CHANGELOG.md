@@ -1,12 +1,76 @@
 # Clubhouse changelog
 
-## 2026-10-07 — A page can own a second surface (`implementation.also`)
+## 2026-10-08 — Springs, thrown sheets and the gestures iOS has
 
-A page manifest's `implementation` takes an optional `also`: further paths the page owns beside its root, loader,
-route and styles. The changelog gate, the registry's path check and PAGE.md's Related block read it. P015 (Auth)
-uses it for sign up and onboarding (`screens/onboard`, `data/onboard.ts`, `routes/onboard.tsx`, `onboard.css` and
-`onboard-tokens.css`): until now `onboard.css` was gated as a shared piece in this log, and the screens were gated
-nowhere. Tests: changelog-gate, registry and docs-index.
+Motion gains real springs on D-64's durations. This is a lead decision under the owner's full-auto brief, for the
+owner to confirm.
+- `CH_SPRINGS` in `lib/motion.ts`: `smooth` (base, bounce 0) for anchored parts, and `settle` (base, bounce 0.1,
+  about 0.15% past the mark) for a free part arriving.
+- `chSpring` hands framer the same spring as stiffness and damping. framer 13 drops the velocity of a spring given
+  as a duration and a bounce, so this is what lets a retarget or a throw keep its speed.
+- `chSpringCurve` samples the spring for Web Animations and CSS: `--ch-ease-spring-smooth` and
+  `--ch-dur-spring-smooth`, behind `@supports`, with the Animations-off zero. The phone `Modal` sheet now rises on
+  it (`controls.css`), as More and the bell do. The pages' own sheets keep their ease-out until their owners adopt it.
+
+Reduced motion and Animations off stay instant.
+
+- **Sheets** (`lib/sheet-drag.ts`, every phone sheet), CH-1611. Pulled up, a sheet gives like a rubber band over a
+  floor of its own colour. Let go, it springs back from the speed it was moving. Thrown back up hard, it carries on a
+  little past its open position over the same floor, and a finger can catch it on the way. The coach chat's history
+  drawer and the sidebar plate hold at their mark instead (`hold`): sent at it too fast to stop there, they start
+  slower rather than pass it. It drags from its body once that is
+  at the top and the first move is down, and the row a drag started on doesn't open. A throw carries its speed into
+  the close (`takeSheetFling`, then `lib/dialog-lifetime.ts` or the sheet's exit). A dialog sheet closed without a
+  throw keeps the base ease-out; More and the bell leave on the spring either way.
+- **Toasts** (`ui/Toast.tsx`), CH-1614. Held, a toast's clock stops; let go, it stays at least 1.5 seconds. Thrown
+  toward its edge past 40px or on a flick, it goes on at the throw's speed and fades.
+- **The segmented pill and swaps.** The pill (CH-1615) and a swap's incoming copy (CH-1616) arrive on the settle
+  spring.
+- **Slider scrub** (CH-1708). A finger scrubbing a slider warms the Taptic Engine as it lands, ticks each step it
+  crosses, and lets the engine idle on release (`hapticScrub`).
+- **Row press tint** (CH-1606). A row's tint waits `--ch-dur-press-delay` (50ms), so a scroll that starts on a row
+  never flashes it. It also holds with reduced motion.
+- **iOS Back** (CH-1908). A Back that iOS animated itself is not animated again (`lib/ua-pop.ts`).
+- **The iOS shell** sets `CADisableMinimumFrameDurationOnPhone`, so native layers (scrolling, the edge swipe) can run
+  at 120Hz on ProMotion iPhones. WebKit page rendering in the WebView stays near 60fps (WebKit bug 294338).
+
+## 2026-10-08 — Empty, failed and loading states, one family
+
+The states audit (2026-10-07) found three empty-state anatomies, a pink boxed
+notice in the flush Ledger, a route error in a white card and skeletons drawn
+as filled cards. The shared layer (`ui/States.tsx`, `ui/Notices.tsx`,
+`ui/RefreshNotice.tsx` and their blocks in `styles/shell.css`) now draws one
+family:
+
+- **Section empty:** a flush line, left-aligned to the section's edge: an
+  optional glyph in the forest ink, the title, one sentence and the action
+  under them. No well, no centring.
+- **Page empty:** in the Ledger it sits under the framed head with measured air
+  (72px above, 88px below) instead of a viewport's height, so the action stays
+  above the fold. Its title is the ledger ink everywhere, the phone included.
+- **Notice:** no pink box. A 2px danger rule at the left, the icon and title in
+  the danger ink and the body in the secondary ink. Try again sits beside the
+  words in a full-width notice, and under them in anything narrower than 640px
+  (a rail, a half column) and on the phone. A notice
+  on a dark or floating surface is restyled through `--ch-notice-rule`,
+  `--ch-notice-ink`, `--ch-notice-body` and `--ch-notice-fill`; on the
+  FeatureCard it already takes the ivory inks.
+- **Several failed parts (CH-1209):** `PageNotice` and `PageRefreshNotice` say
+  it once under the page head with one Try again. Each failed part's notice
+  takes `covered` and keeps only its title. Pages adopt it as they are next
+  touched.
+- **Route error:** the page empty in a brick danger tone, with no card. Try
+  again (or Reload) comes first, Back to Home sits beside it, and the reference
+  is a quiet caption.
+- **Skeletons:** a shade deeper, about 1.2:1 on the workspace. On desktop Ledger
+  pages a fluid placeholder 56px or taller is a rule with two lines of type, not
+  a filled card; `shape="solid"` keeps a real object filled. New shared shapes:
+  `SkelLine`, `SkelRows` and `SkelRule`.
+- **Copy:** a state's title renders without a trailing full stop
+  (`stateTitle`). The shared components' own copy uses curly apostrophes.
+
+The four decisions behind this are recorded in P001 DESIGN.md as lead decisions
+under the owner's full-auto brief, for the owner to confirm.
 
 ## 2026-10-08 — The phone chassis, and no serif anywhere
 
@@ -22,6 +86,14 @@ board. Pushed screens' bars follow.
 sans (600), and `--ch-font-serif` points at the sans. This follows the owner's
 2026-10-07 choice of bold sans titles and the Clubhouse doctrine. Digits that
 SerifText set apart take the title's own size and weight.
+
+## 2026-10-07 — A page can own a second surface (`implementation.also`)
+
+A page manifest's `implementation` takes an optional `also`: further paths the page owns beside its root, loader,
+route and styles. The changelog gate, the registry's path check and PAGE.md's Related block read it. P015 (Auth)
+uses it for sign up and onboarding (`screens/onboard`, `data/onboard.ts`, `routes/onboard.tsx`, `onboard.css` and
+`onboard-tokens.css`): until now `onboard.css` was gated as a shared piece in this log, and the screens were gated
+nowhere. Tests: changelog-gate, registry and docs-index.
 
 ## 2026-10-07 — Rows press with a tint; the motion notes say what runs
 

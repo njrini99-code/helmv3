@@ -25,9 +25,9 @@ import { InlineNotice } from '../ui/Notices';
 import { Menu } from '../ui/Menu';
 import { Skeleton } from '../ui/States';
 import { haptic } from '../lib/haptics';
-import { CH_POP, chTween } from '../lib/motion';
+import { CH_POP, chSpring, chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
-import { useSheetDrag } from '../lib/sheet-drag';
+import { chThrownExit, takeSheetFling, useSheetDrag } from '../lib/sheet-drag';
 import { OverlayScrollLock } from '../lib/overlay-scroll';
 import { useChPhone } from '../lib/use-phone';
 import { chReport, chTrail } from '../lib/track';
@@ -123,6 +123,20 @@ export function Bell() {
   }, []);
   const closeSheet = useCallback(() => close(), [close]);
   const drag = useSheetDrag(panel, closeSheet, { enabled: phone && !reduced });
+  // CH-1612: on the phone the sheet rises on the smooth spring and leaves on it, as More does (CH-1602), at the speed
+  // it was thrown when swiped shut (CH-1611). Read as the exit begins, since the sheet's props are fixed once removed.
+  const sheetMotion = {
+    shown: { y: 0, opacity: 1, transition: chSpring('smooth', reduced) },
+    gone: (_custom: unknown, current: { y?: unknown }) => {
+      if (reduced) return { y: 0, opacity: 0, transition: { duration: 0 } };
+      const travel = panel.current?.offsetHeight ?? 0;
+      if (!travel) return { y: '100%', transition: chTween('base') };
+      // From where it is now (mid rise, when closed early), plus the frame a throw has already carried it.
+      const from = typeof current?.y === 'number' ? current.y : 0;
+      const out = chThrownExit(takeSheetFling(panel.current, { peek: true }), travel - from);
+      return { y: [from + out.lead, travel], transition: { duration: out.ms / 1000, ease: out.ease } };
+    },
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -361,9 +375,9 @@ export function Bell() {
                 className="ch-bellp ch-bellp--sheet"
                 data-ui="clubhouse"
                 initial={reduced ? { opacity: 0 } : { y: '100%' }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={reduced ? { y: 0, opacity: 0 } : { y: '100%' }}
-                transition={reduced ? { duration: 0 } : chTween('base')}
+                variants={sheetMotion}
+                animate="shown"
+                exit="gone"
               >
                 <OverlayScrollLock />
                 <div className="ch-bellp__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />

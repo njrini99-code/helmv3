@@ -339,6 +339,15 @@
   --ch-dur-base: 260ms;
   --ch-dur-release: 280ms;
   --ch-dur-reveal: 520ms;
+  /* A row's pressed tint waits this long after the finger lands (UIKit delays a cell's highlight the same way), so a
+     scroll that starts on a row never flashes it; letting go clears it at once. Kept with reduced motion: it isn't motion. */
+  --ch-dur-press-delay: 50ms;
+  /* The smooth spring (D-64 extension, 2026-10-08; lib/motion.ts CH_SPRINGS, base, no bounce) for a one-shot CSS entry
+     that moves an anchored part, such as a sheet rising. Where linear() is missing it is the ease-out over base. An
+     interruptible state change keeps a curve: a CSS spring would restart from rest when retargeted, so those springs
+     run in script. */
+  --ch-ease-spring-smooth: var(--ch-ease);
+  --ch-dur-spring-smooth: var(--ch-dur-base);
   --ch-reveal-offset: 40ms;
   --ch-reveal-step: 55ms;
   --ch-reveal-rise: 10px;
@@ -384,6 +393,15 @@
   }
 }
 
+/* The smooth spring as CSS linear(), sampled from chSpringCurve('smooth') once a frame and cut within 0.1% of the
+   mark (motion-physics.test pins the two together). */
+@supports (transition-timing-function: linear(0, 1)) {
+  [data-ui='clubhouse'] {
+    --ch-ease-spring-smooth: linear(0, 0.0418, 0.136, 0.2508, 0.3677, 0.477, 0.5739, 0.657, 0.7266, 0.7839, 0.8303, 0.8675, 0.8971, 0.9204, 0.9387, 0.953, 0.964, 0.9725, 0.9791, 0.9841, 0.988, 0.9909, 0.9931, 0.9948, 0.9961, 0.9971, 0.9978, 0.9983, 0.9988, 1);
+    --ch-dur-spring-smooth: 462ms;
+  }
+}
+
 /* Settings > Preferences > Animations off: every Clubhouse transition becomes
    instant (portaled menus and dialogs carry their own data-ui, so both forms). */
 [data-ui='clubhouse'][data-motion='off'],
@@ -393,6 +411,7 @@
   --ch-dur-base: 0ms;
   --ch-dur-release: 0ms;
   --ch-dur-reveal: 0ms;
+  --ch-dur-spring-smooth: 0ms;
   --ch-reveal-offset: 0ms;
   --ch-reveal-step: 0ms;
   --ch-reveal-rise: 0px;

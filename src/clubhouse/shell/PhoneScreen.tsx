@@ -2,18 +2,20 @@
 
 import { m } from 'framer-motion';
 import { useEffect, useRef, type ReactNode } from 'react';
-import { chTween } from '../lib/motion';
+import { chSpring, chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
+import { poppedByUA } from '../lib/ua-pop';
 import { usePhoneImmersive } from './phone-chrome';
 import { useOverlayScrollLock } from '../lib/overlay-scroll';
 
 /**
- * A pushed phone screen (a thread, details, a new message): it slides in over
- * the page in 220ms and back out on pop, or fades when motion is reduced
- * (CH-1610). While it is up, the shell's top bar and tab bar are inert and
- * hidden from assistive tech (CH-1809), and focus moves to the screen's title
- * so VoiceOver starts there. Render it inside `AnimatePresence` so the pop
- * animates too. Its own top bar is a `PhoneBar`.
+ * A pushed phone screen (a thread, details, a new message): it slides in over the page on the smooth spring (base,
+ * no bounce) and back out on pop over the base ease-out, so the page beneath is free again at once; it fades when
+ * motion is reduced (CH-1610). When iOS has already played the pop
+ * itself (the edge swipe), it leaves at once rather than slide out a second time (CH-1908). While it is up, the
+ * shell's top bar and tab bar are inert and hidden from assistive tech (CH-1809), and focus moves to the screen's
+ * title so VoiceOver starts there. Render it inside `AnimatePresence` so the pop animates too. Its own top bar is a
+ * `PhoneBar`.
  */
 export function PhoneScreen({
   labelledBy,
@@ -64,8 +66,10 @@ export function PhoneScreen({
       tabIndex={-1}
       initial={reduced ? { opacity: 0 } : { x: '100%' }}
       animate={{ x: 0, opacity: 1 }}
-      exit={reduced ? { x: 0, opacity: 0 } : { x: '100%' }}
-      transition={reduced ? { duration: 0 } : chTween('base')}
+      // Read as the pop begins, so a Back that iOS already animated doesn't play again.
+      exit="pop"
+      variants={{ pop: () => (reduced || poppedByUA() ? { opacity: 0, transition: { duration: 0 } } : { x: '100%', transition: chTween('base') }) }}
+      transition={chSpring('smooth', reduced)}
     >
       {children}
     </m.section>

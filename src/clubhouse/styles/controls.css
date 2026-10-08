@@ -395,7 +395,9 @@
     max-height: var(--ch-modal-max-h);
     padding-bottom: env(safe-area-inset-bottom);
     border-radius: 20px 20px 0 0;
-    animation: ch-rise var(--ch-dur-base) var(--ch-ease);
+    /* It rises on the smooth spring, as More and the bell do (CH-1602, CH-1612): a soft start and a settle with no
+       overshoot; the ease-out over base where linear() is missing. */
+    animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
   }
   .ch-modal__grab {
     display: block;

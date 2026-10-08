@@ -1,5 +1,63 @@
 # P001 — Shell: changelog
 
+## 2026-10-08 — Springs in the shell, and a tab that answers a second tap
+
+More and the bell now rise on the smooth spring (base, no bounce) and leave on it. Swiped shut, they leave at the
+speed they were thrown (CH-1602, CH-1612, CH-1611). A pushed phone screen slides in on the same spring and leaves
+over the base ease-out, so the page beneath is free again at once (CH-1610). The sidebar plate also glides on it, and
+a second row tapped mid-glide sends it on from where it is, at its speed. Toward a row too near to stop at from that
+speed, it starts slower instead, so it never passes the row (CH-1613). A sheet thrown back up carries on a little past
+its open position over its own floor, and a finger can catch it on the way (CH-1611).
+
+Tapping the tab that is already open now does what a UIKit tab bar does, without a tick. A pushed screen or section
+pops back to the tab's root, and at the root the page scrolls to the top (CH-1907). When iOS has already animated a
+Back with its edge swipe (`hasUAVisualTransition`), the Back shows once: the pushed screen leaves at once and the page
+crossfade does not run (CH-1908). The More sheet's rows tint after a 50ms beat, so a drag or a scroll never flashes
+them (CH-1606). The springs are a D-64 extension: a lead decision under the owner's full-auto brief, for the owner to
+confirm.
+
+Machine load ran from 70 to 290 for most of the work, so the springs are checked first by their curves, not by frame
+timing. Each check is one of two kinds: framer's own spring generator sampled at fixed times, or a WebKit animation
+read through `getAnimations()` and seeked while paused. All run against a harness of the real components (390px,
+touch).
+- framer's generator, given the stiffness and damping `chSpring` passes, draws the same curve as the
+  duration-and-bounce form from rest (largest difference 0px). Smooth is at 59.8% at 100ms and 96.7% at 260ms, within
+  0.5px of 100 at 369ms, and never past its mark. Settle passes it by 0.13%.
+- Handed 2000px/s, that form starts at 2000px/s, where the duration-and-bounce form starts at 0. Retargeted at 80ms,
+  it carries on at 648px/s; the other drops to 0.
+- The `Modal` sheet rises on a 462ms CSS animation whose `linear()` easing holds the token's 30 values. Seeked, it is
+  within 0.001 of the spring at every sampled time.
+- Thrown at 1.5px/ms, the `Modal` exit starts 24px on, one frame at the throw speed. It runs at 1.74, then
+  1.97px/ms (8ms seeks) and ends off screen at 367ms.
+- Let go 40px down while moving up at 1.5px/ms, More springs back over 288ms. It passes its open position by 3.96px
+  at 112ms, over a seamless floor. A finger landing there holds it at -3.96px.
+- The sidebar plate glides 200px in 408ms over 27 keyframes, never past its row. Sent on at about 100ms, its new
+  glide starts within 1.4px of where it was, and it passes no row by more than half a pixel.
+- Pulled up 160px, the sheet gives 47px over its floor.
+- A Back flagged `hasUAVisualTransition` removes the pushed screen on the first frame.
+- With reduced motion, the `Modal` fades in 1ms and the plate jumps with no animation.
+- Frame-sampled once load fell to 14 to 18 (headless WebKit draws about every 10ms):
+  - More rises within half a pixel at 474ms and closes by the scrim in 446ms.
+  - Thrown at 2.4px/ms, More runs 3.8 to 4.3px/ms and is gone at 431ms; the old fixed ease-out started near 10px/ms.
+    Its first frame runs faster (6.7px/ms), because the 16ms lead is sized for the 60Hz frame of WKWebView and
+    Safari.
+  - The band springs back in 330ms. The plate is within half a pixel at 403ms, and a second tap never drops its speed.
+  - A pushed screen is within half a pixel at 463ms. The pill passes its mark by 0.22px of 147px; nothing else
+    passes.
+
+## 2026-10-08 — The shared states, drawn as the Ledger draws
+
+`shell.css` now draws the shared states as flush Ledger pieces (see the
+Clubhouse changelog):
+
+- The section empty is a left-aligned line.
+- The page empty keeps measured air under the framed head.
+- The notice has a danger rule in place of the pink box.
+- The route error is the page empty in a brick danger tone, with no card.
+- On desktop Ledger pages, a skeleton block is a rule with two lines of type.
+
+New: CH-1209, one notice with one Try again when several parts of a page fail.
+
 ## 2026-10-08 — The tab bar in Safari is one toolbar with Safari's
 
 Opened in mobile Safari rather than the app, the phone tab bar used to float as

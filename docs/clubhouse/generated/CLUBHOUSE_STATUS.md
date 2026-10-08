@@ -9,7 +9,7 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 - Design: approved
 - Implementation: in_progress
 - Contract: complete; 19 of 25 categories have catalog contracts
-- Bridge: reserved; 74 IDs, 72 on an element or in code, 2 reserved
+- Bridge: reserved; 81 IDs, 79 on an element or in code, 2 reserved
 - Data: existing; 0 held plan(s)
 - Verification: partial
 - Docs: current
@@ -69,7 +69,7 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 - Design: approved
 - Implementation: in_progress
 - Contract: complete; 23 of 25 categories have catalog contracts
-- Bridge: reserved; 95 IDs, 93 on an element or in code, 2 reserved
+- Bridge: reserved; 96 IDs, 94 on an element or in code, 2 reserved
 - Data: existing; 2 held plan(s)
 - Verification: partial
 - Docs: current
@@ -79,7 +79,7 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 - Design: draft
 - Implementation: in_progress
 - Contract: complete; 23 of 25 categories have catalog contracts
-- Bridge: reserved; 127 IDs, 127 on an element or in code, 0 reserved
+- Bridge: reserved; 128 IDs, 128 on an element or in code, 0 reserved
 - Data: existing; 0 held plan(s)
 - Verification: partial
 - Docs: current
@@ -89,7 +89,7 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 - Design: approved
 - Implementation: in_progress
 - Contract: complete; 23 of 25 categories have catalog contracts
-- Bridge: reserved; 132 IDs, 125 on an element or in code, 7 reserved
+- Bridge: reserved; 133 IDs, 125 on an element or in code, 8 reserved
 - Data: existing; 2 held plan(s)
 - Verification: partial
 - Docs: current
@@ -139,7 +139,7 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 - Design: approved
 - Implementation: in_progress
 - Contract: complete; 19 of 25 categories have catalog contracts
-- Bridge: reserved; 63 IDs, 63 on an element or in code, 0 reserved
+- Bridge: reserved; 64 IDs, 63 on an element or in code, 1 reserved
 - Data: existing; 1 held plan(s)
 - Verification: partial
 - Docs: current
