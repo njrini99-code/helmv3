@@ -1,0 +1,51 @@
+name: Setup Node and install dependencies
+description: >-
+  actions/setup-node plus `npm ci`, with the npm download cache restored on every
+  run and SAVED ONLY ON main. Replaces `setup-node` with `cache: npm`, whose
+  post step saves a cache entry from any ref that misses, so a PR that touched
+  the lockfile wrote its own multi-hundred-MB entry into the repository's 10 GB
+  cache budget and evicted entries other PRs were about to restore.
+
+# Composite actions cannot have a post step, so the save is a step AFTER
+# `npm ci` here (that is when ~/.npm is full). Callers use this in place of the
+# old two steps (Setup Node, Install dependencies) and may put `if:` on the
+# single `uses:` line.
+#
+# Key: lockfile-exact, with a prefix fallback so a PR that changes the lockfile
+# still starts from main's most recent cache instead of from nothing. PRs and
+# branches restore only; they never write. `cache-hit` is the exact-key
+# result, so main writes at most one entry per lockfile.
+
+inputs:
+  node-version:
+    description: Node version to install.
+    required: false
+    default: '24'
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Restore npm cache
+      id: npm-cache
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+      with:
+        path: ~/.npm
+        key: npm-${{ runner.os }}-node${{ inputs.node-version }}-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          npm-${{ runner.os }}-node${{ inputs.node-version }}-
+
+    - name: Install dependencies
+      shell: bash
+      run: npm ci --prefer-offline --no-audit --no-fund
+
+    - name: Save npm cache (main only)
+      if: github.ref == 'refs/heads/main' && steps.npm-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+      with:
+        path: ~/.npm
+        key: npm-${{ runner.os }}-node${{ inputs.node-version }}-${{ hashFiles('package-lock.json') }}

@@ -49,7 +49,7 @@ violation always fails regardless of baseline.
 |---|---|---|---|
 | Unit/unit-dom/integration/business/contract | vitest projects | `src/**/*.test.{ts,tsx}` + named `scripts/**` files | `test:run`, `test:integration` |
 | RLS | pgTAP | `supabase/tests/rls/*.sql` | Supabase lint + RLS tests job |
-| E2E | Playwright | `e2e/**` | PR smoke (`ci.yml`'s `pr-smoke-a11y` job) is gated on `frontend`; the full suite is manual (`workflow_dispatch`, `full_e2e=true`) |
+| E2E | Playwright | `e2e/**` | the a11y smoke (`nightly.yml`'s `pr-smoke-a11y` job) runs nightly and on dispatch, never on PRs; the full suite is manual (`workflow_dispatch`, `full_e2e=true`) |
 
 `npm test` runs unit + unit-dom only, the fast loop. `npm run test:all` runs
 every project. `npm run test:file -- <paths>` is the scoped inner loop — same
@@ -57,9 +57,8 @@ two projects, no serialize queue, for iterating on one file before the gate.
 
 ### Running a gate takes longer than a Bash call
 A full local pass is 8-12 minutes and `scripts/serialize.mjs` queues it behind
-gates in sibling worktrees (`HELM_GATE_SLOTS`, default 2; a gate that cannot
-get a slot within 8 minutes exits 75 with a retry command), while the Bash tool
-times out at 120s. Background the run and read its log; never poll it with
+gates in sibling worktrees (`HELM_GATE_SLOTS`, default 2; no slot in 8 minutes
+exits 75 with a retry command), while the Bash tool times out at 120s. Background the run and read its log; never poll it with
 `sleep`. `typecheck` and `typecheck:fast` set `--max-old-space-size=8192`
 themselves — `tsc` costs ~2.85 GB here and dies at the default heap.
 
@@ -76,6 +75,6 @@ check the scanned-file count.
 `typecheck` (`tsc`) stays the CI gate — do not swap the gate for `tsgo`.
 
 ### CI shape
-`.github/workflows/detect-changes.yml`, ONE `workflow_call` reusable workflow called by `ci.yml`/`codeql.yml`/`feature-awareness.yml`/`migration-lockdown.yml`, is the only changed-path detector in the repo: outputs `code`, `frontend`, `e2e`, `migrations`, `python`, `actions`, `docs_only`, `mapped_feature_code`.
+`.github/workflows/detect-changes.yml`, ONE `workflow_call` reusable workflow called by `ci.yml` and `codeql.yml` (feature-awareness and migration-lockdown decide in-job), is the shared changed-path detector: outputs `code`, `knowledge`, `python`, `actions`. Path lists live in `.github/path-filters.yml`.
 
-`ci.yml`: `code` gates `Next build`/`Unit tests`/`Supabase lint + RLS tests` — each reads `.github/path-filters.yml` in its own first steps (no `needs: detect-changes`) and finishes green with nothing to do when nothing code-relevant changed — → required `CI aggregate`. `pr-smoke-a11y` and `sentry-snapshot-capture` are advisory jobs inside `ci.yml` (not separate workflows), run on push to `main`, dispatch, or a `ci:e2e`-labelled PR, consuming `next-build`'s `.next` artifact instead of rebuilding. `review-gate.yml` → required `Review Gate aggregate`. `codeql.yml`: three required `Analyze (...)` legs + non-required `CodeQL`; `javascript-typescript` is gated by the shared `code` output. `baseball-readiness-matrix.yml`: advisory, no `pull_request`. `feature-awareness.yml`: advisory, gated on `mapped_feature_code`. `migration-lockdown.yml`: `block-historical-edits`, every PR, gated on `migrations`. `claude-code.yml`: gated agent run. `playwright.yml` (manual only) downloads `ci.yml`'s `next-build` artifact when one exists, building only as a fallback. CircleCI: weekly heavy jobs + branch-gated native compiles. `main`'s required checks come from GitHub branch protection (`enforce_admins` is off, `strict` is off); take the list from GitHub, not from this file.
+`ci.yml`: `code` gates `Next build`/`Unit tests`/`Supabase lint + RLS tests` — each reads `.github/path-filters.yml` in its own first steps (no `needs: detect-changes`) and finishes green with nothing to do when nothing code-relevant changed — → required `CI aggregate`. `pr-smoke-a11y` and `sentry-snapshot-capture` are advisory jobs inside `nightly.yml` (not separate workflows), run nightly and on dispatch behind that workflow's own `next-build`. `review-gate.yml` → required `Review Gate aggregate`. `codeql.yml`: three required `Analyze (...)` legs + non-required `CodeQL`; `javascript-typescript` is gated by the shared `code` output. `baseball-readiness-matrix.yml`: advisory, no `pull_request`. `feature-awareness.yml`: advisory, classifies docs-only diffs in its own first step. `migration-lockdown.yml`: `block-historical-edits`, every PR, decides from its own `git diff`. `claude-code.yml`: gated agent run. `playwright.yml` (manual only) downloads `ci.yml`'s `next-build` artifact when one exists, building only as a fallback. CircleCI: weekly heavy jobs + branch-gated native compiles. `main`'s required checks come from GitHub branch protection (`enforce_admins` is off, `strict` is off); take the list from GitHub, not from this file.

@@ -48,8 +48,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 49 | 15 | 2 | 4 |
 | `ADR` | 6 | 0 | 3 | 2 |
-| `INDEX` | 25 | 1 | 8 | 5 |
-| `UNKNOWN` | 321 | 12 | 70 | 86 |
+| `INDEX` | 25 | 1 | 9 | 5 |
+| `UNKNOWN` | 321 | 12 | 70 | 90 |
 
 ## Files
 
@@ -649,7 +649,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/README.md` | current | - | - | - | - |
 | `public/images/README.md` | current | - | - | - | - |
 | `replay/README.md` | current | yes | - | yes | - |
-| `scripts/README.md` | current | - | - | - | - |
+| `scripts/README.md` | current | - | - | yes | - |
 | `src/app/golf/README.md` | current | - | - | - | - |
 | `src/components/baseball/living-annual/README.md` | current | - | - | - | - |
 | `src/contracts/baseball/README.md` | current | - | - | yes | - |
@@ -726,7 +726,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `design/handoff/design-system/components/surfaces/Surface.prompt.md` | current | - | - | - | - |
 | `design/handoff/design-system/readme.md` | current | - | - | - | 1 |
 | `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 20 |
-| `docs/CI_RUNBOOK.md` | current | - | - | yes | 1 |
+| `docs/CI_RUNBOOK.md` | current | - | - | yes | 5 |
 | `docs/HELM_OS.md` | current | - | - | yes | - |
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 2 |
 | `docs/OBSERVABILITY.md` | current | yes | - | yes | - |
