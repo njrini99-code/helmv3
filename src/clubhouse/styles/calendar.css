@@ -161,6 +161,11 @@
 .ch-cal-step {
   display: inline-flex;
 }
+/* P006 D6: in Agenda the arrows keep their place but are hidden, and visibility takes them out of tab order and the
+   accessibility tree. */
+.ch-cal-step.is-off {
+  visibility: hidden;
+}
 .ch-cal-legend {
   display: flex;
   align-items: center;
@@ -557,6 +562,16 @@
   font: 600 12.5px/1.25 var(--ch-font-sans);
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+/* P006 D2: a block on its own wraps its title to the lines its height leaves (views.tsx sets --ch-ev-lines). */
+.ch-ev--wrap .ch-ev__t {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--ch-ev-lines, 2);
+  line-clamp: var(--ch-ev-lines, 2);
+  flex-shrink: 0;
+  white-space: normal;
+  overflow-wrap: normal;
 }
 .ch-ev__m {
   overflow: hidden;
@@ -1281,7 +1296,12 @@
   color: var(--ch-text-secondary);
   box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.1);
 }
+/* P006 D4: a clash stays in sight over the proposed time, in amber; it lets the pointer through to the band and lane. */
 .ch-lane__b.is-clash {
+  z-index: 4;
+  pointer-events: none;
+  background: var(--ch-warning-100);
+  color: var(--ch-text-primary);
   box-shadow: inset 0 0 0 1.5px var(--ch-warning-600);
 }
 .ch-lane__b.is-overlap {
@@ -1289,10 +1309,11 @@
   background: rgb(154 101 18 / 0.16);
   box-shadow: inset 0 0 0 1px rgb(154 101 18 / 0.35);
 }
+/* The proposed time is an outline over a faint wash (P006 D4): an opaque band hid the blocks it clashed with. */
 .ch-lane__b.is-prop {
   z-index: 3;
-  background: var(--ch-raised-bg);
-  box-shadow: var(--ch-raised-shadow), 0 0 0 1.5px var(--ch-green-600);
+  background: rgb(21 90 57 / 0.07);
+  box-shadow: 0 0 0 1.5px var(--ch-green-600);
   color: var(--ch-green-700);
 }
 .ch-cal-ft {
@@ -2661,6 +2682,12 @@ html[data-fw-theme='dark'] .ch-lane__b.is-overlap {
 }
 html[data-fw-theme='dark'] .ch-lane__b.is-clash {
   box-shadow: inset 0 0 0 1.5px var(--ch-warning-600);
+}
+html[data-fw-theme='dark'] .ch-lane__b.is-clash {
+  background: var(--ch-warning-100);
+}
+html[data-fw-theme='dark'] .ch-lane__b.is-prop {
+  background: rgb(120 200 150 / 0.08);
 }
 html[data-fw-theme='dark'] .ch-switch__t {
   box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.4), inset 0 0 0 1px rgb(255 255 255 / 0.06);

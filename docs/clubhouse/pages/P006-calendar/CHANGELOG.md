@@ -1,5 +1,12 @@
 # P006 — Calendar: changelog
 
+## 2026-10-08 — premium pass: findings D2, D3, D4, D6
+
+- D2: a week or day block on its own wraps its title to the lines its height leaves above the time, up to three (`--ch-ev-lines`, `.ch-ev--wrap`), so "Bus to Pine…" reads in full. A block with room for only one line keeps the plain cut-off.
+- D3: a new event opens on the first two free hours for everyone invited (`seedWindow`): after now today, from 9 AM on another day, and on the first free window when the day's free time is past. It no longer opens on daily practice with the whole team Busy.
+- D4: Find a time's proposed band is an outline over a faint wash, and a clashing block sits above it in amber, so you can see the clash in the lanes, not only in the list.
+- D6: Agenda keeps the arrows' place in the toolbar, hidden and inert, so the toolbar doesn't shift by about 80px when you switch views.
+
 ## 2026-10-08 — premium pass: peek an event (P006-C3)
 
 An event peeks where it is listed, through the shared peek (`ui/Peek.tsx`): a hold on a phone agenda row, a rest of the pointer (or keyboard focus) on a desktop week block. The card (`screens/calendar/peek.tsx`) shows kind, title, day and time, and place; for the coach, how many are going, how many can't, and who hasn't replied. Its actions are Open; for the coach, Nudge the people who haven't replied, which opens Messages prefilled with them and a short draft that the coach sends; and, for a qualifier, tournament or trip with a place, Directions as a plain Apple Maps link. Classes and busy time don't peek; a block that is being dragged doesn't either. Not built: answering the invite from the peek.

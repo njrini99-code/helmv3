@@ -287,6 +287,24 @@ export function openTimes(events: ChCalEvent[], people: string[], date: string, 
 }
 
 /**
+ * Where a new event opens (P006 D3): the first two hours on the date, on the quarter hour, when none of `people` is
+ * busy, from now on today (from 9 AM on another day), within 7 AM to 8 PM. Practice every afternoon no longer makes
+ * every new event open with the whole team Busy. Late in the day, or on a full day, the first free window of the day;
+ * failing that the old 3:30.
+ */
+export function seedWindow(events: ChCalEvent[], people: string[], date: string, now: { date: string; hour: number }): [number, number] {
+  const len = 2;
+  const busy = people.flatMap((p) => busyFor(events, p, date)).map((b) => [b.start!, b.end!] as [number, number]);
+  const firstFree = (from: number): [number, number] | null => {
+    for (let s = Math.max(7, Math.ceil(from * 4) / 4); s + len <= 20; s += 0.25) {
+      if (!busy.some((b) => overlaps([s, s + len], b))) return [s, s + len];
+    }
+    return null;
+  };
+  return firstFree(date === now.date ? now.hour : 9) ?? firstFree(7) ?? [15.5, 17.5];
+}
+
+/**
  * Dates a blocked-time row covers inside [from, to]: one-off spans day by day,
  * and daily or weekly (by weekday) rules expanded, bounded by UNTIL, COUNT and
  * a hard cap. Monthly rules fall back to the first occurrence.

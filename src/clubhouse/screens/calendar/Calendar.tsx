@@ -578,6 +578,7 @@ export function Calendar({
           peopleError={!!data.membersError}
           timezone={data.timezone}
           today={now.date}
+          nowHour={now.hour}
         />
       )}
       {coach && (
@@ -708,12 +709,11 @@ export function Calendar({
 
       <div className="ch-cal-bar">
         <div className="ch-cal-viewctl">
-          {view !== 'agenda' && (
-            <span className="ch-cal-step">
-              <IconButton icon={ChevronLeft} label={`Previous ${view}`} onClick={() => step(-1)} />
-              <IconButton icon={ChevronRight} label={`Next ${view}`} onClick={() => step(1)} />
-            </span>
-          )}
+          {/* P006 D6: Agenda keeps the arrows' place (hidden, out of reach), so the toolbar doesn't shift as views change. */}
+          <span className={'ch-cal-step' + (view === 'agenda' ? ' is-off' : '')} inert={view === 'agenda'} aria-hidden={view === 'agenda' || undefined}>
+            <IconButton icon={ChevronLeft} label={`Previous ${view === 'agenda' ? 'month' : view}`} onClick={() => step(-1)} />
+            <IconButton icon={ChevronRight} label={`Next ${view === 'agenda' ? 'month' : view}`} onClick={() => step(1)} />
+          </span>
           <Segmented<ChCalView>
             label="View"
             value={view}

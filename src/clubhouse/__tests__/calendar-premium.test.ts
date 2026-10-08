@@ -73,3 +73,21 @@ describe('Calendar · peek actions (P006-C3)', () => {
     expect(eventPeekActions(practice, true, people, () => {}).map((a) => a.label)).toEqual(['Open', 'Nudge Ben']);
   });
 });
+
+describe('Calendar · a new event opens on free time (P006 D3)', () => {
+  const ev = (id: string, start: number, end: number, people: string[]) =>
+    ({ id, type: 'practice', title: id, date: '2026-10-14', start, end, allDay: false, people, rsvp: {} }) as never;
+  const day = [ev('lift', 10, 11.5, ['p1']), ev('practice', 15.5, 17.5, ['p1', 'p2'])];
+
+  it('today: the first two free hours after now, on the quarter hour', async () => {
+    const { seedWindow } = await import('../screens/calendar/model');
+    expect(seedWindow(day, ['p1', 'p2'], '2026-10-14', { date: '2026-10-14', hour: 9.1 })).toEqual([11.5, 13.5]);
+    expect(seedWindow(day, ['p1', 'p2'], '2026-10-14', { date: '2026-10-14', hour: 12.6 })).toEqual([12.75, 14.75]);
+  });
+
+  it('another day opens from 9 AM; a day with nothing left falls back to its first free window', async () => {
+    const { seedWindow } = await import('../screens/calendar/model');
+    expect(seedWindow(day, ['p2'], '2026-10-14', { date: '2026-10-13', hour: 16 })).toEqual([9, 11]);
+    expect(seedWindow(day, ['p1', 'p2'], '2026-10-14', { date: '2026-10-14', hour: 19 })).toEqual([7, 9]);
+  });
+});

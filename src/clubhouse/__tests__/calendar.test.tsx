@@ -292,6 +292,8 @@ describe('Calendar · saves that fail', () => {
     const user = userEvent.setup();
     wrap(cal(), { initialNew: true });
     await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Range');
+    // A new event opens on the first free time (P006 D3): start it in the afternoon, then end it in the morning.
+    fireEvent.change(screen.getByLabelText('Start time'), { target: { value: '15:30' } });
     fireEvent.change(screen.getByLabelText('End time'), { target: { value: '09:00' } });
     await user.click(screen.getByRole('button', { name: 'Publish event' }));
     await expectCode('CH-6102', /End has to be after the start/);
@@ -1490,6 +1492,9 @@ describe('Calendar · what each role is given', () => {
     a.createGolfEvent.mockResolvedValue({ success: true });
     wrap(cal(), { initialNew: true, initialWith: 'jonah' });
     await screen.findByRole('button', { name: 'Publish event' });
+    // A new event opens on Jonah's free time (P006 D3); the coach moves it onto practice, where he is busy.
+    expect(screen.queryByText('Jonah is busy at this time.')).toBeNull();
+    fireEvent.change(screen.getByLabelText('Start time'), { target: { value: '15:30' } });
     expect(screen.getByText('Jonah is busy at this time.')).toBeTruthy();
     expect(screen.getByText('Busy at this time')).toBeTruthy();
     await user.type(screen.getByRole('textbox', { name: 'Event title' }), '1:1 with Jonah');

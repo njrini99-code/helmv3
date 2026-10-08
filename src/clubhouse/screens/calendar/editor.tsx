@@ -19,7 +19,7 @@ import { friendlyReason, normalise, useAction } from '../../lib/use-action';
 import { newRequestId } from '../../data/recruiting-shape';
 import { chReport, chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
-import { TYPE_LABEL, addDays, busyFor, dayNum, dowOf, fmtHour, monthName, overlaps, type ChCalEvent, type ChCalPerson, type ChCalType } from './model';
+import { TYPE_LABEL, addDays, busyFor, dayNum, dowOf, fmtHour, monthName, overlaps, seedWindow, type ChCalEvent, type ChCalPerson, type ChCalType } from './model';
 import { TYPE_ICON } from './views';
 
 const EDIT_TYPES: ChCalType[] = ['practice', 'qualifier', 'tournament', 'meeting', 'travel', 'other'];
@@ -183,6 +183,7 @@ export function EventEditor({
   peopleError = false,
   timezone,
   today,
+  nowHour,
 }: {
   seed: EditorSeed | null;
   onClose: () => void;
@@ -193,6 +194,8 @@ export function EventEditor({
   peopleError?: boolean;
   timezone: string;
   today: string;
+  /** The hour now on the team's clock, so a new event today opens after it (P006 D3). */
+  nowHour?: number;
 }) {
   const base = seed?.event ?? null;
   const open = seed != null;
@@ -218,13 +221,13 @@ export function EventEditor({
 
   // The editor seeds once per opening. A page re-read that lands while it is open (a slower refresh, a Retry
   // elsewhere) brings the same team in new arrays, and seeding again would wipe what the coach has typed.
-  const latest = useRef({ people, today });
+  const latest = useRef({ people, today, events, nowHour });
   useEffect(() => {
-    latest.current = { people, today };
-  }, [people, today]);
+    latest.current = { people, today, events, nowHour };
+  }, [people, today, events, nowHour]);
   useEffect(() => {
     if (!seed) return;
-    const { people, today } = latest.current;
+    const { people, today, events, nowHour } = latest.current;
     const e = seed.event;
     const c = seed.copyOf;
     const init = e
@@ -251,16 +254,20 @@ export function EventEditor({
             // Invitees the Calendar no longer lists (a player who left) are dropped, never widened to the team.
             invited: c.people.filter((id) => people.some((p) => p.id === id)),
           }
-        : {
-            title: '',
-            type: seed.type ?? ('practice' as ChCalType),
-            date: seed.date ?? today,
-            win: [15.5, 17.5] as [number, number],
-            allDay: false,
-            loc: '',
-            notes: '',
-            invited: seed.invite ? seed.invite.filter((id) => people.some((p) => p.id === id)) : people.map((p) => p.id),
-          };
+        : (() => {
+            const date = seed.date ?? today;
+            const invited = seed.invite ? seed.invite.filter((id) => people.some((p) => p.id === id)) : people.map((p) => p.id);
+            return {
+              title: '',
+              type: seed.type ?? ('practice' as ChCalType),
+              date,
+              win: seedWindow(events, invited, date, { date: today, hour: nowHour ?? 0 }),
+              allDay: false,
+              loc: '',
+              notes: '',
+              invited,
+            };
+          })();
     setTitle(init.title);
     setType(init.type);
     setDate(init.date);
