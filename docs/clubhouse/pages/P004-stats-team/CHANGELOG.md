@@ -11,35 +11,52 @@ Data impact: none (same loader and fields)
 Held items: none
 ```
 
-### Changed
+### Changed (phone direction A)
 
-- Phone only; desktop Team stats is unchanged. The page is recomposed, not re-sourced: same loader, window
+- Phone only; desktop Team stats is unchanged. The page is recomposed, not
+  re-sourced: same loader, window
   change, filter sheet, notices, empty and failure states, and catalog codes.
-- The head is the team's context line in plain sentence case (it was letter-spaced) over a 34px large title.
-- One hero figure: the scoring average at 64px with its change and what the loader says it is against, and
-  where it sits against par (the stat line's par gauge, as words); its trend sits directly under it. Readings
-  under the trend and the groups hold two lines, so a wrap never moves what follows. The trend is Recharts on its own chunk (never loaded on desktop): the mean dashed, lower
-  scores higher, a finger on it reads a round day; the page keeps the written reading and the 340:120 box.
-- Greens, putts and scrambling are an iOS inset group (no chevrons: nothing to open), each with its reference
+- The head is the team's context line in plain sentence case (it was
+  letter-spaced) over a 34px large title.
+- One hero figure: the scoring average at 64px with its change and what the
+  loader says it is against, and
+  where it sits against par (the stat line's par gauge, as words); its trend
+  sits directly under it. Readings
+  under the trend and the groups hold two lines, so a wrap never moves what
+  follows. The trend is Recharts on its own chunk (never loaded on desktop): the
+  mean dashed, lower
+  scores higher, a finger on it reads a round day; the page keeps the written
+  reading and the 340:120 box.
+- Greens, putts and scrambling are an iOS inset group (no chevrons: nothing to
+  open), each with its reference
   where the data has one; the hole-coverage line sits under the group.
-- Strokes gained by leg: the chosen leg's team figure rolls (Number Flow) over the legs and team total as rows
-  with bars on the data's own scale. The rows are the leg picker (Base UI Tabs, vertical, a sliding wash); one
-  selection tick per pick. Team total is the window's mean, never the legs summed.
-- Players keep Avg and SG; on SG they rank by the chosen leg and each value rolls to it. Picking a leg moves the
+- Strokes gained by leg: the chosen leg's team figure rolls (Number Flow) over
+  the legs and team total as rows
+  with bars on the data's own scale. The rows are the leg picker (Base UI Tabs,
+  vertical, a sliding wash); one
+  selection tick per pick. Team total is the window's mean, never the legs
+  summed.
+- Players keep Avg and SG; on SG they rank by the chosen leg and each value
+  rolls to it. Picking a leg moves the
   sort to SG.
 - Team putting is an inset group with the Tour mark explained in its note.
-- The phone skeleton draws the new geometry (head, controls, hero, trend box, the round, strokes gained) from
+- The phone skeleton draws the new geometry (head, controls, hero, trend box,
+  the round, strokes gained) from
   the same fixed CSS heights.
 
-### Why
+### Why (phone direction A)
 
-- The owner chose direction A plus the kit's interactions for the phone Team stats (2026-10-08).
+- The owner chose direction A plus the kit's interactions for the phone Team
+  stats (2026-10-08).
 
-### Verification
+### Verification (phone direction A)
 
-- stats-team, stats-geometry, strokes-gained, stats-player, stats-parity, large-title and the reduced-motion
-  coverage tests; clubhouse:css; typecheck. No browser or device screenshots in this change (none recorded in
-  VERIFY); skeleton geometry is set from fixed CSS heights, not measured in WebKit.
+- stats-team, stats-geometry, strokes-gained, stats-player, stats-parity,
+  large-title and the reduced-motion
+  coverage tests; clubhouse:css; typecheck. No browser or device screenshots in
+  this change (none recorded in
+  VERIFY); skeleton geometry is set from fixed CSS heights, not measured in
+  WebKit.
 
 ## 2026-10-08 — Premium pass: the ledger grid, one scoring axis
 

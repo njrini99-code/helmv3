@@ -17,8 +17,10 @@ Status: approved. The owner's v2 phone board is the spec (D-22): `design/handoff
 
 ## Layout
 
-Direction A, "native analysis" (owner, 2026-10-08), with the kit interactions the owner picked: the board's pieces
-recomposed as one hero figure and iOS inset groups. Same loader, window change, filter, notices and catalog.
+Direction A, "native analysis" (owner, 2026-10-08), with the kit interactions
+the owner picked: the board's pieces
+recomposed as one hero figure and iOS inset groups. Same loader, window change,
+filter, notices and catalog.
 
 | Piece | Built as |
 | --- | --- |
@@ -53,4 +55,8 @@ The failed reads are the desktop's (CH-4201, CH-4202, CH-4203). No rounds in the
 
 ## Gestures and haptics
 
-A selection tick on a window, sort or leg change (CH-4701, CH-4703); a leg picked while the sort is Avg moves it to SG with no second tick. The leg wash slides on the base ease-out and Number Flow rolls on base; reduced motion and Animations off move both at once. Rows press with the shared press. Reduced motion turns the press off.
+A selection tick on a window, sort or leg change (CH-4701, CH-4703); a leg
+picked while the sort is Avg moves it to SG with no second tick. The leg wash
+slides on the base ease-out and Number Flow rolls on base; reduced motion and
+Animations off move both at once. Rows press with the shared press. Reduced
+motion turns the press off.

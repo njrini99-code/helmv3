@@ -83,5 +83,11 @@ A read that fails is never drawn as empty. The two delivery actions answer an em
 - Assign as focus and Dismiss share the row and split its width.
 - The player's focus sits above the lists, and choosing a row brings the focus into view.
 - "Proposed for you" is one card above the focus: each focus area is a row with its two buttons underneath, side by side and sharing the width; both buttons are 44px tall on the phone.
-- Ask's `@` picker (CH-13821; no owner board draws it, so this is the draft): typing `@` or the `@` key opens a compact list docked above the composer, never a sheet. Players first, then the stats CoachHelm can read, each row 44px with a coin and the name at 16px; about four and a half rows show (at most two fifths of the height the keyboard leaves), so the cut row says it scrolls. The text box keeps the focus, so the keyboard stays up; the return key picks the highlighted row, a tap picks any row, and the pick ticks the select haptic.
+- Ask's `@` picker (CH-13821; no owner board draws it, so this is the draft):
+  typing `@` or the `@` key opens a compact list docked above the composer,
+  never a sheet. Players first, then the stats CoachHelm can read, each row 44px
+  with a coin and the name at 16px; about four and a half rows show (at most two
+  fifths of the height the keyboard leaves), so the cut row says it scrolls. The
+  text box keeps the focus, so the keyboard stays up; the return key picks the
+  highlighted row, a tap picks any row, and the pick ticks the select haptic.
 - Not yet: a measured touch-target pass (the pills, the insight rows) and a pass on a real iPhone (haptics felt, the sideways row with the tab bar).

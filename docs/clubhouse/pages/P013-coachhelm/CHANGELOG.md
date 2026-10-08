@@ -9,42 +9,67 @@ Data impact:    none; the stats are the agent's metric catalog (metrics-catalog.
 Held items:     before and after screenshots (no dev server in this pass)
 ```
 
-- **One picker, phone and desktop:** typing `@` (or the `@` key, the Players chip, the Add player starter) opens a
-  cmdk list of the roster and, under it, the stats CoachHelm can read (the agent's own metric catalog, so a stat the
-  coach names is one the model can measure). Both narrow as the coach types; `@gir` and `@sg` find a metric by its short
+- **One picker, phone and desktop:** typing `@` (or the `@` key, the Players
+  chip, the Add player starter) opens a
+  cmdk list of the roster and, under it, the stats CoachHelm can read (the
+  agent's own metric catalog, so a stat the
+  coach names is one the model can measure). Both narrow as the coach types;
+  `@gir` and `@sg` find a metric by its short
   name. A player or stat already in the question is not offered again.
-- **The phone's sheet is gone:** on the phone the list docks above the composer, about four and a half 44px rows tall
-  and never more than two fifths of the space the keyboard leaves. The text box keeps the focus throughout (the `@` key
-  and a row press never take it), so the keyboard stays up; the composer's keyboard-height layout is untouched.
-- **Keys:** the arrows move and wrap, Enter and Tab pick, Esc closes; Shift+Enter is still a new line, and a closed
-  picker never takes a key. VoiceOver hears cmdk's listbox through the box's `aria-controls` and
-  `aria-activedescendant`, the two groups by their headings, and a fragment that matches nothing as one dimmed row.
-- **Never clipped:** the composer measures the room between its box and the nearest edge that would cut the list off
-  (a clipping ancestor such as the Ask sheet's panel, or the visible viewport above the keyboard) and the CSS caps the
+- **The phone's sheet is gone:** on the phone the list docks above the composer,
+  about four and a half 44px rows tall
+  and never more than two fifths of the space the keyboard leaves. The text box
+  keeps the focus throughout (the `@` key
+  and a row press never take it), so the keyboard stays up; the composer's
+  keyboard-height layout is untouched.
+- **Keys:** the arrows move and wrap, Enter and Tab pick, Esc closes;
+  Shift+Enter is still a new line, and a closed
+  picker never takes a key. VoiceOver hears cmdk's listbox through the box's
+  `aria-controls` and
+  `aria-activedescendant`, the two groups by their headings, and a fragment that
+  matches nothing as one dimmed row.
+- **Never clipped:** the composer measures the room between its box and the
+  nearest edge that would cut the list off
+  (a clipping ancestor such as the Ask sheet's panel, or the visible viewport
+  above the keyboard) and the CSS caps the
   list to the smaller of that and its own height (296px, the phone's 212px).
-- **Without a roster:** a host that loads no roster passes `roster={false}` (the shell's Ask sheet does); its picker
-  offers the stats alone, named "Mention a stat", with no Players group and no "No active players" that is not true of
-  the team. A fragment no stat matches is one dimmed row, "No stat by that name".
-- **Look:** rows are 44px everywhere (were 38px on the desktop): a player's initials coin or a stat's chart coin, then
-  the name. The list floats on the overlay elevation with a 180ms fade and rise, none under reduced motion or with
+- **Without a roster:** a host that loads no roster passes `roster={false}` (the
+  shell's Ask sheet does); its picker
+  offers the stats alone, named "Mention a stat", with no Players group and no
+  "No active players" that is not true of
+  the team. A fragment no stat matches is one dimmed row, "No stat by that
+  name".
+- **Look:** rows are 44px everywhere (were 38px on the desktop): a player's
+  initials coin or a stat's chart coin, then
+  the name. The list floats on the overlay elevation with a 180ms fade and rise,
+  none under reduced motion or with
   Animations off. A pick ticks the select haptic.
 
 ## 2026-10-08 — the cardless pass: Ask on the phone
 
 Phone only; the desktop is unchanged.
 
-- **New chat:** the opener and the questions sit together at the foot of the screen, just above the composer,
-  instead of a centered greeting over an empty page with a sideways rail of outlined 164px cards at the bottom. The
-  opener is left-aligned (28px), and the three questions are action rows between the Ledger's soft seams, their
-  words in the green ink as an iPhone action row's are, a 60px row with a full-width tap area and a press tint, no
+- **New chat:** the opener and the questions sit together at the foot of the
+  screen, just above the composer,
+  instead of a centered greeting over an empty page with a sideways rail of
+  outlined 164px cards at the bottom. The
+  opener is left-aligned (28px), and the three questions are action rows between
+  the Ledger's soft seams, their
+  words in the green ink as an iPhone action row's are, a 60px row with a
+  full-width tap area and a press tint, no
   chevron (a row asks; it does not go somewhere).
-- **Evidence:** the figure stays the one object. Its metric tiles are no longer cards inside it but its rows: the
-  label at the left with the sample under it, the value at the right, parted by the figure's hairline and closed by
-  one above and below. The Evidence sheet draws the same rows, and its trend sits on the sheet under a hairline
+- **Evidence:** the figure stays the one object. Its metric tiles are no longer
+  cards inside it but its rows: the
+  label at the left with the sample under it, the value at the right, parted by
+  the figure's hairline and closed by
+  one above and below. The Evidence sheet draws the same rows, and its trend
+  sits on the sheet under a hairline
   instead of in a ringed card. The scrolling table keeps its card.
-- **Action card:** the notes (who is told, and the impact) are lines under the facts' hairline, not filled boxes
+- **Action card:** the notes (who is told, and the impact) are lines under the
+  facts' hairline, not filled boxes
   inside the card; the impact's icon keeps the warning ink.
-- **Loading:** the phone skeleton draws the new chat's shape (the opener's lines, three rows, the composer) at the
+- **Loading:** the phone skeleton draws the new chat's shape (the opener's
+  lines, three rows, the composer) at the
   foot of the screen, not the desktop's centered block.
 
 ## 2026-10-08 — The green card is where the light lands (P013-A3)

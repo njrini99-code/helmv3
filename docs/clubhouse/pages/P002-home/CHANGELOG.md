@@ -2,11 +2,16 @@
 
 ## 2026-10-08 — the cardless pass: Since you last looked
 
-On the phone, "Since you last looked" is a list, not a sideways rail of filled tiles. Each change is a Ledger row
-(`LedgerRow`) between soft seams: the figure (a posted score with its to-par in the under-par red, or the new
-replies) stands in the lead, 68px wide, so the titles start where Later today's titles do, and a posted round
-carries its course and day under the name. The rows take Later today's sizes and, like Home's other lists, show no
-chevron. The single green Up next card is unchanged; the desktop does not draw this section.
+On the phone, "Since you last looked" is a list, not a sideways rail of filled
+tiles. Each change is a Ledger row
+(`LedgerRow`) between soft seams: the figure (a posted score with its to-par in
+the under-par red, or the new
+replies) stands in the lead, 68px wide, so the titles start where Later today's
+titles do, and a posted round
+carries its course and day under the name. The rows take Later today's sizes
+and, like Home's other lists, show no
+chevron. The single green Up next card is unchanged; the desktop does not draw
+this section.
 
 ## 2026-10-08 — the player peek (P003-C1)
 
