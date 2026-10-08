@@ -206,7 +206,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "experiment",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: "2027-01-05",
+    expires_at: null,
     default: true,
     environment: {
       production: true,
