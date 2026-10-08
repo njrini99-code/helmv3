@@ -143,7 +143,7 @@ its edge swipe (`hasUAVisualTransition`), the Back shows once: the pushed screen
 leaves at once and the page crossfade does not run (CH-1908). The More sheet's
 rows tint after a 50ms beat, so a drag or a scroll never flashes them (CH-1606).
 The springs are a D-64 extension: a lead decision under the owner's full-auto
-brief, for the owner to confirm.
+brief, which the owner confirmed on 2026-10-08.
 
 Machine load ran from 70 to 290 for most of the work, so the springs are checked
 first by their curves, not by frame timing. Each check is one of two kinds:

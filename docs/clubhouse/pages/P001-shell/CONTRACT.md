@@ -212,7 +212,7 @@ skeleton delay, pushed screens, sheet drags, the phone bell, the sidebar's
 gliding plate, a toast held or thrown, the segmented pill, content swaps, and
 the press on a choice or the feature card, which tints or shades and never
 scales (11601 to 11617). Since 2026-10-08 (a D-64 extension, a lead decision
-under the owner's full-auto brief; owner to confirm), what moves and can be
+under the owner's full-auto brief, owner-confirmed), what moves and can be
 interrupted or thrown rides the D-64 springs (`CH_SPRINGS`, bounce 0 to 0.1):
 the More and bell sheets, pushed screens, the plate, the pill and a swap's
 incoming copy. Sheets rubber-band past their open position, spring back from the

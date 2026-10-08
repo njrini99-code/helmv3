@@ -1042,8 +1042,8 @@ the new system. Nothing here is applied by an agent. Each file's status stays in
   reveal steps through a page's top-level sections, so a page whose body is one
   wrapper rises as one block. The `motion` gates of Stats (team) and Qualifiers
   went back to `doing`: their evidence was against the old timings.
-- D-64 extension (2026-10-08, a lead decision under the owner's full-auto brief;
-  owner to confirm): what moves and can be interrupted or thrown runs on real
+- D-64 extension (2026-10-08, a lead decision under the owner's full-auto brief,
+  owner-confirmed): what moves and can be interrupted or thrown runs on real
   springs, Apple's duration-and-bounce model (WWDC23 "Animate with springs"), on
   D-64's durations. `smooth` (base, bounce 0) is for anchored parts, which never
   pass their mark from rest: sheets, pushed screens, the nav plate. Thrown at

@@ -196,7 +196,8 @@ blocks in `styles/shell.css`) now draws one family:
 
 ### Decisions from the states audit
 
-Each is a lead decision under the owner's full-auto brief; owner to confirm.
+Each is a lead decision under the owner's full-auto brief, which the owner
+confirmed on 2026-10-08.
 
 1. Notices drop the pink box in the Ledger. They become the flush notice above;
    the semantic colour stays in the icon and the title. Revised the same day:

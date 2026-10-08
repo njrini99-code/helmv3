@@ -43,7 +43,7 @@
 ## 2026-10-08 — Springs, thrown sheets and the gestures iOS has
 
 Motion gains real springs on D-64's durations. This is a lead decision under the
-owner's full-auto brief, for the owner to confirm.
+owner's full-auto brief, which the owner confirmed on 2026-10-08.
 
 - `CH_SPRINGS` in `lib/motion.ts`: `smooth` (base, bounce 0) for anchored parts,
   and `settle` (base, bounce 0.1, about 0.15% past the mark) for a free part
@@ -141,7 +141,7 @@ blocks in `styles/shell.css`) now draws one family:
   (`stateTitle`). The shared components' own copy uses curly apostrophes.
 
 The six decisions behind this are recorded in P001 DESIGN.md as lead decisions
-under the owner's full-auto brief, for the owner to confirm.
+under the owner's full-auto brief, which the owner confirmed on 2026-10-08.
 
 ## 2026-10-08 — The phone chassis, and no serif anywhere
 
