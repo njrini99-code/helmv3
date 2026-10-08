@@ -1122,9 +1122,7 @@
         "AskComposer"
       ],
       "styles": [
-        "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
@@ -6191,15 +6189,15 @@
         "ch-ask-nothing__t",
         "ch-ask-ph__title",
         "ch-ask-pick",
-        "ch-ask-pick__find",
+        "ch-ask-pick__list",
+        "ch-ask-pick__mark",
+        "ch-ask-pick__name",
         "ch-ask-pick__none",
         "ch-ask-pick__row",
         "ch-ask-pill",
         "ch-ask-pills",
         "ch-ask-plain",
         "ch-ask-scroll",
-        "ch-ask-sheetlist",
-        "ch-ask-sheetlist__row",
         "ch-ask-sk",
         "ch-ask-sk__mid",
         "ch-ask-sk__ph",

@@ -1,5 +1,11 @@
 # Clubhouse changelog
 
+## 2026-10-08 — The Ask sheet keeps its mention key hidden
+
+`styles/shell.css`. The composer's mention key is now named "Mention a player or stat" (P013 changelog, the cmdk
+picker), so the Ask sheet's rule that hides it (the sheet has no roster to mention from) follows the new name. No visible
+change.
+
 ## 2026-10-08 — Phone: large titles collapse into the bar; flat More sheet
 
 From the owner's cardless, native-feeling phone pass. A shared shell change; no page's own files change. Not yet reviewed by the owner.
