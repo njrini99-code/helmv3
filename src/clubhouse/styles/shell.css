@@ -1896,7 +1896,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     right: 0;
     left: 0;
     height: 3px;
-    border-top: 1px solid rgb(110 98 62 / 0.16);
+    border-top: 1px solid var(--ch-ledger-rule);
     border-bottom: 1px solid rgb(110 98 62 / 0.07);
     content: '';
     pointer-events: none;
@@ -1906,13 +1906,13 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     font: 600 44px/1.08 var(--ch-font-sans);
     letter-spacing: -0.036em;
     font-variation-settings: 'wdth' 88;
-    color: rgb(18 59 41 / 0.9);
+    color: var(--ch-ledger-ink);
     text-shadow: 0 1px 0 rgb(255 255 255 / 0.9), 0 -1px 0 rgb(28 25 18 / 0.18);
   }
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] :is(.ch-h-head__date, .ch-hl-role, .ch-hero__eyebrow) {
     font: 500 11px/1.3 var(--ch-font-sans);
     letter-spacing: 0.14em;
-    color: #7a6b3f;
+    color: var(--ch-ledger-eyebrow);
   }
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] p {
     max-width: 600px;
@@ -2348,5 +2348,137 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 @keyframes ch-ptr-turn {
   to {
     rotate: 360deg;
+  }
+}
+
+/* ── Dark: "Clubhouse at night" (owner, 2026-10-08) ──────────────────────────────────────────────────────────────────
+   The frame, the sidebar's ivory type and the phone's green bar hold in both themes. What the tokens can't carry: the
+   light plates and sheets drawn as literals (the selected row, the team list, the desktop bar's parchment glass, the
+   skeleton's sweep), ivory used as ink on the green bar, forest ink on themed surfaces, the letterpress white edge on
+   the page head, and scrims that need more weight on a dark page. The selected row becomes a lit green plate under
+   the gilt ring, so the sidebar reads as one green at night. */
+html[data-fw-theme='dark'] .ch-skip,
+html[data-fw-theme='dark'] .ch-next__t {
+  color: var(--ch-ledger-ink);
+}
+html[data-fw-theme='dark'] .ch-tsw {
+  background: var(--ch-ivory-100);
+}
+html[data-fw-theme='dark'] .ch-tsw__opt:focus-visible,
+html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
+  background: var(--ch-ivory-200);
+  box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.25);
+}
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-tsw__opt:hover,
+  html[data-fw-theme='dark'] .ch-bellp__row:hover {
+    background: var(--ch-ivory-200);
+    box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.25);
+  }
+}
+/* Under .ch-nav--plate, which clears the row's own plate once the gliding one has measured. */
+:where(html[data-fw-theme='dark']) .ch-navitem[aria-current='page'],
+:where(html[data-fw-theme='dark']) .ch-navitem:has(.ch-lp),
+html[data-fw-theme='dark'] .ch-nav__plate {
+  background: var(--ch-green-200);
+}
+html[data-fw-theme='dark'] .ch-navitem[aria-current='page'],
+html[data-fw-theme='dark'] .ch-navitem:has(.ch-lp) {
+  color: var(--ch-on-green-ink);
+}
+@media (min-width: 821px) {
+  html[data-fw-theme='dark'] .ch-topbar {
+    border-bottom-color: var(--ch-border-hairline);
+    background: color-mix(in oklab, var(--ch-workspace) 88%, transparent);
+  }
+  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] {
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
+  }
+  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head]::before {
+    border-bottom-color: var(--ch-ledger-rule-soft);
+  }
+  /* The letterpress edge at night: the lit lip under the letters becomes a shadow, never a white halo. */
+  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] h1 {
+    text-shadow: 0 1px 0 rgb(0 0 0 / 0.5);
+  }
+  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary {
+    background: rgb(237 231 216 / 0.05);
+    box-shadow: 0 0 0 1px var(--ch-border-control);
+  }
+  @media (hover: hover) {
+    html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary:hover:not(:disabled) {
+      background: rgb(237 231 216 / 0.09);
+      box-shadow: 0 0 0 1px var(--ch-border-strong);
+    }
+  }
+  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::before,
+  html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::after {
+    background: linear-gradient(100deg, #252c26 42%, #2e362f 50%, #252c26 58%) 0 0 / 200vw 100% fixed;
+  }
+}
+@media (min-width: 821px) and (prefers-reduced-transparency: reduce) {
+  html[data-fw-theme='dark'] .ch-topbar {
+    background: var(--ch-workspace);
+  }
+}
+html[data-fw-theme='dark'] .ch-empty-page {
+  --ch-medallion-rings: rgb(107 187 140 / 0.12);
+}
+html[data-fw-theme='dark'] .ch-empty-page--danger {
+  --ch-medallion-rings: rgb(239 133 118 / 0.12);
+}
+html[data-fw-theme='dark'] .ch-empty-page__seg i {
+  background: rgb(237 231 216 / 0.12);
+}
+:where(html[data-fw-theme='dark']) .ch-skel {
+  background: linear-gradient(100deg, #252c26 42%, #2e362f 50%, #252c26 58%) 0 0 / 200vw 100% fixed;
+}
+html[data-fw-theme='dark'] .ch-scrim {
+  background: rgb(0 0 0 / 0.55);
+}
+html[data-fw-theme='dark'] .ch-more__grab,
+html[data-fw-theme='dark'] .ch-bellp__grab {
+  background: rgb(237 231 216 / 0.22);
+}
+html[data-fw-theme='dark'] .ch-more__x,
+html[data-fw-theme='dark'] .ch-bellp__x {
+  background: rgb(237 231 216 / 0.08);
+}
+html[data-fw-theme='dark'] .ch-bellp__body > section + section {
+  border-top-color: var(--ch-border-hairline);
+}
+html[data-fw-theme='dark'] .ch-bellp__ic {
+  background: var(--ch-green-100);
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.2), inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+html[data-fw-theme='dark'] .ch-topbar__actions .ch-iconbtn.is-on {
+  background: rgb(107 187 140 / 0.12);
+}
+html[data-fw-theme='dark'] .ch-offline {
+  border-bottom-color: rgb(227 169 79 / 0.25);
+}
+@media (max-width: 820px) {
+  /* The bar under the status bar is the frame's green at night too, so it meets the sheet's lip (drawn in the frame). */
+  html[data-fw-theme='dark'] body [data-ui='clubhouse'] {
+    --ch-phone-bar-bg: var(--ch-frame);
+  }
+  html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-topbar,
+  html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-ptr {
+    background: var(--ch-frame);
+  }
+  html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-topbar__team,
+  html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-topbar .ch-bell {
+    color: var(--ch-on-green-ink);
+  }
+  /* The crest's coin stays ivory on the green, as in the day. */
+  html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-topbar__mark {
+    background: var(--ch-on-green-ink);
+  }
+  html[data-fw-theme='dark'] .ch-pscrim,
+  html[data-fw-theme='dark'] .ch-pscreen::after {
+    background: rgb(0 0 0 / 0.35);
+  }
+  html[data-fw-theme='dark'] .ch-tabbar .ch-tab:focus-visible {
+    background: rgb(107 187 140 / 0.12);
   }
 }

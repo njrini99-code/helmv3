@@ -261,7 +261,7 @@
   padding: 12px;
   border-top-color: transparent;
   border-radius: var(--ch-radius-lg);
-  background: rgb(21 90 57 / 0.06);
+  background: color-mix(in oklab, var(--ch-green-600) 6%, transparent);
 }
 .ch-h-agenda__row.is-next + .ch-h-agenda__row {
   border-top-color: transparent;
@@ -465,11 +465,11 @@
 }
 @media (hover: hover) {
   .ch-h-rail__item:hover {
-    background: rgb(21 90 57 / 0.045);
+    background: color-mix(in oklab, var(--ch-green-600) 4.5%, transparent);
   }
 }
 .ch-h-rail__item:active {
-  background: rgb(21 90 57 / 0.08);
+  background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
 }
 .ch-h-rail__item.is-on {
   background: var(--ch-green-25);
@@ -579,7 +579,7 @@
 }
 @media (hover: hover) {
   .ch-h-lb__row.is-link:hover {
-    background: linear-gradient(90deg, rgb(21 90 57 / 0.035), rgb(21 90 57 / 0.06) 60%, rgb(21 90 57 / 0.035));
+    background: linear-gradient(90deg, color-mix(in oklab, var(--ch-green-600) 3.5%, transparent), color-mix(in oklab, var(--ch-green-600) 6%, transparent) 60%, color-mix(in oklab, var(--ch-green-600) 3.5%, transparent));
   }
 }
 @media (hover: hover) {
@@ -613,7 +613,7 @@
   }
 }
 .ch-h-lb__row.is-link:active {
-  background: rgb(21 90 57 / 0.08);
+  background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
 }
 .ch-h-lb__row.is-link:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -640,7 +640,7 @@
 }
 .ch-h-lb__pos.is-lead {
   color: var(--ch-ivory-25);
-  background: linear-gradient(180deg, var(--ch-green-500), var(--ch-green-700));
+  background: linear-gradient(180deg, var(--ch-green-fill-500), var(--ch-green-fill-700));
   box-shadow: var(--ch-score-eagle-shadow);
 }
 .ch-h-lb__who {
@@ -1211,7 +1211,7 @@
     border-radius: 999px;
     background: var(--ch-green-fill-600);
     font: 600 11px/1 var(--ch-font-sans);
-    color: var(--ch-ivory-0);
+    color: var(--ch-text-on-accent);
   }
   .ch-hm-empty {
     display: flex;
@@ -1309,7 +1309,7 @@
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     padding-top: 12px;
-    border-top: 1px solid rgb(21 90 57 / 0.12);
+    border-top: 1px solid color-mix(in oklab, var(--ch-green-600) 12%, transparent);
   }
   .ch-hm-form__figs > div {
     display: flex;
@@ -1318,7 +1318,7 @@
   }
   .ch-hm-form__figs > div + div {
     padding-left: 12px;
-    border-left: 1px solid rgb(21 90 57 / 0.12);
+    border-left: 1px solid color-mix(in oklab, var(--ch-green-600) 12%, transparent);
   }
   .ch-hm-form__figs dt {
     font: 500 11.5px/1 var(--ch-font-sans);
@@ -2493,10 +2493,10 @@
 @media (max-width: 820px) {
   .ch-hm-hero {
     padding:52px 18px 22px;
-    color:#1C1B18;
+    color:var(--ch-ink-900);
     border-radius:0;
     box-shadow:none;
-    background:radial-gradient(70% 220px at 0% 100px,rgb(11 58 37/.11),rgb(11 58 37/.035) 55%,transparent 80%),radial-gradient(60% 200px at 100% 300px,rgb(110 140 100/.08),transparent 75%),linear-gradient(180deg,#0A331F 0 114px,#F5F0E4 114px);
+    background:radial-gradient(70% 220px at 0% 100px,rgb(11 58 37/.11),rgb(11 58 37/.035) 55%,transparent 80%),radial-gradient(60% 200px at 100% 300px,rgb(110 140 100/.08),transparent 75%),linear-gradient(180deg,var(--ch-frame) 0 114px,var(--ch-workspace) 114px);
   }
   .ch-hm-hero::before {
     content:"";
@@ -2506,7 +2506,7 @@
     top:100px;
     height:16px;
     border-radius:18px 18px 0 0;
-    background:radial-gradient(70% 220px at 0% 0,rgb(11 58 37/.11),rgb(11 58 37/.035) 55%,transparent 80%),#F5F0E4;
+    background:radial-gradient(70% 220px at 0% 0,rgb(11 58 37/.11),rgb(11 58 37/.035) 55%,transparent 80%),var(--ch-workspace);
     pointer-events:none;
   }
   .ch-hm-hero>* {
@@ -2521,17 +2521,17 @@
     border-top:3px double rgb(110 98 62/.2);
     font:500 12px/1.2 var(--ch-font-sans);
     letter-spacing:.14em;
-    color:#7A6B3F;
+    color:var(--ch-ledger-eyebrow);
   }
   .ch-hm-hero__brief svg {
-    color:#7A6B3F;
+    color:var(--ch-ledger-eyebrow);
   }
   .ch-hm-next {
     padding:16px;
     border-radius:12px;
     background:#FFFEFA;
-    box-shadow:0 0 0 1px rgb(110 98 62/.16);
-    color:#1C1B18;
+    box-shadow:0 0 0 1px var(--ch-ledger-rule);
+    color:var(--ch-ink-900);
     position:relative;
     overflow:hidden;
   }
@@ -2542,7 +2542,7 @@
     right:0;
     top:0;
     height:2px;
-    background:#155A39;
+    background:var(--ch-green-fill-600);
   }
   .ch-hm-next__type {
     color:#6E6A60;
@@ -2555,10 +2555,10 @@
   }
   .ch-hm-next__when.is-soon {
     background:rgb(21 90 57/.09);
-    color:#155A39;
+    color:var(--ch-green-600);
   }
   .ch-hm-next h2 {
-    color:#1C1B18;
+    color:var(--ch-ink-900);
   }
   .ch-hm-next p {
     color:#6E6A60;
@@ -2573,17 +2573,17 @@
     color:#6E6A60;
   }
   .ch-hm-next__rsvp b {
-    color:#1C1B18;
+    color:var(--ch-ink-900);
   }
   .ch-hm-none__ic {
-    color:#155A39;
+    color:var(--ch-green-600);
     background:rgb(110 98 62/.04);
     box-shadow:none;
     border:1px dashed rgb(110 98 62/.3);
     border-radius:10px;
   }
   .ch-hm-none h2 {
-    color:#1C1B18;
+    color:var(--ch-ink-900);
   }
   .ch-hm-none p {
     color:#6E6A60;
@@ -2595,7 +2595,7 @@
     box-shadow:inset 0 0 0 1px rgb(110 98 62/.2);
   }
   .ch-hm-none__chip svg {
-    color:#155A39;
+    color:var(--ch-green-600);
   }
   .ch-hm-none__add {
     border-radius:10px;
@@ -2608,7 +2608,7 @@
     padding:22px 16px 28px;
   }
   .ch-hm-link {
-    color:#155A39;
+    color:var(--ch-green-600);
   }
   .ch-hm-count {
     border-radius:6px;
@@ -2620,7 +2620,7 @@
   .ch-hm-empty {
     border-radius:12px;
     background:#FFFEFA;
-    box-shadow:0 0 0 1px rgb(110 98 62/.16);
+    box-shadow:0 0 0 1px var(--ch-ledger-rule);
   }
   .ch-hm-tl__rail i {
     box-shadow:0 0 0 3px #FFFEFA;
@@ -2637,13 +2637,13 @@
   .ch-hm-need__a .ch-btn {
     border-radius:8px;
     background:transparent;
-    color:#155A39;
+    color:var(--ch-green-600);
     box-shadow:inset 0 0 0 1px rgb(21 90 57/.25);
   }
   .ch-hm-form {
     border-radius:12px;
     background:#FFFEFA;
-    box-shadow:0 0 0 1px rgb(110 98 62/.16);
+    box-shadow:0 0 0 1px var(--ch-ledger-rule);
   }
   .ch-hm-form__figs {
     border-top-color:rgb(110 98 62/.12);
@@ -2665,7 +2665,7 @@
     right:0;
     top:0;
     height:2px;
-    background:#155A39;
+    background:var(--ch-green-fill-600);
   }
   .ch-hm-score {
     border-radius:8px;
@@ -2695,7 +2695,7 @@
     top:8px;
     right:9px;
     background:#C9B27A;
-    box-shadow:0 0 0 2px #0A331F;
+    box-shadow:0 0 0 2px var(--ch-frame);
   }
   .ch-hm-hero {
     padding-left:20px;
@@ -2712,7 +2712,7 @@
     align-items:baseline;
     gap:12px;
     padding:0 0 10px;
-    border-bottom:1px solid rgb(110 98 62/.16);
+    border-bottom:1px solid var(--ch-ledger-rule);
   }
   .ch-hm-link {
     font-size:13px;
@@ -2727,12 +2727,12 @@
     padding:18px 18px 16px;
   }
   .ch-hm-form__top em {
-    color:#7A6B3F;
+    color:var(--ch-ledger-eyebrow);
     font-size:11px;
     letter-spacing:.12em;
   }
   .ch-hm-form__top b {
-    color:#1C1B18;
+    color:var(--ch-ink-900);
   }
   .ch-hm-delta {
     color:#3F7556;
@@ -2761,7 +2761,7 @@
     gap:2px;
     background:#FFFEFA;
     border-radius:12px;
-    box-shadow:0 0 0 1px rgb(110 98 62/.16);
+    box-shadow:0 0 0 1px var(--ch-ledger-rule);
   }
   .ch-hm-week__d {
     border-radius:8px;
@@ -2772,7 +2772,7 @@
     color:#6E6A60;
   }
   .ch-hm-week__n b {
-    color:#155A39;
+    color:var(--ch-green-600);
   }
   .ch-hm-rd {
     min-height:62px;
@@ -2809,7 +2809,7 @@
   }
   .ch-hm-next__when.is-soon {
     background:#C9B27A;
-    color:#0B3A25;
+    color:var(--ch-green-800);
   }
   .ch-hm-next h2 {
     color:#F4F1E8;
@@ -2822,7 +2822,7 @@
     border-top-color:rgb(255 255 255/.1);
   }
   .ch-hm-stack .ch-avatar {
-    box-shadow:0 0 0 2px #0B3A25;
+    box-shadow:0 0 0 2px var(--ch-green-800);
   }
   .ch-hm-next__rsvp {
     color:rgb(244 241 232/.7);
@@ -2849,7 +2849,7 @@
     color:#C9B27A;
   }
   .ch-hm-none__add {
-    color:#0B3A25;
+    color:var(--ch-green-800);
     background:#F4F1E8;
     box-shadow:none;
   }
@@ -2863,7 +2863,7 @@
   .ch-hm-sec__h {
     padding:12px 0 0;
     border-bottom:0;
-    border-top:3px double rgb(110 98 62/.22);
+    border-top:var(--ch-ledger-rule-double);
   }
   .ch-hm-tl,
   .ch-hm-list,
@@ -2889,11 +2889,11 @@
     background:none;
   }
   .ch-hm-tl__r.is-now .ch-hm-tl__t {
-    color:#155A39;
+    color:var(--ch-green-600);
     font-weight:600;
   }
   .ch-hm-tl__rail i {
-    box-shadow:0 0 0 3px #F5F0E4;
+    box-shadow:0 0 0 3px var(--ch-workspace);
   }
   .ch-hm-empty {
     padding:14px 0;
@@ -2909,7 +2909,7 @@
   }
   .ch-hm-form {
     padding-top:18px;
-    border-top:3px double rgb(110 98 62/.22);
+    border-top:var(--ch-ledger-rule-double);
   }
   .ch-hm-form__top em {
     display:none;
@@ -2929,8 +2929,8 @@
   }
   .ch-hm-form__figs {
     padding:12px 0;
-    border-top:1px solid rgb(110 98 62/.16);
-    border-bottom:1px solid rgb(110 98 62/.16);
+    border-top:1px solid var(--ch-ledger-rule);
+    border-bottom:1px solid var(--ch-ledger-rule);
   }
   .ch-hm-week {
     padding:6px 0 0;
@@ -2964,13 +2964,13 @@
     padding:0;
     box-shadow:none;
     background:none;
-    color:#155A39;
+    color:var(--ch-green-600);
     font-weight:600;
     justify-content:flex-start;
   }
   .ch-hm-count {
     background:none;
-    color:#7A6B3F;
+    color:var(--ch-ledger-eyebrow);
     font-weight:600;
   }
 }
@@ -3350,5 +3350,136 @@
   .ch-h-main--first[data-canopy] > .ch-h-head {
     gap: 4px;
     max-width: none;
+  }
+}
+
+/* ── Dark: "Clubhouse at night" (owner, 2026-10-08) ──────────────────────────────────────────────────────────────────
+   Home rides the tokens; these are the parts drawn as ink-on-paper literals, which would turn to light patches or sink
+   into the ground at night. The frosted today key becomes a faint lit glass, white lit tops drop to a whisper, the
+   forest ink on themed surfaces becomes the Ledger's night ink, and the parchment's brown rules take the champagne
+   rule. The green surfaces (the scoreboard, Up next, the countdown) are green in both themes and keep their inks. */
+html[data-fw-theme='dark'] .ch-h-main--desk > .ch-h-head .ch-btn--primary .ch-btn__kbd {
+  color: var(--ch-on-green-ink-soft);
+  background: rgb(255 255 255 / 0.1);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
+}
+html[data-fw-theme='dark'] .ch-h-day--today {
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.14), rgb(255 255 255 / 0.08));
+}
+html[data-fw-theme='dark'] .ch-h-day--today .ch-h-day__n,
+html[data-fw-theme='dark'] .ch-h-agenda__row.is-next .ch-h-agenda__a {
+  color: var(--ch-ledger-ink);
+}
+@media (prefers-reduced-transparency: reduce) {
+  html[data-fw-theme='dark'] .ch-h-day--today {
+    background: var(--ch-ivory-200);
+  }
+}
+html[data-fw-theme='dark'] .ch-h-nine__par {
+  border-bottom-color: var(--ch-border-subtle);
+}
+html[data-fw-theme='dark'] .ch-h-rail__item.is-on {
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.2), inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+html[data-fw-theme='dark'] .ch-h-lb__pos.is-lead {
+  color: var(--ch-text-on-accent);
+}
+html[data-fw-theme='dark'] .ch-ph-next,
+html[data-fw-theme='dark'] .ch-ph-next__t,
+html[data-fw-theme='dark'] .ch-cd b {
+  color: var(--ch-on-green-ink);
+}
+html[data-fw-theme='dark'] .ch-ph-chart__halo {
+  stroke: var(--ch-workspace);
+}
+html[data-fw-theme='dark'] .ch-ph-chart__dot {
+  fill: var(--ch-workspace);
+}
+html[data-fw-theme='dark'] .ch-ph-chart__dot.is-under {
+  fill: var(--ch-green-600);
+}
+html[data-fw-theme='dark'] .ch-ph-chart__hatch {
+  stroke: rgb(107 187 140 / 0.08);
+}
+html[data-fw-theme='dark'] .ch-ph-viz,
+html[data-fw-theme='dark'] .ch-rviz {
+  background: rgb(237 231 216 / 0.09);
+  box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.3);
+}
+html[data-fw-theme='dark'] .ch-ph-note {
+  border-top-color: rgb(205 187 142 / 0.3);
+}
+html[data-fw-theme='dark'] .ch-ph-leg__sg.is-flat,
+html[data-fw-theme='dark'] .ch-ph-bench__t {
+  background: rgb(237 231 216 / 0.09);
+}
+html[data-fw-theme='dark'] .ch-ph-spark__mean {
+  stroke: rgb(237 231 216 / 0.2);
+}
+html[data-fw-theme='dark'] .ch-ph-pg button::before {
+  box-shadow: 0 0 0 1px var(--ch-border-control);
+}
+html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
+  border-top-color: var(--ch-border-hairline);
+}
+@media (max-width: 820px) {
+  html[data-fw-theme='dark'] .ch-hm-skel__bar {
+    background: rgb(244 241 232 / 0.1);
+  }
+  html[data-fw-theme='dark'] .ch-hm-tl__rail i {
+    box-shadow: 0 0 0 3px var(--ch-workspace);
+  }
+  html[data-fw-theme='dark'] .ch-hm-tl__rail i.is-qualifier,
+  html[data-fw-theme='dark'] .ch-hm-tl__rail i.is-tournament {
+    background: var(--ch-green-600);
+  }
+  html[data-fw-theme='dark'] .ch-hm-tl__r.is-now .ch-hm-tl__rail i {
+    box-shadow: 0 0 0 3px var(--ch-green-50), 0 0 0 5px rgb(107 187 140 / 0.3);
+  }
+  html[data-fw-theme='dark'] .ch-hm-tl__rail::before {
+    background: rgb(205 187 142 / 0.16);
+  }
+  html[data-fw-theme='dark'] .ch-hm-week__d > span i {
+    background: rgb(237 231 216 / 0.3);
+  }
+  html[data-fw-theme='dark'] .ch-hm-score {
+    box-shadow: none;
+  }
+  html[data-fw-theme='dark'] .ch-hm-score.is-under em {
+    color: var(--ch-score-under);
+  }
+  html[data-fw-theme='dark'] .ch-hm .ch-well-soft {
+    background: rgb(205 187 142 / 0.04);
+    box-shadow: inset 0 0 0 1px rgb(205 187 142 / 0.08);
+  }
+  html[data-fw-theme='dark'] .ch-hm-hero__date {
+    border-top: var(--ch-ledger-rule-double);
+  }
+  html[data-fw-theme='dark'] .ch-hm-tl__r + .ch-hm-tl__r {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  html[data-fw-theme='dark'] .ch-hm-empty,
+  html[data-fw-theme='dark'] .ch-hm-need {
+    border-bottom-color: var(--ch-ledger-rule-soft);
+  }
+  html[data-fw-theme='dark'] .ch-hm-form__figs > div + div {
+    border-left-color: var(--ch-ledger-rule-soft);
+  }
+  /* Under .ch-hm .is-gain and .is-loss, as the light rule is. */
+  :where(html[data-fw-theme='dark']) .ch-hm-delta {
+    color: var(--ch-green-500);
+  }
+  html[data-fw-theme='dark'] .ch-hm-form__svg path:nth-of-type(2) {
+    stroke: var(--ch-green-500);
+  }
+  html[data-fw-theme='dark'] .ch-hm-form__svg circle {
+    fill: var(--ch-green-500);
+    stroke: var(--ch-workspace);
+  }
+  html[data-fw-theme='dark'] .ch-hm-delta em,
+  html[data-fw-theme='dark'] .ch-hm-form__figs em,
+  html[data-fw-theme='dark'] .ch-hm-week__n,
+  html[data-fw-theme='dark'] .ch-hm-form__top > span:first-child::after {
+    color: var(--ch-text-tertiary);
   }
 }

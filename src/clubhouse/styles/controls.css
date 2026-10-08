@@ -846,3 +846,83 @@
     font-size: 12px;
   }
 }
+
+/* ── Dark: "Clubhouse at night" (owner, 2026-10-08) ──────────────────────────────────────────────────────────────────
+   Wells, fields and switches ride the tokens. The paper literals turn to night ones: the menu and modal are a raised
+   surface over the page with a lit hover, the modal's backdrop takes more weight, the segmented labels' white
+   letterpress edge becomes a shadow, the green focus rings and halos take the light green, and the slider's track the
+   ground's own rule. */
+:where(html[data-fw-theme='dark']) .ch-seg__b {
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.35);
+}
+html[data-fw-theme='dark'] .ch-seg__b:focus-visible,
+html[data-fw-theme='dark'] .ch-switch input:focus-visible + .ch-switch__track,
+html[data-fw-theme='dark'] .ch-slider input:focus-visible {
+  outline-color: var(--ch-green-rule);
+}
+html[data-fw-theme='dark'] .ch-pill[aria-pressed='true'] {
+  background: var(--ch-green-100);
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.3);
+}
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-search__x:hover {
+    background: rgb(237 231 216 / 0.08);
+  }
+  html[data-fw-theme='dark'] .ch-menu__item:hover {
+    background: var(--ch-ivory-200);
+    box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.25);
+  }
+  html[data-fw-theme='dark'] .ch-pp__row:hover {
+    background: rgb(237 231 216 / 0.05);
+  }
+}
+html[data-fw-theme='dark'] .ch-menu__item:focus-visible {
+  background: var(--ch-ivory-200);
+  box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.25);
+}
+html[data-fw-theme='dark'] .ch-input:focus,
+html[data-fw-theme='dark'] .ch-textarea:focus,
+html[data-fw-theme='dark'] .ch-select select:focus-visible {
+  box-shadow: 0 0 0 1px var(--ch-green-600), 0 0 0 4px var(--ch-focus-halo);
+}
+html[data-fw-theme='dark'] .ch-input[aria-invalid='true'],
+html[data-fw-theme='dark'] .ch-textarea[aria-invalid='true'] {
+  box-shadow: 0 0 0 1px var(--ch-danger-600), 0 0 0 4px rgb(239 133 118 / 0.16);
+}
+html[data-fw-theme='dark'] .ch-menu__sep {
+  background: var(--ch-border-hairline);
+}
+html[data-fw-theme='dark'] .ch-modal::backdrop {
+  background: rgb(0 0 0 / 0.55);
+}
+:where(html[data-fw-theme='dark']) .ch-modal__panel {
+  background: var(--ch-ivory-100);
+}
+html[data-fw-theme='dark'] .ch-modal__foot {
+  border-top-color: var(--ch-border-hairline);
+  background: var(--ch-ivory-50);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+}
+@media (max-width: 820px) {
+  :where(html[data-fw-theme='dark']) .ch-modal__panel {
+    background: var(--ch-sheet-bg);
+  }
+}
+html[data-fw-theme='dark'] .ch-pp__row[aria-pressed='true'] .ch-pp__name b,
+html[data-fw-theme='dark'] .ch-pp__row[aria-selected='true'] .ch-pp__name b {
+  color: var(--ch-ledger-ink);
+}
+html[data-fw-theme='dark'] .ch-slider input::-webkit-slider-runnable-track {
+  background: linear-gradient(90deg, var(--ch-green-600) var(--ch-fill), var(--ch-ivory-300) var(--ch-fill));
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.4);
+}
+html[data-fw-theme='dark'] .ch-slider input::-moz-range-track {
+  background: linear-gradient(90deg, var(--ch-green-600) var(--ch-fill), var(--ch-ivory-300) var(--ch-fill));
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.4);
+}
+html[data-fw-theme='dark'] .ch-slider input::-webkit-slider-thumb {
+  background: linear-gradient(180deg, #f4eedd 0%, #e6dfcd 70%, #d8d1bf 100%);
+}
+html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
+  background: linear-gradient(180deg, #f4eedd 0%, #e6dfcd 70%, #d8d1bf 100%);
+}

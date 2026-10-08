@@ -954,3 +954,144 @@ button.ch-feat {
     font-variation-settings: 'wdth' 88;
   }
 }
+
+/* ── Dark: "Clubhouse at night" (owner, 2026-10-08) ──────────────────────────────────────────────────────────────────
+   The primary key, the scoreboard and the feature card are green in both themes and keep their finishes. The paper
+   finishes drawn as literals turn to night ones: the secondary key a lit charcoal with the same sliding hover face,
+   the toast and popover a raised surface above the page (the toast's ink ramp flips, so it can't stay ink-900), the
+   tonal coins and badges deep tints with light inks, and the scorecard marks keep their shapes in night finishes, the
+   double's solid tile turning ivory. White lit tops drop to a whisper; green focus rings take the light green. */
+html[data-fw-theme='dark'] .ch-root .ch-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--ch-bg-page), 0 0 0 4px rgb(107 187 140 / 0.55);
+}
+html[data-fw-theme='dark'] .ch-btn--primary:disabled:not([aria-busy='true']) {
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.4);
+}
+:where(html[data-fw-theme='dark']) .ch-btn--secondary {
+  background: linear-gradient(180deg, #313932 0%, #29302a 50%, #2a312b 50%, #232a24 100%) 0 100% / 100% 200%;
+}
+html[data-fw-theme='dark'] .ch-btn--secondary:active:not(:disabled) {
+  background: #1f2520;
+  box-shadow: 0 0 0 1px rgb(237 231 216 / 0.1), inset 0 1px 2px rgb(0 0 0 / 0.35);
+}
+:where(html[data-fw-theme='dark']) .ch-btn--ink {
+  color: var(--ch-ink-950);
+  background: linear-gradient(180deg, #3a423b 0%, #2c332d 100%);
+  box-shadow: 0 0 0 1px rgb(237 231 216 / 0.14), inset 0 1px 0 rgb(255 255 255 / 0.08);
+}
+:where(html[data-fw-theme='dark']) .ch-btn__kbd {
+  background: rgb(237 231 216 / 0.06);
+  box-shadow: inset 0 0 0 1px rgb(237 231 216 / 0.1);
+}
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-iconbtn.ch-btn--ghost:hover:not(:disabled) {
+    background: rgb(237 231 216 / 0.07);
+  }
+}
+/* Under the contextual rings (the identity, a stack on the green), as the light rule is. */
+:where(html[data-fw-theme='dark']) .ch-avatar {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 0 0 1px var(--ch-av-ring);
+}
+html[data-fw-theme='dark'] .ch-avatar[data-tone='stone'] {
+  --ch-av-bg: #2f2e29;
+  --ch-av-fg: #d8d1c1;
+  --ch-av-ring: rgb(216 209 193 / 0.16);
+}
+html[data-fw-theme='dark'] .ch-avatar[data-tone='sage'] {
+  --ch-av-bg: #25322a;
+  --ch-av-fg: #c6dacb;
+  --ch-av-ring: rgb(198 218 203 / 0.16);
+}
+html[data-fw-theme='dark'] .ch-avatar[data-tone='mist'] {
+  --ch-av-bg: #243034;
+  --ch-av-fg: #c4d5da;
+  --ch-av-ring: rgb(196 213 218 / 0.16);
+}
+html[data-fw-theme='dark'] .ch-avatar[data-tone='clay'] {
+  --ch-av-bg: #352a23;
+  --ch-av-fg: #e4c9b8;
+  --ch-av-ring: rgb(228 201 184 / 0.16);
+}
+@media (max-width: 820px) {
+  html[data-fw-theme='dark'] .ch-avatar[data-tone] {
+    --ch-av-bg: var(--ch-avatar-neutral-bg);
+    --ch-av-fg: var(--ch-avatar-neutral-fg);
+    --ch-av-ring: var(--ch-avatar-neutral-ring);
+  }
+}
+html[data-fw-theme='dark'] .ch-avatar--ring {
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.3), inset 0 0 0 2px var(--ch-bg-surface), inset 0 0 0 3px var(--ch-green-600);
+}
+html[data-fw-theme='dark'] .ch-badge--neutral {
+  background: var(--ch-ivory-200);
+  color: var(--ch-ink-700);
+  box-shadow: inset 0 0 0 1px rgb(237 231 216 / 0.08);
+}
+html[data-fw-theme='dark'] .ch-badge--accent,
+html[data-fw-theme='dark'] .ch-badge--positive {
+  background: var(--ch-green-100);
+  color: var(--ch-green-700);
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.18);
+}
+html[data-fw-theme='dark'] .ch-badge--warning {
+  background: var(--ch-champagne-100);
+  color: var(--ch-champagne-300);
+  box-shadow: inset 0 0 0 1px rgb(205 187 142 / 0.2);
+}
+html[data-fw-theme='dark'] .ch-badge--info {
+  background: var(--ch-info-100);
+  color: var(--ch-info-600);
+  box-shadow: inset 0 0 0 1px rgb(134 182 212 / 0.18);
+}
+html[data-fw-theme='dark'] .ch-score--birdie {
+  color: var(--ch-score-under);
+  background: linear-gradient(180deg, #462320 0%, #3a1c1a 100%);
+}
+html[data-fw-theme='dark'] .ch-score--bogey {
+  background: linear-gradient(180deg, #2e352f 0%, #252b26 100%);
+}
+html[data-fw-theme='dark'] .ch-score--double {
+  color: var(--ch-ivory-0);
+  background: linear-gradient(180deg, var(--ch-ink-900) 0%, var(--ch-ink-700) 100%);
+}
+/* The board's own finishes come back over the night ones above. */
+html[data-fw-theme='dark'] .ch-scoreboard .ch-score--birdie {
+  color: #fff8f5;
+  background: linear-gradient(180deg, #d0574a 0%, #a8372b 100%);
+}
+html[data-fw-theme='dark'] .ch-scoreboard .ch-score--bogey {
+  background: transparent;
+}
+html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
+  color: var(--ch-green-900);
+  background: linear-gradient(180deg, #fbf8ef 0%, #e6e1d3 100%);
+}
+:where(html[data-fw-theme='dark']) .ch-toast {
+  background: var(--ch-ivory-200);
+  color: var(--ch-ink-900);
+  box-shadow: var(--ch-elevation-overlay);
+}
+:where(html[data-fw-theme='dark']) .ch-toast__action {
+  color: var(--ch-ink-950);
+}
+:where(html[data-fw-theme='dark']) .ch-surface {
+  box-shadow: var(--ch-elevation-reading);
+}
+:where(html[data-fw-theme='dark']) .ch-surface__foot {
+  background: var(--ch-bg-subtle);
+}
+:where(html[data-fw-theme='dark']) .ch-inset {
+  background: var(--ch-bg-inset);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.4), inset 0 0 0 1px rgb(0 0 0 / 0.3), 0 1px 0 rgb(255 255 255 / 0.04);
+}
+:where(html[data-fw-theme='dark']) .ch-popover {
+  background: var(--ch-ivory-100);
+}
+:where(html[data-fw-theme='dark']) .ch-popover__sep {
+  background: var(--ch-border-hairline);
+}
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-backlink:hover {
+    color: var(--ch-ledger-ink);
+  }
+}
