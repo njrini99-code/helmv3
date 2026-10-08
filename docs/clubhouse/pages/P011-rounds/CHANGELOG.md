@@ -1,5 +1,12 @@
 # P011 — Rounds: changelog
 
+
+## 2026-10-08 — the shot screen's field is centred
+
+- Owner: "center this, way too much white space". The drawn hole, its readout and the shot log now sit centred in
+  the green field between the hole strip and the entry sheet, which stays on the dock. The tree band drawn under the
+  log is gone, and the drawing's top and bottom dissolve into the field green, so the hole has no visible edge.
+  WebKit 390 × 844: approach, putt and holed states.
 ## 2026-10-08 — The shot screen toward board 3: chip strip, a save line by the readout, the sheet on the dock
 
 Toward the owner's phone concept "3 · On the course, glove on" (called "native,

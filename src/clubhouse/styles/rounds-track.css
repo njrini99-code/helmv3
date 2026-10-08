@@ -2189,10 +2189,9 @@ button.ch-rt-strip__h {
     gap: 0;
     padding-top: 10px;
   }
-  /* The hero takes whatever height the entry leaves, so the entry sheet always sits on the dock (board 3) and never
-     floats over an empty band. The drawn hole keeps its own size at the top (picking a result grows the sheet upward
-     into this ground, and nothing above it moves); below the shot log the course carries on: the hole's dark rough,
-     a few trees at the edges, settling into the field green where the sheet begins. */
+  /* The hero takes whatever height the entry leaves, so the entry sheet always sits on the dock (board 3). The drawn
+     hole, its readout and the shot log sit centred in that green field (owner, 2026-10-08: "center this, way too much
+     white space"), so spare height splits evenly above and below instead of pooling as a band under the log. */
   .ch-rt-hero {
     position: static;
     display: grid;
@@ -2201,20 +2200,12 @@ button.ch-rt-strip__h {
     grid-template-areas:
       'stage'
       'log';
-    align-content: start;
+    align-content: center;
     gap: 0;
     margin: 0 -12px;
     padding: 0;
     border-radius: 0;
-    background:
-      linear-gradient(180deg, transparent calc(100% - 56px), var(--ch-green-900)),
-      radial-gradient(circle at 3% calc(64.6cqi + 92px), #06210f 17px, transparent 18px),
-      radial-gradient(circle at 12% calc(64.6cqi + 128px), #06210f 12px, transparent 13px),
-      radial-gradient(circle at 97% calc(64.6cqi + 70px), #06210f 15px, transparent 16px),
-      radial-gradient(circle at 89% calc(64.6cqi + 118px), #06210f 19px, transparent 20px),
-      radial-gradient(circle at 99% calc(64.6cqi + 176px), #06210f 13px, transparent 14px),
-      radial-gradient(circle at 6% calc(64.6cqi + 206px), #06210f 15px, transparent 16px),
-      linear-gradient(180deg, rgb(9 46 30), var(--ch-green-900) calc(64.6cqi + 320px));
+    background: var(--ch-green-900);
     box-shadow: none;
   }
   .ch-rt-hero__map {
@@ -2227,7 +2218,8 @@ button.ch-rt-strip__h {
   .ch-rt-hero__map::after {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgb(8 43 28 / 0.35), transparent 34%, transparent 70%, rgb(8 43 28 / 0.72));
+    /* Dissolve the drawing's top and bottom into the field green, so the centred hole has no visible edge. */
+    background: linear-gradient(180deg, var(--ch-green-900), transparent 26%, transparent 66%, var(--ch-green-900));
     pointer-events: none;
     content: '';
   }
