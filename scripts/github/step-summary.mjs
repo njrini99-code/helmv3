@@ -66,6 +66,11 @@ export function firstErrorLine(logText) {
   return lines.length ? lines[lines.length - 1].trim() : '';
 }
 
+/** Log text is untrusted: escape backslashes first, then the pipe that would split the table row. */
+function mdCell(s) {
+  return s.replace(/\\/g, '\\\\').replace(/\|/g, '\\|').slice(0, 300);
+}
+
 /** Build the plain-text report, the markdown summary and the verdict. Pure. */
 export function summarize({ outcomes, names, logs, ignore = new Set() }) {
   const rows = Object.entries(outcomes).filter(([id]) => !ignore.has(id)).map(([id, v]) => ({ id, name: names.get(id) ?? id, outcome: v?.outcome ?? 'unknown' }));
@@ -76,7 +81,7 @@ export function summarize({ outcomes, names, logs, ignore = new Set() }) {
     md.push('| Step | Outcome | First error |', '| --- | --- | --- |');
     for (const r of bad) {
       const first = r.outcome === 'skipped' ? 'did not run (an earlier step failed it)' : firstErrorLine(logs.get(r.id) ?? '') || '(no output captured)';
-      md.push(`| ${r.name} (\`${r.id}\`) | ${r.outcome} | ${first.replace(/\|/g, '\\|').slice(0, 300)} |`);
+      md.push(`| ${r.name} (\`${r.id}\`) | ${r.outcome} | ${mdCell(first)} |`);
     }
   }
   return { bad, text, markdown: md.join('\n'), ok: bad.length === 0 };
