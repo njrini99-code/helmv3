@@ -159,8 +159,9 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     brief: roundsRes.error ? null : briefFor(full, legs?.rows ?? []),
     coachUserId,
     week: wk.week,
-    next: wk.next,
-    today: wk.todayEvents,
+    // Who hasn't replied, and the invitees' ids, are the coach's (Nudge and Message); a player's page never carries them.
+    next: wk.next && coachOnlyOut(wk.next),
+    today: wk.todayEvents.map(coachOnlyOut),
     weekNote: wk.weekNote,
     latest: { rounds: latest.rounds, error: roundsRes.error, holesError: latest.holesError },
     scoring: { points, error: roundsRes.error },
@@ -170,6 +171,8 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     legs,
   };
 }
+
+const coachOnlyOut = ({ awaiting: _a, inviteeIds: _i, ...e }: ChHomeEvent): ChHomeEvent => e;
 
 /**
  * The user id of the coach who created the team (golf_teams.created_by is a

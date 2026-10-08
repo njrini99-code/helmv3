@@ -1,5 +1,16 @@
 # P002 — Home: changelog
 
+## 2026-10-08 — premium pass: the coach's phone Home is the day (concept board 1)
+
+The coach's phone Home opens on one living green card for the next thing that matters (`screens/home/DayCard.tsx`, owner-approved phone concept board 1, "The day, not a dashboard"); desktop keeps its dashboard, and the player's phone keeps Up next.
+
+- The card holds the event under way ("Now · until 5:00 PM") or next ("Next up · 3:30 PM") with its time chip, the invitees (28px coins that no longer clip their initials, P002 D2) and "5 of 6 going · Eli hasn't replied". Once today's events are over and rounds came in today, it becomes the day's recap, each round opening its card. A live round has no read on Home yet, so that phase isn't drawn.
+- Actions are the coach's and prefill Messages only (D2-7): Nudge the people who haven't replied, or Message the invitees when everyone has. Directions is a plain Apple Maps link, only for competitions and travel with a place (no maps API, D1-2).
+- "Later today" replaces Today when the day has events: the rest of today on the same rail (the card's event and what is over left out), then the week's next competition. A slot is ready for the sunset row from the global light.
+- "Since you last looked": chips for rounds posted since this device last showed Home and for new replies to the card's event, kept on the device only; nothing on a first visit.
+- The loader adds `awaiting` (who hasn't replied, id and name) and `inviteeIds` to the coach's events, null when replies didn't load; the player's Home strips both. Latest rounds carry their `date`.
+- The gap under the hero is one 34px step (P002 D7).
+
 ## 2026-10-08 — premium pass: the brief loses the AI glyph (D1)
 
 The phone hero's brief is deterministic (`homeSubline`), so it no longer wears the Sparkles glyph that reads as model output; the line stands alone. The owner declined the "Why this line" sheet (P002-C1: "Take this out").

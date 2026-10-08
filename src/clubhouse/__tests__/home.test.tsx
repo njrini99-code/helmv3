@@ -200,6 +200,27 @@ describe('Home · reads that fail', () => {
     expect(row.detail).toBe('Practice green');
   });
 
+  it('the day card’s Nudge: who hasn’t replied, by id and name; null with the replies, never an empty list', async () => {
+    tables.current = {
+      golf_team_members: {
+        data: [
+          { player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti', graduation_year: 2027 } },
+          { player: { id: 'p2', first_name: 'Eli', last_name: 'Brandt', graduation_year: 2027 } },
+        ],
+      },
+      golf_events: { data: [todayEvent()] },
+      golf_event_attendance: { data: [{ id: 'a1', event_id: 'e1', player_id: 'p1', status: 'accepted' }, { id: 'a2', event_id: 'e1', player_id: 'p2', status: null }] },
+    };
+    const data = await load();
+    const e = data.phone.today.find((x) => x.id === 'e1')!;
+    expect(e.awaiting).toEqual([{ id: 'p2', name: 'Eli Brandt' }]);
+    expect(e.inviteeIds).toEqual(['p1', 'p2']);
+    tables.current = { golf_events: { data: [todayEvent()] }, golf_event_attendance: { error: { message: 'boom' } } };
+    const failed = (await load()).phone.today.find((x) => x.id === 'e1')!;
+    expect(failed.awaiting).toBeNull();
+    expect(failed.inviteeIds).toBeNull();
+  });
+
   it('CH-2210 the timezone does not load: Home reads the week in Eastern time', async () => {
     tables.current = { golf_team_settings: { error: { message: 'boom' } } };
     const data = await load();
@@ -317,11 +338,13 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
   it('20101 20103 21901 the hero: date, greeting, brief, and Up next with its countdown and replies, opening the event in Calendar', () => {
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
     expect(screen.getByRole('heading', { level: 1, name: 'Good morning, Maya.' })).toBeTruthy();
-    const next = document.querySelector('a.ch-hm-next') as HTMLAnchorElement;
-    expect(next.getAttribute('href')).toBe('/golf/dashboard/calendar?date=2026-10-14&event=a1');
+    // The day card (phone concept board 1): the title opens the event.
+    const next = document.querySelector('.ch-hm-day') as HTMLElement;
+    expect(within(next).getByRole('link', { name: 'Short-game block' }).getAttribute('href')).toBe('/golf/dashboard/calendar?date=2026-10-14&event=a1');
     // 2:40 PM against a 3:30 PM start.
+    expect(next.textContent).toMatch(/Next up · 3:30 PM/);
     expect(next.textContent).toMatch(/In 50 min/);
-    expect(next.textContent).toMatch(/5 of 6 going/);
+    expect(next.textContent).toMatch(/5 of 6 going · Eli hasn’t replied/);
     expect(next.querySelector('.is-soon')).not.toBeNull();
   });
 
@@ -927,7 +950,7 @@ describe('Home · the phone, the page’s own contracts', () => {
     const main = document.querySelector('main.ch-hm')!;
     expect(main.getAttribute('aria-label')).toBe('Home');
     const headings = [...main.querySelectorAll('h2')].map((h) => h.textContent);
-    expect(headings.filter((h) => ['Today', 'This week', 'Latest rounds'].includes(h!))).toEqual(['Today', 'This week', 'Latest rounds']);
+    expect(headings.filter((h) => ['Later today', 'This week', 'Latest rounds'].includes(h!))).toEqual(['Later today', 'This week', 'Latest rounds']);
     expect(main.querySelector('.ch-hm-form')).not.toBeNull();
     expect(document.querySelector('.ch-h-main')).toBeNull();
     expect(screen.queryByRole('table', { name: 'Leaderboard' })).toBeNull();
@@ -976,7 +999,7 @@ describe('Home · the phone, the page’s own contracts', () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
     vi.setSystemTime(new Date(PREVIEW_HOME_NOW));
     wrap(<CoachHome data={PREVIEW_HOME} />);
-    const when = () => document.querySelector('a.ch-hm-next .ch-hm-next__when')!.textContent;
+    const when = () => document.querySelector('.ch-hm-day .ch-hm-next__when')!.textContent;
     expect(when()).toBe('In 50 min');
     act(() => {
       vi.advanceTimersByTime(60_000);
@@ -1007,7 +1030,7 @@ describe('Home · the phone, the page’s own contracts', () => {
   it('22301 a phone section that crashes is reported under its own surface; opening Up next or a round leaves a breadcrumb', async () => {
     const user = userEvent.setup();
     const view = wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
-    await user.click(document.querySelector('a.ch-hm-next')!);
+    await user.click(document.querySelector('a.ch-hm-day__open')!);
     expect(chTrail).toHaveBeenCalledWith('home open next event');
     await user.click(screen.getByRole('button', { name: /Theo Marchetti/ }));
     expect(chTrail).toHaveBeenCalledWith('home open round');

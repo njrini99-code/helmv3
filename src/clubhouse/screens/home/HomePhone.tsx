@@ -24,6 +24,7 @@ import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
 import { coachFailedParts } from './model';
 import { roundHref } from './player-links';
+import { competitionExtra, DayCard, dayPhase, LaterToday, SinceYouLooked } from './DayCard';
 
 export const CALENDAR = '/golf/dashboard/calendar';
 export const eventHref = (e: ChHomeEvent) => `${CALENDAR}?date=${e.date}&event=${e.id}`;
@@ -47,6 +48,10 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
   // Two or more failed reads are told once under the greeting, with one Try again; each part keeps its title (CH-1209).
   const failed = coachFailedParts(data, true);
   const covered = failed.length > 1;
+  // The day card (phone concept board 1): the event under way or next, or the day's recap once it's over. Worked out
+  // inside each part's boundary, so a malformed event takes down only its own part.
+  const today = data.week.days.find((d) => d.isToday)?.date ?? null;
+  const rounds = data.latestRounds.error ? [] : data.latestRounds.rounds;
 
   return (
     <main className="ch-hm" aria-label="Home">
@@ -63,17 +68,15 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
           {data.week.error ? (
             // On the sheet, not in the green card: inside it the notice took the card's ivory ink and its words vanished.
             <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. This is a display problem, and trying again usually clears it." covered={covered} />
-          ) : phone.next ? (
-            <UpNext e={phone.next} now={now} />
           ) : (
-            <NoEvents />
+            <Day phone={phone} rounds={rounds} now={now} today={today} onOpenRound={setOpen} />
           )}
         </SectionBoundary>
       </header>
 
       <div className="ch-hm-body">
         <SectionBoundary surface="home.today" label="Today" code="CH-2214">
-          <Today list={phone.today} now={now} failed={data.week.error} quiet={nothingAhead} />
+          <Later data={data} rounds={rounds} now={now} today={today} quiet={nothingAhead} onOpenRound={setOpen} />
         </SectionBoundary>
 
         {phone.form ? (
@@ -97,6 +100,32 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
 
       <RoundSheet round={open} holesError={data.latestRounds.holesError} onClose={() => setOpen(null)} />
     </main>
+  );
+}
+
+type DayProps = { rounds: ChLatestRound[]; now: Date | null; today: string | null; onOpenRound: (r: ChLatestRound) => void };
+
+/** Up next's place: the day card, or how to add the first event. */
+function Day({ phone, rounds, now, today, onOpenRound }: DayProps & { phone: ChCoachHome['phone'] }) {
+  const phase = dayPhase(phone.next, phone.today, rounds, now, today);
+  return phase ? <DayCard phase={phase} now={now} today={today} onOpenRound={onOpenRound} /> : <NoEvents />;
+}
+
+/**
+ * Today's place: an empty day keeps Today's own empty state (with Plan); otherwise the rail of what's left after the
+ * card, and what changed since the coach last looked.
+ */
+function Later({ data, rounds, now, today, quiet, onOpenRound }: DayProps & { data: ChCoachHome; quiet: boolean }) {
+  const { phone } = data;
+  if (data.week.error || !phone.today.length) return <Today list={phone.today} now={now} failed={data.week.error} quiet={quiet} />;
+  const phase = dayPhase(phone.next, phone.today, rounds, now, today);
+  const card = phase?.kind === 'event' ? phase.e : null;
+  const later = data.week.agenda.find((a) => a.when === 'later' && a.id !== card?.id);
+  return (
+    <>
+      <LaterToday todays={phone.today} cardId={card?.id ?? null} now={now} extras={competitionExtra(later)} />
+      {!data.latestRounds.error && <SinceYouLooked rounds={rounds} event={card} onOpenRound={onOpenRound} />}
+    </>
   );
 }
 

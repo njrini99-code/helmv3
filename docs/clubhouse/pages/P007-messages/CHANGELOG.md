@@ -2,7 +2,7 @@
 
 ## 2026-10-08 — premium pass: prefilled messages (D2-7)
 
-Actions that reach players open Messages prefilled and never send: `messagesPrefillHref({ players, draft, title })` (`screens/messages/prefill.ts`) links to `?players=<golf_players ids>&draft=&title=`. One player with a thread opens it with the draft in its composer (an unsent draft of the coach's own wins); otherwise New message opens with the people chosen (a coach's two or more as a group named `title`) and the draft quoted (CH-7105). Nothing is created until the coach presses on, and the draft lands in the new thread's composer, where the coach presses Send. A player's prefill keeps one person (D-15). Unknown players say CH-7001.
+Actions that reach players open Messages prefilled and never send: `messagesPrefillHref({ players, draft, title })` (`screens/messages/prefill.ts`) links to `?players=<golf_players ids>&draft=&title=`. One player with a thread opens it with the draft in its composer (an unsent draft of the coach's own wins); otherwise New message opens with the people chosen (a coach's two or more as a group named `title`) and the draft quoted. Nothing is created until the coach presses on, and the draft lands in the new thread's composer, where the coach presses Send. A player's prefill keeps one person (D-15). Unknown players say CH-7001.
 
 ## 2026-10-08 — dark: Clubhouse at night
 

@@ -112,6 +112,8 @@ export const PREVIEW_HOME: ChCoachHome = {
       location: 'Practice green',
       invitees: ['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Jonah Okafor', 'Eli Brandt', 'Priya Natarajan'],
       going: 5,
+      awaiting: [{ id: 'eli', name: 'Eli Brandt' }],
+      inviteeIds: ['theo', 'sofia', 'ava', 'jonah', 'eli', 'priya'],
       conflict: false,
     },
     today: [

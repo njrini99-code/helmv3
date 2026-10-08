@@ -874,7 +874,7 @@ function PhoneNewMessage({
       <div className="ch-msp-scroll">
         <div className="ch-msp-page">
           {seed?.draft && (
-            <p className="ch-ms-new__draft" data-ch-code="CH-7105">
+            <p className="ch-ms-new__draft">
               <span>Your draft, ready in the conversation to edit and send</span>
               <q>{seed.draft}</q>
             </p>
