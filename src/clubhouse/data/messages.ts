@@ -18,6 +18,8 @@ export interface ChMessagesData {
   /** Everyone the viewer may message: the program's coaches and the team's players, never themselves. */
   directory: ChPerson[];
   directoryError: boolean;
+  /** The program's coaches by golf_coaches.id, the viewer among them: who signs an announcement (P007-A1). */
+  signers?: Record<string, { name: string; title: string }>;
 }
 
 /**
@@ -48,9 +50,9 @@ export async function loadMessagesDirectory(input: {
   if (membersRes.error) chLogServer('messages', 'members', membersRes.error, 'teams');
 
   let coachesError = false;
-  let coaches: Array<{ user_id: string | null; full_name: string | null; title: string | null }> = [];
+  let coaches: Array<{ id: string; user_id: string | null; full_name: string | null; title: string | null }> = [];
   if (teamRes.data?.organization_id) {
-    const res = await supabase.from('golf_coaches').select('user_id, full_name, title').eq('organization_id', teamRes.data.organization_id).limit(50);
+    const res = await supabase.from('golf_coaches').select('id, user_id, full_name, title').eq('organization_id', teamRes.data.organization_id).limit(50);
     if (res.error) {
       chLogServer('messages', 'coaches', res.error, 'messaging');
       coachesError = true;
@@ -81,5 +83,6 @@ export async function loadMessagesDirectory(input: {
     now: new Date().toISOString(),
     directory,
     directoryError: !!membersRes.error || coachesError || !!teamRes.error,
+    signers: Object.fromEntries(coaches.map((c) => [c.id, { name: c.full_name?.trim() || 'Coach', title: c.title?.trim() || 'Coach' }])),
   };
 }

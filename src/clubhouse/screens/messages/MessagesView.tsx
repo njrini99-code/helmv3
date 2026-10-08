@@ -119,6 +119,8 @@ export interface ChAttachmentRecovery {
 
 export interface ChMessagesApi {
   viewer: { userId: string; role: "coach" | "player"; name: string };
+  /** Coaches by golf_coaches.id, for an announcement's signature (P007-A1). */
+  signers?: Record<string, { name: string; title: string }>;
   timeZone: string;
   now: string;
   teamName: string | null;

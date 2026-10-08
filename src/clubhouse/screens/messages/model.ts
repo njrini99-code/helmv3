@@ -157,6 +157,8 @@ export interface ChAnnouncement {
   taskCount: number;
   completedTaskCount: number;
   docCount: number;
+  /** golf_coaches.id of the coach who posted it, for the signature; null when unknown. */
+  authorId?: string | null;
 }
 
 export interface ChAnnouncementDetail {

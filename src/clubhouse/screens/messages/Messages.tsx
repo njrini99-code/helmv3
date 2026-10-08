@@ -352,6 +352,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
           taskCount: a.task_count ?? 0,
           completedTaskCount: a.completed_task_count ?? 0,
           docCount: a.document_count ?? 0,
+          authorId: (a as { created_by?: string | null }).created_by ?? null,
         })),
       );
     } catch (err) {
@@ -483,6 +484,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
 
   const api: ChMessagesApi = {
     viewer: { userId: data.viewerUserId, role: data.role, name: data.viewerName },
+    signers: data.signers,
     timeZone: data.timeZone,
     now,
     teamName: data.teamName,

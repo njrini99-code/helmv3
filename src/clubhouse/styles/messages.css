@@ -1051,6 +1051,69 @@
   color: var(--ch-text-tertiary);
 }
 
+/* P007-A1: the announcement as a signed team letter. On desktop the sheet is paper the room's light falls on (never
+   the words); on the phone it stays flush on the parchment with only the letterhead line and the signature's rule. */
+.ch-ms-ann.is-letter {
+  gap: 14px;
+  padding: 36px 44px 32px;
+  background: var(--ch-light-paper), var(--ch-sheet-bg);
+}
+.ch-ms-ann__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin: 0 0 6px;
+  padding-bottom: 12px;
+  /* Engraved: a hairline with a lit lower edge. */
+  box-shadow:
+    0 1px 0 var(--ch-border-hairline),
+    0 2px 0 rgb(255 255 255 / 0.55);
+  font: 500 13px/1.35 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-ms-ann__head > span:last-child:not(:first-child) {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ch-text-secondary);
+}
+.ch-ms-ann__head > .is-urgent {
+  color: var(--ch-warning-600);
+}
+.ch-ms-ann.is-letter .ch-ms-ann__title {
+  font-size: 28px;
+  line-height: 1.12;
+}
+.ch-ms-ann.is-letter .ch-ms-ann__body {
+  max-width: 62ch;
+  color: var(--ch-text-primary);
+}
+.ch-ms-ann__sig {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-self: flex-start;
+  min-width: min(240px, 100%);
+  margin: 10px 0 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--ch-champagne-500);
+}
+.ch-ms-ann__sig b {
+  font: 600 15px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-ms-ann__sig span {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+:where(html[data-fw-theme='dark']) .ch-ms-ann__head {
+  box-shadow:
+    0 1px 0 var(--ch-border-hairline),
+    0 2px 0 rgb(255 255 255 / 0.04);
+}
+
 /* Mute and search */
 .ch-ms-quiet {
   margin: 0;
@@ -2032,6 +2095,10 @@
   }
   .ch-msp-ann .ch-ms-ann__body {
     font: 400 16px/1.55 var(--ch-font-sans);
+  }
+  .ch-msp-ann .ch-ms-ann.is-letter {
+    padding: 26px 20px 32px;
+    background: none;
   }
   .ch-msp-ann .ch-ms-ann__sec {
     gap: 0;

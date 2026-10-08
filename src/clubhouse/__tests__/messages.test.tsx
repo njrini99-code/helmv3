@@ -553,6 +553,20 @@ describe('Messages · more actions that fail', () => {
     await expectCode('CH-7012', /Couldn’t send your acknowledgement/);
   });
 
+  it('P007-A1 an announcement reads as a signed letter: team and date, the asks in words, the coach’s signature', async () => {
+    const user = userEvent.setup();
+    a.getAnnouncementsWithMeta.mockResolvedValue({ success: true, data: [{ ...annRow, urgency: 'urgent', created_by: 'c-maya' }] });
+    a.getAnnouncementDetail.mockImplementation(never);
+    show({ ...player, signers: { 'c-maya': { name: 'Maya Reyes', title: 'Head coach' } } });
+    await openAnnouncement(user);
+    const head = document.querySelector('.ch-ms-ann__head')!;
+    expect(head.textContent).toMatch(/Wednesday 14 October/);
+    expect(head.textContent).toMatch(/Urgent · please acknowledge/);
+    expect(document.querySelector('.ch-ms-ann__sig')!.textContent).toBe('Maya ReyesHead coach');
+    // No chips: the asks are words.
+    expect(document.querySelector('.ch-ms-ann .ch-badge')).toBeNull();
+  });
+
   it('CH-7013 marking a task done fails', async () => {
     const user = userEvent.setup();
     a.getAnnouncementsWithMeta.mockResolvedValue({ success: true, data: [annRow] });

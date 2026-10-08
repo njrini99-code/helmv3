@@ -86,8 +86,8 @@ const baseReactions: Record<string, ChReaction[]> = {
 };
 
 const baseAnns: ChAnnouncement[] = [
-  { id: 'an1', title: 'Pinehurst travel: bus at 6:15', body: 'Bus leaves the field house at 6:15 Thursday. Breakfast on the bus. Bring your rain gear and two dozen balls.', urgent: true, publishedAt: at(14, 8, 5), requiresAck: true, ackCount: 5, total: 6, acknowledgedByMe: false, taskCount: 1, completedTaskCount: 4, docCount: 1 },
-  { id: 'an2', title: 'Qualifier pairings posted', body: 'Pairings for the Pinehurst qualifier are in Documents.', urgent: false, publishedAt: at(12, 17, 30), requiresAck: false, ackCount: 0, total: 6, acknowledgedByMe: false, taskCount: 0, completedTaskCount: 0, docCount: 0 },
+  { id: 'an1', title: 'Pinehurst travel: bus at 6:15', body: 'Bus leaves the field house at 6:15 Thursday. Breakfast on the bus. Bring your rain gear and two dozen balls.', urgent: true, publishedAt: at(14, 8, 5), requiresAck: true, ackCount: 5, total: 6, acknowledgedByMe: false, taskCount: 1, completedTaskCount: 4, docCount: 1, authorId: 'c-maya' },
+  { id: 'an2', title: 'Qualifier pairings posted', body: 'Pairings for the Pinehurst qualifier are in Documents.', urgent: false, publishedAt: at(12, 17, 30), requiresAck: false, ackCount: 0, total: 6, acknowledgedByMe: false, taskCount: 0, completedTaskCount: 0, docCount: 0, authorId: 'c-maya' },
 ];
 const annDetail = async (id: string) =>
   id === 'an1'
@@ -131,6 +131,7 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
 
   const api: ChMessagesApi = {
     viewer: { userId: 'me', role, name: role === 'coach' ? 'Maya Reyes' : 'Jonah Okafor' },
+    signers: { 'c-maya': { name: 'Maya Reyes', title: 'Head coach' } },
     timeZone: TZ,
     now: NOW,
     teamName: 'Varsity',
