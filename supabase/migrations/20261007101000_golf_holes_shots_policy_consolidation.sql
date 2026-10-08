@@ -31,7 +31,7 @@
 -- golf_shots (12)
 --   SELECT  golf_shots_select               authenticated  owner | coach |
 --   teammate
---   SELECT  admin_read_all                  authenticated  is_admin()     
+--   SELECT  admin_read_all                  authenticated  is_admin()
 --   (KEPT, untouched)
 --   INSERT  golf_shots_insert               authenticated  owner via round
 --   INSERT  golf_shots_insert_own           authenticated  owner via hole or
