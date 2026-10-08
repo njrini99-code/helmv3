@@ -10,6 +10,9 @@
 export { FairwayTravel } from './FairwayTravel';
 export type { FairwayTravelProps } from './FairwayTravel';
 
+export { FairwayNextTrip } from './FairwayNextTrip';
+export type { FairwayNextTripProps } from './FairwayNextTrip';
+
 export { FairwayTripCard } from './FairwayTripCard';
 export type { FairwayTripCardProps } from './FairwayTripCard';
 
@@ -30,4 +33,7 @@ export {
   getTripStatus,
   formatTravelDate,
   formatTravelTime,
+  groupTrips,
+  transportIcon,
+  transportLabel,
 } from './travel-helpers';

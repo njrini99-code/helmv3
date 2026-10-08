@@ -56,18 +56,26 @@ describe('FairwayTripCard', () => {
   });
 
   it('puts the status pill on its own line under the dates, not beside the name', () => {
-    render(<FairwayTripCard itinerary={makeItinerary()} selected={false} now={null} onSelect={() => {}} />);
+    // 3 days out, so the row carries an informative countdown pill (a plain
+    // "Upcoming" is omitted: the "Coming up" section already says it).
+    const now = new Date(2026, 6, 29, 9);
+    render(<FairwayTripCard itinerary={makeItinerary()} selected={false} now={now} onSelect={() => {}} />);
 
     const name = screen.getByText(LONG_NAME);
     const dates = screen.getByText(/Aug 1, 2026/);
-    const pill = screen.getByText('Upcoming').closest('[class*="rounded-full"]');
+    const pill = screen.getByText('3d away').closest('[class*="rounded-full"]');
     const column = name.parentElement;
 
     // Name, destination, dates and pill are stacked children of one column.
     expect(pill?.parentElement).toBe(column);
     expect(column?.lastElementChild).toBe(pill);
     expect(column?.firstElementChild).toBe(name);
-    expect(dates.closest('span.flex')?.parentElement).toBe(column);
+    expect(dates.parentElement).toBe(column);
+  });
+
+  it('omits the pill when it would only repeat the section ("Upcoming")', () => {
+    render(<FairwayTripCard itinerary={makeItinerary()} selected={false} now={null} onSelect={() => {}} />);
+    expect(screen.queryByText('Upcoming')).not.toBeInTheDocument();
   });
 
   it('is one pressable row that reports selection and fires onSelect', () => {

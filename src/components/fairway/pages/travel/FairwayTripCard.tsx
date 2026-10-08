@@ -5,8 +5,10 @@
  * Fairway · Travel · FairwayTripCard — one trip in the itinerary list
  * ----------------------------------------------------------------------------
  * A matte selectable list-row (a Fairway PressTarget with Surface-look
- * classes). Shows the transport icon, event name, destination, date range and
- * lifecycle StatusPill — every data point the legacy list row carried.
+ * classes). A date block (month / day) leads, like a tee sheet; then the event
+ * name, the leave time + destination, and the lifecycle StatusPill.
+ * Redesign 2026-09-28 (docs/redesign/travel): the transport-icon plaque was
+ * replaced by the date, which is the thing people scan a trip list by.
  * Selecting it surfaces the trip in the detail panel.
  *
  * The name owns the full text column and wraps to two lines; the status pill
@@ -19,15 +21,16 @@
  * Presentation only. Tokens ONLY.
  * ========================================================================== */
 
-import { MapPin, Calendar, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
 import { PressTarget, StatusPill } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import {
   type TravelItinerary,
-  TRANSPORT_ICON,
   getTripStatus,
   formatTravelDate,
+  formatTravelTime,
+  dateParts,
 } from './travel-helpers';
 
 export interface FairwayTripCardProps {
@@ -39,9 +42,10 @@ export interface FairwayTripCardProps {
 
 export function FairwayTripCard({ itinerary, selected, now, onSelect }: FairwayTripCardProps) {
   const status = getTripStatus(itinerary, now);
-  const Icon = TRANSPORT_ICON[itinerary.transportation_type];
+  const { month, day } = dateParts(itinerary.departure_date);
   const hasReturn =
     itinerary.return_date && itinerary.return_date !== itinerary.departure_date;
+  const time = itinerary.departure_time ? formatTravelTime(itinerary.departure_time) : null;
 
   return (
     <PressTarget
@@ -49,55 +53,50 @@ export function FairwayTripCard({ itinerary, selected, now, onSelect }: FairwayT
       aria-pressed={selected}
       className={cn(
         // PressTarget brings the focus ring, the 180ms transition and the
-        // surface press response; the card look is ours.
+        // surface press response; the row look is ours.
         'group relative block w-full rounded-card p-4 text-left',
-        'motion-reduce:hover:translate-y-0',
         selected
-          ? 'border border-accent-300 bg-accent-50/60 shadow-soft hover:bg-accent-50/60'
-          : 'border border-border-subtle bg-surface shadow-flat hover:-translate-y-px hover:border-border-strong hover:bg-surface hover:shadow-raise',
+          ? 'border border-border-control bg-accent-wash'
+          : 'border border-border-subtle bg-surface hover:border-border-strong',
       )}
     >
-      <span className="flex w-full items-start gap-3">
-        <span
-          className={cn(
-            'grid h-9 w-9 shrink-0 place-items-center rounded-fw-md',
-            selected ? 'bg-accent-100 text-accent-700' : 'bg-surface-sunken text-text-tertiary',
-          )}
-        >
-          <Icon className="h-4 w-4" aria-hidden />
+      <span className="flex w-full items-start gap-4">
+        {/* Date block: the scan key for a list of trips. */}
+        <span className="flex w-10 shrink-0 flex-col items-center pt-0.5 tabular-nums" aria-hidden>
+          <span className="font-fw-sans text-caption font-medium text-text-tertiary">{month}</span>
+          <span className="font-fw-display text-h3 text-text-primary">{day}</span>
         </span>
         <span className="block min-w-0 flex-1">
           <span
             className={cn(
-              'line-clamp-2 break-words font-fw-sans text-body-sm font-medium',
-              selected ? 'text-fw-success-ink' : 'text-text-primary',
+              'line-clamp-2 break-words font-fw-sans text-body font-medium',
+              selected ? 'text-accent-ink' : 'text-text-primary',
             )}
           >
             {itinerary.event_name || 'Trip'}
           </span>
-          <span className="mt-1 flex items-center gap-1.5 font-fw-sans text-caption text-text-tertiary">
-            <MapPin aria-hidden className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">{itinerary.destination || 'Destination TBD'}</span>
+          <span className="mt-0.5 block truncate font-fw-sans text-body-sm text-text-secondary tabular-nums">
+            {time ? <>{time} &middot; </> : null}
+            {itinerary.destination || 'Destination TBD'}
           </span>
-          <span className="mt-0.5 flex items-center gap-1.5 font-fw-sans text-caption text-text-tertiary tabular-nums">
-            <Calendar aria-hidden className="h-3.5 w-3.5 shrink-0" />
-            <span>
-              {formatTravelDate(itinerary.departure_date)}
-              {hasReturn ? <> &ndash; {formatTravelDate(itinerary.return_date as string)}</> : null}
-            </span>
+          {/* The date block is aria-hidden, so the full date is always in the
+              accessible name; visually it only adds a line for a multi-day trip. */}
+          <span className={cn('block font-fw-sans text-body-sm text-text-tertiary tabular-nums', !hasReturn && 'sr-only')}>
+            {formatTravelDate(itinerary.departure_date)}
+            {hasReturn ? <> &ndash; {formatTravelDate(itinerary.return_date as string)}</> : null}
           </span>
-          {/* Its own line: "Aug 28, 2026 – Sep 12, 2026" plus a pill does not
-              fit one line of the 390px text column. */}
-          <StatusPill tone={status.tone} size="sm" dot pulse={status.pulse} className="mt-2 flex w-fit">
-            {status.label}
-          </StatusPill>
+          {/* Only when it adds something the section heading doesn't already say
+              ("Coming up" / "Past trips"): a countdown, Today, In transit. Its own
+              line under the dates, so the name keeps the full column. */}
+          {status.label !== 'Upcoming' && status.label !== 'Completed' ? (
+            <StatusPill tone={status.tone} size="sm" dot pulse={status.pulse} className="mt-2 flex w-fit">
+              {status.label}
+            </StatusPill>
+          ) : null}
         </span>
         <ChevronRight
           aria-hidden
-          className={cn(
-            'mt-0.5 h-4 w-4 shrink-0',
-            selected ? 'text-accent-ink' : 'text-text-tertiary',
-          )}
+          className={cn('mt-1 h-4 w-4 shrink-0', selected ? 'text-accent-ink' : 'text-text-tertiary')}
         />
       </span>
     </PressTarget>
