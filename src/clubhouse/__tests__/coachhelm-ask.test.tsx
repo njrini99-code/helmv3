@@ -721,11 +721,13 @@ describe('the container', () => {
     phoneState.on = true;
     show(ready({ thread: { id: 'c', title: 't', messages: ASK_MSGS_ANSWER } }), fakeChat());
     await userEvent.click(screen.getByRole('button', { name: 'stub evidence' }));
-    const sheet = document.querySelector('dialog[open]') as HTMLElement;
-    expect(within(sheet).getByTestId('evidence')).toHaveAttribute('data-phone', 'true');
-    expect(within(sheet).getByRole('region', { name: 'Evidence' })).toHaveAttribute('tabindex', '0');
-    await userEvent.click(within(sheet).getByRole('button', { name: 'stub close evidence' }));
+    // The panel owns its sheet on the phone (its dialog is tested in coachhelm-thread-ui › the evidence panel); Ask
+    // renders it once, with no Modal of its own around it, so only one Evidence sheet ever opens.
+    expect(screen.getAllByTestId('evidence')).toHaveLength(1);
+    expect(screen.getByTestId('evidence')).toHaveAttribute('data-phone', 'true');
     expect(document.querySelector('dialog[open]')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'stub close evidence' }));
+    expect(screen.queryByTestId('evidence')).toBeNull();
   });
 });
 
