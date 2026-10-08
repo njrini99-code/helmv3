@@ -1,5 +1,14 @@
 # P001 — Shell: changelog
 
+## 2026-10-08 — The preview hands the frame its query
+
+The dev preview (`src/app/clubhouse-preview/[screen]/page.tsx`) passes its own query to `ClubhouseFrame` as `search`,
+as the live shell passes the address's, so `&section=` and a coach's `&player=` decide the preview's phone bar too
+(CH-1402). Checked in WebKit at 390 (touch), loading to loaded: Settings with `&section=team` and `&section=account`
+loads and lands under "‹ Settings" (0px); an unknown section and the bare page under "‹ More" (0px); a coach's player
+with `&player=p1` under "‹ Team" and "Player stats" (0px), the page adding Share. The preview's player screen without
+`&player=` is still the team's address, so it loads under the Stats tab root's bar, as the live address would.
+
 ## 2026-10-08 — The hero bell shows keyboard focus
 
 On Home's green bar the bell showed no focus at all (CH-1806): the keys' green focus shadow lost to the disc's own

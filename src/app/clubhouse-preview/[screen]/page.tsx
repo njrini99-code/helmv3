@@ -463,7 +463,14 @@ export default async function ClubhousePreview({
 
   return (
     <PreviewBell state={bell}>
-      <ClubhouseFrame userData={screen === 'coachhelm-player' || screen === 'coachhelm-views' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : user} shell={PREVIEW_SHELL} pathname={entry.path} forceRebuilt>
+      <ClubhouseFrame
+        userData={screen === 'coachhelm-player' || screen === 'coachhelm-views' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : user}
+        shell={PREVIEW_SHELL}
+        pathname={entry.path}
+        // The preview's own query, as the live shell hands the frame the address's: `&section=` and a coach's `&player=` decide the phone bar (CH-1402).
+        search={new URLSearchParams(Object.entries(await searchParams).filter((kv): kv is [string, string] => typeof kv[1] === 'string')).toString()}
+        forceRebuilt
+      >
         <HeroToneProvider tone={heroTone}>{entry.node}</HeroToneProvider>
       </ClubhouseFrame>
     </PreviewBell>
