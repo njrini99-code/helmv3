@@ -614,6 +614,10 @@ from both cloud backup and device-to-device transfer. Both are referenced from
 re-verified green. Cost: a user re-authenticates after a restore, which is the
 correct trade for not shipping a live auth session to Google Drive.
 
+Update (plan phase 7b): the manifest now sets `android:allowBackup="false"`, which
+turns Auto Backup off entirely. The two rule files stay as a second layer in case
+the flag is ever flipped back.
+
 Original finding follows.
 
 
