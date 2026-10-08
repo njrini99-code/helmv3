@@ -474,7 +474,13 @@ const nextConfig = {
           // Content Security Policy
           // SECURITY: 'unsafe-eval' is only for development (Next.js hot reload,
           // React dev tooling); production builds never send it.
-          // TODO: Use nonce-based CSP in production to drop 'unsafe-inline' too.
+          // 'unsafe-inline' stays for scripts and styles: this app has no
+          // nonce plumbing (src/proxy.ts sets no nonce and the layout reads
+          // none), and a per-request nonce makes every page dynamic. Dropping
+          // it means adding both, so it is a separate piece of work.
+          // The form directive blocks a form from posting to another origin
+          // (Chrome also applies it to a redirect that follows the post). No
+          // form in src/ posts off-site; server actions submit through fetch.
           //
           // ANALYTICS HOSTS. src/app/layout.tsx mounts PostHogProvider and
           // DatadogProvider; both initialise client-side whenever their
@@ -522,6 +528,7 @@ const nextConfig = {
               frame-ancestors 'none';
               base-uri 'self';
               object-src 'none';
+              form-action 'self';
             `.replace(/\s{2,}/g, ' ').trim(),
           },
         ],
