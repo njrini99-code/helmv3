@@ -77,6 +77,7 @@ export function PreviewTracking({ state }: { state?: string }) {
         onNavigateToHole={setIndex}
         onExit={() => setSheet('exit')}
         onOpenScorecard={() => setSheet('card')}
+        holeShots={(i) => shotsByHole[i] ?? null}
       />
       <ExitSheet
         open={sheet === 'exit'}

@@ -391,3 +391,40 @@ describe('P011-D1 Round tracking: full screen on the phone', () => {
     unmount();
   });
 });
+
+describe('P011 board 3b: the drawn hole and the course view', () => {
+  it('plots each shot along the hole by the yards it left, and scales the rings from the yardage', async () => {
+    const { holeShape, plotShots, pointAlong, ringRadius, lineLength } = await import('../screens/rounds/track/hole-geometry');
+    const s = holeShape(4, 'tall');
+    const approach = shot({ shotNumber: 2, shotType: 'approach', result: 'green', distanceToHoleBefore: 150, distanceToHoleAfter: 18, distanceUnitAfter: 'feet' });
+    const { plotted, ball } = plotShots(s, HOLES[0]!, [TEE, approach]);
+    expect(plotted.map((p) => p.n)).toEqual([1, 2]);
+    expect(plotted[0]!.from).toEqual(s.tee);
+    // 150 of 420 yards left: the tee shot finishes about 64% of the way along the line.
+    const at = pointAlong(s, 1 - 150 / 420);
+    expect(Math.hypot(plotted[0]!.to.x - at.x, plotted[0]!.to.y - at.y)).toBeLessThan(1);
+    // Each shot ends nearer the pin than the last.
+    const d = (p: { x: number; y: number }) => Math.hypot(p.x - s.pin.x, p.y - s.pin.y);
+    expect(d(ball)).toBeLessThan(d(plotted[0]!.to));
+    expect(ringRadius(s, 150, 420)).toBeCloseTo((150 / 420) * lineLength(s), 5);
+    expect(ringRadius(s, 150, 140)).toBeNull();
+  });
+
+  it('opens from the hole, shows the hole’s shots, and its ‹ › only change what it shows', async () => {
+    const holes: RoundHole[] = [
+      { number: 1, par: 4, yardage: 420, score: 4 },
+      { number: 2, par: 5, yardage: 540, score: null },
+      { number: 3, par: 3, yardage: 170, score: null },
+    ];
+    const { props, user } = setup({ holes, currentHoleIndex: 1, holeShots: (i) => (i === 0 ? [TEE] : null) });
+    await user.click(screen.getByRole('button', { name: 'Course view of hole 2' }));
+    const view = await screen.findByRole('dialog', { name: 'Course view, hole 2' });
+    expect(within(view).getByRole('heading', { name: 'This hole' })).toBeInTheDocument();
+    expect(within(view).getByText('to play')).toBeInTheDocument();
+    expect(within(view).queryByText(/Your last 3|Team average/)).toBeNull();
+    await user.click(within(view).getByRole('button', { name: 'Hole 1' }));
+    expect(within(view).getByRole('heading', { name: 'Hole 1' })).toBeInTheDocument();
+    expect(within(view).getByText('Tee · Driver')).toBeInTheDocument();
+    expect(props.onNavigateToHole).not.toHaveBeenCalled();
+  });
+});

@@ -182,7 +182,7 @@ Every rule is the shared shot rules (`src/lib/golf/shot-entry-rules.ts`), the sa
 | CH-11805 | The hole strip | Holes you can go to are buttons ("Go to hole 1, 4 strokes"); the rest are named marks ("Hole 2, current hole") | `TrackStrip` | round-tracking.test › CH-11805 |
 | CH-11806 | Choices in the entry and the sheets | Radio groups named for what they choose ("Shot result", "Where it missed the green"); putt tags are toggle buttons | `Seg`, the miss grid | preview |
 | CH-11807 | The distance box | Labelled by its section ("Distance remaining (yds)"), `aria-invalid` with its message when it isn't a number | `ShotEntry` | preview |
-| CH-11808 | The hole map | One image named in words ("Hole 4, par 4: 2 shots so far"), captioned Schematic | `HoleMap` | preview |
+| CH-11808 | The hole map | One image named in words ("Hole 4, par 4: 2 shots so far"); on the shot screen it is the button that opens the course view ("Course view of hole 4") | `HoleMap` | preview |
 
 ## 119xx Network and UX
 
