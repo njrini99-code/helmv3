@@ -1087,6 +1087,19 @@ describe('Calendar · the loader', () => {
   beforeEach(freezeClock);
   afterEach(() => vi.useRealTimers());
 
+  it('D2-8 a meeting with no invitees is the coach’s own: players never get it, unless the invite list failed to load', async () => {
+    const rows = { data: [eventRow('e1'), eventRow('m-private', { event_type: 'meeting', title: 'Parent call' }), eventRow('m-team', { event_type: 'meeting' })] };
+    const replies = { data: [replyRow('e1', 'p2', 'accepted'), replyRow('m-team', 'p2', null)] };
+    serve({ ...healthy(), golf_events: rows, golf_event_attendance: replies });
+    expect((await load()).events.map((e) => e.id)).toEqual(expect.arrayContaining(['m-private', 'm-team']));
+    serve({ ...healthy(), golf_events: rows, golf_event_attendance: replies });
+    const ids = (await load(asPlayer('p2'))).events.map((e) => e.id);
+    expect(ids).toContain('m-team');
+    expect(ids).not.toContain('m-private');
+    serve({ ...healthy(), golf_events: rows, golf_event_attendance: { error: { message: 'boom' } } });
+    expect((await load(asPlayer('p2'))).events.map((e) => e.id)).toContain('m-private');
+  });
+
   it('CH-6309 the loader counts the team’s events for a coach: none ever is the first run; any, a failed count, or a player is not', async () => {
     serve({ ...healthy(), golf_events: { data: [], count: 0 } as { data?: unknown } });
     expect((await load()).firstRun).toBe(true);

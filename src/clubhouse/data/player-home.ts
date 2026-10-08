@@ -160,8 +160,8 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     coachUserId,
     week: wk.week,
     // Who hasn't replied, and the invitees' ids, are the coach's (Nudge and Message); a player's page never carries them.
-    next: wk.next && coachOnlyOut(wk.next),
-    today: wk.todayEvents.map(coachOnlyOut),
+    next: wk.next && !coachPrivate(wk.next) ? coachOnlyOut(wk.next) : null,
+    today: wk.todayEvents.filter((e) => !coachPrivate(e)).map(coachOnlyOut),
     weekNote: wk.weekNote,
     latest: { rounds: latest.rounds, error: roundsRes.error, holesError: latest.holesError },
     scoring: { points, error: roundsRes.error },
@@ -172,6 +172,8 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   };
 }
 
+/** D2-8: a meeting with no invitees is the coach's own; a failed invite read (null ids) never hides one. */
+const coachPrivate = (e: ChHomeEvent) => e.type === 'meeting' && e.inviteeIds != null && e.inviteeIds.length === 0;
 const coachOnlyOut = ({ awaiting: _a, inviteeIds: _i, ...e }: ChHomeEvent): ChHomeEvent => e;
 
 /**

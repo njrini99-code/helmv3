@@ -1,5 +1,9 @@
 # P006 — Calendar: changelog
 
+## 2026-10-08 — premium pass: coach-only meetings (D2-8, D7)
+
+A meeting with no invitees is the coach's own (a parent call, a staff meeting): the Calendar loader leaves it out of a player's payload, and the player's Home leaves it out of Up next and Today. Only once the invite list has loaded; when replies fail to load, nothing is hidden. No schema change.
+
 ## 2026-10-08 — premium pass: open on now (P006-B1, D1)
 
 The Week and Day grids open with the now line, or the next event when today is not on show, about 30% down the canvas, on first paint and on T or Today (`focusHour` in `model.ts`, `useOpenOnNow` in `Calendar.tsx`). Opening is instant; Today eases unless motion is reduced. Back and Forward keep the place RouteFrame restored, and stepping a week keeps the canvas where it is.
