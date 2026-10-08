@@ -3254,7 +3254,7 @@
     "item": 3,
     "name": "SORTING_THE_PHONES_PLAYERS_BY_AVG_OR",
     "chCode": "CH-4703",
-    "meaning": "Sorting the phone's players by Avg or SG",
+    "meaning": "Sorting the phone's players by Avg or SG, or picking a strokes gained leg (a row of the leg list: Off the tee, Approach, Around green, Putting or Team total)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
@@ -3320,7 +3320,7 @@
     "item": 5,
     "name": "THE_PHONES_SCORING_LINE_IS_AN_IMAGE",
     "chCode": "CH-4805",
-    "meaning": "The phone's scoring line is an image with a written reading (\"Team scoring average by week, from 74.8 to 73.4. Down 1.4 strokes…\"); each player row is one link read as name, rounds, average and strokes gained (\"Early read\" under three rounds)",
+    "meaning": "The phone's scoring line is an image with a written reading (\"Team scoring average by round day, from 74.8 to 73.4. Down 1.4 strokes…\"); a finger on it reads a round day (pointer only, the reading carries it for assistive technology); each player row is one link read as name, rounds, average and strokes gained (\"Early read\" under three rounds)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
