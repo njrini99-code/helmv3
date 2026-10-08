@@ -1,5 +1,11 @@
 # P003 — Roster: changelog
 
+## 2026-10-08 — The phone list shows the figure it is sorted by
+
+From the native-feel audit (P1-3). Not yet reviewed by the owner.
+
+- **Sorted by SG**, each phone row's trailing column shows strokes gained per round (`+0.8`, `−1.2`, `—` when there is none) over "SG / rd", with gains in green and losses in amber. The row's VoiceOver label reads the same figure. Sorted by Avg or Name, the column keeps the average and handicap; under Name, the name already leads the row (`RosterPhoneRow`'s `sort` prop).
+
 ## 2026-10-08 — Premium pass: ranks, one material, the lit ledger, the peek
 
 Approved by the owner on 2026-10-08 (P003-A1, A3, C1; findings #1 to #17).

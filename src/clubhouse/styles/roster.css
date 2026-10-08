@@ -1001,6 +1001,13 @@
     color: var(--ch-text-tertiary);
     white-space: nowrap;
   }
+  /* Sorted by SG, the row leads with strokes gained a round (P1-3): gains green, losses amber (D-42). */
+  .ch-rsm-row__v b.is-gain {
+    color: var(--ch-chart-gain);
+  }
+  .ch-rsm-row__v b.is-loss {
+    color: var(--ch-chart-loss);
+  }
 
   /* Profile: a pushed screen (PhoneScreen) with its own scroll, on the same ledger: the player at the top, the figures
      between two hairlines, then each part flush under the double rule. */
