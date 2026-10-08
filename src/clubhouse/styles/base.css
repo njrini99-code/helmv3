@@ -14,6 +14,20 @@
   text-rendering: optimizeLegibility;
   -webkit-tap-highlight-color: transparent;
 }
+/* No WebKit tap flash on any control, whatever sport the document is tagged with: press feedback is each control's own
+   :active state, as in a native app (globals.css paints links and buttons green unless the html is tagged golf). */
+.ch-root a,
+.ch-root button,
+.ch-root summary,
+.ch-root label,
+.ch-root nav,
+.ch-root aside,
+.ch-root header,
+.ch-root footer,
+.ch-root [role='tablist'],
+.ch-root [role='toolbar'] {
+  -webkit-tap-highlight-color: transparent;
+}
 .ch-root *,
 .ch-root *::before,
 .ch-root *::after {
