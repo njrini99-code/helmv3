@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChHomeEvent, ChLatestRound } from '../../data/home';
 import { Avatar } from '../../ui/Avatar';
 import { Icon } from '../../ui/Icon';
+import { LedgerList, LedgerRow } from '../../ui/Ledger';
 import { formatToPar } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
@@ -351,32 +352,23 @@ export function SinceYouLooked({ rounds, event, onOpenRound }: { rounds: ChLates
       <div className="ch-hm-sec__h">
         <h2 id="ch-hm-since">Since you last looked</h2>
       </div>
-      <ul className="ch-hm-since__l">
+      {/* The cardless pass (owner, 2026-10-08): Ledger rows on the canvas, the figure where Later today keeps its time, so
+          the titles of the two lists stand on one line; not a sideways rail of filled tiles. */}
+      <LedgerList className="ch-hm-since__l">
         {chips.map((c) => {
-          const body = (
-            <>
-              <b className="ch-num">
-                {c.big}
-                {c.toPar && <em className={c.toPar.under ? 'is-under' : undefined}> {c.toPar.text}</em>}
-              </b>
-              <span>{c.label}</span>
-            </>
+          const lead = (
+            <b className="ch-hm-since__fig ch-num">
+              {c.big}
+              {c.toPar && <em className={c.toPar.under ? 'is-under' : undefined}> {c.toPar.text}</em>}
+            </b>
           );
-          return (
-            <li key={c.key}>
-              {c.round ? (
-                <button type="button" className="ch-hm-since__c" data-ch-press="" onClick={() => (haptic('select'), onOpenRound(c.round!))}>
-                  {body}
-                </button>
-              ) : (
-                <Link href={c.href ?? CALENDAR} className="ch-hm-since__c" data-ch-press="" onClick={() => haptic('select')}>
-                  {body}
-                </Link>
-              )}
-            </li>
+          return c.round ? (
+            <LedgerRow key={c.key} className="ch-hm-since__c" lead={lead} title={c.label} meta={c.round.meta.split(' · ').slice(0, 2).join(' · ') || undefined} onClick={() => (haptic('select'), onOpenRound(c.round!))} />
+          ) : (
+            <LedgerRow key={c.key} className="ch-hm-since__c" lead={lead} title={c.label} href={c.href ?? CALENDAR} onClick={() => haptic('select')} />
           );
         })}
-      </ul>
+      </LedgerList>
     </section>
   );
 }

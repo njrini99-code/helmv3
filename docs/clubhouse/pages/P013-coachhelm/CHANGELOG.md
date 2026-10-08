@@ -1,5 +1,23 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-08 — the cardless pass: Ask on the phone
+
+Phone only; the desktop is unchanged.
+
+- **New chat:** the opener and the questions sit together at the foot of the screen, just above the composer,
+  instead of a centered greeting over an empty page with a sideways rail of outlined 164px cards at the bottom. The
+  opener is left-aligned (28px), and the three questions are action rows between the Ledger's soft seams, their
+  words in the green ink as an iPhone action row's are, a 60px row with a full-width tap area and a press tint, no
+  chevron (a row asks; it does not go somewhere).
+- **Evidence:** the figure stays the one object. Its metric tiles are no longer cards inside it but its rows: the
+  label at the left with the sample under it, the value at the right, parted by the figure's hairline and closed by
+  one above and below. The Evidence sheet draws the same rows, and its trend sits on the sheet under a hairline
+  instead of in a ringed card. The scrolling table keeps its card.
+- **Action card:** the notes (who is told, and the impact) are lines under the facts' hairline, not filled boxes
+  inside the card; the impact's icon keeps the warning ink.
+- **Loading:** the phone skeleton draws the new chat's shape (the opener's lines, three rows, the composer) at the
+  foot of the screen, not the desktop's centered block.
+
 ## 2026-10-08 — The green card is where the light lands (P013-A3)
 
 Approved by the owner on 2026-10-08. On the phone the focus's claim, the page's one

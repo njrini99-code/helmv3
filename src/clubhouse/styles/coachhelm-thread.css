@@ -996,6 +996,87 @@ a.ch-th-rank__name::after {
   }
 }
 
+/* The cardless pass (owner, 2026-10-08: "the card is not the unit of layout"). On the phone the evidence figure is the one
+   object: its metric tiles are not cards inside it but its rows, each the figure's label at the left and its value at the
+   right with the sample under the label, parted by the figure's hairline as its table's rows are. The Evidence sheet
+   (EvidencePanel, a Modal outside .ch-th--phone, marked .is-phone) draws the same rows, and its trend sits on the sheet
+   under a hairline instead of in a ringed card beside the others. The action card keeps its card (it is a real object
+   with its own actions); its notes are lines under its facts' hairline, not filled boxes inside it. */
+@media (max-width: 820px) {
+  .ch-th--phone .ch-th-tiles,
+  .ch-th-evp__body.is-phone .ch-th-tiles {
+    display: block;
+    border-top: 1px solid var(--ch-border-hairline);
+    border-bottom: 1px solid var(--ch-border-hairline);
+  }
+  .ch-th--phone .ch-th-tile,
+  .ch-th-evp__body.is-phone .ch-th-tile {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'label value' 'sub value';
+    align-items: center;
+    column-gap: 16px;
+    row-gap: 2px;
+    min-height: 52px;
+    padding: 9px 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-th--phone .ch-th-tile + .ch-th-tile,
+  .ch-th-evp__body.is-phone .ch-th-tile + .ch-th-tile {
+    border-top: 1px solid var(--ch-border-hairline);
+  }
+  .ch-th--phone .ch-th-tile__label,
+  .ch-th-evp__body.is-phone .ch-th-tile__label {
+    grid-area: label;
+    font: 500 14px/1.3 var(--ch-font-sans);
+    color: var(--ch-text-primary);
+  }
+  .ch-th--phone .ch-th-tile__sub,
+  .ch-th-evp__body.is-phone .ch-th-tile__sub {
+    grid-area: sub;
+    font-size: 12.5px;
+  }
+  .ch-th--phone .ch-th-tile__value,
+  .ch-th-evp__body.is-phone .ch-th-tile__value {
+    grid-area: value;
+    font: 600 20px/1 var(--ch-font-sans);
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+  .ch-th--phone .ch-th-tile[data-tone='loss'] .ch-th-tile__value,
+  .ch-th-evp__body.is-phone .ch-th-tile[data-tone='loss'] .ch-th-tile__value {
+    color: var(--ch-chart-loss);
+  }
+  .ch-th-evp__body.is-phone .ch-th-fig--bare {
+    padding: 16px 0 0;
+    border-top: 1px solid var(--ch-border-hairline);
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  /* Under the figure rows, whose closing hairline already parts them from it. */
+  .ch-th-evp__body.is-phone .ch-th-tiles + .ch-th-fig--bare {
+    padding-top: 4px;
+    border-top: 0;
+  }
+  .ch-th--phone .ch-th-act__note {
+    margin: 4px 16px 0;
+    padding: 12px 0 0;
+    border-top: 1px solid var(--ch-border-hairline);
+    border-radius: 0;
+    background: none;
+  }
+  .ch-th--phone .ch-th-act__note + .ch-th-act__note {
+    margin-top: 12px;
+  }
+  .ch-th--phone .ch-th-act__impact svg {
+    color: var(--ch-warning-600);
+  }
+}
+
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. The trend is drawn at its own width, so its SVG text is in pixels. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
