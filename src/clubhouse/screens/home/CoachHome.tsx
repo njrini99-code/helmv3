@@ -46,7 +46,7 @@ export function CoachHome({ data, now }: { data: ChCoachHome; /** Preview and te
         </SectionBoundary>
       </div>
       <SectionBoundary surface="home.leaderboard" label="The leaderboard" code="CH-2207">
-        <Leaderboard data={data.leaderboard} covered={covered} />
+        <Leaderboard data={data.leaderboard} covered={covered} rounds={data.latestRounds.rounds} />
       </SectionBoundary>
     </main>
   );

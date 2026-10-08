@@ -1,5 +1,28 @@
 # P001 — Shell: changelog
 
+## 2026-10-08 — Press-and-hold peek and the player peek (P003-C1 primitive)
+
+Approved by the owner on 2026-10-08.
+
+- **`PeekTarget` (`ui/Peek.tsx`, CH-1830, CH-1831).** Anything that names an
+  object can show a card of it without leaving the page:
+  - Phone: hold about 450ms (a selection tick) and the card rises over the
+    dimmed page where the row was, with the actions under it. The tap the hold
+    ends with does not open the row, and a scroll cancels the hold.
+  - Desktop: rest the pointer for 400ms, or focus from the keyboard for 600ms,
+    for a hover card with the same actions.
+
+  The target always keeps its own tap.
+- **`PlayerPeek` (`ui/PlayerPeek.tsx`, CH-1832).** A player's card:
+  - why they need a look;
+  - the last round and the average;
+  - a word-sized line of the last scores.
+
+  Its actions are Message (prefills Messages with the player, never sends),
+  View stats and Plan 1:1. Pages map what they have already loaded into
+  `ChPlayerPeek`, so the peek makes no reads. It is wired on Home's
+  leaderboard (`leaderPeek`); page builders wrap their own names.
+
 ## 2026-10-08 — Deep links inside the app (P001-C2, shell part)
 
 Approved by the owner on 2026-10-08.

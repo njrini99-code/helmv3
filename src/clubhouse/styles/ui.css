@@ -1095,3 +1095,228 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
     color: var(--ch-ledger-ink);
   }
 }
+
+/* Press-and-hold peek (ui/Peek.tsx; owner, 2026-10-08). The target wraps without a box of its own. On a touch screen
+   iOS's link callout and text selection stay out of a hold, which the peek takes. */
+.ch-peek-target {
+  display: contents;
+}
+@media (pointer: coarse) {
+  .ch-peek-target > * {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+/* Phone: the card rises over the dimmed, softened page where the row was, with the actions under it (CH-1830). */
+.ch-peek {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  color: var(--ch-text-primary);
+}
+.ch-peek::backdrop {
+  background: rgb(20 20 18 / 0.28);
+  -webkit-backdrop-filter: blur(10px) saturate(110%);
+  backdrop-filter: blur(10px) saturate(110%);
+  animation: ch-fade var(--ch-dur-base) var(--ch-ease);
+}
+.ch-peek__panel {
+  position: absolute;
+  right: 16px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+/* The panel takes focus as it opens, so VoiceOver starts on the card: no ring on what is not a control. */
+.ch-root .ch-peek__panel:focus {
+  outline: none;
+}
+.ch-peek__card {
+  padding: 16px;
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-elevation-overlay), var(--ch-highlight);
+}
+.ch-peek__menu {
+  overflow: hidden;
+  width: min(250px, 100%);
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-elevation-overlay), var(--ch-highlight);
+}
+.ch-peek__act {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  background: none;
+  color: var(--ch-text-primary);
+  font: var(--ch-type-body);
+  text-align: left;
+  text-decoration: none;
+}
+.ch-peek__act + .ch-peek__act {
+  box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+}
+.ch-peek__act:active {
+  background: var(--ch-bg-hover);
+}
+.ch-peek__act svg {
+  color: var(--ch-text-secondary);
+}
+/* Desktop: the hover card beside the name (CH-1831), the same card with its actions as small keys. */
+.ch-hovercard {
+  position: fixed;
+  z-index: var(--ch-z-overlay);
+  box-sizing: border-box;
+  padding: 14px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-sheet-bg);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-body);
+  box-shadow: var(--ch-elevation-overlay), var(--ch-highlight), 0 0 0 1px var(--ch-border-hairline);
+}
+.ch-hovercard__acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+}
+.ch-hovercard__act {
+  display: inline-flex;
+  flex: 1;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-raised-bg);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-label-s);
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: var(--ch-raised-shadow), 0 0 0 1px var(--ch-border-subtle);
+}
+@media (hover: hover) {
+  .ch-hovercard__act:hover {
+    background: var(--ch-bg-hover);
+  }
+}
+.ch-hovercard__act svg {
+  color: var(--ch-text-secondary);
+}
+:where(html[data-fw-theme='dark']) .ch-peek::backdrop {
+  background: rgb(0 0 0 / 0.5);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .ch-peek::backdrop {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+:root[data-reduce-transparency] .ch-peek::backdrop {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* The player peek's card (ui/PlayerPeek.tsx, CH-1832). The reason is ink; its icon carries the amber (D5-1). */
+.ch-ppeek {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ch-ppeek__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.ch-ppeek__who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ch-ppeek__who b {
+  overflow: hidden;
+  font: var(--ch-type-title);
+  color: var(--ch-text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-ppeek__who span,
+.ch-ppeek__m {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-ppeek__why {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-primary);
+}
+.ch-ppeek__why svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--ch-warning-600);
+}
+.ch-ppeek__figs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 0;
+}
+.ch-ppeek__figs > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.ch-ppeek__figs dt {
+  font: var(--ch-type-label-s);
+  color: var(--ch-text-tertiary);
+}
+.ch-ppeek__figs dd {
+  margin: 0;
+  font: 600 22px/1.1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-ppeek__figs dd small {
+  font: var(--ch-type-label);
+  color: var(--ch-text-secondary);
+}
+.ch-ppeek__line {
+  overflow: visible;
+}
+.ch-ppeek__line polyline {
+  stroke: var(--ch-text-tertiary);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ch-ppeek__line circle {
+  fill: var(--ch-green-700);
+}
