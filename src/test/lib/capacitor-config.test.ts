@@ -37,7 +37,11 @@ describe('capacitor config', () => {
     const config = await load();
     expect(config.server?.url).toBe('http://192.168.1.20:3000/golf/dashboard');
     expect(config.server?.cleartext).toBe(true);
-    expect(config.server?.allowNavigation).toContain('192.168.1.20:3000');
+    // Capacitor matches allowNavigation against the URL's host without its port
+    // (WebViewDelegationHandler: navURL.host), so a host:port entry never matched
+    // and every redirect on a dev run opened in Safari.
+    expect(config.server?.allowNavigation).toContain('192.168.1.20');
+    expect(config.server?.allowNavigation).not.toContain('192.168.1.20:3000');
   });
 
   it('anything off the local network is refused', async () => {
