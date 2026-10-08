@@ -85,6 +85,7 @@ First-run states only; the page has no filter or search, so no filtered empty. A
 | 80403 | CH-8303 | `A_PLAYER_HAS_ASKED_TO_JOIN_AND` | A player has asked to join and is waiting |
 | 80404 | CH-8304 | `NO_PROFILE_PHOTO` | No profile photo |
 | 80405 | — | `SETTINGS_OPEN_WITHOUT_A_TEAM` | A coach or player with no team still gets Settings, never a no-team page: Account, Notifications and Preferences work, a coach's Team section says why it is empty (CH-8301) and a player's Golf profile offers Join a team (CH-8302). |
+| 80406 | CH-8320 | `THE_TEAMS_COURSE_LOCATION` | The team's course location (Team; held migration 20261008150000) |
 
 ## 05 — Validation
 
@@ -167,6 +168,7 @@ are the shell's (10603 to 10607).
 | 80638 | CH-8027 | `DECLINING_AN_ASSISTANT_COACH_REQUEST_FAILS` | Declining an assistant coach request fails (head coach) |
 | 80639 | CH-8028 | `MAKING_A_STAFF_INVITE_FAILS` | Making a staff invite fails (head coach) |
 | 80640 | CH-8213 | `THE_ASSISTANT_COACH_REQUESTS_DONT_LOAD` | The assistant coach requests don't load (head coach) |
+| 80641 | CH-8029 | `SEND_A_TEST_PUSH_FAILS` | Send a test push fails (P008-C3, D1-6) |
 
 ## 07 — Network / offline
 
@@ -351,7 +353,7 @@ Settings' own (81801 to 81807): the rail is a navigation with the open section m
 | 81806 | CH-8806 | `DIALOGS_TRAP_FOCUS_ESC_CLOSES_FOCUS_RETURNS` | Dialogs trap focus, Esc closes, focus returns to the button |
 | 81807 | CH-8807 | `EVERY_FIELD_HAS_A_LABEL_AND_ITS` | Every field has a label, and its help or error is read with it |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842.
 
 ## 19 — Responsive layout
 

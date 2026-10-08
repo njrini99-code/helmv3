@@ -933,6 +933,105 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 11816,
+    "page": "P001",
+    "category": 18,
+    "item": 16,
+    "name": "ON_THE_PHONE_THE_DOCK_THE_BAND",
+    "chCode": "CH-1820",
+    "meaning": "On the phone the dock, the band just above the tab bar, carries a page's primary controls (`ThumbDock`) and the Resume round accessory; it hides with the tab bar (a pushed screen, a full-page form) and while a field has focus (the keyboard), and the canvas grows by its height so the last row clears it. Empty, it is not drawn",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11817,
+    "page": "P001",
+    "category": 18,
+    "item": 17,
+    "name": "ON_THE_PHONE_WHILE_THE_PLAYER_HAS",
+    "chCode": "CH-1821",
+    "meaning": "On the phone, while the player has a round in progress (touched in the last 12 hours), a parchment accessory above the tab bar reads “Round in progress, Oakmont CC · Hole 7”; one tap opens the shot screen. Not shown on the round's own screens or for a round whose screen isn't rebuilt",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11818,
+    "page": "P001",
+    "category": 18,
+    "item": 18,
+    "name": "ON_A_DESKTOP_THE_SIDEBARS_CARD_SLOT",
+    "chCode": "CH-1822",
+    "meaning": "On a desktop the sidebar's card slot resumes the player's round in progress in place of the next event",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11819,
+    "page": "P001",
+    "category": 18,
+    "item": 19,
+    "name": "ON_A_TOUCH_SCREEN_HOLDING_A_PEEKABLE",
+    "chCode": "CH-1830",
+    "meaning": "On a touch screen, holding a peekable object (a player's name) for about 450ms ticks once and raises its card over the dimmed, softened page where the row was, its actions listed under it (the native context menu's anatomy); the tap the hold ends with does not open the row, a scroll or drag past 8px cancels the hold, and iOS's link callout stays out of it. Esc, a tap outside or an action closes it, but not the lift that ends the hold; focus returns to the row",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11820,
+    "page": "P001",
+    "category": 18,
+    "item": 20,
+    "name": "ON_A_DESKTOP_RESTING_THE_POINTER_ON",
+    "chCode": "CH-1831",
+    "meaning": "On a desktop, resting the pointer on it for 400ms (or focusing it from the keyboard for 600ms) opens a hover card beside it with the same actions as small keys; leaving the target and the card, Esc, or a scroll that moves the target closes it",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11821,
+    "page": "P001",
+    "category": 18,
+    "item": 21,
+    "name": "THE_PLAYER_PEEK_NAME_AND_CLASS_WHY",
+    "chCode": "CH-1832",
+    "meaning": "The player peek: name and class, why they need a look (ink, the amber on its icon), the last round, the average and a word-sized line of the last scores; Message opens Messages with the player as the recipient (never sends), View stats and Plan 1:1 open their pages. Wired on Home's leaderboard; other pages wrap their names in `PlayerPeek`",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11822,
+    "page": "P001",
+    "category": 18,
+    "item": 22,
+    "name": "A_COACHS_TOP_BAR_CARRIES_AN_ASK",
+    "chCode": "CH-1840",
+    "meaning": "A coach's top bar carries an Ask key (desktop and phone; only while CoachHelm is on for the coach, not on CoachHelm itself, and never for a player): it opens the Ask sheet over the page",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11823,
+    "page": "P001",
+    "category": 18,
+    "item": 23,
+    "name": "THE_ASK_SHEET_IS_COACHHELMS_ASK_OVER",
+    "chCode": "CH-1841",
+    "meaning": "The Ask sheet is CoachHelm's Ask over any screen: the same chat hook and route (no new model or spend), the thread and the message box, saved like any chat; Open in CoachHelm goes to it there. Phone: a bottom sheet that opens at half height with the page in view and grows to full when a thread starts (the grab or the chevron toggles); desktop: a centred sheet. Its heading takes focus, Esc, Close or the backdrop close it, and a new page (or another player) closes it and starts the next one fresh; in the app it sits above the keyboard",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11824,
+    "page": "P001",
+    "category": 18,
+    "item": 24,
+    "name": "THE_SHEET_NAMES_WHAT_THE_COACH_IS",
+    "chCode": "CH-1842",
+    "meaning": "The sheet names what the coach is looking at (“Looking at: Stats · Jonah Okafor”, from the page's trail or the navigation); a page about one player (`?player=`) also hands the chat that player as its context chip",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 11901,
     "page": "P001",
     "category": 19,
@@ -3851,6 +3950,17 @@
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
+    "id": 50619,
+    "page": "P005",
+    "category": 6,
+    "item": 19,
+    "name": "SHARING_A_PERSONAL_BEST_CARD_FAILS",
+    "chCode": "CH-5005",
+    "meaning": "Sharing a personal-best card fails (the share sheet or the download is blocked)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
     "id": 50701,
     "page": "P005",
     "category": 7,
@@ -4196,6 +4306,17 @@
     "chCode": "CH-5809",
     "meaning": "The round filter, as on Team stats (CH-4806): the Filter button opens a labelled dialog, each chip is \"Remove filter: …\", Clear is \"Clear filters\", the count line is a polite status region, choices (round type, holes, pick mode) are toggle buttons and courses and rounds are checkboxes, all in labelled groups, and the date fields carry their error as their description",
     "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 51810,
+    "page": "P005",
+    "category": 18,
+    "item": 10,
+    "name": "SHARE_BEST_SCORE_OPENS_A_LABELLED_DIALOG",
+    "chCode": "CH-5810",
+    "meaning": "Share best score (P005-C2) opens a labelled dialog with the card as an image whose alt names the score, the player, the course and the date; Share is the one primary. The card shows no school or team name and, unless the player shares it, their first name and last initial",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
@@ -4844,6 +4965,17 @@
     "name": "REMOVING_A_CALENDAR_APP_LINK_FAILS",
     "chCode": "CH-6014",
     "meaning": "Removing a calendar-app link fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60628,
+    "page": "P006",
+    "category": 6,
+    "item": 28,
+    "name": "MOVING_AN_EVENT_BY_DRAG_OR_ALT",
+    "chCode": "CH-6015",
+    "meaning": "Moving an event by drag or Alt+arrow fails (P006-B3)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
@@ -6572,6 +6704,17 @@
     ]
   },
   {
+    "id": 80406,
+    "page": "P008",
+    "category": 4,
+    "item": 6,
+    "name": "THE_TEAMS_COURSE_LOCATION",
+    "chCode": "CH-8320",
+    "meaning": "The team's course location (Team; held migration 20261008150000)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
     "id": 80501,
     "page": "P008",
     "category": 5,
@@ -7173,6 +7316,17 @@
     "name": "THE_ASSISTANT_COACH_REQUESTS_DONT_LOAD",
     "chCode": "CH-8213",
     "meaning": "The assistant coach requests don't load (head coach)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 80641,
+    "page": "P008",
+    "category": 6,
+    "item": 41,
+    "name": "SEND_A_TEST_PUSH_FAILS",
+    "chCode": "CH-8029",
+    "meaning": "Send a test push fails (P008-C3, D1-6)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -15268,6 +15422,17 @@
     "catalog": "docs/clubhouse/catalog/recruiting.md"
   },
   {
+    "id": 140407,
+    "page": "P014",
+    "category": 4,
+    "item": 7,
+    "name": "A_PROSPECT_WITH_NO_NEXT_STEP",
+    "chCode": "CH-14307",
+    "meaning": "A prospect with no next step (only while the next-step columns exist)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/recruiting.md"
+  },
+  {
     "id": 140501,
     "page": "P014",
     "category": 5,
@@ -15374,6 +15539,17 @@
     "name": "A_FOLDER_OR_A_FILE_WITH_NOTHING",
     "chCode": "CH-14110",
     "meaning": "A folder, or a file with nothing in it, is dropped",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/recruiting.md"
+  },
+  {
+    "id": 140511,
+    "page": "P014",
+    "category": 5,
+    "item": 11,
+    "name": "THE_NEXT_STEPS_DAY_IS_NOT_A",
+    "chCode": "CH-14111",
+    "meaning": "The next step's day is not a real date",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/recruiting.md"
   },
@@ -15792,6 +15968,39 @@
     "name": "EMAIL_AND_CALL",
     "chCode": "CH-14805",
     "meaning": "Email and Call",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/recruiting.md"
+  },
+  {
+    "id": 141806,
+    "page": "P014",
+    "category": 18,
+    "item": 6,
+    "name": "A_PROSPECT_IS_MOVED_TO_COMMITTED_AND",
+    "chCode": "CH-14806",
+    "meaning": "A prospect is moved to Committed and the save lands",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/recruiting.md"
+  },
+  {
+    "id": 141807,
+    "page": "P014",
+    "category": 18,
+    "item": 7,
+    "name": "EMAIL_AND_CALL_FOR_A_DIVISION_I",
+    "chCode": "CH-14807",
+    "meaning": "Email and Call for a Division I prospect before June 15 of their sophomore year",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/recruiting.md"
+  },
+  {
+    "id": 141808,
+    "page": "P014",
+    "category": 18,
+    "item": 8,
+    "name": "THE_RECRUITING_CALENDAR_LINE",
+    "chCode": "CH-14808",
+    "meaning": "The recruiting calendar line",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/recruiting.md"
   },
