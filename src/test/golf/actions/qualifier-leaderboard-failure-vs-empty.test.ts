@@ -60,7 +60,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 
 async function leaderboard() {
-  const { getQualifierLeaderboard } = await import('@/app/golf/actions/golf');
+  const { getQualifierLeaderboard } = await import('@/app/golf/actions/qualifier-actions');
   return getQualifierLeaderboard('q1');
 }
 

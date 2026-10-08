@@ -19,7 +19,7 @@ export function StaleStandings() {
   return (
     <InlineNotice
       code="CH-09220"
-      title="These standings may be out of date."
+      title="These standings may be out of date"
       body="The latest scores didn’t load, so this is the last list that did. Try again to bring it up to date."
       onRetry={refresh}
       retrying={refreshing}
@@ -53,7 +53,7 @@ export function Selections({ data, status, topScore }: { data: ChQDetailCore; st
       return (
         <section className="ch-qf-side" aria-labelledby="ch-qf-sel">
           {head}
-          <InlineNotice code="CH-09207" title="The confirmed squad didn’t load." body={squadMissing} onRetry={refresh} retrying={refreshing} />
+          <InlineNotice code="CH-09207" title="The confirmed squad didn’t load" body={squadMissing} onRetry={refresh} retrying={refreshing} />
         </section>
       );
     }
@@ -83,7 +83,7 @@ export function Selections({ data, status, topScore }: { data: ChQDetailCore; st
           ))}
         {/* A failed read of the notes is not "no notes": the picks above stay, the missing notes are named. */}
         {coach && data.reasonsError && (
-          <InlineNotice code="CH-09221" title="Pick notes didn’t load." body="The squad is right; the coach’s notes on the picks are missing until they load." onRetry={refresh} retrying={refreshing} />
+          <InlineNotice code="CH-09221" title="Pick notes didn’t load" body="The squad is right; the coach’s notes on the picks are missing until they load." onRetry={refresh} retrying={refreshing} />
         )}
       </section>
     );
@@ -150,7 +150,7 @@ export function Courses({ data }: { data: ChQDetailCore }) {
 function CourseRows({ s }: { s: ChQDetailSecondary }) {
   const { refresh, refreshing } = useRefresh();
   if (s.coursesError) {
-    return <InlineNotice code="CH-09206" title="The round courses didn’t load." body="The standings are right; which course each round is on is missing until it loads." onRetry={refresh} retrying={refreshing} />;
+    return <InlineNotice code="CH-09206" title="The round courses didn’t load" body="The standings are right; which course each round is on is missing until it loads." onRetry={refresh} retrying={refreshing} />;
   }
   return (
     <ol className="ch-qf-list">

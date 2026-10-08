@@ -12,7 +12,7 @@
  *
  * Re-exported from `src/lib/coachhelm/v3/motion.ts`.
  */
-import type { Transition } from 'framer-motion';
+import type { Transition } from 'motion/react';
 
 /** Framer springs. */
 export const SPRING = {

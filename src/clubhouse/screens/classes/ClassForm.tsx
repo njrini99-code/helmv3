@@ -316,7 +316,7 @@ export function ClassForm({
         icon={TriangleAlert}
         code="CH-12502"
         title="Discard your changes?"
-        description="What you typed here isn't saved."
+        description="What you typed here isn’t saved."
         footer={
           <>
             <Button variant="ghost" onClick={() => setDiscarding(false)}>

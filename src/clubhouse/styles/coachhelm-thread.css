@@ -133,9 +133,11 @@
   text-decoration-thickness: 1px;
   transition: color var(--ch-dur-quick) var(--ch-ease), text-decoration-color var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-th-mention:hover {
-  color: var(--ch-green-700);
-  text-decoration-color: var(--ch-green-rule);
+@media (hover: hover) {
+  .ch-th-mention:hover {
+    color: var(--ch-green-700);
+    text-decoration-color: var(--ch-green-rule);
+  }
 }
 
 /* What CoachHelm is doing */
@@ -337,7 +339,7 @@
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: 7px;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 .ch-th-bar[data-tone='good'] .ch-th-bar__track > span {
   background: var(--ch-green-400);
@@ -559,9 +561,11 @@
   color: var(--ch-text-tertiary);
   transition: background var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-th-icobtn:hover {
-  background: var(--ch-ivory-150);
-  color: var(--ch-text-primary);
+@media (hover: hover) {
+  .ch-th-icobtn:hover {
+    background: var(--ch-ivory-150);
+    color: var(--ch-text-primary);
+  }
 }
 .ch-th--phone .ch-th-icobtn {
   width: 44px;
@@ -587,8 +591,10 @@
   color: var(--ch-text-primary);
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-th-pill:hover {
-  background: var(--ch-ivory-50);
+@media (hover: hover) {
+  .ch-th-pill:hover {
+    background: var(--ch-ivory-50);
+  }
 }
 .ch-th-work__btn:focus-visible,
 .ch-th-toggle:focus-visible,
@@ -663,7 +669,7 @@
   border-radius: 10px;
   display: grid;
   place-items: center;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   color: var(--ch-ivory-25);
 }
 .ch-th-act[data-status='cancelled'] .ch-th-act__icon,
@@ -814,7 +820,7 @@
   height: 8px;
   margin-top: 6px;
   border-radius: 50%;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 .ch-th-receipt[data-status='failed'] .ch-th-receipt__dot,
 .ch-th-receipt[data-status='partial'] .ch-th-receipt__dot {
@@ -846,8 +852,10 @@
   font: 500 12.5px/1 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
-a.ch-th-chip:hover {
-  box-shadow: 0 0 0 1px var(--ch-green-ring);
+@media (hover: hover) {
+  a.ch-th-chip:hover {
+    box-shadow: 0 0 0 1px var(--ch-green-ring);
+  }
 }
 .ch-th-receipt__meta {
   margin-top: 10px;
@@ -919,6 +927,31 @@ a.ch-th-chip:hover {
   }
 }
 
+/* The Mobile clubhouse pass (2026-10-08): on the phone a failed answer is a flush notice like every other one, the
+   danger rule at its left and the title in the danger ink, no fill; Try again sits under the words, at their edge. */
+@media (max-width: 820px) {
+  .ch-th--phone .ch-th-error {
+    align-items: flex-start;
+    gap: 10px 12px;
+    padding: 1px 0 1px 14px;
+    border-left: 2px solid var(--ch-danger-600);
+    border-radius: 0;
+    background: none;
+  }
+  .ch-th--phone .ch-th-error__txt {
+    flex-basis: calc(100% - 28px);
+  }
+  .ch-th--phone .ch-th-error__title {
+    font-size: 15px;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+    color: var(--ch-danger-600);
+  }
+  .ch-th--phone .ch-th-error > .ch-btn {
+    margin-left: 28px;
+  }
+}
+
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
@@ -927,4 +960,17 @@ a.ch-th-chip:hover {
   .ch-th-ref-label {
     font-size: 12px;
   }
+}
+
+/* Dark (Clubhouse at night). The action icon's ink stays ivory on its fill (the ivory ramp is the dark surfaces here);
+   a cancelled action's fill steps down to a raised surface so that ink still reads. */
+:where(html[data-fw-theme='dark']) .ch-th-pill {
+  box-shadow: 0 0 0 1px var(--ch-border-control);
+}
+:where(html[data-fw-theme='dark']) .ch-th-act__icon {
+  color: var(--ch-text-on-accent);
+}
+:where(html[data-fw-theme='dark']) .ch-th-act[data-status='cancelled'] .ch-th-act__icon,
+:where(html[data-fw-theme='dark']) .ch-th-act[data-status='abandoned'] .ch-th-act__icon {
+  background: var(--ch-ivory-400);
 }

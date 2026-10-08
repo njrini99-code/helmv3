@@ -19,7 +19,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import * as React from 'react';
 
-vi.mock('framer-motion', () => ({
+vi.mock('motion/react', () => ({
   useReducedMotion: () => false,
   useScroll: () => ({ scrollY: { get: () => 0, on: () => () => {} } }),
   useTransform: () => ({ get: () => 0, on: () => () => {} }),

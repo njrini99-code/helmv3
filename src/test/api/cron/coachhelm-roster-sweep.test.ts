@@ -25,7 +25,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 
 // Side-effect-only import in the route — no-op it so loading the route
 // doesn't pull in the real (heavy) insights.ts module graph.
-vi.mock('@/app/golf/actions/insights', () => ({}));
+vi.mock('@/app/golf/actions/insights-coachhelm', () => ({}));
 
 vi.mock('@/lib/coachhelm/v2/trigger-insights-bridge', () => ({
   triggerPlayerInsightsAfterRound: vi.fn(async () => ({ success: true, insights_created: 1 })),

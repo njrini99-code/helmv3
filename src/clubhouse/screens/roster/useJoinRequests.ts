@@ -76,14 +76,14 @@ export function useJoinRequests(teamName: string, initial: ChJoinRequest[]) {
       }),
     (r) => ({
       done: `${r.name} added to ${teamName}`,
-      failed: `Couldn't approve ${r.name}`,
+      failed: `Couldn’t approve ${r.name}`,
       hint: 'The request may have been withdrawn. Refresh to see the latest.',
       code: 'CH-3002',
     }),
   );
   const decline = useAction('roster.declineRequest', (r: ChJoinRequest) => decideOne(r, () => rejectJoinRequest(r.id)), (r) => ({
     done: `Request from ${r.name} declined`,
-    failed: `Couldn't decline ${r.name}'s request`,
+    failed: `Couldn’t decline ${r.name}’s request`,
     code: 'CH-3003',
   }));
 
@@ -120,7 +120,7 @@ export function useJoinRequests(teamName: string, initial: ChJoinRequest[]) {
   const all = useAction(
     'roster.approveAll',
     approveEach,
-    (): ActionCopy => ({ done: '', failed: "Couldn't approve every request", code: 'CH-3007' }),
+    (): ActionCopy => ({ done: '', failed: 'Couldn’t approve every request', code: 'CH-3007' }),
     (res, c) => {
       const out = res.data;
       if (!out) return c;
@@ -129,7 +129,7 @@ export function useJoinRequests(teamName: string, initial: ChJoinRequest[]) {
       const tried = n + out.failed.length;
       return {
         ...c,
-        failed: `Couldn't approve ${nameList(out.failed.map((r) => r.name))}`,
+        failed: `Couldn’t approve ${nameList(out.failed.map((r) => r.name))}`,
         hint: `${n === 0 ? `None of the ${tried} were added.` : `${n} of ${tried} added to ${teamName}.`} ${out.failed.length === 1 ? 'That request' : 'Those requests'} may have been withdrawn. Try again, or refresh to see the latest.`,
       };
     },

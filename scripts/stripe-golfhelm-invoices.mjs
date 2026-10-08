@@ -24,6 +24,15 @@
 // exist AND you've confirmed the obligation with a tax advisor.
 
 import Stripe from 'stripe';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/stripe-golfhelm-invoices.mjs',
+  summary:
+    "GolfHelm \u2014 batch invoice builder (2026-07 billing run).",
+  guard: "its own --commit / --live flag (unchanged)",
+  secrets: 'STRIPE_SECRET_KEY',
+});
 
 // ── Batch identity ─────────────────────────────────────────────────────────
 // Bump this for a NEW billing run. Keeping it stable is what makes re-running

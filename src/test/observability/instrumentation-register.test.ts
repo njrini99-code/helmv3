@@ -1,18 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 /**
- * register() used to `void` the start-up Inngest credential report. It runs
- * before the first request, with no request scope, so the write took the
- * awaited fallback — and nothing awaited THAT. On a function frozen after
- * start-up the row never landed, while the throttle window the report had
- * already opened silenced the next `send`/`inbound` report for 60s. These pin
- * the fix: register() awaits the report (bounded inside scheduleBridgeWrite),
- * never rejects because of it, and does not hold the process-level handlers
- * back while it waits.
+ * register() runs before the first request. These pin its Node-runtime
+ * start-up contract: it wires the process-level error handlers and records the
+ * deploy marker, never rejects because of a failing Bridge write, and does
+ * neither on the edge runtime.
  */
 const mocks = vi.hoisted(() => ({
   init: vi.fn(),
-  reportInngestCredentialFault: vi.fn(async (_trigger: string) => true),
   recordDeployMarker: vi.fn(async () => {}),
   registerProcessErrorHandlers: vi.fn(),
 }));
@@ -24,9 +19,6 @@ vi.mock('@sentry/nextjs', () => ({
   captureRequestError: vi.fn(),
 }));
 vi.mock('@supabase/supabase-js/tracing', () => ({}));
-vi.mock('@/lib/inngest/credentials', () => ({
-  reportInngestCredentialFault: mocks.reportInngestCredentialFault,
-}));
 vi.mock('@/lib/admin/deploy-marker', () => ({ recordDeployMarker: mocks.recordDeployMarker }));
 vi.mock('@/lib/observability/register-process-error-handlers', () => ({
   registerProcessErrorHandlers: mocks.registerProcessErrorHandlers,
@@ -34,16 +26,14 @@ vi.mock('@/lib/observability/register-process-error-handlers', () => ({
 
 import { register } from '@/instrumentation';
 
-const tick = () => new Promise((r) => setTimeout(r, 0));
-
-describe('instrumentation register() — start-up Inngest credential report', () => {
+describe('instrumentation register() — start-up wiring', () => {
   let consoleLog: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.stubEnv('NEXT_RUNTIME', 'nodejs');
     consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
-    mocks.reportInngestCredentialFault.mockReset();
-    mocks.reportInngestCredentialFault.mockImplementation(async () => true);
+    mocks.recordDeployMarker.mockReset();
+    mocks.recordDeployMarker.mockImplementation(async () => {});
     mocks.registerProcessErrorHandlers.mockClear();
   });
   afterEach(() => {
@@ -51,33 +41,20 @@ describe('instrumentation register() — start-up Inngest credential report', ()
     vi.unstubAllEnvs();
   });
 
-  it('AWAITS the start-up report — register() resolves only after it has', async () => {
-    let finishReport!: (v: boolean) => void;
-    mocks.reportInngestCredentialFault.mockImplementation(
-      () => new Promise<boolean>((resolve) => { finishReport = resolve; }),
-    );
-    let registered = false;
-    const pending = register().then(() => { registered = true; });
-
-    await vi.waitFor(() => expect(mocks.reportInngestCredentialFault).toHaveBeenCalledWith('startup'));
-    // The process-level handlers are not held back behind the report.
+  it('registers the process-level error handlers and the deploy marker on the node runtime', async () => {
+    await register();
     await vi.waitFor(() => expect(mocks.registerProcessErrorHandlers).toHaveBeenCalledTimes(1));
-    await tick();
-    expect(registered).toBe(false);
-
-    finishReport(true);
-    await pending;
-    expect(registered).toBe(true);
+    await vi.waitFor(() => expect(mocks.recordDeployMarker).toHaveBeenCalledTimes(1));
   });
 
-  it('never rejects because of the report', async () => {
-    mocks.reportInngestCredentialFault.mockRejectedValue(new Error('bridge down'));
+  it('never rejects because the deploy marker write failed', async () => {
+    mocks.recordDeployMarker.mockRejectedValue(new Error('bridge down'));
     await expect(register()).resolves.toBeUndefined();
   });
 
-  it('does not run the report on the edge runtime', async () => {
+  it('does not register process-level handlers on the edge runtime', async () => {
     vi.stubEnv('NEXT_RUNTIME', 'edge');
     await register();
-    expect(mocks.reportInngestCredentialFault).not.toHaveBeenCalled();
+    expect(mocks.registerProcessErrorHandlers).not.toHaveBeenCalled();
   });
 });

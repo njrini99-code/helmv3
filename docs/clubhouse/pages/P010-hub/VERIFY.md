@@ -146,6 +146,10 @@ before, after, baseline or evidence.
 | `P010__premium-audit__coach__1280__case-109-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-109-chromium-normal; /clubhouse-preview/hub; synthetic preview |
 | `P010__premium-audit__coach__390__case-015-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-015-webkit-reduce; /clubhouse-preview/hub; synthetic preview |
 | `P010__premium-audit__coach__390__case-109-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-109-chromium-normal; /clubhouse-preview/hub; synthetic preview |
+| `P010__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
+| `P010__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
+| `P010__page__player__1280x948__default__after__77e553a.png` | after | 77e553a | page (player), 1280x948px, default |
+| `P010__page__player__390x792__default__after__77e553a.png` | after | 77e553a | page (player), 390x792px, default |
 
 ## 2026-10-02 — Mobile design fidelity verification
 

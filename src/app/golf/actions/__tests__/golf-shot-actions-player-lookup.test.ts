@@ -61,7 +61,7 @@ vi.mock('@/lib/notifications', () => ({ notifyQualifierCreated: vi.fn(async () =
 vi.mock('@/lib/notifications/email', () => ({ sendEmailNotification: vi.fn(async () => ({ success: true })) }));
 vi.mock('@/lib/notifications/push', () => ({ sendBulkPushNotification: vi.fn(async () => {}) }));
 
-import { deleteShot, updateShot } from '../golf';
+import { deleteShot, updateShot } from '../shot-actions';
 
 const SHOT = '11111111-1111-4111-8111-111111111111';
 const ROUND = '22222222-2222-4222-8222-222222222222';

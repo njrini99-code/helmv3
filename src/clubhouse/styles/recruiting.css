@@ -21,8 +21,8 @@
   gap: 6px;
 }
 .ch-rec-head h1 {
-  font: 600 30px/1.1 var(--ch-font-sans);
-  letter-spacing: -0.025em;
+  font: 400 52px/1.02 var(--ch-font-serif);
+  letter-spacing: -0.01em;
 }
 .ch-rec-head p {
   font: 400 14.5px/1.4 var(--ch-font-sans);
@@ -76,8 +76,10 @@
   color: var(--ch-green-600);
   cursor: pointer;
 }
-.ch-rec-pipe__all:hover {
-  background: var(--ch-green-50);
+@media (hover: hover) {
+  .ch-rec-pipe__all:hover {
+    background: var(--ch-green-50);
+  }
 }
 .ch-rec-pipe__line {
   position: relative;
@@ -157,8 +159,10 @@
 .ch-rec-pipe__stage.is-offered:disabled .ch-rec-pipe__dot {
   color: var(--ch-ink-500);
 }
-.ch-rec-pipe__stage:not(:disabled):hover .ch-rec-pipe__dot {
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .ch-rec-pipe__stage:not(:disabled):hover .ch-rec-pipe__dot {
+    transform: translateY(-1px);
+  }
 }
 /* Pressed: the stage the list is showing. A second ring, so it is seen without colour. */
 .ch-rec-pipe__stage[aria-pressed='true'] .ch-rec-pipe__dot {
@@ -232,8 +236,10 @@
 .ch-rec-tb tbody tr:first-child {
   box-shadow: none;
 }
-.ch-rec-tb tbody tr:hover {
-  background: var(--ch-bg-hover);
+@media (hover: hover) {
+  .ch-rec-tb tbody tr:hover {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-rec-tb tbody tr.is-on {
   background: var(--ch-bg-selected);
@@ -469,8 +475,10 @@
   color: var(--ch-danger-600);
   cursor: pointer;
 }
-.ch-rec-danger:hover {
-  background: var(--ch-danger-100);
+@media (hover: hover) {
+  .ch-rec-danger:hover {
+    background: var(--ch-danger-100);
+  }
 }
 .ch-rec-danger.is-block {
   width: 100%;
@@ -532,8 +540,10 @@
   color: var(--ch-green-600);
   cursor: pointer;
 }
-.ch-rec-link:hover {
-  background: var(--ch-green-50);
+@media (hover: hover) {
+  .ch-rec-link:hover {
+    background: var(--ch-green-50);
+  }
 }
 .ch-rec-rows {
   overflow: hidden;
@@ -552,8 +562,10 @@
 .ch-rec-row + .ch-rec-row {
   box-shadow: 0 -1px 0 var(--ch-border-hairline);
 }
-.ch-rec-row:hover {
-  background: var(--ch-bg-hover);
+@media (hover: hover) {
+  .ch-rec-row:hover {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-rec-row svg {
   flex: none;
@@ -613,8 +625,10 @@
   text-align: left;
   cursor: pointer;
 }
-.ch-rec-doc__open:hover {
-  background: var(--ch-bg-hover);
+@media (hover: hover) {
+  .ch-rec-doc__open:hover {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-rec-doc__t {
   flex: 1;
@@ -644,9 +658,11 @@
   color: var(--ch-text-tertiary);
   cursor: pointer;
 }
-.ch-rec-doc__x:hover {
-  background: var(--ch-ivory-150);
-  color: var(--ch-text-primary);
+@media (hover: hover) {
+  .ch-rec-doc__x:hover {
+    background: var(--ch-ivory-150);
+    color: var(--ch-text-primary);
+  }
 }
 .ch-rec-note {
   font: 400 12px/1.4 var(--ch-font-sans);
@@ -683,12 +699,16 @@
   border-radius: 999px;
   background: var(--ch-ivory-150);
 }
+/* The fill is the track's full width, slid in from the left by the share sent: it moves by transform, never by width,
+   and keeps its rounded end (the track clips the rest). */
 .ch-rec-up__bar > span {
   display: block;
+  width: 100%;
   height: 100%;
   border-radius: inherit;
-  background: var(--ch-green-500);
-  transition: width var(--ch-dur-quick) var(--ch-ease);
+  background: var(--ch-green-fill-500);
+  transform: translateX(-100%);
+  transition: transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-rec-empty {
   display: flex;
@@ -734,8 +754,10 @@
   color: var(--ch-green-600);
   cursor: pointer;
 }
-.ch-rec-empty__a:hover {
-  background: var(--ch-green-50);
+@media (hover: hover) {
+  .ch-rec-empty__a:hover {
+    background: var(--ch-green-50);
+  }
 }
 
 /* ── The add and edit form ────────────────────────────────────────────────── */
@@ -801,49 +823,101 @@
   }
   .ch-rec[aria-busy='true'],
   .ch-rec-none {
-    padding: 14px 14px 24px;
+    padding: 26px 20px 32px;
   }
   .ch-rec-skel-desk {
     display: none;
   }
   .ch-recm-skel {
     display: flex;
+  }
+  .ch-recm-skel .ch-recm-title {
+    padding-bottom: 0.48px;
+  }
+  .ch-rec-pipe.is-compact.ch-recm-skel__pipe {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .ch-recm-skel__stage {
+    display: flex;
     flex-direction: column;
-    gap: 12px;
+    align-items: center;
+    gap: 10px;
+    min-height: 64px;
+  }
+  .ch-recm-skel__list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .ch-recm-skel__list > .ch-recm-count {
+    min-height: 44px;
+  }
+  .ch-recm-row--static {
+    cursor: default;
+  }
+  .ch-recm-row.ch-recm-row--static:active {
+    background: none;
   }
 
+  /* The Mobile clubhouse pass (owner, 2026-10-08; the Coach Home board carried to every phone screen): the page opens on
+     the engraved double rule and the bold sans title, the timeline sits between two hairlines, and the prospects are
+     rows on seams on the parchment. No green feature card here: nothing on this list outranks the rest. */
   .ch-recm {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    padding: 14px 16px 24px;
+    padding: 26px 20px 32px;
   }
   .ch-recm-page {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
+  }
+  /* The list's swap (CH-14603) keeps the page's rhythm between the count and the list. */
+  .ch-recm-page > .ch-swap .ch-swap__body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
   }
   .ch-recm-title {
-    margin: 2px 0 0;
-    font: 600 34px/1.1 var(--ch-font-sans);
-    letter-spacing: -0.03em;
+    margin: 0;
+    padding-top: 14px;
+    border-top: var(--ch-ledger-rule-double);
+    font: 600 31px/1.08 var(--ch-font-sans);
+    letter-spacing: -0.038em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
   }
+  /* The kit's field (its material kept), 36px drawn and 44px to the finger: the label's reach focuses the input, while
+     the input and its clear key sit above it and take their own taps. */
   .ch-recm-search {
-    height: 40px;
-    border-radius: 12px;
-    background: rgb(28 25 18 / 0.06);
-    box-shadow: none;
+    position: relative;
+  }
+  .ch-recm-search::after {
+    position: absolute;
+    inset: -4px 0;
+    content: '';
   }
   .ch-recm-search input {
+    position: relative;
+    z-index: 1;
     font-size: 16px;
   }
+  .ch-recm-search .ch-search__x {
+    position: relative;
+    z-index: 1;
+  }
 
-  /* The compact timeline */
+  /* The compact timeline: between two hairlines, as the board's figures, with no box around it. */
   .ch-rec-pipe.is-compact {
     gap: 0;
-    padding: 14px 8px 12px;
-    border-radius: 18px;
-    box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07);
+    padding: 14px 0 12px;
+    border-top: 1px solid var(--ch-ledger-rule);
+    border-bottom: 1px solid var(--ch-ledger-rule);
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
   }
   .ch-rec-pipe.is-compact .ch-rec-pipe__seg {
     top: 19px;
@@ -872,84 +946,121 @@
   .ch-rec-pipe.is-compact .ch-rec-pipe__txt b {
     font-size: 12px;
   }
+  /* A stage answers the finger with the row press tint over its coin for the press beat (CH-14601), before the list
+     settles (CH-14603); the coin never scales. */
+  .ch-rec-pipe.is-compact .ch-rec-pipe__stage {
+    touch-action: manipulation;
+  }
+  .ch-rec-pipe.is-compact .ch-rec-pipe__dot {
+    position: relative;
+  }
+  .ch-rec-pipe.is-compact .ch-rec-pipe__dot::after {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--ch-ledger-row-press);
+    opacity: 0;
+    transition: opacity var(--ch-dur-press) var(--ch-ease);
+    content: '';
+    pointer-events: none;
+  }
+  .ch-rec-pipe.is-compact .ch-rec-pipe__stage.is-committed > .ch-rec-pipe__dot::after {
+    background: rgb(2 18 10 / 0.22);
+  }
+  .ch-rec-pipe.is-compact .ch-rec-pipe__stage:active:not(:disabled) > .ch-rec-pipe__dot::after {
+    opacity: 1;
+  }
 
   .ch-recm-count {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 4px;
   }
   .ch-recm-count > span {
-    font: 400 13px/1.3 var(--ch-font-sans);
+    font: 500 13px/1.3 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
+  /* The sort's trigger tints under the finger over the press beat, as a row does (CH-14604). */
   .ch-recm-sort {
     display: inline-flex;
     align-items: center;
     gap: 4px;
     min-height: 44px;
-    padding: 0 4px;
+    margin-right: -8px;
+    padding: 0 8px;
     border: 0;
+    border-radius: var(--ch-radius-md);
     background: none;
     font: 500 13.5px/1 var(--ch-font-sans);
     color: var(--ch-green-600);
     cursor: pointer;
+    touch-action: manipulation;
+    transition: background var(--ch-dur-press) var(--ch-ease);
   }
+  .ch-recm-sort:active {
+    background: var(--ch-ledger-row-press);
+  }
+  /* The prospects: rows on seams under a hairline, with no card. */
   .ch-recm-list {
     margin: 0;
     padding: 0;
-    overflow: hidden;
     list-style: none;
-    border-radius: 16px;
-    background: var(--ch-ivory-25);
-    box-shadow: var(--ch-elevation-reading);
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
   }
-  .ch-recm-list > li {
-    position: relative;
+  .ch-recm-list > li + li {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
   }
-  .ch-recm-list > li + li::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: 64px;
-    height: 1px;
-    background: var(--ch-border-hairline);
-  }
+  /* A row's tint reaches 12px past the text on each side, so the names and chips stay on the page's edge; a press lays
+     the row press tint over it for the press beat (CH-14604). */
   .ch-recm-row {
     display: flex;
     align-items: center;
-    gap: 12px;
-    width: 100%;
-    min-height: 64px;
-    padding: 0 14px 0 16px;
+    gap: 14px;
+    box-sizing: border-box;
+    width: calc(100% + 24px);
+    min-height: 66px;
+    margin: 0 -12px;
+    padding: 0 12px;
     border: 0;
+    border-radius: var(--ch-radius-md);
     background: none;
     font: inherit;
     color: inherit;
     text-align: left;
     cursor: pointer;
+    touch-action: manipulation;
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-recm-row:active {
+    background: var(--ch-ledger-row-press);
+  }
+  .ch-recm-row:focus-visible {
+    outline: 2px solid var(--ch-border-focus);
+    outline-offset: -2px;
   }
   .ch-recm-row__b {
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
     min-width: 0;
   }
   .ch-recm-row__b b {
-    font: 500 16px/1.3 var(--ch-font-sans);
+    font: 600 15px/1.25 var(--ch-font-sans);
+    letter-spacing: -0.012em;
+    color: var(--ch-text-primary);
     overflow-wrap: anywhere;
   }
   .ch-recm-row__b span {
-    font: 400 13px/1.3 var(--ch-font-sans);
+    font: var(--ch-type-caption);
     color: var(--ch-text-tertiary);
   }
+  /* No match: the state alone, centred on the parchment, with no box around it. */
   .ch-rec-none-match.is-phone {
-    padding: 32px 20px 36px;
-    border-radius: 16px;
-    background: var(--ch-ivory-25);
-    box-shadow: var(--ch-elevation-reading);
+    padding: 36px 8px 28px;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
   }
   .ch-rec-none-match.is-phone .ch-rec-none-match__a {
     flex-direction: column;
@@ -957,33 +1068,37 @@
     width: 100%;
   }
 
-  /* A prospect: a pushed screen with its own scroll */
+  /* A prospect: a pushed screen with its own scroll, on the same ledger. Who, then Stage with Email and Call as keys
+     drawn on the parchment, then the parts: a part with something in it opens under the double rule, a part with
+     nothing yet is one row on a seam. */
   .ch-recm-scroll {
     flex: 1;
     min-height: 0;
-    padding: 14px 16px calc(24px + env(safe-area-inset-bottom));
+    padding: 26px 20px calc(32px + env(safe-area-inset-bottom));
     overflow: auto;
     overscroll-behavior: contain;
   }
   .ch-recm-det {
     display: flex;
     flex-direction: column;
-    gap: 14px;
   }
   .ch-recm-hero {
     display: flex;
     align-items: center;
     gap: 14px;
+    margin-bottom: 22px;
   }
   .ch-recm-hero > span:not(.ch-rec-av) {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
     min-width: 0;
   }
   .ch-recm-hero b {
-    font: 600 24px/1.2 var(--ch-font-sans);
-    letter-spacing: -0.02em;
+    font: 600 26px/1.1 var(--ch-font-sans);
+    letter-spacing: -0.035em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
     overflow-wrap: anywhere;
   }
   .ch-recm-hero > span > span {
@@ -998,7 +1113,10 @@
   .ch-recm-tiles.is-two {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  /* Keys on the parchment: a hairline ring, no card. The stage key keeps its stage's fill. A press lays the row press
+     tint over the key for the press beat; nothing scales (CH-14604). */
   .ch-recm-tile {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1007,13 +1125,31 @@
     height: 64px;
     padding: 0;
     border: 0;
-    border-radius: 14px;
-    background: var(--ch-ivory-25);
-    box-shadow: var(--ch-elevation-reading);
+    border-radius: 12px;
+    background: none;
+    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
     font: 600 12.5px/1.2 var(--ch-font-sans);
     color: var(--ch-green-600);
     text-decoration: none;
     cursor: pointer;
+    touch-action: manipulation;
+  }
+  .ch-recm-tile::after {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--ch-ledger-row-press);
+    opacity: 0;
+    transition: opacity var(--ch-dur-press) var(--ch-ease);
+    content: '';
+    pointer-events: none;
+  }
+  .ch-recm-tile:active::after {
+    opacity: 1;
+  }
+  .ch-recm-tile:focus-visible {
+    outline: 2px solid var(--ch-border-focus);
+    outline-offset: 2px;
   }
   .ch-recm-tile.is-stage {
     box-shadow: none;
@@ -1033,63 +1169,164 @@
     background: var(--ch-green-800);
     color: var(--ch-hero-mint);
   }
+  .ch-recm-tile.is-stage.is-committed::after {
+    background: rgb(2 18 10 / 0.22);
+  }
+  /* Stage, when there is no contact yet: one row between two seams, tinting under the finger. */
   .ch-recm-stagerow {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 10px;
-    width: 100%;
-    height: 52px;
-    padding: 0 14px 0 16px;
+    box-sizing: border-box;
+    width: calc(100% + 24px);
+    height: 56px;
+    margin: 0 -12px;
+    padding: 0 12px;
     border: 0;
-    border-radius: 14px;
-    background: var(--ch-ivory-25);
-    box-shadow: var(--ch-elevation-reading);
-    font: 400 16px/1 var(--ch-font-sans);
+    border-radius: var(--ch-radius-md);
+    background: none;
+    font: 500 16px/1 var(--ch-font-sans);
     color: var(--ch-text-primary);
     text-align: left;
     cursor: pointer;
+    touch-action: manipulation;
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-recm-stagerow::before,
+  .ch-recm-stagerow::after {
+    position: absolute;
+    right: 12px;
+    left: 12px;
+    height: 1px;
+    background: var(--ch-ledger-rule-soft);
+    content: '';
+    pointer-events: none;
+  }
+  .ch-recm-stagerow::before {
+    top: 0;
+  }
+  .ch-recm-stagerow::after {
+    bottom: 0;
+  }
+  .ch-recm-stagerow:active {
+    background: var(--ch-ledger-row-press);
+  }
+  .ch-recm-stagerow:focus-visible {
+    outline: 2px solid var(--ch-border-focus);
+    outline-offset: -2px;
   }
   .ch-recm-stagerow > span:first-child {
     flex: 1;
   }
-  .ch-recm-det .ch-rec-sec h3 {
-    padding: 6px 16px 0;
-    font-size: 13px;
-    font-weight: 500;
+  .ch-recm-stagerow > svg {
+    color: var(--ch-ink-400);
+  }
+  /* A part with something in it opens under the double rule with its heading, as the board's sections. */
+  .ch-recm-det > .ch-rec-sec {
+    gap: 6px;
+    margin-top: 32px;
+  }
+  .ch-recm-det .ch-rec-sec > h3,
+  .ch-recm-det .ch-rec-sec__head {
+    padding-top: 12px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-recm-det .ch-rec-sec > h3,
+  .ch-recm-det .ch-rec-sec__head h3 {
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-recm-det .ch-rec-sec__head {
+    align-items: baseline;
+    min-height: 0;
   }
   /* The empty rows say what is missing themselves, so the heading above them would say it twice. */
   .ch-recm-det .ch-rec-sec:has(> .ch-rec-empty) > h3,
   .ch-recm-det .ch-rec-sec:has(> .ch-rec-empty) > .ch-rec-sec__head {
     display: none;
   }
-  .ch-recm-det .ch-rec-sec__head {
-    padding-right: 4px;
+  /* A part with nothing in it yet is one row on a seam. Rows that follow the Stage row or each other run on as one
+     ledger; the first of a run after anything else opens on a seam of its own. */
+  .ch-recm-det > .ch-rec-sec:has(> .ch-rec-empty) {
+    margin-top: 22px;
   }
-  .ch-recm-det .ch-rec-sec__head h3 {
-    padding: 6px 16px 0;
+  .ch-recm-det > .ch-recm-stagerow + .ch-rec-sec:has(> .ch-rec-empty),
+  .ch-recm-det > .ch-rec-sec:has(> .ch-rec-empty) + .ch-rec-sec:has(> .ch-rec-empty) {
+    margin-top: 0;
   }
+  .ch-recm-det .ch-rec-empty {
+    gap: 14px;
+    padding: 14px 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-recm-det > .ch-recm-tiles + .ch-rec-sec > .ch-rec-empty,
+  .ch-recm-det > .ch-rec-sec:not(:has(> .ch-rec-empty)) + .ch-rec-sec > .ch-rec-empty {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft), inset 0 -1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-recm-det .ch-rec-empty__t b {
+    font-size: 15px;
+  }
+  .ch-recm-det .ch-rec-empty__a {
+    min-height: 44px;
+    margin-right: -8px;
+    font-size: 15px;
+    touch-action: manipulation;
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-recm-det .ch-rec-empty__a:active {
+    background: var(--ch-ledger-row-press);
+  }
+  /* 44px tall on the heading's line; it sits above the first row, so its reach is not cut by the row under it. */
   .ch-recm-det .ch-rec-link {
+    position: relative;
+    z-index: 1;
     height: 44px;
+    margin: -12px -10px -12px 0;
     font-size: 14px;
+    touch-action: manipulation;
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-recm-det .ch-rec-link:active {
+    background: var(--ch-ledger-row-press);
   }
   .ch-recm-det .ch-rec-notes {
-    padding: 14px 16px;
-    border-radius: 16px;
-    background: var(--ch-ivory-25);
-    box-shadow: var(--ch-elevation-reading);
+    padding: 6px 0 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
     font-size: 15px;
-    line-height: 1.5;
+    line-height: 1.55;
+    color: var(--ch-text-primary);
   }
+  /* The documents: rows on seams, each opening with the row press tint; the remove key tints the same way. */
   .ch-recm-det .ch-rec-docs,
-  .ch-recm-det .ch-rec-rows,
-  .ch-recm-det .ch-rec-empty {
-    border-radius: 16px;
-    background: var(--ch-ivory-25);
-    box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07);
+  .ch-recm-det .ch-rec-rows {
+    overflow: visible;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-recm-det .ch-rec-doc + .ch-rec-doc {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-recm-det .ch-rec-docs.is-loading .ch-rec-doc {
+    padding: 0;
   }
   .ch-recm-det .ch-rec-doc__open {
     min-height: 52px;
-    padding-left: 16px;
+    margin-left: -12px;
+    padding-left: 12px;
+    border-radius: var(--ch-radius-md);
+    touch-action: manipulation;
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-recm-det .ch-rec-doc__open:active {
+    background: var(--ch-ledger-row-press);
   }
   .ch-recm-det .ch-rec-doc__t {
     font-size: 15px;
@@ -1097,21 +1334,19 @@
   .ch-recm-det .ch-rec-doc__x {
     width: 44px;
     height: 44px;
-    margin-right: 2px;
+    margin-right: -10px;
+    touch-action: manipulation;
+    transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-recm-det .ch-rec-empty {
-    padding: 14px 14px 14px 16px;
+  .ch-recm-det .ch-rec-doc__x:active {
+    background: var(--ch-ledger-row-press);
   }
-  .ch-recm-det .ch-rec-empty__t b {
-    font-size: 15px;
+  .ch-recm-det .ch-rec-note {
+    padding-top: 6px;
+    font-size: 12.5px;
   }
-  .ch-recm-det .ch-rec-empty__a {
-    min-height: 44px;
-    font-size: 15px;
-  }
-  .ch-recm-det .ch-rec-note,
-  .ch-recm-det .ch-rec-meta {
-    padding: 0 16px;
+  .ch-recm-det > .ch-rec-meta {
+    margin-top: 18px;
     font-size: 12.5px;
   }
   .ch-recm-det .ch-rec-row {
@@ -1416,5 +1651,353 @@
   .ch-rec-act__b:disabled {
     color: var(--ch-text-disabled);
     cursor: default;
+  }
+}
+
+/* Loading in the framed page head (desktop): the recruiting head holds the loaded head's measured height (WebKit 1440 and 1100,
+   2026-10-07: 167px), so nothing under it moves on load. */
+@media (min-width: 821px) {
+  .ch-rec[aria-busy='true'][data-canopy] .ch-rec-head {
+    box-sizing: border-box;
+    min-height: 167px;
+  }
+}
+
+/* The Ledger on desktop Recruiting (owner, 2026-10-07: "flush, not so card heavy"). The pipeline, the prospect list and
+   the open prospect sit on the canvas: the pipeline is a section head over an engraved rule and four stage columns
+   split by hairlines (each still a filter); the table is rows and seams; the prospect is a column beside it, split
+   off by a hairline. Coins, stage chips, the search field, segmented controls and dialogs keep their material. The
+   loading screen draws the same head and stage heights, so the list doesn't move when the data lands. */
+@media (min-width: 821px) {
+  .ch-rec[data-canopy] .ch-rec-head p {
+    text-wrap: pretty;
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe {
+    gap: 0;
+    margin-top: 14px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__head {
+    box-sizing: border-box;
+    align-items: flex-end;
+    min-height: 56px;
+    padding: 0 0 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__sum {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__sum b {
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.022em;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__sum span {
+    font: var(--ch-type-caption);
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__all {
+    margin-right: -10px;
+  }
+  /* Columns, not a timeline: the hairlines between stages replace the connecting line. */
+  .ch-rec[data-canopy] .ch-rec-pipe__seg {
+    display: none;
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__line,
+  .ch-rec[data-canopy] .ch-rec-skel-pipe {
+    margin-inline: -12px;
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__stage,
+  .ch-rec[data-canopy] .ch-rec-skel-pipe__s {
+    box-sizing: border-box;
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    min-height: 92px;
+    padding: 16px 24px;
+    text-align: left;
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__stage.is-watched,
+  .ch-rec[data-canopy] .ch-rec-skel-pipe__s:first-child {
+    padding-left: 12px;
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__stage.is-committed,
+  .ch-rec[data-canopy] .ch-rec-skel-pipe__s:last-child {
+    padding-right: 12px;
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__stage + .ch-rec-pipe__stage,
+  .ch-rec[data-canopy] .ch-rec-skel-pipe__s + .ch-rec-skel-pipe__s {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__stage {
+    transition: background var(--ch-dur-quick) var(--ch-ease);
+  }
+  @media (hover: hover) {
+    .ch-rec[data-canopy] .ch-rec-pipe__stage:not(:disabled):hover {
+      background: var(--ch-ledger-row-hover);
+    }
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__stage[aria-pressed='true'] {
+    background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+  }
+  @media (hover: hover) {
+    .ch-rec[data-canopy] .ch-rec-pipe__stage[aria-pressed='true']:hover {
+      background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+    }
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__stage:focus-visible {
+    outline-offset: -3px;
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__dot {
+    flex: none;
+  }
+  .ch-rec[data-canopy] .ch-rec-pipe__txt {
+    min-width: 0;
+  }
+  /* Too narrow for a coin and its words side by side: the words go under the coin, so no blurb breaks. */
+  @container (max-width: 1120px) {
+    .ch-rec[data-canopy] .ch-rec-pipe__stage,
+    .ch-rec[data-canopy] .ch-rec-skel-pipe__s {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+      min-height: 160px;
+    }
+  }
+
+  /* The list: the search and sort head it over an engraved rule; the table is bled 12px so a row's tint clears the
+     text while the names line up with the search field. Safari draws no shadow on a table row, so the seams are on
+     the cells. */
+  .ch-rec[data-canopy] .ch-rec-body {
+    gap: 32px;
+    margin-top: 18px;
+  }
+  .ch-rec[data-canopy] .ch-rec-list {
+    overflow: visible;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rec[data-canopy] .ch-rec-list > .ch-rec-bar {
+    padding: 0 0 16px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rec[data-canopy] .ch-rec-tb {
+    width: calc(100% + 24px);
+    margin-inline: -12px;
+  }
+  .ch-rec[data-canopy] .ch-rec-tb th[scope='col'] {
+    padding-block: 14px 10px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rec[data-canopy] .ch-rec-tb th[scope='col']:first-child,
+  .ch-rec[data-canopy] .ch-rec-tb th[scope='row'] {
+    padding-left: 12px;
+  }
+  .ch-rec[data-canopy] .ch-rec-tb .is-when {
+    padding-right: 12px;
+  }
+  .ch-rec[data-canopy] .ch-rec-tb tbody tr,
+  .ch-rec[data-canopy] .ch-rec-tb tbody tr.is-on {
+    background: none;
+    box-shadow: none;
+  }
+  @media (hover: hover) {
+    .ch-rec[data-canopy] .ch-rec-tb tbody tr:hover {
+      background: none;
+      box-shadow: none;
+    }
+  }
+  .ch-rec[data-canopy] .ch-rec-tb tbody tr + tr > * {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  /* A row's hover and selected tint are drawn once, as one box behind the row's cells (the click target above them
+     stays clear): Safari paints a row's own background cell by cell, which leaves hairline gaps at fractional widths. */
+  .ch-rec[data-canopy] .ch-rec-tb__name::before {
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    transition: background var(--ch-dur-quick) var(--ch-ease);
+    content: '';
+    pointer-events: none;
+  }
+  @media (hover: hover) {
+    .ch-rec[data-canopy] .ch-rec-tb tbody tr:hover .ch-rec-tb__name::before {
+      background: var(--ch-ledger-row-hover);
+    }
+  }
+  .ch-rec[data-canopy] .ch-rec-tb tbody tr.is-on .ch-rec-tb__name::before {
+    background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+  }
+  /* A press deepens the row's tint over the press beat (the shell's CH-1606: a row never scales). */
+  .ch-rec[data-canopy] .ch-rec-tb tbody tr .ch-rec-tb__name:active::before {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
+  }
+  .ch-rec[data-canopy] .ch-rec-skel-row {
+    padding: 0;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rec[data-canopy] .ch-rec-bar + .ch-rec-skel-row {
+    box-shadow: none;
+  }
+
+  /* The open prospect: a column beside the list, under its own rule. Contact rows and documents are seams on the
+     canvas, bled 10px for their hover tint; the notes are text; a part with nothing in it yet is a row with an
+     engraved key, not a card. */
+  .ch-rec[data-canopy] .ch-rec-panel {
+    padding-left: 32px;
+    overflow: visible;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rec[data-canopy] .ch-rec-panel__top {
+    padding: 0 0 20px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  /* 4px of room inside the scroller so a focus ring at the column's edge isn't clipped. */
+  .ch-rec[data-canopy] .ch-rec-panel__body {
+    gap: 24px;
+    margin-inline: -4px;
+    padding: 22px 4px;
+  }
+  .ch-rec[data-canopy] .ch-rec-panel__foot {
+    padding: 14px 0 0;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rec[data-canopy] .ch-rec-panel__foot .ch-rec-danger,
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-sec__head .ch-rec-link {
+    margin-right: -10px;
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-rows,
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-docs {
+    margin-inline: -10px;
+    overflow: visible;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-row,
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-doc {
+    position: relative;
+    box-shadow: none;
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-row + .ch-rec-row::before,
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-doc + .ch-rec-doc::before {
+    position: absolute;
+    top: 0;
+    right: 10px;
+    left: 10px;
+    height: 1px;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    content: '';
+    pointer-events: none;
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-row {
+    padding: 0 10px;
+    border-radius: var(--ch-radius-md);
+  }
+  @media (hover: hover) {
+    .ch-rec[data-canopy] .ch-rec-panel .ch-rec-row:hover,
+    .ch-rec[data-canopy] .ch-rec-panel .ch-rec-doc__open:hover {
+      background: var(--ch-ledger-row-hover);
+    }
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-doc__open {
+    padding-left: 10px;
+    border-radius: var(--ch-radius-md);
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-doc__x {
+    margin-right: 1px;
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-docs.is-loading .ch-rec-doc {
+    padding: 0 10px;
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-notes {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-empty {
+    padding: 2px 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-empty__ic {
+    background: none;
+    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+  }
+  .ch-rec[data-canopy] .ch-rec-panel .ch-rec-empty__a {
+    margin-right: -8px;
+  }
+  @container (max-width: 860px) {
+    /* The prospect follows the list: its hairline runs across the top instead. */
+    .ch-rec[data-canopy] .ch-rec-panel {
+      padding: 28px 0 0;
+      box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+    }
+  }
+}
+
+/* Dark (Clubhouse at night). The pipeline still deepens stage by stage, now by stepping lighter and greener off the
+   dark page; offered stages and avatars take the night greens with the light text green; ink rings, scrims and the
+   phone action sheet move to their night tones. `:where()` keeps each at its light rule's specificity. */
+:where(html[data-fw-theme='dark']) .ch-rec-pipe__seg.is-1 {
+  background: var(--ch-ivory-300);
+}
+:where(html[data-fw-theme='dark']) .ch-rec-pipe__seg.is-2 {
+  background: #2f5a41;
+}
+:where(html[data-fw-theme='dark']) .ch-rec-pipe__seg.is-3 {
+  background: #4f9a6e;
+}
+:where(html[data-fw-theme='dark']) .ch-rec-pipe__dot {
+  --ch-rec-ring: var(--ch-ivory-400);
+  box-shadow: 0 0 0 2px var(--ch-rec-ring), var(--ch-elevation-bubble);
+}
+:where(html[data-fw-theme='dark']) .ch-rec-pipe__stage.is-recruiting > .ch-rec-pipe__dot {
+  --ch-rec-ring: #3d7a56;
+}
+:where(html[data-fw-theme='dark']) .ch-rec-pipe__stage.is-offered > .ch-rec-pipe__dot {
+  --ch-rec-ring: var(--ch-green-400);
+}
+:where(html[data-fw-theme='dark']) .ch-rec-pipe__stage[aria-pressed='true'] .ch-rec-pipe__dot {
+  box-shadow: 0 0 0 2px var(--ch-rec-ring), 0 0 0 6px rgb(107 187 140 / 0.2), var(--ch-elevation-bubble);
+}
+:where(html[data-fw-theme='dark']) .ch-rec-pipe__stage.is-offered > .ch-rec-pipe__dot,
+:where(html[data-fw-theme='dark']) .ch-rec-chip.is-offered {
+  background: var(--ch-green-100);
+  color: var(--ch-green-700);
+}
+:where(html[data-fw-theme='dark']) .ch-rec-av {
+  background: var(--ch-green-50);
+  color: var(--ch-green-700);
+}
+:where(html[data-fw-theme='dark']) .ch-rec-rows,
+:where(html[data-fw-theme='dark']) .ch-rec-docs {
+  box-shadow: 0 0 0 1px var(--ch-border-subtle);
+}
+:where(html[data-fw-theme='dark']) .ch-rec-drop {
+  background: rgb(21 36 27 / 0.94);
+}
+@media (max-width: 820px) {
+  :where(html[data-fw-theme='dark']) .ch-recm-tile.is-stage.is-offered {
+    background: var(--ch-green-100);
+    color: var(--ch-green-700);
+  }
+  :where(html[data-fw-theme='dark']) .ch-rec-dlg::backdrop {
+    background: rgb(5 8 6 / 0.6);
+  }
+  :where(html[data-fw-theme='dark']) .ch-rec-form.is-phone .ch-textarea {
+    box-shadow: 0 0 0 1px var(--ch-border-control);
+  }
+  :where(html[data-fw-theme='dark']) .ch-rec-act__group,
+  :where(html[data-fw-theme='dark']) .ch-rec-act__b.is-cancel {
+    background: rgb(36 42 37 / 0.97);
   }
 }

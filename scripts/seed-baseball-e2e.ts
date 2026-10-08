@@ -74,6 +74,15 @@ import {
   assertWriteTargetAllowed,
   describeSeedTarget,
 } from './lib/seed-target-guard';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/seed-baseball-e2e.ts',
+  summary:
+    "Deterministic seed for the BaseballHelm Camps, Pipeline and Box Score Playwright specs (issue #375). Run by CI against the local stack.",
+  guard: "its own --confirm flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 // This script had NO target guard until 2026-07-30, while CI ran it against
 // PRODUCTION on every push to main (.github/workflows/playwright.yml). Its

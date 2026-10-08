@@ -79,8 +79,11 @@ function EventBlock({
   const top = (start - from) * CAL_HH;
   const h = Math.max((end - start) * CAL_HH - 2, 20);
   const short = h < 40;
-  const w = 100 / lanes;
-  /** Side by side with another event: a share of one column, 29px of text at three lanes. */
+  /** Overlapping events cascade, as Apple Calendar does (owner, 2026-10-06: the split lanes crushed titles into
+   *  fragments): each later lane steps right and lies over the earlier ones, reaching the column's right edge, so every
+   *  block keeps a readable width and an earlier one shows in full above where the next begins. */
+  const step = lanes > 1 ? Math.min(46, 70 / (lanes - 1)) : 0;
+  const left = step * lane;
   const shared = lanes > 1;
   const title = eventTitle(e, people);
   const meta = short || shared ? fmtHour(e.start!, false) : rangeLabel(e) + (h > 70 && e.location && !e.busyOnly ? ` · ${e.location}` : '');
@@ -90,7 +93,7 @@ function EventBlock({
       data-print-visible
       // CH-6801: a button named with its title, time and any overlap. CH-6601: it lifts on hover and marks its selection.
       className={`ch-ev ch-ev--${e.type}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${sel ? ' is-sel' : ''}`}
-      style={{ top, height: h, left: `calc(${w * lane}% + 3px)`, width: `calc(${w}% - ${lanes > 1 ? 4 : 6}px)` }}
+      style={{ top, height: h, left: `calc(${left}% + 3px)`, width: `calc(${100 - left}% - 6px)`, zIndex: shared ? lane + 1 : undefined }}
       aria-label={`${title}, ${rangeLabel(e)}${flagged ? ', schedule overlap' : ''}`}
       aria-pressed={sel}
       onClick={() => {

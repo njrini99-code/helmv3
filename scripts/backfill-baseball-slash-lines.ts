@@ -43,6 +43,15 @@
 import { config as loadEnv } from 'dotenv';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { computeCareerSlashLine, type SlashLineStatRow } from '../src/lib/baseball/aggregates/career-slash-line';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/backfill-baseball-slash-lines.ts',
+  summary:
+    "One-time backfill for `baseball_player_aggregates.career_obp` / `career_slg` / `career_ops`.",
+  guard: "its own --confirm flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 loadEnv({ path: '.env.local' });
 

@@ -31,7 +31,7 @@
  * rest of the Fairway stats surfaces already follow.
  * ========================================================================== */
 
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { VIZ_EASE, VIZ_REVEAL_MS } from './theme';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';

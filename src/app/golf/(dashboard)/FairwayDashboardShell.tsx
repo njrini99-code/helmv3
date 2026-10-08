@@ -26,7 +26,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { TopBarRouteActionOutlet, TopBarRouteActionProvider } from '@/components/fairway/app-shell/TopBarRouteAction';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { LazyMotion, MotionConfig } from 'framer-motion';
+import { LazyMotion, MotionConfig } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 
 import { Button } from '@/components/ui/button';

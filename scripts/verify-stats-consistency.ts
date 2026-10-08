@@ -24,6 +24,14 @@
  * Exit code: 0 if every player agrees within tolerance, 1 otherwise (CI-friendly).
  */
 import { createClient } from '@supabase/supabase-js';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/verify-stats-consistency.ts',
+  summary:
+    "Checks the coach-facing stat surfaces agree with golf_player_stats_cache for every rostered player. Read-only.",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;

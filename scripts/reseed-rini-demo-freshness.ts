@@ -67,6 +67,15 @@
 import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/reseed-rini-demo-freshness.ts',
+  summary:
+    "Freshness pass for the Rini University Baseball demo team (seeded by scripts/seed-rini-baseball-demo.ts).",
+  guard: "its own --confirm flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 // --- Verified prod identity (SAME ids scripts/seed-rini-baseball-demo.ts uses) --
 const COACH_USER_ID = 'c8dcf7d5-da14-439b-93c6-58d1e0dd38a0'; // njrini99@gmail.com

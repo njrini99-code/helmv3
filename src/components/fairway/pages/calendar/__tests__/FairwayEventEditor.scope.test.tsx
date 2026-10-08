@@ -63,7 +63,7 @@ vi.mock('@/components/fairway/forms/Switch', () => ({
   ),
 }));
 
-vi.mock('@/app/golf/actions/golf', () => ({
+vi.mock('@/app/golf/actions/calendar-events', () => ({
   getEventRSVP: vi.fn(async () => ({
     success: true,
     data: { summary: { accepted: 0, declined: 0, tentative: 0, pending: 0, total: 0, attendees: [] } },

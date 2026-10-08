@@ -1,4 +1,4 @@
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -29,12 +29,18 @@ const mocks = vi.hoisted(() => ({
 vi.mock('next/navigation', () => ({ useRouter: () => mocks.router, useSearchParams: () => mocks.search }));
 vi.mock('../lib/haptics', () => ({ haptic: mocks.haptic }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
-vi.mock('@/app/golf/actions/golf', () => ({
+vi.mock('@/app/golf/actions/round-submit', () => ({
   submitGolfRoundComprehensive: (...args: unknown[]) => mocks.submitGolfRoundComprehensive(...args),
+}));
+vi.mock('@/app/golf/actions/round-partial', () => ({
   savePartialRound: (...args: unknown[]) => mocks.savePartialRound(...args),
   deleteInProgressRound: (...args: unknown[]) => mocks.deleteInProgressRound(...args),
+}));
+vi.mock('@/app/golf/actions/qualifier-actions', () => ({
   getPlayerQualifiers: (...args: unknown[]) => mocks.getPlayerQualifiers(...args),
   getNextQualifierRoundNumber: (...args: unknown[]) => mocks.getNextQualifierRoundNumber(...args),
+}));
+vi.mock('@/app/golf/actions/saved-courses', () => ({
   getPlayerSavedCourses: vi.fn(async () => ({ success: true, data: [] })),
   getRecentCoursesForPlayer: vi.fn(async () => ({ success: true, data: [] })),
   savePlayerCourse: vi.fn(async () => ({ success: true, data: { id: 'sc-1' } })),
@@ -229,7 +235,7 @@ describe('112401 Round entry: a start the engine refuses (CH-11514, CH-11007, CH
     mocks.savePartialRound.mockResolvedValueOnce({ success: false, error: 'The server is busy' });
     const user = renderNew();
     await startRound(user);
-    await waitFor(() => expect(code('CH-11007')).toHaveTextContent("Couldn't start your round at Finley GC"));
+    await waitFor(() => expect(code('CH-11007')).toHaveTextContent("Couldn’t start your round at Finley GC"));
     await user.click(toastAction('CH-11007', 'Retry')!);
     await screen.findByTestId('tracking');
     expect(startCalls()).toHaveLength(2);

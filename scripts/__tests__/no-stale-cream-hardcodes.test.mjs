@@ -19,9 +19,12 @@
 // hardcode under src/) is a regression: replace with `#F7F5F2` or
 // `bg-cream-100`.
 //
-// Run via: node scripts/__tests__/no-stale-cream-hardcodes.test.mjs
+// Run via: npm run test:file -- scripts/__tests__/no-stale-cream-hardcodes.test.mjs
+// (promoted into vitest's `guards` project 2026-10-07; it used to be a bare
+// script that no runner executed).
 
 import { spawnSync } from 'node:child_process';
+import { expect, it } from 'vitest';
 import { resolve } from 'node:path';
 
 const repoRoot = resolve(import.meta.dirname, '../..');
@@ -101,41 +104,41 @@ function uniqueFiles(lines) {
   return Array.from(new Set(lines)).sort();
 }
 
-let failures = 0;
+it('no stale cream hardcodes outside the allowlist', () => {
+  let failures = 0;
 
-// 1. `#FFFEFA` literal — only allowed in ALLOWLIST.
-{
-  const files = uniqueFiles(grepHits('#FFFEFA'));
-  const offenders = files.filter((f) => !ALLOWLIST.has(f));
-  if (offenders.length > 0) {
-    failures += 1;
-    console.error('FAIL: #FFFEFA found in files outside the allowlist:');
-    for (const f of offenders) console.error('  - ' + f);
-    console.error('Replace with #F7F5F2 (linen-100 cream token).');
-  } else {
-    console.log(`PASS: #FFFEFA only present in ${files.length} allowlisted files.`);
+  // 1. `#FFFEFA` literal — only allowed in ALLOWLIST.
+  {
+    const files = uniqueFiles(grepHits('#FFFEFA'));
+    const offenders = files.filter((f) => !ALLOWLIST.has(f));
+    if (offenders.length > 0) {
+      failures += 1;
+      console.error('FAIL: #FFFEFA found in files outside the allowlist:');
+      for (const f of offenders) console.error('  - ' + f);
+      console.error('Replace with #F7F5F2 (linen-100 cream token).');
+    } else {
+      console.log(`PASS: #FFFEFA only present in ${files.length} allowlisted files.`);
+    }
   }
-}
 
-// 2. `bg-[#FFFEFA]` Tailwind arbitrary value — should NEVER appear
-// anywhere under src/ (auth splash uses CSS var / style={{}}, not
-// Tailwind arbitrary).
-{
-  // Baseball / Lift Lab files are frozen (OD-17, see ALLOWLIST); every other
-  // file under src/ must stay clean.
-  const files = uniqueFiles(grepHits('bg-\\[#FFFEFA\\]')).filter((f) => !FROZEN_SPORTS.has(f));
-  if (files.length > 0) {
-    failures += 1;
-    console.error('FAIL: bg-[#FFFEFA] Tailwind arbitrary value found — replace with bg-cream-100:');
-    for (const f of files) console.error('  - ' + f);
-  } else {
-    console.log('PASS: bg-[#FFFEFA] arbitrary Tailwind value not present in src/.');
+  // 2. `bg-[#FFFEFA]` Tailwind arbitrary value — should NEVER appear
+  // anywhere under src/ (auth splash uses CSS var / style={{}}, not
+  // Tailwind arbitrary).
+  {
+    // Baseball / Lift Lab files are frozen (OD-17, see ALLOWLIST); every other
+    // file under src/ must stay clean.
+    const files = uniqueFiles(grepHits('bg-\\[#FFFEFA\\]')).filter((f) => !FROZEN_SPORTS.has(f));
+    if (files.length > 0) {
+      failures += 1;
+      console.error('FAIL: bg-[#FFFEFA] Tailwind arbitrary value found — replace with bg-cream-100:');
+      for (const f of files) console.error('  - ' + f);
+    } else {
+      console.log('PASS: bg-[#FFFEFA] arbitrary Tailwind value not present in src/.');
+    }
   }
-}
 
-if (failures > 0) {
-  console.error(`\n${failures} check(s) failed.`);
-  process.exit(1);
-}
+  if (failures > 0) console.error(`\n${failures} check(s) failed.`);
+  expect(failures).toBe(0);
 
-console.log('\nAll cream-hardcode regression checks passed.');
+  console.log('\nAll cream-hardcode regression checks passed.');
+});

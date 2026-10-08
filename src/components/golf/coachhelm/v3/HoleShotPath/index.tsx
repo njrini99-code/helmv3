@@ -69,7 +69,7 @@
 
 import { useMemo, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { LazyMotion, m } from 'framer-motion';
+import { LazyMotion, m } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { Turf, GreenInsetScenery } from './turf';
 import { Hazards } from './hazards';

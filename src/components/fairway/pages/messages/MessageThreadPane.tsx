@@ -5,7 +5,7 @@
 
 import { MESSAGE_REACTIONS, summarizeReactions, type MessageReactionsState } from '@/hooks/golf/use-message-reactions';
 import * as React from 'react';
-import { AnimatePresence, m } from 'framer-motion';
+import { AnimatePresence, m } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { ArrowLeft, Pencil, Trash2, Check, X, Copy, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw, Info, SmilePlus } from 'lucide-react';
 import { cn } from '@/lib/utils';

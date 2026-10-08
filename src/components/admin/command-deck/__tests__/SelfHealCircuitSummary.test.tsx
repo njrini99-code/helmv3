@@ -91,6 +91,57 @@ describe('SelfHealCircuitSummary', () => {
     expect(within(link).queryByText('0')).not.toBeInTheDocument();
   });
 
+  // `quiet` is passed only under a granted page-level all-clear.
+  describe('quiet', () => {
+    function idleSummary() {
+      return buildCircuitSummary({
+        incidents: [],
+        flow: summarizeFlow([], NOW),
+        stageDetails: [stage('triage'), stage('repair'), stage('close', { capability: { stageId: 'close', state: 'unproven', evidence: 'Close has never closed anything.', provenAt: null } })],
+        verdict: { tone: 'ok', label: 'Healthy', detail: 'On schedule.' },
+        now: NOW,
+      });
+    }
+
+    it('idle stages drop their zero counts but keep title, state and capability', () => {
+      render(<SelfHealCircuitSummary summary={idleSummary()} proofDebt={0} quiet />);
+      for (const title of ['Diagnose', 'Repair', 'Close']) {
+        expect(screen.getByText(title)).toBeInTheDocument();
+      }
+      expect(screen.getAllByText('IDLE')).toHaveLength(3);
+      expect(screen.queryByText('Waiting')).not.toBeInTheDocument();
+      expect(screen.queryByText('Stalled')).not.toBeInTheDocument();
+      expect(screen.getAllByText('Capability proven')).toHaveLength(2);
+      expect(screen.getByText('Capability unproven')).toBeInTheDocument();
+    });
+
+    it('a confirmed zero proof debt reads as a sentence, not a "0" chip into an empty lens', () => {
+      render(<SelfHealCircuitSummary summary={idleSummary()} proofDebt={0} quiet />);
+      expect(screen.getByText(/No proof debt/)).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /proof debt/i })).not.toBeInTheDocument();
+    });
+
+    it('never quiets an unknown or non-zero proof debt', () => {
+      const { unmount } = render(<SelfHealCircuitSummary summary={idleSummary()} proofDebt={null} quiet />);
+      expect(screen.getByRole('link', { name: /unknown\s*proof debt/i })).toBeInTheDocument();
+      unmount();
+      render(<SelfHealCircuitSummary summary={idleSummary()} proofDebt={2} quiet />);
+      expect(screen.getByRole('link', { name: /2\s*proof debt/i })).toBeInTheDocument();
+    });
+
+    it('keeps the full stage cards when the board could not be read', () => {
+      const summary = buildCircuitSummary({
+        incidents: [],
+        flow: summarizeFlow([], NOW),
+        stageDetails: null,
+        verdict: null,
+        now: NOW,
+      });
+      render(<SelfHealCircuitSummary summary={summary} proofDebt={0} quiet />);
+      expect(screen.getAllByText('Waiting').length).toBeGreaterThan(0);
+    });
+  });
+
   it('defaults the proof-debt chip to "unknown" when the prop is omitted', () => {
     const summary = buildCircuitSummary({
       incidents: [],

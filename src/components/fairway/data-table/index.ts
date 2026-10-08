@@ -3,7 +3,7 @@
  * Fairway DataTable — public barrel (ADDITIVE / Wave 1)
  * ----------------------------------------------------------------------------
  * The new warm-premium table for admin / CRM / roster / stats-team, built on
- * @tanstack/react-table v8. Import from here, e.g.
+ * @tanstack/react-table v9. Import from here, e.g.
  *
  *   import { DataTable, type ColumnDef } from '@/components/fairway/data-table';
  *
@@ -20,6 +20,9 @@ export type { DataTableSkeletonProps } from './data-table-skeleton';
 export { DataTableEmpty, DataTableError } from './data-table-states';
 
 export { densityMetrics, alignClass } from './density';
+
+export { dataTableFeatures } from './features';
+export type { DataTableFeatures } from './features';
 export type { DensityMetrics } from './density';
 
 export type {

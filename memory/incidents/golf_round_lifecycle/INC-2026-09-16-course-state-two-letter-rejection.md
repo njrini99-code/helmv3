@@ -12,7 +12,7 @@
 
 ## What was wrong
 
-Both round schemas in `src/app/golf/actions/golf.ts`
+Both round schemas in `actions/golf.ts (pre-split)`
 (`golfRoundComprehensiveSchema` and `partialRoundSchema`) declared
 
 ```ts

@@ -89,6 +89,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
 
   const [query, setQuery] = useState(initial?.query ?? '');
   const [stage, setStageState] = useState<ChStage | null>(initial?.stage ?? null);
+  const [stageTurn, setStageTurn] = useState(0);
   const [sort, setSortState] = useState<ChSort>(initial?.sort ?? 'updated');
   // The last sort and stage are a per-browser convenience, not account state (the current page keeps them the same way).
   useEffect(() => {
@@ -111,6 +112,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
     }
   };
   const setStage = (s: ChStage | null) => {
+    if (s !== stage) setStageTurn((n) => n + 1);
     setStageState(s);
     try {
       if (s) localStorage.setItem(STAGE_KEY, s);
@@ -177,7 +179,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
   };
   const add = useAction('recruiting.add', addAction, (input: RecruitInput) => ({
     done: '',
-    failed: `Couldn't add ${fullName(input.first_name, input.last_name)}`,
+    failed: `Couldn’t add ${fullName(input.first_name, input.last_name)}`,
     hint: 'Nothing was added. Check your connection and try again.',
     code: 'CH-14001',
   }));
@@ -197,7 +199,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
   };
   const save = useAction('recruiting.save', saveAction, (p: ChProspect) => ({
     done: '',
-    failed: `Couldn't save ${p.name}'s changes`,
+    failed: `Couldn’t save ${p.name}’s changes`,
     hint: 'Nothing was changed. Check your connection and try again.',
     code: 'CH-14002',
   }));
@@ -222,7 +224,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
   };
   const move = useAction('recruiting.stage', moveAction, (p: ChProspect, to: ChStage) => ({
     done: '',
-    failed: `Couldn't move ${p.name} to ${stageMeta(to).label}`,
+    failed: `Couldn’t move ${p.name} to ${stageMeta(to).label}`,
     hint: `${p.name} is still ${stageMeta(p.stage).label}. Try again.`,
     code: 'CH-14003',
   }));
@@ -242,7 +244,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
   };
   const del = useAction('recruiting.delete', deleteAction, (p: ChProspect) => ({
     done: '',
-    failed: `Couldn't delete ${p.name}`,
+    failed: `Couldn’t delete ${p.name}`,
     hint: 'Nothing was deleted. Check your connection and try again.',
     code: 'CH-14004',
   }));
@@ -258,6 +260,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
     setQuery,
     stage,
     setStage,
+    stageTurn,
     sort,
     setSort,
     open,
@@ -311,7 +314,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
           onClose={() => setAsking(null)}
           code="CH-14501"
           title={asking ? `Delete ${asking.name}?` : 'Delete prospect?'}
-          message="This removes them from your list, with their notes and documents. This can't be undone."
+          message="This removes them from your list, with their notes and documents. This can’t be undone."
           actionLabel={del.pending ? 'Deleting' : 'Delete prospect'}
           busy={del.pending}
           onAction={() => asking && void del.run(asking)}
@@ -324,7 +327,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
           icon={Trash2}
           code="CH-14501"
           title={asking ? `Delete ${asking.name}?` : 'Delete prospect?'}
-          description="This removes them from your list, with their notes and documents. This can't be undone."
+          description="This removes them from your list, with their notes and documents. This can’t be undone."
           footer={
             <>
               <Button variant="ghost" disabled={del.pending} onClick={() => setAsking(null)}>

@@ -3,7 +3,7 @@
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import { createEnrichedAnnouncement, deleteAnnouncement, updateAnnouncement } from '@/app/golf/actions/announcements';
 import { createGolfDocument, deleteGolfDocument, getPreviewUrl, uploadGolfDocument } from '@/app/golf/actions/documents';
-import { respondToEvent, updateGolfEvent } from '@/app/golf/actions/golf';
+import { respondToEvent, updateGolfEvent } from '@/app/golf/actions/calendar-events';
 import { completeTask, createTask, deleteTask, uncompleteTask } from '@/app/golf/actions/tasks';
 import { createGolfTravelItinerary, deleteGolfTravelItinerary, getTravelerClassConflicts, updateGolfTravelItinerary } from '@/app/golf/actions/travel';
 import type { ChHubUrgency } from '../../data/hub';

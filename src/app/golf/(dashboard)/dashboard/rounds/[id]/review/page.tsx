@@ -13,7 +13,7 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { containerVariants, itemVariants } from '@/components/golf/dashboard/premium-components';
 import Link from 'next/link';

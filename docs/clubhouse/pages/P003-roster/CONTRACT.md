@@ -52,7 +52,7 @@ Route skeleton (30201): the header, toolbar and six face cards in their final sl
 | --- | --- | --- | --- |
 | 30201 | CH-3401 | `ROSTER_IS_LOADING` | Roster is loading |
 
-From the shell (P001): 10201 CH-1401.
+From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 ## 03 — Background loading / refresh
 
@@ -121,7 +121,7 @@ Every change has its own toast (30601 to 30607) naming what failed and what to d
 | 30617 | CH-3210 | `THE_PLAYERS_ROSTER_DOESNT_LOAD` | The player's roster doesn't load (a player's own team's members) |
 | 30618 | CH-3211 | `THE_PLAYERS_ROSTER_LIST_CRASHES` | The player's roster list crashes |
 
-From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002, 10611 CH-1003.
+From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002, 10611 CH-1003, 10612 CH-1209, 10613 CH-1210, 10614 CH-1211.
 
 ## 07 — Network / offline
 
@@ -133,7 +133,7 @@ Roster's writes all go through useAction, so offline every one is refused before
 | --- | --- | --- | --- |
 | 30701 | — | `WRITES_REFUSED_OFFLINE` | Offline, every Roster write (a removal, an approval, a decline, Approve all, a note) is refused before anything is sent, the toast names what did not happen, and nothing on screen changes; Export, Copy and the filters are local and keep working. |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
 
 ## 08 — Permission / authorization
 
@@ -226,14 +226,22 @@ What a coach changes here revalidates the page and comes back (category 03). A c
 
 Status: DEFINED
 
-Roster's own motion (CH-3601, CH-3602; both are checked in the preview, not by a test) and the shell's: v2 press, reveal, sheets and pushes (D-64).
+Roster's own motion: the panel slides in and players cross-fade (CH-3601), a
+face or row takes the Ledger tint on hover and a deeper one on press, never a
+scale, and on the phone a player row tints and the join requests card (the
+screen's one feature card) darkens under a shade for the press beat (CH-3602),
+and Team view and List view settle in as the toggle moves, never when the kept
+layout returns (CH-3603). All three are checked in the preview, and roster.test
+forces the layout swap's gating (CH-3603). The shell's: the page crossfade, the
+press on keys, sheets and pushes (D-64); there is no first-paint rise.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 31601 | CH-3601 | `OPENING_OR_SWITCHING_A_PLAYER` | Opening or switching a player |
 | 31602 | CH-3602 | `HOVERING_OR_PRESSING_A_FACE_CARD_OR` | Hovering or pressing a face card or row |
+| 31603 | CH-3603 | `SWITCHING_BETWEEN_TEAM_VIEW_AND_LIST_VIEW` | Switching between Team view and List view |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -248,7 +256,7 @@ Roster's own haptics (31701 to 31703) and the warning as Remove player is presse
 | 31703 | CH-3703 | `THE_CODE_OR_LINK_IS_COPIED` | The code or link is copied |
 | 31704 | — | `REMOVE_PLAYER_WARNS` | Pressing Remove player in the confirm fires the warning haptic (D-70), then the success pattern when the removal lands or the error pattern when it fails; Cancel is silent. |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
 
 ## 18 — Accessibility
 
@@ -266,7 +274,7 @@ Roster's own (31801 to 31806): the table roles, a status as a word, Esc, the pol
 | 31806 | CH-3806 | `PHONE_A_PLAYER_ROW_IS_ONE_BUTTON` | Phone: a player row is one button that reads name, class, note, average and handicap; the form spark is decoration |
 | 31807 | CH-3807 | `THE_PLAYERS_ROSTER_A_TEAMMATE_IS_TEXT` | The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
 
 ## 19 — Responsive layout
 
@@ -290,7 +298,7 @@ The coach's note saves when the field loses focus, only if it changed (32001). E
 | --- | --- | --- | --- |
 | 32001 | — | `NOTE_SAVES_ON_LEAVING_THE_FIELD` | The coach's note saves when the field loses focus, only if its trimmed text changed, and an emptied note saves as no note. |
 
-From the shell (P001): 12001 CH-1906.
+From the shell (P001): 12001 CH-1906, 12002 CH-1907, 12003 CH-1908.
 
 ## 21 — Performance
 

@@ -136,6 +136,15 @@ More" top bar with "+" as its one action; a prospect is a pushed screen (an iOS
 edge swipe pops it); the edit form, the stage picker and delete are bottom
 sheets that drag to dismiss; the sort is a menu. The tab bar stays.
 
+Its look is the Coach Home "Mobile clubhouse pass" board (owner, 2026-10-08:
+round 3, "fewer containers, one feature card"): the page opens on the engraved
+double rule with Recruiting in the bold condensed sans; the compact timeline
+sits between two hairlines; the prospects are rows on seams on the parchment.
+A prospect's Stage, Email and Call are keys drawn on the parchment, its parts
+open under the double rule, and a part with nothing yet is one row on a seam.
+No green feature card (nothing on the list outranks the rest), no white cards,
+no serif; the sheets keep their grouped forms.
+
 ## Accessibility
 
 A captioned table with a button for each name and `aria-current` on the open
@@ -162,7 +171,7 @@ school, a last-contacted date, or a stage history. The monogram is the initials.
 (`src/app/golf/actions/recruiting.ts`) and `getRecruitDocuments`,
 `deleteRecruitDocument`, `getRecruitDocumentUrl` and, for an upload,
 `prepareRecruitDocumentUpload` then `completeRecruitDocumentUpload`
-(`recruit-documents.ts`; the current page keeps `uploadRecruitDocument`). Two
+(`recruit-documents.ts`; the Fairway page now uses the same two steps). Two
 additions on the server, both optional for the current page: `createRecruit`
 takes a request id, and the two upload steps send the file straight to Storage
 (a server action's body is capped far below a film). WIRING.md maps each.

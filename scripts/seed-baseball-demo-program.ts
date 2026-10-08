@@ -83,6 +83,15 @@ import {
   type PitcherSkill,
 } from '../src/lib/baseball/seed/demo-program-sim';
 import { isRecruitingEnabled } from '../src/lib/baseball/product-modules';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/seed-baseball-demo-program.ts',
+  summary:
+    "Seeds the BaseballHelm demo program (fixes #912).",
+  guard: "its own --confirm flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 // ---------------------------------------------------------------------------
 // CI guard (mirrors scripts/seed-baseball-demo.ts) — fail loudly before any

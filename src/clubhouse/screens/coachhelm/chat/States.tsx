@@ -1,9 +1,8 @@
 'use client';
 
-import { CircleAlert, Users } from 'lucide-react';
+import { MessageSquareOff, Users } from 'lucide-react';
 import { rebuiltHref } from '../../../shell/nav';
 import { Button } from '../../../ui/Button';
-import { Icon } from '../../../ui/Icon';
 import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { EmptyState } from '../../../ui/States';
 
@@ -33,11 +32,16 @@ export function AskNoRoster() {
   );
 }
 
-/** The chat context did not load (no active team, a dropped read): no program to ask against, so no composer. */
+/**
+ * The chat context did not load (no active team, a dropped read): no program to ask against, so no composer. It is the
+ * page's one read, so it is the page failure (CH-1211), drawn as the route error is: a brick medallion, Try again first.
+ */
 export function AskInputsFailed() {
   return (
     <div className="ch-ask-state">
-      <RefreshNotice
+      <EmptyState
+        size="page"
+        tone="danger"
         code="CH-13221"
         title="Ask CoachHelm couldn’t load your program"
         body="Nothing is lost, but there is no program to ask about until this loads. Try again in a moment."
@@ -62,20 +66,24 @@ export function AskThreadFailed({ onNew }: { onNew: () => void }) {
   );
 }
 
-/** `?c=` names a conversation that is gone or not this coach's (mockup Unavailable). The composer stays usable. */
+/**
+ * `?c=` names a conversation that is gone or not this coach's (mockup Unavailable). The composer stays usable. It is the page's
+ * empty state, calm on the canvas, not a boxed card (states audit, 2026-10-08), and still an alert, so it is announced.
+ */
 export function AskUnavailable({ onNew, phone = false }: { onNew: () => void; phone?: boolean }) {
   return (
-    <div className="ch-ask-state">
-      <div className="ch-ask-gone" role="alert" data-ch-code="CH-13320">
-        <span className="ch-ask-gone__ic" aria-hidden="true">
-          <Icon icon={CircleAlert} size={20} />
-        </span>
-        <b>That conversation isn’t available</b>
-        <span>It may have been deleted, or it belongs to another coach. {phone ? 'Your other chats are under History.' : 'Your other chats are on the left.'}</span>
-        <button type="button" className="ch-ask-gone__new" onClick={onNew}>
-          Start a new chat
-        </button>
-      </div>
+    <div className="ch-ask-state" role="alert" data-ch-code="CH-13320">
+      <EmptyState
+        size="page"
+        icon={MessageSquareOff}
+        title="That conversation isn’t available"
+        body={`It may have been deleted, or it belongs to another coach. ${phone ? 'Your other chats are under History.' : 'Your other chats are on the left.'}`}
+        action={
+          <Button variant="primary" onClick={onNew}>
+            Start a new chat
+          </Button>
+        }
+      />
     </div>
   );
 }

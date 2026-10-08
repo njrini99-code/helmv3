@@ -24,7 +24,7 @@
  * ========================================================================== */
 
 import { useState, useSyncExternalStore, type Dispatch, type SetStateAction } from 'react';
-import { m, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { MapPin, Check, BarChart3, Trophy, Search, ChevronLeft } from 'lucide-react';
 
@@ -43,12 +43,8 @@ import { FairwayRecentCourses } from './FairwayRecentCourses';
 import { OfflineWarningBanner } from '@/components/golf';
 import { FairwayHoleConfig } from './FairwayHoleConfig';
 import type { HoleConfig } from '@/lib/types/golf-course';
-import type {
-  SavedCourse,
-  SavedCourseHoleConfig,
-  RecentPlayedCourse,
-  PlayerQualifierInfo,
-} from '@/app/golf/actions/golf';
+import type { SavedCourse, SavedCourseHoleConfig, RecentPlayedCourse } from '@/app/golf/actions/saved-courses';
+import type { PlayerQualifierInfo } from '@/app/golf/actions/qualifier-actions';
 
 /** Mirrors the legacy RoundSetupForm (string-based). */
 export interface FairwaySetupForm {

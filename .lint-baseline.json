@@ -1,11 +1,5 @@
 {
   "(null)": 1,
   "@typescript-eslint/no-explicit-any": 6,
-  "@typescript-eslint/no-unused-vars": 25,
-  "ERROR:@typescript-eslint/no-unused-expressions": 1,
-  "ERROR:no-empty": 1,
-  "ERROR:no-irregular-whitespace": 1,
-  "ERROR:no-undef": 21,
-  "ERROR:no-useless-escape": 2,
-  "ERROR:prefer-const": 1
+  "@typescript-eslint/no-unused-vars": 22
 }

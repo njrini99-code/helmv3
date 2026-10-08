@@ -35,7 +35,7 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push, refresh }),
 }));
 
-vi.mock('@/app/golf/actions/golf', () => ({
+vi.mock('@/app/golf/actions/qualifier-actions', () => ({
   createGolfQualifier: (...args: unknown[]) => createGolfQualifier(...args),
 }));
 

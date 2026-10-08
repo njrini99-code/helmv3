@@ -1,5 +1,316 @@
 # P001 — Shell: changelog
 
+## 2026-10-08 — The page under a screen, a skeleton's reveal, pull to refresh
+
+Approved by the owner on 2026-10-08.
+
+- **The page under a pushed screen (CH-1618).** As a phone screen slides in,
+  the page it covers (the top bar, the tab bar and the page) draws back about a
+  quarter of the width and dims under a light warm scrim, on the screen's own
+  smooth spring, and comes back with it over the base ease-out as it pops. The
+  scrim's animation drives the page frame by frame, so the two edges never part,
+  and a pop that cuts a push short reverses both from where they are. A screen
+  with another pushed over it does the same. A Back that iOS animated itself
+  puts the page back at once (CH-1908). Reduced motion and Animations off keep
+  the page still. The screens are fixed inside the page, and a transform on any
+  of their ancestors would pin them to it, so those wrappers stay put and their
+  other children move (`PhoneUnderlay`, `usePhonePushed`).
+- **The top bar under a sheet or a screen.** On a phone page scrolled down,
+  opening a sheet or pushing a screen took the green top bar off the screen
+  until it closed: the scroll lock made the body a scroller, and the sticky bar
+  stuck to it, a scroll's height above the view. The lock now clips the body
+  instead, and leaves the phone's canvas alone (lib/overlay-scroll.ts).
+- **A page over its skeleton (CH-1619).** A page that arrives in place of its
+  route skeleton after a navigation fades in over the press beat, opacity only.
+  The fade waits for the page's first paint. Never on the first paint of a
+  server-rendered page, never again on a refresh, and not with reduced motion or
+  Animations off (`RouteFrame`).
+- **Pull to refresh in the iPhone app (CH-1909, CH-1622, CH-1709).** At the top
+  of a phone page a downward pull brings the parchment sheet down off the green
+  chassis with UIKit's rubber band, the spinner's spokes coming in as it goes.
+  Past 64px the medium tap fires once and the page reads again; let go, the
+  sheet rests at the spinner and springs home when the read has landed. There is
+  no native refresh plugin in the app, so the page draws its own; mobile Safari
+  keeps its own pull (`PullToRefresh`).
+
+Checked in WebKit at 390 (touch), sampled each frame:
+
+- **Push.** The page lands at −94px (24% of 390). On every sampled frame it sits
+  within a pixel of 0.24 times the screen's travel, with the scrim on the same
+  curve (screen at 170px, page at −53px, scrim 0.564).
+- **Pop.** The page returns on the screen's ease-out. Popped mid-push at about
+  160ms, both reverse from where they are (screen at 129px, page at −63px).
+- **A Back iOS animated.** The screen is gone, the page at 0 and the scrim at 0
+  in the same frame.
+- **Nested.** Details over a thread: the thread draws back to −94px and its veil
+  reaches 1.0 in step.
+- **Scrolled 300px.** The top bar stays at the top through push and pop; before,
+  it sat at −300px.
+- **Reduced motion and Animations off.** The page holds at 0 and the screen is
+  in place on the first frame.
+- **A page over its skeleton.** Roster's page was at opacity 0 on its first
+  frame, 0.86 35ms later and 1 by 100ms. With reduced motion, and on a first
+  paint, there was no fade.
+- **Pull to refresh.** Simulated touches with the app's body class. A 220px pull
+  followed the finger with resistance to 108px, turned the spinner at 64px, sent
+  one refresh, held at 52px and sprang home once the read landed. A pull short
+  of the trigger, a first move upward and Safari did nothing.
+
+## 2026-10-08 — The offline refusal writes "you’re offline"
+
+The shared action hook's offline toast (CH-1903, `lib/use-action.ts`) ends
+"…: you’re offline" with the typographic apostrophe, as Settings, Messages and
+Calendar already wrote theirs; every page whose saves go through `useAction`
+reads it so. The words before it are the page's own; copy-apostrophes.test
+holds Calendar, Team Hub, Messages, Settings, Home, Stats, Roster and
+Recruiting to the curly marks.
+
+## 2026-10-08 — The preview hands the frame its query
+
+The dev preview (`src/app/clubhouse-preview/[screen]/page.tsx`) passes its own
+query to `ClubhouseFrame` as `search`, as the live shell passes the address's,
+so `&section=` and a coach's `&player=` decide the preview's phone bar too
+(CH-1402). Checked in WebKit at 390 (touch), loading to loaded: Settings with
+`&section=team` and `&section=account` loads and lands under "‹ Settings" (0px);
+an unknown section and the bare page under "‹ More" (0px); a coach's player with
+`&player=p1` under "‹ Team" and "Player stats" (0px), the page adding Share. The
+preview's player screen without `&player=` is still the team's address, so it
+loads under the Stats tab root's bar, as the live address would.
+
+## 2026-10-08 — The hero bell shows keyboard focus
+
+On Home's green bar the bell showed no focus at all (CH-1806): the keys' green
+focus shadow lost to the disc's own ring, and its green would have vanished on
+the hero anyway. It now takes a champagne outline 2px off the disc, with no
+shadow; at rest it is unchanged. Checked in WebKit at 390: reached with
+Option-Tab, it matches `:focus-visible` with a 2px `#dccda6` outline at offset 0
+and only its own inset ring for a shadow; the bar at rest is pixel-identical.
+
+## 2026-10-08 — The pushed bar for forms, Settings sections and a coach's player
+
+- **Forms (CH-1402).** The coach's qualifier forms (new and edit) load under
+  their own bar: the plain Cancel and the form's title, where the form puts
+  them, with the tab bar already hidden; the form adds Create or Save. They
+  loaded under the tab root's title and bell with the tab bar showing, then
+  changed both. A player's new round and the round itself keep their own chrome
+  (the band's Back and the plain bar, P011 111903), and now hide the tab bar
+  from their first frame too (`phoneFullScreen`), so it no longer shows while
+  they load and leaves as they arrive.
+- **The query (CH-1402).** `ClubhouseShell` hands the address's query to the
+  frame (`useSearchParams`; the dashboard renders per request, so the server
+  reads it too). A Settings section named in the address (`?section=`, or the
+  old `/settings/notifications` and `/settings/coaching-intelligence`) loads
+  under "‹ Settings", as SettingsPhone pushes it; a coach's player on Stats
+  (`?player=`) under "‹ Team" and "Player stats". Both used to load under the
+  list's or the team's bar and swap the back link when the page arrived.
+- Manage selections' bar is the coach's only: a player there meets the
+  coach-only notice, under the plain bar.
+
+Checked in WebKit at 390 (touch): the new and edited qualifier, loading to
+loaded, Cancel and the title moved 0px with the tab bar hidden in both (before:
+the tab root's title and bell, the tab bar showing); Manage selections and the
+earlier routes unchanged. The Settings-section and player bars are checked in
+`shell.test` only: the preview hands the frame no query yet.
+
+## 2026-10-08 — A pushed page's bar from its first frame, 44 by 44 keys, and choices that answer a press
+
+- **The pushed bar while a page loads (CH-1402).** On the phone a page opened
+  from More (a coach's Roster, Recruiting, Qualifiers, Team Hub and Messages; a
+  player's Calendar, Roster, My stats, Qualifiers, My qualifiers and Classes;
+  Settings for both) and a page below another (a qualifier, its selections, a
+  round, recovery) loaded under the tab root's bar, the title at the left and
+  the bell, then jumped to "‹ More" and a centred title when the page arrived:
+  the largest shift left on the phone. The shell now draws that bar from the
+  address (`phonePushedTop` in `shell/nav.ts`, `PushedTopStandIn` in
+  `shell/phone-chrome.tsx`), in the loading state and in the server's first
+  paint. The page's own bar replaces it where it stood and adds its action; Back
+  works while the page loads. The stand-in's title is plain text, so the heading
+  stays the page's. `PhoneTop` and the chrome hooks (`usePhoneImmersive`,
+  `usePhoneHero`, `usePhoneTabsHidden`) now take hold in a layout effect, in the
+  commit that mounts them, so the bars never show a frame of the last page's
+  state. The bar title's tracking is its own (`.ch-pbar__title`), no longer the
+  app's global h1 rule, so plain text and the h1 match to the pixel. If Home's
+  skeleton holds the green hero for a moment on a cold load of a pushed address,
+  the team gives way to the address's back link and title.
+- **44 by 44 (CH-1815).** A pushed screen's bar drew a hairline inside its 50px,
+  so its row was 43px and its 44px back link and text action stood half a pixel
+  out of it; it has no hairline now, as the shell bar. The hero bell's 40px disc
+  sits in a 44px key (a clear 2px border), where it was drawn. A sheet's Close,
+  with a title alone, was clipped to 44 by 43 by its scrolling header; its reach
+  now leans up into the header's padding. The search field carries its own reach
+  (Clubhouse changelog).
+- **A press on a choice (CH-1617).** A segmented option or a pill that isn't on
+  takes the press tint over the press beat, after the 50ms delay; the kit's
+  feature card answers with a shade instead of a 0.985 scale.
+
+Checked in WebKit at 390 (touch), machine load 9 to 14:
+
+- Loading to loaded, back link and title (the text's own box): 0px on all 11
+  pushed routes in the preview (Roster for both roles, Recruiting, Qualifiers
+  for both, My qualifiers, Settings, Team Hub, Messages, Classes, a round).
+  Measured before on four of them (Roster, Recruiting, Qualifiers, Settings):
+  loading drew the tab root's title and bell. Sampled every frame from first
+  paint through hydration (Roster loaded and loading, Settings, Recruiting, a
+  round, Team Hub, Classes): the pushed bar with one back link in every frame,
+  never the tab root's. Tab roots are unchanged (the coach's Calendar still
+  trades the bell for its New event key on load).
+- Keys: a pushed screen's back link and Edit 44 by 44 at y 0 (were 44 at y -0.5,
+  hit 43.5); a thread's bare back 44; the hero bell 44 by 44 at 340,0 (was 40 by
+  40), pixel-identical at rest; a title-only sheet's Close hit 44 by 44 (was 44
+  by 43); the search field hit 44 tall from a 36px drawn field (3px outside
+  lands on it, 5px outside on the page), its input 16px, its clear key clearing,
+  in the page (Rounds, Recruiting) and in a sheet (the course picker).
+- A held segment tints to `--ch-ledger-row-press` after the delay, scale none,
+  and the chip moves on release.
+- The preview's qualifier screens use `/golf/dashboard/qualifiers` for every
+  state, so their `?state=loading` shows the list's bar; the real addresses draw
+  the qualifier's.
+
+## 2026-10-08 — The bell, Not rebuilt and the way back, in the shared states
+
+The bell's empty (CH-1302, CH-1303) is the shared section empty and its failed
+list (CH-1201) the notice, both at the rows' inset; while the list hasn't
+loaded, the panel's head drops its unread count and Mark all read. Not rebuilt
+(CH-1301) is the page empty's anatomy, not a card. The route error's way back
+honours the route's `homePath` and names it (CH-1206). The on-green notice inks
+are tokens (`--ch-notice-on-green-ink`, `--ch-notice-on-green-body`).
+
+CH-1210 also holds on the phone in development: a section that crashes in the
+commit that mounts it (the phone tree mounts after hydration) tells its group
+again when StrictMode, or React's `<Activity>`, detaches and reattaches it
+(`componentDidMount`). Found by phone-a on stats__crash at 390.
+
+## 2026-10-08 — Springs in the shell, and a tab that answers a second tap
+
+More and the bell now rise on the smooth spring (base, no bounce) and leave on
+it. Swiped shut, they leave at the speed they were thrown (CH-1602, CH-1612,
+CH-1611). A pushed phone screen slides in on the same spring and leaves over the
+base ease-out, so the page beneath is free again at once (CH-1610). The sidebar
+plate also glides on it, and a second row tapped mid-glide sends it on from
+where it is, at its speed. Toward a row too near to stop at from that speed, it
+starts slower instead, so it never passes the row (CH-1613). A sheet thrown back
+up carries on a little past its open position over its own floor, and a finger
+can catch it on the way (CH-1611).
+
+Tapping the tab that is already open now does what a UIKit tab bar does, without
+a tick. A pushed screen or section pops back to the tab's root, and at the root
+the page scrolls to the top (CH-1907). When iOS has already animated a Back with
+its edge swipe (`hasUAVisualTransition`), the Back shows once: the pushed screen
+leaves at once and the page crossfade does not run (CH-1908). The More sheet's
+rows tint after a 50ms beat, so a drag or a scroll never flashes them (CH-1606).
+The springs are a D-64 extension: a lead decision under the owner's full-auto
+brief, which the owner confirmed on 2026-10-08.
+
+Machine load ran from 70 to 290 for most of the work, so the springs are checked
+first by their curves, not by frame timing. Each check is one of two kinds:
+framer's own spring generator sampled at fixed times, or a WebKit animation read
+through `getAnimations()` and seeked while paused. All run against a harness of
+the real components (390px, touch).
+
+- framer's generator, given the stiffness and damping `chSpring` passes, draws
+  the same curve as the duration-and-bounce form from rest (largest difference
+  0px). Smooth is at 59.8% at 100ms and 96.7% at 260ms, within 0.5px of 100 at
+  369ms, and never past its mark. Settle passes it by 0.13%.
+- Handed 2000px/s, that form starts at 2000px/s, where the duration-and-bounce
+  form starts at 0. Retargeted at 80ms, it carries on at 648px/s; the other
+  drops to 0.
+- The `Modal` sheet rises on a 462ms CSS animation whose `linear()` easing holds
+  the token's 30 values. Seeked, it is within 0.001 of the spring at every
+  sampled time.
+- Thrown at 1.5px/ms, the `Modal` exit starts 24px on, one frame at the throw
+  speed. It runs at 1.74, then 1.97px/ms (8ms seeks) and ends off screen at
+  367ms.
+- Let go 40px down while moving up at 1.5px/ms, More springs back over 288ms. It
+  passes its open position by 3.96px at 112ms, over a seamless floor. A finger
+  landing there holds it at -3.96px.
+- The sidebar plate glides 200px in 408ms over 27 keyframes, never past its row.
+  Sent on at about 100ms, its new glide starts within 1.4px of where it was, and
+  it passes no row by more than half a pixel.
+- Pulled up 160px, the sheet gives 47px over its floor.
+- A Back flagged `hasUAVisualTransition` removes the pushed screen on the first
+  frame.
+- With reduced motion, the `Modal` fades in 1ms and the plate jumps with no animation.
+- Frame-sampled once load fell to 14 to 18 (headless WebKit draws about every 10ms):
+  - More rises within half a pixel at 474ms and closes by the scrim in 446ms.
+  - Thrown at 2.4px/ms, More runs 3.8 to 4.3px/ms and is gone at 431ms; the old
+    fixed ease-out started near 10px/ms. Its first frame runs faster (6.7px/ms),
+    because the 16ms lead is sized for the 60Hz frame of WKWebView and Safari.
+  - The band springs back in 330ms. The plate is within half a pixel at 403ms,
+    and a second tap never drops its speed.
+  - A pushed screen is within half a pixel at 463ms. The pill passes its mark by
+    0.22px of 147px; nothing else passes.
+
+## 2026-10-08 — The shared states, drawn as the Ledger draws
+
+`shell.css` now draws the shared states as flush Ledger pieces (see the
+Clubhouse changelog):
+
+- The section empty is a left-aligned line.
+- The page empty keeps measured air under the framed head.
+- The notice drops the pink box and draws nothing of its own: no fill, ring or
+  stripe, its icon on the heading's edge, between the section's own rules (the
+  2px danger stripe was dropped the same day; side stripes are avoided). In the
+  bell it takes the rows' 10px inset.
+- The route error is the page empty in a brick danger tone, with no card.
+- On desktop Ledger pages, a skeleton block is a rule with two lines of type.
+- The kit's PageIntro eyebrow is 12px (`ui.css`), the F09 phone text floor.
+
+New: CH-1209, one notice with one Try again when several parts of a page fail;
+CH-1210, the same for sections that crash together (`SectionGroup`,
+`SectionGroupNotice`); CH-1211, the danger page for a page whose one read
+failed (`EmptyState size="page" tone="danger"`).
+
+## 2026-10-08 — The tab bar in Safari is one toolbar with Safari's
+
+Opened in mobile Safari rather than the app, the phone tab bar used to float as
+a pill above Safari's own floating controls: two pills stacked, with the page
+showing between them. The owner chose to merge them. Outside the app
+(`body:not(.capacitor)`), the bar is now a full-width shelf on the bottom edge,
+square to the screen with one hairline on top, and Safari tints its controls'
+strip from it. The app keeps the floating pill. Owner check on an iPhone is
+pending.
+
+## 2026-10-07 — The sidebar plate glides
+
+The selected row's ivory plate is now one object that travels (CH-1613,
+`shell/NavPlate.tsx`). On the first frame of a tap (`LinkPending`) it glides
+to the new row at the base duration, and the rows' ink follows at the same
+pace, instead of one row switching off and another on. It lands without
+travelling on first paint and on resize, and jumps with reduced motion or
+Animations off. Until it has measured, and wherever script never runs, each
+row still draws its own plate. Measured in WebKit: Home to Stats, 0 to 267px in
+about 210ms on the ease-out.
+
+## 2026-10-07 — Framed workspace, replacing the ivory sidebar and canopy
+
+The sidebar and frame are the frame green again, with the brand in its own
+panel and an ivory plate for the selected row. The desktop canvas is the
+parchment workspace with a left-edge green bleed and a top-left mist. The
+canopy's green field and scroll-settling top bar are removed; the top bar is a
+parchment glass. `main[data-canopy]` now means the framed page head (see the
+Clubhouse changelog).
+
+## 2026-10-07 — Canopy top bar at rest
+
+On canopy pages the top bar's resting state is clear over the green with ivory
+ink, and scrolling settles it into the ivory glass. A page too short to scroll
+(the timeline is inactive) keeps the clear bar instead of a tinted glass. Where
+scroll-driven animations are unsupported, the bar is the solid field green.
+
+## 2026-10-07 — Ivory sidebar and canopy
+
+The sidebar and frame are ivory, the selected row is a green key, the brand uses
+the green mark with a serif wordmark, and the next-event card is a light sheet.
+The shared canopy (`main[data-canopy]`) and its scroll-settling top bar live in
+shell.css.
+
+## 2026-10-06 — Smooth scroll and materials
+
+The phone tab bar floats as a glass capsule above the safe area, and the canvas
+reserves its height. Desktop wheel scrolling eases through the canvas scroller
+(shared smooth scroll); route changes and Back restoration land instantly.
+Sidebar brand, nav item and next-event radii are on the scale.
+
 ## 2026-10-06 — Popup geometry and focus styling
 
 Native-dialog menus use their dialog's top layer and reserve keyboard space.
@@ -30,6 +341,22 @@ are preserved; runtime gaps stay explicit.
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
+
+## 2026-10-06 — Motion import path moves to `motion/react`
+
+```text
+PR/commit:      #2153 (agent/deps-ui-upgrade)
+Design package: none; no visual or behavior change
+Contract IDs:   none
+Data impact:    none
+Held items:     none
+```
+
+Dependency upgrade only. `framer-motion` 13 is replaced by the `motion` 14
+package, so this page's animation imports change from `framer-motion` to
+`motion/react`. The animation API, durations, curves and reduced-motion gating
+are unchanged; Motion 14 only removed internal compatibility APIs this tree
+never used.
 
 ## 2026-10-02 — Slow feedback follows its request
 

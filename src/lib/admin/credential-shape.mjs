@@ -10,7 +10,6 @@
  *   scripts/check-helm-bridge-env.mjs   deploy-time env check (CI --drift too)
  *   src/lib/admin/sentry-api.ts          runtime reader
  *   src/lib/admin/vercel-api.ts          runtime reader
- *   src/lib/inngest/credentials.ts       runtime state + Bridge reporter
  *
  * WHY. Every one of the eight Bridge values in the local `.env.local` was
  * exactly 11 characters, which cleared the old `length >= 10` floor and missed
@@ -35,10 +34,6 @@
  *   - Sentry DSN: a URL whose host ends in `sentry.io`, carrying the public key
  *     as the URL username and the numeric project id as the path
  *     (`https://<key>@o<org>.ingest.<region>.sentry.io/<project>`).
- *   - Inngest signing key: `signkey-<env>-<hex>` — the SDK itself strips
- *     `/^signkey-[\w]+-/` before hashing (inngest/helpers/strings.js).
- *   - Inngest event key: opaque, long (the live one is 86 characters, no
- *     padding — src/app/api/inngest/route.ts); floor 20.
  *   - Vercel: project ids are `prj_…`, team ids `team_…`, API tokens are
  *     opaque alphanumerics (24 characters when issued); floor 20.
  *   - INTERNAL_LOG_KEY: an app-chosen shared secret; floor 16, no whitespace.
@@ -110,16 +105,6 @@ export function isVercelTeamId(value) {
 }
 
 /** @param {string} value */
-export function isInngestSigningKey(value) {
-  return /^signkey-[A-Za-z0-9]+-[0-9a-f]{32,}$/i.test(value.trim());
-}
-
-/** @param {string} value */
-export function isInngestEventKey(value) {
-  return /^[A-Za-z0-9_-]{20,}$/.test(value.trim());
-}
-
-/** @param {string} value */
 export function isInternalLogKey(value) {
   const v = value.trim();
   return v.length >= 16 && noWhitespace(v);
@@ -161,8 +146,8 @@ export function isSupabaseSecretKey(value) {
 
 /**
  * @typedef {'sentry_auth_token' | 'sentry_dsn' | 'sentry_slug' | 'vercel_api_token'
- *   | 'vercel_project_id' | 'vercel_team_id' | 'inngest_signing_key'
- *   | 'inngest_event_key' | 'internal_log_key' | 'supabase_publishable_key'
+ *   | 'vercel_project_id' | 'vercel_team_id'
+ *   | 'internal_log_key' | 'supabase_publishable_key'
  *   | 'supabase_secret_key'} CredentialKind
  */
 
@@ -174,8 +159,6 @@ const SHAPE_CHECKS = {
   vercel_api_token: isVercelApiToken,
   vercel_project_id: isVercelProjectId,
   vercel_team_id: isVercelTeamId,
-  inngest_signing_key: isInngestSigningKey,
-  inngest_event_key: isInngestEventKey,
   internal_log_key: isInternalLogKey,
   supabase_publishable_key: isSupabasePublishableKey,
   supabase_secret_key: isSupabaseSecretKey,
@@ -190,8 +173,6 @@ export const SHAPE_HINTS = {
   vercel_api_token: 'expected an opaque token of >= 20 chars',
   vercel_project_id: 'expected prj_<id>',
   vercel_team_id: 'expected team_<id>',
-  inngest_signing_key: 'expected signkey-<env>-<hex>',
-  inngest_event_key: 'expected an opaque key of >= 20 chars',
   internal_log_key: 'expected a shared secret of >= 16 chars',
   supabase_publishable_key: 'expected sb_publishable_<id> or a legacy anon-key JWT',
   supabase_secret_key: 'expected sb_secret_<id> or a legacy service-role JWT',

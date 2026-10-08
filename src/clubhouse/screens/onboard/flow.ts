@@ -59,7 +59,8 @@ export interface FlowState {
 
 type Action =
   | { t: 'patch'; patch: Partial<Draft> }
-  | { t: 'next'; patch?: Partial<Draft>; to?: OnboardStep }
+  /** `from` is the question that asked to move on: a second tap, or a choice's timer firing after Back, is ignored once it is no longer the current one. */
+  | { t: 'next'; patch?: Partial<Draft>; to?: OnboardStep; from?: OnboardStep }
   | { t: 'back' }
   | { t: 'restore'; state: FlowState };
 
@@ -72,14 +73,15 @@ export function canGoBack(s: Pick<FlowState, 'd' | 'hist'>): boolean {
   return !(s.d.accountMade && !AFTER_ACCOUNT.has(prev));
 }
 
-function reduce(s: FlowState, a: Action): FlowState {
+export function reduceFlow(s: FlowState, a: Action): FlowState {
   switch (a.t) {
     case 'patch':
       return { ...s, d: { ...s.d, ...a.patch } };
     case 'next': {
+      const cur = s.hist[s.hist.length - 1]!;
+      if (a.from && a.from !== cur) return s;
       const d = { ...s.d, ...(a.patch ?? {}) };
       const plan = PLAN[pathOfDraft(d)];
-      const cur = s.hist[s.hist.length - 1]!;
       const i = plan.indexOf(cur);
       const to = a.to ?? plan[i >= 0 ? i + 1 : 1];
       if (!to) return { ...s, d };
@@ -141,7 +143,7 @@ export function useFlow(start: OnboardStep, seed: Partial<Draft>, persist = true
   const plan0 = PLAN[pathOfDraft(d0)];
   const i0 = plan0.indexOf(start);
   const initial: FlowState = { d: d0, hist: i0 >= 0 ? (plan0.slice(0, i0 + 1) as OnboardStep[]) : [start], dir: 'fwd', n: 0 };
-  const [s, dispatch] = useReducer(reduce, initial);
+  const [s, dispatch] = useReducer(reduceFlow, initial);
   const restored = useRef(false);
 
   useEffect(() => {
@@ -174,7 +176,7 @@ export function useFlow(start: OnboardStep, seed: Partial<Draft>, persist = true
   }, [s, persist]);
 
   const up = useCallback((patch: Partial<Draft>) => dispatch({ t: 'patch', patch }), []);
-  const next = useCallback((patch?: Partial<Draft>, to?: OnboardStep) => dispatch({ t: 'next', patch, to }), []);
+  const next = useCallback((patch?: Partial<Draft>, to?: OnboardStep, from?: OnboardStep) => dispatch({ t: 'next', patch, to, from }), []);
   const back = useCallback(() => dispatch({ t: 'back' }), []);
 
   const step = s.hist[s.hist.length - 1]!;

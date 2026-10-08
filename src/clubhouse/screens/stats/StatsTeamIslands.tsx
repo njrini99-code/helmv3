@@ -1,8 +1,9 @@
 'use client';
 
-import { Download, TrendingDown, TrendingUp } from 'lucide-react';
+import { useHeroTone } from '../../ui/PageHero';
+import { CalendarRange, Download, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
-import { createContext, useContext, useEffect, useMemo, useState, useTransition, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, useTransition, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
@@ -11,9 +12,10 @@ import { basisWords, clearFilters, filterFor, isFiltered, isWindowChange, hasRan
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
-import { InlineNotice } from '../../ui/Notices';
+import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Icon } from '../../ui/Icon';
 import { Segmented } from '../../ui/Segmented';
+import { Swap } from '../../ui/Swap';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useDelayedToast, useToast } from '../../ui/Toast';
 import { useChPhone } from '../../lib/use-phone';
@@ -61,6 +63,7 @@ export function useShownWindow(): ChWindow {
 /** The page frame: changing the window or the filter dims the page and marks it busy until the new rounds land. */
 export function StatsTeamFrame({ filter: current, phone, children }: { filter: ChFilter; phone?: ReactNode; children: ReactNode }) {
   const isPhone = useChPhone() && phone != null;
+  const tone = useHeroTone();
   const router = useRouter();
   const toast = useToast();
   const delayedToast = useDelayedToast();
@@ -93,7 +96,7 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
   };
   return (
     <GoFilter.Provider value={{ filter: current, go, shown: (loading ?? current).window }}>
-      <main className={'ch-st' + (isPhone ? ' is-phone' : '')} aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined}>
+      <main className={'ch-st' + (isPhone ? ' is-phone' : '')} aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined} data-canopy={isPhone || tone !== 'canopy' ? undefined : ''} data-hero-tone={tone}>
         {/* The server renders desktop; at phone width it stays hidden until the phone view takes over at hydration. */}
         {isPhone ? phone : <div className="ch-st-desk">{children}</div>}
       </main>
@@ -121,7 +124,7 @@ export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; 
     } catch (err) {
       chReport(err, { surface: 'stats.team.export', severity: 'low' });
       haptic('error');
-      toast({ tone: 'error', title: "Couldn't export team stats", body: 'Your browser blocked the download. Try a desktop browser.', code: 'CH-4001' });
+      toast({ tone: 'error', title: 'Couldn’t export team stats', body: 'Your browser blocked the download. Try a desktop browser.', code: 'CH-4001' });
     }
   };
   return (
@@ -140,8 +143,9 @@ export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; 
 /** The empty window's way out. */
 export function ShowSeason() {
   const go = useGoWindow();
+  // The page empty's one primary action (CH-4301, CH-4302).
   return (
-    <Button size="sm" onClick={() => go('season')}>
+    <Button variant="primary" leftIcon={CalendarRange} onClick={() => go('season')}>
       Show the season
     </Button>
   );
@@ -153,16 +157,18 @@ export function TeamFilter({ filter, options, count, phone = false }: { filter: 
   return <StatsFilter filter={filter} options={options} count={count} onChange={go} phone={phone} team codes={{ empty: 'CH-4313', pickEmpty: 'CH-4315', pickCap: 'CH-4316', range: 'CH-4101', holes: 'CH-4318' }} />;
 }
 
-/** The filter leaves no round: CH-4313, and Clear filters is the way back. */
+/** The filter leaves no round: CH-4313, the whole page body, so the page's empty state; Clear filters is the way back. */
 export function TeamFilterEmpty() {
   const { filter, go } = useContext(GoFilter);
-  return <FilterEmpty code="CH-4313" onClear={() => go(clearFilters(filter))} />;
+  return <FilterEmpty page code="CH-4313" onClear={() => go(clearFilters(filter))} />;
 }
 
-/** A failed read's notice; Try again re-runs the server render. */
-export function RetryNotice({ code, title, body }: { code: string; title: string; body: string }) {
-  const router = useRouter();
-  return <InlineNotice code={code} title={title} body={body} onRetry={() => router.refresh()} />;
+/**
+ * A failed read's notice; Try again re-runs the server render and says so while it runs. `covered`: the page's notice
+ * (CH-1209) carries the one Try again, so this keeps only its title.
+ */
+export function RetryNotice({ code, title, body, covered = false }: { code: string; title: string; body: string; covered?: boolean }) {
+  return <RefreshNotice code={code} title={title} body={body} covered={covered} />;
 }
 
 /** The trend, the leg cards and the grid: one island, because they share the focused player and the chosen leg. */
@@ -234,6 +240,17 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   // Players' scores read in whole strokes, as in the handoff; the team keeps its decimal.
   const fmtEnd = (v: number) => (isSg ? formatSigned(v) : v.toFixed(0));
   const sel = lines.find((l) => l.p.id === focus);
+  // CH-4601: the player the pointer or the keyboard rests on comes forward without being chosen; a press chooses them
+  // (focus, which the note, the legend and the grid follow). Their line turns green and is drawn again over the others,
+  // which fade back, all over quick.
+  const [peek, setPeek] = useState<string | null>(null);
+  const litId = peek ?? focus;
+  const lit = lines.find((l) => l.p.id === litId);
+  const litPath = lit ? gappedPath(lit.v, x, y) : null;
+  const litEnd = lit ? lastValue(lit.v) : null;
+  const point = (id: string) => (e: ReactPointerEvent) => {
+    if (e.pointerType !== 'touch') setPeek(id);
+  };
   const tFirst = firstValue(team);
   const tLast = lastValue(team);
   const tMean = isSg ? data.team.sgMean : data.team.scoreMean;
@@ -251,13 +268,13 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
       if (!a || !b || a.i === b.i) return `${sel.p.first} has one week in this window so far.`;
       const d = b.v - a.v;
       return isSg
-        ? sgChangeNote(`${sel.p.first}'s`, a.v, b.v, data.weeks[a.i]!)
+        ? sgChangeNote(`${sel.p.first}’s`, a.v, b.v, data.weeks[a.i]!)
         : `${sel.p.first} is ${d <= 0 ? 'down' : 'up'} ${Math.abs(d).toFixed(1)} strokes across this window, now ${fmtEnd(b.v)}.`;
     }
     if (!tFirst || !tLast || tFirst.i === tLast.i) return 'The trend needs rounds in at least two weeks.';
     const d = tLast.v - tFirst.v;
     return isSg
-      ? sgChangeNote("The team's", tFirst.v, tLast.v, data.weeks[tFirst.i]!)
+      ? sgChangeNote('The team’s', tFirst.v, tLast.v, data.weeks[tFirst.i]!)
       : `Team scoring is ${d <= 0 ? 'down' : 'up'} ${Math.abs(d).toFixed(1)} from ${data.weeks[tFirst.i]} to ${data.weeks[tLast.i]}, now ${tLast.v.toFixed(1)}.`;
   })();
   const sorted = [...lines].sort((a, b) => {
@@ -308,76 +325,111 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
           />
         </div>
       </div>
-      {n === 0 || !all.length ? (
-        // The empty window keeps the plot's height (the team's players set it), so the page below stays where it was.
-        <div className="ch-sgt__hold" style={{ ['--ch-ends' as string]: data.players.length }}>
-          <EmptyState code={isSg ? 'CH-4303' : 'CH-4304'} compact title={isSg ? 'No strokes gained in this window.' : 'No scores in this window.'} body={isSg ? 'Strokes gained appears for rounds posted with shots.' : undefined} />
-        </div>
-      ) : (
-        <div className="ch-sgt__plot" style={{ ['--ch-ends' as string]: data.players.length }}>
-          <svg viewBox={`0 0 ${w} ${h}`} className="ch-sgt__svg" role="img" aria-label={`${isSg ? 'Strokes gained' : 'Scoring average'} by week. ${note}`}>
-            {ticks.map((t) => (
-              <g key={t}>
-                <line x1={padL} x2={w - padR} y1={y(t)} y2={y(t)} stroke={t === ref ? 'var(--ch-champagne-500)' : 'var(--ch-ivory-200)'} strokeDasharray={t === ref ? '4 4' : undefined} />
-                <text x={padL - 8} y={y(t) + 4} textAnchor="end" className="ch-tick">
-                  {isSg ? (t > 0 ? `+${t}` : t === 0 ? '0' : `−${Math.abs(t)}`) : t}
-                </text>
-              </g>
-            ))}
-            {data.weeks.map((wk, i) => (
-              <text key={wk + i} x={x(i)} y={h - 8} textAnchor="middle" className="ch-tick">
-                {wk}
-              </text>
-            ))}
-            {lines.map(({ p, v }) => {
-              const d = gappedPath(v, x, y);
-              const on = p.id === focus;
-              return d ? (
-                <path
-                  key={p.id}
-                  d={d}
-                  className="ch-sgt__line"
-                  stroke={on ? 'var(--ch-green-600)' : 'var(--ch-ink-300)'}
-                  strokeOpacity={on ? 1 : 0.45}
-                  strokeWidth={on ? 2.25 : 1.25}
-                  onClick={() => setFocus(on ? null : p.id)}
-                />
-              ) : null;
-            })}
-            {teamPath && <path d={teamPath} fill="none" stroke="var(--ch-green-800)" strokeWidth={3} strokeLinecap="round" />}
-            {tLast && <circle cx={x(tLast.i)} cy={y(tLast.v)} r={4.5} fill="var(--ch-ivory-25)" stroke="var(--ch-green-800)" strokeWidth={2.5} />}
-            {sel && lastValue(sel.v) && <circle cx={x(lastValue(sel.v)!.i)} cy={y(lastValue(sel.v)!.v)} r={4} fill="var(--ch-ivory-25)" stroke="var(--ch-green-600)" strokeWidth={2} />}
-          </svg>
-          <div className="ch-sgt__ends">
-            <div className="ch-sgt__team">
-              <span>Team</span>
-              <b className="ch-num">{tMean != null ? fmt(tMean) : NO_DATA}</b>
-            </div>
-            {sorted.map(({ p, m }) => {
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  className={'ch-sgt__end' + (p.id === focus ? ' is-sel' : '')}
-                  aria-pressed={p.id === focus}
-                  onClick={() => {
-                    haptic('select');
-                    chTrail('stats focus player');
-                    setFocus(p.id === focus ? null : p.id);
-                  }}
-                >
-                  <Avatar name={p.name} size={22} />
-                  <span>{p.first}</span>
-                  <b className={`ch-num ${m == null ? '' : good(m) ? 'ch-gain' : 'ch-loss'}`}>{m != null ? fmtEnd(m) : NO_DATA}</b>
-                </button>
-              );
-            })}
+      {/* Strokes gained and Scoring crossfade (CH-4603). */}
+      <Swap swapKey={lens}>
+        {n === 0 || !all.length ? (
+          // The empty window keeps the plot's height (the team's players set it), so the page below stays where it was.
+          <div className="ch-sgt__hold" style={{ ['--ch-ends' as string]: data.players.length }}>
+            <EmptyState code={isSg ? 'CH-4303' : 'CH-4304'} compact title={isSg ? 'No strokes gained in this window.' : 'No scores in this window.'} body={isSg ? 'Strokes gained appears for rounds posted with shots.' : undefined} />
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="ch-sgt__plot" style={{ ['--ch-ends' as string]: data.players.length }}>
+            <svg viewBox={`0 0 ${w} ${h}`} className="ch-sgt__svg" role="img" aria-label={`${isSg ? 'Strokes gained' : 'Scoring average'} by week. ${note}`}>
+              {ticks.map((t) => (
+                <g key={t}>
+                  <line x1={padL} x2={w - padR} y1={y(t)} y2={y(t)} stroke={t === ref ? 'var(--ch-champagne-500)' : 'var(--ch-ivory-200)'} strokeDasharray={t === ref ? '4 4' : undefined} />
+                  <text x={padL - 8} y={y(t) + 4} textAnchor="end" className="ch-tick">
+                    {isSg ? (t > 0 ? `+${t}` : t === 0 ? '0' : `−${Math.abs(t)}`) : t}
+                  </text>
+                </g>
+              ))}
+              {data.weeks.map((wk, i) => (
+                <text key={wk + i} x={x(i)} y={h - 8} textAnchor="middle" className="ch-tick">
+                  {wk}
+                </text>
+              ))}
+              {lines.map(({ p, v }) => {
+                const d = gappedPath(v, x, y);
+                const on = p.id === litId;
+                return d ? (
+                  <path
+                    key={p.id}
+                    d={d}
+                    className="ch-sgt__line"
+                    stroke={on ? 'var(--ch-green-600)' : 'var(--ch-st-other-line)'}
+                    strokeOpacity={on ? 1 : litId ? 0.2 : 0.45}
+                    strokeWidth={on ? 2.25 : 1.25}
+                  />
+                ) : null;
+              })}
+              {/* The player in front, drawn again over the other lines; the team's line stays on top. */}
+              {litPath && (
+                <path key={`front-${litId}`} d={litPath} className="ch-sgt__front" fill="none" stroke="var(--ch-green-600)" strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round" />
+              )}
+              {teamPath && <path d={teamPath} fill="none" stroke="var(--ch-st-team-line)" strokeWidth={3} strokeLinecap="round" />}
+              {tLast && <circle cx={x(tLast.i)} cy={y(tLast.v)} r={4.5} fill="var(--ch-ivory-25)" stroke="var(--ch-st-team-line)" strokeWidth={2.5} />}
+              {litEnd && <circle key={`end-${litId}`} className="ch-sgt__front" cx={x(litEnd.i)} cy={y(litEnd.v)} r={4} fill="var(--ch-ivory-25)" stroke="var(--ch-green-600)" strokeWidth={2} />}
+              {/* A line is 1.25px: each takes the pointer along a wider invisible band, over everything drawn. */}
+              {lines.map(({ p, v }) => {
+                const d = gappedPath(v, x, y);
+                return d ? (
+                  <path
+                    key={`hit-${p.id}`}
+                    d={d}
+                    className="ch-sgt__hit"
+                    onPointerEnter={point(p.id)}
+                    onPointerLeave={() => setPeek(null)}
+                    onClick={() => setFocus(p.id === focus ? null : p.id)}
+                  />
+                ) : null;
+              })}
+            </svg>
+            <div className="ch-sgt__ends">
+              <div className="ch-sgt__team">
+                <span>Team</span>
+                <b className="ch-num">{tMean != null ? fmt(tMean) : NO_DATA}</b>
+              </div>
+              {sorted.map(({ p, m }) => {
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className={'ch-sgt__end' + (p.id === focus ? ' is-sel' : '')}
+                    aria-pressed={p.id === focus}
+                    onPointerEnter={point(p.id)}
+                    onPointerLeave={() => setPeek(null)}
+                    onFocus={(e) => {
+                      if (focusVisible(e.currentTarget)) setPeek(p.id);
+                    }}
+                    onBlur={() => setPeek(null)}
+                    onClick={() => {
+                      haptic('select');
+                      chTrail('stats focus player');
+                      setFocus(p.id === focus ? null : p.id);
+                    }}
+                  >
+                    <Avatar name={p.name} size={22} />
+                    <span>{p.first}</span>
+                    <b className={`ch-num ${m == null ? '' : good(m) ? 'ch-gain' : 'ch-loss'}`}>{m != null ? fmtEnd(m) : NO_DATA}</b>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </Swap>
       <p className="ch-note">{note}</p>
     </section>
   );
+}
+
+/** Focus from the keyboard (a Tab), not the focus a click leaves behind. */
+function focusVisible(el: Element): boolean {
+  try {
+    return el.matches(':focus-visible');
+  } catch {
+    return false;
+  }
 }
 
 function niceTicks(lo: number, hi: number): number[] {
@@ -458,61 +510,65 @@ function LegGrid({
       {rows.length === 0 ? (
         <EmptyState code="CH-4305" compact title="No player rounds in this window." />
       ) : (
-        <div className="ch-lg__tbl" role="table" aria-label="Strokes gained by leg per player">
-          <div className="ch-lg__r ch-lg__r--h" role="row">
-            <span role="columnheader">Player</span>
-            {LEGS_LIST.map((l) => (
-              <span key={l} role="columnheader" className={'c' + (l === leg ? ' is-col' : '')}>
-                {l}
-              </span>
-            ))}
-            <span role="columnheader" className="r">Total</span>
-            <span role="columnheader" className="r">Trend</span>
-          </div>
-          {rows.map((g) => (
-            <Link
-              key={g.id}
-              href={playerHref(g.id)}
-              role="row"
-              className={'ch-lg__r' + (g.id === focus ? ' is-sel' : '')}
-              onMouseEnter={() => setFocus(g.id)}
-              onFocus={() => setFocus(g.id)}
-            >
-              <span role="cell" className="ch-who">
-                <Avatar name={g.name} size={30} />
-                <span>
-                  <b>{g.name}</b>
-                  <span className="ch-who__m ch-num">
-                    {g.rounds} {g.rounds === 1 ? 'round' : 'rounds'}
-                  </span>
-                </span>
-              </span>
-              {g.legs.map((v, i) => (
-                <span key={i} role="cell" className={'ch-lg__cell ch-num' + (i === li ? ' is-col' : '')} style={{ background: fill(v) }}>
-                  <span className={v == null ? '' : v >= 0 ? 'ch-gain' : 'ch-loss'}>{v == null ? NO_DATA : formatSigned(v)}</span>
+        // CH-4602: choosing a leg re-sorts the grid, so the table settles in with the leg's column ringed (base in,
+        // quick out) instead of its rows jumping; the whole table swaps, so its rows stay inside role=table.
+        <Swap swapKey={leg}>
+          <div className="ch-lg__tbl" role="table" aria-label="Strokes gained by leg per player">
+            <div className="ch-lg__r ch-lg__r--h" role="row">
+              <span role="columnheader">Player</span>
+              {LEGS_LIST.map((l) => (
+                <span key={l} role="columnheader" className={'c' + (l === leg ? ' is-col' : '')}>
+                  {l}
                 </span>
               ))}
-              <span
-                role="cell"
-                data-ch-code={g.total == null ? 'CH-4308' : undefined}
-                className={'r ch-num ch-lg__tot ' + (g.total == null ? '' : g.total >= 0 ? 'ch-gain' : 'ch-loss')}
+              <span role="columnheader" className="r">Total</span>
+              <span role="columnheader" className="r">Trend</span>
+            </div>
+            {rows.map((g) => (
+              <Link
+                key={g.id}
+                href={playerHref(g.id)}
+                role="row"
+                className={'ch-lg__r' + (g.id === focus ? ' is-sel' : '')}
+                onMouseEnter={() => setFocus(g.id)}
+                onFocus={() => setFocus(g.id)}
               >
-                {g.total == null ? 'Early read' : formatSigned(g.total)}
-              </span>
-              <span role="cell" className={'r ch-num ch-lg__ch ' + (g.change == null ? '' : g.change >= 0 ? 'ch-gain' : 'ch-loss')}>
-                {g.change == null ? (
-                  NO_DATA
-                ) : (
-                  <>
-                    <Icon icon={g.change >= 0 ? TrendingUp : TrendingDown} size={14} />
-                    {formatSigned(g.change)}
-                  </>
-                )}
-              </span>
-              <LinkPending />
-            </Link>
-          ))}
-        </div>
+                <span role="cell" className="ch-who">
+                  <Avatar name={g.name} size={30} />
+                  <span>
+                    <b>{g.name}</b>
+                    <span className="ch-who__m ch-num">
+                      {g.rounds} {g.rounds === 1 ? 'round' : 'rounds'}
+                    </span>
+                  </span>
+                </span>
+                {g.legs.map((v, i) => (
+                  <span key={i} role="cell" className={'ch-lg__cell ch-num' + (i === li ? ' is-col' : '')} style={{ background: fill(v) }}>
+                    <span className={v == null ? '' : v >= 0 ? 'ch-gain' : 'ch-loss'}>{v == null ? NO_DATA : formatSigned(v)}</span>
+                  </span>
+                ))}
+                <span
+                  role="cell"
+                  data-ch-code={g.total == null ? 'CH-4308' : undefined}
+                  className={'r ch-num ch-lg__tot ' + (g.total == null ? '' : g.total >= 0 ? 'ch-gain' : 'ch-loss')}
+                >
+                  {g.total == null ? 'Early read' : formatSigned(g.total)}
+                </span>
+                <span role="cell" className={'r ch-num ch-lg__ch ' + (g.change == null ? '' : g.change >= 0 ? 'ch-gain' : 'ch-loss')}>
+                  {g.change == null ? (
+                    NO_DATA
+                  ) : (
+                    <>
+                      <Icon icon={g.change >= 0 ? TrendingUp : TrendingDown} size={14} />
+                      {formatSigned(g.change)}
+                    </>
+                  )}
+                </span>
+                <LinkPending />
+              </Link>
+            ))}
+          </div>
+        </Swap>
       )}
     </section>
   );

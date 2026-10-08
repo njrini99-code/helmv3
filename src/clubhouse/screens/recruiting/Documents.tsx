@@ -143,7 +143,7 @@ export function Documents({ prospect, writes, initialUpload }: { prospect: ChPro
     uploadAction,
     (file: File, meta: { title: string; category: ChDocCategory }) => ({
       done: '',
-      failed: `Couldn't upload ${meta.title || file.name}`,
+      failed: `Couldn’t upload ${meta.title || file.name}`,
       hint: 'Nothing was added. Check your connection and try again.',
       code: 'CH-14005',
     }),
@@ -162,7 +162,7 @@ export function Documents({ prospect, writes, initialUpload }: { prospect: ChPro
   };
   const remove = useAction('recruiting.removeDocument', removeAction, (doc: ChDocument) => ({
     done: '',
-    failed: `Couldn't remove ${doc.title}`,
+    failed: `Couldn’t remove ${doc.title}`,
     hint: 'It is still on the prospect. Try again.',
     code: 'CH-14006',
   }));
@@ -170,7 +170,7 @@ export function Documents({ prospect, writes, initialUpload }: { prospect: ChPro
   const openAction = (doc: ChDocument) => writes.documents.open(doc);
   const open = useAction('recruiting.openDocument', openAction, (doc: ChDocument) => ({
     done: '',
-    failed: `Couldn't open ${doc.title}`,
+    failed: `Couldn’t open ${doc.title}`,
     hint: 'The link could not be made. Check your connection and try again.',
     code: 'CH-14007',
   }));
@@ -271,7 +271,7 @@ export function Documents({ prospect, writes, initialUpload }: { prospect: ChPro
           ))}
         </div>
       ) : state.kind === 'failed' ? (
-        <InlineNotice code="CH-14202" title="Documents didn't load" body="Nothing is lost. Try again in a moment." onRetry={tryAgain} />
+        <InlineNotice code="CH-14202" title="Documents didn’t load" body="Nothing is lost. Try again in a moment." onRetry={tryAgain} />
       ) : docs.length === 0 ? (
         <EmptyRow code="CH-14305" icon={FileText} title="No documents yet" body="Schedules, transcripts and film, private to your staff." actionLabel="Upload" onAction={choose} />
       ) : (
@@ -325,7 +325,7 @@ export function Documents({ prospect, writes, initialUpload }: { prospect: ChPro
         icon={Trash2}
         code="CH-14502"
         title="Remove this document?"
-        description={asking ? `${asking.title} is deleted from ${prospect.firstName}'s documents. This can't be undone.` : undefined}
+        description={asking ? `${asking.title} is deleted from ${prospect.firstName}’s documents. This can’t be undone.` : undefined}
         footer={
           <>
             <Button variant="ghost" onClick={() => setAsking(null)}>
@@ -426,7 +426,7 @@ function UploadDialog({
           {busy && progress !== null && (
             <div className="ch-rec-up__progress" data-ch-code="CH-14407">
               <div className="ch-rec-up__bar" role="progressbar" aria-label="Upload progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
-                <span style={{ width: `${progress}%` }} />
+                <span style={{ transform: `translateX(${progress - 100}%)` }} />
               </div>
               <span className="ch-rec-note">Keep this page open until it finishes.</span>
             </div>

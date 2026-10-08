@@ -1,6 +1,10 @@
 <!-- markdownlint-disable MD013 MD022 MD032 MD034 MD037 MD040 MD060 -->
 # Handoff — Helm Bridge engineering control plane (parallel session)
 
+> **STATUS: STALE — the authority, approval and deploy sections are superseded by AGENTS.md (2026-10-07)** wherever this doc says agents
+> must not deploy, merge or migrate, or must wait for owner approval. Read it as
+> design history; `AGENTS.md` and `config/*.yml` are current.
+
 Written 2026-09-03 ~02:50Z by the session that is finishing the Sentry max-out.
 This file is the complete starting state for a SECOND Claude Code session that
 owns the Bridge control-plane program. Read it, then `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md`
@@ -37,9 +41,9 @@ merge time, not before.
 
 - `main` tip when written: `75d3c761a` (+ #1775 and #1777 merging via auto-merge).
   Production serves `a9638cecf` (deployed 2026-09-02 17:42Z); the owner has not
-  yet said "deploy" for the 13+ commits since. Only the owner's explicit word
-  triggers a production promote (`scripts/deploy-prod.sh` from a clean `main`
-  checkout; a detached one is staged at `~/worktrees/helmv3/deploy-main`).
+  yet said "deploy" for the 13+ commits since. (At the time only the owner's
+  word triggered a promote through a deploy script; since 2026-10-07 agents
+  deploy directly with the command in AGENTS.md "Production".)
 - Merged tonight: #1765, #1769 (Flight Recorder real timings), #1770 + #1772
   (Postgres checkpoints migration, APPLIED to production with #1772 discharging
   the HELD rows), #1771 (Repair launchd config in repo), #1773 (tracer gaps),
@@ -107,8 +111,8 @@ snapshots, rather than new event streams.
 ## Rules that bit tonight
 
 - Never `git reset`/stash/checkout in a worktree another agent owns.
-- Commit with explicit paths; every commit ends with
-  `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
+- Commit with explicit paths; end every commit with the attribution trailer your
+  session instructions give (do not hardcode a model name).
 - Ledger/doc conflicts on merge: keep both sides, regenerate
   `docs/generated/DOCUMENT_AUTHORITY_INVENTORY.md` and `HELM_FEATURE_MAP.md`
   (`tsx` may need the sandbox disabled).

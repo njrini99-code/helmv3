@@ -55,7 +55,8 @@ interface FocusAreaTimeframeFields {
 
 interface CreateFocusAreaData extends FocusAreaTimeframeFields {
   player_id: string;
-  coach_id: string;
+  /** Ignored: the coach is always the authenticated caller. Accepted so existing callers keep compiling. */
+  coach_id?: string;
   area_type: string;
   title: string;
   description: string | null;
@@ -362,35 +363,52 @@ async function createFocusAreaImpl(
   // ACTIVE team (cookie-aware; toggle-safe for a two-team program) rather than
   // assuming the org has a single team — the old org-filtered .maybeSingle()
   // throws/nulls when an org runs both a men's and a women's team.
-  // `verifiedTeamId` is that team once the player is confirmed on it: it is the team
-  // the focus area is written under, which the player's CoachHelm reads their proposals by.
-  let verifiedTeamId: string | null = null;
-  if (coach.organization_id && data.player_id) {
-    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
+  // The resolver also finds a staffed team for a coach with no organisation.
+  // No team, or a team that could not be read, refuses: this check used to be
+  // skipped then, leaving row-level security as the only lock.
+  if (!data.player_id) {
+    return { success: false, error: 'Not authorized to create a focus area for this player' };
+  }
+  const verifiedTeamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
+  if (!verifiedTeamId) {
+    return { success: false, error: "Couldn't confirm this player is on your team. Please try again." };
+  }
 
-    if (teamId) {
-      const { data: membership, error: membershipError } = await supabase
-        .from('golf_team_members')
-        .select('id')
-        .eq('team_id', teamId)
-        .eq('player_id', data.player_id)
-        .eq('status', 'active')
-        .maybeSingle();
+  const { data: membership, error: membershipError } = await supabase
+    .from('golf_team_members')
+    .select('id')
+    .eq('team_id', verifiedTeamId)
+    .eq('player_id', data.player_id)
+    .eq('status', 'active')
+    .maybeSingle();
 
-      // Same shape: deny, but do not blame the roster for an outage. A
-      // discarded error told the coach this player is not on their team.
-      if (membershipError) {
-        await logServerError(
-          `[development] roster check failed — denying, but this is an outage not a roster fact: ${describeError(membershipError)}`,
-          { action: 'development.rosterCheck', featureArea: 'development', playerId: data.player_id },
-        );
-        return { success: false, error: "Couldn't confirm this player is on your team. Please try again." };
-      }
+  // Same shape: deny, but do not blame the roster for an outage. A
+  // discarded error told the coach this player is not on their team.
+  if (membershipError) {
+    await logServerError(
+      `[development] roster check failed — denying, but this is an outage not a roster fact: ${describeError(membershipError)}`,
+      { action: 'development.rosterCheck', featureArea: 'development', playerId: data.player_id },
+    );
+    return { success: false, error: "Couldn't confirm this player is on your team. Please try again." };
+  }
 
-      if (!membership) {
-        return { success: false, error: 'Player is not an active member on your team' };
-      }
-      verifiedTeamId = teamId;
+  if (!membership) {
+    return { success: false, error: 'Player is not an active member on your team' };
+  }
+
+  // A linked insight must be this player's, on this team (or teamless): the
+  // id comes from the browser, and readers trust the link.
+  if (data.from_insight_id) {
+    const { data: insight, error: insightError } = await supabase
+      .from('golf_coach_insights')
+      .select('player_id, team_id')
+      .eq('id', data.from_insight_id)
+      .maybeSingle();
+    if (insightError) {
+      return { success: false, error: 'Failed to fetch insight details' };
+    }
+    if (!insight || insight.player_id !== data.player_id || (insight.team_id && insight.team_id !== verifiedTeamId)) {
+      return { success: false, error: 'Not authorized to link this insight' };
     }
   }
 
@@ -423,14 +441,12 @@ async function createFocusAreaImpl(
     return { success: false, error: ACTIVE_FOCUS_DUPLICATE_ERROR, duplicateFocusAreaId: existingActive.id };
   }
 
-  // The team the focus area belongs to: the coach's own team the player was just confirmed on, else the team the player is
-  // active on. Written NULL, a proposal never reached the player's CoachHelm (it reads their proposals by team).
-  const focusTeamId = verifiedTeamId ?? (await resolvePlayerTeamId(supabase, data.player_id));
-
+  // The team the focus area belongs to is the coach's own team the player was just confirmed on: the player's CoachHelm
+  // reads their proposals by team. The coach is the authenticated caller, never the id the browser sent.
   const { error } = await fromUntyped(supabase, 'golf_player_focus_areas').insert({
     player_id: data.player_id,
-    team_id: focusTeamId,
-    coach_id: data.coach_id,
+    team_id: verifiedTeamId,
+    coach_id: coach.id,
     area_type: data.area_type,
     title: data.title,
     description: data.description,
@@ -472,7 +488,7 @@ async function createFocusAreaImpl(
 
 const observedCreateFocusArea = withAdminObserved(
   'createFocusArea',
-  { sport: 'golf', feature: 'development_plans_coach' },
+  { demoSafe: true, sport: 'golf', feature: 'development_plans_coach' },
   createFocusAreaImpl,
 );
 

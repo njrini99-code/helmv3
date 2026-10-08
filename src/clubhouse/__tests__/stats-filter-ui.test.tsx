@@ -1,4 +1,4 @@
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -28,7 +28,8 @@ import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_PLAYER_NOMATCH, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
 
-const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
+// A swap's leaving copy (ui/Swap.tsx) is hidden from assistive tech while it fades; read the live one.
+const code = (c: string) => [...document.querySelectorAll(`[data-ch-code="${c}"]`)].find((e) => !e.closest('.ch-swap__body[aria-hidden]')) ?? null;
 async function expectCode(c: string, text?: RegExp) {
   await waitFor(() => expect(code(c)).not.toBeNull());
   if (text) expect(code(c)!.textContent).toMatch(text);
@@ -181,6 +182,8 @@ describe('Team stats · the filter bar', () => {
     const user = userEvent.setup();
     showTeam(team({ filter: filt({ window: 'season', types: ['qualifier'], courses: ['Pine Hollow'] }), window: 'season', roundCount: 0, grid: [], players: [], putting: null, bests: [] }));
     await expectCode('CH-4313', /No rounds match these filters/);
+    // The whole body is empty, so it is the page's empty state, as CH-4301 is (states audit, 2026-10-08).
+    expect(code('CH-4313')!.classList.contains('ch-empty-page')).toBe(true);
     expect(screen.queryByText(/No stats yet/)).toBeNull();
     expect(code('CH-4301')).toBeNull();
     expect(code('CH-4302')).toBeNull();
@@ -509,7 +512,7 @@ describe('Team stats · network', () => {
     const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
     const { unmount } = showTeam(team({ filter: filt({ types: ['tournament'] }), roundCount: 12 }));
     await user.click(screen.getByRole('button', { name: 'Remove filter: Tournament' }));
-    await expectCode('CH-4901', /Couldn't apply the filter: you're offline/);
+    await expectCode('CH-4901', /Couldn’t apply the filter: you’re offline/);
     expect(code('CH-4901')!.textContent).toMatch(/still the rounds you had/);
     expect(router.push).not.toHaveBeenCalled();
     expect(hapticSpy).toHaveBeenCalledWith('error');
@@ -518,7 +521,7 @@ describe('Team stats · network', () => {
     showTeam(team({ filter: filt({ types: ['tournament'] }), roundCount: 12 }));
     await user.click(screen.getByRole('radio', { name: 'Season' }));
     await waitFor(() => expect(document.querySelectorAll('[data-ch-code="CH-4901"]').length).toBeGreaterThan(0));
-    expect([...document.querySelectorAll('[data-ch-code="CH-4901"]')].some((n) => /Couldn't open the season: you're offline/.test(n.textContent ?? ''))).toBe(true);
+    expect([...document.querySelectorAll('[data-ch-code="CH-4901"]')].some((n) => /Couldn’t open the season: you’re offline/.test(n.textContent ?? ''))).toBe(true);
     online.mockRestore();
   });
 
@@ -582,6 +585,8 @@ describe('Stats player · the filter', () => {
     const user = userEvent.setup();
     showPlayer(PREVIEW_PLAYER_NOMATCH);
     await expectCode('CH-5320', /No rounds match these filters/);
+    // It stands in for a tab's content beside Development, so it stays a section's empty state, not the page's.
+    expect(code('CH-5320')!.classList.contains('ch-empty-page')).toBe(false);
     // Not an "early read" of nothing.
     expect(code('CH-5305')).toBeNull();
     expect(document.querySelector('.ch-st-panel .ch-fg, .ch-st-panel .ch-pf-figs')).toBeNull();
@@ -615,7 +620,7 @@ describe('Stats player · the filter', () => {
     const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
     const { unmount } = showPlayer(player({ filter: filt({ types: ['qualifier'] }) }));
     await user.click(screen.getByRole('button', { name: 'Remove filter: Qualifying' }));
-    await expectCode('CH-5901', /Couldn't apply the filter: you're offline/);
+    await expectCode('CH-5901', /Couldn’t apply the filter: you’re offline/);
     expect(router.push).not.toHaveBeenCalled();
     online.mockRestore();
     unmount();

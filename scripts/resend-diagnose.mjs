@@ -4,6 +4,14 @@
  * explain a non-delivered test send. Run: node scripts/resend-diagnose.mjs
  */
 import { readFileSync } from 'node:fs';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/resend-diagnose.mjs',
+  summary:
+    "Checks that the local RESEND_API_KEY is valid and the from-domain is verified. Sends no email.",
+  secrets: 'RESEND_API_KEY',
+});
 
 const env = {};
 for (const file of ['../.env.local', '../.env']) {

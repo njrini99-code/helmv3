@@ -37,7 +37,7 @@ import {
   type MouseEventHandler,
   type ReactNode,
 } from 'react';
-import { motion, type HTMLMotionProps } from 'framer-motion';
+import { motion, type HTMLMotionProps } from 'motion/react';
 import {
   AlertTriangle,
   Flame,

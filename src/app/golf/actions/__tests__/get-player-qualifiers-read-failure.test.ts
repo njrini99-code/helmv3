@@ -33,7 +33,7 @@ vi.mock('@/lib/auth/resilient-get-user', () => ({
   getUserResilient: vi.fn(async () => ({ user: { id: 'u-p1' }, degraded: false })),
 }));
 
-import { getPlayerQualifiers } from '../golf';
+import { getPlayerQualifiers } from '../qualifier-actions';
 
 const QUALIFIER = '33333333-3333-4333-8333-333333333333';
 

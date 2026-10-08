@@ -17,13 +17,18 @@
   font-family: var(--ch-font-sans);
   -webkit-font-smoothing: antialiased;
 }
-.ch-au a {
+/* Text links only: a key that is a link (`<Button href>`, a .ch-btn) keeps its variant's ink. Unscoped, this out-ranked
+   .ch-btn--primary and drew a link key's word green on green (sign up's Enter a team code, Go to sign in). The :where
+   keeps the old weight, so the legal links' and the skip link's own colours still win. */
+.ch-au a:where(:not(.ch-btn)) {
   color: var(--ch-green-700);
   text-decoration: none;
 }
-.ch-au a:hover {
-  color: var(--ch-green-800);
-  text-decoration: underline;
+@media (hover: hover) {
+  .ch-au a:where(:not(.ch-btn)):hover {
+    color: var(--ch-green-800);
+    text-decoration: underline;
+  }
 }
 .ch-au-skip {
   position: absolute;
@@ -321,7 +326,7 @@
   max-width: 12ch;
   font: 600 52px/1.02 var(--ch-font-sans);
   letter-spacing: -0.04em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-au-ivory);
   text-wrap: balance;
   text-shadow: 0 1px 24px rgb(10 51 31 / 0.35);
@@ -372,24 +377,45 @@
 .ch-au-back {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  /* Lucide's chevron carries 6px of its own air on the right: 1px more reads as one word with "Home". */
+  gap: 1px;
   min-height: 44px;
-  padding: 0 10px 0 6px;
+  padding: 0 12px 0 6px;
   margin: -4px 0 -4px -6px;
   border-radius: 10px;
   font: 500 14px/1 var(--ch-font-sans);
   color: var(--ch-text-secondary) !important;
   text-decoration: none !important;
+  transition: background-color var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-au-back:hover {
-  background: rgb(28 25 18 / 0.05);
+/* CH-15611: the chevron leans back the way the link goes. */
+.ch-au-back svg {
+  transition: transform var(--ch-dur-quick) var(--ch-ease);
+}
+@media (hover: hover) {
+  .ch-au-back:hover {
+    background: rgb(28 25 18 / 0.05);
+    color: var(--ch-text-primary) !important;
+  }
+  .ch-au-back:hover svg {
+    transform: translateX(-2px);
+  }
+}
+.ch-au-back:active {
+  background: rgb(28 25 18 / 0.09);
   color: var(--ch-text-primary) !important;
 }
-.ch-au-form {
+/* The stage: the lockup over the panel's view (sign in, the reset form, check your email), centred in the panel. The
+   lockup stays put while the views slide under it (CH-15612). */
+.ch-au-stage {
   margin: auto;
   padding: 32px 0;
   width: 100%;
   max-width: 360px;
+  display: flex;
+  flex-direction: column;
+}
+.ch-au-form {
   display: flex;
   flex-direction: column;
 }
@@ -406,8 +432,8 @@
 .ch-au-lock span,
 .ch-au-mark span {
   font: 650 28px/1 var(--ch-font-sans);
-  letter-spacing: -0.045em;
-  font-variation-settings: 'wdth' 86;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
   color: #1c1b18;
   padding-top: 2px;
 }
@@ -419,18 +445,71 @@
 .ch-au-form h1 {
   margin: 36px 0 0;
   font: 600 36px/1.05 var(--ch-font-sans);
-  letter-spacing: -0.036em;
-  font-variation-settings: 'wdth' 88;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
 }
 .ch-au-sub {
-  margin: 10px 0 0;
   font: 400 15px/1.5 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
+.ch-au-nowrap {
+  white-space: nowrap;
+}
+/* Paragraph spacing is written under .ch-au: base.css zeroes every .ch-root p, which had quietly taken the board's 10px
+   from under the heading. */
+.ch-au .ch-au-sub {
+  margin-top: 10px;
+}
+.ch-au .ch-au-alt {
+  margin-top: 20px;
+}
+.ch-au .ch-au-body {
+  margin-top: 14px;
+}
+/* The reset form's way back, a quiet line under its key (CH-15922). */
+.ch-au-alt {
+  text-align: center;
+  font: 400 14px/1.4 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-au-alt a {
+  position: relative;
+  font-weight: 500;
+  border-radius: 4px;
+  outline-offset: 3px;
+}
+/* 44px tall: 19.6px of line plus 12px above and below. */
+.ch-au-alt a::after {
+  content: '';
+  position: absolute;
+  inset: -12px -8px;
+}
+/* Check your email (CH-15921): the address it went to in ink, and today's sentence on what to do next. */
+.ch-au-sent .ch-au-sub b {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+  overflow-wrap: anywhere;
+}
+.ch-au-body {
+  font: 400 14.5px/1.55 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+  text-wrap: pretty;
+}
+.ch-au-sent .ch-au-submit {
+  margin-top: 28px;
+}
+/* One sentence a line on the desktop (the phone drops the second). */
+.ch-au-sub__more {
+  display: block;
+}
+/* A notice the URL names sits between the subtitle and the fields with even space either side. */
 .ch-au-notice-top {
-  margin-bottom: 16px;
+  margin-top: 24px;
+}
+.ch-au-notice-top + .ch-au-fields {
+  margin-top: 24px;
 }
 .ch-au-fields {
   margin-top: 32px;
@@ -465,8 +544,10 @@
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
   color: var(--ch-text-tertiary);
 }
-.ch-au-input:hover {
-  box-shadow: 0 0 0 1px var(--ch-border-strong), 0 1px 2px rgb(28 25 18 / 0.04);
+@media (hover: hover) {
+  .ch-au-input:hover {
+    box-shadow: var(--ch-elevation-field-hover);
+  }
 }
 .ch-au-input:focus-within {
   box-shadow: 0 0 0 1px var(--ch-green-600), 0 0 0 4px rgb(21 90 57 / 0.12);
@@ -504,6 +585,12 @@
   position: absolute;
   inset: -14px -8px;
 }
+/* Text links take a rounded focus ring a step off the words, not a square box on them. */
+.ch-au-forgot,
+.ch-au-foot a {
+  border-radius: 4px;
+  outline-offset: 3px;
+}
 .ch-au-forgot--below {
   display: none;
 }
@@ -524,9 +611,24 @@
   position: absolute;
   inset: -7px;
 }
-.ch-au-eye:hover {
-  background: rgb(28 25 18 / 0.05);
-  color: var(--ch-text-primary);
+/* CH-15610: the eye and the slashed eye share one cell and crossfade, the leaving one shrinking and turning away. */
+.ch-au-eye > svg {
+  grid-area: 1 / 1;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-base) var(--ch-ease);
+}
+.ch-au-eye[aria-pressed='true'] > .ch-au-eye__show {
+  opacity: 0;
+  transform: scale(0.6) rotate(-20deg);
+}
+.ch-au-eye[aria-pressed='false'] > .ch-au-eye__hide {
+  opacity: 0;
+  transform: scale(0.6) rotate(20deg);
+}
+@media (hover: hover) {
+  .ch-au-eye:hover {
+    background: rgb(28 25 18 / 0.05);
+    color: var(--ch-text-primary);
+  }
 }
 .ch-au-eye:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -535,6 +637,21 @@
 .ch-au-err {
   margin-top: 16px;
   animation: chAuIn var(--ch-au-t-err) var(--ch-au-out) both;
+}
+/* CH-15608: while the next attempt is in flight the last refusal steps back; the answer replaces it in place. */
+.ch-au-err .ch-au-notice {
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-au-err[data-stale] .ch-au-notice {
+  opacity: 0.5;
+}
+/* CH-15609: a refusal about the fields shakes them once, as a wrong team code does on sign up. Two names, so a second
+   refusal restarts it. */
+.ch-au-fields[data-shake='a'] {
+  animation: chAuShakeA var(--ch-au-t-shake) var(--ch-au-out);
+}
+.ch-au-fields[data-shake='b'] {
+  animation: chAuShakeB var(--ch-au-t-shake) var(--ch-au-out);
 }
 .ch-au-notice {
   display: flex;
@@ -586,14 +703,71 @@
   width: 100%;
   height: 48px;
   font-size: 15px;
+  transition: background-position var(--ch-dur-base) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease),
+    color var(--ch-dur-quick) var(--ch-ease), text-shadow var(--ch-dur-quick) var(--ch-ease);
+}
+/* CH-15607: off, the key is unlit: the same shape pressed into the paper, its word engraved in it. No fade or desaturated
+   green (the shared disabled look read as a washed-out key). Filling both fields lights it: the face lifts away over the
+   quick beat and the word takes the green's ink. */
+.ch-au-submit .ch-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-au-submit .ch-btn:disabled {
+  opacity: 1;
+  filter: none;
+}
+.ch-au-submit .ch-btn:disabled:not([aria-busy='true']) {
+  color: var(--ch-ink-400);
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
+  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.06);
+}
+.ch-au-submit .ch-btn:disabled:not([aria-busy='true'])::before {
+  opacity: 1;
+}
+/* In flight it stays the lit green: the key is working, not unavailable. */
+.ch-au-submit .ch-btn[aria-busy='true'] {
+  cursor: progress;
+}
+/* Both labels hold one cell, so the key never reflows: the word leaves upward as the working label rises in. */
+.ch-au-key {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.ch-au-key__idle,
+.ch-au-key__busy {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-base) var(--ch-ease);
+}
+.ch-au-key[data-busy] .ch-au-key__idle {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+.ch-au-key:not([data-busy]) .ch-au-key__busy {
+  opacity: 0;
+  transform: translateY(8px);
 }
 .ch-au-spin {
   width: 15px;
   height: 15px;
   border-radius: 50%;
-  border: 2px solid rgb(255 255 255 / 0.35);
-  border-top-color: #fff;
+  border: 2px solid rgb(244 238 221 / 0.3);
+  border-top-color: var(--ch-on-green-ink);
   animation: chAuSpin 0.8s linear infinite;
+}
+.ch-au-key:not([data-busy]) .ch-au-spin {
+  animation-play-state: paused;
 }
 .ch-au-bottom {
   display: flex;
@@ -613,6 +787,7 @@
   display: flex;
   gap: 2px;
   align-items: center;
+  margin-right: -6px;
   color: var(--ch-text-tertiary);
 }
 .ch-au-legal a {
@@ -621,6 +796,8 @@
   min-height: 44px;
   margin: -14px 0;
   padding: 0 6px;
+  border-radius: 8px;
+  outline-offset: 0;
   color: var(--ch-text-tertiary);
 }
 .ch-au-hsl {
@@ -667,6 +844,26 @@
 @keyframes chAuSpin {
   to {
     transform: rotate(360deg);
+  }
+}
+@keyframes chAuShakeA {
+  20%,
+  60% {
+    transform: translateX(-5px);
+  }
+  40%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+@keyframes chAuShakeB {
+  20%,
+  60% {
+    transform: translateX(-5px);
+  }
+  40%,
+  80% {
+    transform: translateX(5px);
   }
 }
 
@@ -735,8 +932,8 @@
 .ch-au-wl h1 {
   margin: 18px 0 0;
   font: 600 clamp(52px, 6.4vw, 92px) / 1 var(--ch-font-sans);
-  letter-spacing: -0.045em;
-  font-variation-settings: 'wdth' 88;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-au-wl-l1 {
   display: block;
@@ -857,7 +1054,8 @@
   gap: 6px;
   margin-top: 14px;
   font: 400 13px/1 var(--ch-font-sans);
-  color: var(--ch-text-secondary);
+  /* Ink, not secondary: it sits on the fairway, not on paper (secondary measured under 4.5:1 there). */
+  color: var(--ch-text-primary);
 }
 .ch-au-wl-hint kbd {
   padding: 3px 6px;
@@ -1012,22 +1210,45 @@
   .ch-au-lock {
     display: none;
   }
-  .ch-au-form {
+  .ch-au-stage {
     margin: 0;
     padding: 0;
     max-width: none;
   }
+  .ch-au-alt {
+    font-size: 14.5px;
+  }
+  .ch-au .ch-au-alt {
+    margin-top: 18px;
+  }
+  .ch-au-body {
+    font-size: 14px;
+  }
+  .ch-au .ch-au-body {
+    margin-top: 12px;
+  }
+  .ch-au-sent .ch-au-submit {
+    margin-top: 22px;
+  }
   .ch-au-form h1 {
     margin: 0;
     font-size: 30px;
-    letter-spacing: -0.034em;
+    letter-spacing: -0.026em;
   }
   .ch-au-sub {
-    margin-top: 6px;
     font-size: 14.5px;
+  }
+  .ch-au .ch-au-sub {
+    margin-top: 6px;
   }
   .ch-au-sub__more {
     display: none;
+  }
+  .ch-au-notice-top {
+    margin-top: 16px;
+  }
+  .ch-au-notice-top + .ch-au-fields {
+    margin-top: 16px;
   }
   .ch-au-fields {
     margin-top: 20px;
@@ -1038,7 +1259,7 @@
     overflow: hidden;
   }
   .ch-au-fields[data-invalid] {
-    box-shadow: 0 0 0 1.5px #b3261e;
+    box-shadow: 0 0 0 1.5px var(--ch-danger-600);
   }
   .ch-au-label {
     position: absolute;
@@ -1056,8 +1277,10 @@
     background: transparent;
     box-shadow: none;
   }
-  .ch-au-input:hover {
-    box-shadow: none;
+  @media (hover: hover) {
+    .ch-au-input:hover {
+      box-shadow: none;
+    }
   }
   /* The field's own focus cue on the grouped sheet: a green hairline, never the app's black keyboard outline. */
   .ch-au-input:focus-within {
@@ -1123,6 +1346,7 @@
     font-size: 14px;
   }
   .ch-au-legal {
+    margin-right: 0;
     font-size: 12.5px;
   }
   .ch-au-hsl {
@@ -1157,8 +1381,11 @@
   .ch-au-wl-body {
     margin-top: 34px;
   }
+  /* The board's 50px from a 390px phone, scaling down below it. One width step narrower (94) is what lets "Good
+     afternoon," hold one line there at the relaxed tracking: 341px of 346px at 390, 328px of 331px at 375. */
   .ch-au-wl h1 {
-    font-size: 50px;
+    font-size: clamp(40px, 12.83vw, 50px);
+    font-variation-settings: 'wdth' 94;
     margin-top: 14px;
   }
   .ch-au-wl-card {
@@ -1201,4 +1428,94 @@
   .ch-au-input input {
     font-size: 16px;
   }
+}
+
+/* ── Dark: "Clubhouse at night" (owner, 2026-10-08) ──────────────────────────
+   The tokens carry the panel, the sheet and the fields; these are the literals they can't reach. The painted course
+   keeps its own clock (the veil, the say line and the phone's mark follow the hour, not the theme); the reading sheet
+   over it is dark whatever the hour. */
+html[data-fw-theme='dark'] .ch-au a:where(:not(.ch-btn)):hover {
+  color: var(--ch-green-500);
+}
+html[data-fw-theme='dark'] .ch-au-back:hover,
+html[data-fw-theme='dark'] .ch-au-eye:hover {
+  background: rgb(237 231 216 / 0.06);
+}
+html[data-fw-theme='dark'] .ch-au-back:active {
+  background: rgb(237 231 216 / 0.1);
+}
+html[data-fw-theme='dark'] .ch-au-lock img {
+  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.4));
+}
+html[data-fw-theme='dark'] .ch-au-lock span {
+  color: var(--ch-text-primary);
+}
+html[data-fw-theme='dark'] .ch-au-lock b,
+html[data-fw-theme='dark'] .ch-au-wl-mark b {
+  color: var(--ch-green-600);
+}
+/* Desktop only: the phone's grouped fields draw their own inset cues from dark-aware tokens. */
+@media (min-width: 821px) {
+  html[data-fw-theme='dark'] .ch-au-input:focus-within {
+    box-shadow: 0 0 0 1px var(--ch-green-600), 0 0 0 4px var(--ch-focus-halo);
+  }
+  html[data-fw-theme='dark'] .ch-au-input[data-invalid='true'] {
+    box-shadow: 0 0 0 1px var(--ch-danger-600), 0 0 0 4px rgb(239 133 118 / 0.14);
+  }
+}
+html[data-fw-theme='dark'] .ch-au-notice--positive {
+  box-shadow: 0 0 0 1px rgb(107 187 140 / 0.22);
+}
+html[data-fw-theme='dark'] .ch-au-notice--warning {
+  box-shadow: 0 0 0 1px rgb(227 169 79 / 0.24);
+}
+html[data-fw-theme='dark'] .ch-au-notice--danger {
+  box-shadow: 0 0 0 1px rgb(239 133 118 / 0.24);
+}
+/* The unlit key: engraved into the dark paper, so the word's catch-light falls below it as a shadow, not a glow. */
+html[data-fw-theme='dark'] .ch-au-submit .ch-btn:disabled:not([aria-busy='true']) {
+  color: var(--ch-ink-500);
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.5);
+  box-shadow: 0 0 0 1px rgb(237 231 216 / 0.06);
+}
+/* The welcome's reading plane: the night paper, not the day's ivory, under the ivory type. The hour's own night scrim
+   ([data-dark], navy) still wins where the sky is dark. */
+html[data-fw-theme='dark'] .ch-au-wl-scrim {
+  background: radial-gradient(90% 80% at 12% 18%, rgb(17 21 18 / 0.97), rgb(17 21 18 / 0.92) 46%, transparent 82%);
+}
+html[data-fw-theme='dark'] .ch-au-wl-l1 {
+  color: var(--ch-green-700);
+}
+html[data-fw-theme='dark'] .ch-au-wl-mark img {
+  filter: none;
+}
+/* The keyboard hint sits on the fairway, which keeps the hour's light: its ink stays the day's ink (the night sky's own
+   colour, [data-dark], still wins after dark). */
+html[data-fw-theme='dark'] .ch-au-wl-hint,
+html[data-fw-theme='dark'] .ch-au-wl-hint kbd {
+  color: #1c1b18;
+}
+html[data-fw-theme='dark'] .ch-au[data-phase='leaving'] {
+  background: var(--ch-frame);
+}
+@media (max-width: 820px) {
+  html[data-fw-theme='dark'] .ch-au-panel {
+    box-shadow: var(--ch-elevation-sheet);
+  }
+  html[data-fw-theme='dark'] .ch-au-fields {
+    box-shadow: 0 0 0 1px var(--ch-border-subtle);
+  }
+  html[data-fw-theme='dark'] .ch-au-fields[data-invalid] {
+    box-shadow: 0 0 0 1.5px var(--ch-danger-600);
+  }
+  html[data-fw-theme='dark'] .ch-au-field + .ch-au-field .ch-au-input::before {
+    background: var(--ch-border-subtle);
+  }
+  html[data-fw-theme='dark'] .ch-au-wl-scrim {
+    background: linear-gradient(180deg, rgb(17 21 18 / 0.99), rgb(17 21 18 / 0.97) 36%, rgb(17 21 18 / 0.88) 42%, transparent 62%);
+  }
+}
+/* The name line has no colour of its own and took the document's dark heading ink. */
+html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
+  color: var(--ch-text-primary);
 }

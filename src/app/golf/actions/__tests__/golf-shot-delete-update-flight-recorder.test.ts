@@ -112,7 +112,7 @@ vi.mock('@/lib/observability/helm-flight-recorder', () => ({
   }),
 }));
 
-import { deleteShot, updateShot } from '../golf';
+import { deleteShot, updateShot } from '../shot-actions';
 
 const SHOT = '11111111-1111-4111-8111-111111111111';
 const ROUND = '22222222-2222-4222-8222-222222222222';

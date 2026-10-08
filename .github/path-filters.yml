@@ -1,11 +1,17 @@
 # Changed-path classes for dorny/paths-filter — the ONE copy of these lists.
 #
 # Read by .github/workflows/detect-changes.yml (the reusable "Detect changes"
-# job other workflows call) AND, since 2026-09-23, by each heavy ci.yml job's
-# own first steps (`Unit tests`, `Next build`, `Supabase lint + RLS tests`),
-# which decide for themselves instead of queueing behind detect-changes for a
-# second runner slot. One file, so the two can never disagree about what
-# "code" means. Editing this file counts as a code change (it is in `code`).
+# job ci.yml and codeql.yml call) AND, since 2026-09-23, by each heavy ci.yml
+# job's own first steps (`Unit tests`, `Next build`, `Supabase lint + RLS
+# tests`) and, since 2026-10-07, `Static checks` for `knowledge`, which decide
+# for themselves instead of queueing behind detect-changes for a second runner
+# slot. One file, so they can never disagree about what "code" means. Editing
+# this file counts as a code change (it is in `code`).
+#
+# `frontend` and `e2e` lived here for the Playwright a11y and Sentry snapshot
+# jobs, which moved to nightly.yml (no path gate there) on 2026-10-07;
+# `migrations` and the docs-only classifier went when migration-lockdown.yml and
+# feature-awareness.yml began deciding in-job.
 code:
   - 'src/**'
   - 'supabase/**'
@@ -24,32 +30,12 @@ code:
   - '.github/workflows/ci.yml'
   - '.github/workflows/detect-changes.yml'
   - '.github/path-filters.yml'
-frontend:
-  - 'src/**'
-  - 'app/**'
-  - 'components/**'
-  - 'lib/**'
-  - 'e2e/**'
-  - 'public/**'
-  - 'playwright.config.ts'
-  - 'package.json'
-  - 'package-lock.json'
+knowledge:
+  - 'memory/**'
+  - 'docs/**'
+  - 'scripts/knowledge/**'
   - '.github/workflows/ci.yml'
-  - '.github/workflows/detect-changes.yml'
-  - '.github/workflows/playwright.yml'
   - '.github/path-filters.yml'
-e2e:
-  - 'src/**'
-  - 'e2e/**'
-  - 'public/**'
-  - 'playwright.config.ts'
-  - 'package.json'
-  - 'package-lock.json'
-  - '.github/workflows/ci.yml'
-  - '.github/workflows/detect-changes.yml'
-  - '.github/path-filters.yml'
-migrations:
-  - 'supabase/migrations/**'
 python:
   - '**/*.py'
   - 'requirements*.txt'

@@ -1,6 +1,7 @@
 ---
 name: golfhelm-creative-engine
 description: Generate premium Instagram creatives, social media ads, and marketing mockups for GolfHelm — an AI-powered golf coaching SaaS for college teams. Use this skill whenever the user mentions Instagram ads, social creatives, marketing mockups, ad templates, carousel posts, social media content, or any visual marketing asset for GolfHelm. Also trigger when the user asks to "make an ad", "create a post", "design a carousel", "mockup a creative", or anything related to GolfHelm marketing visuals. This skill contains the complete extracted design token system, product feature catalog, and creative rules — everything needed to generate pixel-perfect, on-brand assets without accessing the codebase.
+disable-model-invocation: true
 ---
 
 # GolfHelm Creative Engine
@@ -28,6 +29,12 @@ Read these reference files based on what you need:
 
 Read `design-tokens.md` first on every invocation. The tokens are the non-negotiable foundation.
 
+**Scope:** this skill is for marketing creatives only. Product UI follows
+`.claude/rules/design-system.md` and `src/styles/design-tokens.css` (Fairway,
+no glass or cream); Clubhouse follows `.claude/rules/clubhouse.md`. The product
+screens an ad shows must match what is live; the ad framing (canvas, glass
+cards) is marketing only.
+
 ---
 
 ## Core Philosophy
@@ -38,7 +45,7 @@ This means:
 - Use real UI components (score predictions, insight cards, round reviews) as the visual hero
 - Use the exact glass morphism values from the token system
 - Use warm neutrals (stone tones), never cool/blue grays
-- Use cream (#FFFEFA), never pure white (#ffffff)
+- Use cream (#FFFEFA) for cards, text panels and light surfaces, never pure white (#ffffff); the ad canvas itself is sage by default (see above)
 - Use DM Sans, never Inter/Roboto/system defaults
 - Show aspirational but realistic golf stats (see sample data in product-features.md)
 
@@ -284,7 +291,7 @@ All outputs include 3% noise texture for premium grain.
 1. **Use real tokens** — Every color, shadow, radius, and font value comes from `design-tokens.md`
 2. **Isolate components** — Never show a full dashboard screenshot
 3. **Warm, not cool** — Stone/cream neutrals, never blue-gray
-4. **Cream, not white** — `#FFFEFA` minimum, never `#ffffff`
+4. **Cream, not white** — light surfaces are `#FFFEFA`, never `#ffffff`; the canvas is sage unless the ad vibe guide says otherwise
 5. **DM Sans only** — Never substitute fonts
 6. **12 words max** — Headlines that don't fit need rewriting
 7. **Realistic data** — Use the sample data library, not made-up numbers

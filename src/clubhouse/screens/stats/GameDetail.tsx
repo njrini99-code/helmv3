@@ -427,7 +427,7 @@ export function GameDetail({
           )}
         >
           {x.approachError ? (
-            <InlineNotice code="CH-5210" title="Proximity against the Tour didn't load." body="The rest of Game detail is correct. Try again; the error has been reported." onRetry={onRetry} />
+            <InlineNotice code="CH-5210" title="Proximity against the Tour didn’t load." body="The rest of Game detail is correct. Try again; the error has been reported." onRetry={onRetry} />
           ) : tourProx.length ? (
             <>
               <Ladder rows={tourProx.map((b) => ({ band: b.band, value: b.value, bench: b.bench, n: b.n, floor: b.floor }))} unit={'′'} label="Yards to the pin" invert phone={phone} code="CH-5316" />
@@ -494,7 +494,7 @@ export function GameDetail({
           s.scramblingPercentage == null
             ? 'No up-and-down chances are logged in this window.'
             : `${first} ${verb('gets', 'get')} up and down ${Math.round(s.scramblingPercentage)}% of the time.${
-                s.scramblingPctRough != null ? ` From the rough it's ${Math.round(s.scramblingPctRough)}%` : ''
+                s.scramblingPctRough != null ? ` From the rough it’s ${Math.round(s.scramblingPctRough)}%` : ''
               }${s.sandSavePercentage != null ? `, and sand saves are ${Math.round(s.sandSavePercentage)}%` : ''}.`
         }
         figs={[
@@ -568,7 +568,7 @@ export function GameDetail({
             'Bars are the make rate; the tick is the Tour. Amber is below it.',
           )}
         >
-          {x.puttsError && <InlineNotice code="CH-5211" title="Putts past 20 feet didn't load." body="The curve stops at 20 feet. Try again; the error has been reported." onRetry={onRetry} />}
+          {x.puttsError && <InlineNotice code="CH-5211" title="Putts past 20 feet didn’t load." body="The curve stops at 20 feet. Try again; the error has been reported." onRetry={onRetry} />}
           {phone ? <MakeRows bands={curve} /> : <MakeCurve bands={curve} />}
         </Panel>
         <Panel title="How putts miss" wide>

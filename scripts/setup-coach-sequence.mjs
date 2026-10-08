@@ -40,6 +40,14 @@
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 import { scoreCoach, tierOf } from './coach-priority.mjs';
+import { cliGuard, dryRunClient } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/setup-coach-sequence.mjs',
+  summary:
+    "Creates or maintains the \"Coach First Touch (Cold Outreach)\" sequence, its step and one enrollment per target coach in the production CRM. It never sends email.",
+  secrets: "SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL (.env.local)",
+});
 
 const env = {};
 for (const file of ['../.env.local', '../.env']) {
@@ -50,8 +58,8 @@ for (const file of ['../.env.local', '../.env']) {
     }
   } catch { /* missing */ }
 }
-const supa = createClient(env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { autoRefreshToken: false, persistSession: false } });
+const supa = dryRunClient(createClient(env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY,
+  { auth: { autoRefreshToken: false, persistSession: false } }), cli);
 
 const SEQUENCE_NAME = 'Coach First Touch (Cold Outreach)';
 const TEMPLATE_NAME = 'Coach First Touch';
@@ -262,4 +270,5 @@ const tierDist = activeScored.reduce((a, r) => (a[r.tier] = (a[r.tier] || 0) + 1
 console.log(`\nActive send queue by tier (warmest first): ${Object.entries(tierDist).sort().map(([t, n]) => `${t}=${n}`).join(', ')}`);
 console.log('Next up:');
 for (const r of activeScored.slice(0, 10)) console.log(`  [${r.tier} ${r.score}] ${r.coach?.name ?? '?'} — ${r.coach?.title ?? '?'} · ${r.coach?.school ?? '?'} (${r.coach?.program ?? '?'})`);
-console.log(`\nNO emails were sent. To send the next batch:  node scripts/process-sequence-batch.mjs 10`);
+console.log(`\nNO emails were sent. To send the next batch:  node scripts/process-sequence-batch.mjs 10 --apply`);
+if (!cli.apply) console.log('[dry-run] this run only reported the writes above and made none. Re-run with --apply to create the sequence and enrollments.');

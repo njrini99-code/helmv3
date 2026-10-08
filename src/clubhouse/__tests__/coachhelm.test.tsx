@@ -1,4 +1,4 @@
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -27,7 +27,7 @@ vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
 vi.mock('@/app/golf/actions/development', () => ({ createFocusAreaFromInsightV2: vi.fn(), acceptFocusArea: vi.fn(), declineFocusArea: vi.fn() }));
-vi.mock('@/app/golf/actions/insights', () => ({ dismissInsight: vi.fn(), reactivateInsight: vi.fn() }));
+vi.mock('@/app/golf/actions/insights-feed', () => ({ dismissInsight: vi.fn(), reactivateInsight: vi.fn() }));
 vi.mock('@/app/golf/actions/insight-delivery', () => ({ getInsightsForPlayer: vi.fn(), getTopInsightsForPlayers: vi.fn() }));
 vi.mock('@/lib/coachhelm/v2/gate', () => ({ isCoachHelmEnabledForPlayer: vi.fn(), isCoachHelmEnabledForCoach: vi.fn() }));
 vi.mock('@/lib/coachhelm/v3/chat/request-cache', () => ({ getCoachProgramPulse: vi.fn(), getCoachChatContext: async () => ({ roster: [] }) }));
@@ -38,7 +38,7 @@ vi.mock('../routes/team', () => ({ resolveClubhouseTeam: () => Promise.resolve(t
 
 import GolfCoachHelmPage from '@/app/golf/(dashboard)/dashboard/coachhelm/page';
 import { acceptFocusArea, createFocusAreaFromInsightV2, declineFocusArea } from '@/app/golf/actions/development';
-import { dismissInsight, reactivateInsight } from '@/app/golf/actions/insights';
+import { dismissInsight, reactivateInsight } from '@/app/golf/actions/insights-feed';
 import { getInsightsForPlayer, getTopInsightsForPlayers } from '@/app/golf/actions/insight-delivery';
 import { isCoachHelmEnabledForCoach, isCoachHelmEnabledForPlayer } from '@/lib/coachhelm/v2/gate';
 import { getCoachProgramPulse } from '@/lib/coachhelm/v3/chat/request-cache';
@@ -618,7 +618,7 @@ describe('CoachHelm for the player, on screen', () => {
     const list = PREVIEW_HELM_PLAYER.insights.list;
     // An insight whose evidence can't be read throws inside the focus card only.
     showPlayer({ ...PREVIEW_HELM_PLAYER, insights: { list: [{ ...list[0]!, evidence: null as never }, ...list.slice(1)], error: false } });
-    await expectCode('CH-13204', /Your focus couldn’t be shown\./);
+    await expectCode('CH-13204', /Your focus couldn’t be shown/);
     expect(inList('Working').getByRole('button', { name: /Double bogey-or-worse rate/ })).toBeTruthy();
     quiet.mockRestore();
   });
@@ -752,7 +752,7 @@ describe('CoachHelm proposals, on the player’s board', () => {
   it('CH-13204 a proposals section that crashes while drawing is contained: the insights stay', async () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     showPlayer({ ...PREVIEW_HELM_PLAYER_PROPOSED, proposals: { list: [null as never], error: false } });
-    await expectCode('CH-13204', /Proposed focus areas couldn’t be shown\./);
+    await expectCode('CH-13204', /Proposed focus areas couldn’t be shown/);
     expect(focusHeading()).toBe('Downhill putts inside 4-6 ft: a real penalty');
     quiet.mockRestore();
   });
@@ -1010,7 +1010,7 @@ describe('CoachHelm for the coach, on screen', () => {
     Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
     try {
       await u.click(screen.getByRole('button', { name: 'Assign as focus' }));
-      await expectCode('CH-1903', /Couldn’t assign the focus to Jonah: you're offline/);
+      await expectCode('CH-1903', /Couldn’t assign the focus to Jonah: you’re offline/);
       expect(w.assign).not.toHaveBeenCalled();
     } finally {
       Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
@@ -1104,7 +1104,7 @@ describe('CoachHelm for the coach, on screen', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     // A pulse row whose icon can't be drawn throws inside the pulse's own section only.
     showCoach({ ...PREVIEW_HELM_COACH, pulse: { rows: [{ id: 'x', headline: 'A headline', evidence: 'Some evidence', tone: 'warn', icon: 'nope' as never }], error: false } });
-    await expectCode('CH-13204', /The program pulse couldn’t be shown\./);
+    await expectCode('CH-13204', /The program pulse couldn’t be shown/);
     expect(screen.getByRole('region', { name: 'By player' })).toBeTruthy();
     quiet.mockRestore();
   });
@@ -1807,7 +1807,7 @@ describe('CoachHelm route', () => {
     session.current = { userId: 'u1', role: 'coach', coach: { id: 'c1', organization_id: 'org1' }, player: null };
     teamOf.current = null;
     render(wrap(await ClubhouseCoachHelmRoute()));
-    expect(code('CH-13308')!.textContent).toMatch(/You aren't on a team yet.*CoachHelm reads the rounds your players post/);
+    expect(code('CH-13308')!.textContent).toMatch(/You aren’t on a team yet.*CoachHelm reads the rounds your players post/);
     expect(getTopInsightsForPlayers).not.toHaveBeenCalled();
   });
 

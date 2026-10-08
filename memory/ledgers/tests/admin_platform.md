@@ -89,8 +89,8 @@
   `src/lib/observability/__tests__/register-process-error-handlers.test.ts` (7),
   `src/lib/admin/__tests__/observed-action-scheduling.test.ts` (3),
   `src/test/lib/admin/integration-health-scheduling.test.ts` (2),
-  `src/lib/inngest/__tests__/credentials.test.ts` (9),
-  `src/lib/inngest/__tests__/is-inngest-configured.test.ts` (4),
+  the Inngest credentials test (removed 2026-10-06) (9),
+  the isInngestConfigured test (removed 2026-10-06) (4),
   `src/lib/admin/__tests__/feature-aliases.test.ts` (17),
   `src/lib/admin/__tests__/credential-shape.test.ts` (26),
   `src/test/scripts/check-helm-bridge-env.test.ts` (5 — spawns the real
@@ -323,7 +323,7 @@
   today per vitest.config.ts's own note on `scripts/__tests__/`, so this was
   hygiene, not a CI fix).
 - Verification: `./node_modules/.bin/tsc --noEmit -p tsconfig.json` (pre-
-  existing errors only, all in `src/app/golf/actions/golf.ts` and a test file
+  existing errors only, all in `actions/golf.ts (pre-split)` and a test file
   under concurrent edit by another agent — zero errors reference
   `golf/admin`); `./node_modules/.bin/eslint` on the 3 changed test files
   (0 errors, 1 pre-existing unrelated warning); full

@@ -7,8 +7,9 @@ paths:
 
 ## Clubhouse (the from-scratch GolfHelm UI)
 
-`src/clubhouse/` is a new UI tree built from the owner-approved handoff in
-`design/handoff/` (the Fairway Clubhouse Edition spec). **The Fairway rules in
+`src/clubhouse/` is a new UI tree built from the handoff in `design/handoff/`
+(the Fairway Clubhouse Edition spec). It is off in production today
+(its feature flag is off); Fairway is the live UI. **The Fairway rules in
 `design-system.md` do not apply here, and Fairway code must never be reused
 here.** An earlier redesign layered new styles on top of Fairway and the owner
 rejected the result; this tree exists so that cannot happen again.
@@ -26,13 +27,14 @@ rejected the result; this tree exists so that cannot happen again.
   - Red means under par, the pin flag, or a destructive action (D-42). Gains are green; losses are amber.
   - Instrument Sans for display, body and data; JetBrains Mono for keyboard hints only (`lib/fonts.ts`). Sentence case: no tracked uppercase, no serif.
   - Tabular numbers everywhere. Use a true minus `−`, `E` for even and `—` for no data.
-  - Motion follows v2 (D-64): press 110ms, quick 180ms, base 260ms, release 280ms and reveal 520ms, from the `--ch-dur-*` tokens and `CH_DUR`, on the v2 ease-out, in-out and spring curves. The press is `useChPress` (about 6px). Routine first-paint staggering is retired: content is visible immediately, and `shell/RouteFrame.tsx` plus `styles/shell.css` own the whole-page crossfade. Use `useChReducedMotion`; reduced motion and Animations off swap immediately. Pushed phone screens retain their separate `PhoneScreen` transition; auth course choreography follows its own tokens and contract. No count-ups or routine staggers.
+  - Motion follows v2 (D-64): press 110ms, quick 180ms, base 260ms, release 280ms and reveal 520ms, from the `--ch-dur-*` tokens and `CH_DUR`, on the v2 ease-out, in-out and spring curves. The press is `useChPress` (about 6px). Routine first-paint staggering is retired: content is visible immediately, and `shell/RouteFrame.tsx` plus `styles/shell.css` own the whole-page crossfade. Use `useChReducedMotion`; reduced motion and Animations off swap immediately. Pushed phone screens retain their separate `PhoneScreen` transition; auth course choreography follows its own tokens and contract. What moves and can be interrupted or thrown (sheets, pushed screens, the segmented pill, a swap's incoming copy, the nav plate) rides the D-64 springs on those durations, `CH_SPRINGS` through `chSpring`/`chSpringCurve` in `lib/motion.ts`, bounce 0 to 0.1 (D-64 extension). No count-ups or routine staggers.
   - Haptics follow v2 (D-70): selection, light for primary buttons, success for saves and sends, warning before destructive actions, medium only for a sheet settling, error on failure; other taps are silent.
   - No emoji and no exclamation marks.
 - **Haptics:** only through `src/clubhouse/lib/haptics.ts`.
 - **Phone:** iPhone only. The owner's phone board (`… - Mobile.html` in
-  `design/handoff/`; v1 boards in `design/handoff/mobile/`) is the phone spec; without one, a draft in `docs/clubhouse/phone/<screen>.md`
-  needs owner approval before it is built. It is never a shrunken desktop.
+  `design/handoff/`; v1 boards in `design/handoff/mobile/`) is the phone spec; without one, write the draft in
+  `docs/clubhouse/phone/<screen>.md` first and build from it, noting in the PR
+  that no owner board exists. It is never a shrunken desktop.
   Follow `docs/clubhouse/MOBILE.md`, and never commit a native config that
   points anywhere but production.
 - **New design:** follow `docs/clubhouse/README.md` step by step. The
@@ -47,7 +49,7 @@ rejected the result; this tree exists so that cannot happen again.
 - **Reviews:** when a reviewer is useful, use `clubhouse-polish-reviewer`
   (`.claude/agents/clubhouse-polish-reviewer.md`) against current runtime owners,
   page contracts and handoff screenshots. `ui-polish-reviewer` targets Fairway.
-  Reviewer agents remain optional and risk-based under root `AGENTS.md`.
+  Reviewer agents are optional and risk-based.
 - **Shared exemplars:** `src/clubhouse/AGENTS.md` indexes current Modal, Menu,
   Button, FormLine, Surface, PhoneScreen and route-transition owners. Follow
   their live implementations and current styles, rather than stale comments

@@ -3,7 +3,7 @@
 import { describeError } from '@/lib/utils/describe-error';
 import { useState, useMemo, useCallback, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/sonner';
 import { logError } from '@/lib/error-logging';

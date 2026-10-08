@@ -1,4 +1,4 @@
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -44,11 +44,13 @@ const a = vi.hoisted(() => ({
   getAttendanceReport: vi.fn(),
   markAttendance: vi.fn(),
 }));
-vi.mock('@/app/golf/actions/golf', () => ({
+vi.mock('@/app/golf/actions/calendar-events', () => ({
   createGolfEvent: a.createGolfEvent,
   updateGolfEvent: a.updateGolfEvent,
   deleteGolfEvent: a.deleteGolfEvent,
   respondToEvent: a.respondToEvent,
+}));
+vi.mock('@/app/golf/actions/calendar-blocked-time', () => ({
   addCoachBlockedTime: a.addCoachBlockedTime,
   deleteCoachBlockedTime: a.deleteCoachBlockedTime,
 }));
@@ -134,7 +136,7 @@ describe('Calendar · swap audit §8 edits', () => {
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     await waitFor(() => expect(a.updateGolfEvent).toHaveBeenCalledTimes(1));
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toMatch(/Saved · Fall Invitational \(final\) · invitations didn't go out/);
+    expect(alert.textContent).toMatch(/Saved · Fall Invitational \(final\) · invitations didn’t go out/);
     expect(alert.textContent).toMatch(/new invitations didn't go out/);
     expect(screen.queryByText(/^Saved · Fall Invitational \(final\)$/)).toBeNull();
   });
@@ -228,7 +230,7 @@ describe('Calendar · swap audit §8 edits', () => {
     await user.click(await screen.findByRole('button', { name: 'Edit event' }));
     await user.click(screen.getByRole('radio', { name: 'All in series' }));
     expect((screen.getByRole('checkbox', { name: 'All day' }) as HTMLInputElement).disabled).toBe(true);
-    await user.clear(screen.getByPlaceholderText("What to bring, what you'll work on"));
+    await user.clear(screen.getByPlaceholderText("What to bring, what you’ll work on"));
     await user.clear(screen.getByPlaceholderText('Practice green, Finley GC'));
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     await waitFor(() => expect(a.editRecurringEvent).toHaveBeenCalled());

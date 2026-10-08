@@ -519,7 +519,7 @@ export function FairwayEventEditor({
     setExistingAttendeeIds(null);
     (async () => {
       try {
-        const { getEventRSVP } = await import('@/app/golf/actions/golf');
+        const { getEventRSVP } = await import('@/app/golf/actions/calendar-events');
         const result = await getEventRSVP(event.id);
         if (cancelled) return;
         if (result.success && result.data) {
@@ -617,7 +617,7 @@ export function FairwayEventEditor({
     setConflictStatus('checking');
     async function check() {
       try {
-        const { checkScheduleConflicts } = await import('@/app/golf/actions/golf');
+        const { checkScheduleConflicts } = await import('@/app/golf/actions/calendar-events');
         const result = await checkScheduleConflicts(
           formData.startDate,
           formData.allDay ? '00:00' : formData.startTime!,

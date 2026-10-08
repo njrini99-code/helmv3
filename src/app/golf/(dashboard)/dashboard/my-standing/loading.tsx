@@ -8,7 +8,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
  * `page.tsx` here (my-standing/page.tsx:1-20) is a pure `permanentRedirect`
  * shim: My Standing stopped being a standalone surface and is now the
  * `standing` drill of the Player CoachHelm Spine & Stage home
- * (`.claude/rules/golf-feature-ownership.md` — "My Standing" →
+ * (`.claude/rules/golf.md` — "My Standing" →
  * `…/coachhelm?view=standing`). `next.config.mjs` additionally intercepts
  * `/golf/dashboard/my-standing` at the framework routing layer before this
  * segment ever renders; this component is only a fallback for anything the

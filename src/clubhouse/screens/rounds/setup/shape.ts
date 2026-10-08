@@ -150,7 +150,7 @@ export function holeIssue(h: ChSetupHole): string | null {
 export function setupBlocker(form: ChSetupForm, today: string): string | null {
   if (!form.pick) return 'Choose a course to start';
   if (!form.date) return 'Pick the date you played';
-  if (form.date > today) return "The round's date can't be after today";
+  if (form.date > today) return "The round’s date can’t be after today";
   if (form.type === 'qualifier' && (!form.qualifierId || !form.qualifierRound)) return 'Choose the qualifier round';
   const holes = holesForRound(form.holes, form.count, form.nine);
   if (holes.length < form.count) return `This card has ${holes.length} holes; play 9`;

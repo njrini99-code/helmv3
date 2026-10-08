@@ -168,6 +168,18 @@ before, after, baseline or evidence.
 | `P001__modal-stress__coach__320x568__popup-audit__before__43a146a.png` | before | 43a146a | modal-stress (coach), 320x568px, popup-audit; local synthetic preview; 43a146a baseline |
 | `P001__premium-audit__coach__1280__case-001-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-001-chromium-normal; /clubhouse-preview/settings; synthetic preview |
 | `P001__premium-audit__coach__390__case-001-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-001-chromium-normal; /clubhouse-preview/settings; synthetic preview |
+| `P001__hero-bell__coach__390__home__after__d22efe2.png` | after | d22efe2 | hero-bell (coach), 390px, home |
+| `P001__hero-bell__coach__390__home__before__96dcb84.png` | before | 96dcb84 | hero-bell (coach), 390px, home |
+| `P001__pushed-bar__coach__390__roster-loading__after__d22efe2.png` | after | d22efe2 | pushed-bar (coach), 390px, roster-loading |
+| `P001__pushed-bar__coach__390__roster-loading__before__96dcb84.png` | before | 96dcb84 | pushed-bar (coach), 390px, roster-loading |
+| `P001__pushed-screen-bar__coach__390__recruiting-detail__after__d22efe2.png` | after | d22efe2 | pushed-screen-bar (coach), 390px, recruiting-detail |
+| `P001__pushed-screen-bar__coach__390__recruiting-detail__before__96dcb84.png` | before | 96dcb84 | pushed-screen-bar (coach), 390px, recruiting-detail |
+| `P001__segmented-press__coach__390__held__evidence__d22efe2.png` | evidence | d22efe2 | segmented-press (coach), 390px, held |
+| `P001__sheet-close__coach__390__title-only__after__d22efe2.png` | after | d22efe2 | sheet-close (coach), 390px, title-only |
+| `P001__sheet-close__coach__390__title-only__before__96dcb84.png` | before | 96dcb84 | sheet-close (coach), 390px, title-only |
+| `P001__form-bar__coach__390x844__qualifier-new-loading__after__834fa2c.png` | after | 834fa2c | form-bar (coach), 390x844px, qualifier-new-loading; clubhouse-preview |
+| `P001__form-bar__coach__390x844__qualifier-new-loading__before__4141d68.png` | before | 4141d68 | form-bar (coach), 390x844px, qualifier-new-loading; clubhouse-preview |
+| `P001__hero-bell__coach__390__keyboard-focus__evidence__c1af28d.png` | evidence | c1af28d | hero-bell (coach), 390px, keyboard-focus; clubhouse-preview |
 
 ## Historical verification gaps
 
@@ -279,3 +291,33 @@ keeps representative viewport/browser evidence; the complete state/opener
 ledger and review limitations are in the
 [premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
 Captured states are not all visually approved.
+
+## 2026-10-08 — The approved motion set (CH-1618 to CH-1622, CH-1709, CH-1909)
+
+Browser observations only: WebKit through Playwright at 390 by 844 with touch,
+and 1440 for the desktop canvas, sampled once a frame against the dev server.
+Nothing here was seen on an iPhone.
+
+- CH-1618: on Messages, Roster and Recruiting the bars, the tab bar and the
+  list draw back to −94px as the screen lands, within a pixel of 0.24 times its
+  travel on every frame, the scrim on the same curve. A pop at about 160ms
+  reverses both from there. A Back with `hasUAVisualTransition` (patched in)
+  clears the screen, the page and the scrim in one frame. Details over a thread
+  draws the thread back and veils it. A sheet opened from a pushed screen keeps
+  its place (left 0, no moved ancestor). Reduced motion and Animations off hold
+  the page still. Scrolled 300px, the top bar stays at the top (before: −300px).
+- CH-1619: a page replacing Roster's route skeleton after a navigation went
+  from opacity 0 to 1 in about 100ms; none on a first paint or with reduced
+  motion.
+- CH-1620: held, the thumb grew from 19 to 22.8px wide from its resting edge
+  (27 to 32.4px in Settings) and settled round on release; none with reduced
+  motion or Animations off.
+- CH-1621: synthetic fractional wheel steps eased; whole-pixel steps passed
+  through untouched, and stopped a glide where it was.
+- CH-1622, CH-1709, CH-1909: simulated touches with the app's body class: a
+  220px pull reached 108px, turned the spinner at 64px, sent one refresh, held
+  at 52px and sprang home once the read landed. Short, upward and Safari pulls
+  did nothing.
+
+Open on a device: the WebView's own bounce under a pull, the medium tap, the
+edge-swipe Back, a real trackpad and mouse, and a live route's `loading.tsx`.

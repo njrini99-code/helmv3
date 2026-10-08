@@ -8,7 +8,7 @@ Written 2026-09-30 on `agent/clubhouse` at `21188ce5d`. Every claim about produc
 
 ## Recommendation in brief
 
-1. `.claude/rules/golf-feature-ownership.md:27-32` lists three areas (signals with alerts, patterns and insights filters; players; effectiveness). That is out of date. Production's `/intelligence` has four views, `home`, `lab`, `chat` and a deep-link-only `players`, and no Effectiveness view: `?view=effectiveness` opens Home (sections 1.1 and 1.7).
+1. `.claude/rules/golf.md` lists three areas (signals with alerts, patterns and insights filters; players; effectiveness). That is out of date. Production's `/intelligence` has four views, `home`, `lab`, `chat` and a deep-link-only `players`, and no Effectiveness view: `?view=effectiveness` opens Home (sections 1.1 and 1.7).
 2. Build one Clubhouse screen at `/golf/dashboard/intelligence` with four views, in this order: Signals (production's The Lab), Players, Team (production's Home) and Ask (production's Chat).
 3. Signals first. It is the only place a coach sees every open signal (up to 218 on one real team, against the board's one top signal per player), the 71 open patterns, and the team roll-ups, and the only place Mark reviewed exists. It reuses `getSignalGroups` and the existing writes unchanged, and adds the Undo that production lacks, using the reversals that already exist server-side (an insight's prior lifecycle state needs one extra read, section 4 gap 2).
 4. Players second, and lean (only 8 of 86 active players have a focus area). It is the coach's only roster-wide view of focus areas (about 15 inbound addresses point at it). Clubhouse Stats already covers one player's focus areas, proposing one, and the player's Accept and Decline; nothing covers the roster-wide list, completing, reopening, recording an outcome, or logging progress.
@@ -21,7 +21,7 @@ Written 2026-09-30 on `agent/clubhouse` at `21188ce5d`. Every claim about produc
 
 ## 0. Sources read
 
-`AGENTS.md`, `.claude/rules/clubhouse.md`, `.claude/rules/golf-feature-ownership.md`, `docs/clubhouse/README.md`, `MOBILE.md`, `phone/coachhelm.md`, `phone/roster.md`, `catalog/README.md`, `PROGRESS.md` (D-42, D-64, D-70, D-71, Q-76, Q-77, Q-85, Q-86), `CLICKABLES.md:960-975`. Design: `design/handoff/Coach - CoachHelm.html`, `Coach and Player - CoachHelm - Mobile.html`, `helm3.jsx`, `coachhelm2.css`, `m-ch.jsx`, `ch2-data.js`. Clubhouse: `src/clubhouse/screens/coachhelm/*`, `data/coachhelm*.ts`, `routes/coachhelm.tsx`, `shell/nav.ts`, `ui/*`, `lib/use-action.ts`, `lib/haptics.ts`, `lib/motion.ts`, `screens/stats/StatsPlayer.tsx`. Production: `intelligence/page.tsx` and every component and action listed in section 1.
+`AGENTS.md`, `.claude/rules/clubhouse.md`, `.claude/rules/golf.md`, `docs/clubhouse/README.md`, `MOBILE.md`, `phone/coachhelm.md`, `phone/roster.md`, `catalog/README.md`, `PROGRESS.md` (D-42, D-64, D-70, D-71, Q-76, Q-77, Q-85, Q-86), `CLICKABLES.md:960-975`. Design: `design/handoff/Coach - CoachHelm.html`, `Coach and Player - CoachHelm - Mobile.html`, `helm3.jsx`, `coachhelm2.css`, `m-ch.jsx`, `ch2-data.js`. Clubhouse: `src/clubhouse/screens/coachhelm/*`, `data/coachhelm*.ts`, `routes/coachhelm.tsx`, `shell/nav.ts`, `ui/*`, `lib/use-action.ts`, `lib/haptics.ts`, `lib/motion.ts`, `screens/stats/StatsPlayer.tsx`. Production: `intelligence/page.tsx` and every component and action listed in section 1.
 
 ## 1. Inventory of production Intelligence
 
@@ -206,7 +206,7 @@ Usage in the database (SQL): 76 conversations and 166 messages ever, from 7 coac
 
 ### 1.7 Effectiveness, and the stale ownership table
 
-`resolveTriageView` maps `effectiveness` to Home (`buildTriageViewModel.ts:70-71`); `analytics/coachhelm/page.tsx:23` redirects to it; `FairwayEffectiveness` is exported (`fairway/pages/coachhelm/index.ts:100`) and mounted on no page (a search of `src` finds no other use). `CommandPalette.tsx:95` still lists "Insight effectiveness" and lands on Home. `.claude/rules/golf-feature-ownership.md:27-32` still lists `view=signals&filter=alerts|patterns|insights`, `view=players` and `view=effectiveness` as three live areas; the code says otherwise, and AGENTS.md puts live code above prose. That table should be corrected in a separate change.
+`resolveTriageView` maps `effectiveness` to Home (`buildTriageViewModel.ts:70-71`); `analytics/coachhelm/page.tsx:23` redirects to it; `FairwayEffectiveness` is exported (`fairway/pages/coachhelm/index.ts:100`) and mounted on no page (a search of `src` finds no other use). `CommandPalette.tsx:95` still lists "Insight effectiveness" and lands on Home. `.claude/rules/golf.md` still lists `view=signals&filter=alerts|patterns|insights`, `view=players` and `view=effectiveness` as three live areas; the code says otherwise, and AGENTS.md puts live code above prose. That table should be corrected in a separate change.
 
 ### 1.8 What the data looks like (read-only SQL, production, 2026-09-30)
 

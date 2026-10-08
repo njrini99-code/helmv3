@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, ChevronLeft, Flag, ListChecks, Lock, Pencil, UserMinus, UserPlus, Users } from 'lucide-react';
+import { Check, Flag, ListChecks, Lock, Pencil, UserMinus, UserPlus, Users } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChQCandidate, ChQSelectionData } from '../../data/qualifiers';
@@ -10,6 +10,7 @@ import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
+import { BackLink } from '../../ui/Section';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useToast } from '../../ui/Toast';
 import { normalise, useAction, type ServerResult } from '../../lib/use-action';
@@ -17,7 +18,7 @@ import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
-import { plural } from './model';
+import { plural, stageNoteText } from './model';
 import { ToPar } from './parts';
 import { useStepBack } from './return-state';
 import { LIVE_SELECTION_WRITES, startSelecting, type ChQSelectionWrites } from './writes';
@@ -213,14 +214,12 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   }
 
   return (
-    <main className="ch-qf ch-qfs">
+    <main className="ch-qf ch-qfs" data-canopy="">
       {phone && <PhoneTop title="Selections" back={{ label: 'Qualifier', onBack: back.onBack }} />}
       <div className="ch-qf-back" onClickCapture={back.onClickCapture}>
-        <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={detailHref}>
-          Qualifier
-        </Button>
+        <BackLink href={detailHref}>Qualifier</BackLink>
       </div>
-      <header className="ch-qf-head">
+      <header className="ch-qf-head" data-canopy-head="">
         <div>
           <span className="ch-qf-eyebrow">Manage selections</span>
           <h1>{data.name}</h1>
@@ -265,7 +264,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
                   compact
                   code="CH-09316"
                   icon={Flag}
-                  title={topN ? 'Nobody has a score in yet.' : 'Every place is a coach’s pick.'}
+                  title={topN ? 'Nobody has a score in yet' : 'Every place is a coach’s pick'}
                   body={topN ? 'Places on score fill from the standings as rounds are signed.' : 'This squad has no places decided on score.'}
                 />
               )}
@@ -524,18 +523,7 @@ function Row({ c }: { c: ChQCandidate }) {
 }
 
 function StageNote({ stage, topN, picks, picksReady, nobody, tie = 0 }: { stage: 0 | 1 | 2; topN: number; picks: number; picksReady: boolean; nobody: boolean; tie?: number }) {
-  const text =
-    stage === 1 && tie > 0
-      ? `Players are level at the last place on score. Give ${plural(tie, 'more place', 'more places')} to confirm the squad.`
-      : stage === 0
-      ? `Start selecting when the standings are where you want them.${picks ? ` Then choose ${plural(picks, 'coach’s pick', 'coach’s picks')}, each with a reason.` : ''} The top ${topN} on score are set when you confirm.`
-      : stage === 1
-        ? nobody
-          ? 'Nobody has a score in and no pick is made yet, so there is no squad to confirm.'
-          : picksReady
-            ? 'Every pick is made. Confirm the squad to tell the players.'
-            : `Choose ${plural(picks, 'coach’s pick', 'coach’s picks')}, each with a reason, to confirm the squad.`
-        : 'The squad is confirmed, and every entrant has been told whether they made it.';
+  const text = stageNoteText(stage, { topN, picks, picksReady, nobody, tie });
   return (
     <div className="ch-qf-note" data-ch-code={stage === 2 ? 'CH-09903' : undefined}>
       <Icon icon={stage === 2 ? Lock : Users} size={16} />
@@ -651,7 +639,7 @@ function PickDialog({
             compact
             code="CH-09315"
             icon={Users}
-            title="Nobody else can be picked yet."
+            title="Nobody else can be picked yet"
             body="A player needs a round in, outside the places on score, to be a coach’s pick."
           />
         ))}

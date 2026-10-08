@@ -28,7 +28,7 @@
 // =============================================================================
 
 import * as React from 'react';
-import { LazyMotion, m, AnimatePresence } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 import {
   Drawer,

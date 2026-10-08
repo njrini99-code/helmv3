@@ -1,5 +1,118 @@
 # P006 — Calendar: changelog
 
+## 2026-10-08 — dark: Clubhouse at night
+
+Calendar follows GolfHelm's dark theme ("Clubhouse at night"). A tournament or qualifier block, the month's competition chip and the detail panel's next-up card keep their filled green with ivory type; practice blocks, agenda times and lane events take the light text green; the competition dot, the phone's now line and its competition dots lift to the light green so they hold on the dark ground; selection, today, travel, the class hatch and the coach's busy hatch are redrawn as ivory or champagne washes. Light mode is unchanged (every rule is scoped to `html[data-fw-theme='dark']`).
+
+## 2026-10-08 — phone: Mobile clubhouse pass
+
+Phone Calendar follows the owner's "Mobile clubhouse pass" board (carried from
+Coach Home), with no cards:
+
+- the month opens under the engraved double rule in the 31px bold sans, with the
+  year and the team's timezone engraved over it and the Day, Month and List
+  switch beside it (the serif title is gone);
+- the week is flush on the parchment; the chosen day is one green plate that
+  glides along the strip to the day you tap, and the day's agenda slides 12px
+  the way the day went (CH-6606, instant with reduced motion);
+- the day is a section on its own double rule, its events rows on soft seams
+  along Home's Today rail (time, a dot in the event's colour, title and place),
+  class and busy blocks still hatched, past rows in a lighter ink;
+- Month is flush under the weekdays' rule, and List is each day on its double
+  rule with rows on seams;
+- every row, day and month cell presses with the Ledger tint, never a scale.
+
+The phone route skeleton draws the same shape in the loaded page's geometry (0px
+shift at 390, WebKit).
+
+## 2026-10-08 — One notice when several reads fail; the page's own words take curly apostrophes
+
+With more than one read failed (team events, the team's timezone, the roster,
+busy time, classes, replies), the calendar says so once above the grid, naming
+the parts, with one Try again that reads the page again (the shell's CH-1209).
+The grid and the inspector keep only their notice's title where the data would
+be. The timezone, roster, busy-time and class notices have no place but the
+stack under the toolbar, so they fold into the page's notice rather than repeat
+it on the next line. One failed read keeps its own notice and Try again (states
+audit b6). Every line the page writes, its toasts included, takes the curly
+apostrophe; words a server sends are shown as sent (b8, held by
+`copy-apostrophes.test.ts`).
+
+## 2026-10-08 — Whole-page empties: visible on the phone, under the framed head on desktop
+
+The first-run page (CH-6309) and the no-team page (CH-6307) were blank on a
+phone: the rule that hides the server-drawn desktop page until the phone view
+takes over also caught them (states audit c1). They now carry their own class
+and show from first paint. On desktop both open under the page's framed head
+("Calendar", no action of its own), like every other page (c4). Empty titles
+drop their full stop and take curly apostrophes ("You aren’t on a team yet",
+"Nothing on this day").
+
+## 2026-10-08 — Server-action imports follow the golf.ts split
+
+```text
+PR/commit:      #2176, agent/phase-7
+Design package: none
+Contract IDs:   none changed
+Data impact:    none
+Held items:     none
+```
+
+The screen's imports and test mocks now point at the files that own the server
+actions (calendar-events.ts and calendar-blocked-time.ts) after `golf.ts`, `insights.ts` and `admin-data.ts` were split
+by domain. No behavior change.
+
+## 2026-10-07 — Views settle in; weeks slide
+
+Switching Day, Week, Month and Agenda (Day, Month and List on the phone) settles
+the new view in with a 6px rise (base) while the old one fades out (quick),
+hidden from assistive tech (CH-6604). Stepping to another day, week or month
+slides the grid 12px the way it went (CH-6605). Both are instant with reduced
+motion. An agenda row presses with the row press tint. CH-6601 no longer claims
+an event shrinks on a press: it lifts on hover and rings when selected. New
+test: calendar.test › CH-6605 CH-6604.
+
+## 2026-10-07 — The Ledger: the calendar sits flush on the canvas
+
+On desktop the week, day, month and agenda views lose their card. The grid sits
+on the ivory canvas with its own lines in the ledger's rules: soft column and
+hour lines, an engraved rule under the all-day row and under the month's
+weekdays, and open sides. The agenda's days open on an engraved rule, with
+their events as rows on soft seams. The detail panel is a flush column behind
+one soft rule that runs the body's full height; on a narrow canvas it stacks
+under the view, below a rule. Event chips keep their tint, and the next-event
+plate, the overlap notice and the lanes keep their material. The now dot, the
+now label and a cascaded event's edge take the canvas tone, and the failed
+notice sits flush. The route skeleton draws the same flush shape (the toolbar
+with its legend, the week's full height, the panel column), so nothing moves
+on load at 1440, 1280 or 1100 (WebKit). The phone is unchanged.
+
+## 2026-10-07 — Narrow cascaded events keep their time
+
+An event stepped in by an overlap can be under 50px wide. Its title wrapped to
+two lines, which pushed the time out of a one-hour block and cut the title
+through its second line ("Busy · Staf"). Lane events now measure themselves
+(`container-type: inline-size`): with under 60px for text, the title keeps one
+line and ellipsizes, so the time shows. Wider events still wrap to two lines.
+Checked in WebKit at 1440 and 1200: no lane event overflows.
+
+## 2026-10-07 — Overlapping events cascade
+
+Overlapping events in the week and day grids no longer split a column into equal
+lanes, which crushed titles into mid-word fragments. They cascade as Apple
+Calendar does: each later lane steps right and lies over the earlier ones,
+reaching the column's right edge, edged in the sheet's ivory. An event that
+starts earlier shows in full above where the next begins. A cascaded title wraps
+at word boundaries only, over at most two lines. The phone's month title is set
+in the display serif; the desktop's numeric date-range title stays in the sans,
+because the serif's 1 reads as l.
+
+## 2026-10-06 — Display type relaxed
+
+The owner found the display type too compact. Display headings on this page
+widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on
+every Clubhouse page. Layout and content are unchanged.
+
 ## 2026-10-06 — Short-screen popup and hover verification
 
 Full-page WebKit Axe checks pass with either date/people popover open and with

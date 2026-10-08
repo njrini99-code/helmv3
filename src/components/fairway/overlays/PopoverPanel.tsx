@@ -21,7 +21,7 @@
 
 import * as React from 'react';
 import * as Popover from '@radix-ui/react-popover';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import {

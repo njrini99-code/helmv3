@@ -16,7 +16,7 @@
 // =============================================================================
 
 import { useState, useTransition } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion } from 'motion/react';
 import { toast } from 'sonner';
 
 import { Card, CardContent } from '@/components/ui/card';

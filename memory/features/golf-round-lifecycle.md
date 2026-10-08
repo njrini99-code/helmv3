@@ -113,7 +113,10 @@ separate `recordWorkflow` calls directly in `golf.ts`.
 
 ### Actions
 
-- `src/app/golf/actions/golf.ts`
+- `src/app/golf/actions/round-submit.ts` (`submitGolfRoundComprehensive`)
+- `src/app/golf/actions/round-partial.ts` (`savePartialRound`, `deleteInProgressRound`)
+- `src/app/golf/actions/saved-courses.ts`, `src/app/golf/actions/golf-action-shared.ts`
+- The former `golf.ts` was split by domain; the older prose in this document that says `golf.ts` means these files (map: `src/app/golf/actions/ACTIONS.md`).
 - `src/app/golf/actions/round-drafts.ts`
 - `src/app/golf/actions/round-recap.ts`
 - `src/app/golf/actions/round-review-system.ts`

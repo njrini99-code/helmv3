@@ -1,6 +1,14 @@
 # Helm Sports Labs — Design System Reference
 # For use with Pencil and any design tooling
 
+> **STATUS: RETIRED — superseded by src/styles/design-tokens.css and .claude/rules/design-system.md (2026-10-07)**
+>
+> These tokens describe the glass/cream
+> language that the live product no longer uses. Product UI follows
+> `.claude/rules/design-system.md` and `src/styles/design-tokens.css`
+> (Fairway); Clubhouse follows `.claude/rules/clubhouse.md`. Use this file only
+> for Pencil marketing mockups.
+>
 > **Ground truth is code, not this file.** Every value below is a
 > hand-copied snapshot of `tailwind.config.ts` and `src/app/globals.css`
 > / `src/styles/tokens.css`. If this file and the config ever disagree,

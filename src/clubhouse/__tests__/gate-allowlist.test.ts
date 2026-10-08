@@ -47,6 +47,15 @@ describe('isClubhouseFor with a team allowlist (Q-131)', () => {
     expect(await isClubhouseFor('coach')).toBe(false);
   });
 
+  it('* means every team, written on purpose, and matches nobody by accident', async () => {
+    process.env.HELM_CLUBHOUSE_TEAMS = '*';
+    expect(clubhouseTeamAllowlist()).toBeNull();
+    team.current = { role: 'coach', teamId: 'team-z', coachId: 'c1' };
+    expect(await isClubhouseFor('coach')).toBe(true);
+    process.env.HELM_CLUBHOUSE_TEAMS = 'team-a, *';
+    expect(clubhouseTeamAllowlist()).toBeNull();
+  });
+
   it('the flag off still wins over a listed team', async () => {
     process.env.HELM_CLUBHOUSE_TEAMS = 'team-a';
     flag.on = false;

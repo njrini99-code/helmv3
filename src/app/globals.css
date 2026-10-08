@@ -569,9 +569,10 @@
     @apply cursor-grab active:cursor-grabbing;
   }
 
-  /* Smooth button press effect */
-  button:not(:disabled):active,
-  [role="button"]:not(:disabled):active {
+  /* Smooth button press effect. Not inside Clubhouse, whose rows never scale and whose keys press through useChPress
+     (:where keeps this rule's specificity unchanged everywhere else). */
+  button:not(:disabled):active:where(:not(.ch-root *)),
+  [role="button"]:not(:disabled):active:where(:not(.ch-root *)) {
     transform: scale(0.98);
     transition: transform 0.1s ease-out;
   }

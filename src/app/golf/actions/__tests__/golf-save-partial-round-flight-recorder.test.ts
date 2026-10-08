@@ -97,7 +97,7 @@ vi.mock('@/lib/observability/helm-flight-recorder', () => ({
   }),
 }));
 
-import { savePartialRound } from '../golf';
+import { savePartialRound } from '../round-partial';
 
 const COURSE_A = '11111111-1111-4111-8111-111111111111';
 const ROUND_ID = 'round-flight-recorder';

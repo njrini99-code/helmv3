@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
 import { hydrateRoot } from 'react-dom/client';
@@ -45,6 +45,7 @@ import { WelcomeStage } from '../screens/auth/WelcomeStage';
 import { FixedClock } from '../screens/auth/use-hour';
 import { GolfScene } from '../screens/auth/GolfScene';
 import { HANDOFF_MS, OPENING_MS, WELCOME_PHONE_AUTO_MS } from '../screens/auth/auth-motion';
+import { useGlide } from '../screens/auth/use-glide';
 
 let reduced = false;
 const setMedia = (opts: { reduced?: boolean; phone?: boolean } = {}) => {
@@ -413,6 +414,131 @@ describe('the sign-in screen', () => {
     expect(src).not.toMatch(/signInWithPassword|supabase\/client|createClient/);
     const action = readFileSync('src/app/golf/actions/auth.ts', 'utf8');
     expect(action.indexOf('await resetSessionIdleMarker()')).toBeGreaterThan(-1);
+  });
+});
+
+describe('the sign-in micro-motion', () => {
+  const css = () => readFileSync('src/clubhouse/styles/auth.css', 'utf8');
+  const fields = () => document.querySelector('.ch-au-fields') as HTMLElement;
+
+  it('CH-15607 the key holds both labels in one cell, reads only the one showing, and is drawn unlit when off, lit in flight', async () => {
+    let finish: (v: unknown) => void = () => {};
+    login.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    const user = userEvent.setup();
+    render(<SignIn signIn={login} />);
+    expect(document.querySelector('.ch-au-key__busy')).toHaveAttribute('aria-hidden', 'true');
+    expect(document.querySelector('.ch-au-key__idle')).not.toHaveAttribute('aria-hidden');
+    await fill(user);
+    await user.click(submit());
+    const busy = await screen.findByRole('button', { name: /^signing in…$/i });
+    expect(busy.querySelector('.ch-au-key')).toHaveAttribute('data-busy');
+    expect(busy.querySelector('.ch-au-key__idle')).toHaveAttribute('aria-hidden', 'true');
+    expect(busy.querySelector('.ch-au-key__busy')).not.toHaveAttribute('aria-hidden');
+    // Off is drawn, not faded: the shared opacity and desaturation are undone, the unlit face is the soft well, and in
+    // flight (also disabled) the face stays lifted so the key is the lit green.
+    expect(css()).toMatch(/\.ch-au-submit \.ch-btn:disabled \{\s*opacity: 1;\s*filter: none;/);
+    expect(css()).toMatch(/\.ch-au-submit \.ch-btn::before \{[^}]*background: var\(--ch-well-soft-bg\)/);
+    expect(css()).toMatch(/\.ch-au-submit \.ch-btn:disabled:not\(\[aria-busy='true'\]\)::before \{\s*opacity: 1;/);
+    await act(async () => finish({ success: false, error: 'Too many requests' }));
+  });
+
+  it('CH-15608 the last refusal stays, stepped back, while the next attempt is in flight, and the answer replaces it', async () => {
+    let finish: (v: unknown) => void = () => {};
+    login.mockResolvedValueOnce({ success: false, error: 'Invalid login credentials' }).mockReturnValueOnce(new Promise((resolve) => (finish = resolve)));
+    const user = userEvent.setup();
+    render(<SignIn signIn={login} />);
+    await fill(user);
+    await user.click(submit());
+    const first = await screen.findByRole('alert');
+    expect(first.closest('.ch-au-err')).not.toHaveAttribute('data-stale');
+    await user.click(submit());
+    await screen.findByRole('button', { name: /signing in/i });
+    // Clearing it here pulled the button up under the pointer; it stays, at half strength.
+    expect(screen.getByRole('alert')).toBe(first);
+    expect(first.closest('.ch-au-err')).toHaveAttribute('data-stale');
+    await act(async () => finish({ success: false, error: 'Invalid login credentials' }));
+    await waitFor(() => expect(screen.getByRole('alert')).not.toBe(first));
+    expect(screen.getByRole('alert').closest('.ch-au-err')).not.toHaveAttribute('data-stale');
+    expect(screen.getByRole('alert')).toHaveAttribute('data-ch-code', 'CH-15001');
+  });
+
+  it('CH-15608 what a refusal moves glides from where it was drawn, on transform only, and not at all under reduced motion', () => {
+    const panel = document.createElement('div');
+    const form = document.createElement('form');
+    const row = document.createElement('div');
+    const hidden = document.createElement('a');
+    const tops = new Map<HTMLElement, number>([[panel, 8], [form, 184], [row, 585], [hidden, 0]]);
+    // WebKit makes an element whose transform is running its children's offsetParent: once the form glides, the row's
+    // offsetTop is measured from the form. Reading it against the panel then put the row 147px out (a glide upward).
+    let formGliding = false;
+    const animate = vi.fn(function (this: HTMLElement, _keyframes: Keyframe[], _options: KeyframeAnimationOptions) {
+      if (this === form) formGliding = true;
+    });
+    for (const el of [panel, form, row, hidden]) {
+      Object.defineProperty(el, 'offsetTop', { get: () => (el === row && formGliding ? tops.get(row)! - tops.get(form)! : tops.get(el)) });
+      Object.defineProperty(el, 'offsetParent', { get: () => (el === panel || el === hidden ? null : el === row && formGliding ? form : panel) });
+      Object.assign(el, { animate, getAnimations: () => [] });
+    }
+    const gliders = [{ ref: { current: form } }, { ref: { current: row }, within: { current: form } }, { ref: { current: hidden }, within: { current: form } }];
+    const { result, rerender } = renderHook(({ reduced }) => useGlide(reduced, gliders), { initialProps: { reduced: false } });
+    // A refusal lands: the centred form rises 37px and the button row, inside it, drops 75px below where it was.
+    result.current.capture();
+    tops.set(form, 147).set(row, 623);
+    result.current.play();
+    expect(animate).toHaveBeenCalledTimes(2);
+    expect(animate.mock.calls[0]?.[0]).toEqual([{ transform: 'translateY(37px)' }, { transform: 'translateY(0)' }]);
+    expect(animate.mock.calls[1]?.[0]).toEqual([{ transform: 'translateY(-75px)' }, { transform: 'translateY(0)' }]);
+    expect(animate.mock.calls[1]?.[1]).toMatchObject({ duration: 260, id: 'ch-au-glide' });
+    // Nothing captured, nothing played; and reduced motion takes the new layout at once.
+    animate.mockClear();
+    formGliding = false;
+    result.current.play();
+    rerender({ reduced: true });
+    result.current.capture();
+    tops.set(form, 184).set(row, 585);
+    result.current.play();
+    expect(animate).not.toHaveBeenCalled();
+  });
+
+  it('CH-15609 a refusal about the fields shakes them once, again on a second, and never for one that marks no field', async () => {
+    login.mockResolvedValue({ success: false, error: 'Invalid login credentials' });
+    const user = userEvent.setup();
+    render(<SignIn signIn={login} />);
+    expect(fields()).not.toHaveAttribute('data-shake');
+    await fill(user);
+    await user.click(submit());
+    await screen.findByRole('alert');
+    expect(fields()).toHaveAttribute('data-shake', 'a');
+    expect(fields()).toHaveAttribute('data-ch-code', 'CH-15609');
+    await user.click(submit());
+    await waitFor(() => expect(fields()).toHaveAttribute('data-shake', 'b'));
+    login.mockResolvedValue({ success: false, error: 'fetch failed' });
+    await user.click(submit());
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveAttribute('data-ch-code', 'CH-15004'));
+    expect(fields()).not.toHaveAttribute('data-shake');
+    // Reduced motion and Animations off hold the fields still: the shake's token is a millisecond in both.
+    const tokens = readFileSync('src/clubhouse/styles/auth-tokens.css', 'utf8');
+    expect(tokens.match(/--ch-au-t-shake: 1ms;/g)).toHaveLength(2);
+    expect(css()).toMatch(/\.ch-au-fields\[data-shake='a'\] \{\s*animation: chAuShakeA var\(--ch-au-t-shake\)/);
+  });
+
+  it('CH-15610 the eye crossfades between its two glyphs instead of swapping one', async () => {
+    const user = userEvent.setup();
+    render(<SignIn signIn={login} />);
+    const eye = screen.getByRole('button', { name: 'Show password' });
+    expect(eye.querySelector('.ch-au-eye__show')).not.toBeNull();
+    expect(eye.querySelector('.ch-au-eye__hide')).not.toBeNull();
+    await user.click(eye);
+    expect(screen.getByRole('button', { name: 'Hide password' })).toHaveAttribute('aria-pressed', 'true');
+    expect(css()).toMatch(/\.ch-au-eye\[aria-pressed='true'\] > \.ch-au-eye__show \{\s*opacity: 0;/);
+    expect(css()).toMatch(/\.ch-au-eye\[aria-pressed='false'\] > \.ch-au-eye__hide \{\s*opacity: 0;/);
+  });
+
+  it('CH-15611 the Home link leans its chevron back only where a pointer can hover, and tints when pressed', () => {
+    render(<SignIn signIn={login} />);
+    expect(document.querySelector('.ch-au-back svg')).not.toBeNull();
+    expect(css()).toMatch(/@media \(hover: hover\) \{[^@]*\.ch-au-back:hover svg \{\s*transform: translateX\(-2px\);/);
+    expect(css()).toMatch(/\.ch-au-back:active \{\s*background:/);
   });
 });
 

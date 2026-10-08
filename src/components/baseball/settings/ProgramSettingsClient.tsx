@@ -29,7 +29,7 @@
 // =============================================================================
 
 import { useState, useTransition } from 'react';
-import { LazyMotion } from 'framer-motion';
+import { LazyMotion } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

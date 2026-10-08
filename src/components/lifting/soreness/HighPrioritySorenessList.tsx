@@ -7,7 +7,7 @@
 // Uses coach language, NOT medical language (spec §13).
 // =============================================================================
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion } from 'motion/react';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';

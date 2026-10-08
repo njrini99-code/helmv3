@@ -23,24 +23,25 @@ earlier observations below retain their original date and scope.
 | Checklist | [screens/auth.md](../../screens/auth.md) |
 | Phone spec | [phone/auth.md](../../phone/auth.md) |
 | Design boards | [Sign in.html](../../../../design/handoff/auth/Sign%20in.html) · [Sign in - Times of day.html](../../../../design/handoff/auth/Sign%20in%20-%20Times%20of%20day.html) · [Sign up.html](../../../../design/handoff/auth/Sign%20up.html) · [Sign in - Mobile.html](../../../../design/handoff/auth/Sign%20in%20-%20Mobile.html) · [Sign up - Mobile.html](../../../../design/handoff/auth/Sign%20up%20-%20Mobile.html) |
-| Code | [auth](../../../../src/clubhouse/screens/auth) · [welcome.ts](../../../../src/clubhouse/data/welcome.ts) · [auth.tsx](../../../../src/clubhouse/routes/auth.tsx) · [auth.css](../../../../src/clubhouse/styles/auth.css) |
+| Code | [auth](../../../../src/clubhouse/screens/auth) · [welcome.ts](../../../../src/clubhouse/data/welcome.ts) · [auth.tsx](../../../../src/clubhouse/routes/auth.tsx) · [auth.css](../../../../src/clubhouse/styles/auth.css) · [onboard](../../../../src/clubhouse/screens/onboard) · [onboard.ts](../../../../src/clubhouse/data/onboard.ts) · [onboard.tsx](../../../../src/clubhouse/routes/onboard.tsx) · [onboard.css](../../../../src/clubhouse/styles/onboard.css) · [onboard-tokens.css](../../../../src/clubhouse/styles/onboard-tokens.css) |
 | Audits | [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Auth" |
 | Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
 | Screenshots | `npm run clubhouse:shots -- gallery --page P015`, which opens `.helm/screenshots/clubhouse/P015-auth/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
-The entrance to GolfHelm, drawn for someone with no role yet: sign in, then a welcome that says who is here and what
-has happened since they were last in. Sign up and onboarding are the next phase and join this page when they are
-built.
+The entrance to GolfHelm, drawn for someone with no role yet: sign in, then a
+welcome that says who is here and what has happened since they were last in.
+Sign up and a new player's onboarding are on this page too, built behind the
+same flag.
 
 ## Identity
 
 ```text
 Page ID:            P015
 Page Name:          Auth
-Route:              /golf/login (sign in) and /golf/welcome (the greeting after it). Later: /golf/signup and the
-                    onboarding steps
+Route:              /golf/login (sign in), /golf/welcome (the greeting after it), /golf/signup (sign up) and
+                    /golf/player (a new player's questions after the account)
 Bridge Namespace:   15 (Bridge IDs 15ccii, D-68; catalog codes CH-15xxx)
 Roles:              none: drawn for a visitor with no role (the manifest's area is "auth")
 Implementation Root: src/clubhouse/screens/auth
@@ -105,9 +106,9 @@ Canonical IDs from `memory/registry.yml`:
 
 ```text
 Package:          design/handoff/auth/ (README.md, the four boards, src/*.jsx and *.css, screenshots)
-Desktop reference: design/handoff/auth/Sign in.html, Sign in - Times of day.html, Sign up.html (Sign up is phase 2)
+Desktop reference: design/handoff/auth/Sign in.html, Sign in - Times of day.html, Sign up.html
 Phone spec:       docs/clubhouse/phone/auth.md (approved), from design/handoff/auth/Sign in - Mobile.html and
-                  Sign up - Mobile.html (Sign up is phase 2)
+                  Sign up - Mobile.html
 Decisions:        Q-96 (owner, 2026-09-30: who onboards and how), Q-98 (open: the flag, the welcome's "since"
                   source, the wrong-password wording)
 Status:           approved. The hand-off's dashboard-side reveal is not built (DESIGN.md, "Not built")
@@ -130,7 +131,9 @@ console for an admin, onboarding for an account with no profile yet, Forgot pass
 ```text
 Design:          the owner (Claude Design)
 Implementation:  src/clubhouse/screens/auth, src/clubhouse/routes/auth.tsx, src/clubhouse/data/welcome*.ts,
-                 and the shared rules in src/lib/auth/golf-sign-in-logic.ts (used by the current form too)
+                 and the shared rules in src/lib/auth/golf-sign-in-logic.ts (used by the current form too);
+                 sign up and onboarding in src/clubhouse/screens/onboard, src/clubhouse/routes/onboard.tsx and
+                 src/clubhouse/data/onboard.ts
 Data:            users, golf_coaches, golf_players, golf_team_coach_staff (read by loginAction to decide where a sign-in goes);
                  users.last_seen, notifications, golf_calendar_notifications (read by the welcome)
 ```
@@ -139,8 +142,8 @@ Data:            users, golf_coaches, golf_players, golf_team_coach_staff (read 
 
 ```text
 Design:         approved
-Implementation: in_progress (sign in and welcome built behind the flag; sign up and onboarding not started)
-Contract:       partial (CONTRACT.md covers sign in and the welcome; sign up and onboarding join it when built)
+Implementation: in_progress (sign in, the welcome, sign up and onboarding built behind the flag)
+Contract:       partial (CONTRACT.md covers sign in and its reset views, the welcome, sign up and onboarding)
 Bridge:         reserved (IDs recorded; nothing is sent until the Bridge is wired, D-68)
 Data:           existing (no migration)
 Verification:   partial (VERIFY.md)

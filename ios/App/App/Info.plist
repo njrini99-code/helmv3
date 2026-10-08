@@ -4,6 +4,11 @@
 <dict>
 	<key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
+	<!-- ProMotion (2026-10-08, Clubhouse motion A5): lets the app's native layers (the WebView's scrolling and
+	     compositing, the edge swipe) run at up to 120Hz on ProMotion iPhones. WebKit's own page rendering in a
+	     WKWebView stays near 60fps until WebKit bug 294338 lands, so web animations gain nothing yet. -->
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>

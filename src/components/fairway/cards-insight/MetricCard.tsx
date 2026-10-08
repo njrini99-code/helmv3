@@ -48,7 +48,7 @@ import {
   type ReactNode,
 } from 'react';
 import NumberFlow, { type Format } from '@number-flow/react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/fairway/feedback';

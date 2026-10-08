@@ -153,8 +153,10 @@ button.ch-rt-strip__h {
 .ch-rt-strip__h.is-done em {
   color: var(--ch-ink-600);
 }
-button.ch-rt-strip__h.is-done:hover {
-  background: var(--ch-ivory-0);
+@media (hover: hover) {
+  button.ch-rt-strip__h.is-done:hover {
+    background: var(--ch-ivory-0);
+  }
 }
 .ch-rt-strip__h.is-cur {
   background: transparent;
@@ -285,7 +287,7 @@ button.ch-rt-strip__h.is-done:hover {
 .ch-rt-hero__dist b {
   font: 500 120px/0.85 var(--ch-font-sans);
   letter-spacing: -0.06em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
   font-variant-numeric: tabular-nums;
   color: var(--ch-ink-950);
 }
@@ -467,7 +469,7 @@ button.ch-rt-strip__h.is-done:hover {
 .ch-rt-log__dots i.is-hole,
 .ch-rt-log__n.is-hole,
 .ch-rt-rs__n.is-hole {
-  background: var(--ch-green-500);
+  background: var(--ch-green-fill-500);
 }
 .ch-rt-log__t {
   flex: 1;
@@ -579,7 +581,7 @@ button.ch-rt-strip__h.is-done:hover {
   width: 3px;
   height: 12px;
   border-radius: 2px;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 .ch-rt-hint {
   padding: 4px 8px;
@@ -690,7 +692,7 @@ button.ch-rt-strip__h.is-done:hover {
   background: rgb(255 255 255 / 0.6);
 }
 .ch-rt-amiss button[aria-checked='true'] {
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   color: var(--ch-ivory-100);
 }
 .ch-rt-amiss__g {
@@ -965,8 +967,10 @@ button.ch-rt-strip__h.is-done:hover {
   border-top: 1px solid rgb(28 25 18 / 0.07);
   color: var(--ch-text-tertiary);
 }
-.ch-rt-rs:hover:not(:disabled) {
-  background: var(--ch-bg-hover);
+@media (hover: hover) {
+  .ch-rt-rs:hover:not(:disabled) {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-rt-rs:disabled {
   cursor: default;
@@ -1288,7 +1292,7 @@ button.ch-rt-strip__h.is-done:hover {
 .ch-rt-sum__hero b {
   font: 500 64px/0.9 var(--ch-font-sans);
   letter-spacing: -0.06em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
   font-variant-numeric: tabular-nums;
 }
 .ch-rt-sum__hero em {
@@ -1509,6 +1513,196 @@ button.ch-rt-strip__h.is-done:hover {
     position: absolute;
     inset: min(0px, calc(50% - 22px));
   }
+}
+
+/* Dark ("Clubhouse at night"). The ivory ramp turns into the dark surfaces, so ivory type and strokes on a green
+   ground read the on-green ink; the lit course keeps its greens, its cup stays dark, and the white wells, hairlines
+   and lit tops written as literals above take their night values. */
+html[data-fw-theme='dark'] .ch-rt-strip__tot b,
+html[data-fw-theme='dark'] .ch-rt-hno,
+html[data-fw-theme='dark'] .ch-rt-log__dots i,
+html[data-fw-theme='dark'] .ch-rt-log__n,
+html[data-fw-theme='dark'] .ch-rt-rs__n,
+html[data-fw-theme='dark'] .ch-rt-exitc,
+html[data-fw-theme='dark'] .ch-rt-sum,
+html[data-fw-theme='dark'] .ch-rt-subm {
+  color: var(--ch-on-green-ink);
+}
+/* A played hole on the strip: a raised dark chip rather than a dark hole in the green. */
+html[data-fw-theme='dark'] .ch-rt-strip__h.is-done,
+html[data-fw-theme='dark'] .ch-rt-strip__h.is-cur.is-done {
+  background: var(--ch-ivory-200);
+}
+html[data-fw-theme='dark'] .ch-rt-strip__h.is-done em {
+  color: var(--ch-ink-500);
+}
+@media (hover: hover) {
+  html[data-fw-theme='dark'] button.ch-rt-strip__h.is-done:hover {
+    background: var(--ch-ivory-300);
+  }
+}
+html[data-fw-theme='dark'] .ch-rt-hno {
+  box-shadow: var(--ch-elevation-cast);
+}
+html[data-fw-theme='dark'] .ch-rt-hero {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.04),
+    0 0 0 1px rgb(201 173 116 / 0.22),
+    var(--ch-elevation-cast);
+}
+html[data-fw-theme='dark'] .ch-rt-map {
+  filter: drop-shadow(0 10px 18px rgb(0 0 0 / 0.45));
+}
+html[data-fw-theme='dark'] .ch-rt-map__pole,
+html[data-fw-theme='dark'] .ch-rt-map__path,
+html[data-fw-theme='dark'] .ch-rt-map__stop {
+  stroke: var(--ch-on-green-ink);
+}
+html[data-fw-theme='dark'] .ch-rt-map__stop.is-cur,
+:where(html[data-fw-theme='dark']) .ch-rt-map__n {
+  fill: var(--ch-on-green-ink);
+}
+html[data-fw-theme='dark'] .ch-rt-map__cup {
+  fill: #0c1a12;
+}
+html[data-fw-theme='dark'] .ch-rt-log {
+  box-shadow: var(--ch-elevation-reading);
+}
+html[data-fw-theme='dark'] .ch-rt-log.is-empty {
+  border-color: var(--ch-border-control);
+  box-shadow: none;
+}
+html[data-fw-theme='dark'] .ch-rt-log__r,
+html[data-fw-theme='dark'] .ch-rt-rs,
+html[data-fw-theme='dark'] .ch-rt-review__f,
+html[data-fw-theme='dark'] .ch-rt-mc tr + tr > * {
+  border-top-color: var(--ch-border-hairline);
+}
+html[data-fw-theme='dark'] .ch-rt-sec {
+  border-bottom-color: var(--ch-border-hairline);
+}
+/* The off-fairway shot disc one step deeper, so its ivory number keeps 4.5:1. */
+html[data-fw-theme='dark'] .ch-rt-log__dots i.is-rough,
+html[data-fw-theme='dark'] .ch-rt-log__dots i.is-sand,
+html[data-fw-theme='dark'] .ch-rt-log__dots i.is-other,
+html[data-fw-theme='dark'] .ch-rt-log__dots i.is-penalty,
+html[data-fw-theme='dark'] .ch-rt-log__n.is-rough,
+html[data-fw-theme='dark'] .ch-rt-log__n.is-sand,
+html[data-fw-theme='dark'] .ch-rt-log__n.is-other,
+html[data-fw-theme='dark'] .ch-rt-log__n.is-penalty,
+html[data-fw-theme='dark'] .ch-rt-rs__n.is-rough,
+html[data-fw-theme='dark'] .ch-rt-rs__n.is-sand,
+html[data-fw-theme='dark'] .ch-rt-rs__n.is-other,
+html[data-fw-theme='dark'] .ch-rt-rs__n.is-penalty {
+  background: #75653f;
+}
+html[data-fw-theme='dark'] .ch-rt-panel {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.04),
+    0 0 0 1px rgb(107 187 140 / 0.16),
+    var(--ch-elevation-cast);
+}
+html[data-fw-theme='dark'] .ch-rt-sec.is-tint {
+  background: var(--ch-bg-subtle);
+}
+html[data-fw-theme='dark'] .ch-rt-hint.is-required {
+  background: var(--ch-ivory-200);
+}
+/* The choice wells: recessed below the panel, the options lit ink on them. */
+html[data-fw-theme='dark'] .ch-rt-seg,
+html[data-fw-theme='dark'] .ch-rt-amiss {
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow);
+}
+html[data-fw-theme='dark'] .ch-rt-seg button[aria-checked='true'] {
+  background: linear-gradient(180deg, var(--ch-green-fill-500), var(--ch-green-fill-600));
+  color: var(--ch-on-green-ink);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    var(--ch-elevation-control);
+}
+html[data-fw-theme='dark'] .ch-rt-amiss button {
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+}
+html[data-fw-theme='dark'] .ch-rt-amiss button[aria-checked='true'],
+html[data-fw-theme='dark'] .ch-rt-tags button[aria-pressed='true'],
+html[data-fw-theme='dark'] .ch-rt-quick button[aria-pressed='true'] {
+  background: var(--ch-green-fill-600);
+  color: var(--ch-on-green-ink);
+}
+html[data-fw-theme='dark'] .ch-rt-amiss__g {
+  background: radial-gradient(circle, #3f7a54 0 55%, #4f8c63 56%);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.3);
+}
+html[data-fw-theme='dark'] .ch-rt-amiss__g i {
+  background: #0c1a12;
+  box-shadow: 0 0 0 3px var(--ch-on-green-ink);
+}
+html[data-fw-theme='dark'] .ch-rt-dist input {
+  background: var(--ch-bg-inset);
+  box-shadow: 0 0 0 1.5px rgb(107 187 140 / 0.35);
+}
+html[data-fw-theme='dark'] .ch-rt-dist input:focus {
+  box-shadow:
+    0 0 0 2px var(--ch-green-600),
+    0 0 0 6px rgb(107 187 140 / 0.2);
+}
+html[data-fw-theme='dark'] .ch-rt-dist input[aria-invalid='true'] {
+  box-shadow: 0 0 0 2px var(--ch-danger-600);
+}
+html[data-fw-theme='dark'] .ch-rt-bar {
+  background: rgb(27 32 28 / 0.92);
+  box-shadow: 0 -1px 0 var(--ch-border-hairline);
+}
+html[data-fw-theme='dark'] .ch-rt-bar__go:disabled {
+  background: var(--ch-ivory-200);
+  color: var(--ch-ink-500);
+}
+html[data-fw-theme='dark'] .ch-rt-spin {
+  border-color: rgb(107 187 140 / 0.2);
+  border-top-color: var(--ch-green-600);
+}
+html[data-fw-theme='dark'] .ch-rt-spin--lg {
+  border-color: rgb(255 255 255 / 0.12);
+  border-top-color: var(--ch-hero-mint);
+}
+html[data-fw-theme='dark'] .ch-rt-radio {
+  box-shadow: inset 0 0 0 1.5px rgb(237 231 216 / 0.35);
+}
+html[data-fw-theme='dark'] .ch-rt-opt[aria-checked='true'] {
+  background: var(--ch-bg-selected);
+}
+html[data-fw-theme='dark'] .ch-rt-opt[aria-checked='true'] .ch-rt-radio {
+  box-shadow: inset 0 0 0 5px var(--ch-green-700);
+}
+html[data-fw-theme='dark'] .ch-rt-xopt.is-primary {
+  background: var(--ch-bg-selected);
+  box-shadow: 0 0 0 1.5px rgb(107 187 140 / 0.4);
+}
+html[data-fw-theme='dark'] .ch-rt-scrim {
+  background: rgb(5 20 12 / 0.92);
+}
+html[data-fw-theme='dark'] .ch-rt-subm__ok,
+html[data-fw-theme='dark'] .ch-rt-subm__bad {
+  background: var(--ch-on-green-ink);
+  color: var(--ch-green-800);
+}
+/* The light-mode amber: the night amber is too pale on the ivory disc. */
+html[data-fw-theme='dark'] .ch-rt-subm__bad {
+  color: #94600e;
+}
+@container chrt (max-width: 640px) {
+  html[data-fw-theme='dark'] .ch-rt-review__f {
+    background: rgb(27 32 28 / 0.94);
+  }
+}
+
+/* A holed shot's disc on the deep fill, so its ivory number keeps 4.5:1 (the 500 fill measured 4.4). */
+html[data-fw-theme='dark'] .ch-rt-log__dots i.is-hole,
+html[data-fw-theme='dark'] .ch-rt-log__n.is-hole,
+html[data-fw-theme='dark'] .ch-rt-rs__n.is-hole {
+  background: var(--ch-green-fill-600);
 }
 
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn

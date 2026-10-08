@@ -48,7 +48,13 @@ From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS
 
 Status: DEFINED
 
-The route skeleton (60201) has the page's own shape: the header, the toolbar, the week grid and the panel. Every section that loads on its own has a skeleton: calendar-app links (60202), an event's files (60203), the documents to attach (60204) and attendance (60205). v2 timing: nothing for 150ms, then a fade (the shell's motion).
+The route skeleton (60201) has the page's own shape: the header, the toolbar,
+the week grid and the panel; on the phone the month's opening with the view
+switch, the flush week, the day's heading and its rows, in the loaded page's
+geometry so nothing moves when it lands (0px at 390, WebKit, 2026-10-08). Every
+section that loads on its own has a skeleton: calendar-app links (60202), an
+event's files (60203), the documents to attach (60204) and attendance (60205).
+v2 timing: nothing for 150ms, then a fade (the shell's motion).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -58,7 +64,7 @@ The route skeleton (60201) has the page's own shape: the header, the toolbar, th
 | 60204 | CH-6404 | `DOCUMENTS_ARE_LOADING` | Documents are loading (attach) |
 | 60205 | CH-6405 | `ATTENDANCE_IS_LOADING` | Attendance is loading |
 
-From the shell (P001): 10201 CH-1401.
+From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 ## 03 — Background loading / refresh
 
@@ -76,7 +82,18 @@ The page does not subscribe to changes. The server reads it when it opens and ag
 
 Status: DEFINED
 
-First-run and filtered empties are distinct, and a failed read is never shown as empty. An empty range still draws the grid and the panel says there is nothing on the team calendar today (60402). The agenda says its range is empty, and for the chosen players when the filter is on (60401). A coach with no overlaps and no replies waiting, and a player who is caught up, are told so (60406). An event with no files (60403); a team with no documents to attach (60404); a day with nothing on it on the phone (60408). An opened event that has left the loaded range says so and offers Today (60405). Signed in with no team is the v2 page empty state, with its own words for a coach and a player (60407).
+First-run and filtered empties are distinct, and a failed read is never shown as
+empty. An empty range still draws the grid and the panel says there is nothing
+on the team calendar today (60402). The agenda says its range is empty, and for
+the chosen players when the filter is on (60401). A coach with no overlaps and
+no replies waiting, and a player who is caught up, are told so (60406). An event
+with no files (60403); a team with no documents to attach (60404); a day with
+nothing on it on the phone (60408). An opened event that has left the loaded
+range says so and offers Today (60405). Signed in with no team is the v2 page
+empty state, with its own words for a coach and a player (60407). Both
+whole-page empties (60407, 60409) open under the page's framed head on desktop,
+with no action of their own in it, and show from first paint on the phone, where
+the bar carries the title (states audit c1, c4, 2026-10-08).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -107,7 +124,27 @@ Checked before anything is sent, with the warning haptic. An event needs a title
 
 Status: DEFINED
 
-Every change has its own toast naming what failed and what to do (60601 to 60612), and every section that fails to load has its own notice with Try again (60613 to 60621, 60624). A crash stays in its section: the calendar view (60622) and the detail panel (60623) each sit in a SectionBoundary. A write that goes through the shell's save hook gets Retry, which sends the same write again and finishes the job (61401). Three failures have no Retry because there is nothing to send again: copying a link (60604, 60612) and an Undo that fails (60609); removing a file has none either, and its toast says to try again in a moment (60608). Making a new calendar-app link has no Retry either (60626): the server deletes the old link before it makes the new one, so a failure can leave either state, and the links are read again so the row shows what exists. Removing a link has one (60627). A server refusal written for a person is shown as the toast's reason (a reply's lock: the deadline passed, the event started or was cancelled); one written for a developer is replaced by the toast's own hint. Open, not fixed: a create whose answer is lost on the way back may have landed, and Retry then creates it a second time (no write here carries an idempotency key).
+Every change has its own toast naming what failed and what to do (60601 to
+60612), and every section that fails to load has its own notice with Try again
+(60613 to 60621, 60624). When more than one of the page's reads fails, the page
+says so once above the grid, naming each, with one Try again (the shell's
+CH-1209): the grid's and the inspector's notices keep only their title in place,
+and the timezone, roster, busy-time and class notices, which have no place but
+that stack, fold into it (states audit b6, 2026-10-08). A crash stays in its
+section: the calendar view (60622) and the detail panel (60623) each sit in a
+SectionBoundary. A write that goes through the shell's save hook gets Retry,
+which sends the same write again and finishes the job (61401). Three failures
+have no Retry because there is nothing to send again: copying a link
+(60604, 60612) and an Undo that fails (60609); removing a file has none either, and its
+toast says to try again in a moment (60608). Making a new calendar-app link has
+no Retry either (60626): the server deletes the old link before it makes the new
+one, so a failure can leave either state, and the links are read again so the
+row shows what exists. Removing a link has one (60627). A server refusal written
+for a person is shown as the toast's reason (a reply's lock: the deadline
+passed, the event started or was cancelled); one written for a developer is
+replaced by the toast's own hint. Open, not fixed: a create whose answer is lost
+on the way back may have landed, and Retry then creates it a second time (no
+write here carries an idempotency key).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -139,7 +176,7 @@ Every change has its own toast naming what failed and what to do (60601 to 60612
 | 60626 | CH-6013 | `MAKING_A_NEW_CALENDAR_APP_LINK_FAILS` | Making a new calendar-app link fails |
 | 60627 | CH-6014 | `REMOVING_A_CALENDAR_APP_LINK_FAILS` | Removing a calendar-app link fails |
 
-From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002, 10611 CH-1003.
+From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002, 10611 CH-1003, 10612 CH-1209, 10613 CH-1210, 10614 CH-1211.
 
 ## 07 — Network / offline
 
@@ -151,7 +188,7 @@ Offline and slow saves are the shell's: nothing is sent offline (10703), a save 
 | --- | --- | --- | --- |
 | 60701 | — | `FILE_REMOVAL_REFUSES_OFFLINE` | Removing a file from an event, and Undo on that, send nothing while the browser is offline: the file stays where it was, the error haptic fires, and the toast says nothing was changed (the shell's CH-1903 wording). |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
 
 ## 08 — Permission / authorization
 
@@ -245,7 +282,15 @@ A player's reply shows the moment it is tapped and goes back to the last confirm
 
 Status: DEFINED
 
-The failure toast's Retry runs the same write again with the same arguments and, when it lands, does everything the button would have done: the editor or sheet closes, the panel clears, the page reads again, the new link shows, the new file shows and the reply shows as chosen (61401; until 2026-09-30 it only re-sent the write, see the changelog). Try again on a page notice has the server read the page again, and inside a section it reads only that section (61402). Attendance offers Retry too; it sends every changed mark again, including the ones that had saved, which is harmless because each mark is an upsert.
+The failure toast's Retry runs the same write again with the same arguments and,
+when it lands, does everything the button would have done: the editor or sheet
+closes, the panel clears, the page reads again, the new link shows, the new file
+shows and the reply shows as chosen (61401; until 2026-09-30 it only re-sent the
+write, see the changelog). Try again on a page notice has the server read the
+page again, and inside a section it reads only that section (61402); with
+several reads failed the one Try again is the page's (CH-1209). Attendance
+offers Retry too; it sends every changed mark again, including the ones that had
+saved, which is harmless because each mark is an upsert.
 
 What this is proved on. The Retry tests run in jsdom, where a toast can be clicked while a dialog is open. In a browser a native modal dialog makes everything outside it inert, and the toasts are outside it, so a Retry raised by a failure inside a dialog (the editor, the two confirms, the busy time, file and calendar-app sheets, and every panel sheet on the phone) is probably not clickable until the dialog closes; the button that failed is still there to press again. This was not verified in a browser. The fix is in the shell's Toast and Modal, not in this page, and it affects every page's Retry.
 
@@ -270,15 +315,30 @@ Status: DEFINED
 
 Status: DEFINED
 
-Calendar's own motion (61601 to 61603): an event lifts and takes a ring, the Find a time band follows the pointer in 15-minute steps, and the now line moves down the grid. The shell's: v2 press, reveal, sheets and pushes (11601 to 11612, D-64). All three are checked in the browser preview and none has a test.
+Calendar's own motion (61601 to 61606): an event lifts on a soft shadow and
+takes a ring when selected, the Find a time band follows the pointer in
+15-minute steps, the now line moves down the grid, another view settles in (Day,
+Week, Month and Agenda; Day, Month and List on the phone), and another day, week
+or month slides the way it went; an agenda row deepens its tint on press. On the
+phone (2026-10-08) the chosen day's green plate glides along the week strip to
+the day you tap while the day's heading and agenda slide 12px the way the day
+went (CH-6606); every row, day and month cell answers a press with the Ledger's
+tint and never scales. The shell's: the page crossfade, the press on keys,
+sheets and pushes (11601 to 11613, D-64); there is no first-paint rise. All six
+are checked in the browser preview; calendar.test also forces the view, period
+and day swaps (CH-6604, CH-6605, CH-6606), and the phone's were frame-sampled in
+WebKit at 390 (instant with reduced motion).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 61601 | CH-6601 | `HOVERING_OR_SELECTING_AN_EVENT` | Hovering or selecting an event |
 | 61602 | CH-6602 | `DRAGGING_THE_TIME_BAND_IN_FIND_A` | Dragging the time band in Find a time |
 | 61603 | CH-6603 | `THE_CURRENT_TIME` | The current time |
+| 61604 | CH-6604 | `SWITCHING_BETWEEN_DAY_WEEK_MONTH_AND_AGENDA` | Switching between Day, Week, Month and Agenda (Day, Month and List on the phone) |
+| 61605 | CH-6605 | `STEPPING_TO_ANOTHER_DAY_WEEK_OR_MONTH` | Stepping to another day, week or month (the arrows, the arrow keys, Today or a date) |
+| 61606 | CH-6606 | `CHOOSING_ANOTHER_DAY_IN_THE_PHONES_WEEK` | Choosing another day in the phone's week strip |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -292,7 +352,7 @@ Calendar's own haptics (61701 to 61703) on the v2 grammar (D-70): selection for 
 | 61702 | CH-6702 | `A_FORM_WITH_A_PROBLEM_OR_CLOSING` | A form with a problem, or closing the editor with changes |
 | 61703 | CH-6703 | `A_LINK_IS_COPIED` | A link is copied |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
 
 ## 18 — Accessibility
 
@@ -307,7 +367,7 @@ Calendar's own (61801 to 61804): each event is a button named with its title and
 | 61803 | CH-6803 | `CHANGING_THE_PLAYER_FILTER_IS_ANNOUNCED` | Changing the player filter is announced ("Showing 2 players") |
 | 61804 | CH-6804 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_VIEW` | No axe violations in any preview view and state, 1280px and 390px. One known exception, listed in the scan: the 7-day week at 390px squeezes overlapping events under 24px until the phone Calendar is designed |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
 
 ## 19 — Responsive layout
 
@@ -331,7 +391,7 @@ On the desktop N opens New event (coach), T goes to today, the arrows step a day
 | --- | --- | --- | --- |
 | 62001 | — | `KEYBOARD_SHORTCUTS` | On the desktop N opens New event (coach), T goes to today, the left and right arrows step a day, week or month (not in the agenda), and Esc closes the open panel. None of them fires while typing in a field or with a dialog open. |
 
-From the shell (P001): 12001 CH-1906.
+From the shell (P001): 12001 CH-1906, 12002 CH-1907, 12003 CH-1908.
 
 ## 21 — Performance
 

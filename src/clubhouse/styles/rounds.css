@@ -31,9 +31,8 @@
 }
 .ch-rd-h h1 {
   margin: 8px 0 0;
-  font: 600 36px/1.05 var(--ch-font-sans);
-  letter-spacing: -0.036em;
-  font-variation-settings: 'wdth' 86;
+  font: 400 50px/1.02 var(--ch-font-serif);
+  letter-spacing: -0.01em;
 }
 
 /* The hero: the round in progress beside the season */
@@ -51,10 +50,8 @@
   padding: 20px 22px 18px;
   border-radius: 20px;
   color: var(--ch-ivory-100);
-  background: radial-gradient(120% 90% at 100% 0%, rgb(123 199 154 / 0.18), transparent 60%), var(--ch-green-800);
-  box-shadow:
-    0 0 0 1px var(--ch-green-900),
-    0 22px 44px -28px rgb(11 58 37 / 0.7);
+  background: var(--ch-field-green);
+  box-shadow: inset 0 1px 0 rgb(210 244 221 / 0.12), var(--ch-elevation-cast);
 }
 .ch-rd-unf.is-idle {
   background: radial-gradient(120% 90% at 100% 0%, rgb(123 199 154 / 0.12), transparent 60%), var(--ch-green-800);
@@ -93,18 +90,21 @@
   margin-top: 18px;
   font: 600 28px/1.05 var(--ch-font-sans);
   letter-spacing: -0.03em;
-  font-variation-settings: 'wdth' 86;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-rd-unf__m {
   margin-top: 5px;
   font: 400 13px/1.3 var(--ch-font-sans);
   color: rgb(244 241 232 / 0.7);
 }
+/* The holes so far, set like the scoreboard: centred in the card's free height so the card never ends in a dead
+   band, with the board's finishes (a red disc under par, an ivory outline over it). */
 .ch-rd-strip {
   display: grid;
   grid-template-columns: repeat(9, minmax(0, 44px));
-  gap: 4px;
-  margin: 20px 0 18px;
+  gap: 6px 4px;
+  margin: auto 0;
+  padding: 20px 0 18px;
 }
 .ch-rd-strip span {
   aspect-ratio: 1;
@@ -115,7 +115,8 @@
   font-variant-numeric: tabular-nums;
   background: rgb(0 0 0 / 0.18);
   box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.3);
-  color: rgb(244 241 232 / 0.35);
+  /* An unplayed hole's number still reads (4.5:1 on the green); the recess, not a faded ink, says it is to come. */
+  color: var(--ch-on-green-ink-muted);
 }
 .ch-rd-strip span.is-par {
   background: rgb(255 255 255 / 0.1);
@@ -123,14 +124,15 @@
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
 }
 .ch-rd-strip span.is-under {
-  background: var(--ch-ivory-100);
-  color: var(--ch-score-under);
-  box-shadow: inset 0 0 0 2px var(--ch-score-under);
+  border-radius: 50%;
+  background: linear-gradient(180deg, #d0574a 0%, #a8372b 100%);
+  color: #fff8f5;
+  box-shadow: var(--ch-board-birdie-shadow);
 }
 .ch-rd-strip span.is-over {
-  background: rgb(255 255 255 / 0.1);
-  color: var(--ch-ivory-100);
-  box-shadow: inset 0 0 0 1.5px rgb(244 241 232 / 0.7);
+  background: transparent;
+  color: var(--ch-on-green-ink);
+  box-shadow: var(--ch-board-bogey-shadow);
 }
 .ch-rd-strip span.is-next {
   background: transparent;
@@ -196,28 +198,20 @@
   color: rgb(244 241 232 / 0.7);
   cursor: pointer;
 }
-.ch-rd-unf__discard:hover {
-  background: rgb(255 255 255 / 0.14);
-  color: var(--ch-ivory-100);
+@media (hover: hover) {
+  .ch-rd-unf__discard:hover {
+    background: rgb(255 255 255 / 0.14);
+    color: var(--ch-ivory-100);
+  }
 }
 
 /* Season scoring */
 .ch-rd-season {
   position: relative;
   padding: 20px 22px 14px;
-  border-radius: 20px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
-  box-shadow:
-    0 0 0 1px rgb(176 149 96 / 0.28),
-    0 18px 40px -30px rgb(28 25 18 / 0.4);
-}
-.ch-rd-season::before {
-  content: '';
-  position: absolute;
-  inset: 7px;
-  border-radius: 14px;
-  border: 1px solid rgb(176 149 96 / 0.15);
-  pointer-events: none;
+  box-shadow: var(--ch-elevation-reading);
 }
 .ch-rd-season.is-empty {
   display: flex;
@@ -235,10 +229,10 @@
   color: var(--ch-text-secondary);
 }
 .ch-rd-season__h {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: end;
+  gap: 16px 28px;
 }
 .ch-rd-season__big {
   display: flex;
@@ -257,33 +251,119 @@
   color: var(--ch-text-secondary);
 }
 .ch-rd-season__f {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 0;
-  display: flex;
 }
-.ch-rd-season__f > div {
-  padding: 0 16px;
+.ch-rd-fig {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 18px;
 }
-.ch-rd-season__f > div + div {
-  border-left: 1px solid var(--ch-champagne-rule);
+.ch-rd-fig + .ch-rd-fig {
+  box-shadow: var(--ch-seam-y);
 }
-.ch-rd-season__f dt {
-  font: 500 11.5px/1 var(--ch-font-sans);
+.ch-rd-fig dt {
+  font: 600 12px/1 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
-.ch-rd-season__f dd {
+.ch-rd-fig dd {
   margin: 0;
-  font: 500 22px/1 var(--ch-font-sans);
-  letter-spacing: -0.035em;
 }
-/* The figure's sub-line: a second dd, so the list stays dt/dd pairs (axe definition-list). */
-.ch-rd-season__f dd + dd {
-  letter-spacing: normal;
-  font: 400 11.5px/1 var(--ch-font-sans);
+.ch-rd-fig__v {
+  font: 500 24px/1 var(--ch-font-sans);
+  letter-spacing: -0.026em;
+  color: var(--ch-text-primary);
+}
+.ch-rd-fig__viz {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 2px 0;
+}
+/* The figure's caption: a dd, so the list stays dt/dd pairs (axe definition-list). */
+.ch-rd-fig__m {
+  font: 400 12px/1.3 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
-  white-space: nowrap;
+}
+/* Best: the season's rounds on their range. */
+.ch-rd-range {
+  position: relative;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow);
+}
+.ch-rd-range i {
+  position: absolute;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ch-ink-400);
+  translate: -50% -50%;
+}
+.ch-rd-range i.is-best {
+  z-index: 1;
+  width: 9px;
+  height: 9px;
+  background: var(--ch-green-fill-600);
+  box-shadow: 0 0 0 2px var(--ch-sheet-bg);
+}
+.ch-rd-range b {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--ch-ink-900);
+  translate: -50% 0;
+}
+.ch-rd-range__ends {
+  display: flex;
+  justify-content: space-between;
+  font: 600 12px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+/* Putts: a bar against two putts a green (36), ticked. */
+.ch-rd-putts {
+  position: relative;
+  height: 8px;
+  margin: 3px 0;
+  border-radius: 4px;
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow);
+}
+.ch-rd-putts i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--ch-green-500), var(--ch-green-600));
+}
+.ch-rd-putts b {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--ch-ink-900);
+  translate: -50% 0;
+}
+/* GIR: the 18 greens of a round. */
+.ch-rd-greens {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 3px;
+}
+.ch-rd-greens i {
+  height: 7px;
+  border-radius: 2px;
+  background: var(--ch-ivory-300);
+}
+.ch-rd-greens i.is-hit {
+  background: var(--ch-green-fill-500);
 }
 .ch-rd-season__ch {
   display: flex;
@@ -371,7 +451,7 @@
   border-radius: 3px;
 }
 .ch-rd-season__lg i.is-under {
-  background: var(--ch-green-500);
+  background: var(--ch-green-fill-500);
 }
 .ch-rd-season__lg i.is-over {
   background: #bfb59c;
@@ -432,9 +512,11 @@
   color: var(--ch-text-tertiary);
   cursor: pointer;
 }
-.ch-rd-more__discard:hover {
-  background: var(--ch-bg-hover);
-  color: var(--ch-text-primary);
+@media (hover: hover) {
+  .ch-rd-more__discard:hover {
+    background: var(--ch-bg-hover);
+    color: var(--ch-text-primary);
+  }
 }
 .ch-rd-more__go {
   height: 34px;
@@ -488,8 +570,8 @@
 }
 .ch-rd-grp__h h3 {
   margin: 0;
-  font: 600 18px/1 var(--ch-font-sans);
-  letter-spacing: -0.02em;
+  font: var(--ch-type-serif-s);
+  letter-spacing: -0.004em;
   color: var(--ch-ink-950);
 }
 .ch-rd-grp__h b {
@@ -523,39 +605,42 @@
     box-shadow var(--ch-dur-quick) var(--ch-ease),
     transform var(--ch-dur-quick) var(--ch-ease);
 }
-/* CH-11601: a round that opens its review lifts and rings green on hover (quick). */
-a.ch-rd-sc:hover {
-  transform: translateY(-1px);
-  box-shadow:
-    0 0 0 1px rgb(21 90 57 / 0.25),
-    0 14px 28px -18px rgb(11 58 37 / 0.4);
+/* Off the Ledger (a narrow window), a round card that opens its review lifts 1px with a deeper shadow on hover (quick);
+   on the desktop Ledger it takes the row tint instead (CH-11601, below). */
+@media (hover: hover) {
+  a.ch-rd-sc:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--ch-elevation-row-card-hover);
+  }
 }
 a.ch-rd-sc:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }
 /* No photography (Q-72a): the photo tile becomes a green date tile. */
+/* The date: an ivory key with the day as a serif numeral in the field green, like a dated card in a club ledger
+   (owner: green only for the field, selection and the scoreboard, so no green block per row). */
 .ch-rd-sc__date {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
   width: 64px;
   height: 60px;
-  border-radius: 12px;
-  background: var(--ch-green-800);
-  color: var(--ch-ivory-100);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-raised-bg);
+  color: var(--ch-field-green);
+  box-shadow: var(--ch-key-raised-shadow);
 }
 .ch-rd-sc__date b {
-  font: 600 22px/1 var(--ch-font-sans);
-  letter-spacing: -0.03em;
+  font: 600 23px/1 var(--ch-font-sans);
+  letter-spacing: -0.02em;
 }
 .ch-rd-sc__date em {
-  font: 500 11px/1 var(--ch-font-sans);
+  font: 600 12px/1 var(--ch-font-sans);
   font-style: normal;
-  color: rgb(244 241 232 / 0.72);
+  color: var(--ch-text-tertiary);
 }
 .ch-rd-sc__c {
   min-width: 0;
@@ -710,7 +795,7 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rd-sc__s b {
   font: 500 22px/1 var(--ch-font-sans);
-  letter-spacing: -0.035em;
+  letter-spacing: -0.026em;
   color: var(--ch-ink-950);
 }
 .ch-rd-sc__s em {
@@ -742,7 +827,7 @@ a.ch-rd-sc:focus-visible {
 /* Phone (Player - Rounds - Mobile.html) */
 @container chrd (max-width: 640px) {
   .ch-rd-h h1 {
-    font-size: 28px;
+    font-size: 38px;
   }
   .ch-rd-tools {
     flex-wrap: nowrap;
@@ -787,11 +872,13 @@ a.ch-rd-sc:focus-visible {
   .ch-rd-season__big b {
     font-size: 36px;
   }
+  .ch-rd-season__h {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .ch-rd-season__f {
     width: 100%;
   }
   .ch-rd-season__f > div {
-    flex: 1;
     padding: 0 10px;
   }
   .ch-rd-season__f > div:first-child {
@@ -895,10 +982,10 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rv-hero h1 {
   margin: 0;
-  color: var(--ch-ivory-100);
-  font: 600 38px/1 var(--ch-font-sans);
-  letter-spacing: -0.035em;
-  font-variation-settings: 'wdth' 86;
+  color: var(--ch-on-green-ink);
+  font: 400 48px/1 var(--ch-font-serif);
+  letter-spacing: -0.01em;
+  text-shadow: var(--ch-on-green-text-shadow);
 }
 .ch-rv-hero__m {
   display: inline-flex;
@@ -916,7 +1003,7 @@ a.ch-rd-sc:focus-visible {
 .ch-rv-hero__s b {
   font: 500 84px/0.85 var(--ch-font-sans);
   letter-spacing: -0.06em;
-  font-variation-settings: 'wdth' 88;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-rv-hero__s em {
   font: 600 18px/1 var(--ch-font-sans);
@@ -1129,8 +1216,10 @@ a.ch-rd-sc:focus-visible {
   color: inherit;
   cursor: pointer;
 }
-.ch-rv-nine thead button:hover {
-  background: var(--ch-bg-hover);
+@media (hover: hover) {
+  .ch-rv-nine thead button:hover {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-rv-nine thead button.is-sel {
   background: var(--ch-green-800);
@@ -1168,7 +1257,7 @@ a.ch-rd-sc:focus-visible {
   border-radius: 50%;
 }
 .ch-rv-yn.is-y {
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 .ch-rv-yn.is-n {
   box-shadow: inset 0 0 0 1.5px rgb(28 25 18 / 0.25);
@@ -1268,7 +1357,7 @@ a.ch-rd-sc:focus-visible {
   background: #8e7b4e;
 }
 .ch-rv-shots__n.is-hole {
-  background: var(--ch-green-500);
+  background: var(--ch-green-fill-500);
 }
 .ch-rv-shots li > div {
   flex: 1;
@@ -1332,19 +1421,24 @@ a.ch-rd-sc:focus-visible {
   background: rgb(28 25 18 / 0.06);
   overflow: hidden;
 }
+/* The bar is drawn at the track's full width and slid in from the left by its share (--ch-rv-p, 0 to 1), so a change
+   moves on transform, never on width (motion research A4, 2026-10-08). A slide rather than a scaleX keeps its rounded
+   end round; the track's clip draws the start. */
 .ch-rv-dist__t i {
   display: block;
+  width: 100%;
   height: 100%;
   border-radius: 6px;
   background: #bfb59c;
-  transition: width var(--ch-dur-base) var(--ch-ease);
+  transform: translateX(calc((var(--ch-rv-p, 0) - 1) * 100%));
+  transition: transform var(--ch-dur-base) var(--ch-ease);
 }
 .ch-rv-dist__r.is-birdie i,
 .ch-rv-dist__r.is-eagle i {
   background: var(--ch-score-under);
 }
 .ch-rv-dist__r.is-par i {
-  background: var(--ch-green-700);
+  background: var(--ch-green-fill-700);
 }
 .ch-rv-dist__r.is-double i {
   background: var(--ch-ink-600);
@@ -1440,6 +1534,611 @@ a.ch-rd-sc:focus-visible {
   }
 }
 
+/* Route loading draws a desktop and a phone shape (RoundsSkeleton.tsx); the width shows one, so the server needs none. */
+.ch-rd-sk-desk,
+.ch-rv-sk-desk {
+  display: contents;
+}
+.ch-rd-sk-phone,
+.ch-rv-sk-phone {
+  display: none;
+}
+
+/* The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy, too vibe coded"; the Coach Home board, round 3:
+   "fewer containers, one feature card"). On the phone Rounds opens on the Ledger's intro under the engraved double rule
+   (the season line as the brown eyebrow, Your rounds in the 600 sans, New round beside it); the round in progress (or
+   the idle card) is the one green feature card and keeps its scoreboard strip; season scoring is a section flush on the
+   parchment, its three figures between hairlines and the ribbon under them; and every month is a section whose rounds
+   are rows between soft seams, led by the date and ending in the score. A round's review opens on its green hero (the
+   course in the 600 sans); its five figures sit between hairlines; strokes gained, the scorecard, the hole, the
+   distribution, the recap and the notes are sections under the double rule. Kept as material: the hole strip, the
+   scorecard's grid, the search, the grouping control, the hole steps and the notices. */
+@media (max-width: 820px) {
+  .ch-rd.is-phone {
+    gap: 28px;
+    padding: 14px 20px 110px;
+  }
+  /* The eyebrow takes the page's whole width, as the intro's does; New round sits at the end of the title's line. */
+  .ch-rd.is-phone > .ch-rd-h {
+    position: relative;
+    display: block;
+    padding-top: 14px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-rd.is-phone > .ch-rd-h > .ch-btn {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+  }
+  .ch-rd.is-phone .ch-rd-h .ch-rd-k,
+  .ch-rd.is-phone .ch-rd-h .ch-rd-upd {
+    font: 500 12px/1.2 var(--ch-font-sans);
+    letter-spacing: 0.14em;
+    color: var(--ch-ledger-eyebrow);
+  }
+  .ch-rd.is-phone .ch-rd-h h1 {
+    margin-top: 10px;
+    font: 600 31px/1.08 var(--ch-font-sans);
+    letter-spacing: -0.038em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+
+  /* The round in progress: the feature card. */
+  .ch-rd.is-phone .ch-rd-hero {
+    gap: 30px;
+  }
+  .ch-rd.is-phone .ch-rd-unf {
+    padding: 18px 18px 16px;
+    border-radius: 14px;
+    background: var(--ch-feature-bg);
+    box-shadow: var(--ch-elevation-feature);
+  }
+  /* A notice on the card (the round couldn't be checked, its scores or its posting didn't load) takes the on-green inks,
+     as on the shared feature card (shell.css); the card's own padding insets it. */
+  .ch-rd.is-phone .ch-rd-unf .ch-notice--danger {
+    --ch-notice-ink: var(--ch-notice-on-green-ink);
+    --ch-notice-body: var(--ch-notice-on-green-body);
+  }
+
+  /* Season scoring: the label is the section's heading under the double rule; the average, then the figures between
+     hairlines, then the ribbon. */
+  .ch-rd.is-phone .ch-rd-season {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rd.is-phone .ch-rd-season .ch-rd-k {
+    display: block;
+    padding-top: 12px;
+    border-top: var(--ch-ledger-rule-double);
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rd.is-phone .ch-rd-season__h {
+    gap: 14px;
+  }
+  .ch-rd.is-phone .ch-rd-season__big {
+    margin-top: 14px;
+  }
+  .ch-rd.is-phone .ch-rd-season__big b {
+    font-size: 48px;
+    font-weight: 600;
+    letter-spacing: -0.055em;
+  }
+  .ch-rd.is-phone .ch-rd-season__f {
+    padding: 12px 0;
+    border-top: 1px solid var(--ch-ledger-rule);
+    border-bottom: 1px solid var(--ch-ledger-rule);
+  }
+  .ch-rd.is-phone .ch-rd-fig + .ch-rd-fig {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rd.is-phone .ch-rd-fig__v {
+    font-weight: 600;
+  }
+  .ch-rd.is-phone .ch-rd-range i.is-best {
+    box-shadow: 0 0 0 2px var(--ch-workspace);
+  }
+  .ch-rd.is-phone .ch-rd-season.is-empty {
+    gap: 6px;
+  }
+  .ch-rd.is-phone .ch-rd-season.is-empty .ch-rd-k {
+    margin-bottom: 6px;
+  }
+
+  /* More unfinished rounds: a section, one row each. */
+  .ch-rd.is-phone .ch-rd-more {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rd.is-phone .ch-rd-more h2 {
+    margin: 0 0 4px;
+    padding-top: 12px;
+    border-top: var(--ch-ledger-rule-double);
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rd.is-phone .ch-rd-more li {
+    min-height: 58px;
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+
+  /* The book: each month a section under the double rule; each round a row. */
+  .ch-rd.is-phone .ch-rd-grp {
+    gap: 2px;
+    margin-top: 18px;
+  }
+  .ch-rd.is-phone .ch-rd-grp__h {
+    padding: 12px 0 0;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-rd.is-phone .ch-rd-grp__h h3 {
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rd.is-phone .ch-rd-grp__rule {
+    background: none;
+  }
+  .ch-rd.is-phone .ch-rd-book {
+    gap: 0;
+  }
+  .ch-rd.is-phone .ch-rd-sc {
+    min-height: 64px;
+    padding: 10px 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-rd.is-phone .ch-rd-sc + .ch-rd-sc {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rd.is-phone a.ch-rd-sc:active {
+    background: var(--ch-ledger-row-press);
+  }
+  .ch-rd.is-phone .ch-rd-sc__date {
+    width: 44px;
+    height: auto;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rd.is-phone .ch-rd-sc__s {
+    align-items: flex-end;
+    height: auto;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rd.is-phone .ch-rd-sc__s b {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+  .ch-rd.is-phone .ch-rd-sc__s.is-under {
+    background: none;
+    box-shadow: none;
+  }
+
+  /* A round's review. */
+  .ch-rv.is-phone {
+    gap: 28px;
+    padding: 14px 20px 110px;
+  }
+  .ch-rv.is-phone .ch-rv-hero {
+    gap: 16px;
+    padding: 18px;
+    border-radius: 14px;
+    background: var(--ch-feature-bg);
+    box-shadow: var(--ch-elevation-feature);
+  }
+  .ch-rv.is-phone .ch-rv-hero h1 {
+    font: 600 28px/1.1 var(--ch-font-sans);
+    letter-spacing: -0.03em;
+    font-variation-settings: 'wdth' 92;
+  }
+  .ch-rv.is-phone .ch-rv-hero__s b {
+    font-weight: 600;
+  }
+  .ch-rv.is-phone .ch-rv-figs {
+    padding: 12px 0;
+    border-radius: 0;
+    background: none;
+    border-top: 1px solid var(--ch-ledger-rule);
+    border-bottom: 1px solid var(--ch-ledger-rule);
+    box-shadow: none;
+  }
+  .ch-rv.is-phone .ch-rv-figs > div:nth-child(3n + 1) {
+    padding-left: 0;
+  }
+  .ch-rv.is-phone .ch-rv-figs > div + div {
+    border-left-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-rv.is-phone .ch-rv-figs dd {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+  .ch-rv.is-phone .ch-rv-figs dd + dd {
+    font: 400 12px/1 var(--ch-font-sans);
+    letter-spacing: normal;
+  }
+  .ch-rv.is-phone .ch-rv-card {
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rv.is-phone .ch-rv-card__h {
+    margin-bottom: 6px;
+    padding: 12px 0 0;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-rv.is-phone .ch-rv-card__h h2,
+  .ch-rv.is-phone .ch-rv-card__h h3 {
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rv.is-phone .ch-rv-sg__legs,
+  .ch-rv.is-phone .ch-rv-cardw,
+  .ch-rv.is-phone .ch-rv-shots,
+  .ch-rv.is-phone .ch-rv-dist,
+  .ch-rv.is-phone .ch-rv-notes p {
+    padding-inline: 0;
+  }
+  .ch-rv.is-phone .ch-rv-cardw {
+    margin-inline: -20px;
+    padding-inline: 20px;
+  }
+  .ch-rv.is-phone .ch-rv-hole .ch-notice,
+  .ch-rv.is-phone .ch-rv-none {
+    margin-inline: 0;
+  }
+  .ch-rv.is-phone .ch-rv-shots__n {
+    box-shadow: 0 0 0 3px var(--ch-workspace);
+  }
+  /* A hole on the scorecard answers the press with the row press tint (it selects, so it does not scale; the steps beside
+     the hole are keys and compress, data-ch-press). */
+  .ch-rv.is-phone .ch-rv-nine thead button:not(.is-sel):active,
+  .ch-rv.is-phone .ch-rv-nine td[data-hole]:not(.is-sel):active {
+    background: var(--ch-ledger-row-press);
+  }
+  .ch-rv.is-phone .ch-rv-cols {
+    gap: 28px;
+  }
+  .ch-rv.is-phone .ch-rv-side {
+    gap: 28px;
+  }
+  /* The recap: one green surface per screen (the hero), so on the phone it is a passage under a rule, its kicker green. */
+  .ch-rv.is-phone .ch-rv-recap {
+    gap: 8px;
+    padding: 14px 0 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+    color: var(--ch-text-primary);
+  }
+  .ch-rv.is-phone .ch-rv-recap__k {
+    color: var(--ch-green-600);
+  }
+  .ch-rv.is-phone .ch-rv-recap p {
+    color: var(--ch-text-secondary);
+  }
+
+  /* Loading (CH-11401, CH-11406) in the phone's shapes: the intro, the feature card, the sections under the double rule
+     with their figures between hairlines and their rows between soft seams. */
+  .ch-rd-sk-desk,
+  .ch-rv-sk-desk {
+    display: none;
+  }
+  .ch-rd-sk-phone,
+  .ch-rv-sk-phone {
+    display: contents;
+  }
+  .ch-rd[data-ch-code='CH-11401'],
+  .ch-rv[data-ch-code='CH-11406'] {
+    gap: 28px;
+    padding: 14px 20px 110px;
+  }
+  /* At the loaded geometry (measured at 390): the intro is 84.5px (the eyebrow's 24px line box, the title 10px under it), New
+     round sits at the end of the title's line, the card and season scoring stand 30px apart, a month opens 18px under the tools
+     and its rows are 67.8px. */
+  .ch-rd-sk-h {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding-top: 14px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-rd-sk-title {
+    margin-top: 10px;
+  }
+  .ch-rd-sk-new {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+  }
+  .ch-rd-sk-hero {
+    container: chrdsk / inline-size;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+  }
+  /* The round card's place follows the idle card as the phone widens (measured in WebKit from 355 to 445px): its holes
+     are squares nine across the card, two rows of them, so it grows by two ninths of the card's width; and its foot
+     takes one line from a 359px card (a 399px phone), two below. */
+  .ch-rd-sk-hero > .ch-skel {
+    height: calc(262.5px + 22.222cqw) !important;
+  }
+  @container chrdsk (min-width: 359px) {
+    .ch-rd-sk-hero > .ch-skel {
+      height: calc(233.6px + 22.222cqw) !important;
+    }
+  }
+  .ch-rd-sk-sec.ch-rd-sk-season {
+    gap: 0;
+  }
+  .ch-rd-sk-season > .ch-rd-sk-figs {
+    box-sizing: border-box;
+    height: 129.2px;
+    margin-top: 14px;
+  }
+  .ch-rd-sk-season > .ch-rd-sk-figs + span {
+    margin-top: 16px;
+  }
+  /* The chart scales with the page's width (its viewBox is 380 wide on the phone and about 216 tall for a usual season), so
+     its place does too. */
+  .ch-rd-sk-season > .ch-skel {
+    height: auto !important;
+    margin-top: 10px;
+    aspect-ratio: 380 / 216;
+  }
+  .ch-rd-sk-sec.ch-rd-sk-grp {
+    gap: 0;
+    margin-top: 18px;
+  }
+  .ch-rd-sk-sec,
+  .ch-rv-sk-sec {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-rd-sk-figs,
+  .ch-rv-sk-figs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 14px;
+    padding: 12px 0;
+    border-top: 1px solid var(--ch-ledger-rule);
+    border-bottom: 1px solid var(--ch-ledger-rule);
+  }
+  .ch-rd-sk-figs > span,
+  .ch-rv-sk-figs > span {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 0 12px;
+  }
+  .ch-rd-sk-figs > span:first-child,
+  .ch-rv-sk-figs > span:nth-child(3n + 1) {
+    padding-left: 0;
+  }
+  .ch-rd-sk-figs > span + span,
+  .ch-rv-sk-figs > span + span {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rv-sk-figs > span:nth-child(3n + 1) {
+    box-shadow: none;
+  }
+  /* The review at its loaded geometry (measured at 390): the hero 178px, the figures 156px in two rows, each section's head
+     (the double rule, the heading and its figure) 6px over its body, strokes gained's four bars in 125px. */
+  .ch-rv-sk-phone > .ch-rv-sk-figs {
+    box-sizing: border-box;
+    height: 156px;
+    align-content: center;
+  }
+  .ch-rv-sk-sec {
+    gap: 6px;
+  }
+  .ch-rv-sk-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    height: 50.8px;
+  }
+  .ch-rv-sk-head.is-sg {
+    height: 54.2px;
+  }
+  .ch-rv-sk-head > span {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 3px;
+  }
+  .ch-rv-sk-leg {
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr) 30px;
+    gap: 10px;
+    align-items: center;
+    height: 26.8px;
+  }
+  .ch-rd-sk-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 67.8px;
+  }
+  .ch-rd-sk-row > span {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .ch-rd-sk-row + .ch-rd-sk-row {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+}
+
+/* Dark ("Clubhouse at night"). The ivory ramp turns into the dark surfaces, so ivory type on a green band reads the
+   on-green ink, and the white wells, hairlines and lit tops written as literals above take their night values. */
+html[data-fw-theme='dark'] .ch-rd-unf,
+html[data-fw-theme='dark'] .ch-rd-unf__f b,
+html[data-fw-theme='dark'] .ch-rd-strip span.is-par,
+html[data-fw-theme='dark'] .ch-rv-hero,
+html[data-fw-theme='dark'] .ch-rv-shots__n,
+html[data-fw-theme='dark'] .ch-rv-recap {
+  color: var(--ch-on-green-ink);
+}
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-rd-unf__discard:hover {
+    color: var(--ch-on-green-ink);
+  }
+}
+html[data-fw-theme='dark'] .ch-rd-unf__cta {
+  background: linear-gradient(180deg, #e9e3d3, #d6cfbd);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.4),
+    var(--ch-elevation-control);
+}
+html[data-fw-theme='dark'] .ch-rd-rib line {
+  stroke: var(--ch-border-hairline);
+}
+html[data-fw-theme='dark'] .ch-rd-rib line.is-par {
+  stroke: rgb(237 231 216 / 0.45);
+}
+html[data-fw-theme='dark'] .ch-rd-rib__chip {
+  stroke: rgb(107 187 140 / 0.3);
+}
+/* Over par a warm grey (4.4:1 on the card), qualifiers the gilt, so the three bar kinds stay apart. */
+html[data-fw-theme='dark'] .ch-rd-rib rect.is-over,
+html[data-fw-theme='dark'] .ch-rd-season__lg i.is-over,
+:where(html[data-fw-theme='dark']) .ch-rv-dist__t i {
+  fill: #8a8373;
+  background: #8a8373;
+}
+html[data-fw-theme='dark'] .ch-rd-rib rect.is-q,
+html[data-fw-theme='dark'] .ch-rd-season__lg i.is-q {
+  fill: var(--ch-champagne-500);
+  background: var(--ch-champagne-500);
+}
+html[data-fw-theme='dark'] .ch-rd-season__lg i.is-under {
+  background: var(--ch-green-500);
+}
+html[data-fw-theme='dark'] .ch-rd-more__go,
+html[data-fw-theme='dark'] .ch-rd-pill.is-qualifier {
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.28);
+}
+html[data-fw-theme='dark'] .ch-rd-tee {
+  box-shadow: 0 0 0 1px rgb(237 231 216 / 0.3);
+}
+html[data-fw-theme='dark'] .ch-rd-tee--white {
+  background: #f1ece0;
+}
+html[data-fw-theme='dark'] .ch-rd-sc__grid {
+  box-shadow: 0 0 0 1px var(--ch-border-control);
+}
+html[data-fw-theme='dark'] .ch-rd-sc__grid > span {
+  background: var(--ch-ivory-50);
+}
+html[data-fw-theme='dark'] .ch-rd-sc__grid > span + span {
+  border-left-color: var(--ch-border-subtle);
+}
+html[data-fw-theme='dark'] .ch-rd-sc__grid .is-tot {
+  background: var(--ch-ivory-150);
+}
+html[data-fw-theme='dark'] .ch-rd-meter__t,
+html[data-fw-theme='dark'] .ch-rv-dist__t {
+  background: rgb(237 231 216 / 0.08);
+}
+html[data-fw-theme='dark'] .ch-rd-meter__t i {
+  background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-500));
+}
+html[data-fw-theme='dark'] .ch-rd-sc__s {
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.35);
+}
+html[data-fw-theme='dark'] .ch-rd-sc__s.is-under {
+  background: var(--ch-score-under-bg);
+  box-shadow: inset 0 0 0 2px var(--ch-score-under);
+}
+html[data-fw-theme='dark'] .ch-rv-back,
+html[data-fw-theme='dark'] .ch-rv-step button {
+  background: var(--ch-ivory-50);
+  box-shadow: 0 0 0 1px var(--ch-border-control);
+}
+html[data-fw-theme='dark'] .ch-rv-hero {
+  box-shadow:
+    0 0 0 1px var(--ch-green-900),
+    var(--ch-elevation-cast);
+}
+html[data-fw-theme='dark'] .ch-rv-figs {
+  background: linear-gradient(180deg, var(--ch-ivory-25), var(--ch-green-25));
+  box-shadow: 0 0 0 1px rgb(107 187 140 / 0.14);
+}
+html[data-fw-theme='dark'] .ch-rv-figs > div + div {
+  border-left-color: rgb(107 187 140 / 0.12);
+}
+html[data-fw-theme='dark'] .ch-rv-card {
+  box-shadow: var(--ch-elevation-reading);
+}
+html[data-fw-theme='dark'] .ch-rv-nine {
+  background: var(--ch-ivory-50);
+  box-shadow: 0 0 0 1px var(--ch-border-subtle);
+}
+html[data-fw-theme='dark'] .ch-rv-nine tr + tr > * {
+  border-top-color: var(--ch-border-hairline);
+}
+html[data-fw-theme='dark'] .ch-rv-nine thead button.is-sel {
+  background: var(--ch-green-fill-600);
+  color: var(--ch-text-on-accent);
+}
+html[data-fw-theme='dark'] .ch-rv-nine td.is-sel,
+html[data-fw-theme='dark'] .ch-rv-lie.is-fairway,
+html[data-fw-theme='dark'] .ch-rv-lie.is-green,
+html[data-fw-theme='dark'] .ch-rv-lie.is-hole {
+  background: var(--ch-bg-selected);
+}
+html[data-fw-theme='dark'] .ch-rv-yn.is-n {
+  box-shadow: inset 0 0 0 1.5px rgb(237 231 216 / 0.35);
+}
+html[data-fw-theme='dark'] .ch-rv-yn.is-na {
+  background: rgb(237 231 216 / 0.35);
+}
+html[data-fw-theme='dark'] .ch-rv-shots li:not(:last-child)::before {
+  background: rgb(107 187 140 / 0.22);
+}
+/* The off-fairway shot disc one step deeper, so its ivory number keeps 4.5:1. */
+html[data-fw-theme='dark'] .ch-rv-shots__n.is-rough,
+html[data-fw-theme='dark'] .ch-rv-shots__n.is-sand,
+html[data-fw-theme='dark'] .ch-rv-shots__n.is-other,
+html[data-fw-theme='dark'] .ch-rv-shots__n.is-penalty {
+  background: #75653f;
+}
+
+/* A filled under-par disc carries an ivory numeral: the deeper filled red holds it at 4.5:1. */
+html[data-fw-theme='dark'] .ch-rd-strip span.is-under {
+  background: var(--ch-score-under-fill);
+}
+html[data-fw-theme='dark'] .ch-rd-sc__date {
+  color: var(--ch-green-700);
+}
+/* A holed shot's disc on the deep fill, so its ivory number keeps 4.5:1 (the 500 fill measured 4.4). */
+html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
+  background: var(--ch-green-fill-600);
+}
+
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
@@ -1460,5 +2159,415 @@ a.ch-rd-sc:focus-visible {
   .ch-rv-nine thead,
   .ch-rv-lie {
     font-size: 12px;
+  }
+}
+
+/* The Ledger (owner, 2026-10-07: sub-screens take the page head; "flush, not so card heavy"). On desktop the round's
+   green slab becomes the framed page head: the date and kind as the eyebrow, the course in the heavy sans, the tee
+   line, and the score on the right in forest ink. The figures and the sections sit on the canvas; the scorecard's
+   own grid and the green recap keep their material. */
+@media (min-width: 821px) {
+  .ch-rv[data-canopy] {
+    gap: 28px;
+  }
+  .ch-rv[data-canopy] .ch-rv-back {
+    height: auto;
+    margin: 0 0 -14px -4px;
+    padding: 4px 8px 4px 4px;
+    border-radius: var(--ch-radius-md);
+    background: none;
+    box-shadow: none;
+    font: 500 13px/1.2 var(--ch-font-sans);
+    color: var(--ch-green-700);
+    transition: background var(--ch-dur-quick) var(--ch-ease);
+  }
+  @media (hover: hover) {
+    .ch-rv[data-canopy] .ch-rv-back:hover {
+      background: var(--ch-ledger-row-hover);
+    }
+  }
+  .ch-rv[data-canopy] .ch-rv-hero {
+    align-items: flex-end;
+    min-height: 0;
+    border-radius: 0;
+    color: var(--ch-text-primary);
+    background: none;
+  }
+  .ch-rv[data-canopy] .ch-rv-hero__k {
+    font: 500 11px/1.3 var(--ch-font-sans);
+    letter-spacing: 0.14em;
+    color: var(--ch-ledger-eyebrow);
+  }
+  .ch-rv[data-canopy] .ch-rv-hero__m {
+    font: 400 15px/1.4 var(--ch-font-sans);
+    color: var(--ch-text-secondary);
+  }
+  .ch-rv[data-canopy] .ch-rv-hero__s b {
+    font-size: 64px;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rv[data-canopy] .ch-rv-hero__s em {
+    color: var(--ch-chart-loss);
+  }
+  .ch-rv[data-canopy] .ch-rv-hero__s em.is-under {
+    color: var(--ch-score-under);
+  }
+  .ch-rv[data-canopy] .ch-rv-hero__s span {
+    color: var(--ch-text-tertiary);
+  }
+  .ch-rv[data-canopy] .ch-rv-figs {
+    margin-top: -6px;
+    padding: 0 0 22px;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rv[data-canopy] .ch-rv-figs > div:first-child {
+    padding-left: 0;
+  }
+  .ch-rv[data-canopy] .ch-rv-figs > div + div {
+    border-left-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-rv[data-canopy] .ch-rv-card {
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rv[data-canopy] .ch-rv-card__h {
+    margin-bottom: 14px;
+    padding: 0 0 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rv[data-canopy] .ch-rv-card__h h2,
+  .ch-rv[data-canopy] .ch-rv-card__h h3 {
+    font: 600 19px/1.2 var(--ch-font-sans);
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rv[data-canopy] :is(.ch-rv-sg__legs, .ch-rv-cardw, .ch-rv-shots, .ch-rv-dist, .ch-rv-notes p) {
+    padding-inline: 0;
+  }
+  .ch-rv[data-canopy] :is(.ch-rv-hole .ch-notice, .ch-rv-none) {
+    margin-inline: 0;
+  }
+  .ch-rv[data-canopy] .ch-rv-cols {
+    gap: 44px;
+  }
+  .ch-rv[data-canopy] .ch-rv-side {
+    gap: 32px;
+  }
+}
+
+/* The Ledger on the Rounds list (owner, 2026-10-07: "flush, not so card heavy"; the page takes the framed head). On
+   desktop the title block is the framed page head with its eyebrow; the round in progress and season scoring are
+   two panes on the canvas under engraved rules, split by a soft column rule, and the in-progress hole strip keeps its
+   scoreboard; more unfinished rounds and each month are sections, and every posted round is a row between soft seams.
+   Kept as material: the hole strip's board, the date key, the Out, In and Tot scorecard and the to-par key. */
+@media (min-width: 821px) {
+  .ch-rd[data-canopy] {
+    gap: 40px;
+  }
+  /* The head: the eyebrow is set like the framed head's date line, the title is the shell's 44px sans. */
+  .ch-rd[data-canopy] .ch-rd-h > div:first-child {
+    font: 500 11px/1.3 var(--ch-font-sans);
+    letter-spacing: 0.14em;
+  }
+  .ch-rd[data-canopy] .ch-rd-h .ch-rd-k {
+    font: inherit;
+    color: var(--ch-ledger-eyebrow);
+  }
+  .ch-rd[data-canopy] .ch-rd-h .ch-rd-upd {
+    margin-left: 10px;
+    font: inherit;
+  }
+  .ch-rd[data-canopy] .ch-rd-h[data-canopy-head] h1 {
+    margin-top: 8px;
+  }
+
+  /* The two panes */
+  .ch-rd[data-canopy] .ch-rd-hero {
+    gap: 0;
+  }
+  .ch-rd[data-canopy] .ch-rd-unf {
+    overflow: visible;
+    padding: 0 32px 0 0;
+    border-radius: 0;
+    color: var(--ch-text-primary);
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__top {
+    padding-bottom: 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__k {
+    gap: 10px;
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.022em;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__k i {
+    width: 8px;
+    height: 8px;
+    background: var(--ch-green-fill-500);
+    box-shadow: 0 0 0 3px var(--ch-green-100);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__k.is-idle i {
+    background: var(--ch-ink-300);
+    box-shadow: none;
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__t {
+    font: 500 13px/1.2 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__c {
+    margin-top: 22px;
+    color: var(--ch-text-primary);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__m {
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: var(--ch-text-secondary);
+  }
+  /* The holes so far stay a scoreboard: a small recessed green board with the board's finishes. The pane reads top
+     down (the course, the board, where the round stands) and ends where its content does, as Home's week does. */
+  .ch-rd[data-canopy] .ch-rd-strip {
+    align-self: flex-start;
+    margin: 0 0 18px;
+    padding: 14px;
+    border-radius: var(--ch-radius-lg);
+    background: var(--ch-board-bg);
+    box-shadow: var(--ch-board-shadow);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf .ch-notice {
+    margin: 0 0 18px;
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__f {
+    margin-top: 0;
+    padding-top: 16px;
+    border-top: 0;
+    color: var(--ch-text-secondary);
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__f b {
+    color: var(--ch-text-primary);
+  }
+  /* One primary per page (New round, in the head): Continue is the raised secondary key, in green ink. */
+  .ch-rd[data-canopy] .ch-rd-unf__cta {
+    background: var(--ch-raised-bg);
+    color: var(--ch-green-700);
+    box-shadow: var(--ch-btn-secondary-shadow);
+    transition:
+      transform var(--ch-dur-press) var(--ch-ease),
+      box-shadow var(--ch-dur-quick) var(--ch-ease);
+  }
+  @media (hover: hover) {
+    .ch-rd[data-canopy] .ch-rd-unf__cta:hover {
+      box-shadow: var(--ch-btn-secondary-hover-shadow);
+    }
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__discard {
+    background: none;
+    color: var(--ch-text-tertiary);
+  }
+  @media (hover: hover) {
+    .ch-rd[data-canopy] .ch-rd-unf__discard:hover {
+      background: var(--ch-bg-hover);
+      color: var(--ch-text-primary);
+    }
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__cta:focus-visible,
+  .ch-rd[data-canopy] .ch-rd-unf__discard:focus-visible {
+    outline-color: var(--ch-border-focus);
+  }
+
+  /* Season scoring: the label becomes the pane's heading over the engraved rule; the average and the three figures
+     sit under it, then the ribbon. */
+  .ch-rd[data-canopy] .ch-rd-season {
+    padding: 0 0 0 32px;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rd[data-canopy] .ch-rd-season.is-empty {
+    justify-content: flex-start;
+    gap: 10px;
+  }
+  .ch-rd[data-canopy] .ch-rd-season .ch-rd-k {
+    grid-area: k;
+    padding-bottom: 12px;
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.022em;
+    color: var(--ch-ledger-ink);
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rd[data-canopy] .ch-rd-season.is-empty .ch-rd-k {
+    margin-bottom: 12px;
+  }
+  .ch-rd[data-canopy] .ch-rd-season__h {
+    grid-template-areas:
+      'k k'
+      'big figs';
+    row-gap: 22px;
+  }
+  .ch-rd[data-canopy] .ch-rd-season__h > div:first-child {
+    display: contents;
+  }
+  .ch-rd[data-canopy] .ch-rd-season__big {
+    grid-area: big;
+    align-self: center;
+    margin-top: 0;
+  }
+  .ch-rd[data-canopy] .ch-rd-season__f {
+    grid-area: figs;
+  }
+  .ch-rd[data-canopy] .ch-rd-fig + .ch-rd-fig {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rd[data-canopy] .ch-rd-range i.is-best {
+    box-shadow: 0 0 0 2px var(--ch-workspace);
+  }
+  .ch-rd[data-canopy] .ch-rd-season__ch {
+    margin-top: 26px;
+  }
+  /* Rounds failed: the notice stands in the season's pane, past the column rule. */
+  .ch-rd[data-canopy] .ch-rd-hero > .ch-notice {
+    align-self: start;
+    margin-left: 32px;
+  }
+
+  /* More unfinished rounds: a section, one row each. */
+  .ch-rd[data-canopy] .ch-rd-more {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rd[data-canopy] .ch-rd-more h2 {
+    margin: 0;
+    padding-bottom: 12px;
+    font: 600 19px/1.2 var(--ch-font-sans);
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rd[data-canopy] .ch-rd-more li {
+    padding: 12px 0;
+    border-top: 0;
+  }
+  .ch-rd[data-canopy] .ch-rd-more li + li {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  /* Continue and Submit share one width, so the discard buttons line up down the list. */
+  .ch-rd[data-canopy] .ch-rd-more__go {
+    box-sizing: border-box;
+    min-width: 92px;
+    text-align: center;
+  }
+
+  /* The book: the tools lead the months; each month is a section, each round a row. */
+  .ch-rd[data-canopy] .ch-rd-tools {
+    margin: 0 0 -12px;
+  }
+  .ch-rd[data-canopy] .ch-rd-grp {
+    gap: 0;
+    margin-top: 0;
+  }
+  .ch-rd[data-canopy] .ch-rd-grp__h {
+    padding: 0 0 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rd[data-canopy] .ch-rd-grp__h h3 {
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rd[data-canopy] .ch-rd-grp__rule {
+    background: none;
+  }
+  .ch-rd[data-canopy] .ch-rd-book {
+    gap: 0;
+    margin: 6px -12px 0;
+  }
+  .ch-rd[data-canopy] .ch-rd-sc {
+    position: relative;
+    padding: 12px;
+    border-radius: var(--ch-radius-md);
+    background: none;
+    box-shadow: none;
+    transition: background var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-rd[data-canopy] .ch-rd-sc + .ch-rd-sc::before {
+    position: absolute;
+    top: 0;
+    right: 12px;
+    left: 12px;
+    height: 1px;
+    background: var(--ch-ledger-rule-soft);
+    content: '';
+    pointer-events: none;
+  }
+  /* CH-11601: a round that opens its review takes the Ledger row tint on hover (quick), as Home's leaderboard rows do.
+     A flush row has no card to lift, so it neither lifts nor rings. */
+  @media (hover: hover) {
+    .ch-rd[data-canopy] a.ch-rd-sc:hover {
+      transform: none;
+      background: var(--ch-ledger-row-hover);
+      box-shadow: none;
+    }
+  }
+  @media (hover: hover) {
+    .ch-rd[data-canopy] a.ch-rd-sc:hover::before,
+    .ch-rd[data-canopy] a.ch-rd-sc:hover + .ch-rd-sc::before {
+      opacity: 0;
+    }
+  }
+  /* CH-11601: a press deepens the tint over the press beat (the shell's CH-1606: a row never scales). */
+  .ch-rd[data-canopy] a.ch-rd-sc:active {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
+  }
+
+  /* One column below a 860px page: the panes stack, the column rule goes. */
+  @container chrd (max-width: 860px) {
+    .ch-rd[data-canopy] .ch-rd-hero {
+      row-gap: 40px;
+    }
+    .ch-rd[data-canopy] .ch-rd-unf {
+      padding-right: 0;
+    }
+    .ch-rd[data-canopy] .ch-rd-season {
+      padding-left: 0;
+      box-shadow: none;
+    }
+    .ch-rd[data-canopy] .ch-rd-hero > .ch-notice {
+      margin-left: 0;
+    }
+  }
+  /* Below 640px (a narrow desktop window) the season's figures go under the average, as on the phone. */
+  @container chrd (max-width: 640px) {
+    .ch-rd[data-canopy] .ch-rd-season__h {
+      grid-template-areas:
+        'k'
+        'big'
+        'figs';
+    }
+    .ch-rd[data-canopy] .ch-rd-season__big {
+      justify-self: start;
+    }
+  }
+
+  /* Loading (CH-11401): the head holds the loaded head's height (the shell's 34px and 30px padding, the eyebrow's
+     line, 8px, the title's line; 133.8px in WebKit at 1440 and 1100), and its bars sit on the eyebrow and the title, so
+     nothing moves on load. */
+  .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-h {
+    box-sizing: border-box;
+    min-height: calc(34px + 11px * 1.3 + 8px + 44px * 1.08 + 30px);
+  }
+  .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-h > div:first-child > .ch-skel:first-child {
+    margin-bottom: 10.8px;
+  }
+  /* Its placeholders keep the panes' gutter and the head's edges, and stand apart in the book. */
+  .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-hero {
+    gap: 40px 64px;
+  }
+  .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-book {
+    gap: 8px;
+    margin: 0;
   }
 }

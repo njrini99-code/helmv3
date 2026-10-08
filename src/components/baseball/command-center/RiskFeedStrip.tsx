@@ -16,7 +16,7 @@
 // plus capability-aware callbacks. It owns NO data fetching.
 // =============================================================================
 
-import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, useReducedMotion } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 import {
   IconShieldAlert,

@@ -1,17 +1,35 @@
 #!/bin/bash
 
-# Helper script to apply a migration and regenerate types
-# Usage: ./scripts/apply-migration.sh path/to/migration.sql
+# Helper script to regenerate types after a migration has been applied.
+# Usage: ./scripts/apply-migration.sh path/to/migration.sql [--yes]
+#
+# This script does NOT apply the migration. Apply it first with
+# `npm run db:apply -- <file>` (docs/operations/APPLY_PATH.md) or the project
+# Supabase MCP, then run this with --yes to confirm that has happened and
+# regenerate src/lib/types/database.ts. Without --yes it only prints the
+# instructions and exits, so it never blocks waiting on a keypress.
 
 set -e
 
-if [ -z "$1" ]; then
+YES=0
+MIGRATION_FILE=""
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help)
+      sed -n '2,/^set -e/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    --yes|-y) YES=1 ;;
+    -*) echo "unknown argument: $arg (see --help)" >&2; exit 2 ;;
+    *) MIGRATION_FILE="$arg" ;;
+  esac
+done
+
+if [ -z "$MIGRATION_FILE" ]; then
   echo "❌ Error: Migration file path required"
-  echo "Usage: ./scripts/apply-migration.sh path/to/migration.sql"
+  echo "Usage: ./scripts/apply-migration.sh path/to/migration.sql [--yes]"
   exit 1
 fi
-
-MIGRATION_FILE="$1"
 
 if [ ! -f "$MIGRATION_FILE" ]; then
   echo "❌ Error: Migration file not found: $MIGRATION_FILE"
@@ -50,13 +68,16 @@ echo "🔑 Using project ID: ${SUPABASE_PROJECT_ID:0:10}..."
 # PGPASSWORD='your-password' psql "postgresql://postgres:password@db.$SUPABASE_PROJECT_ID.supabase.co:5432/postgres" -f "$MIGRATION_FILE"
 
 # For now, we'll just apply via Supabase dashboard or MCP tools
-echo "⚠️  Note: Migration must be applied manually via:"
-echo "   1. Supabase Dashboard > SQL Editor, OR"
+echo "⚠️  Note: this script does not apply the migration. Apply it via:"
+echo "   1. npm run db:apply -- $MIGRATION_FILE, OR"
 echo "   2. Supabase MCP tools, OR"
 echo "   3. Direct psql connection"
 echo ""
-echo "After applying the migration, press Enter to regenerate types..."
-read -r
+if [ "$YES" -ne 1 ]; then
+  echo "Once it is applied, re-run with --yes to regenerate types:"
+  echo "   ./scripts/apply-migration.sh $MIGRATION_FILE --yes"
+  exit 0
+fi
 
 echo "🔄 Regenerating database types..."
 export SUPABASE_PROJECT_ID

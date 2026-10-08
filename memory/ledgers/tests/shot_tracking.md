@@ -425,7 +425,7 @@ date.
   instead of asserting a ghosted `verify.round`, distinguishing a genuine
   required-step ghost (`server.player`) from a best-effort step that
   correctly renders as simply not there.
-- `src/app/golf/actions/golf.ts` (`deleteShotImpl`/`updateShotImpl`): no new
+- `actions/golf.ts (pre-split)` (`deleteShotImpl`/`updateShotImpl`): no new
   test file — covered by the existing
   `golf-shot-delete-update-flight-recorder.test.ts` suite, which continued
   to pass unchanged; the fix (binding and checking `verify.shots`'s read

@@ -1,4 +1,4 @@
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { cleanup, render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readdirSync, readFileSync, statSync } from 'node:fs';

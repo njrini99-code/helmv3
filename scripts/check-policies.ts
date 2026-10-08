@@ -1,5 +1,13 @@
 import { config as loadEnv } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/check-policies.ts',
+  summary:
+    "Lists the RLS policies on the project in .env.local for a quick audit. Read-only.",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 loadEnv({ path: '.env.local' });
 

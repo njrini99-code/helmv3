@@ -125,7 +125,7 @@ vi.mock('@/lib/supabase/server', () => ({
 import {
   updateGolfQualifierDetails,
   setQualifierRoundCourses,
-} from '@/app/golf/actions/golf';
+} from '@/app/golf/actions/qualifier-actions';
 
 /** setQualifierRoundCourses refuses anything that isn't a uuid before it reads. */
 const QID = '11111111-1111-4111-8111-111111111111';

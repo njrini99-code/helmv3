@@ -32,34 +32,34 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-3001 | Removing a player fails | "Couldn't remove Theo Marchetti" + "Nothing changed on the roster. Try again, or refresh if it keeps failing." Retry; the dialog stays open. Done: "Theo Marchetti removed from Varsity" | `useAction('roster.removePlayer')` | roster.test › CH-3001 |
-| CH-3002 | Approving a join request fails | "Couldn't approve Grace Liu" + "The request may have been withdrawn. Refresh to see the latest." The request comes back to the list. Done: "Grace Liu added to Varsity" | `useAction('roster.approveRequest')`, optimistic | roster.test › CH-3002 |
-| CH-3003 | Declining a join request fails | "Couldn't decline Grace Liu's request"; the request comes back. Done: "Request from Grace Liu declined" | `useAction('roster.declineRequest')`, optimistic | roster.test › CH-3003 |
-| CH-3004 | The coach's note doesn't save (on leaving the field) | "Couldn't save your note about Theo" + "Your text is still in the field. Try again in a moment." Done: "Note saved for Theo" | `useAction('roster.coachNote')` | roster.test › CH-3004 |
-| CH-3005 | The browser blocks the CSV download | "Couldn't export the roster" + "Your browser blocked the download. Try again, or use a desktop browser." Done: "Roster exported · 7 players" | `exportCsv` | roster.test › CH-3005 |
-| CH-3006 | Copying the join code or link fails | "Couldn't copy the join code" + "Select it and copy it by hand." Done: "Join code copied" | `useCopyText` (Invite sheet, phone requests sheet) | roster.test › CH-3006 |
-| CH-3007 | Approve all (phone requests sheet, D-55) leaves some requests unapproved | "Couldn't approve Owen Park and Sam Reyes" + "1 of 3 added to Varsity. Those requests may have been withdrawn. Try again, or refresh to see the latest." Those requests stay listed, and Retry re-tries only them. Done: "3 players added to Varsity" | `useJoinRequests` → `useAction('roster.approveAll')`, one request at a time | roster.test › CH-3007 |
+| CH-3001 | Removing a player fails | "Couldn’t remove Theo Marchetti" + "Nothing changed on the roster. Try again, or refresh if it keeps failing." Retry; the dialog stays open. Done: "Theo Marchetti removed from Varsity" | `useAction('roster.removePlayer')` | roster.test › CH-3001 |
+| CH-3002 | Approving a join request fails | "Couldn’t approve Grace Liu" + "The request may have been withdrawn. Refresh to see the latest." The request comes back to the list. Done: "Grace Liu added to Varsity" | `useAction('roster.approveRequest')`, optimistic | roster.test › CH-3002 |
+| CH-3003 | Declining a join request fails | "Couldn’t decline Grace Liu’s request"; the request comes back. Done: "Request from Grace Liu declined" | `useAction('roster.declineRequest')`, optimistic | roster.test › CH-3003 |
+| CH-3004 | The coach's note doesn't save (on leaving the field) | "Couldn’t save your note about Theo" + "Your text is still in the field. Try again in a moment." Done: "Note saved for Theo" | `useAction('roster.coachNote')` | roster.test › CH-3004 |
+| CH-3005 | The browser blocks the CSV download | "Couldn’t export the roster" + "Your browser blocked the download. Try again, or use a desktop browser." Done: "Roster exported · 7 players" | `exportCsv` | roster.test › CH-3005 |
+| CH-3006 | Copying the join code or link fails | "Couldn’t copy the join code" + "Select it and copy it by hand." Done: "Join code copied" | `useCopyText` (Invite sheet, phone requests sheet) | roster.test › CH-3006 |
+| CH-3007 | Approve all (phone requests sheet, D-55) leaves some requests unapproved | "Couldn’t approve Owen Park and Sam Reyes" + "1 of 3 added to Varsity. Those requests may have been withdrawn. Try again, or refresh to see the latest." Those requests stay listed, and Retry re-tries only them. Done: "3 players added to Varsity" | `useJoinRequests` → `useAction('roster.approveAll')`, one request at a time | roster.test › CH-3007 |
 
 ## 31xx Validation
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-3101 | A coach's note is within 200 characters of its 2,000 limit | "150 characters left" under the field, then "That's the limit: 2,000 characters." Typing stops at the limit | `CoachNote`, `maxLength` | roster.test › CH-3101 |
+| CH-3101 | A coach's note is within 200 characters of its 2,000 limit | "150 characters left" under the field, then "That’s the limit: 2,000 characters." Typing stops at the limit | `CoachNote`, `maxLength` | roster.test › CH-3101 |
 
 ## 32xx Didn't load
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-3201 | The roster doesn't load | "The roster didn't load." + "Your players are safe…" Try again. Never "No players" | `Roster`, `RosterPhone`; logged `clubhouse.roster.members` | roster.test › CH-3201 |
-| CH-3202 | Season rounds don't load | "Season stats didn't load." + "The roster is complete, but averages, form and strokes gained are missing until the rounds load." Try again; figures show "—" and no Needs a look chips | `Roster`, `RosterPhone` (and the phone profile); logged by `loadSeasonRounds` | roster.test › CH-3202 |
-| CH-3203 | Join requests don't load | "Join requests didn't load." + "Pending requests are safe…" Try again | `RosterRequests`; on the phone `RequestsBanner`, in the banner slot; logged `clubhouse.roster.joinRequests` | roster.test › CH-3203 |
-| CH-3204 | The join requests section crashes | "Join requests couldn't be shown." + "The rest of the page is fine…" Try again | `SectionBoundary roster.requests` | roster.test › CH-3204 |
-| CH-3205 | The roster list crashes | "The roster couldn't be shown." … | `SectionBoundary roster.list` | roster.test › CH-3205 |
-| CH-3206 | The player panel crashes | "The player panel couldn't be shown." … | `SectionBoundary roster.peek` | roster.test › CH-3206 |
-| CH-3207 | The team row doesn't load | Invite players shows "The join code didn't load." + "Your code still works for players who have it. Try again to show it here." (never "no join code"); the header reads "Your team" | `InviteModal`; logged `clubhouse.roster.team` | roster.test › CH-3207 |
+| CH-3201 | The roster doesn't load | "The roster didn’t load" + "Your players are safe…" Try again. Never "No players". With join requests failing too, the page's one notice under the head says both and carries the one Try again (CH-1209, `PageRefreshNotice`), and this keeps its title alone | `Roster`, `RosterPhone`; logged `clubhouse.roster.members` | roster.test › CH-3201, CH-1209 |
+| CH-3202 | Season rounds don't load | "Season stats didn’t load" + "The roster is complete, but averages, form and strokes gained are missing until the rounds load." Try again; figures show "—" and no Needs a look chips | `Roster`, `RosterPhone` (and the phone profile); logged by `loadSeasonRounds` | roster.test › CH-3202 |
+| CH-3203 | Join requests don't load | "Join requests didn’t load" + "Pending requests are safe…" Try again; covered by the page's one notice (title alone) when another part failed too (CH-1209) | `RosterRequests`; on the phone `RequestsBanner`, in the banner slot; logged `clubhouse.roster.joinRequests` | roster.test › CH-3203 |
+| CH-3204 | The join requests section crashes | "Join requests couldn’t be shown." + "The rest of the page is fine…" Try again | `SectionBoundary roster.requests` | roster.test › CH-3204 |
+| CH-3205 | The roster list crashes | "The roster couldn’t be shown." … | `SectionBoundary roster.list` | roster.test › CH-3205 |
+| CH-3206 | The player panel crashes | "The player panel couldn’t be shown." … | `SectionBoundary roster.peek` | roster.test › CH-3206 |
+| CH-3207 | The team row doesn't load | Invite players shows "The join code didn’t load" + "Your code still works for players who have it. Try again to show it here." (never "no join code"); the header reads "Your team" | `InviteModal`; logged `clubhouse.roster.team` | roster.test › CH-3207 |
 | CH-3208 | Focus areas or goals don't load | The panel's Development counts read "—", never 0 | `RosterPeek`; logged `clubhouse.roster.golf_player_focus_areas` / `golf_goals` | roster.test › CH-3208 |
-| CH-3209 | This coach's notes don't load | The note field is read-only with "Your notes didn't load, so this one can't be edited right now. Refresh the page to try again." A blank field can never save over a real note | `CoachNote locked`; logged `clubhouse.roster.coachNotes` | roster.test › CH-3209 |
-| CH-3210 | The player's roster doesn't load (a player's own team's members) | "The roster didn't load." + "Your team is safe. Try again, and if it keeps happening the error has already been reported." Try again. Never "No one on the roster" | `TeamRoster`, `TeamRosterPhone`; logged `clubhouse.roster.playerMembers` | roster-player.test › CH-3210 |
+| CH-3209 | This coach's notes don't load | The note field is read-only with "Your notes didn’t load, so this one can’t be edited right now. Refresh the page to try again." A blank field can never save over a real note | `CoachNote locked`; logged `clubhouse.roster.coachNotes` | roster.test › CH-3209 |
+| CH-3210 | The player's roster doesn't load (a player's own team's members) | "The roster didn’t load." + "Your team is safe. Try again, and if it keeps happening the error has already been reported." Try again. Never "No one on the roster" | `TeamRoster`, `TeamRosterPhone`; logged `clubhouse.roster.playerMembers` | roster-player.test › CH-3210 |
 | CH-3211 | The player's roster list crashes | "The roster couldn’t be shown." … The header, search and sort stay | `SectionBoundary roster.team` | roster-player.test › CH-3211 |
 
 ## 33xx Empty
@@ -69,11 +69,11 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | CH-3301 | No players yet | The page empty state (v2 medallion): "No players yet" + "Share your team code, then approve requests as they arrive. Players appear here as soon as they join." + Invite players; on desktop also Copy team code when the team has one (v2 says "by email"; there is no email invite, Data gaps) | `Roster`, `RosterPhone` | roster.test › CH-3301 |
 | CH-3302 | A search matches nobody | "No players match "zzz"" + Show everyone | `Roster`, `TeamRoster` | roster.test › CH-3302 |
 | CH-3303 | A status filter has nobody | "No inactive players." / "No active players." + Show everyone | `Roster` | roster.test › CH-3303 |
-| CH-3304 | The team has no join code | "Your team has no join code yet." + "Make one in Settings, then invite players here." + Open team settings | `InviteModal` | roster.test › CH-3304 |
+| CH-3304 | The team has no join code | "Your team has no join code yet" + "Make one in Settings, then invite players here." + Open team settings | `InviteModal` | roster.test › CH-3304 |
 | CH-3305 | A player has no 18-hole rounds | Form reads "No 18-hole rounds this season" and "Form appears once rounds are posted." | `RosterPeek`, phone `RosterProfile` | roster.test › CH-3305 |
-| CH-3306 | A coach signed in with no active team | The page empty state (v2 medallion): "You aren't on a team yet" + "Your players appear here once your team is set up." No action. It used to be Home's state (CH-2307), whose text is about Home | `RosterNoTeam`, from `ClubhouseRosterRoute` | roster.test › CH-3306 |
+| CH-3306 | A coach signed in with no active team | The page empty state (v2 medallion): "You aren’t on a team yet" + "Your players appear here once your team is set up." No action. It used to be Home's state (CH-2307), whose text is about Home | `RosterNoTeam`, from `ClubhouseRosterRoute` | roster.test › CH-3306 |
 | CH-3307 | A player's team has nobody on it | The page empty state: "No one on the roster yet" + "Your teammates appear here once your coach adds them." No action | `TeamRoster`, `TeamRosterPhone` | roster-player.test › CH-3307 |
-| CH-3308 | A player signed in with no active team | The page empty state: "You aren't on a team yet" + "Your teammates appear here once your coach approves your request to join." | `RosterNoTeam viewer="player"` | roster-player.test › CH-3308 |
+| CH-3308 | A player signed in with no active team | The page empty state: "You aren’t on a team yet" + "Your teammates appear here once your coach approves your request to join." | `RosterNoTeam viewer="player"` | roster-player.test › CH-3308 |
 
 ## 34xx Loading
 
@@ -94,7 +94,8 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-3601 | Opening or switching a player | The panel slides in 16px and fades (260ms); switching players cross-fades | `RosterPeek`, `chTween('base')`; on the phone the profile is pushed instead (the shell's CH-1610) | preview |
-| CH-3602 | Hovering or pressing a face card or row | It lifts (180ms) and shrinks about 6px (110ms) and springs back (280ms); the selected card keeps a green ring | `roster.css` | preview |
+| CH-3602 | Hovering or pressing a face card or row | On desktop the cell takes the Ledger tint on hover and a deeper one on press (110ms), with no lift and no scale; a list row presses the same way from its name; the selected face keeps a green tint, ring and name. On the phone a player row, an action in the ⋯ sheet and the profile's All link take the row press tint over the press beat, and the join requests card (the screen's one feature card) darkens under a shade over the press beat; nothing scales | `roster.css`, `--ch-ledger-row-press` | preview |
+| CH-3603 | Switching between Team view and List view | The other layout settles in with a 6px rise (260ms) while the old one fades out (180ms), hidden from assistive tech. The kept layout coming back as the page opens never animates. Instant with reduced motion | `Swap` in `Roster` (`viewTurn`) | roster.test › CH-3603; preview (the timing) |
 
 ## 37xx Haptics
 

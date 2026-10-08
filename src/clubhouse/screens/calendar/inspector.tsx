@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { getAttendanceReport, markAttendance, type AttendanceMark } from '@/app/golf/actions/attendance';
-import { respondToEvent } from '@/app/golf/actions/golf';
+import { respondToEvent } from '@/app/golf/actions/calendar-events';
 import { readRsvpLockCode, rsvpLockMessage } from '@/hooks/useRSVP';
 import { Avatar } from '../../ui/Avatar';
 import { Badge, type BadgeTone } from '../../ui/Badge';
@@ -74,6 +74,8 @@ export interface InspCtx {
   events: ChCalEvent[];
   overlaps: ChCalOverlap[];
   rsvpError: boolean;
+  /** The page's notice carries the one Try again (CH-1209): a failed part keeps only its title here. */
+  covered?: boolean;
   /** Dev preview: no session, so attendance starts unmarked instead of calling the server. */
   preview?: boolean;
   teamId: string;
@@ -180,7 +182,7 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
           <span>Next 7 days</span>
         </div>
         {ctx.rsvpError && (
-          <InlineNotice code="CH-6204" title="Replies didn't load." body="Pending replies aren't counted until they do." onRetry={ctx.refresh} />
+          <InlineNotice code="CH-6204" title="Replies didn’t load." body="Pending replies aren’t counted until they do." onRetry={ctx.refresh} covered={ctx.covered} />
         )}
         {weekOverlaps.length + pendingRows.length === 0 && !ctx.rsvpError ? (
           <p className="ch-in__quiet" data-ch-code="CH-6306">
@@ -316,7 +318,7 @@ function PlayerReply({ e, playerId, now, onDone }: { e: ChCalEvent; playerId: st
     },
     (status) => ({
       done: status === 'accepted' ? `You’re going to ${e.title}` : status === 'tentative' ? `Marked maybe for ${e.title}` : `Coach knows you can’t make ${e.title}`,
-      failed: `Couldn't send your reply for ${e.title}`,
+      failed: `Couldn’t send your reply for ${e.title}`,
       hint: 'Replies lock at the deadline or once the event starts.',
       code: 'CH-6010',
     }),
@@ -366,7 +368,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
       <div className="ch-in">
         <Back label="Today" onClick={() => ctx.go(null)} />
         <p className="ch-in__quiet" data-ch-code="CH-6305">
-          This event isn&apos;t in the loaded range anymore. It may have moved or been cancelled.
+          This event isn’t in the loaded range anymore. It may have moved or been cancelled.
         </p>
       </div>
     );
@@ -384,7 +386,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
     } catch (err) {
       chReport(err, { surface: 'calendar.detail', severity: 'low' });
       haptic('error');
-      toast({ tone: 'error', title: "Couldn't copy the link", body: 'Your browser blocked the clipboard.', code: 'CH-6012' });
+      toast({ tone: 'error', title: "Couldn’t copy the link", body: 'Your browser blocked the clipboard.', code: 'CH-6012' });
     }
   };
 
@@ -444,7 +446,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
             <span>{e.people.length} invited</span>
           </div>
           {ctx.rsvpError ? (
-            <InlineNotice code="CH-6205" title="Replies didn't load." body="Try again to see who's going." onRetry={ctx.refresh} />
+            <InlineNotice code="CH-6205" title="Replies didn’t load." body="Try again to see who’s going." onRetry={ctx.refresh} covered={ctx.covered} />
           ) : (
             <>
               <Responses e={e} />
@@ -473,7 +475,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
       {coach && e.people.length === 0 && (
         <div className="ch-in__sec">
           {ctx.rsvpError ? (
-            <InlineNotice code="CH-6205" title="Replies didn't load." body="Try again to see who's going." onRetry={ctx.refresh} />
+            <InlineNotice code="CH-6205" title="Replies didn’t load." body="Try again to see who’s going." onRetry={ctx.refresh} covered={ctx.covered} />
           ) : (
             <p className="ch-in__quiet">No players invited. Invite players to collect replies and take attendance.</p>
           )}
@@ -602,7 +604,7 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
     },
     () => ({
       done: `${unsaved.current.length} attendance ${unsaved.current.length === 1 ? 'mark' : 'marks'} saved`,
-      failed: "Couldn't save attendance",
+      failed: "Couldn’t save attendance",
       hint: 'The marks that saved are kept. Try again for the rest.',
       code: 'CH-6011',
     }),
@@ -621,7 +623,7 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
         </div>
       </div>
       {loadError ? (
-        <InlineNotice code="CH-6209" title="Attendance didn't load." body="Marks already saved are safe. Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+        <InlineNotice code="CH-6209" title="Attendance didn’t load." body="Marks already saved are safe. Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
       ) : !saved ? (
         <div className="ch-in__facts" aria-busy="true" data-ch-code="CH-6405">
           {e.people.slice(0, 5).map((p) => (
@@ -781,7 +783,7 @@ export function Overlap({ ctx, id }: { ctx: InspCtx; id: string }) {
       </p>
       <div className="ch-in__sec">
         <div className="ch-in__sechead">
-          <b>{who}&apos;s day</b>
+          <b>{who}’s day</b>
           <span>Current time and proposal</span>
         </div>
         <Lanes

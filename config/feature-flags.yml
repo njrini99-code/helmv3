@@ -5,7 +5,8 @@
 # see docs/ai-system/FEATURE_FLAGS.md for the full schema, the NEVER-GATE
 # list, and how to add/expire a flag).
 #
-# Owner decision: ADR 2026-09-03-control-plane-owner-decisions.md
+# Background: ADR 2026-09-03-control-plane-owner-decisions.md (flag policy;
+# agents may flip flags: see AGENTS.md and ADR-2026-10-07-agent-autonomy.md)
 # (`FEATURE_FLAG_INFRASTRUCTURE_NET_NEW` = "Flags yes";
 # `CANARY_ROLLOUT_MECHANISM` = "Canary later" — `environment` below is
 # booleans ONLY, never a percentage/cohort. Percentage rollout is explicitly
@@ -13,7 +14,7 @@
 #
 # Schema per flag (all fields required unless noted):
 #   feature_id             stable id; also the string passed to isFlagEnabled()
-#   owner                  who to ask before flipping/removing this flag
+#   owner                  the team that knows this flag (context, not an approval step)
 #   purpose                one sentence: what it controls and why it exists
 #   type                   release | experiment | operations_kill_switch | temporary_migration
 #   status                 active | archived

@@ -28,6 +28,14 @@
 import { readFileSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
 import { join, relative } from 'node:path';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/check-row-cap-limits.mjs',
+  summary:
+    "Fails when a query uses .limit(N) with N above PostgREST's 1,000-row cap, including through a named constant. Read-only.",
+  secrets: 'CRON_SECRET',
+});
 
 const ROOT = process.cwd();
 const SCAN_DIRS = ['src', 'scripts'];

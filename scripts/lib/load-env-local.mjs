@@ -1,7 +1,6 @@
-// scripts/lib/load-env-local.mjs — resolve the canonical repo root the same
-// way scripts/deploy-prod.sh does (the parent of `git rev-parse
-// --git-common-dir`, the shared .git regardless of which worktree this
-// process actually runs from) and load .env.local from there.
+// scripts/lib/load-env-local.mjs — resolve the canonical repo root (the parent
+// of `git rev-parse --git-common-dir`, the shared .git regardless of which
+// worktree this process actually runs from) and load .env.local from there.
 //
 // WHY NOT A HARDCODED PATH. Several one-off smoke scripts
 // (admin-rollup-smoke.mjs, rpc-smoke.mjs) used to `readFileSync` a literal

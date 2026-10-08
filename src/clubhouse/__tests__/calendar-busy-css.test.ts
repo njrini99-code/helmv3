@@ -15,6 +15,13 @@ describe('Calendar busy styles', () => {
     expect(css).toMatch(/\.ch-cal--skel\s*>\s*:not\(\.ch-calm-skel\)\s*\{\s*display:\s*none/);
   });
 
+  it('CH-6309 CH-6307 the whole-page empties stay visible on a phone; only the server-drawn desktop page waits for hydration (states audit c1)', () => {
+    expect(css).toMatch(/\.ch-cal:not\(\[data-ch-code\]\):not\(\.ch-cal--page\)\s*\{\s*visibility:\s*hidden/);
+    for (const file of ['CalendarFirstRun.tsx', 'CalendarNoTeam.tsx']) {
+      expect(readFileSync(join(__dirname, `../screens/calendar/${file}`), 'utf8')).toMatch(/className="ch-cal ch-cal--page"/);
+    }
+  });
+
   it('the skeleton carries the class the phone rules target', () => {
     const skeleton = readFileSync(join(__dirname, '../screens/calendar/CalendarSkeleton.tsx'), 'utf8');
     expect(skeleton).toMatch(/className="ch-cal ch-cal--skel" aria-busy="true"/);

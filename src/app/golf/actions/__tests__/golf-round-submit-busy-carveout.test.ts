@@ -100,7 +100,7 @@ vi.mock('@/lib/notifications/push', () => ({
   sendBulkPushNotification: vi.fn(async () => {}),
 }));
 
-import { submitGolfRoundComprehensive } from '../golf';
+import { submitGolfRoundComprehensive } from '../round-submit';
 import { logServerError } from '@/lib/server-error-logger';
 import { __resetEmitThrottleForTests } from '@/lib/admin/emit-throttle';
 

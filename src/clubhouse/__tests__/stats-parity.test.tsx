@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -676,10 +676,10 @@ describe('Game detail · states', () => {
     const user = userEvent.setup();
     showPlayer(withExtra({ holesError: true, toughest: null, opening: null, approachError: true, approach: null, sprayError: true, spray: null, puttsError: true }));
     await openTab(/Game detail/);
-    expect(code('CH-5209')!.textContent).toContain("Toughest holes didn't load.");
-    expect(code('CH-5210')!.textContent).toContain("Proximity against the Tour didn't load.");
+    expect(code('CH-5209')!.textContent).toContain('Toughest holes didn’t load');
+    expect(code('CH-5210')!.textContent).toContain('Proximity against the Tour didn’t load');
     expect(codes('CH-5212')).toHaveLength(2);
-    expect(code('CH-5211')!.textContent).toContain("Putts past 20 feet didn't load.");
+    expect(code('CH-5211')!.textContent).toContain('Putts past 20 feet didn’t load');
     // None of them is shown as "none logged".
     expect(code('CH-5311')).toBeNull();
     expect(code('CH-5316')).toBeNull();

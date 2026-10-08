@@ -48,7 +48,9 @@ Read the team's direction, find the leg to work on, and open the player who lose
 
 ## Visual hierarchy
 
-Header (team, active players, window switch, Export), five figure cards, the trend (strokes gained or
+Header (team, active players, window switch, Export), the figures (strokes
+gained leading on its own card, five supporting figures on one surface), the
+trend (strokes gained or
 scoring, with a player list beside it), the four leg cards, the player grid, then Team putting and
 Season bests side by side. On the phone: four figures, the scoring line, strokes gained by leg as
 bars, the players as rows, and Team putting.
@@ -62,14 +64,22 @@ bars, the players as rows, and Team putting.
 
 ### New Clubhouse components
 
-`StatsTeam` (the server-rendered page: figures, putting, season bests), `StatsTeamFrame`,
-`TeamHeadActions`, `TeamCharts`, `ShowSeason` and `RetryNotice` (the client islands in
-`StatsTeamIslands.tsx`), `StatsTeamPhone` (with `ScoreLine`), `StatsSkeleton`, `WindowSwitch`, and the
-charts in `charts.tsx` (`FigureCards`, `YardagePage`, `PuttingRings`), which the player profile shares.
+`StatsTeam` (the server-rendered page: figures, putting, season bests),
+`StatsTeamFrame`, `TeamHeadActions`, `TeamCharts`, `ShowSeason` (the empty
+window's one primary action) and `RetryNotice` (on `RefreshNotice`, so Try again
+says so while it runs; `covered` under the page notice) (the client islands in
+`StatsTeamIslands.tsx`), `StatsTeamPhone` (with `ScoreLine`), `StatsSkeleton`,
+`WindowSwitch`, and the charts in `charts.tsx` (`FigureCards`, `YardagePage`,
+`PuttingRings`), which the player profile shares.
 
 ### Modified Clubhouse components
 
-None for this page beyond the foundation's v2 changes (motion, haptics, page empty state).
+None for this page beyond the foundation's v2 changes (motion, haptics, page
+empty state). It uses the states components' page notice (`PageRefreshNotice`,
+CH-1209) when two or more parts fail, the page's failure
+(`EmptyState tone="danger"`, CH-1211) when the rounds read fails (CH-4201), and
+the page's empty state for an empty window (CH-4301, CH-4302): in both, the
+whole body is the state (states audit, 2026-10-08).
 
 ## Actions affected
 
@@ -95,9 +105,12 @@ change is refused offline (CH-4901). Every other tap is silent.
 
 ## Desktop
 
-Five figure cards, the trend and the leg cards full width, the grid, then putting and bests in two
-columns. The layout follows the container, not the viewport (`stats.css`): the two-column row stacks
-below 1080px, the figure cards go to two columns below 900px, and the padding tightens below 720px.
+The figures (strokes gained on its own card, the five supporting figures on one
+surface divided by hairlines), the trend and the leg cards full width, the grid,
+then putting and bests in two columns. The layout follows the container, not the
+viewport (`stats.css`): the two-column row stacks below 1080px, below 900px
+strokes gained spans the width and the supporting figures become rows (label and
+change left, value right), and the padding tightens below 720px.
 The page never scrolls sideways.
 
 ## Phone
@@ -107,6 +120,14 @@ window switch, four figures with their change (green when better, amber when wor
 scoring line with its mean, strokes gained by leg as bars either side of zero, the players sorted by
 Avg or SG (a row opens their profile), and Team putting. Season bests and Export stay on desktop
 (Q-68). The phone is a different structure, never the desktop shrunk.
+
+In the Mobile clubhouse pass (owner, 2026-10-08) the page is the parchment sheet
+with no cards. It opens on the Ledger's page intro: the team and its count as
+the eyebrow under the engraved double rule, Team stats in the bold condensed
+sans. The figures sit between hairlines as the Ledger's figure row, each still
+drawn against its reference. Every panel is a section flush under its double
+rule, its caption under the title, and the players are rows on seams that tint
+on press. The window switch, the filter and the sort keep their material.
 
 ## Accessibility
 
@@ -155,8 +176,11 @@ tab), D-70 (haptics), D-71 (page empty state), Q-68 (phone gaps, built on the re
 ## Strokes gained (2026-09-30)
 
 - The figure row leads with **Team SG per round**: the window's mean per round, signed, with a change chip
-  against the previous 10 and "vs Tour" under it (a women's team: "vs the women's Tour baseline"). Six
-  cards in six columns; the skeleton draws six.
+  against the previous 10 and "vs Tour" under it (a women's team: "vs the
+  women's Tour baseline"). Since 2026-10-06 (owner decision, premium audit P004
+  P1) it is the row's first read: its own card with a 48px value, beside one
+  surface holding the five supporting figures. The skeleton draws the same
+  layout.
 - Every strokes gained headline is the window's mean, not the latest week: the four leg cards, the team
   and player figures beside the trend. The trend's dashed line and the chart are weekly; the caption says
   the names show the window average.
@@ -205,11 +229,16 @@ One filter for every figure, shared with the player profile (P005) and kept in t
   with the player named) and "Only these" / "Exclude these" choose among the ones matching the other choices.
 - **Links and export.** A grid row, a Season best and a phone row open the player's profile with the filter kept. The
   CSV is named for the filter ("varsity-stats-last10-filtered.csv").
-- **States.** No round matches: "No rounds match these filters" with Clear filters (CH-4313), in place of the first-run
-  page and of CH-4301 / CH-4302; fewer than three whole rounds: an early-read note above the figures (CH-4314); the sheet's
-  range error (CH-4101), nothing to pick from (CH-4315), a list cut at 200 (CH-4316); nine-hole rounds in: the per-18 note
-  (CH-4318); no 18-hole round but 9-hole ones posted: where they are (CH-4319), above CH-4301. D-71's first-run page is for
-  no round of either length, so a team with only 9-hole rounds this season gets CH-4301 and the hint, not "No stats yet".
+- **States.** No round matches: "No rounds match these filters" with Clear
+  filters (CH-4313), the whole page body under the filter row, so the page's
+  empty state as CH-4301 is (the filter glyph's medallion), in place of the
+  first-run page and of CH-4301 / CH-4302; fewer than three whole rounds: an
+  early-read note above the figures (CH-4314); the sheet's range error
+  (CH-4101), nothing to pick from (CH-4315), a list cut at 200 (CH-4316);
+  nine-hole rounds in: the per-18 note (CH-4318); no 18-hole round but 9-hole
+  ones posted: where they are (CH-4319), above CH-4301. D-71's first-run page is
+  for no round of either length, so a team with only 9-hole rounds this season
+  gets CH-4301 and the hint, not "No stats yet".
 - **Phone.** As on the profile: the bar under the window switch, the standard bottom sheet (the approved phone board has
   no filter; this is the owner's addition).
 

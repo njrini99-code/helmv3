@@ -9,7 +9,7 @@ import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
-import { RefreshNotice } from '../../ui/RefreshNotice';
+import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
 import { Nine } from '../../ui/Nine';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { changeTone, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
@@ -22,6 +22,7 @@ import { getValidTimezone } from '@/lib/calendar/timezone';
 import { usePhoneHero } from '../../shell/phone-chrome';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
+import { coachFailedParts } from './model';
 import { roundHref } from './player-links';
 
 export const CALENDAR = '/golf/dashboard/calendar';
@@ -43,6 +44,9 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
   const [open, setOpen] = useState<ChLatestRound | null>(null);
   const { phone } = data;
   const nothingAhead = !data.week.error && !phone.next && data.week.days.every((d) => d.eventCount === 0);
+  // Two or more failed reads are told once under the greeting, with one Try again; each part keeps its title (CH-1209).
+  const failed = coachFailedParts(data, true);
+  const covered = failed.length > 1;
 
   return (
     <main className="ch-hm" aria-label="Home">
@@ -55,11 +59,11 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
             {data.subline}
           </p>
         )}
+        <PageRefreshNotice parts={failed} />
         <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
           {data.week.error ? (
-            <div className="ch-hm-next is-static">
-              <RefreshNotice code="CH-2201" title="This week's schedule didn't load." body="Your events are safe. This is a display problem, and trying again usually clears it." />
-            </div>
+            // On the sheet, not in the green card: inside it the notice took the card's ivory ink and its words vanished.
+            <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. This is a display problem, and trying again usually clears it." covered={covered} />
           ) : phone.next ? (
             <UpNext e={phone.next} now={now} />
           ) : (
@@ -78,7 +82,7 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
             <Form form={phone.form} />
           </SectionBoundary>
         ) : data.latestRounds.error ? (
-          <RefreshNotice code="CH-2211" title="Team scoring didn't load." body="Posted rounds are safe. Try again; the error has been reported." />
+          <RefreshNotice code="CH-2211" title="Team scoring didn’t load" body="Posted rounds are safe. Try again; the error has been reported." covered={covered} />
         ) : null}
 
         {!data.week.error && !nothingAhead && (
@@ -88,7 +92,7 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
         )}
 
         <SectionBoundary surface="home.latestRound" label="Latest rounds" code="CH-2206">
-          <Rounds data={data.latestRounds} onOpen={setOpen} />
+          <Rounds data={data.latestRounds} onOpen={setOpen} covered={covered} />
         </SectionBoundary>
       </div>
 
@@ -179,7 +183,7 @@ function NoEvents() {
       </div>
       <div className="ch-hm-none__q">
         {QUICK.map((t) => (
-          <Link key={t} href={newEventHref(t)} className="ch-hm-none__chip" onClick={() => haptic('select')}>
+          <Link key={t} href={newEventHref(t)} className="ch-hm-none__chip" onClick={() => haptic('select')} data-ch-press="">
             <Icon icon={TYPE_ICON[t]} size={13} />
             {TYPE_LABEL[t]}
           </Link>
@@ -318,7 +322,7 @@ function Form({ form }: { form: ChTeamForm }) {
         </span>
       </div>
       {pts.length > 1 && (
-        <svg viewBox={`0 0 ${W} ${H}`} className="ch-hm-form__svg" role="img" aria-label={`Team scoring, the team's average on each of its last ${pts.length} round days, from ${formatFixed(pts[0]!)} to ${formatFixed(pts[pts.length - 1]!)}`}>
+        <svg viewBox={`0 0 ${W} ${H}`} className="ch-hm-form__svg" role="img" aria-label={`Team scoring, the team’s average on each of its last ${pts.length} round days, from ${formatFixed(pts[0]!)} to ${formatFixed(pts[pts.length - 1]!)}`}>
           <path d={`${d} L${x(pts.length - 1)},${H} L${x(0)},${H} Z`} className="ch-hm-form__fill" />
           <path d={d} className="ch-hm-form__line" />
           <circle cx={x(pts.length - 1)} cy={y(pts[pts.length - 1]!)} r="3.6" className="ch-hm-form__dot" />
@@ -380,7 +384,7 @@ export function WeekStrip({ days, note, children, majorIcon = TYPE_ICON.tourname
   );
 }
 
-function Rounds({ data, onOpen }: { data: ChCoachHome['latestRounds']; onOpen: (r: ChLatestRound) => void }) {
+function Rounds({ data, onOpen, covered }: { data: ChCoachHome['latestRounds']; onOpen: (r: ChLatestRound) => void; covered: boolean }) {
   const teamStats = rebuiltHref('/golf/dashboard/stats');
   return (
     <section className="ch-hm-sec" aria-labelledby="ch-hm-rounds">
@@ -394,7 +398,7 @@ function Rounds({ data, onOpen }: { data: ChCoachHome['latestRounds']; onOpen: (
         )}
       </div>
       {data.error ? (
-        <RefreshNotice code="CH-2202" title="Recent rounds didn't load." body="Posted rounds are safe. Try again; the error has been reported." />
+        <RefreshNotice code="CH-2202" title="Recent rounds didn’t load" body="Posted rounds are safe. Try again; the error has been reported." covered={covered} />
       ) : !data.rounds.length ? (
         <EmptyState compact code="CH-2302" icon={BarChart3} title="No rounds posted yet this season." body="The newest 18-hole round appears here as soon as a player posts it." />
       ) : (
@@ -487,7 +491,7 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
           </dl>
           {holesError ? (
             <p className="ch-hm-muted" data-ch-code="CH-2203">
-              Hole-by-hole scores didn&apos;t load for this round. The total is right.
+              Hole-by-hole scores didn’t load for this round. The total is right.
             </p>
           ) : round.holes ? (
             <>
@@ -496,7 +500,7 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
             </>
           ) : (
             <p className="ch-hm-muted" data-ch-code="CH-2303">
-              Posted as a total. Hole-by-hole scores weren&apos;t recorded for this round.
+              Posted as a total. Hole-by-hole scores weren’t recorded for this round.
             </p>
           )}
         </div>
