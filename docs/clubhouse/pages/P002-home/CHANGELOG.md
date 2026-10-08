@@ -1,5 +1,18 @@
 # P002 — Home: changelog
 
+## 2026-10-08 — Coach Home on the phone: the Mobile clubhouse pass
+
+Phone Home now follows the owner's "Coach - Home - Mobile v2" board
+(`m-clubhouse.css`, ported in order so its third round wins):
+- the green chassis bar over the parchment sheet;
+- the greeting in the bold 31px sans in forest ink, with the brief under it;
+- Up next as the screen's one green feature card;
+- Today, the team's scoring, This week and Latest rounds flush under engraved
+  double rules, with rows on seams instead of white cards.
+
+The board's own hero drew the bar and the sheet's lip; in the app the shell's
+phone chassis draws both, so the hero here is the sheet itself.
+
 ## 2026-10-07 — A leaderboard row answers the press
 
 On desktop a leaderboard row keeps its Ledger tint and sliding chevron on hover, and a press now deepens the tint

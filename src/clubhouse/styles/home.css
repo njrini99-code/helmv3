@@ -2512,3 +2512,606 @@
     box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
   }
 }
+
+/* Coach Home on the phone: the "Mobile clubhouse pass" board (owner, 2026-10-08), ported from its m-clubhouse.css
+   (rounds 1 to 3, in order, so its last word wins): the green chassis over a parchment sheet, the editorial greeting,
+   one green feature card (Up next), and every other section flush under an engraved double rule. */
+@media (max-width: 820px) {
+  .ch-hm-hero {
+    padding:52px 18px 22px;
+    color:#1C1B18;
+    border-radius:0;
+    box-shadow:none;
+    background:radial-gradient(70% 220px at 0% 100px,rgb(11 58 37/.11),rgb(11 58 37/.035) 55%,transparent 80%),radial-gradient(60% 200px at 100% 300px,rgb(110 140 100/.08),transparent 75%),linear-gradient(180deg,#0A331F 0 114px,#F5F0E4 114px);
+  }
+  .ch-hm-hero::before {
+    content:"";
+    position:absolute;
+    left:0;
+    right:0;
+    top:100px;
+    height:16px;
+    border-radius:18px 18px 0 0;
+    background:radial-gradient(70% 220px at 0% 0,rgb(11 58 37/.11),rgb(11 58 37/.035) 55%,transparent 80%),#F5F0E4;
+    pointer-events:none;
+  }
+  .ch-hm-hero>* {
+    position:relative;
+    z-index:1;
+  }
+  .ch-hm-hero__bar {
+    margin:0 -4px 40px;
+  }
+  .ch-hm-hero__date {
+    padding-top:14px;
+    border-top:3px double rgb(110 98 62/.2);
+    font:500 11px/1 var(--font-sans);
+    letter-spacing:.14em;
+    color:#7A6B3F;
+  }
+  .ch-hm-hero h1 {
+    margin:12px 0 10px;
+    color:#123B29;
+    font-size:30px;
+  }
+  .ch-hm-hero__brief {
+    margin:0 0 20px;
+    padding-bottom:18px;
+    border-bottom:1px solid rgb(110 98 62/.11);
+    color:#55524B;
+  }
+  .ch-hm-hero__brief svg {
+    color:#7A6B3F;
+  }
+  .ch-hm-next {
+    padding:16px;
+    border-radius:12px;
+    background:#FFFEFA;
+    box-shadow:0 0 0 1px rgb(110 98 62/.16);
+    color:#1C1B18;
+    position:relative;
+    overflow:hidden;
+  }
+  .ch-hm-next::before {
+    content:"";
+    position:absolute;
+    left:0;
+    right:0;
+    top:0;
+    height:2px;
+    background:#155A39;
+  }
+  .ch-hm-next__type {
+    color:#6E6A60;
+  }
+  .ch-hm-next__when {
+    padding:5px 8px;
+    border-radius:6px;
+    background:rgb(110 98 62/.06);
+    color:#3F3C35;
+  }
+  .ch-hm-next__when.is-soon {
+    background:rgb(21 90 57/.09);
+    color:#155A39;
+  }
+  .ch-hm-next h2 {
+    color:#1C1B18;
+  }
+  .ch-hm-next p {
+    color:#6E6A60;
+  }
+  .ch-hm-next__f {
+    border-top-color:rgb(110 98 62/.1);
+  }
+  .ch-hm-stack .ch-avatar {
+    box-shadow:0 0 0 2px #FFFEFA;
+  }
+  .ch-hm-next__rsvp {
+    color:#6E6A60;
+  }
+  .ch-hm-next__rsvp b {
+    color:#1C1B18;
+  }
+  .ch-hm-none__ic {
+    color:#155A39;
+    background:rgb(110 98 62/.04);
+    box-shadow:none;
+    border:1px dashed rgb(110 98 62/.3);
+    border-radius:10px;
+  }
+  .ch-hm-none h2 {
+    color:#1C1B18;
+  }
+  .ch-hm-none p {
+    color:#6E6A60;
+  }
+  .ch-hm-none__chip {
+    border-radius:8px;
+    color:#3F3C35;
+    background:transparent;
+    box-shadow:inset 0 0 0 1px rgb(110 98 62/.2);
+  }
+  .ch-hm-none__chip svg {
+    color:#155A39;
+  }
+  .ch-hm-none__add {
+    border-radius:10px;
+    color:#fff;
+    background:linear-gradient(180deg,#1A6542,#145838);
+    box-shadow:0 0 0 1px #0E462C,inset 0 1px 0 rgb(255 255 255/.1);
+  }
+  .ch-hm-body {
+    gap:28px;
+    padding:22px 16px 28px;
+  }
+  .ch-hm-sec__h h3 {
+    color:#1C1B18;
+    font-size:16.5px;
+  }
+  .ch-hm-link {
+    color:#155A39;
+  }
+  .ch-hm-count {
+    border-radius:6px;
+    background:rgb(21 90 57/.08);
+  }
+  .ch-hm-tl,
+  .ch-hm-list,
+  .ch-hm-need,
+  .ch-hm-empty {
+    border-radius:12px;
+    background:#FFFEFA;
+    box-shadow:0 0 0 1px rgb(110 98 62/.16);
+  }
+  .ch-hm-tl__rail i {
+    box-shadow:0 0 0 3px #FFFEFA;
+  }
+  .ch-hm-tl__rail::before {
+    background:rgb(110 98 62/.14);
+  }
+  .ch-hm-tl__r.is-now {
+    background:linear-gradient(90deg,rgb(21 90 57/.05),transparent);
+  }
+  .ch-hm-now {
+    border-radius:6px;
+  }
+  .ch-hm-need__a .ch-btn {
+    border-radius:8px;
+    background:transparent;
+    color:#155A39;
+    box-shadow:inset 0 0 0 1px rgb(21 90 57/.25);
+  }
+  .ch-hm-form {
+    border-radius:12px;
+    background:#FFFEFA;
+    box-shadow:0 0 0 1px rgb(110 98 62/.16);
+  }
+  .ch-hm-form__figs {
+    border-top-color:rgb(110 98 62/.12);
+  }
+  .ch-hm-form__figs>div+div {
+    border-left-color:rgb(110 98 62/.12);
+  }
+  .ch-hm-week__d {
+    border-radius:8px;
+  }
+  .ch-hm-week__d.is-today {
+    background:#FFFEFA;
+    box-shadow:0 0 0 1px rgb(110 98 62/.18);
+  }
+  .ch-hm-week__d.is-major {
+    background:#0B3A25;
+  }
+  .ch-hm-list {
+    position:relative;
+  }
+  .ch-hm-list::before {
+    content:"";
+    position:absolute;
+    z-index:1;
+    left:0;
+    right:0;
+    top:0;
+    height:2px;
+    background:#155A39;
+  }
+  .ch-hm-rd+.ch-hm-rd {
+    border-top-color:rgb(110 98 62/.08);
+  }
+  .ch-hm-rd:active {
+    background:rgb(110 98 62/.04);
+  }
+  .ch-hm-score {
+    border-radius:8px;
+    background:rgb(110 98 62/.04);
+    box-shadow:inset 0 0 0 1px rgb(110 98 62/.08);
+  }
+  .ch-hm-score.is-under em {
+    color:#9E3B2E;
+  }
+  .ch-hm .ch-well-soft {
+    background:rgb(110 98 62/.035);
+    box-shadow:inset 0 0 0 1px rgb(110 98 62/.07);
+  }
+  .ch-hm-team {
+    height:34px;
+    padding:0 12px 0 5px;
+    background:rgb(255 255 255/.07);
+    box-shadow:inset 0 0 0 1px rgb(255 255 255/.1);
+  }
+  .ch-hm-bell {
+    width:36px;
+    height:36px;
+    background:rgb(255 255 255/.07);
+    color:#F4F1E8;
+  }
+  .ch-hm-bell i {
+    top:8px;
+    right:9px;
+    background:#C9B27A;
+    box-shadow:0 0 0 2px #0A331F;
+  }
+  .ch-hm-hero {
+    padding-left:20px;
+    padding-right:20px;
+  }
+  .ch-hm-hero h1 {
+    font-size:31px;
+    letter-spacing:-.038em;
+    margin:14px 0 12px;
+  }
+  .ch-hm-hero__brief {
+    font-size:14.5px;
+    line-height:1.5;
+    padding-bottom:20px;
+    margin-bottom:22px;
+  }
+  .ch-hm-body {
+    gap:32px;
+    padding:26px 20px 32px;
+  }
+  .ch-hm-sec {
+    gap:14px;
+  }
+  .ch-hm-sec__h {
+    align-items:baseline;
+    gap:12px;
+    padding:0 0 10px;
+    border-bottom:1px solid rgb(110 98 62/.16);
+  }
+  .ch-hm-sec__h h3 {
+    font:600 15.5px/1 var(--font-sans);
+    letter-spacing:-.012em;
+  }
+  .ch-hm-link {
+    font-size:13px;
+  }
+  .ch-hm-tl {
+    padding:4px 0;
+  }
+  .ch-hm-tl__r {
+    min-height:56px;
+  }
+  .ch-hm-form {
+    padding:18px 18px 16px;
+  }
+  .ch-hm-form__top em {
+    color:#7A6B3F;
+    font-size:11px;
+    letter-spacing:.12em;
+  }
+  .ch-hm-form__top b {
+    color:#1C1B18;
+  }
+  .ch-hm-delta {
+    color:#3F7556;
+  }
+  .ch-hm-delta em {
+    letter-spacing:0;
+    font-size:11.5px;
+    color:#8A8476;
+  }
+  .ch-hm-form__svg path:first-of-type {
+    display:none;
+  }
+  .ch-hm-form__svg path:nth-of-type(2) {
+    stroke:#3F7556;
+    stroke-width:1.5;
+  }
+  .ch-hm-form__svg circle {
+    fill:#3F7556;
+    stroke:#FFFEFA;
+  }
+  .ch-hm-form__figs em {
+    color:#8A8476;
+  }
+  .ch-hm-week {
+    padding:6px;
+    gap:2px;
+    background:#FFFEFA;
+    border-radius:12px;
+    box-shadow:0 0 0 1px rgb(110 98 62/.16);
+  }
+  .ch-hm-week__d {
+    border-radius:8px;
+    padding:10px 0 9px;
+  }
+  .ch-hm-week__d.is-today {
+    background:#155A39;
+    box-shadow:none;
+  }
+  .ch-hm-week__d.is-today em {
+    color:rgb(255 255 255/.7);
+  }
+  .ch-hm-week__d.is-today b {
+    color:#fff;
+  }
+  .ch-hm-week__d.is-today>span i {
+    background:rgb(255 255 255/.6);
+  }
+  .ch-hm-week__d.is-today>span {
+    color:#fff;
+  }
+  .ch-hm-week__d.is-major:not(.is-today) {
+    background:rgb(21 90 57/.07);
+  }
+  .ch-hm-week__d.is-major:not(.is-today) em {
+    color:#3F7556;
+  }
+  .ch-hm-week__d.is-major:not(.is-today) b {
+    color:#155A39;
+    font-weight:600;
+  }
+  .ch-hm-week__d.is-major:not(.is-today)>span {
+    color:#155A39;
+  }
+  .ch-hm-week__n {
+    font-size:12.5px;
+    color:#6E6A60;
+  }
+  .ch-hm-week__n b {
+    color:#155A39;
+  }
+  .ch-hm-rd {
+    min-height:62px;
+    padding:10px 18px 10px 16px;
+  }
+  .ch-hm-score {
+    background:none;
+    box-shadow:none;
+    align-items:flex-end;
+    min-width:44px;
+  }
+  .ch-hm-score b {
+    font-size:18px;
+  }
+  .ch-hm-need {
+    padding:16px;
+  }
+  .ch-hm-next {
+    background: var(--ch-feature-bg);
+    box-shadow: var(--ch-elevation-feature);
+    border-radius:14px;
+    color:#F4F1E8;
+    padding:18px;
+  }
+  .ch-hm-next::before {
+    display:none;
+  }
+  .ch-hm-next__type {
+    color:rgb(244 241 232/.66);
+  }
+  .ch-hm-next__when {
+    background:rgb(255 255 255/.09);
+    color:#F4F1E8;
+  }
+  .ch-hm-next__when.is-soon {
+    background:#C9B27A;
+    color:#0B3A25;
+  }
+  .ch-hm-next h2 {
+    color:#F4F1E8;
+    font-size:23px;
+  }
+  .ch-hm-next p {
+    color:rgb(244 241 232/.7);
+  }
+  .ch-hm-next__f {
+    border-top-color:rgb(255 255 255/.1);
+  }
+  .ch-hm-stack .ch-avatar {
+    box-shadow:0 0 0 2px #0B3A25;
+  }
+  .ch-hm-next__rsvp {
+    color:rgb(244 241 232/.7);
+  }
+  .ch-hm-next__rsvp b {
+    color:#F4F1E8;
+  }
+  .ch-hm-none__ic {
+    color:#C9B27A;
+    background:rgb(255 255 255/.05);
+    border-color:rgb(201 178 122/.35);
+  }
+  .ch-hm-none h2 {
+    color:#F4F1E8;
+  }
+  .ch-hm-none p {
+    color:rgb(244 241 232/.7);
+  }
+  .ch-hm-none__chip {
+    color:#F4F1E8;
+    box-shadow:inset 0 0 0 1px rgb(255 255 255/.16);
+  }
+  .ch-hm-none__chip svg {
+    color:#C9B27A;
+  }
+  .ch-hm-none__add {
+    color:#0B3A25;
+    background:#F4F1E8;
+    box-shadow:none;
+  }
+  .ch-hm-hero__brief {
+    border-bottom:0;
+    padding-bottom:0;
+  }
+  .ch-hm-body {
+    gap:36px;
+    padding-top:30px;
+  }
+  .ch-hm-sec {
+    gap:6px;
+  }
+  .ch-hm-sec__h {
+    padding:12px 0 0;
+    border-bottom:0;
+    border-top:3px double rgb(110 98 62/.22);
+  }
+  .ch-hm-sec__h h3 {
+    font:600 19px/1.1 var(--font-display);
+    letter-spacing:-.025em;
+    font-variation-settings:"wdth" 88;
+    color:#123B29;
+  }
+  .ch-hm-tl,
+  .ch-hm-list,
+  .ch-hm-form,
+  .ch-hm-week,
+  .ch-hm-empty {
+    background:none;
+    box-shadow:none;
+    border-radius:0;
+    padding:0;
+  }
+  .ch-hm-list::before {
+    display:none;
+  }
+  .ch-hm-tl__r {
+    padding:0;
+    min-height:58px;
+  }
+  .ch-hm-tl__r+.ch-hm-tl__r {
+    box-shadow:inset 0 1px 0 rgb(110 98 62/.1);
+  }
+  .ch-hm-tl__r.is-now {
+    background:none;
+  }
+  .ch-hm-tl__r.is-now .ch-hm-tl__t {
+    color:#155A39;
+    font-weight:600;
+  }
+  .ch-hm-tl__rail i {
+    box-shadow:0 0 0 3px #F5F0E4;
+  }
+  .ch-hm-empty {
+    padding:14px 0;
+    border-bottom:1px solid rgb(110 98 62/.1);
+  }
+  .ch-hm-rd {
+    padding:12px 0;
+    min-height:64px;
+  }
+  .ch-hm-rd+.ch-hm-rd {
+    border-top:1px solid rgb(110 98 62/.1);
+  }
+  .ch-hm-score b {
+    font-size:20px;
+    letter-spacing:-.03em;
+  }
+  .ch-hm-form {
+    padding-top:18px;
+    border-top:3px double rgb(110 98 62/.22);
+  }
+  .ch-hm-form__top em {
+    display:none;
+  }
+  .ch-hm-form__top b {
+    font-size:56px;
+    letter-spacing:-.055em;
+  }
+  .ch-hm-form__top>span:first-child::after {
+    content:"Team scoring average · last 10 rounds";
+    font:400 12.5px/1.3 var(--font-sans);
+    color:#6E6A60;
+    margin-top:4px;
+  }
+  .ch-hm-form__svg {
+    margin:16px 0 14px;
+  }
+  .ch-hm-form__figs {
+    padding:12px 0;
+    border-top:1px solid rgb(110 98 62/.16);
+    border-bottom:1px solid rgb(110 98 62/.16);
+  }
+  .ch-hm-week {
+    padding:6px 0 0;
+    gap:4px;
+  }
+  .ch-hm-week__d {
+    padding:10px 0;
+  }
+  .ch-hm-rail {
+    flex-direction:column;
+    overflow:visible;
+    margin:0;
+    padding:0;
+    gap:0;
+    scroll-snap-type:none;
+  }
+  .ch-hm-need {
+    width:auto;
+    background:none;
+    box-shadow:none;
+    border-radius:0;
+    padding:16px 0;
+    border-bottom:1px solid rgb(110 98 62/.1);
+  }
+  .ch-hm-need:last-child {
+    border-bottom:0;
+  }
+  .ch-hm-need__a .ch-btn {
+    width:auto;
+    height:auto;
+    padding:0;
+    box-shadow:none;
+    background:none;
+    color:#155A39;
+    font-weight:600;
+    justify-content:flex-start;
+  }
+  .ch-hm-count {
+    background:none;
+    color:#7A6B3F;
+    font-weight:600;
+  }
+}
+/* In the app the green chassis is the shell's bar (shell.css "The phone chassis"), which already draws the sheet's
+   rounded lip; the board drew both inside its hero. So the hero here is the sheet itself. */
+@media (max-width: 820px) {
+  .ch-hm-hero {
+    padding-top: 26px;
+    background: none;
+  }
+  .ch-hm-hero::before {
+    content: none;
+  }
+  .ch-hm-hero {
+    color: var(--ch-text-primary);
+    text-shadow: none;
+  }
+  .ch-hm > .ch-hm-hero > h1,
+  .ch-hm > .ch-hm-hero.is-player > h1 {
+    margin: 14px 0 12px;
+    font: 600 31px/1.08 var(--ch-font-sans);
+    letter-spacing: -0.038em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+    text-shadow: none;
+  }
+  .ch-hm-hero > .ch-hm-hero__brief {
+    color: var(--ch-text-secondary);
+  }
+  .ch-hm-hero__brief svg {
+    color: var(--ch-ledger-eyebrow);
+  }
+}
