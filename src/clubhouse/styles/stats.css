@@ -2569,19 +2569,19 @@
    is the one card; inside it the tiles lose their boxes and sit between hairlines, divided by soft rules, as the
    phone's ledger tiles. Each tile draws the rule to its left and above it, and the grid clips the outer ones. */
 @media (min-width: 821px) {
-  .ch-gd:not(.is-phone) :is(.ch-gx-tiles, .ch-par3) {
+  .ch-gd:not(.is-phone) :is(.ch-gx-tiles, .ch-par3, .ch-gx-pars) {
     gap: 0;
     overflow: hidden;
     border-top: 1px solid var(--ch-ledger-rule);
     border-bottom: 1px solid var(--ch-ledger-rule);
   }
-  .ch-gd:not(.is-phone) :is(.ch-gx-tiles > div, .ch-par3__t) {
+  .ch-gd:not(.is-phone) :is(.ch-gx-tiles > div, .ch-par3__t, .ch-gx-pm) {
     padding: 14px 16px;
     border-radius: 0;
     background: none;
     box-shadow: -1px 0 0 var(--ch-ledger-rule-soft), 0 -1px 0 var(--ch-ledger-rule-soft);
   }
-  :where(html[data-fw-theme='dark']) .ch-gd:not(.is-phone) :is(.ch-gx-tiles > div, .ch-par3__t) {
+  :where(html[data-fw-theme='dark']) .ch-gd:not(.is-phone) :is(.ch-gx-tiles > div, .ch-par3__t, .ch-gx-pm) {
     box-shadow: -1px 0 0 var(--ch-ledger-rule-soft), 0 -1px 0 var(--ch-ledger-rule-soft);
   }
 }
@@ -3060,6 +3060,15 @@
   }
   .ch-stm-controls > :first-child {
     min-width: 0;
+  }
+  /* P004-D10: the window switch fills its share of the row, its segments evenly, not packed to the left. */
+  .ch-stm-controls > :first-child .ch-seg {
+    display: flex;
+    width: 100%;
+  }
+  .ch-stm-controls > :first-child .ch-seg__b {
+    flex: 1;
+    justify-content: center;
   }
   .ch-stm-controls .ch-sf.is-phone .ch-sf__open {
     width: 44px;
