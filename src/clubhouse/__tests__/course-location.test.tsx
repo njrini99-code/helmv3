@@ -126,3 +126,22 @@ describe('a location the device will not give (CH-8320)', () => {
     expect((screen.getByLabelText('Name') as HTMLInputElement).disabled).toBe(false);
   });
 });
+
+describe('without a Supabase client (CH-8320)', () => {
+  it('reads as off, so the row draws nothing and nothing throws', async () => {
+    const mod = await import('@/lib/supabase/client');
+    const spy = vi.spyOn(mod, 'createClient').mockImplementation(() => {
+      throw new Error('NEXT_PUBLIC_SUPABASE_URL is not set');
+    });
+    await expect(liveCourseSource('team-1').read()).resolves.toEqual({ status: 'off' });
+    await expect(liveCourseSource('team-1').save(null)).resolves.toMatchObject({ success: false });
+    spy.mockRestore();
+  });
+
+  it('a read that throws leaves the row undrawn', async () => {
+    const throwing: ChCourseSource = { read: async () => Promise.reject(new Error('dropped')), save: async () => ({ success: true }) };
+    const { container } = render(<CourseLocationCard teamId="team-1" />, { wrapper: wrap(throwing) });
+    await act(async () => {});
+    expect(container.textContent).toBe('');
+  });
+});

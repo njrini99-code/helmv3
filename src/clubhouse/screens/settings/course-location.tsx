@@ -53,11 +53,21 @@ type Untyped = {
 };
 
 export function liveCourseSource(teamId: string): ChCourseSource {
-  // The generated types do not have the columns until the migration is applied and db:types runs.
-  const table = () => createClient().from('golf_team_settings') as unknown as Untyped;
+  // The generated types do not have the columns until the migration is applied and db:types runs. The client is made
+  // only when a read or a write runs, and a client that can't be made (no Supabase config: tests, a bare preview) reads
+  // as "off", so the row draws nothing rather than throwing on mount.
+  const table = (): Untyped | null => {
+    try {
+      return createClient().from('golf_team_settings') as unknown as Untyped;
+    } catch {
+      return null;
+    }
+  };
   return {
     async read() {
-      const { data, error } = await table().select('course_latitude, course_longitude, course_label').eq('team_id', teamId).maybeSingle();
+      const t = table();
+      if (!t) return { status: 'off' };
+      const { data, error } = await t.select('course_latitude, course_longitude, course_label').eq('team_id', teamId).maybeSingle();
       if (isMissingColumn(error)) return { status: 'off' };
       if (error) {
         chReport(error, { surface: 'settings.team', action: 'readCourseLocation' });
@@ -67,7 +77,9 @@ export function liveCourseSource(teamId: string): ChCourseSource {
       return { status: 'ok', value: { lat: data.course_latitude, lng: data.course_longitude, label: data.course_label } };
     },
     async save(v) {
-      const { error } = await table().upsert(
+      const t = table();
+      if (!t) return { success: false, error: 'Settings are not connected.' };
+      const { error } = await t.upsert(
         {
           team_id: teamId,
           course_latitude: v ? roundCoord(v.lat) : null,
@@ -114,11 +126,18 @@ function useCourseLocation(teamId: string) {
 
   useEffect(() => {
     let live = true;
-    void source.read().then((r) => {
-      if (!live) return;
-      setRead(r);
-      if (r.status === 'ok') setLabel(r.value?.label ?? '');
-    });
+    source
+      .read()
+      .then((r) => {
+        if (!live) return;
+        setRead(r);
+        if (r.status === 'ok') setLabel(r.value?.label ?? '');
+      })
+      // A read that throws (a dropped connection) is a failed read: the row stays undrawn, the Team section untouched.
+      .catch((err: unknown) => {
+        chReport(err, { surface: 'settings.team', action: 'readCourseLocation' });
+        if (live) setRead({ status: 'failed' });
+      });
     return () => {
       live = false;
     };
