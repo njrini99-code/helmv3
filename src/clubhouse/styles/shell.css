@@ -3,7 +3,8 @@
 .ch-app {
   display: flex;
   height: 100dvh;
-  background: var(--ch-shell);
+  /* The global light's sky falls across the frame (P001-A1, tokens.css "The global light"). */
+  background: var(--ch-light-sky), var(--ch-shell);
 }
 .ch-canvas {
   position: relative;
@@ -68,7 +69,8 @@
   height: 100%;
   padding: 14px 10px 12px;
   overflow-y: auto;
-  background: var(--ch-shell);
+  /* Clear, so the frame's sky (.ch-app) lights the sidebar field as one plane with the frame. */
+  background: transparent;
   color: var(--ch-text-primary);
 }
 .ch-brand {
@@ -1106,7 +1108,7 @@ button.ch-more__row[disabled] {
     gap: 8px;
     height: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
     padding: env(safe-area-inset-top) 8px 6px 16px;
-    background: var(--ch-phone-bar-bg);
+    background: var(--ch-light-bar), var(--ch-phone-bar-bg);
   }
   .ch-topbar__crumbs,
   .ch-topbar__settings {
@@ -1166,7 +1168,7 @@ button.ch-more__row[disabled] {
   /* The green hero's bar (usePhoneHero, the v2 phone Home, m-home.css .mh-hero__bar): the team and the bell on green. */
   .ch-root[data-phone-hero] .ch-topbar {
     border-bottom-color: transparent;
-    background: var(--ch-green-800);
+    background: var(--ch-light-bar), var(--ch-green-800);
     box-shadow: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -1315,7 +1317,7 @@ button.ch-more__row[disabled] {
     padding: env(safe-area-inset-top) 8px 6px 16px;
     box-sizing: border-box;
     border-bottom: 1px solid var(--ch-border-hairline);
-    background: var(--ch-phone-bar-bg);
+    background: var(--ch-light-bar), var(--ch-phone-bar-bg);
   }
   .ch-pbar.is-lead {
     gap: 4px;
@@ -2038,8 +2040,11 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   .ch-canvas {
     isolation: isolate;
     border-radius: 14px;
+    /* The light across the canvas top and the paper's temperature come from the global light (P001-A1). */
     background:
+      var(--ch-light-canvas) local,
       linear-gradient(90deg, rgb(11 58 37 / 0.04), rgb(11 58 37 / 0.012) 90px, transparent 200px) local,
+      var(--ch-light-paper),
       var(--ch-workspace);
     box-shadow: var(--ch-elevation-framed);
   }
@@ -2181,7 +2186,11 @@ html[data-ch-ua-pop] .ch-pscreen::after {
      a band of shell grey above the tab bar. */
   [data-ui='clubhouse'] .ch-app,
   [data-ui='clubhouse'] .ch-canvas {
-    background: var(--ch-workspace);
+    background: var(--ch-light-paper), var(--ch-workspace);
+  }
+  /* The light falls across the top of the parchment sheet, under the chassis (P001-A1). */
+  [data-ui='clubhouse'] .ch-canvas {
+    background: var(--ch-light-canvas), var(--ch-light-paper), var(--ch-workspace);
   }
   [data-ui='clubhouse'] .ch-topbar {
     border-bottom: 0;
@@ -2466,9 +2475,11 @@ html[data-fw-theme='dark'] .ch-offline {
   html[data-fw-theme='dark'] body [data-ui='clubhouse'] {
     --ch-phone-bar-bg: var(--ch-frame);
   }
-  html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-topbar,
   html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-ptr {
     background: var(--ch-frame);
+  }
+  html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-topbar {
+    background: var(--ch-light-bar), var(--ch-frame);
   }
   html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-topbar__team,
   html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-topbar .ch-bell {

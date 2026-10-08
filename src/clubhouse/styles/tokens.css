@@ -202,6 +202,61 @@
   --ch-phone-topbar-h: 50px; /* a 44px row and 6px below it, under the status bar */
   --ch-tabbar-h: 56px;
 
+  /* The global light (P001-A1, D3-1; owner 2026-10-08). One sun for the whole Clubhouse, from the team's course location
+     (Team settings; the team's time zone until it is set) and the time. shell/light.tsx writes these unitless numbers on
+     <html> a few times an hour (lib/light.ts computes them; useClubhouseLight() reads them in TS):
+       --ch-sun-x          0 left (morning) .. 0.5 overhead .. 1 right (evening)
+       --ch-sun-y          0 zenith .. 1 horizon
+       --ch-sun-dir        -1 .. 1, the light's side (x as a direction)
+       --ch-sun-intensity  0 night .. 1 high sun
+       --ch-sun-warmth     0 .. 1, golden hour
+       --ch-sun-night      0 day .. 1 night
+       --ch-sun-drift      the contact shadow's lean in px, away from the light (|drift| <= 6)
+     Each is read with its noon fallback, so the server, the first paint and a page outside the shell draw noon. Consume
+     the derived tokens below, never the raw numbers, and only on the frame and materials: never on data (scores, charts,
+     figures). Nothing transitions them: values change in place, so reduced motion and Animations off need nothing. */
+  /* The key light's colour: warm white by day, gold at golden hour, moon blue at night. */
+  --ch-light-key: color-mix(
+    in oklab,
+    color-mix(in oklab, #fff6e0, #ffbf73 calc(var(--ch-sun-warmth, 0) * 100%)),
+    #a9bbdd calc(var(--ch-sun-night, 0) * 100%)
+  );
+  /* The 1px rim on a material's sun-facing edges (top, and the side the sun is on), and its softer twin for keys. */
+  --ch-light-rim: color-mix(in oklab, rgb(255 255 255 / 0.9), rgb(255 228 182 / 0.95) calc(var(--ch-sun-warmth, 0) * 75%));
+  --ch-light-rim-soft: color-mix(in oklab, rgb(255 255 255 / 0.7), rgb(255 228 182 / 0.8) calc(var(--ch-sun-warmth, 0) * 75%));
+  --ch-light-rim-x: calc(var(--ch-sun-dir, 0) * -1px);
+  /* Contact shadows lean away from the light: the near layer a little, the far layer the full drift. */
+  --ch-light-drift: calc(var(--ch-sun-drift, 0) * 1px);
+  --ch-light-drift-mid: calc(var(--ch-sun-drift, 0) * 0.6px);
+  --ch-light-drift-near: calc(var(--ch-sun-drift, 0) * 0.25px);
+  /* The sky falling across the green frame, brightest under the sun (desktop frame and sidebar field). */
+  --ch-light-sky: radial-gradient(
+    110% 120% at calc(var(--ch-sun-x, 0.5) * 100%) calc(var(--ch-sun-y, 0.25) * 40% - 30%),
+    color-mix(in oklab, var(--ch-light-key) calc(5% + var(--ch-sun-intensity, 1) * 9% + var(--ch-sun-warmth, 0) * 14%), transparent),
+    transparent 75%
+  );
+  /* The same sky through the phone chassis bar: a horizontal falloff that is gone before the bar's lower edge, so the
+     sheet's lip below keeps the flat green it is cut from. */
+  --ch-light-bar: radial-gradient(
+    60% 150% at calc(var(--ch-sun-x, 0.5) * 100%) -45%,
+    color-mix(in oklab, var(--ch-light-key) calc(4% + var(--ch-sun-intensity, 1) * 6% + var(--ch-sun-warmth, 0) * 9%), transparent),
+    transparent 70%
+  );
+  /* The light falling across the top of the parchment canvas. */
+  --ch-light-canvas: radial-gradient(
+    70% 420px at calc(var(--ch-sun-x, 0.5) * 100%) 0%,
+    color-mix(in oklab, var(--ch-light-key) calc(var(--ch-sun-intensity, 1) * 14% + var(--ch-sun-warmth, 0) * 12%), transparent),
+    transparent 80%
+  );
+  /* Paper temperature: a flat wash over the canvas, warm toward golden hour and cool at night (a few percent at most). */
+  --ch-light-paper-tint: color-mix(
+    in oklab,
+    color-mix(in oklab, #e8b46a, #5d74a6 calc(var(--ch-sun-night, 0) * 100%))
+      calc(var(--ch-sun-warmth, 0) * 7% + var(--ch-sun-night, 0) * 4%),
+    transparent
+  );
+  --ch-light-paper: linear-gradient(var(--ch-light-paper-tint), var(--ch-light-paper-tint));
+
   /* Radius */
   --ch-radius-xs: 5px;
   --ch-radius-sm: 7px;
@@ -223,30 +278,32 @@
      under ordinary fields/cards. Reading surfaces are quiet; floating controls
      and overlays retain a small, progressively stronger separation. */
   --ch-edge: rgb(28 25 18 / 0.08);
-  --ch-highlight: inset 0 1px 0 rgb(255 255 255 / 0.7);
+  --ch-highlight: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim-soft);
   /* Reading surfaces (premium brief, October 6): layered light rather than one broad shadow. A lit top edge, a crisp
      hairline, a tight contact shadow and an ambient falloff with negative spread, so the shadow sits under the card
      instead of hazing the canvas around it. */
-  --ch-elevation-reading: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 0 0 1px rgb(28 25 18 / 0.085),
-    0 1px 2px rgb(28 25 18 / 0.08), 0 8px 18px -10px rgb(28 25 18 / 0.16), 0 22px 40px -24px rgb(28 25 18 / 0.18);
+  --ch-elevation-reading: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(28 25 18 / 0.085),
+    var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.08), var(--ch-light-drift-mid) 8px 18px -10px rgb(28 25 18 / 0.16),
+    var(--ch-light-drift) 22px 40px -24px rgb(28 25 18 / 0.18);
   /* The reading surface's cast shadow alone, for dark and branded surfaces where a white top edge or ink hairline
      would draw a line (the green hero, the green Up next card). */
-  --ch-elevation-cast: 0 1px 2px rgb(28 25 18 / 0.06), 0 8px 18px -10px rgb(28 25 18 / 0.16),
-    0 22px 40px -24px rgb(28 25 18 / 0.18);
-  --ch-elevation-reading-hover: inset 0 1px 0 rgb(255 255 255 / 0.95), 0 0 0 1px rgb(28 25 18 / 0.1),
-    0 2px 4px rgb(28 25 18 / 0.07), 0 12px 24px -12px rgb(28 25 18 / 0.2), 0 28px 48px -26px rgb(28 25 18 / 0.22);
+  --ch-elevation-cast: var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.06),
+    var(--ch-light-drift-mid) 8px 18px -10px rgb(28 25 18 / 0.16), var(--ch-light-drift) 22px 40px -24px rgb(28 25 18 / 0.18);
+  --ch-elevation-reading-hover: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(28 25 18 / 0.1),
+    var(--ch-light-drift-near) 2px 4px rgb(28 25 18 / 0.07), var(--ch-light-drift-mid) 12px 24px -12px rgb(28 25 18 / 0.2),
+    var(--ch-light-drift) 28px 48px -26px rgb(28 25 18 / 0.22);
   --ch-elevation-reading-accent: 0 1px 3px rgb(8 43 28 / 0.08), 0 4px 12px -6px rgb(8 43 28 / 0.12);
-  --ch-elevation-control: var(--ch-highlight), 0 1px 2px rgb(28 25 18 / 0.06);
-  --ch-elevation-floating: 0 2px 6px rgb(28 25 18 / 0.06), 0 8px 20px -8px rgb(28 25 18 / 0.12);
+  --ch-elevation-control: var(--ch-highlight), var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.06);
+  --ch-elevation-floating: var(--ch-light-drift-near) 2px 6px rgb(28 25 18 / 0.06), var(--ch-light-drift-mid) 8px 20px -8px rgb(28 25 18 / 0.12);
   --ch-elevation-floating-focus: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo),
     var(--ch-elevation-floating);
   /* The phone's floating tab bar: a lit edge, a hairline and a long soft shadow that separates it from the scrolling page. */
-  --ch-elevation-tabbar: inset 0 1px 0 rgb(255 255 255 / 0.7), 0 0 0 1px rgb(28 25 18 / 0.07),
-    0 2px 6px rgb(28 25 18 / 0.08), 0 14px 32px -12px rgb(28 25 18 / 0.32);
+  --ch-elevation-tabbar: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim-soft), 0 0 0 1px rgb(28 25 18 / 0.07),
+    var(--ch-light-drift-near) 2px 6px rgb(28 25 18 / 0.08), var(--ch-light-drift-mid) 14px 32px -12px rgb(28 25 18 / 0.32);
   /* Depth on the Frame's green (owner, 2026-10-07): the framed dashboard panel, and a plate or card lifted off the
      green (the selected nav row, the next-event card). A gilt ring, then a deeper drop than ivory needs. */
-  --ch-elevation-framed: 0 1px 3px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.12), inset 1px 0 0 rgb(11 58 37 / 0.12);
-  --ch-elevation-on-frame: 0 0 0 1px rgb(176 149 96 / 0.45), 0 1px 2px rgb(2 18 10 / 0.3);
+  --ch-elevation-framed: var(--ch-light-drift-near) 1px 3px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.12), inset 1px 0 0 rgb(11 58 37 / 0.12);
+  --ch-elevation-on-frame: 0 0 0 1px rgb(176 149 96 / 0.45), var(--ch-light-drift-near) 1px 2px rgb(2 18 10 / 0.3);
   --ch-elevation-on-frame-hover: 0 0 0 1px rgb(176 149 96 / 0.6), 0 2px 6px rgb(2 18 10 / 0.35);
   /* The Ledger (owner, 2026-10-07: "flush, not so card heavy"): inside the framed workspace a section is a rule and a
      heading on the canvas, not a card. Engraved gilt-brown rules, forest ink for headings, the head's eyebrow brown. */
@@ -272,8 +329,9 @@
   --ch-elevation-on-frame-card-hover: 0 0 0 1px rgb(176 149 96 / 0.6), 0 10px 22px -10px rgb(0 0 0 / 0.55), inset 0 1px 0 #fff;
   --ch-elevation-primary-hover: 0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), 0 2px 4px rgb(12 65 40 / 0.22),
     0 8px 16px -8px rgb(12 65 40 / 0.45);
-  --ch-elevation-overlay: 0 4px 12px rgb(28 25 18 / 0.08), 0 16px 36px -12px rgb(28 25 18 / 0.16);
-  --ch-elevation-sheet: 0 -4px 12px rgb(28 25 18 / 0.06), 0 -12px 32px -12px rgb(28 25 18 / 0.12);
+  --ch-elevation-overlay: var(--ch-light-drift-near) 4px 12px rgb(28 25 18 / 0.08), var(--ch-light-drift-mid) 16px 36px -12px rgb(28 25 18 / 0.16);
+  --ch-elevation-sheet: inset 0 1px 0 var(--ch-light-rim), var(--ch-light-drift-near) -4px 12px rgb(28 25 18 / 0.06),
+    var(--ch-light-drift-mid) -12px 32px -12px rgb(28 25 18 / 0.12);
   --ch-elevation-bubble: 0 1px 2px rgb(28 25 18 / 0.04);
   --ch-bubble-mine-bg: linear-gradient(180deg, #1e6a45 0%, #155a39 60%, #0f4a2f 100%);
   --ch-elevation-bubble-mine: 0 1px 2px rgb(11 58 37 / 0.08);
@@ -478,17 +536,41 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 
   --ch-glass-bg: rgb(22 27 23 / 0.74);
   --ch-edge: rgb(255 255 255 / 0.07);
-  --ch-highlight: inset 0 1px 0 rgb(255 255 255 / 0.06);
-  --ch-elevation-reading: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 0 0 1px rgb(255 255 255 / 0.06),
-    0 1px 2px rgb(0 0 0 / 0.35), 0 8px 18px -10px rgb(0 0 0 / 0.5), 0 22px 40px -24px rgb(0 0 0 / 0.5);
-  --ch-elevation-cast: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 18px -10px rgb(0 0 0 / 0.5), 0 22px 40px -24px rgb(0 0 0 / 0.5);
-  --ch-elevation-reading-hover: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 0 0 1px rgb(255 255 255 / 0.09),
-    0 2px 4px rgb(0 0 0 / 0.4), 0 12px 24px -12px rgb(0 0 0 / 0.55), 0 28px 48px -26px rgb(0 0 0 / 0.55);
+  /* The night's light is the dark theme's own: a cool moon key, very faint, warming only a touch at golden hour. */
+  --ch-light-key: color-mix(in oklab, #b9cbea, #e9c48c calc(var(--ch-sun-warmth, 0) * 45%));
+  --ch-light-rim: color-mix(in oklab, rgb(214 226 246 / 0.06), rgb(240 214 170 / 0.08) calc(var(--ch-sun-warmth, 0) * 60%));
+  --ch-light-rim-soft: color-mix(in oklab, rgb(214 226 246 / 0.06), rgb(240 214 170 / 0.07) calc(var(--ch-sun-warmth, 0) * 60%));
+  --ch-light-sky: radial-gradient(
+    75% 90% at calc(var(--ch-sun-x, 0.5) * 100%) calc(var(--ch-sun-y, 0.25) * 40% - 30%),
+    color-mix(in oklab, var(--ch-light-key) calc(3% + var(--ch-sun-intensity, 1) * 2% + var(--ch-sun-warmth, 0) * 2%), transparent),
+    transparent 72%
+  );
+  --ch-light-bar: radial-gradient(
+    60% 150% at calc(var(--ch-sun-x, 0.5) * 100%) -45%,
+    color-mix(in oklab, var(--ch-light-key) calc(3% + var(--ch-sun-intensity, 1) * 2% + var(--ch-sun-warmth, 0) * 2%), transparent),
+    transparent 70%
+  );
+  --ch-light-canvas: radial-gradient(
+    70% 420px at calc(var(--ch-sun-x, 0.5) * 100%) 0%,
+    color-mix(in oklab, var(--ch-light-key) calc(2.5% + var(--ch-sun-intensity, 1) * 1.5% + var(--ch-sun-warmth, 0) * 2%), transparent),
+    transparent 80%
+  );
+  --ch-light-paper-tint: transparent;
+  --ch-highlight: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim);
+  --ch-elevation-reading: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(255 255 255 / 0.06),
+    var(--ch-light-drift-near) 1px 2px rgb(0 0 0 / 0.35), var(--ch-light-drift-mid) 8px 18px -10px rgb(0 0 0 / 0.5),
+    var(--ch-light-drift) 22px 40px -24px rgb(0 0 0 / 0.5);
+  --ch-elevation-cast: var(--ch-light-drift-near) 1px 2px rgb(0 0 0 / 0.3), var(--ch-light-drift-mid) 8px 18px -10px rgb(0 0 0 / 0.5),
+    var(--ch-light-drift) 22px 40px -24px rgb(0 0 0 / 0.5);
+  --ch-elevation-reading-hover: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(255 255 255 / 0.09),
+    var(--ch-light-drift-near) 2px 4px rgb(0 0 0 / 0.4), var(--ch-light-drift-mid) 12px 24px -12px rgb(0 0 0 / 0.55),
+    var(--ch-light-drift) 28px 48px -26px rgb(0 0 0 / 0.55);
   --ch-elevation-reading-accent: 0 1px 3px rgb(0 0 0 / 0.35), 0 4px 12px -6px rgb(0 0 0 / 0.45);
-  --ch-elevation-control: var(--ch-highlight), 0 1px 2px rgb(0 0 0 / 0.35);
-  --ch-elevation-floating: 0 0 0 1px rgb(255 255 255 / 0.06), 0 2px 6px rgb(0 0 0 / 0.35), 0 8px 20px -8px rgb(0 0 0 / 0.55);
-  --ch-elevation-tabbar: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 1px rgb(255 255 255 / 0.07),
-    0 2px 6px rgb(0 0 0 / 0.4), 0 14px 32px -12px rgb(0 0 0 / 0.7);
+  --ch-elevation-control: var(--ch-highlight), var(--ch-light-drift-near) 1px 2px rgb(0 0 0 / 0.35);
+  --ch-elevation-floating: 0 0 0 1px rgb(255 255 255 / 0.06), var(--ch-light-drift-near) 2px 6px rgb(0 0 0 / 0.35),
+    var(--ch-light-drift-mid) 8px 20px -8px rgb(0 0 0 / 0.55);
+  --ch-elevation-tabbar: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(255 255 255 / 0.07),
+    var(--ch-light-drift-near) 2px 6px rgb(0 0 0 / 0.4), var(--ch-light-drift-mid) 14px 32px -12px rgb(0 0 0 / 0.7);
   --ch-elevation-framed: 0 1px 3px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.04), inset 1px 0 0 rgb(255 255 255 / 0.03);
   --ch-elevation-on-frame: 0 0 0 1px rgb(201 173 116 / 0.4), 0 1px 2px rgb(0 0 0 / 0.5);
   --ch-elevation-on-frame-hover: 0 0 0 1px rgb(201 173 116 / 0.55), 0 2px 6px rgb(0 0 0 / 0.55);
@@ -508,8 +590,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-elevation-on-frame-card-hover: 0 0 0 1px rgb(201 173 116 / 0.55), 0 10px 22px -10px rgb(0 0 0 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.06);
   --ch-elevation-primary-hover: 0 0 0 1px rgb(107 187 140 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.1), 0 2px 4px rgb(0 0 0 / 0.4),
     0 8px 16px -8px rgb(0 0 0 / 0.55);
-  --ch-elevation-overlay: 0 0 0 1px rgb(255 255 255 / 0.07), 0 4px 12px rgb(0 0 0 / 0.4), 0 16px 36px -12px rgb(0 0 0 / 0.6);
-  --ch-elevation-sheet: 0 -1px 0 rgb(255 255 255 / 0.06), 0 -4px 12px rgb(0 0 0 / 0.35), 0 -12px 32px -12px rgb(0 0 0 / 0.5);
+  --ch-elevation-overlay: 0 0 0 1px rgb(255 255 255 / 0.07), var(--ch-light-drift-near) 4px 12px rgb(0 0 0 / 0.4),
+    var(--ch-light-drift-mid) 16px 36px -12px rgb(0 0 0 / 0.6);
+  --ch-elevation-sheet: 0 -1px 0 rgb(255 255 255 / 0.06), inset 0 1px 0 var(--ch-light-rim), var(--ch-light-drift-near) -4px 12px rgb(0 0 0 / 0.35),
+    var(--ch-light-drift-mid) -12px 32px -12px rgb(0 0 0 / 0.5);
   --ch-elevation-bubble: 0 1px 2px rgb(0 0 0 / 0.3);
   --ch-elevation-bubble-mine: 0 1px 2px rgb(0 0 0 / 0.3);
   --ch-field-pill-edge: inset 0 0 0 1px rgb(237 231 216 / 0.16);

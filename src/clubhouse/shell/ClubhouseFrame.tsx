@@ -20,6 +20,7 @@ import { PullToRefresh } from './PullToRefresh';
 import { teamSwitchFor } from './team-switch';
 import { NotRebuilt } from './NotRebuilt';
 import { ClubhouseMarker } from './context';
+import { LightProvider } from './light';
 import { CrumbProvider } from './crumbs';
 import { PhoneChromeProvider, PhoneUnderlay, usePhoneChromeState } from './phone-chrome';
 import '../styles/tokens.css';
@@ -41,6 +42,7 @@ export function ClubhouseFrame({
   pathname,
   search = '',
   forceRebuilt = false,
+  lightAt = null,
   children,
 }: {
   userData: GolfUserData;
@@ -50,6 +52,8 @@ export function ClubhouseFrame({
   search?: string;
   /** Preview only: render children even on a route that isn't in CH_REBUILT_ROUTES. */
   forceRebuilt?: boolean;
+  /** Preview only: hold the global light at this instant (?at=). */
+  lightAt?: number | null;
   children: ReactNode;
 }) {
   const role = userData.role;
@@ -71,33 +75,35 @@ export function ClubhouseFrame({
     <ClubhouseMarker role={role}>
       {/* The animation features (domMax, for layoutId slides) load in their own chunk, after first paint (D-25). */}
       <LazyMotion features={loadMaxFeatures} strict>
-        <PhoneChromeProvider>
-          {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
-          <FrameRoot motionOff={!showAnimations} fullScreen={fullScreen}>
-            <ToastProvider scope={userData.teamId ?? ''}>
-              <CrumbProvider>
-                {/* The first Tab on any page: jump past the navigation to the page itself (CH-1607: it slides into view). */}
-                <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
-                  Skip to content
-                </a>
-                <div className="ch-app">
-                  <Sidebar userData={userData} shell={shell} pathname={pathname} teamSwitch={teamSwitch} />
-                  <div className="ch-canvas" id="ch-canvas">
-                    <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} pushed={pushed} />
-                    <OfflineBanner />
-                    {/* A new team is a new page: the route remounts, so nothing the old team's screen held (a search, an open panel, a live feed) carries over. */}
-                    <RouteFrame routeKey={`${pathname}\u0000${userData.teamId ?? ''}`}>
-                      {rebuilt ? children : <NotRebuilt label={item?.label ?? routeLabel(pathname) ?? 'This page'} />}
-                    </RouteFrame>
+        <LightProvider timeZone={shell.timezone ?? null} at={lightAt}>
+          <PhoneChromeProvider>
+            {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
+            <FrameRoot motionOff={!showAnimations} fullScreen={fullScreen}>
+              <ToastProvider scope={userData.teamId ?? ''}>
+                <CrumbProvider>
+                  {/* The first Tab on any page: jump past the navigation to the page itself (CH-1607: it slides into view). */}
+                  <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
+                    Skip to content
+                  </a>
+                  <div className="ch-app">
+                    <Sidebar userData={userData} shell={shell} pathname={pathname} teamSwitch={teamSwitch} />
+                    <div className="ch-canvas" id="ch-canvas">
+                      <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} pushed={pushed} />
+                      <OfflineBanner />
+                      {/* A new team is a new page: the route remounts, so nothing the old team's screen held (a search, an open panel, a live feed) carries over. */}
+                      <RouteFrame routeKey={`${pathname}\u0000${userData.teamId ?? ''}`}>
+                        {rebuilt ? children : <NotRebuilt label={item?.label ?? routeLabel(pathname) ?? 'This page'} />}
+                      </RouteFrame>
+                    </div>
                   </div>
-                </div>
-                <TabBar pathname={pathname} shell={shell} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null }} teamSwitch={teamSwitch} />
-                {/* The iPhone app's pull to refresh (CH-1909); nothing in a browser. */}
-                <PullToRefresh pathname={pathname} />
-              </CrumbProvider>
-            </ToastProvider>
-          </FrameRoot>
-        </PhoneChromeProvider>
+                  <TabBar pathname={pathname} shell={shell} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null }} teamSwitch={teamSwitch} />
+                  {/* The iPhone app's pull to refresh (CH-1909); nothing in a browser. */}
+                  <PullToRefresh pathname={pathname} />
+                </CrumbProvider>
+              </ToastProvider>
+            </FrameRoot>
+          </PhoneChromeProvider>
+        </LightProvider>
       </LazyMotion>
     </ClubhouseMarker>
   );

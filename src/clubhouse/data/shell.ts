@@ -19,6 +19,8 @@ export interface ChShellData {
   nextEvent: ChNextEvent | null;
   /** Null when the read failed: the badge hides rather than claiming zero. */
   pendingJoinRequests: number | null;
+  /** The team's time zone: where the global light's sun is until the course location is set (P001-A1). */
+  timezone?: string;
 }
 
 /**
@@ -70,6 +72,7 @@ export async function loadClubhouseShell(teamId: string | undefined): Promise<Ch
   return {
     nextEvent: e ? { ...describeEvent(e, timezone), ready } : null,
     pendingJoinRequests: joinRes.error ? null : (joinRes.count ?? 0),
+    timezone,
   };
 }
 

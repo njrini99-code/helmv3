@@ -1,5 +1,39 @@
 # P001 — Shell: changelog
 
+## 2026-10-08 — The global light (P001-A1, D3-1)
+
+Approved by the owner on 2026-10-08 ("the ambient light has really transformed
+the app").
+
+- **One sun for the whole Clubhouse.** The shell computes the sun's altitude and
+  azimuth locally (`lib/sun.ts`, NOAA's low-precision formula; no network) for
+  the team's course location, or for the team's time zone until the course is
+  set (`lib/light.ts` `ZONE_POINTS`, else the zone's offset meridian). It turns
+  them into seven unitless numbers (`--ch-sun-x`, `-y`, `-dir`, `-intensity`,
+  `-warmth`, `-night`, `-drift`), and `LightProvider` (`shell/light.tsx`) writes
+  them on `<html>` every five minutes and when the tab comes back. Portaled
+  sheets and menus share the frame's sun this way. The server and first paint
+  draw noon, the CSS fallbacks.
+- **What it lights.** tokens.css derives the rest per theme:
+  - a sky across the green frame and the sidebar field (`--ch-light-sky`), the
+    phone chassis bar (`--ch-light-bar`) and the parchment's top
+    (`--ch-light-canvas`);
+  - the paper's temperature, warm toward golden hour and cool at night
+    (`--ch-light-paper`);
+  - a 1px rim on the sun-facing top and side of cards, sheets, keys and the tab
+    bar (`--ch-light-rim`, `--ch-light-rim-x` inside the elevation tokens);
+  - contact shadows that lean up to 6px away from the light
+    (`--ch-light-drift*`).
+
+  Morning light comes from the left and evening light from the right, as in the
+  sign-in sky. The dark theme keeps its own faint, cool moonlight and no paper
+  tint. Nothing is drawn over data, and nothing animates: the values change in
+  place.
+- **For TS consumers,** `useClubhouseLight()` returns the same numbers. The dev
+  preview holds the light with `?at=HH:MM` in the fixture team's zone.
+- **Not yet.** The course location needs a column on `golf_team_settings`
+  (proposed to the lead). Until then every team's sun is its time zone's.
+
 ## 2026-10-08 — The page under a screen, a skeleton's reveal, pull to refresh
 
 Approved by the owner on 2026-10-08.
