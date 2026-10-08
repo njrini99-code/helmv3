@@ -116,6 +116,6 @@ signed in.
 - [ ] Logged in `PROGRESS.md` with the device and iOS version
 
 Shipping follows the desktop rules. The flag stays off in production until
-the owner turns it on, and deploys are the owner's call. A native change (a
+turning it on is a flag change, and deploys follow AGENTS.md "Production". A native change (a
 new plugin, anything in `ios/`) also needs a new App Store build, which is
 the owner's call too (`ios/appstore/`).
