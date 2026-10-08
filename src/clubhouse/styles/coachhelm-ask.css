@@ -46,7 +46,6 @@
   flex: 1;
   grid-template-columns: 0 minmax(0, 1fr);
   min-height: 0;
-  transition: grid-template-columns var(--ch-dur-base) var(--ch-ease);
 }
 .ch-ask-body.has-panel {
   grid-template-columns: 280px minmax(0, 1fr);
@@ -179,10 +178,24 @@
 .ch-ask-hist > * {
   min-width: 256px;
 }
+/* Show chats and Hide chats (CH-13620) switch the rail's column at once: the column is layout, and layout never animates.
+   Shown, the rail arrives on its own, fading in over base while its content slides in from the edge, inside the rail's
+   own clip; hidden, it goes at once. The phone's drawer is not in the grid and keeps its own motion. */
+.ch-ask-body > .ch-ask-hist {
+  transition: opacity var(--ch-dur-base) var(--ch-ease);
+}
+.ch-ask-body > .ch-ask-hist > * {
+  transition: transform var(--ch-dur-base) var(--ch-ease);
+}
 .ch-ask-hist.is-closed {
   padding: 0;
   visibility: hidden;
-  transition: visibility 0s var(--ch-dur-base);
+  opacity: 0;
+  transition: none;
+}
+.ch-ask-hist.is-closed > * {
+  transform: translateX(-12px);
+  transition: none;
 }
 .ch-ask-hist__head {
   display: flex;
@@ -959,9 +972,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
 /* A switch (use-view-switch.ts): the strip or the chosen chat has already moved, so what is changing dims and stops answering
    taps until the next view lands. To the Board the whole chat dims; to another chat the list of chats stays crisp. */
 .ch-ask-body {
-  transition:
-    grid-template-columns var(--ch-dur-base) var(--ch-ease),
-    opacity var(--ch-dur-quick) var(--ch-ease);
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
 :where(.ch-ask-body) > * {
   transition: opacity var(--ch-dur-quick) var(--ch-ease);

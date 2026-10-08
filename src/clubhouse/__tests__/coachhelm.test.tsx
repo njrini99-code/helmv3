@@ -1010,7 +1010,7 @@ describe('CoachHelm for the coach, on screen', () => {
     Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
     try {
       await u.click(screen.getByRole('button', { name: 'Assign as focus' }));
-      await expectCode('CH-1903', /Couldn’t assign the focus to Jonah: you're offline/);
+      await expectCode('CH-1903', /Couldn’t assign the focus to Jonah: you’re offline/);
       expect(w.assign).not.toHaveBeenCalled();
     } finally {
       Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });

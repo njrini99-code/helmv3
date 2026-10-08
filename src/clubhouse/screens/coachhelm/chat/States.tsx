@@ -32,11 +32,16 @@ export function AskNoRoster() {
   );
 }
 
-/** The chat context did not load (no active team, a dropped read): no program to ask against, so no composer. */
+/**
+ * The chat context did not load (no active team, a dropped read): no program to ask against, so no composer. It is the
+ * page's one read, so it is the page failure (CH-1211), drawn as the route error is: a brick medallion, Try again first.
+ */
 export function AskInputsFailed() {
   return (
     <div className="ch-ask-state">
-      <RefreshNotice
+      <EmptyState
+        size="page"
+        tone="danger"
         code="CH-13221"
         title="Ask CoachHelm couldn’t load your program"
         body="Nothing is lost, but there is no program to ask about until this loads. Try again in a moment."

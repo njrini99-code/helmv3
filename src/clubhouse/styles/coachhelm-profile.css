@@ -677,6 +677,19 @@
     background: none;
     box-shadow: none;
   }
+  /* The card's place follows the loaded card as the phone widens (measured in WebKit from 355 to 445px): 268px while its
+     kicker takes two lines, 246px once the kicker fits one (a 374px column, a 414px phone) and 219.5px once the headline
+     fits two (378px), so nothing moves when the read lands at any phone width. */
+  @container chhl (min-width: 374px) {
+    :is(.ch-hv.is-phone) .ch-hg-sk__hero > .ch-skel {
+      height: 246px !important;
+    }
+  }
+  @container chhl (min-width: 378px) {
+    :is(.ch-hv.is-phone) .ch-hg-sk__hero > .ch-skel {
+      height: 219.5px !important;
+    }
+  }
   .ch-hg-sk__grid {
     gap: 0;
     padding-top: 12px;

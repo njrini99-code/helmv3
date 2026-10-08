@@ -84,7 +84,8 @@ function MeasureSkeleton() {
 export function ProfileSkeleton({ chained }: { chained?: boolean } = {}) {
   const phone = useChPhone();
   if (phone) {
-    // The phone: the shape of the game's feature card, then the measures' section and its rows.
+    // The phone: the shape of the game's feature card, then the measures' section and its rows. The card's height is the
+    // loaded card's at 390; coachhelm-profile.css follows it at other widths.
     return (
       <Chrome label="Loading your game profile" code="CH-13460" chained={chained}>
         <div className="ch-hg-sk__hero">
@@ -149,7 +150,8 @@ function StandingGroupSkeleton({ rows }: { rows: number }) {
 export function StandingSkeleton({ chained }: { chained?: boolean } = {}) {
   const phone = useChPhone();
   if (phone) {
-    // The phone: where you stand's feature card (the headline, the note and what is most to gain), then the groups.
+    // The phone: where you stand's feature card (the headline, the note and what is most to gain), then the groups. The
+    // card's height is the loaded card's at 390; coachhelm-standing.css follows it at other widths.
     return (
       <Chrome label="Loading your standing" code="CH-13470" chained={chained}>
         <div className="ch-hs-sk__hero">

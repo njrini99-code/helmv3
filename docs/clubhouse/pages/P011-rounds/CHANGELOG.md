@@ -16,6 +16,9 @@ The states audit's Rounds findings and the owner's native-feel pass, verified in
   the round card at the idle card's height, season scoring, the tools, a month's rows; the review's hero, figures,
   strokes gained and scorecard), so nothing moves when the page lands. On the desktop the review's scorecard loads as a
   solid object; the rest are the Ledger's ruled blocks (shell).
+- **Loading at every phone width:** the round card's place follows the idle card as the phone widens (it was 20px too
+  tall at 430): it grows with its two rows of hole squares (two ninths of the card's width, `cqw`) and drops its foot's
+  second line from a 359px card, as the card does. Measured in WebKit from 355 to 445px; within 0.3px at 390 and 430.
 
 ## 2026-10-08 — Phone: Mobile clubhouse pass
 

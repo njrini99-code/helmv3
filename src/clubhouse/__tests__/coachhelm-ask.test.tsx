@@ -754,9 +754,11 @@ describe('the states that stand in for the thread', () => {
     expect(screen.queryByRole('textbox')).toBeNull();
   });
 
-  it('CH-13221 a program that did not load is a notice with Try again and no composer, and Try again refreshes the page', async () => {
+  it('CH-13221 CH-1211 a program that did not load is the page failure (an alert in the danger tone) with Try again and no composer, and Try again refreshes the page', async () => {
     show({ status: 'failed' });
     expect(code('CH-13221')?.textContent).toMatch(/Ask CoachHelm couldn’t load your program/);
+    expect(code('CH-13221')).toHaveAttribute('role', 'alert');
+    expect(code('CH-13221')).toHaveClass('ch-empty-page--danger');
     expect(screen.queryByRole('textbox')).toBeNull();
     await userEvent.click(within(code('CH-13221') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalled();

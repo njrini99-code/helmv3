@@ -579,6 +579,24 @@
     background: none;
     box-shadow: none;
   }
+  /* The card's place follows the loaded card as the phone widens (measured in WebKit from 355 to 445px), its headline,
+     note and closing line taking fewer lines: 527.5px under a 329px column (a 369px phone), 511px to 350px (390), 493px
+     from 351px (391) and 446.5px from 388px (428), so nothing moves when the read lands at any phone width. */
+  @container chhl (max-width: 328.9px) {
+    :is(.ch-hv.is-phone) .ch-hs-sk__hero > .ch-skel {
+      height: 527.5px !important;
+    }
+  }
+  @container chhl (min-width: 351px) {
+    :is(.ch-hv.is-phone) .ch-hs-sk__hero > .ch-skel {
+      height: 493.2px !important;
+    }
+  }
+  @container chhl (min-width: 388px) {
+    :is(.ch-hv.is-phone) .ch-hs-sk__hero > .ch-skel {
+      height: 446.7px !important;
+    }
+  }
   .ch-hs-sk__g {
     gap: 0;
     padding: 12px 0 0;

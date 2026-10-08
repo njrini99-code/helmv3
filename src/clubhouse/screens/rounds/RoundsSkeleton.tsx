@@ -38,8 +38,9 @@ export function RoundsSkeleton() {
  * The phone's loading shape (the Mobile clubhouse pass, 2026-10-08), at the loaded page's geometry so nothing moves when it lands
  * (measured at 390, 2026-10-08): the intro (the eyebrow's line box, the title 10px under it, New round at the end of its line), the
  * round card at the idle card's height (the page at rest; a round in progress is a little shorter), season scoring (the average, the
- * figures between hairlines, the chart and its legend), the tools, then a month and its rows. It is drawn beside the desktop shape
- * and rounds.css shows the one for the width, so the server needs no width to draw it.
+ * figures between hairlines, the chart and its legend), the tools, then a month and its rows. The card's height follows the idle
+ * card at other widths (rounds.css). It is drawn beside the desktop shape and rounds.css shows the one for the width, so the
+ * server needs no width to draw it.
  */
 function PhoneRoundsSkeleton() {
   return (

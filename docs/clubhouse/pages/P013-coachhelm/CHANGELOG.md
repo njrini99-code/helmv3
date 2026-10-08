@@ -21,6 +21,15 @@ The states audit's CoachHelm findings and the owner's native-feel pass, verified
 - **Loading:** the phone skeletons hold the loaded geometry, measured at 390: the player's two-line intro, the claim's
   card per role, the views' cards and the Deep dive's three-line brief, so nothing moves when the page lands. The pulse
   still grows past its three reserved rows when it has more (CH-13405).
+- **Loading at every phone width:** the Game profile's and Standing's cards in waiting follow the loaded card as the
+  phone widens and its lines wrap fewer (they were 48 and 64px too tall at 430), on the CoachHelm container's width.
+  Measured in WebKit from 355 to 445px; within 0.2px at 390 and 430.
+- **Ask, the program did not load (CH-13221):** the page failure (CH-1211), drawn as the route error is (a brick
+  medallion, the title, Try again first), where it was a notice.
+- **Ask, Show and Hide chats (CH-13620):** the rail's column switches at once; it no longer animates the grid's columns
+  (layout never animates). Shown, the rail fades in over base while its content slides 12px in from the edge, inside
+  the rail's own clip; hidden, it goes at once. Reduced motion and Animations off show it at once. The phone's drawer
+  is unchanged.
 
 ## 2026-10-08 — Phone: Mobile clubhouse pass
 

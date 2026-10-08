@@ -2054,7 +2054,7 @@ describe('Classes, offline and slow', () => {
     setField('Room', '121');
     goOffline();
     await submitForm(user);
-    await expectCode('CH-1903', /Couldn't update STAT 201: you're offline/);
+    await expectCode('CH-1903', /Couldn't update STAT 201: you’re offline/);
     expect(w.save).not.toHaveBeenCalled();
     expect(within(sheet()).getByRole('button', { name: 'Save changes' })).toBeTruthy();
     expect(field('Room').value).toBe('121');
@@ -2070,7 +2070,7 @@ describe('Classes, offline and slow', () => {
     await user.click(within(await screen.findByRole('dialog', { name: 'Probability and Statistics' })).getByRole('button', { name: 'Remove class' }));
     goOffline();
     await user.click(await screen.findByRole('button', { name: 'Remove class' }));
-    await expectCode('CH-1903', /Couldn't remove STAT 201: you're offline/);
+    await expectCode('CH-1903', /Couldn't remove STAT 201: you’re offline/);
     expect(w.remove).not.toHaveBeenCalled();
     expect(names()).toContain('Probability and Statistics');
   });
@@ -2088,7 +2088,7 @@ describe('Classes, offline and slow', () => {
     });
     await fillGeog(user);
     await submitForm(user);
-    await expectCode('CH-1903', /GEOG 110 is saved, but not on your calendar: you're offline/);
+    await expectCode('CH-1903', /GEOG 110 is saved, but not on your calendar: you’re offline/);
     await waitFor(() => expect(within(card(/^GEOG 110/)).getByText('Not on your calendar')).toBeTruthy());
     expect(w.sync).not.toHaveBeenCalled();
     expect(document.querySelector('.ch-cl-sync.is-failed')!.textContent).toContain('1 class is not on your calendar');
