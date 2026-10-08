@@ -2887,3 +2887,114 @@ html[data-fw-theme='dark'] .ch-offline {
     padding-bottom: 10px;
   }
 }
+
+/* Phone large titles (shell/large-title.tsx, owner 2026-10-08: "cardless, native-feeling phone Clubhouse"). A page that
+   opens with its own large title does not also show its name in the bar: while the large title is in view the bar's
+   title is hidden, and as it scrolls up under the bar (the bar is marked data-large-title="tucked") the bar's title
+   fades in, on opacity and a 3px rise only. The :has() list is CH_LARGE_TITLES and must stay in step with it; it holds
+   from the first paint, so a cold load never shows the bar's title and then takes it away. The bar's title keeps its
+   place in the accessibility tree and stays the focus target for a pushed page. Pages with no large title, the green
+   hero's bar and desktop are untouched. The scroll edge: a soft shade under the bar once content has scrolled under
+   it (data-scrolled), drawn on ::before because ::after is the sheet's lip. */
+@media (max-width: 820px) {
+  [data-ui='clubhouse'] .ch-topbar :is(.ch-topbar__ptitle, .ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
+    transition:
+      opacity var(--ch-dur-quick) var(--ch-ease),
+      translate var(--ch-dur-quick) var(--ch-ease);
+  }
+  [data-ui='clubhouse']:not([data-phone-hero]):has(
+      #ch-canvas
+        :is(
+          [data-ch-large-title],
+          .ch-rsm-title,
+          .ch-recm-title,
+          .ch-setm-title,
+          .ch-qf-head h1,
+          .ch-rd-h h1,
+          .ch-hl-h__t,
+          .ch-stm-head h1
+        ):not(.ch-sr-only, .ch-pscreen *, dialog *)
+    )
+    .ch-topbar:not([data-large-title='tucked'])
+    :is(.ch-topbar__ptitle, .ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
+    opacity: 0;
+    translate: 0 3px;
+  }
+  [data-ui='clubhouse'] .ch-topbar::before {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    height: 14px;
+    background: linear-gradient(color-mix(in oklab, var(--ch-frame) 26%, transparent), transparent);
+    opacity: 0;
+    content: '';
+    pointer-events: none;
+    transition: opacity var(--ch-dur-quick) var(--ch-ease);
+  }
+  [data-ui='clubhouse']:not([data-phone-hero]) .ch-topbar[data-scrolled]::before {
+    opacity: 1;
+  }
+  [data-ui='clubhouse'][data-motion='off'] .ch-topbar::before,
+  [data-ui='clubhouse'][data-motion='off'] .ch-topbar :is(.ch-topbar__ptitle, .ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
+    transition: none;
+  }
+}
+@media (max-width: 820px) and (prefers-reduced-motion: reduce) {
+  [data-ui='clubhouse'] .ch-topbar::before,
+  [data-ui='clubhouse'] .ch-topbar :is(.ch-topbar__ptitle, .ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
+    transition: none;
+  }
+}
+
+/* The More sheet's rows (owner 2026-10-08, the cardless phone pass): native inset grouped rows inside the sheet, not
+   cards on it. Each group is a rounded tint of the sheet with no shadow, the separators are hairlines that start at the
+   label (the icon column hangs to their left), and the icons are plain glyphs, not tiles. Who you are is one more
+   group. The sheet itself stays: it is a real overlay. Phone only; desktop never opens it. */
+@media (max-width: 820px) {
+  .ch-more__list,
+  .ch-more__me {
+    border-radius: 12px;
+    background: color-mix(in oklab, var(--ch-text-primary) 4.5%, transparent);
+    box-shadow: none;
+  }
+  /* A list row's type, not a card's label: 16px, a shade over regular (the current page and team keep their 600). */
+  .ch-more__row,
+  button.ch-more__row {
+    position: relative;
+    gap: 14px;
+    min-height: 50px;
+    border-top: 0;
+    font-size: 16px;
+    font-weight: 450;
+    letter-spacing: -0.01em;
+  }
+  /* 16px padding, the 24px icon column and the 14px gap: the hairline starts where the label does. */
+  .ch-more__row + .ch-more__row::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 54px;
+    height: 1px;
+    background: var(--ch-border-subtle);
+    content: '';
+    pointer-events: none;
+  }
+  .ch-more__row:active {
+    background: var(--ch-ledger-row-press);
+  }
+  .ch-more__ic,
+  .ch-more__row[aria-current='page'] .ch-more__ic,
+  .ch-more__row[aria-current='true'] .ch-more__ic {
+    width: 24px;
+    height: 24px;
+    border-radius: 0;
+    background: none;
+  }
+  .ch-more__row[aria-current] .ch-more__ic {
+    color: var(--ch-green-700);
+  }
+  .ch-more__cap {
+    padding: 0 16px 6px;
+  }
+}

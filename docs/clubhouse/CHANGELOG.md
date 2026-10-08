@@ -1,5 +1,14 @@
 # Clubhouse changelog
 
+## 2026-10-08 — Phone: large titles collapse into the bar; flat More sheet
+
+From the owner's cardless, native-feeling phone pass. A shared shell change; no page's own files change. Not yet reviewed by the owner.
+
+- **Large titles** (`shell/large-title.tsx`, `shell/TopBar.tsx`, `styles/shell.css`). A phone page that opens with its own large title no longer names itself twice. While the large title is in view the bar's title is hidden; once it scrolls up under the bar, the bar's title fades in over 180ms (`--ch-dur-quick`, opacity and a 3px rise). It fades out again on the way back down. Reduced motion and Animations off swap it at once. The large titles are listed once, in `CH_LARGE_TITLES`: Roster, Recruiting, Settings, Qualifiers and My qualifiers, CoachHelm, Team stats and Rounds. A page can opt in with `data-ch-large-title`. A CSS `:has()` on the same list hides the bar's title from the first paint, so a cold load never shows it and then takes it away. One IntersectionObserver on the title marks the bar `data-large-title="tucked"`. Pages without a large title keep their bar title: Messages, Calendar (its month is content), Round, Qualifier, Player stats and Classes. The green hero's bar is unchanged. The bar's title stays in the accessibility tree and remains the focus target.
+- **Scroll edge** (`styles/shell.css`). The bar casts a soft frame-green shade onto the sheet below it only once content has scrolled under it (`data-scrolled`). It is drawn on `::before`, because `::after` is the sheet's lip. There is none on the hero's green.
+- **More sheet** (`styles/shell.css`). The sheet's lists and the "who you are" row are native inset grouped rows: a rounded tint of the sheet with no shadow, hairlines inset to the label, and plain icons instead of tiles. The current page and the current team keep their green icon. The sheet itself is unchanged.
+- Phone only (`max-width: 820px`); desktop markup and styles are untouched. WebKit at 390px, 2026-10-08: the collapse was checked on 8 screens and the no-title case on 6, plus the More sheet open (coach, two-team coach and player), reduced motion, and desktop at 1280.
+
 ## 2026-10-08 — Native phone navigation: cached tabs, steady bars, push and pop
 
 From the native-feel audit (docs/clubhouse/NATIVE_FEEL_PERF_AUDIT_2026-10-08.md, P0-2, P0-3, P1-1, P1-2). Not yet reviewed by the owner.
