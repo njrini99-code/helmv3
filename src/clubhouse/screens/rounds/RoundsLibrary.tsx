@@ -120,7 +120,8 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
           <span className="ch-rd-upd" role="status" data-ch-code={refreshing ? 'CH-11410' : undefined}>
             {refreshing ? 'Updating…' : ''}
           </span>
-          <h1 id="ch-rd-title">Your rounds</h1>
+          {/* D11: on the phone the bar's "Rounds" is the screen's h1. */}
+          {phone ? <h2 id="ch-rd-title">Your rounds</h2> : <h1 id="ch-rd-title">Your rounds</h1>}
         </div>
         {newHref && !nothing && (
           <Button variant="primary" leftIcon={Plus} href={newHref}>
