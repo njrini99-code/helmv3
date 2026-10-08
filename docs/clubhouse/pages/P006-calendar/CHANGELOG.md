@@ -1,5 +1,9 @@
 # P006 — Calendar: changelog
 
+## 2026-10-08 — dark: Clubhouse at night
+
+Calendar follows GolfHelm's dark theme ("Clubhouse at night"). A tournament or qualifier block, the month's competition chip and the detail panel's next-up card keep their filled green with ivory type; practice blocks, agenda times and lane events take the light text green; the competition dot, the phone's now line and its competition dots lift to the light green so they hold on the dark ground; selection, today, travel, the class hatch and the coach's busy hatch are redrawn as ivory or champagne washes. Light mode is unchanged (every rule is scoped to `html[data-fw-theme='dark']`).
+
 ## 2026-10-08 — phone: Mobile clubhouse pass
 
 Phone Calendar follows the owner's "Mobile clubhouse pass" board (carried from

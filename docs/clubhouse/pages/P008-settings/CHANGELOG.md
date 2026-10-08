@@ -1,5 +1,9 @@
 # P008 — Settings: changelog
 
+## 2026-10-08 — dark: Clubhouse at night
+
+Settings follows GolfHelm's dark theme ("Clubhouse at night"), including the new Appearance control. The rail's selection is a light-green wash with the light text green; the team code and rank numbers lift off the ground; the phone's portrait coin and pills keep a filled green with ivory type; the phone switch uses the switch tokens (ivory thumb, never the dark ivory ramp); the action sheet's card and scrim are dark. Light mode is unchanged.
+
 ## 2026-10-08 — phone: Mobile clubhouse pass
 
 Phone Settings now follows the owner's "Mobile clubhouse pass" board, as phone

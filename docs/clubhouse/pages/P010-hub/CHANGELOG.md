@@ -1,5 +1,9 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-08 — dark: Clubhouse at night
+
+Team Hub follows GolfHelm's dark theme ("Clubhouse at night"). Row rules, the pass's perforation, task checkboxes, RSVP and read tracks become ivory hairlines; the tab underline and Going in the RSVP bar take the light green; ivory type on a filled green (RSVP choice, task tick, upload mark, audience choice, step) takes the on-green ink; the featured announcement is unchanged. Light mode is unchanged.
+
 ## 2026-10-08 — phone: Mobile clubhouse pass
 
 Phone Team Hub follows the owner's "Mobile clubhouse pass" board (carried from

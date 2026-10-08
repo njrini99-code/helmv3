@@ -1830,3 +1830,83 @@
     }
   }
 }
+
+/* ── Dark: "Clubhouse at night" (owner, 2026-10-08) ──────────────────────────
+   Rules, tracks and checkboxes drawn in ink become ivory hairlines; ivory type on a filled green takes the on-green
+   ink (the ivory ramp is the dark surfaces at night); deep-green marks and ink lift to the text greens. The featured
+   announcement is already a green card with its own inks and stays as it is. */
+html[data-fw-theme='dark'] .ch-hb-role {
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.35);
+}
+html[data-fw-theme='dark'] .ch-hb-tabs__bar {
+  background: var(--ch-green-600);
+}
+html[data-fw-theme='dark'] .ch-hb-rsvp__list li,
+html[data-fw-theme='dark'] .ch-hb-plan li,
+html[data-fw-theme='dark'] .ch-hb-feed li,
+html[data-fw-theme='dark'] .ch-hb-task + .ch-hb-task {
+  border-top-color: var(--ch-border-hairline);
+}
+html[data-fw-theme='dark'] .ch-hb-ann__h,
+html[data-fw-theme='dark'] .ch-hb-pass__f {
+  border-top-color: var(--ch-border-hairline);
+}
+html[data-fw-theme='dark'] .ch-hb-rsvp__d {
+  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+}
+html[data-fw-theme='dark'] .ch-hb-rsvp__a {
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.4);
+}
+html[data-fw-theme='dark'] .ch-hb-rsvp__a button[aria-checked='true'],
+html[data-fw-theme='dark'] .ch-hb-check,
+html[data-fw-theme='dark'] .ch-hb-drop > span,
+html[data-fw-theme='dark'] .ch-hb-aud button[aria-checked='true'],
+html[data-fw-theme='dark'] .ch-hb-dp__ck,
+html[data-fw-theme='dark'] .ch-hb-steps li.is-on {
+  color: var(--ch-on-green-ink);
+}
+html[data-fw-theme='dark'] .ch-hb-rsvp__bar,
+html[data-fw-theme='dark'] .ch-hb-reads__t {
+  background: rgb(237 231 216 / 0.08);
+}
+html[data-fw-theme='dark'] .ch-hb-rsvp__bar .is-going {
+  background: var(--ch-green-600);
+}
+html[data-fw-theme='dark'] .ch-hb-rsvp__bar .is-none {
+  background: rgb(237 231 216 / 0.14);
+}
+html[data-fw-theme='dark'] .ch-hb-pass__stub {
+  border-left-color: var(--ch-border-control);
+}
+html[data-fw-theme='dark'] .ch-hb-check,
+html[data-fw-theme='dark'] .ch-hb-dp__ck {
+  box-shadow: inset 0 0 0 1.5px rgb(237 231 216 / 0.3);
+}
+html[data-fw-theme='dark'] .ch-hb-check[aria-pressed='true'],
+html[data-fw-theme='dark'] .ch-hb-dp__row[aria-pressed='true'] .ch-hb-dp__ck {
+  box-shadow: none;
+}
+html[data-fw-theme='dark'] .ch-hb-ring {
+  background: conic-gradient(var(--ch-green-600) calc(var(--ch-hb-p) * 1%), rgb(237 231 216 / 0.1) 0);
+}
+html[data-fw-theme='dark'] .ch-hb-drop {
+  border-color: rgb(107 187 140 / 0.35);
+}
+html[data-fw-theme='dark'] .ch-hb-drop.is-over {
+  border-color: var(--ch-green-600);
+}
+html[data-fw-theme='dark'] .ch-hb-drop > span,
+html[data-fw-theme='dark'] .ch-hb-aud button[aria-checked='true'],
+html[data-fw-theme='dark'] .ch-hb-dp__row[aria-pressed='true'] .ch-hb-dp__ck,
+html[data-fw-theme='dark'] .ch-hb-steps li.is-on {
+  background: var(--ch-green-fill-700);
+}
+html[data-fw-theme='dark'] .ch-hb-picks button[aria-pressed='true'],
+html[data-fw-theme='dark'] .ch-hb-chip {
+  color: var(--ch-green-700);
+}
+@container chhb (max-width: 900px) {
+  html[data-fw-theme='dark'] .ch-hb-pass__stub {
+    border-top-color: var(--ch-border-control);
+  }
+}

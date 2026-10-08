@@ -2082,3 +2082,165 @@
     font-size: 12px;
   }
 }
+
+/* ── Dark: "Clubhouse at night" (owner, 2026-10-08) ──────────────────────────
+   Sign up keeps GolfHelm's theme when it is reached from a dark sign in (ThemeScript sets it only on a hard load of the
+   guarded routes, and nothing clears it on the way here). The stationery pane becomes night paper over the course, the
+   floating pills dark glass, and the literal inks the ramp's own. The felt, the green choices, the crest and the member
+   card (card stock, a physical object on the felt) keep their colours: they are already a dark tray with ivory type,
+   and the card is the one piece meant to stand off it. */
+html[data-fw-theme='dark'] .ch-ox {
+  --ch-ox-ink: var(--ch-text-primary);
+}
+html[data-fw-theme='dark'] .ch-ox-lock {
+  background: rgb(27 32 28 / 0.88);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 1px rgb(201 173 116 / 0.24), var(--ch-elevation-floating);
+}
+html[data-fw-theme='dark'] .ch-ox-rail {
+  background: rgb(27 32 28 / 0.92);
+  box-shadow: 0 0 0 1px rgb(201 173 116 / 0.22), var(--ch-elevation-floating);
+}
+html[data-fw-theme='dark'] .ch-ox-rail__s {
+  color: var(--ch-text-tertiary);
+}
+html[data-fw-theme='dark'] .ch-ox-rail__s[data-state='done'] {
+  color: var(--ch-green-600);
+}
+html[data-fw-theme='dark'] .ch-ox-rail__thumb .ch-ox-rail__s {
+  color: var(--ch-ox-ivory);
+}
+html[data-fw-theme='dark'] .ch-ox-rail__m {
+  background: rgb(27 32 28 / 0.9);
+  box-shadow: 0 0 0 1px rgb(201 173 116 / 0.22);
+  color: var(--ch-ink-700);
+}
+html[data-fw-theme='dark'] .ch-ox-rail__m::before {
+  background: rgb(107 187 140 / 0.18);
+}
+html[data-fw-theme='dark'] .ch-ox-rail__m::after {
+  background: var(--ch-green-600);
+}
+html[data-fw-theme='dark'] .ch-ox-signin {
+  background: rgb(27 32 28 / 0.96);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 1px rgb(201 173 116 / 0.3), var(--ch-elevation-floating);
+  color: var(--ch-ink-700);
+}
+html[data-fw-theme='dark'] .ch-ox .ch-ox-signin a {
+  color: var(--ch-on-green-ink);
+}
+html[data-fw-theme='dark'] .ch-ox-stage {
+  background: var(--ch-ox-grain), linear-gradient(170deg, rgb(27 32 28 / 0.94), rgb(24 29 25 / 0.92) 55%, rgb(21 26 22 / 0.94));
+}
+html[data-fw-theme='dark'] .ch-ox-side {
+  box-shadow: inset 0 0 0 1px #072a1a, inset 0 0 0 8px #0c3c27, inset 0 0 0 9px rgb(220 205 166 / 0.3), inset 0 3px 22px rgb(0 0 0 / 0.35), 0 1px 0 rgb(255 255 255 / 0.05);
+}
+html[data-fw-theme='dark'] .ch-ox-back,
+html[data-fw-theme='dark'] .ch-ox-sub,
+html[data-fw-theme='dark'] .ch-ox-enter,
+html[data-fw-theme='dark'] .ch-ox-legal,
+html[data-fw-theme='dark'] .ch-ox-lbl,
+html[data-fw-theme='dark'] .ch-ox-hint,
+html[data-fw-theme='dark'] .ch-ox-big > span,
+html[data-fw-theme='dark'] .ch-ox-consent,
+html[data-fw-theme='dark'] .ch-ox-help {
+  color: var(--ch-text-secondary);
+}
+html[data-fw-theme='dark'] .ch-ox-opt,
+html[data-fw-theme='dark'] .ch-ox-rules li {
+  color: var(--ch-text-tertiary);
+}
+html[data-fw-theme='dark'] .ch-ox-rules li[data-ok] {
+  color: var(--ch-green-700);
+}
+html[data-fw-theme='dark'] .ch-ox-field > label {
+  color: var(--ch-ink-700);
+}
+html[data-fw-theme='dark'] .ch-ox-back:hover:not(:disabled) {
+  background: rgb(237 231 216 / 0.06);
+  color: var(--ch-text-primary);
+}
+html[data-fw-theme='dark'] .ch-ox-eyebrow {
+  color: var(--ch-green-600);
+}
+html[data-fw-theme='dark'] .ch-ox-hello {
+  color: var(--ch-green-700);
+}
+html[data-fw-theme='dark'] .ch-ox-hello[data-error] {
+  color: var(--ch-danger-600);
+}
+html[data-fw-theme='dark'] .ch-ox-enter kbd {
+  box-shadow: 0 0 0 1px var(--ch-border-subtle), 0 1px 0 rgb(0 0 0 / 0.4);
+}
+html[data-fw-theme='dark'] .ch-ox-slots > b {
+  background: rgb(237 231 216 / 0.3);
+}
+html[data-fw-theme='dark'] .ch-ox-slot {
+  background: rgb(255 255 255 / 0.03);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.07);
+}
+html[data-fw-theme='dark'] .ch-ox-slot[data-filled] {
+  background: var(--ch-raised-bg);
+  box-shadow: var(--ch-raised-shadow);
+}
+html[data-fw-theme='dark'] .ch-ox-code[data-focus] .ch-ox-slot[data-cur] {
+  background: rgb(255 255 255 / 0.07);
+  box-shadow: inset 0 0 0 1.5px rgb(237 231 216 / 0.5);
+}
+html[data-fw-theme='dark'] .ch-ox-code[data-st='ok'] .ch-ox-slot {
+  background: linear-gradient(180deg, var(--ch-green-100), var(--ch-green-50));
+  box-shadow: 0 0 0 1px rgb(107 187 140 / 0.35), inset 0 1px 0 rgb(255 255 255 / 0.05);
+  color: var(--ch-green-700);
+}
+html[data-fw-theme='dark'] .ch-ox-code[data-st='error'] .ch-ox-slot[data-filled] {
+  box-shadow: 0 0 0 1.5px var(--ch-danger-600), var(--ch-raised-shadow);
+}
+html[data-fw-theme='dark'] .ch-ox-spin {
+  border-color: rgb(237 231 216 / 0.15);
+  border-top-color: var(--ch-green-700);
+}
+html[data-fw-theme='dark'] .ch-ox-big input {
+  border-bottom-color: var(--ch-border-control);
+}
+html[data-fw-theme='dark'] .ch-ox-big input::placeholder {
+  color: var(--ch-ink-400);
+}
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-ox-big input:hover {
+    border-bottom-color: var(--ch-border-strong);
+  }
+}
+html[data-fw-theme='dark'] .ch-ox-big input:focus {
+  border-bottom-color: var(--ch-green-600);
+}
+html[data-fw-theme='dark'] .ch-ox-big[data-invalid] input {
+  border-bottom-color: var(--ch-danger-600);
+}
+html[data-fw-theme='dark'] .ch-ox-hcp__val[data-plus] {
+  color: var(--ch-green-700);
+}
+html[data-fw-theme='dark'] .ch-ox-hcp__val[data-none] {
+  color: var(--ch-ink-300);
+}
+html[data-fw-theme='dark'] .ch-ox-range::-webkit-slider-thumb {
+  box-shadow: var(--ch-raised-shadow), 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+html[data-fw-theme='dark'] .ch-ox-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: var(--ch-raised-shadow), 0 0 0 4px var(--ch-focus-halo);
+}
+html[data-fw-theme='dark'] .ch-ox-range::-moz-range-thumb {
+  background: radial-gradient(circle at 50% 50%, var(--ch-green-600) 0 4px, transparent 4.5px), #262d27;
+}
+html[data-fw-theme='dark'] .ch-ox-drop[data-over] .ch-ox-drop__in {
+  background: var(--ch-green-50);
+}
+html[data-fw-theme='dark'] .ch-ox-drop__busy {
+  background: rgb(17 21 18 / 0.6);
+}
+html[data-fw-theme='dark'] .ch-ox[data-phase='fold'] {
+  background: var(--ch-frame);
+}
+@media (max-width: 820px) {
+  html[data-fw-theme='dark'] .ch-ox-stage {
+    background: linear-gradient(165deg, rgb(27 32 28 / 0.94), rgb(22 27 23 / 0.92));
+  }
+}

@@ -1,5 +1,9 @@
 # P007 — Messages: changelog
 
+## 2026-10-08 — dark: Clubhouse at night
+
+Messages follows GolfHelm's dark theme ("Clubhouse at night"). Sent bubbles keep the green gradient with ivory type (not white); row hover and press, tool hovers and the reaction hover become ivory washes; the selected thread's rail, the To chips and the announcement acknowledgement take the light text green; announcement marks, the phone's group marks and Jump to latest keep their filled green with ivory type; the phone's idle Send glyph reads on its grey plate. Light mode is unchanged.
+
 ## 2026-10-08 — phone: Mobile clubhouse pass
 
 Phone Messages now follows the owner's "Coach - Home - Mobile v2" board (round
