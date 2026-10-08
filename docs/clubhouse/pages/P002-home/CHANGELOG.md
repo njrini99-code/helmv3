@@ -1,5 +1,9 @@
 # P002 — Home: changelog
 
+## 2026-10-08 — premium pass: the sunset on the day's rail
+
+"Later today" carries today's sunset at the team's place (the global light's `sunTimes` and `useLightPlace`) while it is still ahead, with when the light turns golden; a champagne mark on the rail and a sunset glyph. Nothing after sunset.
+
 ## 2026-10-08 — premium pass: trend sparkline in the phone's Latest rounds (P002-C2)
 
 Each latest round on the coach's phone carries its player's last rounds as a 64x18 bare FormLine between the player and the score (from the leaderboard rows Home already loads; three rounds or more). It is decorative beside the figures (the trend itself lives in Stats), and absent when the leaderboard read failed.

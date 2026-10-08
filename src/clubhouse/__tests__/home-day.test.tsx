@@ -104,3 +104,15 @@ describe('Home · Since you last looked', () => {
     expect(screen.getByRole('button', { name: /Theo posted/ })).toBeTruthy();
   });
 });
+
+describe('Home · the sunset row', () => {
+  it('shows today’s sunset at the team’s place while it is ahead, and nothing after', async () => {
+    const { sunsetExtra } = await import('../screens/home/DayCard');
+    const place = { place: { lat: 38.9, lng: -78.5 }, timeZone: 'America/New_York' };
+    const [row] = sunsetExtra('2026-10-14', new Date('2026-10-14T18:40:00Z'), place);
+    expect(row).toMatchObject({ key: 'sunset', title: 'Sunset', mark: 'sun' });
+    expect(row!.time).toMatch(/^6:[2-4]\d$/);
+    expect(row!.sub).toMatch(/^Golden hour from \d:\d\d$/);
+    expect(sunsetExtra('2026-10-14', new Date('2026-10-15T00:30:00Z'), place)).toEqual([]);
+  });
+});

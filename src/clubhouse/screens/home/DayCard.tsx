@@ -14,6 +14,7 @@ import { LinkPending } from '../../shell/LinkPending';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
 import { messagesPrefillHref } from '../messages/prefill';
+import { sunTimes, type LatLng } from '../../lib/sun';
 import { CALENDAR, eventHref, whenLabel } from './HomePhone';
 
 /**
@@ -259,6 +260,28 @@ function minutesOf(iso: string, timeZone?: string): number {
   const p: Record<string, string> = {};
   for (const x of new Intl.DateTimeFormat('en-US', { timeZone: timeZone || 'America/New_York', hourCycle: 'h23', hour: '2-digit', minute: '2-digit' }).formatToParts(new Date(iso))) p[x.type] = x.value;
   return Number(p.hour) * 60 + Number(p.minute);
+}
+
+/**
+ * The sunset row (concept board 1): today's sunset at the team's place (the global light's sun, lib/sun.ts sunTimes),
+ * while it is still ahead; its line says when the light turns golden. Nothing after sunset, or where the sun doesn't set.
+ */
+export function sunsetExtra(today: string | null, now: Date | null, place: { place: LatLng; timeZone: string }): ChRailExtra[] {
+  if (!today || !now) return [];
+  const { sunset, goldenStart } = sunTimes(today, place.place, place.timeZone);
+  if (sunset === null || sunset <= now.getTime()) return [];
+  const clock = new Intl.DateTimeFormat('en-US', { timeZone: place.timeZone, hour: 'numeric', minute: '2-digit' });
+  const short = (ms: number) => clock.format(ms).replace(/\s?[AP]M$/, '');
+  return [
+    {
+      key: 'sunset',
+      at: minutesOf(new Date(sunset).toISOString(), place.timeZone),
+      time: short(sunset),
+      title: 'Sunset',
+      sub: goldenStart && goldenStart > now.getTime() ? `Golden hour from ${short(goldenStart)}` : 'Last light on the range',
+      mark: 'sun',
+    },
+  ];
 }
 
 /** A competition later this week, for the rail: after today, so it sorts below today's rows. */

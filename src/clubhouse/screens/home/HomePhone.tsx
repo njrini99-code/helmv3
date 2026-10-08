@@ -25,7 +25,8 @@ import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
 import { coachFailedParts } from './model';
 import { roundHref } from './player-links';
-import { competitionExtra, DayCard, dayPhase, LaterToday, SinceYouLooked } from './DayCard';
+import { competitionExtra, DayCard, dayPhase, LaterToday, SinceYouLooked, sunsetExtra } from './DayCard';
+import { useLightPlace } from '../../shell/light';
 
 export const CALENDAR = '/golf/dashboard/calendar';
 export const eventHref = (e: ChHomeEvent) => `${CALENDAR}?date=${e.date}&event=${e.id}`;
@@ -118,13 +119,14 @@ function Day({ phone, rounds, now, today, onOpenRound }: DayProps & { phone: ChC
  */
 function Later({ data, rounds, now, today, quiet, onOpenRound }: DayProps & { data: ChCoachHome; quiet: boolean }) {
   const { phone } = data;
+  const place = useLightPlace();
   if (data.week.error || !phone.today.length) return <Today list={phone.today} now={now} failed={data.week.error} quiet={quiet} />;
   const phase = dayPhase(phone.next, phone.today, rounds, now, today);
   const card = phase?.kind === 'event' ? phase.e : null;
   const later = data.week.agenda.find((a) => a.when === 'later' && a.id !== card?.id);
   return (
     <>
-      <LaterToday todays={phone.today} cardId={card?.id ?? null} now={now} extras={competitionExtra(later)} />
+      <LaterToday todays={phone.today} cardId={card?.id ?? null} now={now} extras={[...sunsetExtra(today, now, place), ...competitionExtra(later)]} />
       {!data.latestRounds.error && <SinceYouLooked rounds={rounds} event={card} onOpenRound={onOpenRound} />}
     </>
   );
