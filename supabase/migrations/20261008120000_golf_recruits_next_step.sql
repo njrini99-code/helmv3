@@ -1,4 +1,4 @@
--- STATUS: WRITTEN, NOT APPLIED. Prepared for the Clubhouse Recruiting premium
+-- STATUS: HELD (supabase/migrations/HELD.md). WRITTEN, NOT APPLIED. Prepared for the Clubhouse Recruiting premium
 -- pass (P014 C1, "Next step with a date", owner-approved in
 -- docs/clubhouse/PREMIUM_PASS_AUDIT.md).
 -- Apply: npm run db:apply --
@@ -28,6 +28,8 @@
 -- VERIFY: select count(*) = 2 from information_schema.columns
 -- VERIFY: where table_schema = 'public' and table_name = 'golf_recruits'
 -- VERIFY: and column_name in ('next_step_label', 'next_step_date');
+
+SET lock_timeout = '3s';
 
 ALTER TABLE public.golf_recruits
   ADD COLUMN IF NOT EXISTS next_step_label text,
