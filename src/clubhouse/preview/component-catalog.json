@@ -3670,6 +3670,22 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/shell/PullToRefresh.tsx",
+      "group": "shell",
+      "exports": [
+        "PullToRefresh"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/shell/RouteFrame.tsx",
       "group": "shell",
       "exports": [
@@ -3798,13 +3814,19 @@
       "file": "src/clubhouse/shell/phone-chrome.tsx",
       "group": "shell",
       "exports": [
+        "CH_UNDERLAY_SHIFT",
         "PhoneChromeProvider",
         "PhoneTop",
+        "PhoneUnderlay",
         "PushedTopStandIn"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
-        "src/clubhouse/styles/home.css"
+        "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5533,16 +5555,106 @@
           "line": 27
         },
         {
+          "name": "--ch-cl-t",
+          "value": "#232c2e",
+          "scope": "html[data-fw-theme='dark'] .ch-cl-t-mist",
+          "line": 1777
+        },
+        {
+          "name": "--ch-cl-tf",
+          "value": "#b9cacd",
+          "scope": "html[data-fw-theme='dark'] .ch-cl-t-mist",
+          "line": 1778
+        },
+        {
+          "name": "--ch-cl-tb",
+          "value": "#3b494c",
+          "scope": "html[data-fw-theme='dark'] .ch-cl-t-mist",
+          "line": 1779
+        },
+        {
+          "name": "--ch-cl-t",
+          "value": "#30261f",
+          "scope": "html[data-fw-theme='dark'] .ch-cl-t-clay",
+          "line": 1782
+        },
+        {
+          "name": "--ch-cl-tf",
+          "value": "#e2c1af",
+          "scope": "html[data-fw-theme='dark'] .ch-cl-t-clay",
+          "line": 1783
+        },
+        {
+          "name": "--ch-cl-tb",
+          "value": "#503e33",
+          "scope": "html[data-fw-theme='dark'] .ch-cl-t-clay",
+          "line": 1784
+        },
+        {
+          "name": "--ch-cl-t",
+          "value": "#2d2818",
+          "scope": "html[data-fw-theme='dark'] .ch-cl-t-sand",
+          "line": 1787
+        },
+        {
+          "name": "--ch-cl-tf",
+          "value": "#dccb9c",
+          "scope": "html[data-fw-theme='dark'] .ch-cl-t-sand",
+          "line": 1788
+        },
+        {
+          "name": "--ch-cl-tb",
+          "value": "#4c432a",
+          "scope": "html[data-fw-theme='dark'] .ch-cl-t-sand",
+          "line": 1789
+        },
+        {
+          "name": "--ch-cl-t",
+          "value": "#292824",
+          "scope": "html[data-fw-theme='dark'] .ch-cl-t-stone",
+          "line": 1792
+        },
+        {
+          "name": "--ch-cl-tf",
+          "value": "#d0cabe",
+          "scope": "html[data-fw-theme='dark'] .ch-cl-t-stone",
+          "line": 1793
+        },
+        {
+          "name": "--ch-cl-tb",
+          "value": "#47443c",
+          "scope": "html[data-fw-theme='dark'] .ch-cl-t-stone",
+          "line": 1794
+        },
+        {
+          "name": "--ch-cl-t",
+          "value": "#222c24",
+          "scope": "html[data-fw-theme='dark'] .ch-cl-t-sage",
+          "line": 1797
+        },
+        {
+          "name": "--ch-cl-tf",
+          "value": "#bdd0c0",
+          "scope": "html[data-fw-theme='dark'] .ch-cl-t-sage",
+          "line": 1798
+        },
+        {
+          "name": "--ch-cl-tb",
+          "value": "#3b4b3d",
+          "scope": "html[data-fw-theme='dark'] .ch-cl-t-sage",
+          "line": 1799
+        },
+        {
           "name": "--ch-cl-codew",
           "value": "116px",
           "scope": "@media (min-width: 821px) → .ch-cl[data-canopy]",
-          "line": 1802
+          "line": 1942
         },
         {
           "name": "--ch-cl-codew",
           "value": "92px",
           "scope": "@media (min-width: 821px) → @container chcl (max-width: 640px) → .ch-cl[data-canopy] .ch-cl-deck",
-          "line": 2210
+          "line": 2350
         }
       ]
     },
@@ -5799,6 +5911,12 @@
           "value": "var(--ch-chart-loss-on-tint)",
           "scope": ".ch-hd-tr li.is-warn",
           "line": 338
+        },
+        {
+          "name": "--ch-hd-ink",
+          "value": "var(--ch-champagne-300)",
+          "scope": ":where(html[data-fw-theme='dark']) .ch-hd-it.is-medium",
+          "line": 1256
         }
       ]
     },
@@ -6322,6 +6440,24 @@
           "value": "rgb(35 55 45 / 0.16)",
           "scope": ".ch-hero[data-tone]:not([data-tone='canopy'])",
           "line": 7
+        },
+        {
+          "name": "--ch-hero-ink",
+          "value": "var(--ch-ledger-ink)",
+          "scope": "html[data-fw-theme='dark'] .ch-hero[data-tone]:not([data-tone='canopy'])",
+          "line": 135
+        },
+        {
+          "name": "--ch-hero-brass",
+          "value": "var(--ch-ledger-eyebrow)",
+          "scope": "html[data-fw-theme='dark'] .ch-hero[data-tone]:not([data-tone='canopy'])",
+          "line": 136
+        },
+        {
+          "name": "--ch-hero-rule",
+          "value": "rgb(205 187 142 / 0.18)",
+          "scope": "html[data-fw-theme='dark'] .ch-hero[data-tone]:not([data-tone='canopy'])",
+          "line": 137
         }
       ]
     },
@@ -7567,6 +7703,12 @@
           "value": "0.92",
           "scope": "@media (max-width: 820px) → .ch-ox-mcw",
           "line": 1790
+        },
+        {
+          "name": "--ch-ox-ink",
+          "value": "var(--ch-text-primary)",
+          "scope": "html[data-fw-theme='dark'] .ch-ox",
+          "line": 2093
         }
       ]
     },
@@ -7876,6 +8018,24 @@
           "value": "var(--ch-green-800)",
           "scope": ".ch-rec-pipe__stage.is-committed > .ch-rec-pipe__dot",
           "line": 153
+        },
+        {
+          "name": "--ch-rec-ring",
+          "value": "var(--ch-ivory-400)",
+          "scope": ":where(html[data-fw-theme='dark']) .ch-rec-pipe__dot",
+          "line": 1960
+        },
+        {
+          "name": "--ch-rec-ring",
+          "value": "#3d7a56",
+          "scope": ":where(html[data-fw-theme='dark']) .ch-rec-pipe__stage.is-recruiting > .ch-rec-pipe__dot",
+          "line": 1964
+        },
+        {
+          "name": "--ch-rec-ring",
+          "value": "var(--ch-green-400)",
+          "scope": ":where(html[data-fw-theme='dark']) .ch-rec-pipe__stage.is-offered > .ch-rec-pipe__dot",
+          "line": 1967
         }
       ]
     },
@@ -8626,6 +8786,9 @@
         "ch-pbar__text",
         "ch-pbar__title",
         "ch-pscreen",
+        "ch-pscrim",
+        "ch-ptr",
+        "ch-ptr__spin",
         "ch-root",
         "ch-scrim",
         "ch-serif-num",
@@ -8672,115 +8835,133 @@
           "name": "--ch-medallion-bg",
           "value": "var(--ch-green-800)",
           "scope": ".ch-empty-page",
-          "line": 479
+          "line": 483
         },
         {
           "name": "--ch-medallion-ink",
           "value": "#f4f1e8",
           "scope": ".ch-empty-page",
-          "line": 480
+          "line": 484
         },
         {
           "name": "--ch-medallion-rings",
           "value": "rgb(21 90 57 / 0.1)",
           "scope": ".ch-empty-page",
-          "line": 481
+          "line": 485
         },
         {
           "name": "--ch-medallion-bg",
           "value": "linear-gradient(180deg, #8d4235 0%, #74352b 100%)",
           "scope": ".ch-empty-page--danger",
-          "line": 592
+          "line": 596
         },
         {
           "name": "--ch-medallion-ink",
           "value": "#f8ede8",
           "scope": ".ch-empty-page--danger",
-          "line": 593
+          "line": 597
         },
         {
           "name": "--ch-medallion-rings",
           "value": "rgb(126 59 48 / 0.12)",
           "scope": ".ch-empty-page--danger",
-          "line": 594
+          "line": 598
         },
         {
           "name": "--ch-notice-on-green-ink",
           "value": "#f2c3b6",
           "scope": ".ch-notice",
-          "line": 687
+          "line": 691
         },
         {
           "name": "--ch-notice-on-green-body",
           "value": "var(--ch-on-green-ink-soft)",
           "scope": ".ch-notice",
-          "line": 688
+          "line": 692
         },
         {
           "name": "--ch-notice-rule",
           "value": "var(--ch-ledger-rule)",
           "scope": ".ch-notice",
-          "line": 689
+          "line": 693
         },
         {
           "name": "--ch-notice-ink",
           "value": "var(--ch-text-primary)",
           "scope": ".ch-notice",
-          "line": 690
+          "line": 694
         },
         {
           "name": "--ch-notice-body",
           "value": "var(--ch-text-secondary)",
           "scope": ".ch-notice",
-          "line": 691
+          "line": 695
         },
         {
           "name": "--ch-notice-fill",
           "value": "none",
           "scope": ".ch-notice",
-          "line": 692
+          "line": 696
         },
         {
           "name": "--ch-notice-ink",
           "value": "var(--ch-danger-600)",
           "scope": ".ch-notice--danger",
-          "line": 700
+          "line": 704
         },
         {
           "name": "--ch-notice-ink",
           "value": "var(--ch-notice-on-green-ink)",
           "scope": ".ch-feat .ch-notice--danger",
-          "line": 763
+          "line": 767
         },
         {
           "name": "--ch-notice-body",
           "value": "var(--ch-notice-on-green-body)",
           "scope": ".ch-feat .ch-notice--danger",
-          "line": 764
+          "line": 768
         },
         {
           "name": "--ch-type-serif-l",
           "value": "600 32px/1.1 var(--ch-font-sans)",
           "scope": "@media (min-width: 821px) → [data-ui='clubhouse'] main[data-canopy]",
-          "line": 1910
+          "line": 1943
         },
         {
           "name": "--ch-type-serif-m",
           "value": "600 22px/1.15 var(--ch-font-sans)",
           "scope": "@media (min-width: 821px) → [data-ui='clubhouse'] main[data-canopy]",
-          "line": 1911
+          "line": 1944
         },
         {
           "name": "--ch-type-serif-s",
           "value": "600 19px/1.2 var(--ch-font-sans)",
           "scope": "@media (min-width: 821px) → [data-ui='clubhouse'] main[data-canopy]",
-          "line": 1912
+          "line": 1945
         },
         {
           "name": "--ch-phone-bar-bg",
           "value": "var(--ch-frame)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 2145
+          "line": 2178
+        },
+        {
+          "name": "--ch-medallion-rings",
+          "value": "rgb(107 187 140 / 0.12)",
+          "scope": "html[data-fw-theme='dark'] .ch-empty-page",
+          "line": 2429
+        },
+        {
+          "name": "--ch-medallion-rings",
+          "value": "rgb(239 133 118 / 0.12)",
+          "scope": "html[data-fw-theme='dark'] .ch-empty-page--danger",
+          "line": 2432
+        },
+        {
+          "name": "--ch-phone-bar-bg",
+          "value": "var(--ch-frame)",
+          "scope": "@media (max-width: 820px) → html[data-fw-theme='dark'] body [data-ui='clubhouse']",
+          "line": 2467
         }
       ]
     },
@@ -9100,6 +9281,66 @@
           "value": "208px",
           "scope": "@container (max-width: 900px) → .ch-fg.ch-fg--lead",
           "line": 1866
+        },
+        {
+          "name": "--ch-st-mean-rule",
+          "value": "rgb(28 25 18 / 0.35)",
+          "scope": "[data-ui='clubhouse']",
+          "line": 3826
+        },
+        {
+          "name": "--ch-st-dot-paper",
+          "value": "#fbf8ef",
+          "scope": "[data-ui='clubhouse']",
+          "line": 3827
+        },
+        {
+          "name": "--ch-st-miss-heat",
+          "value": "rgb(154 101 18)",
+          "scope": "[data-ui='clubhouse']",
+          "line": 3828
+        },
+        {
+          "name": "--ch-st-team-line",
+          "value": "var(--ch-green-800)",
+          "scope": "[data-ui='clubhouse']",
+          "line": 3829
+        },
+        {
+          "name": "--ch-st-other-line",
+          "value": "var(--ch-ink-300)",
+          "scope": "[data-ui='clubhouse']",
+          "line": 3830
+        },
+        {
+          "name": "--ch-st-mean-rule",
+          "value": "rgb(237 231 216 / 0.4)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 3833
+        },
+        {
+          "name": "--ch-st-dot-paper",
+          "value": "var(--ch-chart-paper)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 3834
+        },
+        {
+          "name": "--ch-st-miss-heat",
+          "value": "var(--ch-warning-600)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 3835
+        },
+        {
+          "name": "--ch-st-team-line",
+          "value": "#b4dfc4",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 3837
+        },
+        {
+          "name": "--ch-st-other-line",
+          "value": "var(--ch-ink-400)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 3838
         }
       ]
     },
@@ -9282,1468 +9523,2344 @@
           "line": 44
         },
         {
+          "name": "--ch-green-fill-500",
+          "value": "var(--ch-green-500)",
+          "scope": "[data-ui='clubhouse']",
+          "line": 47
+        },
+        {
+          "name": "--ch-green-fill-600",
+          "value": "var(--ch-green-600)",
+          "scope": "[data-ui='clubhouse']",
+          "line": 48
+        },
+        {
+          "name": "--ch-green-fill-700",
+          "value": "var(--ch-green-700)",
+          "scope": "[data-ui='clubhouse']",
+          "line": 49
+        },
+        {
           "name": "--ch-hero-mint",
           "value": "#9fe0b6",
           "scope": "[data-ui='clubhouse']",
-          "line": 46
+          "line": 51
         },
         {
           "name": "--ch-hero-mint-strong",
           "value": "#7bc79a",
           "scope": "[data-ui='clubhouse']",
-          "line": 47
+          "line": 52
         },
         {
           "name": "--ch-frame",
           "value": "#0a331f",
           "scope": "[data-ui='clubhouse']",
-          "line": 48
+          "line": 53
         },
         {
           "name": "--ch-shell",
           "value": "var(--ch-frame)",
           "scope": "[data-ui='clubhouse']",
-          "line": 51
+          "line": 56
         },
         {
           "name": "--ch-workspace",
           "value": "#f5f0e4",
           "scope": "[data-ui='clubhouse']",
-          "line": 53
+          "line": 58
         },
         {
           "name": "--ch-field-green",
           "value": "var(--ch-green-800)",
           "scope": "[data-ui='clubhouse']",
-          "line": 55
+          "line": 60
         },
         {
           "name": "--ch-champagne-100",
           "value": "#efe6d2",
           "scope": "[data-ui='clubhouse']",
-          "line": 57
+          "line": 62
         },
         {
           "name": "--ch-champagne-300",
           "value": "#dccda6",
           "scope": "[data-ui='clubhouse']",
-          "line": 58
+          "line": 63
         },
         {
           "name": "--ch-champagne-500",
           "value": "#b09560",
           "scope": "[data-ui='clubhouse']",
-          "line": 59
+          "line": 64
         },
         {
           "name": "--ch-positive-600",
           "value": "#1c6b43",
           "scope": "[data-ui='clubhouse']",
-          "line": 61
+          "line": 66
         },
         {
           "name": "--ch-positive-100",
           "value": "#e6f2ea",
           "scope": "[data-ui='clubhouse']",
-          "line": 62
+          "line": 67
         },
         {
           "name": "--ch-warning-600",
           "value": "#94600e",
           "scope": "[data-ui='clubhouse']",
-          "line": 63
+          "line": 68
         },
         {
           "name": "--ch-warning-100",
           "value": "#faf0dc",
           "scope": "[data-ui='clubhouse']",
-          "line": 64
+          "line": 69
         },
         {
           "name": "--ch-danger-600",
           "value": "#b03a2e",
           "scope": "[data-ui='clubhouse']",
-          "line": 65
+          "line": 70
         },
         {
           "name": "--ch-danger-100",
           "value": "#fbe9e6",
           "scope": "[data-ui='clubhouse']",
-          "line": 66
+          "line": 71
         },
         {
           "name": "--ch-info-600",
           "value": "#2d5c77",
           "scope": "[data-ui='clubhouse']",
-          "line": 67
+          "line": 72
         },
         {
           "name": "--ch-info-100",
           "value": "#e6eef3",
           "scope": "[data-ui='clubhouse']",
-          "line": 68
+          "line": 73
         },
         {
           "name": "--ch-score-under",
           "value": "#b03a2e",
           "scope": "[data-ui='clubhouse']",
-          "line": 70
+          "line": 75
         },
         {
           "name": "--ch-score-under-bg",
           "value": "#fbe9e6",
           "scope": "[data-ui='clubhouse']",
-          "line": 71
+          "line": 76
         },
         {
           "name": "--ch-score-over-bg",
           "value": "#efece4",
           "scope": "[data-ui='clubhouse']",
-          "line": 72
+          "line": 77
         },
         {
           "name": "--ch-score-double",
           "value": "#1c1b18",
           "scope": "[data-ui='clubhouse']",
-          "line": 73
+          "line": 78
+        },
+        {
+          "name": "--ch-score-under-fill",
+          "value": "#b03a2e",
+          "scope": "[data-ui='clubhouse']",
+          "line": 80
         },
         {
           "name": "--ch-chart-paper",
           "value": "#fbf9f3",
           "scope": "[data-ui='clubhouse']",
-          "line": 75
+          "line": 82
         },
         {
           "name": "--ch-chart-gain",
           "value": "#155a39",
           "scope": "[data-ui='clubhouse']",
-          "line": 76
+          "line": 83
         },
         {
           "name": "--ch-chart-loss",
           "value": "#865608",
           "scope": "[data-ui='clubhouse']",
-          "line": 78
+          "line": 85
         },
         {
           "name": "--ch-chart-loss-on-tint",
           "value": "#744a06",
           "scope": "[data-ui='clubhouse']",
-          "line": 80
+          "line": 87
         },
         {
           "name": "--ch-chart-flag",
           "value": "#b03a2e",
           "scope": "[data-ui='clubhouse']",
-          "line": 81
+          "line": 88
         },
         {
           "name": "--ch-chart-fairway",
           "value": "#cbddcc",
           "scope": "[data-ui='clubhouse']",
-          "line": 82
+          "line": 89
         },
         {
           "name": "--ch-chart-fairway-alt",
           "value": "#bfd5c1",
           "scope": "[data-ui='clubhouse']",
-          "line": 83
+          "line": 90
         },
         {
           "name": "--ch-chart-rough",
           "value": "#e4e6d6",
           "scope": "[data-ui='clubhouse']",
-          "line": 84
+          "line": 91
         },
         {
           "name": "--ch-bg-page",
           "value": "#ebe7dc",
           "scope": "[data-ui='clubhouse']",
-          "line": 89
+          "line": 96
         },
         {
           "name": "--ch-canvas-wash",
           "value": "linear-gradient(transparent, transparent)",
           "scope": "[data-ui='clubhouse']",
-          "line": 93
+          "line": 100
         },
         {
           "name": "--ch-bg-surface",
           "value": "#fcfaf5",
           "scope": "[data-ui='clubhouse']",
-          "line": 94
+          "line": 101
         },
         {
           "name": "--ch-bg-subtle",
           "value": "#f5f2ea",
           "scope": "[data-ui='clubhouse']",
-          "line": 95
+          "line": 102
         },
         {
           "name": "--ch-bg-inset",
           "value": "var(--ch-ivory-150)",
           "scope": "[data-ui='clubhouse']",
-          "line": 96
+          "line": 103
         },
         {
           "name": "--ch-bg-hover",
           "value": "var(--ch-ivory-50)",
           "scope": "[data-ui='clubhouse']",
-          "line": 97
+          "line": 104
         },
         {
           "name": "--ch-bg-selected",
           "value": "var(--ch-green-50)",
           "scope": "[data-ui='clubhouse']",
-          "line": 98
+          "line": 105
         },
         {
           "name": "--ch-text-primary",
           "value": "var(--ch-ink-900)",
           "scope": "[data-ui='clubhouse']",
-          "line": 99
+          "line": 106
         },
         {
           "name": "--ch-text-secondary",
           "value": "var(--ch-ink-600)",
           "scope": "[data-ui='clubhouse']",
-          "line": 100
+          "line": 107
         },
         {
           "name": "--ch-text-tertiary",
           "value": "var(--ch-ink-500)",
           "scope": "[data-ui='clubhouse']",
-          "line": 101
+          "line": 108
         },
         {
           "name": "--ch-text-disabled",
           "value": "var(--ch-ink-300)",
           "scope": "[data-ui='clubhouse']",
-          "line": 102
+          "line": 109
         },
         {
           "name": "--ch-text-on-accent",
           "value": "#ffffff",
           "scope": "[data-ui='clubhouse']",
-          "line": 103
+          "line": 110
         },
         {
           "name": "--ch-accent",
           "value": "var(--ch-green-600)",
           "scope": "[data-ui='clubhouse']",
-          "line": 104
+          "line": 111
         },
         {
           "name": "--ch-accent-hover",
           "value": "var(--ch-green-700)",
           "scope": "[data-ui='clubhouse']",
-          "line": 105
+          "line": 112
         },
         {
           "name": "--ch-accent-press",
           "value": "var(--ch-green-800)",
           "scope": "[data-ui='clubhouse']",
-          "line": 106
+          "line": 113
         },
         {
           "name": "--ch-border-hairline",
           "value": "rgb(28 25 18 / 0.07)",
           "scope": "[data-ui='clubhouse']",
-          "line": 107
+          "line": 114
         },
         {
           "name": "--ch-border-subtle",
           "value": "rgb(28 25 18 / 0.1)",
           "scope": "[data-ui='clubhouse']",
-          "line": 108
+          "line": 115
         },
         {
           "name": "--ch-border-control",
           "value": "rgb(28 25 18 / 0.14)",
           "scope": "[data-ui='clubhouse']",
-          "line": 109
+          "line": 116
         },
         {
           "name": "--ch-border-strong",
           "value": "rgb(28 25 18 / 0.24)",
           "scope": "[data-ui='clubhouse']",
-          "line": 110
+          "line": 117
         },
         {
           "name": "--ch-seam-ink",
           "value": "rgb(28 25 18 / 0.15)",
           "scope": "[data-ui='clubhouse']",
-          "line": 113
+          "line": 120
         },
         {
           "name": "--ch-seam-light",
           "value": "rgb(255 255 255 / 0.9)",
           "scope": "[data-ui='clubhouse']",
-          "line": 114
+          "line": 121
         },
         {
           "name": "--ch-seam-x",
           "value": "inset 0 1px 0 var(--ch-seam-ink), inset 0 2px 0 var(--ch-seam-light)",
           "scope": "[data-ui='clubhouse']",
-          "line": 115
+          "line": 122
         },
         {
           "name": "--ch-seam-y",
           "value": "inset 1px 0 0 var(--ch-seam-ink), inset 2px 0 0 var(--ch-seam-light)",
           "scope": "[data-ui='clubhouse']",
-          "line": 116
+          "line": 123
         },
         {
           "name": "--ch-board-bg",
           "value": "radial-gradient(120% 140% at 85% -20%, rgb(123 199 154 / 0.14), transparent 55%),\n    linear-gradient(180deg, #0e3d28 0%, var(--ch-field-green) 100%)",
           "scope": "[data-ui='clubhouse']",
-          "line": 119
+          "line": 126
         },
         {
           "name": "--ch-board-shadow",
           "value": "inset 0 2px 4px rgb(0 0 0 / 0.35), inset 0 0 0 1px rgb(0 0 0 / 0.25), 0 1px 0 rgb(255 255 255 / 0.8)",
           "scope": "[data-ui='clubhouse']",
-          "line": 121
+          "line": 128
         },
         {
           "name": "--ch-on-green-ink",
           "value": "#f4eedd",
           "scope": "[data-ui='clubhouse']",
-          "line": 124
+          "line": 131
         },
         {
           "name": "--ch-on-green-ink-soft",
           "value": "rgb(240 233 214 / 0.86)",
           "scope": "[data-ui='clubhouse']",
-          "line": 125
+          "line": 132
         },
         {
           "name": "--ch-on-green-ink-muted",
           "value": "rgb(222 214 190 / 0.72)",
           "scope": "[data-ui='clubhouse']",
-          "line": 126
+          "line": 133
         },
         {
           "name": "--ch-on-green-text-shadow",
           "value": "0 1px 0 rgb(2 18 10 / 0.45), 0 2px 10px rgb(2 18 10 / 0.25)",
           "scope": "[data-ui='clubhouse']",
-          "line": 127
+          "line": 134
         },
         {
           "name": "--ch-on-green-text-shadow-s",
           "value": "0 1px 0 rgb(2 18 10 / 0.4)",
           "scope": "[data-ui='clubhouse']",
-          "line": 128
+          "line": 135
         },
         {
           "name": "--ch-nav-selected-shadow",
           "value": "inset 0 1px 0 rgb(210 244 221 / 0.14), 0 1px 2px rgb(11 58 37 / 0.3), 0 6px 14px -8px rgb(11 58 37 / 0.55)",
           "scope": "[data-ui='clubhouse']",
-          "line": 130
+          "line": 137
         },
         {
           "name": "--ch-board-rule",
           "value": "rgb(210 244 221 / 0.14)",
           "scope": "[data-ui='clubhouse']",
-          "line": 131
+          "line": 138
         },
         {
           "name": "--ch-board-birdie-shadow",
           "value": "inset 0 1px 0 rgb(255 255 255 / 0.28), 0 0 0 1px rgb(60 10 6 / 0.45), 0 1px 3px rgb(0 0 0 / 0.4)",
           "scope": "[data-ui='clubhouse']",
-          "line": 132
+          "line": 139
         },
         {
           "name": "--ch-board-eagle-shadow",
           "value": "0 0 0 2px #0c3522, 0 0 0 3.5px #d0574a, 0 1px 3px rgb(0 0 0 / 0.4)",
           "scope": "[data-ui='clubhouse']",
-          "line": 133
+          "line": 140
         },
         {
           "name": "--ch-board-bogey-shadow",
           "value": "inset 0 0 0 1.5px rgb(250 248 240 / 0.72)",
           "scope": "[data-ui='clubhouse']",
-          "line": 134
+          "line": 141
         },
         {
           "name": "--ch-board-double-shadow",
           "value": "inset 0 1px 0 #fff, 0 1px 3px rgb(0 0 0 / 0.45)",
           "scope": "[data-ui='clubhouse']",
-          "line": 135
+          "line": 142
         },
         {
           "name": "--ch-key-frost-shadow",
           "value": "inset 0 1px 0 #fff, 0 0 0 1px rgb(28 25 18 / 0.08), 0 2px 4px rgb(28 25 18 / 0.12), 0 10px 20px -10px rgb(28 25 18 / 0.4)",
           "scope": "[data-ui='clubhouse']",
-          "line": 138
+          "line": 145
         },
         {
           "name": "--ch-key-raised-shadow",
           "value": "var(--ch-elevation-control), 0 0 0 1px rgb(28 25 18 / 0.05), 0 6px 12px -8px rgb(28 25 18 / 0.3)",
           "scope": "[data-ui='clubhouse']",
-          "line": 140
+          "line": 147
         },
         {
           "name": "--ch-on-dark-primary-shadow",
           "value": "inset 0 1px 0 #fff, 0 0 0 1px rgb(2 18 10 / 0.12), 0 1px 2px rgb(2 18 10 / 0.3), 0 8px 16px -8px rgb(2 18 10 / 0.55)",
           "scope": "[data-ui='clubhouse']",
-          "line": 142
+          "line": 149
         },
         {
           "name": "--ch-seg-pill-lift-shadow",
           "value": "var(--ch-elevation-control), 0 2px 6px -2px rgb(28 25 18 / 0.16)",
           "scope": "[data-ui='clubhouse']",
-          "line": 144
+          "line": 151
         },
         {
           "name": "--ch-btn-secondary-shadow",
           "value": "0 0 0 1px rgb(28 25 18 / 0.07), inset 0 -1px 0 rgb(28 25 18 / 0.05), inset 0 1px 0 #fff, 0 1px 2px rgb(28 25 18 / 0.08), 0 4px 10px -5px rgb(28 25 18 / 0.18)",
           "scope": "[data-ui='clubhouse']",
-          "line": 146
+          "line": 153
         },
         {
           "name": "--ch-btn-secondary-hover-shadow",
           "value": "0 0 0 1px rgb(28 25 18 / 0.1), inset 0 -1px 0 rgb(28 25 18 / 0.05), inset 0 1px 0 #fff, 0 2px 4px rgb(28 25 18 / 0.09), 0 8px 16px -8px rgb(28 25 18 / 0.22)",
           "scope": "[data-ui='clubhouse']",
-          "line": 148
+          "line": 155
         },
         {
           "name": "--ch-score-birdie-shadow",
           "value": "inset 0 0 0 1px rgb(150 46 35 / 0.38), inset 0 1px 0 rgb(255 255 255 / 0.85), 0 1px 2px rgb(120 36 28 / 0.2)",
           "scope": "[data-ui='clubhouse']",
-          "line": 150
+          "line": 157
         },
         {
           "name": "--ch-score-eagle-shadow",
           "value": "inset 0 0 0 1px rgb(110 30 22 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.25), 0 1px 2px rgb(110 30 22 / 0.35)",
           "scope": "[data-ui='clubhouse']",
-          "line": 152
+          "line": 159
         },
         {
           "name": "--ch-score-bogey-shadow",
           "value": "inset 0 0 0 1px rgb(28 25 18 / 0.24), inset 0 1px 0 #fff, 0 1px 2px rgb(28 25 18 / 0.16)",
           "scope": "[data-ui='clubhouse']",
-          "line": 154
+          "line": 161
         },
         {
           "name": "--ch-score-double-shadow",
           "value": "inset 0 0 0 1px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 2px rgb(28 25 18 / 0.3)",
           "scope": "[data-ui='clubhouse']",
-          "line": 156
+          "line": 163
         },
         {
           "name": "--ch-border-focus",
           "value": "var(--ch-green-600)",
           "scope": "[data-ui='clubhouse']",
-          "line": 158
+          "line": 165
         },
         {
           "name": "--ch-green-ring",
           "value": "rgb(21 90 57 / 0.28)",
           "scope": "[data-ui='clubhouse']",
-          "line": 160
+          "line": 167
         },
         {
           "name": "--ch-green-rule",
           "value": "rgb(21 90 57 / 0.4)",
           "scope": "[data-ui='clubhouse']",
-          "line": 161
+          "line": 168
         },
         {
           "name": "--ch-ink-rule",
           "value": "rgb(28 25 18 / 0.2)",
           "scope": "[data-ui='clubhouse']",
-          "line": 162
+          "line": 169
         },
         {
           "name": "--ch-champagne-ring",
           "value": "rgb(110 84 36 / 0.14)",
           "scope": "[data-ui='clubhouse']",
-          "line": 163
+          "line": 170
         },
         {
           "name": "--ch-champagne-rule",
           "value": "rgb(176 149 96 / 0.25)",
           "scope": "[data-ui='clubhouse']",
-          "line": 164
+          "line": 171
         },
         {
           "name": "--ch-focus-halo",
           "value": "rgb(21 90 57 / 0.13)",
           "scope": "[data-ui='clubhouse']",
-          "line": 165
+          "line": 172
         },
         {
           "name": "--ch-font-sans",
           "value": "var(--ch-font-instrument), ui-sans-serif, -apple-system, 'Segoe UI', system-ui, sans-serif",
           "scope": "[data-ui='clubhouse']",
-          "line": 168
+          "line": 175
         },
         {
           "name": "--ch-font-serif",
           "value": "var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 171
+          "line": 178
         },
         {
           "name": "--ch-font-mono",
           "value": "var(--ch-font-jetbrains), ui-monospace, 'SF Mono', Menlo, monospace",
           "scope": "[data-ui='clubhouse']",
-          "line": 172
+          "line": 179
         },
         {
           "name": "--ch-type-serif-l",
           "value": "600 36px/1.08 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 175
+          "line": 182
         },
         {
           "name": "--ch-type-serif-m",
           "value": "600 24px/1.15 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 176
+          "line": 183
         },
         {
           "name": "--ch-type-serif-s",
           "value": "600 20px/1.2 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 177
+          "line": 184
         },
         {
           "name": "--ch-type-display-l",
           "value": "600 36px/1.08 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 178
+          "line": 185
         },
         {
           "name": "--ch-type-display-s",
           "value": "600 22px/1.2 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 179
+          "line": 186
         },
         {
           "name": "--ch-type-title",
           "value": "600 15px/1.35 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 180
+          "line": 187
         },
         {
           "name": "--ch-type-body-l",
           "value": "400 16px/1.55 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 181
+          "line": 188
         },
         {
           "name": "--ch-type-body",
           "value": "400 14px/1.5 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 182
+          "line": 189
         },
         {
           "name": "--ch-type-body-s",
           "value": "400 13px/1.45 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 183
+          "line": 190
         },
         {
           "name": "--ch-type-label",
           "value": "500 13.5px/1.3 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 184
+          "line": 191
         },
         {
           "name": "--ch-type-label-s",
           "value": "500 12.5px/1.3 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 185
+          "line": 192
         },
         {
           "name": "--ch-type-caption",
           "value": "400 12.5px/1.4 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 186
+          "line": 193
         },
         {
           "name": "--ch-type-figure-l",
           "value": "500 40px/1 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 187
+          "line": 194
         },
         {
           "name": "--ch-type-mono",
           "value": "500 11px/1 var(--ch-font-mono)",
           "scope": "[data-ui='clubhouse']",
-          "line": 188
+          "line": 195
         },
         {
           "name": "--ch-gutter",
           "value": "40px",
           "scope": "[data-ui='clubhouse']",
-          "line": 191
+          "line": 198
         },
         {
           "name": "--ch-sidebar-w",
           "value": "240px",
           "scope": "[data-ui='clubhouse']",
-          "line": 192
+          "line": 199
         },
         {
           "name": "--ch-topbar-h",
           "value": "56px",
           "scope": "[data-ui='clubhouse']",
-          "line": 193
+          "line": 200
         },
         {
           "name": "--ch-phone-topbar-h",
           "value": "50px",
           "scope": "[data-ui='clubhouse']",
-          "line": 195
+          "line": 202
         },
         {
           "name": "--ch-tabbar-h",
           "value": "56px",
           "scope": "[data-ui='clubhouse']",
-          "line": 196
+          "line": 203
         },
         {
           "name": "--ch-radius-xs",
           "value": "5px",
           "scope": "[data-ui='clubhouse']",
-          "line": 199
+          "line": 206
         },
         {
           "name": "--ch-radius-sm",
           "value": "7px",
           "scope": "[data-ui='clubhouse']",
-          "line": 200
+          "line": 207
         },
         {
           "name": "--ch-radius-md",
           "value": "10px",
           "scope": "[data-ui='clubhouse']",
-          "line": 201
+          "line": 208
         },
         {
           "name": "--ch-radius-lg",
           "value": "14px",
           "scope": "[data-ui='clubhouse']",
-          "line": 202
+          "line": 209
         },
         {
           "name": "--ch-radius-xl",
           "value": "20px",
           "scope": "[data-ui='clubhouse']",
-          "line": 203
+          "line": 210
         },
         {
           "name": "--ch-shadow-sm",
           "value": "var(--ch-elevation-reading)",
           "scope": "[data-ui='clubhouse']",
-          "line": 207
+          "line": 214
         },
         {
           "name": "--ch-shadow-md",
           "value": "var(--ch-elevation-floating)",
           "scope": "[data-ui='clubhouse']",
-          "line": 208
+          "line": 215
         },
         {
           "name": "--ch-shadow-lg",
           "value": "var(--ch-elevation-overlay)",
           "scope": "[data-ui='clubhouse']",
-          "line": 209
+          "line": 216
         },
         {
           "name": "--ch-glass-bg",
           "value": "rgb(250 248 241 / 0.7)",
           "scope": "[data-ui='clubhouse']",
-          "line": 210
+          "line": 217
         },
         {
           "name": "--ch-glass-blur",
           "value": "20px",
           "scope": "[data-ui='clubhouse']",
-          "line": 212
+          "line": 219
         },
         {
           "name": "--ch-glass-saturate",
           "value": "110%",
           "scope": "[data-ui='clubhouse']",
-          "line": 213
+          "line": 220
         },
         {
           "name": "--ch-edge",
           "value": "rgb(28 25 18 / 0.08)",
           "scope": "[data-ui='clubhouse']",
-          "line": 218
+          "line": 225
         },
         {
           "name": "--ch-highlight",
           "value": "inset 0 1px 0 rgb(255 255 255 / 0.7)",
           "scope": "[data-ui='clubhouse']",
-          "line": 219
+          "line": 226
         },
         {
           "name": "--ch-elevation-reading",
           "value": "inset 0 1px 0 rgb(255 255 255 / 0.9), 0 0 0 1px rgb(28 25 18 / 0.085),\n    0 1px 2px rgb(28 25 18 / 0.08), 0 8px 18px -10px rgb(28 25 18 / 0.16), 0 22px 40px -24px rgb(28 25 18 / 0.18)",
           "scope": "[data-ui='clubhouse']",
-          "line": 223
+          "line": 230
         },
         {
           "name": "--ch-elevation-cast",
           "value": "0 1px 2px rgb(28 25 18 / 0.06), 0 8px 18px -10px rgb(28 25 18 / 0.16),\n    0 22px 40px -24px rgb(28 25 18 / 0.18)",
           "scope": "[data-ui='clubhouse']",
-          "line": 227
+          "line": 234
         },
         {
           "name": "--ch-elevation-reading-hover",
           "value": "inset 0 1px 0 rgb(255 255 255 / 0.95), 0 0 0 1px rgb(28 25 18 / 0.1),\n    0 2px 4px rgb(28 25 18 / 0.07), 0 12px 24px -12px rgb(28 25 18 / 0.2), 0 28px 48px -26px rgb(28 25 18 / 0.22)",
           "scope": "[data-ui='clubhouse']",
-          "line": 229
+          "line": 236
         },
         {
           "name": "--ch-elevation-reading-accent",
           "value": "0 1px 3px rgb(8 43 28 / 0.08), 0 4px 12px -6px rgb(8 43 28 / 0.12)",
           "scope": "[data-ui='clubhouse']",
-          "line": 231
+          "line": 238
         },
         {
           "name": "--ch-elevation-control",
           "value": "var(--ch-highlight), 0 1px 2px rgb(28 25 18 / 0.06)",
           "scope": "[data-ui='clubhouse']",
-          "line": 232
+          "line": 239
         },
         {
           "name": "--ch-elevation-floating",
           "value": "0 2px 6px rgb(28 25 18 / 0.06), 0 8px 20px -8px rgb(28 25 18 / 0.12)",
           "scope": "[data-ui='clubhouse']",
-          "line": 233
+          "line": 240
         },
         {
           "name": "--ch-elevation-floating-focus",
           "value": "0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo),\n    var(--ch-elevation-floating)",
           "scope": "[data-ui='clubhouse']",
-          "line": 234
+          "line": 241
         },
         {
           "name": "--ch-elevation-tabbar",
           "value": "inset 0 1px 0 rgb(255 255 255 / 0.7), 0 0 0 1px rgb(28 25 18 / 0.07),\n    0 2px 6px rgb(28 25 18 / 0.08), 0 14px 32px -12px rgb(28 25 18 / 0.32)",
           "scope": "[data-ui='clubhouse']",
-          "line": 237
+          "line": 244
         },
         {
           "name": "--ch-elevation-framed",
           "value": "0 1px 3px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.12), inset 1px 0 0 rgb(11 58 37 / 0.12)",
           "scope": "[data-ui='clubhouse']",
-          "line": 241
+          "line": 248
         },
         {
           "name": "--ch-elevation-on-frame",
           "value": "0 0 0 1px rgb(176 149 96 / 0.45), 0 1px 2px rgb(2 18 10 / 0.3)",
           "scope": "[data-ui='clubhouse']",
-          "line": 242
+          "line": 249
         },
         {
           "name": "--ch-elevation-on-frame-hover",
           "value": "0 0 0 1px rgb(176 149 96 / 0.6), 0 2px 6px rgb(2 18 10 / 0.35)",
           "scope": "[data-ui='clubhouse']",
-          "line": 243
+          "line": 250
         },
         {
           "name": "--ch-ledger-rule",
           "value": "rgb(110 98 62 / 0.16)",
           "scope": "[data-ui='clubhouse']",
-          "line": 246
+          "line": 253
         },
         {
           "name": "--ch-ledger-rule-soft",
           "value": "rgb(110 98 62 / 0.09)",
           "scope": "[data-ui='clubhouse']",
-          "line": 247
+          "line": 254
         },
         {
           "name": "--ch-ledger-ink",
           "value": "rgb(18 59 41 / 0.9)",
           "scope": "[data-ui='clubhouse']",
-          "line": 248
+          "line": 255
         },
         {
           "name": "--ch-ledger-eyebrow",
           "value": "#7a6b3f",
           "scope": "[data-ui='clubhouse']",
-          "line": 249
+          "line": 256
         },
         {
           "name": "--ch-ledger-row-hover",
           "value": "rgb(110 98 62 / 0.05)",
           "scope": "[data-ui='clubhouse']",
-          "line": 250
+          "line": 257
         },
         {
           "name": "--ch-ledger-rule-double",
           "value": "3px double rgb(110 98 62 / 0.22)",
           "scope": "[data-ui='clubhouse']",
-          "line": 253
+          "line": 260
         },
         {
           "name": "--ch-feature-bg",
           "value": "radial-gradient(120% 90% at 100% 0%, rgb(123 199 154 / 0.14), transparent 60%), var(--ch-green-800)",
           "scope": "[data-ui='clubhouse']",
-          "line": 255
+          "line": 262
         },
         {
           "name": "--ch-elevation-feature",
           "value": "0 0 0 1px #082b1c, 0 14px 28px -18px rgb(11 58 37 / 0.7)",
           "scope": "[data-ui='clubhouse']",
-          "line": 256
+          "line": 263
         },
         {
           "name": "--ch-ledger-row-press",
           "value": "color-mix(in oklab, var(--ch-green-600) 11%, transparent)",
           "scope": "[data-ui='clubhouse']",
-          "line": 257
+          "line": 264
         },
         {
           "name": "--ch-ledger-avatar-ring",
           "value": "0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule), 0 10px 22px -12px rgb(11 58 37 / 0.4)",
           "scope": "[data-ui='clubhouse']",
-          "line": 259
+          "line": 266
         },
         {
           "name": "--ch-elevation-field-hover",
           "value": "0 0 0 1px var(--ch-border-strong), 0 1px 2px rgb(28 25 18 / 0.05)",
           "scope": "[data-ui='clubhouse']",
-          "line": 261
+          "line": 268
         },
         {
           "name": "--ch-elevation-chip-hover",
           "value": "inset 0 0 0 1px rgb(28 25 18 / 0.24), 0 2px 6px -2px rgb(28 25 18 / 0.18)",
           "scope": "[data-ui='clubhouse']",
-          "line": 262
+          "line": 269
         },
         {
           "name": "--ch-elevation-choice-hover",
           "value": "0 0 0 1.5px var(--ch-green-600), 0 10px 20px -14px rgb(11 58 37 / 0.4)",
           "scope": "[data-ui='clubhouse']",
-          "line": 263
+          "line": 270
         },
         {
           "name": "--ch-elevation-row-card-hover",
           "value": "0 0 0 1px rgb(21 90 57 / 0.25), 0 14px 28px -18px rgb(11 58 37 / 0.4)",
           "scope": "[data-ui='clubhouse']",
-          "line": 264
+          "line": 271
         },
         {
           "name": "--ch-elevation-on-frame-card-hover",
           "value": "0 0 0 1px rgb(176 149 96 / 0.6), 0 10px 22px -10px rgb(0 0 0 / 0.55), inset 0 1px 0 #fff",
           "scope": "[data-ui='clubhouse']",
-          "line": 265
+          "line": 272
         },
         {
           "name": "--ch-elevation-primary-hover",
           "value": "0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), 0 2px 4px rgb(12 65 40 / 0.22),\n    0 8px 16px -8px rgb(12 65 40 / 0.45)",
           "scope": "[data-ui='clubhouse']",
-          "line": 266
+          "line": 273
         },
         {
           "name": "--ch-elevation-overlay",
           "value": "0 4px 12px rgb(28 25 18 / 0.08), 0 16px 36px -12px rgb(28 25 18 / 0.16)",
           "scope": "[data-ui='clubhouse']",
-          "line": 268
+          "line": 275
         },
         {
           "name": "--ch-elevation-sheet",
           "value": "0 -4px 12px rgb(28 25 18 / 0.06), 0 -12px 32px -12px rgb(28 25 18 / 0.12)",
           "scope": "[data-ui='clubhouse']",
-          "line": 269
+          "line": 276
         },
         {
           "name": "--ch-elevation-bubble",
           "value": "0 1px 2px rgb(28 25 18 / 0.04)",
           "scope": "[data-ui='clubhouse']",
-          "line": 270
+          "line": 277
         },
         {
           "name": "--ch-bubble-mine-bg",
           "value": "linear-gradient(180deg, #1e6a45 0%, #155a39 60%, #0f4a2f 100%)",
           "scope": "[data-ui='clubhouse']",
-          "line": 271
+          "line": 278
         },
         {
           "name": "--ch-elevation-bubble-mine",
           "value": "0 1px 2px rgb(11 58 37 / 0.08)",
           "scope": "[data-ui='clubhouse']",
-          "line": 272
+          "line": 279
         },
         {
           "name": "--ch-control-bg",
           "value": "var(--ch-raised-bg)",
           "scope": "[data-ui='clubhouse']",
-          "line": 273
+          "line": 280
         },
         {
           "name": "--ch-field-pill-edge",
           "value": "inset 0 0 0 1px rgb(28 25 18 / 0.14)",
           "scope": "[data-ui='clubhouse']",
-          "line": 274
+          "line": 281
         },
         {
           "name": "--ch-field-pill-edge-focus",
           "value": "inset 0 0 0 1.5px var(--ch-border-focus)",
           "scope": "[data-ui='clubhouse']",
-          "line": 275
+          "line": 282
         },
         {
           "name": "--ch-switch-track-bg",
           "value": "#d3cdbf",
           "scope": "[data-ui='clubhouse']",
-          "line": 277
+          "line": 284
         },
         {
           "name": "--ch-switch-track-shadow",
           "value": "inset 0 0 0 1px rgb(28 25 18 / 0.08), inset 0 1px 2px rgb(28 25 18 / 0.1)",
           "scope": "[data-ui='clubhouse']",
-          "line": 278
+          "line": 285
         },
         {
           "name": "--ch-switch-on-bg",
           "value": "var(--ch-green-600)",
           "scope": "[data-ui='clubhouse']",
-          "line": 279
+          "line": 286
         },
         {
           "name": "--ch-switch-on-shadow",
           "value": "inset 0 0 0 1px rgb(4 30 18 / 0.2), inset 0 1px 2px rgb(4 30 18 / 0.2)",
           "scope": "[data-ui='clubhouse']",
-          "line": 280
+          "line": 287
         },
         {
           "name": "--ch-switch-thumb-bg",
           "value": "#fff",
           "scope": "[data-ui='clubhouse']",
-          "line": 281
+          "line": 288
         },
         {
           "name": "--ch-switch-thumb-shadow",
           "value": "0 0 0 0.5px rgb(28 25 18 / 0.12), 0 1px 2px rgb(28 25 18 / 0.18),\n    0 3px 8px -2px rgb(28 25 18 / 0.2)",
           "scope": "[data-ui='clubhouse']",
-          "line": 282
+          "line": 289
         },
         {
           "name": "--ch-phone-bar-bg",
           "value": "rgb(247 245 239 / 0.9)",
           "scope": "[data-ui='clubhouse']",
-          "line": 284
+          "line": 291
         },
         {
           "name": "--ch-phone-tabbar-bg",
           "value": "rgb(253 252 248 / 0.92)",
           "scope": "[data-ui='clubhouse']",
-          "line": 285
+          "line": 292
         },
         {
           "name": "--ch-phone-tabbar-shelf-bg",
           "value": "#f7f4ec",
           "scope": "[data-ui='clubhouse']",
-          "line": 288
+          "line": 295
         },
         {
           "name": "--ch-phone-tabbar-shelf-edge",
           "value": "inset 0 1px 0 rgb(28 25 18 / 0.08)",
           "scope": "[data-ui='clubhouse']",
-          "line": 289
+          "line": 296
         },
         {
           "name": "--ch-phone-composer-bg",
           "value": "rgb(253 252 248 / 0.94)",
           "scope": "[data-ui='clubhouse']",
-          "line": 290
+          "line": 297
         },
         {
           "name": "--ch-avatar-neutral-bg",
           "value": "#d9e4d8",
           "scope": "[data-ui='clubhouse']",
-          "line": 292
+          "line": 299
         },
         {
           "name": "--ch-avatar-neutral-fg",
           "value": "#23402f",
           "scope": "[data-ui='clubhouse']",
-          "line": 293
+          "line": 300
         },
         {
           "name": "--ch-avatar-neutral-ring",
           "value": "rgb(35 64 47 / 0.18)",
           "scope": "[data-ui='clubhouse']",
-          "line": 294
+          "line": 301
         },
         {
           "name": "--ch-well-bg",
           "value": "linear-gradient(180deg, #d4cebe 0%, #ddd8ca 55%, #e4dfd3 100%)",
           "scope": "[data-ui='clubhouse']",
-          "line": 297
+          "line": 304
         },
         {
           "name": "--ch-well-shadow",
           "value": "inset 0 2px 3px rgb(28 25 18 / 0.2), inset 0 4px 10px -2px rgb(28 25 18 / 0.16),\n    inset 0 -1px 0 rgb(255 255 255 / 0.55), inset 0 0 0 1px rgb(28 25 18 / 0.13), 0 1px 0 #fff,\n    0 0 0 1px rgb(255 255 255 / 0.35)",
           "scope": "[data-ui='clubhouse']",
-          "line": 298
+          "line": 305
         },
         {
           "name": "--ch-well-soft-bg",
           "value": "linear-gradient(180deg, #e2ddd0 0%, #e9e5da 60%, #edeae0 100%)",
           "scope": "[data-ui='clubhouse']",
-          "line": 302
+          "line": 309
         },
         {
           "name": "--ch-well-soft-shadow",
           "value": "inset 0 1px 2px rgb(28 25 18 / 0.12), inset 0 3px 8px -3px rgb(28 25 18 / 0.1),\n    inset 0 0 0 1px rgb(28 25 18 / 0.1), 0 1px 0 rgb(255 255 255 / 0.9)",
           "scope": "[data-ui='clubhouse']",
-          "line": 303
+          "line": 310
         },
         {
           "name": "--ch-raised-bg",
           "value": "linear-gradient(180deg, #fffdf8 0%, #f8f6ef 60%, #f0ede4 100%)",
           "scope": "[data-ui='clubhouse']",
-          "line": 305
+          "line": 312
         },
         {
           "name": "--ch-raised-shadow",
           "value": "var(--ch-elevation-control)",
           "scope": "[data-ui='clubhouse']",
-          "line": 306
+          "line": 313
         },
         {
           "name": "--ch-sheet-bg",
           "value": "#fdfbf7",
           "scope": "[data-ui='clubhouse']",
-          "line": 309
+          "line": 316
         },
         {
           "name": "--ch-sheet-shadow",
           "value": "var(--ch-elevation-reading)",
           "scope": "[data-ui='clubhouse']",
-          "line": 310
+          "line": 317
         },
         {
           "name": "--ch-on-dark-raised-bg",
           "value": "linear-gradient(180deg, #245740 0%, #1b4a33 100%)",
           "scope": "[data-ui='clubhouse']",
-          "line": 314
+          "line": 321
         },
         {
           "name": "--ch-on-dark-raised-shadow",
           "value": "inset 0 1px 0 rgb(210 244 221 / 0.16), 0 0 0 1px rgb(2 18 10 / 0.18),\n    0 2px 4px rgb(2 18 10 / 0.28), 0 14px 28px -14px rgb(2 18 10 / 0.6)",
           "scope": "[data-ui='clubhouse']",
-          "line": 315
+          "line": 322
         },
         {
           "name": "--ch-on-dark-well-bg",
           "value": "linear-gradient(180deg, #0c3221 0%, #10382a 100%)",
           "scope": "[data-ui='clubhouse']",
-          "line": 317
+          "line": 324
         },
         {
           "name": "--ch-on-dark-well-shadow",
           "value": "inset 0 2px 4px rgb(0 0 0 / 0.32), inset 0 0 0 1px rgb(0 0 0 / 0.14),\n    0 1px 0 rgb(210 244 221 / 0.08)",
           "scope": "[data-ui='clubhouse']",
-          "line": 318
+          "line": 325
         },
         {
           "name": "--ch-on-dark-control-bg",
           "value": "linear-gradient(180deg, #2c6148 0%, #22553c 100%)",
           "scope": "[data-ui='clubhouse']",
-          "line": 320
+          "line": 327
         },
         {
           "name": "--ch-on-dark-control-shadow",
           "value": "inset 0 1px 0 rgb(210 244 221 / 0.2), 0 0 0 1px rgb(2 18 10 / 0.2),\n    0 1px 2px rgb(2 18 10 / 0.35), 0 6px 12px -6px rgb(2 18 10 / 0.5)",
           "scope": "[data-ui='clubhouse']",
-          "line": 321
+          "line": 328
         },
         {
           "name": "--ch-on-dark-control-press-shadow",
           "value": "inset 0 1px 3px rgb(2 18 10 / 0.4), 0 0 0 1px rgb(2 18 10 / 0.2)",
           "scope": "[data-ui='clubhouse']",
-          "line": 323
+          "line": 330
         },
         {
           "name": "--ch-green-raised-bg",
           "value": "linear-gradient(180deg, #1e6a45 0%, #155a39 55%, #0f4a2f 100%)",
           "scope": "[data-ui='clubhouse']",
-          "line": 324
+          "line": 331
         },
         {
           "name": "--ch-green-raised-shadow",
           "value": "0 1px 2px rgb(8 43 28 / 0.2), 0 6px 12px -4px rgb(8 43 28 / 0.36),\n    inset 0 1px 0 rgb(255 255 255 / 0.18), inset 0 -1px 0 rgb(0 0 0 / 0.15)",
           "scope": "[data-ui='clubhouse']",
-          "line": 325
+          "line": 332
         },
         {
           "name": "--ch-ease",
           "value": "cubic-bezier(0.22, 1, 0.36, 1)",
           "scope": "[data-ui='clubhouse']",
-          "line": 334
+          "line": 341
         },
         {
           "name": "--ch-ease-io",
           "value": "cubic-bezier(0.65, 0, 0.35, 1)",
           "scope": "[data-ui='clubhouse']",
-          "line": 335
+          "line": 342
         },
         {
           "name": "--ch-ease-spring",
           "value": "cubic-bezier(0.34, 1.3, 0.64, 1)",
           "scope": "[data-ui='clubhouse']",
-          "line": 336
+          "line": 343
         },
         {
           "name": "--ch-dur-press",
           "value": "110ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 337
+          "line": 344
         },
         {
           "name": "--ch-dur-quick",
           "value": "180ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 338
+          "line": 345
         },
         {
           "name": "--ch-dur-base",
           "value": "260ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 339
+          "line": 346
         },
         {
           "name": "--ch-dur-release",
           "value": "280ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 340
+          "line": 347
         },
         {
           "name": "--ch-dur-reveal",
           "value": "520ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 341
+          "line": 348
         },
         {
           "name": "--ch-dur-press-delay",
           "value": "50ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 344
+          "line": 351
         },
         {
           "name": "--ch-ease-spring-smooth",
           "value": "var(--ch-ease)",
           "scope": "[data-ui='clubhouse']",
-          "line": 349
+          "line": 356
         },
         {
           "name": "--ch-dur-spring-smooth",
           "value": "var(--ch-dur-base)",
           "scope": "[data-ui='clubhouse']",
-          "line": 350
+          "line": 357
         },
         {
           "name": "--ch-reveal-offset",
           "value": "40ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 351
+          "line": 358
         },
         {
           "name": "--ch-reveal-step",
           "value": "55ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 352
+          "line": 359
         },
         {
           "name": "--ch-reveal-rise",
           "value": "10px",
           "scope": "[data-ui='clubhouse']",
-          "line": 353
+          "line": 360
         },
         {
           "name": "--ch-dur-shimmer",
           "value": "1.9s",
           "scope": "[data-ui='clubhouse']",
-          "line": 354
+          "line": 361
         },
         {
           "name": "--ch-dur-sweep",
           "value": "900ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 356
+          "line": 363
         },
         {
           "name": "--ch-skel-delay",
           "value": "0ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 359
+          "line": 366
         },
         {
           "name": "--ch-z-sticky",
           "value": "40",
           "scope": "[data-ui='clubhouse']",
-          "line": 362
+          "line": 369
         },
         {
           "name": "--ch-z-overlay",
           "value": "80",
           "scope": "[data-ui='clubhouse']",
-          "line": 363
+          "line": 370
         },
         {
           "name": "--ch-z-toast",
           "value": "100",
           "scope": "[data-ui='clubhouse']",
-          "line": 364
+          "line": 371
+        },
+        {
+          "name": "--ch-ivory-0",
+          "value": "#1b201c",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 385
+        },
+        {
+          "name": "--ch-ivory-25",
+          "value": "#1d231e",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 386
+        },
+        {
+          "name": "--ch-ivory-50",
+          "value": "#202621",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 387
+        },
+        {
+          "name": "--ch-ivory-100",
+          "value": "#242a25",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 388
+        },
+        {
+          "name": "--ch-ivory-150",
+          "value": "#293029",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 389
+        },
+        {
+          "name": "--ch-ivory-200",
+          "value": "#2f3730",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 390
+        },
+        {
+          "name": "--ch-ivory-300",
+          "value": "#3c453d",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 391
+        },
+        {
+          "name": "--ch-ivory-400",
+          "value": "#4e584f",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 392
+        },
+        {
+          "name": "--ch-ink-950",
+          "value": "#f7f2e6",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 393
+        },
+        {
+          "name": "--ch-ink-900",
+          "value": "#ede7d8",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 394
+        },
+        {
+          "name": "--ch-ink-700",
+          "value": "#d8d1c1",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 395
+        },
+        {
+          "name": "--ch-ink-600",
+          "value": "#c7c0af",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 396
+        },
+        {
+          "name": "--ch-ink-500",
+          "value": "#a8a193",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 397
+        },
+        {
+          "name": "--ch-ink-400",
+          "value": "#827d71",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 398
+        },
+        {
+          "name": "--ch-ink-300",
+          "value": "#5c584f",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 399
+        },
+        {
+          "name": "--ch-green-25",
+          "value": "#131d17",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 400
+        },
+        {
+          "name": "--ch-green-50",
+          "value": "#15241b",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 401
+        },
+        {
+          "name": "--ch-green-100",
+          "value": "#1a3024",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 402
+        },
+        {
+          "name": "--ch-green-200",
+          "value": "#24412f",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 403
+        },
+        {
+          "name": "--ch-green-400",
+          "value": "#5fa57a",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 404
+        },
+        {
+          "name": "--ch-green-500",
+          "value": "#6db488",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 405
+        },
+        {
+          "name": "--ch-green-600",
+          "value": "#6bbb8c",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 407
+        },
+        {
+          "name": "--ch-green-700",
+          "value": "#84c9a0",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 408
+        },
+        {
+          "name": "--ch-green-800",
+          "value": "#123d29",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 409
+        },
+        {
+          "name": "--ch-green-900",
+          "value": "#0a2a1b",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 410
+        },
+        {
+          "name": "--ch-green-fill-500",
+          "value": "#2a7d53",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 411
+        },
+        {
+          "name": "--ch-green-fill-600",
+          "value": "#23704a",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 412
+        },
+        {
+          "name": "--ch-green-fill-700",
+          "value": "#1d613f",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 413
+        },
+        {
+          "name": "--ch-frame",
+          "value": "#08150e",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 415
+        },
+        {
+          "name": "--ch-score-under-fill",
+          "value": "#c2473a",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 417
+        },
+        {
+          "name": "--ch-workspace",
+          "value": "#131814",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 418
+        },
+        {
+          "name": "--ch-champagne-100",
+          "value": "#2b2619",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 419
+        },
+        {
+          "name": "--ch-champagne-300",
+          "value": "#cdbb8e",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 420
+        },
+        {
+          "name": "--ch-champagne-500",
+          "value": "#c9ad74",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 421
+        },
+        {
+          "name": "--ch-positive-600",
+          "value": "#6bbb8c",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 422
+        },
+        {
+          "name": "--ch-positive-100",
+          "value": "#16291e",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 423
+        },
+        {
+          "name": "--ch-warning-600",
+          "value": "#e3a94f",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 424
+        },
+        {
+          "name": "--ch-warning-100",
+          "value": "#2e2414",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 425
+        },
+        {
+          "name": "--ch-danger-600",
+          "value": "#ef8576",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 426
+        },
+        {
+          "name": "--ch-danger-100",
+          "value": "#35191a",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 427
+        },
+        {
+          "name": "--ch-info-600",
+          "value": "#86b6d4",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 428
+        },
+        {
+          "name": "--ch-info-100",
+          "value": "#172632",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 429
+        },
+        {
+          "name": "--ch-score-under",
+          "value": "#ef8576",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 430
+        },
+        {
+          "name": "--ch-score-under-bg",
+          "value": "#3a1c1a",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 431
+        },
+        {
+          "name": "--ch-score-over-bg",
+          "value": "#272c27",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 432
+        },
+        {
+          "name": "--ch-score-double",
+          "value": "#ede7d8",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 433
+        },
+        {
+          "name": "--ch-chart-paper",
+          "value": "#171c18",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 434
+        },
+        {
+          "name": "--ch-chart-gain",
+          "value": "#6bbb8c",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 435
+        },
+        {
+          "name": "--ch-chart-loss",
+          "value": "#e3a94f",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 436
+        },
+        {
+          "name": "--ch-chart-loss-on-tint",
+          "value": "#edb860",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 437
+        },
+        {
+          "name": "--ch-chart-flag",
+          "value": "#ef8576",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 438
+        },
+        {
+          "name": "--ch-chart-fairway",
+          "value": "#24412f",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 439
+        },
+        {
+          "name": "--ch-chart-fairway-alt",
+          "value": "#1f3a29",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 440
+        },
+        {
+          "name": "--ch-chart-rough",
+          "value": "#272d23",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 441
+        },
+        {
+          "name": "--ch-bg-page",
+          "value": "#111512",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 443
+        },
+        {
+          "name": "--ch-bg-surface",
+          "value": "#1b201c",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 444
+        },
+        {
+          "name": "--ch-bg-subtle",
+          "value": "#181d19",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 445
+        },
+        {
+          "name": "--ch-bg-inset",
+          "value": "#0e120f",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 446
+        },
+        {
+          "name": "--ch-bg-hover",
+          "value": "#212722",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 447
+        },
+        {
+          "name": "--ch-bg-selected",
+          "value": "#16281d",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 448
+        },
+        {
+          "name": "--ch-text-on-accent",
+          "value": "#f4eedd",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 449
+        },
+        {
+          "name": "--ch-accent",
+          "value": "#23704a",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 450
+        },
+        {
+          "name": "--ch-accent-hover",
+          "value": "#2a7d53",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 451
+        },
+        {
+          "name": "--ch-accent-press",
+          "value": "#1d613f",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 452
+        },
+        {
+          "name": "--ch-border-hairline",
+          "value": "rgb(237 231 216 / 0.08)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 453
+        },
+        {
+          "name": "--ch-border-subtle",
+          "value": "rgb(237 231 216 / 0.11)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 454
+        },
+        {
+          "name": "--ch-border-control",
+          "value": "rgb(237 231 216 / 0.17)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 455
+        },
+        {
+          "name": "--ch-border-strong",
+          "value": "rgb(237 231 216 / 0.3)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 456
+        },
+        {
+          "name": "--ch-seam-ink",
+          "value": "rgb(0 0 0 / 0.55)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 457
+        },
+        {
+          "name": "--ch-seam-light",
+          "value": "rgb(255 255 255 / 0.05)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 458
+        },
+        {
+          "name": "--ch-board-shadow",
+          "value": "inset 0 2px 4px rgb(0 0 0 / 0.45), inset 0 0 0 1px rgb(0 0 0 / 0.35), 0 1px 0 rgb(255 255 255 / 0.05)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 459
+        },
+        {
+          "name": "--ch-board-double-shadow",
+          "value": "inset 0 1px 0 rgb(255 255 255 / 0.2), 0 1px 3px rgb(0 0 0 / 0.5)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 460
+        },
+        {
+          "name": "--ch-key-frost-shadow",
+          "value": "inset 0 1px 0 rgb(255 255 255 / 0.07), 0 0 0 1px rgb(255 255 255 / 0.07), 0 2px 4px rgb(0 0 0 / 0.4), 0 10px 20px -10px rgb(0 0 0 / 0.6)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 461
+        },
+        {
+          "name": "--ch-key-raised-shadow",
+          "value": "var(--ch-elevation-control), 0 0 0 1px rgb(255 255 255 / 0.06), 0 6px 12px -8px rgb(0 0 0 / 0.6)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 462
+        },
+        {
+          "name": "--ch-on-dark-primary-shadow",
+          "value": "inset 0 1px 0 rgb(255 255 255 / 0.6), 0 0 0 1px rgb(0 0 0 / 0.2), 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 16px -8px rgb(0 0 0 / 0.6)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 463
+        },
+        {
+          "name": "--ch-seg-pill-lift-shadow",
+          "value": "var(--ch-elevation-control), 0 2px 6px -2px rgb(0 0 0 / 0.5)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 464
+        },
+        {
+          "name": "--ch-btn-secondary-shadow",
+          "value": "0 0 0 1px rgb(237 231 216 / 0.1), inset 0 1px 0 rgb(255 255 255 / 0.06), 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 10px -5px rgb(0 0 0 / 0.5)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 465
+        },
+        {
+          "name": "--ch-btn-secondary-hover-shadow",
+          "value": "0 0 0 1px rgb(237 231 216 / 0.16), inset 0 1px 0 rgb(255 255 255 / 0.08), 0 2px 4px rgb(0 0 0 / 0.45), 0 8px 16px -8px rgb(0 0 0 / 0.55)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 466
+        },
+        {
+          "name": "--ch-score-birdie-shadow",
+          "value": "inset 0 0 0 1px rgb(239 133 118 / 0.45), 0 1px 2px rgb(0 0 0 / 0.4)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 467
+        },
+        {
+          "name": "--ch-score-eagle-shadow",
+          "value": "inset 0 0 0 1px rgb(239 133 118 / 0.7), 0 1px 2px rgb(0 0 0 / 0.45)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 468
+        },
+        {
+          "name": "--ch-score-bogey-shadow",
+          "value": "inset 0 0 0 1px rgb(237 231 216 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.4)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 469
+        },
+        {
+          "name": "--ch-score-double-shadow",
+          "value": "inset 0 0 0 1px rgb(255 255 255 / 0.4), 0 1px 2px rgb(0 0 0 / 0.5)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 470
+        },
+        {
+          "name": "--ch-border-focus",
+          "value": "#6bbb8c",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 471
+        },
+        {
+          "name": "--ch-green-ring",
+          "value": "rgb(107 187 140 / 0.35)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 472
+        },
+        {
+          "name": "--ch-green-rule",
+          "value": "rgb(107 187 140 / 0.45)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 473
+        },
+        {
+          "name": "--ch-ink-rule",
+          "value": "rgb(237 231 216 / 0.22)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 474
+        },
+        {
+          "name": "--ch-champagne-ring",
+          "value": "rgb(205 187 142 / 0.2)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 475
+        },
+        {
+          "name": "--ch-champagne-rule",
+          "value": "rgb(205 187 142 / 0.28)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 476
+        },
+        {
+          "name": "--ch-focus-halo",
+          "value": "rgb(107 187 140 / 0.2)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 477
+        },
+        {
+          "name": "--ch-glass-bg",
+          "value": "rgb(22 27 23 / 0.74)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 479
+        },
+        {
+          "name": "--ch-edge",
+          "value": "rgb(255 255 255 / 0.07)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 480
+        },
+        {
+          "name": "--ch-highlight",
+          "value": "inset 0 1px 0 rgb(255 255 255 / 0.06)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 481
+        },
+        {
+          "name": "--ch-elevation-reading",
+          "value": "inset 0 1px 0 rgb(255 255 255 / 0.05), 0 0 0 1px rgb(255 255 255 / 0.06),\n    0 1px 2px rgb(0 0 0 / 0.35), 0 8px 18px -10px rgb(0 0 0 / 0.5), 0 22px 40px -24px rgb(0 0 0 / 0.5)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 482
+        },
+        {
+          "name": "--ch-elevation-cast",
+          "value": "0 1px 2px rgb(0 0 0 / 0.3), 0 8px 18px -10px rgb(0 0 0 / 0.5), 0 22px 40px -24px rgb(0 0 0 / 0.5)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 484
+        },
+        {
+          "name": "--ch-elevation-reading-hover",
+          "value": "inset 0 1px 0 rgb(255 255 255 / 0.07), 0 0 0 1px rgb(255 255 255 / 0.09),\n    0 2px 4px rgb(0 0 0 / 0.4), 0 12px 24px -12px rgb(0 0 0 / 0.55), 0 28px 48px -26px rgb(0 0 0 / 0.55)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 485
+        },
+        {
+          "name": "--ch-elevation-reading-accent",
+          "value": "0 1px 3px rgb(0 0 0 / 0.35), 0 4px 12px -6px rgb(0 0 0 / 0.45)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 487
+        },
+        {
+          "name": "--ch-elevation-control",
+          "value": "var(--ch-highlight), 0 1px 2px rgb(0 0 0 / 0.35)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 488
+        },
+        {
+          "name": "--ch-elevation-floating",
+          "value": "0 0 0 1px rgb(255 255 255 / 0.06), 0 2px 6px rgb(0 0 0 / 0.35), 0 8px 20px -8px rgb(0 0 0 / 0.55)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 489
+        },
+        {
+          "name": "--ch-elevation-tabbar",
+          "value": "inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 1px rgb(255 255 255 / 0.07),\n    0 2px 6px rgb(0 0 0 / 0.4), 0 14px 32px -12px rgb(0 0 0 / 0.7)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 490
+        },
+        {
+          "name": "--ch-elevation-framed",
+          "value": "0 1px 3px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.04), inset 1px 0 0 rgb(255 255 255 / 0.03)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 492
+        },
+        {
+          "name": "--ch-elevation-on-frame",
+          "value": "0 0 0 1px rgb(201 173 116 / 0.4), 0 1px 2px rgb(0 0 0 / 0.5)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 493
+        },
+        {
+          "name": "--ch-elevation-on-frame-hover",
+          "value": "0 0 0 1px rgb(201 173 116 / 0.55), 0 2px 6px rgb(0 0 0 / 0.55)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 494
+        },
+        {
+          "name": "--ch-ledger-rule",
+          "value": "rgb(205 187 142 / 0.15)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 495
+        },
+        {
+          "name": "--ch-ledger-rule-soft",
+          "value": "rgb(205 187 142 / 0.08)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 496
+        },
+        {
+          "name": "--ch-ledger-ink",
+          "value": "rgb(226 238 229 / 0.94)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 497
+        },
+        {
+          "name": "--ch-ledger-eyebrow",
+          "value": "#bba878",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 498
+        },
+        {
+          "name": "--ch-ledger-row-hover",
+          "value": "rgb(205 187 142 / 0.06)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 499
+        },
+        {
+          "name": "--ch-ledger-rule-double",
+          "value": "3px double rgb(205 187 142 / 0.22)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 500
+        },
+        {
+          "name": "--ch-elevation-feature",
+          "value": "0 0 0 1px rgb(107 187 140 / 0.14), 0 14px 28px -18px rgb(0 0 0 / 0.8)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 501
+        },
+        {
+          "name": "--ch-ledger-row-press",
+          "value": "color-mix(in oklab, var(--ch-green-600) 12%, transparent)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 502
+        },
+        {
+          "name": "--ch-ledger-avatar-ring",
+          "value": "0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule), 0 10px 22px -12px rgb(0 0 0 / 0.6)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 503
+        },
+        {
+          "name": "--ch-elevation-field-hover",
+          "value": "0 0 0 1px var(--ch-border-strong), 0 1px 2px rgb(0 0 0 / 0.3)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 504
+        },
+        {
+          "name": "--ch-elevation-chip-hover",
+          "value": "inset 0 0 0 1px rgb(237 231 216 / 0.24), 0 2px 6px -2px rgb(0 0 0 / 0.5)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 505
+        },
+        {
+          "name": "--ch-elevation-choice-hover",
+          "value": "0 0 0 1.5px var(--ch-green-600), 0 10px 20px -14px rgb(0 0 0 / 0.6)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 506
+        },
+        {
+          "name": "--ch-elevation-row-card-hover",
+          "value": "0 0 0 1px rgb(107 187 140 / 0.3), 0 14px 28px -18px rgb(0 0 0 / 0.6)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 507
+        },
+        {
+          "name": "--ch-elevation-on-frame-card-hover",
+          "value": "0 0 0 1px rgb(201 173 116 / 0.55), 0 10px 22px -10px rgb(0 0 0 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.06)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 508
+        },
+        {
+          "name": "--ch-elevation-primary-hover",
+          "value": "0 0 0 1px rgb(107 187 140 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.1), 0 2px 4px rgb(0 0 0 / 0.4),\n    0 8px 16px -8px rgb(0 0 0 / 0.55)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 509
+        },
+        {
+          "name": "--ch-elevation-overlay",
+          "value": "0 0 0 1px rgb(255 255 255 / 0.07), 0 4px 12px rgb(0 0 0 / 0.4), 0 16px 36px -12px rgb(0 0 0 / 0.6)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 511
+        },
+        {
+          "name": "--ch-elevation-sheet",
+          "value": "0 -1px 0 rgb(255 255 255 / 0.06), 0 -4px 12px rgb(0 0 0 / 0.35), 0 -12px 32px -12px rgb(0 0 0 / 0.5)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 512
+        },
+        {
+          "name": "--ch-elevation-bubble",
+          "value": "0 1px 2px rgb(0 0 0 / 0.3)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 513
+        },
+        {
+          "name": "--ch-elevation-bubble-mine",
+          "value": "0 1px 2px rgb(0 0 0 / 0.3)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 514
+        },
+        {
+          "name": "--ch-field-pill-edge",
+          "value": "inset 0 0 0 1px rgb(237 231 216 / 0.16)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 515
+        },
+        {
+          "name": "--ch-switch-track-bg",
+          "value": "#3a423b",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 516
+        },
+        {
+          "name": "--ch-switch-track-shadow",
+          "value": "inset 0 0 0 1px rgb(255 255 255 / 0.05), inset 0 1px 2px rgb(0 0 0 / 0.4)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 517
+        },
+        {
+          "name": "--ch-switch-on-bg",
+          "value": "var(--ch-accent)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 518
+        },
+        {
+          "name": "--ch-switch-on-shadow",
+          "value": "inset 0 0 0 1px rgb(0 0 0 / 0.25), inset 0 1px 2px rgb(0 0 0 / 0.3)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 519
+        },
+        {
+          "name": "--ch-switch-thumb-bg",
+          "value": "#f4eedd",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 520
+        },
+        {
+          "name": "--ch-switch-thumb-shadow",
+          "value": "0 0 0 0.5px rgb(0 0 0 / 0.3), 0 1px 2px rgb(0 0 0 / 0.4), 0 3px 8px -2px rgb(0 0 0 / 0.45)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 521
+        },
+        {
+          "name": "--ch-phone-bar-bg",
+          "value": "rgb(17 21 18 / 0.92)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 522
+        },
+        {
+          "name": "--ch-phone-tabbar-bg",
+          "value": "rgb(27 32 28 / 0.86)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 523
+        },
+        {
+          "name": "--ch-phone-tabbar-shelf-bg",
+          "value": "#161b17",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 524
+        },
+        {
+          "name": "--ch-phone-tabbar-shelf-edge",
+          "value": "inset 0 1px 0 rgb(255 255 255 / 0.07)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 525
+        },
+        {
+          "name": "--ch-phone-composer-bg",
+          "value": "rgb(27 32 28 / 0.94)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 526
+        },
+        {
+          "name": "--ch-avatar-neutral-bg",
+          "value": "#243a2c",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 527
+        },
+        {
+          "name": "--ch-avatar-neutral-fg",
+          "value": "#cfe3d4",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 528
+        },
+        {
+          "name": "--ch-avatar-neutral-ring",
+          "value": "rgb(207 227 212 / 0.16)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 529
+        },
+        {
+          "name": "--ch-well-bg",
+          "value": "linear-gradient(180deg, #0a0d0b 0%, #0d110e 55%, #101411 100%)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 530
+        },
+        {
+          "name": "--ch-well-shadow",
+          "value": "inset 0 2px 3px rgb(0 0 0 / 0.5), inset 0 4px 10px -2px rgb(0 0 0 / 0.4), inset 0 0 0 1px rgb(0 0 0 / 0.4),\n    0 1px 0 rgb(255 255 255 / 0.05)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 531
+        },
+        {
+          "name": "--ch-well-soft-bg",
+          "value": "linear-gradient(180deg, #121613 0%, #141915 60%, #161b17 100%)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 533
+        },
+        {
+          "name": "--ch-well-soft-shadow",
+          "value": "inset 0 1px 2px rgb(0 0 0 / 0.4), inset 0 3px 8px -3px rgb(0 0 0 / 0.35), inset 0 0 0 1px rgb(0 0 0 / 0.3),\n    0 1px 0 rgb(255 255 255 / 0.04)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 534
+        },
+        {
+          "name": "--ch-raised-bg",
+          "value": "linear-gradient(180deg, #262d27 0%, #212722 60%, #1d231e 100%)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 536
+        },
+        {
+          "name": "--ch-sheet-bg",
+          "value": "#1b201c",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
+          "line": 537
         },
         {
           "name": "--ch-ivory-0",
           "value": "#fdfbf7",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 372
+          "line": 545
         },
         {
           "name": "--ch-ivory-25",
           "value": "#fbf9f4",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 373
+          "line": 546
         },
         {
           "name": "--ch-ivory-50",
           "value": "#f3efe6",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 374
+          "line": 547
         },
         {
           "name": "--ch-bg-page",
           "value": "#ede9df",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 375
+          "line": 548
         },
         {
           "name": "--ch-bg-surface",
           "value": "#fcfaf5",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 376
+          "line": 549
         },
         {
           "name": "--ch-bg-subtle",
           "value": "#f5f2ea",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 377
+          "line": 550
         },
         {
           "name": "--ch-bg-hover",
           "value": "#f5f2ea",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 378
+          "line": 551
         },
         {
           "name": "--ch-bg-inset",
           "value": "#e9e5da",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 379
+          "line": 552
         },
         {
           "name": "--ch-raised-bg",
           "value": "linear-gradient(180deg, #fffdf8 0%, #f9f7f0 60%, #f1eee5 100%)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 380
+          "line": 553
         },
         {
           "name": "--ch-sheet-bg",
           "value": "#fdfbf7",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 381
+          "line": 554
         },
         {
           "name": "--ch-chart-paper",
           "value": "#fbf9f3",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 382
+          "line": 555
         },
         {
           "name": "--ch-phone-bar-bg",
           "value": "rgb(237 233 223 / 0.94)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 383
+          "line": 556
         },
         {
           "name": "--ch-phone-tabbar-bg",
           "value": "rgb(243 240 231 / 0.84)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 385
+          "line": 558
         },
         {
           "name": "--ch-phone-composer-bg",
           "value": "#fbf9f4",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 386
+          "line": 559
         },
         {
           "name": "--ch-glass-bg",
           "value": "rgb(243 240 231 / 0.84)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 387
+          "line": 560
         },
         {
           "name": "--ch-ink-500",
           "value": "#5f5c55",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 391
+          "line": 564
         },
         {
           "name": "--ch-ink-600",
           "value": "#46433d",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 392
+          "line": 565
         },
         {
           "name": "--ch-ease-spring-smooth",
           "value": "linear(0, 0.0418, 0.136, 0.2508, 0.3677, 0.477, 0.5739, 0.657, 0.7266, 0.7839, 0.8303, 0.8675, 0.8971, 0.9204, 0.9387, 0.953, 0.964, 0.9725, 0.9791, 0.9841, 0.988, 0.9909, 0.9931, 0.9948, 0.9961, 0.9971, 0.9978, 0.9983, 0.9988, 1)",
           "scope": "@supports (transition-timing-function: linear(0, 1)) → [data-ui='clubhouse']",
-          "line": 400
+          "line": 573
         },
         {
           "name": "--ch-dur-spring-smooth",
           "value": "462ms",
           "scope": "@supports (transition-timing-function: linear(0, 1)) → [data-ui='clubhouse']",
-          "line": 401
+          "line": 574
         },
         {
           "name": "--ch-dur-press",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']",
-          "line": 409
+          "line": 582
         },
         {
           "name": "--ch-dur-quick",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']",
-          "line": 410
+          "line": 583
         },
         {
           "name": "--ch-dur-base",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']",
-          "line": 411
+          "line": 584
         },
         {
           "name": "--ch-dur-release",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']",
-          "line": 412
+          "line": 585
         },
         {
           "name": "--ch-dur-reveal",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']",
-          "line": 413
+          "line": 586
         },
         {
           "name": "--ch-dur-spring-smooth",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']",
-          "line": 414
+          "line": 587
         },
         {
           "name": "--ch-reveal-offset",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']",
-          "line": 415
+          "line": 588
         },
         {
           "name": "--ch-reveal-step",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']",
-          "line": 416
+          "line": 589
         },
         {
           "name": "--ch-reveal-rise",
           "value": "0px",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']",
-          "line": 417
+          "line": 590
         },
         {
           "name": "--ch-skel-delay",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']",
-          "line": 418
+          "line": 591
         },
         {
           "name": "--ch-dur-vt-out",
           "value": "180ms",
           "scope": "html:has([data-ui='clubhouse'])",
-          "line": 425
+          "line": 598
         },
         {
           "name": "--ch-dur-vt-in",
           "value": "180ms",
           "scope": "html:has([data-ui='clubhouse'])",
-          "line": 426
+          "line": 599
         },
         {
           "name": "--ch-dur-vt-gap",
           "value": "0ms",
           "scope": "html:has([data-ui='clubhouse'])",
-          "line": 427
+          "line": 600
         },
         {
           "name": "--ch-ease-vt-out",
           "value": "cubic-bezier(0.4, 0, 1, 1)",
           "scope": "html:has([data-ui='clubhouse'])",
-          "line": 428
+          "line": 601
         },
         {
           "name": "--ch-ease-vt-in",
           "value": "cubic-bezier(0.22, 1, 0.36, 1)",
           "scope": "html:has([data-ui='clubhouse'])",
-          "line": 429
+          "line": 602
         },
         {
           "name": "--ch-type-title",
           "value": "600 16px/1.35 var(--ch-font-sans)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 451
+          "line": 634
         },
         {
           "name": "--ch-type-body-l",
           "value": "400 17px/1.5 var(--ch-font-sans)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 452
+          "line": 635
         },
         {
           "name": "--ch-type-body",
           "value": "400 16px/1.5 var(--ch-font-sans)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 453
+          "line": 636
         },
         {
           "name": "--ch-type-body-s",
           "value": "400 14px/1.45 var(--ch-font-sans)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 454
+          "line": 637
         },
         {
           "name": "--ch-type-label",
           "value": "500 14px/1.3 var(--ch-font-sans)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 455
+          "line": 638
         },
         {
           "name": "--ch-type-label-s",
           "value": "500 13px/1.3 var(--ch-font-sans)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 456
+          "line": 639
         },
         {
           "name": "--ch-type-caption",
           "value": "400 13px/1.4 var(--ch-font-sans)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 457
+          "line": 640
         }
       ]
     },
@@ -10952,6 +12069,96 @@
           "value": "var(--ch-avatar-neutral-ring)",
           "scope": "@media (max-width: 820px) → .ch-avatar[data-tone]",
           "line": 208
+        },
+        {
+          "name": "--ch-av-bg",
+          "value": "#2f2e29",
+          "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='stone']",
+          "line": 996
+        },
+        {
+          "name": "--ch-av-fg",
+          "value": "#d8d1c1",
+          "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='stone']",
+          "line": 997
+        },
+        {
+          "name": "--ch-av-ring",
+          "value": "rgb(216 209 193 / 0.16)",
+          "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='stone']",
+          "line": 998
+        },
+        {
+          "name": "--ch-av-bg",
+          "value": "#25322a",
+          "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='sage']",
+          "line": 1001
+        },
+        {
+          "name": "--ch-av-fg",
+          "value": "#c6dacb",
+          "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='sage']",
+          "line": 1002
+        },
+        {
+          "name": "--ch-av-ring",
+          "value": "rgb(198 218 203 / 0.16)",
+          "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='sage']",
+          "line": 1003
+        },
+        {
+          "name": "--ch-av-bg",
+          "value": "#243034",
+          "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='mist']",
+          "line": 1006
+        },
+        {
+          "name": "--ch-av-fg",
+          "value": "#c4d5da",
+          "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='mist']",
+          "line": 1007
+        },
+        {
+          "name": "--ch-av-ring",
+          "value": "rgb(196 213 218 / 0.16)",
+          "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='mist']",
+          "line": 1008
+        },
+        {
+          "name": "--ch-av-bg",
+          "value": "#352a23",
+          "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='clay']",
+          "line": 1011
+        },
+        {
+          "name": "--ch-av-fg",
+          "value": "#e4c9b8",
+          "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='clay']",
+          "line": 1012
+        },
+        {
+          "name": "--ch-av-ring",
+          "value": "rgb(228 201 184 / 0.16)",
+          "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='clay']",
+          "line": 1013
+        },
+        {
+          "name": "--ch-av-bg",
+          "value": "var(--ch-avatar-neutral-bg)",
+          "scope": "@media (max-width: 820px) → html[data-fw-theme='dark'] .ch-avatar[data-tone]",
+          "line": 1017
+        },
+        {
+          "name": "--ch-av-fg",
+          "value": "var(--ch-avatar-neutral-fg)",
+          "scope": "@media (max-width: 820px) → html[data-fw-theme='dark'] .ch-avatar[data-tone]",
+          "line": 1018
+        },
+        {
+          "name": "--ch-av-ring",
+          "value": "var(--ch-avatar-neutral-ring)",
+          "scope": "@media (max-width: 820px) → html[data-fw-theme='dark'] .ch-avatar[data-tone]",
+          "line": 1019
         }
       ]
     }
