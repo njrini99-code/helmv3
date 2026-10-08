@@ -1,7 +1,9 @@
 -- STATUS: WRITTEN, NOT APPLIED. Prepared by plan phase 6 item 6.1.
--- Apply: npm run db:apply -- supabase/migrations/20261007101000_golf_holes_shots_policy_consolidation.sql
+-- Apply: npm run db:apply --
+-- supabase/migrations/20261007101000_golf_holes_shots_policy_consolidation.sql
 -- Risk: MEDIUM-HIGH (RLS on the two hottest golf tables). Needs the
--- local-stack proof (supabase/tests/rls/golf_holes_shots_policy_consolidation.sql)
+-- local-stack proof
+-- (supabase/tests/rls/golf_holes_shots_policy_consolidation.sql)
 -- before it is applied. Independent of 20261007100000 and of the held
 -- 20261005120000: it applies cleanly with or without either of them.
 --
@@ -14,32 +16,43 @@
 -- BEFORE (production, read 2026-10-07 from pg_policies)
 -- ---------------------------------------------------------------------------
 -- golf_holes (9)                            roles
---   SELECT  golf_holes_select               authenticated  owner | coach | teammate
---   SELECT  golf_holes_select_team          authenticated  coach (subset of the one above)
+--   SELECT  golf_holes_select               authenticated  owner | coach |
+--   teammate
+--   SELECT  golf_holes_select_team          authenticated  coach (subset of the
+--   one above)
 --   INSERT  golf_holes_insert               authenticated  owner
 --   INSERT  golf_holes_insert_coach         public         coach
 --   UPDATE  golf_holes_update               authenticated  owner
 --   UPDATE  golf_holes_update_coach         public         coach
---   UPDATE  golf_holes_update_team          authenticated  org coach of an active team member
+--   UPDATE  golf_holes_update_team          authenticated  org coach of an
+--   active team member
 --   DELETE  golf_holes_delete               authenticated  owner
 --   DELETE  golf_holes_delete_coach         public         head coach
 -- golf_shots (12)
---   SELECT  golf_shots_select               authenticated  owner | coach | teammate
---   SELECT  admin_read_all                  authenticated  is_admin()      (KEPT, untouched)
+--   SELECT  golf_shots_select               authenticated  owner | coach |
+--   teammate
+--   SELECT  admin_read_all                  authenticated  is_admin()     
+--   (KEPT, untouched)
 --   INSERT  golf_shots_insert               authenticated  owner via round
---   INSERT  golf_shots_insert_own           authenticated  owner via hole or round
+--   INSERT  golf_shots_insert_own           authenticated  owner via hole or
+--   round
 --   INSERT  golf_shots_insert_coach         public         coach
 --   UPDATE  golf_shots_update               authenticated  owner via round
---   UPDATE  golf_shots_update_own           authenticated  owner via hole or round
+--   UPDATE  golf_shots_update_own           authenticated  owner via hole or
+--   round
 --   UPDATE  golf_shots_update_coach         public         coach
---   UPDATE  golf_shots_update_team          authenticated  org coach of an active team member
+--   UPDATE  golf_shots_update_team          authenticated  org coach of an
+--   active team member
 --   DELETE  golf_shots_delete               authenticated  owner via round
---   DELETE  golf_shots_delete_own           authenticated  owner via hole or round
+--   DELETE  golf_shots_delete_own           authenticated  owner via hole or
+--   round
 --   DELETE  golf_shots_delete_coach         public         head coach
 --
 -- AFTER
--- golf_holes (4): golf_holes_select, _insert, _update, _delete   all authenticated
--- golf_shots (5): golf_shots_select, _insert, _update, _delete   all authenticated
+-- golf_holes (4): golf_holes_select, _insert, _update, _delete   all
+-- authenticated
+-- golf_shots (5): golf_shots_select, _insert, _update, _delete   all
+-- authenticated
 --                 + admin_read_all (unchanged)
 --
 -- ---------------------------------------------------------------------------
@@ -94,7 +107,8 @@
 --   or is_golf_team_coach(team_id) or is_golf_team_player(team_id))). That is
 --   a correlated subquery whose golf_rounds read fires golf_rounds RLS (three
 --   SELECT policies, five helper calls) and golf_players RLS per probe. The
---   planner hid some of this behind a hashed SubPlan from golf_holes_select_team
+--   planner hid some of this behind a hashed SubPlan from
+--   golf_holes_select_team
 --   that still called a helper once per round (SubPlan 14: 99 ms and 5,387
 --   buffer hits for a coach with 279 rounds).
 -- New: round_id IN (select public.golf_readable_round_ids()). The function is
@@ -123,11 +137,20 @@
 -- POLICY, then
 --   DROP FUNCTION public.golf_readable_round_ids();
 --
--- VERIFY: select 1 where (select count(*) from pg_policies where schemaname = 'public' and tablename = 'golf_holes') = 4;
--- VERIFY: select 1 where (select count(*) from pg_policies where schemaname = 'public' and tablename = 'golf_shots') = 5;
--- VERIFY: select 1 where not exists (select 1 from pg_policies where schemaname = 'public' and tablename in ('golf_holes', 'golf_shots') and 'public' = any (roles));
--- VERIFY: select 1 where exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_shots' and policyname = 'admin_read_all');
--- VERIFY: select 1 where has_function_privilege('authenticated', 'public.golf_readable_round_ids()', 'EXECUTE') and not has_function_privilege('anon', 'public.golf_readable_round_ids()', 'EXECUTE');
+-- VERIFY: select 1 where (select count(*) from pg_policies where schemaname =
+-- VERIFY: 'public' and tablename = 'golf_holes') = 4;
+-- VERIFY: select 1 where (select count(*) from pg_policies where schemaname =
+-- VERIFY: 'public' and tablename = 'golf_shots') = 5;
+-- VERIFY: select 1 where not exists (select 1 from pg_policies where schemaname
+-- VERIFY: = 'public' and tablename in ('golf_holes', 'golf_shots') and 'public'
+-- VERIFY: = any (roles));
+-- VERIFY: select 1 where exists (select 1 from pg_policies where schemaname =
+-- VERIFY: 'public' and tablename = 'golf_shots' and policyname =
+-- VERIFY: 'admin_read_all');
+-- VERIFY: select 1 where has_function_privilege('authenticated',
+-- VERIFY: 'public.golf_readable_round_ids()', 'EXECUTE') and not
+-- VERIFY: has_function_privilege('anon', 'public.golf_readable_round_ids()',
+-- VERIFY: 'EXECUTE');
 
 -- ---------------------------------------------------------------------------
 -- Once-per-statement lookup of the caller's readable rounds
@@ -168,8 +191,9 @@ AS $function$
         );
 $function$;
 
-REVOKE ALL ON FUNCTION public.golf_readable_round_ids() FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.golf_readable_round_ids() TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.golf_readable_round_ids() FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.golf_readable_round_ids() TO authenticated,
+service_role;
 
 -- ---------------------------------------------------------------------------
 -- golf_holes
@@ -185,99 +209,109 @@ DROP POLICY IF EXISTS golf_holes_delete ON public.golf_holes;
 DROP POLICY IF EXISTS golf_holes_delete_coach ON public.golf_holes;
 
 CREATE POLICY golf_holes_select ON public.golf_holes
-  FOR SELECT TO authenticated
-  USING (round_id IN (SELECT public.golf_readable_round_ids()));
+FOR SELECT TO authenticated
+USING (round_id IN (SELECT public.golf_readable_round_ids()));
 
 CREATE POLICY golf_holes_insert ON public.golf_holes
-  FOR INSERT TO authenticated
-  WITH CHECK (
+FOR INSERT TO authenticated
+WITH CHECK (
     EXISTS (
-      SELECT 1
-      FROM public.golf_rounds gr
-      JOIN public.golf_players gp ON gp.id = gr.player_id
-      WHERE gr.id = golf_holes.round_id
-        AND gp.user_id = (SELECT auth.uid())
+        SELECT 1
+        FROM public.golf_rounds gr
+        JOIN public.golf_players gp ON gp.id = gr.player_id
+        WHERE
+            gr.id = golf_holes.round_id
+            AND gp.user_id = (SELECT auth.uid())
     )
     OR EXISTS (
-      SELECT 1
-      FROM public.golf_rounds gr
-      WHERE gr.id = golf_holes.round_id
-        AND gr.team_id IS NOT NULL
-        AND public.is_golf_team_coach(gr.team_id)
+        SELECT 1
+        FROM public.golf_rounds gr
+        WHERE
+            gr.id = golf_holes.round_id
+            AND gr.team_id IS NOT NULL
+            AND public.is_golf_team_coach(gr.team_id)
     )
-  );
+);
 
 CREATE POLICY golf_holes_update ON public.golf_holes
-  FOR UPDATE TO authenticated
-  USING (
+FOR UPDATE TO authenticated
+USING (
     EXISTS (
-      SELECT 1
-      FROM public.golf_rounds gr
-      JOIN public.golf_players gp ON gp.id = gr.player_id
-      WHERE gr.id = golf_holes.round_id
-        AND gp.user_id = (SELECT auth.uid())
+        SELECT 1
+        FROM public.golf_rounds gr
+        JOIN public.golf_players gp ON gp.id = gr.player_id
+        WHERE
+            gr.id = golf_holes.round_id
+            AND gp.user_id = (SELECT auth.uid())
     )
     OR EXISTS (
-      SELECT 1
-      FROM public.golf_rounds gr
-      WHERE gr.id = golf_holes.round_id
-        AND gr.team_id IS NOT NULL
-        AND public.is_golf_team_coach(gr.team_id)
+        SELECT 1
+        FROM public.golf_rounds gr
+        WHERE
+            gr.id = golf_holes.round_id
+            AND gr.team_id IS NOT NULL
+            AND public.is_golf_team_coach(gr.team_id)
     )
     OR round_id IN (
-      SELECT gr.id
-      FROM public.golf_rounds gr
-      JOIN public.golf_team_members gtm ON gtm.player_id = gr.player_id
-      JOIN public.golf_teams gt ON gt.id = gtm.team_id
-      JOIN public.golf_coaches gc ON gc.organization_id = gt.organization_id
-      WHERE gc.user_id = (SELECT auth.uid())
-        AND gtm.status = 'active'::public.team_member_status
+        SELECT gr.id
+        FROM public.golf_rounds gr
+        JOIN public.golf_team_members gtm ON gtm.player_id = gr.player_id
+        JOIN public.golf_teams gt ON gt.id = gtm.team_id
+        JOIN public.golf_coaches gc ON gc.organization_id = gt.organization_id
+        WHERE
+            gc.user_id = (SELECT auth.uid())
+            AND gtm.status = 'active'::public.team_member_status
     )
-  )
-  WITH CHECK (
+)
+WITH CHECK (
     EXISTS (
-      SELECT 1
-      FROM public.golf_rounds gr
-      JOIN public.golf_players gp ON gp.id = gr.player_id
-      WHERE gr.id = golf_holes.round_id
-        AND gp.user_id = (SELECT auth.uid())
+        SELECT 1
+        FROM public.golf_rounds gr
+        JOIN public.golf_players gp ON gp.id = gr.player_id
+        WHERE
+            gr.id = golf_holes.round_id
+            AND gp.user_id = (SELECT auth.uid())
     )
     OR EXISTS (
-      SELECT 1
-      FROM public.golf_rounds gr
-      WHERE gr.id = golf_holes.round_id
-        AND gr.team_id IS NOT NULL
-        AND public.is_golf_team_coach(gr.team_id)
+        SELECT 1
+        FROM public.golf_rounds gr
+        WHERE
+            gr.id = golf_holes.round_id
+            AND gr.team_id IS NOT NULL
+            AND public.is_golf_team_coach(gr.team_id)
     )
     OR round_id IN (
-      SELECT gr.id
-      FROM public.golf_rounds gr
-      JOIN public.golf_team_members gtm ON gtm.player_id = gr.player_id
-      JOIN public.golf_teams gt ON gt.id = gtm.team_id
-      JOIN public.golf_coaches gc ON gc.organization_id = gt.organization_id
-      WHERE gc.user_id = (SELECT auth.uid())
-        AND gtm.status = 'active'::public.team_member_status
+        SELECT gr.id
+        FROM public.golf_rounds gr
+        JOIN public.golf_team_members gtm ON gtm.player_id = gr.player_id
+        JOIN public.golf_teams gt ON gt.id = gtm.team_id
+        JOIN public.golf_coaches gc ON gc.organization_id = gt.organization_id
+        WHERE
+            gc.user_id = (SELECT auth.uid())
+            AND gtm.status = 'active'::public.team_member_status
     )
-  );
+);
 
 CREATE POLICY golf_holes_delete ON public.golf_holes
-  FOR DELETE TO authenticated
-  USING (
+FOR DELETE TO authenticated
+USING (
     EXISTS (
-      SELECT 1
-      FROM public.golf_rounds gr
-      JOIN public.golf_players gp ON gp.id = gr.player_id
-      WHERE gr.id = golf_holes.round_id
-        AND gp.user_id = (SELECT auth.uid())
+        SELECT 1
+        FROM public.golf_rounds gr
+        JOIN public.golf_players gp ON gp.id = gr.player_id
+        WHERE
+            gr.id = golf_holes.round_id
+            AND gp.user_id = (SELECT auth.uid())
     )
     OR EXISTS (
-      SELECT 1
-      FROM public.golf_rounds gr
-      WHERE gr.id = golf_holes.round_id
-        AND gr.team_id IS NOT NULL
-        AND public.is_golf_team_head_coach(gr.team_id)
+        SELECT 1
+        FROM public.golf_rounds gr
+        WHERE
+            gr.id = golf_holes.round_id
+            AND gr.team_id IS NOT NULL
+            AND public.is_golf_team_head_coach(gr.team_id)
     )
-  );
+);
 
 -- ---------------------------------------------------------------------------
 -- golf_shots (admin_read_all is deliberately not touched)
@@ -298,121 +332,127 @@ DROP POLICY IF EXISTS golf_shots_delete_coach ON public.golf_shots;
 -- DROP statements per file (all CREATEs, then all DROPs) and would read a
 -- drop-and-recreate of golf_shots_select as the policy being removed.
 ALTER POLICY golf_shots_select ON public.golf_shots
-  USING (round_id IN (SELECT public.golf_readable_round_ids()));
+USING (round_id IN (SELECT public.golf_readable_round_ids()));
 
 CREATE POLICY golf_shots_insert ON public.golf_shots
-  FOR INSERT TO authenticated
-  WITH CHECK (
+FOR INSERT TO authenticated
+WITH CHECK (
     hole_id IN (
-      SELECT gh.id
-      FROM public.golf_holes gh
-      JOIN public.golf_rounds gr ON gr.id = gh.round_id
-      JOIN public.golf_players gp ON gp.id = gr.player_id
-      WHERE gp.user_id = (SELECT auth.uid())
+        SELECT gh.id
+        FROM public.golf_holes gh
+        JOIN public.golf_rounds gr ON gr.id = gh.round_id
+        JOIN public.golf_players gp ON gp.id = gr.player_id
+        WHERE gp.user_id = (SELECT auth.uid())
     )
     OR round_id IN (
-      SELECT gr.id
-      FROM public.golf_rounds gr
-      JOIN public.golf_players gp ON gp.id = gr.player_id
-      WHERE gp.user_id = (SELECT auth.uid())
+        SELECT gr.id
+        FROM public.golf_rounds gr
+        JOIN public.golf_players gp ON gp.id = gr.player_id
+        WHERE gp.user_id = (SELECT auth.uid())
     )
     OR EXISTS (
-      SELECT 1
-      FROM public.golf_rounds gr
-      WHERE gr.id = golf_shots.round_id
-        AND gr.team_id IS NOT NULL
-        AND public.is_golf_team_coach(gr.team_id)
+        SELECT 1
+        FROM public.golf_rounds gr
+        WHERE
+            gr.id = golf_shots.round_id
+            AND gr.team_id IS NOT NULL
+            AND public.is_golf_team_coach(gr.team_id)
     )
-  );
+);
 
 CREATE POLICY golf_shots_update ON public.golf_shots
-  FOR UPDATE TO authenticated
-  USING (
+FOR UPDATE TO authenticated
+USING (
     hole_id IN (
-      SELECT gh.id
-      FROM public.golf_holes gh
-      JOIN public.golf_rounds gr ON gr.id = gh.round_id
-      JOIN public.golf_players gp ON gp.id = gr.player_id
-      WHERE gp.user_id = (SELECT auth.uid())
+        SELECT gh.id
+        FROM public.golf_holes gh
+        JOIN public.golf_rounds gr ON gr.id = gh.round_id
+        JOIN public.golf_players gp ON gp.id = gr.player_id
+        WHERE gp.user_id = (SELECT auth.uid())
     )
     OR round_id IN (
-      SELECT gr.id
-      FROM public.golf_rounds gr
-      JOIN public.golf_players gp ON gp.id = gr.player_id
-      WHERE gp.user_id = (SELECT auth.uid())
+        SELECT gr.id
+        FROM public.golf_rounds gr
+        JOIN public.golf_players gp ON gp.id = gr.player_id
+        WHERE gp.user_id = (SELECT auth.uid())
     )
     OR EXISTS (
-      SELECT 1
-      FROM public.golf_rounds gr
-      WHERE gr.id = golf_shots.round_id
-        AND gr.team_id IS NOT NULL
-        AND public.is_golf_team_coach(gr.team_id)
+        SELECT 1
+        FROM public.golf_rounds gr
+        WHERE
+            gr.id = golf_shots.round_id
+            AND gr.team_id IS NOT NULL
+            AND public.is_golf_team_coach(gr.team_id)
     )
     OR hole_id IN (
-      SELECT gh.id
-      FROM public.golf_holes gh
-      JOIN public.golf_rounds gr ON gr.id = gh.round_id
-      JOIN public.golf_team_members gtm ON gtm.player_id = gr.player_id
-      JOIN public.golf_teams gt ON gt.id = gtm.team_id
-      JOIN public.golf_coaches gc ON gc.organization_id = gt.organization_id
-      WHERE gc.user_id = (SELECT auth.uid())
-        AND gtm.status = 'active'::public.team_member_status
+        SELECT gh.id
+        FROM public.golf_holes gh
+        JOIN public.golf_rounds gr ON gr.id = gh.round_id
+        JOIN public.golf_team_members gtm ON gtm.player_id = gr.player_id
+        JOIN public.golf_teams gt ON gt.id = gtm.team_id
+        JOIN public.golf_coaches gc ON gc.organization_id = gt.organization_id
+        WHERE
+            gc.user_id = (SELECT auth.uid())
+            AND gtm.status = 'active'::public.team_member_status
     )
-  )
-  WITH CHECK (
+)
+WITH CHECK (
     hole_id IN (
-      SELECT gh.id
-      FROM public.golf_holes gh
-      JOIN public.golf_rounds gr ON gr.id = gh.round_id
-      JOIN public.golf_players gp ON gp.id = gr.player_id
-      WHERE gp.user_id = (SELECT auth.uid())
+        SELECT gh.id
+        FROM public.golf_holes gh
+        JOIN public.golf_rounds gr ON gr.id = gh.round_id
+        JOIN public.golf_players gp ON gp.id = gr.player_id
+        WHERE gp.user_id = (SELECT auth.uid())
     )
     OR round_id IN (
-      SELECT gr.id
-      FROM public.golf_rounds gr
-      JOIN public.golf_players gp ON gp.id = gr.player_id
-      WHERE gp.user_id = (SELECT auth.uid())
+        SELECT gr.id
+        FROM public.golf_rounds gr
+        JOIN public.golf_players gp ON gp.id = gr.player_id
+        WHERE gp.user_id = (SELECT auth.uid())
     )
     OR EXISTS (
-      SELECT 1
-      FROM public.golf_rounds gr
-      WHERE gr.id = golf_shots.round_id
-        AND gr.team_id IS NOT NULL
-        AND public.is_golf_team_coach(gr.team_id)
+        SELECT 1
+        FROM public.golf_rounds gr
+        WHERE
+            gr.id = golf_shots.round_id
+            AND gr.team_id IS NOT NULL
+            AND public.is_golf_team_coach(gr.team_id)
     )
     OR hole_id IN (
-      SELECT gh.id
-      FROM public.golf_holes gh
-      JOIN public.golf_rounds gr ON gr.id = gh.round_id
-      JOIN public.golf_team_members gtm ON gtm.player_id = gr.player_id
-      JOIN public.golf_teams gt ON gt.id = gtm.team_id
-      JOIN public.golf_coaches gc ON gc.organization_id = gt.organization_id
-      WHERE gc.user_id = (SELECT auth.uid())
-        AND gtm.status = 'active'::public.team_member_status
+        SELECT gh.id
+        FROM public.golf_holes gh
+        JOIN public.golf_rounds gr ON gr.id = gh.round_id
+        JOIN public.golf_team_members gtm ON gtm.player_id = gr.player_id
+        JOIN public.golf_teams gt ON gt.id = gtm.team_id
+        JOIN public.golf_coaches gc ON gc.organization_id = gt.organization_id
+        WHERE
+            gc.user_id = (SELECT auth.uid())
+            AND gtm.status = 'active'::public.team_member_status
     )
-  );
+);
 
 CREATE POLICY golf_shots_delete ON public.golf_shots
-  FOR DELETE TO authenticated
-  USING (
+FOR DELETE TO authenticated
+USING (
     hole_id IN (
-      SELECT gh.id
-      FROM public.golf_holes gh
-      JOIN public.golf_rounds gr ON gr.id = gh.round_id
-      JOIN public.golf_players gp ON gp.id = gr.player_id
-      WHERE gp.user_id = (SELECT auth.uid())
+        SELECT gh.id
+        FROM public.golf_holes gh
+        JOIN public.golf_rounds gr ON gr.id = gh.round_id
+        JOIN public.golf_players gp ON gp.id = gr.player_id
+        WHERE gp.user_id = (SELECT auth.uid())
     )
     OR round_id IN (
-      SELECT gr.id
-      FROM public.golf_rounds gr
-      JOIN public.golf_players gp ON gp.id = gr.player_id
-      WHERE gp.user_id = (SELECT auth.uid())
+        SELECT gr.id
+        FROM public.golf_rounds gr
+        JOIN public.golf_players gp ON gp.id = gr.player_id
+        WHERE gp.user_id = (SELECT auth.uid())
     )
     OR EXISTS (
-      SELECT 1
-      FROM public.golf_rounds gr
-      WHERE gr.id = golf_shots.round_id
-        AND gr.team_id IS NOT NULL
-        AND public.is_golf_team_head_coach(gr.team_id)
+        SELECT 1
+        FROM public.golf_rounds gr
+        WHERE
+            gr.id = golf_shots.round_id
+            AND gr.team_id IS NOT NULL
+            AND public.is_golf_team_head_coach(gr.team_id)
     )
-  );
+);

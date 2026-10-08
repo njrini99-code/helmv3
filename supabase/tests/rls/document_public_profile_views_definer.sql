@@ -15,7 +15,7 @@ SELECT is(
    WHERE c.relnamespace = 'public'::regnamespace
      AND c.relname IN ('baseball_coaches_public', 'baseball_team_coach_staff_public',
                        'baseball_teams_public_profile', 'organizations_public_profile')
-     AND d.description LIKE 'SECURITY DEFINER BY DESIGN%'),
+     AND d.description LIKE 'DEFINER VIEW BY DESIGN%'),
   4,
   'all four public-profile views carry the by-design comment'
 );

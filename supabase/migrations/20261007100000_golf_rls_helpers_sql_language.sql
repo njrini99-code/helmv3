@@ -1,5 +1,6 @@
 -- STATUS: WRITTEN, NOT APPLIED. Prepared by plan phase 6 item 6.1.
--- Apply: npm run db:apply -- supabase/migrations/20261007100000_golf_rls_helpers_sql_language.sql
+-- Apply: npm run db:apply --
+-- supabase/migrations/20261007100000_golf_rls_helpers_sql_language.sql
 -- Risk: LOW-MEDIUM. Every golf RLS policy calls these five functions, so a
 -- semantic slip would change access everywhere. Same signatures, same
 -- return type, same ACL (CREATE OR REPLACE keeps it). Rehearse locally.
@@ -57,9 +58,22 @@
 --   supabase/migrations/20260527000000_prod_public_baseline.sql and in
 --   production via pg_get_functiondef.)
 --
--- VERIFY: select 1 where (select count(*) from pg_proc p join pg_language l on l.oid = p.prolang where p.pronamespace = 'public'::regnamespace and p.proname in ('is_golf_team_coach', 'is_golf_team_head_coach', 'is_golf_team_player', 'is_team_coach', 'is_team_player') and l.lanname = 'sql' and p.prosecdef and p.provolatile = 's') = 5;
--- VERIFY: select 1 where not exists (select 1 from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname in ('is_golf_team_coach', 'is_golf_team_head_coach', 'is_golf_team_player', 'is_team_coach', 'is_team_player') and (p.proconfig is null or not ('search_path=pg_catalog, public, pg_temp' = any (p.proconfig))));
--- VERIFY: select 1 where not exists (select 1 from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname in ('is_golf_team_coach', 'is_golf_team_head_coach', 'is_golf_team_player', 'is_team_coach', 'is_team_player') and has_function_privilege('anon', p.oid, 'EXECUTE'));
+-- VERIFY: select 1 where (select count(*) from pg_proc p join pg_language l on
+-- VERIFY: l.oid = p.prolang where p.pronamespace = 'public'::regnamespace and
+-- VERIFY: p.proname in ('is_golf_team_coach', 'is_golf_team_head_coach',
+-- VERIFY: 'is_golf_team_player', 'is_team_coach', 'is_team_player') and
+-- VERIFY: l.lanname = 'sql' and p.prosecdef and p.provolatile = 's') = 5;
+-- VERIFY: select 1 where not exists (select 1 from pg_proc p where
+-- VERIFY: p.pronamespace = 'public'::regnamespace and p.proname in
+-- VERIFY: ('is_golf_team_coach', 'is_golf_team_head_coach',
+-- VERIFY: 'is_golf_team_player', 'is_team_coach', 'is_team_player') and
+-- VERIFY: (p.proconfig is null or not
+-- VERIFY: ('search_path=pg_catalog, public, pg_temp' = any (p.proconfig))));
+-- VERIFY: select 1 where not exists (select 1 from pg_proc p where
+-- VERIFY: p.pronamespace = 'public'::regnamespace and p.proname in
+-- VERIFY: ('is_golf_team_coach', 'is_golf_team_head_coach',
+-- VERIFY: 'is_golf_team_player', 'is_team_coach', 'is_team_player') and
+-- VERIFY: has_function_privilege('anon', p.oid, 'EXECUTE'));
 
 CREATE OR REPLACE FUNCTION public.is_golf_team_coach(team_uuid uuid)
 RETURNS boolean

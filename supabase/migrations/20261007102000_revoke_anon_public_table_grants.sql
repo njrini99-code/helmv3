@@ -1,5 +1,6 @@
 -- STATUS: WRITTEN, NOT APPLIED. Prepared by plan phase 6 item 6.4.
--- Apply: npm run db:apply -- supabase/migrations/20261007102000_revoke_anon_public_table_grants.sql
+-- Apply: npm run db:apply --
+-- supabase/migrations/20261007102000_revoke_anon_public_table_grants.sql
 -- Risk: HIGHEST of the phase. Needs the local-stack pgTAP proof
 -- (supabase/tests/rls/revoke_anon_public_table_grants.sql) plus a smoke of the
 -- public pages and the landing demo form right after the apply.
@@ -85,10 +86,29 @@
 --     GRANT ALL ON SEQUENCES TO anon;
 -- The three views and demo_requests keep working either way.
 --
--- VERIFY: select 1 where not exists (select 1 from pg_class c cross join lateral aclexplode(c.relacl) a where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'v', 'm', 'p', 'f') and a.grantee = (select oid from pg_roles where rolname = 'anon') and not ((c.relname = 'demo_requests' and a.privilege_type = 'INSERT') or (c.relname in ('organizations_public_profile', 'baseball_teams_public_profile', 'baseball_team_coach_staff_public') and a.privilege_type = 'SELECT')));
--- VERIFY: select 1 where has_table_privilege('anon', 'public.demo_requests', 'INSERT') and not has_table_privilege('anon', 'public.demo_requests', 'SELECT') and has_table_privilege('anon', 'public.organizations_public_profile', 'SELECT') and has_table_privilege('anon', 'public.baseball_teams_public_profile', 'SELECT') and has_table_privilege('anon', 'public.baseball_team_coach_staff_public', 'SELECT');
--- VERIFY: select 1 where not exists (select 1 from pg_default_acl d cross join lateral aclexplode(d.defaclacl) a where d.defaclnamespace = 'public'::regnamespace and d.defaclrole = (select oid from pg_roles where rolname = 'postgres') and d.defaclobjtype in ('r', 'S') and a.grantee = (select oid from pg_roles where rolname = 'anon'));
--- VERIFY: select 1 where has_table_privilege('authenticated', 'public.users', 'SELECT') and has_table_privilege('service_role', 'public.users', 'SELECT');
+-- VERIFY: select 1 where not exists (select 1 from pg_class c cross join
+-- VERIFY: lateral aclexplode(c.relacl) a where c.relnamespace =
+-- VERIFY: 'public'::regnamespace and c.relkind in ('r', 'v', 'm', 'p', 'f') and
+-- VERIFY: a.grantee = (select oid from pg_roles where rolname = 'anon') and not
+-- VERIFY: ((c.relname = 'demo_requests' and a.privilege_type = 'INSERT') or
+-- VERIFY: (c.relname in ('organizations_public_profile',
+-- VERIFY: 'baseball_teams_public_profile', 'baseball_team_coach_staff_public')
+-- VERIFY: and a.privilege_type = 'SELECT')));
+-- VERIFY: select 1 where has_table_privilege('anon', 'public.demo_requests',
+-- VERIFY: 'INSERT') and not has_table_privilege('anon', 'public.demo_requests',
+-- VERIFY: 'SELECT') and has_table_privilege('anon',
+-- VERIFY: 'public.organizations_public_profile', 'SELECT') and
+-- VERIFY: has_table_privilege('anon', 'public.baseball_teams_public_profile',
+-- VERIFY: 'SELECT') and has_table_privilege('anon',
+-- VERIFY: 'public.baseball_team_coach_staff_public', 'SELECT');
+-- VERIFY: select 1 where not exists (select 1 from pg_default_acl d cross join
+-- VERIFY: lateral aclexplode(d.defaclacl) a where d.defaclnamespace =
+-- VERIFY: 'public'::regnamespace and d.defaclrole = (select oid from pg_roles
+-- VERIFY: where rolname = 'postgres') and d.defaclobjtype in ('r', 'S') and
+-- VERIFY: a.grantee = (select oid from pg_roles where rolname = 'anon'));
+-- VERIFY: select 1 where has_table_privilege('authenticated', 'public.users',
+-- VERIFY: 'SELECT') and has_table_privilege('service_role', 'public.users',
+-- VERIFY: 'SELECT');
 
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;
 REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon;
@@ -99,6 +119,6 @@ GRANT SELECT ON TABLE public.baseball_teams_public_profile TO anon;
 GRANT SELECT ON TABLE public.baseball_team_coach_staff_public TO anon;
 
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
-  REVOKE ALL ON TABLES FROM anon;
+REVOKE ALL ON TABLES FROM anon;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
-  REVOKE ALL ON SEQUENCES FROM anon;
+REVOKE ALL ON SEQUENCES FROM anon;

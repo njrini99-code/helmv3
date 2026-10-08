@@ -21,8 +21,8 @@ async function smtpVerify(email: string): Promise<VerifyResult> {
       return { email, valid: false, reason: "No MX records" };
     }
 
-    // Sort by priority, pick best
-    mxRecords.sort((a, b) => a.priority - b.priority);
+    // Sort by preference (lowest first), pick best
+    mxRecords.sort((a, b) => a.preference - b.preference);
     const mxHost = mxRecords[0].exchange;
 
     // Connect to SMTP server

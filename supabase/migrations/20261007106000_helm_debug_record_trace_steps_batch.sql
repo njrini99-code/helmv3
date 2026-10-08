@@ -1,5 +1,6 @@
 -- STATUS: WRITTEN, NOT APPLIED. Prepared by plan phase 6 item 6.9.
--- Apply: npm run db:apply -- supabase/migrations/20261007106000_helm_debug_record_trace_steps_batch.sql
+-- Apply: npm run db:apply --
+-- supabase/migrations/20261007106000_helm_debug_record_trace_steps_batch.sql
 -- Risk: LOW. Adds one new service_role-only function and changes nothing that
 -- exists. The app code falls back to the per-step RPC while this function is
 -- missing, so the code can ship before or after this migration.
@@ -21,14 +22,17 @@
 --
 -- TIMING. The per-step function stamps started_at and finished_at with
 -- clock_timestamp() when the row is written, and the admin tracer derives each
--- step's elapsed time from the pair (src/app/admin/golf/tracer/tracer-shared.ts,
--- computeStepElapsedMs). A step the app buffered is written later than it ran,
+-- step's elapsed time from the pair (see computeStepElapsedMs in
+-- src/app/admin/golf/tracer/tracer-shared.ts). A step the app buffered is
+-- written later than it ran,
 -- so each element may carry "age_ms": how long before this call the step
 -- happened, measured by the app on its own clock. The function backdates the
 -- step's stamps by that (clock_timestamp() minus age_ms, clamped to 0..600000).
 -- An element without age_ms is stamped at write time, exactly as the per-step
--- function does. A started_at supplied in metadata still wins, as it does there. The per-step function is untouched
--- and stays the API for callers that record a single step (scripts/trace-db.ts).
+-- function does. A started_at supplied in metadata still wins, as it does
+-- there. The per-step function is untouched
+-- and stays the API for callers that record a single step
+-- (scripts/trace-db.ts).
 --
 -- Guards: the argument must be a JSON array of at most 100 elements; the
 -- function is SECURITY DEFINER with a pinned search_path and is executable by
@@ -37,12 +41,19 @@
 -- ROLLBACK: DROP FUNCTION public.helm_debug_record_trace_steps(uuid, jsonb);
 --   (the app falls back to the per-step RPC when this function is absent)
 --
--- VERIFY: select 1 where exists (select 1 from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = 'helm_debug_record_trace_steps' and p.prosecdef);
--- VERIFY: select 1 where has_function_privilege('service_role', 'public.helm_debug_record_trace_steps(uuid,jsonb)', 'EXECUTE') and not has_function_privilege('anon', 'public.helm_debug_record_trace_steps(uuid,jsonb)', 'EXECUTE') and not has_function_privilege('authenticated', 'public.helm_debug_record_trace_steps(uuid,jsonb)', 'EXECUTE');
+-- VERIFY: select 1 where exists (select 1 from pg_proc p where p.pronamespace =
+-- VERIFY: 'public'::regnamespace and p.proname =
+-- VERIFY: 'helm_debug_record_trace_steps' and p.prosecdef);
+-- VERIFY: select 1 where has_function_privilege('service_role',
+-- VERIFY: 'public.helm_debug_record_trace_steps(uuid,jsonb)', 'EXECUTE') and
+-- VERIFY: not has_function_privilege('anon',
+-- VERIFY: 'public.helm_debug_record_trace_steps(uuid,jsonb)', 'EXECUTE') and
+-- VERIFY: not has_function_privilege('authenticated',
+-- VERIFY: 'public.helm_debug_record_trace_steps(uuid,jsonb)', 'EXECUTE');
 
 create or replace function public.helm_debug_record_trace_steps(
-  p_trace_id uuid,
-  p_steps jsonb
+    p_trace_id uuid,
+    p_steps jsonb
 )
 returns integer
 language plpgsql
@@ -133,5 +144,11 @@ begin
 end;
 $$;
 
-revoke all on function public.helm_debug_record_trace_steps(uuid, jsonb) from public, anon, authenticated;
-grant execute on function public.helm_debug_record_trace_steps(uuid, jsonb) to service_role;
+revoke all on function public.helm_debug_record_trace_steps(
+    uuid, jsonb
+) from public,
+anon,
+authenticated;
+grant execute on function public.helm_debug_record_trace_steps(
+    uuid, jsonb
+) to service_role;

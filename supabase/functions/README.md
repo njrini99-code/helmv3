@@ -43,8 +43,8 @@ production.
 
 As of 2026-08-01 the project has four ACTIVE functions, and two of them had no
 source in this directory until 2026-10-07 (`create-admin-user` and
-`verify-emails`, both now committed here exactly as deployed; the deployed
-sha256 values were `1dceaaa1…` and `ff26d564…`, versions 7 and 5):
+`verify-emails`, both now committed here as deployed, plus one type fix in
+`verify-emails`; the deployed sha256 values were `1dceaaa1…` and `ff26d564…`, versions 7 and 5):
 
 | slug | source here | deployed | note |
 | --- | --- | --- | --- |
@@ -97,7 +97,7 @@ looks like a code bug and is not one.
 ## Functions committed from production (2026-10-07)
 
 Both were fetched with the Supabase `get_edge_function` operation and committed
-unchanged, after reading them for embedded secrets (none: they read
+as fetched (plus the one type fix below), after reading them for embedded secrets (none: they read
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from the environment). Committing
 them does not deploy anything, and editing them here changes nothing in
 production until `supabase functions deploy <slug>` runs.
@@ -109,6 +109,13 @@ and reads no secret. The dashboard is the only place to delete it, because the
 Management API has no delete. Do not turn it back into a bootstrap.
 
 ### `verify-emails`
+
+This is the fetched production source plus one type fix: `Deno.resolveDns(…, "MX")`
+records have `preference`, not `priority`, so `deno check` rejected the
+deployed `a.priority - b.priority`. The deployed build compares `undefined`, so
+its MX sort is a no-op and it probes whichever record DNS returned first. With
+the fix, a future deploy probes the lowest-preference host first. `deno check`
+now passes (`npm run typecheck:functions`).
 
 Probes the mailbox of `crm_coaches` rows over SMTP (MX lookup, `RCPT TO`) and
 sets `email_status = 'bounced'` on the ones the server rejects. It runs with the

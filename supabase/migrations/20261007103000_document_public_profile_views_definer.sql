@@ -1,5 +1,7 @@
--- STATUS: WRITTEN, NOT APPLIED. Prepared by plan phase 6 item 6.5 (security advisor).
--- Apply: npm run db:apply -- supabase/migrations/20261007103000_document_public_profile_views_definer.sql
+-- STATUS: WRITTEN, NOT APPLIED. Prepared by plan phase 6 item 6.5 (security
+-- advisor).
+-- Apply: npm run db:apply --
+-- supabase/migrations/20261007103000_document_public_profile_views_definer.sql
 -- Risk: NONE. Catalog comments only; no behaviour change.
 --
 -- The Supabase security advisor reports four ERROR-level security_definer_view
@@ -12,7 +14,8 @@
 --     Consumer: baseball (dashboard)/dashboard/calendar/page.tsx lists the
 --     coaches of the player's own organisation. A player is not a "teammate"
 --     of every org coach on baseball_coaches, whose SELECT policy is
---     (user_id = auth.uid() OR shares_my_baseball_organization(organization_id)).
+--     (user_id = auth.uid() OR
+--     shares_my_baseball_organization(organization_id)).
 --     With security_invoker the roster panel would list nobody.
 --   baseball_team_coach_staff_public (anon, authenticated)
 --     Consumers: baseball (public)/team/[id] and program/[id] for logged-out
@@ -37,15 +40,34 @@
 -- Rule for editing these views: adding a column to the base table does not
 -- expose it, but adding one to the view does. Review every column added.
 --
--- ROLLBACK: COMMENT ON VIEW public.<name> IS NULL; for each of the four views.
+-- ROLLBACK: COMMENT ON VIEW public.<name> IS NULL; for each of the four
+-- views.
 --
--- VERIFY: select 1 where (select count(*) from pg_description d join pg_class c on c.oid = d.objoid where c.relnamespace = 'public'::regnamespace and c.relname in ('baseball_coaches_public', 'baseball_team_coach_staff_public', 'baseball_teams_public_profile', 'organizations_public_profile') and d.description like 'SECURITY DEFINER BY DESIGN%') = 4;
+-- VERIFY: select 1 where (select count(*) from pg_description d join pg_class c
+-- VERIFY: on c.oid = d.objoid where c.relnamespace = 'public'::regnamespace and
+-- VERIFY: c.relname in ('baseball_coaches_public',
+-- VERIFY: 'baseball_team_coach_staff_public', 'baseball_teams_public_profile',
+-- VERIFY: 'organizations_public_profile') and d.description like
+-- VERIFY: 'DEFINER VIEW BY DESIGN%') = 4;
 
 COMMENT ON VIEW public.baseball_coaches_public IS
-  'SECURITY DEFINER BY DESIGN (advisor security_definer_view accepted). Column-filtered coach identity for players who cannot read baseball_coaches under RLS. Consumer: baseball calendar roster. Do not switch to security_invoker without a replacement. See migration 20261007103000.';
+'DEFINER VIEW BY DESIGN (advisor security_definer_view accepted). '
+'Column-filtered coach identity for players who cannot read baseball_coaches '
+'under RLS. Consumer: baseball calendar roster. Do not switch to '
+'security_invoker without a replacement. See migration 20261007103000.';
+
 COMMENT ON VIEW public.baseball_team_coach_staff_public IS
-  'SECURITY DEFINER BY DESIGN (advisor security_definer_view accepted). Coach name, role and avatar for logged-out visitors of public team and program pages. Row filter lives in the view. See migration 20261007103000.';
+'DEFINER VIEW BY DESIGN (advisor security_definer_view accepted). Coach '
+'name, role and avatar for logged-out visitors of public team and program '
+'pages. Row filter lives in the view. See migration 20261007103000.';
+
 COMMENT ON VIEW public.baseball_teams_public_profile IS
-  'SECURITY DEFINER BY DESIGN (advisor security_definer_view accepted). Public team identity for logged-out visitors and the cross-organisation compare action. public_profile_mode <> private is the row filter. See migration 20261007103000.';
+'DEFINER VIEW BY DESIGN (advisor security_definer_view accepted). Public '
+'team identity for logged-out visitors and the cross-organisation compare '
+'action. public_profile_mode <> private is the row filter. See migration '
+'20261007103000.';
+
 COMMENT ON VIEW public.organizations_public_profile IS
-  'SECURITY DEFINER BY DESIGN (advisor security_definer_view accepted). Anon-safe organisation identity for the public program page and its metadata. Column list is the filter. See migration 20261007103000.';
+'DEFINER VIEW BY DESIGN (advisor security_definer_view accepted). Anon-safe '
+'organisation identity for the public program page and its metadata. Column '
+'list is the filter. See migration 20261007103000.';
