@@ -29,7 +29,8 @@
   justify-content: space-between;
   gap: 16px;
 }
-.ch-rd-h :is(h1, h2) {
+.ch-rd-h h1,
+.ch-rd-h h2 {
   margin: 8px 0 0;
   font: 400 50px/1.02 var(--ch-font-serif);
   letter-spacing: -0.01em;
@@ -859,7 +860,8 @@ a.ch-rd-sc:focus-visible {
 }
 /* Phone (Player - Rounds - Mobile.html) */
 @container chrd (max-width: 640px) {
-  .ch-rd-h :is(h1, h2) {
+  .ch-rd-h h1,
+  .ch-rd-h h2 {
     font-size: 38px;
   }
   .ch-rd-tools {
@@ -1013,7 +1015,8 @@ a.ch-rd-sc:focus-visible {
   font: 500 13px/1.2 var(--ch-font-sans);
   color: var(--ch-hero-mint);
 }
-.ch-rv-hero :is(h1, h2) {
+.ch-rv-hero h1,
+.ch-rv-hero h2 {
   margin: 0;
   color: var(--ch-on-green-ink);
   font: 400 48px/1 var(--ch-font-serif);
@@ -1517,7 +1520,8 @@ a.ch-rd-sc:focus-visible {
     min-height: 0;
     padding: 18px;
   }
-  .ch-rv-hero :is(h1, h2) {
+  .ch-rv-hero h1,
+  .ch-rv-hero h2 {
     font-size: 28px;
   }
   .ch-rv-hero__s {
@@ -1609,7 +1613,8 @@ a.ch-rd-sc:focus-visible {
     letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
-  .ch-rd.is-phone .ch-rd-h :is(h1, h2) {
+  .ch-rd.is-phone .ch-rd-h h1,
+  .ch-rd.is-phone .ch-rd-h h2 {
     margin-top: 10px;
     font: 600 31px/1.08 var(--ch-font-sans);
     letter-spacing: -0.038em;
@@ -1775,7 +1780,8 @@ a.ch-rd-sc:focus-visible {
     background: var(--ch-feature-bg);
     box-shadow: var(--ch-elevation-feature);
   }
-  .ch-rv.is-phone .ch-rv-hero :is(h1, h2) {
+  .ch-rv.is-phone .ch-rv-hero h1,
+  .ch-rv.is-phone .ch-rv-hero h2 {
     font: 600 28px/1.1 var(--ch-font-sans);
     letter-spacing: -0.03em;
     font-variation-settings: 'wdth' 92;
@@ -2256,10 +2262,15 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
     font: 600 19px/1.2 var(--ch-font-sans);
     color: var(--ch-ledger-ink);
   }
-  .ch-rv[data-canopy] :is(.ch-rv-sg__legs, .ch-rv-cardw, .ch-rv-shots, .ch-rv-dist, .ch-rv-notes p) {
+  .ch-rv[data-canopy] .ch-rv-sg__legs,
+  .ch-rv[data-canopy] .ch-rv-cardw,
+  .ch-rv[data-canopy] .ch-rv-shots,
+  .ch-rv[data-canopy] .ch-rv-dist,
+  .ch-rv[data-canopy] .ch-rv-notes p {
     padding-inline: 0;
   }
-  .ch-rv[data-canopy] :is(.ch-rv-hole .ch-notice, .ch-rv-none) {
+  .ch-rv[data-canopy] .ch-rv-hole .ch-notice,
+  .ch-rv[data-canopy] .ch-rv-none {
     margin-inline: 0;
   }
   .ch-rv[data-canopy] .ch-rv-cols {
@@ -2335,7 +2346,8 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   color: var(--ch-ink-900);
   box-shadow: inset 0 -1px 0 rgb(28 25 18 / 0.08);
 }
-.ch-rv .ch-rv-nine :is(th, td):last-child {
+.ch-rv .ch-rv-nine th:last-child,
+.ch-rv .ch-rv-nine td:last-child {
   border-left: 2px solid transparent;
   background-clip: padding-box;
 }
@@ -2345,7 +2357,8 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
 .ch-rv .ch-rv-nine .is-score td {
   height: 42px;
 }
-.ch-rv .ch-rv-nine .is-marks :is(th, td) {
+.ch-rv .ch-rv-nine .is-marks th,
+.ch-rv .ch-rv-nine .is-marks td {
   height: 26px;
 }
 .ch-rv .ch-rv-nine .is-score .ch-score {
@@ -2385,7 +2398,8 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
     -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent);
     mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent);
   }
-  .ch-rv.is-phone .ch-rv-nine :is(th[scope='row'], thead th:first-child) {
+  .ch-rv.is-phone .ch-rv-nine th[scope='row'],
+  .ch-rv.is-phone .ch-rv-nine thead th:first-child {
     position: sticky;
     left: 0;
     z-index: 1;

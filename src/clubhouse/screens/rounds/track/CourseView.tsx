@@ -56,8 +56,8 @@ export function CourseView({
 }) {
   const { ref, retainContent } = useDialogLifetime(open, {
     direction: 'bottom',
-    surfaceSelector: '.ch-rcv',
-    focusSelector: '.ch-rcv__back',
+    surfaceSelector: '.ch-rtcv',
+    focusSelector: '.ch-rtcv__back',
   });
   const [index, setIndex] = useState(current);
   // Each opening starts on the hole being scored.
@@ -80,7 +80,7 @@ export function CourseView({
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <dialog
       ref={ref}
-      className="ch-rcv-d"
+      className="ch-rtcv-d"
       aria-label={`Course view, hole ${hole.number}`}
       onCancel={(e) => {
         e.preventDefault();
@@ -92,35 +92,35 @@ export function CourseView({
     >
       {retainContent(
         open && (
-          <div className="ch-rcv" data-ui="clubhouse">
+          <div className="ch-rtcv" data-ui="clubhouse">
             <HoleMap
               key={hole.number}
               hole={hole}
               shots={shots}
               pending={!!live}
               frame="tall"
-              className="ch-rcv__map"
+              className="ch-rtcv__map"
               rings={hole.yardage ? pref : undefined}
               labels={pref}
               ball={live ? farText : null}
             />
-            <header className="ch-rcv__top">
+            <header className="ch-rtcv__top">
               <button
                 type="button"
-                className="ch-rcv__glass ch-rcv__back"
+                className="ch-rtcv__glass ch-rtcv__back"
                 aria-label={pending ? `Back to shot ${pending.shot}` : 'Back to the hole'}
                 onClick={onClose}
               >
                 <Icon icon={ChevronDown} size={18} />
               </button>
-              <h2 className="ch-rcv__glass ch-rcv__t">
+              <h2 className="ch-rtcv__glass ch-rtcv__t">
                 <b>Hole {hole.number}</b>
                 <span>
                   Par {hole.par}
                   {yards ? ` · ${yards}` : ''}
                 </span>
               </h2>
-              <div className="ch-rcv__glass ch-rcv__nav" role="group" aria-label="Look at another hole">
+              <div className="ch-rtcv__glass ch-rtcv__nav" role="group" aria-label="Look at another hole">
                 <button
                   type="button"
                   disabled={index === 0}
@@ -139,10 +139,10 @@ export function CourseView({
                 </button>
               </div>
             </header>
-            <section className="ch-rcv__sheet" aria-labelledby="ch-rcv-h">
-              <span className="ch-rcv__grab" aria-hidden="true" />
-              <div className="ch-rcv__sh">
-                <h3 id="ch-rcv-h">{isCurrent ? 'This hole' : `Hole ${hole.number}`}</h3>
+            <section className="ch-rtcv__sheet" aria-labelledby="ch-rtcv-h">
+              <span className="ch-rtcv__grab" aria-hidden="true" />
+              <div className="ch-rtcv__sh">
+                <h3 id="ch-rtcv-h">{isCurrent ? 'This hole' : `Hole ${hole.number}`}</h3>
                 {!isCurrent && hole.score != null && (
                   <span>
                     {hole.score} stroke{hole.score === 1 ? '' : 's'}
@@ -151,32 +151,32 @@ export function CourseView({
                 {!isCurrent && index > current && hole.score == null && <span>Not played yet</span>}
               </div>
               {shots.length || live ? (
-                <ol className="ch-rcv__list">
+                <ol className="ch-rtcv__list">
                   {shots.map((s, i) => (
                     <li key={s.id ?? `${s.shotNumber}-${i}`}>
-                      <span className="ch-rcv__n" aria-hidden="true">
+                      <span className="ch-rtcv__n" aria-hidden="true">
                         {s.isPenalty ? 'P' : i + 1}
                       </span>
-                      <span className="ch-rcv__w">
+                      <span className="ch-rtcv__w">
                         <b>{shotTitle(s)}</b> <em>{whereTo(s)}</em>
                       </span>
-                      <span className="ch-rcv__f">{shotFigure(s, pref)}</span>
+                      <span className="ch-rtcv__f">{shotFigure(s, pref)}</span>
                     </li>
                   ))}
                   {live && (
                     <li className="is-next">
-                      <span className="ch-rcv__n" aria-hidden="true">
+                      <span className="ch-rtcv__n" aria-hidden="true">
                         {pending.shot}
                       </span>
-                      <span className="ch-rcv__w">
+                      <span className="ch-rtcv__w">
                         <b>{shotKind(pending.kind)}</b> <em>to play</em>
                       </span>
-                      <span className="ch-rcv__f">{farText} to go</span>
+                      <span className="ch-rtcv__f">{farText} to go</span>
                     </li>
                   )}
                 </ol>
               ) : (
-                <p className="ch-rcv__none">{hole.score != null ? 'This hole’s shots aren’t on this phone.' : 'No shots on this hole yet.'}</p>
+                <p className="ch-rtcv__none">{hole.score != null ? 'This hole’s shots aren’t on this phone.' : 'No shots on this hole yet.'}</p>
               )}
             </section>
           </div>
