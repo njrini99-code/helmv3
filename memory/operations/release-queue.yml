@@ -463,7 +463,7 @@ items:
     status: verified
     risk: R1
     sha: 90ae5607f86f1e40d4844ec5f8a01b78d52c1daa
-    pr: null
+    pr: 2163
     regression_tests:
       - src/hooks/golf/__tests__/use-golf-messages.rail-deadline-abort.test.ts
     queued_for_release: false
@@ -478,9 +478,24 @@ items:
     status: verified
     risk: R1
     sha: 90ae5607f86f1e40d4844ec5f8a01b78d52c1daa
-    pr: null
+    pr: 2163
     regression_tests:
       - src/lib/admin/__tests__/auto-resolve.test.ts
       - src/lib/admin/__tests__/incident-classification-benign-recurrences.test.ts
     queued_for_release: false
     first_seen: '2026-09-19T00:00:00Z'
+  - id: retired-triage-runner-claude-cloud-2026-10-08
+    feature_id: admin_selfheal
+    root_cause: >-
+      The retired cloud Diagnose task wrote its failed heartbeat as
+      method='claude-cloud-session', outside the retired claude-code-* family,
+      so the Bridge read Diagnose (and the loop) as FAILED 09:22Z-15:17Z.
+    incident_id: memory/incidents/admin_selfheal/INC-2026-09-27-retired-triage-runner-paints-loop-red.md
+    status: verified
+    risk: R1
+    sha: 1d7a8cd0d0e12cb8ad30f83e731e0ff5e456ea7c
+    pr: 2163
+    regression_tests:
+      - src/lib/admin/__tests__/selfheal-registry.test.ts
+    queued_for_release: false
+    first_seen: '2026-10-08T09:18:00Z'
