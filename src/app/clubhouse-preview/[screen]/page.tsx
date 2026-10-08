@@ -375,23 +375,23 @@ export default async function ClubhousePreview({
       node: state === 'loading' ? <QualifiersSkeleton mode="mine" /> : <QualifiersList data={qList('player', 'mine')} />,
     },
     qualifier: {
-      path: '/golf/dashboard/qualifiers',
+      path: '/golf/dashboard/qualifiers/00000000-0000-4000-8000-0000000000a1',
       node: state === 'loading' ? <QualifierDetailSkeleton /> : <PreviewQualifierDetail data={qDetail('coach')} state={state} />,
     },
     'qualifier-player': {
-      path: '/golf/dashboard/qualifiers',
+      path: '/golf/dashboard/qualifiers/00000000-0000-4000-8000-0000000000a1',
       node: <PreviewQualifierDetail data={qDetail('player')} state={state} />,
     },
     'qualifier-new': {
-      path: '/golf/dashboard/qualifiers',
+      path: '/golf/dashboard/qualifiers/new',
       node: state === 'loading' ? <QualifierFormSkeleton /> : <PreviewQualifierForm data={qForm(false)} state={state} />,
     },
     'qualifier-edit': {
-      path: '/golf/dashboard/qualifiers',
+      path: '/golf/dashboard/qualifiers/00000000-0000-4000-8000-0000000000a1/edit',
       node: state === 'loading' ? <QualifierFormSkeleton /> : <PreviewQualifierForm data={qForm(true)} state={state} />,
     },
     'qualifier-selection': {
-      path: '/golf/dashboard/qualifiers',
+      path: '/golf/dashboard/qualifiers/00000000-0000-4000-8000-0000000000a1/selection',
       node: state === 'loading' ? <QualifierSelectionSkeleton /> : <PreviewQualifierSelection data={previewSelection(q === 'picking' || q === 'picked' || q === 'selected' ? q : 'standings')} state={state} />,
     },
     'messages-player': {
