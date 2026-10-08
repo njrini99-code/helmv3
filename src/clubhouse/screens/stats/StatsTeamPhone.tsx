@@ -15,7 +15,8 @@ import { Segmented } from '../../ui/Segmented';
 import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
 import { FigureGauge, SgBars } from './charts';
-import { teamPlayerHref } from './links';
+import { gridPeek, teamPlayerHref } from './links';
+import { PlayerPeek } from '../../ui/PlayerPeek';
 import { LinkPending } from '../../shell/LinkPending';
 import { puttingNote } from './notes';
 import { RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty, useGoWindow, useShownWindow } from './StatsTeamIslands';
@@ -335,6 +336,8 @@ function Players({ data }: { data: ChTeamStats }) {
         <ul className="ch-stm-list">
           {rows.map((p) => (
             <li key={p.id}>
+              {/* P003-C1: a hold peeks at the player; a tap still opens their stats. */}
+              <PlayerPeek player={gridPeek(p)}>
               <Link href={teamPlayerHref(p.id, data.filter)} className="ch-stm-row">
                 <Avatar name={p.name} size={36} />
                 <span className="ch-stm-row__b">
@@ -350,6 +353,7 @@ function Players({ data }: { data: ChTeamStats }) {
                 <Icon icon={ChevronRight} size={16} className="ch-stm-row__chev" />
                 <LinkPending />
               </Link>
+              </PlayerPeek>
             </li>
           ))}
         </ul>

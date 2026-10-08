@@ -28,7 +28,8 @@ import { formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, StatsFilter } from './StatsFilter';
-import { teamPlayerHref } from './links';
+import { gridPeek, teamPlayerHref } from './links';
+import { PlayerPeek } from '../../ui/PlayerPeek';
 import { LinkPending } from '../../shell/LinkPending';
 
 /*
@@ -557,10 +558,13 @@ function LegGrid({
                 <span role="cell" className="ch-who">
                   <Avatar name={g.name} size={30} />
                   <span>
-                    <Link href={playerHref(g.id)} className="ch-lg__a" onFocus={() => setFocus(g.id)} onMouseEnter={() => setFocus(g.id)}>
-                      <b>{g.name}</b>
-                      <LinkPending />
-                    </Link>
+                    {/* P003-C1: resting on the name shows the player's card; the row still opens their stats. */}
+                    <PlayerPeek player={gridPeek(g)}>
+                      <Link href={playerHref(g.id)} className="ch-lg__a" onFocus={() => setFocus(g.id)} onMouseEnter={() => setFocus(g.id)}>
+                        <b>{g.name}</b>
+                        <LinkPending />
+                      </Link>
+                    </PlayerPeek>
                     <span className="ch-who__m ch-num">
                       {g.rounds} {g.rounds === 1 ? 'round' : 'rounds'}
                     </span>
