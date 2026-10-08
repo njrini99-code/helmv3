@@ -2892,7 +2892,8 @@ html[data-fw-theme='dark'] .ch-offline {
    opens with its own large title does not also show its name in the bar: while the large title is in view the bar's
    title is hidden, and as it scrolls up under the bar (the bar is marked data-large-title="tucked") the bar's title
    fades in, on opacity and a 3px rise only. The :has() list is CH_LARGE_TITLES and must stay in step with it; it holds
-   from the first paint, so a cold load never shows the bar's title and then takes it away. The bar's title keeps its
+   from the first paint, so a loaded page never shows the bar's title and then takes it away (a skeleton matches only if
+   it draws the title's block: Settings and Recruiting today). The bar's title keeps its
    place in the accessibility tree and stays the focus target for a pushed page. Pages with no large title, the green
    hero's bar and desktop are untouched. The scroll edge: a soft shade under the bar once content has scrolled under
    it (data-scrolled), drawn on ::before because ::after is the sheet's lip. */
