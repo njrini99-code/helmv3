@@ -1,8 +1,8 @@
 # Clubhouse UI guidance
 
 Root `AGENTS.md` remains the operating guide. This file covers the Clubhouse
-exception for agents working in this tree (Clubhouse is off in production today;
-Fairway is the live UI). Read `.claude/rules/clubhouse.md` for the scoped rules,
+exception for agents working in this tree (Clubhouse is live in production for
+coaches and players; Fairway serves everything else). Read `.claude/rules/clubhouse.md` for the scoped rules,
 `docs/clubhouse/README.md` for the workflow and `docs/clubhouse/MOBILE.md` for
 phone behavior. Fairway's primitives, tokens and motion rules do not apply here.
 
