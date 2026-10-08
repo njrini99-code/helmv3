@@ -1,5 +1,12 @@
 # P002 — Home: changelog
 
+## 2026-10-08 — premium pass: findings D3, D4, D5
+
+- D3: a leaderboard row is a table row (a `div` with `role="row"`). The player's name is the link to their stats, and its `::after` covers the row, so the whole row still opens it. The row draws the focus ring (`:has(:focus-visible)`), and assistive tech now hears a row with a link in it, not a row that is a link.
+- D4: players on the same season average, to the tenth, share a place with a T, and the next place counts them all: 1, T2, T2, 4 (`leaderPlaces`). An early read has no place yet ("—"); the loader already sorts early reads last.
+- D5: on the phone, a part that didn't load keeps its section and the same head as the others (Up next, Team scoring, Latest rounds: a title over the rule), at one rhythm. Up next's failed section keeps 18px below the page notice.
+- Not changed: D6. With the Day card the coach's desktop columns end about 90px apart in the preview, not 300px. P002-A1, the alternative fix, is on the not-building list.
+
 ## 2026-10-08 — premium pass: the sunset on the day's rail
 
 "Later today" carries today's sunset at the team's place (the global light's `sunTimes` and `useLightPlace`) while it is still ahead, with when the light turns golden; a champagne mark on the rail and a sunset glyph. Nothing after sunset.

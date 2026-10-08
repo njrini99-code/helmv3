@@ -870,8 +870,11 @@ describe('Home · Coach Home’s own contracts', () => {
     expect(href(/New event/)).toBe('/golf/dashboard/calendar?new=1');
     expect(href('Full roster')).toBe('/golf/dashboard/roster');
     expect(href('Theo’s stats')).toBe('/golf/dashboard/stats?player=theo');
-    // A leaderboard row is a link (its role is row, for the table), to that player's stats.
-    expect(document.querySelector('a.ch-h-lb__row')!.getAttribute('href')).toBe('/golf/dashboard/stats?player=theo');
+    // P002 D3: a leaderboard row is a table row (not a link with a row role); the player's name is the link, to their stats.
+    const first = within(screen.getByRole('table', { name: 'Leaderboard' })).getAllByRole('row')[1]!;
+    expect(first.tagName).toBe('DIV');
+    expect(within(first).getByRole('link').getAttribute('href')).toBe('/golf/dashboard/stats?player=theo');
+    expect(document.querySelector('a.ch-h-lb__row')).toBeNull();
   });
 
   it('20806 Coach Home draws no player control: no Message coach, no Post a round, no countdown', () => {
@@ -1069,5 +1072,19 @@ describe('Home · this file', () => {
     const bridge = JSON.parse(readFileSync(join(root, 'config/clubhouse/bridge-contracts.json'), 'utf8')) as Array<{ id: number; page: string; chCode?: string; status: string }>;
     const unnamed = bridge.filter((r) => r.page === 'P002' && !r.chCode && r.status === 'implemented').filter((r) => !titles.some((l) => l.includes(String(r.id))));
     expect(unnamed.map((r) => r.id)).toEqual([]);
+  });
+});
+
+describe('Home · leaderboard places (P002 D4)', () => {
+  it('ties share a place with a T and the next place counts them; an early read has no place', async () => {
+    const { leaderPlaces } = await import('../screens/home/Leaderboard');
+    const rows = [
+      { avg: 72.04, status: 'steady' },
+      { avg: 73.0, status: 'improving' },
+      { avg: 72.96, status: 'slipping' },
+      { avg: 75.5, status: 'steady' },
+      { avg: 71.0, status: 'early' },
+    ] as const;
+    expect(leaderPlaces(rows as never).map((p) => p.label)).toEqual(['1', 'T2', 'T2', '4', '—']);
   });
 });

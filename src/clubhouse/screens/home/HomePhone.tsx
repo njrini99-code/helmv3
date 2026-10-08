@@ -69,7 +69,9 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
         <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
           {data.week.error ? (
             // On the sheet, not in the green card: inside it the notice took the card's ivory ink and its words vanished.
-            <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. This is a display problem, and trying again usually clears it." covered={covered} />
+            <FailedSec id="ch-hm-upnext-failed" title="Up next">
+              <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. This is a display problem, and trying again usually clears it." covered={covered} />
+            </FailedSec>
           ) : (
             <Day phone={phone} rounds={rounds} now={now} today={today} onOpenRound={setOpen} />
           )}
@@ -86,7 +88,9 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
             <Form form={phone.form} />
           </SectionBoundary>
         ) : data.latestRounds.error ? (
-          <RefreshNotice code="CH-2211" title="Team scoring didn’t load" body="Posted rounds are safe. Try again; the error has been reported." covered={covered} />
+          <FailedSec id="ch-hm-form-failed" title="Team scoring">
+            <RefreshNotice code="CH-2211" title="Team scoring didn’t load" body="Posted rounds are safe. Try again; the error has been reported." covered={covered} />
+          </FailedSec>
         ) : null}
 
         {!data.week.error && !nothingAhead && (
@@ -419,6 +423,21 @@ export function WeekStrip({ days, note, children, majorIcon = TYPE_ICON.tourname
  * `trends`: the leaderboard's rows, for each player's last rounds as a word-sized line beside the score (P002-C2): who
  * is slipping, read without a leaderboard on the phone. Null when that read failed: the rows keep their scores.
  */
+/**
+ * P002 D5: a part that didn't load keeps the section it would have been, with the same head (title over the rule) as
+ * Latest rounds, so a page with several failures reads as one list of sections at one rhythm.
+ */
+function FailedSec({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  return (
+    <section className="ch-hm-sec is-failed" aria-labelledby={id}>
+      <div className="ch-hm-sec__h">
+        <h2 id={id}>{title}</h2>
+      </div>
+      {children}
+    </section>
+  );
+}
+
 function Rounds({ data, trends, onOpen, covered }: { data: ChCoachHome['latestRounds']; trends: ChCoachHome['leaderboard']['rows'] | null; onOpen: (r: ChLatestRound) => void; covered: boolean }) {
   const trendOf = new Map((trends ?? []).map((p) => [p.playerId, p.trend]));
   const teamStats = rebuiltHref('/golf/dashboard/stats');

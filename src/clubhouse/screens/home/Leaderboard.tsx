@@ -40,15 +40,42 @@ export function leaderPeek(p: ChLeaderRow, rounds: ChLatestRound[] = []): ChPlay
   };
 }
 
-function Row({ p, pos, rounds }: { p: ChLeaderRow; pos: number; rounds?: ChLatestRound[] }) {
+/**
+ * Each row's place (P002 D4). Players on the same season average, as shown to a tenth, share a place with a T ("T2"),
+ * and the next place counts them all (1, T2, T2, 4). An early read (under three 18-hole rounds; the loader sorts them
+ * last) has no place yet: "—".
+ */
+export function leaderPlaces(rows: Pick<ChLeaderRow, 'avg' | 'status'>[]): Array<{ label: string; place: number | null }> {
+  const key = (r: Pick<ChLeaderRow, 'avg'>) => Math.round(r.avg * 10);
+  return rows.map((r, i) => {
+    if (r.status === 'early') return { label: '—', place: null };
+    const first = rows.findIndex((o) => o.status !== 'early' && key(o) === key(r));
+    const tied = rows.some((o, j) => j !== i && o.status !== 'early' && key(o) === key(r));
+    return { label: `${tied ? 'T' : ''}${first + 1}`, place: first + 1 };
+  });
+}
+
+function Row({ p, pos, rounds }: { p: ChLeaderRow; pos: { label: string; place: number | null }; rounds?: ChLatestRound[] }) {
   const href = rebuiltHref(`/golf/dashboard/stats?player=${p.playerId}`);
+  const top = pos.place != null && pos.place <= 3;
+  // P002 D3: the row is a table row (a div); the link is the player's name, stretched over the row by its ::after.
+  const name = href ? (
+    <Link href={href} className="ch-h-lb__go">
+      <span className="ch-h-lb__name">{p.name}</span>
+      <LinkPending />
+    </Link>
+  ) : (
+    <span className="ch-h-lb__name">{p.name}</span>
+  );
   const cells = (
     <>
-      <span className={'ch-h-lb__pos ch-num' + (pos <= 3 ? ' is-top' : '') + (pos === 1 ? ' is-lead' : '')} role="cell">{pos}</span>
+      <span className={'ch-h-lb__pos ch-num' + (top ? ' is-top' : '') + (pos.place === 1 ? ' is-lead' : '') + (pos.label.startsWith('T') ? ' is-tie' : '')} role="cell">
+        {pos.label}
+      </span>
       <span className="ch-h-lb__who" role="cell">
         <Avatar name={p.name} size={28} />
         <span>
-          <span className="ch-h-lb__name">{p.name}</span>
+          {name}
           <span className="ch-h-lb__meta">
             {p.classYear && <>{p.classYear} &middot; </>}
             <span className={'ch-h-lb__status is-' + (p.quietDays != null && p.quietDays >= QUIET_DAYS ? 'quiet' : p.status)}>{statusText(p)}</span>
@@ -78,16 +105,9 @@ function Row({ p, pos, rounds }: { p: ChLeaderRow; pos: number; rounds?: ChLates
   // deepens the tint (press). It never lifts or scales.
   return (
     <PlayerPeek player={leaderPeek(p, rounds)}>
-      {href ? (
-        <Link href={href} className="ch-h-lb__row is-link" role="row">
-          {cells}
-          <LinkPending />
-        </Link>
-      ) : (
-        <div className="ch-h-lb__row" role="row">
-          {cells}
-        </div>
-      )}
+      <div className={'ch-h-lb__row' + (href ? ' is-link' : '')} role="row">
+        {cells}
+      </div>
     </PlayerPeek>
   );
 }
@@ -152,9 +172,10 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
             <span role="columnheader" className="r">To par</span>
             <span role="columnheader" className="r">SG / rd</span>
           </div>
-          {data.rows.map((p, i) => (
-            <Row key={p.playerId} p={p} pos={i + 1} rounds={rounds} />
-          ))}
+          {(() => {
+            const places = leaderPlaces(data.rows);
+            return data.rows.map((p, i) => <Row key={p.playerId} p={p} pos={places[i]!} rounds={rounds} />);
+          })()}
         </div>
       )}
     </section>
