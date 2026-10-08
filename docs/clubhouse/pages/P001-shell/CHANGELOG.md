@@ -1,5 +1,17 @@
 # P001 — Shell: changelog
 
+## 2026-10-08 — A quieter selected row (P001-A2)
+
+Approved by the owner on 2026-10-08.
+
+- **The sidebar's selected row is a well, not a plate.** The bright ivory plate
+  was the loudest object on the desktop and drew the eye from the page title.
+  The selected row is now pressed into the frame instead: the frame's green a
+  step darker, one champagne hairline (3:1 against the rows around it), ivory
+  text and a champagne glyph (`--ch-nav-well-bg`, `--ch-nav-well-shadow`). The
+  gliding plate (CH-1613) draws the same well. At night the well is cut from the
+  night frame, so dark mode needs no rule of its own.
+
 ## 2026-10-08 — The global light (P001-A1, D3-1)
 
 Approved by the owner on 2026-10-08 ("the ambient light has really transformed

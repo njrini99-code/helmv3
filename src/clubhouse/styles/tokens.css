@@ -232,7 +232,7 @@
   /* The sky falling across the green frame, brightest under the sun (desktop frame and sidebar field). */
   --ch-light-sky: radial-gradient(
     110% 120% at calc(var(--ch-sun-x, 0.5) * 100%) calc(var(--ch-sun-y, 0.25) * 40% - 30%),
-    color-mix(in oklab, var(--ch-light-key) calc(5% + var(--ch-sun-intensity, 1) * 9% + var(--ch-sun-warmth, 0) * 14%), transparent),
+    color-mix(in oklab, var(--ch-light-key) calc(5% + var(--ch-sun-intensity, 1) * 9% + var(--ch-sun-warmth, 0) * 10%), transparent),
     transparent 75%
   );
   /* The same sky through the phone chassis bar: a horizontal falloff that is gone before the bar's lower edge, so the
@@ -304,6 +304,11 @@
      green (the selected nav row, the next-event card). A gilt ring, then a deeper drop than ivory needs. */
   --ch-elevation-framed: var(--ch-light-drift-near) 1px 3px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.12), inset 1px 0 0 rgb(11 58 37 / 0.12);
   --ch-elevation-on-frame: 0 0 0 1px rgb(176 149 96 / 0.45), var(--ch-light-drift-near) 1px 2px rgb(2 18 10 / 0.3);
+  /* The sidebar's selected row (P001-A2, owner 2026-10-08): an inset well in the frame rather than a lit plate, so the
+     page title stays the brightest thing on screen. The frame a step darker, one champagne hairline (3:1 against the
+     rows around it, WCAG 1.4.11) and a pressed-in top shade. */
+  --ch-nav-well-bg: color-mix(in oklab, var(--ch-frame) 80%, #000);
+  --ch-nav-well-shadow: inset 0 0 0 1px rgb(205 187 142 / 0.58), inset 0 1px 3px rgb(0 0 0 / 0.32), 0 1px 0 rgb(255 255 255 / 0.04);
   --ch-elevation-on-frame-hover: 0 0 0 1px rgb(176 149 96 / 0.6), 0 2px 6px rgb(2 18 10 / 0.35);
   /* The Ledger (owner, 2026-10-07: "flush, not so card heavy"): inside the framed workspace a section is a rule and a
      heading on the canvas, not a card. Engraved gilt-brown rules, forest ink for headings, the head's eyebrow brown. */

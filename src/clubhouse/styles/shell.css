@@ -1999,16 +1999,16 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 }
 .ch-navitem[aria-current='page'],
 .ch-navitem:has(.ch-lp) {
-  background: var(--ch-ivory-25);
-  color: var(--ch-green-800);
-  box-shadow: var(--ch-elevation-on-frame);
+  background: var(--ch-nav-well-bg);
+  color: var(--ch-on-green-ink);
+  box-shadow: var(--ch-nav-well-shadow);
   text-shadow: none;
 }
 .ch-navitem[aria-current='page'] svg,
 .ch-navitem[aria-current='page'] .ch-navitem__count,
 .ch-navitem:has(.ch-lp) svg,
 .ch-navitem:has(.ch-lp) .ch-navitem__count {
-  color: var(--ch-green-700);
+  color: var(--ch-champagne-300);
 }
 .ch-navitem__count {
   color: var(--ch-champagne-300);
@@ -2133,8 +2133,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   left: 0;
   z-index: 0;
   border-radius: var(--ch-radius-md);
-  background: var(--ch-ivory-25);
-  box-shadow: var(--ch-elevation-on-frame);
+  background: var(--ch-nav-well-bg);
+  box-shadow: var(--ch-nav-well-shadow);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
@@ -2385,16 +2385,7 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
     box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.25);
   }
 }
-/* Under .ch-nav--plate, which clears the row's own plate once the gliding one has measured. */
-:where(html[data-fw-theme='dark']) .ch-navitem[aria-current='page'],
-:where(html[data-fw-theme='dark']) .ch-navitem:has(.ch-lp),
-html[data-fw-theme='dark'] .ch-nav__plate {
-  background: var(--ch-green-200);
-}
-html[data-fw-theme='dark'] .ch-navitem[aria-current='page'],
-html[data-fw-theme='dark'] .ch-navitem:has(.ch-lp) {
-  color: var(--ch-on-green-ink);
-}
+/* The selected row's well (P001-A2) is drawn from the frame, so the night frame darkens it without a rule here. */
 @media (min-width: 821px) {
   /* The frame is darker than the workspace at night: a faint ivory hairline keeps the join reading as an edge. */
   html[data-fw-theme='dark'] .ch-canvas {
