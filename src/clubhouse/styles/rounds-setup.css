@@ -1212,3 +1212,13 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
     font-size: 12px;
   }
 }
+
+/* P011-A1: the setup band is the round's green feature: the shell's sky falls across it from the sun's side, a hairline
+   rim on its sun-facing top edge, and the cast shadow leaning away from the light (tokens.css). */
+.ch-rsu-band {
+  background: var(--ch-light-sky), radial-gradient(70% 120% at 100% 0%, rgb(123 199 154 / 0.12), transparent 60%), var(--ch-green-800);
+  box-shadow:
+    inset var(--ch-light-rim-x) 1px 0 color-mix(in oklab, var(--ch-light-rim) 30%, transparent),
+    0 0 0 1px var(--ch-green-900),
+    var(--ch-elevation-cast);
+}

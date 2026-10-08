@@ -1606,7 +1606,7 @@ a.ch-rd-sc:focus-visible {
   .ch-rd.is-phone .ch-rd-h .ch-rd-k,
   .ch-rd.is-phone .ch-rd-h .ch-rd-upd {
     font: 500 12px/1.2 var(--ch-font-sans);
-    letter-spacing: 0.14em;
+    letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-rd.is-phone .ch-rd-h :is(h1, h2) {
@@ -2208,7 +2208,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   }
   .ch-rv[data-canopy] .ch-rv-hero__k {
     font: 500 11px/1.3 var(--ch-font-sans);
-    letter-spacing: 0.14em;
+    letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-rv[data-canopy] .ch-rv-hero__m {
@@ -2746,4 +2746,21 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
     gap: 8px;
     margin: 0;
   }
+}
+
+/* P011-A1: one sun for the round. The green feature cards (the round in progress, the review's hero on the phone) take
+   the shell's light (tokens.css --ch-light-*, from the team's place and the hour): the sky falls across the card from the
+   sun's side, a hairline rim catches the sun-facing top edge, and the contact shadow (the cast token) leans away from
+   the light. Paint only, on the material: the scores and figures on the card keep their ink. */
+.ch-rd-unf,
+.ch-rd.is-phone .ch-rd-unf,
+.ch-rv.is-phone .ch-rv-hero {
+  background: var(--ch-light-sky), var(--ch-feature-bg);
+  box-shadow:
+    inset var(--ch-light-rim-x) 1px 0 color-mix(in oklab, var(--ch-light-rim) 30%, transparent),
+    0 0 0 1px var(--ch-green-900),
+    var(--ch-elevation-cast);
+}
+.ch-rd-unf.is-idle {
+  background: var(--ch-light-sky), var(--ch-feature-bg);
 }

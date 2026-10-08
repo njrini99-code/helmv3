@@ -1963,10 +1963,11 @@ button.ch-rt-strip__h {
    and rule is useShotTracking's, as on the desktop: this block only draws it. It sits after the dark rules (which are
    :where()-scoped) so it holds in both themes. */
 @container chrt (max-width: 640px) {
+  /* P011-A1: the course's own sky over the track field (the shell's light), above the drawn hole, never on it. */
   .ch-rt {
     min-height: 100dvh;
     padding: calc(env(safe-area-inset-top) + 8px) 12px 0;
-    background: var(--ch-green-900);
+    background: var(--ch-light-bar) no-repeat top / 100% 320px, var(--ch-green-900);
     color: var(--ch-on-green-ink);
   }
   .ch-rt-top {
