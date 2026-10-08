@@ -41,15 +41,6 @@
   align-items: center;
   gap: 12px;
 }
-.ch-rs-team__stack {
-  display: flex;
-}
-.ch-rs-team__stack > * + * {
-  margin-left: -8px;
-}
-.ch-rs-team__stack .ch-avatar {
-  box-shadow: 0 0 0 2px var(--ch-bg-page), 0 0 0 3px rgb(176 149 96 / 0.3);
-}
 .ch-rs-team__name {
   font: 500 13.5px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
@@ -866,17 +857,17 @@
     flex-direction: column;
     gap: 22px;
   }
+  /* P003-A3: no rule above the kicker; the top bar already closes the page's top. */
   .ch-rsm-head {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    padding-top: 14px;
-    border-top: var(--ch-ledger-rule-double);
+    padding-top: 4px;
   }
   /* 12px, the phone text floor (F09), as the kit's PageIntro eyebrow. */
   .ch-rsm-kicker {
     font: 500 12px/1.2 var(--ch-font-sans);
-    letter-spacing: 0.14em;
+    letter-spacing: 0;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-rsm-title {
@@ -1063,11 +1054,6 @@
     flex: 1;
     justify-content: center;
     min-height: 44px;
-  }
-  .ch-rsm-hero__act .ch-btn:first-child {
-    background: var(--ch-green-50);
-    color: var(--ch-green-800);
-    box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.24);
   }
   .ch-rsm-hero__act .ch-btn svg {
     color: var(--ch-green-700);
@@ -1571,9 +1557,6 @@
   .ch-rs[data-canopy] .ch-rs-head {
     border-bottom: 0;
   }
-  .ch-rs[data-canopy] .ch-rs-team__stack:empty {
-    display: none;
-  }
 
   .ch-rs[data-canopy] .ch-rs-req {
     margin-top: 14px;
@@ -1637,11 +1620,19 @@
     gap: 0;
     overflow: hidden;
   }
+  /* P003-A1: one ruled ledger lit by the hour. Each hairline carries a 1px rim of the shell's light on its sun-facing
+     side (the top, and the side the sun is on: --ch-light-rim-x is 0 at noon), so the grid reads as one sheet under
+     one sun. The rims are on the rules, never on a figure, and they are gone in dark, Increase Contrast and noon's
+     side light. */
   .ch-rs[data-canopy] .ch-rs-face {
     padding: 22px 20px 26px;
     border-radius: 0;
     background: none;
-    box-shadow: -1px 0 0 var(--ch-ledger-rule-soft), 0 -1px 0 var(--ch-ledger-rule-soft);
+    box-shadow:
+      -1px 0 0 var(--ch-ledger-rule-soft),
+      0 -1px 0 var(--ch-ledger-rule-soft),
+      inset 0 1px 0 var(--ch-light-rim-soft),
+      inset var(--ch-light-rim-x) 0 0 var(--ch-light-rim-soft);
     transform: none;
     transition: background var(--ch-dur-quick) var(--ch-ease);
   }
@@ -1650,7 +1641,11 @@
       padding: 22px 20px 26px;
       border-radius: 0;
       background: none;
-      box-shadow: -1px 0 0 var(--ch-ledger-rule-soft), 0 -1px 0 var(--ch-ledger-rule-soft);
+      box-shadow:
+        -1px 0 0 var(--ch-ledger-rule-soft),
+        0 -1px 0 var(--ch-ledger-rule-soft),
+        inset 0 1px 0 var(--ch-light-rim-soft),
+        inset var(--ch-light-rim-x) 0 0 var(--ch-light-rim-soft);
       transform: none;
       transition: background var(--ch-dur-quick) var(--ch-ease);
     }
@@ -1691,6 +1686,18 @@
   .ch-rs[data-canopy] .ch-rs-face.is-sel .ch-rs-face__av {
     box-shadow: var(--ch-elevation-floating);
     outline: 2px solid var(--ch-green-600);
+  }
+  /* P003-A1: the open player's ring catches a gilt crescent on the side the light comes from. */
+  .ch-rs[data-canopy] .ch-rs-face__av {
+    position: relative;
+  }
+  .ch-rs[data-canopy] .ch-rs-face.is-sel .ch-rs-face__av::after {
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    box-shadow: inset var(--ch-light-rim-x) 1.5px 0 0 color-mix(in oklab, var(--ch-champagne-300) 85%, var(--ch-light-key));
+    content: '';
+    pointer-events: none;
   }
   .ch-rs[data-canopy] .ch-rs-face.is-sel .ch-rs-face__name {
     color: var(--ch-green-800);
@@ -1757,13 +1764,17 @@
       display: none;
     }
   }
+  /* P003 #4: the panel stays with the coach. It sticks under the top bar and scrolls inside itself, so the name,
+     Close and the actions never leave the screen. P003-A1: its leading hairline takes the sun's rim beside it. */
   .ch-rs[data-canopy] .ch-rs-peek {
     gap: 20px;
+    max-height: calc(100dvh - 96px);
     padding: 22px 0 24px 32px;
-    overflow: visible;
+    overflow: hidden auto;
+    overscroll-behavior: contain;
     border-radius: 0;
     background: none;
-    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft), inset 2px 0 0 var(--ch-light-rim-soft);
   }
   .ch-rs[data-canopy] .ch-rs-peek > * {
     margin-inline: 0;
@@ -1824,9 +1835,6 @@
   border-top-color: var(--ch-champagne-rule);
   border-bottom-color: var(--ch-champagne-rule);
 }
-:where(html[data-fw-theme='dark']) .ch-rs-team__stack .ch-avatar {
-  box-shadow: 0 0 0 2px var(--ch-bg-page), 0 0 0 3px rgb(205 187 142 / 0.3);
-}
 :where(html[data-fw-theme='dark']) .ch-rs-req__ic {
   color: var(--ch-text-on-accent);
 }
@@ -1863,10 +1871,6 @@
   color: var(--ch-green-700);
 }
 @media (max-width: 820px) {
-  :where(html[data-fw-theme='dark']) .ch-rsm-hero__act .ch-btn:first-child {
-    color: var(--ch-green-700);
-    box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.28);
-  }
   :where(html[data-fw-theme='dark']) .ch-rsm-code b {
     color: var(--ch-green-700);
   }
@@ -1875,4 +1879,7 @@
   :where(html[data-fw-theme='dark']) .ch-rs[data-canopy] .ch-rs-face.is-sel .ch-rs-face__name {
     color: var(--ch-green-700);
   }
+}
+:where(html[data-fw-theme='dark']) .ch-rs[data-canopy] .ch-rs-face.is-sel .ch-rs-face__av::after {
+  opacity: 0.45;
 }

@@ -66,15 +66,11 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
   if (phone) return <TeamRosterPhone data={data} onRetry={() => router.refresh()} />;
 
   return (
-    <main className="ch-rs">
-      <header className="ch-rs-head">
+    // The coach's page material (P003 #1): the framed head and the Ledger, so player and coach read as one product.
+    <main className="ch-rs" data-canopy="">
+      <header className="ch-rs-head" data-canopy-head="">
         <div>
           <span className="ch-rs-team">
-            <span className="ch-rs-team__stack" aria-hidden="true">
-              {players.slice(0, 7).map((p) => (
-                <Avatar key={p.id} name={p.name} size={30} />
-              ))}
-            </span>
             <span className="ch-rs-team__name">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
           </span>
           <h1 className="ch-display">Your team.</h1>

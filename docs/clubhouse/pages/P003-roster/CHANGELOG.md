@@ -1,5 +1,35 @@
 # P003 — Roster: changelog
 
+## 2026-10-08 — Premium pass: ranks, one material, the lit ledger, the peek
+
+Approved by the owner on 2026-10-08 (P003-A1, A3, C1; findings #1 to #17).
+
+- **Ranks from the active roster (#2, #3).** A card's place ("4th of 7") and the
+  team strip rank the active players with an average and at least three rounds
+  (`rosterStandings`), never the rows a search or filter left: searching "Jo"
+  keeps Jonah's place, and All doesn't rank inactive players. Under three rounds
+  the card says "Needs 1 more" instead of a place.
+- **One material (#1).** The player's Roster and the no-team page take the
+  coach's canopy (`data-canopy`, `data-canopy-head`); the no-team page has a
+  hidden h1.
+- **Less chrome (A3).** The seven-coin initials stack above the title is gone on
+  desktop, and the phone loses the double rule above the kicker, which is no
+  longer tracked (#9). The status dots stay (owner).
+- **The ledger in the light (A1).** The faces' hairlines carry a 1px rim of the
+  shell's light on their sun-facing side, and the open player's ring catches a
+  gilt crescent on the lit side. The peek's leading hairline takes the rim too.
+  Nothing on a figure is lit, and dark, Increase Contrast and noon draw no rim.
+- **The player peek (C1).** A hold on a phone row, or a rest on a desktop
+  Needs-a-look chip, shows the shell's `PlayerPeek` from what the roster holds
+  (`rosterPeek`: the newest round, the average, the form, the warning).
+- **Findings.** The desktop panel sticks under the top bar and scrolls inside
+  itself (#4); the phone requests sheet has one primary, Approve all (#5);
+  without season stats the sort falls back to Name and offers no Avg or SG (#7);
+  a failed team read says "your team" mid-sentence (#8); a chip only opens its
+  player (#11); "a round" hides when SG is missing (#12); cards and names are
+  `aria-expanded` with a short label (#13); the phone profile has one secondary
+  style (#15).
+
 ## 2026-10-08 — Copy: typographic apostrophes
 
 Roster writes its apostrophes as ’ on desktop and the phone, as Home, Stats and

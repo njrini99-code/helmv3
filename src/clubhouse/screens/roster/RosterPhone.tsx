@@ -24,7 +24,8 @@ import { PhoneScreen } from '../../shell/PhoneScreen';
 import { PhoneTop, useBackFromMore, usePhoneStackHistory } from '../../shell/phone-chrome';
 import type { NoteSaved } from './RosterPeek';
 import { RosterProfile } from './RosterProfile';
-import { formatHcp, rosterFailedParts, rowNote } from './format';
+import { PlayerPeek } from '../../ui/PlayerPeek';
+import { formatHcp, rosterFailedParts, rosterPeek, rowNote } from './format';
 import { nameList, type ChJoinRequestsState } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
 
@@ -84,8 +85,10 @@ export function RosterPhone({
   const [acting, setActing] = useState(false);
   const open = openId ? players.find((p) => p.id === openId) : undefined;
   const activeCount = players.filter((p) => p.status === 'active').length;
-  const active = useMemo(() => sortPlayers(players.filter((p) => p.status === 'active'), sort), [players, sort]);
-  const inactive = useMemo(() => sortPlayers(players.filter((p) => p.status === 'inactive'), sort), [players, sort]);
+  // Avg and SG order nothing while season stats are missing: the list falls back to Name (P003 #7).
+  const sortBy: PhoneSort = data.statsError ? 'name' : sort;
+  const active = useMemo(() => sortPlayers(players.filter((p) => p.status === 'active'), sortBy), [players, sortBy]);
+  const inactive = useMemo(() => sortPlayers(players.filter((p) => p.status === 'inactive'), sortBy), [players, sortBy]);
 
   // The profile is a history entry, so the iOS edge swipe and the browser's back pop it (CH-1906).
   const popTo = useCallback((level: number) => level < 1 && onClose(), [onClose]);
@@ -182,13 +185,17 @@ export function RosterPhone({
               <Segmented<PhoneSort>
                 size="sm"
                 label="Sort players"
-                value={sort}
+                value={sortBy}
                 onChange={setSort}
-                options={[
-                  { value: 'avg', label: 'Avg', aria: 'Avg, scoring average' },
-                  { value: 'sg', label: 'SG', aria: 'SG, strokes gained' },
-                  { value: 'name', label: 'Name' },
-                ]}
+                options={
+                  data.statsError
+                    ? [{ value: 'name', label: 'Name' }]
+                    : [
+                        { value: 'avg', label: 'Avg', aria: 'Avg, scoring average' },
+                        { value: 'sg', label: 'SG', aria: 'SG, strokes gained' },
+                        { value: 'name', label: 'Name' },
+                      ]
+                }
               />
             </div>
             <SectionBoundary surface="roster.list" label="The roster" code="CH-3205">
@@ -292,23 +299,26 @@ export function RosterPhoneRow({ p, statsError, onOpen }: { p: ChRosterPlayer; s
   ]
     .filter(Boolean)
     .join(', ');
+  // P003-C1: a hold peeks at the player (the shell's PlayerPeek); a tap still opens the profile.
   return (
-    <button type="button" className="ch-rsm-row" aria-label={label} data-ch-code="CH-3806" onClick={() => onOpen(p.id)}>
-      <Avatar name={p.name} size={40} />
-      <span className="ch-rsm-row__b">
-        <b>{p.name}</b>
-        <span className={note?.tone ? `is-${note.tone}` : undefined}>{[p.classYear, note?.text].filter(Boolean).join(' · ') || ' '}</span>
-      </span>
-      {p.trend.length >= 3 && (
-        <span className="ch-rsm-row__spark" aria-hidden="true">
-          <FormLine data={p.trend} width={48} height={20} earlyBelow={3} bare label={`${p.name} form`} />
+    <PlayerPeek player={rosterPeek(p)}>
+      <button type="button" className="ch-rsm-row" aria-label={label} data-ch-code="CH-3806" onClick={() => onOpen(p.id)}>
+        <Avatar name={p.name} size={40} />
+        <span className="ch-rsm-row__b">
+          <b>{p.name}</b>
+          <span className={note?.tone ? `is-${note.tone}` : undefined}>{[p.classYear, note?.text].filter(Boolean).join(' · ') || ' '}</span>
         </span>
-      )}
-      <span className="ch-rsm-row__v">
-        <b className="ch-num">{formatFixed(p.avg)}</b>
-        <span className="ch-num">{formatHcp(p.handicap)} hcp</span>
-      </span>
-    </button>
+        {p.trend.length >= 3 && (
+          <span className="ch-rsm-row__spark" aria-hidden="true">
+            <FormLine data={p.trend} width={48} height={20} earlyBelow={3} bare label={`${p.name} form`} />
+          </span>
+        )}
+        <span className="ch-rsm-row__v">
+          <b className="ch-num">{formatFixed(p.avg)}</b>
+          <span className="ch-num">{formatHcp(p.handicap)} hcp</span>
+        </span>
+      </button>
+    </PlayerPeek>
   );
 }
 
@@ -398,7 +408,8 @@ function RequestsSheet({ open, onClose, data, jr }: { open: boolean; onClose: ()
               <Button disabled={jr.busy != null} onClick={() => void jr.decide(r, false)}>
                 Decline
               </Button>
-              <Button variant="primary" leftIcon={Check} disabled={jr.busy != null} feel={null} onClick={() => void jr.decide(r, true)}>
+              {/* Approve all is the sheet's one primary (P003 #5); each row's Approve is secondary. */}
+              <Button leftIcon={Check} disabled={jr.busy != null} feel={null} onClick={() => void jr.decide(r, true)}>
                 Approve
               </Button>
             </div>
