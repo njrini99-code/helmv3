@@ -463,8 +463,11 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
     const none = d.rounds === 0;
     return (
       <PlayerHelmFrame view="deep-dive" line={LINE}>
+        {/* The whole view is empty: on the phone it is the page's empty state, centred on the parchment like the Board's first run
+            (the Mobile clubhouse pass, 2026-10-08); desktop keeps the line on the Ledger. */}
         <EmptyState
           code={none ? 'CH-13380' : 'CH-13381'}
+          size={phone ? 'page' : 'section'}
           icon={Compass}
           title={none ? 'Your Deep dive starts with a round' : 'No insight to open yet'}
           body={

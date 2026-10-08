@@ -1,5 +1,28 @@
 # P012 — Classes: changelog
 
+## 2026-10-08 — Phone: Mobile clubhouse pass
+
+The owner's phone review ("phone too cardy, too vibe coded"; the Coach Home "Mobile clubhouse pass" board, round 3:
+"fewer containers, one feature card"), carried to Classes. Phone only: each new rule sits inside
+`@media (max-width: 820px)`.
+
+- **Head:** the top bar stays the page's one heading (the iPhone brief); the term and its dates are the tracked brown
+  eyebrow under the engraved double rule, over Import schedule and Add class.
+- **One feature card:** the term card ("Week 8 of 17 · 13 credits · 5 classes" and the overlaps row) is the page's
+  green feature card.
+- **No stacked cards:** Today, this week's overlaps and "Your classes" are sections under the double rule, their
+  entries rows between soft seams. A class was a tinted card; it is a row that keeps only its department key in its
+  tone, the name over the instructor, its week of day keys (the days it meets raised, today ringed green), and the
+  room and flags. Add a class is the last row; what the coach sees is a line under a soft rule. The deck is wrapped
+  in the shared Section on the phone too, so "Your classes" heads it.
+- **No team:** the page had a 400-weight "Classes" title at the desktop's edge under the bar's own "Classes"; on the
+  phone the calm empty page sits under the bar, at the phone's edge, and the title only names the page for a screen
+  reader.
+- **Loading:** `ClassesSkeleton` draws a phone shape beside the desktop one; the stylesheet shows the one for the width.
+
+Kept as material: the tone keys, the day keys, the flags, the buttons, the notices and every sheet. No motion, copy,
+behaviour or catalog code changed.
+
 ## 2026-10-07 — A class row answers the press
 
 On the desktop Ledger a class now deepens to the row press tint over the press beat, never a lift or a scale

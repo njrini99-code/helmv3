@@ -112,14 +112,18 @@ export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: Ch
   const id = useId();
   return (
     <article className="ch-hl-focus" aria-labelledby={`${id}-t`}>
-      <div className="ch-hl-focus__k">
-        <span>{who ? `${who} · ${ins.category}` : ins.category}</span>
-        <PriPill ins={ins} assigned={assigned} />
+      {/* The claim. On the phone it is the screen's one green feature card (the Mobile clubhouse pass, 2026-10-08), and
+          the evidence, the drill and the reasoning sit flush under it; on desktop the wrapper draws nothing. */}
+      <div className="ch-hl-focus__head">
+        <div className="ch-hl-focus__k">
+          <span>{who ? `${who} · ${ins.category}` : ins.category}</span>
+          <PriPill ins={ins} assigned={assigned} />
+        </div>
+        <h2 id={`${id}-t`}>
+          <SerifText text={ins.title} />
+        </h2>
+        {ins.lede && <p className="ch-hl-lede">{ins.lede}</p>}
       </div>
-      <h2 id={`${id}-t`}>
-        <SerifText text={ins.title} />
-      </h2>
-      {ins.lede && <p className="ch-hl-lede">{ins.lede}</p>}
       {/* CH-13903: a read from before the newest round is never drawn as current. */}
       {ins.stale && (
         <p className="ch-hl-stale" role="note" data-ch-code="CH-13903">

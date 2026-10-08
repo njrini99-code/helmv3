@@ -195,7 +195,7 @@ describe('112401 Rounds library, on screen', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     // A season whose ribbon can't be read throws inside SeasonCard only.
     show({ ...PREVIEW_ROUNDS, season: { ...PREVIEW_ROUNDS.season, ribbon: null as never } });
-    await expectCode('CH-11203', /Season scoring couldn’t be shown\./);
+    await expectCode('CH-11203', /Season scoring couldn’t be shown/);
     expect(screen.getByText('In progress')).toBeTruthy();
     expect(screen.getByRole('searchbox')).toBeTruthy();
     quiet.mockRestore();

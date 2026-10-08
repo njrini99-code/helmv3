@@ -3,6 +3,7 @@
 import { Play, Scale as ScaleIcon } from 'lucide-react';
 import type { ChStandRow, ChStanding, ChStandSense } from '../../../data/coachhelm-standing-shape';
 import { PLAYER_HELM_HREF, type ChViewLoad } from '../../../data/coachhelm-views-shape';
+import { useChPhone } from '../../../lib/use-phone';
 import { Button } from '../../../ui/Button';
 import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
@@ -142,6 +143,7 @@ function Hero({ s }: { s: ChStanding }) {
  * says why in place (a team too small, a Tour value that is not comparable); it is never drawn as a zero.
  */
 export function Standing({ load }: { load: ChViewLoad<ChStanding> }) {
+  const phone = useChPhone();
   const startHref = coachHelmLinks.startRound();
 
   if (load.status === 'off') {
@@ -164,8 +166,11 @@ export function Standing({ load }: { load: ChViewLoad<ChStanding> }) {
       {s.state === 'empty' ? (
         <>
           {s.baselineFailed && <RefreshNotice code="CH-13271" title="Your scoring average didn’t load" body="Standing is empty for now, and projections need it. Try again in a moment." />}
+          {/* The whole view is empty: on the phone it is the page's empty state, centred on the parchment like the Board's first run
+              (the Mobile clubhouse pass, 2026-10-08); desktop keeps the line on the Ledger. */}
           <EmptyState
             code="CH-13370"
+            size={phone ? 'page' : 'section'}
             icon={ScaleIcon}
             title="Standing starts with a few rounds"
             body={`Standing puts your stats next to the Tour and your team. It fills in once your first rounds are in, and refreshes overnight.${s.rounds ? ` You have posted ${s.rounds} ${s.rounds === 1 ? 'round' : 'rounds'}.` : ''}`}

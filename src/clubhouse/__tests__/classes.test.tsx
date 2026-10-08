@@ -1032,7 +1032,7 @@ describe('Classes, states', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     // A term with no end to its weeks can't be drawn as a line: only the overview throws.
     show({ ...PREVIEW_CLASSES, term: { ...PREVIEW_CLASSES.term, weeks: Infinity } });
-    await expectCode('CH-12203', /The term overview couldn.t be shown\./);
+    await expectCode('CH-12203', /The term overview couldn.t be shown/);
     expect(names()).toHaveLength(5);
     expect(screen.getByText('A team event overlaps your classes')).toBeTruthy();
     quiet.mockRestore();

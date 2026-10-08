@@ -1529,6 +1529,381 @@ a.ch-rd-sc:focus-visible {
   }
 }
 
+/* Route loading draws a desktop and a phone shape (RoundsSkeleton.tsx); the width shows one, so the server needs none. */
+.ch-rd-sk-desk,
+.ch-rv-sk-desk {
+  display: contents;
+}
+.ch-rd-sk-phone,
+.ch-rv-sk-phone {
+  display: none;
+}
+
+/* The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy, too vibe coded"; the Coach Home board, round 3:
+   "fewer containers, one feature card"). On the phone Rounds opens on the Ledger's intro under the engraved double rule
+   (the season line as the brown eyebrow, Your rounds in the 600 sans, New round beside it); the round in progress (or
+   the idle card) is the one green feature card and keeps its scoreboard strip; season scoring is a section flush on the
+   parchment, its three figures between hairlines and the ribbon under them; and every month is a section whose rounds
+   are rows between soft seams, led by the date and ending in the score. A round's review opens on its green hero (the
+   course in the 600 sans); its five figures sit between hairlines; strokes gained, the scorecard, the hole, the
+   distribution, the recap and the notes are sections under the double rule. Kept as material: the hole strip, the
+   scorecard's grid, the search, the grouping control, the hole steps and the notices. */
+@media (max-width: 820px) {
+  .ch-rd.is-phone {
+    gap: 28px;
+    padding: 14px 20px 110px;
+  }
+  /* The eyebrow takes the page's whole width, as the intro's does; New round sits at the end of the title's line. */
+  .ch-rd.is-phone > .ch-rd-h {
+    position: relative;
+    display: block;
+    padding-top: 14px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-rd.is-phone > .ch-rd-h > .ch-btn {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+  }
+  .ch-rd.is-phone .ch-rd-h .ch-rd-k,
+  .ch-rd.is-phone .ch-rd-h .ch-rd-upd {
+    font: 500 12px/1.2 var(--ch-font-sans);
+    letter-spacing: 0.14em;
+    color: var(--ch-ledger-eyebrow);
+  }
+  .ch-rd.is-phone .ch-rd-h h1 {
+    margin-top: 10px;
+    font: 600 31px/1.08 var(--ch-font-sans);
+    letter-spacing: -0.038em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+
+  /* The round in progress: the feature card. */
+  .ch-rd.is-phone .ch-rd-hero {
+    gap: 30px;
+  }
+  .ch-rd.is-phone .ch-rd-unf {
+    padding: 18px 18px 16px;
+    border-radius: 14px;
+    background: var(--ch-feature-bg);
+    box-shadow: var(--ch-elevation-feature);
+  }
+  /* A notice on the card (the round couldn't be checked, its scores or its posting didn't load) takes the card's ivory
+     inks and a light brick rule, as on the shared feature card (shell.css). */
+  .ch-rd.is-phone .ch-rd-unf .ch-notice--danger {
+    --ch-notice-rule: rgb(236 160 140 / 0.75);
+    --ch-notice-ink: #f2c3b6;
+    --ch-notice-body: var(--ch-on-green-ink-soft);
+  }
+
+  /* Season scoring: the label is the section's heading under the double rule; the average, then the figures between
+     hairlines, then the ribbon. */
+  .ch-rd.is-phone .ch-rd-season {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rd.is-phone .ch-rd-season .ch-rd-k {
+    display: block;
+    padding-top: 12px;
+    border-top: var(--ch-ledger-rule-double);
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rd.is-phone .ch-rd-season__h {
+    gap: 14px;
+  }
+  .ch-rd.is-phone .ch-rd-season__big {
+    margin-top: 14px;
+  }
+  .ch-rd.is-phone .ch-rd-season__big b {
+    font-size: 48px;
+    font-weight: 600;
+    letter-spacing: -0.055em;
+  }
+  .ch-rd.is-phone .ch-rd-season__f {
+    padding: 12px 0;
+    border-top: 1px solid var(--ch-ledger-rule);
+    border-bottom: 1px solid var(--ch-ledger-rule);
+  }
+  .ch-rd.is-phone .ch-rd-fig + .ch-rd-fig {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rd.is-phone .ch-rd-fig__v {
+    font-weight: 600;
+  }
+  .ch-rd.is-phone .ch-rd-range i.is-best {
+    box-shadow: 0 0 0 2px var(--ch-workspace);
+  }
+  .ch-rd.is-phone .ch-rd-season.is-empty {
+    gap: 6px;
+  }
+  .ch-rd.is-phone .ch-rd-season.is-empty .ch-rd-k {
+    margin-bottom: 6px;
+  }
+
+  /* More unfinished rounds: a section, one row each. */
+  .ch-rd.is-phone .ch-rd-more {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rd.is-phone .ch-rd-more h2 {
+    margin: 0 0 4px;
+    padding-top: 12px;
+    border-top: var(--ch-ledger-rule-double);
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rd.is-phone .ch-rd-more li {
+    min-height: 58px;
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+
+  /* The book: each month a section under the double rule; each round a row. */
+  .ch-rd.is-phone .ch-rd-grp {
+    gap: 2px;
+    margin-top: 18px;
+  }
+  .ch-rd.is-phone .ch-rd-grp__h {
+    padding: 12px 0 0;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-rd.is-phone .ch-rd-grp__h h3 {
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rd.is-phone .ch-rd-grp__rule {
+    background: none;
+  }
+  .ch-rd.is-phone .ch-rd-book {
+    gap: 0;
+  }
+  .ch-rd.is-phone .ch-rd-sc {
+    min-height: 64px;
+    padding: 10px 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-rd.is-phone .ch-rd-sc + .ch-rd-sc {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rd.is-phone a.ch-rd-sc:active {
+    background: var(--ch-ledger-row-press);
+  }
+  .ch-rd.is-phone .ch-rd-sc__date {
+    width: 44px;
+    height: auto;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rd.is-phone .ch-rd-sc__s {
+    align-items: flex-end;
+    height: auto;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rd.is-phone .ch-rd-sc__s b {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+  .ch-rd.is-phone .ch-rd-sc__s.is-under {
+    background: none;
+    box-shadow: none;
+  }
+
+  /* A round's review. */
+  .ch-rv.is-phone {
+    gap: 28px;
+    padding: 14px 20px 110px;
+  }
+  .ch-rv.is-phone .ch-rv-hero {
+    gap: 16px;
+    padding: 18px;
+    border-radius: 14px;
+    background: var(--ch-feature-bg);
+    box-shadow: var(--ch-elevation-feature);
+  }
+  .ch-rv.is-phone .ch-rv-hero h1 {
+    font: 600 28px/1.1 var(--ch-font-sans);
+    letter-spacing: -0.03em;
+    font-variation-settings: 'wdth' 92;
+  }
+  .ch-rv.is-phone .ch-rv-hero__s b {
+    font-weight: 600;
+  }
+  .ch-rv.is-phone .ch-rv-figs {
+    padding: 12px 0;
+    border-radius: 0;
+    background: none;
+    border-top: 1px solid var(--ch-ledger-rule);
+    border-bottom: 1px solid var(--ch-ledger-rule);
+    box-shadow: none;
+  }
+  .ch-rv.is-phone .ch-rv-figs > div:nth-child(3n + 1) {
+    padding-left: 0;
+  }
+  .ch-rv.is-phone .ch-rv-figs > div + div {
+    border-left-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-rv.is-phone .ch-rv-figs dd {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+  .ch-rv.is-phone .ch-rv-figs dd + dd {
+    font: 400 12px/1 var(--ch-font-sans);
+    letter-spacing: normal;
+  }
+  .ch-rv.is-phone .ch-rv-card {
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rv.is-phone .ch-rv-card__h {
+    margin-bottom: 6px;
+    padding: 12px 0 0;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-rv.is-phone .ch-rv-card__h h2,
+  .ch-rv.is-phone .ch-rv-card__h h3 {
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rv.is-phone .ch-rv-sg__legs,
+  .ch-rv.is-phone .ch-rv-cardw,
+  .ch-rv.is-phone .ch-rv-shots,
+  .ch-rv.is-phone .ch-rv-dist,
+  .ch-rv.is-phone .ch-rv-notes p {
+    padding-inline: 0;
+  }
+  .ch-rv.is-phone .ch-rv-cardw {
+    margin-inline: -20px;
+    padding-inline: 20px;
+  }
+  .ch-rv.is-phone .ch-rv-hole .ch-notice,
+  .ch-rv.is-phone .ch-rv-none {
+    margin-inline: 0;
+  }
+  .ch-rv.is-phone .ch-rv-shots__n {
+    box-shadow: 0 0 0 3px var(--ch-workspace);
+  }
+  .ch-rv.is-phone .ch-rv-cols {
+    gap: 28px;
+  }
+  .ch-rv.is-phone .ch-rv-side {
+    gap: 28px;
+  }
+  /* The recap: one green surface per screen (the hero), so on the phone it is a passage under a rule, its kicker green. */
+  .ch-rv.is-phone .ch-rv-recap {
+    gap: 8px;
+    padding: 14px 0 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+    color: var(--ch-text-primary);
+  }
+  .ch-rv.is-phone .ch-rv-recap__k {
+    color: var(--ch-green-600);
+  }
+  .ch-rv.is-phone .ch-rv-recap p {
+    color: var(--ch-text-secondary);
+  }
+
+  /* Loading (CH-11401, CH-11406) in the phone's shapes: the intro, the feature card, the sections under the double rule
+     with their figures between hairlines and their rows between soft seams. */
+  .ch-rd-sk-desk,
+  .ch-rv-sk-desk {
+    display: none;
+  }
+  .ch-rd-sk-phone,
+  .ch-rv-sk-phone {
+    display: contents;
+  }
+  .ch-rd[data-ch-code='CH-11401'],
+  .ch-rv[data-ch-code='CH-11406'] {
+    gap: 28px;
+    padding: 14px 20px 110px;
+  }
+  .ch-rd-sk-h {
+    display: flex;
+    flex-direction: column;
+    padding-top: 14px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-rd-sk-title {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+  .ch-rd-sk-sec,
+  .ch-rv-sk-sec {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-rd-sk-figs,
+  .ch-rv-sk-figs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 14px;
+    padding: 12px 0;
+    border-top: 1px solid var(--ch-ledger-rule);
+    border-bottom: 1px solid var(--ch-ledger-rule);
+  }
+  .ch-rd-sk-figs > span,
+  .ch-rv-sk-figs > span {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 0 12px;
+  }
+  .ch-rd-sk-figs > span:first-child,
+  .ch-rv-sk-figs > span:nth-child(3n + 1) {
+    padding-left: 0;
+  }
+  .ch-rd-sk-figs > span + span,
+  .ch-rv-sk-figs > span + span {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rv-sk-figs > span:nth-child(3n + 1) {
+    box-shadow: none;
+  }
+  .ch-rd-sk-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 64px;
+  }
+  .ch-rd-sk-row > span {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .ch-rd-sk-row + .ch-rd-sk-row {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+}
+
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */

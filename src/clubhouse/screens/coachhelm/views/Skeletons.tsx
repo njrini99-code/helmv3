@@ -19,14 +19,46 @@ function Chrome({ label, code, chained, children }: { label: string; code: strin
   return (
     <main className={'ch-hl ch-hv' + (phone ? ' is-phone' : '')} aria-busy="true" aria-label={label} data-skel={chained ? 'chained' : undefined} data-ch-code={code} data-canopy={phone ? undefined : ''}>
       {phone && tabs}
-      <header className={'ch-hl-h' + (phone ? '' : ' has-aside')} data-canopy-head="">
-        <Skeleton width={62} height={24} radius={12} />
-        <Skeleton width={190} height={44} radius={10} />
-        <Skeleton width={360} height={14} />
-        {!phone && <div className="ch-hl-h__aside">{tabs}</div>}
-      </header>
+      {phone ? (
+        // The phone's intro at its loaded line heights (the Mobile clubhouse pass): the eyebrow, the 31px title and the two-line
+        // brief under the double rule.
+        <header className="ch-hl-h" data-canopy-head="">
+          <Line h={14.4} w={56} sh={11} />
+          <Line h={33.5} w={176} sh={28} r={8} />
+          <span className="ch-hl-sk__line is-two">
+            <Skeleton width="92%" height={13} />
+            <Skeleton width="58%" height={13} />
+          </span>
+        </header>
+      ) : (
+        <header className="ch-hl-h has-aside" data-canopy-head="">
+          <Skeleton width={62} height={24} radius={12} />
+          <Skeleton width={190} height={44} radius={10} />
+          <Skeleton width={360} height={14} />
+          <div className="ch-hl-h__aside">{tabs}</div>
+        </header>
+      )}
       {children}
     </main>
+  );
+}
+
+/** One text line's box at its loaded height, with the bar centred in it (the phone's intro and section heads). */
+function Line({ h, w, sh, r }: { h: number; w: number | string; sh: number; r?: number }) {
+  return (
+    <span className="ch-hl-sk__line" style={{ height: h }}>
+      <Skeleton width={w} height={sh} radius={r} />
+    </span>
+  );
+}
+
+/** A section's head on the phone: the heading's line under the double rule (drawn by the section), and its caption. */
+function PhoneHead({ w, caption = true }: { w: number; caption?: boolean }) {
+  return (
+    <span className="ch-hv-sk-head">
+      <Line h={22.8} w={w} sh={17} r={6} />
+      {caption && <Skeleton width="84%" height={12} />}
+    </span>
   );
 }
 
@@ -49,6 +81,23 @@ function MeasureSkeleton() {
 
 /** The Game profile: the persona card, then the seven measures (CH-13460). */
 export function ProfileSkeleton({ chained }: { chained?: boolean } = {}) {
+  const phone = useChPhone();
+  if (phone) {
+    // The phone: the shape of the game's feature card, then the measures' section and its rows.
+    return (
+      <Chrome label="Loading your game profile" code="CH-13460" chained={chained}>
+        <div className="ch-hg-sk__hero">
+          <Skeleton width="100%" height={262} radius={14} />
+        </div>
+        <div className="ch-hg-sk__grid">
+          <PhoneHead w={150} />
+          {Array.from({ length: 3 }, (_, i) => (
+            <MeasureSkeleton key={i} />
+          ))}
+        </div>
+      </Chrome>
+    );
+  }
   return (
     <Chrome label="Loading your game profile" code="CH-13460" chained={chained}>
       <div className="ch-hg-sk__hero">
@@ -70,12 +119,17 @@ export function ProfileSkeleton({ chained }: { chained?: boolean } = {}) {
 }
 
 function StandingGroupSkeleton({ rows }: { rows: number }) {
+  const phone = useChPhone();
   return (
     <div className="ch-hs-sk__g">
-      <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 12 }}>
-        <Skeleton width={150} height={20} radius={6} />
-        <Skeleton width={240} height={12} />
-      </div>
+      {phone ? (
+        <PhoneHead w={150} />
+      ) : (
+        <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 12 }}>
+          <Skeleton width={150} height={20} radius={6} />
+          <Skeleton width={240} height={12} />
+        </div>
+      )}
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="ch-hs-sk__r">
           <span style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -92,6 +146,19 @@ function StandingGroupSkeleton({ rows }: { rows: number }) {
 
 /** Standing: the green card with what is most to gain, then the groups of stats (CH-13470). */
 export function StandingSkeleton({ chained }: { chained?: boolean } = {}) {
+  const phone = useChPhone();
+  if (phone) {
+    // The phone: where you stand's feature card (the headline, the note and what is most to gain), then the groups.
+    return (
+      <Chrome label="Loading your standing" code="CH-13470" chained={chained}>
+        <div className="ch-hs-sk__hero">
+          <Skeleton width="100%" height={404} radius={14} />
+        </div>
+        <StandingGroupSkeleton rows={3} />
+        <StandingGroupSkeleton rows={2} />
+      </Chrome>
+    );
+  }
   return (
     <Chrome label="Loading your standing" code="CH-13470" chained={chained}>
       <div className="ch-hs-sk__hero">
@@ -115,19 +182,26 @@ export function DiveSkeleton({ chained }: { chained?: boolean } = {}) {
   const phone = useChPhone();
   return (
     <Chrome label="Loading your deep dive" code="CH-13480" chained={chained}>
-      <div className="ch-hd-sk__hero">
-        <div className="ch-hd-sk__col">
-          <Skeleton width={150} height={11} />
-          <Skeleton width="70%" height={32} radius={8} />
-          <Skeleton width="86%" height={13} />
+      {phone ? (
+        // The phone: what CoachHelm has found's feature card, with its figure line.
+        <div className="ch-hd-sk__hero">
+          <Skeleton width="100%" height={196} radius={14} />
         </div>
-        <Skeleton width="100%" height={72} radius={14} />
-      </div>
+      ) : (
+        <div className="ch-hd-sk__hero">
+          <div className="ch-hd-sk__col">
+            <Skeleton width={150} height={11} />
+            <Skeleton width="70%" height={32} radius={8} />
+            <Skeleton width="86%" height={13} />
+          </div>
+          <Skeleton width="100%" height={72} radius={14} />
+        </div>
+      )}
       <div className="ch-hd">
         <div className="ch-hd-rail">
           {[4, 2].map((rows, g) => (
             <div key={g} className="ch-hd-sk__grp">
-              <Skeleton width={110} height={16} radius={6} />
+              {phone ? <PhoneHead w={110} /> : <Skeleton width={110} height={16} radius={6} />}
               {Array.from({ length: rows }, (_, i) => (
                 <div key={i} className="ch-hd-sk__it">
                   <span style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0 }}>

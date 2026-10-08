@@ -139,11 +139,29 @@ evidence and drill are the same component for both roles.
 
 Approved spec `docs/clubhouse/phone/coachhelm.md`: CoachHelm is a phone tab for
 both roles. The top bar is the shell's "CoachHelm" and the page keeps its own
-header; the focus card takes less padding; the coach's players are a row of
-pills (the "By player" heading stays for screen readers); Assign as focus and
-Dismiss share a row; on the player's page, choosing a row brings the focus into
-view, and each proposed focus area is a row with its two 44px buttons
-underneath, side by side.
+header; the coach's players are a row of pills (the "By player" heading stays
+for screen readers); Assign as focus and Dismiss share a row; on the player's
+page, choosing a row brings the focus into view, and each proposed focus area is
+a row with its two 44px buttons underneath, side by side.
+
+**The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy, too vibe
+coded"; the Coach Home board's round 3, "fewer containers, one feature card").**
+The page opens on the Ledger's intro under the engraved double rule: the role as
+the tracked brown eyebrow, "CoachHelm" in the 600 sans (no regular-weight
+title), the live line. The program pulse, Proposed for you, Also worth knowing
+and Working are sections flush on the parchment, each heading under the double
+rule and their rows between soft seams; the pulse's glyphs are flat tinted keys.
+The one green card is the focus's claim (its category, its stance, the claim and
+its first sentence); its evidence, the week's drill and Why we think this follow
+flush beneath it, set off by rules, never a card inside a card. The player
+chips and the view chips are drawn with a hairline (the chosen one green), not
+as lifted plates. A view that is empty as a whole (Standing's and the Deep
+dive's first run) is the page's empty state, centred on the parchment like the
+Board's; an empty part of a view stays a line. Ask sits on the same parchment; its bar's title is ivory on
+the green, its suggestions are hairline chips, and a failed answer is a flush
+notice (the danger rule, the message in the danger ink, no fill). Kept as material: the view
+switch, the chips, the bars and the gauge, the pills, the buttons, the thread,
+the composer and the notices.
 
 ## Owner rules (2026-10-01)
 
@@ -193,8 +211,11 @@ off no view is drawn and no strip is: every view answers with the board's own
 
 **Look.** One page grammar, in the Clubhouse tokens (`--ch-*`) and the darker
 ivory page: each view opens on a deep-green feature card (the persona, where
-they stand, what CoachHelm has found) with its figures in mint and champagne,
-then white cards on the ivory with a hairline ring and a soft green shadow.
+they stand, what CoachHelm has found) with its figures in mint and champagne.
+On desktop the rest sits on the Ledger's canvas under engraved rules; on the
+phone (the Mobile clubhouse pass, 2026-10-08) the opener is the view's one green
+card and every section after it is flush on the parchment under the double
+rule, its rows between soft seams.
 Numbers are never plain ink where they say something: green for ahead or
 working, amber for behind or worth watching (red stays for under par and the
 flag, D-42), tertiary ink only for a number that is neutral. Hierarchy is one
@@ -264,9 +285,11 @@ and not tappable, and is replaced once by the next one.
 
 **Phone (DRAFT).** The owner's phone boards
 (`docs/clubhouse/phone/coachhelm.md`) cover the board only; these layouts are
-built on the phone grammar (the shell's top bar, the chips, cards, a pushed
-screen with a back link, 44px targets) and are to be replaced if the owner draws
-them. The Deep dive's pushed screen slides in over the page (the page under it
+built on the phone grammar (the shell's top bar, the chips, the Ledger's flush
+sections with one feature card, a pushed screen with a back link, 44px targets)
+and are to be replaced if the owner draws them. A read's pushed screen opens on
+its own feature card (category, stance, claim), its parts flush under the double
+rule. The Deep dive's pushed screen slides in over the page (the page under it
 inert), is a history entry so the iOS back swipe pops it, and fades with reduced
 motion. `?insight=<id>` opens on a read, checked against the player's own list.
 

@@ -1,5 +1,38 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-08 — Phone: Mobile clubhouse pass
+
+The owner's phone review ("phone too cardy, too vibe coded"; the Coach Home "Mobile clubhouse pass" board, round 3:
+"fewer containers, one feature card"), carried to every CoachHelm phone screen. Phone only: each new rule sits inside
+`@media (max-width: 820px)`, and on desktop the focus's new wrapper draws nothing (`display: contents`).
+
+- **Title:** "CoachHelm" was a 400-weight display title on the phone. The header is now the Ledger's intro under the
+  engraved double rule: the role as the tracked brown eyebrow, CoachHelm in the 600 sans at 31px, the live line.
+- **No stacked cards:** the program pulse, Proposed for you, Also worth knowing and Working are sections flush on the
+  parchment, each heading under the double rule, their rows between soft seams (the pulse's glyphs are flat keys).
+  The one green card is the focus's claim (category, stance, claim, first sentence); its evidence, the week's drill
+  and Why we think this follow flush under it, set off by rules. Before, the focus was a white card holding the
+  evidence's card and the drill's well. A dismissed insight is a row between rules.
+- **Views:** the Game profile, Standing and the Deep dive open on their one green feature card (the persona with
+  Strong and Worth watching; where you stand with Most to gain in champagne; what CoachHelm has found with its three
+  counts as a figure line), and every measure, group of stats and list of reads is a section of rows. A read's
+  pushed screen opens on its own feature card and its parts follow flush. This fixes the Game profile's figure
+  beside a strength (62%), which was ivory on a white card on the phone. When a whole view is empty (Standing's
+  first run, CH-13370; the Deep dive's, CH-13380 and CH-13381) the phone draws the page's empty state, centred on
+  the parchment like the Board's first run; the Game profile's first run keeps its line, since what it will read
+  follows it.
+- **Chips:** the player chips and the view chips are drawn with a hairline (the chosen one green), not lifted plates,
+  and take the page's 20px edge.
+- **Ask:** the bar's title ("CoachHelm", or the chat's name) was dark ink on the green bar and could not be read; it is
+  ivory. The page sits on the parchment, its suggestions are hairline chips, and the no-rounds note is a line. A
+  failed answer (CH-13251) is a flush notice like the page's others: the danger rule at its left, the message in the
+  danger ink, no pink fill, Try again under the words.
+- **Loading:** the board's and the views' skeletons draw the phone's shapes (the intro's lines at their loaded
+  heights, the pulse's head and reserved rows, the chips, the feature card's place, sections of rows).
+
+Kept as material: the view switch, the chips, the bars and the gauge, the pills, the buttons, the thread, the
+composer, the notices and the sheets. No motion, copy, behaviour or catalog code changed.
+
 ## 2026-10-07 — Rows answer the press
 
 On desktop an insight row or a player in By player now deepens to the row press tint over the press beat, as the

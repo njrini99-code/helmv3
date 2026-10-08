@@ -735,7 +735,7 @@ describe('CH-13225 a section that crashes leaves the rest of the page usable', (
     crash.on = true;
     show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ANSWER } }), fakeChat());
     const notice = code('CH-13225') as HTMLElement;
-    expect(notice.textContent).toMatch(/The conversation couldn’t be shown\..*The rest of the page is fine\. This has been reported automatically\./);
+    expect(notice.textContent).toMatch(/The conversation couldn’t be shown.*The rest of the page is fine\. This has been reported automatically\./);
     expect(within(screen.getByRole('complementary', { name: 'Chats' })).getAllByRole('link').length).toBeGreaterThan(0);
     expect(screen.getByRole('textbox', { name: 'Reply to CoachHelm' })).toBeInTheDocument();
     crash.on = false;

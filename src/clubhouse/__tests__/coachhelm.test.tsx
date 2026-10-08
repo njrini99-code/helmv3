@@ -618,7 +618,7 @@ describe('CoachHelm for the player, on screen', () => {
     const list = PREVIEW_HELM_PLAYER.insights.list;
     // An insight whose evidence can't be read throws inside the focus card only.
     showPlayer({ ...PREVIEW_HELM_PLAYER, insights: { list: [{ ...list[0]!, evidence: null as never }, ...list.slice(1)], error: false } });
-    await expectCode('CH-13204', /Your focus couldn’t be shown\./);
+    await expectCode('CH-13204', /Your focus couldn’t be shown/);
     expect(inList('Working').getByRole('button', { name: /Double bogey-or-worse rate/ })).toBeTruthy();
     quiet.mockRestore();
   });
@@ -752,7 +752,7 @@ describe('CoachHelm proposals, on the player’s board', () => {
   it('CH-13204 a proposals section that crashes while drawing is contained: the insights stay', async () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     showPlayer({ ...PREVIEW_HELM_PLAYER_PROPOSED, proposals: { list: [null as never], error: false } });
-    await expectCode('CH-13204', /Proposed focus areas couldn’t be shown\./);
+    await expectCode('CH-13204', /Proposed focus areas couldn’t be shown/);
     expect(focusHeading()).toBe('Downhill putts inside 4-6 ft: a real penalty');
     quiet.mockRestore();
   });
@@ -1104,7 +1104,7 @@ describe('CoachHelm for the coach, on screen', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     // A pulse row whose icon can't be drawn throws inside the pulse's own section only.
     showCoach({ ...PREVIEW_HELM_COACH, pulse: { rows: [{ id: 'x', headline: 'A headline', evidence: 'Some evidence', tone: 'warn', icon: 'nope' as never }], error: false } });
-    await expectCode('CH-13204', /The program pulse couldn’t be shown\./);
+    await expectCode('CH-13204', /The program pulse couldn’t be shown/);
     expect(screen.getByRole('region', { name: 'By player' })).toBeTruthy();
     quiet.mockRestore();
   });

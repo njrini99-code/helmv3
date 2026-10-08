@@ -396,12 +396,11 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
           )}
           <div className="ch-cl-grid">
             <SectionBoundary surface="classes.deck" label="Your classes" code="CH-12203">
-              {/* Desktop (the Ledger): the deck is a section on the canvas under its heading and rule, its classes rows. The phone keeps its board. */}
-              {phone ? deck : (
-                <Section id="ch-cl-deck" title="Your classes" className="ch-cl-sec">
-                  {deck}
-                </Section>
-              )}
+              {/* The deck is a section under its heading, its classes rows: on the desktop Ledger, and on the phone under the double rule (the
+                  Mobile clubhouse pass, 2026-10-08). */}
+              <Section id="ch-cl-deck" title="Your classes" className="ch-cl-sec">
+                {deck}
+              </Section>
             </SectionBoundary>
             <SectionBoundary surface="classes.side" label="This week's overlaps" code="CH-12203">
               <div className="ch-cl-side" id="ch-cl-overlaps">

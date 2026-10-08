@@ -5,6 +5,35 @@ import { Skeleton } from '../../ui/States';
 import { useChPhone } from '../../lib/use-phone';
 import '../../styles/coachhelm.css';
 
+/** One text line's box at its loaded height, with the bar centred in it (the phone intro's lines). */
+function Line({ h, w, sh, r }: { h: number; w: number | string; sh: number; r?: number }) {
+  return (
+    <span className="ch-hl-sk__line" style={{ height: h }}>
+      <Skeleton width={w} height={sh} radius={r} />
+    </span>
+  );
+}
+
+/**
+ * The phone's focus in its loaded shape (the Mobile clubhouse pass): the claim's feature card, then the evidence, the week's
+ * drill and the reasoning's row flush on the parchment under it.
+ */
+function PhoneFocusSkeleton() {
+  return (
+    <div className="ch-hl-sk__card">
+      <Skeleton width="100%" height={176} radius={14} />
+      <Skeleton width="62%" height={12} />
+      <Skeleton width="100%" height={10} radius={5} />
+      <Skeleton width="100%" height={10} radius={5} />
+      <Skeleton width="54%" height={11} />
+      <span className="ch-hl-sk__rule" />
+      <Skeleton width={90} height={12} />
+      <Skeleton width="92%" height={13} />
+      <Skeleton width="78%" height={13} />
+    </div>
+  );
+}
+
 function FocusSkeleton() {
   return (
     <div className="ch-hl-sk__card">
@@ -66,17 +95,58 @@ export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player';
     // green nor the content below moves when the page lands.
     <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-busy="true" aria-label="Loading CoachHelm" data-skel={chained ? 'chained' : undefined} data-ch-code={coach ? 'CH-13402' : 'CH-13401'} data-canopy={phone ? undefined : ''}>
       {phone && <StripSkeleton coach={coach} phone />}
-      <header className={'ch-hl-h' + (phone ? '' : ' has-aside')} data-canopy-head="">
-        <Skeleton width={62} height={24} radius={12} />
-        <Skeleton width={190} height={44} radius={10} />
-        <Skeleton width={360} height={14} />
-        {!phone && (
+      {phone ? (
+        // The phone's intro at its loaded line heights: the eyebrow, the 31px title and the live line under the double rule.
+        <header className="ch-hl-h" data-canopy-head="">
+          <Line h={14.4} w={56} sh={11} />
+          <Line h={33.5} w={176} sh={28} r={8} />
+          <Line h={21.75} w="74%" sh={13} />
+        </header>
+      ) : (
+        <header className="ch-hl-h has-aside" data-canopy-head="">
+          <Skeleton width={62} height={24} radius={12} />
+          <Skeleton width={190} height={44} radius={10} />
+          <Skeleton width={360} height={14} />
           <div className="ch-hl-h__aside">
             <StripSkeleton coach={coach} phone={false} />
           </div>
-        )}
-      </header>
-      {coach ? (
+        </header>
+      )}
+      {phone ? (
+        coach ? (
+          <>
+            <div className="ch-hl-sk__pulse">
+              <Line h={22.8} w={128} sh={17} r={6} />
+              <RowsSkeleton rows={3} avatar={30} />
+            </div>
+            <div className="ch-hl-sk ch-hl-sk--coach">
+              <div className="ch-hl-sk__chips" aria-hidden="true">
+                {[132, 140, 120].map((w) => (
+                  <Skeleton key={w} width={w} height={40} radius={20} />
+                ))}
+              </div>
+              <PhoneFocusSkeleton />
+            </div>
+          </>
+        ) : (
+          <div className="ch-hl-sk ch-hl-sk--player">
+            <PhoneFocusSkeleton />
+            <div className="ch-hl-sk__col">
+              <Line h={22.8} w={170} sh={17} r={6} />
+              {[0, 1].map((i) => (
+                <div key={i} className="ch-hl-sk__row">
+                  <Skeleton width={8} height={8} radius={4} />
+                  <span>
+                    <Skeleton width="34%" height={10} />
+                    <Skeleton width="76%" height={13} />
+                  </span>
+                  <Skeleton width={34} height={13} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      ) : coach ? (
         <>
           <div className="ch-hl-sk__pulse">
             <Skeleton width={110} height={11} />
