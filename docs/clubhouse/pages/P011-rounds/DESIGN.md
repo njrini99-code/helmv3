@@ -58,7 +58,9 @@ thought, and check a round afterwards. Coach: read a player's round, hole by hol
   head: kicker as the eyebrow, the course in the heavy sans, tee facts, the
   score with its to par in forest ink; on the phone the screen's one green
   feature card, the course in the 600 sans), the five figures (flush on desktop;
-  between hairlines on the phone), the scorecard as two captioned nines, then
+  between hairlines on the phone), the scorecard as two captioned nines hung as
+  green boards of ivory plates (A2; on the phone a sticky label column and an edge
+  fade), then
   two columns (the picked hole's shots; the scoring distribution, the recap and
   the notes). One column below 900px; the figures wrap to three below 640px.
 - **Setup** (`.ch-rsu`, `chrs`): the green band with its steps (Course, Scorecard, Track) and Back, then two columns
@@ -150,8 +152,8 @@ under the double rule, and every round is a row between soft seams that deepens
 to the row press tint. A round's review opens on its green hero; the figures sit
 between hairlines; strokes gained, the scorecard, the hole, the distribution and
 the notes are sections under the double rule; the recap is a passage under a
-rule with its kicker in green, not a second green card. Kept as material: the
-hole strip, the scorecard's grid, the search, the grouping control, the hole
+rule labelled "Written by CoachHelm from N holes", not a second green card, on
+both widths. Kept as material: the hole strip, the scorecard's hung board (A2), the search, the grouping control, the hole
 steps and the notices. The route skeletons draw the same shapes at the phone's
 width.
 

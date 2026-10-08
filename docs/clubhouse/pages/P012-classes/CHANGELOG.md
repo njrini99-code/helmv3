@@ -1,5 +1,30 @@
 # P012 — Classes: changelog
 
+## 2026-10-08 — Premium pass (backlog)
+
+- **One timetable (A1):** "Your classes" takes one row of days (Mon to Fri; the
+  weekend only when a class meets then). Each class's days are cells under it: an
+  ink bar as long as the meeting, its start in the cell numeral; a day off is empty
+  paper. Today is one soft light band down the list. Replaces the 25 raised day
+  keys (D7). The header and cells stay drawing (aria-hidden); each class still
+  names when it meets (CH-12801).
+- **Overlaps where they happen (A2):** a day a team event meets a class is a
+  field-green band down the list, named in the header; the overlapped meeting
+  carries an amber notch. The side list names each class by its department key
+  (D1, no checkbox-like square).
+- **A read that shows its work (B1):** no reading state for the first 150ms; once
+  shown it holds 450ms; the rows found arrive one a beat, each tagged "Read
+  clearly", "Check the time" or "Check the days", under "Reading N classes · M to
+  check". Reduced motion and Animations off show them at once. One success haptic
+  when the imported classes are on the calendar. The read is still one server
+  answer: true streaming needs a streamed server action (not built).
+- **Findings:** a one-credit class is tone only on the term bar (D4); the sync
+  spinner stills under Animations off (D5); the empty state says "we’ll read it so
+  you can check each class" (D6); "This week" no longer collides with "Today"
+  (D9); the eyebrow is not tracked.
+- Not here: 44pt phone buttons (D2) and the red failure titles (D3) are the shared
+  Button and notice (shell builder).
+
 ## 2026-10-08 — States and native feel
 
 The states audit's Classes findings and the owner's native-feel pass, verified

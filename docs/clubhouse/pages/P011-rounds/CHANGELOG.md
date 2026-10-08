@@ -1,5 +1,52 @@
 # P011 — Rounds: changelog
 
+## 2026-10-08 — Premium pass (backlog)
+
+- **Full screen on the phone (D1):** the shot screen and setup call
+  `usePhoneImmersive` (the shell's bar goes inert) and hide the shell's top bar and
+  bell while they are up (`.ch-root:has(.ch-rt-q|.ch-rsu)`, so the server's first
+  paint is already full screen). The live `/golf/dashboard/rounds/new` route renders
+  the same `RoundSetup` and `RoundTracking`. One h1 per screen (D11): the shot
+  screen's is the course and hole, setup's names the screen, the phone library and
+  review leave it to the bar.
+- **On the course (owner board 3):** the shot screen in track mode on the phone:
+  deep green full bleed; Exit, the round and Card in glass pills; the hole strip
+  as plates; the drawn hole as the hero (solid line for each played shot, dashed to
+  the pin, numbered stops) with "Hole N / Par · yds" and "Shot N · kind / distance /
+  yards to the pin" set on it; the one-line shot log; one ivory entry card with the
+  real fields; Undo, Penalty and a big Next shot on the green. Every rule is
+  `useShotTracking`'s and `shot-entry-rules`' (undo asks first, D-70; plausibility;
+  the 15-stroke note; putting details; the miss grids). Desktop keeps its layout
+  with the same drawn hole.
+- **Course view (board 3b):** tapping the hole opens it full screen (a panel on
+  the desktop): the hole top to bottom with 50/100/150 rings from the pin scaled
+  from the hole's yardage, each shot numbered with its club and distance, and a
+  sheet of this hole's shots. ‹ › look at other holes (the round screen's finished
+  holes' shots; view only, never the scored hole). No GPS, satellite or course
+  geometry; "Your last 3" and "Team average" are left out (not loaded). The drawn
+  hole's geometry is `track/hole-geometry.ts`.
+- **The scorecard as a hung board (A2):** each nine a field-green board, hole
+  numbers debossed, figures on ivory plates, the Score row the largest numerals
+  (D8), Tot past a gutter, the whole cell the target (D9); on the phone a sticky
+  label column and an edge fade (D10). Missed at 3:1, N/A as "—" (D12).
+- **Round review:** the recap is a passage under a rule labelled "Written by
+  CoachHelm from N holes" (no Sparkles, D14) on both widths; any clause its own
+  strokes-gained or putts figures contradict is cut before it shows
+  (`recap-check.ts`, D13; no new AI call). "Select a hole" on the desktop (D17).
+- **One sun (A1):** the green feature cards (in progress, the review's phone hero,
+  the setup band) and the shot screen's field take the shell's global light
+  (`--ch-light-*`): sky from the sun's side, a sun-side rim, a leaning cast shadow.
+  Never on figures.
+- **Library and posting:** a month's low is an 18-hole figure and nine-hole rows
+  say so (D2); the ribbon draws under par red, over par at 3:1, Even in the legend,
+  a qualifier as a gilt outline, with an honest caption and ink-500 labels
+  (D3–D5); played holes on the round card show the number over the score (D15); the
+  best round keeps its whole course name (D16); the desktop score box keeps one
+  width (D18). Submitting, posted and didn't-submit are a modal dialog over a 0.96
+  green with an opaque card and focus on the title (D6, D7). The spinner stops
+  under Animations off (D20); the bar's blur has its prefix (D21).
+- Not here: B3 (D-70 stands); 44pt shared buttons and red failure titles (shell).
+
 ## 2026-10-08 — States and native feel
 
 The states audit's Rounds findings and the owner's native-feel pass, verified in
