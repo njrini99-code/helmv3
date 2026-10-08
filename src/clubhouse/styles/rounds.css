@@ -2127,6 +2127,10 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-penalty {
   background: #75653f;
 }
 
+/* A filled under-par disc carries an ivory numeral: the deeper filled red holds it at 4.5:1. */
+html[data-fw-theme='dark'] .ch-rd-strip span.is-under {
+  background: var(--ch-score-under-fill);
+}
 html[data-fw-theme='dark'] .ch-rd-sc__date {
   color: var(--ch-green-700);
 }
