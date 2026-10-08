@@ -205,5 +205,15 @@
     "note": "383 local Chromium/WebKit cases; partial visual rubric; physical iPhone, authenticated performance and full manual state acceptance remain open",
     "allPages": true,
     "pages": []
+  },
+  {
+    "file": "NATIVE_FEEL_PERF_AUDIT_2026-10-08.md",
+    "title": "Native feel and performance audit (phone, measured)",
+    "kind": "audit",
+    "date": "2026-10-08",
+    "scope": "Coach phone screens on the iPhone 17 Pro simulator against the Vercel preview: frame-timed transitions, gestures, scroll, and the production query and RLS cost behind them.",
+    "status": "in_progress",
+    "note": "Tab switches 715-1350 ms with full skeletons; golf_shots/golf_holes RLS re-checked per row (553 ms vs 4.7 ms raw). Fix plan inside.",
+    "allPages": true
   }
 ]
