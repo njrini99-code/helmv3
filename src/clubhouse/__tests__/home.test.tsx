@@ -350,8 +350,11 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
 
   it('20103 Today: a timeline, with overlaps marked and each row opening its event', () => {
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
-    const rows = document.querySelectorAll('.ch-hm-tl__r');
-    expect(rows).toHaveLength(4);
+    // The rail under the day card: the rest of today (the card's 3:30 left out), the sunset, then Thursday's qualifier.
+    const rows = [...document.querySelectorAll('.ch-hm-tl__r')].map((r) => r.textContent);
+    expect(rows).toHaveLength(5);
+    expect(rows[3]).toMatch(/Sunset/);
+    expect(rows[4]).toMatch(/Qualifier/);
     expect(screen.getAllByText('Overlaps another event').length).toBe(2);
     expect(screen.getByRole('link', { name: /1:1 with Jonah/ }).getAttribute('href')).toBe('/golf/dashboard/calendar?date=2026-10-14&event=a2');
   });
