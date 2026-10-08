@@ -3,7 +3,7 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Flag, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
 import { distribution, type ChReviewHole, type ChRoundReview } from '../../data/round-review-shape';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
@@ -18,6 +18,7 @@ import { Swap } from '../../ui/Swap';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { dateOf, TeeSwatch, TYPE_LABEL } from './parts';
+import { checkedRecap } from './recap-check';
 import { openedFromLibrary } from './return-state';
 
 const LIE_LABEL: Record<string, string> = { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', penalty: 'Penalty', other: 'Other', tee: 'Tee' };
@@ -108,7 +109,13 @@ function StrokesGained({ review: r, onRetry, retrying }: { review: ChRoundReview
 }
 
 function Mark({ v }: { v: boolean | null }) {
-  if (v == null) return <i className="ch-rv-yn is-na" role="img" aria-label="Not applicable" />;
+  // D12: Not applicable is the doctrine's dash, not a rule that reads as "_".
+  if (v == null)
+    return (
+      <i className="ch-rv-yn is-na" role="img" aria-label="Not applicable">
+        —
+      </i>
+    );
   return <i className={'ch-rv-yn' + (v ? ' is-y' : ' is-n')} role="img" aria-label={v ? 'Hit' : 'Missed'} />;
 }
 
@@ -291,6 +298,9 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
   const coach = isCoachView(r);
   const hole = r.holes.find((h) => h.n === sel) ?? r.holes[0] ?? null;
   const dist = useMemo(() => distribution(r.holes), [r.holes]);
+  // D13: the stored recap, less any sentence its own figures contradict (recap-check.ts).
+  const recap = useMemo(() => checkedRecap(r), [r]);
+  const holesScored = r.holes.filter((h) => h.score != null).length || r.holesPlayed;
   const maxD = Math.max(1, ...dist.map((d) => d.count));
   const back = reviewBack(r);
   // Rule 8: a player's review opened from the library goes back in history, so the library returns with its search and its place
@@ -345,7 +355,8 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
       <header className="ch-rv-hero" data-canopy-head={phone ? undefined : ''}>
         <div className="ch-rv-hero__l">
           <span className="ch-rv-hero__k">{kicker}</span>
-          <h1 id="ch-rv-title">{r.course}</h1>
+          {/* D11: on the phone the bar's title is the screen's h1; the course is the hero's heading under it. */}
+          {phone ? <h2 id="ch-rv-title">{r.course}</h2> : <h1 id="ch-rv-title">{r.course}</h1>}
           {(r.tee || r.teeFacts) && (
             <span className="ch-rv-hero__m">
               <TeeSwatch color={r.teeColor} />
@@ -395,7 +406,7 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
               <div className="ch-rv-card__h">
                 <div>
                   <h2 id="ch-rv-card-h">Scorecard</h2>
-                  <span>Tap a hole to see every shot</span>
+                  <span>{phone ? 'Tap a hole to see every shot' : 'Select a hole to see every shot'}</span>
                 </div>
               </div>
               <div className="ch-rv-cardw">
@@ -428,13 +439,16 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
                   ))}
                 </div>
               </section>
-              {r.recap && (
+              {recap && (
+                // C2: a passage under a rule, labelled in words for who wrote it (no sparkle, D14).
                 <section className="ch-rv-recap" aria-labelledby="ch-rv-recap-k">
-                  <span className="ch-rv-recap__k" id="ch-rv-recap-k">
-                    <Icon icon={Sparkles} size={14} />
+                  <h3 className="ch-rv-recap__k" id="ch-rv-recap-k">
                     Round recap
+                  </h3>
+                  <p>{recap}</p>
+                  <span className="ch-rv-recap__by">
+                    Written by CoachHelm from {holesScored} hole{holesScored === 1 ? '' : 's'}
                   </span>
-                  <p>{r.recap}</p>
                 </section>
               )}
               {r.notes && (
