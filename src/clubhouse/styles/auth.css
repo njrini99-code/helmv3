@@ -1543,7 +1543,7 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
   background: var(--ch-champagne-500);
   transform: scaleX(0);
   transform-origin: left center;
-  animation: chAuAuto var(--ch-au-auto, 3600ms) linear forwards;
+  animation: chAuAuto var(--ch-au-auto) linear forwards;
   pointer-events: none;
 }
 .ch-au-wl-auto[data-reduced] {

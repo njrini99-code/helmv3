@@ -1939,8 +1939,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
       inset 0 1px 0 var(--ch-light-rim),
       inset var(--ch-light-rim-x) 0 0 var(--ch-light-rim-soft),
       0 0 0 1px rgb(28 25 18 / 0.05),
-      var(--ch-light-drift-near) 1px 2px rgb(16 40 28 / 0.08),
-      var(--ch-light-drift) 22px 44px -22px rgb(8 34 22 / 0.34);
+      var(--ch-elevation-cast);
   }
   .ch-hb[data-canopy] .ch-hb-pass.is-next .ch-hb-pass__main,
   .ch-hb[data-canopy] .ch-hb-pass.is-next .ch-hb-pass__stub {
@@ -1967,7 +1966,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     box-shadow:
       inset 0 1px 0 var(--ch-light-rim),
       0 0 0 1px rgb(255 255 255 / 0.06),
-      var(--ch-light-drift) 22px 44px -22px rgb(0 0 0 / 0.6);
+      var(--ch-elevation-cast);
   }
   :where(html[data-fw-theme='dark']) .ch-hb[data-canopy] .ch-hb-pass.is-next .ch-hb-pass__stub {
     border-left-color: rgb(255 255 255 / 0.14);
