@@ -144,7 +144,7 @@ Status: DEFINED
 
 Home has no saves, so a slow save (10702) and a save refused offline (10703) never fire here. What applies is the shell's: the offline banner (10701), and Try again on a notice while offline, which says so and asks nothing (10704; proved on Home's own notices by the 21402 test). Following a link while offline is the browser's, not tested here.
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
 
 ## 08 — Permission / authorization
 
@@ -235,7 +235,7 @@ shell's: the page crossfade, the press on keys, sheets and skeletons (11601 to
 | 21601 | CH-2601 | `PAGING_THE_LATEST_ROUND` | Paging the latest round |
 | 21602 | CH-2602 | `HOVERING_OR_PRESSING_A_LEADERBOARD_ROW` | Hovering or pressing a leaderboard row |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -249,7 +249,7 @@ Home's catalogued haptics: a selection tick when paging the latest round (21701)
 | 21702 | CH-2702 | `NEW_EVENT` | New event (button or the N key) |
 | 21703 | — | `TAPS_FOLLOW_THE_GRAMMAR` | Home's taps follow the haptic grammar: a selection tick for paging the latest round, opening a round's card, choosing a quick event type and choosing the Scoring window, the light tap for New event (button or N), Add event and, on the phone, Message coach, and nothing for Message team; Home makes no change, so none of its own controls fires a success or error haptic. |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
 
 ## 18 — Accessibility
 

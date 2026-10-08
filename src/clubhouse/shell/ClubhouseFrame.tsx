@@ -16,11 +16,12 @@ import { TopBar } from './TopBar';
 import { OfflineBanner } from './OfflineBanner';
 import { TabBar } from './TabBar';
 import { RouteFrame } from './RouteFrame';
+import { PullToRefresh } from './PullToRefresh';
 import { teamSwitchFor } from './team-switch';
 import { NotRebuilt } from './NotRebuilt';
 import { ClubhouseMarker } from './context';
 import { CrumbProvider } from './crumbs';
-import { PhoneChromeProvider, usePhoneChromeState } from './phone-chrome';
+import { PhoneChromeProvider, PhoneUnderlay, usePhoneChromeState } from './phone-chrome';
 import '../styles/tokens.css';
 import '../styles/base.css';
 import '../styles/ui.css';
@@ -91,6 +92,8 @@ export function ClubhouseFrame({
                   </div>
                 </div>
                 <TabBar pathname={pathname} shell={shell} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null }} teamSwitch={teamSwitch} />
+                {/* The iPhone app's pull to refresh (CH-1909); nothing in a browser. */}
+                <PullToRefresh pathname={pathname} />
               </CrumbProvider>
             </ToastProvider>
           </FrameRoot>
@@ -114,6 +117,8 @@ function FrameRoot({ motionOff, fullScreen, children }: { motionOff: boolean; fu
       data-phone-hero={hero ? '' : undefined}
     >
       {children}
+      {/* The dim over the page while a phone screen is pushed, and what draws the page back with it (CH-1618). */}
+      <PhoneUnderlay />
     </div>
   );
 }

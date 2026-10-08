@@ -151,7 +151,7 @@ Offline, no write is sent: the shell's toast names what did not happen ("Couldn'
 | 140703 | CH-14916 | `AN_UPLOAD_IS_REPEATED` | An upload is repeated |
 | 140704 | CH-14917 | `A_FILE_IS_DRAGGED_OVER_A_PROSPECTS` | A file is dragged over a prospect's documents (desktop) |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
 
 ## 08 — Permission / authorization
 
@@ -263,7 +263,7 @@ is no first-paint rise; reduced motion and Animations off remove all of it
 | 141603 | CH-14603 | `PICKING_A_STAGE_IN_THE_PIPELINE_OR` | Picking a stage in the pipeline, or letting it go |
 | 141604 | CH-14604 | `PRESSING_A_ROW_OR_A_KEY_ON` | Pressing a row or a key on the phone |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -277,7 +277,7 @@ v2 grammar (D-70): selection when a stage is picked as the filter or as a prospe
 | 141702 | CH-14702 | `DELETE_PROSPECT_IS_TAPPED` | Delete prospect is tapped |
 | 141703 | CH-14703 | `STORAGE_TURNS_A_FILE_DOWN` | Storage turns a file down (CH-14107, CH-14108) |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
 
 ## 18 — Accessibility
 

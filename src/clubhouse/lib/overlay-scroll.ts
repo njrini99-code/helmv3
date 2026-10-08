@@ -21,7 +21,11 @@ export function acquireOverlayScroll(doc: Document = document): () => void {
     const htmlOverflow = html.style.overflow;
     const gap = Math.max(0, win.innerWidth - html.clientWidth);
     const padding = parseFloat(win.getComputedStyle(body).paddingRight) || 0;
-    const canvases = Array.from(doc.querySelectorAll<HTMLElement>('.ch-canvas')).map((el) => ({ el, overflow: el.style.overflow, top: el.scrollTop, left: el.scrollLeft }));
+    // Only a canvas that scrolls (the desktop's) is locked. The phone's scrolls the window and must not become a
+    // scroller itself, or the sticky top bar inside it would stick to its top, a screen's height above the view.
+    const canvases = Array.from(doc.querySelectorAll<HTMLElement>('.ch-canvas'))
+      .filter((el) => win.getComputedStyle(el).overflowY !== 'visible')
+      .map((el) => ({ el, overflow: el.style.overflow, top: el.scrollTop, left: el.scrollLeft }));
     // Freeze at the current visual position. Unlike overflow alone this also stops
     // iOS document rubber-banding behind fixed sheets, without translating the page.
     body.style.position = 'fixed';
@@ -29,7 +33,9 @@ export function acquireOverlayScroll(doc: Document = document): () => void {
     body.style.left = `${-x}px`;
     body.style.width = '100%';
     body.style.boxSizing = 'border-box';
-    body.style.overflow = 'hidden';
+    // Clipped, not hidden: a hidden body would be the scroller the phone's sticky top bar sticks to, and with the
+    // page frozen above the view the bar would leave the screen behind a sheet or a pushed screen (CH-1618).
+    body.style.overflow = win.CSS?.supports?.('overflow', 'clip') ? 'clip' : 'hidden';
     if (gap) body.style.paddingRight = `${padding + gap}px`;
     html.style.overflow = 'hidden';
     canvases.forEach(({ el }) => { el.style.overflow = 'hidden'; });

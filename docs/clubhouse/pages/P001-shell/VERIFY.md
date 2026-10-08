@@ -291,3 +291,33 @@ keeps representative viewport/browser evidence; the complete state/opener
 ledger and review limitations are in the
 [premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
 Captured states are not all visually approved.
+
+## 2026-10-08 — The approved motion set (CH-1618 to CH-1622, CH-1709, CH-1909)
+
+Browser observations only: WebKit through Playwright at 390 by 844 with touch,
+and 1440 for the desktop canvas, sampled once a frame against the dev server.
+Nothing here was seen on an iPhone.
+
+- CH-1618: on Messages, Roster and Recruiting the bars, the tab bar and the
+  list draw back to −94px as the screen lands, within a pixel of 0.24 times its
+  travel on every frame, the scrim on the same curve. A pop at about 160ms
+  reverses both from there. A Back with `hasUAVisualTransition` (patched in)
+  clears the screen, the page and the scrim in one frame. Details over a thread
+  draws the thread back and veils it. A sheet opened from a pushed screen keeps
+  its place (left 0, no moved ancestor). Reduced motion and Animations off hold
+  the page still. Scrolled 300px, the top bar stays at the top (before: −300px).
+- CH-1619: a page replacing Roster's route skeleton after a navigation went
+  from opacity 0 to 1 in about 100ms; none on a first paint or with reduced
+  motion.
+- CH-1620: held, the thumb grew from 19 to 22.8px wide from its resting edge
+  (27 to 32.4px in Settings) and settled round on release; none with reduced
+  motion or Animations off.
+- CH-1621: synthetic fractional wheel steps eased; whole-pixel steps passed
+  through untouched, and stopped a glide where it was.
+- CH-1622, CH-1709, CH-1909: simulated touches with the app's body class: a
+  220px pull reached 108px, turned the spinner at 64px, sent one refresh, held
+  at 52px and sprang home once the read landed. Short, upward and Safari pulls
+  did nothing.
+
+Open on a device: the WebView's own bounce under a pull, the medium tap, the
+edge-swipe Back, a real trackpad and mouse, and a live route's `loading.tsx`.

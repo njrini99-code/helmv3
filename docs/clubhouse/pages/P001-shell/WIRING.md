@@ -53,8 +53,8 @@ Tests: src/clubhouse/__tests__/shell.test.tsx, team-switch.test.tsx, gate.test.t
 
 ## Actions
 
-Each action's record is in `config/clubhouse/pages/P001-shell.json` (`actions`); the whole list is
-in `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`.
+Each action's record is in `config/clubhouse/pages/P001-shell.json` (`actions`);
+the whole list is in `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`.
 
 | Action | Control | Handler | Service | Data | Contracts |
 | --- | --- | --- | --- | --- | --- |
@@ -144,13 +144,18 @@ None.
 
 ## Impact notes
 
-- `useAction` is every page's write path. A change to its copy, haptics or reporting changes every
-  page; the shell tests (10901, 11402, 12301, 10702, 10703) guard it.
+- `useAction` is every page's write path. A change to its copy, haptics or
+  reporting changes every page; the shell tests (10901, 11402, 12301,
+  10702, 10703) guard it.
 - `RouteErrorBoundary` is shared with Fairway. Only its view is Clubhouse's.
-- `setActiveTeam` is shared with Fairway's `TeamSwitcher`. Its refusals (`unauthenticated`, `switching-not-permitted`,
-  `unauthorized`) are mapped to a sentence in `team-switch.ts`; a new reason shows the default hint until it is mapped.
-- With `HELM_CLUBHOUSE_TEAMS` set, `isClubhouseFor` reads the active team: a head coach who switches to a team that is not
-  listed gets Fairway for it (the allowlist, Q-131).
-- The More sheet's `max-height` and scroll (`shell.css`) apply to every role's sheet.
-- `nav.ts`'s `CH_REBUILT_ROUTES` decides what each role reaches; `clubhouse:check` keeps it and
-  `SCREENS.md` in step.
+- `setActiveTeam` is shared with Fairway's `TeamSwitcher`. Its refusals
+  (`unauthenticated`, `switching-not-permitted`, `unauthorized`) are mapped to a
+  sentence in `team-switch.ts`; a new reason shows the default hint until it is
+  mapped.
+- With `HELM_CLUBHOUSE_TEAMS` set, `isClubhouseFor` reads the active team: a
+  head coach who switches to a team that is not listed gets Fairway for it (the
+  allowlist, Q-131).
+- The More sheet's `max-height` and scroll (`shell.css`) apply to every role's
+  sheet.
+- `nav.ts`'s `CH_REBUILT_ROUTES` decides what each role reaches;
+  `clubhouse:check` keeps it and `SCREENS.md` in step.

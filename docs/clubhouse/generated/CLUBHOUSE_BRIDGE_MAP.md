@@ -104,7 +104,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Page | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | Total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P001 | 3 | 2 | 1 | 5 |  | 14 | 4 | 3 | 1 |  |  |  | 1 | 2 |  | 17 | 8 | 15 | 1 | 3 | 1 | 3 | 1 | 1 |  | 86 |
+| P001 | 3 | 2 | 1 | 5 |  | 14 | 5 | 3 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 15 | 1 | 3 | 1 | 3 | 1 | 1 |  | 93 |
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
 | P003 | 2 | 1 | 3 | 8 | 2 | 18 | 1 | 6 | 1 |  | 1 | 3 | 1 | 3 |  | 3 | 4 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 69 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
@@ -153,6 +153,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10702 | CH-1902 | 07 Network / offline | `A_SAVE_TAKES_LONGER_THAN_5_SECONDS` | implemented | A save takes longer than 5 seconds (forms, switches and CoachHelm settings) |
 | 10703 | CH-1903 | 07 Network / offline | `SOMEONE_SAVES_WHILE_OFFLINE` | implemented | Someone saves while offline |
 | 10704 | CH-1905 | 07 Network / offline | `SOMEONE_PRESSES_TRY_AGAIN_ON_A_NOTICE` | implemented | Someone presses Try again on a notice, or on a page that didn't load, while offline |
+| 10705 | CH-1909 | 07 Network / offline | `IN_THE_IPHONE_APP_PULLING_A_PHONE` | implemented | In the iPhone app, pulling a phone page down from its top |
 | 10801 |  | 08 Permission / authorization | `CLUBHOUSE_GATE` | implemented | Clubhouse renders only for a coach or a player, and only with golf_clubhouse_ui on (isClubhouseFor); everyone else gets the existing GolfHelm pages, and held server actions refuse through the same check. |
 | 10802 |  | 08 Permission / authorization | `ROLE_SCOPED_NAV` | implemented | Each role sees only its own navigation (D-66), and an address not rebuilt for the viewer's role shows the not-rebuilt notice inside the Clubhouse frame, never another role's page or a Fairway page. |
 | 10803 |  | 08 Permission / authorization | `TEAM_SWITCH_IS_A_HEAD_COACHS` | implemented | Only a head coach staffed on more than one team is offered the team switch (canSwitchTeams and two or more teams), the same gate setActiveTeam enforces: a coach on one team, an assistant on several, and a player see the team as a plain label, and a forged or unstaffed team id is refused by the server, so the switch can never be wider than the server's answer. |
@@ -177,6 +178,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 11615 | CH-1615 | 16 Micro animation | `A_SEGMENTED_CONTROLS_CHOICE_CHANGES` | implemented | A segmented control's choice changes |
 | 11616 | CH-1616 | 16 Micro animation | `CONTENT_SWAPS_INSIDE_A_FIXED_FRAME` | implemented | Content swaps inside a fixed frame (a tab's panel, a chart's mode, a window's figures, a pager) |
 | 11617 | CH-1617 | 16 Micro animation | `PRESSING_A_SEGMENTED_CONTROLS_OPTION_OR_A` | implemented | Pressing a segmented control's option or a pill that isn't on, or the kit's feature card as a link or a button |
+| 11618 | CH-1618 | 16 Micro animation | `THE_PAGE_BENEATH_A_PHONE_SCREEN_AS` | implemented | The page beneath a phone screen as the screen is pushed or popped (a thread, details, a profile, a prospect, a read) |
+| 11619 | CH-1619 | 16 Micro animation | `A_PAGE_ARRIVES_IN_PLACE_OF_ITS` | implemented | A page arrives in place of its route skeleton after a navigation |
+| 11620 | CH-1620 | 16 Micro animation | `A_FINGER_OR_THE_POINTER_HOLDS_A` | implemented | A finger or the pointer holds a switch |
+| 11621 | CH-1621 | 16 Micro animation | `SCROLLING_THE_DESKTOP_CANVAS_WITH_A_MAC` | implemented | Scrolling the desktop canvas with a Mac trackpad |
+| 11622 | CH-1622 | 16 Micro animation | `PULLING_A_PHONE_PAGE_DOWN_FROM_ITS` | implemented | Pulling a phone page down from its top, in the iPhone app (CH-1909) |
 | 11701 | CH-1701 | 17 Haptic | `CHANGING_TABS` | implemented | Changing tabs (not tapping the tab they're on) |
 | 11702 | CH-1702 | 17 Haptic | `ANY_SAVE_OR_SEND_LANDS` | implemented | Any save or send lands |
 | 11703 | CH-1703 | 17 Haptic | `ANY_SAVE_OR_SEND_FAILS` | implemented | Any save or send fails |
@@ -185,6 +191,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 11706 | CH-1706 | 17 Haptic | `THE_CONNECTION_DROPS` | implemented | The connection drops |
 | 11707 | CH-1707 | 17 Haptic | `PICKING_ANOTHER_TEAM_IN_THE_SWITCHER` | implemented | Picking another team in the switcher |
 | 11708 | CH-1708 | 17 Haptic | `A_FINGER_SCRUBS_A_SLIDER` | implemented | A finger scrubs a slider |
+| 11709 | CH-1709 | 17 Haptic | `A_PULL_TO_REFRESH_PASSES_ITS_TRIGGER` | implemented | A pull to refresh passes its trigger (the iPhone app, CH-1909) |
 | 11801 | CH-1801 | 18 Accessibility | `THE_FIRST_TAB_ON_ANY_PAGE_OFFERS` | implemented | The first Tab on any page offers "Skip to content", which jumps past the navigation to the page |
 | 11802 | CH-1802 | 18 Accessibility | `THE_PHONE_MORE_SHEET_IS_MODAL_FOCUS` | implemented | The phone More sheet is modal: focus moves in without scrolling, Tab stays inside, Esc closes it and focus returns to More without scrolling. The underlying page stays stationary until the full exit completes |
 | 11803 | CH-1803 | 18 Accessibility | `THE_CURRENT_PAGE_IS_MARKED_IN_THE` | implemented | The current page is marked in the sidebar and tab bar; the sidebar and its navigation are named landmarks; breadcrumbs mark the current page |

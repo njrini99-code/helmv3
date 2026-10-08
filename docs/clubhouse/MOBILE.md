@@ -41,7 +41,7 @@ phone is **iPhone only, portrait, light theme** (D-22).
 | Swipe-back guard: no edge swipe while a sheet or dialog is open | `NativeSwipeBackBridge` in `ClubhouseShell`; an overlay is `<dialog open>`, or `role="dialog"` with `data-state="open"` | done |
 | Sign-out stops this phone getting the old account's pushes | `teardownDeviceTokenOnSignOut()` first in `writes.signOut` | done |
 | Push permission prompt (soft ask before the iOS dialog) | Fairway's version can't be reused; needs a Clubhouse sheet | waits for the foundation design |
-| Pull to refresh (Home, Roster, Messages list, Calendar agenda) | `router.refresh()`, light haptic at the threshold | waits for the foundation design |
+| Pull to refresh (every phone page, at its top; the app only, Safari keeps its own) | `PullToRefresh` in the shell: `router.refresh()`, the medium haptic at the trigger (owner-approved 2026-10-08, CH-1909) | done |
 | Keyboard: anything pinned to the bottom (composer, sheet footer) lifts by `var(--keyboard-height)` and carries `data-fw-keyboard-aware` | the page | per page |
 
 A Clubhouse test (`src/clubhouse/__tests__/native.test.tsx`) pins the done

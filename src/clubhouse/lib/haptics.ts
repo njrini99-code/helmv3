@@ -8,7 +8,8 @@ import { areHapticsEnabled } from '@/lib/utils/haptics-pref';
  * When each fires follows the v2 design (D-70); every other tap is silent.
  *   select  - v2 selection: tabs, segmented controls, switches, pickers, choices, checkboxes
  *   press   - v2 light: primary buttons (and their shortcut), a long press opening a sheet
- *   commit  - v2 medium: only a sheet settling at a stop (dragged shut), or a shot logged
+ *   commit  - v2 medium: only a sheet settling at a stop (dragged shut), a shot logged, or the app's pull to refresh
+ *             passing its trigger (CH-1709)
  *   success - Post, Save, Import, Publish, Send, Share, Assign, Got it: a write that landed
  *   warning - Remove, Delete, Discard, Dismiss, and a refused retry while offline
  *   error   - a write, import or sync that failed

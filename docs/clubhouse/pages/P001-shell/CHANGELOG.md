@@ -1,5 +1,61 @@
 # P001 — Shell: changelog
 
+## 2026-10-08 — The page under a screen, a skeleton's reveal, pull to refresh
+
+Approved by the owner on 2026-10-08.
+
+- **The page under a pushed screen (CH-1618).** As a phone screen slides in,
+  the page it covers (the top bar, the tab bar and the page) draws back about a
+  quarter of the width and dims under a light warm scrim, on the screen's own
+  smooth spring, and comes back with it over the base ease-out as it pops. The
+  scrim's animation drives the page frame by frame, so the two edges never part,
+  and a pop that cuts a push short reverses both from where they are. A screen
+  with another pushed over it does the same. A Back that iOS animated itself
+  puts the page back at once (CH-1908). Reduced motion and Animations off keep
+  the page still. The screens are fixed inside the page, and a transform on any
+  of their ancestors would pin them to it, so those wrappers stay put and their
+  other children move (`PhoneUnderlay`, `usePhonePushed`).
+- **The top bar under a sheet or a screen.** On a phone page scrolled down,
+  opening a sheet or pushing a screen took the green top bar off the screen
+  until it closed: the scroll lock made the body a scroller, and the sticky bar
+  stuck to it, a scroll's height above the view. The lock now clips the body
+  instead, and leaves the phone's canvas alone (lib/overlay-scroll.ts).
+- **A page over its skeleton (CH-1619).** A page that arrives in place of its
+  route skeleton after a navigation fades in over the press beat, opacity only.
+  The fade waits for the page's first paint. Never on the first paint of a
+  server-rendered page, never again on a refresh, and not with reduced motion or
+  Animations off (`RouteFrame`).
+- **Pull to refresh in the iPhone app (CH-1909, CH-1622, CH-1709).** At the top
+  of a phone page a downward pull brings the parchment sheet down off the green
+  chassis with UIKit's rubber band, the spinner's spokes coming in as it goes.
+  Past 64px the medium tap fires once and the page reads again; let go, the
+  sheet rests at the spinner and springs home when the read has landed. There is
+  no native refresh plugin in the app, so the page draws its own; mobile Safari
+  keeps its own pull (`PullToRefresh`).
+
+Checked in WebKit at 390 (touch), sampled each frame:
+
+- **Push.** The page lands at −94px (24% of 390). On every sampled frame it sits
+  within a pixel of 0.24 times the screen's travel, with the scrim on the same
+  curve (screen at 170px, page at −53px, scrim 0.564).
+- **Pop.** The page returns on the screen's ease-out. Popped mid-push at about
+  160ms, both reverse from where they are (screen at 129px, page at −63px).
+- **A Back iOS animated.** The screen is gone, the page at 0 and the scrim at 0
+  in the same frame.
+- **Nested.** Details over a thread: the thread draws back to −94px and its veil
+  reaches 1.0 in step.
+- **Scrolled 300px.** The top bar stays at the top through push and pop; before,
+  it sat at −300px.
+- **Reduced motion and Animations off.** The page holds at 0 and the screen is
+  in place on the first frame.
+- **A page over its skeleton.** Roster's page was at opacity 0 on its first
+  frame, 0.86 35ms later and 1 by 100ms. With reduced motion, and on a first
+  paint, there was no fade.
+- **Pull to refresh.** Simulated touches with the app's body class. A 220px pull
+  followed the finger with resistance to 108px, turned the spinner at 64px, sent
+  one refresh, held at 52px and sprang home once the read landed. A pull short
+  of the trigger, a first move upward and Safari did nothing.
+
 ## 2026-10-08 — The offline refusal writes "you’re offline"
 
 The shared action hook's offline toast (CH-1903, `lib/use-action.ts`) ends

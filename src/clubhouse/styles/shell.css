@@ -33,6 +33,10 @@
 .ch-frame-route:focus {
   outline: none;
 }
+/* The pushed-screen scrim (CH-1618) is phone only: desktop never pushes a screen. */
+.ch-pscrim {
+  display: none;
+}
 
 /* Skip to content: off screen until it is focused (the first Tab). */
 .ch-skip {
@@ -1430,6 +1434,31 @@ button.ch-more__row[disabled] {
   body.keyboard-open .ch-pscreen[data-fw-keyboard-aware] {
     padding-bottom: var(--keyboard-height);
   }
+  /* The page beneath a pushed screen dims as it draws back (CH-1618): PhoneUnderlay runs this scrim's opacity on the
+     screen's own curves. It lies over the shell's bars and under every screen, and taps pass through it. */
+  .ch-pscrim {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--ch-z-sticky) + 5);
+    display: block;
+    background: rgb(20 18 12 / 0.1);
+    pointer-events: none;
+  }
+  /* A screen with another pushed over it dims the same way: in on the push's spring, back on the pop's ease-out. */
+  .ch-pscreen::after {
+    position: absolute;
+    inset: 0;
+    z-index: var(--ch-z-overlay);
+    background: rgb(20 18 12 / 0.1);
+    opacity: 0;
+    pointer-events: none;
+    content: '';
+    transition: opacity var(--ch-dur-base) var(--ch-ease);
+  }
+  .ch-pscreen[data-ch-covered]::after {
+    opacity: 1;
+    transition: opacity var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  }
   .ch-notyet {
     min-height: 60dvh;
     padding: 24px 16px;
@@ -1757,6 +1786,10 @@ html[data-ch-ua-pop]:has([data-ui='clubhouse'])::view-transition-group(*),
 html[data-ch-ua-pop]:has([data-ui='clubhouse'])::view-transition-old(*),
 html[data-ch-ua-pop]:has([data-ui='clubhouse'])::view-transition-new(*) {
   animation: none !important;
+}
+/* The same Back uncovers a screen at once (CH-1618): iOS already showed it undimmed under the finger. */
+html[data-ch-ua-pop] .ch-pscreen::after {
+  transition: none;
 }
 
 /* -- A nav tap before its page arrives (LinkPending) -----------------------------------------------------------------
@@ -2199,5 +2232,121 @@ html[data-ch-ua-pop]:has([data-ui='clubhouse'])::view-transition-new(*) {
   }
   [data-ui='clubhouse'] .ch-pbar__text[aria-disabled='true'] {
     color: var(--ch-on-green-ink-muted);
+  }
+}
+
+/* Pull to refresh in the iPhone app (shell/PullToRefresh.tsx; CH-1909, CH-1622). Pulled down from under the bar, the
+   parchment sheet shows the green chassis behind it: this band, the bar's own green, its lower edge riding the sheet's
+   top with the sheet's rounded lip, and the spinner in the gap. Only the app draws it, hidden until a pull begins. */
+.ch-ptr {
+  display: none;
+}
+@media (max-width: 820px) {
+  .ch-ptr {
+    position: fixed;
+    top: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
+    right: 0;
+    left: 0;
+    z-index: calc(var(--ch-z-sticky) - 1);
+    display: block;
+    height: 180px;
+    background: var(--ch-phone-bar-bg);
+    translate: 0 -180px;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .ch-root[data-phone-hero] .ch-ptr {
+    background: var(--ch-green-800);
+  }
+  .ch-ptr[data-state='pull'],
+  .ch-ptr[data-state='spin'] {
+    visibility: visible;
+  }
+  .ch-ptr::after {
+    position: absolute;
+    right: 0;
+    bottom: -16px;
+    left: 0;
+    height: 16px;
+    background: inherit;
+    -webkit-mask: radial-gradient(16px at 16px 16px, transparent 97%, #000 100%) left top / 16px 16px no-repeat,
+      radial-gradient(16px at 0 16px, transparent 97%, #000 100%) right top / 16px 16px no-repeat;
+    mask: radial-gradient(16px at 16px 16px, transparent 97%, #000 100%) left top / 16px 16px no-repeat,
+      radial-gradient(16px at 0 16px, transparent 97%, #000 100%) right top / 16px 16px no-repeat;
+    content: '';
+  }
+  /* UIActivityIndicatorView's eight spokes, in the bar's ivory: they come in one by one as the sheet comes down (set
+     from script), then turn in eighths with a fading tail while the page re-reads. */
+  .ch-ptr__spin {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 26px;
+    height: 26px;
+    translate: -50% 13px;
+  }
+  .ch-ptr__spin > i {
+    position: absolute;
+    top: 0;
+    left: 11.75px;
+    width: 2.5px;
+    height: 7px;
+    border-radius: 2px;
+    background: var(--ch-on-green-ink);
+    opacity: 0;
+    transform-origin: 1.25px 13px;
+  }
+  .ch-ptr__spin > i:nth-child(2) {
+    rotate: 45deg;
+  }
+  .ch-ptr__spin > i:nth-child(3) {
+    rotate: 90deg;
+  }
+  .ch-ptr__spin > i:nth-child(4) {
+    rotate: 135deg;
+  }
+  .ch-ptr__spin > i:nth-child(5) {
+    rotate: 180deg;
+  }
+  .ch-ptr__spin > i:nth-child(6) {
+    rotate: 225deg;
+  }
+  .ch-ptr__spin > i:nth-child(7) {
+    rotate: 270deg;
+  }
+  .ch-ptr__spin > i:nth-child(8) {
+    rotate: 315deg;
+  }
+  .ch-ptr[data-state='spin'] .ch-ptr__spin {
+    animation: ch-ptr-turn calc(var(--ch-dur-base) * 4) steps(8) infinite;
+  }
+  .ch-ptr[data-state='spin'] .ch-ptr__spin > i:nth-child(1) {
+    opacity: 1;
+  }
+  .ch-ptr[data-state='spin'] .ch-ptr__spin > i:nth-child(8) {
+    opacity: 0.89;
+  }
+  .ch-ptr[data-state='spin'] .ch-ptr__spin > i:nth-child(7) {
+    opacity: 0.78;
+  }
+  .ch-ptr[data-state='spin'] .ch-ptr__spin > i:nth-child(6) {
+    opacity: 0.67;
+  }
+  .ch-ptr[data-state='spin'] .ch-ptr__spin > i:nth-child(5) {
+    opacity: 0.56;
+  }
+  .ch-ptr[data-state='spin'] .ch-ptr__spin > i:nth-child(4) {
+    opacity: 0.45;
+  }
+  .ch-ptr[data-state='spin'] .ch-ptr__spin > i:nth-child(3) {
+    opacity: 0.34;
+  }
+  .ch-ptr[data-state='spin'] .ch-ptr__spin > i:nth-child(2) {
+    opacity: 0.23;
+  }
+}
+@keyframes ch-ptr-turn {
+  to {
+    rotate: 360deg;
   }
 }

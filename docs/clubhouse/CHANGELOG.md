@@ -1,5 +1,30 @@
 # Clubhouse changelog
 
+## 2026-10-08 — A switch that stretches, trackpads left alone, a steady bar
+
+Approved by the owner on 2026-10-08 (the shell's part is in P001's log).
+
+- **The switch** (`controls.css`, `ui/Switch.tsx`; P001 CH-1620). Held, a
+  switch's thumb stretches about a fifth of its width toward where it would
+  travel, as UISwitch's does, and settles round as it slides across. It grows
+  from the edge it rests on, on the scale property, so nothing reflows. The
+  track is a size container, so Settings' larger switch finds its edge without
+  a rule of its own. A disabled or saving switch stays round; so does every
+  switch with reduced motion or Animations off. WebKit, 2026-10-08: 19 to 22.8px
+  wide and back (27 to 32.4px in Settings), the far edge still to the pixel.
+- **Smooth scrolling** (`lib/smooth-scroll.ts`; P001 CH-1621). On a Mac a
+  trackpad gesture scrolls the desktop canvas natively, on its own momentum; a
+  notched wheel still eases. The first wheel event of a gesture decides: whole
+  pixels or a sideways part mean a trackpad, fractional line steps a wheel. A
+  glide a wheel started stops where it is when the fingers take over. Other
+  platforms ease every wheel, as before.
+- **The scroll lock** (`lib/overlay-scroll.ts`; P001 CH-1618). The body is
+  clipped rather than hidden while a sheet or a pushed screen is up, and the
+  phone's canvas is left alone, so the sticky top bar stays on screen over a
+  page scrolled down. Before, it left the screen until the overlay closed.
+- **Haptics** (`lib/haptics.ts`). The medium tap's grammar adds the app's pull
+  to refresh at its trigger (P001 CH-1709).
+
 ## 2026-10-08 — The kit for pages, a search field with its own reach, choices that answer a press
 
 - **The Ledger kit** (`ui/Ledger.tsx`) is ready for the phone pages:

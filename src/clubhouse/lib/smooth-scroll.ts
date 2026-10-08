@@ -12,7 +12,9 @@ import { useChReducedMotion } from './reduced-motion';
  *
  * Off on a phone layout or a touch pointer (iOS momentum is already smooth and must stay native), and off with
  * reduced motion or Settings > Animations off (CH-1608: every Clubhouse movement is instant then). A nested scroller
- * inside the canvas (a list, a table, a panel), a dialog and a menu keep their own native scroll.
+ * inside the canvas (a list, a table, a panel), a dialog and a menu keep their own native scroll. A Mac trackpad
+ * scrolls natively too (owner-approved 2026-10-08, CH-1621): its momentum is already smooth, so only a notched wheel
+ * eases.
  */
 let current: Lenis | null = null;
 
@@ -46,6 +48,29 @@ export function chScrollToTop(reduced: boolean): void {
 
 const DESK = '(min-width: 821px) and (pointer: fine)';
 
+/** A pause longer than this between wheel events starts a new gesture. */
+const GESTURE_GAP_MS = 120;
+
+/**
+ * Whether a wheel gesture on a Mac comes from a trackpad (CH-1621). A trackpad, like a Magic Mouse, sends whole-pixel
+ * deltas that already carry the system's momentum, often with a sideways part; easing them again only makes the page
+ * lag the fingers. A notched wheel sends accelerated line steps, which arrive as fractional pixels and never sideways
+ * (the data in w3c/uievents#337). The first event decides for the whole gesture, so a stray value mid-scroll never
+ * hands it between the two. Off the Mac every wheel eases, as before.
+ */
+export function chTrackpadGesture(): (event: WheelEvent) => boolean {
+  const mac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform || navigator.userAgent);
+  let lastAt = -Infinity;
+  let trackpad = false;
+  return (event) => {
+    if (!mac) return false;
+    const now = event.timeStamp || performance.now();
+    if (now - lastAt > GESTURE_GAP_MS) trackpad = event.deltaMode === 0 && (event.deltaX !== 0 || Number.isInteger(event.deltaY));
+    lastAt = now;
+    return trackpad;
+  };
+}
+
 /** Mount once, in the Clubhouse frame. */
 export function useCanvasSmoothScroll(): void {
   const reduced = useChReducedMotion();
@@ -59,6 +84,7 @@ export function useCanvasSmoothScroll(): void {
     const start = () => {
       const wrapper = document.getElementById('ch-canvas');
       if (!wrapper || lenis) return;
+      const fromTrackpad = chTrackpadGesture();
       lenis = new Lenis({
         wrapper,
         content: wrapper,
@@ -67,6 +93,13 @@ export function useCanvasSmoothScroll(): void {
         smoothWheel: true,
         syncTouch: false,
         wheelMultiplier: 1,
+        // A trackpad scrolls natively (CH-1621): Lenis lets the event through untouched, and a glide a wheel started
+        // stops where it is, so the fingers take over from the page's place rather than fight the easing.
+        virtualScroll: ({ event }) => {
+          if (!(event instanceof WheelEvent) || !fromTrackpad(event)) return true;
+          if (lenis?.isScrolling === 'smooth') lenis.scrollTo(lenis.actualScroll, { immediate: true, force: true });
+          return false;
+        },
         prevent: (node) => {
           if (node.closest('[data-lenis-prevent], dialog, [role="dialog"], [role="menu"], [role="listbox"]')) return true;
           if (node === wrapper) return false;

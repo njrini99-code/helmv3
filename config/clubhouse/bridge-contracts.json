@@ -325,6 +325,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10705,
+    "page": "P001",
+    "category": 7,
+    "item": 5,
+    "name": "IN_THE_IPHONE_APP_PULLING_A_PHONE",
+    "chCode": "CH-1909",
+    "meaning": "In the iPhone app, pulling a phone page down from its top",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10801,
     "page": "P001",
     "category": 8,
@@ -603,6 +614,61 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 11618,
+    "page": "P001",
+    "category": 16,
+    "item": 18,
+    "name": "THE_PAGE_BENEATH_A_PHONE_SCREEN_AS",
+    "chCode": "CH-1618",
+    "meaning": "The page beneath a phone screen as the screen is pushed or popped (a thread, details, a profile, a prospect, a read)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11619,
+    "page": "P001",
+    "category": 16,
+    "item": 19,
+    "name": "A_PAGE_ARRIVES_IN_PLACE_OF_ITS",
+    "chCode": "CH-1619",
+    "meaning": "A page arrives in place of its route skeleton after a navigation",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11620,
+    "page": "P001",
+    "category": 16,
+    "item": 20,
+    "name": "A_FINGER_OR_THE_POINTER_HOLDS_A",
+    "chCode": "CH-1620",
+    "meaning": "A finger or the pointer holds a switch",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11621,
+    "page": "P001",
+    "category": 16,
+    "item": 21,
+    "name": "SCROLLING_THE_DESKTOP_CANVAS_WITH_A_MAC",
+    "chCode": "CH-1621",
+    "meaning": "Scrolling the desktop canvas with a Mac trackpad",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11622,
+    "page": "P001",
+    "category": 16,
+    "item": 22,
+    "name": "PULLING_A_PHONE_PAGE_DOWN_FROM_ITS",
+    "chCode": "CH-1622",
+    "meaning": "Pulling a phone page down from its top, in the iPhone app (CH-1909)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 11701,
     "page": "P001",
     "category": 17,
@@ -687,6 +753,17 @@
     "name": "A_FINGER_SCRUBS_A_SLIDER",
     "chCode": "CH-1708",
     "meaning": "A finger scrubs a slider",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 11709,
+    "page": "P001",
+    "category": 17,
+    "item": 9,
+    "name": "A_PULL_TO_REFRESH_PASSES_ITS_TRIGGER",
+    "chCode": "CH-1709",
+    "meaning": "A pull to refresh passes its trigger (the iPhone app, CH-1909)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },

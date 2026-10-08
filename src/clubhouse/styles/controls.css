@@ -610,6 +610,8 @@
   background: var(--ch-switch-track-bg);
   box-shadow: var(--ch-switch-track-shadow);
   transition: background var(--ch-dur-base) var(--ch-ease);
+  /* The thumb reads the track's width (100cqw) to find the edge it rests on, whatever size a page draws the switch. */
+  container-type: inline-size;
 }
 .ch-switch__thumb {
   position: absolute;
@@ -620,7 +622,9 @@
   border-radius: 50%;
   background: var(--ch-switch-thumb-bg);
   box-shadow: var(--ch-switch-thumb-shadow);
-  transition: transform var(--ch-dur-base) var(--ch-ease-spring);
+  transform-origin: left center;
+  transition: transform var(--ch-dur-base) var(--ch-ease-spring), scale var(--ch-dur-press) var(--ch-ease),
+    transform-origin var(--ch-dur-press) var(--ch-ease);
 }
 .ch-switch input:checked + .ch-switch__track {
   background: var(--ch-switch-on-bg);
@@ -628,6 +632,20 @@
 }
 .ch-switch input:checked + .ch-switch__track .ch-switch__thumb {
   transform: translateX(17px);
+  /* The track's inner right edge, where an on thumb rests (the track less its 2px insets each side, before the
+     travel): the stretch grows from there, so the thumb leans back toward off. */
+  transform-origin: calc(100cqw - 4px) center;
+}
+/* Held, the thumb stretches about a fifth of its width toward where it would travel, as UISwitch's does (CH-1620), and
+   settles round as the finger lifts. The scale property composes with the travel's transform, so nothing reflows.
+   Like the press (CH-1606), it is off with reduced motion and with Animations off. */
+@media (prefers-reduced-motion: no-preference) {
+  .ch-switch:not(.is-disabled):not(.is-busy):active .ch-switch__thumb {
+    scale: 1.2 1;
+  }
+  [data-motion='off'] .ch-switch:not(.is-disabled):not(.is-busy):active .ch-switch__thumb {
+    scale: none;
+  }
 }
 .ch-switch input:focus-visible + .ch-switch__track {
   outline: 2px solid rgb(21 90 57 / 0.45);

@@ -26,19 +26,23 @@ implemented/tested behavior from open runtime acceptance; this pass does not
 reserve new IDs or mark manual contracts verified.
 <!-- clubhouse:release-audit:end -->
 
-Everything the Clubhouse frame promises on every page, by the 25 V2 categories (D-69): the sidebar,
-the top bar and bell, the phone tab bar and More sheet, the offline banner, the toasts, the route
-error views and the not-rebuilt notice. A contract's number is its Bridge ID (D-68: namespace 1,
-category, item); `Code` is the catalog code on the element and in the test
-(`docs/clubhouse/catalog/shell.md`). Rows without a code are behaviours with no single element,
-recorded in `config/clubhouse/bridge-contracts.json` by hand. Every other page inherits these and
-names them where they carry a category. `clubhouse:check` holds this file to the registry.
+Everything the Clubhouse frame promises on every page, by the 25 V2 categories
+(D-69): the sidebar, the top bar and bell, the phone tab bar and More sheet, the
+offline banner, the toasts, the route error views and the not-rebuilt notice. A
+contract's number is its Bridge ID (D-68: namespace 1, category, item); `Code`
+is the catalog code on the element and in the test
+(`docs/clubhouse/catalog/shell.md`). Rows without a code are behaviours with no
+single element, recorded in `config/clubhouse/bridge-contracts.json` by hand.
+Every other page inherits these and names them where they carry a category.
+`clubhouse:check` holds this file to the registry.
 
 ## 01 — Default / core UI
 
 Status: DEFINED
 
-The frame around every page (10102), a page change that opens the new page at the top (10101), and a team switch that reads every screen again for the new team (10103).
+The frame around every page (10102), a page change that opens the new page at
+the top (10101), and a team switch that reads every screen again for the new
+team (10103).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -70,7 +74,9 @@ Cancel, and a full-screen flow hides the tab bar from its first frame.
 
 Status: DEFINED
 
-The bell reads its list again on every open, and a list already shown stays while it does (10301). The sidebar's next event and Roster badge are read on the server with each page load.
+The bell reads its list again on every open, and a list already shown stays
+while it does (10301). The sidebar's next event and Roster badge are read on the
+server with each page load.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -80,7 +86,10 @@ The bell reads its list again on every open, and a list already shown stays whil
 
 Status: DEFINED
 
-A page not rebuilt yet (10401), an empty bell (10402), a bell filter with nothing (10403), no next event (10404, the card is left out), and a team that is a plain label because there is nothing to switch to (10405). Each page's own first-run and filtered empties are in its contract.
+A page not rebuilt yet (10401), an empty bell (10402), a bell filter with
+nothing (10403), no next event (10404, the card is left out), and a team that is
+a plain label because there is nothing to switch to (10405). Each page's own
+first-run and filtered empties are in its contract.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -128,7 +137,15 @@ one read fails (10614, `EmptyState size="page" tone="danger"`).
 
 Status: DEFINED
 
-The banner under the top bar (10701), a save over five seconds says so once (10702), a save while offline is refused before anything is sent (10703), and Try again while offline says so instead of failing again (10704). Every page inherits all four.
+The banner under the top bar (10701), a save over five seconds says so once
+(10702), a save while offline is refused before anything is sent (10703), and
+Try again while offline says so instead of failing again (10704). Every page
+inherits all four.
+
+In the iPhone app a pull from the top of a phone page reads the page again
+(10705, owner-approved 2026-10-08), with its own motion (11622) and haptic
+(11709). It starts only at the very top, with no screen pushed, no sheet open
+and no full-screen flow. Mobile Safari keeps its own pull.
 
 Slow feedback belongs to its request. Completion, replacement or unmount ends
 its notice, including one already displayed; it cannot remove a newer notice.
@@ -142,12 +159,19 @@ remain four seconds and errors eight seconds.
 | 10702 | CH-1902 | `A_SAVE_TAKES_LONGER_THAN_5_SECONDS` | A save takes longer than 5 seconds (forms, switches and CoachHelm settings) |
 | 10703 | CH-1903 | `SOMEONE_SAVES_WHILE_OFFLINE` | Someone saves while offline |
 | 10704 | CH-1905 | `SOMEONE_PRESSES_TRY_AGAIN_ON_A_NOTICE` | Someone presses Try again on a notice, or on a page that didn't load, while offline |
+| 10705 | CH-1909 | `IN_THE_IPHONE_APP_PULLING_A_PHONE` | In the iPhone app, pulling a phone page down from its top |
 
 ## 08 — Permission / authorization
 
 Status: DEFINED
 
-Clubhouse renders only for a coach or a player with the flag on (10801); the same check guards the held server actions. Each role sees only its own navigation, and an address not rebuilt for that role shows the not-rebuilt notice, never another role's page (10802). Only a head coach staffed on more than one team is offered the team switch, and the server refuses anyone else (10803). Who may read or change what is decided by the server actions and RLS, never by the frame; the pages name their own gates.
+Clubhouse renders only for a coach or a player with the flag on (10801); the
+same check guards the held server actions. Each role sees only its own
+navigation, and an address not rebuilt for that role shows the not-rebuilt
+notice, never another role's page (10802). Only a head coach staffed on more
+than one team is offered the team switch, and the server refuses anyone else
+(10803). Who may read or change what is decided by the server actions and RLS,
+never by the frame; the pages name their own gates.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -159,7 +183,8 @@ Clubhouse renders only for a coach or a player with the flag on (10801); the sam
 
 Status: DEFINED
 
-A change that lands fires the success haptic and names itself in a toast; an instant switch shows no toast (10901, D-70). Every page's saves go through this.
+A change that lands fires the success haptic and names itself in a toast; an
+instant switch shows no toast (10901, D-70). Every page's saves go through this.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -181,7 +206,8 @@ Status: N/A — the frame holds nothing the user typed. A refused offline save c
 
 Status: DEFINED
 
-Mark all read and opening a notification update the bell at once; a failed Mark all read puts the rows back (11301).
+Mark all read and opening a notification update the bell at once; a failed Mark
+all read puts the rows back (11301).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -191,7 +217,11 @@ Mark all read and opening a notification update the bell at once; a failed Mark 
 
 Status: DEFINED
 
-A crashed page offers Try again, or Reload after an update, with the number of tries (11401). Every error toast carries Retry, which runs the same action again (11402). The route boundary also retries a transient failure once by itself after two seconds when the tab is visible (at most twice per route per session); that part is the shared `RouteErrorBoundary`'s and is not tested here.
+A crashed page offers Try again, or Reload after an update, with the number of
+tries (11401). Every error toast carries Retry, which runs the same action again
+(11402). The route boundary also retries a transient failure once by itself
+after two seconds when the tab is visible (at most twice per route per session);
+that part is the shared `RouteErrorBoundary`'s and is not tested here.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -201,6 +231,9 @@ A crashed page offers Try again, or Reload after an update, with the number of t
 ## 15 — Data freshness / sync
 
 Status: N/A — the shell keeps no data that can go stale on screen: the bell re-reads on open (10301) and the sidebar reads come with each page. A page built for an older version, or one open across an update, is caught as a route error (10603, 10604).
+
+The iPhone app's pull to refresh (10705) reads a page again on demand; the
+shell keeps nothing of its own that it refreshes.
 
 ## 16 — Micro animation
 
@@ -218,6 +251,15 @@ the More and bell sheets, pushed screens, the plate, the pill and a swap's
 incoming copy. Sheets rubber-band past their open position, spring back from the
 finger's speed, drag from their body at the top, and carry a throw into the
 close (11611).
+
+Approved by the owner on 2026-10-08: the page beneath a pushed screen draws
+back about a quarter of the width and dims, on the screen's own curves, frame
+by frame (11618); a page that arrives in place of its route skeleton fades in
+over the press beat, never on a first paint (11619); a held switch's thumb
+stretches toward its travel (11620); a Mac trackpad scrolls the desktop canvas
+natively while a notched wheel still eases (11621); and the iPhone app's pull
+to refresh rubber-bands, holds at its spinner and springs home (11622). Reduced
+motion and Animations off keep each still or instant.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -238,6 +280,11 @@ close (11611).
 | 11615 | CH-1615 | `A_SEGMENTED_CONTROLS_CHOICE_CHANGES` | A segmented control's choice changes |
 | 11616 | CH-1616 | `CONTENT_SWAPS_INSIDE_A_FIXED_FRAME` | Content swaps inside a fixed frame (a tab's panel, a chart's mode, a window's figures, a pager) |
 | 11617 | CH-1617 | `PRESSING_A_SEGMENTED_CONTROLS_OPTION_OR_A` | Pressing a segmented control's option or a pill that isn't on, or the kit's feature card as a link or a button |
+| 11618 | CH-1618 | `THE_PAGE_BENEATH_A_PHONE_SCREEN_AS` | The page beneath a phone screen as the screen is pushed or popped (a thread, details, a profile, a prospect, a read) |
+| 11619 | CH-1619 | `A_PAGE_ARRIVES_IN_PLACE_OF_ITS` | A page arrives in place of its route skeleton after a navigation |
+| 11620 | CH-1620 | `A_FINGER_OR_THE_POINTER_HOLDS_A` | A finger or the pointer holds a switch |
+| 11621 | CH-1621 | `SCROLLING_THE_DESKTOP_CANVAS_WITH_A_MAC` | Scrolling the desktop canvas with a Mac trackpad |
+| 11622 | CH-1622 | `PULLING_A_PHONE_PAGE_DOWN_FROM_ITS` | Pulling a phone page down from its top, in the iPhone app (CH-1909) |
 
 ## 17 — Haptic
 
@@ -246,7 +293,8 @@ Status: DEFINED
 v2 haptics (D-70) for every page: a tab change, a save that lands, a failure,
 the More sheet, the bell and menus, the connection dropping, picking another
 team, and a finger scrubbing a slider, with the Taptic Engine warmed as it lands
-(11701 to 11708).
+(11701 to 11708). In the iPhone app a pull to refresh taps once, medium, as it
+passes its trigger (11709, owner-approved 2026-10-08).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -258,6 +306,7 @@ team, and a finger scrubbing a slider, with the Taptic Engine warmed as it lands
 | 11706 | CH-1706 | `THE_CONNECTION_DROPS` | The connection drops |
 | 11707 | CH-1707 | `PICKING_ANOTHER_TEAM_IN_THE_SWITCHER` | Picking another team in the switcher |
 | 11708 | CH-1708 | `A_FINGER_SCRUBS_A_SLIDER` | A finger scrubs a slider |
+| 11709 | CH-1709 | `A_PULL_TO_REFRESH_PASSES_ITS_TRIGGER` | A pull to refresh passes its trigger (the iPhone app, CH-1909) |
 
 ## 18 — Accessibility
 
@@ -291,7 +340,8 @@ reaching 44 by 44, the search field included (11801 to 11815).
 
 Status: DEFINED
 
-On a phone the sidebar gives way to the role's tab bar and the More sheet (11901, D-66). The phone spec is `docs/clubhouse/phone/foundation.md`.
+On a phone the sidebar gives way to the role's tab bar and the More sheet
+(11901, D-66). The phone spec is `docs/clubhouse/phone/foundation.md`.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -317,7 +367,10 @@ sheet and the bell (11802, 11805).
 
 Status: DEFINED
 
-Web vitals (INP, CLS, LCP) come from Sentry browser tracing, sampled at 20% of sessions (12101); nothing Clubhouse-side measures them yet. The animation features load in their own chunk after first paint (D-25); the shell's server reads run in parallel in one pass and never take a page down.
+Web vitals (INP, CLS, LCP) come from Sentry browser tracing, sampled at 20% of
+sessions (12101); nothing Clubhouse-side measures them yet. The animation
+features load in their own chunk after first paint (D-25); the shell's server
+reads run in parallel in one pass and never take a page down.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -327,7 +380,10 @@ Web vitals (INP, CLS, LCP) come from Sentry browser tracing, sampled at 20% of s
 
 Status: DEFINED
 
-Rage, dead and slow clicks are seen only through Sentry Replay (10% of sessions plus every session with an error), with nothing on screen (12201 to 12203). There is no Clubhouse-side detector, so most are not seen; the Bridge is where they will be counted.
+Rage, dead and slow clicks are seen only through Sentry Replay (10% of sessions
+plus every session with an error), with nothing on screen (12201 to 12203).
+There is no Clubhouse-side detector, so most are not seen; the Bridge is where
+they will be counted.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -339,7 +395,9 @@ Rage, dead and slow clicks are seen only through Sentry Replay (10% of sessions 
 
 Status: DEFINED
 
-Every client failure goes through chReport with its surface and action, a refused action at low severity; every event carries ui=clubhouse; server reads log through chLogServer; each intent leaves a breadcrumb (12301).
+Every client failure goes through chReport with its surface and action, a
+refused action at low severity; every event carries ui=clubhouse; server reads
+log through chLogServer; each intent leaves a breadcrumb (12301).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -349,7 +407,9 @@ Every client failure goes through chReport with its surface and action, a refuse
 
 Status: DEFINED
 
-`clubhouse:check` fails a catalog code that no test names (12401); `shell.test.tsx`, `gate.test.ts`, `native.test.tsx` and `motion.test.tsx` force the shell's states by their codes and Bridge IDs.
+`clubhouse:check` fails a catalog code that no test names (12401);
+`shell.test.tsx`, `gate.test.ts`, `native.test.tsx` and `motion.test.tsx` force
+the shell's states by their codes and Bridge IDs.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

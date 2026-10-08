@@ -69,11 +69,11 @@ link), then the tab bar.
 
 `ClubhouseShell` (the providers), `ClubhouseFrame` (the UI), `Sidebar`,
 `TopBar`, `Bell`, `TabBar` with the More sheet, `OfflineBanner`, `RouteFrame`
-(the navigation crossfade and the press), `NotRebuilt`, `NextEventCard`, `PhoneScreen` and
-`phone-chrome` (pushed screens, the page top), `crumbs`, `ClubhouseSwitch`,
-`TeamSwitch` (the team switcher: `BrandTeamSwitch` in the sidebar,
-`MoreTeamSwitch` in the More sheet) with `team-switch` (the gate and the
-action).
+(the navigation crossfade and the press), `NotRebuilt`, `NextEventCard`,
+`PhoneScreen` and `phone-chrome` (pushed screens, the page top), `crumbs`,
+`ClubhouseSwitch`, `TeamSwitch` (the team switcher: `BrandTeamSwitch` in the
+sidebar, `MoreTeamSwitch` in the More sheet) with `team-switch` (the gate and
+the action).
 
 ### Modified Clubhouse components
 
@@ -98,11 +98,21 @@ appears after 150ms, with a 1.9s shimmer. Reduced motion or Animations off
 removes the route transition and press. Some Framer fades still retain their
 duration: this CH-1608 mismatch is SM-03 in SMOOTHNESS_AUDIT.md.
 
+Approved by the owner on 2026-10-08: a pushed phone screen draws the page
+beneath it back about a quarter of the width and dims it, on its own curves
+(CH-1618); a page that replaces its route skeleton fades in over the press beat
+(CH-1619); a held switch's thumb stretches toward its travel (CH-1620); a Mac
+trackpad scrolls the desktop canvas natively (CH-1621); and the iPhone app pulls
+to refresh, the parchment sheet coming down off the green chassis (CH-1622,
+CH-1909).
+
 ## Haptic intent
 
 v2 (D-70): selection for a tab change, a menu pick, or opening the bell or a
 notification; success when a save lands; error on failure; warning when the
-connection drops; medium only when a sheet settles. Every other tap is silent.
+connection drops; medium when a sheet settles and, in the iPhone app, as a pull
+to refresh passes its trigger (owner-approved 2026-10-08). Every other tap is
+silent.
 
 ## Desktop
 
@@ -247,9 +257,10 @@ None.
 
 ### Owner decisions
 
-Q-130 (2026-10-01: the team switcher), D-25 (the animation chunk after first paint), D-40 and D-41 (the phone shell),
-D-42 (red means destructive), D-64 (motion), D-66 (navigation), D-70 (haptics),
-D-71 (page empty state).
+Q-130 (2026-10-01: the team switcher), D-25 (the animation chunk after first
+paint), D-40 and D-41 (the phone shell), D-42 (red means destructive), D-64
+(motion), D-66 (navigation), D-70 (haptics), D-71 (page empty state), and the
+motion set approved on 2026-10-08 (CH-1618 to CH-1622, CH-1709, CH-1909).
 
 ## Explicit non-goals
 
