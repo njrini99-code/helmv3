@@ -704,6 +704,21 @@ html:has([data-ui='clubhouse']) {
   --ch-dur-vt-gap: 0ms;
   --ch-ease-vt-out: cubic-bezier(0.4, 0, 1, 1);
   --ch-ease-vt-in: cubic-bezier(0.22, 1, 0.36, 1);
+  /* How long a navigation onto a route skeleton keeps the old page up before the skeleton shows (native-feel audit
+     2026-10-08, P0-2): a load that finishes sooner never shows a skeleton. base.css delays the skeleton by the same. */
+  --ch-dur-vt-hold: 300ms;
+  /* A drill-in's push and Back's pop (lib/nav-motion.ts): the smooth spring, as a pushed phone screen moves
+     (PhoneScreen), and how far the page beneath draws back (UIKit's parallax, about a third). */
+  --ch-dur-vt-push: 260ms;
+  --ch-ease-vt-push: cubic-bezier(0.22, 1, 0.36, 1);
+  --ch-vt-parallax: -30%;
+}
+/* The smooth spring as CSS linear(), as [data-ui='clubhouse'] has it above (motion-physics.test pins the two). */
+@supports (transition-timing-function: linear(0, 1)) {
+  html:has([data-ui='clubhouse']) {
+    --ch-ease-vt-push: linear(0, 0.0418, 0.136, 0.2508, 0.3677, 0.477, 0.5739, 0.657, 0.7266, 0.7839, 0.8303, 0.8675, 0.8971, 0.9204, 0.9387, 0.953, 0.964, 0.9725, 0.9791, 0.9841, 0.988, 0.9909, 0.9931, 0.9948, 0.9961, 0.9971, 0.9978, 0.9983, 0.9988, 1);
+    --ch-dur-vt-push: 462ms;
+  }
 }
 
 /* The document under Clubhouse (high-fidelity audit F05): the overscroll bounce and the frame before first paint show

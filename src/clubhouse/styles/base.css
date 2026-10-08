@@ -265,6 +265,12 @@
 [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='Loading'] {
   animation: ch-skel-in var(--ch-dur-base) var(--ch-ease) var(--ch-skel-delay) backwards;
 }
+/* Reached by an in-app navigation (RouteFrame sets data-ch-vt-hold while the page crossfade runs): the skeleton waits
+   --ch-dur-vt-hold (300ms) with the old page still up, so a load that finishes sooner never flashes one (native-feel
+   audit 2026-10-08, P0-2). A hard load's streamed skeleton, a push, reduced motion and Animations off show it at once. */
+html[data-ch-vt-hold] [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='Loading'] {
+  animation-delay: var(--ch-dur-vt-hold);
+}
 
 /* Animations off (Settings) and reduced motion: no skeleton fade. */
 [data-ui='clubhouse'][data-motion='off'] main[aria-busy='true'] {
