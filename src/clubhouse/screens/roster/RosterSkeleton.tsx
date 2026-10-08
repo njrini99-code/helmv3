@@ -33,7 +33,9 @@ export function RosterSkeleton() {
       <div className="ch-rsm-skel ch-rsm-page">
         <div className="ch-rsm-head">
           <Skeleton width={124} height={14.4} />
-          <Skeleton width={128} height={33.48} radius={8} />
+          <span data-ch-large-title="">
+            <Skeleton width={128} height={33.48} radius={8} />
+          </span>
         </div>
         <div className="ch-rsm-sort">
           <Skeleton width={48} height={14} />
