@@ -6,6 +6,7 @@ import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
 import { haptic } from '../../lib/haptics';
+import { EventPeek } from './peek';
 import {
   CAL_END,
   CAL_HH,
@@ -169,6 +170,7 @@ export function TimeGrid({
   onDay,
   onMove,
   daylight,
+  coach = false,
 }: {
   dates: string[];
   events: ChCalEvent[];
@@ -182,6 +184,8 @@ export function TimeGrid({
   onMove?: (e: ChCalEvent, to: ChMoveTarget) => void;
   /** P006-A1: a day's sunrise, golden hour and sunset on the team's clock (the global light's sun); absent, no daylight. */
   daylight?: (date: string) => ChDaylight;
+  /** P006-C3: the hover card's Nudge is the coach's. */
+  coach?: boolean;
 }) {
   // 6 AM to 9 PM, widened to the hour around anything earlier or later on the days shown, so a 5 AM bus or a 9:30 PM
   // meeting is on the grid instead of dropped from it (CAL-07).
@@ -316,20 +320,21 @@ export function TimeGrid({
             <div key={d} className={'ch-wk__col' + (d === now.date ? ' is-today' : '')}>
               {daylight && <Daylight dl={daylight(d)} from={from} to={to} label={d === dates[dates.length - 1]} />}
               {laid.map((l) => (
-                <EventBlock
-                  key={l.e.id}
-                  e={l.e}
-                  lane={l.lane}
-                  lanes={l.lanes}
-                  sel={selId === l.e.id}
-                  flagged={flagged.has(l.e.id)}
-                  people={people}
-                  onSelect={onSelect}
-                  from={from}
-                  to={to}
-                  drag={dragFor(l.e)}
-                  state={drag?.e.id === l.e.id ? 'held' : clashes?.has(l.e.id) ? 'clash' : undefined}
-                />
+                <EventPeek key={l.e.id} e={l.e} coach={coach} people={people} onOpen={() => onSelect(l.e.id)} disabled={!!drag}>
+                  <EventBlock
+                    e={l.e}
+                    lane={l.lane}
+                    lanes={l.lanes}
+                    sel={selId === l.e.id}
+                    flagged={flagged.has(l.e.id)}
+                    people={people}
+                    onSelect={onSelect}
+                    from={from}
+                    to={to}
+                    drag={dragFor(l.e)}
+                    state={drag?.e.id === l.e.id ? 'held' : clashes?.has(l.e.id) ? 'clash' : undefined}
+                  />
+                </EventPeek>
               ))}
               {drag && drag.to.date === d && (
                 <EventBlock e={{ ...drag.e, date: d, start: drag.to.start, end: drag.to.end }} lane={0} lanes={1} sel={false} flagged={false} people={people} onSelect={() => {}} from={from} to={to} state="ghost" />

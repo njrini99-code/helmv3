@@ -1,5 +1,9 @@
 # P006 — Calendar: changelog
 
+## 2026-10-08 — premium pass: peek an event (P006-C3)
+
+An event peeks where it is listed, through the shared peek (`ui/Peek.tsx`): a hold on a phone agenda row, a rest of the pointer (or keyboard focus) on a desktop week block. The card (`screens/calendar/peek.tsx`) shows kind, title, day and time, and place; for the coach, how many are going, how many can't, and who hasn't replied. Its actions are Open; for the coach, Nudge the people who haven't replied, which opens Messages prefilled with them and a short draft that the coach sends; and, for a qualifier, tournament or trip with a place, Directions as a plain Apple Maps link. Classes and busy time don't peek; a block that is being dragged doesn't either. Not built: answering the invite from the peek.
+
 ## 2026-10-08 — premium pass: daylight on the grid (P006-A1)
 
 The Week and Day grids carry the day's light from the global light's sun at the team's place (`daylightOn` over `sunTimes`, `useLightPlace`): a night wash before sunrise and after sunset, a warm band through golden hour, and "Sunset 6:31" on the last column shown. Washes sit on the frame under the events and never tint an event; dark mode has its own night; print drops them.

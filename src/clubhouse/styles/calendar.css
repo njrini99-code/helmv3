@@ -2748,3 +2748,41 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
     display: none;
   }
 }
+
+/* P006-C3: an event's peek card (screens/calendar/peek.tsx), inside the shared peek and hover card. Kind, title, when
+   and where; for the coach, who has answered. Tokens only, so the dark theme follows. */
+.ch-evpeek {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  max-width: 320px;
+}
+.ch-evpeek__k {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+  font: var(--ch-type-k);
+  color: var(--ch-text-tertiary);
+}
+.ch-evpeek__t {
+  font: var(--ch-type-title);
+  color: var(--ch-text-primary);
+  overflow-wrap: anywhere;
+}
+.ch-evpeek__m {
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-secondary);
+}
+.ch-evpeek__r {
+  margin-top: 6px;
+  padding-top: 8px;
+  box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-secondary);
+}
+.ch-evpeek__r b {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}

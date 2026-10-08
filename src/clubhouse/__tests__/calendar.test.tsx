@@ -778,7 +778,10 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
       vi.setSystemTime(new Date('2026-10-14T18:40:00Z'));
       wrap(cal());
       const mid = screen.getByRole('separator', { name: /^Now,/ });
-      expect(mid.nextElementSibling!.getAttribute('aria-label')).toMatch(/^Short-game block/);
+      // The row after the line; it sits in its peek wrapper (P006-C3), which draws no box.
+      const after = mid.nextElementSibling!;
+      const row = after.matches('.ch-peek-target') ? after.querySelector('button')! : after;
+      expect(row.getAttribute('aria-label')).toMatch(/^Short-game block/);
     } finally {
       vi.useRealTimers();
     }

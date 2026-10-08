@@ -12,6 +12,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
 import { Swap } from '../../ui/Swap';
 import { haptic } from '../../lib/haptics';
+import { EventPeek } from './peek';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
 import { addDays, dayNum, dowOf, fmtHour, isMajor, monthCells, monthName, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
 import { AgendaView, eventTitle, type ChNow } from './views';
@@ -273,35 +274,38 @@ function DayPage({
             return (
               <li key={`${e.id}${e.date}`}>
                 {i === nowAt && nowLine}
-                <button
-                  type="button"
-                  className={`ch-calm-ev is-${e.type}` + (past ? ' is-past' : '') + (live ? ' is-live' : '') + (selId === e.id ? ' is-sel' : '') + (e.cancelled ? ' is-cancelled' : '')}
-                  aria-label={`${eventTitle(e, people)}, ${e.allDay ? 'all day' : `${fmtHour(e.start!)} to ${fmtHour(e.end!)}`}${flagged.has(e.id) ? ', schedule overlap' : ''}${e.cancelled ? ', cancelled' : ''}`}
-                  onClick={() => {
-                    haptic('select');
-                    onOpen(e.id, e.date);
-                  }}
-                >
-                  <span className="ch-calm-ev__t ch-num">
-                    {e.allDay ? 'All day' : fmtHour(e.start!, false)}
-                    {!e.allDay && <em>{fmtHour(e.end!, false)}</em>}
-                  </span>
-                  {/* The day's rail, as on Home's Today: a dot in the event's colour, a ring for time that isn't free. */}
-                  <span className="ch-calm-ev__rail" aria-hidden="true">
-                    <i className={`ch-dot-${e.type}`} />
-                  </span>
-                  <span className="ch-calm-ev__b">
-                    <b>{eventTitle(e, people)}</b>
-                    <span>{block ? (e.busyOnly ? 'Busy' : e.type === 'busy' ? 'Your busy time' : [e.title, e.location].filter(Boolean).join(' · ')) : (e.location ?? '')}</span>
-                  </span>
-                  {flagged.has(e.id) ? (
-                    <span className="ch-calm-ev__w" aria-hidden="true">
-                      <Icon icon={TriangleAlert} size={13} />
+                {/* P006-C3: a hold lifts the event's card with its actions; the row keeps its tap. */}
+                <EventPeek e={e} coach={coach} people={people} onOpen={() => onOpen(e.id, e.date)}>
+                  <button
+                    type="button"
+                    className={`ch-calm-ev is-${e.type}` + (past ? ' is-past' : '') + (live ? ' is-live' : '') + (selId === e.id ? ' is-sel' : '') + (e.cancelled ? ' is-cancelled' : '')}
+                    aria-label={`${eventTitle(e, people)}, ${e.allDay ? 'all day' : `${fmtHour(e.start!)} to ${fmtHour(e.end!)}`}${flagged.has(e.id) ? ', schedule overlap' : ''}${e.cancelled ? ', cancelled' : ''}`}
+                    onClick={() => {
+                      haptic('select');
+                      onOpen(e.id, e.date);
+                    }}
+                  >
+                    <span className="ch-calm-ev__t ch-num">
+                      {e.allDay ? 'All day' : fmtHour(e.start!, false)}
+                      {!e.allDay && <em>{fmtHour(e.end!, false)}</em>}
                     </span>
-                  ) : live ? (
-                    <Badge tone="accent">Now</Badge>
-                  ) : null}
-                </button>
+                    {/* The day's rail, as on Home's Today: a dot in the event's colour, a ring for time that isn't free. */}
+                    <span className="ch-calm-ev__rail" aria-hidden="true">
+                      <i className={`ch-dot-${e.type}`} />
+                    </span>
+                    <span className="ch-calm-ev__b">
+                      <b>{eventTitle(e, people)}</b>
+                      <span>{block ? (e.busyOnly ? 'Busy' : e.type === 'busy' ? 'Your busy time' : [e.title, e.location].filter(Boolean).join(' · ')) : (e.location ?? '')}</span>
+                    </span>
+                    {flagged.has(e.id) ? (
+                      <span className="ch-calm-ev__w" aria-hidden="true">
+                        <Icon icon={TriangleAlert} size={13} />
+                      </span>
+                    ) : live ? (
+                      <Badge tone="accent">Now</Badge>
+                    ) : null}
+                  </button>
+                </EventPeek>
                 {nowLast && i === list.length - 1 && nowLine}
               </li>
             );

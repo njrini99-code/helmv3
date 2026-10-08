@@ -36,3 +36,40 @@ describe('Calendar · daylight on the grid (P006-A1)', () => {
     expect(june.set!).toBeGreaterThan(20.3);
   });
 });
+
+describe('Calendar · peek actions (P006-C3)', () => {
+  const people = new Map([
+    ['p1', { id: 'p1', name: 'Ava Lin' }],
+    ['p2', { id: 'p2', name: 'Ben Ortiz' }],
+  ]) as never;
+  const base = {
+    id: 'e1',
+    type: 'tournament',
+    title: 'Fall Invitational',
+    date: '2026-10-14',
+    start: 9,
+    end: 15,
+    allDay: false,
+    location: 'Pine Hollow GC',
+    people: ['p1', 'p2'],
+    rsvp: { p1: 'accepted' },
+  } as never;
+
+  it('the coach can nudge the one player who hasn’t replied, through a prefilled message, and get directions off site', async () => {
+    const { eventPeekActions } = await import('../screens/calendar/peek');
+    const acts = eventPeekActions(base, true, people, () => {});
+    expect(acts.map((a) => a.label)).toEqual(['Open', 'Nudge Ben', 'Directions']);
+    const nudge = new URL(acts[1]!.href!, 'https://x.test');
+    expect(nudge.pathname).toBe('/golf/dashboard/messages');
+    expect(nudge.searchParams.get('players')).toBe('p2');
+    expect(nudge.searchParams.get('draft')).toContain('Fall Invitational');
+    expect(acts[2]!.href).toContain(encodeURIComponent('Pine Hollow GC'));
+  });
+
+  it('a player gets no nudge, and a practice on site gets no directions', async () => {
+    const { eventPeekActions } = await import('../screens/calendar/peek');
+    expect(eventPeekActions(base, false, people, () => {}).map((a) => a.label)).toEqual(['Open', 'Directions']);
+    const practice = { ...(base as object), type: 'practice' } as never;
+    expect(eventPeekActions(practice, true, people, () => {}).map((a) => a.label)).toEqual(['Open', 'Nudge Ben']);
+  });
+});
