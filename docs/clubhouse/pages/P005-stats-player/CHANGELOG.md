@@ -17,7 +17,7 @@ Approved by the owner on 2026-10-08 (P005-A2, C2; findings D1, D2, D5 to D8, D12
   Transparency (D5).
 - **The personal-best card (C2).** Personal bests offer "Share best score": a
   dated card (the score, to par when it is the same round, the course, the date,
-  "Attested by Coach <surname>" for the team's primary coach, so a shared card
+  "Attested by Coach `<surname>`" for the team's primary coach, so a shared card
   doesn't point to the school; owner, 2026-10-08), drawn on a canvas and handed to the
   share sheet, or downloaded where there is none (CH-5810, CH-5005). It never
   shows a school or team name, and a coach's card names the player by first

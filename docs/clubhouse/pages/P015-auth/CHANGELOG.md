@@ -4,7 +4,7 @@
 
 - D6: the welcome card holds its news as rows between hairlines, not bordered, shadowed cards inside a card. A vertical hairline parts them side by side on a wide screen, a horizontal one when stacked. Empty and failed states are a flush notice.
 - D11: the preview's round reads "74 · +2 · Pine Needles", as Home's latest rounds do. The live welcome carries no score.
-- D10 (owner, 2026-10-08): the phone's sign-in fields keep a visible label, small and quiet at the top of each row of the grouped sheet; the focus and error rings take the whole row. The email placeholder is "you@school.edu" on sign in and Forgot password, and the password field has none, since its label names it.
+- D10 (owner, 2026-10-08): the phone's sign-in fields keep a visible label, small and quiet at the top of each row of the grouped sheet; the focus and error rings take the whole row. The email placeholder is `you@school.edu` on sign in and Forgot password, and the password field has none, since its label names it.
 
 ## 2026-10-08 — premium pass: Continue keeps honest time, and findings (P015-B3, D4, D5, D7)
 

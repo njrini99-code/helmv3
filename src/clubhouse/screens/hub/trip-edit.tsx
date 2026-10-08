@@ -123,7 +123,7 @@ export function TripEditSheet({
         {input('destination', 'Where', 'text', errs.destination, 'CH-10104')}
         <div className="ch-field">
           <span className="ch-field__label">Getting there</span>
-          <div className="ch-hb-aud" role="radiogroup" ref={rovingRadios} onKeyDown={radioKeys()} aria-label="Getting there">
+          <div className="ch-hb-aud" role="radiogroup" tabIndex={-1} ref={rovingRadios} onKeyDown={radioKeys()} aria-label="Getting there">
             {TRANSPORTS.map(([k, l]) => (
               <button
                 key={k}

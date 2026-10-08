@@ -148,7 +148,7 @@ function ReplyChoices({ r, mine, pending, onReply }: {
   }), quietBusy);
   return (
     <div className="ch-hb-rsvp__choice">
-      <span className="ch-hb-rsvp__a" role="radiogroup" ref={rovingRadios} onKeyDown={radioKeys(false)} aria-label={`Your reply for ${r.title}`} aria-busy={pending}>
+      <span className="ch-hb-rsvp__a" role="radiogroup" tabIndex={-1} ref={rovingRadios} onKeyDown={radioKeys(false)} aria-label={`Your reply for ${r.title}`} aria-busy={pending}>
         {REPLIES.map(([answer, label]) => (
           <button key={answer} type="button" role="radio" aria-checked={mine === answer} disabled={pending} onClick={() => {
             if (mine === answer) return;

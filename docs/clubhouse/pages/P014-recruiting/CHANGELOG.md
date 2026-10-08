@@ -28,7 +28,7 @@ Data impact: supabase/migrations/20261008120000_golf_recruits_next_step.sql, wri
 Held items: the next-step write needs createRecruit/updateRecruit to pass next_step_label/next_step_date (src/app/golf/actions/recruiting.ts, outside this page); calendar event and Undo for a next step not built
 ```
 
-### Changed
+### Changed in the premium pass
 
 - **B1, Committed is a moment, once (CH-14806).** A landed move to Committed
   draws a 1px gilt rule under the stage (desktop panel; the phone's Stage row),
@@ -58,7 +58,7 @@ Held items: the next-step write needs createRecruit/updateRecruit to pass next_s
   edge to coin edge. #5 (the shared canopy band) is the shell's; the page-local
   part is the shorter subtitle.
 
-### Why
+### Why the premium pass changed it
 
 - Owner-approved premium backlog items for P014 (B1, C1, C2) and the page's
   P2 and P3 findings.

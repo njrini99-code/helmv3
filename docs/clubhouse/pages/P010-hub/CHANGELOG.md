@@ -1,5 +1,13 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-08 — the radio groups take programmatic focus
+
+Every Hub radio group (an RSVP's reply, Send to, Event, and Getting there in
+the trip sheet and the trip editor) takes `tabIndex={-1}`. The checked radio is still the one Tab stop and the group
+still routes the arrow keys, Home and End (D7); the group itself is now
+focusable, as `jsx-a11y/interactive-supports-focus` requires of an element
+that handles keys, without adding a Tab stop.
+
 ## 2026-10-08 — premium pass: the lit pass, the plate, the edited page and findings (P010-A1 to A3, D1 to D9, D14)
 
 - A1: the next trip is the page's one paper object. On desktop it keeps the paper (the room's light as `--ch-light-paper`), a rim on its sun-facing edges and a contact shadow with a long falloff leaning away from the sun (`--ch-light-*`, never on the facts), joined to its stub by a dashed perforation with two notches; its eyebrow is the page's one gilt (`--ch-ledger-eyebrow`). Later trips stay flat rows. On the phone the approved flush entry keeps everything but gains the perforated rule and notches between the facts and the plan. More contrast drops the rim and shadow for a plain border.

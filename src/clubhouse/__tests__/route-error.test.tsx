@@ -13,6 +13,9 @@ import { ClubhouseMarker } from '../shell/context';
 
 const chunk = () => Object.assign(new Error('Loading chunk 4521 failed. (error: /_next/static/chunks/4521.js)'), { name: 'ChunkLoadError' });
 
+// ClubhouseMarker's `role` is the shell's coach or player, not an ARIA role.
+const shellRole = 'coach' as const;
+
 beforeEach(() => requestRecovery.mockClear());
 
 describe('Clubhouse route error (P007 D3)', () => {
@@ -33,7 +36,7 @@ describe('Clubhouse route error (P007 D3)', () => {
   it('inside the shell it draws the same view without a second root', () => {
     render(
       <div className="ch-root" data-testid="shell">
-        <ClubhouseMarker role="coach">
+        <ClubhouseMarker role={shellRole}>
           <ClubhouseRouteError error={chunk()} reset={vi.fn()} route="/golf/dashboard/messages" />
         </ClubhouseMarker>
       </div>,
