@@ -271,7 +271,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
   const failedList = classes.filter((c) => failedSync.has(c.id));
   const importedNow = imported && { ...imported, classes: imported.classes.map((c) => classes.find((x) => x.id === c.id) ?? c) };
   const importSync = sync.pending ? 'syncing' : importedNow?.classes.some((c) => failedSync.has(c.id)) ? 'failed' : 'ok';
-  // First run. A load that failed is checked before this wherever it matters (the notice is drawn first, and the header offers nothing), so an empty list from a failed read is never called "no classes".
+  // First run. A load that failed is checked before this wherever it matters (the notice is drawn first), so an empty list from a failed read is never called "no classes".
   const nothing = classes.length === 0;
 
   const startAdd = () => {
@@ -341,10 +341,12 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
           {/* Phone: the top bar is the page's one heading (iPhone brief: no second "Classes" under it). */}
           {!phone && <h1 id="ch-cl-title">Classes</h1>}
         </div>
-        {/* Neither list is offered while the classes didn't load: an add or an import would land beside a schedule the page can't show (CH-12201). */}
-        {!nothing && !data.classes.error && (
+        {/* The head keeps its actions when the classes didn't load (owner decision, 2026-10-08: a failed read keeps the head and its
+            primary action, CH-12201). Only a first run has none here, because its empty state carries them; Delete all classes stays
+            out until the classes are on the page (CH-12503). */}
+        {(data.classes.error || !nothing) && (
           <div className="ch-cl-h__a">
-            <SyncStatus failed={failedList.length} syncing={sync.pending} onRetry={() => void syncClasses(failedList)} />
+            {!data.classes.error && <SyncStatus failed={failedList.length} syncing={sync.pending} onRetry={() => void syncClasses(failedList)} />}
             <Button leftIcon={Upload} onClick={startImport}>
               Import schedule
             </Button>

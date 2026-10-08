@@ -74,7 +74,7 @@ First run is the whole-page empty state (CH-12301), which offers Import schedule
 | 120404 | CH-12304 | `A_CLASS_WITH_TIMES_BUT_NO_DAYS` | A class with times but no days |
 | 120405 | CH-12305 | `A_PLAYER_ON_NO_TEAM` | A player on no team |
 | 120406 | CH-12307 | `AN_IMPORT_WHERE_EVERY_CLASS_IS_ALREADY` | An import where every class is already on the schedule |
-| 120407 | — | `FIRST_RUN_ONLY_WHEN_THE_READ_ANSWERED` | The first-run page (CH-12301) shows only when the classes read answered and the list is empty. A read that failed shows CH-12201 in its place, with no Add class or Import schedule beside it, and the header offers neither. Removing the last class returns to the first-run page. |
+| 120407 | — | `FIRST_RUN_ONLY_WHEN_THE_READ_ANSWERED` | The first-run page (CH-12301) shows only when the classes read answered and the list is empty. A read that failed shows CH-12201 in its place, and the header keeps Import schedule and Add class (a failed read keeps the head and its primary action, owner decision 2026-10-08). Removing the last class returns to the first-run page. |
 | 120408 | CH-12308 | `PHONE_NO_CLASS_MEETS_TODAY` | Phone: no class meets today |
 
 ## 05 — Validation

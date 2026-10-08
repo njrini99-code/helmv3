@@ -994,22 +994,27 @@ describe('Classes, states', () => {
     expect(await screen.findByRole('dialog', { name: 'Import schedule' })).toBeTruthy();
   });
 
-  it('120407 121403 CH-12201 the classes do not load: it says so with a way to ask again, never "no classes", and offers no add or import', async () => {
+  it('120407 121403 CH-12201 the classes do not load: it says so with a way to ask again, never "no classes", and the head keeps Import schedule and Add class', async () => {
     const user = userEvent.setup();
     show(PREVIEW_CLASSES_FAILED);
     await expectCode('CH-12201', /Your classes didn't load.*Nothing is lost\. Your classes are still saved; try again in a moment\./);
     expect(code('CH-12301')).toBeNull();
-    expect(document.querySelector('.ch-cl-h__a')).toBeNull();
+    const head = document.querySelector('.ch-cl-h__a') as HTMLElement;
+    expect(within(head).getByRole('button', { name: 'Import schedule' })).toBeTruthy();
+    expect(within(head).getByRole('button', { name: 'Add class' })).toBeTruthy();
     expect(document.querySelector('.ch-cl-tb')).toBeNull();
     await user.click(within(code('CH-12201') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalledTimes(1);
   });
 
-  it('CH-12201 a failed read is never drawn beside classes: with the error set the notice replaces the deck, and Add and Import are not offered', () => {
+  it('CH-12201 a failed read is never drawn beside classes: with the error set the notice replaces the deck, and the head keeps its actions with no sync status', () => {
     show({ ...PREVIEW_CLASSES, classes: { list: PREVIEW_CLASSES.classes.list, error: true } });
     expect(code('CH-12201')).not.toBeNull();
     expect(document.querySelector('.ch-cl-deck')).toBeNull();
-    expect(document.querySelector('.ch-cl-h__a')).toBeNull();
+    const head = document.querySelector('.ch-cl-h__a') as HTMLElement;
+    expect(within(head).getByRole('button', { name: 'Add class' })).toBeTruthy();
+    expect(within(head).getByRole('button', { name: 'Import schedule' })).toBeTruthy();
+    expect(head.textContent).not.toMatch(/calendar/i);
   });
 
   it('CH-12202 the team’s events do not load: the classes show, the overlap card says it cannot tell, and no overlap is claimed anywhere', async () => {

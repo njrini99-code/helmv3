@@ -9,6 +9,10 @@ The states audit's Classes findings and the owner's native-feel pass, verified i
   classes, so nothing moves when the page lands. On the desktop the deck's placeholders are the Ledger's ruled rows,
   without the radius they kept from the card era.
 - **Press:** the overlaps line on the term's card deepens its wash when pressed.
+- **A failed read keeps the head (owner decision):** when the classes do not load (CH-12201) the head keeps Import
+  schedule and Add class, desktop and phone; before, it offered neither. Delete all classes still waits for the
+  classes (CH-12503). The add sheet cannot check a new class against classes that did not load, and claims no overlap
+  either way. Contract 120407 and the catalog row say so.
 
 ## 2026-10-08 — Phone: Mobile clubhouse pass
 

@@ -10,6 +10,8 @@ The states audit's Rounds findings and the owner's native-feel pass, verified in
   without a full stop.
 - **Press:** a hole on the review's scorecard deepens to the row press tint; the hole steps and the round card's discard
   key compress like every key (`data-ch-press`).
+- **Notices on the green card** take the shared on-green tokens (`--ch-notice-on-green-ink`, `--ch-notice-on-green-body`)
+  instead of copied literals; the notice draws no stripe now (shell).
 - **Loading:** on the phone the list's and the review's skeletons hold the loaded geometry, measured at 390 (the intro,
   the round card at the idle card's height, season scoring, the tools, a month's rows; the review's hero, figures,
   strokes gained and scorecard), so nothing moves when the page lands. On the desktop the review's scorecard loads as a

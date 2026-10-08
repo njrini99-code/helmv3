@@ -1594,12 +1594,11 @@ a.ch-rd-sc:focus-visible {
     background: var(--ch-feature-bg);
     box-shadow: var(--ch-elevation-feature);
   }
-  /* A notice on the card (the round couldn't be checked, its scores or its posting didn't load) takes the card's ivory
-     inks and a light brick rule, as on the shared feature card (shell.css). */
+  /* A notice on the card (the round couldn't be checked, its scores or its posting didn't load) takes the on-green inks,
+     as on the shared feature card (shell.css); the card's own padding insets it. */
   .ch-rd.is-phone .ch-rd-unf .ch-notice--danger {
-    --ch-notice-rule: rgb(236 160 140 / 0.75);
-    --ch-notice-ink: #f2c3b6;
-    --ch-notice-body: var(--ch-on-green-ink-soft);
+    --ch-notice-ink: var(--ch-notice-on-green-ink);
+    --ch-notice-body: var(--ch-notice-on-green-body);
   }
 
   /* Season scoring: the label is the section's heading under the double rule; the average, then the figures between
