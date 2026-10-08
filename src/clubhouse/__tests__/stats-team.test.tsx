@@ -879,10 +879,12 @@ describe('Stats team · the page', () => {
     await user.keyboard('{Enter}');
     expect(putting.getAttribute('aria-pressed')).toBe('true');
     expect(hapticSpy).toHaveBeenCalledWith('select');
-    // A row is a link, so Tab reaches it; focusing it marks the same player on the trend.
-    const row = screen.getByRole('table', { name: 'Strokes gained by leg per player' }).querySelector('a[href*="player=sofia"]') as HTMLElement;
-    expect(row.getAttribute('role')).toBe('row');
-    await act(async () => row.focus());
+    // A row's name is a link (P004-D4: role=row is not allowed on a link), so Tab reaches it; focusing it marks the
+    // same player on the trend.
+    const link = screen.getByRole('table', { name: 'Strokes gained by leg per player' }).querySelector('a[href*="player=sofia"]') as HTMLElement;
+    const row = link.closest('[role="row"]') as HTMLElement;
+    expect(row.tagName).toBe('DIV');
+    await act(async () => link.focus());
     expect(row.className).toMatch(/is-sel/);
     expect(document.querySelector('.ch-sgt__end.is-sel')!.textContent).toMatch(/Sofia/);
   });

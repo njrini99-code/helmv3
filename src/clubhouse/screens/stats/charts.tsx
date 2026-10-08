@@ -20,9 +20,10 @@ export function YardagePage({ title, meta, note, children }: { title: string; me
   return (
     <section className="ch-yb">
       <header className="ch-yb__head">
-        <h3>
+        {/* A page section, so an h2 under the page's h1 (P005-D7: the h3 skipped a level). */}
+        <h2>
           <SerifText text={title} />
-        </h3>
+        </h2>
         {meta && <span className="ch-yb__meta">{meta}</span>}
       </header>
       {children}
@@ -214,7 +215,7 @@ export function ScoreBoardTrend({ rounds }: { rounds: Array<{ label: string; sco
   const ticks = [Math.ceil(lo), Math.round((lo + hi) / 2), Math.floor(hi)];
   return (
     <>
-      <svg viewBox={`0 0 ${w} ${h}`} role="img" aria-label={`Scores: ${rounds.map((r) => r.score).join(', ')}`}>
+      <svg viewBox={`0 0 ${w} ${h}`} role="img" aria-label={`Scores, lower is better: ${rounds.map((r) => r.score).join(', ')}`}>
         {ticks.map((t) => (
           <g key={t}>
             <line x1={0} x2={w} y1={y(t)} y2={y(t)} stroke="var(--ch-border-subtle)" />
@@ -226,6 +227,10 @@ export function ScoreBoardTrend({ rounds }: { rounds: Array<{ label: string; sco
         <line x1={0} x2={w} y1={y(avg)} y2={y(avg)} stroke="var(--ch-st-mean-rule)" strokeDasharray="2 3" />
         <text x={padX} y={y(avg) + 14} className="ch-ax">
           avg {avg.toFixed(1)}
+        </text>
+        {/* The one scoring-axis convention (P005-D1): lower scores sit higher, and the chart says so. */}
+        <text x={w - 4} y={14} textAnchor="end" className="ch-ax">
+          ↑ Lower is better
         </text>
         {pts.length > 1 && <path d={monotonePath(pts)} fill="none" stroke="var(--ch-ink-900)" strokeWidth={1.5} strokeLinecap="round" />}
         {pts.map(([px, py], i) => (

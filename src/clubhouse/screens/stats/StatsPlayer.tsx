@@ -331,7 +331,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
               <SectionBoundary surface="stats.player.rounds" label="The rounds table" code="CH-5206">
                 {data.rounds.length > 0 && (
                   <div className="ch-st-grid2">
-                    <RoundsExtra x={data.extra} filter={data.filter} />
+                    <RoundsExtra x={data.extra} filter={data.filter} share={{ viewer: data.viewer, name: data.name, coach: data.attestingCoach }} />
                   </div>
                 )}
                 <RoundsTable rounds={data.rounds} role={coach ? 'coach' : 'player'} tour={data.tour} holes={data.filter.holes} />

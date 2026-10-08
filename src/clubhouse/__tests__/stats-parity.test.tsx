@@ -755,7 +755,9 @@ describe('Rounds on the phone', () => {
   it('the bests and the comparison are panels above the round list, and a round row names its type', () => {
     showPhone(player());
     const titles = [...document.querySelectorAll('.ch-stm-panel__h h2')].map((h) => h.textContent);
-    expect(titles).toEqual(expect.arrayContaining(['Score by round', 'Personal bests', 'This window against the one before', 'Rounds']));
+    expect(titles).toEqual(expect.arrayContaining(['Scoring trend', 'Personal bests', 'This window against the one before', 'Rounds']));
+    // P005-D1: one scoring chart on the phone. Score by round drew the same rounds one panel below Scoring trend.
+    expect(titles).not.toContain('Score by round');
     expect(titles.indexOf('Personal bests')).toBeLessThan(titles.indexOf('Rounds'));
     expect(document.querySelector('.ch-spm-round .ch-num')!.textContent).toContain('Practice');
   });

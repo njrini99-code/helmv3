@@ -30,7 +30,7 @@ import { RosterSkeleton } from '@/clubhouse/screens/roster/RosterSkeleton';
 import { PREVIEW_PLAYER_ROSTER, PREVIEW_PLAYER_ROSTER_EMPTY, PREVIEW_PLAYER_ROSTER_FAILED, PREVIEW_ROSTER, PREVIEW_ROSTER_EMPTY, PREVIEW_ROSTER_FAILED, PREVIEW_ROSTER_PARTIAL } from '@/clubhouse/preview/fixtures-roster';
 import { StatsTeam } from '@/clubhouse/screens/stats/StatsTeam';
 import { StatsPlayer } from '@/clubhouse/screens/stats/StatsPlayer';
-import { StatsProfileSkeleton, StatsSkeleton } from '@/clubhouse/screens/stats/StatsSkeleton';
+import { StatsSkeletonFor } from '@/clubhouse/screens/stats/StatsRouteSkeleton';
 import {
   PREVIEW_PLAYER,
   PREVIEW_PLAYER_EARLY,
@@ -298,7 +298,7 @@ export default async function ClubhousePreview({
       path: '/golf/dashboard/stats',
       node:
         state === 'loading' ? (
-          <StatsSkeleton />
+          <StatsSkeletonFor profile={false} />
         ) : state === 'empty' ? (
           <StatsTeam data={{ ...PREVIEW_TEAM_STATS, roundCount: 0, grid: [], players: [], putting: null, bests: [], filterOptions: { ...PREVIEW_TEAM_STATS.filterOptions, rounds: [], total: 0, courses: [] } }} />
         ) : state === 'failed' ? (
@@ -326,7 +326,7 @@ export default async function ClubhousePreview({
         state === 'failed' ? (
           <StatsPlayer data={{ ...PREVIEW_PLAYER, roundsError: true, statsError: true, devError: true }} coachId="preview-coach" />
         ) : state === 'loading' ? (
-          <StatsProfileSkeleton coach />
+          <StatsSkeletonFor profile />
         ) : state === 'filtered' ? (
           <StatsPlayer data={PREVIEW_PLAYER_FILTERED} coachId="preview-coach" />
         ) : state === 'nomatch' ? (

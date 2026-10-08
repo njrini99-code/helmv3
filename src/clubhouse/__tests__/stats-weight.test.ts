@@ -161,7 +161,11 @@ describe('the calculator\'s per-round counts', () => {
 
   it('are the calculator\'s own with eighteen-hole rounds only, and with no holes', () => {
     const s = stats();
-    expect(perEighteen(s, [r('a', 18, 75), r('b', 18, 76)])).toBe(s);
+    // The counts stay the calculator's; the scoring average is always the window's posted totals (P005-D2).
+    const out = perEighteen(s, [r('a', 18, 75), r('b', 18, 76)]);
+    expect(out.scoringAverage).toBe(75.5);
+    expect(out.scoringAverage18).toBe(75.5);
+    expect({ ...out, scoringAverage: 75, scoringAverage18: 75 }).toEqual(s);
     const none = stats({ holesPlayed: 0 });
     expect(perEighteen(none, [r('a', 9, 38)])).toBe(none);
   });

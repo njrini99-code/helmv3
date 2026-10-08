@@ -126,7 +126,12 @@ export function perEighteen(s: GolfStats, rounds: ChRound[]): GolfStats {
   // A nine-hole round always has its holes (only an 18-hole total can be posted without them), so the calculator read it.
   const nine = rounds.some((r) => (r.holes_played ?? 18) !== 18) && s.holesPlayed > 0;
   const totalOnly = rounds.some((r) => !hasHoleScores(r));
-  if (!nine && !totalOnly) return s;
+  // Even with every round's holes in, Game detail's scoring average is the headline's (P005-D2): one round set, one
+  // mean of the posted totals, whatever the calculator summed from the holes.
+  if (!nine && !totalOnly) {
+    const avg = s.holesPlayed > 0 ? weightedMean(rounds, (r) => r.total_score) : null;
+    return avg == null || avg === s.scoringAverage18 ? s : { ...s, scoringAverage: avg, scoringAverage18: avg };
+  }
   const per = (total: number) => (total * 18) / s.holesPlayed;
   const avg = weightedMean(rounds, (r) => r.total_score);
   const ofKind = (k: ChRoundKind) => rounds.filter((r) => r.total_score != null && roundKind(r.round_type) === k);

@@ -1,5 +1,21 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-08 — Premium pass: the ledger grid, one scoring axis
+
+Approved by the owner on 2026-10-08 (P004-A1; findings D1, D4, D6, D7).
+
+- **The ledger grid (A1).** "Where each player gains and loses" is a ruled
+  ledger, not 28 tinted boxes: hairline rows, right-aligned tabular figures
+  coloured by sign, a hairline track under each with a tick at the team's median
+  for that leg and a dot at the player's value. The chosen leg is a 2px column
+  rule and a 4% wash; the worst losing leg in a row keeps an 8% amber wash.
+- **Rows are divs (D4).** `role="row"` moved off the link; the name is the link
+  and its hit area covers the row, so the whole row still opens the player.
+- **One scoring axis (D1).** Every scoring chart puts lower scores higher and
+  says "Lower is better" (the phone's ScoreLine, the desktop trend's caption).
+- **Loading (D6, D7).** The preview's loading state draws the phone's own
+  skeleton on a phone, and every skeleton keeps a hidden h1.
+
 ## 2026-10-08 — Copy: typographic apostrophes
 
 Team stats writes its apostrophes as ’: the export's failure (CH-4001), the

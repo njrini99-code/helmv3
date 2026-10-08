@@ -15,3 +15,9 @@ export function StatsRouteSkeleton() {
   if (useChPhone()) return profile ? <StatsPlayerPhoneSkeleton /> : <StatsTeamPhoneSkeleton />;
   return profile ? <StatsProfileSkeleton coach={role === 'coach'} /> : <StatsSkeleton />;
 }
+
+/** The same choice for a known page (the dev preview): the phone's own skeleton on a phone (P004-D6, P005-D13). */
+export function StatsSkeletonFor({ profile, coach = true }: { profile: boolean; coach?: boolean }) {
+  if (useChPhone()) return profile ? <StatsPlayerPhoneSkeleton /> : <StatsTeamPhoneSkeleton />;
+  return profile ? <StatsProfileSkeleton coach={coach} /> : <StatsSkeleton />;
+}

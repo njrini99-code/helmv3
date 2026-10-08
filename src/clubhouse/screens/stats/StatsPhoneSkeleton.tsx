@@ -79,6 +79,8 @@ export function StatsTeamPhoneSkeleton() {
       <p className="ch-stm-cover" aria-hidden="true"><Skeleton width={180} height={12} /></p>
       <Panel rows={0} chart height={0} title="Scoring trend" />
       <Panel rows={5} height={266} title="Strokes gained by leg" />
+      {/* P004-D7: the page keeps its one h1 while it loads (last, so the loaded order stays). */}
+      <h1 className="ch-sr-only">Team stats</h1>
     </main>
   );
 }
@@ -113,6 +115,7 @@ export function StatsPlayerPhoneSkeleton() {
       </div>
       <Panel rows={5} height={266} title="Strokes gained" />
       <Panel rows={4} height={175} title="Game detail" />
+      <h1 className="ch-sr-only">Player stats</h1>
     </main>
   );
 }

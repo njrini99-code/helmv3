@@ -25,7 +25,7 @@ import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { firstValue, gappedPath, lastValue } from '../../lib/chart';
 import { formatSigned, NO_DATA } from '../../lib/format';
-import { sgBaseline, sgScale, sgTint } from '../../lib/sg';
+import { sgBaseline, sgScale } from '../../lib/sg';
 import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, StatsFilter } from './StatsFilter';
 import { teamPlayerHref } from './links';
@@ -293,7 +293,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
           <span>
             {isSg
               ? `Per round, weekly average · dashed line is ${baseline.noun} · names show the window average`
-              : `Team and players · par 72 · ${data.roundCount} ${data.roundCount === 1 ? 'round' : 'rounds'} · dashed line is par · names show the window average`}
+              : `Team and players · par 72 · ${data.roundCount} ${data.roundCount === 1 ? 'round' : 'rounds'} · dashed line is par · lower is better · names show the window average`}
           </span>
         </div>
         <div className="ch-sgt__tools">
@@ -474,6 +474,23 @@ function LegTrend({ leg, data, mean, selected, onSelect }: { leg: ChLeg; data: A
   );
 }
 
+/** The middle of a leg's known values (the team's benchmark tick on the grid), or null with none. */
+function median(xs: Array<number | null>): number | null {
+  const v = xs.filter((x): x is number => x != null).sort((a, b) => a - b);
+  if (!v.length) return null;
+  const m = Math.floor(v.length / 2);
+  return v.length % 2 ? v[m]! : (v[m - 1]! + v[m]!) / 2;
+}
+
+/** The leg a player loses most in, when they lose strokes in any; null otherwise. */
+export function worstLeg(legs: Array<number | null>): number | null {
+  let worst: number | null = null;
+  legs.forEach((v, i) => {
+    if (v != null && v < 0 && (worst == null || v < legs[worst]!)) worst = i;
+  });
+  return worst;
+}
+
 /** Which rounds the grid reads, in a clause: the window's own words, or what the filter selects. */
 function gridBasis(filter: ChFilter): string {
   const b = basisWords(filter);
@@ -494,9 +511,12 @@ function LegGrid({
   const playerHref = (id: string) => teamPlayerHref(id, data.filter);
   const li = LEGS_LIST.indexOf(leg);
   const rows = [...data.grid].sort((a, b) => (b.legs[li] ?? -99) - (a.legs[li] ?? -99));
-  // The tint scales to the largest cell in the grid (rounded up, at least 1), not to a fixed 1.2.
+  // P004-A1: a ruled ledger, not 28 tinted boxes. Each cell is its signed number over a hairline track scaled to the
+  // grid's largest cell (rounded up, at least 1), with one short tick at the team's median for that leg and a dot at
+  // the player's value. Only the worst losing leg in a row keeps a wash, so "who loses most" still shows.
   const scale = sgScale(data.grid.flatMap((g) => g.legs));
-  const fill = (v: number | null) => sgTint(v, scale);
+  const medians = LEGS_LIST.map((_, i) => median(data.grid.map((g) => g.legs[i] ?? null)));
+  const at = (v: number) => `${Math.max(0, Math.min(100, 50 + (v / scale) * 50)).toFixed(1)}%`;
   return (
     <section className="ch-lg">
       <div className="ch-sgt__head">
@@ -524,29 +544,40 @@ function LegGrid({
               <span role="columnheader" className="r">Total</span>
               <span role="columnheader" className="r">Trend</span>
             </div>
-            {rows.map((g) => (
-              <Link
+            {rows.map((g) => {
+              const worst = worstLeg(g.legs);
+              return (
+              // P004-D4: the row is a div (role=row is not allowed on a link); the name is the link, and its hit area
+              // covers the row, so the whole row still opens the player.
+              <div
                 key={g.id}
-                href={playerHref(g.id)}
                 role="row"
                 className={'ch-lg__r' + (g.id === focus ? ' is-sel' : '')}
-                onMouseEnter={() => setFocus(g.id)}
-                onFocus={() => setFocus(g.id)}
               >
                 <span role="cell" className="ch-who">
                   <Avatar name={g.name} size={30} />
                   <span>
-                    <b>{g.name}</b>
+                    <Link href={playerHref(g.id)} className="ch-lg__a" onFocus={() => setFocus(g.id)} onMouseEnter={() => setFocus(g.id)}>
+                      <b>{g.name}</b>
+                      <LinkPending />
+                    </Link>
                     <span className="ch-who__m ch-num">
                       {g.rounds} {g.rounds === 1 ? 'round' : 'rounds'}
                     </span>
                   </span>
                 </span>
-                {g.legs.map((v, i) => (
-                  <span key={i} role="cell" className={'ch-lg__cell ch-num' + (i === li ? ' is-col' : '')} style={{ background: fill(v) }}>
-                    <span className={v == null ? '' : v >= 0 ? 'ch-gain' : 'ch-loss'}>{v == null ? NO_DATA : formatSigned(v)}</span>
-                  </span>
-                ))}
+                {g.legs.map((v, i) => {
+                  const med = medians[i];
+                  return (
+                    <span key={i} role="cell" className={'ch-lg__cell' + (i === li ? ' is-col' : '') + (i === worst ? ' is-worst' : '')}>
+                      <span className={'ch-num ' + (v == null ? '' : v >= 0 ? 'ch-gain' : 'ch-loss')}>{v == null ? NO_DATA : formatSigned(v)}</span>
+                      <span className="ch-lg__track" aria-hidden="true">
+                        {med != null && <i className="ch-lg__med" style={{ left: at(med) }} />}
+                        {v != null && <i className={'ch-lg__dot ' + (v >= 0 ? 'is-gain' : 'is-loss')} style={{ left: at(v) }} />}
+                      </span>
+                    </span>
+                  );
+                })}
                 <span
                   role="cell"
                   data-ch-code={g.total == null ? 'CH-4308' : undefined}
@@ -564,9 +595,9 @@ function LegGrid({
                     </>
                   )}
                 </span>
-                <LinkPending />
-              </Link>
-            ))}
+              </div>
+              );
+            })}
           </div>
         </Swap>
       )}

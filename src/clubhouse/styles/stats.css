@@ -674,47 +674,63 @@
   overflow-x: auto;
 }
 .ch-lg__r {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(200px, 1.4fr) repeat(4, minmax(84px, 1fr)) 70px 80px;
-  gap: 6px;
-  align-items: center;
+  gap: 0;
+  align-items: stretch;
   min-width: 760px;
-  padding: 6px 8px;
+  padding: 0 8px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 0;
   background: none;
+  box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
   color: inherit;
   text-align: left;
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-a.ch-lg__r {
-  text-decoration: none;
-  cursor: pointer;
+.ch-lg__r > * {
+  align-self: center;
 }
 .ch-lg__r.is-sel {
-  background: var(--ch-ivory-50);
+  background: var(--ch-ledger-row-hover);
+}
+/* P004-D4: the name is the row's link; its hit area covers the row, so the whole row still opens the player. */
+.ch-lg__a {
+  color: inherit;
+  text-decoration: none;
+}
+.ch-lg__a::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+}
+.ch-lg__a:focus-visible {
+  outline: none;
+}
+.ch-lg__a:focus-visible::after {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: -2px;
 }
 @media (hover: hover) {
-  a.ch-lg__r:hover {
-    background: var(--ch-ivory-50);
+  .ch-lg__r:has(.ch-lg__a):hover {
+    background: var(--ch-ledger-row-hover);
   }
 }
 /* A press deepens the row's tint over the press beat (the shell's CH-1606: a row never scales). */
-a.ch-lg__r:active {
+.ch-lg__r:has(.ch-lg__a:active) {
   background: var(--ch-ledger-row-press);
   transition-duration: var(--ch-dur-press);
 }
-/* Inside the grid's scroller an outset ring would be clipped. */
-a.ch-lg__r:focus-visible {
-  outline-offset: -2px;
-}
 .ch-lg__r--h {
-  padding-bottom: 8px;
+  padding-block: 0 8px;
   font: 500 11.5px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
+  box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
 }
 .ch-lg__r .c {
-  text-align: center;
+  padding: 0 14px;
+  text-align: right;
 }
 .ch-lg__r .r {
   justify-self: end;
@@ -724,15 +740,57 @@ a.ch-lg__r:focus-visible {
   font-weight: 600;
   color: var(--ch-green-700);
 }
+/* P004-A1: the grid is a ruled ledger. A cell is its signed number, right-aligned in tabular figures and coloured only
+   by sign, over a hairline track: a short tick at the team's median for the leg and a dot at the player's value. The
+   chosen leg is a 2px column rule and a 4% wash; the worst losing leg in a row keeps an 8% amber wash. */
 .ch-lg__cell {
   display: grid;
-  place-items: center;
-  height: 36px;
-  border-radius: 8px;
+  grid-template-rows: auto 6px;
+  align-content: center;
+  gap: 5px;
+  align-self: stretch;
+  min-height: 44px;
+  padding: 0 14px;
   font: 600 13.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 .ch-lg__cell.is-col {
-  box-shadow: inset 0 0 0 1.5px rgb(21 90 57 / 0.35);
+  background: color-mix(in oklab, var(--ch-green-600) 4%, transparent);
+  box-shadow: inset 2px 0 0 color-mix(in oklab, var(--ch-green-600) 55%, transparent);
+}
+.ch-lg__cell.is-worst {
+  background: color-mix(in oklab, var(--ch-chart-loss) 8%, transparent);
+}
+.ch-lg__cell.is-col.is-worst {
+  background: color-mix(in oklab, var(--ch-chart-loss) 10%, transparent);
+}
+.ch-lg__track {
+  position: relative;
+  height: 6px;
+  background: linear-gradient(var(--ch-ledger-rule-soft), var(--ch-ledger-rule-soft)) center / 100% 1px no-repeat;
+}
+.ch-lg__track i {
+  position: absolute;
+  translate: -50% 0;
+}
+.ch-lg__med {
+  top: 0;
+  width: 1px;
+  height: 6px;
+  background: var(--ch-ink-500);
+}
+.ch-lg__dot {
+  top: 1px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+.ch-lg__dot.is-gain {
+  background: var(--ch-chart-gain);
+}
+.ch-lg__dot.is-loss {
+  background: var(--ch-chart-loss);
 }
 .ch-lg__tot {
   font: 600 15px/1 var(--ch-font-sans);
@@ -788,7 +846,7 @@ a.ch-lg__r:focus-visible {
 }
 /* The card's title in the display serif, as the trend card and every page's panels (words only; its digits, if any,
    in the sans through SerifText). */
-.ch-yb__head h3 {
+.ch-yb__head h2 {
   font: var(--ch-type-serif-s);
   letter-spacing: -0.006em;
   color: var(--ch-ink-900);
@@ -1338,6 +1396,24 @@ a.ch-lg__r:focus-visible {
   background: rgb(244 242 234 / 0.86);
   -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
+}
+/* P005-D5: without backdrop-filter, or under Reduce Transparency, the sticky bar is opaque parchment. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .ch-gd__nav {
+    background: var(--ch-bg-page);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .ch-gd__nav {
+    background: var(--ch-bg-page);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+:root[data-reduce-transparency] .ch-gd__nav {
+  background: var(--ch-bg-page);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 .ch-gd__src {
   margin-left: auto;
@@ -2489,6 +2565,27 @@ a.ch-lg__r:focus-visible {
   }
 }
 
+/* P005-A2: one surface in Game detail on desktop (the phone pass's rule, "never a card inside a card"). Each section
+   is the one card; inside it the tiles lose their boxes and sit between hairlines, divided by soft rules, as the
+   phone's ledger tiles. Each tile draws the rule to its left and above it, and the grid clips the outer ones. */
+@media (min-width: 821px) {
+  .ch-gd:not(.is-phone) :is(.ch-gx-tiles, .ch-par3) {
+    gap: 0;
+    overflow: hidden;
+    border-top: 1px solid var(--ch-ledger-rule);
+    border-bottom: 1px solid var(--ch-ledger-rule);
+  }
+  .ch-gd:not(.is-phone) :is(.ch-gx-tiles > div, .ch-par3__t) {
+    padding: 14px 16px;
+    border-radius: 0;
+    background: none;
+    box-shadow: -1px 0 0 var(--ch-ledger-rule-soft), 0 -1px 0 var(--ch-ledger-rule-soft);
+  }
+  :where(html[data-fw-theme='dark']) .ch-gd:not(.is-phone) :is(.ch-gx-tiles > div, .ch-par3__t) {
+    box-shadow: -1px 0 0 var(--ch-ledger-rule-soft), 0 -1px 0 var(--ch-ledger-rule-soft);
+  }
+}
+
 /* Game detail, the parity pass (PARITY.md): the rules line, More detail, tiles, tables, per-round lines, sectors. */
 .ch-gx-rule {
   margin: 0;
@@ -3411,7 +3508,7 @@ a.ch-lg__r:focus-visible {
     padding: 0 0 12px;
     border-bottom-color: var(--ch-ledger-rule);
   }
-  .ch-st[data-canopy] .ch-yb__head h3 {
+  .ch-st[data-canopy] .ch-yb__head h2 {
     color: var(--ch-ledger-ink);
   }
   .ch-st[data-canopy] :is(.ch-sgt, .ch-lg) {
@@ -3885,7 +3982,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.22), inset 0 1px 0 rgb(255 255 255 / 0.05);
 }
 :where(html[data-fw-theme='dark']) .ch-lg__cell.is-col {
-  box-shadow: inset 0 0 0 1.5px rgb(107 187 140 / 0.4);
+  background: color-mix(in oklab, var(--ch-green-600) 7%, transparent);
+  box-shadow: inset 2px 0 0 color-mix(in oklab, var(--ch-green-600) 70%, transparent);
 }
 :where(html[data-fw-theme='dark']) .ch-yb__head {
   border-bottom-color: var(--ch-border-subtle);
@@ -4001,4 +4099,28 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 :where(html[data-fw-theme='dark']) .ch-sf__chip {
   box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.32);
+}
+
+/* The personal-best card (P005-C2): Share under the bests, and the card's preview in its sheet at the card's own 4:5. */
+.ch-bestcard__act {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.ch-bestcard {
+  display: grid;
+  place-items: center;
+}
+.ch-bestcard img,
+.ch-bestcard__hold {
+  display: block;
+  width: min(100%, 300px);
+  aspect-ratio: 4 / 5;
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-elevation-reading);
+}
+@media (max-width: 820px) {
+  .ch-bestcard__act .ch-btn {
+    min-height: 44px;
+  }
 }

@@ -207,7 +207,8 @@ function Trend({ data }: { data: ChTeamStats }) {
 /**
  * The phone's scoring line (m-stats.jsx `Trend`; CH-4805): scores oldest to newest,
  * gaps skipped, the mean dashed, the newest point larger. Lower scores sit
- * higher, so a line that climbs is a player getting better.
+ * higher, so a line that climbs is a player getting better, and the axis says
+ * so: "Lower is better", the one scoring-axis convention (P004-D1).
  */
 export function ScoreLine({ values, from, to, label }: { values: Array<number | null>; from: string; to: string; label: string }) {
   const pts = values.map((v, i) => ({ v, i })).filter((p): p is { v: number; i: number } => p.v != null);
@@ -251,7 +252,7 @@ export function ScoreLine({ values, from, to, label }: { values: Array<number | 
   });
   const spot = corners.find((c) => c.clear >= 4) ?? [...corners].sort((a, b) => b.clear - a.clear)[0]!;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="ch-stm-chart" role="img" aria-label={label}>
+    <svg viewBox={`0 0 ${W} ${H}`} className="ch-stm-chart" role="img" aria-label={`${label} Lower scores sit higher.`}>
       <line x1={pad} x2={W - pad} y1={y(mean)} y2={y(mean)} className="ch-stm-chart__mean" />
       <text x={spot.end ? W - pad : pad} y={spot.ty} textAnchor={spot.end ? 'end' : 'start'} className="ch-stm-chart__t">
         Mean {formatFixed(mean)}
@@ -262,6 +263,9 @@ export function ScoreLine({ values, from, to, label }: { values: Array<number | 
       ))}
       <text x={pad} y={H - 2} className="ch-stm-chart__t">
         {from}
+      </text>
+      <text x={W / 2} y={H - 2} textAnchor="middle" className="ch-stm-chart__t">
+        ↑ Lower is better
       </text>
       <text x={W - pad} y={H - 2} textAnchor="end" className="ch-stm-chart__t">
         {to}

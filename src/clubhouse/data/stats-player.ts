@@ -168,6 +168,8 @@ export interface ChPlayerProfile {
   devError: boolean;
   nav: { index: number; total: number; prev: string; next: string } | null;
   roundsError: boolean;
+  /** The team's primary coach by name, for the personal-best card's attesting line (P005-C2); null when unknown or unread. */
+  attestingCoach?: string | null;
 }
 
 /**
@@ -211,6 +213,8 @@ export async function loadPlayerProfile(input: {
   // Coaches compare against the active team and page through it; players see only themselves.
   const teamMembersRead = coach ? Promise.resolve(supabase.from('golf_team_members').select('player_id').eq('team_id', input.teamId).eq('status', 'active')) : null;
   const ownRoundsRead = loadSeasonRounds(supabase, [input.playerId], { surface: 'stats', since: loadSince(f) });
+  // The personal-best card's attesting coach (P005-C2): the team's primary coach on staff. A failed read only drops the line.
+  const coachRead = attestingCoachName(supabase, input.teamId);
   const focusRead = Promise.resolve(
     supabase
       .from('golf_player_focus_areas')
@@ -462,7 +466,9 @@ export async function loadPlayerProfile(input: {
     }
   }
 
+  const attestingCoach = await coachRead;
   return {
+    attestingCoach,
     viewer: input.viewer,
     window: f.window,
     filter: f,
@@ -545,4 +551,17 @@ export async function loadPlayerProfile(input: {
     nav,
     roundsError: seasonRes.error,
   };
+}
+
+/** The team's primary coach's name (else any coach on its staff), or null; never throws. */
+async function attestingCoachName(supabase: Awaited<ReturnType<typeof createClient>>, teamId: string): Promise<string | null> {
+  try {
+    const staff = await supabase.from('golf_team_coach_staff').select('coach_id, is_primary').eq('team_id', teamId).limit(10);
+    if (staff.error || !staff.data?.length) return null;
+    const lead = [...staff.data].sort((a, b) => Number(!!b.is_primary) - Number(!!a.is_primary))[0]!;
+    const coach = await supabase.from('golf_coaches').select('full_name').eq('id', lead.coach_id).maybeSingle();
+    return coach.error ? null : coach.data?.full_name?.trim() || null;
+  } catch {
+    return null;
+  }
 }

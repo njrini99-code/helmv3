@@ -1,5 +1,32 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-08 — Premium pass: one round set, one chart, one surface, the best card
+
+Approved by the owner on 2026-10-08 (P005-A2, C2; findings D1, D2, D5 to D8, D12, D13).
+
+- **One round set (D2).** The hero, Game detail and the charts read the same
+  rounds: Game detail's scoring average is always the window's posted totals
+  (`perEighteen`), and the preview's Last 10 reads 73.6 everywhere.
+- **One chart and one axis on the phone (D1).** Scoring trend draws every round in
+  the window; Score by round is desktop only. Score charts put lower scores higher
+  and say "Lower is better"; the mean label moves off any value label
+  (`meanLabelSpot`).
+- **One surface in Game detail (A2).** On desktop each section is the one card;
+  its tiles and par tiles sit between hairlines with soft rules, no boxes inside.
+  The sticky section bar is opaque without backdrop-filter or under Reduce
+  Transparency (D5).
+- **The personal-best card (C2).** Personal bests offer "Share best score": a
+  dated card (the score, to par when it is the same round, the course, the date,
+  "Attested by" the team's primary coach), drawn on a canvas and handed to the
+  share sheet, or downloaded where there is none (CH-5810, CH-5005). It never
+  shows a school or team name, and a coach's card names the player by first
+  name and last initial. The loader reads the attesting coach from
+  `golf_team_coach_staff` and `golf_coaches`; a failed read drops the line.
+- **Findings.** One h1 on the phone (the bar's title is plain text) and the
+  overview's section titles are h2 (D7); Development rows show units (D8, fixture
+  metric ids); the phone's change chip says "SG a round" (D6); "holes" and
+  "Par 4s: 65%" (D12); the loading preview is the phone's own (D13).
+
 ## 2026-10-08 — Security: Add focus area trusts only the session
 
 `createFocusArea` (shared with Fairway) no longer trusts the browser. The coach
