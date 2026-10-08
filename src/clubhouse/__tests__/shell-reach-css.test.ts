@@ -46,6 +46,13 @@ describe('CH-1815 every phone key reaches 44 by 44', () => {
     expect(px(bell, 'margin')).toBe(-2);
   });
 
+  it('CH-1806 the hero bell shows keyboard focus as a champagne ring off the disc, with no shadow of its own', () => {
+    const focus = withProp(shell, '.ch-root[data-phone-hero] .ch-topbar .ch-bell:focus-visible', 'outline');
+    expect(focus).toMatch(/outline:\s*2px solid var\(--ch-champagne-300\)/);
+    expect(focus).toMatch(/outline-offset:\s*0/);
+    expect(focus).not.toMatch(/box-shadow/);
+  });
+
   it("a sheet's close reaches 44 inside its header, which clips, even with a title alone", () => {
     const close = withProp(controls, '.ch-modal__head .ch-iconbtn::before', 'inset');
     const m = /inset:\s*-(\d+)px -(\d+)px -(\d+)px/.exec(close)!;

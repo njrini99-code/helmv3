@@ -1,5 +1,12 @@
 # P001 — Shell: changelog
 
+## 2026-10-08 — The hero bell shows keyboard focus
+
+On Home's green bar the bell showed no focus at all (CH-1806): the keys' green focus shadow lost to the disc's own
+ring, and its green would have vanished on the hero anyway. It now takes a champagne outline 2px off the disc, with no
+shadow; at rest it is unchanged. Checked in WebKit at 390: reached with Option-Tab, it matches `:focus-visible` with a
+2px `#dccda6` outline at offset 0 and only its own inset ring for a shadow; the bar at rest is pixel-identical.
+
 ## 2026-10-08 — The pushed bar for forms, Settings sections and a coach's player
 
 - **Forms (CH-1402).** The coach's qualifier forms (new and edit) load under their own bar: the plain Cancel and the

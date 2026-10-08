@@ -1212,6 +1212,12 @@ button.ch-more__row[disabled] {
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
     color: var(--ch-ivory-100);
   }
+  /* Keyboard focus on the green (CH-1806): the keys' focus shadow loses to the disc's own ring here, and its green would
+     vanish on the hero anyway, so the bell takes a champagne ring 2px off the disc (the clear border's width), no shadow. */
+  .ch-root[data-phone-hero] .ch-topbar .ch-bell:focus-visible {
+    outline: 2px solid var(--ch-champagne-300);
+    outline-offset: 0;
+  }
   /* A full-page form hides the tab bar (usePhoneTabsHidden): its Cancel and submit are in the top bar. */
   .ch-root[data-phone-notabs] .ch-tabbar {
     display: none;
