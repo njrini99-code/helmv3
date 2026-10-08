@@ -8,6 +8,7 @@ import { Bell } from './Bell';
 import { useCrumbTrail } from './crumbs';
 import { PushedTopStandIn, usePhoneChromeState } from './phone-chrome';
 import { useClubhouseRole } from './context';
+import { AskSheetButton } from './AskSheet';
 
 /** The board's page gears: on CoachHelm and Team Hub a coach's gear opens that page's Settings section (?section=). */
 const PAGE_SETTINGS: ReadonlyArray<{ path: string; section: string; label: string }> = [
@@ -78,6 +79,7 @@ export function TopBar({
         </div>
       )}
       <div className="ch-topbar__actions">
+        <AskSheetButton />
         <Bell />
         <Link
           href={pageSettings ? `/golf/dashboard/settings?section=${pageSettings.section}` : '/golf/dashboard/settings'}

@@ -1,5 +1,23 @@
 # P001 — Shell: changelog
 
+## 2026-10-08 — Ask as a sheet over any screen
+
+Approved by the owner on 2026-10-08.
+
+- **Ask from anywhere (CH-1840–CH-1842).** A coach's top bar has an Ask key on
+  every page except CoachHelm itself. It opens CoachHelm's Ask as a sheet over
+  the page:
+  - Phone: half height with the page in view, growing to full when a thread
+    starts.
+  - Desktop: centred.
+
+  A "Looking at" chip names the page, and a one-player page hands the chat that
+  player as context. It is the same chat hook and route, so there is no new
+  spend, and the chat is saved and opens in CoachHelm. The chat's code and
+  styles load on first open (`shell/AskSheet.tsx`, `AskSheetBody.tsx`); the
+  CoachHelm chat files are imported, not edited.
+- The sheet has no roster, so its message box hides the mention key.
+
 ## 2026-10-08 — Press-and-hold peek and the player peek (P003-C1 primitive)
 
 Approved by the owner on 2026-10-08.

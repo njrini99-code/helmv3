@@ -1207,7 +1207,8 @@ button.ch-more__row[disabled] {
   }
   /* The 40px disc is a 44px key (CH-1815): a clear 2px border is the reach, the fill and ring stop inside it, and the
      negative margin keeps the disc where it was drawn. */
-  .ch-root[data-phone-hero] .ch-topbar .ch-bell {
+  .ch-root[data-phone-hero] .ch-topbar .ch-bell,
+  .ch-root[data-phone-hero] .ch-topbar .ch-topbar__ask {
     width: 44px;
     height: 44px;
     margin: -2px;
@@ -1220,7 +1221,8 @@ button.ch-more__row[disabled] {
   }
   /* Keyboard focus on the green (CH-1806): the keys' focus shadow loses to the disc's own ring here, and its green would
      vanish on the hero anyway, so the bell takes a champagne ring 2px off the disc (the clear border's width), no shadow. */
-  .ch-root[data-phone-hero] .ch-topbar .ch-bell:focus-visible {
+  .ch-root[data-phone-hero] .ch-topbar .ch-bell:focus-visible,
+  .ch-root[data-phone-hero] .ch-topbar .ch-topbar__ask:focus-visible {
     outline: 2px solid var(--ch-champagne-300);
     outline-offset: 0;
   }
@@ -2473,7 +2475,8 @@ html[data-fw-theme='dark'] .ch-offline {
     background: var(--ch-light-bar), var(--ch-frame);
   }
   html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-topbar__team,
-  html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-topbar .ch-bell {
+  html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-topbar .ch-bell,
+  html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-topbar .ch-topbar__ask {
     color: var(--ch-on-green-ink);
   }
   /* The crest's coin stays ivory on the green, as in the day. */
@@ -2590,4 +2593,152 @@ html[data-fw-theme='dark'] .ch-offline {
 }
 :where(html[data-fw-theme='dark']) .ch-resume__go {
   color: var(--ch-hero-mint-strong);
+}
+
+/* Ask as a sheet (shell/AskSheet.tsx, CH-1840–CH-1842; owner, 2026-10-08): CoachHelm's Ask over any screen. Desktop: a
+   centred sheet. Phone: a bottom sheet with a half and a full detent; the page stays in view above the half one. */
+.ch-asks {
+  box-sizing: border-box;
+  width: min(calc(100% - 32px), 620px);
+  max-width: none;
+  height: auto;
+  max-height: none;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  color: var(--ch-text-primary);
+}
+.ch-asks::backdrop {
+  background: rgb(20 20 18 / 0.32);
+  animation: ch-fade var(--ch-dur-base) var(--ch-ease);
+}
+:where(html[data-fw-theme='dark']) .ch-asks::backdrop {
+  background: rgb(0 0 0 / 0.55);
+}
+.ch-asks__panel {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  max-height: min(calc(100dvh - 64px), 760px);
+  overflow: hidden;
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-elevation-overlay), var(--ch-highlight);
+  animation: ch-pop var(--ch-dur-base) var(--ch-ease);
+}
+.ch-asks__head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 12px 4px 20px;
+}
+.ch-asks__title {
+  flex: 1;
+  margin: 0;
+  font: var(--ch-type-display-s);
+  color: var(--ch-text-primary);
+}
+.ch-root .ch-asks__title:focus {
+  outline: none;
+}
+.ch-asks .ch-asks__ctx {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  margin: 4px 20px 8px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
+  background: var(--ch-bg-inset);
+  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  font: var(--ch-type-label-s);
+  color: var(--ch-text-secondary);
+}
+.ch-asks__ctx b {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+.ch-asks__scroll {
+  flex: 1;
+  min-height: 72px;
+  padding: 4px 20px 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.ch-asks__hint {
+  margin: 8px 0 0;
+  font: var(--ch-type-body);
+  color: var(--ch-text-secondary);
+}
+.ch-asks__dock {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 16px calc(14px + env(safe-area-inset-bottom));
+  box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+}
+.ch-asks__open {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: 5px;
+  min-height: 32px;
+  font: var(--ch-type-label-s);
+  color: var(--ch-green-700);
+  text-decoration: none;
+}
+.ch-asks__grab {
+  display: none;
+}
+/* The sheet has no roster to mention from; the full Ask (Open in CoachHelm) has. */
+.ch-asks .ch-ask-cmp__round[aria-label='Mention a player'] {
+  display: none;
+}
+@media (max-width: 820px) {
+  .ch-asks {
+    position: fixed;
+    inset: auto 0 0;
+    width: 100%;
+    height: auto;
+    margin: 0;
+  }
+  .ch-asks__panel {
+    height: 56dvh;
+    max-height: none;
+    border-radius: 22px 22px 0 0;
+    box-shadow: var(--ch-elevation-sheet);
+    transition: height var(--ch-dur-base) var(--ch-ease);
+  }
+  .ch-asks__panel[data-detent='full'] {
+    height: calc(100dvh - env(safe-area-inset-top) - 12px);
+  }
+  .ch-asks__grab {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 100%;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    background: none;
+    touch-action: none;
+  }
+  .ch-asks__grab i {
+    width: 36px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--ch-border-strong);
+  }
+  .ch-asks__head {
+    padding-top: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-asks__panel {
+    transition: none;
+  }
 }
