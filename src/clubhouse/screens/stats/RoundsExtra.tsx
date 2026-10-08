@@ -4,7 +4,8 @@ import type { ChBests } from '../../data/stats-figures';
 import type { ChProfileExtra } from '../../data/stats-player';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { DataTable, Empty, RoundLine, Rule, Tiles } from './detail';
-import { bestCardFields, BestCardShare } from './BestCard';
+import { BestCardShare } from './BestCard';
+import { bestCardFields } from './best-card-fields';
 import type { ChViewer } from '../../data/stats-player';
 
 /**

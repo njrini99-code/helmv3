@@ -44,7 +44,7 @@ describe('the mean label keeps off the values (P005-D1)', () => {
   });
 });
 
-import { bestCardFields } from '../screens/stats/BestCard';
+import { bestCardFields } from '../screens/stats/best-card-fields';
 
 describe('the personal-best card (P005-C2)', () => {
   const bests = {
