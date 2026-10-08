@@ -114,6 +114,13 @@ export function TabBar({
   useEffect(() => {
     if (!moreOpen) return;
     const trigger = moreBtn.current;
+    // P001-D3: the page, its bars and the dock go inert under the sheet, so VoiceOver's swipe can't reach them (aria-modal
+    // alone is not enough in Safari). Put back before focus returns to More.
+    const behind = Array.from(document.querySelectorAll<HTMLElement>('.ch-root > .ch-app, .ch-root > .ch-tabbar, .ch-root > .ch-dock, .ch-root > .ch-skip'));
+    const was = behind.map((el) => el.inert);
+    behind.forEach((el) => {
+      el.inert = true;
+    });
     // The sheet mounts in the same commit, so it can take focus right away.
     sheet.current?.querySelector<HTMLElement>('a, button')?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
@@ -133,6 +140,9 @@ export function TabBar({
     window.addEventListener('keydown', onKey);
     return () => {
       window.removeEventListener('keydown', onKey);
+      behind.forEach((el, i) => {
+        el.inert = was[i] ?? false;
+      });
       // Back on More without a ring after a tap (F-46); a keyboard user still lands on it.
       trigger?.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
     };

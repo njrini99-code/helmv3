@@ -2,7 +2,9 @@
 
 import { LazyMotion } from 'motion/react';
 import { loadMaxFeatures } from '@/lib/motion/load-features';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { useChPhone } from '../lib/use-phone';
+import { useChDynamicType } from '../lib/dynamic-type';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 import { clubhouseFontVariables } from '../lib/fonts';
 import { chTagSession } from '../lib/track';
@@ -80,7 +82,7 @@ export function ClubhouseFrame({
         <LightProvider timeZone={shell.timezone ?? null} at={lightAt}>
           <PhoneChromeProvider>
             {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
-            <FrameRoot motionOff={!showAnimations} fullScreen={fullScreen}>
+            <FrameRoot motionOff={!showAnimations} fullScreen={fullScreen} homeRoot={rebuilt && pathname.replace(/\/$/, '') === '/golf/dashboard'}>
               <ToastProvider scope={userData.teamId ?? ''}>
                 <CrumbProvider>
                   <AskSheetProvider pathname={pathname} search={search}>
@@ -119,9 +121,16 @@ export function ClubhouseFrame({
 }
 
 /** `.ch-root`, marked while a pushed phone screen covers the page, so toasts sit above its composer instead of the hidden tab bar. */
-function FrameRoot({ motionOff, fullScreen, children }: { motionOff: boolean; fullScreen: boolean; children: ReactNode }) {
-  const { immersive, noTabs, hero } = usePhoneChromeState();
+function FrameRoot({ motionOff, fullScreen, homeRoot, children }: { motionOff: boolean; fullScreen: boolean; homeRoot: boolean; children: ReactNode }) {
+  const { immersive, noTabs, hero: pageHero } = usePhoneChromeState();
+  // P001-D4: Home's phone bar is the green hero's from the server's first paint (the device's last layout, F-36), not
+  // "Home" until the page's usePhoneHero lands after hydration. From then on the page's own flag decides.
+  const phone = useChPhone();
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const hero = pageHero || (!hydrated && phone && homeRoot);
   usePhoneEdges(hero);
+  useChDynamicType();
   return (
     <div
       className={`ch-root ${clubhouseFontVariables}`}

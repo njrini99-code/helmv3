@@ -42,6 +42,9 @@ export function Modal({
   const phone = useChPhone();
   const { ref, reduced, retainContent } = useDialogLifetime(open, {
     direction: phone ? 'bottom' : 'center', surfaceSelector: '.ch-modal__panel',
+    // The heading takes focus as the sheet opens, not the Close key: a tap-opened sheet shows no ring on Close, and
+    // VoiceOver starts on the title (P001 shared finding). Tab goes on to Close and the rest.
+    focusSelector: '.ch-modal__titles h2',
   });
   const drag = useSheetDrag(ref, onClose, { enabled: phone && !reduced });
 
@@ -73,7 +76,9 @@ export function Modal({
               </span>
             )}
             <div className="ch-modal__titles">
-              <h2 id={titleId}>{title}</h2>
+              <h2 id={titleId} tabIndex={-1}>
+                {title}
+              </h2>
               {description && <p id={descriptionId}>{description}</p>}
             </div>
             <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label="Close" onClick={onClose}>

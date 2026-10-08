@@ -1,5 +1,42 @@
 # P001 — Shell: changelog
 
+## 2026-10-08 — Shared findings from the premium audit (P001 D1–D7, D5-1, P008-C1)
+
+- **Reduce Transparency everywhere it can be read (D1).** Every glass token
+  (`--ch-glass-bg`, the blur, the tab bar and composer fills) turns opaque under
+  `prefers-reduced-transparency` and under `html[data-reduce-transparency]`.
+  WebKit on iOS has no media query, so the iPhone app's native bridge will set
+  that attribute (wave 2). The phone's green top bar is no longer turned to
+  parchment by the old fallback.
+- **More is modal for VoiceOver too (D3).** While the sheet is up, the page, its
+  bars and the dock are `inert`; they are put back before focus returns to More.
+  The scrim already dims the green bar (D2, re-checked in WebKit: the bar goes
+  from 19/57/38 to 16/46/30).
+- **Home's phone bar is right from the first paint (D4).** On a phone (the
+  layout cookie), Home's server HTML already draws the green hero bar, so it no
+  longer flips from "Home" to the team after hydration.
+- **The date eyebrow is not tracked (D5).** 0.01em at 12.5–13px in the canopy
+  head and `PageIntro`.
+- **Shell colours on tokens (D6).** The repeated literals in shell.css
+  (champagne, on-green inks, the press well, the skeleton sweep) are `--ch-*`
+  tokens. The dark skeleton reads the same tokens. 44 hex literals are down to
+  20, mostly mask blacks and whites.
+- **Increase Contrast (D7).** Under `prefers-contrast: more`, one token block
+  strengthens rules, hairlines and borders, sets the eyebrow and tertiary text
+  to the secondary ink, makes glass opaque and drops the light's rim.
+- **Failure titles in ink (D5-1).** A notice's title is the page's ink; only its
+  icon carries the danger colour (`--ch-notice-icon`).
+- **Sheets open on their title.** `Modal` focuses its heading, so a sheet opened
+  by a tap shows no ring on Close and VoiceOver starts on the title. A field
+  that asked for focus keeps it (`useDialogLifetime`).
+- **One h1 per screen.** `PhoneTop` and `PhoneBar` take `heading={false}` when
+  the page draws its own h1.
+- **Real Dynamic Type (P008-C1).** Every `--ch-type-*` step is a multiple of
+  `--ch-type-k`, which follows the root size (rem) and the iPhone's Text Size
+  (`--ch-type-scale`, read from `-apple-system-body`, capped at XXL;
+  `lib/dynamic-type.ts`). At a 130% root a 13px step draws at 16.9px (WebKit).
+  Pages still sized in raw px do not scale until they move to the tokens.
+
 ## 2026-10-08 — Ask as a sheet over any screen
 
 Approved by the owner on 2026-10-08.

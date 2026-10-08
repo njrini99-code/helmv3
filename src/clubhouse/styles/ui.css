@@ -908,8 +908,8 @@ button.ch-feat {
 }
 /* 12px, the phone text floor (F09): PageIntro opens a page on the phone (lead, 2026-10-08). */
 .ch-intro__eyebrow {
-  font: 500 12px/1.2 var(--ch-font-sans);
-  letter-spacing: 0.14em;
+  font: 500 13px/1.2 var(--ch-font-sans);
+  letter-spacing: 0.01em;
   color: var(--ch-ledger-eyebrow);
 }
 .ch-intro__row {

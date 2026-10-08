@@ -99,12 +99,12 @@
   font: 600 18px/1 var(--ch-font-sans);
   letter-spacing: -0.03em;
   font-variation-settings: 'wdth' 92;
-  color: #fbfaf6;
+  color: var(--ch-on-green-bright);
 }
 .ch-brand__team {
   overflow: hidden;
   font: 500 12.5px/1.2 var(--ch-font-sans);
-  color: #cfc7b2;
+  color: var(--ch-on-green-glyph);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -129,7 +129,7 @@
   }
 }
 .ch-brand--switch:focus-visible {
-  outline: 2px solid #dccda6;
+  outline: 2px solid var(--ch-champagne-300);
   outline-offset: 1px;
 }
 .ch-brand--switch[aria-busy='true'] {
@@ -162,7 +162,7 @@
 }
 .ch-brand__team--switch svg {
   flex: none;
-  color: #cfc7b2;
+  color: var(--ch-on-green-glyph);
 }
 /* The coach's teams, under the brand block: a popover panel (.ch-popover) of two or three rows. */
 .ch-tsw {
@@ -191,13 +191,13 @@
 }
 .ch-tsw__opt:focus-visible {
   outline: none;
-  background: #ece8de;
+  background: var(--ch-press-well);
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
 }
 @media (hover: hover) {
   .ch-tsw__opt:hover {
     outline: none;
-    background: #ece8de;
+    background: var(--ch-press-well);
     box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
   }
 }
@@ -241,7 +241,7 @@
 .ch-nav__section {
   padding: 18px 10px 6px;
   font: 500 12px/1 var(--ch-font-sans);
-  color: #dccda6;
+  color: var(--ch-champagne-300);
   opacity: 0.8;
 }
 .ch-navitem {
@@ -251,7 +251,7 @@
   height: 32px;
   padding: 0 10px;
   border-radius: var(--ch-radius-md);
-  color: #e9e4d6;
+  color: var(--ch-on-green-label);
   font: 500 13.5px/1 var(--ch-font-sans);
   letter-spacing: -0.006em;
   text-decoration: none;
@@ -259,28 +259,28 @@
     box-shadow var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-navitem svg {
-  color: #cfc7b2;
+  color: var(--ch-on-green-glyph);
   transition: color var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-navitem:hover {
     background: rgb(250 248 241 / 0.07);
-    color: #fbfaf6;
+    color: var(--ch-on-green-bright);
   }
 }
 @media (hover: hover) {
   .ch-navitem:hover svg {
-    color: #f4f1e8;
+    color: var(--ch-on-green-plate);
   }
 }
 .ch-navitem:focus-visible {
-  outline: 2px solid #dccda6;
+  outline: 2px solid var(--ch-champagne-300);
   outline-offset: 1px;
 }
 /* A tapped row takes the selected look on the first frame and the old one lets go of it (LinkPending). */
 .ch-navitem[aria-current='page'],
 .ch-navitem:has(.ch-lp) {
-  background: linear-gradient(180deg, #fdfcf8, #f4f1e8);
+  background: linear-gradient(180deg, var(--ch-ivory-25), var(--ch-on-green-plate));
   color: var(--ch-green-800);
   font-weight: 600;
   box-shadow: 0 0 0 1px rgb(176 149 96 / 0.45), 0 1px 2px rgb(0 0 0 / 0.25), 0 6px 14px -8px rgb(0 0 0 / 0.45),
@@ -295,7 +295,7 @@
 .ch-navitem__count {
   margin-left: auto;
   font: 500 12px/1 var(--ch-font-sans);
-  color: #dccda6;
+  color: var(--ch-champagne-300);
 }
 .ch-sidebar__foot {
   display: flex;
@@ -311,7 +311,7 @@
   gap: 8px;
   padding: 12px;
   border-radius: var(--ch-radius-lg);
-  background: linear-gradient(180deg, #fdfcf8, #f4f1e8);
+  background: linear-gradient(180deg, var(--ch-ivory-25), var(--ch-on-green-plate));
   color: var(--ch-text-primary);
   text-decoration: none;
   box-shadow: 0 0 0 1px rgb(176 149 96 / 0.4), 0 8px 18px -10px rgb(0 0 0 / 0.5), inset 0 1px 0 #fff;
@@ -380,11 +380,11 @@
 }
 .ch-identity__name {
   font: 600 14px/1.3 var(--ch-font-sans);
-  color: #fbfaf6;
+  color: var(--ch-on-green-bright);
 }
 .ch-identity__meta {
   font: var(--ch-type-caption);
-  color: #cfc7b2;
+  color: var(--ch-on-green-glyph);
 }
 
 /* Top bar */
@@ -483,7 +483,7 @@
    route error (RouteErrorView) is the same anatomy in the danger tone. */
 .ch-empty-page {
   --ch-medallion-bg: var(--ch-green-800);
-  --ch-medallion-ink: #f4f1e8;
+  --ch-medallion-ink: var(--ch-on-green-plate);
   --ch-medallion-rings: rgb(21 90 57 / 0.1);
   display: grid;
   place-items: center;
@@ -683,7 +683,8 @@
 /* The notice (InlineNotice, PageNotice): a part of the page could not load. Flush in the Ledger (lead decision under
    the owner's full-auto brief, 2026-10-08, revised the same day; owner to confirm): it sits between the section's
    own engraved rules and draws nothing of its own, no fill, no ring and no stripe, so its icon lines up with the
-   section's heading. The icon and the title carry the danger ink, the body the secondary ink. Try again sits beside
+   section's heading. The icon carries the danger ink; the title keeps the page's ink (D5-1, owner 2026-10-08: red is for
+   under par and destructive actions, so a failure is named in ink and flagged by its icon), the body the secondary ink. Try again sits beside
    the words, or under them in a narrow rail (the notice is its own size container) and on the phone. The inks and
    the fill are local properties, so a notice on a dark or a floating surface is restyled in one rule;
    --ch-notice-rule stays as a hook but is no longer drawn. On the green (the FeatureCard, a board card) a context
@@ -694,6 +695,7 @@
   --ch-notice-on-green-body: var(--ch-on-green-ink-soft);
   --ch-notice-rule: var(--ch-ledger-rule);
   --ch-notice-ink: var(--ch-text-primary);
+  --ch-notice-icon: var(--ch-notice-ink);
   --ch-notice-body: var(--ch-text-secondary);
   --ch-notice-fill: none;
   container: ch-notice / inline-size;
@@ -703,7 +705,7 @@
   background: var(--ch-notice-fill);
 }
 .ch-notice--danger {
-  --ch-notice-ink: var(--ch-danger-600);
+  --ch-notice-icon: var(--ch-danger-600);
 }
 .ch-notice__in {
   display: grid;
@@ -714,7 +716,7 @@
 }
 .ch-notice .ch-notice__icon {
   margin-top: 1.5px;
-  color: var(--ch-notice-ink);
+  color: var(--ch-notice-icon);
 }
 .ch-notice__txt {
   display: flex;
@@ -766,7 +768,8 @@
 }
 /* On the one green feature card (ui/Ledger.tsx) the notice takes the on-green inks. */
 .ch-feat .ch-notice--danger {
-  --ch-notice-ink: var(--ch-notice-on-green-ink);
+  --ch-notice-ink: var(--ch-on-green-ink);
+  --ch-notice-icon: var(--ch-notice-on-green-ink);
   --ch-notice-body: var(--ch-notice-on-green-body);
 }
 
@@ -777,7 +780,7 @@
    parchment): about 1.2:1 on the workspace, with a soft sheen. */
 .ch-skel {
   display: block;
-  background: linear-gradient(100deg, #e2dbca 42%, #ece6d8 50%, #e2dbca 58%) 0 0 / 200vw 100% fixed;
+  background: linear-gradient(100deg, var(--ch-skel-base) 42%, var(--ch-skel-sheen) 50%, var(--ch-skel-base) 58%) 0 0 / 200vw 100% fixed;
   animation: ch-shimmer var(--ch-dur-shimmer) linear infinite;
 }
 @media (min-width: 821px) {
@@ -795,7 +798,7 @@
     position: absolute;
     left: 0;
     border-radius: 6px;
-    background: linear-gradient(100deg, #e2dbca 42%, #ece6d8 50%, #e2dbca 58%) 0 0 / 200vw 100% fixed;
+    background: linear-gradient(100deg, var(--ch-skel-base) 42%, var(--ch-skel-sheen) 50%, var(--ch-skel-base) 58%) 0 0 / 200vw 100% fixed;
     animation: ch-shimmer var(--ch-dur-shimmer) linear infinite;
     content: '';
   }
@@ -1207,7 +1210,18 @@ button.ch-more__row[disabled] {
   }
   /* The 40px disc is a 44px key (CH-1815): a clear 2px border is the reach, the fill and ring stop inside it, and the
      negative margin keeps the disc where it was drawn. */
-  .ch-root[data-phone-hero] .ch-topbar .ch-bell,
+  .ch-root[data-phone-hero] .ch-topbar .ch-bell {
+    width: 44px;
+    height: 44px;
+    margin: -2px;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 0.08);
+    background-clip: padding-box;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+    color: var(--ch-ivory-100);
+  }
+  /* The Ask key (CH-1840) is the bell's twin on the hero. */
   .ch-root[data-phone-hero] .ch-topbar .ch-topbar__ask {
     width: 44px;
     height: 44px;
@@ -1221,7 +1235,10 @@ button.ch-more__row[disabled] {
   }
   /* Keyboard focus on the green (CH-1806): the keys' focus shadow loses to the disc's own ring here, and its green would
      vanish on the hero anyway, so the bell takes a champagne ring 2px off the disc (the clear border's width), no shadow. */
-  .ch-root[data-phone-hero] .ch-topbar .ch-bell:focus-visible,
+  .ch-root[data-phone-hero] .ch-topbar .ch-bell:focus-visible {
+    outline: 2px solid var(--ch-champagne-300);
+    outline-offset: 0;
+  }
   .ch-root[data-phone-hero] .ch-topbar .ch-topbar__ask:focus-visible {
     outline: 2px solid var(--ch-champagne-300);
     outline-offset: 0;
@@ -1605,14 +1622,14 @@ button.ch-more__row[disabled] {
 .ch-bellp__row:focus-visible {
   /* .ch-menu__item hover: the design system's popover item */
   outline: none;
-  background: #ece8de;
+  background: var(--ch-press-well);
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
 }
 @media (hover: hover) {
   .ch-bellp__row:hover {
     /* .ch-menu__item hover: the design system's popover item */
     outline: none;
-    background: #ece8de;
+    background: var(--ch-press-well);
     box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
   }
 }
@@ -1864,10 +1881,31 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     background: var(--ch-bg-page);
   }
 }
+/* Less transparency (the media query, or html[data-reduce-transparency] where WebKit lacks it, P001-D1): the tab bar and
+   the desktop top bar are solid. The phone's top bar is the opaque green chassis already, so it is left alone. The glass
+   tokens themselves turn opaque in tokens.css. */
 @media (prefers-reduced-transparency: reduce) {
-  .ch-topbar,
   .ch-tabbar {
     background: var(--ch-bg-page);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+:root[data-reduce-transparency] .ch-tabbar {
+  background: var(--ch-bg-page);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+@media (min-width: 821px) and (prefers-reduced-transparency: reduce) {
+  .ch-topbar {
+    background: var(--ch-workspace);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (min-width: 821px) {
+  :root[data-reduce-transparency] .ch-topbar {
+    background: var(--ch-workspace);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
@@ -1913,9 +1951,10 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     color: var(--ch-ledger-ink);
     text-shadow: 0 1px 0 rgb(255 255 255 / 0.9), 0 -1px 0 rgb(28 25 18 / 0.18);
   }
+  /* P001-D5: not tracked (letterspaced mixed case read as a mistake); colour and the double rule carry the hierarchy. */
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] :is(.ch-h-head__date, .ch-hl-role, .ch-hero__eyebrow) {
-    font: 500 11px/1.3 var(--ch-font-sans);
-    letter-spacing: 0.14em;
+    font: 500 12.5px/1.3 var(--ch-font-sans);
+    letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] p {
@@ -2068,7 +2107,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   }
   .ch-topbar {
     border-bottom-color: rgb(110 98 62 / 0.08);
-    background: color-mix(in oklab, #f7f2e6 88%, transparent);
+    background: color-mix(in oklab, var(--ch-topbar-paper) 88%, transparent);
   }
 }
 
@@ -2419,7 +2458,7 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::before,
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::after {
-    background: linear-gradient(100deg, #252c26 42%, #2e362f 50%, #252c26 58%) 0 0 / 200vw 100% fixed;
+    background: linear-gradient(100deg, var(--ch-skel-base) 42%, var(--ch-skel-sheen) 50%, var(--ch-skel-base) 58%) 0 0 / 200vw 100% fixed;
   }
 }
 @media (min-width: 821px) and (prefers-reduced-transparency: reduce) {
@@ -2437,7 +2476,7 @@ html[data-fw-theme='dark'] .ch-empty-page__seg i {
   background: rgb(237 231 216 / 0.12);
 }
 :where(html[data-fw-theme='dark']) .ch-skel {
-  background: linear-gradient(100deg, #252c26 42%, #2e362f 50%, #252c26 58%) 0 0 / 200vw 100% fixed;
+  background: linear-gradient(100deg, var(--ch-skel-base) 42%, var(--ch-skel-sheen) 50%, var(--ch-skel-base) 58%) 0 0 / 200vw 100% fixed;
 }
 html[data-fw-theme='dark'] .ch-scrim {
   background: rgb(0 0 0 / 0.55);
@@ -2521,7 +2560,9 @@ html[data-fw-theme='dark'] .ch-offline {
     display: none;
   }
   /* The keyboard covers the bottom of the screen: the dock steps aside while a field has focus. */
-  .ch-root:has(:is(input, textarea, select, [contenteditable='true']):focus) .ch-dock {
+  .ch-root:has(input:focus) .ch-dock,
+  .ch-root:has(textarea:focus) .ch-dock,
+  .ch-root:has([contenteditable='true']:focus) .ch-dock {
     display: none;
   }
   .ch-dock-spacer {
@@ -2711,7 +2752,6 @@ html[data-fw-theme='dark'] .ch-offline {
     max-height: none;
     border-radius: 22px 22px 0 0;
     box-shadow: var(--ch-elevation-sheet);
-    transition: height var(--ch-dur-base) var(--ch-ease);
   }
   .ch-asks__panel[data-detent='full'] {
     height: calc(100dvh - env(safe-area-inset-top) - 12px);
@@ -2735,10 +2775,5 @@ html[data-fw-theme='dark'] .ch-offline {
   }
   .ch-asks__head {
     padding-top: 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ch-asks__panel {
-    transition: none;
   }
 }

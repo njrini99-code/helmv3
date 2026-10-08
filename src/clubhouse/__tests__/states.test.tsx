@@ -336,7 +336,9 @@ describe('CH-1609 skeletons draw bars and rules, not filled cards', () => {
     );
     expect([...container.querySelectorAll('.ch-skel')].map((s) => s.classList.contains('ch-skel--block'))).toEqual([true, true, false, false, false, true]);
     expect(rule("  [data-ui='clubhouse'] main[data-canopy] .ch-skel--block")).toMatch(/border-radius: 0 !important;[\s\S]*animation: none;/);
-    expect(rule('.ch-skel')).toContain('#e2dbca');
+    // The deeper shade (states audit, 2026-10-08), through its token since P001-D6.
+    expect(rule('.ch-skel')).toContain('var(--ch-skel-base)');
+    expect(readFileSync(join(root, 'styles/tokens.css'), 'utf8')).toMatch(/--ch-skel-base: #e2dbca;/);
   });
 
   it('SkelLine holds the line box; SkelRows are Ledger rows; SkelRule is the rule', () => {

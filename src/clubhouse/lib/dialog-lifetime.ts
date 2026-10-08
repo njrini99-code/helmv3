@@ -54,7 +54,10 @@ export function useDialogLifetime(open: boolean, {
       if (!dialog.open) {
         opener.current = document.activeElement;
         dialog.showModal();
-        if (focusSelector) dialog.querySelector<HTMLElement>(focusSelector)?.focus({ preventScroll: true });
+        // A field that asked for focus (autoFocus) keeps it; otherwise the named element (a title) takes it.
+        const active = document.activeElement;
+        const typing = active instanceof HTMLElement && dialog.contains(active) && active.matches('input, textarea, select, [contenteditable="true"]');
+        if (focusSelector && !typing) dialog.querySelector<HTMLElement>(focusSelector)?.focus({ preventScroll: true });
       }
       return;
     }
