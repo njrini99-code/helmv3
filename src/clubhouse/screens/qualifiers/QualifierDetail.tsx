@@ -1,11 +1,10 @@
 'use client';
 
 import { ChevronDown, Lock, LockOpen, Flag, Pencil, Users } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, ViewTransition, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChQDetailCore, ChQDetailSecondary } from '../../data/qualifiers';
 import { Avatar } from '../../ui/Avatar';
-import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
@@ -21,10 +20,11 @@ import { useLastGood } from '../../lib/use-last-good';
 import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { formatFixed } from '../../lib/format';
-import { dayLabel, plural, positionLabel, shortRange, yearOf, type ChQBoard, type ChQHole, type ChQRound, type ChQRow, type ChQStatus } from './model';
-import { StateBadge, StatusPill, ToPar } from './parts';
-import { useLiveStandings } from './live';
-import { Courses, Selections, StaleStandings } from './QualifierSections';
+import { bubbleNote, dayLabel, endedLive, plural, positionLabel, sampleNote, shortRange, yearOf, type ChQBoard, type ChQHole, type ChQRound, type ChQRow, type ChQStatus } from './model';
+import { Pos, StateBadge, StatusPill, ToPar, ToParPlate } from './parts';
+import { useLiveStandings, type ChLiveFeed, type LiveFeedView } from './live';
+import { useRankSlide } from './rank-slide';
+import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSections';
 import { QualifierDetailPhone } from './QualifierDetailPhone';
 import { LIST_HREF, noteIfSelectionLink, useStepBack } from './return-state';
 import { CardBodySkeleton, ParLineSkeleton, SecondaryProvider, Streamed, fulfilled, secondaryOf, settled, type ChQDetailView } from './streamed';
@@ -44,12 +44,15 @@ export function QualifierDetail({
   secondary,
   writes = LIVE_WRITES,
   live = true,
+  feed: forcedFeed,
 }: {
   data: ChQDetailView;
   /** The courses and the scorecards, streaming in behind the standings. A fixture or a test may give them inside `data` instead. */
   secondary?: PromiseLike<ChQDetailSecondary>;
   writes?: ChQWrites;
   live?: boolean;
+  /** The preview's stand-in for the realtime feed (it draws without one): the chip shows this state instead. */
+  feed?: { feed: ChLiveFeed; updatedAt: number };
 }) {
   const router = useRouter();
   // Back is a step back in history when the list opened this qualifier (the list returns with its filter, search and place), and the
@@ -66,7 +69,15 @@ export function QualifierDetail({
   const [status, setStatus] = useState<ChQStatus>(data.status);
   const [confirmClose, setConfirmClose] = useState(false);
   useEffect(() => setStatus(data.status), [data.status]);
-  useLiveStandings(data.id, live && status === 'in_progress');
+  const liveFeed = useLiveStandings(data.id, live && status === 'in_progress', fresh);
+  const feed: LiveFeedView = {
+    feed: status !== 'in_progress' ? 'off' : (forcedFeed?.feed ?? liveFeed.feed),
+    version: fresh,
+    updatedAt: forcedFeed?.updatedAt,
+    refresh: liveFeed.refresh,
+    // P009-D3: still open after its last day reads "Ended · n rounds outstanding", never Live.
+    ended: endedLive({ status, endDate: data.endDate, today: data.today, entrants: data.entrants, numRounds: data.numRounds, submitted: data.board?.submitted ?? null }),
+  };
 
   // What follows a landed write is part of the action, not of the button that started it, so the toast's Retry
   // (which runs the action again) finishes the job too: the pill changes, the question closes, the page re-reads.
@@ -147,6 +158,7 @@ export function QualifierDetail({
           onBack={back.onBack}
           onSelectionClick={selectionClick}
           status={status}
+          feed={feed}
           onAskClose={() => {
             chTrail('qualifiers close ask');
             setConfirmClose(true);
@@ -168,7 +180,7 @@ export function QualifierDetail({
         <header className="ch-qf-head" data-canopy-head="">
           <div>
             <span className="ch-qf-eyebrow">
-              <StatusPill status={status} />
+              <StatusPill status={status} ended={feed.ended} />
               <span>Qualifier</span>
             </span>
             <h1>{data.name}</h1>
@@ -228,7 +240,7 @@ export function QualifierDetail({
         <div className="ch-qf-body">
           <div className="ch-qf-col">
             <SectionBoundary surface="qualifiers.leaderboard" label="The leaderboard" code="CH-09212">
-              <Leaderboard data={data} status={status} stale={stale} />
+              <Leaderboard data={data} status={status} stale={stale} feed={feed} />
             </SectionBoundary>
             {coach && b && b.rows.length > 0 && (
               <SectionBoundary surface="qualifiers.rounds" label="Round-by-round scores" code="CH-09213">
@@ -319,9 +331,10 @@ function Facts({ data, topScore }: { data: ChQDetailCore; topScore: number }) {
   );
 }
 
-const LB_COLS = '44px minmax(0, 1fr) 56px 56px 60px 104px 28px';
+/** Pos, Player, Thru, Avg, Total, To par (the plate), Status, the scorecards' chevron (P009-A1, C2). */
+const LB_COLS = '56px minmax(0, 1fr) 48px 52px 52px 64px 108px 28px';
 
-function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQStatus; stale: boolean }) {
+function Leaderboard({ data, status, stale, feed }: { data: ChQDetailCore; status: ChQStatus; stale: boolean; feed: LiveFeedView }) {
   const { refresh, refreshing } = useRefresh();
   const [open, setOpen] = useState<string | null>(null);
   const [announce, setAnnounce] = useState('');
@@ -336,6 +349,9 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
     }
     if (submitted != null) setAnnounce(`Standings updated. ${plural(submitted, 'round')} submitted.`);
   }, [submitted]);
+  const order = useMemo(() => (b?.rows ?? []).map((r) => r.playerId), [b]);
+  // P009-B1: a refresh that changed the ranks slides the rows to their new places, unless a scorecard tray is open.
+  const slide = useRankSlide(order, open !== null);
 
   const head = (
     <div className="ch-qf-panel__head">
@@ -343,11 +359,7 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
         <h2 id="ch-qf-lb">Leaderboard</h2>
         {b && <p className="ch-num">Ranked by total to par · {plural(b.submitted, 'round')} submitted</p>}
       </div>
-      {status === 'in_progress' && b && (
-        <Badge tone="accent" dot>
-          Updates as rounds are signed
-        </Badge>
-      )}
+      {status === 'in_progress' && b && <LiveChip view={feed} />}
     </div>
   );
 
@@ -406,7 +418,10 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
             <span role="columnheader">Pos</span>
             <span role="columnheader">Player</span>
             <span role="columnheader" className="r">
-              Rounds
+              Thru
+            </span>
+            <span role="columnheader" className="r">
+              Avg
             </span>
             <span role="columnheader" className="r">
               Total
@@ -427,62 +442,75 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
             const isOpen = open === r.playerId;
             const me = r.playerId === data.viewerPlayerId;
             const openable = canOpen(r);
+            const note = sampleNote(r, b, data.numRounds);
             return (
               <div key={r.playerId}>
                 {i === b.topScore && b.topScore > 0 && <CutLine text={`Top-score line · ${b.topScore} qualify on score`} />}
                 {i === b.squad && b.squad !== b.topScore && <CutLine muted text={`Travel cut · top ${b.squad} make the trip`} />}
-                {/* The row is a mouse target too; the keyboard path is the scorecards button in its last cell. */}
-                {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus */}
-                <div
-                  className={'ch-qf-row' + (openable ? ' ch-qf-rowbtn' : '') + (isOpen ? ' is-open' : '') + (me ? ' is-me' : '')}
-                  role="row"
-                  style={{ gridTemplateColumns: LB_COLS }}
-                  onClick={openable ? () => toggle(r) : undefined}
-                >
-                  <span role="cell" className="ch-qf-pos">
-                    {positionLabel(r)}
-                  </span>
-                  <span role="rowheader" className="ch-qf-who">
-                    <Avatar name={r.name} size={32} />
-                    <span>
-                      <b>
-                        {r.name}
-                        {me && <span className="ch-qf-you">You</span>}
-                      </b>
-                      {r.classYear && <small>{r.classYear}</small>}
+                {/* P009-B1: the row slides to a new rank only when a refresh changed the order (`slide`); otherwise it never moves. */}
+                <ViewTransition name={`ch-rank-${r.playerId}`} update={slide ? 'ch-rank' : 'none'} enter="none" exit="none" share="none" default="none">
+                  {/* The row is a mouse target too; the keyboard path is the scorecards button in its last cell (44pt on touch). */}
+                  {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus */}
+                  <div
+                    className={'ch-qf-row' + (openable ? ' ch-qf-rowbtn' : '') + (isOpen ? ' is-open' : '') + (me ? ' is-me' : '')}
+                    role="row"
+                    style={{ gridTemplateColumns: LB_COLS }}
+                    onClick={openable ? () => toggle(r) : undefined}
+                  >
+                    <span role="cell">
+                      <Pos position={r.position} tied={r.tied} move={r.move} />
                     </span>
-                  </span>
-                  <span role="cell" className="r ch-qf-num">
-                    {r.played}/{data.numRounds}
-                  </span>
-                  <span role="cell" className="r ch-qf-num">
-                    {r.total ?? '—'}
-                  </span>
-                  <span role="cell" className="r">
-                    <ToPar value={r.toPar} big />
-                  </span>
-                  <span role="cell" className="r">
-                    <StateBadge state={r.state} />
-                  </span>
-                  <span role="cell">
-                    {openable && (
-                      <button
-                        type="button"
-                        className="ch-qf-open"
-                        aria-expanded={isOpen}
-                        aria-controls={`ch-qf-tray-${r.playerId}`}
-                        aria-label={`${isOpen ? 'Hide' : 'Show'} ${me ? 'your' : `${r.name}’s`} scorecards`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggle(r);
-                        }}
-                      >
-                        {/* One chevron that turns over base (CH-09602), not two that swap. */}
-                        <Icon icon={ChevronDown} size={15} />
-                      </button>
-                    )}
-                  </span>
-                </div>
+                    <span role="rowheader" className="ch-qf-who">
+                      <Avatar name={r.name} size={32} />
+                      <span>
+                        <b>
+                          {r.name}
+                          {me && <span className="ch-qf-you">You</span>}
+                        </b>
+                        {(r.classYear || note) && (
+                          <small>
+                            {r.classYear}
+                            {r.classYear && note ? ' · ' : ''}
+                            {note && <span className="ch-qf-thin">{note}</span>}
+                          </small>
+                        )}
+                      </span>
+                    </span>
+                    <span role="cell" className="r ch-qf-num">
+                      {r.played}/{data.numRounds}
+                    </span>
+                    <span role="cell" className="r ch-qf-num">
+                      {r.avg != null ? formatFixed(r.avg) : '—'}
+                    </span>
+                    <span role="cell" className="r ch-qf-num">
+                      {r.total ?? '—'}
+                    </span>
+                    <span role="cell" className="r">
+                      <ToParPlate value={r.toPar} />
+                    </span>
+                    <span role="cell" className="r">
+                      <StateBadge state={r.state} />
+                    </span>
+                    <span role="cell">
+                      {openable && (
+                        <button
+                          type="button"
+                          className="ch-qf-open"
+                          aria-expanded={isOpen}
+                          aria-controls={`ch-qf-tray-${r.playerId}`}
+                          aria-label={`${isOpen ? 'Hide' : 'Show'} ${me ? 'your' : `${r.name}’s`} scorecards`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggle(r);
+                          }}
+                        >
+                          {/* One chevron that turns over base (CH-09602), not two that swap. */}
+                          <Icon icon={ChevronDown} size={15} />
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                </ViewTransition>
                 {/* CH-09602: the row turns selected (quick) and its scorecards drop 6px into place as they fade in (base),
                     at their final values; closing takes the tray away at once. */}
                 {isOpen && (
@@ -497,8 +525,8 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
           })}
           {b.unscored.map((r) => (
             <div key={r.playerId} className={'ch-qf-row is-none' + (r.playerId === data.viewerPlayerId ? ' is-me' : '')} role="row" style={{ gridTemplateColumns: LB_COLS }}>
-              <span role="cell" className="ch-qf-pos">
-                —
+              <span role="cell">
+                <Pos position={null} tied={false} move={null} />
               </span>
               <span role="rowheader" className="ch-qf-who">
                 <Avatar name={r.name} size={32} />
@@ -519,6 +547,9 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
               <span role="cell" className="r ch-qf-dash">
                 —
               </span>
+              <span role="cell" className="r ch-qf-dash">
+                —
+              </span>
               <span role="cell" />
               <span role="cell" />
             </div>
@@ -527,7 +558,8 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
       </div>
       <p className="ch-qf-cap">
         Ranked by total to par, then total strokes, then more rounds played. Top {b.topScore} qualify on score
-        {data.picks ? `; ${plural(data.picks, 'coach’s pick', 'coach’s picks')}` : ''}.{data.rules ? ` ${data.rules}` : ''}
+        {data.picks ? `; ${plural(data.picks, 'coach’s pick', 'coach’s picks')}` : ''}.{bubbleNote(data.numRounds, status)}
+        {data.rules ? ` ${data.rules}` : ''}
       </p>
     </section>
   );

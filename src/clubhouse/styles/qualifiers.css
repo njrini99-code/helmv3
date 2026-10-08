@@ -189,7 +189,7 @@
 }
 .ch-qf-lead__r {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) 36px 44px;
+  grid-template-columns: 46px minmax(0, 1fr) 36px 44px;
   gap: 8px;
   align-items: center;
   height: 32px;
@@ -1542,7 +1542,7 @@
     display: none;
   }
   .ch-qf-lead__r {
-    grid-template-columns: 24px minmax(0, 1fr) auto;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
     gap: 8px;
     height: auto;
     min-height: 36px;
@@ -1791,15 +1791,34 @@
   .ch-qfm-lb > li:has(> .ch-qf-line) {
     box-shadow: none;
   }
-  /* A row's press tint reaches 12px past the text on each side (CH-09601); the viewer's own row keeps its tint. */
+  /* P009-A1: the column header drawn once over the rows (the rows' own labels read them), on the rows' grid. */
+  .ch-qfm-lbhead {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) 52px 34px;
+    gap: 10px;
+    align-items: end;
+    margin-top: 6px;
+    padding: 0 0 6px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
+    font: var(--ch-type-label-s);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-qfm-lbhead > :nth-child(n + 3) {
+    justify-self: end;
+    text-align: right;
+  }
+  /* One 56pt row a player: Pos, Player, the plate, Thru. A row's press tint reaches 12px past the text on each side
+     (CH-09601); the viewer's own row keeps its tint. */
   .ch-qfm-lb__row {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) 52px 34px;
+    gap: 10px;
+    align-items: center;
     box-sizing: border-box;
     width: calc(100% + 24px);
+    min-height: 56px;
     margin: 0 -12px;
-    padding: 12px;
+    padding: 6px 12px;
     border: 0;
     border-radius: var(--ch-radius-md);
     background: none;
@@ -1822,17 +1841,11 @@
   .ch-qfm-lb__row.is-me {
     background: var(--ch-bg-selected);
   }
-  .ch-qfm-lb__top {
-    display: grid;
-    grid-template-columns: 26px 32px minmax(0, 1fr) auto;
-    gap: 10px;
-    align-items: center;
-  }
   .ch-qfm-lb__n {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
+    gap: 3px;
     min-width: 0;
   }
   .ch-qfm-lb__n b {
@@ -1847,38 +1860,32 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  .ch-qfm-lb__n small {
+  .ch-qfm-lb__sub {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
     font: var(--ch-type-caption);
     color: var(--ch-text-tertiary);
+  }
+  /* The state on the name's second line, compact, so the row holds at 56pt. */
+  .ch-qfm-lb__sub .ch-badge {
+    height: 18px;
+    padding: 0 6px;
+    font-size: 12px;
   }
   .ch-qfm-lb__row.is-none .ch-qfm-lb__n b {
     color: var(--ch-text-tertiary);
   }
-  .ch-qfm-lb__top .ch-qf-tp.is-big {
-    font-size: 17px;
-    letter-spacing: -0.02em;
+  .ch-qfm-lb__row > .ch-qf-plate,
+  .ch-qfm-lb__row > .ch-qf-dash {
+    justify-self: end;
   }
-  /* Rounds, average and total as plain figures under the name: no well around them. */
-  .ch-qfm .ch-qfm-lb__g.ch-well-soft {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    margin-left: 78px;
-    padding: 0;
-    border-radius: 0;
-    background: none;
-    box-shadow: none;
-  }
-  .ch-qfm-lb__g > span {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    font: 600 14px/1 var(--ch-font-sans);
-    color: var(--ch-text-primary);
-  }
-  .ch-qfm-lb__g em {
-    font: 500 11.5px/1 var(--ch-font-sans);
-    font-style: normal;
-    color: var(--ch-text-tertiary);
+  .ch-qfm-lb__thru {
+    justify-self: end;
+    font: 500 14px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    color: var(--ch-text-secondary);
   }
   .ch-qfm-line {
     margin: 8px 0;
@@ -2187,12 +2194,6 @@
   .ch-qfm-held--b {
     height: 18.75px;
   }
-  .ch-qfm-held--em {
-    height: 12px;
-  }
-  .ch-qfm-held--fig {
-    height: 14px;
-  }
   /* The form and Manage selections: the head's lines at the phone's heights, no way back (the top bar has it), and
      each section's placeholder under the double rule. */
   .ch-qf--form[aria-busy='true'] > .ch-qf-held--back {
@@ -2235,13 +2236,187 @@
   }
 }
 
+/* P009-A1: to par on a hand-hung plate. A fixed-aspect ivory plate (the page's lightest paper, a dark plate at night)
+   with a keyline and a short drop, the numeral in the condensed cell role: 600, 86% width, tabular. Red only under par;
+   even and over par are ink. On the live card's green scoreboard the plate is the board's ivory with green ink. */
+.ch-qf-plate {
+  display: inline-grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 52px;
+  height: 30px;
+  border-radius: var(--ch-radius-xs);
+  background: var(--ch-ivory-25);
+  box-shadow: inset 0 0 0 1px var(--ch-ink-rule), var(--ch-elevation-control);
+  font: 600 17px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  font-variation-settings: 'wdth' 86;
+  letter-spacing: -0.01em;
+  color: var(--ch-text-primary);
+}
+.ch-qf-plate.is-under {
+  color: var(--ch-score-under);
+}
+.ch-qf-plate.is-none {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  color: var(--ch-text-tertiary);
+}
+.ch-qf-plate.is-card {
+  width: 40px;
+  height: 24px;
+  font-size: 14.5px;
+}
+.ch-scoreboard .ch-qf-plate {
+  background: var(--ch-on-green-ink);
+  box-shadow: var(--ch-board-double-shadow);
+  color: var(--ch-green-900);
+}
+.ch-scoreboard .ch-qf-plate.is-under {
+  color: var(--ch-score-under-fill);
+}
+
+/* A board position: the numeral, a tie's T small and raised, and under it the quiet movement since the previous
+   round (gain green, loss amber). Nothing animates in. */
+.ch-qf-pos {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+.ch-qf-pos__n {
+  display: inline-flex;
+  align-items: baseline;
+  font: 600 15px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  font-variation-settings: 'wdth' 88;
+  color: var(--ch-text-secondary);
+}
+.ch-qf-pos__t {
+  position: relative;
+  top: -0.4em;
+  margin-right: 1px;
+  font-size: 0.68em;
+}
+.ch-qf-move {
+  font: 600 11px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.ch-qf-move.is-gain {
+  color: var(--ch-chart-gain);
+}
+.ch-qf-move.is-loss {
+  color: var(--ch-chart-loss);
+}
+/* The live card's leaders: position and movement on one line, in the board's own inks. */
+.ch-qf-lead__r .ch-qf-pos {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 4px;
+}
+.ch-scoreboard .ch-qf-pos__n {
+  color: var(--ch-on-green-ink);
+}
+.ch-scoreboard .ch-qf-move.is-gain {
+  color: var(--ch-hero-mint);
+}
+.ch-scoreboard .ch-qf-move.is-loss {
+  color: var(--ch-on-green-ink-soft);
+}
+
+/* P009-C2: the sample-size note ("1 of 3 rounds") beside a thin total. */
+.ch-qf-thin {
+  color: var(--ch-chart-loss);
+}
+
+/* P009-B2: the board's Live chip, and Refresh when the feed paused. The dot is static (D-33). */
+.ch-qf-feed {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.ch-qf-feed__refresh {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-bg-subtle);
+  color: var(--ch-text-primary);
+  font: 600 13px/1 var(--ch-font-sans);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background var(--ch-dur-press) var(--ch-ease);
+}
+/* 26px drawn, 44px to the finger. */
+.ch-qf-feed__refresh::before {
+  position: absolute;
+  inset: -9px -4px;
+  content: '';
+}
+.ch-qf-feed__refresh:active {
+  background: var(--ch-bg-inset);
+}
+.ch-qf-feed__refresh:disabled {
+  color: var(--ch-text-tertiary);
+  cursor: default;
+}
+@media (hover: hover) {
+  .ch-qf-feed__refresh:hover:not(:disabled) {
+    background: var(--ch-bg-hover);
+  }
+}
+
+/* P009-B1: a refresh that changed the ranks slides each moved row to its new place on the smooth spring (D-64). No
+   crossfade and no digits rolling: the row's new face travels from the old place. The shell's reduced-motion rule
+   stops it, and the board never asks for it then (rank-slide.ts). */
+html:has([data-ui='clubhouse'])::view-transition-group(.ch-rank) {
+  animation-duration: var(--ch-dur-spring-smooth);
+  animation-timing-function: var(--ch-ease-spring-smooth);
+}
+html:has([data-ui='clubhouse'])::view-transition-old(.ch-rank) {
+  display: none;
+}
+html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
+  animation: none;
+}
+
+/* P009-D5: the scorecards chevron is the keyboard path into a row; on touch it is a 44pt target (28px drawn). Manage
+   selections' Choose a player is 44pt to the finger too. */
+@media (pointer: coarse) {
+  .ch-qf-open {
+    position: relative;
+  }
+  .ch-qf-open::before {
+    position: absolute;
+    inset: -8px;
+    content: '';
+  }
+}
+@media (max-width: 820px) {
+  .ch-qfs-pick__act .ch-btn {
+    position: relative;
+  }
+  .ch-qfs-pick__act .ch-btn::before {
+    position: absolute;
+    inset: -7px 0;
+    content: '';
+  }
+}
+
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
 @media (max-width: 820px) {
   .ch-qf-you,
   .ch-qf-line--s,
-  .ch-qfm-lb__g em {
+  .ch-qfm-lbhead,
+  .ch-qf-move {
     font-size: 12px;
   }
 }

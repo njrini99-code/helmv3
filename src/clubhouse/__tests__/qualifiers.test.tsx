@@ -572,7 +572,7 @@ describe('Qualifiers · list', () => {
     expect(within(hero).getByText('Leaders')).toBeTruthy();
     const titles = (heading: string) =>
       [...(screen.getByRole('heading', { level: 2, name: heading }).closest('section') as HTMLElement).querySelectorAll('h3')].map((h) => h.textContent);
-    expect(titles('Active')).toEqual(['Conference qualifier']);
+    expect(titles('Upcoming and live')).toEqual(['Conference qualifier']);
     expect(titles('Concluded')).toEqual(['Fall invitational qualifier', 'Preseason qualifier', 'Spring conference qualifier']);
   });
 
@@ -2740,7 +2740,7 @@ describe('Qualifiers · live standings (background refresh)', () => {
   }
   afterEach(() => vi.useRealTimers());
 
-  it('90304 a live qualifier listens for signed rounds, a burst of them re-reads the page once, and a dropped feed is reported rather than shown', () => {
+  it('90304 a live qualifier listens for signed rounds, a burst of them re-reads the page once, and a dropped feed is reported (and shown as Paused: P009-B2, qualifiers-premium.test)', () => {
     vi.useFakeTimers();
     const { chan, handle } = openChannel();
     const { unmount } = renderHook(() => useLiveStandings('q1', true));

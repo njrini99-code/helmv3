@@ -51,6 +51,8 @@ export interface ChQRow extends ChQEntrant {
   avg: number | null;
   /** Rounds left out of the average because they weren't 18 holes. */
   shortRounds: number;
+  /** Places gained (positive) or lost (negative) since the previous round; null when there is nothing to compare. */
+  move: number | null;
   state: ChQRowState;
   rounds: ChQRound[];
 }
@@ -88,27 +90,15 @@ export function parseSelectionState(s: string | null | undefined): ChQSelectionS
   return s === 'scoring' || s === 'closed' || s === 'selected' ? s : 'open';
 }
 
-/**
- * The leaderboard: entrants ranked, positions and ties assigned, and each
- * row's state against the cut lines. Rounds from players who aren't entered
- * are ignored.
- */
-export function buildBoard(input: {
-  entrants: ChQEntrant[];
-  rounds: ChQRound[];
-  squad: number;
-  picks: number;
-  status: ChQStatus;
-  selectionState: ChQSelectionState;
-  selections: ChQSelection[] | null;
-}): ChQBoard {
+/** The scored rows ranked, with positions and ties assigned (states left null), and the unscored rows by name. */
+function rankRows(entrants: ChQEntrant[], rounds: ChQRound[]): { scored: ChQRow[]; unscored: ChQRow[]; all: ChQRow[] } {
   const byPlayer = new Map<string, ChQRound[]>();
-  for (const r of input.rounds) {
+  for (const r of rounds) {
     const list = byPlayer.get(r.playerId) ?? [];
     list.push(r);
     byPlayer.set(r.playerId, list);
   }
-  const all: ChQRow[] = input.entrants.map((e) => {
+  const all: ChQRow[] = entrants.map((e) => {
     const rounds = (byPlayer.get(e.playerId) ?? []).slice().sort((a, b) => a.number - b.number);
     // A completed round without a total is unknown, not a free zero: it neither counts as played nor adds to the
     // sums, the same rule as the stored entry aggregate (updateQualifierEntryStats).
@@ -131,17 +121,17 @@ export function buildBoard(input: {
       total: withScore.length ? sum('total') : null,
       avg: full.length ? full.reduce((s, r) => s + (r.total as number), 0) / full.length : null,
       shortRounds: withScore.length - full.length,
+      move: null,
       state: null,
       rounds,
     };
   });
   const scored = all.filter((r) => r.played > 0);
   const unscored = all.filter((r) => r.played === 0).sort((a, b) => a.name.localeCompare(b.name));
-  const key = (r: ChQRow) => ({ toPar: r.toPar as number, total: r.total as number, played: r.played, name: r.name });
-  scored.sort((a, b) => compareStandings(key(a), key(b)));
+  scored.sort((a, b) => compareStandings(standingKey(a), standingKey(b)));
   scored.forEach((row, i) => {
     const prev = scored[i - 1];
-    if (prev && sameStanding(key(prev), key(row))) {
+    if (prev && sameStanding(standingKey(prev), standingKey(row))) {
       row.position = prev.position;
       row.tied = true;
       prev.tied = true;
@@ -149,23 +139,131 @@ export function buildBoard(input: {
       row.position = i + 1;
     }
   });
+  return { scored, unscored, all };
+}
+
+const standingKey = (r: ChQRow) => ({ toPar: r.toPar as number, total: r.total as number, played: r.played, name: r.name });
+
+/** A counted round: it has a total and a to-par (the rule `rankRows` applies). */
+const counted = (r: ChQRound) => r.total != null && r.toPar != null;
+
+/**
+ * The fewest rounds a player needs in before the board frames them as on the Bubble (P009-C2, owner 2026-10-08): at
+ * least half the scheduled rounds, rounded up (1 of 1, 1 of 2, 2 of 3, 2 of 4, 3 of 5). One round of three is too thin a
+ * sample to call a player contending; the ranking rule itself does not change.
+ */
+export function bubbleMinRounds(numRounds: number): number {
+  return Math.max(1, Math.ceil(Math.max(0, numRounds) / 2));
+}
+
+/**
+ * Places gained (positive) or lost (negative) since the previous round (P009-A1): each row's position against the
+ * board as it stood with every round of the latest round number left out. Null for a player who wasn't ranked then,
+ * or when there is no earlier round to compare with. Never a refresh-to-refresh delta.
+ */
+function movement(entrants: ChQEntrant[], rounds: ChQRound[], scored: ChQRow[]): void {
+  const latest = rounds.filter(counted).reduce((m, r) => Math.max(m, r.number), 0);
+  if (latest < 2) return;
+  const before = rankRows(entrants, rounds.filter((r) => r.number < latest)).scored;
+  const was = new Map(before.map((r) => [r.playerId, r.position]));
+  for (const row of scored) {
+    const p = was.get(row.playerId);
+    row.move = p != null && row.position != null ? p - row.position : null;
+  }
+}
+
+/**
+ * The leaderboard: entrants ranked, positions and ties assigned, and each
+ * row's state against the cut lines. Rounds from players who aren't entered
+ * are ignored.
+ */
+export function buildBoard(input: {
+  entrants: ChQEntrant[];
+  rounds: ChQRound[];
+  squad: number;
+  picks: number;
+  status: ChQStatus;
+  selectionState: ChQSelectionState;
+  selections: ChQSelection[] | null;
+  /**
+   * The rounds scheduled. With it, a player is on the Bubble only with at least `bubbleMinRounds` rounds in (P009-C2).
+   * Every Clubhouse caller passes it; a caller without it (an older test of the shared ranking) gets the ungated state.
+   */
+  numRounds?: number;
+}): ChQBoard {
+  const { scored, unscored, all } = rankRows(input.entrants, input.rounds);
+  movement(input.entrants, input.rounds, scored);
 
   const squad = Math.max(0, input.squad);
   const topScore = Math.max(0, squad - Math.max(0, input.picks));
+  const minBubble = input.numRounds != null ? bubbleMinRounds(input.numRounds) : 0;
   const confirmed = input.selectionState === 'selected' && input.selections ? new Map(input.selections.map((s) => [s.playerId, s.type])) : null;
   // Q-114 (owner, 2026-10-01): players level with both the last place on score and the next player share a "Tie at
   // cut" until the coach chooses in Manage selections; name order no longer decides it.
   const cutRow = topScore > 0 ? scored[topScore - 1] : undefined;
-  const tieAtCut = !!cutRow && !!scored[topScore] && sameStanding(key(cutRow), key(scored[topScore]!));
-  const tied = (row: ChQRow) => tieAtCut && sameStanding(key(row), key(cutRow!));
+  const tieAtCut = !!cutRow && !!scored[topScore] && sameStanding(standingKey(cutRow), standingKey(scored[topScore]!));
+  const tied = (row: ChQRow) => tieAtCut && sameStanding(standingKey(row), standingKey(cutRow!));
   scored.forEach((row, i) => {
     if (confirmed) row.state = confirmed.get(row.playerId) === 'coach_pick' ? 'pick' : confirmed.has(row.playerId) ? 'selected' : null;
     else if (tied(row)) row.state = 'tie';
     else if (input.status === 'completed') row.state = i < topScore ? 'qualified' : null;
-    else row.state = i < topScore ? 'qualifying' : i <= squad ? 'bubble' : null;
+    else row.state = i < topScore ? 'qualifying' : i <= squad && row.played >= minBubble ? 'bubble' : null;
   });
 
   return { rows: scored, unscored, topScore, squad, submitted: all.reduce((s, r) => s + r.played, 0) };
+}
+
+/** P009-C2, the board's caption: why a player below the line isn't on the Bubble yet, when one round isn't enough to say so. */
+export function bubbleNote(numRounds: number, status: ChQStatus): string {
+  const min = bubbleMinRounds(numRounds);
+  return status === 'in_progress' && min > 1 ? ` The bubble needs ${min} of ${plural(numRounds, 'round')} in.` : '';
+}
+
+/**
+ * The sample-size note (P009-C2): "1 of 3 rounds" on a ranked row with fewer rounds in than the most anyone has, so a
+ * total over one round never reads as the same thing as a total over two. Null when the row has kept pace.
+ */
+export function sampleNote(row: Pick<ChQRow, 'played'>, board: Pick<ChQBoard, 'rows'>, numRounds: number): string | null {
+  const most = board.rows.reduce((m, r) => Math.max(m, r.played), 0);
+  return row.played > 0 && row.played < most ? `${row.played} of ${plural(numRounds, 'round')}` : null;
+}
+
+/**
+ * Whether a re-read changed who stands where (P009-B1): the ranked players' order, compared with the order drawn
+ * before. A first draw (no previous order) is not a change, and neither is a refresh that only moved scores.
+ */
+export function rankOrderChanged(prev: readonly string[] | null, next: readonly string[]): boolean {
+  if (!prev) return false;
+  return prev.length !== next.length || prev.some((id, i) => next[i] !== id);
+}
+
+/**
+ * The day to hold a qualifier's end date against (P009-D3), for a server-side `now`: the calendar date where the day
+ * starts last (UTC−12), so a qualifier reads as ended only once its last day is over everywhere.
+ */
+export function endDayFor(now: Date): string {
+  return new Date(now.getTime() - 12 * 3_600_000).toISOString().slice(0, 10);
+}
+
+/**
+ * A qualifier still open after its end date (P009-D3): it reads "Ended · n rounds outstanding", never Live. Null while
+ * it is not live, has no end date, the day is unknown, or its last day isn't over.
+ */
+export function endedLive(input: {
+  status: ChQStatus;
+  endDate: string | null;
+  today: string | null | undefined;
+  entrants: number;
+  numRounds: number;
+  submitted: number | null;
+}): { outstanding: number | null } | null {
+  if (input.status !== 'in_progress' || !input.endDate || !input.today || input.today.slice(0, 10) <= input.endDate.slice(0, 10)) return null;
+  return { outstanding: input.submitted == null ? null : Math.max(0, input.entrants * input.numRounds - input.submitted) };
+}
+
+/** "Ended · 3 rounds outstanding", or "Ended" when nothing is outstanding or the count didn't load. */
+export function endedLabel(e: { outstanding: number | null }): string {
+  return e.outstanding ? `Ended · ${plural(e.outstanding, 'round')} outstanding` : 'Ended';
 }
 
 export const STATE_LABEL: Record<Exclude<ChQRowState, null>, { tone: 'positive' | 'warning' | 'accent'; label: string }> = {
@@ -248,7 +346,7 @@ export const FORM_LEDE = 'Players enter rounds from their app. The leaderboard b
 
 /** The help under the form's first fields, shared with its skeleton so each help wraps where the form's does. */
 export const FORM_HELP = {
-  description: 'What players should expect: format, stakes, vibe.',
+  description: 'What players should expect: format and stakes.',
   endDate: 'For multi-day qualifiers.',
   entryDeadline: 'Shown to players. On or before the start date.',
   rounds: 'How many rounds count. Players can’t enter more than this.',

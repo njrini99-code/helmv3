@@ -230,33 +230,25 @@ export function QualifierDetailSkeleton() {
               <Skeleton width={128} height={18} />
             </Held>
           </div>
+          {/* The board's header once and its 56pt rows (P009-A1): Pos, Player, the to-par plate, Thru. */}
+          <div className="ch-qfm-lbhead">
+            <Skeleton width={22} height={10} />
+            <Skeleton width={40} height={10} />
+            <Skeleton width={34} height={10} />
+            <Skeleton width={26} height={10} />
+          </div>
           <ol className="ch-qfm-lb">
-            {Array.from({ length: 5 }, (_, i) => (
+            {Array.from({ length: 7 }, (_, i) => (
               <li key={i}>
                 <span className="ch-qfm-lb__row is-static">
-                  <span className="ch-qfm-lb__top">
-                    <Skeleton width={14} height={14} />
-                    <Skeleton width={32} height={32} radius={16} />
-                    <span className="ch-qfm-lb__n">
-                      <Held className="ch-qfm-held--b">
-                        <Skeleton width={128} height={14} />
-                      </Held>
-                      <Skeleton width={74} height={22} radius={5} />
-                    </span>
-                    <Skeleton width={26} height={17} />
+                  <Skeleton width={14} height={14} />
+                  <span className="ch-qfm-lb__n">
+                    <Held className="ch-qfm-held--b">
+                      <Skeleton width={128} height={14} />
+                    </Held>
                   </span>
-                  <span className="ch-qfm-lb__g ch-well-soft">
-                    {Array.from({ length: 3 }, (_, j) => (
-                      <span key={j}>
-                        <Held className="ch-qfm-held--em">
-                          <Skeleton width={40} height={10} />
-                        </Held>
-                        <Held className="ch-qfm-held--fig">
-                          <Skeleton width={34} height={12} />
-                        </Held>
-                      </span>
-                    ))}
-                  </span>
+                  <Skeleton width={48} height={30} radius={4} />
+                  <Skeleton width={24} height={12} />
                 </span>
               </li>
             ))}
