@@ -1870,9 +1870,21 @@ a.ch-rd-sc:focus-visible {
     bottom: 0;
   }
   .ch-rd-sk-hero {
+    container: chrdsk / inline-size;
     display: flex;
     flex-direction: column;
     gap: 30px;
+  }
+  /* The round card's place follows the idle card as the phone widens (measured in WebKit from 355 to 445px): its holes
+     are squares nine across the card, two rows of them, so it grows by two ninths of the card's width; and its foot
+     takes one line from a 359px card (a 399px phone), two below. */
+  .ch-rd-sk-hero > .ch-skel {
+    height: calc(262.5px + 22.222cqw) !important;
+  }
+  @container chrdsk (min-width: 359px) {
+    .ch-rd-sk-hero > .ch-skel {
+      height: calc(233.6px + 22.222cqw) !important;
+    }
   }
   .ch-rd-sk-sec.ch-rd-sk-season {
     gap: 0;

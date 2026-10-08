@@ -273,9 +273,9 @@ describe('Recruiting · film and file drop · the transfer to Storage', () => {
 
   it('CH-14903 a refusal by policy says it is for the team\'s coaches; a dropped connection says the file did not finish sending, and neither is a refusal of the file', async () => {
     const policy = await uploadRecruitFile(io({ put: { status: 403, body: '' } }).io, 'p-mason', film(), meta);
-    expect(policy).toEqual({ success: false, error: "Only this team's coaches can add recruit documents" });
+    expect(policy).toEqual({ success: false, error: 'Only this team’s coaches can add recruit documents' });
     const lost = await uploadRecruitFile(io({ put: { status: 0, body: '' } }).io, 'p-mason', film(), meta);
-    expect(lost).toEqual({ success: false, error: "The file didn't finish sending. Check your connection and try again." });
+    expect(lost).toEqual({ success: false, error: 'The file didn’t finish sending. Check your connection and try again.' });
     const server = await uploadRecruitFile(io({ put: { status: 503, body: '' } }).io, 'p-mason', film(), meta);
     expect(server.success).toBe(false);
     expect(server).not.toHaveProperty('refused');
@@ -521,7 +521,7 @@ describe('Recruiting · film and file drop · the page', () => {
   it('CH-14107 CH-14703 Storage turning down the file\'s type says so in the dialog, with Choose another file, an error felt once, and no Retry toast', async () => {
     const user = userEvent.setup();
     const w = fakeWrites();
-    w.documents.upload.mockImplementation(() => Promise.resolve({ success: false, refused: 'type', error: 'Storage refused Swing.mov: it doesn\'t take that type of file.' }));
+    w.documents.upload.mockImplementation(() => Promise.resolve({ success: false, refused: 'type', error: 'Storage refused Swing.mov: it doesn’t take that type of file.' }));
     wrap(w);
     await within(panel('Mason Reilly')).findByRole('button', { name: /^Fall tournament schedule\.pdf/ });
     fireEvent.drop(section(), drag([film('Swing.mov')]));
@@ -550,12 +550,12 @@ describe('Recruiting · film and file drop · the page', () => {
   it('CH-14005 CH-14916 a failure that is not a refusal of the file keeps the Retry toast, and Retry sends the same upload id, so nothing is sent or recorded twice', async () => {
     const user = userEvent.setup();
     const w = fakeWrites();
-    w.documents.upload.mockImplementation(() => fail("The file didn't finish sending. Check your connection and try again."));
+    w.documents.upload.mockImplementation(() => fail('The file didn’t finish sending. Check your connection and try again.'));
     wrap(w);
     await within(panel('Mason Reilly')).findByRole('button', { name: /^Fall tournament schedule\.pdf/ });
     fireEvent.drop(section(), drag([film()]));
     await user.click(within(dlg()).getByRole('button', { name: 'Upload' }));
-    await expectCode('CH-14005', /Couldn't upload Swing, down the line.*The file didn't finish sending/);
+    await expectCode('CH-14005', /Couldn’t upload Swing, down the line.*The file didn’t finish sending/);
     expect(dlg()).not.toBeNull();
     w.documents.upload.mockImplementation(() => ok({ id: 'd-x' }));
     await user.click(within(code('CH-14005') as HTMLElement).getByRole('button', { name: 'Retry' }));
@@ -626,7 +626,7 @@ describe('Recruiting · an Add cannot add a prospect twice', () => {
     w.create.mockImplementation(() => fail('Failed to add recruit'));
     wrap(w);
     await fillAndAdd(user, 'Ellie');
-    await expectCode('CH-14001', /Couldn't add Ellie/);
+    await expectCode('CH-14001', /Couldn’t add Ellie/);
     await user.click(within(code('CH-14001') as HTMLElement).getByRole('button', { name: 'Retry' }));
     await waitFor(() => expect(w.create).toHaveBeenCalledTimes(2));
     await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));

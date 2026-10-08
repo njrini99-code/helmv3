@@ -87,7 +87,7 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10306 | A player with nothing from their coaches (EMPTY.hub.player) | "No team updates yet" + "Announcements, trips and documents from your coaches will show up here." Only when every read answered and was empty, Updates included; a failed Updates read shows CH-10202 instead | `TeamHub` | hub.test › CH-10306 |
 | CH-10307 | No announcements | "No announcements yet", flush at the panel's edge under the composer line (no card) | `TeamHub` | hub.test › CH-10307 |
 | CH-10308 | No trips | "No trips planned" + who fills it, flush at the panel's edge under Plan a trip (no card) | `TeamHub` | hub.test › CH-10308 |
-| CH-10309 | No team | "You aren't on a team yet" + the role's next step | `ClubhouseHubRoute` | hub.test › CH-10309 |
+| CH-10309 | No team | "You aren’t on a team yet" + the role's next step | `ClubhouseHubRoute` | hub.test › CH-10309 |
 | CH-10310 | A team with nobody on the roster | In the sheets, where players are chosen: "No players on the roster yet. Add them in Roster, then choose them here." | `PlayerPicks` | hub.test › CH-10310 |
 | CH-10311 | A team with no documents | In New announcement, where files are attached: "No documents yet. Add files in the Documents tab, then attach them here." Nothing to attach; the post still goes | `DocumentPicks` | hub.test › CH-10311 |
 | CH-10312 | Plan a trip: no upcoming events in the next four months | "No upcoming events in the next four months. Add the tournament in Calendar to choose its travelers here." | `TripSheet` | hub.test › CH-10312 |

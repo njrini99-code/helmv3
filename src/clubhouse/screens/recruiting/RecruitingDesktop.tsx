@@ -26,7 +26,7 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
       <header className="ch-rec-head" data-canopy-head="">
         <div>
           <h1 id="ch-rec-title">Recruiting</h1>
-          <p>Prospects you&apos;re following, from first look to commitment. Only coaches see this page.</p>
+          <p>Prospects you’re following, from first look to commitment. Only coaches see this page.</p>
         </div>
         {/* One primary per screen: first run carries Add your first prospect in the page below. */}
         {(!nothing || c.error) && (
@@ -39,8 +39,8 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
       {c.error ? (
         <InlineNotice
           code="CH-14201"
-          title="Your prospects didn't load"
-          body="Nothing was lost; this page just couldn't reach them. Check your connection and try again."
+          title="Your prospects didn’t load"
+          body="Nothing was lost; this page just couldn’t reach them. Check your connection and try again."
           onRetry={c.tryAgain}
         />
       ) : (
@@ -58,7 +58,7 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
               code="CH-14301"
               icon={GraduationCap}
               title="Your prospect list starts here"
-              body="Add the golfers you're watching. Keep their contact details, notes and documents in one place, and move them through Watched, Recruiting, Offered and Committed."
+              body="Add the golfers you’re watching. Keep their contact details, notes and documents in one place, and move them through Watched, Recruiting, Offered and Committed."
               action={
                 <Button variant="primary" leftIcon={Plus} onClick={c.startAdd}>
                   Add your first prospect
@@ -96,7 +96,7 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
 export function NoMatch({ query, stage, onClear, onAll, phone = false }: { query: string; stage: ChStage | null; onClear: () => void; onAll: () => void; phone?: boolean }) {
   const q = query.trim();
   const inStage = stage ? ` in ${stageMeta(stage).label}` : '';
-  const title = q ? (phone ? `No match for "${q}"${inStage}` : `No prospects match "${q}"${inStage}`) : `No prospects${inStage}`;
+  const title = q ? (phone ? `No match for “${q}”${inStage}` : `No prospects match “${q}”${inStage}`) : `No prospects${inStage}`;
   const body = q
     ? phone
       ? `Try another word${stage ? ', or look across every stage' : ''}.`

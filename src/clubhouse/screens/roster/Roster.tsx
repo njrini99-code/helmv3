@@ -152,7 +152,7 @@ export function Roster({ data }: { data: ChRoster }) {
     },
     (p) => ({
       done: `${p.name} removed from ${data.teamName}`,
-      failed: `Couldn't remove ${p.name}`,
+      failed: `Couldn’t remove ${p.name}`,
       hint: 'Nothing changed on the roster. Try again, or refresh if it keeps failing.',
       code: 'CH-3001',
     }),
@@ -182,7 +182,7 @@ export function Roster({ data }: { data: ChRoster }) {
       toast({ title: `Roster exported · ${rows.length} ${rows.length === 1 ? 'player' : 'players'}` });
     } catch {
       haptic('error');
-      toast({ tone: 'error', title: "Couldn't export the roster", body: 'Your browser blocked the download. Try again, or use a desktop browser.', code: 'CH-3005' });
+      toast({ tone: 'error', title: 'Couldn’t export the roster', body: 'Your browser blocked the download. Try again, or use a desktop browser.', code: 'CH-3005' });
     }
   };
 
@@ -314,7 +314,7 @@ export function Roster({ data }: { data: ChRoster }) {
       {data.statsError && (
         <InlineNotice
           code="CH-3202"
-          title="Season stats didn't load"
+          title="Season stats didn’t load"
           body="The roster is complete, but averages, form and strokes gained are missing until the rounds load. The error has been reported."
           onRetry={() => router.refresh()}
           covered={covered}
@@ -337,7 +337,7 @@ export function Roster({ data }: { data: ChRoster }) {
       {data.playersError ? (
         <InlineNotice
           code="CH-3201"
-          title="The roster didn't load"
+          title="The roster didn’t load"
           body="Your players are safe. Try again, and if it keeps happening the error has already been reported."
           onRetry={() => router.refresh()}
           covered={covered}
@@ -649,7 +649,7 @@ function InviteModal({
       ) : codeFailed ? (
         <InlineNotice
           code="CH-3207"
-          title="The join code didn't load"
+          title="The join code didn’t load"
           body="Your code still works for players who have it. Try again to show it here."
           onRetry={onRetry}
         />

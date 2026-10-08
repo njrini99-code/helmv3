@@ -1,12 +1,16 @@
 # P014 — Recruiting: changelog
 
-## 2026-10-08 — Copy: the no-team page's apostrophes
+## 2026-10-08 — Copy: typographic apostrophes and quotes
 
-The no-team page (CH-14306) writes "You aren’t on a team yet" and "Recruiting
-is your team’s list of prospects … the golfers you’re following" with the
-typographic apostrophe, as Home, Stats and Calendar do. An offline write's
-toast (CH-14901) now ends "you’re offline" from the shared action hook
-(CH-1903); "Couldn't move …" before it is the page's own and unchanged.
+Recruiting writes its apostrophes as ’, as Home, Stats and Calendar do: the
+no-team page (CH-14306), the failed reads (CH-14201, CH-14202), the first run,
+the delete confirmations (CH-14501, CH-14502), the failed writes (CH-14001 to
+CH-14007) and the upload's own reasons, so an offline write reads "Couldn’t
+move Mason Reilly to Committed: you’re offline" (CH-14901). A search that
+matches nothing quotes the words in curly quotes: No prospects match “Tampa”
+(CH-14302). What the server sends is shown as it sent it ("Only this team's
+coaches can add recruit documents."). The catalog quotes them as shown, and
+copy-apostrophes.test now covers the page.
 
 ## 2026-10-08 — States: first run stands alone
 

@@ -229,7 +229,7 @@ export function CoachNote({ p, locked, onSaved }: { p: ChRosterPlayer; locked: b
     },
     {
       done: `Note saved for ${p.firstName}`,
-      failed: `Couldn't save your note about ${p.firstName}`,
+      failed: `Couldn’t save your note about ${p.firstName}`,
       hint: 'Your text is still in the field. Try again in a moment.',
       code: 'CH-3004',
     },

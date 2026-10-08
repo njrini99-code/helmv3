@@ -1,15 +1,19 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
  * States audit b8 (2026-10-08): the copy mixed straight apostrophes (didn't, aren't) with curly ones, and a title
  * quoted in a toast sat in straight quotes. A page's own words use the curly marks; comments may say what they like,
- * and words a server sends are shown as it sent them. Calendar, Team Hub, Messages and Settings, with their routes;
- * the shared state files have their own check (states.test.tsx).
+ * and words a server sends are shown as it sent them. Calendar, Team Hub, Messages, Settings, Home, Stats, Roster and
+ * Recruiting, with their routes (Home has none of its own); the shared state files have their own check
+ * (states.test.tsx).
  */
 const root = join(__dirname, '..');
-const pages = ['calendar', 'hub', 'messages', 'settings'];
+const pages = ['calendar', 'hub', 'messages', 'settings', 'home', 'stats', 'roster', 'recruiting'];
+
+/** Straight quotes a file format needs, not words on the screen: a CSV cell (the Roster and Team stats exports, RFC 4180). */
+const csvCell = '`"${String(v).replace(/"/g, \'""\')}"`';
 
 function sources(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -27,13 +31,13 @@ const code = (path: string) =>
 
 describe('Page copy', () => {
   it.each(pages)('%s writes its own copy with curly apostrophes and quotes', (page) => {
-    const files = [...sources(join(root, 'screens', page)), join(root, 'routes', `${page}.tsx`)];
+    const files = [...sources(join(root, 'screens', page)), join(root, 'routes', `${page}.tsx`)].filter((file) => existsSync(file));
     for (const file of files) {
       const src = code(file);
       expect(src.match(/[A-Za-z]'[A-Za-z]/g), file).toBeNull();
       expect(src, file).not.toContain('&apos;');
       // A name quoted inside the words ("Posted “Waiver”"), not an attribute value in a selector (="${id}").
-      expect(src.match(/(?<![=\w])"\$\{[^}]*\}"/g), file).toBeNull();
+      expect(src.split(csvCell).join('').match(/(?<![=\w])"\$\{[^}]*\}"/g), file).toBeNull();
     }
   });
 });

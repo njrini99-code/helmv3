@@ -490,14 +490,14 @@ describe('Recruiting · desktop', () => {
   it('CH-14302 a search and a stage that match nothing say so, and Search all stages and Clear search are the ways back; the open prospect stays open', async () => {
     const user = userEvent.setup();
     wrap(PREVIEW_RECRUITING, fakeWrites(), { query: 'Tampa', stage: 'offered', openId: 'p-owen' });
-    expect(code('CH-14302')?.textContent).toContain('No prospects match "Tampa" in Offered');
+    expect(code('CH-14302')?.textContent).toContain('No prospects match “Tampa” in Offered');
     expect(code('CH-14302')?.textContent).toContain('Search looks at names, hometowns, email and notes. Try another word, or look across every stage.');
     expect(panel('Owen Park')).toBeTruthy();
     expect(screen.queryByRole('table')).toBeNull();
     expect(screen.getByRole('button', { name: 'Offered, 1 prospect' }).getAttribute('aria-pressed')).toBe('true');
     await user.click(screen.getByRole('button', { name: 'Search all stages' }));
     // The search is kept; only the stage goes.
-    expect(code('CH-14302')?.textContent).toContain('No prospects match "Tampa"');
+    expect(code('CH-14302')?.textContent).toContain('No prospects match “Tampa”');
     expect(code('CH-14302')?.textContent).not.toContain('in Offered');
     expect(screen.queryByRole('button', { name: 'Search all stages' })).toBeNull();
     await user.click(within(code('CH-14302') as HTMLElement).getByRole('button', { name: 'Clear search' }));
@@ -533,7 +533,7 @@ describe('Recruiting · desktop', () => {
   it('CH-14201 CH-14911 a list that did not load says so with Try again, which asks the server again; it is never "your list starts here"', async () => {
     const user = userEvent.setup();
     const { again } = wrap(PREVIEW_RECRUITING_FAILED);
-    expect(code('CH-14201')?.textContent).toMatch(/Your prospects didn't load.*Nothing was lost; this page just couldn't reach them/);
+    expect(code('CH-14201')?.textContent).toMatch(/Your prospects didn’t load.*Nothing was lost; this page just couldn’t reach them/);
     expect(code('CH-14301')).toBeNull();
     expect(screen.queryByRole('group', { name: 'Filter by stage' })).toBeNull();
     // The board keeps Add prospect in the header beside the notice.
@@ -631,7 +631,7 @@ describe('Recruiting · desktop', () => {
     w.update.mockImplementation(() => fail('Failed to update recruit'));
     wrap(PREVIEW_RECRUITING, w);
     await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Committed' }));
-    await expectCode('CH-14003', /Couldn't move Mason Reilly to Committed/);
+    await expectCode('CH-14003', /Couldn’t move Mason Reilly to Committed/);
     expect(code('CH-14003')!.textContent).toMatch(/Failed to update recruit\./);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     // Back where they were, everywhere.
@@ -664,7 +664,7 @@ describe('Recruiting · desktop', () => {
     await waitFor(() => expect(w.update).toHaveBeenCalledTimes(3));
     await waitFor(() => expect(stageOf('Mason Reilly')).toBe('Offered'));
     expect(report).toHaveBeenCalledWith(expect.objectContaining({ message: 'network down' }), expect.objectContaining({ action: 'recruiting.stage' }));
-    await waitFor(() => expect(codes('CH-14003').map((t) => t.textContent).join(' ')).toMatch(/Couldn't move Mason Reilly to Recruiting/));
+    await waitFor(() => expect(codes('CH-14003').map((t) => t.textContent).join(' ')).toMatch(/Couldn’t move Mason Reilly to Recruiting/));
   });
 
   it('CH-14901 offline a stage change is refused before it moves anything: the shell says so, nothing is sent and nothing has to be put back', async () => {
@@ -673,7 +673,7 @@ describe('Recruiting · desktop', () => {
     wrap(PREVIEW_RECRUITING, w);
     const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
     await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Committed' }));
-    await expectCode('CH-1903', /Couldn't move Mason Reilly to Committed: you’re offline/);
+    await expectCode('CH-1903', /Couldn’t move Mason Reilly to Committed: you’re offline/);
     expect(w.update).not.toHaveBeenCalled();
     expect(stageOf('Mason Reilly')).toBe('Offered');
     // Back online, Retry does it.
@@ -700,7 +700,7 @@ describe('Recruiting · desktop', () => {
     wrap(PREVIEW_RECRUITING, w);
     await user.click(within(panel('Mason Reilly')).getByRole('button', { name: 'Delete prospect' }));
     expect(hapticSpy).toHaveBeenCalledWith('warning');
-    expect(code('CH-14501')?.textContent).toMatch(/Delete Mason Reilly\?.*This removes them from your list, with their notes and documents\. This can't be undone\./);
+    expect(code('CH-14501')?.textContent).toMatch(/Delete Mason Reilly\?.*This removes them from your list, with their notes and documents\. This can’t be undone\./);
     expect(w.remove).not.toHaveBeenCalled();
     await user.click(within(dlg()).getByRole('button', { name: 'Keep them' }));
     expect(w.remove).not.toHaveBeenCalled();
@@ -731,7 +731,7 @@ describe('Recruiting · desktop', () => {
     wrap(PREVIEW_RECRUITING, w);
     await user.click(within(panel('Mason Reilly')).getByRole('button', { name: 'Delete prospect' }));
     await user.click(within(dlg()).getByRole('button', { name: 'Delete prospect' }));
-    await expectCode('CH-14004', /Couldn't delete Mason Reilly/);
+    await expectCode('CH-14004', /Couldn’t delete Mason Reilly/);
     expect(code('CH-14501')).not.toBeNull();
     expect(rowNames()).toHaveLength(8);
     w.remove.mockImplementation(() => ok());
@@ -825,7 +825,7 @@ describe('Recruiting · desktop', () => {
     expect(code('CH-14403')?.textContent).toBe('Saving');
     expect((within(dlg()).getByRole('button', { name: 'Saving' }) as HTMLButtonElement).disabled).toBe(true);
     await act(async () => answer.resolve({ success: false, error: 'Failed to add recruit' }));
-    await expectCode('CH-14001', /Couldn't add Ellie.*Failed to add recruit\./);
+    await expectCode('CH-14001', /Couldn’t add Ellie.*Failed to add recruit\./);
     expect((within(dlg()).getByRole('textbox', { name: 'First name' }) as HTMLInputElement).value).toBe('Ellie');
     expect((within(dlg()).getByRole('textbox', { name: 'Hometown' }) as HTMLInputElement).value).toBe('Wilmington');
     expect(rowNames()).toHaveLength(8);
@@ -883,7 +883,7 @@ describe('Recruiting · desktop', () => {
     await user.clear(hometown);
     await user.type(hometown, 'Raleigh');
     await user.click(within(dlg()).getByRole('button', { name: 'Save changes' }));
-    await expectCode('CH-14002', /Couldn't save Mason Reilly's changes.*Failed to update recruit\./);
+    await expectCode('CH-14002', /Couldn’t save Mason Reilly’s changes.*Failed to update recruit\./);
     expect((within(dlg()).getByRole('textbox', { name: 'Hometown' }) as HTMLInputElement).value).toBe('Raleigh');
     expect(within(panel('Mason Reilly')).getByText('Class of 2027 · Charlotte, NC')).toBeTruthy();
     w.update.mockImplementation(() => ok());
@@ -915,7 +915,7 @@ describe('Recruiting · desktop', () => {
     const w = fakeWrites();
     w.documents.list.mockImplementation(() => fail('Failed to load documents'));
     wrap(PREVIEW_RECRUITING, w);
-    await expectCode('CH-14202', /Documents didn't load.*Nothing is lost/);
+    await expectCode('CH-14202', /Documents didn’t load.*Nothing is lost/);
     expect(within(panel('Mason Reilly')).getByText(/Saw Mason at the Carolinas Junior/)).toBeTruthy();
     expect(code('CH-14305')).toBeNull();
     w.documents.list.mockImplementation((id: string) => ok((PREVIEW_DOCUMENTS[id] ?? []).map((d) => ({ ...d }))));
@@ -946,7 +946,7 @@ describe('Recruiting · desktop', () => {
     expect(code('CH-14007')).toBeNull();
     w.documents.open.mockImplementation(() => fail('Failed to open document'));
     await user.click(row);
-    await expectCode('CH-14007', /Couldn't open Fall tournament schedule\.pdf.*Failed to open document\./);
+    await expectCode('CH-14007', /Couldn’t open Fall tournament schedule\.pdf.*Failed to open document\./);
   });
 
   it('CH-14502 CH-14405 CH-14908 CH-14006 removing a document asks first; the list is read again, inside the action, so a failed first try can be retried to the end', async () => {
@@ -955,12 +955,12 @@ describe('Recruiting · desktop', () => {
     wrap(PREVIEW_RECRUITING, w);
     await within(panel('Mason Reilly')).findByRole('button', { name: /^Fall tournament schedule\.pdf/ });
     await user.click(within(panel('Mason Reilly')).getByRole('button', { name: 'Remove Fall tournament schedule.pdf' }));
-    expect(code('CH-14502')?.textContent).toMatch(/Remove this document\?.*Fall tournament schedule\.pdf is deleted from Mason's documents\. This can't be undone\./);
+    expect(code('CH-14502')?.textContent).toMatch(/Remove this document\?.*Fall tournament schedule\.pdf is deleted from Mason’s documents\. This can’t be undone\./);
     expect(w.documents.remove).not.toHaveBeenCalled();
     expect(hapticSpy).toHaveBeenCalledWith('warning');
     w.documents.remove.mockImplementation(() => fail('Failed to delete document'));
     await user.click(within(dlg()).getByRole('button', { name: 'Remove document' }));
-    await expectCode('CH-14006', /Couldn't remove Fall tournament schedule\.pdf.*Failed to delete document\./);
+    await expectCode('CH-14006', /Couldn’t remove Fall tournament schedule\.pdf.*Failed to delete document\./);
     expect(code('CH-14502')).not.toBeNull();
     // Retry: it lands, the question closes, the list is read again without the file.
     w.documents.remove.mockImplementation(() => ok());
@@ -1013,7 +1013,7 @@ describe('Recruiting · desktop', () => {
     await user.upload(document.querySelector('input[type="file"]') as HTMLInputElement, new File(['x'], 'Film notes.txt', { type: 'text/plain' }));
     await user.click(within(dlg()).getByRole('button', { name: 'Film' }));
     await user.click(within(dlg()).getByRole('button', { name: 'Upload' }));
-    await expectCode('CH-14005', /Couldn't upload Film notes/);
+    await expectCode('CH-14005', /Couldn’t upload Film notes/);
     // The server's sentence is the reason (a refusal for someone who is not the team's coach).
     expect(code('CH-14005')!.textContent).toContain("Only this team's coaches can add recruit documents.");
     expect(dlg()).not.toBeNull();
@@ -1035,7 +1035,7 @@ describe('Recruiting · desktop', () => {
     await within(panel('Mason Reilly')).findByRole('button', { name: /^Fall tournament schedule\.pdf/ });
     await user.upload(document.querySelector('input[type="file"]') as HTMLInputElement, new File(['x'], 'a.pdf', { type: 'application/pdf' }));
     await user.click(within(dlg()).getByRole('button', { name: 'Upload' }));
-    await expectCode('CH-14005', /Couldn't upload a.*Check your connection and try again\./);
+    await expectCode('CH-14005', /Couldn’t upload a.*Check your connection and try again\./);
     expect(report).toHaveBeenCalledWith(expect.objectContaining({ message: 'body too large' }), expect.objectContaining({ action: 'recruiting.upload' }));
   });
 
@@ -1171,7 +1171,7 @@ describe('Recruiting · phone', () => {
     // A pick that fails goes back, with the toast inside the sheet.
     w.update.mockImplementation(() => fail('Failed to update recruit'));
     await user.click(sheet.getByRole('radio', { name: /Watched/ }));
-    await expectCode('CH-14003', /Couldn't move Mason Reilly to Watched/);
+    await expectCode('CH-14003', /Couldn’t move Mason Reilly to Watched/);
     await waitFor(() => expect(sheet.getByRole('radio', { name: /Committed/ }).getAttribute('aria-checked')).toBe('true'));
     await user.click(sheet.getByRole('button', { name: 'Done' }));
     await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());
@@ -1208,11 +1208,11 @@ describe('Recruiting · phone', () => {
     await user.click(within(dlg()).getByRole('button', { name: 'Delete prospect' }));
     const act1 = document.querySelectorAll('dialog[open]');
     const actionSheet = within(act1[act1.length - 1] as HTMLElement);
-    expect(code('CH-14501')?.textContent).toMatch(/Delete Mason Reilly\?.*can't be undone/);
+    expect(code('CH-14501')?.textContent).toMatch(/Delete Mason Reilly\?.*can’t be undone/);
     expect(w.remove).not.toHaveBeenCalled();
     w.remove.mockImplementation(() => fail());
     await user.click(actionSheet.getByRole('button', { name: 'Delete prospect' }));
-    await expectCode('CH-14004', /Couldn't delete Mason Reilly/);
+    await expectCode('CH-14004', /Couldn’t delete Mason Reilly/);
     expect(detail()).not.toBeNull();
     w.remove.mockImplementation(() => ok());
     await user.click(within(code('CH-14004') as HTMLElement).getByRole('button', { name: 'Retry' }));
@@ -1242,20 +1242,20 @@ describe('Recruiting · phone', () => {
   it('CH-14302 no match on the phone reads "No match for", with Search all stages first and Clear search after it', async () => {
     const user = userEvent.setup();
     wrap(PREVIEW_RECRUITING, fakeWrites(), { query: 'Tampa', stage: 'offered', openId: 'p-owen' });
-    expect(code('CH-14302')?.textContent).toContain('No match for "Tampa" in Offered');
+    expect(code('CH-14302')?.textContent).toContain('No match for “Tampa” in Offered');
     expect(code('CH-14302')?.textContent).toContain('Try another word, or look across every stage.');
     const buttons = within(code('CH-14302') as HTMLElement).getAllByRole('button').map((b) => b.textContent);
     expect(buttons).toEqual(['Search all stages', 'Clear search']);
     expect(detail()).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Search all stages' }));
-    expect(code('CH-14302')?.textContent).toContain('No match for "Tampa"');
+    expect(code('CH-14302')?.textContent).toContain('No match for “Tampa”');
     expect(code('CH-14302')?.textContent).not.toContain('in Offered');
   });
 
   it('CH-14301 CH-14201 first run and a failed read have no Add in the top bar: the page\'s own action is the way in', async () => {
     const user = userEvent.setup();
     const first = wrap(PREVIEW_RECRUITING_EMPTY);
-    expect(code('CH-14301')?.textContent).toContain('Add the golfers you\'re watching and move them through Watched, Recruiting, Offered and Committed.');
+    expect(code('CH-14301')?.textContent).toContain('Add the golfers you’re watching and move them through Watched, Recruiting, Offered and Committed.');
     expect(top().queryByRole('button', { name: 'Add prospect' })).toBeNull();
     expect(screen.queryByRole('searchbox')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Add your first prospect' }));

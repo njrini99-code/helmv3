@@ -32,7 +32,7 @@ export function RosterRequests({
     return (
       <InlineNotice
         code="CH-3203"
-        title="Join requests didn't load"
+        title="Join requests didn’t load"
         body="Pending requests are safe. Try again, and if it keeps happening the error has already been reported."
         onRetry={onRetry}
         covered={covered}

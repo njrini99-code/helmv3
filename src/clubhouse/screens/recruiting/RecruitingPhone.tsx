@@ -52,14 +52,14 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
           Recruiting
         </p>
         {c.error ? (
-          <InlineNotice code="CH-14201" title="Your prospects didn't load" body="Nothing was lost. Check your connection and try again." onRetry={c.tryAgain} />
+          <InlineNotice code="CH-14201" title="Your prospects didn’t load" body="Nothing was lost. Check your connection and try again." onRetry={c.tryAgain} />
         ) : nothing ? (
           <EmptyState
             size="page"
             code="CH-14301"
             icon={GraduationCap}
             title="Your prospect list starts here"
-            body="Add the golfers you're watching and move them through Watched, Recruiting, Offered and Committed."
+            body="Add the golfers you’re watching and move them through Watched, Recruiting, Offered and Committed."
             action={
               <Button variant="primary" leftIcon={Plus} onClick={c.startAdd}>
                 Add your first prospect

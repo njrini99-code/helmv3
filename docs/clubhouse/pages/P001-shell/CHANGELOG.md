@@ -5,9 +5,9 @@
 The shared action hook's offline toast (CH-1903, `lib/use-action.ts`) ends
 "…: you’re offline" with the typographic apostrophe, as Settings, Messages and
 Calendar already wrote theirs; every page whose saves go through `useAction`
-reads it so. Where a page's own words before it still use a straight
-apostrophe (Roster's "Couldn't approve …", Recruiting's "Couldn't move …"),
-those are the page's to change.
+reads it so. The words before it are the page's own; copy-apostrophes.test
+holds Calendar, Team Hub, Messages, Settings, Home, Stats, Roster and
+Recruiting to the curly marks.
 
 ## 2026-10-08 — The preview hands the frame its query
 

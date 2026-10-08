@@ -1,11 +1,14 @@
 # P003 — Roster: changelog
 
-## 2026-10-08 — Copy: the no-team page's apostrophe
+## 2026-10-08 — Copy: typographic apostrophes
 
-"You aren’t on a team yet" (CH-3306 for a coach, CH-3308 for a player) uses the
-typographic apostrophe, as Home, Stats and Calendar do. The offline toast's
-"you’re offline" now comes curly from the shared action hook (CH-1903); the
-page's own "Couldn't …" words before it are unchanged.
+Roster writes its apostrophes as ’ on desktop and the phone, as Home, Stats and
+Calendar do: the no-team page (CH-3306 for a coach, CH-3308 for a player), the
+failed reads (CH-3201 to CH-3203, CH-3207, CH-3210), and the failures of a
+removal, an approval or decline, a note, the export and a copy (CH-3001 to
+CH-3007), so an offline refusal reads "Couldn’t approve Grace Liu: you’re
+offline" (CH-1903) with one kind of mark. The catalog quotes them as shown, and
+copy-apostrophes.test now covers the page.
 
 ## 2026-10-08 — States: one notice when two reads fail; titles without a full stop
 

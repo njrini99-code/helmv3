@@ -105,7 +105,7 @@ Every save goes through `useAction`, so these belong to the shell:
 | CH-09305 | The roster has no active players (form) | "No active players on the roster." | `EmptyState` | qualifiers.test › CH-09305 |
 | CH-09306 | A player isn't entered in any qualifier (/my-qualifiers) | The page empty state (v2 medallion): "You aren't entered in any qualifiers" + See the team's qualifiers | `EmptyState` | qualifiers.test › CH-09306 |
 | CH-09308 | A round has no hole-by-hole card | "No hole-by-hole card for this round. Only the total was recorded." | `Scorecard` | qualifiers.test › CH-09308 |
-| CH-09309 | Not on a team | The page empty state (v2 medallion): "You aren't on a team yet" | `EmptyState` (route) | qualifiers.test › CH-09309 |
+| CH-09309 | Not on a team | The page empty state (v2 medallion): "You aren’t on a team yet" | `EmptyState` (route) | qualifiers.test › CH-09309 |
 | CH-09310 | The qualifier isn't on the viewer's team, or doesn't exist | The page empty state (v2 medallion): "That qualifier isn't on your team" + Back to qualifiers | `EmptyState` (route) | qualifiers.test › CH-09310 |
 | CH-09311 | A player opens /new, /edit or /selection | The page empty state (v2 medallion): "Only coaches create qualifiers" (or edit, or "Only coaches pick the squad") + a way back | `EmptyState` (route) | qualifiers.test › CH-09311 |
 | CH-09312 | The course search matches nothing | "No courses match “Pine”." | `EmptyState` | qualifiers.test › CH-09312 |
