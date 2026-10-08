@@ -249,6 +249,11 @@
   --ch-ledger-eyebrow: #7a6b3f;
   --ch-ledger-row-hover: rgb(110 98 62 / 0.05);
   /* A flush row's press: a deeper green tint, not a scale (lib/press.ts scales keys up to 240px only). */
+  /* The section rule the phone board draws above a heading: an engraved double hairline. */
+  --ch-ledger-rule-double: 3px double rgb(110 98 62 / 0.22);
+  /* The one feature card: the frame's green, lit faintly from its top right corner. */
+  --ch-feature-bg: radial-gradient(120% 90% at 100% 0%, rgb(123 199 154 / 0.14), transparent 60%), var(--ch-green-800);
+  --ch-elevation-feature: 0 0 0 1px #082b1c, 0 14px 28px -18px rgb(11 58 37 / 0.7);
   --ch-ledger-row-press: color-mix(in oklab, var(--ch-green-600) 11%, transparent);
   /* A portrait set into the page head: a canvas gap, a fine engraved ring, a soft green drop. */
   --ch-ledger-avatar-ring: 0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule), 0 10px 22px -12px rgb(11 58 37 / 0.4);

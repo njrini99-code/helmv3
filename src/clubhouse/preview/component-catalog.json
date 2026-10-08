@@ -83,6 +83,7 @@
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/popup-lab.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
@@ -486,6 +487,18 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/auth/AuthKey.tsx",
+      "group": "screens",
+      "exports": [
+        "AuthKeyLabel"
+      ],
+      "styles": [
+        "src/clubhouse/styles/auth.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/auth/AuthNotice.tsx",
       "group": "screens",
       "exports": [
@@ -493,6 +506,34 @@
       ],
       "styles": [
         "src/clubhouse/styles/auth.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/auth/ForgotPassword.tsx",
+      "group": "screens",
+      "exports": [
+        "ResetForm",
+        "ResetSent"
+      ],
+      "styles": [
+        "src/clubhouse/styles/auth.css",
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-thread.css",
+        "src/clubhouse/styles/coachhelm-views.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/onboard.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/rounds-setup.css",
+        "src/clubhouse/styles/rounds-track.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -623,6 +664,7 @@
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
@@ -722,6 +764,7 @@
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
@@ -757,6 +800,7 @@
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
@@ -967,6 +1011,7 @@
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
@@ -1051,6 +1096,7 @@
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
@@ -1368,6 +1414,7 @@
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
@@ -1542,6 +1589,7 @@
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
@@ -1620,6 +1668,7 @@
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
@@ -1685,6 +1734,7 @@
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
@@ -1734,6 +1784,18 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/onboard-tokens.css",
+        "src/clubhouse/styles/onboard.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/onboard/Rail.tsx",
+      "group": "screens",
+      "exports": [
+        "Rail"
+      ],
+      "styles": [
         "src/clubhouse/styles/onboard.css"
       ],
       "examples": [],
@@ -2117,6 +2179,7 @@
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
@@ -3053,6 +3116,7 @@
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
@@ -3095,6 +3159,7 @@
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
@@ -3291,6 +3356,7 @@
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
@@ -3354,6 +3420,18 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/shell/NavPlate.tsx",
+      "group": "shell",
+      "exports": [
+        "NavPlate"
+      ],
+      "styles": [
+        "src/clubhouse/styles/shell.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/shell/NextEventCard.tsx",
       "group": "shell",
       "exports": [
@@ -3381,6 +3459,7 @@
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
@@ -3513,6 +3592,7 @@
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
@@ -3607,6 +3687,7 @@
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
@@ -3664,6 +3745,23 @@
       "fixture": "Shared gallery example"
     },
     {
+      "file": "src/clubhouse/ui/Ledger.tsx",
+      "group": "ui",
+      "exports": [
+        "FeatureCard",
+        "FigureRow",
+        "LedgerList",
+        "LedgerRow",
+        "PageIntro"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/ui/Menu.tsx",
       "group": "ui",
       "exports": [
@@ -3697,6 +3795,7 @@
         "src/clubhouse/styles/component-playground.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
@@ -3989,6 +4088,9 @@
         "Swap"
       ],
       "styles": [
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -4105,436 +4207,454 @@
           "line": 26
         },
         {
+          "name": "--ch-au-t-shake",
+          "value": "380ms",
+          "scope": "[data-ui='clubhouse']",
+          "line": 28
+        },
+        {
           "name": "--ch-au-t-sheet",
           "value": "760ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 27
+          "line": 29
         },
         {
           "name": "--ch-au-t-sheet-fade",
           "value": "500ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 28
+          "line": 30
         },
         {
           "name": "--ch-au-t-cam",
           "value": "5200ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 30
+          "line": 32
         },
         {
           "name": "--ch-au-t-phone-cam",
           "value": "2600ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 31
+          "line": 33
         },
         {
           "name": "--ch-au-t-pine",
           "value": "4200ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 32
+          "line": 34
         },
         {
           "name": "--ch-au-t-pine-fade",
           "value": "2400ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 33
+          "line": 35
         },
         {
           "name": "--ch-au-push",
           "value": "1.34",
           "scope": "[data-ui='clubhouse']",
-          "line": 34
+          "line": 36
         },
         {
           "name": "--ch-au-leave",
           "value": "1.5",
           "scope": "[data-ui='clubhouse']",
-          "line": 35
+          "line": 37
         },
         {
           "name": "--ch-au-t-fold",
           "value": "880ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 37
+          "line": 39
         },
         {
           "name": "--ch-au-t-paper",
           "value": "640ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 38
+          "line": 40
         },
         {
           "name": "--ch-au-paper-delay",
           "value": "260ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 39
+          "line": 41
         },
         {
           "name": "--ch-au-t-leave-cam",
           "value": "1400ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 40
+          "line": 42
         },
         {
           "name": "--ch-au-t-rise",
           "value": "820ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 41
+          "line": 43
         },
         {
           "name": "--ch-au-rise-delay",
           "value": "200ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 42
+          "line": 44
         },
         {
           "name": "--ch-au-t-hero",
           "value": "520ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 43
+          "line": 45
         },
         {
           "name": "--ch-au-t-out",
           "value": "420ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 44
+          "line": 46
         },
         {
           "name": "--ch-au-loop-sway",
           "value": "9s",
           "scope": "[data-ui='clubhouse']",
-          "line": 46
+          "line": 48
         },
         {
           "name": "--ch-au-loop-sway-bough",
           "value": "7s",
           "scope": "[data-ui='clubhouse']",
-          "line": 47
+          "line": 49
         },
         {
           "name": "--ch-au-loop-oak",
           "value": "11s",
           "scope": "[data-ui='clubhouse']",
-          "line": 48
+          "line": 50
         },
         {
           "name": "--ch-au-loop-oak-r",
           "value": "13s",
           "scope": "[data-ui='clubhouse']",
-          "line": 49
+          "line": 51
         },
         {
           "name": "--ch-au-loop-reeds",
           "value": "5s",
           "scope": "[data-ui='clubhouse']",
-          "line": 50
+          "line": 52
         },
         {
           "name": "--ch-au-loop-clouds",
           "value": "90s",
           "scope": "[data-ui='clubhouse']",
-          "line": 51
+          "line": 53
         },
         {
           "name": "--ch-au-loop-birds",
           "value": "46s",
           "scope": "[data-ui='clubhouse']",
-          "line": 52
+          "line": 54
         },
         {
           "name": "--ch-au-loop-shimmer",
           "value": "3.4s",
           "scope": "[data-ui='clubhouse']",
-          "line": 53
+          "line": 55
         },
         {
           "name": "--ch-au-loop-twinkle",
           "value": "3.6s",
           "scope": "[data-ui='clubhouse']",
-          "line": 54
+          "line": 56
         },
         {
           "name": "--ch-au-pw",
           "value": "clamp(400px, 40vw, 540px)",
           "scope": "[data-ui='clubhouse']",
-          "line": 56
+          "line": 58
         },
         {
           "name": "--ch-au-t-photo",
-          "value": "1ms",
-          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
-          "line": 63
-        },
-        {
-          "name": "--ch-au-t-veil",
-          "value": "1ms",
-          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
-          "line": 64
-        },
-        {
-          "name": "--ch-au-t-fade",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 65
         },
         {
-          "name": "--ch-au-t-say",
+          "name": "--ch-au-t-veil",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 66
         },
         {
-          "name": "--ch-au-t-panel",
+          "name": "--ch-au-t-fade",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 67
         },
         {
-          "name": "--ch-au-t-panel-move",
+          "name": "--ch-au-t-say",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 68
         },
         {
-          "name": "--ch-au-t-err",
+          "name": "--ch-au-t-panel",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 69
         },
         {
-          "name": "--ch-au-t-sheet",
+          "name": "--ch-au-t-panel-move",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 70
         },
         {
-          "name": "--ch-au-t-sheet-fade",
+          "name": "--ch-au-t-err",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 71
         },
         {
-          "name": "--ch-au-t-cam",
+          "name": "--ch-au-t-shake",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 72
         },
         {
-          "name": "--ch-au-t-phone-cam",
+          "name": "--ch-au-t-sheet",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 73
         },
         {
-          "name": "--ch-au-t-pine",
+          "name": "--ch-au-t-sheet-fade",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 74
         },
         {
-          "name": "--ch-au-t-pine-fade",
+          "name": "--ch-au-t-cam",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 75
         },
         {
-          "name": "--ch-au-push",
-          "value": "1.2",
+          "name": "--ch-au-t-phone-cam",
+          "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 76
         },
         {
-          "name": "--ch-au-leave",
-          "value": "1.2",
+          "name": "--ch-au-t-pine",
+          "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 77
         },
         {
-          "name": "--ch-au-t-fold",
+          "name": "--ch-au-t-pine-fade",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 78
         },
         {
-          "name": "--ch-au-t-paper",
-          "value": "1ms",
+          "name": "--ch-au-push",
+          "value": "1.2",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 79
         },
         {
-          "name": "--ch-au-paper-delay",
-          "value": "1ms",
+          "name": "--ch-au-leave",
+          "value": "1.2",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 80
         },
         {
-          "name": "--ch-au-t-leave-cam",
+          "name": "--ch-au-t-fold",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 81
         },
         {
-          "name": "--ch-au-t-rise",
+          "name": "--ch-au-t-paper",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 82
         },
         {
-          "name": "--ch-au-rise-delay",
+          "name": "--ch-au-paper-delay",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 83
         },
         {
-          "name": "--ch-au-t-hero",
+          "name": "--ch-au-t-leave-cam",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 84
         },
         {
-          "name": "--ch-au-t-out",
+          "name": "--ch-au-t-rise",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 85
         },
         {
+          "name": "--ch-au-rise-delay",
+          "value": "1ms",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
+          "line": 86
+        },
+        {
+          "name": "--ch-au-t-hero",
+          "value": "1ms",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
+          "line": 87
+        },
+        {
+          "name": "--ch-au-t-out",
+          "value": "1ms",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
+          "line": 88
+        },
+        {
           "name": "--ch-au-t-photo",
-          "value": "1ms",
-          "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 89
-        },
-        {
-          "name": "--ch-au-t-veil",
-          "value": "1ms",
-          "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 90
-        },
-        {
-          "name": "--ch-au-t-fade",
-          "value": "1ms",
-          "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 91
-        },
-        {
-          "name": "--ch-au-t-say",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
           "line": 92
         },
         {
-          "name": "--ch-au-t-panel",
+          "name": "--ch-au-t-veil",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
           "line": 93
         },
         {
-          "name": "--ch-au-t-panel-move",
+          "name": "--ch-au-t-fade",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
           "line": 94
         },
         {
-          "name": "--ch-au-t-err",
+          "name": "--ch-au-t-say",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
           "line": 95
         },
         {
-          "name": "--ch-au-t-sheet",
+          "name": "--ch-au-t-panel",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
           "line": 96
         },
         {
-          "name": "--ch-au-t-sheet-fade",
+          "name": "--ch-au-t-panel-move",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
           "line": 97
         },
         {
-          "name": "--ch-au-t-cam",
+          "name": "--ch-au-t-err",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
           "line": 98
         },
         {
-          "name": "--ch-au-t-phone-cam",
+          "name": "--ch-au-t-shake",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
           "line": 99
         },
         {
-          "name": "--ch-au-t-pine",
+          "name": "--ch-au-t-sheet",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
           "line": 100
         },
         {
-          "name": "--ch-au-t-pine-fade",
+          "name": "--ch-au-t-sheet-fade",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
           "line": 101
         },
         {
-          "name": "--ch-au-push",
-          "value": "1.2",
+          "name": "--ch-au-t-cam",
+          "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
           "line": 102
         },
         {
-          "name": "--ch-au-leave",
-          "value": "1.2",
+          "name": "--ch-au-t-phone-cam",
+          "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
           "line": 103
         },
         {
-          "name": "--ch-au-t-fold",
+          "name": "--ch-au-t-pine",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
           "line": 104
         },
         {
-          "name": "--ch-au-t-paper",
+          "name": "--ch-au-t-pine-fade",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
           "line": 105
         },
         {
-          "name": "--ch-au-paper-delay",
-          "value": "1ms",
+          "name": "--ch-au-push",
+          "value": "1.2",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
           "line": 106
         },
         {
-          "name": "--ch-au-t-leave-cam",
-          "value": "1ms",
+          "name": "--ch-au-leave",
+          "value": "1.2",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
           "line": 107
         },
         {
-          "name": "--ch-au-t-rise",
+          "name": "--ch-au-t-fold",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
           "line": 108
         },
         {
-          "name": "--ch-au-rise-delay",
+          "name": "--ch-au-t-paper",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
           "line": 109
         },
         {
-          "name": "--ch-au-t-hero",
+          "name": "--ch-au-paper-delay",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
           "line": 110
         },
         {
-          "name": "--ch-au-t-out",
+          "name": "--ch-au-t-leave-cam",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
           "line": 111
+        },
+        {
+          "name": "--ch-au-t-rise",
+          "value": "1ms",
+          "scope": "[data-ui='clubhouse'][data-motion='off']",
+          "line": 112
+        },
+        {
+          "name": "--ch-au-rise-delay",
+          "value": "1ms",
+          "scope": "[data-ui='clubhouse'][data-motion='off']",
+          "line": 113
+        },
+        {
+          "name": "--ch-au-t-hero",
+          "value": "1ms",
+          "scope": "[data-ui='clubhouse'][data-motion='off']",
+          "line": 114
+        },
+        {
+          "name": "--ch-au-t-out",
+          "value": "1ms",
+          "scope": "[data-ui='clubhouse'][data-motion='off']",
+          "line": 115
         }
       ]
     },
@@ -4543,12 +4663,16 @@
       "classes": [
         "ch-au",
         "ch-au--welcome",
+        "ch-au-alt",
         "ch-au-back",
+        "ch-au-body",
         "ch-au-bottom",
         "ch-au-bough",
         "ch-au-cam",
         "ch-au-err",
         "ch-au-eye",
+        "ch-au-eye__hide",
+        "ch-au-eye__show",
         "ch-au-field",
         "ch-au-fields",
         "ch-au-foot",
@@ -4559,6 +4683,9 @@
         "ch-au-grain",
         "ch-au-hsl",
         "ch-au-input",
+        "ch-au-key",
+        "ch-au-key__busy",
+        "ch-au-key__idle",
         "ch-au-label",
         "ch-au-layer",
         "ch-au-layer--birds",
@@ -4572,6 +4699,7 @@
         "ch-au-notice--positive",
         "ch-au-notice--warning",
         "ch-au-notice-top",
+        "ch-au-nowrap",
         "ch-au-oak",
         "ch-au-oak--r",
         "ch-au-panel",
@@ -4585,10 +4713,12 @@
         "ch-au-reeds",
         "ch-au-say",
         "ch-au-scene",
+        "ch-au-sent",
         "ch-au-shim",
         "ch-au-skip",
         "ch-au-spin",
         "ch-au-sr",
+        "ch-au-stage",
         "ch-au-sub",
         "ch-au-sub__more",
         "ch-au-submit",
@@ -4612,98 +4742,99 @@
         "ch-au-wl-news__h",
         "ch-au-wl-scrim",
         "ch-au-wl-t",
-        "ch-btn"
+        "ch-btn",
+        "ch-btn--primary"
       ],
       "tokens": [
         {
           "name": "--ch-au-push",
           "value": "1.18",
           "scope": ".ch-au-scene[data-crop='tall']",
-          "line": 97
+          "line": 99
         },
         {
           "name": "--ch-au-leave",
           "value": "1.22",
           "scope": ".ch-au-scene[data-crop='tall']",
-          "line": 98
+          "line": 100
         },
         {
           "name": "--ch-au-shift",
           "value": "0",
           "scope": ".ch-au-scene[data-crop='tall']",
-          "line": 99
+          "line": 101
         },
         {
           "name": "--ch-au-t-cam",
           "value": "var(--ch-au-t-phone-cam)",
           "scope": ".ch-au-scene[data-crop='tall']",
-          "line": 100
+          "line": 102
         },
         {
           "name": "--ch-au-push",
           "value": "1.2",
           "scope": "@media (max-height: 760px) and (min-width: 821px) → .ch-au-scene[data-crop='wide']",
-          "line": 104
+          "line": 106
         },
         {
           "name": "--ch-au-inl",
           "value": "calc(var(--ch-au-pw) * 0.5 + 4px)",
           "scope": ".ch-au-photo > .ch-au-poster,\n.ch-au-photo > .ch-au-scene",
-          "line": 292
+          "line": 294
         },
         {
           "name": "--ch-au-inr",
           "value": "calc(var(--ch-au-pw) * 0.5 + 4px)",
           "scope": ".ch-au-photo > .ch-au-poster,\n.ch-au-photo > .ch-au-scene",
-          "line": 293
+          "line": 295
         },
         {
           "name": "--ch-au-inl",
           "value": "0px",
           "scope": ".ch-au[data-phase='opening'] .ch-au-photo > .ch-au-scene",
-          "line": 650
+          "line": 834
         },
         {
           "name": "--ch-au-inr",
           "value": "0px",
           "scope": ".ch-au[data-phase='opening'] .ch-au-photo > .ch-au-scene",
-          "line": 651
+          "line": 835
         },
         {
           "name": "--ch-au-inl",
           "value": "0px",
           "scope": ".ch-au--welcome .ch-au-photo > .ch-au-scene",
-          "line": 681
+          "line": 885
         },
         {
           "name": "--ch-au-inr",
           "value": "0px",
           "scope": ".ch-au--welcome .ch-au-photo > .ch-au-scene",
-          "line": 682
+          "line": 886
         },
         {
           "name": "--ch-au-phone-sheet-top",
           "value": "clamp(200px, 42svh, 352px)",
           "scope": "@media (max-width: 820px) → .ch-au",
-          "line": 933
+          "line": 1138
         },
         {
           "name": "--ch-au-phone-window",
           "value": "calc(var(--ch-au-phone-sheet-top) + 40px)",
           "scope": "@media (max-width: 820px) → .ch-au",
-          "line": 934
+          "line": 1139
         },
         {
           "name": "--ch-au-inl",
           "value": "0px",
           "scope": "@media (max-width: 820px) → .ch-au-photo > .ch-au-poster,\n  .ch-au-photo > .ch-au-scene",
-          "line": 956
+          "line": 1161
         },
         {
           "name": "--ch-au-inr",
           "value": "0px",
           "scope": "@media (max-width: 820px) → .ch-au-photo > .ch-au-poster,\n  .ch-au-photo > .ch-au-scene",
-          "line": 957
+          "line": 1162
         }
       ]
     },
@@ -4753,61 +4884,61 @@
           "name": "--ch-scrollbar-thumb",
           "value": "ButtonText",
           "scope": "@media (forced-colors: active) → [data-ui='clubhouse']",
-          "line": 57
+          "line": 59
         },
         {
           "name": "--ch-scrollbar-thumb-hover",
           "value": "Highlight",
           "scope": "@media (forced-colors: active) → [data-ui='clubhouse']",
-          "line": 58
+          "line": 60
         },
         {
           "name": "--ch-scrollbar-thumb-active",
           "value": "Highlight",
           "scope": "@media (forced-colors: active) → [data-ui='clubhouse']",
-          "line": 59
+          "line": 61
         },
         {
           "name": "--ch-scrollbar-track",
           "value": "Canvas",
           "scope": "@media (forced-colors: active) → [data-ui='clubhouse']",
-          "line": 60
+          "line": 62
         },
         {
           "name": "--ch-text-secondary",
           "value": "var(--ch-ink-700)",
           "scope": ".ch-well,\n.ch-well-soft",
-          "line": 176
+          "line": 178
         },
         {
           "name": "--ch-text-tertiary",
           "value": "var(--ch-ink-600)",
           "scope": ".ch-well,\n.ch-well-soft",
-          "line": 177
+          "line": 179
         },
         {
           "name": "--ch-chart-loss",
           "value": "var(--ch-chart-loss-on-tint)",
           "scope": ".ch-well,\n.ch-well-soft",
-          "line": 178
+          "line": 180
         },
         {
           "name": "--ch-text-primary",
           "value": "var(--ch-on-green-ink)",
           "scope": ".ch-scoreboard",
-          "line": 181
+          "line": 183
         },
         {
           "name": "--ch-text-secondary",
           "value": "var(--ch-on-green-ink-soft)",
           "scope": ".ch-scoreboard",
-          "line": 182
+          "line": 184
         },
         {
           "name": "--ch-text-tertiary",
           "value": "var(--ch-on-green-ink-muted)",
           "scope": ".ch-scoreboard",
-          "line": 183
+          "line": 185
         }
       ]
     },
@@ -4958,6 +5089,8 @@
         "ch-seg",
         "ch-seg__b",
         "ch-seg__l",
+        "ch-swap",
+        "ch-swap__body",
         "ch-switch",
         "ch-switch__t",
         "ch-verify",
@@ -5167,13 +5300,13 @@
           "name": "--ch-cl-codew",
           "value": "116px",
           "scope": "@media (min-width: 821px) → .ch-cl[data-canopy]",
-          "line": 1391
+          "line": 1409
         },
         {
           "name": "--ch-cl-codew",
           "value": "92px",
           "scope": "@media (min-width: 821px) → @container chcl (max-width: 640px) → .ch-cl[data-canopy] .ch-cl-deck",
-          "line": 1788
+          "line": 1817
         }
       ]
     },
@@ -5392,37 +5525,37 @@
           "name": "--ch-hd-fig",
           "value": "var(--ch-ink-700)",
           "scope": ".ch-hd-meas",
-          "line": 266
+          "line": 268
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-green-700)",
           "scope": ".ch-hd-meas.is-good",
-          "line": 272
+          "line": 274
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-chart-loss-on-tint)",
           "scope": ".ch-hd-meas.is-warn",
-          "line": 275
+          "line": 277
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-ink-700)",
           "scope": ".ch-hd-tr",
-          "line": 312
+          "line": 314
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-green-700)",
           "scope": ".ch-hd-tr li.is-good",
-          "line": 333
+          "line": 335
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-chart-loss-on-tint)",
           "scope": ".ch-hd-tr li.is-warn",
-          "line": 336
+          "line": 338
         }
       ]
     },
@@ -5794,7 +5927,7 @@
           "name": "--ch-hl-pulse-h",
           "value": "202px",
           "scope": "@media (min-width: 821px) → .ch-hl[data-canopy]",
-          "line": 981
+          "line": 985
         }
       ]
     },
@@ -5888,25 +6021,25 @@
           "name": "--ch-modal-max-h",
           "value": "calc(100dvh - 48px)",
           "scope": ".ch-modal__panel",
-          "line": 286
+          "line": 300
         },
         {
           "name": "--ch-modal-max-h",
           "value": "92dvh",
           "scope": "@media (max-width: 820px) → .ch-modal",
-          "line": 374
+          "line": 388
         },
         {
           "name": "--ch-modal-max-h",
           "value": "92dvh",
           "scope": "@media (max-width: 820px) → .ch-modal__panel",
-          "line": 380
+          "line": 394
         },
         {
           "name": "--ch-modal-max-h",
           "value": "calc(100dvh - var(--keyboard-height, 0px) - env(safe-area-inset-top) - 8px)",
           "scope": "@media (max-width: 820px) → body.keyboard-open .ch-modal__panel",
-          "line": 442
+          "line": 456
         }
       ]
     },
@@ -6140,19 +6273,19 @@
           "name": "--ch-spark",
           "value": "var(--ch-ink-400)",
           "scope": ".ch-ph-spark",
-          "line": 1914
+          "line": 1925
         },
         {
           "name": "--ch-spark",
           "value": "var(--ch-chart-gain)",
           "scope": ".ch-ph-spark.is-gain",
-          "line": 1917
+          "line": 1928
         },
         {
           "name": "--ch-spark",
           "value": "var(--ch-chart-loss)",
           "scope": ".ch-ph-spark.is-loss",
-          "line": 1920
+          "line": 1931
         }
       ]
     },
@@ -6285,6 +6418,7 @@
         "ch-ms-mute",
         "ch-ms-mute__opts",
         "ch-ms-new",
+        "ch-ms-pane",
         "ch-ms-pick",
         "ch-ms-quiet",
         "ch-ms-quote",
@@ -6357,6 +6491,8 @@
         "ch-seg",
         "ch-seg__b",
         "ch-sr-only--focusable",
+        "ch-swap__body",
+        "ch-swap__item",
         "ch-switch"
       ],
       "tokens": []
@@ -6540,304 +6676,394 @@
           "line": 37
         },
         {
-          "name": "--ch-ox-t-step",
-          "value": "1ms",
-          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
+          "name": "--ch-ox-turn-delay",
+          "value": "90ms",
+          "scope": "[data-ui='clubhouse']",
+          "line": 41
+        },
+        {
+          "name": "--ch-ox-t-rail",
+          "value": "520ms",
+          "scope": "[data-ui='clubhouse']",
           "line": 42
         },
         {
-          "name": "--ch-ox-t-pane",
-          "value": "1ms",
-          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
+          "name": "--ch-ox-t-wet",
+          "value": "1100ms",
+          "scope": "[data-ui='clubhouse']",
           "line": 43
         },
         {
-          "name": "--ch-ox-t-card",
-          "value": "1ms",
-          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
+          "name": "--ch-ox-t-coin",
+          "value": "420ms",
+          "scope": "[data-ui='clubhouse']",
           "line": 44
         },
         {
-          "name": "--ch-ox-t-key",
-          "value": "1ms",
-          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
+          "name": "--ch-ox-t-lift",
+          "value": "900ms",
+          "scope": "[data-ui='clubhouse']",
           "line": 45
         },
         {
-          "name": "--ch-ox-t-pop",
+          "name": "--ch-ox-t-step",
           "value": "1ms",
-          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
-          "line": 46
-        },
-        {
-          "name": "--ch-ox-t-shake",
-          "value": "1ms",
-          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
-          "line": 47
-        },
-        {
-          "name": "--ch-ox-t-flash",
-          "value": "1ms",
-          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
-          "line": 48
-        },
-        {
-          "name": "--ch-ox-t-issue",
-          "value": "1ms",
-          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
-          "line": 49
-        },
-        {
-          "name": "--ch-ox-issue-delay",
-          "value": "0ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 50
         },
         {
-          "name": "--ch-ox-t-stamp",
+          "name": "--ch-ox-t-pane",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 51
         },
         {
-          "name": "--ch-ox-stamp-delay",
-          "value": "0ms",
+          "name": "--ch-ox-t-card",
+          "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 52
         },
         {
-          "name": "--ch-ox-t-cam",
+          "name": "--ch-ox-t-key",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 53
         },
         {
-          "name": "--ch-ox-t-hover",
+          "name": "--ch-ox-t-pop",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 54
         },
         {
-          "name": "--ch-ox-t-quick",
+          "name": "--ch-ox-t-shake",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 55
         },
         {
-          "name": "--ch-ox-t-err",
+          "name": "--ch-ox-t-flash",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 56
         },
         {
-          "name": "--ch-ox-t-leave",
+          "name": "--ch-ox-t-issue",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 57
         },
         {
-          "name": "--ch-ox-t-leave-move",
-          "value": "1ms",
+          "name": "--ch-ox-issue-delay",
+          "value": "0ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 58
         },
         {
-          "name": "--ch-ox-t-fold",
+          "name": "--ch-ox-t-stamp",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 59
         },
         {
-          "name": "--ch-ox-t-paper",
-          "value": "1ms",
+          "name": "--ch-ox-stamp-delay",
+          "value": "0ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 60
         },
         {
-          "name": "--ch-ox-paper-delay",
-          "value": "0ms",
+          "name": "--ch-ox-t-cam",
+          "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 61
         },
         {
-          "name": "--ch-ox-t-fold-cam",
+          "name": "--ch-ox-t-hover",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 62
         },
         {
-          "name": "--ch-ox-t-home",
+          "name": "--ch-ox-t-quick",
           "value": "1ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
           "line": 63
         },
         {
+          "name": "--ch-ox-t-err",
+          "value": "1ms",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
+          "line": 64
+        },
+        {
+          "name": "--ch-ox-t-leave",
+          "value": "1ms",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
+          "line": 65
+        },
+        {
+          "name": "--ch-ox-t-leave-move",
+          "value": "1ms",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
+          "line": 66
+        },
+        {
+          "name": "--ch-ox-t-fold",
+          "value": "1ms",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
+          "line": 67
+        },
+        {
+          "name": "--ch-ox-t-paper",
+          "value": "1ms",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
+          "line": 68
+        },
+        {
+          "name": "--ch-ox-paper-delay",
+          "value": "0ms",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
+          "line": 69
+        },
+        {
+          "name": "--ch-ox-t-fold-cam",
+          "value": "1ms",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
+          "line": 70
+        },
+        {
+          "name": "--ch-ox-t-home",
+          "value": "1ms",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
+          "line": 71
+        },
+        {
           "name": "--ch-ox-home-delay",
           "value": "0ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
-          "line": 64
+          "line": 72
         },
         {
           "name": "--ch-ox-slot-step",
           "value": "0ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
-          "line": 65
+          "line": 73
         },
         {
           "name": "--ch-ox-seal-delay",
           "value": "0ms",
           "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
-          "line": 66
+          "line": 74
+        },
+        {
+          "name": "--ch-ox-turn-delay",
+          "value": "0ms",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
+          "line": 75
+        },
+        {
+          "name": "--ch-ox-t-rail",
+          "value": "1ms",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
+          "line": 76
+        },
+        {
+          "name": "--ch-ox-t-wet",
+          "value": "1ms",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
+          "line": 77
+        },
+        {
+          "name": "--ch-ox-t-coin",
+          "value": "1ms",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
+          "line": 78
+        },
+        {
+          "name": "--ch-ox-t-lift",
+          "value": "1ms",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']",
+          "line": 79
         },
         {
           "name": "--ch-ox-t-step",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 70
+          "line": 83
         },
         {
           "name": "--ch-ox-t-pane",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 71
+          "line": 84
         },
         {
           "name": "--ch-ox-t-card",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 72
+          "line": 85
         },
         {
           "name": "--ch-ox-t-key",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 73
+          "line": 86
         },
         {
           "name": "--ch-ox-t-pop",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 74
+          "line": 87
         },
         {
           "name": "--ch-ox-t-shake",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 75
+          "line": 88
         },
         {
           "name": "--ch-ox-t-flash",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 76
+          "line": 89
         },
         {
           "name": "--ch-ox-t-issue",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 77
+          "line": 90
         },
         {
           "name": "--ch-ox-issue-delay",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 78
+          "line": 91
         },
         {
           "name": "--ch-ox-t-stamp",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 79
+          "line": 92
         },
         {
           "name": "--ch-ox-stamp-delay",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 80
+          "line": 93
         },
         {
           "name": "--ch-ox-t-cam",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 81
+          "line": 94
         },
         {
           "name": "--ch-ox-t-hover",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 82
+          "line": 95
         },
         {
           "name": "--ch-ox-t-quick",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 83
+          "line": 96
         },
         {
           "name": "--ch-ox-t-err",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 84
+          "line": 97
         },
         {
           "name": "--ch-ox-t-leave",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 85
+          "line": 98
         },
         {
           "name": "--ch-ox-t-leave-move",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 86
+          "line": 99
         },
         {
           "name": "--ch-ox-t-fold",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 87
+          "line": 100
         },
         {
           "name": "--ch-ox-t-paper",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 88
+          "line": 101
         },
         {
           "name": "--ch-ox-paper-delay",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 89
+          "line": 102
         },
         {
           "name": "--ch-ox-t-fold-cam",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 90
+          "line": 103
         },
         {
           "name": "--ch-ox-t-home",
           "value": "1ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 91
+          "line": 104
         },
         {
           "name": "--ch-ox-home-delay",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 92
+          "line": 105
         },
         {
           "name": "--ch-ox-slot-step",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 93
+          "line": 106
         },
         {
           "name": "--ch-ox-seal-delay",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off']",
-          "line": 94
+          "line": 107
+        },
+        {
+          "name": "--ch-ox-turn-delay",
+          "value": "0ms",
+          "scope": "[data-ui='clubhouse'][data-motion='off']",
+          "line": 108
+        },
+        {
+          "name": "--ch-ox-t-rail",
+          "value": "1ms",
+          "scope": "[data-ui='clubhouse'][data-motion='off']",
+          "line": 109
+        },
+        {
+          "name": "--ch-ox-t-wet",
+          "value": "1ms",
+          "scope": "[data-ui='clubhouse'][data-motion='off']",
+          "line": 110
+        },
+        {
+          "name": "--ch-ox-t-coin",
+          "value": "1ms",
+          "scope": "[data-ui='clubhouse'][data-motion='off']",
+          "line": 111
+        },
+        {
+          "name": "--ch-ox-t-lift",
+          "value": "1ms",
+          "scope": "[data-ui='clubhouse'][data-motion='off']",
+          "line": 112
         }
       ]
     },
@@ -6846,6 +7072,7 @@
       "classes": [
         "ch-au-cam",
         "ch-avatar",
+        "ch-btn",
         "ch-btn--lg",
         "ch-btn--primary",
         "ch-ox",
@@ -6917,6 +7144,7 @@
         "ch-ox-mhome",
         "ch-ox-names",
         "ch-ox-nextstep",
+        "ch-ox-nextstep__t",
         "ch-ox-opt",
         "ch-ox-paper",
         "ch-ox-photo",
@@ -6928,6 +7156,7 @@
         "ch-ox-rail",
         "ch-ox-rail__m",
         "ch-ox-rail__s",
+        "ch-ox-rail__thumb",
         "ch-ox-range",
         "ch-ox-rules",
         "ch-ox-scale",
@@ -6950,7 +7179,8 @@
         "ch-ox-tick",
         "ch-ox-tile",
         "ch-ox-tiles",
-        "ch-ox-top"
+        "ch-ox-top",
+        "ch-ox-turn"
       ],
       "tokens": [
         {
@@ -6990,10 +7220,58 @@
           "line": 17
         },
         {
+          "name": "--ch-ox-mc-s",
+          "value": "1",
+          "scope": ".ch-ox-mcw",
+          "line": 1372
+        },
+        {
           "name": "--ch-av-size",
           "value": "55px",
           "scope": ".ch-ox-mc__coin .ch-avatar",
-          "line": 1356
+          "line": 1471
+        },
+        {
+          "name": "--ch-av-bg",
+          "value": "#ede4cc",
+          "scope": ".ch-ox-mc__coin .ch-avatar[data-tone]",
+          "line": 1477
+        },
+        {
+          "name": "--ch-av-fg",
+          "value": "var(--ch-ox-felt)",
+          "scope": ".ch-ox-mc__coin .ch-avatar[data-tone]",
+          "line": 1478
+        },
+        {
+          "name": "--ch-av-ring",
+          "value": "transparent",
+          "scope": ".ch-ox-mc__coin .ch-avatar[data-tone]",
+          "line": 1479
+        },
+        {
+          "name": "--ch-ox-mc-s",
+          "value": "0.9",
+          "scope": "@media (max-width: 1400px) → .ch-ox-mcw",
+          "line": 1612
+        },
+        {
+          "name": "--ch-ox-mc-s",
+          "value": "0.72",
+          "scope": "@media (max-width: 1200px) → .ch-ox-mcw",
+          "line": 1621
+        },
+        {
+          "name": "--ch-ox-mc-s",
+          "value": "0.64",
+          "scope": "@media (max-width: 1000px) → .ch-ox-mcw",
+          "line": 1633
+        },
+        {
+          "name": "--ch-ox-mc-s",
+          "value": "0.92",
+          "scope": "@media (max-width: 820px) → .ch-ox-mcw",
+          "line": 1783
         }
       ]
     },
@@ -7252,6 +7530,8 @@
         "ch-recm-title",
         "ch-seg",
         "ch-seg__b",
+        "ch-swap",
+        "ch-swap__body",
         "ch-textarea"
       ],
       "tokens": [
@@ -7259,25 +7539,25 @@
           "name": "--ch-rec-ring",
           "value": "#cfc9ba",
           "scope": ".ch-rec-pipe__dot",
-          "line": 134
+          "line": 136
         },
         {
           "name": "--ch-rec-ring",
           "value": "#8dbb9f",
           "scope": ".ch-rec-pipe__stage.is-recruiting > .ch-rec-pipe__dot",
-          "line": 141
+          "line": 143
         },
         {
           "name": "--ch-rec-ring",
           "value": "#4f8a67",
           "scope": ".ch-rec-pipe__stage.is-offered > .ch-rec-pipe__dot",
-          "line": 146
+          "line": 148
         },
         {
           "name": "--ch-rec-ring",
           "value": "var(--ch-green-800)",
           "scope": ".ch-rec-pipe__stage.is-committed > .ch-rec-pipe__dot",
-          "line": 151
+          "line": 153
         }
       ]
     },
@@ -7957,7 +8237,9 @@
         "ch-more__tick",
         "ch-more__x",
         "ch-nav",
+        "ch-nav--plate",
         "ch-nav__group",
+        "ch-nav__plate",
         "ch-nav__section",
         "ch-navitem",
         "ch-navitem__count",
@@ -8027,19 +8309,25 @@
           "name": "--ch-type-serif-l",
           "value": "600 32px/1.1 var(--ch-font-sans)",
           "scope": "@media (min-width: 821px) → [data-ui='clubhouse'] main[data-canopy]",
-          "line": 1715
+          "line": 1741
         },
         {
           "name": "--ch-type-serif-m",
           "value": "600 22px/1.15 var(--ch-font-sans)",
           "scope": "@media (min-width: 821px) → [data-ui='clubhouse'] main[data-canopy]",
-          "line": 1716
+          "line": 1742
         },
         {
           "name": "--ch-type-serif-s",
           "value": "600 19px/1.2 var(--ch-font-sans)",
           "scope": "@media (min-width: 821px) → [data-ui='clubhouse'] main[data-canopy]",
-          "line": 1717
+          "line": 1743
+        },
+        {
+          "name": "--ch-phone-bar-bg",
+          "value": "var(--ch-frame)",
+          "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
+          "line": 1975
         }
       ]
     },
@@ -8221,7 +8509,9 @@
         "ch-sgt",
         "ch-sgt__end",
         "ch-sgt__ends",
+        "ch-sgt__front",
         "ch-sgt__head",
+        "ch-sgt__hit",
         "ch-sgt__hold",
         "ch-sgt__legend",
         "ch-sgt__line",
@@ -8355,7 +8645,7 @@
           "name": "--ch-fg-h",
           "value": "208px",
           "scope": "@container (max-width: 900px) → .ch-fg.ch-fg--lead",
-          "line": 1825
+          "line": 1866
         }
       ]
     },
@@ -9037,861 +9327,933 @@
         },
         {
           "name": "--ch-font-serif",
-          "value": "var(--ch-font-instrument-serif), 'Iowan Old Style', Georgia, serif",
+          "value": "var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 169
+          "line": 171
         },
         {
           "name": "--ch-font-mono",
           "value": "var(--ch-font-jetbrains), ui-monospace, 'SF Mono', Menlo, monospace",
           "scope": "[data-ui='clubhouse']",
-          "line": 170
-        },
-        {
-          "name": "--ch-type-serif-l",
-          "value": "400 42px/1.06 var(--ch-font-serif)",
-          "scope": "[data-ui='clubhouse']",
           "line": 172
         },
         {
-          "name": "--ch-type-serif-m",
-          "value": "400 31px/1.1 var(--ch-font-serif)",
-          "scope": "[data-ui='clubhouse']",
-          "line": 173
-        },
-        {
-          "name": "--ch-type-serif-s",
-          "value": "400 25px/1.15 var(--ch-font-serif)",
-          "scope": "[data-ui='clubhouse']",
-          "line": 174
-        },
-        {
-          "name": "--ch-type-display-l",
+          "name": "--ch-type-serif-l",
           "value": "600 36px/1.08 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
           "line": 175
         },
         {
+          "name": "--ch-type-serif-m",
+          "value": "600 24px/1.15 var(--ch-font-sans)",
+          "scope": "[data-ui='clubhouse']",
+          "line": 176
+        },
+        {
+          "name": "--ch-type-serif-s",
+          "value": "600 20px/1.2 var(--ch-font-sans)",
+          "scope": "[data-ui='clubhouse']",
+          "line": 177
+        },
+        {
+          "name": "--ch-type-display-l",
+          "value": "600 36px/1.08 var(--ch-font-sans)",
+          "scope": "[data-ui='clubhouse']",
+          "line": 178
+        },
+        {
           "name": "--ch-type-display-s",
           "value": "600 22px/1.2 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 176
+          "line": 179
         },
         {
           "name": "--ch-type-title",
           "value": "600 15px/1.35 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 177
+          "line": 180
         },
         {
           "name": "--ch-type-body-l",
           "value": "400 16px/1.55 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 178
+          "line": 181
         },
         {
           "name": "--ch-type-body",
           "value": "400 14px/1.5 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 179
+          "line": 182
         },
         {
           "name": "--ch-type-body-s",
           "value": "400 13px/1.45 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 180
+          "line": 183
         },
         {
           "name": "--ch-type-label",
           "value": "500 13.5px/1.3 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 181
+          "line": 184
         },
         {
           "name": "--ch-type-label-s",
           "value": "500 12.5px/1.3 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 182
+          "line": 185
         },
         {
           "name": "--ch-type-caption",
           "value": "400 12.5px/1.4 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 183
+          "line": 186
         },
         {
           "name": "--ch-type-figure-l",
           "value": "500 40px/1 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']",
-          "line": 184
+          "line": 187
         },
         {
           "name": "--ch-type-mono",
           "value": "500 11px/1 var(--ch-font-mono)",
           "scope": "[data-ui='clubhouse']",
-          "line": 185
+          "line": 188
         },
         {
           "name": "--ch-gutter",
           "value": "40px",
           "scope": "[data-ui='clubhouse']",
-          "line": 188
+          "line": 191
         },
         {
           "name": "--ch-sidebar-w",
           "value": "240px",
           "scope": "[data-ui='clubhouse']",
-          "line": 189
+          "line": 192
         },
         {
           "name": "--ch-topbar-h",
           "value": "56px",
           "scope": "[data-ui='clubhouse']",
-          "line": 190
+          "line": 193
         },
         {
           "name": "--ch-phone-topbar-h",
           "value": "50px",
           "scope": "[data-ui='clubhouse']",
-          "line": 192
+          "line": 195
         },
         {
           "name": "--ch-tabbar-h",
           "value": "56px",
           "scope": "[data-ui='clubhouse']",
-          "line": 193
+          "line": 196
         },
         {
           "name": "--ch-radius-xs",
           "value": "5px",
           "scope": "[data-ui='clubhouse']",
-          "line": 196
+          "line": 199
         },
         {
           "name": "--ch-radius-sm",
           "value": "7px",
           "scope": "[data-ui='clubhouse']",
-          "line": 197
+          "line": 200
         },
         {
           "name": "--ch-radius-md",
           "value": "10px",
           "scope": "[data-ui='clubhouse']",
-          "line": 198
+          "line": 201
         },
         {
           "name": "--ch-radius-lg",
           "value": "14px",
           "scope": "[data-ui='clubhouse']",
-          "line": 199
+          "line": 202
         },
         {
           "name": "--ch-radius-xl",
           "value": "20px",
           "scope": "[data-ui='clubhouse']",
-          "line": 200
+          "line": 203
         },
         {
           "name": "--ch-shadow-sm",
           "value": "var(--ch-elevation-reading)",
           "scope": "[data-ui='clubhouse']",
-          "line": 204
+          "line": 207
         },
         {
           "name": "--ch-shadow-md",
           "value": "var(--ch-elevation-floating)",
           "scope": "[data-ui='clubhouse']",
-          "line": 205
+          "line": 208
         },
         {
           "name": "--ch-shadow-lg",
           "value": "var(--ch-elevation-overlay)",
           "scope": "[data-ui='clubhouse']",
-          "line": 206
+          "line": 209
         },
         {
           "name": "--ch-glass-bg",
           "value": "rgb(250 248 241 / 0.7)",
           "scope": "[data-ui='clubhouse']",
-          "line": 207
+          "line": 210
         },
         {
           "name": "--ch-glass-blur",
           "value": "20px",
           "scope": "[data-ui='clubhouse']",
-          "line": 209
+          "line": 212
         },
         {
           "name": "--ch-glass-saturate",
           "value": "110%",
           "scope": "[data-ui='clubhouse']",
-          "line": 210
+          "line": 213
         },
         {
           "name": "--ch-edge",
           "value": "rgb(28 25 18 / 0.08)",
           "scope": "[data-ui='clubhouse']",
-          "line": 215
+          "line": 218
         },
         {
           "name": "--ch-highlight",
           "value": "inset 0 1px 0 rgb(255 255 255 / 0.7)",
           "scope": "[data-ui='clubhouse']",
-          "line": 216
+          "line": 219
         },
         {
           "name": "--ch-elevation-reading",
           "value": "inset 0 1px 0 rgb(255 255 255 / 0.9), 0 0 0 1px rgb(28 25 18 / 0.085),\n    0 1px 2px rgb(28 25 18 / 0.08), 0 8px 18px -10px rgb(28 25 18 / 0.16), 0 22px 40px -24px rgb(28 25 18 / 0.18)",
           "scope": "[data-ui='clubhouse']",
-          "line": 220
+          "line": 223
         },
         {
           "name": "--ch-elevation-cast",
           "value": "0 1px 2px rgb(28 25 18 / 0.06), 0 8px 18px -10px rgb(28 25 18 / 0.16),\n    0 22px 40px -24px rgb(28 25 18 / 0.18)",
           "scope": "[data-ui='clubhouse']",
-          "line": 224
+          "line": 227
         },
         {
           "name": "--ch-elevation-reading-hover",
           "value": "inset 0 1px 0 rgb(255 255 255 / 0.95), 0 0 0 1px rgb(28 25 18 / 0.1),\n    0 2px 4px rgb(28 25 18 / 0.07), 0 12px 24px -12px rgb(28 25 18 / 0.2), 0 28px 48px -26px rgb(28 25 18 / 0.22)",
           "scope": "[data-ui='clubhouse']",
-          "line": 226
+          "line": 229
         },
         {
           "name": "--ch-elevation-reading-accent",
           "value": "0 1px 3px rgb(8 43 28 / 0.08), 0 4px 12px -6px rgb(8 43 28 / 0.12)",
           "scope": "[data-ui='clubhouse']",
-          "line": 228
+          "line": 231
         },
         {
           "name": "--ch-elevation-control",
           "value": "var(--ch-highlight), 0 1px 2px rgb(28 25 18 / 0.06)",
           "scope": "[data-ui='clubhouse']",
-          "line": 229
+          "line": 232
         },
         {
           "name": "--ch-elevation-floating",
           "value": "0 2px 6px rgb(28 25 18 / 0.06), 0 8px 20px -8px rgb(28 25 18 / 0.12)",
           "scope": "[data-ui='clubhouse']",
-          "line": 230
+          "line": 233
         },
         {
           "name": "--ch-elevation-floating-focus",
           "value": "0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo),\n    var(--ch-elevation-floating)",
           "scope": "[data-ui='clubhouse']",
-          "line": 231
+          "line": 234
         },
         {
           "name": "--ch-elevation-tabbar",
           "value": "inset 0 1px 0 rgb(255 255 255 / 0.7), 0 0 0 1px rgb(28 25 18 / 0.07),\n    0 2px 6px rgb(28 25 18 / 0.08), 0 14px 32px -12px rgb(28 25 18 / 0.32)",
           "scope": "[data-ui='clubhouse']",
-          "line": 234
+          "line": 237
         },
         {
           "name": "--ch-elevation-framed",
           "value": "0 1px 3px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.12), inset 1px 0 0 rgb(11 58 37 / 0.12)",
           "scope": "[data-ui='clubhouse']",
-          "line": 238
+          "line": 241
         },
         {
           "name": "--ch-elevation-on-frame",
           "value": "0 0 0 1px rgb(176 149 96 / 0.45), 0 1px 2px rgb(2 18 10 / 0.3)",
           "scope": "[data-ui='clubhouse']",
-          "line": 239
+          "line": 242
         },
         {
           "name": "--ch-elevation-on-frame-hover",
           "value": "0 0 0 1px rgb(176 149 96 / 0.6), 0 2px 6px rgb(2 18 10 / 0.35)",
           "scope": "[data-ui='clubhouse']",
-          "line": 240
+          "line": 243
         },
         {
           "name": "--ch-ledger-rule",
           "value": "rgb(110 98 62 / 0.16)",
           "scope": "[data-ui='clubhouse']",
-          "line": 243
+          "line": 246
         },
         {
           "name": "--ch-ledger-rule-soft",
           "value": "rgb(110 98 62 / 0.09)",
           "scope": "[data-ui='clubhouse']",
-          "line": 244
+          "line": 247
         },
         {
           "name": "--ch-ledger-ink",
           "value": "rgb(18 59 41 / 0.9)",
           "scope": "[data-ui='clubhouse']",
-          "line": 245
+          "line": 248
         },
         {
           "name": "--ch-ledger-eyebrow",
           "value": "#7a6b3f",
           "scope": "[data-ui='clubhouse']",
-          "line": 246
+          "line": 249
         },
         {
           "name": "--ch-ledger-row-hover",
           "value": "rgb(110 98 62 / 0.05)",
           "scope": "[data-ui='clubhouse']",
-          "line": 247
+          "line": 250
+        },
+        {
+          "name": "--ch-ledger-rule-double",
+          "value": "3px double rgb(110 98 62 / 0.22)",
+          "scope": "[data-ui='clubhouse']",
+          "line": 253
+        },
+        {
+          "name": "--ch-feature-bg",
+          "value": "radial-gradient(120% 90% at 100% 0%, rgb(123 199 154 / 0.14), transparent 60%), var(--ch-green-800)",
+          "scope": "[data-ui='clubhouse']",
+          "line": 255
+        },
+        {
+          "name": "--ch-elevation-feature",
+          "value": "0 0 0 1px #082b1c, 0 14px 28px -18px rgb(11 58 37 / 0.7)",
+          "scope": "[data-ui='clubhouse']",
+          "line": 256
+        },
+        {
+          "name": "--ch-ledger-row-press",
+          "value": "color-mix(in oklab, var(--ch-green-600) 11%, transparent)",
+          "scope": "[data-ui='clubhouse']",
+          "line": 257
         },
         {
           "name": "--ch-ledger-avatar-ring",
           "value": "0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule), 0 10px 22px -12px rgb(11 58 37 / 0.4)",
           "scope": "[data-ui='clubhouse']",
-          "line": 249
+          "line": 259
+        },
+        {
+          "name": "--ch-elevation-field-hover",
+          "value": "0 0 0 1px var(--ch-border-strong), 0 1px 2px rgb(28 25 18 / 0.05)",
+          "scope": "[data-ui='clubhouse']",
+          "line": 261
+        },
+        {
+          "name": "--ch-elevation-chip-hover",
+          "value": "inset 0 0 0 1px rgb(28 25 18 / 0.24), 0 2px 6px -2px rgb(28 25 18 / 0.18)",
+          "scope": "[data-ui='clubhouse']",
+          "line": 262
+        },
+        {
+          "name": "--ch-elevation-choice-hover",
+          "value": "0 0 0 1.5px var(--ch-green-600), 0 10px 20px -14px rgb(11 58 37 / 0.4)",
+          "scope": "[data-ui='clubhouse']",
+          "line": 263
+        },
+        {
+          "name": "--ch-elevation-row-card-hover",
+          "value": "0 0 0 1px rgb(21 90 57 / 0.25), 0 14px 28px -18px rgb(11 58 37 / 0.4)",
+          "scope": "[data-ui='clubhouse']",
+          "line": 264
+        },
+        {
+          "name": "--ch-elevation-on-frame-card-hover",
+          "value": "0 0 0 1px rgb(176 149 96 / 0.6), 0 10px 22px -10px rgb(0 0 0 / 0.55), inset 0 1px 0 #fff",
+          "scope": "[data-ui='clubhouse']",
+          "line": 265
+        },
+        {
+          "name": "--ch-elevation-primary-hover",
+          "value": "0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), 0 2px 4px rgb(12 65 40 / 0.22),\n    0 8px 16px -8px rgb(12 65 40 / 0.45)",
+          "scope": "[data-ui='clubhouse']",
+          "line": 266
         },
         {
           "name": "--ch-elevation-overlay",
           "value": "0 4px 12px rgb(28 25 18 / 0.08), 0 16px 36px -12px rgb(28 25 18 / 0.16)",
           "scope": "[data-ui='clubhouse']",
-          "line": 250
+          "line": 268
         },
         {
           "name": "--ch-elevation-sheet",
           "value": "0 -4px 12px rgb(28 25 18 / 0.06), 0 -12px 32px -12px rgb(28 25 18 / 0.12)",
           "scope": "[data-ui='clubhouse']",
-          "line": 251
+          "line": 269
         },
         {
           "name": "--ch-elevation-bubble",
           "value": "0 1px 2px rgb(28 25 18 / 0.04)",
           "scope": "[data-ui='clubhouse']",
-          "line": 252
+          "line": 270
         },
         {
           "name": "--ch-bubble-mine-bg",
           "value": "linear-gradient(180deg, #1e6a45 0%, #155a39 60%, #0f4a2f 100%)",
           "scope": "[data-ui='clubhouse']",
-          "line": 253
+          "line": 271
         },
         {
           "name": "--ch-elevation-bubble-mine",
           "value": "0 1px 2px rgb(11 58 37 / 0.08)",
           "scope": "[data-ui='clubhouse']",
-          "line": 254
+          "line": 272
         },
         {
           "name": "--ch-control-bg",
           "value": "var(--ch-raised-bg)",
           "scope": "[data-ui='clubhouse']",
-          "line": 255
+          "line": 273
         },
         {
           "name": "--ch-field-pill-edge",
           "value": "inset 0 0 0 1px rgb(28 25 18 / 0.14)",
           "scope": "[data-ui='clubhouse']",
-          "line": 256
+          "line": 274
         },
         {
           "name": "--ch-field-pill-edge-focus",
           "value": "inset 0 0 0 1.5px var(--ch-border-focus)",
           "scope": "[data-ui='clubhouse']",
-          "line": 257
+          "line": 275
         },
         {
           "name": "--ch-switch-track-bg",
           "value": "#d3cdbf",
           "scope": "[data-ui='clubhouse']",
-          "line": 259
+          "line": 277
         },
         {
           "name": "--ch-switch-track-shadow",
           "value": "inset 0 0 0 1px rgb(28 25 18 / 0.08), inset 0 1px 2px rgb(28 25 18 / 0.1)",
           "scope": "[data-ui='clubhouse']",
-          "line": 260
+          "line": 278
         },
         {
           "name": "--ch-switch-on-bg",
           "value": "var(--ch-green-600)",
           "scope": "[data-ui='clubhouse']",
-          "line": 261
+          "line": 279
         },
         {
           "name": "--ch-switch-on-shadow",
           "value": "inset 0 0 0 1px rgb(4 30 18 / 0.2), inset 0 1px 2px rgb(4 30 18 / 0.2)",
           "scope": "[data-ui='clubhouse']",
-          "line": 262
+          "line": 280
         },
         {
           "name": "--ch-switch-thumb-bg",
           "value": "#fff",
           "scope": "[data-ui='clubhouse']",
-          "line": 263
+          "line": 281
         },
         {
           "name": "--ch-switch-thumb-shadow",
           "value": "0 0 0 0.5px rgb(28 25 18 / 0.12), 0 1px 2px rgb(28 25 18 / 0.18),\n    0 3px 8px -2px rgb(28 25 18 / 0.2)",
           "scope": "[data-ui='clubhouse']",
-          "line": 264
+          "line": 282
         },
         {
           "name": "--ch-phone-bar-bg",
           "value": "rgb(247 245 239 / 0.9)",
           "scope": "[data-ui='clubhouse']",
-          "line": 266
+          "line": 284
         },
         {
           "name": "--ch-phone-tabbar-bg",
           "value": "rgb(253 252 248 / 0.92)",
           "scope": "[data-ui='clubhouse']",
-          "line": 267
+          "line": 285
+        },
+        {
+          "name": "--ch-phone-tabbar-shelf-bg",
+          "value": "#f7f4ec",
+          "scope": "[data-ui='clubhouse']",
+          "line": 288
+        },
+        {
+          "name": "--ch-phone-tabbar-shelf-edge",
+          "value": "inset 0 1px 0 rgb(28 25 18 / 0.08)",
+          "scope": "[data-ui='clubhouse']",
+          "line": 289
         },
         {
           "name": "--ch-phone-composer-bg",
           "value": "rgb(253 252 248 / 0.94)",
           "scope": "[data-ui='clubhouse']",
-          "line": 268
+          "line": 290
         },
         {
           "name": "--ch-avatar-neutral-bg",
           "value": "#d9e4d8",
           "scope": "[data-ui='clubhouse']",
-          "line": 270
+          "line": 292
         },
         {
           "name": "--ch-avatar-neutral-fg",
           "value": "#23402f",
           "scope": "[data-ui='clubhouse']",
-          "line": 271
+          "line": 293
         },
         {
           "name": "--ch-avatar-neutral-ring",
           "value": "rgb(35 64 47 / 0.18)",
           "scope": "[data-ui='clubhouse']",
-          "line": 272
+          "line": 294
         },
         {
           "name": "--ch-well-bg",
           "value": "linear-gradient(180deg, #d4cebe 0%, #ddd8ca 55%, #e4dfd3 100%)",
           "scope": "[data-ui='clubhouse']",
-          "line": 275
+          "line": 297
         },
         {
           "name": "--ch-well-shadow",
           "value": "inset 0 2px 3px rgb(28 25 18 / 0.2), inset 0 4px 10px -2px rgb(28 25 18 / 0.16),\n    inset 0 -1px 0 rgb(255 255 255 / 0.55), inset 0 0 0 1px rgb(28 25 18 / 0.13), 0 1px 0 #fff,\n    0 0 0 1px rgb(255 255 255 / 0.35)",
           "scope": "[data-ui='clubhouse']",
-          "line": 276
+          "line": 298
         },
         {
           "name": "--ch-well-soft-bg",
           "value": "linear-gradient(180deg, #e2ddd0 0%, #e9e5da 60%, #edeae0 100%)",
           "scope": "[data-ui='clubhouse']",
-          "line": 280
+          "line": 302
         },
         {
           "name": "--ch-well-soft-shadow",
           "value": "inset 0 1px 2px rgb(28 25 18 / 0.12), inset 0 3px 8px -3px rgb(28 25 18 / 0.1),\n    inset 0 0 0 1px rgb(28 25 18 / 0.1), 0 1px 0 rgb(255 255 255 / 0.9)",
           "scope": "[data-ui='clubhouse']",
-          "line": 281
+          "line": 303
         },
         {
           "name": "--ch-raised-bg",
           "value": "linear-gradient(180deg, #fffdf8 0%, #f8f6ef 60%, #f0ede4 100%)",
           "scope": "[data-ui='clubhouse']",
-          "line": 283
+          "line": 305
         },
         {
           "name": "--ch-raised-shadow",
           "value": "var(--ch-elevation-control)",
           "scope": "[data-ui='clubhouse']",
-          "line": 284
+          "line": 306
         },
         {
           "name": "--ch-sheet-bg",
           "value": "#fdfbf7",
           "scope": "[data-ui='clubhouse']",
-          "line": 287
+          "line": 309
         },
         {
           "name": "--ch-sheet-shadow",
           "value": "var(--ch-elevation-reading)",
           "scope": "[data-ui='clubhouse']",
-          "line": 288
+          "line": 310
         },
         {
           "name": "--ch-on-dark-raised-bg",
           "value": "linear-gradient(180deg, #245740 0%, #1b4a33 100%)",
           "scope": "[data-ui='clubhouse']",
-          "line": 292
+          "line": 314
         },
         {
           "name": "--ch-on-dark-raised-shadow",
           "value": "inset 0 1px 0 rgb(210 244 221 / 0.16), 0 0 0 1px rgb(2 18 10 / 0.18),\n    0 2px 4px rgb(2 18 10 / 0.28), 0 14px 28px -14px rgb(2 18 10 / 0.6)",
           "scope": "[data-ui='clubhouse']",
-          "line": 293
+          "line": 315
         },
         {
           "name": "--ch-on-dark-well-bg",
           "value": "linear-gradient(180deg, #0c3221 0%, #10382a 100%)",
           "scope": "[data-ui='clubhouse']",
-          "line": 295
+          "line": 317
         },
         {
           "name": "--ch-on-dark-well-shadow",
           "value": "inset 0 2px 4px rgb(0 0 0 / 0.32), inset 0 0 0 1px rgb(0 0 0 / 0.14),\n    0 1px 0 rgb(210 244 221 / 0.08)",
           "scope": "[data-ui='clubhouse']",
-          "line": 296
+          "line": 318
         },
         {
           "name": "--ch-on-dark-control-bg",
           "value": "linear-gradient(180deg, #2c6148 0%, #22553c 100%)",
           "scope": "[data-ui='clubhouse']",
-          "line": 298
+          "line": 320
         },
         {
           "name": "--ch-on-dark-control-shadow",
           "value": "inset 0 1px 0 rgb(210 244 221 / 0.2), 0 0 0 1px rgb(2 18 10 / 0.2),\n    0 1px 2px rgb(2 18 10 / 0.35), 0 6px 12px -6px rgb(2 18 10 / 0.5)",
           "scope": "[data-ui='clubhouse']",
-          "line": 299
+          "line": 321
         },
         {
           "name": "--ch-on-dark-control-press-shadow",
           "value": "inset 0 1px 3px rgb(2 18 10 / 0.4), 0 0 0 1px rgb(2 18 10 / 0.2)",
           "scope": "[data-ui='clubhouse']",
-          "line": 301
+          "line": 323
         },
         {
           "name": "--ch-green-raised-bg",
           "value": "linear-gradient(180deg, #1e6a45 0%, #155a39 55%, #0f4a2f 100%)",
           "scope": "[data-ui='clubhouse']",
-          "line": 302
+          "line": 324
         },
         {
           "name": "--ch-green-raised-shadow",
           "value": "0 1px 2px rgb(8 43 28 / 0.2), 0 6px 12px -4px rgb(8 43 28 / 0.36),\n    inset 0 1px 0 rgb(255 255 255 / 0.18), inset 0 -1px 0 rgb(0 0 0 / 0.15)",
           "scope": "[data-ui='clubhouse']",
-          "line": 303
+          "line": 325
         },
         {
           "name": "--ch-ease",
           "value": "cubic-bezier(0.22, 1, 0.36, 1)",
           "scope": "[data-ui='clubhouse']",
-          "line": 310
+          "line": 334
         },
         {
           "name": "--ch-ease-io",
           "value": "cubic-bezier(0.65, 0, 0.35, 1)",
           "scope": "[data-ui='clubhouse']",
-          "line": 311
+          "line": 335
         },
         {
           "name": "--ch-ease-spring",
           "value": "cubic-bezier(0.34, 1.3, 0.64, 1)",
           "scope": "[data-ui='clubhouse']",
-          "line": 312
+          "line": 336
         },
         {
           "name": "--ch-dur-press",
           "value": "110ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 313
+          "line": 337
         },
         {
           "name": "--ch-dur-quick",
           "value": "180ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 314
+          "line": 338
         },
         {
           "name": "--ch-dur-base",
           "value": "260ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 315
+          "line": 339
         },
         {
           "name": "--ch-dur-release",
           "value": "280ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 316
+          "line": 340
         },
         {
           "name": "--ch-dur-reveal",
           "value": "520ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 317
+          "line": 341
         },
         {
           "name": "--ch-reveal-offset",
           "value": "40ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 318
+          "line": 342
         },
         {
           "name": "--ch-reveal-step",
           "value": "55ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 319
+          "line": 343
         },
         {
           "name": "--ch-reveal-rise",
           "value": "10px",
           "scope": "[data-ui='clubhouse']",
-          "line": 320
+          "line": 344
         },
         {
           "name": "--ch-dur-shimmer",
           "value": "1.9s",
           "scope": "[data-ui='clubhouse']",
-          "line": 321
+          "line": 345
         },
         {
           "name": "--ch-dur-sweep",
           "value": "900ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 323
+          "line": 347
         },
         {
           "name": "--ch-skel-delay",
           "value": "0ms",
           "scope": "[data-ui='clubhouse']",
-          "line": 326
+          "line": 350
         },
         {
           "name": "--ch-z-sticky",
           "value": "40",
           "scope": "[data-ui='clubhouse']",
-          "line": 329
+          "line": 353
         },
         {
           "name": "--ch-z-overlay",
           "value": "80",
           "scope": "[data-ui='clubhouse']",
-          "line": 330
+          "line": 354
         },
         {
           "name": "--ch-z-toast",
           "value": "100",
           "scope": "[data-ui='clubhouse']",
-          "line": 331
+          "line": 355
         },
         {
           "name": "--ch-ivory-0",
           "value": "#fdfbf7",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 339
+          "line": 363
         },
         {
           "name": "--ch-ivory-25",
           "value": "#fbf9f4",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 340
+          "line": 364
         },
         {
           "name": "--ch-ivory-50",
           "value": "#f3efe6",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 341
+          "line": 365
         },
         {
           "name": "--ch-bg-page",
           "value": "#ede9df",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 342
+          "line": 366
         },
         {
           "name": "--ch-bg-surface",
           "value": "#fcfaf5",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 343
+          "line": 367
         },
         {
           "name": "--ch-bg-subtle",
           "value": "#f5f2ea",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 344
+          "line": 368
         },
         {
           "name": "--ch-bg-hover",
           "value": "#f5f2ea",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 345
+          "line": 369
         },
         {
           "name": "--ch-bg-inset",
           "value": "#e9e5da",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 346
+          "line": 370
         },
         {
           "name": "--ch-raised-bg",
           "value": "linear-gradient(180deg, #fffdf8 0%, #f9f7f0 60%, #f1eee5 100%)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 347
+          "line": 371
         },
         {
           "name": "--ch-sheet-bg",
           "value": "#fdfbf7",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 348
+          "line": 372
         },
         {
           "name": "--ch-chart-paper",
           "value": "#fbf9f3",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 349
+          "line": 373
         },
         {
           "name": "--ch-phone-bar-bg",
           "value": "rgb(237 233 223 / 0.94)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 350
+          "line": 374
         },
         {
           "name": "--ch-phone-tabbar-bg",
           "value": "rgb(243 240 231 / 0.84)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 352
+          "line": 376
         },
         {
           "name": "--ch-phone-composer-bg",
           "value": "#fbf9f4",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 353
+          "line": 377
         },
         {
           "name": "--ch-glass-bg",
           "value": "rgb(243 240 231 / 0.84)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 354
+          "line": 378
         },
         {
           "name": "--ch-ink-500",
           "value": "#5f5c55",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 358
+          "line": 382
         },
         {
           "name": "--ch-ink-600",
           "value": "#46433d",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 359
+          "line": 383
         },
         {
           "name": "--ch-dur-press",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']",
-          "line": 367
+          "line": 391
         },
         {
           "name": "--ch-dur-quick",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']",
-          "line": 368
+          "line": 392
         },
         {
           "name": "--ch-dur-base",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']",
-          "line": 369
+          "line": 393
         },
         {
           "name": "--ch-dur-release",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']",
-          "line": 370
+          "line": 394
         },
         {
           "name": "--ch-dur-reveal",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']",
-          "line": 371
+          "line": 395
         },
         {
           "name": "--ch-reveal-offset",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']",
-          "line": 372
+          "line": 396
         },
         {
           "name": "--ch-reveal-step",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']",
-          "line": 373
+          "line": 397
         },
         {
           "name": "--ch-reveal-rise",
           "value": "0px",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']",
-          "line": 374
+          "line": 398
         },
         {
           "name": "--ch-skel-delay",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']",
-          "line": 375
+          "line": 399
         },
         {
           "name": "--ch-dur-vt-out",
           "value": "180ms",
           "scope": "html:has([data-ui='clubhouse'])",
-          "line": 382
+          "line": 406
         },
         {
           "name": "--ch-dur-vt-in",
           "value": "180ms",
           "scope": "html:has([data-ui='clubhouse'])",
-          "line": 383
+          "line": 407
         },
         {
           "name": "--ch-dur-vt-gap",
           "value": "0ms",
           "scope": "html:has([data-ui='clubhouse'])",
-          "line": 384
+          "line": 408
         },
         {
           "name": "--ch-ease-vt-out",
           "value": "cubic-bezier(0.4, 0, 1, 1)",
           "scope": "html:has([data-ui='clubhouse'])",
-          "line": 385
+          "line": 409
         },
         {
           "name": "--ch-ease-vt-in",
           "value": "cubic-bezier(0.22, 1, 0.36, 1)",
           "scope": "html:has([data-ui='clubhouse'])",
-          "line": 386
+          "line": 410
         },
         {
           "name": "--ch-type-title",
           "value": "600 16px/1.35 var(--ch-font-sans)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 408
+          "line": 432
         },
         {
           "name": "--ch-type-body-l",
           "value": "400 17px/1.5 var(--ch-font-sans)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 409
+          "line": 433
         },
         {
           "name": "--ch-type-body",
           "value": "400 16px/1.5 var(--ch-font-sans)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 410
+          "line": 434
         },
         {
           "name": "--ch-type-body-s",
           "value": "400 14px/1.45 var(--ch-font-sans)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 411
+          "line": 435
         },
         {
           "name": "--ch-type-label",
           "value": "500 14px/1.3 var(--ch-font-sans)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 412
+          "line": 436
         },
         {
           "name": "--ch-type-label-s",
           "value": "500 13px/1.3 var(--ch-font-sans)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 413
+          "line": 437
         },
         {
           "name": "--ch-type-caption",
           "value": "400 13px/1.4 var(--ch-font-sans)",
           "scope": "@media (max-width: 820px) → [data-ui='clubhouse']",
-          "line": 414
+          "line": 438
         }
       ]
     },
@@ -9916,6 +10278,16 @@
         "ch-btn--secondary",
         "ch-btn--sm",
         "ch-btn__kbd",
+        "ch-feat",
+        "ch-feat__chip",
+        "ch-feat__foot",
+        "ch-feat__k",
+        "ch-feat__kicker",
+        "ch-feat__line",
+        "ch-feat__title",
+        "ch-fgr",
+        "ch-fgr__c",
+        "ch-fgr__note",
         "ch-form",
         "ch-form--flat",
         "ch-form--gain",
@@ -9928,7 +10300,21 @@
         "ch-form__mean",
         "ch-iconbtn",
         "ch-inset",
+        "ch-intro",
+        "ch-intro__brief",
+        "ch-intro__eyebrow",
+        "ch-intro__row",
+        "ch-intro__title",
         "ch-kbd",
+        "ch-lgr",
+        "ch-lgr__go",
+        "ch-lgr__item",
+        "ch-lgr__lead",
+        "ch-lgr__meta",
+        "ch-lgr__row",
+        "ch-lgr__title",
+        "ch-lgr__trail",
+        "ch-lgr__txt",
         "ch-nine",
         "ch-popover",
         "ch-popover__label",
@@ -9973,109 +10359,109 @@
           "name": "--ch-av-bg",
           "value": "var(--ch-avatar-neutral-bg)",
           "scope": ".ch-avatar",
-          "line": 145
+          "line": 167
         },
         {
           "name": "--ch-av-fg",
           "value": "var(--ch-avatar-neutral-fg)",
           "scope": ".ch-avatar",
-          "line": 146
+          "line": 168
         },
         {
           "name": "--ch-av-ring",
           "value": "var(--ch-avatar-neutral-ring)",
           "scope": ".ch-avatar",
-          "line": 147
+          "line": 169
         },
         {
           "name": "--ch-av-bg",
           "value": "#e5e2db",
           "scope": ".ch-avatar[data-tone='stone']",
-          "line": 162
+          "line": 184
         },
         {
           "name": "--ch-av-fg",
           "value": "#4f4b43",
           "scope": ".ch-avatar[data-tone='stone']",
-          "line": 163
+          "line": 185
         },
         {
           "name": "--ch-av-ring",
           "value": "rgb(79 75 67 / 0.22)",
           "scope": ".ch-avatar[data-tone='stone']",
-          "line": 164
+          "line": 186
         },
         {
           "name": "--ch-av-bg",
           "value": "#dee5d9",
           "scope": ".ch-avatar[data-tone='sage']",
-          "line": 167
+          "line": 189
         },
         {
           "name": "--ch-av-fg",
           "value": "#3f5444",
           "scope": ".ch-avatar[data-tone='sage']",
-          "line": 168
+          "line": 190
         },
         {
           "name": "--ch-av-ring",
           "value": "rgb(63 84 68 / 0.24)",
           "scope": ".ch-avatar[data-tone='sage']",
-          "line": 169
+          "line": 191
         },
         {
           "name": "--ch-av-bg",
           "value": "#dce2e3",
           "scope": ".ch-avatar[data-tone='mist']",
-          "line": 172
+          "line": 194
         },
         {
           "name": "--ch-av-fg",
           "value": "#3e5055",
           "scope": ".ch-avatar[data-tone='mist']",
-          "line": 173
+          "line": 195
         },
         {
           "name": "--ch-av-ring",
           "value": "rgb(62 80 85 / 0.22)",
           "scope": ".ch-avatar[data-tone='mist']",
-          "line": 174
+          "line": 196
         },
         {
           "name": "--ch-av-bg",
           "value": "#ebddd3",
           "scope": ".ch-avatar[data-tone='clay']",
-          "line": 177
+          "line": 199
         },
         {
           "name": "--ch-av-fg",
           "value": "#6a4a3c",
           "scope": ".ch-avatar[data-tone='clay']",
-          "line": 178
+          "line": 200
         },
         {
           "name": "--ch-av-ring",
           "value": "rgb(106 74 60 / 0.22)",
           "scope": ".ch-avatar[data-tone='clay']",
-          "line": 179
+          "line": 201
         },
         {
           "name": "--ch-av-bg",
           "value": "var(--ch-avatar-neutral-bg)",
           "scope": "@media (max-width: 820px) → .ch-avatar[data-tone]",
-          "line": 184
+          "line": 206
         },
         {
           "name": "--ch-av-fg",
           "value": "var(--ch-avatar-neutral-fg)",
           "scope": "@media (max-width: 820px) → .ch-avatar[data-tone]",
-          "line": 185
+          "line": 207
         },
         {
           "name": "--ch-av-ring",
           "value": "var(--ch-avatar-neutral-ring)",
           "scope": "@media (max-width: 820px) → .ch-avatar[data-tone]",
-          "line": 186
+          "line": 208
         }
       ]
     }
