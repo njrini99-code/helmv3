@@ -167,6 +167,45 @@ describe('flight recorder default writer', () => {
     expect(batchArgs.p_steps.map((s) => s.step_key)).toEqual(['server.validation', 'server.auth', 'server.player']);
   });
 
+  it('tells the database how long ago each buffered step happened, so start and complete keep a real elapsed time', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-07T12:00:00.000Z'));
+    rpc.mockResolvedValue({ error: null });
+    const recorder = await createHelmFlightRecorder({ workflow: 'golf.round.submit' });
+
+    await recorder.start('server.auth');
+    await vi.advanceTimersByTimeAsync(300);
+    await recorder.complete('server.auth');
+    await vi.advanceTimersByTimeAsync(50);
+    await recorder.finalize('success');
+
+    const batchArgs = rpc.mock.calls.find((call) => call[0] === 'helm_debug_record_trace_steps')![1] as {
+      p_steps: Array<{ status: string; age_ms: number }>;
+    };
+    expect(batchArgs.p_steps.map((s) => s.status)).toEqual(['started', 'success']);
+    expect(batchArgs.p_steps[0]!.age_ms).toBe(350);
+    expect(batchArgs.p_steps[1]!.age_ms).toBe(50);
+    // started_at - finished_at between the two writes is the real 300 ms.
+    expect(batchArgs.p_steps[0]!.age_ms - batchArgs.p_steps[1]!.age_ms).toBe(300);
+  });
+
+  it('writes a recorder created after the batch function was found missing one step at a time, as it happens', async () => {
+    rpc.mockImplementation(async (name: string) => (
+      name === 'helm_debug_record_trace_steps'
+        ? { error: { code: 'PGRST202', message: 'Could not find the function public.helm_debug_record_trace_steps' } }
+        : { error: null }
+    ));
+    const first = await createHelmFlightRecorder({ workflow: 'golf.round.submit' });
+    await first.complete('server.auth');
+    await first.finalize('success');
+
+    rpc.mockClear();
+    const second = await createHelmFlightRecorder({ workflow: 'golf.round.submit' });
+    await second.complete('server.auth');
+    // Written inline, before finalize: no buffering, so no backdating is needed.
+    expect(rpc.mock.calls.map((call) => call[0])).toContain('helm_debug_record_trace_step');
+  });
+
   it('falls back to the per-step RPC while the batch function is not deployed, and stops probing', async () => {
     rpc.mockImplementation(async (name: string) => (
       name === 'helm_debug_record_trace_steps'

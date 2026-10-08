@@ -6,7 +6,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(9);
+SELECT plan(12);
 
 SELECT ok(
   has_function_privilege('service_role', 'public.helm_debug_record_trace_steps(uuid,jsonb)', 'EXECUTE')
@@ -92,6 +92,38 @@ SELECT throws_ok(
        FROM generate_series(1, 101) g))$$,
   '22023', NULL,
   'more than 100 steps in one call is rejected'
+);
+
+-- Timing: a step the app buffered carries the age it had when the batch was
+-- sent, and the stamps are backdated by it, so the tracer still sees a real
+-- elapsed time between start and complete.
+SELECT public.helm_debug_start_trace('00000000-0000-0000-0000-00000000f303', 'golf.round.submit', 'test', '{}'::jsonb);
+SELECT public.helm_debug_record_trace_steps(
+  '00000000-0000-0000-0000-00000000f303',
+  '[
+    {"step_key":"server.auth","layer":"server_action","status":"started","requiredness":"required","metadata":{},"age_ms":500},
+    {"step_key":"server.auth","layer":"server_action","status":"success","requiredness":"required","metadata":{},"age_ms":100},
+    {"step_key":"db.submit","layer":"postgres","status":"started","requiredness":"required","metadata":{},"age_ms":99999999}
+  ]'::jsonb);
+
+SELECT ok(
+  (SELECT extract(epoch FROM (finished_at - started_at)) * 1000 BETWEEN 390 AND 410
+   FROM helm_debug.trace_steps
+   WHERE trace_id = '00000000-0000-0000-0000-00000000f303' AND step_key = 'server.auth'),
+  'a buffered start and complete keep a real 400 ms elapsed time (finished_at - started_at)'
+);
+
+SELECT ok(
+  (SELECT finished_at IS NULL FROM helm_debug.trace_steps
+   WHERE trace_id = '00000000-0000-0000-0000-00000000f303' AND step_key = 'db.submit'),
+  'a started step gets no finished_at'
+);
+
+SELECT ok(
+  (SELECT extract(epoch FROM (clock_timestamp() - started_at)) BETWEEN 590 AND 610
+   FROM helm_debug.trace_steps
+   WHERE trace_id = '00000000-0000-0000-0000-00000000f303' AND step_key = 'db.submit'),
+  'an absurd age_ms is clamped to ten minutes'
 );
 
 SET LOCAL ROLE authenticated;

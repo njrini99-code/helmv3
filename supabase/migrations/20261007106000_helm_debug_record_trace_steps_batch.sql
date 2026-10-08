@@ -17,7 +17,17 @@
 -- (same columns, same on-conflict merge, same finished_at rule), in array
 -- order, so a later element for the same step_key updates the earlier one just
 -- as two sequential per-step calls would. The observed_step_count recount runs
--- once at the end instead of once per step. The per-step function is untouched
+-- once at the end instead of once per step.
+--
+-- TIMING. The per-step function stamps started_at and finished_at with
+-- clock_timestamp() when the row is written, and the admin tracer derives each
+-- step's elapsed time from the pair (src/app/admin/golf/tracer/tracer-shared.ts,
+-- computeStepElapsedMs). A step the app buffered is written later than it ran,
+-- so each element may carry "age_ms": how long before this call the step
+-- happened, measured by the app on its own clock. The function backdates the
+-- step's stamps by that (clock_timestamp() minus age_ms, clamped to 0..600000).
+-- An element without age_ms is stamped at write time, exactly as the per-step
+-- function does. A started_at supplied in metadata still wins, as it does there. The per-step function is untouched
 -- and stays the API for callers that record a single step (scripts/trace-db.ts).
 --
 -- Guards: the argument must be a JSON array of at most 100 elements; the
@@ -44,6 +54,7 @@ declare
   v_metadata jsonb;
   v_status text;
   v_finished_at timestamptz;
+  v_occurred_at timestamptz;
   v_count integer := 0;
 begin
   if p_steps is null or jsonb_typeof(p_steps) <> 'array' then
@@ -56,9 +67,11 @@ begin
   for v_step in select value from jsonb_array_elements(p_steps) loop
     v_metadata := helm_private.trace_safe_metadata(coalesce(v_step -> 'metadata', '{}'::jsonb));
     v_status := v_step ->> 'status';
+    v_occurred_at := clock_timestamp()
+      - make_interval(secs => least(greatest(coalesce((v_step ->> 'age_ms')::numeric, 0), 0), 600000)::double precision / 1000.0);
     v_finished_at := case
       when v_status in ('success', 'failure', 'skipped', 'missing', 'warning')
-        then clock_timestamp()
+        then v_occurred_at
       else null
     end;
 
@@ -74,7 +87,7 @@ begin
       nullif(v_metadata ->> 'category', ''),
       v_status,
       v_step ->> 'requiredness',
-      coalesce(nullif(v_metadata ->> 'started_at', '')::timestamptz, clock_timestamp()),
+      coalesce(nullif(v_metadata ->> 'started_at', '')::timestamptz, v_occurred_at),
       v_finished_at,
       nullif(v_metadata ->> 'duration_ms', '')::integer,
       nullif(v_metadata ->> 'table_name', ''),

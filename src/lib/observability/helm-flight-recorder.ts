@@ -112,6 +112,8 @@ function safeMetadata(input: SafeMetadata | undefined): SafeMetadata {
  */
 export const STEP_BATCH_MAX = 50;
 export const STEP_BATCH_WINDOW_MS = 400;
+/** The batch function clamps `age_ms` to the same ten minutes. */
+const MAX_STEP_AGE_MS = 600_000;
 
 /** Set once the batch RPC is found missing, so later saves skip the failed probe. */
 let batchRpcMissing = false;
@@ -143,6 +145,42 @@ function defaultDependencies(): FlightRecorderDependencies {
     p_metadata: payload.metadata,
   });
 
+  const persistStepsBatched = async (payloads: SafeMetadata[]): Promise<void> => {
+    const first = payloads[0];
+    if (!first) return;
+    if (!batchRpcMissing) {
+      // The database stamps started_at and finished_at when a row is
+      // written, and the admin tracer derives each step's elapsed time from
+      // the two (tracer-shared.ts, computeStepElapsedMs). A buffered step is
+      // written later than it happened, so each element says how long ago it
+      // happened and the function backdates its stamps by that. A relative
+      // age, not a wall-clock time: the app and the database clocks differ,
+      // and an age only compares two readings of the app's own clock.
+      const flushedAt = Date.now();
+      const result = await (createAdminClient() as unknown as TraceRpcClient).rpc('helm_debug_record_trace_steps', {
+        p_trace_id: first.traceId,
+        p_steps: payloads.map((payload) => ({
+          step_key: payload.stepKey,
+          layer: payload.layer,
+          status: payload.status,
+          requiredness: payload.requiredness,
+          metadata: payload.metadata,
+          age_ms: typeof payload.occurredAtMs === 'number'
+            ? Math.max(0, Math.min(flushedAt - payload.occurredAtMs, MAX_STEP_AGE_MS))
+            : 0,
+        })),
+      });
+      if (!result.error) return;
+      if (!isMissingFunctionError(result.error)) {
+        throw new Error(`${result.error.code ?? 'TRACE_RPC'}: ${result.error.message}`);
+      }
+      // The migration that adds the batch function is not applied yet. Fall
+      // back to the per-step RPC, in order, and stop probing for this process.
+      batchRpcMissing = true;
+    }
+    for (const payload of payloads) await persistOneStep(payload);
+  };
+
   return {
     newTraceId: () => crypto.randomUUID(),
     startSpan: ({ workflow, traceId, attributes }) => {
@@ -170,30 +208,11 @@ function defaultDependencies(): FlightRecorderDependencies {
       p_metadata: payload.metadata,
     }),
     persistStep: persistOneStep,
-    persistSteps: async (payloads) => {
-      const first = payloads[0];
-      if (!first) return;
-      if (!batchRpcMissing) {
-        const result = await (createAdminClient() as unknown as TraceRpcClient).rpc('helm_debug_record_trace_steps', {
-          p_trace_id: first.traceId,
-          p_steps: payloads.map((payload) => ({
-            step_key: payload.stepKey,
-            layer: payload.layer,
-            status: payload.status,
-            requiredness: payload.requiredness,
-            metadata: payload.metadata,
-          })),
-        });
-        if (!result.error) return;
-        if (!isMissingFunctionError(result.error)) {
-          throw new Error(`${result.error.code ?? 'TRACE_RPC'}: ${result.error.message}`);
-        }
-        // The migration that adds the batch function is not applied yet. Fall
-        // back to the per-step RPC, in order, and stop probing for this process.
-        batchRpcMissing = true;
-      }
-      for (const payload of payloads) await persistOneStep(payload);
-    },
+    // Not offered once the batch function is known to be missing, so a recorder
+    // created after that point writes each step as it happens, with true timing.
+    // The first recorder to find it missing falls back inside the writer and
+    // records its steps at flush time.
+    ...(batchRpcMissing ? {} : { persistSteps: persistStepsBatched }),
     persistFinalize: async (payload) => rpc('helm_debug_finalize_trace', {
       p_trace_id: payload.traceId,
       p_status: payload.status,
@@ -549,6 +568,10 @@ export async function createHelmFlightRecorder(
       layer: state.layer,
       status,
       requiredness: state.requiredness as FlightStepRequiredness,
+      // When the step happened, so a buffered write can be backdated (see the
+      // default writer). Only added when batching: the per-step path writes at
+      // the moment the step happens and needs no stamp.
+      ...(batching ? { occurredAtMs: Date.now() } : {}),
       metadata: safeMetadata({
         ...metadata,
         ...(stepInput?.parentStepKey ? { parent_step_key: stepInput.parentStepKey } : {}),
