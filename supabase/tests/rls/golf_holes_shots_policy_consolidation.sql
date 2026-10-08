@@ -234,8 +234,8 @@ SELECT is(
 
 SELECT is(
   (SELECT count(*)::int FROM pg_policies WHERE schemaname = 'public' AND tablename = 'golf_shots'),
-  5,
-  'golf_shots has four consolidated policies plus admin_read_all'
+  4,
+  'golf_shots has four consolidated policies (admin_read_all dropped by 20261008120000)'
 );
 
 SELECT is(
@@ -246,10 +246,13 @@ SELECT is(
   'no policy on golf_holes or golf_shots is granted to PUBLIC any more'
 );
 
+-- 20261008120000_golf_holes_shots_select_via_rounds.sql replaces the SELECT
+-- policies with round_id IN (golf_rounds under the caller's RLS); admins read
+-- shots and holes through golf_rounds' admin_read_all instead.
 SELECT ok(
-  EXISTS (SELECT 1 FROM pg_policies
-          WHERE schemaname = 'public' AND tablename = 'golf_shots' AND policyname = 'admin_read_all'),
-  'golf_shots keeps admin_read_all'
+  NOT EXISTS (SELECT 1 FROM pg_policies
+              WHERE schemaname = 'public' AND tablename = 'golf_shots' AND policyname = 'admin_read_all'),
+  'golf_shots admin_read_all is gone; admin reads through the round'
 );
 
 SELECT is(
@@ -308,10 +311,10 @@ SELECT is(
   'rows=0', 'coach in another org cannot read shots');
 SELECT is(
   (SELECT res FROM m_new WHERE persona = 'admin' AND rnd = 'team' AND op = 'sel_shots'),
-  'rows=1', 'admin reads shots through admin_read_all');
+  'rows=1', 'admin reads shots through the round');
 SELECT is(
   (SELECT res FROM m_new WHERE persona = 'admin' AND rnd = 'team' AND op = 'sel_holes'),
-  'rows=0', 'admin has no read access to holes');
+  'rows=1', 'admin reads holes through the round (added by 20261008120000)');
 SELECT is(
   (SELECT res FROM m_new WHERE persona = 'head' AND rnd = 'personal' AND op = 'sel_holes'),
   'rows=0', 'a coach cannot read a personal round with no team');
@@ -417,7 +420,9 @@ CREATE POLICY golf_holes_update_team ON public.golf_holes FOR UPDATE TO authenti
                            JOIN golf_coaches gc ON gc.organization_id = gt.organization_id
                            WHERE gc.user_id = (SELECT auth.uid()) AND gtm.status = 'active'::team_member_status));
 
--- golf_shots (11, admin_read_all was never touched)
+-- golf_shots (11 plus admin_read_all, which 20261008120000 dropped)
+CREATE POLICY admin_read_all ON public.golf_shots FOR SELECT TO authenticated
+  USING (is_admin());
 CREATE POLICY golf_shots_delete ON public.golf_shots FOR DELETE TO authenticated
   USING (EXISTS (SELECT 1 FROM golf_rounds gr JOIN golf_players gp ON gp.id = gr.player_id
                  WHERE gr.id = golf_shots.round_id AND gp.user_id = (SELECT auth.uid())));
@@ -500,13 +505,15 @@ SELECT is(
 );
 
 SELECT is_empty(
-  $$SELECT * FROM m_new EXCEPT SELECT * FROM m_old$$,
-  'no cell is allowed after the migration that the old policies denied'
+  $$SELECT * FROM m_new WHERE NOT (persona = 'admin' AND op = 'sel_holes')
+    EXCEPT SELECT * FROM m_old$$,
+  'no cell is allowed after the migration that the old policies denied (admin hole read excepted, 20261008120000)'
 );
 
 SELECT is_empty(
-  $$SELECT * FROM m_old EXCEPT SELECT * FROM m_new$$,
-  'no cell is denied after the migration that the old policies allowed'
+  $$SELECT * FROM m_old WHERE NOT (persona = 'admin' AND op = 'sel_holes')
+    EXCEPT SELECT * FROM m_new$$,
+  'no cell is denied after the migration that the old policies allowed (admin hole read excepted, 20261008120000)'
 );
 
 SELECT * FROM finish();
