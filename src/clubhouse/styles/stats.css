@@ -3969,9 +3969,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 :where(html[data-fw-theme='dark']) .ch-fws__z.is-fw {
   background: repeating-linear-gradient(90deg, var(--ch-chart-fairway) 0 18px, var(--ch-chart-fairway-alt) 18px 36px);
 }
+/* Large chart fills take the deep fill greens at night; the light text greens are for strokes and figures. */
 :where(html[data-fw-theme='dark']) .ch-lad__fill.is-gain,
 :where(html[data-fw-theme='dark']) .ch-lad__fill.is-neutral {
-  background: linear-gradient(180deg, #84c9a0, var(--ch-chart-gain));
+  background: linear-gradient(180deg, var(--ch-green-fill-500), var(--ch-green-fill-700));
 }
 :where(html[data-fw-theme='dark']) .ch-lad__fill.is-loss {
   background: linear-gradient(180deg, #edc07a, var(--ch-chart-loss));
