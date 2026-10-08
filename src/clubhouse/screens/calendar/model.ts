@@ -1,3 +1,5 @@
+import { sunTimes, type LatLng } from '../../lib/sun';
+
 /**
  * Calendar view model. The loader resolves every time into the team's
  * timezone on the server, so the client only works with calendar dates
@@ -61,6 +63,25 @@ export interface ChCalOverlap {
 export const CAL_START = 6;
 export const CAL_END = 21;
 export const CAL_HH = 52;
+
+/** A day's light on the grid (P006-A1), as decimal hours on the team's clock; null where the sun doesn't rise or set. */
+export interface ChDaylight {
+  rise: number | null;
+  set: number | null;
+  golden: number | null;
+}
+
+/** Sunrise, sunset and the start of golden hour for a calendar day, from the global light's sun (lib/sun.ts sunTimes). */
+export function daylightOn(date: string, place: LatLng, timeZone: string): ChDaylight {
+  const t = sunTimes(date, place, timeZone);
+  const fmt = new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', hour: '2-digit', minute: '2-digit' });
+  const hour = (ms: number | null) => {
+    if (ms === null) return null;
+    const p = Object.fromEntries(fmt.formatToParts(ms).map((x) => [x.type, x.value]));
+    return (Number(p.hour) % 24) + Number(p.minute) / 60;
+  };
+  return { rise: hour(t.sunrise), set: hour(t.sunset), golden: hour(t.goldenStart) };
+}
 
 /**
  * The hour the Week and Day grids open on (P006-B1): now, when today is on show; else the first event still ahead on

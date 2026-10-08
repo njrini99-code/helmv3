@@ -22,3 +22,17 @@ describe('Calendar · open on now (P006-B1)', () => {
     expect(focusHour(past, [], { date: '2026-10-08', hour: 14 })).toBeNull();
   });
 });
+
+describe('Calendar · daylight on the grid (P006-A1)', () => {
+  it('sunrise, golden hour and sunset on the team’s clock, from the global light’s sun', async () => {
+    const { daylightOn } = await import('../screens/calendar/model');
+    const oct = daylightOn('2026-10-14', { lat: 38.9, lng: -78.5 }, 'America/New_York');
+    expect(oct.rise!).toBeGreaterThan(7);
+    expect(oct.rise!).toBeLessThan(7.6);
+    expect(oct.set!).toBeGreaterThan(18.3);
+    expect(oct.set!).toBeLessThan(18.8);
+    expect(oct.golden!).toBeLessThan(oct.set!);
+    const june = daylightOn('2026-06-21', { lat: 38.9, lng: -78.5 }, 'America/New_York');
+    expect(june.set!).toBeGreaterThan(20.3);
+  });
+});

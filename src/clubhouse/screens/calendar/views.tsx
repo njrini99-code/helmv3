@@ -23,6 +23,7 @@ import {
   type ChCalEvent,
   type ChCalPerson,
   type ChCalType,
+  type ChDaylight,
 } from './model';
 
 export const TYPE_ICON: Record<ChCalType, LucideIcon> = {
@@ -167,6 +168,7 @@ export function TimeGrid({
   onSelect,
   onDay,
   onMove,
+  daylight,
 }: {
   dates: string[];
   events: ChCalEvent[];
@@ -178,6 +180,8 @@ export function TimeGrid({
   onDay: (date: string) => void;
   /** P006-B3, the coach's desktop: an event dropped at a new day and time (decimal hours). Absent, nothing drags. */
   onMove?: (e: ChCalEvent, to: ChMoveTarget) => void;
+  /** P006-A1: a day's sunrise, golden hour and sunset on the team's clock (the global light's sun); absent, no daylight. */
+  daylight?: (date: string) => ChDaylight;
 }) {
   // 6 AM to 9 PM, widened to the hour around anything earlier or later on the days shown, so a 5 AM bus or a 9:30 PM
   // meeting is on the grid instead of dropped from it (CAL-07).
@@ -310,6 +314,7 @@ export function TimeGrid({
           const laid = layoutLanes(events.filter((e) => !e.allDay && e.date === d && e.start != null && e.end != null));
           return (
             <div key={d} className={'ch-wk__col' + (d === now.date ? ' is-today' : '')}>
+              {daylight && <Daylight dl={daylight(d)} from={from} to={to} label={d === dates[dates.length - 1]} />}
               {laid.map((l) => (
                 <EventBlock
                   key={l.e.id}
@@ -339,6 +344,27 @@ export function TimeGrid({
         })}
       </div>
     </div>
+  );
+}
+
+/**
+ * P006-A1: daylight on the grid. The hours before sunrise and after sunset take a night wash, golden hour a warm band,
+ * and the last column shown (the grid's quiet edge) says when the sun sets. Light on the frame, under the events: it never
+ * tints an event or a figure, and a block covers it.
+ */
+function Daylight({ dl, from, to, label }: { dl: ChDaylight; from: number; to: number; label: boolean }) {
+  const y = (h: number) => (Math.min(to, Math.max(from, h)) - from) * CAL_HH;
+  return (
+    <span className="ch-wk__sky" aria-hidden="true">
+      {dl.rise !== null && dl.rise > from && <i className="is-night" style={{ top: 0, height: y(dl.rise) }} />}
+      {dl.set !== null && dl.set < to && <i className="is-night" style={{ top: y(dl.set), bottom: 0 }} />}
+      {dl.golden !== null && dl.set !== null && dl.set > dl.golden && <i className="is-golden" style={{ top: y(dl.golden), height: y(dl.set) - y(dl.golden) }} />}
+      {label && dl.set !== null && dl.set > from && dl.set < to && (
+        <em className="ch-wk__sunset ch-num" style={{ top: y(dl.set) }}>
+          Sunset {fmtHour(dl.set)}
+        </em>
+      )}
+    </span>
   );
 }
 

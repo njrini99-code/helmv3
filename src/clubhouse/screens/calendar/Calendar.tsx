@@ -18,7 +18,7 @@ import { Swap } from '../../ui/Swap';
 import { useNow } from '../../lib/use-now';
 import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
-import { addDays, addMonths, CAL_HH, dayNum, dowOf, fmtHour, findOverlaps, focusHour, monthCells, monthKey, monthName, viewTitle, weekDates, yearOf, type ChCalEvent, type ChCalType, type ChCalView } from './model';
+import { addDays, addMonths, CAL_HH, daylightOn, dayNum, dowOf, fmtHour, type ChDaylight, findOverlaps, focusHour, monthCells, monthKey, monthName, viewTitle, weekDates, yearOf, type ChCalEvent, type ChCalType, type ChCalView } from './model';
 import { AgendaView, MonthView, TimeGrid, type ChMoveTarget, type ChNow } from './views';
 import { updateGolfEvent } from '@/app/golf/actions/calendar-events';
 import { offsetMinutesFor } from '@/lib/golf/timezone';
@@ -31,6 +31,7 @@ import { CalendarPhone } from './CalendarPhone';
 import { Modal } from '../../ui/Modal';
 import { useChPhone } from '../../lib/use-phone';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { useLightPlace } from '../../shell/light';
 import { canvasLenis, canvasScrollNow } from '../../lib/smooth-scroll';
 import { usePopoverFit } from '../../lib/use-popover-fit';
 import { CalendarFirstRun } from './CalendarFirstRun';
@@ -455,6 +456,15 @@ export function Calendar({
   }, [coach, editor, cancelling, subs, busyOpen, view, anchor, insp, goToday, step]);
 
   const dates = view === 'day' ? [anchor] : weekDates(anchor);
+  // P006-A1: the global light's sun at the team's place, on the team's clock; one read per day shown.
+  const lightPlace = useLightPlace();
+  const daylight = useMemo(() => {
+    const memo = new Map<string, ChDaylight>();
+    return (d: string) => {
+      if (!memo.has(d)) memo.set(d, daylightOn(d, lightPlace.place, data.timezone));
+      return memo.get(d)!;
+    };
+  }, [lightPlace.place, data.timezone]);
   const reduced = useChReducedMotion();
   useOpenOnNow(focusTick, dates[0]!, !phone && (view === 'week' || view === 'day') && !data.eventsError, focusHour(dates, events, now), reduced);
   // The day, week or month on show. Stepping to another slides the grid the way it went (CH-6605): a later period comes in
@@ -753,7 +763,7 @@ export function Calendar({
               <Swap swapKey={view}>
                 <Swap swapKey={period.key} kind="slide" dir={period.dir}>
                   {(view === 'week' || view === 'day') && (
-                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} onMove={coach ? move : undefined} />
+                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} onMove={coach ? move : undefined} daylight={daylight} />
                   )}
                   {view === 'month' && (
                     <MonthView

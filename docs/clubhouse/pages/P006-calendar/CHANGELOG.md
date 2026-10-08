@@ -1,5 +1,9 @@
 # P006 — Calendar: changelog
 
+## 2026-10-08 — premium pass: daylight on the grid (P006-A1)
+
+The Week and Day grids carry the day's light from the global light's sun at the team's place (`daylightOn` over `sunTimes`, `useLightPlace`): a night wash before sunrise and after sunset, a warm band through golden hour, and "Sunset 6:31" on the last column shown. Washes sit on the frame under the events and never tint an event; dark mode has its own night; print drops them.
+
 ## 2026-10-08 — premium pass: drag to reschedule, with Undo (P006-B3)
 
 On desktop a coach picks up one of their events and drops it on another day and time, in 15-minute detents (a selection tick per detent). The block held steps back, a dashed ghost shows where it lands, and an invitee's event or class there lights amber while it is held (`clashesAt`). Alt+↑/↓ on a focused block moves it 15 minutes. A drop shows "Moved to 4:00 PM" with Undo for the done toast's life (4 s); the move is optimistic and nothing is written until the window closes, so invitees are notified only once it stands, and an undone move never reaches anyone. Leaving the page writes a waiting move at once. A failed write puts the block back (CH-6015); offline nothing is held (CH-1903). Series, multi-day, all-day, class and busy blocks don't drag (a series still asks "this event or all" in the editor). Not built: changing length by dragging the bottom edge. The notification timing needed no server change.

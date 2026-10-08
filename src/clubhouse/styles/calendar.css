@@ -2707,3 +2707,44 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
     box-shadow: none;
   }
 }
+
+/* P006-A1: daylight on the grid. Night before sunrise and after sunset, golden hour before sunset, and "Sunset 6:31" on
+   one column: washes on the frame under the events (z-index 0), never on an event. Dark mode has its own night. */
+.ch-wk__sky {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.ch-wk__sky > i {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+.ch-wk__sky > i.is-night {
+  background: rgb(46 58 92 / 0.055);
+}
+.ch-wk__sky > i.is-golden {
+  background: linear-gradient(to bottom, rgb(232 180 106 / 0), rgb(232 180 106 / 0.14));
+}
+.ch-wk__sunset {
+  position: absolute;
+  right: 6px;
+  transform: translateY(-100%);
+  padding-bottom: 2px;
+  font: 500 10.5px/1 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-ledger-eyebrow);
+  white-space: nowrap;
+}
+:where(html[data-fw-theme='dark']) .ch-wk__sky > i.is-night {
+  background: rgb(0 0 0 / 0.18);
+}
+:where(html[data-fw-theme='dark']) .ch-wk__sky > i.is-golden {
+  background: linear-gradient(to bottom, rgb(201 173 116 / 0), rgb(201 173 116 / 0.1));
+}
+@media print {
+  .ch-wk__sky {
+    display: none;
+  }
+}
