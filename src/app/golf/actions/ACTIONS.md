@@ -82,7 +82,7 @@ that effect.
 - `insights-coachhelm.ts`: getCoachHelmStatus, getPlayerCoachHelmDashboard, refreshPlayerAnalysisAsCoach, refreshTeamAnalysisAsCoach, getTeamCoachHelmAccess, getOrCreateTeamCoachHelmSettings, updateTeamCoachHelmSettings
 - `insights-feed.ts`: getTopInsightsByStrokeImpact, generateTeamInsights, getActiveInsights, acknowledgeInsight, dismissInsight, reactivateInsight, resolveInsight, rateInsight
 - `insights-player-analysis.ts`: getPlayerFocusAreas, analyzePlayer, generatePlayerInsight, generatePracticeRecommendations, getPlayerTrajectory, getPlayerPatterns, generateRoundReview, recordInteraction
-- `insights-shared.ts`: getCoachPhilosophy, verifyPlayerAccess
+- `insights-shared.ts`: getCoachPhilosophy, verifyPlayerAccessForInsights
 - `intelligence-dashboard.ts`: getTeamInsightsSummary, generateTeamCorrelations, dismissInsight, acknowledgeInsight
 - `pattern-management.ts`: getTeamPatterns, validatePattern, dismissPattern, markPatternAddressed, resolvePattern, reopenPattern, getPatternStats
 - `signal-groups.ts`: getSignalGroups, reviewSignal, dismissSignal
