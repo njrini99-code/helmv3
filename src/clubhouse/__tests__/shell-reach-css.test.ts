@@ -107,3 +107,12 @@ describe('P011-D9 the shared button reaches 44 under a finger', () => {
     expect(css).toMatch(/@media \(pointer: coarse\) \{\s*\.ch-btn::after \{\s*position: absolute;\s*inset: min\(0px, calc\(50% - 22px\)\);/);
   });
 });
+
+describe('the Safari canvas pads for the tab bar only while it is shown', () => {
+  it('drops the tab-bar padding under a full-page form or a pushed screen', () => {
+    const css = readFileSync(join(__dirname, '../styles/shell.css'), 'utf8');
+    expect(css).toMatch(/body:not\(\.capacitor\) \[data-ui='clubhouse'\]:not\(\[data-phone-notabs\]\):not\(\[data-phone-immersive\]\) \.ch-canvas \{\s*padding-bottom: calc\(var\(--ch-tabbar-h\)/);
+    expect(css).toMatch(/\[data-ui='clubhouse'\]\[data-phone-notabs\] \.ch-canvas \{\s*padding-bottom: env\(safe-area-inset-bottom\);/);
+    expect(css).not.toMatch(/body:not\(\.capacitor\) \[data-ui='clubhouse'\] \.ch-canvas \{/);
+  });
+});

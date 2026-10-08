@@ -2212,8 +2212,14 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     backdrop-filter: none;
     box-shadow: var(--ch-phone-tabbar-shelf-edge);
   }
-  body:not(.capacitor) [data-ui='clubhouse'] .ch-canvas {
+  /* Only while the shelf is shown: a full-page form (notabs) or a pushed screen (immersive) hides it, and the canvas
+     then ends at the safe area, not a tab bar's height above it. */
+  body:not(.capacitor) [data-ui='clubhouse']:not([data-phone-notabs]):not([data-phone-immersive]) .ch-canvas {
     padding-bottom: calc(var(--ch-tabbar-h) + env(safe-area-inset-bottom) + 16px);
+  }
+  body:not(.capacitor) [data-ui='clubhouse'][data-phone-immersive] .ch-canvas,
+  body:not(.capacitor) [data-ui='clubhouse'][data-phone-notabs] .ch-canvas {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 
