@@ -468,10 +468,13 @@ export async function autoResolveFixedIncidents(): Promise<AutoResolveResult> {
     severity: string | null;
     /** Generated types widen this to `Json`; narrowed at the read below. */
     metadata: unknown;
+    title: string | null;
+    message: string | null;
+    source: string | null;
   }>((from, to) =>
     admin
       .from('admin_events')
-      .select('fingerprint, created_at, severity, metadata')
+      .select('fingerprint, created_at, severity, metadata, title, message, source')
       .eq('resolved', false)
       .eq('event_type', 'error')
       .not('fingerprint', 'is', null)
@@ -497,11 +500,30 @@ export async function autoResolveFixedIncidents(): Promise<AutoResolveResult> {
     if (Number.isNaN(t)) continue;
     const prev = maxByFingerprint.get(row.fingerprint);
     if (prev === undefined || t > prev) maxByFingerprint.set(row.fingerprint, t);
-    if (row.severity !== 'info') {
+    const errorCode = (row.metadata as { errorCode?: string | null } | null)?.errorCode;
+    // A row the classifier RECOGNISES (matched: true) as non-actionable is the
+    // same kind of evidence as an info row: the designed path ran again, and
+    // Rule D closes it later in this pass. Stamping it REGRESSED first was
+    // pure Bridge noise — 20ae8f27 (shot_not_found) and af4c2c9d (browser
+    // abort) were reopened 4× each, 2026-09-19 → 2026-10-07. An UNRECOGNISED
+    // row (severity-ladder verdict) still counts, and so does any
+    // operator-gated provider fault.
+    const recognisedNonActionable =
+      !isOperatorGatedFaultCode(errorCode) &&
+      (() => {
+        const c = classifyIncident({
+          title: row.title,
+          message: row.message,
+          severity: row.severity,
+          source: row.source,
+          errorCode,
+        });
+        return c.matched && !c.actionable;
+      })();
+    if (row.severity !== 'info' && !recognisedNonActionable) {
       const prevFault = maxFaultByFingerprint.get(row.fingerprint);
       if (prevFault === undefined || t > prevFault) maxFaultByFingerprint.set(row.fingerprint, t);
     }
-    const errorCode = (row.metadata as { errorCode?: string | null } | null)?.errorCode;
     if (isOperatorGatedFaultCode(errorCode)) operatorGated.add(row.fingerprint);
   }
 

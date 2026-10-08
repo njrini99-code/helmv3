@@ -608,6 +608,12 @@ GRANT ALL ON FUNCTION "public"."golf_player_anonymize_on_unlink"() TO "authentic
 
 GRANT ALL ON FUNCTION "public"."golf_player_anonymize_on_unlink"() TO "service_role";
 
+REVOKE ALL ON FUNCTION "public"."golf_readable_round_ids"() FROM PUBLIC;
+
+GRANT ALL ON FUNCTION "public"."golf_readable_round_ids"() TO "authenticated";
+
+GRANT ALL ON FUNCTION "public"."golf_readable_round_ids"() TO "service_role";
+
 GRANT ALL ON FUNCTION "public"."golf_recruit_documents_assert_same_team"() TO "anon";
 
 GRANT ALL ON FUNCTION "public"."golf_recruit_documents_assert_same_team"() TO "authenticated";
