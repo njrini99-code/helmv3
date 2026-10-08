@@ -1794,6 +1794,83 @@ html:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
 html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
   animation: var(--ch-dur-vt-in) var(--ch-ease-vt-in) var(--ch-dur-vt-gap) both ch-vt-in;
 }
+/* The bars never fade or move during a page change (native-feel audit 2026-10-08, P0-3). As part of root they sat under
+   the page's group, so the fading old page and the new page's skeleton drew over the tab bar. Named, each is its own
+   group, captured after the page and so painted above it, and shown in its new state at once. */
+[data-ui='clubhouse'] .ch-topbar {
+  view-transition-name: ch-topbar;
+}
+[data-ui='clubhouse'] .ch-tabbar {
+  view-transition-name: ch-tabbar;
+}
+html:has([data-ui='clubhouse'])::view-transition-group(ch-topbar),
+html:has([data-ui='clubhouse'])::view-transition-group(ch-tabbar),
+html:has([data-ui='clubhouse'])::view-transition-new(ch-topbar),
+html:has([data-ui='clubhouse'])::view-transition-new(ch-tabbar) {
+  animation: none;
+}
+html:has([data-ui='clubhouse'])::view-transition-old(ch-topbar),
+html:has([data-ui='clubhouse'])::view-transition-old(ch-tabbar) {
+  display: none;
+}
+/* A navigation onto a route skeleton (RouteFrame, data-ch-vt-hold): the old page stays whole until the skeleton is due
+   (--ch-dur-vt-hold, the skeleton's own delay in base.css), then the two crossfade. A page that arrives sooner takes the
+   attribute off, and with it the delay, so the old page's fade jumps to where it would be: gone, or nearly. One fade,
+   never a blank page between them. */
+html[data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
+  animation-delay: var(--ch-dur-vt-hold);
+}
+/* A drill-in pushes and Back pops (P1-1, P1-2; lib/nav-motion.ts sets data-ch-nav), as a pushed phone screen does
+   (PhoneScreen): the new page slides in from the right edge on the smooth spring while the one under it draws back by
+   a parallax share, and Back plays it in reverse with the leaving page on top. Transform only. Phone only: desktop
+   keeps the crossfade. */
+@keyframes ch-vt-push-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes ch-vt-push-out {
+  to {
+    transform: translateX(var(--ch-vt-parallax));
+  }
+}
+@keyframes ch-vt-pop-in {
+  from {
+    transform: translateX(var(--ch-vt-parallax));
+  }
+}
+@keyframes ch-vt-pop-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+@media (max-width: 820px) {
+  /* The pages are opaque while they slide, so neither shows through the other. */
+  html[data-ch-nav] [data-ui='clubhouse'] .ch-frame-route {
+    background: var(--ch-bg-page);
+  }
+  html[data-ch-nav='push']:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
+    animation: var(--ch-dur-vt-push) var(--ch-ease-vt-push) both ch-vt-push-out;
+  }
+  html[data-ch-nav='push']:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
+    animation: var(--ch-dur-vt-push) var(--ch-ease-vt-push) both ch-vt-push-in;
+  }
+  html[data-ch-nav='pop']:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
+    z-index: 1;
+    animation: var(--ch-dur-vt-push) var(--ch-ease-vt-push) both ch-vt-pop-out;
+  }
+  html[data-ch-nav='pop']:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
+    animation: var(--ch-dur-vt-push) var(--ch-ease-vt-push) both ch-vt-pop-in;
+  }
+  /* Back's pop (lib/nav-motion.ts playPop): the copy of the leaving page, over the page and under the bars. */
+  .ch-root.ch-frame-popping {
+    z-index: calc(var(--ch-z-sticky) - 1);
+    min-height: 0;
+    overflow: hidden;
+    background: var(--ch-bg-page);
+    pointer-events: none;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   html:has([data-ui='clubhouse'])::view-transition-group(*),
   html:has([data-ui='clubhouse'])::view-transition-old(*),

@@ -1,5 +1,16 @@
 # Clubhouse changelog
 
+## 2026-10-08 — Native phone navigation: cached tabs, steady bars, push and pop
+
+From the native-feel audit (docs/clubhouse/NATIVE_FEEL_PERF_AUDIT_2026-10-08.md, P0-2, P0-3, P1-1, P1-2). Not yet reviewed by the owner.
+
+- **Router cache and prefetch** (`next.config.mjs`, `shell/use-prefetch-tabs.ts`). `experimental.staleTimes` keeps a visited dynamic page for 30s and a prefetched loading shell for 180s, so a revisited tab renders from memory. This is app-wide, Fairway included: a revisit can show data up to 30s old until a mutation refreshes it. The phone tab bar prefetches its tab routes once the shell is idle, but not with Data Saver on or offline.
+- **Steady bars** (`styles/shell.css`). The top bar and tab bar have their own view-transition names, with no animation. They no longer fade with the page, and the page's snapshots no longer draw over them.
+- **No skeleton flash** (`shell/RouteFrame.tsx`, `styles/base.css`, `styles/tokens.css`). A tab change onto a route skeleton keeps the old page up for 300ms (`--ch-dur-vt-hold`) and keeps the skeleton hidden for the same time. A page that arrives sooner replaces the old page directly. CH-1619's fade over the skeleton now runs only after the skeleton has shown and the crossfade has ended, so there is only ever one fade at a time. A hard load, reduced motion and Animations off still show the skeleton at once. This reverses F-37's 0ms delay, but only for in-app navigations.
+- **Push and pop** (`lib/nav-motion.ts`, `styles/shell.css`). On a phone, a drill-in (a More row, or a link into a detail) pushes: the new page slides in from the right edge on the smooth spring (462ms) while the old one draws back by 30%. A link up a level pops the same way in reverse. React commits a Back synchronously, without a view transition, so Back from a pushed page draws its own pop: a copy of the leaving page slides off to the right edge over the page beneath, which comes in from −30%. The pop is skipped after an iOS edge swipe, with reduced motion or Animations off, and on desktop. A tab change still crossfades.
+- **More leaves first** (`shell/TabBar.tsx`). A row that navigates hides the sheet and its scrim in the same tap, so neither appears in the page transition.
+- **Pushed screens pop on the spring** (`shell/PhoneScreen.tsx`, `shell/phone-chrome.tsx`; CH-1610, CH-1618). A pushed screen and the page beneath it now return on the smooth spring, not the 260ms ease-out. The pop had read as a 183ms jump; it now clears in about 350ms. The underlay shift stays at the owner-approved 24%.
+
 ## 2026-10-08 — Premium pass backlog: one light, peeks, the Ask sheet, a dock
 
 Approved by the owner on 2026-10-08 (owner review; docs/clubhouse/PREMIUM_PASS_AUDIT.md). Each page's part is in its own log.

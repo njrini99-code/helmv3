@@ -17,7 +17,7 @@ import { Modal } from '../../ui/Modal';
 import { PhoneBar, PhoneIconAction } from '../../ui/PhoneBar';
 import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
-import { formatFixed } from '../../lib/format';
+import { changeTone, formatFixed, formatSigned } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneScreen } from '../../shell/PhoneScreen';
@@ -29,7 +29,7 @@ import { formatHcp, rosterFailedParts, rosterPeek, rowNote } from './format';
 import { nameList, type ChJoinRequestsState } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
 
-type PhoneSort = 'avg' | 'sg' | 'name';
+export type PhoneSort = 'avg' | 'sg' | 'name';
 
 const lastName = (n: string) => n.split(' ').slice(-1)[0] ?? n;
 /** Ascending, with missing values last. */
@@ -199,7 +199,7 @@ export function RosterPhone({
               />
             </div>
             <SectionBoundary surface="roster.list" label="The roster" code="CH-3205">
-              <RosterPhoneList active={active} inactive={inactive} statsError={data.statsError} onOpen={onOpen} />
+              <RosterPhoneList active={active} inactive={inactive} statsError={data.statsError} sort={sortBy} onOpen={onOpen} />
             </SectionBoundary>
           </>
         )}
@@ -250,11 +250,13 @@ function RosterPhoneList({
   active,
   inactive,
   statsError,
+  sort,
   onOpen,
 }: {
   active: ChRosterPlayer[];
   inactive: ChRosterPlayer[];
   statsError: boolean;
+  sort: PhoneSort;
   onOpen: (id: string) => void;
 }) {
   return (
@@ -263,7 +265,7 @@ function RosterPhoneList({
         <ul className="ch-rsm-panel ch-rsm-list" aria-label="Active players">
           {active.map((p) => (
             <li key={p.id}>
-              <RosterPhoneRow p={p} statsError={statsError} onOpen={onOpen} />
+              <RosterPhoneRow p={p} statsError={statsError} sort={sort} onOpen={onOpen} />
             </li>
           ))}
         </ul>
@@ -276,7 +278,7 @@ function RosterPhoneList({
           <ul className="ch-rsm-panel ch-rsm-list" aria-labelledby="ch-rsm-inactive">
             {inactive.map((p) => (
               <li key={p.id}>
-                <RosterPhoneRow p={p} statsError={statsError} onOpen={onOpen} />
+                <RosterPhoneRow p={p} statsError={statsError} sort={sort} onOpen={onOpen} />
               </li>
             ))}
           </ul>
@@ -286,16 +288,23 @@ function RosterPhoneList({
   );
 }
 
-/** One player: avatar, name, class and note, a form spark from three rounds (D-57), average and handicap. */
-export function RosterPhoneRow({ p, statsError, onOpen }: { p: ChRosterPlayer; statsError: boolean; onOpen: (id: string) => void }) {
+/**
+ * One player: avatar, name, class and note, a form spark from three rounds (D-57), and the figure the list is sorted by
+ * (native-feel audit 2026-10-08, P1-3): strokes gained per round under SG, gains green and losses amber; otherwise the
+ * scoring average with the handicap. Sorted by name, the name leads the row already, so the average and handicap stay.
+ */
+export function RosterPhoneRow({ p, statsError, sort = 'avg', onOpen }: { p: ChRosterPlayer; statsError: boolean; sort?: PhoneSort; onOpen: (id: string) => void }) {
   const note = rowNote(p, statsError);
+  const bySg = sort === 'sg';
+  const sg = p.sgPerRound;
   const label = [
     p.name,
     p.classYear,
     p.status === 'inactive' ? 'inactive' : null,
     note?.text,
+    bySg ? (sg != null ? `strokes gained ${formatSigned(sg)} a round` : 'no strokes gained yet') : null,
     p.avg != null ? `average ${formatFixed(p.avg)}` : null,
-    p.handicap != null ? `handicap ${formatHcp(p.handicap)}` : null,
+    !bySg && p.handicap != null ? `handicap ${formatHcp(p.handicap)}` : null,
   ]
     .filter(Boolean)
     .join(', ');
@@ -313,10 +322,17 @@ export function RosterPhoneRow({ p, statsError, onOpen }: { p: ChRosterPlayer; s
             <FormLine data={p.trend} width={48} height={20} earlyBelow={3} bare label={`${p.name} form`} />
           </span>
         )}
-        <span className="ch-rsm-row__v">
-          <b className="ch-num">{formatFixed(p.avg)}</b>
-          <span className="ch-num">{formatHcp(p.handicap)} hcp</span>
-        </span>
+        {bySg ? (
+          <span className="ch-rsm-row__v" data-sort="sg">
+            <b className={`ch-num ${changeTone(sg, false)}`.trim()}>{formatSigned(sg)}</b>
+            <span className="ch-num">SG / rd</span>
+          </span>
+        ) : (
+          <span className="ch-rsm-row__v">
+            <b className="ch-num">{formatFixed(p.avg)}</b>
+            <span className="ch-num">{formatHcp(p.handicap)} hcp</span>
+          </span>
+        )}
       </button>
     </PlayerPeek>
   );

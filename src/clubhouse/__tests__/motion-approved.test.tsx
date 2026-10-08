@@ -193,14 +193,19 @@ describe('CH-1619 a page fades in over its route skeleton', () => {
     view.unmount();
   });
 
+  // Native-feel audit 2026-10-08 (P0-2, P0-3): the fade runs only once the skeleton has shown and the page crossfade is
+  // over (the 300ms hold plus the 180ms fade), so the page never fades twice at once.
   it('after a navigation, once, over the press beat, opacity only, started when the page can paint', async () => {
     const { animate, play, pause } = fadeSpy();
+    let now = 1000;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
     const view = render(
       <RouteFrame routeKey="home">
         <main>Home</main>
       </RouteFrame>,
     );
     view.rerender(<RouteFrame routeKey="roster">{skeleton}</RouteFrame>);
+    now += 480;
     view.rerender(
       <RouteFrame routeKey="roster">
         <main key="page">Roster</main>
@@ -238,6 +243,91 @@ describe('CH-1619 a page fades in over its route skeleton', () => {
     );
     await flush();
     expect(animate).not.toHaveBeenCalled();
+  });
+
+  describe('a skeleton waits 300ms with the old page up (native-feel audit 2026-10-08, P0-2)', () => {
+    const hold = () => document.documentElement.hasAttribute('data-ch-vt-hold');
+    function withViewTransitions() {
+      Object.defineProperty(document, 'startViewTransition', { configurable: true, writable: true, value: vi.fn() });
+      return () => delete (document as { startViewTransition?: unknown }).startViewTransition;
+    }
+
+    it('holds while the skeleton is up and lets go, without a second fade, when the page arrives first', async () => {
+      const restore = withViewTransitions();
+      const { animate } = fadeSpy();
+      let now = 1000;
+      vi.spyOn(performance, 'now').mockImplementation(() => now);
+      const view = render(
+        <RouteFrame routeKey="home">
+          <main>Home</main>
+        </RouteFrame>,
+      );
+      expect(hold()).toBe(false);
+      view.rerender(<RouteFrame routeKey="roster">{skeleton}</RouteFrame>);
+      expect(hold()).toBe(true);
+      now += 120;
+      view.rerender(
+        <RouteFrame routeKey="roster">
+          <main key="page">Roster</main>
+        </RouteFrame>,
+      );
+      await flush();
+      expect(hold()).toBe(false);
+      expect(animate).not.toHaveBeenCalled();
+      view.unmount();
+      restore();
+    });
+
+    it('never on a hard load, and lets go when the route changes again', async () => {
+      const restore = withViewTransitions();
+      fadeSpy();
+      vi.resetModules();
+      const { RouteFrame: Fresh } = await import('../shell/RouteFrame');
+      const view = render(<Fresh routeKey="a">{skeleton}</Fresh>);
+      expect(hold()).toBe(false);
+      view.unmount();
+      const nav = render(
+        <RouteFrame routeKey="home">
+          <main>Home</main>
+        </RouteFrame>,
+      );
+      nav.rerender(<RouteFrame routeKey="roster">{skeleton}</RouteFrame>);
+      expect(hold()).toBe(true);
+      nav.rerender(
+        <RouteFrame routeKey="calendar">
+          <main key="cal">Calendar</main>
+        </RouteFrame>,
+      );
+      expect(hold()).toBe(false);
+      nav.unmount();
+      restore();
+    });
+
+    it('the skeleton and the old page wait the same 300ms, on a navigation only', () => {
+      const base = readFileSync(join(process.cwd(), 'src/clubhouse/styles/base.css'), 'utf8');
+      const tokens = readFileSync(join(process.cwd(), 'src/clubhouse/styles/tokens.css'), 'utf8');
+      const shell = readFileSync(join(process.cwd(), 'src/clubhouse/styles/shell.css'), 'utf8');
+      expect(tokens).toContain('--ch-dur-vt-hold: 300ms;');
+      expect(base).toMatch(/html\[data-ch-vt-hold\] \[data-ui='clubhouse'\] main\[aria-busy='true'\]\[aria-label\^='Loading'\] \{\s*animation-delay: var\(--ch-dur-vt-hold\);/);
+      expect(shell).toMatch(/html\[data-ch-vt-hold\]:has\(\[data-ui='clubhouse'\]\)::view-transition-old\(ch-page\) \{\s*animation-delay: var\(--ch-dur-vt-hold\);/);
+      // A hard load's skeleton shows at once.
+      expect(tokens).toContain('--ch-skel-delay: 0ms;');
+    });
+  });
+});
+
+describe('the bars never fade or move during a page change (native-feel audit 2026-10-08, P0-3)', () => {
+  const shell = readFileSync(join(process.cwd(), 'src/clubhouse/styles/shell.css'), 'utf8');
+  it('names the top bar and tab bar, shows their new state at once and hides the old', () => {
+    expect(shell).toMatch(/\[data-ui='clubhouse'\] \.ch-topbar \{\s*view-transition-name: ch-topbar;/);
+    expect(shell).toMatch(/\[data-ui='clubhouse'\] \.ch-tabbar \{\s*view-transition-name: ch-tabbar;/);
+    for (const bar of ['ch-topbar', 'ch-tabbar']) {
+      expect(shell).toContain(`html:has([data-ui='clubhouse'])::view-transition-group(${bar})`);
+      expect(shell).toContain(`html:has([data-ui='clubhouse'])::view-transition-new(${bar})`);
+      expect(shell).toContain(`html:has([data-ui='clubhouse'])::view-transition-old(${bar})`);
+    }
+    expect(shell).toMatch(/::view-transition-new\(ch-tabbar\) \{\s*animation: none;/);
+    expect(shell).toMatch(/::view-transition-old\(ch-tabbar\) \{\s*display: none;/);
   });
 });
 
