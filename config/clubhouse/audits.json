@@ -215,5 +215,15 @@
     "status": "in_progress",
     "note": "Tab switches 715-1350 ms with full skeletons; golf_shots/golf_holes RLS re-checked per row (553 ms vs 4.7 ms raw). Fix plan inside.",
     "allPages": true
+  },
+  {
+    "file": "NATIVE_FEEL_RESEARCH_2026-10-08.md",
+    "title": "Native feel research: what makes a phone web app feel native",
+    "kind": "audit",
+    "date": "2026-10-08",
+    "scope": "Sourced research on iOS-native feel and desktop-to-phone transfer: a 27-item checklist (tab bar, revisits, pushes, edge swipe, large titles, pressed states, frames, offline launch), each with a simulator test, plus conflicts with Clubhouse rules for the owner.",
+    "status": "in_progress",
+    "note": "Checklist runs against the native app after the transition fixes; SF vs Instrument Sans and the page crossfade are owner calls.",
+    "allPages": true
   }
 ]

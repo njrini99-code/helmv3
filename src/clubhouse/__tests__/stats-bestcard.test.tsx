@@ -6,7 +6,7 @@ import { BestCardShare, type ChBestCard } from '../screens/stats/BestCard';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 
-const card: ChBestCard = { who: 'Jonah O.', score: 72, toPar: 'E', course: 'Pinehurst No. 8', date: 'Sep 9', attest: 'Attested by Maya Reyes' };
+const card: ChBestCard = { who: 'Jonah O.', score: 72, toPar: 'E', course: 'Pinehurst No. 8', date: 'Sep 9', attest: 'Attested by Coach Reyes' };
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 
 function show() {

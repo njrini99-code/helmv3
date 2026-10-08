@@ -175,7 +175,7 @@ function useCourseLocation(teamId: string) {
   return { read, saved, point, draft, label, setLabel, problem, locating, locate, dirty, save };
 }
 
-const NOTE = 'The Clubhouse’s light follows the sun where your team plays. Until you set it, the light follows your team’s time zone.';
+const NOTE = 'The Clubhouse’s light follows the sun where your team plays. Set it while you’re at the course: your team sees it, to about a kilometre. Until then, the light follows your team’s time zone.';
 
 /** Desktop: a Settings card under Scoring. Draws nothing until the columns exist, or if the read failed. */
 export function CourseLocationCard({ teamId }: { teamId: string }) {

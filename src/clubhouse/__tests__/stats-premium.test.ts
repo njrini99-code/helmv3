@@ -60,7 +60,7 @@ describe('the personal-best card (P005-C2)', () => {
       toPar: 'E',
       course: 'Pinehurst No. 8',
       date: 'Sep 9',
-      attest: 'Attested by Maya Reyes',
+      attest: 'Attested by Coach Reyes',
     });
     expect(bestCardFields({ viewer: 'player', name: 'Jonah Okafor', bests, coach: null })?.who).toBe('Jonah Okafor');
   });
