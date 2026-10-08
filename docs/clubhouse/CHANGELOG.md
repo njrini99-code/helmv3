@@ -1,5 +1,13 @@
 # Clubhouse changelog
 
+## 2026-10-07 — An unavailable key is unlit
+
+A disabled primary key (Save changes before an edit, Continue before a step is
+complete) is now drawn unlit: the same shape pressed into the paper, its word
+engraved, matching Sign in (CH-15607). It used to be a 42% fade of the green.
+A key in flight (`aria-busy`) stays lit, since it is working rather than
+unavailable.
+
 ## 2026-10-07 — Hover belongs to a pointer
 
 On a touch screen a tap used to leave a row's tint, a card's lift or a key's
