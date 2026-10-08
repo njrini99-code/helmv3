@@ -2147,8 +2147,15 @@
   section.ch-calm-month {
     padding: 0;
   }
-  .ch-calm-month__h,
+  /* The grid is react-day-picker's (screens/calendar/month.tsx) in Clubhouse markup: the weekdays' row, then a column
+     of week rows, each seven days across. The page scrolls up and down over it; a sideways swipe turns the month. */
   .ch-calm-month__g {
+    display: flex;
+    flex-direction: column;
+    touch-action: pan-y;
+  }
+  .ch-calm-month__h,
+  .ch-calm-month__w {
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
   }
@@ -2165,11 +2172,15 @@
     row-gap: 2px;
     padding-top: 6px;
   }
+  .ch-calm-month__d {
+    min-width: 0;
+  }
   .ch-calm-month__c {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 4px;
+    width: 100%;
     height: 52px;
     padding: 5px 0 0;
     border: 0;
@@ -2177,7 +2188,7 @@
     background: none;
     color: inherit;
     cursor: pointer;
-    touch-action: manipulation;
+    touch-action: pan-y;
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-calm-month__c:active {

@@ -430,3 +430,8 @@ Status: N/A — the Bridge is wired later (owner, D-68). Every contract above al
 Keyboard Move up/down alternatives reveal in their own row on focus.
 Ordinary assistive descriptions remain hidden; the visible reorder handle and
 its arrow-key path remain available.
+
+Since 2026-10-08 the phone ranker runs on dnd-kit: the handle's arrows still
+move one place and save each move, and space (or Enter) also picks the row up,
+the arrows carry it a place at a time (a tick and the place spoken each), space
+puts it down with one save and Escape puts it back unsaved.

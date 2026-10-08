@@ -25,7 +25,7 @@ The boards: Day (week strip, agenda with classes), Event detail (conflict and su
 | The month and Day, Month, List | `h2` month and a `Segmented`; the desktop's week and day views are the phone's Day, agenda is List |
 | Day: week strip, day heading with counts, agenda | `DayView`: the anchor's week (Sun to Sat) with dots, the day's events and class or busy blocks, the now line on today, overlap marks (coach), Now on a live event |
 | Event detail sheet | The desktop detail panel (`EventDetail`, `Attendance`, `Overlap`) in a `Modal` sheet: type, facts, overlap with Review (suggested open times), responses, invitees, files, Edit and Attendance (coach), the player's reply |
-| Month | `MonthGrid`: dots, competition days dark; a day opens its Day view |
+| Month | `MonthGrid` (`month.tsx`, react-day-picker in Clubhouse markup): dots, competition days dark; a day opens its Day view. The arrows walk the days, Page Up and Down and a sideways swipe turn the month |
 | List | The desktop `AgendaView` |
 | New event sheet | The desktop `EventEditor` (a sheet on the phone), with its class-schedule check |
 
