@@ -46,6 +46,9 @@
  * tests use.
  *
  * NEVER THROWS. A logging call must never be the reason a workflow fails.
+ *
+ * @deprecated Superseded by server-error-logger (logServerEvent) for new code. New code must not import this module (ESLint enforces it;
+ * existing importers are allowlisted in eslint-rules/import-allowlists.mjs). Use logServerError / logServerEvent from '@/lib/server-error-logger', or withAdminObserved from '@/lib/admin/observed-action'.
  */
 import * as Sentry from '@sentry/nextjs';
 import { scheduleTelemetryFlush } from './flush';
@@ -184,6 +187,7 @@ function emit(level: HelmLogLevel, event: string, fields: HelmLogFields): void {
   }
 }
 
+/** @deprecated Use logServerError / logServerEvent from '@/lib/server-error-logger', or withAdminObserved from '@/lib/admin/observed-action'. */
 export const helmLog = {
   debug: (event: string, fields: HelmLogFields = {}) => emit('debug', event, fields),
   info: (event: string, fields: HelmLogFields = {}) => emit('info', event, fields),

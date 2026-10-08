@@ -139,7 +139,15 @@ describe('isFlagEnabled Sentry correlation', () => {
 /**
  * Parity proof for deliverable (2), and its honest limit.
  *
- * `shouldEmitHelmTraceContext()` at src/app/golf/actions/golf.ts:1207-1209
+ * NOTE (plan phase 7b): the `flight_recorder` entry was removed from
+ * config/feature-flags.yml because nothing calls isFlagEnabled() for it. This
+ * suite is kept as a self-contained proof of how evaluateFlag's environment
+ * column behaves against the raw formula below, using the local fixture; it no
+ * longer mirrors a registry entry, so read "the registry" below as "a flag
+ * defined with these columns".
+ *
+ * `shouldEmitHelmTraceContext()` (now in
+ * src/app/golf/actions/golf-action-shared.ts, formerly golf.ts:1207-1209)
  * is a LIVE read:
  *
  *   process.env.VERCEL_ENV !== 'production' || process.env.HELM_FLIGHT_RECORDER_ENABLED === 'true'
@@ -165,7 +173,7 @@ describe('isFlagEnabled Sentry correlation', () => {
  * PR) closes: once golf.ts stops reading `process.env` directly, the
  * registry becomes the single live authority instead of a snapshot of it.
  */
-describe('flight_recorder: seeded defaults match the real read site golf.ts:1207 evaluates today', () => {
+describe('flight_recorder: a flag with these columns matches the raw read shouldEmitHelmTraceContext evaluates', () => {
   function rawShouldEmitHelmTraceContext(env: { VERCEL_ENV?: string; HELM_FLIGHT_RECORDER_ENABLED?: string }): boolean {
     return env.VERCEL_ENV !== 'production' || env.HELM_FLIGHT_RECORDER_ENABLED === 'true';
   }
@@ -179,10 +187,8 @@ describe('flight_recorder: seeded defaults match the real read site golf.ts:1207
     created_at: '2026-09-03',
     expires_at: null,
     default: true,
-    // Must match config/feature-flags.yml's flight_recorder.environment
-    // exactly — this fixture is a local copy (evaluateFlag takes an
-    // injectable registry for testability), not an import of the real one,
-    // so a hand-edit to one without the other is a silent drift risk. See
+    // The columns the removed config/feature-flags.yml entry carried
+    // (evaluateFlag takes an injectable registry for testability). See
     // scripts/flags/__tests__/lib.test.mjs for the generation-time
     // never-gate/schema checks that DO read the real YAML.
     environment: { production: false, preview: true, development: true },

@@ -112,12 +112,14 @@
     "lint:tooling": "eslint scripts e2e .claude/hooks supabase/functions",
     "lint:duplicate-exports": "node scripts/check-duplicate-exports.mjs",
     "lint:ratchet": "node scripts/lint-ratchet.mjs",
+    "lint:any-ratchet": "node scripts/any-ratchet.mjs",
+    "lint:test-location": "node scripts/test-location-ratchet.mjs",
     "lint:supabase:ratchet": "node scripts/lint-supabase-ratchet.mjs",
     "markdown:ratchet": "node scripts/markdown-lint-ratchet.mjs",
     "orphans:mounts": "node scripts/find-orphan-mounts.mjs",
     "postbuild": "node scripts/strip-next-tsconfig-injection.mjs",
     "prebuild": "node scripts/check-required-env.mjs && node scripts/stamp-sw.mjs",
-    "preflight": "npm run typecheck && npm run lint && npm run lint:ratchet && npm run audit:supabase-errors && npm run audit:fail-open && npm run markdown:ratchet && npm run docs:schema-drift && npm run docs:path-drift && npm run knowledge:globs && npm run lint:duplicate-exports && npm run guards && echo 'PREFLIGHT GREEN \u2014 a LOCAL subset of the static gates, not the CI set. CI also runs docs:check, check:cycles, the other ratchets, the unit shards, the build and the Supabase/RLS job. Inner loop: npm run check:changed. Review preview: npm run gates:review.'",
+    "preflight": "npm run typecheck && npm run lint && npm run lint:ratchet && npm run lint:any-ratchet && npm run lint:test-location && npm run audit:supabase-errors && npm run audit:fail-open && npm run markdown:ratchet && npm run docs:schema-drift && npm run docs:path-drift && npm run knowledge:globs && npm run lint:duplicate-exports && npm run guards && echo 'PREFLIGHT GREEN \u2014 a LOCAL subset of the static gates, not the CI set. CI also runs docs:check, check:cycles, the other ratchets, the unit shards, the build and the Supabase/RLS job. Inner loop: npm run check:changed. Review preview: npm run gates:review.'",
     "pr:land": "node scripts/pr-land.mjs",
     "repo:doctor": "node scripts/repo-doctor/cli.mjs",
     "routes:hygiene:p0p1": "node scripts/check-route-hygiene-p0-p1.mjs",
@@ -226,9 +228,6 @@
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "2.117.2",
     "@tanstack/react-table": "^9.2.6",
-    "@types/node": "^24.19.1",
-    "@types/react": "^19.3.0",
-    "@types/react-dom": "^19.3.0",
     "@upstash/ratelimit": "^2.1.0",
     "@upstash/redis": "^1.38.4",
     "@vercel/analytics": "^2.0.1",
@@ -286,7 +285,10 @@
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
+    "@types/node": "^24.19.1",
     "@types/pg": "8.15.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@types/web-push": "^3.6.4",
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
     "@vitejs/plugin-react": "^6.1.2",
@@ -321,10 +323,7 @@
     "yaml": "^2.9.1"
   },
   "overrides": {
-    "@babel/core": "7.29.7",
     "@opentelemetry/core": "2.10.0",
-    "@opentelemetry/propagator-jaeger": "2.10.0",
-    "brace-expansion@^5.0.5": "5.0.12",
     "next": {
       "postcss": "8.5.24",
       "sharp": "0.35.5"
@@ -340,13 +339,6 @@
     },
     "@vercel/container": {
       "tar": "^7.5.22"
-    },
-    "fast-uri": "^3.1.8",
-    "ip-address": "^10.7.3",
-    "sharp": "0.35.5",
-    "adm-zip": "^0.6.1",
-    "eslint-plugin-jsx-a11y": {
-      "eslint": "$eslint"
     }
   },
   "allowScripts": {

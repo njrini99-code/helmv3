@@ -65,7 +65,7 @@ export interface GolfSurfaceEntry {
   role: GolfSurfaceRole;
   group: GolfSurfaceGroup;
   /** True once a newer canonical surface has replaced this one — the route
-   *  still resolves (permanent redirect shim), but it is intentionally
+   *  still resolves (a next.config.mjs redirect), but it is intentionally
    *  retired, not orphaned. */
   legacy?: boolean;
   /** True when the surface should never appear in generated nav UI (rail,
@@ -165,9 +165,9 @@ export const GOLF_SURFACES: readonly GolfSurfaceEntry[] = [
   // ---------------------------------------------------------------------
   // href points at the CANONICAL destination directly (not the /my-insights
   // shim itself) — same convention as every other legacy entry above. The
-  // shim route still exists (now belt-and-braces behind a next.config.mjs
-  // redirect, see hub/page.tsx's comment) but nothing in this registry should
-  // hand a consumer a URL that just bounces again.
+  // shim page was deleted in plan phase 7b; next.config.mjs `redirects()` now
+  // serves the old URL, and nothing in this registry should hand a consumer a
+  // URL that just bounces again.
   { id: 'my-insights', canonicalName: 'My Insights', href: '/golf/dashboard/coachhelm', role: 'player', group: 'page', legacy: true, hidden: true },
 ] as const;
 

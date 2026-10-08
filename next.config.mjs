@@ -238,11 +238,16 @@ const nextConfig = {
   // checked before the filesystem"). The affected page never renders, so the
   // crash class cannot occur for any of these routes again.
   //
-  // The page.tsx shims themselves are LEFT IN PLACE (not deleted) as
-  // belt-and-braces for anything this config layer misses — several server
-  // actions still call revalidatePath() against these exact paths (e.g.
-  // development.ts, drills.ts, alerts.ts, insight-management.ts), and the
-  // shims are what keeps those calls meaningful.
+  // The page.tsx shims for the golf dashboard entries below (hub, my-insights,
+  // my-development, my-standing, my-game-profile, development,
+  // analytics/coachhelm, players/:playerId and coachhelm/genome/:playerId)
+  // were DELETED in plan phase 7b: this config is now the only implementation
+  // of those redirects. Several server actions still call revalidatePath()
+  // against those exact paths (development.ts, drills.ts, alerts.ts,
+  // insight-management.ts); revalidating a path that has no page is a harmless
+  // no-op, so those calls were left alone. The players/:playerId and
+  // coachhelm/genome/:playerId segments keep their layout.tsx (Clubhouse
+  // aliases, see src/clubhouse/__tests__/alias.test.ts).
   //
   // QUERY-STRING PASSTHROUGH — VERIFIED behavior (read directly from
   // prepareDestination() in next/dist/shared/lib/router/utils/

@@ -1,0 +1,4 @@
+{
+  "$comment": "Test files under src/test/**. May only go DOWN: new tests go in a __tests__/ folder next to the code (AGENTS.md). After moving or deleting tests run `node scripts/test-location-ratchet.mjs --update`.",
+  "legacyTestFiles": 474
+}

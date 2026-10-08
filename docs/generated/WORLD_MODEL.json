@@ -221,6 +221,136 @@
     ],
     "routes": [
       {
+        "id": "routes: ",
+        "pattern": " ",
+        "category": "routes"
+      },
+      {
+        "id": "routes:#",
+        "pattern": "#",
+        "category": "routes"
+      },
+      {
+        "id": "routes:(",
+        "pattern": "(",
+        "category": "routes"
+      },
+      {
+        "id": "routes:)",
+        "pattern": ")",
+        "category": "routes"
+      },
+      {
+        "id": "routes:.",
+        "pattern": ".",
+        "category": "routes"
+      },
+      {
+        "id": "routes:/",
+        "pattern": "/",
+        "category": "routes"
+      },
+      {
+        "id": "routes:7",
+        "pattern": "7",
+        "category": "routes"
+      },
+      {
+        "id": "routes:[",
+        "pattern": "[",
+        "category": "routes"
+      },
+      {
+        "id": "routes:]",
+        "pattern": "]",
+        "category": "routes"
+      },
+      {
+        "id": "routes:a",
+        "pattern": "a",
+        "category": "routes"
+      },
+      {
+        "id": "routes:b",
+        "pattern": "b",
+        "category": "routes"
+      },
+      {
+        "id": "routes:c",
+        "pattern": "c",
+        "category": "routes"
+      },
+      {
+        "id": "routes:d",
+        "pattern": "d",
+        "category": "routes"
+      },
+      {
+        "id": "routes:e",
+        "pattern": "e",
+        "category": "routes"
+      },
+      {
+        "id": "routes:f",
+        "pattern": "f",
+        "category": "routes"
+      },
+      {
+        "id": "routes:g",
+        "pattern": "g",
+        "category": "routes"
+      },
+      {
+        "id": "routes:h",
+        "pattern": "h",
+        "category": "routes"
+      },
+      {
+        "id": "routes:i",
+        "pattern": "i",
+        "category": "routes"
+      },
+      {
+        "id": "routes:j",
+        "pattern": "j",
+        "category": "routes"
+      },
+      {
+        "id": "routes:l",
+        "pattern": "l",
+        "category": "routes"
+      },
+      {
+        "id": "routes:m",
+        "pattern": "m",
+        "category": "routes"
+      },
+      {
+        "id": "routes:n",
+        "pattern": "n",
+        "category": "routes"
+      },
+      {
+        "id": "routes:o",
+        "pattern": "o",
+        "category": "routes"
+      },
+      {
+        "id": "routes:p",
+        "pattern": "p",
+        "category": "routes"
+      },
+      {
+        "id": "routes:r",
+        "pattern": "r",
+        "category": "routes"
+      },
+      {
+        "id": "routes:s",
+        "pattern": "s",
+        "category": "routes"
+      },
+      {
         "id": "routes:src/app/admin/*.tsx",
         "pattern": "src/app/admin/*.tsx",
         "category": "routes"
@@ -371,11 +501,6 @@
         "category": "routes"
       },
       {
-        "id": "routes:src/app/golf/(dashboard)/dashboard/alerts/**",
-        "pattern": "src/app/golf/(dashboard)/dashboard/alerts/**",
-        "category": "routes"
-      },
-      {
         "id": "routes:src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**",
         "pattern": "src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**",
         "category": "routes"
@@ -411,23 +536,8 @@
         "category": "routes"
       },
       {
-        "id": "routes:src/app/golf/(dashboard)/dashboard/development/**",
-        "pattern": "src/app/golf/(dashboard)/dashboard/development/**",
-        "category": "routes"
-      },
-      {
         "id": "routes:src/app/golf/(dashboard)/dashboard/documents/**",
         "pattern": "src/app/golf/(dashboard)/dashboard/documents/**",
-        "category": "routes"
-      },
-      {
-        "id": "routes:src/app/golf/(dashboard)/dashboard/hub/**",
-        "pattern": "src/app/golf/(dashboard)/dashboard/hub/**",
-        "category": "routes"
-      },
-      {
-        "id": "routes:src/app/golf/(dashboard)/dashboard/insights/**",
-        "pattern": "src/app/golf/(dashboard)/dashboard/insights/**",
         "category": "routes"
       },
       {
@@ -446,18 +556,8 @@
         "category": "routes"
       },
       {
-        "id": "routes:src/app/golf/(dashboard)/dashboard/my-insights/**",
-        "pattern": "src/app/golf/(dashboard)/dashboard/my-insights/**",
-        "category": "routes"
-      },
-      {
         "id": "routes:src/app/golf/(dashboard)/dashboard/my-qualifiers/**",
         "pattern": "src/app/golf/(dashboard)/dashboard/my-qualifiers/**",
-        "category": "routes"
-      },
-      {
-        "id": "routes:src/app/golf/(dashboard)/dashboard/patterns/**",
-        "pattern": "src/app/golf/(dashboard)/dashboard/patterns/**",
         "category": "routes"
       },
       {
@@ -564,6 +664,26 @@
         "id": "routes:src/clubhouse/routes/classes.tsx",
         "pattern": "src/clubhouse/routes/classes.tsx",
         "category": "routes"
+      },
+      {
+        "id": "routes:t",
+        "pattern": "t",
+        "category": "routes"
+      },
+      {
+        "id": "routes:u",
+        "pattern": "u",
+        "category": "routes"
+      },
+      {
+        "id": "routes:w",
+        "pattern": "w",
+        "category": "routes"
+      },
+      {
+        "id": "routes:x",
+        "pattern": "x",
+        "category": "routes"
       }
     ],
     "components": [
@@ -575,11 +695,6 @@
       {
         "id": "components:src/app/clubhouse-preview/components/**",
         "pattern": "src/app/clubhouse-preview/components/**",
-        "category": "components"
-      },
-      {
-        "id": "components:src/app/golf/(dashboard)/dashboard/my-standing/page.tsx",
-        "pattern": "src/app/golf/(dashboard)/dashboard/my-standing/page.tsx",
         "category": "components"
       },
       {
@@ -13542,18 +13657,6 @@
     },
     {
       "source": "coach_intelligence_triage",
-      "target": "routes:src/app/golf/(dashboard)/dashboard/alerts/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/golf/(dashboard)/dashboard/alerts/**"
-        }
-      ]
-    },
-    {
-      "source": "coach_intelligence_triage",
       "target": "routes:src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**",
       "kind": "feature_route",
       "evidence": [
@@ -13566,18 +13669,6 @@
     },
     {
       "source": "coach_intelligence_triage",
-      "target": "routes:src/app/golf/(dashboard)/dashboard/insights/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/golf/(dashboard)/dashboard/insights/**"
-        }
-      ]
-    },
-    {
-      "source": "coach_intelligence_triage",
       "target": "routes:src/app/golf/(dashboard)/dashboard/intelligence/**",
       "kind": "feature_route",
       "evidence": [
@@ -13585,18 +13676,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/(dashboard)/dashboard/intelligence/**"
-        }
-      ]
-    },
-    {
-      "source": "coach_intelligence_triage",
-      "target": "routes:src/app/golf/(dashboard)/dashboard/patterns/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/golf/(dashboard)/dashboard/patterns/**"
         }
       ]
     },
@@ -18172,6 +18251,11 @@
           "kind": "import_graph",
           "path": "src/lib/observability/register-process-error-handlers.ts",
           "anchor": "src/lib/admin/schedule-bridge-write"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/observability/structured-log.ts",
+          "anchor": "src/lib/admin/observed-action"
         }
       ]
     },
@@ -19658,18 +19742,6 @@
     },
     {
       "source": "player_coachhelm_development",
-      "target": "components:src/app/golf/(dashboard)/dashboard/my-standing/page.tsx",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/golf/(dashboard)/dashboard/my-standing/page.tsx"
-        }
-      ]
-    },
-    {
-      "source": "player_coachhelm_development",
       "target": "components:src/components/fairway/pages/coachhelm/**",
       "kind": "feature_component",
       "evidence": [
@@ -19997,18 +20069,6 @@
     },
     {
       "source": "player_coachhelm_development",
-      "target": "routes:src/app/golf/(dashboard)/dashboard/development/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/golf/(dashboard)/dashboard/development/**"
-        }
-      ]
-    },
-    {
-      "source": "player_coachhelm_development",
       "target": "routes:src/app/golf/(dashboard)/dashboard/my-development/**",
       "kind": "feature_route",
       "evidence": [
@@ -20016,18 +20076,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/(dashboard)/dashboard/my-development/**"
-        }
-      ]
-    },
-    {
-      "source": "player_coachhelm_development",
-      "target": "routes:src/app/golf/(dashboard)/dashboard/my-insights/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/golf/(dashboard)/dashboard/my-insights/**"
         }
       ]
     },
@@ -20456,13 +20504,361 @@
     },
     {
       "source": "player_hub",
-      "target": "routes:src/app/golf/(dashboard)/dashboard/hub/**",
+      "target": "routes: ",
       "kind": "feature_route",
       "evidence": [
         {
           "kind": "registry_glob",
           "path": "memory/registry.yml",
-          "pattern": "src/app/golf/(dashboard)/dashboard/hub/**"
+          "pattern": " "
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:#",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "#"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:(",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "("
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:)",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": ")"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:.",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "."
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:/",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "/"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:7",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "7"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:[",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "["
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:]",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "]"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:a",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "a"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:b",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "b"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:c",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "c"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:d",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "d"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:e",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "e"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:f",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "f"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:g",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "g"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:h",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "h"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:i",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "i"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:j",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "j"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:l",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "l"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:m",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "m"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:n",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "n"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:o",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "o"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:p",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "p"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:r",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "r"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:s",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "s"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:t",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "t"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:u",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "u"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:w",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "w"
+        }
+      ]
+    },
+    {
+      "source": "player_hub",
+      "target": "routes:x",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "x"
         }
       ]
     },
@@ -24486,18 +24882,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/(dashboard)/dashboard/documents/**"
-        }
-      ]
-    },
-    {
-      "source": "team_operations",
-      "target": "routes:src/app/golf/(dashboard)/dashboard/hub/**",
-      "kind": "feature_route",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/app/golf/(dashboard)/dashboard/hub/**"
         }
       ]
     },
