@@ -1974,6 +1974,9 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
   [data-ui='clubhouse'] {
     --ch-phone-bar-bg: var(--ch-frame);
   }
+  /* The app behind the canvas is the same parchment, so a short page (an empty roster, a failed load) does not end in
+     a band of shell grey above the tab bar. */
+  [data-ui='clubhouse'] .ch-app,
   [data-ui='clubhouse'] .ch-canvas {
     background: var(--ch-workspace);
   }
