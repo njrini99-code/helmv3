@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { CircleAlert, Table2 } from 'lucide-react';
 import type { ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
 import { evidenceBlocks, formatValue, type AskEvidence, type AskTable, type EvidenceTile } from '../../../data/coachhelm-chat-thread';
@@ -182,12 +182,65 @@ function Legs({ block }: { block: Extract<AskEvidence, { kind: 'legs' }> }) {
   );
 }
 
-const W = 360;
+/** The width the trend is drawn at before it is measured (and in tests): the phone's column. */
+const W0 = 360;
 const H = 150;
 const PAD = { l: 38, r: 10, t: 16, b: 26 };
+/** The reference label's type: 10.5px on desktop, 12px on the phone (the CSS); its width is estimated from the larger. */
+const REF_CHAR = 6.6;
 
-/** Movement over time, with the reference drawn dashed so a last point reads against something. The text equivalent is the label and the table. */
+/**
+ * Where the reference label goes so it never sits on the line or a point (P013 D3): above the dashed line at the right, else
+ * below it, else the same two at the left; when all four would touch the line, `null`, and the label is set as a key under
+ * the chart instead. `pts` are the drawn points in viewBox units, `w` the label's estimated width.
+ */
+export function placeRefLabel(pts: Array<{ x: number; y: number }>, ry: number, w: number, width: number): { x: number; y: number; anchor: 'start' | 'end' } | null {
+  const R = 5; // a point's radius plus its stroke
+  const lineSpan = (x0: number, x1: number): [number, number] | null => {
+    const ys: number[] = [];
+    pts.forEach((p, i) => {
+      if (p.x >= x0 && p.x <= x1) ys.push(p.y);
+      const q = pts[i + 1];
+      if (!q) return;
+      for (const x of [x0, x1]) {
+        if ((p.x <= x && x <= q.x) || (q.x <= x && x <= p.x)) ys.push(q.x === p.x ? p.y : p.y + ((x - p.x) * (q.y - p.y)) / (q.x - p.x));
+      }
+    });
+    return ys.length ? [Math.min(...ys) - R, Math.max(...ys) + R] : null;
+  };
+  const right = { x0: width - PAD.r - w, x1: width - PAD.r, x: width - PAD.r, anchor: 'end' as const };
+  const left = { x0: PAD.l + 4, x1: PAD.l + 4 + w, x: PAD.l + 4, anchor: 'start' as const };
+  for (const side of [right, left]) {
+    const span = lineSpan(side.x0, side.x1);
+    // The text's box: about 11px above its baseline and 3px below it.
+    for (const base of [ry - 5, ry + 15]) {
+      if (!span || span[1] < base - 11 || span[0] > base + 3) return { x: side.x, y: base, anchor: side.anchor };
+    }
+  }
+  return null;
+}
+
+/**
+ * Movement over time, with the reference drawn dashed so a last point reads against something. The text equivalent is the label
+ * and the table. Drawn at the width it is given (measured), so its type stays at the token size instead of scaling with the
+ * column (P013 D3).
+ */
 export function Trend({ block }: { block: Extract<AskEvidence, { kind: 'trend' }> }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [W, setW] = useState(W0);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const read = () => {
+      const w = Math.round(el.getBoundingClientRect().width);
+      if (w > 0) setW(w);
+    };
+    read();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const values = block.points.map((p) => p.value);
   const all = block.reference ? [...values, block.reference.value] : values;
   let lo = block.unit === 'percent' ? 0 : Math.min(...all);
@@ -210,35 +263,47 @@ export function Trend({ block }: { block: Extract<AskEvidence, { kind: 'trend' }
   const ticks = [hi - pad, (hi + lo) / 2, lo + pad];
   const showAll = n <= 6;
   const label = `${block.summary} ${block.points.map((p) => `${p.label} ${formatValue(p.value, block.unit)}`).join(', ')}.`;
+  const refText = ref ? (ref.label.startsWith('Team') ? ref.label : `${ref.label} ${formatValue(ref.value, block.unit)}`) : '';
+  const refAt = ref ? placeRefLabel(values.map((v, i) => ({ x: x(i), y: y(v) })), y(ref.value), refText.length * REF_CHAR, W) : null;
   return (
-    <svg className="ch-th-trend" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label}>
-      {ticks.map((t, i) => (
-        <g key={i}>
-          <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} className="ch-th-grid" />
-          <text x={PAD.l - 6} y={y(t) + 4} textAnchor="end" className="ch-th-ax">
-            {formatValue(Math.round(t * 10) / 10, block.unit)}
-          </text>
-        </g>
-      ))}
-      {ref && (
-        <g>
-          <line x1={PAD.l} x2={W - PAD.r} y1={y(ref.value)} y2={y(ref.value)} className="ch-th-ref" />
-          <text x={W - PAD.r} y={y(ref.value) - 5} textAnchor="end" className="ch-th-ref-label">
-            {ref.label.startsWith('Team') ? ref.label : `${ref.label} ${formatValue(ref.value, block.unit)}`}
-          </text>
-        </g>
+    <div ref={box} className="ch-th-trendbox">
+      <svg className="ch-th-trend" width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label}>
+        {ticks.map((t, i) => (
+          <g key={i}>
+            <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} className="ch-th-grid" />
+            <text x={PAD.l - 6} y={y(t) + 4} textAnchor="end" className="ch-th-ax">
+              {formatValue(Math.round(t * 10) / 10, block.unit)}
+            </text>
+          </g>
+        ))}
+        {ref && (
+          <g>
+            <line x1={PAD.l} x2={W - PAD.r} y1={y(ref.value)} y2={y(ref.value)} className="ch-th-ref" />
+            {refAt && (
+              <text x={refAt.x} y={refAt.y} textAnchor={refAt.anchor} className="ch-th-ref-label">
+                {refText}
+              </text>
+            )}
+          </g>
+        )}
+        {n > 1 && <polyline points={values.map((v, i) => `${x(i)},${y(v)}`).join(' ')} fill="none" stroke={stroke} strokeWidth="2.2" strokeLinejoin="round" />}
+        {values.map((v, i) => (
+          <circle key={i} cx={x(i)} cy={y(v)} r="4" fill={i === n - 1 ? stroke : 'var(--ch-ivory-25)'} stroke={stroke} strokeWidth="2" />
+        ))}
+        {block.points.map((p, i) =>
+          showAll || i === 0 || i === n - 1 || i === Math.floor((n - 1) / 2) ? (
+            <text key={i} x={x(i)} y={H - 8} textAnchor="middle" className="ch-th-ax">
+              {p.label}
+            </text>
+          ) : null,
+        )}
+      </svg>
+      {ref && !refAt && (
+        <p className="ch-th-refkey" aria-hidden="true">
+          <i />
+          {refText}
+        </p>
       )}
-      {n > 1 && <polyline points={values.map((v, i) => `${x(i)},${y(v)}`).join(' ')} fill="none" stroke={stroke} strokeWidth="2.2" strokeLinejoin="round" />}
-      {values.map((v, i) => (
-        <circle key={i} cx={x(i)} cy={y(v)} r="4" fill={i === n - 1 ? stroke : 'var(--ch-ivory-25)'} stroke={stroke} strokeWidth="2" />
-      ))}
-      {block.points.map((p, i) =>
-        showAll || i === 0 || i === n - 1 || i === Math.floor((n - 1) / 2) ? (
-          <text key={i} x={x(i)} y={H - 8} textAnchor="middle" className="ch-th-ax">
-            {p.label}
-          </text>
-        ) : null,
-      )}
-    </svg>
+    </div>
   );
 }

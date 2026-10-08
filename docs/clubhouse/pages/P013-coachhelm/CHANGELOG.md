@@ -1,5 +1,50 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-08 — The green card is where the light lands (P013-A3)
+
+Approved by the owner on 2026-10-08. On the phone the focus's claim, the page's one
+green card, takes the only light-aimed rim: a 1px rim of the shell's light on its
+sun-facing top and side, a darker hairline opposite. Its "Worth closing" stance is
+gilt that catches the light on its sun side. Nothing else on the page gains depth,
+no figure is lit, nothing moves, and the rim goes under Increase Contrast.
+
+## 2026-10-08 — Premium pass findings (D3 to D13)
+
+The premium audit's CoachHelm findings, checked in WebKit at 1440x900 and
+390x844, light and dark. A1 (decision above the pulse) is not built: the owner
+said no.
+
+- **Ask trend (D3):** the chart is drawn at its measured width (ResizeObserver),
+  so a viewBox unit is a pixel and its axis type is 10.5px on the desktop and
+  12px on the phone, not about 20px scaled up. The reference label takes the
+  first place clear of the line (above or below the dashed line, at the right
+  or the left); when none is clear it is a key under the chart. The Deep dive
+  and the evidence panel draw the same trend.
+- **Standing (D4):** the hero leads with the most to gain and gives one count,
+  against the Tour's denominator; strokes gained is named against the Tour, as
+  Stats says it (Q-88), never "field average".
+- **Game profile fixture (D5):** scrambling is 35%, "Reliable", the live
+  dimension's own label. "Mixed" under Strong is the live persona's call
+  (driver usage peaks at a 60% mix in `normalize.ts`), not the fixture's.
+- **Deep dive (D6, D13):** the full write-up drops the sentence that repeats
+  the drill "This week" draws; the diagnosis lines end with a full stop; the
+  hero says "In your plan" overlaps the two lists. Even ("E") is ink on the
+  plain plate, not mint.
+- **Ask fixture (D7):** the slope bars are Uphill 76%, Level 81%, Downhill 58%,
+  as the board's level 81% says; the ranking's footer counts what its rows list
+  (24 attempts, not the first row's 9), asserted in the tests.
+- **One h1 (D8):** on the phone the page's large "CoachHelm" is text (the top
+  bar has the h1) and still labels the main landmark; every skeleton has a
+  hidden h1; Standing's rows are h3 under their group's h2.
+- **Reach (D9):** the Ask step toggle and the ranked list's name links have a
+  44px hit area.
+- **One primary (D10):** with more than one proposal each Accept is secondary.
+- **Card in card (D11):** the Ask ranking and tables inside a figure are rows on
+  rules in the figure's one card.
+- **Coach board (D12):** a player with no open signal shows no count (it was
+  "0"); generator labels are sentence case ("Penalties per round"); the gauge
+  legend keeps the spaces round its dot.
+
 ## 2026-10-08 — States and native feel
 
 The states audit's CoachHelm findings and the owner's native-feel pass, verified

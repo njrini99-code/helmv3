@@ -16,7 +16,7 @@ import type { ChPlayerWrites } from './writes';
  * answer confirms itself in place (the chip), so there is no success toast; the follow-up is inside the action, so a toast's Retry
  * that lands shows the chip too. Nothing refreshes the page away from it (131501).
  */
-function ProposalRow({ p, writes }: { p: ChProposal; writes: ChPlayerWrites }) {
+function ProposalRow({ p, writes, quiet = false }: { p: ChProposal; writes: ChPlayerWrites; quiet?: boolean }) {
   const [answered, setAnswered] = useState<'accepted' | 'declined' | null>(null);
   const accept = useAction(
     'coachhelm.acceptFocusArea',
@@ -46,11 +46,13 @@ function ProposalRow({ p, writes }: { p: ChProposal; writes: ChPlayerWrites }) {
       {answered ? (
         <span className="ch-hl-done" role="status" data-ch-code="CH-13902">
           <Icon icon={Check} size={15} />
-          {answered === 'accepted' ? 'Started' : 'Declined'} · {p.title}
+          <span>
+            {answered === 'accepted' ? 'Started' : 'Declined'} · {p.title}
+          </span>
         </span>
       ) : (
         <span className="ch-hl-prop__a" role="group" aria-label={`Answer ${p.title}`}>
-          <Button size="sm" variant="primary" disabled={pending} onClick={() => void accept.run()}>
+          <Button size="sm" variant={quiet ? 'secondary' : 'primary'} feel="press" disabled={pending} onClick={() => void accept.run()}>
             {accept.pending ? <span data-ch-code="CH-13404">Accepting</span> : 'Accept'}
           </Button>
           <Button size="sm" variant="ghost" disabled={pending} onClick={() => void decline.run()}>
@@ -69,7 +71,8 @@ function ProposalSection({ list, writes }: { list: ChProposal[]; writes: ChPlaye
       <p className="ch-hl-note">Accept to start a focus, or decline to set it aside.</p>
       <ul>
         {list.map((p) => (
-          <ProposalRow key={p.id} p={p} writes={writes} />
+          // More than one proposal: each Accept is secondary, so the page keeps one primary action (P013 D10).
+          <ProposalRow key={p.id} p={p} writes={writes} quiet={list.length > 1} />
         ))}
       </ul>
     </section>

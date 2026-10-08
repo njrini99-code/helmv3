@@ -49,7 +49,7 @@
   row-gap: 4px;
 }
 
-.ch-hl-h h1 {
+.ch-hl-h .ch-hl-h__t {
   font: 400 52px/1.02 var(--ch-font-serif);
   letter-spacing: -0.01em;
 }
@@ -240,7 +240,7 @@
   font: 400 12.5px/1 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
-.ch-hl-g__lg span {
+.ch-hl-g__lg > span {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -812,7 +812,7 @@
     padding-bottom: 16px;
     gap: 8px;
   }
-  .ch-hl-h h1 {
+  .ch-hl-h .ch-hl-h__t {
     font-size: 32px;
   }
   .ch-hl-h p {
@@ -1169,7 +1169,7 @@
     letter-spacing: 0.14em;
     color: var(--ch-ledger-eyebrow);
   }
-  .ch-hl.is-phone > .ch-hl-h h1 {
+  .ch-hl.is-phone > .ch-hl-h .ch-hl-h__t {
     font: 600 31px/1.08 var(--ch-font-sans);
     letter-spacing: -0.038em;
     font-variation-settings: 'wdth' 88;
@@ -1267,7 +1267,14 @@
     padding: 18px;
     border-radius: 14px;
     background: var(--ch-feature-bg);
-    box-shadow: var(--ch-elevation-feature);
+    /* P013-A3: the green card is where the light lands, and nothing else on the page gains depth. A 1px rim of the
+       shell's light on its sun-facing top and side, a darker hairline opposite. The rim token is transparent in dark,
+       under Increase Contrast and at noon's side, so only the top edge stays lit then. */
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--ch-light-rim) 55%, transparent),
+      inset var(--ch-light-rim-x) 0 0 color-mix(in oklab, var(--ch-light-rim) 40%, transparent),
+      inset 0 -1px 0 rgb(0 0 0 / 0.18),
+      var(--ch-elevation-feature);
     color: var(--ch-on-green-ink);
   }
   .ch-hl.is-phone .ch-hl-focus__k {
@@ -1294,9 +1301,15 @@
     background: var(--ch-warning-100);
     color: var(--ch-warning-600);
   }
+  /* P013-A3: the stance in gilt that catches the light on its sun side (static: nothing moves). */
   .ch-hl.is-phone .ch-hl-focus__head .ch-hl-pri.is-medium {
-    background: var(--ch-champagne-300);
+    background: linear-gradient(
+      calc(90deg - var(--ch-sun-dir, 0) * 90deg),
+      color-mix(in oklab, var(--ch-champagne-300) 70%, var(--ch-light-key)),
+      var(--ch-champagne-300) 70%
+    );
     color: var(--ch-green-800);
+    box-shadow: inset 0 1px 0 color-mix(in oklab, var(--ch-light-rim) 60%, transparent);
   }
   .ch-hl.is-phone .ch-hl-focus__head .ch-hl-pri.is-ok {
     background: var(--ch-positive-100);

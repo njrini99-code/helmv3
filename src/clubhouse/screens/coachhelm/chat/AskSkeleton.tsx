@@ -9,6 +9,8 @@ import { Skeleton } from '../../../ui/States';
 export function AskSkeleton({ chained }: { chained?: boolean } = {}) {
   return (
     <main className="ch-ask ch-ask-sk" aria-busy="true" aria-label="Loading Ask CoachHelm" data-skel={chained ? 'chained' : undefined} data-ch-code="CH-13420">
+      {/* The screen's one h1 while it loads, for the page outline (P013 D8). */}
+      <h1 className="ch-sr-only">Ask CoachHelm</h1>
       <div className="ch-ask-top">
         <Skeleton width={150} height={38} radius={12} />
       </div>

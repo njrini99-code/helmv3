@@ -50,7 +50,10 @@ function Gauge({ g, who }: { g: ChHelmGauge; who?: string }) {
       <div className="ch-hl-g__lg">
         <span>
           <i className="is-you" aria-hidden="true" />
-          {who ?? 'You'} · <b className="ch-num">{g.you}</b>
+          {/* One inline run: as loose flex items the spaces round the dot collapsed ("Eli· 1.1", P013 D12). */}
+          <span>
+            {who ?? 'You'} · <b className="ch-num">{g.you}</b>
+          </span>
         </span>
         <span>
           <i className="is-cmp" aria-hidden="true" />
@@ -237,11 +240,16 @@ export function BoardPartial({ missing, what, focus = true }: { missing: ChBoard
 /** The page's title block: the role chip, CoachHelm, one line. CH-13801: the h1 labels the page's main landmark (aria-labelledby), and each section below is a labelled region. */
 /** `aside`: the view switch on desktop, set level with the title (the large-title pattern), so the header is one line of
  *  structure instead of a title block over a separate strip. */
-export function Head({ who, children, aside }: { who: 'Player' | 'Coach'; children: ReactNode; aside?: ReactNode }) {
+/** `phone`: the shell's top bar already carries the page's h1 ("CoachHelm"), so the large title here is the same words set as
+ *  text, still labelling the main landmark: one h1 per screen (P013 D8). */
+export function Head({ who, children, aside, phone = false }: { who: 'Player' | 'Coach'; children: ReactNode; aside?: ReactNode; phone?: boolean }) {
+  const Title = phone ? 'p' : 'h1';
   return (
     <header className={'ch-hl-h' + (aside ? ' has-aside' : '')} data-canopy-head="">
       <span className="ch-hl-role">{who}</span>
-      <h1 id="ch-hl-title">CoachHelm</h1>
+      <Title id="ch-hl-title" className="ch-hl-h__t">
+        CoachHelm
+      </Title>
       <p>
         {children}
       </p>

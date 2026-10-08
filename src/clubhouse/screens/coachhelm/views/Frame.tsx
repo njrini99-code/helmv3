@@ -30,7 +30,7 @@ export function PlayerHelmFrame({ view, line, off = false, covered = false, afte
       <main className={'ch-hl ch-hv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" data-ch-view={view} data-canopy={phone ? undefined : ''} aria-busy={sw.pending || undefined} inert={covered || undefined}>
         {phone && <PhoneTop start title="CoachHelm" />}
         {phone && tabs}
-        <Head who="Player" aside={!phone ? tabs : undefined}>
+        <Head who="Player" phone={phone} aside={!phone ? tabs : undefined}>
           {line}
         </Head>
         {children}
