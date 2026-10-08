@@ -67,10 +67,9 @@ function EventCard({ e, live, now, today }: { e: ChHomeEvent; live: boolean; now
   const awaiting = e.awaiting ?? [];
   const end = e.rangeLabel.split(' – ')[1];
   const kicker = e.allDay ? `${e.date === today ? 'Today' : WEEKDAY.format(new Date(`${e.date}T12:00:00Z`))} · all day` : live ? `Now${end ? ` · until ${end}` : ''}` : `Next up · ${e.startLabel}`;
-  const nudge = awaiting.length
-    ? rebuiltHref(messagesPrefillHref({ players: awaiting.map((p) => p.id), draft: nudgeDraft(e, today), title: e.title }))
-    : null;
-  const message = !nudge && e.inviteeIds?.length ? rebuiltHref(messagesPrefillHref({ players: e.inviteeIds, draft: '', title: e.title })) : null;
+  const open = (h: string | null) => (h ? rebuiltHref(h) : null);
+  const nudge = awaiting.length ? open(messagesPrefillHref({ players: awaiting.map((p) => p.id), draft: nudgeDraft(e, today), title: e.title })) : null;
+  const message = !nudge && e.inviteeIds?.length ? open(messagesPrefillHref({ players: e.inviteeIds, draft: '', title: e.title })) : null;
   const directions = directionsHref(e);
   return (
     <section className={'ch-hm-next ch-hm-day' + (live ? ' is-live' : '')} aria-labelledby="ch-hm-day-t">

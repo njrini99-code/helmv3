@@ -19,9 +19,8 @@ const OFF_SITE = new Set(['qualifier', 'tournament', 'travel']);
 export function eventPeekActions(e: ChCalEvent, coach: boolean, people: Map<string, ChCalPerson>, onOpen: () => void): PeekAction[] {
   const waiting = coach ? e.people.filter((p) => (e.rsvp[p] ?? 'pending') === 'pending') : [];
   const when = e.allDay ? `${dowOf(e.date)} ${dayNum(e.date)} ${monthName(e.date)}` : `${dowOf(e.date)} ${dayNum(e.date)} ${monthName(e.date)} at ${fmtHour(e.start!)}`;
-  const nudge = waiting.length
-    ? rebuiltHref(messagesPrefillHref({ players: waiting, draft: `Can you let me know if you’re coming to ${e.title} (${when})? You can reply on the event in Calendar.`, title: e.title }))
-    : null;
+  const href = waiting.length ? messagesPrefillHref({ players: waiting, draft: `Can you let me know if you’re coming to ${e.title} (${when})? You can reply on the event in Calendar.`, title: e.title }) : null;
+  const nudge = href ? rebuiltHref(href) : null;
   const first = waiting.length === 1 ? (people.get(waiting[0]!)?.name.split(' ')[0] ?? 'them') : null;
   return [
     { label: 'Open', icon: CalendarDays, onSelect: onOpen },

@@ -7,6 +7,7 @@ vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSessi
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 
 import { DayCard, dayPhase, directionsHref, LaterToday, nudgeDraft, sinceChips, SinceYouLooked } from '../screens/home/DayCard';
+import { takePrefill } from '../screens/messages/prefill';
 import { PREVIEW_HOME, PREVIEW_HOME_NOW } from '../preview/fixtures';
 
 /** P002 premium pass: the phone Home's day card (owner-approved concept, board 1). */
@@ -32,15 +33,18 @@ describe('Home · the day card', () => {
     render(<DayCard phase={{ kind: 'event', e: next, live: false }} now={at(PREVIEW_HOME_NOW)} today="2026-10-14" onOpenRound={() => {}} />);
     const href = screen.getByRole('link', { name: 'Nudge Eli' }).getAttribute('href')!;
     const q = new URL(href, 'https://x').searchParams;
-    expect(href.startsWith('/golf/dashboard/messages?')).toBe(true);
-    expect(q.get('players')).toBe('eli');
-    expect(q.get('draft')).toBe(nudgeDraft(next, '2026-10-14'));
-    expect(q.get('draft')).toMatch(/Short-game block \(today at 3:30 PM\)/);
+    expect(href.startsWith('/golf/dashboard/messages?prefill=')).toBe(true);
+    // The draft and the people stay out of the URL; Messages takes them from this tab's storage.
+    expect(href).not.toMatch(/Short|eli|draft|players/);
+    const pre = takePrefill(q)!;
+    expect(pre.players).toEqual(['eli']);
+    expect(pre.draft).toBe(nudgeDraft(next, '2026-10-14'));
+    expect(pre.draft).toMatch(/Short-game block \(today at 3:30 PM\)/);
     // Everyone replied: Message the invitees instead, with no draft.
     render(<DayCard phase={{ kind: 'event', e: { ...next, awaiting: [] }, live: false }} now={at(PREVIEW_HOME_NOW)} today="2026-10-14" onOpenRound={() => {}} />);
-    const msg = new URL(screen.getByRole('link', { name: 'Message' }).getAttribute('href')!, 'https://x').searchParams;
-    expect(msg.get('players')).toBe('theo,sofia,ava,jonah,eli,priya');
-    expect(msg.get('draft')).toBeNull();
+    const msg = takePrefill(new URL(screen.getByRole('link', { name: 'Message' }).getAttribute('href')!, 'https://x').searchParams)!;
+    expect(msg.players).toEqual(['theo', 'sofia', 'ava', 'jonah', 'eli', 'priya']);
+    expect(msg.draft).toBe('');
   });
 
   it('no Nudge or Message without reply data (a player’s card, or replies that didn’t load)', () => {

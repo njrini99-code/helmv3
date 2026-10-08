@@ -87,6 +87,7 @@ import { Messages } from '../screens/messages/Messages';
 import { DraftStore } from '../screens/messages/drafts';
 import { MessagesSkeleton } from '../screens/messages/MessagesSkeleton';
 import { MessagesNoTeam } from '../screens/messages/MessagesNoTeam';
+import { messagesPrefillHref, onRoster, takePrefill } from '../screens/messages/prefill';
 import { ToastProvider } from '../ui/Toast';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import './dialog-polyfill';
@@ -1415,11 +1416,55 @@ describe('Messages · no team', () => {
 });
 
 describe('Messages · prefilled messages (D2-7: the coach presses Send)', () => {
+  /** What an action elsewhere does: keeps the prefill in this tab's storage, and hands Messages only its key. */
+  const stash = (p: { players: string[]; draft: string; title?: string }) => new URL(messagesPrefillHref(p)!, 'https://x.test').searchParams;
+  afterEach(() => window.sessionStorage.clear());
+
+  it('the URL carries only an opaque key: no draft, no group name, no player ids', () => {
+    const href = messagesPrefillHref({ players: ['p-eli', 'p-jonah'], draft: 'Eli, how is the wrist after physio?', title: 'Injury check-in' })!;
+    expect(href).toMatch(/^\/golf\/dashboard\/messages\?prefill=[a-z0-9]+$/);
+    expect(href).not.toMatch(/wrist|physio|Injury|p-eli|p-jonah|draft|title|players/i);
+    // The same prefill gives the same href, on the server and in the browser.
+    expect(messagesPrefillHref({ players: ['p-eli', 'p-jonah'], draft: 'Eli, how is the wrist after physio?', title: 'Injury check-in' })).toBe(href);
+    expect(messagesPrefillHref({ players: [], draft: 'hi' })).toBeNull();
+  });
+
+  it('the key is single-use, and a key with nothing stored (a cold link, a new tab) gives nothing', () => {
+    const q = stash({ players: ['p-eli'], draft: 'Can you make the 3:30 block?' });
+    expect(takePrefill(q)).toEqual({ players: ['p-eli'], draft: 'Can you make the 3:30 block?', title: undefined });
+    expect(takePrefill(q)).toBeNull();
+    expect(takePrefill(new URLSearchParams('prefill=unknown'))).toBeNull();
+    expect(takePrefill(new URLSearchParams('players=p-eli&draft=hi'))).toBeNull();
+  });
+
+  it('players not on the team are left out, in order, and the rest are kept', () => {
+    expect(onRoster(['p-eli', 'stranger', 'p-jonah'], (id) => id.startsWith('p-'))).toEqual({ kept: ['p-eli', 'p-jonah'], dropped: ['stranger'] });
+  });
+
+  it('a cold link opens Messages as usual, with nothing prefilled and nothing sent', async () => {
+    live.convs.conversations = [team];
+    params.current = new URLSearchParams('prefill=gone');
+    show();
+    await screen.findByRole('textbox', { name: /Message Varsity team/ });
+    expect(screen.queryByRole('dialog', { name: 'New message' })).toBeNull();
+    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('CH-7001 a foreign id is dropped and reported; the teammate stays chosen and nothing is sent', async () => {
+    params.current = stash({ players: ['p-eli', 'stranger', 'p-jonah'], title: 'Short-game block', draft: 'Reply when you can' });
+    show();
+    await expectCode('CH-7001', /One player was left out/);
+    const dialog = await screen.findByRole('dialog', { name: 'New message' });
+    expect(dialog.textContent).toContain('Reply when you can');
+    expect(a.createGolfTeamBroadcast).not.toHaveBeenCalled();
+    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+  });
+
   const dmEli = { id: 'dm-eli', title: null, participant_ids: ['me', 'eli'], participant_count: 2, unread_count: 0, other_participant: { id: 'eli', name: 'Eli Brandt' }, last_message: null, creator_id: 'me' };
 
   it('one player with a thread opens it with the draft in the composer, and nothing is sent', async () => {
     live.convs.conversations = [team, dmEli];
-    params.current = new URLSearchParams(`players=p-eli&draft=${encodeURIComponent('Can you make the 3:30 block?')}`);
+    params.current = stash({ players: ['p-eli'], draft: 'Can you make the 3:30 block?' });
     show();
     const box = await screen.findByRole('textbox', { name: /Message Eli/ });
     await waitFor(() => expect((box as HTMLTextAreaElement).value).toBe('Can you make the 3:30 block?'));
@@ -1430,7 +1475,7 @@ describe('Messages · prefilled messages (D2-7: the coach presses Send)', () => 
   it('two players open New message as a named group with the draft quoted; nothing is created until the coach presses on', async () => {
     const user = userEvent.setup();
     a.createGolfTeamBroadcast.mockResolvedValue({ conversationId: 'grp' });
-    params.current = new URLSearchParams(`players=p-eli,p-jonah&title=${encodeURIComponent('Short-game block')}&draft=${encodeURIComponent('Reply when you can')}`);
+    params.current = stash({ players: ['p-eli', 'p-jonah'], title: 'Short-game block', draft: 'Reply when you can' });
     show();
     const dialog = await screen.findByRole('dialog', { name: 'New message' });
     expect((within(dialog).getByRole('textbox', { name: 'Group name' }) as HTMLInputElement).value).toBe('Short-game block');
@@ -1444,7 +1489,7 @@ describe('Messages · prefilled messages (D2-7: the coach presses Send)', () => 
   it('phone: Next creates the thread and leaves the draft in its composer, unsent', async () => {
     const user = userEvent.setup();
     a.createGolfConversation.mockResolvedValue({ conversationId: 'dm-eli' });
-    params.current = new URLSearchParams(`players=p-eli&draft=${encodeURIComponent('Can you make the 3:30 block?')}`);
+    params.current = stash({ players: ['p-eli'], draft: 'Can you make the 3:30 block?' });
     showPhone();
     const newMsg = await screen.findByRole('region', { name: 'New message' });
     expect(newMsg.textContent).toContain('Can you make the 3:30 block?');
@@ -1456,7 +1501,7 @@ describe('Messages · prefilled messages (D2-7: the coach presses Send)', () => 
   });
 
   it('a player’s prefill to two people keeps one (players start direct threads only, D-15)', async () => {
-    params.current = new URLSearchParams('players=p-eli,p-jonah&draft=hi');
+    params.current = stash({ players: ['p-eli', 'p-jonah'], draft: 'hi' });
     show({ ...data, role: 'player', viewerPlayerId: 'p-me' });
     const dialog = await screen.findByRole('dialog', { name: 'New message' });
     // Direct mode: one person picked, and no group chips.
@@ -1465,7 +1510,7 @@ describe('Messages · prefilled messages (D2-7: the coach presses Send)', () => 
   });
 
   it('CH-7001 players who are not on the team', async () => {
-    params.current = new URLSearchParams('players=nobody&draft=hi');
+    params.current = stash({ players: ['nobody'], draft: 'hi' });
     show();
     await expectCode('CH-7001', /Those players aren’t on your team/);
   });

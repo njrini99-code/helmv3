@@ -30,7 +30,7 @@ import { haptic } from '../../lib/haptics';
 import type { ChAttachmentRecovery, ChMessagesApi } from './MessagesView';
 import { MessagesView } from './MessagesScreen';
 import { DraftStore } from './drafts';
-import { readPrefill } from './prefill';
+import { onRoster, takePrefill } from './prefill';
 import { firstName, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
 const isGroup = (c: GolfConversationWithMeta) => {
@@ -111,15 +111,27 @@ export function Messages({ data }: { data: ChMessagesData }) {
     const conv = params.get('conversation');
     const player = params.get('player');
     const user = params.get('user');
-    const pre = readPrefill(params);
+    // Read once: the entry is deleted as it is taken, so Back or a reload never brings the draft back.
+    const pre = takePrefill(params);
     handledParams.current = true;
     setParamsDone(!conv && !player && !user && !pre);
+    if (params.get('prefill')) router.replace('/golf/dashboard/messages', { scroll: false });
     if (pre) {
-      router.replace('/golf/dashboard/messages', { scroll: false });
-      const to = pre.players.map((id) => data.directory.find((p) => p.playerId === id)?.userId).filter((u): u is string => !!u);
+      // Only people on this team, with an account, are written to; anyone else is left out and the coach is told.
+      const userOf = (id: string) => data.directory.find((p) => p.playerId === id)?.userId;
+      const { kept, dropped } = onRoster(pre.players, (id) => !!userOf(id));
+      const to = kept.map((id) => userOf(id)!);
       if (!to.length) {
         toast({ tone: 'error', title: "Couldn’t open that conversation", body: 'Those players aren’t on your team, or haven’t set up their accounts yet.', code: 'CH-7001' });
         return;
+      }
+      if (dropped.length) {
+        toast({
+          tone: 'error',
+          title: dropped.length === 1 ? 'One player was left out' : `${dropped.length} players were left out`,
+          body: 'They aren’t on your team, or haven’t set up their accounts yet. Everyone else is chosen.',
+          code: 'CH-7001',
+        });
       }
       chTrail('messages prefill');
       const existing = to.length === 1 ? convs.find((c) => !c.group && c.memberIds[0] === to[0]) : undefined;

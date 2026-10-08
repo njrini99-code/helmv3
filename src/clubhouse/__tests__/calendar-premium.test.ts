@@ -61,8 +61,9 @@ describe('Calendar · peek actions (P006-C3)', () => {
     expect(acts.map((a) => a.label)).toEqual(['Open', 'Nudge Ben', 'Directions']);
     const nudge = new URL(acts[1]!.href!, 'https://x.test');
     expect(nudge.pathname).toBe('/golf/dashboard/messages');
-    expect(nudge.searchParams.get('players')).toBe('p2');
-    expect(nudge.searchParams.get('draft')).toContain('Fall Invitational');
+    expect(nudge.search).not.toMatch(/Fall|p2|draft/);
+    // The people and the draft travel in sessionStorage, not the URL (messages.test.tsx covers the store).
+    expect(nudge.searchParams.get('prefill')).toMatch(/^[a-z0-9]+$/);
     expect(acts[2]!.href).toContain(encodeURIComponent('Pine Hollow GC'));
   });
 
