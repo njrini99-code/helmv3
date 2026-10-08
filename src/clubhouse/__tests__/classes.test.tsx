@@ -959,13 +959,26 @@ describe('Classes, on screen', () => {
     expect(parseFloat((tb.querySelector('.ch-cl-tb__fill') as HTMLElement).style.width)).toBeCloseTo((55 / 117) * 100, 3);
   });
 
+  it('P012-A1/A2/D1/D4 one timetable header, the team day named in it, keys in the overlap list, no "E" on the term bar', () => {
+    show();
+    const heads = document.querySelectorAll('.ch-cl-tthead');
+    expect(heads).toHaveLength(1);
+    expect(heads[0]!.getAttribute('aria-hidden')).toBe('true');
+    expect([...heads[0]!.querySelectorAll('.ch-cl-tthead__days em')].map((e) => e.textContent)).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
+    expect(heads[0]!.querySelector('.is-team i')!.textContent).toBe('Pinehurst qualifier');
+    expect([...document.querySelectorAll('.ch-cl-over .ch-cl-key')].map((k) => k.textContent)).toEqual(['STAT', 'BUSI']);
+    expect([...document.querySelectorAll('.ch-cl-tb__bar b')].map((b) => b.textContent)).not.toContain('E');
+  });
+
   it('CH-12802 each card’s week strip is hidden from screen readers and shows the start under each day the class meets', () => {
     show();
     const strip = card(/^STAT 201/).querySelector('.ch-cl-card__week')!;
     expect(strip.getAttribute('aria-hidden')).toBe('true');
     expect([...strip.children].map((d) => d.textContent)).toEqual(['M', 'T9:00', 'W', 'T9:00', 'F']);
     // Today is Wednesday the 14th: its box is marked, and Tuesday and Thursday are the days the class meets.
-    expect([...strip.children].map((d) => d.className.trim())).toEqual(['', 'is-on', 'is-today', 'is-on', '']);
+    // P012-A2: Thursday is the Pinehurst qualifier's day (a team band down the list), and this class's Thursday meeting
+    // carries the overlap notch.
+    expect([...strip.children].map((d) => d.className.trim())).toEqual(['', 'is-on', 'is-today', 'is-on is-clash is-team', '']);
   });
 });
 
@@ -982,7 +995,7 @@ describe('Classes, states', () => {
     show(PREVIEW_CLASSES_EMPTY);
     await expectCode(
       'CH-12301',
-      /Add your class schedule.*Import a screenshot of your schedule and we’ll add every class\. Your coach can see when you’re busy, so practice and travel get planned around class\./,
+      /Add your class schedule.*Import a screenshot of your schedule and we’ll read it so you can check each class\. Your coach can see when you’re busy, so practice and travel get planned around class\./,
     );
     expect(document.querySelector('.ch-cl-h__a')).toBeNull();
     expect(document.querySelector('.ch-cl-tb')).toBeNull();
@@ -1090,7 +1103,8 @@ describe('Classes, states', () => {
     // STAT, ECON, BUSI, CSCI, ART and the one with no term: 3 + 3 + 3 + 3 + 2 + 1 credits.
     expect(screen.getByRole('region', { name: /^Fall 2026, week 8 of 17, 15 credits · 6 classes, ends Dec 15$/ })).toBeTruthy();
     expect(card(/^MUSC 140/).querySelectorAll('.ch-cl-card__week > span')).toHaveLength(7);
-    expect(card(/^STAT 201/).querySelectorAll('.ch-cl-card__week > span')).toHaveLength(5);
+    // P012-A1: one timetable, so every class lines up under the same seven days once one meets on a weekend.
+    expect(card(/^STAT 201/).querySelectorAll('.ch-cl-card__week > span')).toHaveLength(7);
   });
 
   it('a class from another term is never counted as overlapping this week’s practice, even when its days and times would', () => {
@@ -1507,7 +1521,7 @@ describe('Classes, writes that fail', () => {
     const w = show(PREVIEW_CLASSES, { sync, read: vi.fn(async () => ({ ok: true as const, rows: PREVIEW_PARSED.slice(0, 4).map(toImportRow), warnings: [] })) });
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 4 classes' }));
     await screen.findByRole('dialog', { name: 'Schedule imported' });
     await user.click(inSheet().getByRole('button', { name: 'View classes' }));
@@ -1801,6 +1815,13 @@ const chooseFile = (name: string, type: string, size = 1000) => {
   fireEvent.change(fileInput(), { target: { files: [file] } });
   return file;
 };
+/** P012-B1: the review opens, then its rows arrive one a beat; this waits for the last of them ("Read 5 classes"). */
+async function reviewArrived() {
+  const dialog = await screen.findByRole('dialog', { name: 'Review your schedule' });
+  await waitFor(() => expect(dialog.querySelector('.ch-cl-rv__line')?.textContent ?? '').toMatch(/^Read /));
+  return dialog;
+}
+
 async function openImport(user: ReturnType<typeof userEvent.setup>) {
   await user.click(headerButton('Import schedule'));
   await screen.findByRole('dialog', { name: 'Import schedule' });
@@ -1814,6 +1835,23 @@ async function pasteAndRead(user: ReturnType<typeof userEvent.setup>, text = PRE
 const reviewSummary = () => Object.fromEntries([...importSheet().querySelectorAll('.ch-cl-rv__sum > div')].map((d) => [d.querySelector('dt')!.textContent, d.querySelector('dd')!.textContent]));
 
 describe('Classes, import', () => {
+  it('P012-B1 the read shows its work: nothing for a quick read, then each row arrives tagged, with a status line', async () => {
+    const user = userEvent.setup();
+    const answer = later<Awaited<ReturnType<ChClassesWrites['read']>>>();
+    show(PREVIEW_CLASSES, { read: vi.fn(() => answer.promise) });
+    await openImport(user);
+    await pasteAndRead(user);
+    // The first beat shows no reading state.
+    expect(code('CH-12402')).toBeNull();
+    await expectCode('CH-12402', /Reading your schedule/);
+    await act(async () => answer.resolve({ ok: true, rows: PREVIEW_PARSED.map(toImportRow), warnings: [] }));
+    const dialog = await reviewArrived();
+    expect(dialog.querySelector('.ch-cl-rv__line')!.textContent).toBe('Read 5 classes · 1 to check');
+    const tags = [...dialog.querySelectorAll('.ch-cl-rv__tag')].map((t) => t.textContent);
+    expect(tags.filter((t) => t === 'Read clearly')).toHaveLength(4);
+    expect(tags).toContain('Check the time');
+  });
+
   it('CH-12110 CH-12402 CH-12705 pasted text: nothing to read is refused; then it says it is reading, and the rows come back for review', async () => {
     const user = userEvent.setup();
     const answer = later<Awaited<ReturnType<ChClassesWrites['read']>>>();
@@ -1834,7 +1872,7 @@ describe('Classes, import', () => {
     expect(code('CH-12402')!.getAttribute('role')).toBe('status');
     expect(w.read).toHaveBeenCalledWith({ kind: 'text', text: PREVIEW_SCHEDULE_TEXT });
     await act(async () => answer.resolve({ ok: true, rows: PREVIEW_PARSED.map(toImportRow), warnings: ['One class had no room.'] }));
-    expect(await screen.findByRole('dialog', { name: 'Review your schedule' })).toBeTruthy();
+    expect(await reviewArrived()).toBeTruthy();
     expect(reviewSummary()).toEqual({ Classes: '5', Credits: '15', 'Days a week': '5', 'Need a look': '1' });
     expect(within(importSheet().querySelector('.ch-cl-clash') as HTMLElement).getByText('Worth a look')).toBeTruthy();
     const rows = [...importSheet().querySelectorAll('.ch-cl-rv__r')];
@@ -1852,7 +1890,7 @@ describe('Classes, import', () => {
     show();
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     expect(inSheet().getByRole('button', { name: 'Import 5 classes' })).toBeTruthy();
     await user.click(inSheet().getByRole('button', { name: 'Remove STAT 201' }));
     expect(inSheet().getByRole('button', { name: 'Import 4 classes' })).toBeTruthy();
@@ -1870,7 +1908,7 @@ describe('Classes, import', () => {
     const w = show();
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Remove STAT 201' }));
     await user.click(inSheet().getByRole('button', { name: 'Import 4 classes' }));
     expect(await screen.findByRole('dialog', { name: 'Schedule imported' })).toBeTruthy();
@@ -1901,7 +1939,7 @@ describe('Classes, import', () => {
     const w = show(PREVIEW_CLASSES, { importRows });
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 5 classes' }));
     await expectCode('CH-12004', /Couldn’t import your schedule.*Nothing was saved\. Check your connection and try again\./);
     expect(hapticSpy).toHaveBeenCalledWith('error');
@@ -1918,7 +1956,7 @@ describe('Classes, import', () => {
     const w = show(PREVIEW_CLASSES, { importRows: vi.fn(async () => ({ success: true as const, data: { rows: [], skipped: ['STAT 201 - Probability and Statistics'] } })) });
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 5 classes' }));
     expect(await screen.findByRole('dialog', { name: 'Nothing new to import' })).toBeTruthy();
     await expectCode('CH-12307', /Already on your schedule.*That class is already on your schedule, so nothing was imported\. Remove the existing entry first to import again\./);
@@ -1940,7 +1978,7 @@ describe('Classes, import', () => {
     const w = show(PREVIEW_CLASSES, { importRows });
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 5 classes' }));
     await waitFor(() => expect(names()).toContain('Global Environmental Change'));
     await waitFor(() => expect(w.sync).toHaveBeenCalledTimes(1));
@@ -1955,7 +1993,7 @@ describe('Classes, import', () => {
     show(PREVIEW_CLASSES, { sync });
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Remove STAT 201' }));
     await user.click(inSheet().getByRole('button', { name: 'Import 4 classes' }));
     await expectCode('CH-12002', /1 of 4 classes are saved, but not on your calendar.*MATH 232: Could not determine semester dates\. Retry to try again\./);
@@ -2028,7 +2066,7 @@ describe('Classes, import', () => {
     expect(zone.className).toContain('is-over');
     fireEvent.drop(zone, { dataTransfer: { files: [file] } });
     await waitFor(() => expect(w.read).toHaveBeenCalledWith({ kind: 'file', file }));
-    expect(await screen.findByRole('dialog', { name: 'Review your schedule' })).toBeTruthy();
+    expect(await reviewArrived()).toBeTruthy();
   });
 });
 
@@ -2123,14 +2161,14 @@ describe('Classes, offline and slow', () => {
     line!.mockReturnValue(true);
     await user.click(inSheet().getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(w.read).toHaveBeenCalledWith({ kind: 'file', file }));
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Start over' }));
     await screen.findByRole('dialog', { name: 'Import schedule' });
     line!.mockReturnValue(false);
     w.read.mockClear();
     chooseFile('week.txt', 'text/plain');
     await waitFor(() => expect(w.read).toHaveBeenCalledTimes(1));
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Start over' }));
     await pasteAndRead(user);
     await waitFor(() => expect(w.read).toHaveBeenCalledTimes(2));
@@ -2227,7 +2265,7 @@ describe('Classes, calendar sync in the background', () => {
     show(PREVIEW_CLASSES, { sync: vi.fn(() => held.promise), read: vi.fn(async () => ({ ok: true as const, rows: PREVIEW_PARSED.slice(0, 4).map(toImportRow), warnings: [] })) });
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 4 classes' }));
     expect(await screen.findByRole('dialog', { name: 'Schedule imported' })).toBeTruthy();
     expect(inSheet().getByText('Adding them to your calendar…')).toBeTruthy();
@@ -2235,7 +2273,7 @@ describe('Classes, calendar sync in the background', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     expect((inSheet().getByRole('button', { name: 'Import 4 classes' }) as HTMLButtonElement).disabled).toBe(false);
     await act(async () => held.resolve({ success: true }));
   });
@@ -2248,7 +2286,7 @@ describe('Classes, calendar sync in the background', () => {
     const w = show(PREVIEW_CLASSES, { sync, read });
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 2 classes' }));
     await expectCode('CH-12002');
     const starts = () => Object.fromEntries(w.sync.mock.calls.map((c) => [c[0].code, c[1]]));
@@ -2268,7 +2306,7 @@ describe('Classes, calendar sync in the background', () => {
     await user.click(screen.getByRole('button', { name: 'Import schedule' }));
     await screen.findByRole('dialog', { name: 'Import schedule' });
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 5 classes' }));
     await waitFor(() => expect(w.sync).toHaveBeenCalledTimes(5));
     for (const call of w.sync.mock.calls) expect(call[1]).toBeUndefined();
@@ -2324,7 +2362,7 @@ describe('Classes, review fixes on screen', () => {
     const w = show(PREVIEW_CLASSES, { read: vi.fn(async () => ({ ok: true as const, rows: [toImportRow(PREVIEW_PARSED[0]!), hist, toImportRow(PREVIEW_PARSED[3]!)], warnings: [] })) });
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 3 classes' }));
     expect(
       await inSheet().findByText(
@@ -2339,7 +2377,7 @@ describe('Classes, review fixes on screen', () => {
     show(PREVIEW_CLASSES, { read: vi.fn(async () => ({ ok: true as const, rows: [toImportRow(PREVIEW_PARSED[3]!)], warnings: [] })) });
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 1 class' }));
     const result = await inSheet().findByText(/^Not on your calendar: PHIL 150 \(no meeting days\)\./);
     expect(result.textContent).not.toMatch(/on your calendar and repeat/);
@@ -2351,7 +2389,7 @@ describe('Classes, review fixes on screen', () => {
     show(PREVIEW_CLASSES, { read: vi.fn(async () => ({ ok: true as const, rows: [{ ...toImportRow(PREVIEW_PARSED[0]!), semester: 'Spring 2027' }], warnings: [] })) });
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 1 class' }));
     expect(await inSheet().findByText('1 class imported')).toBeTruthy();
     expect(code('CH-12109')).toBeNull();
