@@ -216,7 +216,7 @@ alongside (not duplicated here).
   twins) now call `logServerError`; `src/lib/notifications/push.ts`'s
   per-token invoke-failure, per-token thrown-exception, and outermost
   catches now call `logServerEvent`/`logServerException` (previously
-  console.error-only); `src/app/golf/actions/golf.ts`'s
+  console.error-only); `actions/golf.ts (pre-split)`'s
   `updateGolfEventImpl`/`deleteGolfEventImpl` outer catches (one fully
   bare, one ZodError-only) now call `logServerException`, and
   `updateShotImpl`'s `putt_details`/`approach_miss_details` writes now
@@ -239,7 +239,7 @@ alongside (not duplicated here).
   do not change it there; it is owned by the broader Sentry rollout
   decision, not that file.
 - The workflow-op instrumentation of actual call sites
-  (`src/app/golf/actions/golf.ts` etc.) is NOT part of the telemetry
+  (`actions/golf.ts (pre-split)` etc.) is NOT part of the telemetry
   vocabulary's own code — that vocabulary is what those call sites will
   use, not the instrumentation of them.
 

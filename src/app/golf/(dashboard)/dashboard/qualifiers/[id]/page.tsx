@@ -10,7 +10,7 @@ import type { GolfQualifier, GolfQualifierEntry } from '@/lib/types/golf';
 import type { Metadata } from 'next';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayQualifierDetail } from '@/components/fairway/pages/qualifiers/FairwayQualifierDetail';
-import { getQualifierRoundCourses } from '@/app/golf/actions/golf';
+import { getQualifierRoundCourses } from '@/app/golf/actions/qualifier-actions';
 
 interface QualifierEntryWithPlayer extends GolfQualifierEntry {
   player: {

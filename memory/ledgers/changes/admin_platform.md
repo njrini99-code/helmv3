@@ -125,7 +125,7 @@ rollout is booleans only.
   `src/lib/flags/registry.generated.ts` — no YAML parsing at runtime.
   Seeded with two flags that DESCRIBE existing env-driven toggles without
   changing their behavior: `flight_recorder`
-  (`HELM_FLIGHT_RECORDER_ENABLED`, read at `src/app/golf/actions/golf.ts:1207-1209`
+  (`HELM_FLIGHT_RECORDER_ENABLED`, read at `actions/golf.ts (pre-split):1207-1209`
   and `src/lib/observability/helm-flight-recorder.ts:194`, both owned by the
   parallel Sentry session per that handoff brief's ownership table) and
   `coachhelm_v2_availability` (`NEXT_PUBLIC_COACHHELM_ENABLED`,
@@ -187,7 +187,7 @@ entire Bridge surface maps under.
 
 - **`memory/journeys/golden-paths.yml`** — a thin index over EXISTING
   `e2e/*.spec.ts` coverage and the live Flight Recorder workflow/step-key
-  vocabulary in `src/app/golf/actions/golf.ts`, seeding the 8 golden paths
+  vocabulary in `actions/golf.ts (pre-split)`, seeding the 8 golden paths
   named in the Bridge Track C task (`player_login_hub`, `player_start_round`,
   `player_resume_round`, `player_submit_round`, `coach_view_player_stats`,
   `coach_view_coachhelm_insight`, `coach_create_event`, `player_rsvp_event`).
@@ -1418,7 +1418,7 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
 - SHA: branch `agent/tracer-gaps`, PR pending. Scoped deliberately to stay
   outside the two in-flight Flight Recorder branches
   (`agent/flight-recorder-real-timings`, `agent/flight-recorder-db-checkpoints`)
-  — no edit to `src/app/golf/actions/golf.ts`,
+  — no edit to `actions/golf.ts (pre-split)`,
   `src/lib/observability/golf-round-flight-workflow.ts`,
   `src/lib/observability/helm-flight-recorder.ts`, or any
   `supabase/migrations/*flight*`/`*trace_steps*` file.
