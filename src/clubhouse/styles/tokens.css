@@ -5,7 +5,7 @@
  * Everything is namespaced --ch-* and defined only under [data-ui="clubhouse"],
  * so nothing here reaches the Fairway tree and nothing from Fairway's :root
  * tokens is read in here. `npm run clubhouse:check` enforces both directions.
- * Light theme only until the owner signs off a dark pass (tracker: D-2).
+ * Light here; the dark values follow this block (owner, 2026-10-08).
  */
 [data-ui='clubhouse'] {
   /* Ivory neutrals */
@@ -42,6 +42,11 @@
   --ch-green-700: #0f4a2f;
   --ch-green-800: #0b3a25;
   --ch-green-900: #082b1c;
+  /* Filled greens (a primary key, a selected pill, a sent bubble): the same greens in light; in dark they stay deep under
+     ivory type while --ch-green-500..700 lighten for text and strokes. */
+  --ch-green-fill-500: var(--ch-green-500);
+  --ch-green-fill-600: var(--ch-green-600);
+  --ch-green-fill-700: var(--ch-green-700);
   /* The mint accents on the green hero (v2 phone Home, m-home.css). */
   --ch-hero-mint: #9fe0b6;
   --ch-hero-mint-strong: #7bc79a;
@@ -364,6 +369,169 @@
   --ch-z-toast: 100;
 }
 
+/*
+ * Dark: "Clubhouse at night" (owner, 2026-10-08). The theme is GolfHelm's own (Settings > Preferences > Appearance,
+ * stored as `golf_theme`): ThemeScript marks <html data-fw-theme="dark"> before first paint and useGolfTheme keeps it
+ * live, so portaled menus and toasts follow it too. Warm green-black grounds, never pure black; a card is lighter than
+ * the page it sits on (elevation by lightness, shadows deepen but carry little); ivory ink, never white; the frame a
+ * deeper green; scoring colours lightened so under par, gains and losses hold 4.5:1 on the dark surfaces. The ramps keep
+ * their names and their direction of contrast: a higher ivory step stands further off the page, a higher ink step
+ * recedes. Selector weight (0,2,1) puts this over the light block and the phone block below.
+ */
+html[data-fw-theme='dark'] [data-ui='clubhouse'] {
+  color-scheme: dark;
+  --ch-ivory-0: #1b201c;
+  --ch-ivory-25: #1d231e;
+  --ch-ivory-50: #202621;
+  --ch-ivory-100: #242a25;
+  --ch-ivory-150: #293029;
+  --ch-ivory-200: #2f3730;
+  --ch-ivory-300: #3c453d;
+  --ch-ivory-400: #4e584f;
+  --ch-ink-950: #f7f2e6;
+  --ch-ink-900: #ede7d8;
+  --ch-ink-700: #d8d1c1;
+  --ch-ink-600: #c7c0af;
+  --ch-ink-500: #a8a193;
+  --ch-ink-400: #827d71;
+  --ch-ink-300: #5c584f;
+  --ch-green-25: #131d17;
+  --ch-green-50: #15241b;
+  --ch-green-100: #1a3024;
+  --ch-green-200: #24412f;
+  --ch-green-400: #5fa57a;
+  --ch-green-500: #6db488;
+  /* Text, strokes and gains: 6:1 on a card. Filled buttons read --ch-accent, which stays a deep Augusta green. */
+  --ch-green-600: #6bbb8c;
+  --ch-green-700: #84c9a0;
+  --ch-green-800: #123d29;
+  --ch-green-900: #0a2a1b;
+  --ch-green-fill-500: #2a7d53;
+  --ch-green-fill-600: #23704a;
+  --ch-green-fill-700: #1d613f;
+  --ch-frame: #0b2015;
+  --ch-workspace: #131814;
+  --ch-champagne-100: #2b2619;
+  --ch-champagne-300: #cdbb8e;
+  --ch-champagne-500: #c9ad74;
+  --ch-positive-600: #6bbb8c;
+  --ch-positive-100: #16291e;
+  --ch-warning-600: #e3a94f;
+  --ch-warning-100: #2e2414;
+  --ch-danger-600: #ef8576;
+  --ch-danger-100: #35191a;
+  --ch-info-600: #86b6d4;
+  --ch-info-100: #172632;
+  --ch-score-under: #ef8576;
+  --ch-score-under-bg: #3a1c1a;
+  --ch-score-over-bg: #272c27;
+  --ch-score-double: #ede7d8;
+  --ch-chart-paper: #171c18;
+  --ch-chart-gain: #6bbb8c;
+  --ch-chart-loss: #e3a94f;
+  --ch-chart-loss-on-tint: #edb860;
+  --ch-chart-flag: #ef8576;
+  --ch-chart-fairway: #24412f;
+  --ch-chart-fairway-alt: #1f3a29;
+  --ch-chart-rough: #272d23;
+
+  --ch-bg-page: #111512;
+  --ch-bg-surface: #1b201c;
+  --ch-bg-subtle: #181d19;
+  --ch-bg-inset: #0e120f;
+  --ch-bg-hover: #212722;
+  --ch-bg-selected: #16281d;
+  --ch-text-on-accent: #f4eedd;
+  --ch-accent: #23704a;
+  --ch-accent-hover: #2a7d53;
+  --ch-accent-press: #1d613f;
+  --ch-border-hairline: rgb(237 231 216 / 0.08);
+  --ch-border-subtle: rgb(237 231 216 / 0.11);
+  --ch-border-control: rgb(237 231 216 / 0.17);
+  --ch-border-strong: rgb(237 231 216 / 0.3);
+  --ch-seam-ink: rgb(0 0 0 / 0.55);
+  --ch-seam-light: rgb(255 255 255 / 0.05);
+  --ch-board-shadow: inset 0 2px 4px rgb(0 0 0 / 0.45), inset 0 0 0 1px rgb(0 0 0 / 0.35), 0 1px 0 rgb(255 255 255 / 0.05);
+  --ch-board-double-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 1px 3px rgb(0 0 0 / 0.5);
+  --ch-key-frost-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 0 0 1px rgb(255 255 255 / 0.07), 0 2px 4px rgb(0 0 0 / 0.4), 0 10px 20px -10px rgb(0 0 0 / 0.6);
+  --ch-key-raised-shadow: var(--ch-elevation-control), 0 0 0 1px rgb(255 255 255 / 0.06), 0 6px 12px -8px rgb(0 0 0 / 0.6);
+  --ch-on-dark-primary-shadow: inset 0 1px 0 rgb(255 255 255 / 0.6), 0 0 0 1px rgb(0 0 0 / 0.2), 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 16px -8px rgb(0 0 0 / 0.6);
+  --ch-seg-pill-lift-shadow: var(--ch-elevation-control), 0 2px 6px -2px rgb(0 0 0 / 0.5);
+  --ch-btn-secondary-shadow: 0 0 0 1px rgb(237 231 216 / 0.1), inset 0 1px 0 rgb(255 255 255 / 0.06), 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 10px -5px rgb(0 0 0 / 0.5);
+  --ch-btn-secondary-hover-shadow: 0 0 0 1px rgb(237 231 216 / 0.16), inset 0 1px 0 rgb(255 255 255 / 0.08), 0 2px 4px rgb(0 0 0 / 0.45), 0 8px 16px -8px rgb(0 0 0 / 0.55);
+  --ch-score-birdie-shadow: inset 0 0 0 1px rgb(239 133 118 / 0.45), 0 1px 2px rgb(0 0 0 / 0.4);
+  --ch-score-eagle-shadow: inset 0 0 0 1px rgb(239 133 118 / 0.7), 0 1px 2px rgb(0 0 0 / 0.45);
+  --ch-score-bogey-shadow: inset 0 0 0 1px rgb(237 231 216 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.4);
+  --ch-score-double-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.4), 0 1px 2px rgb(0 0 0 / 0.5);
+  --ch-border-focus: #6bbb8c;
+  --ch-green-ring: rgb(107 187 140 / 0.35);
+  --ch-green-rule: rgb(107 187 140 / 0.45);
+  --ch-ink-rule: rgb(237 231 216 / 0.22);
+  --ch-champagne-ring: rgb(205 187 142 / 0.2);
+  --ch-champagne-rule: rgb(205 187 142 / 0.28);
+  --ch-focus-halo: rgb(107 187 140 / 0.2);
+
+  --ch-glass-bg: rgb(22 27 23 / 0.74);
+  --ch-edge: rgb(255 255 255 / 0.07);
+  --ch-highlight: inset 0 1px 0 rgb(255 255 255 / 0.06);
+  --ch-elevation-reading: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 0 0 1px rgb(255 255 255 / 0.06),
+    0 1px 2px rgb(0 0 0 / 0.35), 0 8px 18px -10px rgb(0 0 0 / 0.5), 0 22px 40px -24px rgb(0 0 0 / 0.5);
+  --ch-elevation-cast: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 18px -10px rgb(0 0 0 / 0.5), 0 22px 40px -24px rgb(0 0 0 / 0.5);
+  --ch-elevation-reading-hover: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 0 0 1px rgb(255 255 255 / 0.09),
+    0 2px 4px rgb(0 0 0 / 0.4), 0 12px 24px -12px rgb(0 0 0 / 0.55), 0 28px 48px -26px rgb(0 0 0 / 0.55);
+  --ch-elevation-reading-accent: 0 1px 3px rgb(0 0 0 / 0.35), 0 4px 12px -6px rgb(0 0 0 / 0.45);
+  --ch-elevation-control: var(--ch-highlight), 0 1px 2px rgb(0 0 0 / 0.35);
+  --ch-elevation-floating: 0 0 0 1px rgb(255 255 255 / 0.06), 0 2px 6px rgb(0 0 0 / 0.35), 0 8px 20px -8px rgb(0 0 0 / 0.55);
+  --ch-elevation-tabbar: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 1px rgb(255 255 255 / 0.07),
+    0 2px 6px rgb(0 0 0 / 0.4), 0 14px 32px -12px rgb(0 0 0 / 0.7);
+  --ch-elevation-framed: 0 1px 3px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.04), inset 1px 0 0 rgb(255 255 255 / 0.03);
+  --ch-elevation-on-frame: 0 0 0 1px rgb(201 173 116 / 0.4), 0 1px 2px rgb(0 0 0 / 0.5);
+  --ch-elevation-on-frame-hover: 0 0 0 1px rgb(201 173 116 / 0.55), 0 2px 6px rgb(0 0 0 / 0.55);
+  --ch-ledger-rule: rgb(205 187 142 / 0.15);
+  --ch-ledger-rule-soft: rgb(205 187 142 / 0.08);
+  --ch-ledger-ink: rgb(226 238 229 / 0.94);
+  --ch-ledger-eyebrow: #bba878;
+  --ch-ledger-row-hover: rgb(205 187 142 / 0.06);
+  --ch-ledger-rule-double: 3px double rgb(205 187 142 / 0.22);
+  --ch-elevation-feature: 0 0 0 1px rgb(107 187 140 / 0.14), 0 14px 28px -18px rgb(0 0 0 / 0.8);
+  --ch-ledger-row-press: color-mix(in oklab, var(--ch-green-600) 12%, transparent);
+  --ch-ledger-avatar-ring: 0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule), 0 10px 22px -12px rgb(0 0 0 / 0.6);
+  --ch-elevation-field-hover: 0 0 0 1px var(--ch-border-strong), 0 1px 2px rgb(0 0 0 / 0.3);
+  --ch-elevation-chip-hover: inset 0 0 0 1px rgb(237 231 216 / 0.24), 0 2px 6px -2px rgb(0 0 0 / 0.5);
+  --ch-elevation-choice-hover: 0 0 0 1.5px var(--ch-green-600), 0 10px 20px -14px rgb(0 0 0 / 0.6);
+  --ch-elevation-row-card-hover: 0 0 0 1px rgb(107 187 140 / 0.3), 0 14px 28px -18px rgb(0 0 0 / 0.6);
+  --ch-elevation-on-frame-card-hover: 0 0 0 1px rgb(201 173 116 / 0.55), 0 10px 22px -10px rgb(0 0 0 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.06);
+  --ch-elevation-primary-hover: 0 0 0 1px rgb(107 187 140 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.1), 0 2px 4px rgb(0 0 0 / 0.4),
+    0 8px 16px -8px rgb(0 0 0 / 0.55);
+  --ch-elevation-overlay: 0 0 0 1px rgb(255 255 255 / 0.07), 0 4px 12px rgb(0 0 0 / 0.4), 0 16px 36px -12px rgb(0 0 0 / 0.6);
+  --ch-elevation-sheet: 0 -1px 0 rgb(255 255 255 / 0.06), 0 -4px 12px rgb(0 0 0 / 0.35), 0 -12px 32px -12px rgb(0 0 0 / 0.5);
+  --ch-elevation-bubble: 0 1px 2px rgb(0 0 0 / 0.3);
+  --ch-elevation-bubble-mine: 0 1px 2px rgb(0 0 0 / 0.3);
+  --ch-field-pill-edge: inset 0 0 0 1px rgb(237 231 216 / 0.16);
+  --ch-switch-track-bg: #3a423b;
+  --ch-switch-track-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05), inset 0 1px 2px rgb(0 0 0 / 0.4);
+  --ch-switch-on-bg: var(--ch-accent);
+  --ch-switch-on-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.25), inset 0 1px 2px rgb(0 0 0 / 0.3);
+  --ch-switch-thumb-bg: #f4eedd;
+  --ch-switch-thumb-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.3), 0 1px 2px rgb(0 0 0 / 0.4), 0 3px 8px -2px rgb(0 0 0 / 0.45);
+  --ch-phone-bar-bg: rgb(17 21 18 / 0.92);
+  --ch-phone-tabbar-bg: rgb(27 32 28 / 0.86);
+  --ch-phone-tabbar-shelf-bg: #161b17;
+  --ch-phone-tabbar-shelf-edge: inset 0 1px 0 rgb(255 255 255 / 0.07);
+  --ch-phone-composer-bg: rgb(27 32 28 / 0.94);
+  --ch-avatar-neutral-bg: #243a2c;
+  --ch-avatar-neutral-fg: #cfe3d4;
+  --ch-avatar-neutral-ring: rgb(207 227 212 / 0.16);
+  --ch-well-bg: linear-gradient(180deg, #0a0d0b 0%, #0d110e 55%, #101411 100%);
+  --ch-well-shadow: inset 0 2px 3px rgb(0 0 0 / 0.5), inset 0 4px 10px -2px rgb(0 0 0 / 0.4), inset 0 0 0 1px rgb(0 0 0 / 0.4),
+    0 1px 0 rgb(255 255 255 / 0.05);
+  --ch-well-soft-bg: linear-gradient(180deg, #121613 0%, #141915 60%, #161b17 100%);
+  --ch-well-soft-shadow: inset 0 1px 2px rgb(0 0 0 / 0.4), inset 0 3px 8px -3px rgb(0 0 0 / 0.35), inset 0 0 0 1px rgb(0 0 0 / 0.3),
+    0 1px 0 rgb(255 255 255 / 0.04);
+  --ch-raised-bg: linear-gradient(180deg, #262d27 0%, #212722 60%, #1d231e 100%);
+  --ch-sheet-bg: #1b201c;
+}
+
 /* Phone: warm ivory with the layered surfaces in the supplied design boards.
    The October 1 Safari review supersedes the darker, flat phone treatment. */
 @media (max-width: 820px) {
@@ -440,6 +608,16 @@ html:has([data-ui='clubhouse']) body {
   html:has([data-ui='clubhouse']),
   html:has([data-ui='clubhouse']) body {
     background: #f4f1e8;
+  }
+}
+html[data-fw-theme='dark']:has([data-ui='clubhouse']),
+html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
+  background: #0b2015;
+}
+@media (max-width: 820px) {
+  html[data-fw-theme='dark']:has([data-ui='clubhouse']),
+  html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
+    background: #111512;
   }
 }
 

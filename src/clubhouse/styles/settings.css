@@ -959,7 +959,7 @@
     box-shadow: 0 2px 4px rgb(0 0 0 / 0.2);
   }
   .ch-setm-row.is-sw .ch-switch input:checked + .ch-switch__track {
-    background: var(--ch-green-600);
+    background: var(--ch-green-fill-600);
     box-shadow: none;
   }
   .ch-setm-row.is-sw .ch-switch input:checked + .ch-switch__track .ch-switch__thumb {

@@ -469,7 +469,7 @@ button.ch-rt-strip__h {
 .ch-rt-log__dots i.is-hole,
 .ch-rt-log__n.is-hole,
 .ch-rt-rs__n.is-hole {
-  background: var(--ch-green-500);
+  background: var(--ch-green-fill-500);
 }
 .ch-rt-log__t {
   flex: 1;
@@ -581,7 +581,7 @@ button.ch-rt-strip__h {
   width: 3px;
   height: 12px;
   border-radius: 2px;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 .ch-rt-hint {
   padding: 4px 8px;
@@ -692,7 +692,7 @@ button.ch-rt-strip__h {
   background: rgb(255 255 255 / 0.6);
 }
 .ch-rt-amiss button[aria-checked='true'] {
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   color: var(--ch-ivory-100);
 }
 .ch-rt-amiss__g {

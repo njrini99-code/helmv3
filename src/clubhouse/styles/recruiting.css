@@ -706,7 +706,7 @@
   width: 100%;
   height: 100%;
   border-radius: inherit;
-  background: var(--ch-green-500);
+  background: var(--ch-green-fill-500);
   transform: translateX(-100%);
   transition: transform var(--ch-dur-quick) var(--ch-ease);
 }

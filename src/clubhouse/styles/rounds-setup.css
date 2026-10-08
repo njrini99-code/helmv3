@@ -278,7 +278,7 @@
   padding: 0 14px;
   border-radius: 999px;
   font: 600 13px/30px var(--ch-font-sans);
-  background: var(--ch-green-700);
+  background: var(--ch-green-fill-700);
   color: var(--ch-ivory-100);
 }
 
@@ -519,7 +519,7 @@
   color: var(--ch-ink-700);
 }
 .ch-rsu-hole.is-edited .ch-rsu-hole__n {
-  background: var(--ch-green-700);
+  background: var(--ch-green-fill-700);
   color: var(--ch-ivory-100);
 }
 .ch-rsu-par {

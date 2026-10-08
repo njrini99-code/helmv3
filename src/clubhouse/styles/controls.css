@@ -542,7 +542,7 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   color: var(--ch-text-on-accent);
 }
 .ch-pp__name {
@@ -575,7 +575,7 @@
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-pp__box.is-on {
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   box-shadow: none;
 }
 .ch-pp__empty {
@@ -807,7 +807,7 @@
   transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-check__box.is-on {
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   box-shadow: none;
 }
 .ch-check.is-disabled .ch-check__box {

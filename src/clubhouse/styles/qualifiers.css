@@ -1187,7 +1187,7 @@
 }
 .ch-qfs-steps li.is-now .ch-qfs-steps__n,
 .ch-qfs-steps li.is-done .ch-qfs-steps__n {
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   box-shadow: none;
   color: var(--ch-ivory-25);
 }

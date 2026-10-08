@@ -339,7 +339,7 @@
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: 7px;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 .ch-th-bar[data-tone='good'] .ch-th-bar__track > span {
   background: var(--ch-green-400);
@@ -669,7 +669,7 @@
   border-radius: 10px;
   display: grid;
   place-items: center;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   color: var(--ch-ivory-25);
 }
 .ch-th-act[data-status='cancelled'] .ch-th-act__icon,
@@ -820,7 +820,7 @@
   height: 8px;
   margin-top: 6px;
   border-radius: 50%;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 .ch-th-receipt[data-status='failed'] .ch-th-receipt__dot,
 .ch-th-receipt[data-status='partial'] .ch-th-receipt__dot {

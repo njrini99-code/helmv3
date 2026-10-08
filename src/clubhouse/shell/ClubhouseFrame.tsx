@@ -166,8 +166,18 @@ function usePhoneEdges(hero: boolean) {
     };
     sync();
     phone.addEventListener('change', sync);
+    // A theme change (Settings > Appearance, or the system flipping) changes the tokens read above. useGolfTheme rewrites
+    // the theme-color tag in the same task, so this runs a frame later and has the last word on the phone.
+    let frame = 0;
+    const themed = new MutationObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(sync);
+    });
+    themed.observe(html, { attributes: true, attributeFilter: ['data-fw-theme'] });
     return () => {
       phone.removeEventListener('change', sync);
+      themed.disconnect();
+      cancelAnimationFrame(frame);
       restore?.();
     };
   }, [hero]);

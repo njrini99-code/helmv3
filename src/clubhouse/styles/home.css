@@ -594,7 +594,7 @@
   right: 6px;
   width: 14px;
   height: 14px;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
   opacity: 0;
@@ -676,7 +676,7 @@
   color: var(--ch-green-600);
 }
 .ch-h-lb__status.is-improving::before {
-  background: var(--ch-green-500);
+  background: var(--ch-green-fill-500);
 }
 .ch-h-lb__status.is-slipping,
 .ch-h-lb__status.is-quiet {
@@ -1128,7 +1128,7 @@
     background: var(--ch-champagne-500);
   }
   .ch-hm-tl.is-player .is-now .ch-hm-tl__rail i {
-    background: var(--ch-green-600);
+    background: var(--ch-green-fill-600);
   }
   .ch-hm-tl__t {
     font: 500 13px/1 var(--ch-font-sans);
@@ -1167,7 +1167,7 @@
     box-shadow: 0 0 0 3px var(--ch-bg-surface);
   }
   .ch-hm-tl__rail i.is-practice {
-    background: var(--ch-green-500);
+    background: var(--ch-green-fill-500);
   }
   .ch-hm-tl__rail i.is-qualifier,
   .ch-hm-tl__rail i.is-tournament {
@@ -1209,7 +1209,7 @@
   .ch-hm-now {
     padding: 5px 8px;
     border-radius: 999px;
-    background: var(--ch-green-600);
+    background: var(--ch-green-fill-600);
     font: 600 11px/1 var(--ch-font-sans);
     color: var(--ch-ivory-0);
   }
@@ -1766,7 +1766,7 @@
   box-shadow: 0 0 0 2px var(--ch-sheet-bg);
 }
 .ch-ph-viz--avg i.is-better {
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 .ch-ph-viz--avg i.is-worse {
   background: var(--ch-chart-loss);
@@ -1794,7 +1794,7 @@
   border-radius: 3px;
 }
 .ch-ph-viz--sg i.is-gain {
-  background: var(--ch-green-500);
+  background: var(--ch-green-fill-500);
 }
 .ch-ph-viz--sg i.is-loss {
   background: var(--ch-chart-loss);
@@ -2325,7 +2325,7 @@
   background: var(--ch-ivory-300);
 }
 .ch-rviz--gir i.is-hit {
-  background: var(--ch-green-500);
+  background: var(--ch-green-fill-500);
 }
 .ch-rviz--putts i {
   position: absolute;
@@ -2333,7 +2333,7 @@
   border-radius: 3px;
 }
 .ch-rviz--putts i.is-good {
-  background: var(--ch-green-500);
+  background: var(--ch-green-fill-500);
 }
 .ch-rviz--putts i.is-over {
   background: var(--ch-chart-loss);
@@ -2358,7 +2358,7 @@
   border-radius: 2px;
 }
 .ch-rviz--sg i.is-gain {
-  background: var(--ch-green-500);
+  background: var(--ch-green-fill-500);
 }
 .ch-rviz--sg i.is-loss {
   background: var(--ch-chart-loss);
@@ -3027,7 +3027,7 @@
   /* This week as the board draws it (m-clubhouse.css round 2, m-player-home.css): today is the one solid green key, a
      competition day a soft green tint with its flag, the other days flat on the sheet. */
   .ch-hm-week .is-today .ch-hm-week__d {
-    background: var(--ch-green-600);
+    background: var(--ch-green-fill-600);
     box-shadow: none;
   }
   .ch-hm-week .is-today .ch-hm-week__d em {
@@ -3074,7 +3074,7 @@
     background: var(--ch-green-100);
   }
   .ch-hm-week .is-today .ch-hm-week__d:active {
-    background: var(--ch-green-700);
+    background: var(--ch-green-fill-700);
   }
   /* Up next is a link: a press deepens the card's green the same beat later (CH-1606: a large surface answers with a
      deeper tint, never a scale). The card isolates its own stacking context, so the shade's negative layer paints over

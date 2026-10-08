@@ -975,7 +975,7 @@
 }
 .ch-ox-meter[data-s='3'] i:nth-child(-n + 3),
 .ch-ox-meter[data-s='4'] i {
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 .ch-ox-rules {
   display: flex;
@@ -1087,7 +1087,7 @@
 .ch-ox-range::-moz-range-progress {
   height: 8px;
   border-radius: 4px;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 .ch-ox-range::-webkit-slider-thumb {
   -webkit-appearance: none;

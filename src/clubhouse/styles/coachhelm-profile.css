@@ -77,7 +77,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--ch-green-500);
+  background: var(--ch-green-fill-500);
 }
 .is-warn .ch-hg-stand__d {
   background: var(--ch-warning-600);

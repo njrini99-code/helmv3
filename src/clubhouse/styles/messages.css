@@ -230,7 +230,7 @@
   height: 20px;
   padding: 0 6px;
   border-radius: 999px;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   font: 600 11.5px/1 var(--ch-font-sans);
   color: var(--ch-text-on-accent);
 }
@@ -703,14 +703,14 @@
     transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ms-send.is-ready {
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), 0 2px 6px -2px rgb(11 58 37 / 0.4);
   color: var(--ch-text-on-accent);
   cursor: pointer;
 }
 @media (hover: hover) {
   .ch-ms-send.is-ready:hover {
-    background: var(--ch-green-700);
+    background: var(--ch-green-fill-700);
   }
 }
 .ch-ms-send:focus-visible {
@@ -939,7 +939,7 @@
 
 /* Announcements */
 .ch-ms-grp.is-ann {
-  background: var(--ch-green-700);
+  background: var(--ch-green-fill-700);
   color: var(--ch-ivory-100);
 }
 .ch-ms-grp.is-ann.is-urgent {
@@ -1297,7 +1297,7 @@
   .ch-msp .ch-ms-row .ch-ms-grp {
     width: 44px;
     height: 44px;
-    background: var(--ch-green-700);
+    background: var(--ch-green-fill-700);
     color: var(--ch-ivory-100);
   }
   .ch-msp .ch-ms-row .ch-ms-grp.is-ann.is-urgent {
@@ -1426,7 +1426,7 @@
     flex: none;
     place-items: center;
     border-radius: 50%;
-    background: var(--ch-green-700);
+    background: var(--ch-green-fill-700);
     color: var(--ch-ivory-100);
   }
   .ch-msp-mark.is-sm {
@@ -1574,7 +1574,7 @@
   }
   .ch-msp-thread .ch-ms-send.is-ready,
   .ch-msp-new .ch-ms-send.is-ready {
-    background: var(--ch-green-600);
+    background: var(--ch-green-fill-600);
     color: var(--ch-text-on-accent);
   }
   /* A 44px target around the 34px send. */
@@ -1975,7 +1975,7 @@
     box-shadow: inset 0 0 0 1.5px var(--ch-ink-300);
   }
   .ch-msp-check.is-on {
-    background: var(--ch-green-600);
+    background: var(--ch-green-fill-600);
     box-shadow: none;
     color: var(--ch-text-on-accent);
   }

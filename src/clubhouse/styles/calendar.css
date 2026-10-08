@@ -137,7 +137,7 @@
   background: rgb(21 90 57 / 0.06);
 }
 .ch-cal-jump__d.is-today {
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   color: var(--ch-text-on-accent);
   font-weight: 600;
 }
@@ -178,7 +178,7 @@
 }
 .ch-dot-practice,
 .ch-dot-workout {
-  background: var(--ch-green-500);
+  background: var(--ch-green-fill-500);
 }
 .ch-dot-tournament,
 .ch-dot-qualifier {
@@ -408,7 +408,7 @@
   color: var(--ch-green-700);
 }
 .ch-wk__day.is-today .ch-wk__n {
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   color: var(--ch-text-on-accent);
 }
 .ch-wk__allday {
@@ -474,7 +474,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   box-shadow: 0 0 0 2px var(--ch-bg-surface);
 }
 .ch-wk__nowlbl {
@@ -605,7 +605,7 @@
 }
 .ch-ev--tournament,
 .ch-ev--qualifier {
-  background: var(--ch-green-700);
+  background: var(--ch-green-fill-700);
   color: var(--ch-ivory-100);
 }
 .ch-ev--travel {
@@ -742,7 +742,7 @@
   color: var(--ch-text-tertiary);
 }
 .ch-mo__cell.is-today .ch-mo__n {
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   color: var(--ch-text-on-accent);
 }
 .ch-mo__cell.is-sel .ch-mo__n {
@@ -774,7 +774,7 @@
   margin: 0 -3px;
   padding: 4px 7px;
   border-radius: 6px;
-  background: var(--ch-green-700);
+  background: var(--ch-green-fill-700);
   color: var(--ch-ivory-100);
   font-weight: 600;
 }
@@ -924,7 +924,7 @@
   margin-left: auto;
   padding: 3px 7px;
   border-radius: 4px;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   font: 600 10.5px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-on-accent);
@@ -1121,7 +1121,7 @@
   padding: 10px 12px;
   border: 0;
   border-radius: 12px;
-  background: var(--ch-green-700);
+  background: var(--ch-green-fill-700);
   color: var(--ch-ivory-100);
   text-align: left;
   cursor: pointer;
@@ -1410,7 +1410,7 @@
   transition: transform var(--ch-dur-base) var(--ch-ease);
 }
 .ch-switch input:checked + .ch-switch__t {
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 .ch-switch input:checked + .ch-switch__t::after {
   transform: translateX(16px);
@@ -1773,7 +1773,7 @@
     left: 0;
     width: calc((100% - 12px) / 7);
     border-radius: 10px;
-    background: var(--ch-green-600);
+    background: var(--ch-green-fill-600);
     transform: translateX(calc(var(--ch-calm-at, 0) * (100% + 2px)));
     transition: transform var(--ch-dur-base) var(--ch-ease);
     content: '';
@@ -2032,13 +2032,13 @@
   .ch-calm-now::after {
     flex: 1;
     height: 1.5px;
-    background: var(--ch-green-500);
+    background: var(--ch-green-fill-500);
     content: '';
   }
   .ch-calm-now span {
     padding: 3px 7px;
     border-radius: 6px;
-    background: var(--ch-green-600);
+    background: var(--ch-green-fill-600);
     font: 600 12px/1 var(--ch-font-sans);
     color: var(--ch-text-on-accent);
   }
@@ -2107,7 +2107,7 @@
     box-shadow: inset 0 0 0 1.5px var(--ch-green-rule);
   }
   .ch-calm-month__c.is-today b {
-    background: var(--ch-green-600);
+    background: var(--ch-green-fill-600);
     font-weight: 600;
     color: var(--ch-text-on-accent);
     box-shadow: none;
@@ -2121,7 +2121,7 @@
   }
   .ch-calm-month__c i.is-major,
   .ch-calm-month__lg i.is-major {
-    background: var(--ch-green-700);
+    background: var(--ch-green-fill-700);
   }
   .ch-calm-month__lg {
     display: flex;

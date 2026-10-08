@@ -168,7 +168,7 @@
   display: block;
   height: 100%;
   border-radius: 5px;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 .ch-hl-bars__t i.is-weak {
   background: var(--ch-chart-loss);
@@ -254,7 +254,7 @@
   background: var(--ch-chart-loss);
 }
 .ch-hl-g.is-good .ch-hl-g__lg i.is-you {
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 .ch-hl-g__lg i.is-cmp,
 .ch-hl-g__lg i.is-sec {
@@ -298,7 +298,7 @@
   background: rgb(28 25 18 / 0.12);
 }
 .ch-hl-conf__d i.is-on {
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 
 /* This week */
@@ -423,7 +423,7 @@
   background: var(--ch-champagne-300);
 }
 .ch-hl-row__d.is-ok {
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 .ch-hl-row__b {
   display: flex;

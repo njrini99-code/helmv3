@@ -409,7 +409,7 @@
   font: 600 12px/1 var(--ch-font-sans);
 }
 .ch-delta.is-good {
-  background: var(--ch-green-700);
+  background: var(--ch-green-fill-700);
   color: #f4f1e8;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
 }
@@ -1062,7 +1062,7 @@ a.ch-lg__r:focus-visible {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--ch-green-500);
+  background: var(--ch-green-fill-500);
 }
 .ch-pf-tag.is-inactive i {
   background: var(--ch-ink-400);
@@ -1173,7 +1173,7 @@ a.ch-lg__r:focus-visible {
   left: 8px;
   height: 2px;
   border-radius: 2px;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 /* Design system .fw-tab__count: a pressed-in pill, green on the selected tab. */
 .ch-tab-t__n {
@@ -1294,7 +1294,7 @@ a.ch-lg__r:focus-visible {
   display: block;
   height: 100%;
   border-radius: 3px;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 .ch-pf-goal {
   display: grid;
@@ -1314,7 +1314,7 @@ a.ch-lg__r:focus-visible {
   box-shadow: inset 0 0 0 1.5px var(--ch-border-strong);
 }
 .ch-pf-goal__c.is-done {
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   box-shadow: none;
 }
 
@@ -1605,7 +1605,7 @@ a.ch-lg__r:focus-visible {
   display: block;
   height: 100%;
   border-radius: 4px;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 .ch-cmp__r b {
   justify-self: end;
@@ -2228,7 +2228,7 @@ a.ch-lg__r:focus-visible {
     position: absolute;
     inset: 0 auto 0 0;
     border-radius: 999px;
-    background: var(--ch-green-600);
+    background: var(--ch-green-fill-600);
   }
   .ch-stm-putt__bar i.is-low {
     background: var(--ch-chart-loss);
@@ -2779,7 +2779,7 @@ a.ch-lg__r:focus-visible {
   min-width: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   color: var(--ch-text-on-accent);
   font: 600 11px/18px var(--ch-font-sans);
   text-align: center;
@@ -3237,7 +3237,7 @@ a.ch-lg__r:focus-visible {
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: 999px;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
 }
 .ch-brow__bar i.is-loss {
   background: var(--ch-chart-loss);

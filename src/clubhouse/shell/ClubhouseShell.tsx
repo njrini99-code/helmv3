@@ -9,6 +9,7 @@ import {
 import { NotificationBadgeProvider } from "@/contexts/notification-badge-context";
 import { SessionActivityProvider } from "@/components/providers/SessionActivityProvider";
 import { NativeSwipeBackBridge } from "@/components/golf/NativeSwipeBackBridge";
+import { ThemeApplier } from "@/components/golf/theme/ThemeApplier";
 import type { ChShellData } from "../data/shell";
 import { ClubhouseFrame } from "./ClubhouseFrame";
 import { OfflineSync } from "./OfflineSync";
@@ -18,7 +19,8 @@ import { ChPhoneHintProvider } from "../lib/use-phone";
  * The live Clubhouse shell: the non-UI providers pages rely on (golf user,
  * badges, session activity, and the iOS swipe-back guard that stops an edge
  * swipe while a sheet or dialog is open) around the Clubhouse frame. None of
- * Fairway's UI.
+ * Fairway's UI. ThemeApplier keeps the GolfHelm theme (light, dark or the
+ * system's) live on <html>, which the Clubhouse dark tokens key off.
  */
 export function ClubhouseShell({
   userData,
@@ -40,6 +42,7 @@ export function ClubhouseShell({
     <ChPhoneHintProvider phone={phone}>
       <SessionActivityProvider>
         <NativeSwipeBackBridge />
+        <ThemeApplier />
         <OfflineSync />
         <GolfUserProvider userData={userData}>
           <NotificationBadgeProvider>
