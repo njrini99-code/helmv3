@@ -2293,6 +2293,14 @@ systems:
       - supabase/migrations/*rescope_service_policies_to_service_role*.sql
       - supabase/migrations/*realtime_publication_add_subscribed_tables*.sql
       - supabase/migrations/*bind_definer_rpcs_to_session*.sql
+      # Plan phase 6 (2026-10-07): golf RLS helper rewrite and holes/shots policy
+      # consolidation, the anon table-grant revoke, the definer-view record, and
+      # advisor foreign-key indexes. Cross-cutting across golf and baseball.
+      - supabase/migrations/*golf_rls_helpers_sql_language*.sql
+      - supabase/migrations/*golf_holes_shots_policy_consolidation*.sql
+      - supabase/migrations/*revoke_anon_public_table_grants*.sql
+      - supabase/migrations/*document_public_profile_views_definer*.sql
+      - supabase/migrations/*add_missing_foreign_key_indexes*.sql
     criticality: high
   review_gate:
     docs: .github/branch-protection.md
