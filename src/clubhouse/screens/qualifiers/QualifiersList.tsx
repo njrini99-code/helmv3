@@ -71,7 +71,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
   return (
     <main className="ch-qf ch-qf--list" data-canopy="">
       {/* Phone (board 01): Qualifiers opens from More (D-66), so the top bar goes back there. */}
-      <PhoneTop title={data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} back={{ label: 'More', onBack: backFromMore }} />
+      <PhoneTop heading={false} title={data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} back={{ label: 'More', onBack: backFromMore }} />
       <header className="ch-qf-head" data-canopy-head="">
         <div>
           <span className="ch-qf-eyebrow ch-num">

@@ -2479,7 +2479,10 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
     const writes = fakeWrites();
     inPhone(<QualifierForm data={previewCreateForm()} writes={writes} />);
     const top = screen.getByTestId('phone-top');
-    expect(within(top).getByRole('heading', { level: 1, name: 'New qualifier' })).toBeTruthy();
+    // One h1 per screen (P009-D6): the bar names the screen as text; the page draws its own h1.
+    expect(top.textContent).toContain('New qualifier');
+    expect(within(top).queryByRole('heading')).toBeNull();
+    expect(document.querySelectorAll('h1')).toHaveLength(1);
     expect(screen.getByTestId('tabs-hidden').textContent).toBe('true');
     await user.click(within(top).getByRole('button', { name: 'Create' }));
     await expectCode('CH-09101', /Give the qualifier a name/);
@@ -2499,7 +2502,10 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
     const data = previewSelection('standings');
     inPhone(<QualifierSelection data={data} writes={selWrites()} />);
     const top = screen.getByTestId('phone-top');
-    expect(within(top).getByRole('heading', { level: 1, name: 'Selections' })).toBeTruthy();
+    // One h1 per screen (P009-D6): the bar names the screen as text; the page draws its own h1.
+    expect(top.textContent).toContain('Selections');
+    expect(within(top).queryByRole('heading')).toBeNull();
+    expect(document.querySelectorAll('h1')).toHaveLength(1);
     await user.click(within(top).getByRole('button', { name: 'Back to Qualifier' }));
     expect(router.push).toHaveBeenCalledWith(`/golf/dashboard/qualifiers/${data.id}`);
     expect(within(document.querySelector('.ch-qfs-foot') as HTMLElement).getByRole('button', { name: 'Start selecting' })).toBeTruthy();
@@ -2509,13 +2515,19 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
     const user = userEvent.setup();
     const first = inPhone(<QualifiersList data={list()} />);
     let top = screen.getByTestId('phone-top');
-    expect(within(top).getByRole('heading', { level: 1, name: 'Qualifiers' })).toBeTruthy();
+    // One h1 per screen (P009-D6): the bar names the screen as text; the page draws its own h1.
+    expect(top.textContent).toContain('Qualifiers');
+    expect(within(top).queryByRole('heading')).toBeNull();
+    expect(document.querySelectorAll('h1')).toHaveLength(1);
     await user.click(within(top).getByRole('button', { name: 'Back to More' }));
     expect(router.back.mock.calls.length + router.push.mock.calls.length).toBe(1);
     first.unmount();
     inPhone(<QualifiersList data={list('player', 'mine')} />);
     top = screen.getByTestId('phone-top');
-    expect(within(top).getByRole('heading', { level: 1, name: 'My qualifiers' })).toBeTruthy();
+    // One h1 per screen (P009-D6): the bar names the screen as text; the page draws its own h1.
+    expect(top.textContent).toContain('My qualifiers');
+    expect(within(top).queryByRole('heading')).toBeNull();
+    expect(document.querySelectorAll('h1')).toHaveLength(1);
   });
 
   it('90808 on the phone a player has no Qualifier actions, no Edit and no Manage selections, and the coach has all three', () => {

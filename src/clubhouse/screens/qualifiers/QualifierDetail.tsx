@@ -21,7 +21,8 @@ import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { formatFixed } from '../../lib/format';
 import { bubbleNote, dayLabel, endedLive, plural, positionLabel, sampleNote, shortRange, yearOf, type ChQBoard, type ChQHole, type ChQRound, type ChQRow, type ChQStatus } from './model';
-import { Pos, StateBadge, StatusPill, ToPar, ToParPlate } from './parts';
+import { Pos, qualifierPeek, StateBadge, StatusPill, ToPar, ToParPlate } from './parts';
+import { PlayerPeek } from '../../ui/PlayerPeek';
 import { useLiveStandings, type ChLiveFeed, type LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
 import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSections';
@@ -463,10 +464,20 @@ function Leaderboard({ data, status, stale, feed }: { data: ChQDetailCore; statu
                     <span role="rowheader" className="ch-qf-who">
                       <Avatar name={r.name} size={32} />
                       <span>
-                        <b>
-                          {r.name}
-                          {me && <span className="ch-qf-you">You</span>}
-                        </b>
+                        {coach ? (
+                          // P003-C1: resting on a name shows the player's card; the row still opens the scorecards.
+                          <PlayerPeek player={qualifierPeek(r, data.numRounds)}>
+                            <b>
+                              {r.name}
+                              {me && <span className="ch-qf-you">You</span>}
+                            </b>
+                          </PlayerPeek>
+                        ) : (
+                          <b>
+                            {r.name}
+                            {me && <span className="ch-qf-you">You</span>}
+                          </b>
+                        )}
                         {(r.classYear || note) && (
                           <small>
                             {r.classYear}

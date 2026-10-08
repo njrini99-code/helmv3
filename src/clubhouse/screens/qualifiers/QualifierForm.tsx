@@ -209,6 +209,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
     <main className="ch-qf ch-qf--form" data-canopy="">
       {phone && (
         <PhoneTop
+        heading={false}
           title={editing ? 'Edit qualifier' : 'New qualifier'}
           back={{ label: 'Cancel', chevron: false, onBack: cancel }}
           action={

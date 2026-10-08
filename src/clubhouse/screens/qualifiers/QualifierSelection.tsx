@@ -215,7 +215,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
 
   return (
     <main className="ch-qf ch-qfs" data-canopy="">
-      {phone && <PhoneTop title="Selections" back={{ label: 'Qualifier', onBack: back.onBack }} />}
+      {phone && <PhoneTop heading={false} title="Selections" back={{ label: 'Qualifier', onBack: back.onBack }} />}
       <div className="ch-qf-back" onClickCapture={back.onClickCapture}>
         <BackLink href={detailHref}>Qualifier</BackLink>
       </div>

@@ -18,7 +18,8 @@ import { chTrail } from '../../lib/track';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { bubbleNote, dayLabel, plural, positionLabel, sampleNote, shortRange, type ChQRound, type ChQRow, type ChQStatus } from './model';
-import { Pos, StateBadge, StatusPill, ToParPlate } from './parts';
+import { Pos, qualifierPeek, StateBadge, StatusPill, ToParPlate } from './parts';
+import { PlayerPeek } from '../../ui/PlayerPeek';
 import type { LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
 import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSections';
@@ -98,6 +99,7 @@ export function QualifierDetailPhone({
   return (
     <main className="ch-qfm" aria-label={data.name}>
       <PhoneTop
+        heading={false}
         title="Qualifier"
         back={{
           label: 'Qualifiers',
@@ -328,30 +330,35 @@ function Board({
             </>
           );
           const label = `${r.name}, ${positionLabel(r)}, ${formatToPar(r.toPar)}, ${r.played} of ${plural(data.numRounds, 'round')}`;
+          const slideRow = (
+            <ViewTransition name={`ch-rank-${r.playerId}`} update={slide ? 'ch-rank' : 'none'} enter="none" exit="none" share="none" default="none">
+              {canOpen(r) ? (
+                <button
+                  type="button"
+                  className={'ch-qfm-lb__row' + (me ? ' is-me' : '')}
+                  aria-label={`${label}. Show ${me ? 'your' : 'their'} rounds`}
+                  onClick={() => {
+                    haptic('select');
+                    chTrail('qualifiers open rounds sheet');
+                    onPeek(r.playerId);
+                  }}
+                >
+                  {body}
+                </button>
+              ) : (
+                <div className={'ch-qfm-lb__row is-static' + (me ? ' is-me' : '')} role="group" aria-label={label}>
+                  {body}
+                </div>
+              )}
+            </ViewTransition>
+          );
           return (
             <li key={r.playerId}>
               {i === b.topScore && b.topScore > 0 && <div className="ch-qf-line ch-qfm-line"><span>Top-score line · {b.topScore} qualify on score</span></div>}
               {i === b.squad && b.squad !== b.topScore && <div className="ch-qf-line ch-qf-line--muted ch-qfm-line"><span>Travel cut · top {b.squad}</span></div>}
-              <ViewTransition name={`ch-rank-${r.playerId}`} update={slide ? 'ch-rank' : 'none'} enter="none" exit="none" share="none" default="none">
-                {canOpen(r) ? (
-                  <button
-                    type="button"
-                    className={'ch-qfm-lb__row' + (me ? ' is-me' : '')}
-                    aria-label={`${label}. Show ${me ? 'your' : 'their'} rounds`}
-                    onClick={() => {
-                      haptic('select');
-                      chTrail('qualifiers open rounds sheet');
-                      onPeek(r.playerId);
-                    }}
-                  >
-                    {body}
-                  </button>
-                ) : (
-                  <div className={'ch-qfm-lb__row is-static' + (me ? ' is-me' : '')} role="group" aria-label={label}>
-                    {body}
-                  </div>
-                )}
-              </ViewTransition>
+              {/* P003-C1: a coach's hold peeks at the player; a tap still opens their rounds. Outside the transition,
+                  so the slide still names the row itself. */}
+              {coach ? <PlayerPeek player={qualifierPeek(r, data.numRounds)}>{slideRow}</PlayerPeek> : slideRow}
             </li>
           );
         })}

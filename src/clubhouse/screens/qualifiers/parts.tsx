@@ -2,7 +2,8 @@ import { CalendarDays, Flag, MapPin } from 'lucide-react';
 import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
 import { formatToPar } from '../../lib/format';
-import { endedLabel, rangeLabel, shortRange, yearOf, STATE_LABEL, STATUS_LABEL, type ChQRowState, type ChQStatus } from './model';
+import type { ChPlayerPeek } from '../../ui/PlayerPeek';
+import { endedLabel, rangeLabel, shortRange, yearOf, STATE_LABEL, STATUS_LABEL, type ChQRow, type ChQRowState, type ChQStatus } from './model';
 
 /**
  * Live, Upcoming or Completed. Live is a static dot: no pulse (D-33). A live qualifier past its last day is "Ended · n
@@ -115,4 +116,14 @@ export function Meta({
       )}
     </div>
   );
+}
+
+/** The player peek (P003-C1) from a leaderboard row: what the board already holds, no reads of its own. Coaches only. */
+export function qualifierPeek(r: ChQRow, numRounds: number): ChPlayerPeek {
+  return {
+    id: r.playerId,
+    name: r.name,
+    sub: [r.classYear, `${r.played} of ${numRounds} ${numRounds === 1 ? 'round' : 'rounds'} in`].filter(Boolean).join(' \u00b7 '),
+    avg: r.avg,
+  };
 }
