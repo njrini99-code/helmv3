@@ -21,6 +21,7 @@ import { teamSwitchFor } from './team-switch';
 import { NotRebuilt } from './NotRebuilt';
 import { ClubhouseMarker } from './context';
 import { LightProvider } from './light';
+import { DockProvider, PhoneDock } from './Dock';
 import { CrumbProvider } from './crumbs';
 import { PhoneChromeProvider, PhoneUnderlay, usePhoneChromeState } from './phone-chrome';
 import '../styles/tokens.css';
@@ -81,24 +82,29 @@ export function ClubhouseFrame({
             <FrameRoot motionOff={!showAnimations} fullScreen={fullScreen}>
               <ToastProvider scope={userData.teamId ?? ''}>
                 <CrumbProvider>
-                  {/* The first Tab on any page: jump past the navigation to the page itself (CH-1607: it slides into view). */}
-                  <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
-                    Skip to content
-                  </a>
-                  <div className="ch-app">
-                    <Sidebar userData={userData} shell={shell} pathname={pathname} teamSwitch={teamSwitch} />
-                    <div className="ch-canvas" id="ch-canvas">
-                      <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} pushed={pushed} />
-                      <OfflineBanner />
-                      {/* A new team is a new page: the route remounts, so nothing the old team's screen held (a search, an open panel, a live feed) carries over. */}
-                      <RouteFrame routeKey={`${pathname}\u0000${userData.teamId ?? ''}`}>
-                        {rebuilt ? children : <NotRebuilt label={item?.label ?? routeLabel(pathname) ?? 'This page'} />}
-                      </RouteFrame>
+                  <DockProvider>
+                    {/* The first Tab on any page: jump past the navigation to the page itself (CH-1607: it slides into view). */}
+                    <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
+                      Skip to content
+                    </a>
+                    <div className="ch-app">
+                      <Sidebar userData={userData} shell={shell} pathname={pathname} teamSwitch={teamSwitch} />
+                      <div className="ch-canvas" id="ch-canvas">
+                        <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} pushed={pushed} />
+                        <OfflineBanner />
+                        {/* A new team is a new page: the route remounts, so nothing the old team's screen held (a search, an open panel, a live feed) carries over. */}
+                        <RouteFrame routeKey={`${pathname}\u0000${userData.teamId ?? ''}`}>
+                          {rebuilt ? children : <NotRebuilt label={item?.label ?? routeLabel(pathname) ?? 'This page'} />}
+                        </RouteFrame>
+                        {/* The phone dock's height, so a page's last row clears it (P001-C1). */}
+                        <div className="ch-dock-spacer" aria-hidden="true" />
+                      </div>
                     </div>
-                  </div>
-                  <TabBar pathname={pathname} shell={shell} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null }} teamSwitch={teamSwitch} />
-                  {/* The iPhone app's pull to refresh (CH-1909); nothing in a browser. */}
-                  <PullToRefresh pathname={pathname} />
+                    <PhoneDock round={shell.roundInProgress ?? null} pathname={pathname} />
+                    <TabBar pathname={pathname} shell={shell} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null }} teamSwitch={teamSwitch} />
+                    {/* The iPhone app's pull to refresh (CH-1909); nothing in a browser. */}
+                    <PullToRefresh pathname={pathname} />
+                  </DockProvider>
                 </CrumbProvider>
               </ToastProvider>
             </FrameRoot>

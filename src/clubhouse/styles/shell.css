@@ -2488,3 +2488,106 @@ html[data-fw-theme='dark'] .ch-offline {
     background: rgb(107 187 140 / 0.12);
   }
 }
+
+/* The phone dock (shell/Dock.tsx; owner, 2026-10-08): the band just above the tab bar, in the thumb's reach. A page's
+   primary controls (ThumbDock) ride on top, and the Resume round accessory (P001-C1, CH-1821) sits on the tab bar the
+   way a UITabAccessory does. Desktop has neither: the page keeps its controls in place and the sidebar card resumes. */
+.ch-dock,
+.ch-dock-spacer {
+  display: none;
+}
+.ch-next--round .ch-next__k span:last-child {
+  color: var(--ch-green-700);
+}
+@media (max-width: 820px) {
+  .ch-dock {
+    position: fixed;
+    right: 12px;
+    bottom: calc(max(12px, calc(env(safe-area-inset-bottom) - 10px)) + var(--ch-tabbar-h) + 8px);
+    left: 12px;
+    z-index: var(--ch-z-sticky);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  body:not(.capacitor) [data-ui='clubhouse'] .ch-dock {
+    bottom: calc(var(--ch-tabbar-h) + max(6px, env(safe-area-inset-bottom)) + 8px);
+  }
+  .ch-dock[hidden],
+  .ch-dock__slot:empty {
+    display: none;
+  }
+  /* The keyboard covers the bottom of the screen: the dock steps aside while a field has focus. */
+  .ch-root:has(:is(input, textarea, select, [contenteditable='true']):focus) .ch-dock {
+    display: none;
+  }
+  .ch-dock-spacer {
+    display: block;
+    height: var(--ch-dock-h, 0px);
+  }
+  .ch-dock__page {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ch-resume {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 6px 8px 6px 6px;
+    border-radius: 24px;
+    background: var(--ch-sheet-bg);
+    color: var(--ch-text-primary);
+    text-decoration: none;
+    box-shadow: var(--ch-elevation-floating), 0 0 0 1px var(--ch-border-subtle), var(--ch-highlight);
+    transition: transform var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-resume:active {
+    transform: scale(0.98);
+  }
+  .ch-resume__ic {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--ch-feature-bg);
+    color: var(--ch-hero-mint);
+  }
+  .ch-resume__t {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .ch-resume__t b {
+    font: var(--ch-type-label-s);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-resume__m {
+    overflow: hidden;
+    font: var(--ch-type-title);
+    color: var(--ch-green-800);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ch-resume__go {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 2px;
+    min-height: 36px;
+    padding: 0 6px 0 10px;
+    color: var(--ch-green-700);
+    font: var(--ch-type-label);
+  }
+}
+:where(html[data-fw-theme='dark']) .ch-resume__m {
+  color: var(--ch-text-primary);
+}
+:where(html[data-fw-theme='dark']) .ch-resume__go {
+  color: var(--ch-hero-mint-strong);
+}

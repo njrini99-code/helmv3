@@ -1,5 +1,24 @@
 # P001 — Shell: changelog
 
+## 2026-10-08 — The phone dock and Resume round (P001-C1)
+
+Approved by the owner on 2026-10-08.
+
+- **The dock (CH-1820).** A band just above the phone tab bar, in the thumb's
+  reach. A page lowers its primary controls into it with
+  `<ThumbDock label>` (a window switch, a search); on desktop `ThumbDock`
+  renders nothing and the page keeps them in place. The dock hides with the tab
+  bar (a pushed screen, a full-page form) and while a field has focus, and the
+  canvas grows by its height (`--ch-dock-h`, `.ch-dock-spacer`).
+- **Resume round (CH-1821, CH-1822).** While the player has a round in progress
+  (touched in the last 12 hours), a parchment accessory rides on the tab bar:
+  "Round in progress, Oakmont CC · Hole 7". One tap opens the shot screen. It is
+  never shown on the round's own screens. On desktop the sidebar's card slot
+  resumes the round in place of the next event. The shell reads it with the
+  next event (`loadClubhouseShell(teamId, playerId)`, the player's own
+  `golf_rounds` row, RLS-scoped) and hides it if the read fails.
+- Preview: `&round=1` on any screen.
+
 ## 2026-10-08 — A quieter selected row (P001-A2)
 
 Approved by the owner on 2026-10-08.

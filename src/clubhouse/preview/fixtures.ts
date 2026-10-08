@@ -32,6 +32,9 @@ export const PREVIEW_SHELL: ChShellData = {
   timezone: 'America/New_York',
 };
 
+/** A round on the course (P001-C1): the preview's &round=1. */
+export const PREVIEW_ROUND_IN_PROGRESS = { id: '6f1c2a8e-4b5d-4c3e-9f7a-1b2c3d4e5f60', course: 'Oakmont CC', hole: 7 };
+
 const PARS = [4, 4, 3, 4, 4, 3, 4, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5];
 const holes = (off: number[]): ChHoleScore[] => PARS.map((par, i) => ({ n: i + 1, par, score: par + (off[i] ?? 0) }));
 const total = (h: ChHoleScore[]) => h.reduce((a, x) => a + (x.score ?? 0), 0);

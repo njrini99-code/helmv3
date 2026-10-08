@@ -75,6 +75,7 @@ import {
   PREVIEW_HOME_NOW,
   PREVIEW_PLAYER as PREVIEW_PLAYER_USER,
   PREVIEW_SHELL,
+  PREVIEW_ROUND_IN_PROGRESS,
 } from '@/clubhouse/preview/fixtures';
 import { PreviewCoachHelm } from '@/clubhouse/preview/PreviewCoachHelm';
 import { PreviewRecruiting } from '@/clubhouse/preview/PreviewRecruiting';
@@ -119,6 +120,7 @@ import { phoneHint } from '@/clubhouse/lib/phone-hint';
  * design/handoff/screenshots. 404 in production.
  *
  *   /clubhouse-preview/home   ?state=empty | noevents | failed | loading | error   (empty is the first-run page)
+ *   any screen &at=HH:MM holds the global light; &round=1 adds a round in progress (the Resume accessory)
  *   /clubhouse-preview/home-player ?state=empty | noevents | failed | loading   (Theo; empty is the first-run page)
  *   /clubhouse-preview/hub, hub-player ?state=empty | failed | failwrites, &tab=home | ann | travel | docs | tasks
  *   /clubhouse-preview/rounds ?state=idle | many | empty | noseason | failed | unfinished-failed | failwrites   (Jonah)
@@ -153,11 +155,11 @@ export default async function ClubhousePreview({
   searchParams,
 }: {
   params: Promise<{ screen: string }>;
-  searchParams: Promise<{ state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string }>;
+  searchParams: Promise<{ state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string; round?: string }>;
 }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen } = await params;
-  const { state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at } = await searchParams;
+  const { state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round } = await searchParams;
   // The header lab (/clubhouse-preview/header-lab) renders a page with one of the hero tones.
   const heroTone = heroToneFrom(tone);
   const qDetail = (role: 'coach' | 'player') => {
@@ -470,7 +472,8 @@ export default async function ClubhousePreview({
       <ChPhoneHintProvider phone={await phoneHint()}>
       <ClubhouseFrame
         userData={screen === 'coachhelm-player' || screen === 'coachhelm-views' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : user}
-        shell={PREVIEW_SHELL}
+        // &round=1: the player has a round in progress (P001-C1: the dock's Resume accessory, the sidebar's card).
+        shell={round ? { ...PREVIEW_SHELL, roundInProgress: PREVIEW_ROUND_IN_PROGRESS } : PREVIEW_SHELL}
         pathname={entry.path}
         // The preview's own query, as the live shell hands the frame the address's: `&section=` and a coach's `&player=` decide the phone bar (CH-1402).
         search={new URLSearchParams(Object.entries(await searchParams).filter((kv): kv is [string, string] => typeof kv[1] === 'string')).toString()}
