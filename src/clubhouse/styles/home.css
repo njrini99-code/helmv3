@@ -2529,7 +2529,7 @@
   .ch-hm-next {
     padding:16px;
     border-radius:12px;
-    background:#FFFEFA;
+    background:var(--ch-ivory-0);
     box-shadow:0 0 0 1px var(--ch-ledger-rule);
     color:var(--ch-ink-900);
     position:relative;
@@ -2567,7 +2567,7 @@
     border-top-color:rgb(110 98 62/.1);
   }
   .ch-hm-stack .ch-avatar {
-    box-shadow:0 0 0 2px #FFFEFA;
+    box-shadow:0 0 0 2px var(--ch-ivory-0);
   }
   .ch-hm-next__rsvp {
     color:#6E6A60;
@@ -2619,11 +2619,11 @@
   .ch-hm-need,
   .ch-hm-empty {
     border-radius:12px;
-    background:#FFFEFA;
+    background:var(--ch-ivory-0);
     box-shadow:0 0 0 1px var(--ch-ledger-rule);
   }
   .ch-hm-tl__rail i {
-    box-shadow:0 0 0 3px #FFFEFA;
+    box-shadow:0 0 0 3px var(--ch-ivory-0);
   }
   .ch-hm-tl__rail::before {
     background:rgb(110 98 62/.14);
@@ -2642,7 +2642,7 @@
   }
   .ch-hm-form {
     border-radius:12px;
-    background:#FFFEFA;
+    background:var(--ch-ivory-0);
     box-shadow:0 0 0 1px var(--ch-ledger-rule);
   }
   .ch-hm-form__figs {
@@ -2751,7 +2751,7 @@
   }
   .ch-hm-form__svg circle {
     fill:#3F7556;
-    stroke:#FFFEFA;
+    stroke:var(--ch-ivory-0);
   }
   .ch-hm-form__figs em {
     color:#8A8476;
@@ -2759,7 +2759,7 @@
   .ch-hm-week {
     padding:6px;
     gap:2px;
-    background:#FFFEFA;
+    background:var(--ch-ivory-0);
     border-radius:12px;
     box-shadow:0 0 0 1px var(--ch-ledger-rule);
   }
