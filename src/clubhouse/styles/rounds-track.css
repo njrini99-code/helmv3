@@ -1541,10 +1541,6 @@ button.ch-rt-strip__h {
   .ch-root:has(.ch-rt-q) .ch-topbar {
     display: none;
   }
-  /* The shot screen's own bar holds the home indicator's inset: no canvas space under the green. */
-  body .ch-root:has(.ch-rt-q) .ch-app .ch-canvas {
-    padding-bottom: 0;
-  }
 }
 
 /* Phone: every control's touch area reaches 44 x 44 (Apple's minimum) without changing how it is drawn. */
