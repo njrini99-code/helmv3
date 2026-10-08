@@ -26,14 +26,13 @@ function synthFlag(overrides: Partial<FlagDefinition> = {}): FlagDefinition {
  * Exercises the real generated registry rather than mocking it: this read
  * model's only job is deriving rollout status from FLAG_REGISTRY, so a test
  * against the actual seeded config/feature-flags.yml data (regenerated via
- * `npm run flags:generate`) doubles as a smoke test that the two seed
- * entries (`flight_recorder`, `coachhelm_v2_availability`) are shaped as
- * expected, without duplicating scripts/flags/__tests__/lib.test.mjs's
+ * `npm run flags:generate`) doubles as a smoke test that the seeded entries
+ * are shaped as expected, without duplicating scripts/flags/__tests__/lib.test.mjs's
  * schema coverage.
  */
 describe('fetchFeatureFlags', () => {
   // Derived from FLAG_REGISTRY rather than pinned to a literal list. The
-  // literal version read ['coachhelm_v2_availability', 'flight_recorder'] and
+  // literal version once read two flag ids and
   // went red the moment a third flag was registered — a legitimate change
   // failing a gate that was only ever asserting "nobody added a flag". The
   // contract worth holding is that fetchFeatureFlags surfaces EVERY
