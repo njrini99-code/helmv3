@@ -13,6 +13,7 @@ import { ThemeApplier } from "@/components/golf/theme/ThemeApplier";
 import type { ChShellData } from "../data/shell";
 import { ClubhouseFrame } from "./ClubhouseFrame";
 import { OfflineSync } from "./OfflineSync";
+import { DeepLinks } from "./DeepLinks";
 import { ChPhoneHintProvider } from "../lib/use-phone";
 
 /**
@@ -44,6 +45,7 @@ export function ClubhouseShell({
         <NativeSwipeBackBridge />
         <ThemeApplier />
         <OfflineSync />
+        <DeepLinks />
         <GolfUserProvider userData={userData}>
           <NotificationBadgeProvider>
             <ClubhouseFrame

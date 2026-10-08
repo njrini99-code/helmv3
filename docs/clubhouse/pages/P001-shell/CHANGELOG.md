@@ -1,5 +1,21 @@
 # P001 — Shell: changelog
 
+## 2026-10-08 — Deep links inside the app (P001-C2, shell part)
+
+Approved by the owner on 2026-10-08.
+
+- **A tapped link opens its screen in the app.** In the iPhone app, a
+  helmsportslabs.com link opened from Messages or Mail (`appUrlOpen` when
+  warm, `getLaunchUrl` once per launch when cold) becomes a client navigation
+  to its Clubhouse screen, so the app is not restarted (`shell/DeepLinks.tsx`).
+  Only the app's own hosts and internal paths get through
+  (`lib/deep-link.ts`, over `lib/utils/safe-redirect`). A link to the screen
+  already open does nothing. Nothing changes on the web.
+- **Native, still to do (wave 2).** The AASA `components` (today `/golf/*` and
+  `/baseball/*`, `public/.well-known/apple-app-site-association`) and the
+  `applinks:` entitlement need a device check on the production domain. A cold
+  open lands on the screen itself; Back follows the page's own back link.
+
 ## 2026-10-08 — The phone dock and Resume round (P001-C1)
 
 Approved by the owner on 2026-10-08.
