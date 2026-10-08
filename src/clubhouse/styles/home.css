@@ -2545,7 +2545,7 @@
   .ch-hm-hero__date {
     padding-top:14px;
     border-top:3px double rgb(110 98 62/.2);
-    font:500 11px/1 var(--font-sans);
+    font:500 11px/1 var(--ch-font-sans);
     letter-spacing:.14em;
     color:#7A6B3F;
   }
@@ -2780,7 +2780,7 @@
     border-bottom:1px solid rgb(110 98 62/.16);
   }
   .ch-hm-sec__h h3 {
-    font:600 15.5px/1 var(--font-sans);
+    font:600 15.5px/1 var(--ch-font-sans);
     letter-spacing:-.012em;
   }
   .ch-hm-link {
@@ -2968,7 +2968,7 @@
     border-top:3px double rgb(110 98 62/.22);
   }
   .ch-hm-sec__h h3 {
-    font:600 19px/1.1 var(--font-display);
+    font:600 19px/1.1 var(--ch-font-sans);
     letter-spacing:-.025em;
     font-variation-settings:"wdth" 88;
     color:#123B29;
@@ -3031,7 +3031,7 @@
   }
   .ch-hm-form__top>span:first-child::after {
     content:"Team scoring average · last 10 rounds";
-    font:400 12.5px/1.3 var(--font-sans);
+    font:400 12.5px/1.3 var(--ch-font-sans);
     color:#6E6A60;
     margin-top:4px;
   }
