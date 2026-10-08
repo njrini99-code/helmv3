@@ -1,5 +1,12 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-08 — States: first run stands alone
+
+From the states audit (2026-10-08, finding c2): with no prospects yet, the
+desktop page no longer draws the pipeline's four empty stages above the page
+empty. "Your prospect list starts here" stands alone under the head, so Add
+your first prospect sits well above the fold, as on the phone (CH-14301).
+
 ## 2026-10-08 — Phone: the Mobile clubhouse pass
 
 The phone Recruiting follows the Coach Home board (round 3, "fewer containers,

@@ -966,10 +966,6 @@
   color: var(--ch-text-tertiary);
 }
 .ch-qf-readout {
-  /* The segments don't break inside; the line breaks between them. */
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
   padding: 12px 14px;
   font: 400 13.5px/1.5 var(--ch-font-sans);
   color: var(--ch-text-secondary);
@@ -979,12 +975,25 @@
   color: var(--ch-text-primary);
   font-variant-numeric: tabular-nums;
 }
-.ch-qf-readout > span:not(.ch-qf-seg) {
-  margin: 0 6px;
-  color: var(--ch-text-tertiary);
+/* The segments don't break inside; the line breaks between them. Each segment leads with its dot, and the row sits one
+   dot's width to the left of the well's text with that strip clipped, so a segment that starts a line drops its dot:
+   no line ends or starts on one in a narrow column (states audit c14). */
+.ch-qf-readout__in {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  margin-left: -18px;
+  clip-path: inset(0 0 0 18px);
 }
 .ch-qf-seg {
   white-space: nowrap;
+}
+.ch-qf-readout__in > .ch-qf-seg::before {
+  display: inline-block;
+  width: 18px;
+  color: var(--ch-text-tertiary);
+  text-align: center;
+  content: '·';
 }
 .ch-qf-rcs {
   display: flex;
@@ -1341,8 +1350,9 @@
   .ch-qf--list .ch-qf-head > div:first-child {
     gap: 12px;
   }
+  /* 12px, the phone text floor (F09), as the kit's PageIntro eyebrow. */
   .ch-qf--list .ch-qf-eyebrow {
-    font: 500 11px/1.2 var(--ch-font-sans);
+    font: 500 12px/1.2 var(--ch-font-sans);
     letter-spacing: 0.14em;
     color: var(--ch-ledger-eyebrow);
   }
@@ -1635,7 +1645,7 @@
     gap: 10px;
   }
   .ch-qfm-head__k > .ch-num {
-    font: 500 11px/1.2 var(--ch-font-sans);
+    font: 500 12px/1.2 var(--ch-font-sans);
     letter-spacing: 0.14em;
     color: var(--ch-ledger-eyebrow);
   }
@@ -1987,7 +1997,7 @@
   }
   .ch-qf--form .ch-qf-eyebrow,
   .ch-qfs .ch-qf-eyebrow {
-    font: 500 11px/1.2 var(--ch-font-sans);
+    font: 500 12px/1.2 var(--ch-font-sans);
     letter-spacing: 0.14em;
     color: var(--ch-ledger-eyebrow);
   }
@@ -2106,7 +2116,7 @@
   }
   .ch-qf--list[aria-busy='true'] .ch-qf-head > div > .ch-skel:nth-child(1) {
     width: 150px !important;
-    height: 13.2px !important;
+    height: 14.4px !important;
   }
   .ch-qf--list[aria-busy='true'] .ch-qf-head > div > .ch-skel:nth-child(2) {
     width: 230px !important;
@@ -2188,7 +2198,7 @@
     display: none;
   }
   .ch-qf[aria-busy='true'] .ch-qf-held--eyebrow {
-    height: 13.2px;
+    height: 14.4px;
   }
   .ch-qf[aria-busy='true'] .ch-qf-held--title {
     height: 33.48px;

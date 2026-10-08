@@ -873,8 +873,9 @@
     padding-top: 14px;
     border-top: var(--ch-ledger-rule-double);
   }
+  /* 12px, the phone text floor (F09), as the kit's PageIntro eyebrow. */
   .ch-rsm-kicker {
-    font: 500 11px/1.2 var(--ch-font-sans);
+    font: 500 12px/1.2 var(--ch-font-sans);
     letter-spacing: 0.14em;
     color: var(--ch-ledger-eyebrow);
   }

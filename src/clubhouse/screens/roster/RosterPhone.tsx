@@ -12,6 +12,7 @@ import { EmptyState } from '../../ui/States';
 import { FormLine } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
+import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { Modal } from '../../ui/Modal';
 import { PhoneBar, PhoneIconAction } from '../../ui/PhoneBar';
 import { Segmented } from '../../ui/Segmented';
@@ -23,7 +24,7 @@ import { PhoneScreen } from '../../shell/PhoneScreen';
 import { PhoneTop, useBackFromMore, usePhoneStackHistory } from '../../shell/phone-chrome';
 import type { NoteSaved } from './RosterPeek';
 import { RosterProfile } from './RosterProfile';
-import { formatHcp, rowNote } from './format';
+import { formatHcp, rosterFailedParts, rowNote } from './format';
 import { nameList, type ChJoinRequestsState } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
 
@@ -90,6 +91,9 @@ export function RosterPhone({
   const popTo = useCallback((level: number) => level < 1 && onClose(), [onClose]);
   usePhoneStackHistory(open ? 1 : 0, popTo);
   useEffect(() => setActing(false), [openId]);
+  // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
+  const failed = rosterFailedParts(data);
+  const covered = failed.length > 1;
 
   return (
     <main className="ch-rsm" aria-label="Roster">
@@ -119,10 +123,13 @@ export function RosterPhone({
           </p>
         </header>
 
+        <PageRefreshNotice parts={failed} />
+
         <SectionBoundary surface="roster.requests" label="Join requests" code="CH-3204">
           <RequestsBanner
             jr={jr}
             error={data.requestsError}
+            covered={covered}
             onRetry={onRetry}
             onOpen={() => {
               setRequestsOpen(true);
@@ -133,18 +140,20 @@ export function RosterPhone({
         {data.statsError && (
           <InlineNotice
             code="CH-3202"
-            title="Season stats didn't load."
+            title="Season stats didn't load"
             body="The roster is complete, but averages, form and strokes gained are missing until the rounds load. The error has been reported."
             onRetry={onRetry}
+            covered={covered}
           />
         )}
 
         {data.playersError ? (
           <InlineNotice
             code="CH-3201"
-            title="The roster didn't load."
+            title="The roster didn't load"
             body="Your players are safe. Try again, and if it keeps happening the error has already been reported."
             onRetry={onRetry}
+            covered={covered}
           />
         ) : players.length === 0 ? (
           <EmptyState
@@ -303,15 +312,19 @@ export function RosterPhoneRow({ p, statsError, onOpen }: { p: ChRosterPlayer; s
   );
 }
 
-/** "2 join requests · Grace Liu, Owen Park": opens the requests sheet. A failed read says so in the same slot (CH-3203). */
-function RequestsBanner({ jr, error, onRetry, onOpen }: { jr: ChJoinRequestsState; error: boolean; onRetry: () => void; onOpen: () => void }) {
+/**
+ * "2 join requests · Grace Liu, Owen Park": opens the requests sheet. A failed read says so in the same slot (CH-3203),
+ * as its title alone while the page's one notice covers it (CH-1209).
+ */
+function RequestsBanner({ jr, error, covered, onRetry, onOpen }: { jr: ChJoinRequestsState; error: boolean; covered: boolean; onRetry: () => void; onOpen: () => void }) {
   if (error) {
     return (
       <InlineNotice
         code="CH-3203"
-        title="Join requests didn't load."
+        title="Join requests didn't load"
         body="Pending requests are safe. Try again, and if it keeps happening the error has already been reported."
         onRetry={onRetry}
+        covered={covered}
       />
     );
   }

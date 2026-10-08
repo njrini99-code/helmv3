@@ -251,9 +251,9 @@ function Board({ data, status, stale, onPeek }: { data: ChQDetailCore; status: C
       <section className="ch-qf-panel" aria-labelledby="ch-qfm-lb">
         {head}
         {data.entriesError ? (
-          <InlineNotice code="CH-09203" title="The field didn’t load." body="Standings wait until the entrants load, so nobody reads a wrong order." onRetry={refresh} retrying={refreshing} />
+          <InlineNotice code="CH-09203" title="The field didn’t load" body="Standings wait until the entrants load, so nobody reads a wrong order." onRetry={refresh} retrying={refreshing} />
         ) : (
-          <InlineNotice code="CH-09204" title="Scores didn’t load." body="The field isn’t shown without its scores, so nobody reads a wrong order. The error has been reported." onRetry={refresh} retrying={refreshing} />
+          <InlineNotice code="CH-09204" title="Scores didn’t load" body="The field isn’t shown without its scores, so nobody reads a wrong order. The error has been reported." onRetry={refresh} retrying={refreshing} />
         )}
       </section>
     );
@@ -263,7 +263,7 @@ function Board({ data, status, stale, onPeek }: { data: ChQDetailCore; status: C
       <section className="ch-qf-panel" aria-labelledby="ch-qfm-lb">
         {head}
         {stale && <StaleStandings />}
-        <EmptyState code="CH-09304" icon={Flag} title="Awaiting first round." body={`${plural(data.entrants, 'player')} entered. Standings appear once a player submits a round.`} />
+        <EmptyState code="CH-09304" icon={Flag} title="Awaiting first round" body={`${plural(data.entrants, 'player')} entered. Standings appear once a player submits a round.`} />
       </section>
     );
   }
@@ -461,7 +461,7 @@ function PlayerRoundCard({ round, n, s }: { round: ChQRound; n: number; s: ChQDe
   return (
     <PlayerRoundHead round={round} course={course}>
       {s.holesError ? (
-        <InlineNotice code="CH-09205" title="Scorecards didn’t load." body="The totals are right; the hole-by-hole card is missing until it loads." onRetry={refresh} retrying={refreshing} />
+        <InlineNotice code="CH-09205" title="Scorecards didn’t load" body="The totals are right; the hole-by-hole card is missing until it loads." onRetry={refresh} retrying={refreshing} />
       ) : holes && holes.length ? (
         <>
           <Nine holes={holes.filter((h) => h.n <= 9)} label="Out" caption={`Round ${n}, front nine`} />

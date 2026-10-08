@@ -14,7 +14,7 @@ import { haptic } from '../../lib/haptics';
 import { useChSessionState } from '../../lib/session-state';
 import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
-import { formatToPar } from '../../lib/format';
+import { formatToPar, NO_DATA } from '../../lib/format';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
 import { ctaLabel, listLede } from './model';
 import { Meta, StatusPill, ToPar } from './parts';
@@ -75,12 +75,10 @@ export function QualifiersList({ data }: { data: ChQList }) {
       <header className="ch-qf-head" data-canopy-head="">
         <div>
           <span className="ch-qf-eyebrow ch-num">
-            {/* The phone's top bar already names the page, so the eyebrow there is the counts alone (board 01). */}
-            <span className="ch-qf-eyebrow__k">
-              {data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'}
-              {!unread && ' · '}
-            </span>
-            {!unread && `${act.length} active · ${con.length} concluded`}
+            {/* The phone's top bar already names the page, so the eyebrow there is the counts alone (board 01). Counts that
+                didn't load are a dash, never 0 and never a blank line (states audit c14). */}
+            <span className="ch-qf-eyebrow__k">{data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} · </span>
+            {unread ? `${NO_DATA} active · ${NO_DATA} concluded` : `${act.length} active · ${con.length} concluded`}
           </span>
           <h1>{title}</h1>
           <p>{lede}</p>
@@ -98,7 +96,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
       {data.listError ? (
         <InlineNotice
           code="CH-09201"
-          title="The qualifiers didn’t load."
+          title="The qualifiers didn’t load"
           body="Nothing has changed. Try again, and if it keeps happening the error has already been reported."
           onRetry={refresh}
           retrying={refreshing}
@@ -106,7 +104,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
       ) : mineUnknown ? (
         <InlineNotice
           code="CH-09222"
-          title="Your qualifiers didn’t load."
+          title="Your qualifiers didn’t load"
           body="Which qualifiers you’re entered in didn’t load, so none are shown rather than a wrong list. Nothing has changed. Try again."
           onRetry={refresh}
           retrying={refreshing}
@@ -163,7 +161,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
           {data.standingsError && (
             <InlineNotice
               code="CH-09202"
-              title="Standings didn’t load."
+              title="Standings didn’t load"
               body="The qualifiers are listed, but entrants, rounds in and leaders are missing until they load."
               onRetry={refresh}
               retrying={refreshing}
@@ -177,7 +175,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
                   compact
                   code="CH-09302"
                   icon={Search}
-                  title="No qualifiers match your filters."
+                  title="No qualifiers match your filters"
                   body="Try a different search, or clear the status filter."
                   action={
                     <Button
@@ -216,7 +214,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
                       </div>
                     ) : (
                       <div className="ch-qf-empty ch-sheet">
-                        <EmptyState compact code="CH-09303" icon={Flag} title="No concluded qualifiers yet." body="Qualifiers move here once they’re completed." />
+                        <EmptyState compact code="CH-09303" icon={Flag} title="No concluded qualifiers yet" body="Qualifiers move here once they’re completed." />
                       </div>
                     )}
                   </section>

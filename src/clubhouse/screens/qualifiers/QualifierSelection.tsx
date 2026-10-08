@@ -264,7 +264,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
                   compact
                   code="CH-09316"
                   icon={Flag}
-                  title={topN ? 'Nobody has a score in yet.' : 'Every place is a coach’s pick.'}
+                  title={topN ? 'Nobody has a score in yet' : 'Every place is a coach’s pick'}
                   body={topN ? 'Places on score fill from the standings as rounds are signed.' : 'This squad has no places decided on score.'}
                 />
               )}
@@ -650,7 +650,7 @@ function PickDialog({
             compact
             code="CH-09315"
             icon={Users}
-            title="Nobody else can be picked yet."
+            title="Nobody else can be picked yet"
             body="A player needs a round in, outside the places on score, to be a coach’s pick."
           />
         ))}

@@ -513,16 +513,17 @@ describe('Recruiting · desktop', () => {
     expect(rowNames()).toHaveLength(7);
   });
 
-  it('CH-14301 first run is its own page: four zeros with their buttons off, no header Add, and Add your first prospect, which opens the dialog', async () => {
+  it('CH-14301 first run is its own page: the page empty alone under the head (no four-zero pipeline), no header Add, and Add your first prospect, which opens the dialog', async () => {
     const user = userEvent.setup();
     wrap(PREVIEW_RECRUITING_EMPTY);
     expect(code('CH-14301')?.textContent).toContain('Your prospect list starts here');
     expect(code('CH-14301')?.textContent).toContain('move them through Watched, Recruiting, Offered and Committed.');
-    expect(screen.getByText('Nobody yet. Stages fill as you add prospects.')).toBeTruthy();
+    // States audit c2: four empty stages said nothing the page empty doesn't, and pushed its Add below the fold.
+    expect(screen.queryByText('Nobody yet. Stages fill as you add prospects.')).toBeNull();
     for (const name of ['Watched, 0 prospects', 'Recruiting, 0 prospects', 'Offered, 0 prospects', 'Committed, 0 prospects']) {
-      expect((screen.getByRole('button', { name }) as HTMLButtonElement).disabled).toBe(true);
+      expect(screen.queryByRole('button', { name })).toBeNull();
     }
-    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(4);
+    expect(document.querySelector('.ch-rec-pipe')).toBeNull();
     expect(screen.queryByRole('searchbox')).toBeNull();
     expect(screen.getAllByRole('button', { name: /^Add/ })).toHaveLength(1);
     await user.click(screen.getByRole('button', { name: 'Add your first prospect' }));

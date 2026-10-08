@@ -5,10 +5,10 @@ import { SkeletonLede, SkeletonListAction, SkeletonMine } from './SkeletonListPa
 import '../../styles/qualifiers.css';
 
 /**
- * Route loading for the Qualifiers list: head, tools, the hero and a row of cards in their final slots; on a phone, the
- * list's own shape (below). `mode`: a player's own entries (/my-qualifiers), whose lede is another sentence.
+ * Route loading for the Qualifiers list (and a player's /my-qualifiers): head, tools, the hero and a row of cards in their
+ * final slots; on a phone, the list's own shape (below).
  */
-export function QualifiersSkeleton({ mode = 'all' }: { mode?: 'all' | 'mine' }) {
+export function QualifiersSkeleton() {
   return (
     <main className="ch-qf ch-qf--list" aria-busy="true" aria-label="Loading qualifiers" data-ch-code="CH-09401" data-canopy="">
       <header className="ch-qf-head" data-canopy-head="">
@@ -17,7 +17,7 @@ export function QualifiersSkeleton({ mode = 'all' }: { mode?: 'all' | 'mine' }) 
           <Skeleton width={300} height={38} radius={10} />
           <Skeleton width={380} height={16} />
           {/* The phone draws the lede as the reader's own sentence instead of the bar above (qualifiers.css). */}
-          <SkeletonLede mode={mode} />
+          <SkeletonLede />
         </div>
         <SkeletonListAction />
       </header>

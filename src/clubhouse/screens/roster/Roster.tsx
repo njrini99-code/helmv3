@@ -10,6 +10,7 @@ import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { InlineNotice } from '../../ui/Notices';
+import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { FormLine } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { Menu, type MenuItem } from '../../ui/Menu';
@@ -30,7 +31,7 @@ import { useJoinRequests } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
 import { RosterPeek } from './RosterPeek';
 import { RosterPhone } from './RosterPhone';
-import { formatHcp } from './format';
+import { formatHcp, rosterFailedParts } from './format';
 import '../../styles/roster.css';
 
 type Sort = 'avg' | 'hcp' | 'rounds' | 'name';
@@ -260,6 +261,9 @@ export function Roster({ data }: { data: ChRoster }) {
     );
   }
 
+  // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
+  const failed = rosterFailedParts(data);
+  const covered = failed.length > 1;
   return (
     <main className="ch-rs" data-canopy="">
       <header className="ch-rs-head" data-canopy-head="">
@@ -272,7 +276,7 @@ export function Roster({ data }: { data: ChRoster }) {
             </span>
             <span className="ch-rs-team__name">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
           </span>
-          <h1 className="ch-display">Your players.</h1>
+          <h1 className="ch-display">Your players</h1>
           {!data.playersError && (
             <p>
               <span className="ch-num">{players.length}</span> {players.length === 1 ? 'player' : 'players'} &middot;{' '}
@@ -301,16 +305,19 @@ export function Roster({ data }: { data: ChRoster }) {
         </div>
       </header>
 
+      <PageRefreshNotice parts={failed} />
+
       <SectionBoundary surface="roster.requests" label="Join requests" code="CH-3204">
-        <RosterRequests teamName={data.teamName} jr={jr} error={data.requestsError} onRetry={() => router.refresh()} />
+        <RosterRequests teamName={data.teamName} jr={jr} error={data.requestsError} covered={covered} onRetry={() => router.refresh()} />
       </SectionBoundary>
 
       {data.statsError && (
         <InlineNotice
           code="CH-3202"
-          title="Season stats didn't load."
+          title="Season stats didn't load"
           body="The roster is complete, but averages, form and strokes gained are missing until the rounds load. The error has been reported."
           onRetry={() => router.refresh()}
+          covered={covered}
         />
       )}
 
@@ -330,9 +337,10 @@ export function Roster({ data }: { data: ChRoster }) {
       {data.playersError ? (
         <InlineNotice
           code="CH-3201"
-          title="The roster didn't load."
+          title="The roster didn't load"
           body="Your players are safe. Try again, and if it keeps happening the error has already been reported."
           onRetry={() => router.refresh()}
+          covered={covered}
         />
       ) : players.length === 0 ? (
         <EmptyState
@@ -641,7 +649,7 @@ function InviteModal({
       ) : codeFailed ? (
         <InlineNotice
           code="CH-3207"
-          title="The join code didn't load."
+          title="The join code didn't load"
           body="Your code still works for players who have it. Try again to show it here."
           onRetry={onRetry}
         />
@@ -649,7 +657,7 @@ function InviteModal({
         <EmptyState
           code="CH-3304"
           compact
-          title="Your team has no join code yet."
+          title="Your team has no join code yet"
           body="Make one in Settings, then invite players here."
           action={
             <Button size="sm" href="/golf/dashboard/settings?section=team">

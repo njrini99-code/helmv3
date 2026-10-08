@@ -1,5 +1,22 @@
 # P003 — Roster: changelog
 
+## 2026-10-08 — States: one notice when two reads fail; titles without a full stop
+
+From the states audit (2026-10-08, findings c15 and b8), desktop and phone:
+
+- **Two failed reads, one notice (CH-1209):** when the roster and join
+  requests (or the season stats) both fail, the page says so once under its
+  head, "Some of this page didn't load", with one Try again that asks the
+  server again (`PageRefreshNotice`). Each failed part keeps its title alone
+  in its place, marking the gap, with no second alert or button. One failed
+  read keeps its own notice, as before.
+- **Titles:** the desktop head reads "Your players", and the state titles
+  ("The roster didn't load", "Join requests didn't load", "Season stats didn't
+  load", the join code's) have no trailing full stop in the source either.
+- **Phone eyebrow:** the team and count are 12px, the phone text floor (F09)
+  and the kit's PageIntro eyebrow; the skeleton holds the new line (WebKit 390
+  and 430: no movement). The title was already the 600 sans at 31px.
+
 ## 2026-10-08 — Phone: the Mobile clubhouse pass
 
 The phone Roster follows the Coach Home board (round 3, "fewer containers, one

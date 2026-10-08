@@ -45,9 +45,13 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
         />
       ) : (
         <>
-          <SectionBoundary surface="recruiting.pipeline" label="The pipeline" code="CH-14203">
-            <Pipeline counts={c.counts} shares={c.shares} total={c.total} stage={c.stage} onPick={c.setStage} onShowAll={() => c.setStage(null)} />
-          </SectionBoundary>
+          {/* With nobody yet, four empty stages say nothing the page empty doesn't: it stands alone under the head, with
+              its Add first, as on the phone (states audit c2). */}
+          {!nothing && (
+            <SectionBoundary surface="recruiting.pipeline" label="The pipeline" code="CH-14203">
+              <Pipeline counts={c.counts} shares={c.shares} total={c.total} stage={c.stage} onPick={c.setStage} onShowAll={() => c.setStage(null)} />
+            </SectionBoundary>
+          )}
           {nothing ? (
             <EmptyState
               size="page"

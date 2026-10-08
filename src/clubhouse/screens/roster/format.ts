@@ -1,4 +1,4 @@
-import type { ChRosterPlayer } from '../../data/roster';
+import type { ChRoster, ChRosterPlayer } from '../../data/roster';
 import { MINUS, NO_DATA } from '../../lib/format';
 
 /** Handicap index: a plus handicap (better than scratch) is written +0.8. */
@@ -9,6 +9,18 @@ export function formatHcp(v: number | null): string {
 }
 
 export { MINUS };
+
+/**
+ * The parts of a coach's Roster that failed, as phrases inside a sentence, for the page's one notice (CH-1209). Season
+ * stats count only with the roster in: without the players there are no averages to miss.
+ */
+export function rosterFailedParts(data: Pick<ChRoster, 'playersError' | 'requestsError' | 'statsError'>): string[] {
+  const parts: string[] = [];
+  if (data.playersError) parts.push('the roster');
+  if (data.requestsError) parts.push('join requests');
+  if (!data.playersError && data.statsError) parts.push('season stats');
+  return parts;
+}
 
 const FORM_WORD: Record<ChRosterPlayer['form'], string> = {
   improving: 'Improving',

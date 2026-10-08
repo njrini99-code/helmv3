@@ -19,6 +19,7 @@ vi.mock('@/hooks/golf/use-appearance-preferences', () => ({ useAppearancePrefere
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn(), back: vi.fn() }));
 vi.mock('next/navigation', () => ({
   useRouter: () => router,
+  usePathname: () => '/golf/dashboard/qualifiers',
   redirect: (to: string) => {
     throw new Error(`redirect:${to}`);
   },
@@ -469,7 +470,7 @@ describe('Qualifiers · a failed read is never an empty (owner rule 1, 2026-10-0
     wrap(<QualifiersList data={data} />);
     await expectCode('CH-09222', /Your qualifiers didn’t load/);
     expect(code('CH-09306')).toBeNull();
-    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('My qualifiers');
+    expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('My qualifiers · — active · — concluded');
     router.refresh.mockClear();
     await user.click(within(code('CH-09222') as HTMLElement).getByRole('button', { name: /Try again/ }));
     expect(router.refresh).toHaveBeenCalledTimes(1);
@@ -1634,7 +1635,7 @@ describe('Qualifiers · create and edit', () => {
     expect(writes.create).toHaveBeenCalledTimes(1);
   });
 
-  it('CH-09002 CH-09902 91202 a partial edit save: the toast says it failed, the form keeps what saved and what to do', async () => {
+  it('CH-09902 91202 a partial edit save: the form’s notice says it failed, what saved and what to do, and no toast says it again', async () => {
     const api = {
       details: vi.fn(async () => ({ success: true as const, data: undefined })),
       rounds: vi.fn(async () => ({ success: true as const, data: undefined })),
@@ -1647,12 +1648,31 @@ describe('Qualifiers · create and edit', () => {
     const user = userEvent.setup();
     const writes = fakeWrites({ saveEdit: vi.fn(async () => res) });
     wrap(<QualifierForm data={previewEditForm()} writes={writes} />);
+    hapticSpy.mockClear();
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
-    await expectCode('CH-09002', /Couldn’t save the qualifier.*Check the form and save again/);
-    await expectCode('CH-09902', /Saved the details .* but not the players\. One player has a round.* Save again to finish\./);
+    await expectCode('CH-09902', /^Couldn’t save the qualifierSaved the details .* but not the players\. One player has a round.* Save again to finish\.$/);
+    // Told once: the notice over the form (lead, 2026-10-08), with the error haptic, and no toast saying the same words.
+    expect(code('CH-09002')).toBeNull();
+    expect(document.querySelector('.ch-toast')).toBeNull();
+    expect(screen.getAllByText('Couldn’t save the qualifier')).toHaveLength(1);
+    expect(hapticSpy).toHaveBeenCalledWith('error');
     writes.saveEdit.mockImplementation(async () => ({ success: true }));
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     await waitFor(() => expect(code('CH-09902')).toBeNull());
+  });
+
+  it('CH-09002 a save whose request fails with no reason is told by its toast, with Retry: there is no notice to tell it', async () => {
+    const user = userEvent.setup();
+    const writes = fakeWrites({
+      saveEdit: vi.fn(async () => {
+        throw new Error('network');
+      }),
+    });
+    wrap(<QualifierForm data={previewEditForm()} writes={writes} />);
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    await expectCode('CH-09002', /Couldn’t save the qualifier.*Check the form and save again/);
+    expect(code('CH-09902')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
   });
 
   it('90513 editing: a player with a round stays entered; a changed squad and entrants are sent, an unchanged one is not', async () => {
@@ -1675,12 +1695,32 @@ describe('Qualifiers · create and edit', () => {
     const { unmount } = wrap(<QualifierForm data={form({ playersError: true })} writes={fakeWrites()} />);
     expect(code('CH-09208')!.textContent).toMatch(/The roster didn’t load/);
     expect((screen.getByRole('button', { name: 'Create qualifier' }) as HTMLButtonElement).disabled).toBe(true);
+    // Said over the form, where the Create that is off is explained, with Try again; the Players section keeps the title
+    // alone, marking the gap, with no second alert or button (states audit c14).
+    const top = code('CH-09208') as HTMLElement;
+    expect(top.compareDocumentPosition(document.querySelector('.ch-qf-form')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(top).getByRole('button', { name: 'Try again' })).toBeTruthy();
+    const players = screen.getByRole('group', { name: 'Players' });
+    expect(players.querySelector('.ch-notice--covered')!.textContent).toBe('The roster didn’t load');
+    expect(within(players).queryByRole('button', { name: 'Try again' })).toBeNull();
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
     unmount();
     const u2 = wrap(<QualifierForm data={form({ players: [], initial: { ...form().initial, playerIds: [] } })} writes={fakeWrites()} />);
     expect(code('CH-09305')!.textContent).toMatch(/No active players on the roster/);
     u2.unmount();
     wrap(<QualifierForm data={{ ...previewEditForm(), coursesError: true, roundCourses: [] }} writes={fakeWrites()} />);
     expect(code('CH-09217')!.textContent).toMatch(/Saving keeps the courses already set/);
+  });
+
+  it('the squad readout wraps whole segments with its dots drawn between them, so no line ends on a dot (states audit c14)', () => {
+    wrap(<QualifierForm data={form()} writes={fakeWrites()} />);
+    const row = document.querySelector('.ch-qf-readout__in')!;
+    expect([...row.children].map((seg) => [seg.className, seg.textContent])).toEqual([
+      ['ch-qf-seg', '4 qualify on score'],
+      ['ch-qf-seg', '1 coach pick'],
+      ['ch-qf-seg', '5-player squad'],
+    ]);
+    expect(document.querySelector('.ch-qf-readout')!.textContent).not.toContain('·');
   });
 
   it('CH-09502 leaving with unsaved changes asks first', async () => {
@@ -2752,9 +2792,11 @@ describe('Qualifiers · every write', () => {
     write: (c: Ctx) => Mock;
     render: (c: Ctx) => ReactNode;
     act: (user: User) => Promise<void>;
-    /** The toast that names what landed, and the toast that names what failed. */
+    /** The toast that names what landed, and the words that name what failed. */
     done: string;
     failed: string;
+    /** A refusal the server explains is told by this notice over the form, not by a toast (a save, CH-09902). */
+    notice?: string;
     /** Where the page goes once it lands, or null when it stays put. */
     goes: string | null;
     /** How it gets there: a form that has done its job is replaced (Back does not return to it), a step on is pushed. */
@@ -2796,6 +2838,7 @@ describe('Qualifiers · every write', () => {
       act: (user) => press(user, 'Save changes'),
       done: 'Qualifier saved',
       failed: 'Couldn’t save the qualifier',
+      notice: 'CH-09902',
       goes: `/golf/dashboard/qualifiers/${previewEditForm().id}`,
       via: 'replace',
       reads: true,
@@ -2906,6 +2949,12 @@ describe('Qualifiers · every write', () => {
     return { c, view };
   }
   const refuse = (write: Mock) => write.mockImplementation(async () => ({ success: false, error: 'nope' }));
+  /** A refused write is told once: by its failure toast, or by the form's notice with no toast saying it again. */
+  const toldOnce = async (sc: Scenario) => {
+    if (!sc.notice) return void (await screen.findByText(sc.failed, { selector: '.ch-toast *' }));
+    await screen.findByText(sc.failed, { selector: `[data-ch-code="${sc.notice}"] *` });
+    expect([sc.name, screen.getAllByText(sc.failed).length, document.querySelectorAll('.ch-toast').length]).toEqual([sc.name, 1, 0]);
+  };
 
   it('CH-09009 a squad confirmed while telling the players failed says so (Q-116)', async () => {
     const sc = scenarios.find((x) => x.name === 'confirm the squad')!;
@@ -2946,17 +2995,19 @@ describe('Qualifiers · every write', () => {
     landed.view.unmount();
     clearNav();
     const refused = await drive(sc, refuse);
-    await screen.findByText(sc.failed, { selector: '.ch-toast *' });
+    await toldOnce(sc);
     expect([sc.name, router.refresh.mock.calls.length, router.push.mock.calls.length, router.replace.mock.calls.length]).toEqual([sc.name, 0, 0, 0]);
     refused.view.unmount();
   });
 
-  it('91401 Retry in a failure toast runs the same write again with the same arguments, and everything a landed write does follows this time too', async () => {
+  it('91401 Retry in a failure toast (for a save, saving again under the form’s notice) runs the same write again with the same arguments, and everything a landed write does follows this time too', async () => {
     for (const sc of scenarios) {
       clearNav();
       const { c, view } = await drive(sc, (write) => write.mockResolvedValueOnce({ success: false, error: 'nope' }));
-      await screen.findByText(sc.failed, { selector: '.ch-toast *' });
-      await userEvent.setup().click(screen.getByRole('button', { name: 'Retry' }));
+      await toldOnce(sc);
+      // The notice has no Retry of its own: the coach saves again, which is the same write.
+      if (sc.notice) await sc.act(userEvent.setup());
+      else await userEvent.setup().click(screen.getByRole('button', { name: 'Retry' }));
       await waitFor(() => expect(sc.write(c)).toHaveBeenCalledTimes(2));
       expect([sc.name, sc.write(c).mock.calls[1]]).toEqual([sc.name, sc.write(c).mock.calls[0]]);
       await screen.findByText(sc.done);

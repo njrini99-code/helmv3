@@ -1,5 +1,28 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-08 — States: a failed read keeps the head; one save failure, said once
+
+From the states audit (2026-10-08, findings c14 and b8) and the lead's
+decision on the save failure, desktop and phone:
+
+- **The list didn't load (CH-09201, CH-09222):** the head stays, Create
+  qualifier with it, and its counts read "— active · — concluded": never a
+  zero, and on the phone never a blank eyebrow line.
+- **A new or edited qualifier whose roster didn't load (CH-09208):** the
+  notice, with Try again, now sits over the form under its head, where it
+  explains why Create is off, instead of far down in Players. Players keeps
+  the title alone, marking the gap.
+- **A save the server refused (CH-09902, CH-09002):** told once, by the notice
+  over the form, with the error haptic; it comes into view if Save was pressed
+  further down. The toast that said the same words at the same moment is gone.
+  A save whose request itself failed has no notice to tell it, so its toast and
+  Retry stay.
+- **The squad readout** wraps whole segments with a dot only between two on
+  one line, so a narrow column never ends a line on "·".
+- **Titles:** state titles have no trailing full stop in the source either.
+- **Phone eyebrows** are 12px, the phone text floor (F09) and the kit's
+  PageIntro eyebrow; the skeletons hold the new line.
+
 ## 2026-10-08 — Phone: the Mobile clubhouse pass
 
 The phone Qualifiers follows the Coach Home board (round 3, "fewer
@@ -31,11 +54,12 @@ too cardy"):
   note, the steps and the keys keep their material. A player in the form and
   a pick's player tint under the finger (CH-09601).
 - **Loading:** the list and a qualifier draw the phone's own shape at the
-  loaded lines' heights, so nothing moves when they land (a coach's, measured
-  in WebKit at 390 and 430: 0px). The list's lede is the reader's own
+  loaded lines' heights, so nothing moves when they land (a coach's list and
+  qualifier, a player's list and /my-qualifiers, measured in WebKit at 390 and
+  430: 0px). The list's lede is the reader's own
   sentence drawn as a bar under each of its lines, so it wraps where the
-  page's does at any width (for /my-qualifiers once its route passes
-  `mode="mine"`); Create qualifier is held only for a coach; then the live
+  page's does at any width, for a coach, a player and /my-qualifiers alike;
+  Create qualifier is held only for a coach; then the live
   qualifier's place (its status, name, dates, three leaders and their
   caption, a player's standing and the link) and Active and Concluded under
   the double rule with their rows. A qualifier's skeleton holds the status

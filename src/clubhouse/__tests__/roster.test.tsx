@@ -41,7 +41,7 @@ import { NOTE_MAX } from '../screens/roster/RosterPeek';
 import { nameList, useJoinRequests } from '../screens/roster/useJoinRequests';
 import { ToastProvider } from '../ui/Toast';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
-import { PREVIEW_ROSTER, PREVIEW_ROSTER_PARTIAL } from '../preview/fixtures-roster';
+import { PREVIEW_ROSTER, PREVIEW_ROSTER_FAILED, PREVIEW_ROSTER_PARTIAL } from '../preview/fixtures-roster';
 import './dialog-polyfill';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
@@ -232,6 +232,19 @@ describe('Roster · reads that fail', () => {
     expect(router.refresh).toHaveBeenCalled();
   });
 
+  it('CH-1209 the roster and join requests both failing are told once under the head, with one Try again; each part keeps its title', async () => {
+    const user = userEvent.setup();
+    wrap(PREVIEW_ROSTER_FAILED);
+    await expectCode('CH-1209', /Some of this page didn’t load.*The roster and join requests didn’t load/);
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    for (const [c, title] of [['CH-3201', "The roster didn't load"], ['CH-3203', "Join requests didn't load"]] as const) {
+      expect(code(c)!.textContent).toBe(title);
+    }
+    await user.click(within(code('CH-1209') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
   it('CH-3204 CH-3205 CH-3206 a crash stays inside its section', async () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     const user = userEvent.setup();
@@ -241,7 +254,7 @@ describe('Roster · reads that fail', () => {
     wrap(roster({ requests: null as never, players: PREVIEW_ROSTER.players.map((p) => (p.id === 'jonah' ? broken : p)) }));
     expect(code('CH-3204')!.textContent).toMatch(/Join requests couldn’t be shown/);
     expect(code('CH-3205')!.textContent).toMatch(/The roster couldn’t be shown/);
-    expect(screen.getByRole('heading', { name: 'Your players.' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Your players' })).toBeTruthy();
     await user.click(within(screen.getByRole('region', { name: 'Needs a look' })).getByRole('button', { name: /Jonah/ }));
     await expectCode('CH-3206', /The player panel couldn’t be shown/);
     quiet.mockRestore();
@@ -626,6 +639,13 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     expect(code('CH-3203')!.textContent).toMatch(/Join requests didn't load/);
   });
 
+  it('CH-1209 on the phone, the roster and join requests failing are one notice under the head with one Try again', () => {
+    phone(PREVIEW_ROSTER_FAILED);
+    expect(code('CH-1209')!.textContent).toMatch(/Some of this page didn’t load.*The roster and join requests didn’t load/);
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    expect([code('CH-3201')!.textContent, code('CH-3203')!.textContent]).toEqual(["The roster didn't load", "Join requests didn't load"]);
+  });
+
   it('CH-3202 season stats that did not load: the profile says so instead of "no rounds"', () => {
     window.history.replaceState(null, '', '/golf/dashboard/roster?player=theo');
     phone(roster({ statsError: true, players: PREVIEW_ROSTER.players.map((p) => ({ ...p, avg: null, sgPerRound: null, trend: [], recent: [], rounds: 0, form: 'early', attention: null })) }));
@@ -667,7 +687,7 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
 
   it('30101 Roster opens on the active players by average, with the team line, Needs a look and the join requests', () => {
     wrap(roster());
-    expect(screen.getByRole('heading', { level: 1, name: 'Your players.' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Your players' })).toBeTruthy();
     expect(document.querySelector('.ch-rs-team__name')!.textContent).toBe('Varsity · Fall 2026');
     // The card's team strip has its own class: the header's avatar row (.ch-rs-team) never takes the strip's bar styles.
     expect(document.querySelector('.ch-rs-head .ch-rs-strip')).toBeNull();
@@ -697,7 +717,8 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
   it('30303 31402 Try again asks the server again, and what comes back replaces the first copy: an approved player appears, and a failed read never turns into "No players yet"', async () => {
     const user = userEvent.setup();
     const view = render(tree(roster({ playersError: true, players: [], requestsError: true, requests: [] })));
-    await user.click(within(code('CH-3201') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    // Two failed reads: the page's one notice carries the Try again (CH-1209).
+    await user.click(within(code('CH-1209') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalledTimes(1);
     // The server's answer arrives as new props.
     view.rerender(tree(roster()));

@@ -10,17 +10,20 @@ import type { ChJoinRequestsState } from './useJoinRequests';
 
 /**
  * Join requests. The list and its actions live in useJoinRequests, so the
- * phone's banner and this card read the same optimistic state.
+ * phone's banner and this card read the same optimistic state. `covered`: the
+ * page's one notice (CH-1209) already says they failed, so only the title stays.
  */
 export function RosterRequests({
   teamName,
   jr,
   error,
+  covered = false,
   onRetry,
 }: {
   teamName: string;
   jr: ChJoinRequestsState;
   error: boolean;
+  covered?: boolean;
   onRetry: () => void;
 }) {
   const { reqs, busy, decide } = jr;
@@ -29,9 +32,10 @@ export function RosterRequests({
     return (
       <InlineNotice
         code="CH-3203"
-        title="Join requests didn't load."
+        title="Join requests didn't load"
         body="Pending requests are safe. Try again, and if it keeps happening the error has already been reported."
         onRetry={onRetry}
+        covered={covered}
       />
     );
   }

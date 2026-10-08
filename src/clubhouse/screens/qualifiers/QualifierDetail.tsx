@@ -356,11 +356,11 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
       <section className="ch-qf-panel" aria-labelledby="ch-qf-lb">
         {head}
         {data.entriesError ? (
-          <InlineNotice code="CH-09203" title="The field didn’t load." body="Standings wait until the entrants load, so nobody reads a wrong order." onRetry={refresh} retrying={refreshing} />
+          <InlineNotice code="CH-09203" title="The field didn’t load" body="Standings wait until the entrants load, so nobody reads a wrong order." onRetry={refresh} retrying={refreshing} />
         ) : (
           <InlineNotice
             code="CH-09204"
-            title="Scores didn’t load."
+            title="Scores didn’t load"
             body="The field isn’t shown without its scores, so nobody reads a wrong order. The error has been reported."
             onRetry={refresh}
             retrying={refreshing}
@@ -378,7 +378,7 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
         <EmptyState
           code="CH-09304"
           icon={Flag}
-          title="Awaiting first round."
+          title="Awaiting first round"
           body={`${plural(data.entrants, 'player')} entered. Standings appear once a player submits a round.`}
         />
       </section>
@@ -569,7 +569,7 @@ function TrayCards({ row, s }: { row: ChQRow; s: ChQDetailSecondary }) {
   return (
     <>
       {s.holesError && (
-        <InlineNotice code="CH-09205" title="Scorecards didn’t load." body="The totals above are right; the hole-by-hole cards are missing until they load." onRetry={refresh} retrying={refreshing} />
+        <InlineNotice code="CH-09205" title="Scorecards didn’t load" body="The totals above are right; the hole-by-hole cards are missing until they load." onRetry={refresh} retrying={refreshing} />
       )}
       {row.rounds.map((rd) => (
         <Scorecard key={rd.id} round={rd} holes={s.holesError ? undefined : (s.holes[rd.id] ?? [])} />

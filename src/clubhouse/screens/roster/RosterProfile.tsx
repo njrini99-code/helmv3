@@ -86,7 +86,7 @@ export function RosterProfile({
       {statsError ? (
         <InlineNotice
           code="CH-3202"
-          title="Season stats didn't load."
+          title="Season stats didn't load"
           body="Averages, form and recent rounds are missing until the rounds load. The error has been reported."
         />
       ) : (
