@@ -30,8 +30,9 @@ earlier observations below retain their original date and scope.
 | Screenshots | `npm run clubhouse:shots -- gallery --page P015`, which opens `.helm/screenshots/clubhouse/P015-auth/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
-The entrance to GolfHelm, drawn for someone with no role yet: sign in, then a welcome that says who is here and what
-has happened since they were last in. Sign up and a new player's onboarding are on this page too, built behind the
+The entrance to GolfHelm, drawn for someone with no role yet: sign in, then a
+welcome that says who is here and what has happened since they were last in.
+Sign up and a new player's onboarding are on this page too, built behind the
 same flag.
 
 ## Identity

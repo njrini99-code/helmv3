@@ -2,19 +2,27 @@
 
 ## 2026-10-08 — The kit for pages, a search field with its own reach, choices that answer a press
 
-- **The Ledger kit** (`ui/Ledger.tsx`) is ready for the phone pages: `LedgerRow`, `FigureRow`, `FeatureCard`,
-  `PageIntro` and `LedgerList` take `className`, `code` (as `data-ch-code`) and `label` (the accessible name, where
-  ARIA allows one: a plain row's on its list item, a plain feature card's as a named group). `FeatureCard` takes
-  `onClick` (a button); a `LedgerRow` with both `href` and `onClick` runs the click as the link is followed; `PageIntro`
-  takes `level={2}` for an intro under a phone bar that already holds the h1. What already rendered renders the same.
-- **The search field** (`ui/SearchField.tsx`, `controls.css`) carries its own reach on the phone (P001 CH-1815): 36px
-  drawn, 44px to the finger, its input and clear key above the reach, and 16px text so iOS doesn't zoom the page on
-  focus. Every `SearchField` gets it without a rule of its own (checked in Rounds and Recruiting at 390); Recruiting's
-  and Qualifiers' own reach rules are now redundant.
-- **Choices answer a press** (P001 CH-1617): a segmented option or a pill that isn't on takes the press tint over the
-  press beat, after the 50ms delay a UIKit cell waits; nothing scales. The kit's feature card, as a link or a button,
-  answers with a shade over its green instead of a 0.985 scale (cards never scale, owner 2026-10-01).
-- **`PhoneBarParts`** takes `heading={false}`, for the shell's stand-in bar (P001 CH-1402).
+- **The Ledger kit** (`ui/Ledger.tsx`) is ready for the phone pages:
+  `LedgerRow`, `FigureRow`, `FeatureCard`, `PageIntro` and `LedgerList` take
+  `className`, `code` (as `data-ch-code`) and `label` (the accessible name,
+  where ARIA allows one: a plain row's on its list item, a plain feature card's
+  as a named group). `FeatureCard` takes `onClick` (a button); a `LedgerRow`
+  with both `href` and `onClick` runs the click as the link is followed;
+  `PageIntro` takes `level={2}` for an intro under a phone bar that already
+  holds the h1. What already rendered renders the same.
+- **The search field** (`ui/SearchField.tsx`, `controls.css`) carries its own
+  reach on the phone (P001 CH-1815): 36px drawn, 44px to the finger, its input
+  and clear key above the reach, and 16px text so iOS doesn't zoom the page on
+  focus. Every `SearchField` gets it without a rule of its own (checked in
+  Rounds and Recruiting at 390); Recruiting's and Qualifiers' own reach rules
+  are now redundant.
+- **Choices answer a press** (P001 CH-1617): a segmented option or a pill that
+  isn't on takes the press tint over the press beat, after the 50ms delay a
+  UIKit cell waits; nothing scales. The kit's feature card, as a link or a
+  button, answers with a shade over its green instead of a 0.985 scale (cards
+  never scale, owner 2026-10-01).
+- **`PhoneBarParts`** takes `heading={false}`, for the shell's stand-in bar
+  (P001 CH-1402).
 
 ## 2026-10-08 — The shell's own states join the family
 
@@ -34,37 +42,51 @@
 
 ## 2026-10-08 — Springs, thrown sheets and the gestures iOS has
 
-Motion gains real springs on D-64's durations. This is a lead decision under the owner's full-auto brief, for the
-owner to confirm.
-- `CH_SPRINGS` in `lib/motion.ts`: `smooth` (base, bounce 0) for anchored parts, and `settle` (base, bounce 0.1,
-  about 0.15% past the mark) for a free part arriving.
-- `chSpring` hands framer the same spring as stiffness and damping. framer 13 drops the velocity of a spring given
-  as a duration and a bounce, so this is what lets a retarget or a throw keep its speed.
-- `chSpringCurve` samples the spring for Web Animations and CSS: `--ch-ease-spring-smooth` and
-  `--ch-dur-spring-smooth`, behind `@supports`, with the Animations-off zero. The phone `Modal` sheet now rises on
-  it (`controls.css`), as More and the bell do. The pages' own sheets keep their ease-out until their owners adopt it.
+Motion gains real springs on D-64's durations. This is a lead decision under the
+owner's full-auto brief, for the owner to confirm.
+
+- `CH_SPRINGS` in `lib/motion.ts`: `smooth` (base, bounce 0) for anchored parts,
+  and `settle` (base, bounce 0.1, about 0.15% past the mark) for a free part
+  arriving.
+- `chSpring` hands framer the same spring as stiffness and damping. framer 13
+  drops the velocity of a spring given as a duration and a bounce, so this is
+  what lets a retarget or a throw keep its speed.
+- `chSpringCurve` samples the spring for Web Animations and CSS:
+  `--ch-ease-spring-smooth` and `--ch-dur-spring-smooth`, behind `@supports`,
+  with the Animations-off zero. The phone `Modal` sheet now rises on it
+  (`controls.css`), as More and the bell do. The pages' own sheets keep their
+  ease-out until their owners adopt it.
 
 Reduced motion and Animations off stay instant.
 
-- **Sheets** (`lib/sheet-drag.ts`, every phone sheet), CH-1611. Pulled up, a sheet gives like a rubber band over a
-  floor of its own colour. Let go, it springs back from the speed it was moving. Thrown back up hard, it carries on a
-  little past its open position over the same floor, and a finger can catch it on the way. The coach chat's history
-  drawer and the sidebar plate hold at their mark instead (`hold`): sent at it too fast to stop there, they start
-  slower rather than pass it. It drags from its body once that is
-  at the top and the first move is down, and the row a drag started on doesn't open. A throw carries its speed into
-  the close (`takeSheetFling`, then `lib/dialog-lifetime.ts` or the sheet's exit). A dialog sheet closed without a
-  throw keeps the base ease-out; More and the bell leave on the spring either way.
-- **Toasts** (`ui/Toast.tsx`), CH-1614. Held, a toast's clock stops; let go, it stays at least 1.5 seconds. Thrown
-  toward its edge past 40px or on a flick, it goes on at the throw's speed and fades.
-- **The segmented pill and swaps.** The pill (CH-1615) and a swap's incoming copy (CH-1616) arrive on the settle
-  spring.
-- **Slider scrub** (CH-1708). A finger scrubbing a slider warms the Taptic Engine as it lands, ticks each step it
-  crosses, and lets the engine idle on release (`hapticScrub`).
-- **Row press tint** (CH-1606). A row's tint waits `--ch-dur-press-delay` (50ms), so a scroll that starts on a row
-  never flashes it. It also holds with reduced motion.
-- **iOS Back** (CH-1908). A Back that iOS animated itself is not animated again (`lib/ua-pop.ts`).
-- **The iOS shell** sets `CADisableMinimumFrameDurationOnPhone`, so native layers (scrolling, the edge swipe) can run
-  at 120Hz on ProMotion iPhones. WebKit page rendering in the WebView stays near 60fps (WebKit bug 294338).
+- **Sheets** (`lib/sheet-drag.ts`, every phone sheet), CH-1611. Pulled up, a
+  sheet gives like a rubber band over a floor of its own colour. Let go, it
+  springs back from the speed it was moving. Thrown back up hard, it carries on
+  a little past its open position over the same floor, and a finger can catch it
+  on the way. The coach chat's history drawer and the sidebar plate hold at
+  their mark instead (`hold`): sent at it too fast to stop there, they start
+  slower rather than pass it. It drags from its body once that is at the top and
+  the first move is down, and the row a drag started on doesn't open. A throw
+  carries its speed into the close (`takeSheetFling`, then
+  `lib/dialog-lifetime.ts` or the sheet's exit). A dialog sheet closed without a
+  throw keeps the base ease-out; More and the bell leave on the spring either
+  way.
+- **Toasts** (`ui/Toast.tsx`), CH-1614. Held, a toast's clock stops; let go, it
+  stays at least 1.5 seconds. Thrown toward its edge past 40px or on a flick, it
+  goes on at the throw's speed and fades.
+- **The segmented pill and swaps.** The pill (CH-1615) and a swap's incoming
+  copy (CH-1616) arrive on the settle spring.
+- **Slider scrub** (CH-1708). A finger scrubbing a slider warms the Taptic
+  Engine as it lands, ticks each step it crosses, and lets the engine idle on
+  release (`hapticScrub`).
+- **Row press tint** (CH-1606). A row's tint waits `--ch-dur-press-delay`
+  (50ms), so a scroll that starts on a row never flashes it. It also holds with
+  reduced motion.
+- **iOS Back** (CH-1908). A Back that iOS animated itself is not animated again
+  (`lib/ua-pop.ts`).
+- **The iOS shell** sets `CADisableMinimumFrameDurationOnPhone`, so native
+  layers (scrolling, the edge swipe) can run at 120Hz on ProMotion iPhones.
+  WebKit page rendering in the WebView stays near 60fps (WebKit bug 294338).
 
 ## 2026-10-08 — Empty, failed and loading states, one family
 
@@ -138,20 +160,25 @@ SerifText set apart take the title's own size and weight.
 
 ## 2026-10-07 — A page can own a second surface (`implementation.also`)
 
-A page manifest's `implementation` takes an optional `also`: further paths the page owns beside its root, loader,
-route and styles. The changelog gate, the registry's path check and PAGE.md's Related block read it. P015 (Auth)
-uses it for sign up and onboarding (`screens/onboard`, `data/onboard.ts`, `routes/onboard.tsx`, `onboard.css` and
-`onboard-tokens.css`): until now `onboard.css` was gated as a shared piece in this log, and the screens were gated
-nowhere. Tests: changelog-gate, registry and docs-index.
+A page manifest's `implementation` takes an optional `also`: further paths the
+page owns beside its root, loader, route and styles. The changelog gate, the
+registry's path check and PAGE.md's Related block read it. P015 (Auth) uses it
+for sign up and onboarding (`screens/onboard`, `data/onboard.ts`,
+`routes/onboard.tsx`, `onboard.css` and `onboard-tokens.css`): until now
+`onboard.css` was gated as a shared piece in this log, and the screens were
+gated nowhere. Tests: changelog-gate, registry and docs-index.
 
 ## 2026-10-07 — Rows press with a tint; the motion notes say what runs
 
-Every flush Ledger row a coach can open now answers a press with `--ch-ledger-row-press` over the press beat, never
-a scale (Home, Qualifiers, Rounds, Classes, CoachHelm, Recruiting, Calendar's agenda, Stats' grid, Team Hub's files,
-Settings' rail and links), as the shell's CH-1606 describes. Content that used to swap in one frame now settles in
-through the shared `Swap`: Calendar's views and periods, Roster's layouts, Recruiting's stage, a desktop Messages
-thread and Team stats' leg grid. The motion comments in `styles/tokens.css` and `lib/motion.ts` no longer describe
-the staggered first-paint reveal as live or say every tappable shrinks. No values changed.
+Every flush Ledger row a coach can open now answers a press with
+`--ch-ledger-row-press` over the press beat, never a scale (Home, Qualifiers,
+Rounds, Classes, CoachHelm, Recruiting, Calendar's agenda, Stats' grid, Team
+Hub's files, Settings' rail and links), as the shell's CH-1606 describes.
+Content that used to swap in one frame now settles in through the shared `Swap`:
+Calendar's views and periods, Roster's layouts, Recruiting's stage, a desktop
+Messages thread and Team stats' leg grid. The motion comments in
+`styles/tokens.css` and `lib/motion.ts` no longer describe the staggered
+first-paint reveal as live or say every tappable shrinks. No values changed.
 
 ## 2026-10-07 — An unavailable key is unlit
 
@@ -174,6 +201,7 @@ hover shadows that moved are now depth tokens (`--ch-elevation-*-hover`).
 ## 2026-10-07 — Motion: swaps, tabs and keys that glide
 
 A shared `Swap` (`ui/Swap.tsx`) runs a content swap inside a fixed frame:
+
 - **Settle:** the new content fades in with a 6px rise (base) while the old
   fades out (quick).
 - **Slide:** the new content moves 12px in the direction of travel.
@@ -181,6 +209,7 @@ A shared `Swap` (`ui/Swap.tsx`) runs a content swap inside a fixed frame:
 The leaving copy is hidden from assistive tech and focus at once. Nothing
 animates on first paint, and reduced motion or Animations off swaps instantly.
 It runs on:
+
 - the profile's and Team Hub's tab panels;
 - Team stats' trend measure;
 - a round's hole stepping;

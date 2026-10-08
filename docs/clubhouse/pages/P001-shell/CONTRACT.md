@@ -50,7 +50,16 @@ The frame around every page (10102), a page change that opens the new page at th
 
 Status: DEFINED
 
-The bell's own skeleton rows (10201). Each page owns its route skeleton, built from the shared shapes (`Skeleton`, `SkelLine`, `SkelRows`, `SkelRule`); the shell fades it in over base as it mounts (11609; the 150ms hold ended with F-37), and on desktop Ledger pages draws a block placeholder as a rule with two lines of type, never a filled card. On the phone the shell draws a pushed page's bar from its address while the page loads and in the server's first paint (10202, since 2026-10-08): the back link and title stand where the page's own bar puts them, so nothing in the bar moves when it arrives. The query decides a Settings section's bar and a coach's player's on Stats, a form's back is its Cancel, and a full-screen flow hides the tab bar from its first frame.
+The bell's own skeleton rows (10201). Each page owns its route skeleton, built
+from the shared shapes (`Skeleton`, `SkelLine`, `SkelRows`, `SkelRule`); the
+shell fades it in over base as it mounts (11609; the 150ms hold ended with
+F-37), and on desktop Ledger pages draws a block placeholder as a rule with two
+lines of type, never a filled card. On the phone the shell draws a pushed page's
+bar from its address while the page loads and in the server's first paint
+(10202, since 2026-10-08): the back link and title stand where the page's own
+bar puts them, so nothing in the bar moves when it arrives. The query decides a
+Settings section's bar and a coach's player's on Stats, a form's back is its
+Cancel, and a full-screen flow hides the tab bar from its first frame.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -89,7 +98,14 @@ Status: N/A — the shell takes no typed input. Fields and their validation belo
 
 Status: DEFINED
 
-Mark all read fails (10601); a team switch fails (10611); the bell's list doesn't load (10602); the five route error views (10603 to 10607), each with its own words and recovery, drawn as the page empty in the danger tone; the two sidebar reads that hide rather than show something wrong (10608, 10609); and, for every page, one notice with one Try again when two or more of its parts fail (10612, `PageNotice`) or two or more of its sections crash in the browser (10613, `SectionGroup` and `SectionGroupNotice`), and the danger page when its one read fails (10614, `EmptyState size="page" tone="danger"`).
+Mark all read fails (10601); a team switch fails (10611); the bell's list
+doesn't load (10602); the five route error views (10603 to 10607), each with its
+own words and recovery, drawn as the page empty in the danger tone; the two
+sidebar reads that hide rather than show something wrong (10608, 10609); and,
+for every page, one notice with one Try again when two or more of its parts fail
+(10612, `PageNotice`) or two or more of its sections crash in the browser
+(10613, `SectionGroup` and `SectionGroupNotice`), and the danger page when its
+one read fails (10614, `EmptyState size="page" tone="danger"`).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -190,7 +206,18 @@ Status: N/A — the shell keeps no data that can go stale on screen: the bell re
 
 Status: DEFINED
 
-v2 motion (D-64) for every page: the route reveal, the More sheet, menus and the bell, toasts, the offline banner, the press, the focus ring, reduced motion, the skeleton delay, pushed screens, sheet drags, the phone bell, the sidebar's gliding plate, a toast held or thrown, the segmented pill, content swaps, and the press on a choice or the feature card, which tints or shades and never scales (11601 to 11617). Since 2026-10-08 (a D-64 extension, a lead decision under the owner's full-auto brief; owner to confirm), what moves and can be interrupted or thrown rides the D-64 springs (`CH_SPRINGS`, bounce 0 to 0.1): the More and bell sheets, pushed screens, the plate, the pill and a swap's incoming copy. Sheets rubber-band past their open position, spring back from the finger's speed, drag from their body at the top, and carry a throw into the close (11611).
+v2 motion (D-64) for every page: the route reveal, the More sheet, menus and the
+bell, toasts, the offline banner, the press, the focus ring, reduced motion, the
+skeleton delay, pushed screens, sheet drags, the phone bell, the sidebar's
+gliding plate, a toast held or thrown, the segmented pill, content swaps, and
+the press on a choice or the feature card, which tints or shades and never
+scales (11601 to 11617). Since 2026-10-08 (a D-64 extension, a lead decision
+under the owner's full-auto brief; owner to confirm), what moves and can be
+interrupted or thrown rides the D-64 springs (`CH_SPRINGS`, bounce 0 to 0.1):
+the More and bell sheets, pushed screens, the plate, the pill and a swap's
+incoming copy. Sheets rubber-band past their open position, spring back from the
+finger's speed, drag from their body at the top, and carry a throw into the
+close (11611).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -216,7 +243,10 @@ v2 motion (D-64) for every page: the route reveal, the More sheet, menus and the
 
 Status: DEFINED
 
-v2 haptics (D-70) for every page: a tab change, a save that lands, a failure, the More sheet, the bell and menus, the connection dropping, picking another team, and a finger scrubbing a slider, with the Taptic Engine warmed as it lands (11701 to 11708).
+v2 haptics (D-70) for every page: a tab change, a save that lands, a failure,
+the More sheet, the bell and menus, the connection dropping, picking another
+team, and a finger scrubbing a slider, with the Taptic Engine warmed as it lands
+(11701 to 11708).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -233,7 +263,11 @@ v2 haptics (D-70) for every page: a tab change, a save that lands, a failure, th
 
 Status: DEFINED
 
-Skip to content, the modal More sheet, the current page and named landmarks, announced toasts, the bell as a dialog, focus rings, axe clean, the phone tab bar, pushed screens named and focused, the phone top bar, the phone bell as a modal sheet, the team switcher on desktop and on the phone, and every phone key reaching 44 by 44, the search field included (11801 to 11815).
+Skip to content, the modal More sheet, the current page and named landmarks,
+announced toasts, the bell as a dialog, focus rings, axe clean, the phone tab
+bar, pushed screens named and focused, the phone top bar, the phone bell as a
+modal sheet, the team switcher on desktop and on the phone, and every phone key
+reaching 44 by 44, the search field included (11801 to 11815).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -267,7 +301,11 @@ On a phone the sidebar gives way to the role's tab bar and the More sheet (11901
 
 Status: DEFINED
 
-On the phone the edge swipe and the browser's back pop a pushed screen, as its back link would (12001); a Back that iOS already animated itself pops once, with no second slide or crossfade (12003). Tapping the tab already open pops back to its root, then scrolls it to the top, silently (12002). Esc closes the More sheet and the bell (11802, 11805).
+On the phone the edge swipe and the browser's back pop a pushed screen, as its
+back link would (12001); a Back that iOS already animated itself pops once, with
+no second slide or crossfade (12003). Tapping the tab already open pops back to
+its root, then scrolls it to the top, silently (12002). Esc closes the More
+sheet and the bell (11802, 11805).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

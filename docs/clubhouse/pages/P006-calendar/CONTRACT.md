@@ -48,7 +48,13 @@ From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS
 
 Status: DEFINED
 
-The route skeleton (60201) has the page's own shape: the header, the toolbar, the week grid and the panel; on the phone the month's opening with the view switch, the flush week, the day's heading and its rows, in the loaded page's geometry so nothing moves when it lands (0px at 390, WebKit, 2026-10-08). Every section that loads on its own has a skeleton: calendar-app links (60202), an event's files (60203), the documents to attach (60204) and attendance (60205). v2 timing: nothing for 150ms, then a fade (the shell's motion).
+The route skeleton (60201) has the page's own shape: the header, the toolbar,
+the week grid and the panel; on the phone the month's opening with the view
+switch, the flush week, the day's heading and its rows, in the loaded page's
+geometry so nothing moves when it lands (0px at 390, WebKit, 2026-10-08). Every
+section that loads on its own has a skeleton: calendar-app links (60202), an
+event's files (60203), the documents to attach (60204) and attendance (60205).
+v2 timing: nothing for 150ms, then a fade (the shell's motion).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -76,7 +82,18 @@ The page does not subscribe to changes. The server reads it when it opens and ag
 
 Status: DEFINED
 
-First-run and filtered empties are distinct, and a failed read is never shown as empty. An empty range still draws the grid and the panel says there is nothing on the team calendar today (60402). The agenda says its range is empty, and for the chosen players when the filter is on (60401). A coach with no overlaps and no replies waiting, and a player who is caught up, are told so (60406). An event with no files (60403); a team with no documents to attach (60404); a day with nothing on it on the phone (60408). An opened event that has left the loaded range says so and offers Today (60405). Signed in with no team is the v2 page empty state, with its own words for a coach and a player (60407). Both whole-page empties (60407, 60409) open under the page's framed head on desktop, with no action of their own in it, and show from first paint on the phone, where the bar carries the title (states audit c1, c4, 2026-10-08).
+First-run and filtered empties are distinct, and a failed read is never shown as
+empty. An empty range still draws the grid and the panel says there is nothing
+on the team calendar today (60402). The agenda says its range is empty, and for
+the chosen players when the filter is on (60401). A coach with no overlaps and
+no replies waiting, and a player who is caught up, are told so (60406). An event
+with no files (60403); a team with no documents to attach (60404); a day with
+nothing on it on the phone (60408). An opened event that has left the loaded
+range says so and offers Today (60405). Signed in with no team is the v2 page
+empty state, with its own words for a coach and a player (60407). Both
+whole-page empties (60407, 60409) open under the page's framed head on desktop,
+with no action of their own in it, and show from first paint on the phone, where
+the bar carries the title (states audit c1, c4, 2026-10-08).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -107,7 +124,27 @@ Checked before anything is sent, with the warning haptic. An event needs a title
 
 Status: DEFINED
 
-Every change has its own toast naming what failed and what to do (60601 to 60612), and every section that fails to load has its own notice with Try again (60613 to 60621, 60624). When more than one of the page's reads fails, the page says so once above the grid, naming each, with one Try again (the shell's CH-1209): the grid's and the inspector's notices keep only their title in place, and the timezone, roster, busy-time and class notices, which have no place but that stack, fold into it (states audit b6, 2026-10-08). A crash stays in its section: the calendar view (60622) and the detail panel (60623) each sit in a SectionBoundary. A write that goes through the shell's save hook gets Retry, which sends the same write again and finishes the job (61401). Three failures have no Retry because there is nothing to send again: copying a link (60604, 60612) and an Undo that fails (60609); removing a file has none either, and its toast says to try again in a moment (60608). Making a new calendar-app link has no Retry either (60626): the server deletes the old link before it makes the new one, so a failure can leave either state, and the links are read again so the row shows what exists. Removing a link has one (60627). A server refusal written for a person is shown as the toast's reason (a reply's lock: the deadline passed, the event started or was cancelled); one written for a developer is replaced by the toast's own hint. Open, not fixed: a create whose answer is lost on the way back may have landed, and Retry then creates it a second time (no write here carries an idempotency key).
+Every change has its own toast naming what failed and what to do (60601 to
+60612), and every section that fails to load has its own notice with Try again
+(60613 to 60621, 60624). When more than one of the page's reads fails, the page
+says so once above the grid, naming each, with one Try again (the shell's
+CH-1209): the grid's and the inspector's notices keep only their title in place,
+and the timezone, roster, busy-time and class notices, which have no place but
+that stack, fold into it (states audit b6, 2026-10-08). A crash stays in its
+section: the calendar view (60622) and the detail panel (60623) each sit in a
+SectionBoundary. A write that goes through the shell's save hook gets Retry,
+which sends the same write again and finishes the job (61401). Three failures
+have no Retry because there is nothing to send again: copying a link
+(60604, 60612) and an Undo that fails (60609); removing a file has none either, and its
+toast says to try again in a moment (60608). Making a new calendar-app link has
+no Retry either (60626): the server deletes the old link before it makes the new
+one, so a failure can leave either state, and the links are read again so the
+row shows what exists. Removing a link has one (60627). A server refusal written
+for a person is shown as the toast's reason (a reply's lock: the deadline
+passed, the event started or was cancelled); one written for a developer is
+replaced by the toast's own hint. Open, not fixed: a create whose answer is lost
+on the way back may have landed, and Retry then creates it a second time (no
+write here carries an idempotency key).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -245,7 +282,15 @@ A player's reply shows the moment it is tapped and goes back to the last confirm
 
 Status: DEFINED
 
-The failure toast's Retry runs the same write again with the same arguments and, when it lands, does everything the button would have done: the editor or sheet closes, the panel clears, the page reads again, the new link shows, the new file shows and the reply shows as chosen (61401; until 2026-09-30 it only re-sent the write, see the changelog). Try again on a page notice has the server read the page again, and inside a section it reads only that section (61402); with several reads failed the one Try again is the page's (CH-1209). Attendance offers Retry too; it sends every changed mark again, including the ones that had saved, which is harmless because each mark is an upsert.
+The failure toast's Retry runs the same write again with the same arguments and,
+when it lands, does everything the button would have done: the editor or sheet
+closes, the panel clears, the page reads again, the new link shows, the new file
+shows and the reply shows as chosen (61401; until 2026-09-30 it only re-sent the
+write, see the changelog). Try again on a page notice has the server read the
+page again, and inside a section it reads only that section (61402); with
+several reads failed the one Try again is the page's (CH-1209). Attendance
+offers Retry too; it sends every changed mark again, including the ones that had
+saved, which is harmless because each mark is an upsert.
 
 What this is proved on. The Retry tests run in jsdom, where a toast can be clicked while a dialog is open. In a browser a native modal dialog makes everything outside it inert, and the toasts are outside it, so a Retry raised by a failure inside a dialog (the editor, the two confirms, the busy time, file and calendar-app sheets, and every panel sheet on the phone) is probably not clickable until the dialog closes; the button that failed is still there to press again. This was not verified in a browser. The fix is in the shell's Toast and Modal, not in this page, and it affects every page's Retry.
 
@@ -270,7 +315,19 @@ Status: DEFINED
 
 Status: DEFINED
 
-Calendar's own motion (61601 to 61606): an event lifts on a soft shadow and takes a ring when selected, the Find a time band follows the pointer in 15-minute steps, the now line moves down the grid, another view settles in (Day, Week, Month and Agenda; Day, Month and List on the phone), and another day, week or month slides the way it went; an agenda row deepens its tint on press. On the phone (2026-10-08) the chosen day's green plate glides along the week strip to the day you tap while the day's heading and agenda slide 12px the way the day went (CH-6606); every row, day and month cell answers a press with the Ledger's tint and never scales. The shell's: the page crossfade, the press on keys, sheets and pushes (11601 to 11613, D-64); there is no first-paint rise. All six are checked in the browser preview; calendar.test also forces the view, period and day swaps (CH-6604, CH-6605, CH-6606), and the phone's were frame-sampled in WebKit at 390 (instant with reduced motion).
+Calendar's own motion (61601 to 61606): an event lifts on a soft shadow and
+takes a ring when selected, the Find a time band follows the pointer in
+15-minute steps, the now line moves down the grid, another view settles in (Day,
+Week, Month and Agenda; Day, Month and List on the phone), and another day, week
+or month slides the way it went; an agenda row deepens its tint on press. On the
+phone (2026-10-08) the chosen day's green plate glides along the week strip to
+the day you tap while the day's heading and agenda slide 12px the way the day
+went (CH-6606); every row, day and month cell answers a press with the Ledger's
+tint and never scales. The shell's: the page crossfade, the press on keys,
+sheets and pushes (11601 to 11613, D-64); there is no first-paint rise. All six
+are checked in the browser preview; calendar.test also forces the view, period
+and day swaps (CH-6604, CH-6605, CH-6606), and the phone's were frame-sampled in
+WebKit at 390 (instant with reduced motion).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

@@ -59,10 +59,12 @@ and ruled blocks changed in the same pass.
 
 ## 2026-10-07 — A stage settles the list in
 
-Picking a stage in the pipeline, or letting it go, settles the prospect list in with a 6px rise (base) while the old
-one fades out (quick), hidden from assistive tech (CH-14603, desktop and phone). Typing a search and the kept stage
-coming back as the page opens stay in place. A prospect row presses with the row press tint. CH-14602 is corrected:
-with reduced motion the prospect settles at once. New test: recruiting.test › CH-14603.
+Picking a stage in the pipeline, or letting it go, settles the prospect list in
+with a 6px rise (base) while the old one fades out (quick), hidden from
+assistive tech (CH-14603, desktop and phone). Typing a search and the kept stage
+coming back as the page opens stay in place. A prospect row presses with the row
+press tint. CH-14602 is corrected: with reduced motion the prospect settles at
+once. New test: recruiting.test › CH-14603.
 
 ## 2026-10-07 — Recruiting on the Ledger
 

@@ -123,10 +123,12 @@ CoachHelm, Calendar, Stats; player Home, CoachHelm, Rounds, Team Hub; then
 More), the More sheet, the top bar's root and pushed variants, the bell as a
 modal sheet, and pushed screens with the edge swipe.
 
-A pushed page's bar is drawn from its address until the page's own arrives (CH-1402): the loading state and the
-server's first paint already show the back link and the title where the page puts them. Every key reaches 44 by 44
-(CH-1815): the bar's back link and text action in a 44px row, the hero bell's 40px disc in a 44px key, a sheet's
-Close, and the 36px search field. A choice answers a press with the Ledger's tint, never a scale (CH-1617).
+A pushed page's bar is drawn from its address until the page's own arrives
+(CH-1402): the loading state and the server's first paint already show the back
+link and the title where the page puts them. Every key reaches 44 by 44
+(CH-1815): the bar's back link and text action in a 44px row, the hero bell's
+40px disc in a 44px key, a sheet's Close, and the 36px search field. A choice
+answers a press with the Ledger's tint, never a scale (CH-1617).
 
 For a head coach on two or more teams the More sheet lists the teams under who
 they are, as a captioned "Team" list in the sheet's own rows: the current team

@@ -19,16 +19,20 @@ catalog code on the element and in the test (`docs/clubhouse/catalog/auth.md`).
 Every contract on this page has a catalog code. The category map routes the page's rows to their
 categories (`config/clubhouse/category-map.json`). `clubhouse:check` holds this file to the registry.
 
-Two screens on two routes, drawn for a visitor with no role behind the flag `golf_clubhouse_front_door`
-(off in production): sign in (`/golf/login`), then the welcome (`/golf/welcome`). The sign-in panel also holds
-the reset form and its check-your-email (`?view=forgot`; owner, 2026-10-07). They have no board, so every
-contract for them is up for owner review. They call today's `requestPasswordResetAction` with today's checks
-and words. The reset link in the email still lands on today's `/golf/reset-password`. Sign up and onboarding are
-built behind the same flag over today's server actions (2026-09-30): sign up at `/golf/signup` (the intro, the
-team code, the questions, the account, the staff path and Request access) and a new player's questions after the
-account at `/golf/player` (your game, the photo, the member card). Their contracts are the rows below named for
-sign up, onboarding and Request access. The auth screens sit outside the dashboard frame,
-so the shell's contracts (P001) do not apply and none are inherited.
+Two screens on two routes, drawn for a visitor with no role behind the flag
+`golf_clubhouse_front_door` (off in production): sign in (`/golf/login`), then
+the welcome (`/golf/welcome`). The sign-in panel also holds the reset form and
+its check-your-email (`?view=forgot`; owner, 2026-10-07). They have no board, so
+every contract for them is up for owner review. They call today's
+`requestPasswordResetAction` with today's checks and words. The reset link in
+the email still lands on today's `/golf/reset-password`. Sign up and onboarding
+are built behind the same flag over today's server actions (2026-09-30): sign up
+at `/golf/signup` (the intro, the team code, the questions, the account, the
+staff path and Request access) and a new player's questions after the account at
+`/golf/player` (your game, the photo, the member card). Their contracts are the
+rows below named for sign up, onboarding and Request access. The auth screens
+sit outside the dashboard frame, so the shell's contracts (P001) do not apply
+and none are inherited.
 
 ## 01 — Default / core UI
 
@@ -78,7 +82,11 @@ The welcome card has three empty states, each true to what was read: nothing new
 
 Status: DEFINED
 
-A sign-in submitted with an empty email or password is refused before anything is sent (CH-15101). The button is off until both are filled, so this is the belt and braces for a pre-hydration submit. The reset form refuses a missing address (CH-15120) or one that is not an address (CH-15121) before anything is sent, as today's page does; editing clears it.
+A sign-in submitted with an empty email or password is refused before anything
+is sent (CH-15101). The button is off until both are filled, so this is the belt
+and braces for a pre-hydration submit. The reset form refuses a missing address
+(CH-15120) or one that is not an address (CH-15121) before anything is sent, as
+today's page does; editing clears it.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -91,7 +99,13 @@ A sign-in submitted with an empty email or password is refused before anything i
 
 Status: DEFINED
 
-Each refusal has its own words (the current form's `getErrorMessage`, unchanged), tone, haptic and number: the credentials (CH-15001), an unconfirmed email (CH-15002), too many attempts (CH-15003), a stale bundle after its one reload (CH-15005), anything unexpected (CH-15006) and the server's own words such as a lockout (CH-15007). The welcome's notifications read failing is CH-15201. A reset request the server refuses in its own words (CH-15020), or one that throws and is logged (CH-15021), says so and can be sent again.
+Each refusal has its own words (the current form's `getErrorMessage`,
+unchanged), tone, haptic and number: the credentials (CH-15001), an unconfirmed
+email (CH-15002), too many attempts (CH-15003), a stale bundle after its one
+reload (CH-15005), anything unexpected (CH-15006) and the server's own words
+such as a lockout (CH-15007). The welcome's notifications read failing is
+CH-15201. A reset request the server refuses in its own words (CH-15020), or one
+that throws and is logged (CH-15021), says so and can be sent again.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -135,7 +149,12 @@ Where a sign-in goes depends on who the person is and is decided once, for this 
 
 Status: DEFINED
 
-The notices `/golf/login?message=` names: password reset, account created, signed out, session expired (CH-15904). A sign-in that lands has no message: the page leaves (its feel is CH-15702, the hand-off CH-15604). A reset link asked for moves the panel on to check your email, which shows the address it went to (CH-15921, up for owner review). The server answers the same whether or not the address has an account, so the page never says one exists.
+The notices `/golf/login?message=` names: password reset, account created,
+signed out, session expired (CH-15904). A sign-in that lands has no message: the
+page leaves (its feel is CH-15702, the hand-off CH-15604). A reset link asked
+for moves the panel on to check your email, which shows the address it went to
+(CH-15921, up for owner review). The server answers the same whether or not the
+address has an account, so the page never says one exists.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -154,7 +173,13 @@ Status: N/A — nothing on these screens deletes or discards anything.
 
 Status: DEFINED
 
-The invite returnTo and the demo ref survive the round trip through sign in, and are cleared once used (CH-15901). "Forgot password?" opens the reset form in place with the address already typed. The view is kept in the URL (`?view=forgot`), so the browser's Back returns to sign in and a reload holds the view (CH-15920). Going back brings the address with it and pops the reset form's history entry rather than stacking one (CH-15922). Both are up for owner review.
+The invite returnTo and the demo ref survive the round trip through sign in, and
+are cleared once used (CH-15901). "Forgot password?" opens the reset form in
+place with the address already typed. The view is kept in the URL
+(`?view=forgot`), so the browser's Back returns to sign in and a reload holds
+the view (CH-15920). Going back brings the address with it and pops the reset
+form's history entry rather than stacking one (CH-15922). Both are up for owner
+review.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -184,7 +209,28 @@ Status: N/A — the welcome's card is read once per visit on the server; nothing
 
 Status: DEFINED
 
-The design's own choreography (a scoped exception to D-64, DESIGN.md): the form leaving and the course taking the frame (CH-15601), the greeting and the card (CH-15602), the camera push and the ball (CH-15603), the hand-off fold (CH-15604), reduced motion (CH-15605) and the loops pausing when the tab is hidden (CH-15606). The form's own micro-motion is on the v2 scale (quick and base): the Sign in key lighting when both fields are filled and crossfading to "Signing in…" without reflowing (CH-15607), a refusal arriving with what it moves gliding there on transform only, the last one stepped back while the next attempt is in flight (CH-15608), the fields shaking once for a refusal about them (CH-15609, the sign-up code's 380ms shake), the password eye crossfading between its glyphs (CH-15610) and the Home link's chevron leaning back on hover (CH-15611). The panel moving between sign in, the reset form and check your email slides the view 12px the way the person is going and crossfades under a still lockup, the desktop stage gliding to its new centre (CH-15612, up for owner review). Reduced motion and Animations off make every one of them instant. Sign up keeps the design's step curve on its own tokens: a question gives way to the next in the direction of travel, the leaving one held in place and out of the accessibility tree (CH-15620), the member card inks in as answers arrive without flickering on each keystroke (CH-15621), the rail's thumb and the phone's hairline move with progress (CH-15622), the card is issued once on done with its seal (CH-15623), and an answer touched or refused answers with its own lift, press, halo and focus (CH-15624); reduced motion makes them instant too.
+The design's own choreography (a scoped exception to D-64, DESIGN.md): the form
+leaving and the course taking the frame (CH-15601), the greeting and the card
+(CH-15602), the camera push and the ball (CH-15603), the hand-off fold
+(CH-15604), reduced motion (CH-15605) and the loops pausing when the tab is
+hidden (CH-15606). The form's own micro-motion is on the v2 scale (quick and
+base): the Sign in key lighting when both fields are filled and crossfading to
+"Signing in…" without reflowing (CH-15607), a refusal arriving with what it
+moves gliding there on transform only, the last one stepped back while the next
+attempt is in flight (CH-15608), the fields shaking once for a refusal about
+them (CH-15609, the sign-up code's 380ms shake), the password eye crossfading
+between its glyphs (CH-15610) and the Home link's chevron leaning back on hover
+(CH-15611). The panel moving between sign in, the reset form and check your
+email slides the view 12px the way the person is going and crossfades under a
+still lockup, the desktop stage gliding to its new centre (CH-15612, up for
+owner review). Reduced motion and Animations off make every one of them instant.
+Sign up keeps the design's step curve on its own tokens: a question gives way to
+the next in the direction of travel, the leaving one held in place and out of
+the accessibility tree (CH-15620), the member card inks in as answers arrive
+without flickering on each keystroke (CH-15621), the rail's thumb and the
+phone's hairline move with progress (CH-15622), the card is issued once on done
+with its seal (CH-15623), and an answer touched or refused answers with its own
+lift, press, halo and focus (CH-15624); reduced motion makes them instant too.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -210,7 +256,10 @@ The design's own choreography (a scoped exception to D-64, DESIGN.md): the form 
 
 Status: DEFINED
 
-The README's haptic table, through `haptics.ts`: sign in tapped (CH-15701), a sign-in landing (CH-15702), warnings (CH-15703), errors (CH-15704) and Continue (CH-15705). The reset form: Send tapped is light (CH-15720), a link asked for is success (CH-15721), and its refusals are the same warning and error.
+The README's haptic table, through `haptics.ts`: sign in tapped (CH-15701), a
+sign-in landing (CH-15702), warnings (CH-15703), errors (CH-15704) and Continue
+(CH-15705). The reset form: Send tapped is light (CH-15720), a link asked for is
+success (CH-15721), and its refusals are the same warning and error.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -226,7 +275,12 @@ The README's haptic table, through `haptics.ts`: sign in tapped (CH-15701), a si
 
 Status: DEFINED
 
-A skip link (CH-15801), refusals announced with focus on the first invalid field (CH-15802), the welcome announced once (CH-15803), the decorative course hidden from assistive technology (CH-15804) and named, pressed, 44px controls (CH-15805). When the panel's view changes, focus moves with it (the reset form's Email, or the new heading) and the leaving view is hidden from assistive technology at once (CH-15820).
+A skip link (CH-15801), refusals announced with focus on the first invalid field
+(CH-15802), the welcome announced once (CH-15803), the decorative course hidden
+from assistive technology (CH-15804) and named, pressed, 44px controls
+(CH-15805). When the panel's view changes, focus moves with it (the reset form's
+Email, or the new heading) and the leaving view is hidden from assistive
+technology at once (CH-15820).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

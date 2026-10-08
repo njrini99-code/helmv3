@@ -12,6 +12,7 @@ scorecard's name, the team scoring chart's label and the coach brief's line
 
 The coach's phone Home now matches its "Mobile v2" board where the port had
 drifted, and the coach's and the player's share one set of rules:
+
 - section titles (Today, This week, Latest rounds) are the Ledger's phone
   heading, the bold condensed sans in forest ink; they were the old 17px black,
   because the board styled h3s and the page's titles are h2s;
@@ -39,6 +40,7 @@ as an iPhone at 390 wide.
 
 Measured in WebKit as an iPhone at 390 wide (touch, no hover), every control on
 the player's phone Home now answers a press, with no tap flash:
+
 - Up next deepens its green (a large card answers with a tint, never a scale,
   CH-1606); a day in the week strip tints its key, today's green key deepens;
 - Today's rows, the latest round's pager and its keys tint a beat after the
@@ -56,6 +58,7 @@ either role (it was 61px for the player's card and 20px for the coach's).
 ## 2026-10-08 — Home's states: one notice for several failed reads, and the framed first run
 
 Fixes from the states audit, on desktop and the phone, for both roles:
+
 - when two or more of Home's reads fail, the page says so once, under the head
   (CH-1209): "Some of this page didn’t load", naming the parts ("This week’s
   schedule, recent rounds and the leaderboard didn’t load"), with one Try
@@ -80,6 +83,7 @@ desktop and the phone.
 
 The player's phone Home follows the same board as the coach's (round 3, "fewer
 containers, one feature card"), carried to `m-player-home.jsx`:
+
 - the page is the chassis' parchment sheet from the greeting to the tab bar;
 - Up next with its countdown stays the one green feature card; Message coach
   and Post a round under it are the shared buttons, Post a round the primary;
@@ -107,6 +111,7 @@ within 3px. Desktop is unchanged.
 
 Phone Home now follows the owner's "Coach - Home - Mobile v2" board
 (`m-clubhouse.css`, ported in order so its third round wins):
+
 - the green chassis bar over the parchment sheet;
 - the greeting in the bold 31px sans in forest ink, with the brief under it;
 - Up next as the screen's one green feature card;
@@ -118,11 +123,13 @@ phone chassis draws both, so the hero here is the sheet itself.
 
 ## 2026-10-07 — A leaderboard row answers the press
 
-On desktop a leaderboard row keeps its Ledger tint and sliding chevron on hover, and a press now deepens the tint
-(`--ch-ledger-row-press`) and nudges the chevron 2px on over the press beat, easing back over quick. Before, the
-press tint was masked by the hover rule. The row never lifts or scales; CH-2602 now says so and is referenced in
-`Leaderboard.tsx`. CH-2601's reduced-motion wording is corrected: paging is instant, not a fade. Frame-sampled in
-WebKit at 1440 (tint 180ms, chevron 260ms).
+On desktop a leaderboard row keeps its Ledger tint and sliding chevron on hover,
+and a press now deepens the tint (`--ch-ledger-row-press`) and nudges the
+chevron 2px on over the press beat, easing back over quick. Before, the press
+tint was masked by the hover rule. The row never lifts or scales; CH-2602 now
+says so and is referenced in `Leaderboard.tsx`. CH-2601's reduced-motion wording
+is corrected: paging is instant, not a fade. Frame-sampled in WebKit at 1440
+(tint 180ms, chevron 260ms).
 
 ## 2026-10-07 — Home on the Ledger
 

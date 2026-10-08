@@ -64,10 +64,12 @@ match).
 
 ## 2026-10-07 — Team view and List view settle in
 
-Toggling Team view and List view now settles the new layout in with a 6px rise (base) while the old one fades out
-(quick), hidden from assistive tech (CH-3603, the shared `Swap`). It runs only on the coach's own toggle: the kept
-layout coming back as the page opens draws in place. A face or a list row's name presses with the row press tint
-(`--ch-ledger-row-press`) over the press beat, never a scale (CH-3602). New test: roster.test › CH-3603.
+Toggling Team view and List view now settles the new layout in with a 6px rise
+(base) while the old one fades out (quick), hidden from assistive tech (CH-3603,
+the shared `Swap`). It runs only on the coach's own toggle: the kept layout
+coming back as the page opens draws in place. A face or a list row's name
+presses with the row press tint (`--ch-ledger-row-press`) over the press beat,
+never a scale (CH-3602). New test: roster.test › CH-3603.
 
 ## 2026-10-07 — Roster on the Ledger
 

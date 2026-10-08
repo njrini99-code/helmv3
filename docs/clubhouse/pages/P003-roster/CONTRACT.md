@@ -226,7 +226,14 @@ What a coach changes here revalidates the page and comes back (category 03). A c
 
 Status: DEFINED
 
-Roster's own motion: the panel slides in and players cross-fade (CH-3601), a face or row takes the Ledger tint on hover and a deeper one on press, never a scale, and on the phone a player row tints and the join requests card (the screen's one feature card) darkens under a shade for the press beat (CH-3602), and Team view and List view settle in as the toggle moves, never when the kept layout returns (CH-3603). All three are checked in the preview, and roster.test forces the layout swap's gating (CH-3603). The shell's: the page crossfade, the press on keys, sheets and pushes (D-64); there is no first-paint rise.
+Roster's own motion: the panel slides in and players cross-fade (CH-3601), a
+face or row takes the Ledger tint on hover and a deeper one on press, never a
+scale, and on the phone a player row tints and the join requests card (the
+screen's one feature card) darkens under a shade for the press beat (CH-3602),
+and Team view and List view settle in as the toggle moves, never when the kept
+layout returns (CH-3603). All three are checked in the preview, and roster.test
+forces the layout swap's gating (CH-3603). The shell's: the page crossfade, the
+press on keys, sheets and pushes (D-64); there is no first-paint rise.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

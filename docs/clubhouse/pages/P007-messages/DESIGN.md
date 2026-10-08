@@ -121,12 +121,14 @@ Approved spec `docs/clubhouse/phone/messages.md`: Inbox with announcements above
 Thread, pushed Details (members, mute, files), New message with group naming (D-45), the long-press
 sheet for a message's actions, and a Message actions button for VoiceOver and keyboards (CH-7804).
 
-The look is the Mobile clubhouse pass (owner, 2026-10-08): no white cards. The inbox, Details, New
-message and a pushed announcement sit on the parchment at the board's margins (26px 20px); a section
-opens under the engraved double rule with its title in the bold 19px sans in forest ink; rows sit on
-seams with the Ledger's press tint; the conversations' dates are the ledger's engraved date line. Real
-objects keep their material: bubbles, the composer, Search, the filter chips, avatars, sheets and the
-acknowledgement's green well. A pushed thread's name reads in ivory on the green chassis bar.
+The look is the Mobile clubhouse pass (owner, 2026-10-08): no white cards. The
+inbox, Details, New message and a pushed announcement sit on the parchment at
+the board's margins (26px 20px); a section opens under the engraved double rule
+with its title in the bold 19px sans in forest ink; rows sit on seams with the
+Ledger's press tint; the conversations' dates are the ledger's engraved date
+line. Real objects keep their material: bubbles, the composer, Search, the
+filter chips, avatars, sheets and the acknowledgement's green well. A pushed
+thread's name reads in ivory on the green chassis bar.
 
 ## Accessibility
 

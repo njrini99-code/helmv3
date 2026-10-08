@@ -11,6 +11,7 @@ titles.
 ## 2026-10-08 — The empty window is the page's empty state; failures and crashes told once
 
 Fixes from the states audit, on desktop and the phone:
+
 - no rounds in the window (CH-4301) or no qualifier rounds (CH-4302) is the
   whole page body, so it is now the page's empty state, not a section's: the
   medallion (a chart, or the qualifiers' medal), the title, its sentence and
@@ -50,6 +51,7 @@ section's.
 Team stats on the phone follows the Coach Home "Mobile clubhouse pass" board
 (round 3, "fewer containers, one feature card"). The page is the parchment
 sheet with no white cards:
+
 - it opens on the Ledger's page intro: "Varsity · 7 active · countable rounds"
   as the eyebrow under the engraved double rule, Team stats in the bold
   condensed sans (it was a regular-weight display title);
@@ -67,11 +69,13 @@ new head. Desktop is unchanged.
 
 ## 2026-10-07 — The trend brings a player forward; a leg re-sorts the grid in place
 
-Pointing at a player's name or line, or tabbing to the name, brings their line forward in green, drawn over the
-others, while the others fade back to 0.2, all over quick; moving away returns to the chosen player, and a press
-chooses them, as before (CH-4601). Each line takes the pointer along a 12px band. Choosing a leg keeps the card's
-ring and now settles the re-sorted grid in with its column ringed (base in, quick out) instead of the rows jumping
-(CH-4602). A grid row presses with the row press tint. New tests: stats-team.test › CH-4601, CH-4602.
+Pointing at a player's name or line, or tabbing to the name, brings their line
+forward in green, drawn over the others, while the others fade back to 0.2, all
+over quick; moving away returns to the chosen player, and a press chooses them,
+as before (CH-4601). Each line takes the pointer along a 12px band. Choosing a
+leg keeps the card's ring and now settles the re-sorted grid in with its column
+ringed (base in, quick out) instead of the rows jumping (CH-4602). A grid row
+presses with the row press tint. New tests: stats-team.test › CH-4601, CH-4602.
 
 ## 2026-10-07 — The trend crossfades between measures
 

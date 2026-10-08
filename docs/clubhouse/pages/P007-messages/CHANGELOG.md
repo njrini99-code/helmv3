@@ -2,8 +2,9 @@
 
 ## 2026-10-08 — phone: Mobile clubhouse pass
 
-Phone Messages now follows the owner's "Coach - Home - Mobile v2" board (round 3:
-fewer containers), carried from Home to every phone screen:
+Phone Messages now follows the owner's "Coach - Home - Mobile v2" board (round
+3: fewer containers), carried from Home to every phone screen:
+
 - the inbox sits on the parchment at the board's margins: Search, then the
   filters as engraved rings, the chosen one in the green tint (the tint and ink
   cross over on the quick beat and the list settles in under it, CH-7606), then
@@ -42,9 +43,11 @@ fewer containers), carried from Home to every phone screen:
 
 ## 2026-10-07 — Another conversation settles in
 
-On desktop, opening another conversation or announcement settles it in with a 6px rise (base) while the last fades
-out (quick), hidden from assistive tech; each keeps its own scroll and a thread still opens at its end (CH-7605). The
-first one a visit opens appears at once. Instant with reduced motion. New test: messages.test › CH-7605.
+On desktop, opening another conversation or announcement settles it in with a
+6px rise (base) while the last fades out (quick), hidden from assistive tech;
+each keeps its own scroll and a thread still opens at its end (CH-7605). The
+first one a visit opens appears at once. Instant with reduced motion. New test:
+messages.test › CH-7605.
 
 ## 2026-10-07 — One continuous conversation rail
 

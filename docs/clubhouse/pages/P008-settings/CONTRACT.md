@@ -114,7 +114,16 @@ Each card checks its fields before anything is sent and keeps Save disabled whil
 
 Status: DEFINED
 
-Every change has its own toast (80601 to 80624) naming what failed and why when the server gave a short reason, otherwise "Check your connection and try again", with Retry on saves and switches. Every section that fails to load shows its own notice with Try again (80625 to 80635), never a blank form that could be saved over real data; its Try again reads the whole page again (81401). When more than one of a section's reads fails (Team, Notifications, Golf), the section says so once at its top, naming each, with the one Try again (the shell's CH-1209), and each part keeps only its title under its heading (states audit b6, 2026-10-08). A crash stays in its section (80636, SectionBoundary). The route's own errors are the shell's (10603 to 10607).
+Every change has its own toast (80601 to 80624) naming what failed and why when
+the server gave a short reason, otherwise "Check your connection and try again",
+with Retry on saves and switches. Every section that fails to load shows its own
+notice with Try again (80625 to 80635), never a blank form that could be saved
+over real data; its Try again reads the whole page again (81401). When more than
+one of a section's reads fails (Team, Notifications, Golf), the section says so
+once at its top, naming each, with the one Try again (the shell's CH-1209), and
+each part keeps only its title under its heading (states audit b6, 2026-10-08).
+A crash stays in its section (80636, SectionBoundary). The route's own errors
+are the shell's (10603 to 10607).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -285,7 +294,13 @@ Settings is rendered on the server for each request and has no realtime. After a
 
 Status: DEFINED
 
-Settings' own motion (81601 to 81609) on the v2 tokens (D-64), and the shell's press on keys, sheets and toasts (11601 to 11613); a section in the rail, a link row and the phone's list rows deepen their tint on press instead of scaling (81607). On the phone a section is pushed: it slides in from the right over the list, which fades under it, and Back slides it off the same way (81609); a pop the iOS back-swipe has already drawn swaps at once. Animations off in Preferences makes every Clubhouse transition instant (81608).
+Settings' own motion (81601 to 81609) on the v2 tokens (D-64), and the shell's
+press on keys, sheets and toasts (11601 to 11613); a section in the rail, a link
+row and the phone's list rows deepen their tint on press instead of scaling
+(81607). On the phone a section is pushed: it slides in from the right over the
+list, which fades under it, and Back slides it off the same way (81609); a pop
+the iOS back-swipe has already drawn swaps at once. Animations off in
+Preferences makes every Clubhouse transition instant (81608).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

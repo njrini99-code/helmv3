@@ -36,7 +36,13 @@ Team Hub opens on Home, or on the tab in `?tab=`, for a coach and for a player. 
 
 Status: DEFINED
 
-The route skeleton (CH-10405) is the Clubhouse one inside the shell and the Fairway one outside it; on the phone it takes the signed-in role's shape from the shell (a coach's New announcement, a coach's five tabs or a player's four), so the page lands without moving; nothing shows for the first 150ms, then a fade (the shell's 11609). Team Hub loads no section on its own after the server render, so there are no section skeletons; a save in flight says what it is doing on its button (Uploading, Posting, Saving, Assigning).
+The route skeleton (CH-10405) is the Clubhouse one inside the shell and the
+Fairway one outside it; on the phone it takes the signed-in role's shape from
+the shell (a coach's New announcement, a coach's five tabs or a player's four),
+so the page lands without moving; nothing shows for the first 150ms, then a fade
+(the shell's 11609). Team Hub loads no section on its own after the server
+render, so there are no section skeletons; a save in flight says what it is
+doing on its button (Uploading, Posting, Saving, Assigning).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -59,7 +65,13 @@ Status: N/A — Team Hub has no realtime, polling or pull to refresh: the server
 
 Status: DEFINED
 
-First run is the whole-page empty state, one for a coach (CH-10305, with Plan a trip; the head's New announcement stays the page's one primary action, states audit b9) and one for a player (CH-10306); each section has its own empty too (CH-10301 to CH-10304, CH-10307, CH-10308). A failed read is never shown as empty, and the page empty state is only for a page where every read answered and was empty, Updates included (100410). No team is CH-10309. Team Hub has no search or filter, so it has no filtered empty state.
+First run is the whole-page empty state, one for a coach (CH-10305, with Plan a
+trip; the head's New announcement stays the page's one primary action, states
+audit b9) and one for a player (CH-10306); each section has its own empty too
+(CH-10301 to CH-10304, CH-10307, CH-10308). A failed read is never shown as
+empty, and the page empty state is only for a page where every read answered and
+was empty, Updates included (100410). No team is CH-10309. Team Hub has no
+search or filter, so it has no filtered empty state.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -103,7 +115,14 @@ Checked before anything is sent, with the message under the field and the warnin
 
 Status: DEFINED
 
-Every write has its own toast naming what failed and what to do, with Retry (CH-10001 to CH-10009); every section that fails to load has its own notice with Try again (CH-10201 to CH-10204, CH-10206, CH-10207), and when more than one does, the page says so once under its head with one Try again that reads the page again (the shell's CH-1209, 2026-10-08) while each failed section keeps only its title under its heading; a crash stays in its section (CH-10205, SectionBoundary). The toast's Retry runs the whole change again, follow-ups included (101401).
+Every write has its own toast naming what failed and what to do, with Retry
+(CH-10001 to CH-10009); every section that fails to load has its own notice with
+Try again (CH-10201 to CH-10204, CH-10206, CH-10207), and when more than one
+does, the page says so once under its head with one Try again that reads the
+page again (the shell's CH-1209, 2026-10-08) while each failed section keeps
+only its title under its heading; a crash stays in its section (CH-10205,
+SectionBoundary). The toast's Retry runs the whole change again, follow-ups
+included (101401).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -248,7 +267,9 @@ Nothing refreshes in the background: the page is as fresh as its last read. Afte
 
 Status: DEFINED
 
-Team Hub's own motion is its tabs: the underline slides to the chosen tab on the press and the panel swaps behind it (CH-10602, CH-10603). Every press, sheet and skeleton fade is the shell's (D-64); there is no first-paint rise.
+Team Hub's own motion is its tabs: the underline slides to the chosen tab on the
+press and the panel swaps behind it (CH-10602, CH-10603). Every press, sheet and
+skeleton fade is the shell's (D-64); there is no first-paint rise.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

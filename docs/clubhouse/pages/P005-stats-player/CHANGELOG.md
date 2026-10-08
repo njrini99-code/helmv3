@@ -24,6 +24,7 @@ controls.css; measured the same way).
 
 A player's stats on the phone follow the Coach Home "Mobile clubhouse pass"
 board (round 3). The page is the parchment sheet with no white cards:
+
 - the head opens under the engraved double rule: the avatar in the Ledger's
   ring beside the name in the bold condensed sans (it was a regular-weight
   display title);
@@ -45,8 +46,9 @@ read on one line. Desktop is unchanged.
 
 ## 2026-10-07 — Add focus area's sheet is on the record
 
-No visible change. CH-5602 now describes the shared Modal's entrance as it runs (a 6px rise from 98% on desktop, a
-rise from the bottom edge on the phone, instant with reduced motion or Animations off) and is referenced at
+No visible change. CH-5602 now describes the shared Modal's entrance as it runs
+(a 6px rise from 98% on desktop, a rise from the bottom edge on the phone,
+instant with reduced motion or Animations off) and is referenced at
 `FocusAreaSheet`.
 
 ## 2026-10-07 — Tabs answer on the press

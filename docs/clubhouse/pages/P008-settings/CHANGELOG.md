@@ -4,6 +4,7 @@
 
 Phone Settings now follows the owner's "Mobile clubhouse pass" board, as phone
 Coach Home does (no stacked white cards):
+
 - the large title under the engraved double rule, in the 31px bold sans in
   forest ink; a section's brief (Notifications, CoachHelm's save status) sits
   10px under it;
@@ -28,13 +29,15 @@ sheets and action sheets are unchanged.
 
 ## 2026-10-08 — One notice when a section's reads fail together; action rows read as actions
 
-In Team, Notifications and Golf, with more than one read failed the section says so once at its top, naming the
-parts, with one Try again that reads the page again (the shell's CH-1209); each part keeps only its title under its
-heading. One failed read keeps its own notice and Try again (states audit b6). On the phone, action and link rows
-with no value or chevron (Create invite, Report a problem, Privacy policy, Terms of service, Try again) take the green
-of a value that opens something, so they no longer read as labels missing their control; Sign out and Leave team stay
-red. Every line the page writes, its toasts included,
-takes the curly apostrophe (b8, held by `copy-apostrophes.test.ts`).
+In Team, Notifications and Golf, with more than one read failed the section says
+so once at its top, naming the parts, with one Try again that reads the page
+again (the shell's CH-1209); each part keeps only its title under its heading.
+One failed read keeps its own notice and Try again (states audit b6). On the
+phone, action and link rows with no value or chevron (Create invite, Report a
+problem, Privacy policy, Terms of service, Try again) take the green of a value
+that opens something, so they no longer read as labels missing their control;
+Sign out and Leave team stay red. Every line the page writes, its toasts
+included, takes the curly apostrophe (b8, held by `copy-apostrophes.test.ts`).
 
 ## 2026-10-08 — A failed read keeps its heading; copy
 
@@ -47,8 +50,9 @@ didn’t load", "You aren’t on a team yet"); "Check maya@…" loses its period
 
 ## 2026-10-07 — Sections press with a tint
 
-A section in the rail and a link row now deepen their tint over the press beat (`--ch-ledger-row-press`); buttons
-keep the shell's 6px press. CH-8607 says so instead of claiming every control shrinks.
+A section in the rail and a link row now deepen their tint over the press beat
+(`--ch-ledger-row-press`); buttons keep the shell's 6px press. CH-8607 says so
+instead of claiming every control shrinks.
 
 ## 2026-10-07 — The Ledger: sections on the canvas
 

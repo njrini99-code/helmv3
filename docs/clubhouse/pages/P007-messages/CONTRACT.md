@@ -269,12 +269,15 @@ A send the client can't confirm says to check the thread before sending again
 
 Status: DEFINED
 
-Messages' own motion (71601 to 71606): a message appears in place, the typing dots (never under a thread that didn't
-load), details and the reaction bar opening from their buttons, the phone's message sheet, on desktop another
-conversation or announcement settling in over the last (never the first one a visit opens), and on the phone another
-inbox filter: the chosen chip's tint and ink cross over the quick beat and the list settles in under it. A row's press
-is a tint on the press beat, never a scale. The shell's: the page crossfade, the press on keys, sheets and pushes
-(11601 to 11613, D-64); there is no first-paint rise. Reduced motion and Animations off make every swap instant.
+Messages' own motion (71601 to 71606): a message appears in place, the typing
+dots (never under a thread that didn't load), details and the reaction bar
+opening from their buttons, the phone's message sheet, on desktop another
+conversation or announcement settling in over the last (never the first one a
+visit opens), and on the phone another inbox filter: the chosen chip's tint and
+ink cross over the quick beat and the list settles in under it. A row's press is
+a tint on the press beat, never a scale. The shell's: the page crossfade, the
+press on keys, sheets and pushes (11601 to 11613, D-64); there is no first-paint
+rise. Reduced motion and Animations off make every swap instant.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

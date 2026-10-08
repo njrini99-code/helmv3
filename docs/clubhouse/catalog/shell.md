@@ -34,11 +34,14 @@ D-40 to D-43).
 
 ## 12xx Didn't load
 
-Every notice is the flush Ledger notice (2026-10-08): it sits between the section's own engraved rules with no fill,
-no ring and no stripe, its icon on the heading's edge, the icon and title in the danger ink, the body in the secondary
-ink, and Try again beside the words in a full-width notice, or under them in anything narrower than 640px and on the
-phone. A state's title (a notice, an empty state, a route error) renders without a trailing full stop
-(`stateTitle`, ui/States.tsx), so a page's catalog may quote a title with one that the screen does not show.
+Every notice is the flush Ledger notice (2026-10-08): it sits between the
+section's own engraved rules with no fill, no ring and no stripe, its icon on
+the heading's edge, the icon and title in the danger ink, the body in the
+secondary ink, and Try again beside the words in a full-width notice, or under
+them in anything narrower than 640px and on the phone. A state's title (a
+notice, an empty state, a route error) renders without a trailing full stop
+(`stateTitle`, ui/States.tsx), so a page's catalog may quote a title with one
+that the screen does not show.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |

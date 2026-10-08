@@ -28,9 +28,9 @@ Held items:     none
   it makes lands where it belongs (CH-15620).
 - The member card fills in without flickering (CH-15621):
   - A value's first appearance is still the design's brass flash. Later changes
-    (each letter, each handicap step) turn it brass again where it stands, and it
-    dries to ink once the answer rests. Each keystroke and slider step used to
-    restart it from invisible.
+    (each letter, each handicap step) turn it brass again where it stands, and
+    it dries to ink once the answer rests. Each keystroke and slider step used
+    to restart it from invisible.
   - The coin is green ink on the card's stock (the app's coin tones changed
     colour with each letter typed). It settles in as it goes from the silhouette
     to the monogram to the photo.
@@ -121,7 +121,7 @@ Data impact:    none
 Held items:     /golf/reset-password (the email's link) is still today's page
 ```
 
-### Changed
+### Changed (reset password)
 
 - "Forgot password?" opens a reset form in the panel instead of leaving the
   Clubhouse sign-in for today's page (CH-15920). The course, the lockup and the
@@ -135,8 +135,8 @@ Held items:     /golf/reset-password (the email's link) is still today's page
   - The same words.
   - Send in flight is the lit key with "Sending reset link…" (CH-15420).
   - A failed request says so, and one that throws is logged (CH-15020, CH-15021).
-- Check your email shows the address the link went to, with Back to sign in as the
-  one action (CH-15921). The address travels between the views.
+- Check your email shows the address the link went to, with Back to sign in as
+  the one action (CH-15921). The address travels between the views.
 - The URL keeps `?view=forgot`, so the browser's Back returns to sign in and a
   reload opens the form. The links keep today's page as their href, for a new tab
   or no JavaScript (CH-15922).
@@ -151,21 +151,21 @@ Held items:     /golf/reset-password (the email's link) is still today's page
   approval they now map to 03, 12, 09 and 12 (`category-map.json`). The four
   first IDs are tombstoned and replaced: 150202 → 150302, 150702 → 151202,
   150703 → 150902, 150704 → 151203.
-- The panel's text-link colour no longer reaches link keys (`.ch-au
-  a:where(:not(.ch-btn))`). It had drawn sign up's "Enter a team code" and "Go to
-  sign in" green on green.
+- The panel's text-link colour no longer reaches link keys
+  (`.ch-au a:where(:not(.ch-btn))`). It had drawn sign up's "Enter a team code"
+  and "Go to sign in" green on green.
 
-### Why
+### Why (reset password)
 
 The Clubhouse sign-in sent "Forgot password?" to today's page, a different design
 with a different frame: the one seam left in the front door. The owner chose to
 bring it into the panel; the reset link's own page stays today's because it
 builds the recovery session.
 
-### Verification
+### Verification (reset password)
 
-- WebKit at 1440x900 and 390x844 (touch): sign in → reset → a refusal → sending →
-  check your email → browser Back → Forward → "Remember it? Sign in".
+- WebKit at 1440x900 and 390x844 (touch): sign in → reset → a refusal → sending
+  → check your email → browser Back → Forward → "Remember it? Sign in".
   - URL, focus and live heading were right at each step.
   - No page errors.
 - A flip back within 60ms re-enters the same copy, with the address carried and
@@ -189,7 +189,7 @@ Data impact:    none
 Held items:     forgot and reset password are still today's pages (not Clubhouse); reported to the lead
 ```
 
-### Changed
+### Changed (sign in)
 
 - The Sign in key, when off because a field is empty, is an unlit key pressed into
   the paper (the soft well, its word engraved) instead of the shared 42% fade,
@@ -219,13 +219,13 @@ Held items:     forgot and reset password are still today's pages (not Clubhouse
 - Preview: `&pending=1` holds Sign in in flight; `fail=empty` leaves the email
   empty.
 
-### Why
+### Why (sign in)
 
 Owner direction (2026-10-07): production-ready, premium, all animations done. The
 team lead's pass on sign in named the disabled key, the motion between states
 and the rough edges.
 
-### Verification
+### Verification (sign in)
 
 - WebKit captures at 1440x900 and 390x844 (touch), before and after; see VERIFY.
 - rAF frame sampling in WebKit:

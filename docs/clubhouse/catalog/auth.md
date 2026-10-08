@@ -13,20 +13,48 @@ browser checks do not replace physical keyboard, gesture or
 assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
-Routes: `/golf/login` (sign in, and in its panel the reset form and check your email at `?view=forgot`, owner 2026-10-07, up for owner review; the reset link in the email still lands on today's `/golf/reset-password`), `/golf/welcome` (the greeting after it), `/golf/signup` (the code, and the questions before the account) and `/golf/player` (a new player's questions after it). Sign up follows Q-96: a roster code signs up a player, a staff code an assistant coach (instantly, no role picker), there is no head-coach path, and Request access reaches the owner's inbound list. It changes presentation only: the same `validateAccessCode`, `signupAction`, `completePlayerOnboarding` and `submitDemoRequest`, with the rules in `docs/clubhouse/drafts/auth-onboarding-ground-truth.md`. They are drawn for a visitor with no role, so they sit outside the dashboard frame and outside `isClubhouseFor`: the owner's design (`design/handoff/auth/`, approved with Q-96) is drawn behind its own flag, `golf_clubhouse_front_door`, which is off in production until the owner says so. With it off, the current pages render exactly as before. The flag chooses the page that is drawn and nothing else: both call the same server action (`loginAction`, which resets the shared idle marker in the response that sets the session cookies) and follow the same redirects.
+Routes: `/golf/login` (sign in, and in its panel the reset form and check your
+email at `?view=forgot`, owner 2026-10-07, up for owner review; the reset link
+in the email still lands on today's `/golf/reset-password`), `/golf/welcome`
+(the greeting after it), `/golf/signup` (the code, and the questions before the
+account) and `/golf/player` (a new player's questions after it). Sign up follows
+Q-96: a roster code signs up a player, a staff code an assistant coach
+(instantly, no role picker), there is no head-coach path, and Request access
+reaches the owner's inbound list. It changes presentation only: the same
+`validateAccessCode`, `signupAction`, `completePlayerOnboarding` and
+`submitDemoRequest`, with the rules in
+`docs/clubhouse/drafts/auth-onboarding-ground-truth.md`. They are drawn for a
+visitor with no role, so they sit outside the dashboard frame and outside
+`isClubhouseFor`: the owner's design (`design/handoff/auth/`, approved with
+Q-96) is drawn behind its own flag, `golf_clubhouse_front_door`, which is off in
+production until the owner says so. With it off, the current pages render
+exactly as before. The flag chooses the page that is drawn and nothing else:
+both call the same server action (`loginAction`, which resets the shared idle
+marker in the response that sets the session cookies) and follow the same
+redirects.
 
 The screens: the painted clubhouse hole (a seeded SVG course whose sky follows the viewer's own clock), the form on an ivory panel (a sheet on the phone), and then the welcome: the course fills the frame, the camera pushes to the pin, a ball lands, the greeting focuses in and a card says what has happened since the last visit. There is no auto-advance: the welcome waits for Continue (or Return), then folds the course into the app canvas and hands over.
 
 Where things live:
-- Code: `src/clubhouse/screens/auth/` (`SignIn`, `SignInForm`, `ForgotPassword` (`ResetForm`, `ResetSent`), `AuthKey`, `auth-view`, `forgot-state`, `use-glide`, `Welcome`, `WelcomeStage`, `AuthFrame`, `AuthNotice`, `SceneMount`, `GolfScene`, `SceneLayers`, `scene-sky`, `scene-geometry`, `scene-ball`, `sign-in-state`, `auth-motion`, `use-hour`, `use-query-param`)
+- Code: `src/clubhouse/screens/auth/` (`SignIn`, `SignInForm`, `ForgotPassword`
+  (`ResetForm`, `ResetSent`), `AuthKey`, `auth-view`, `forgot-state`,
+  `use-glide`, `Welcome`, `WelcomeStage`, `AuthFrame`, `AuthNotice`,
+  `SceneMount`, `GolfScene`, `SceneLayers`, `scene-sky`, `scene-geometry`,
+  `scene-ball`, `sign-in-state`, `auth-motion`, `use-hour`, `use-query-param`)
 - Shared rules: `src/lib/auth/golf-sign-in-logic.ts` (the six messages, the destination, the stale-bundle guard), used by the current form and this one so they cannot drift
 - Loader: `src/clubhouse/data/welcome.ts` (`loadWelcome`), with the pure rules in `welcome-shape.ts` (who is greeted, what the card lists, the last-visit wording)
 - Routes: `src/clubhouse/routes/auth.tsx`, chosen by `src/app/golf/(auth)/login/layout.tsx` and `welcome/layout.tsx` through `isClubhouseFrontDoor`
-- Tests: `src/clubhouse/__tests__/auth.test.tsx`, `auth-forgot.test.tsx`, `auth-logic.test.ts`, `auth-server.test.tsx`, `auth-scene.test.tsx`
+- Tests: `src/clubhouse/__tests__/auth.test.tsx`, `auth-forgot.test.tsx`,
+  `auth-logic.test.ts`, `auth-server.test.tsx`, `auth-scene.test.tsx`
 - Sign up: `src/clubhouse/screens/onboard/` (`Onboard`, `Steps`, `MemberCard`, `flow`, `logic`, `writes`, `writes-context`), `src/clubhouse/data/onboard.ts`, `src/clubhouse/routes/onboard.tsx`, chosen by `signup/layout.tsx` and `(onboarding)/player/layout.tsx`; tests `onboard.test.tsx`, `onboard-logic.test.ts`
 - The hand-off curtain: `src/clubhouse/lib/handoff.ts` (the fold's last frame held over the route change, lifted by `ClubhouseFrame`); test `handoff.test.tsx`
 - Sign-up preview: `/clubhouse-preview/onboard` (`?step=`, `&who=`, `&sim=`, `&hour=`)
-- Preview: `/clubhouse-preview/auth` (`?screen=signin|welcome`; sign in `&state=coach|player&fail=empty|creds|unverified|rate|network|stale`, `&view=forgot` (the reset form; Send answers after 700ms), `&pending=1` (Sign in and Send held in flight); welcome `&state=coach|player|caughtup|first|failed|noname`; `&hour=8.5` picks the time of day)
+- Preview: `/clubhouse-preview/auth` (`?screen=signin|welcome`; sign in
+  `&state=coach|player&fail=empty|creds|unverified|rate|network|stale`,
+  `&view=forgot` (the reset form; Send answers after 700ms), `&pending=1` (Sign
+  in and Send held in flight); welcome
+  `&state=coach|player|caughtup|first|failed|noname`; `&hour=8.5` picks the time
+  of day)
 
 The time of day is read from the viewer's clock after hydration (the server draws a neutral sky and reserved lines, so nothing mismatches), every 30 seconds and when the tab comes back, in the viewer's own timezone. The greeting word follows the hour: morning 4:30 to 12, afternoon 12 to 17, evening otherwise.
 
@@ -34,7 +62,10 @@ The time of day is read from the viewer's clock after hydration (the server draw
 
 ## 150xx Error toasts
 
-These are notices under the form, not toasts: a sign-in that is refused is about the form, and it stays put until the next attempt answers. While that attempt is in flight it steps back to half strength, and the answer replaces it in place (CH-15608). The words are the current form's `getErrorMessage`, unchanged.
+These are notices under the form, not toasts: a sign-in that is refused is about
+the form, and it stays put until the next attempt answers. While that attempt is
+in flight it steps back to half strength, and the answer replaces it in place
+(CH-15608). The words are the current form's `getErrorMessage`, unchanged.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
@@ -86,7 +117,11 @@ These are notices under the form, not toasts: a sign-in that is refused is about
 
 ## 156xx Motion
 
-The design's own easings, durations and delays apply on these screens only (a scoped exception to D-64, recorded in `pages/P015-auth/DESIGN.md`). They are tokens in `styles/auth-tokens.css` and variants in `screens/auth/auth-motion.ts`; sign up's are tokens in `styles/onboard-tokens.css`. Nothing else in Clubhouse changes.
+The design's own easings, durations and delays apply on these screens only (a
+scoped exception to D-64, recorded in `pages/P015-auth/DESIGN.md`). They are
+tokens in `styles/auth-tokens.css` and variants in
+`screens/auth/auth-motion.ts`; sign up's are tokens in
+`styles/onboard-tokens.css`. Nothing else in Clubhouse changes.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
@@ -131,7 +166,7 @@ Only through `src/clubhouse/lib/haptics.ts`. On the web they do nothing.
 | CH-15803 | The welcome announces its sentence once, when it is final ("Good morning, Coach Reyes."): `role="status"`, `aria-live="polite"`, atomic; the `h1` holds the same words | `Welcome` | auth.test › CH-15803 |
 | CH-15804 | The painted course, the tagline and the marks over it are decorative and hidden from assistive technology | `aria-hidden` on `.ch-au-photo` | auth.test › CH-15804 |
 | CH-15805 | The password eye is a named, pressed-state button with a hit area past 44px; every other control is at least 44px on the phone | `ch-au-eye`, `auth.css` | auth.test › CH-15805; a11y scan |
-| CH-15820 | The panel's view changes | Focus moves with it: to the reset form's Email (today's page focuses it), and to the "Check your email" and "Sign in" headings, so the change is read out. The leaving view is hidden from assistive technology and focus at once; first paint moves nothing. A view that comes back while it is still leaving re-enters as the same copy, so focus follows presence | `useIsPresent` in each view, `Swap` | auth-forgot.test › CH-15920, CH-15921, CH-15922 |
+| CH-15820 | The panel's view changes | Focus moves with it: to the reset form's Email (today's page focuses it), and to the "Check your email" and "Sign in" headings, so the change is read out. The leaving view is hidden from assistive technology and focus at once; first paint moves nothing. A view that comes back while it is still leaving re-enters as the same copy, so focus follows presence. `useIsPresent` in each view, `Swap` | auth-forgot.test › CH-15920, CH-15921, CH-15922 |
 
 ## 159xx Network and UX
 

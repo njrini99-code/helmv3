@@ -129,37 +129,49 @@ where the text and the mockups differ, the mockups won). At 820px or less
 rail page: a different screen over the same data, writes and catalog numbers
 (81901).
 
-- **The Ledger on the phone** (2026-10-08, the owner's "Mobile clubhouse pass" board carried from Coach Home): no
-  stacked white cards. The page sits on the parchment at 26px 20px 32px with 36px between sections; each group is a
-  flush section, its heading under the engraved double rule in the 19px bold sans in forest ink, its rows on soft
-  seams (58px, the label in the 15px bold sans), and its footnote flush to the section's edge. Rows press with the
-  Ledger's tint, bleeding 12px past the edge, never a scale. The sheets keep their inset form cards.
-- **The list.** The large title "Settings" under the double rule, in the 31px bold sans in forest ink (the bar carries
-  only "‹ More"); who you are (photo or initials coin set in the Ledger's ring, name, role and team, and the handicap
-  for a player), flush, opening the Profile sheet; the sections on a rule, each row an engraved icon tile (CoachHelm's
-  tile stays dark), a label, a short summary and a chevron (coach: Account, Notifications, Team, CoachHelm,
-  Preferences; player: Account, Golf profile, Notifications, Preferences); Help and legal (Report a problem, Privacy
-  policy, Terms of service); and Sign out, a red row on its own rule. The tab bar stays.
-- **Sections push** over the list (CH-8609): the section slides in from the right as the list fades under it, and Back
-  slides it off the same way; instant with reduced motion, and after an iOS back-swipe that already drew the pop. Each
-  is a history entry, so Back, "‹ Settings" and the iOS edge swipe pop it (CH-1906); a section named in the URL
-  (`?section=`) opens pushed. The heading is the bar's, for VoiceOver, and the large title is drawn in the page.
-- **Rows.** A switch row is the whole row (tap anywhere toggles) and keeps the design system's switch
-  (`role="switch"`, the tick, the busy state), drawn 51 by 31. A picker row opens a bottom sheet of options and saves as
-  one is picked. A slider row keeps the slider full width under its label and value. A destructive row (Delete
-  account, Leave team) is a red label at the section's edge. An action or link row (Create invite, Report a
-  problem, Privacy policy, Terms of service, Try again) has no value or chevron, so its label takes the green of a
-  value that opens something.
+- **The Ledger on the phone** (2026-10-08, the owner's "Mobile clubhouse pass"
+  board carried from Coach Home): no stacked white cards. The page sits on the
+  parchment at 26px 20px 32px with 36px between sections; each group is a flush
+  section, its heading under the engraved double rule in the 19px bold sans in
+  forest ink, its rows on soft seams (58px, the label in the 15px bold sans),
+  and its footnote flush to the section's edge. Rows press with the Ledger's
+  tint, bleeding 12px past the edge, never a scale. The sheets keep their inset
+  form cards.
+- **The list.** The large title "Settings" under the double rule, in the 31px
+  bold sans in forest ink (the bar carries only "‹ More"); who you are (photo or
+  initials coin set in the Ledger's ring, name, role and team, and the handicap
+  for a player), flush, opening the Profile sheet; the sections on a rule, each
+  row an engraved icon tile (CoachHelm's tile stays dark), a label, a short
+  summary and a chevron (coach: Account, Notifications, Team, CoachHelm,
+  Preferences; player: Account, Golf profile, Notifications, Preferences); Help
+  and legal (Report a problem, Privacy policy, Terms of service); and Sign out,
+  a red row on its own rule. The tab bar stays.
+- **Sections push** over the list (CH-8609): the section slides in from the
+  right as the list fades under it, and Back slides it off the same way; instant
+  with reduced motion, and after an iOS back-swipe that already drew the pop.
+  Each is a history entry, so Back, "‹ Settings" and the iOS edge swipe pop it
+  (CH-1906); a section named in the URL (`?section=`) opens pushed. The heading
+  is the bar's, for VoiceOver, and the large title is drawn in the page.
+- **Rows.** A switch row is the whole row (tap anywhere toggles) and keeps the
+  design system's switch (`role="switch"`, the tick, the busy state), drawn 51
+  by 31. A picker row opens a bottom sheet of options and saves as one is
+  picked. A slider row keeps the slider full width under its label and value. A
+  destructive row (Delete account, Leave team) is a red label at the section's
+  edge. An action or link row (Create invite, Report a problem, Privacy policy,
+  Terms of service, Try again) has no value or chevron, so its label takes the
+  green of a value that opens something.
 - **Notifications.** This device (push on this device, the weekly team email); Email and push (one row per kind, each
   showing "Email, Push" and opening a sheet of Email and Push switches, then Quiet mode); for a player, CoachHelm
   updates (Rounds and reviews, Goals, Insights, each opening a sheet of In app, Push and Email, then Quiet mode).
   A kind spans several updates (Goals is four), so a switch in its sheet changes all of them in one write and is on
   only when every update in the kind has it on; a channel that is on for some shows "(some)" on the row and says how
   many in the sheet.
-- **Team (coach).** The invite code is the screen's one green feature card (the kit's FeatureCard): "Invite players",
-  the code as its title, the line on how players join, Share where the card's chip would be, and New code in its foot;
-  then the coaching staff, Team details (Team name opens a sheet with the season and school; Team timezone is a
-  picker), Scoring and format (three pickers) and Event reminders (a switch, and each time is a slider in a sheet).
+- **Team (coach).** The invite code is the screen's one green feature card (the
+  kit's FeatureCard): "Invite players", the code as its title, the line on how
+  players join, Share where the card's chip would be, and New code in its foot;
+  then the coaching staff, Team details (Team name opens a sheet with the season
+  and school; Team timezone is a picker), Scoring and format (three pickers) and
+  Event reminders (a switch, and each time is a slider in a sheet).
 - **CoachHelm (coach).** The power switches (the team switch is locked for an assistant coach, with the reason), the
   priorities with the native reorder handle (touch and hold a row, then drag; a selection tick at each step; saved
   once, on drop), then every other desktop control as rows: sensitivity, thresholds, alerts, evidence, windows and

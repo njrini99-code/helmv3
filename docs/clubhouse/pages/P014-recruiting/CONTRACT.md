@@ -76,7 +76,16 @@ From the shell (P001): 10301 BELL_REFRESHES_ON_OPEN.
 
 Status: DEFINED
 
-First run and filtered are distinct, and a failed read is never drawn as empty. No prospects at all is the page empty state with Add your first prospect, alone under the head: the pipeline is not drawn, since four empty stages said nothing it doesn't (140401, CH-14301; states audit, 2026-10-08). A search or a stage that matches nothing says which, and offers Clear search and Search all stages, or Show all stages when it is only a stage (140402, CH-14302). A prospect with no contact details, no notes or no documents has three different rows, each with its own action (140403 to 140405, CH-14303 to CH-14305). A coach on no team gets the page that says so and opens Team Settings (140406, CH-14306). A failed list is category 06 and never "your list starts here" (141501).
+First run and filtered are distinct, and a failed read is never drawn as empty.
+No prospects at all is the page empty state with Add your first prospect, alone
+under the head: the pipeline is not drawn, since four empty stages said nothing
+it doesn't (140401, CH-14301; states audit, 2026-10-08). A search or a stage
+that matches nothing says which, and offers Clear search and Search all stages,
+or Show all stages when it is only a stage (140402, CH-14302). A prospect with
+no contact details, no notes or no documents has three different rows, each with
+its own action (140403 to 140405, CH-14303 to CH-14305). A coach on no team gets
+the page that says so and opens Team Settings (140406, CH-14306). A failed list
+is category 06 and never "your list starts here" (141501).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -233,7 +242,19 @@ The server's list is the page's source: after a write, or Try again, the server 
 
 Status: DEFINED
 
-A stage in the pipeline lifts its ring 1px on hover and takes a second ring while it is the filter, in the quick duration (141601, CH-14601), and picking or letting go of a stage settles the list in, never when the kept stage returns or as a search is typed (141603, CH-14603). A prospect opens on the phone by sliding in over the list and back out on pop, in the base duration, and settles at once with reduced motion (141602, CH-14602). On the phone a press lays the row press tint over a stage's coin (141601, CH-14601), and a prospect row, the sort, the Stage, Email and Call keys, the Stage row, a document, its remove key and an empty part's action take the row press tint for the press beat, never a scale (141604, CH-14604). A key presses in about 6px and springs back through the shell's press (11606), while a prospect row deepens its tint instead; there is no first-paint rise; reduced motion and Animations off remove all of it (11608). This page's own CSS uses only the v2 tokens (D-64).
+A stage in the pipeline lifts its ring 1px on hover and takes a second ring
+while it is the filter, in the quick duration (141601, CH-14601), and picking or
+letting go of a stage settles the list in, never when the kept stage returns or
+as a search is typed (141603, CH-14603). A prospect opens on the phone by
+sliding in over the list and back out on pop, in the base duration, and settles
+at once with reduced motion (141602, CH-14602). On the phone a press lays the
+row press tint over a stage's coin (141601, CH-14601), and a prospect row, the
+sort, the Stage, Email and Call keys, the Stage row, a document, its remove key
+and an empty part's action take the row press tint for the press beat, never a
+scale (141604, CH-14604). A key presses in about 6px and springs back through
+the shell's press (11606), while a prospect row deepens its tint instead; there
+is no first-paint rise; reduced motion and Animations off remove all of it
+(11608). This page's own CSS uses only the v2 tokens (D-64).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -262,7 +283,18 @@ From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-170
 
 Status: DEFINED
 
-The pipeline is one group named "Filter by stage", each stage a toggle named "Offered, 1 prospect" with its pressed state; with no prospects at all the pipeline is not drawn (141801, CH-14801). The prospects are a real table with a caption and column headers, each name one button, the open one `aria-current`; on the phone a list of buttons named with the prospect, class and stage (141802, CH-14802). The stage control is a radio group that arrow keys move, and the new stage is announced politely once it has saved (141803, CH-14803). A refused save puts each message beside its field with `role="alert"`, marks it `aria-invalid` and moves focus to the first (141804, CH-14804). Email and Call are real links, `mailto:` and `tel:`, named by what they do (141805, CH-14805). Dialogs and sheets are native `<dialog>`s that hold focus and return it on close, and the pushed phone screen is named by its title (the shell's 11809).
+The pipeline is one group named "Filter by stage", each stage a toggle named
+"Offered, 1 prospect" with its pressed state; with no prospects at all the
+pipeline is not drawn (141801, CH-14801). The prospects are a real table with a
+caption and column headers, each name one button, the open one `aria-current`;
+on the phone a list of buttons named with the prospect, class and stage (141802,
+CH-14802). The stage control is a radio group that arrow keys move, and the new
+stage is announced politely once it has saved (141803, CH-14803). A refused save
+puts each message beside its field with `role="alert"`, marks it `aria-invalid`
+and moves focus to the first (141804, CH-14804). Email and Call are real links,
+`mailto:` and `tel:`, named by what they do (141805, CH-14805). Dialogs and
+sheets are native `<dialog>`s that hold focus and return it on close, and the
+pushed phone screen is named by its title (the shell's 11809).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

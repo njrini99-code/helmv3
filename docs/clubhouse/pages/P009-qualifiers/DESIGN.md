@@ -102,18 +102,23 @@ picks). The leaderboard draws the top-score line and the travel cut between rows
 
 ## Phone
 
-Approved spec `docs/clubhouse/phone/qualifiers.md`. The list is the desktop list with phone CSS under a "‹ More"
-top bar. A qualifier is one column: three facts, the confirmed squad above the leaderboard, the leaderboard as
-rows on seams, and a rounds sheet for a player (round chips, Out and In, Message and Stats); Close and Reopen sit behind
-Edit (Q-20), and round-by-round stays on desktop. The form puts Cancel and Create in the top bar and hides the
-tab bar. Manage selections has its own top bar and a foot for the primary action.
+Approved spec `docs/clubhouse/phone/qualifiers.md`. The list is the desktop list
+with phone CSS under a "‹ More" top bar. A qualifier is one column: three facts,
+the confirmed squad above the leaderboard, the leaderboard as rows on seams, and
+a rounds sheet for a player (round chips, Out and In, Message and Stats); Close
+and Reopen sit behind Edit (Q-20), and round-by-round stays on desktop. The form
+puts Cancel and Create in the top bar and hides the tab bar. Manage selections
+has its own top bar and a foot for the primary action.
 
-Its look is the Coach Home "Mobile clubhouse pass" board (owner, 2026-10-08: round 3, "fewer containers, one feature
-card"): every page opens on the engraved double rule with a tracked eyebrow and the bold condensed sans title; the live
-qualifier is the list's one green feature card, its leaders as rows on the green; Active, Concluded, the leaderboard,
-the squad, Course per round, Scoring rules, the form's fieldsets and Manage selections' lists are sections flush under
-the double rule, their rows on seams. The figures sit between two hairlines. No white cards, no grey wells, no serif;
-the pills, the search, the chips, the fields, the steps and the sheets keep their material.
+Its look is the Coach Home "Mobile clubhouse pass" board (owner, 2026-10-08:
+round 3, "fewer containers, one feature card"): every page opens on the engraved
+double rule with a tracked eyebrow and the bold condensed sans title; the live
+qualifier is the list's one green feature card, its leaders as rows on the
+green; Active, Concluded, the leaderboard, the squad, Course per round, Scoring
+rules, the form's fieldsets and Manage selections' lists are sections flush
+under the double rule, their rows on seams. The figures sit between two
+hairlines. No white cards, no grey wells, no serif; the pills, the search, the
+chips, the fields, the steps and the sheets keep their material.
 
 ## Accessibility
 

@@ -124,7 +124,19 @@ Checked in the form before anything is sent. Each problem sits under its field (
 
 Status: DEFINED
 
-Every write has its own failure toast naming what did not happen and what to do: create, save, close and reopen (90601 to 90604) and the four selection writes (90623 to 90626). The one exception is a save the server refused with a reason: the notice over the form tells it (CH-09902), with the error haptic, and no toast says the same words again (lead, 2026-10-08); a save whose request itself failed keeps its toast and Retry (CH-09002). Every section that can fail to load has its own notice with Try again (90605 to 90614, 90621, 90627), and a crash stays in its section (90615 to 90620, 90628; SectionBoundary). A save that lands in part says which part (90622). A failed read of the qualifier itself (detail or form), or of a player's team, throws to the route error view (the shell's 10603 to 10607) instead of claiming "not found"; Manage selections tells a failed read apart in its own notice (90627). Try again has the server read the page again (91402), and Retry runs the write again (91401).
+Every write has its own failure toast naming what did not happen and what to do:
+create, save, close and reopen (90601 to 90604) and the four selection writes
+(90623 to 90626). The one exception is a save the server refused with a reason:
+the notice over the form tells it (CH-09902), with the error haptic, and no
+toast says the same words again (lead, 2026-10-08); a save whose request itself
+failed keeps its toast and Retry (CH-09002). Every section that can fail to load
+has its own notice with Try again (90605 to 90614, 90621, 90627), and a crash
+stays in its section (90615 to 90620, 90628; SectionBoundary). A save that lands
+in part says which part (90622). A failed read of the qualifier itself (detail
+or form), or of a player's team, throws to the route error view (the shell's
+10603 to 10607) instead of claiming "not found"; Manage selections tells a
+failed read apart in its own notice (90627). Try again has the server read the
+page again (91402), and Retry runs the write again (91401).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -271,7 +283,14 @@ None. Every write waits for the server: the status pill, the picks and the steps
 
 Status: DEFINED
 
-The failure toast's Retry runs the same write again with the same arguments and, when it lands, does everything the button would have done: the pill changes, the question closes, the qualifier opens (91401; until 2026-09-30 it only re-sent the write, see the changelog). A save the server refused has no toast: saving again under the form's notice is that same write (91401). Try again on a notice that failed to load has the server read the whole page again; the course picker retries only its own list, and the edit form's round courses offer no retry, because a re-read would drop the coach's changes (91402).
+The failure toast's Retry runs the same write again with the same arguments and,
+when it lands, does everything the button would have done: the pill changes, the
+question closes, the qualifier opens (91401; until 2026-09-30 it only re-sent
+the write, see the changelog). A save the server refused has no toast: saving
+again under the form's notice is that same write (91401). Try again on a notice
+that failed to load has the server read the whole page again; the course picker
+retries only its own list, and the edit form's round courses offer no retry,
+because a re-read would drop the coach's changes (91402).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -294,7 +313,16 @@ After a write lands, the server reads the page again so the page shows the serve
 
 Status: DEFINED
 
-Pressing a card, the hero or a status pill answers with a deeper tint, never a scale; on the phone the live qualifier (the list's one green feature card) darkens under a shade and the rows take the row press tint (91601). Opening a leaderboard row turns its chevron and drops its scorecards into place as they fade in, at their final state, with no count-up or stagger and a static Live dot; closing is instant (91602, D-33). On the phone, choosing a round in a player's rounds sheet fades the chosen chip's raised face in as the old one's fades out, at once with reduced motion (91603, CH-09603). All three are preview-checked; their catalog rows are marked preview and no test forces them. Everything uses the v2 tokens (D-64).
+Pressing a card, the hero or a status pill answers with a deeper tint, never a
+scale; on the phone the live qualifier (the list's one green feature card)
+darkens under a shade and the rows take the row press tint (91601). Opening a
+leaderboard row turns its chevron and drops its scorecards into place as they
+fade in, at their final state, with no count-up or stagger and a static Live
+dot; closing is instant (91602, D-33). On the phone, choosing a round in a
+player's rounds sheet fades the chosen chip's raised face in as the old one's
+fades out, at once with reduced motion (91603, CH-09603). All three are
+preview-checked; their catalog rows are marked preview and no test forces them.
+Everything uses the v2 tokens (D-64).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

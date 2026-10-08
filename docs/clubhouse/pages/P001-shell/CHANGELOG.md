@@ -11,77 +11,104 @@ Recruiting to the curly marks.
 
 ## 2026-10-08 — The preview hands the frame its query
 
-The dev preview (`src/app/clubhouse-preview/[screen]/page.tsx`) passes its own query to `ClubhouseFrame` as `search`,
-as the live shell passes the address's, so `&section=` and a coach's `&player=` decide the preview's phone bar too
-(CH-1402). Checked in WebKit at 390 (touch), loading to loaded: Settings with `&section=team` and `&section=account`
-loads and lands under "‹ Settings" (0px); an unknown section and the bare page under "‹ More" (0px); a coach's player
-with `&player=p1` under "‹ Team" and "Player stats" (0px), the page adding Share. The preview's player screen without
-`&player=` is still the team's address, so it loads under the Stats tab root's bar, as the live address would.
+The dev preview (`src/app/clubhouse-preview/[screen]/page.tsx`) passes its own
+query to `ClubhouseFrame` as `search`, as the live shell passes the address's,
+so `&section=` and a coach's `&player=` decide the preview's phone bar too
+(CH-1402). Checked in WebKit at 390 (touch), loading to loaded: Settings with
+`&section=team` and `&section=account` loads and lands under "‹ Settings" (0px);
+an unknown section and the bare page under "‹ More" (0px); a coach's player with
+`&player=p1` under "‹ Team" and "Player stats" (0px), the page adding Share. The
+preview's player screen without `&player=` is still the team's address, so it
+loads under the Stats tab root's bar, as the live address would.
 
 ## 2026-10-08 — The hero bell shows keyboard focus
 
-On Home's green bar the bell showed no focus at all (CH-1806): the keys' green focus shadow lost to the disc's own
-ring, and its green would have vanished on the hero anyway. It now takes a champagne outline 2px off the disc, with no
-shadow; at rest it is unchanged. Checked in WebKit at 390: reached with Option-Tab, it matches `:focus-visible` with a
-2px `#dccda6` outline at offset 0 and only its own inset ring for a shadow; the bar at rest is pixel-identical.
+On Home's green bar the bell showed no focus at all (CH-1806): the keys' green
+focus shadow lost to the disc's own ring, and its green would have vanished on
+the hero anyway. It now takes a champagne outline 2px off the disc, with no
+shadow; at rest it is unchanged. Checked in WebKit at 390: reached with
+Option-Tab, it matches `:focus-visible` with a 2px `#dccda6` outline at offset 0
+and only its own inset ring for a shadow; the bar at rest is pixel-identical.
 
 ## 2026-10-08 — The pushed bar for forms, Settings sections and a coach's player
 
-- **Forms (CH-1402).** The coach's qualifier forms (new and edit) load under their own bar: the plain Cancel and the
-  form's title, where the form puts them, with the tab bar already hidden; the form adds Create or Save. They loaded
-  under the tab root's title and bell with the tab bar showing, then changed both. A player's new round and the round
-  itself keep their own chrome (the band's Back and the plain bar, P011 111903), and now hide the tab bar from their
-  first frame too (`phoneFullScreen`), so it no longer shows while they load and leaves as they arrive.
-- **The query (CH-1402).** `ClubhouseShell` hands the address's query to the frame (`useSearchParams`; the dashboard
-  renders per request, so the server reads it too). A Settings section named in the address (`?section=`, or the old
-  `/settings/notifications` and `/settings/coaching-intelligence`) loads under "‹ Settings", as SettingsPhone pushes
-  it; a coach's player on Stats (`?player=`) under "‹ Team" and "Player stats". Both used to load under the list's or
-  the team's bar and swap the back link when the page arrived.
-- Manage selections' bar is the coach's only: a player there meets the coach-only notice, under the plain bar.
+- **Forms (CH-1402).** The coach's qualifier forms (new and edit) load under
+  their own bar: the plain Cancel and the form's title, where the form puts
+  them, with the tab bar already hidden; the form adds Create or Save. They
+  loaded under the tab root's title and bell with the tab bar showing, then
+  changed both. A player's new round and the round itself keep their own chrome
+  (the band's Back and the plain bar, P011 111903), and now hide the tab bar
+  from their first frame too (`phoneFullScreen`), so it no longer shows while
+  they load and leaves as they arrive.
+- **The query (CH-1402).** `ClubhouseShell` hands the address's query to the
+  frame (`useSearchParams`; the dashboard renders per request, so the server
+  reads it too). A Settings section named in the address (`?section=`, or the
+  old `/settings/notifications` and `/settings/coaching-intelligence`) loads
+  under "‹ Settings", as SettingsPhone pushes it; a coach's player on Stats
+  (`?player=`) under "‹ Team" and "Player stats". Both used to load under the
+  list's or the team's bar and swap the back link when the page arrived.
+- Manage selections' bar is the coach's only: a player there meets the
+  coach-only notice, under the plain bar.
 
-Checked in WebKit at 390 (touch): the new and edited qualifier, loading to loaded, Cancel and the title moved 0px with
-the tab bar hidden in both (before: the tab root's title and bell, the tab bar showing); Manage selections and the
-earlier routes unchanged. The Settings-section and player bars are checked in `shell.test` only: the preview hands the
-frame no query yet.
+Checked in WebKit at 390 (touch): the new and edited qualifier, loading to
+loaded, Cancel and the title moved 0px with the tab bar hidden in both (before:
+the tab root's title and bell, the tab bar showing); Manage selections and the
+earlier routes unchanged. The Settings-section and player bars are checked in
+`shell.test` only: the preview hands the frame no query yet.
 
 ## 2026-10-08 — A pushed page's bar from its first frame, 44 by 44 keys, and choices that answer a press
 
-- **The pushed bar while a page loads (CH-1402).** On the phone a page opened from More (a coach's Roster,
-  Recruiting, Qualifiers, Team Hub and Messages; a player's Calendar, Roster, My stats, Qualifiers, My qualifiers and
-  Classes; Settings for both) and a page below another (a qualifier, its selections, a round, recovery) loaded under
-  the tab root's bar, the title at the left and the bell, then jumped to "‹ More" and a centred title when the page
-  arrived: the largest shift left on the phone. The shell now draws that bar from the address (`phonePushedTop` in
-  `shell/nav.ts`, `PushedTopStandIn` in `shell/phone-chrome.tsx`), in the loading state and in the server's first
-  paint. The page's own bar replaces it where it stood and adds its action; Back works while the page loads. The
-  stand-in's title is plain text, so the heading stays the page's. `PhoneTop` and the chrome hooks
-  (`usePhoneImmersive`, `usePhoneHero`, `usePhoneTabsHidden`) now take hold in a layout effect, in the commit that
-  mounts them, so the bars never show a frame of the last page's state. The bar title's tracking is its own
-  (`.ch-pbar__title`), no longer the app's global h1 rule, so plain text and the h1 match to the pixel. If Home's
-  skeleton holds the green hero for a moment on a cold load of a pushed address, the team gives way to the address's
-  back link and title.
-- **44 by 44 (CH-1815).** A pushed screen's bar drew a hairline inside its 50px, so its row was 43px and its 44px back
-  link and text action stood half a pixel out of it; it has no hairline now, as the shell bar. The hero bell's 40px
-  disc sits in a 44px key (a clear 2px border), where it was drawn. A sheet's Close, with a title alone, was clipped
-  to 44 by 43 by its scrolling header; its reach now leans up into the header's padding. The search field carries its
-  own reach (Clubhouse changelog).
-- **A press on a choice (CH-1617).** A segmented option or a pill that isn't on takes the press tint over the press
-  beat, after the 50ms delay; the kit's feature card answers with a shade instead of a 0.985 scale.
+- **The pushed bar while a page loads (CH-1402).** On the phone a page opened
+  from More (a coach's Roster, Recruiting, Qualifiers, Team Hub and Messages; a
+  player's Calendar, Roster, My stats, Qualifiers, My qualifiers and Classes;
+  Settings for both) and a page below another (a qualifier, its selections, a
+  round, recovery) loaded under the tab root's bar, the title at the left and
+  the bell, then jumped to "‹ More" and a centred title when the page arrived:
+  the largest shift left on the phone. The shell now draws that bar from the
+  address (`phonePushedTop` in `shell/nav.ts`, `PushedTopStandIn` in
+  `shell/phone-chrome.tsx`), in the loading state and in the server's first
+  paint. The page's own bar replaces it where it stood and adds its action; Back
+  works while the page loads. The stand-in's title is plain text, so the heading
+  stays the page's. `PhoneTop` and the chrome hooks (`usePhoneImmersive`,
+  `usePhoneHero`, `usePhoneTabsHidden`) now take hold in a layout effect, in the
+  commit that mounts them, so the bars never show a frame of the last page's
+  state. The bar title's tracking is its own (`.ch-pbar__title`), no longer the
+  app's global h1 rule, so plain text and the h1 match to the pixel. If Home's
+  skeleton holds the green hero for a moment on a cold load of a pushed address,
+  the team gives way to the address's back link and title.
+- **44 by 44 (CH-1815).** A pushed screen's bar drew a hairline inside its 50px,
+  so its row was 43px and its 44px back link and text action stood half a pixel
+  out of it; it has no hairline now, as the shell bar. The hero bell's 40px disc
+  sits in a 44px key (a clear 2px border), where it was drawn. A sheet's Close,
+  with a title alone, was clipped to 44 by 43 by its scrolling header; its reach
+  now leans up into the header's padding. The search field carries its own reach
+  (Clubhouse changelog).
+- **A press on a choice (CH-1617).** A segmented option or a pill that isn't on
+  takes the press tint over the press beat, after the 50ms delay; the kit's
+  feature card answers with a shade instead of a 0.985 scale.
 
 Checked in WebKit at 390 (touch), machine load 9 to 14:
-- Loading to loaded, back link and title (the text's own box): 0px on all 11 pushed routes in the preview (Roster
-  for both roles, Recruiting, Qualifiers for both, My qualifiers, Settings, Team Hub, Messages, Classes, a round).
-  Measured before on four of them (Roster, Recruiting, Qualifiers, Settings): loading drew the tab root's title and
-  bell. Sampled every frame from first paint through hydration (Roster loaded and loading, Settings, Recruiting, a
-  round, Team Hub, Classes): the pushed bar with one back link in every frame, never the tab root's. Tab roots are
-  unchanged (the coach's Calendar still trades the bell for its New event key on load).
-- Keys: a pushed screen's back link and Edit 44 by 44 at y 0 (were 44 at y -0.5, hit 43.5); a thread's bare back 44;
-  the hero bell 44 by 44 at 340,0 (was 40 by 40), pixel-identical at rest; a title-only sheet's Close hit 44 by 44
-  (was 44 by 43); the search field hit 44 tall from a 36px drawn field (3px outside lands on it, 5px outside on the
-  page), its input 16px, its clear key clearing, in the page (Rounds, Recruiting) and in a sheet (the course
-  picker).
-- A held segment tints to `--ch-ledger-row-press` after the delay, scale none, and the chip moves on release.
-- The preview's qualifier screens use `/golf/dashboard/qualifiers` for every state, so their `?state=loading` shows
-  the list's bar; the real addresses draw the qualifier's.
+
+- Loading to loaded, back link and title (the text's own box): 0px on all 11
+  pushed routes in the preview (Roster for both roles, Recruiting, Qualifiers
+  for both, My qualifiers, Settings, Team Hub, Messages, Classes, a round).
+  Measured before on four of them (Roster, Recruiting, Qualifiers, Settings):
+  loading drew the tab root's title and bell. Sampled every frame from first
+  paint through hydration (Roster loaded and loading, Settings, Recruiting, a
+  round, Team Hub, Classes): the pushed bar with one back link in every frame,
+  never the tab root's. Tab roots are unchanged (the coach's Calendar still
+  trades the bell for its New event key on load).
+- Keys: a pushed screen's back link and Edit 44 by 44 at y 0 (were 44 at y -0.5,
+  hit 43.5); a thread's bare back 44; the hero bell 44 by 44 at 340,0 (was 40 by
+  40), pixel-identical at rest; a title-only sheet's Close hit 44 by 44 (was 44
+  by 43); the search field hit 44 tall from a 36px drawn field (3px outside
+  lands on it, 5px outside on the page), its input 16px, its clear key clearing,
+  in the page (Rounds, Recruiting) and in a sheet (the course picker).
+- A held segment tints to `--ch-ledger-row-press` after the delay, scale none,
+  and the chip moves on release.
+- The preview's qualifier screens use `/golf/dashboard/qualifiers` for every
+  state, so their `?state=loading` shows the list's bar; the real addresses draw
+  the qualifier's.
 
 ## 2026-10-08 — The bell, Not rebuilt and the way back, in the shared states
 
@@ -99,48 +126,63 @@ again when StrictMode, or React's `<Activity>`, detaches and reattaches it
 
 ## 2026-10-08 — Springs in the shell, and a tab that answers a second tap
 
-More and the bell now rise on the smooth spring (base, no bounce) and leave on it. Swiped shut, they leave at the
-speed they were thrown (CH-1602, CH-1612, CH-1611). A pushed phone screen slides in on the same spring and leaves
-over the base ease-out, so the page beneath is free again at once (CH-1610). The sidebar plate also glides on it, and
-a second row tapped mid-glide sends it on from where it is, at its speed. Toward a row too near to stop at from that
-speed, it starts slower instead, so it never passes the row (CH-1613). A sheet thrown back up carries on a little past
-its open position over its own floor, and a finger can catch it on the way (CH-1611).
+More and the bell now rise on the smooth spring (base, no bounce) and leave on
+it. Swiped shut, they leave at the speed they were thrown (CH-1602, CH-1612,
+CH-1611). A pushed phone screen slides in on the same spring and leaves over the
+base ease-out, so the page beneath is free again at once (CH-1610). The sidebar
+plate also glides on it, and a second row tapped mid-glide sends it on from
+where it is, at its speed. Toward a row too near to stop at from that speed, it
+starts slower instead, so it never passes the row (CH-1613). A sheet thrown back
+up carries on a little past its open position over its own floor, and a finger
+can catch it on the way (CH-1611).
 
-Tapping the tab that is already open now does what a UIKit tab bar does, without a tick. A pushed screen or section
-pops back to the tab's root, and at the root the page scrolls to the top (CH-1907). When iOS has already animated a
-Back with its edge swipe (`hasUAVisualTransition`), the Back shows once: the pushed screen leaves at once and the page
-crossfade does not run (CH-1908). The More sheet's rows tint after a 50ms beat, so a drag or a scroll never flashes
-them (CH-1606). The springs are a D-64 extension: a lead decision under the owner's full-auto brief, for the owner to
-confirm.
+Tapping the tab that is already open now does what a UIKit tab bar does, without
+a tick. A pushed screen or section pops back to the tab's root, and at the root
+the page scrolls to the top (CH-1907). When iOS has already animated a Back with
+its edge swipe (`hasUAVisualTransition`), the Back shows once: the pushed screen
+leaves at once and the page crossfade does not run (CH-1908). The More sheet's
+rows tint after a 50ms beat, so a drag or a scroll never flashes them (CH-1606).
+The springs are a D-64 extension: a lead decision under the owner's full-auto
+brief, for the owner to confirm.
 
-Machine load ran from 70 to 290 for most of the work, so the springs are checked first by their curves, not by frame
-timing. Each check is one of two kinds: framer's own spring generator sampled at fixed times, or a WebKit animation
-read through `getAnimations()` and seeked while paused. All run against a harness of the real components (390px,
-touch).
-- framer's generator, given the stiffness and damping `chSpring` passes, draws the same curve as the
-  duration-and-bounce form from rest (largest difference 0px). Smooth is at 59.8% at 100ms and 96.7% at 260ms, within
-  0.5px of 100 at 369ms, and never past its mark. Settle passes it by 0.13%.
-- Handed 2000px/s, that form starts at 2000px/s, where the duration-and-bounce form starts at 0. Retargeted at 80ms,
-  it carries on at 648px/s; the other drops to 0.
-- The `Modal` sheet rises on a 462ms CSS animation whose `linear()` easing holds the token's 30 values. Seeked, it is
-  within 0.001 of the spring at every sampled time.
-- Thrown at 1.5px/ms, the `Modal` exit starts 24px on, one frame at the throw speed. It runs at 1.74, then
-  1.97px/ms (8ms seeks) and ends off screen at 367ms.
-- Let go 40px down while moving up at 1.5px/ms, More springs back over 288ms. It passes its open position by 3.96px
-  at 112ms, over a seamless floor. A finger landing there holds it at -3.96px.
-- The sidebar plate glides 200px in 408ms over 27 keyframes, never past its row. Sent on at about 100ms, its new
-  glide starts within 1.4px of where it was, and it passes no row by more than half a pixel.
+Machine load ran from 70 to 290 for most of the work, so the springs are checked
+first by their curves, not by frame timing. Each check is one of two kinds:
+framer's own spring generator sampled at fixed times, or a WebKit animation read
+through `getAnimations()` and seeked while paused. All run against a harness of
+the real components (390px, touch).
+
+- framer's generator, given the stiffness and damping `chSpring` passes, draws
+  the same curve as the duration-and-bounce form from rest (largest difference
+  0px). Smooth is at 59.8% at 100ms and 96.7% at 260ms, within 0.5px of 100 at
+  369ms, and never past its mark. Settle passes it by 0.13%.
+- Handed 2000px/s, that form starts at 2000px/s, where the duration-and-bounce
+  form starts at 0. Retargeted at 80ms, it carries on at 648px/s; the other
+  drops to 0.
+- The `Modal` sheet rises on a 462ms CSS animation whose `linear()` easing holds
+  the token's 30 values. Seeked, it is within 0.001 of the spring at every
+  sampled time.
+- Thrown at 1.5px/ms, the `Modal` exit starts 24px on, one frame at the throw
+  speed. It runs at 1.74, then 1.97px/ms (8ms seeks) and ends off screen at
+  367ms.
+- Let go 40px down while moving up at 1.5px/ms, More springs back over 288ms. It
+  passes its open position by 3.96px at 112ms, over a seamless floor. A finger
+  landing there holds it at -3.96px.
+- The sidebar plate glides 200px in 408ms over 27 keyframes, never past its row.
+  Sent on at about 100ms, its new glide starts within 1.4px of where it was, and
+  it passes no row by more than half a pixel.
 - Pulled up 160px, the sheet gives 47px over its floor.
-- A Back flagged `hasUAVisualTransition` removes the pushed screen on the first frame.
+- A Back flagged `hasUAVisualTransition` removes the pushed screen on the first
+  frame.
 - With reduced motion, the `Modal` fades in 1ms and the plate jumps with no animation.
 - Frame-sampled once load fell to 14 to 18 (headless WebKit draws about every 10ms):
   - More rises within half a pixel at 474ms and closes by the scrim in 446ms.
-  - Thrown at 2.4px/ms, More runs 3.8 to 4.3px/ms and is gone at 431ms; the old fixed ease-out started near 10px/ms.
-    Its first frame runs faster (6.7px/ms), because the 16ms lead is sized for the 60Hz frame of WKWebView and
-    Safari.
-  - The band springs back in 330ms. The plate is within half a pixel at 403ms, and a second tap never drops its speed.
-  - A pushed screen is within half a pixel at 463ms. The pill passes its mark by 0.22px of 147px; nothing else
-    passes.
+  - Thrown at 2.4px/ms, More runs 3.8 to 4.3px/ms and is gone at 431ms; the old
+    fixed ease-out started near 10px/ms. Its first frame runs faster (6.7px/ms),
+    because the 16ms lead is sized for the 60Hz frame of WKWebView and Safari.
+  - The band springs back in 330ms. The plate is within half a pixel at 403ms,
+    and a second tap never drops its speed.
+  - A pushed screen is within half a pixel at 463ms. The pill passes its mark by
+    0.22px of 147px; nothing else passes.
 
 ## 2026-10-08 — The shared states, drawn as the Ledger draws
 
