@@ -50,11 +50,12 @@ The frame around every page (10102), a page change that opens the new page at th
 
 Status: DEFINED
 
-The bell's own skeleton rows (10201). Each page owns its route skeleton, built from the shared shapes (`Skeleton`, `SkelLine`, `SkelRows`, `SkelRule`); the shell fades it in over base as it mounts (11609; the 150ms hold ended with F-37), and on desktop Ledger pages draws a block placeholder as a rule with two lines of type, never a filled card.
+The bell's own skeleton rows (10201). Each page owns its route skeleton, built from the shared shapes (`Skeleton`, `SkelLine`, `SkelRows`, `SkelRule`); the shell fades it in over base as it mounts (11609; the 150ms hold ended with F-37), and on desktop Ledger pages draws a block placeholder as a rule with two lines of type, never a filled card. On the phone the shell draws a pushed page's bar from its address while the page loads and in the server's first paint (10202, since 2026-10-08): the back link and title stand where the page's own bar puts them, so nothing in the bar moves when it arrives.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 10201 | CH-1401 | `THE_BELL_IS_LOADING_ITS_LIST` | The bell is loading its list |
+| 10202 | CH-1402 | `A_PHONE_PAGE_OPENED_FROM_MORE_OR` | A phone page opened from More, or a page below another (a qualifier, its selections, a round, recovery), is loading or still arriving from the server |
 
 ## 03 — Background loading / refresh
 
@@ -189,7 +190,7 @@ Status: N/A — the shell keeps no data that can go stale on screen: the bell re
 
 Status: DEFINED
 
-v2 motion (D-64) for every page: the route reveal, the More sheet, menus and the bell, toasts, the offline banner, the press, the focus ring, reduced motion, the skeleton delay, pushed screens, sheet drags, the phone bell, the sidebar's gliding plate, a toast held or thrown, the segmented pill and content swaps (11601 to 11616). Since 2026-10-08 (a D-64 extension, a lead decision under the owner's full-auto brief; owner to confirm), what moves and can be interrupted or thrown rides the D-64 springs (`CH_SPRINGS`, bounce 0 to 0.1): the More and bell sheets, pushed screens, the plate, the pill and a swap's incoming copy. Sheets rubber-band past their open position, spring back from the finger's speed, drag from their body at the top, and carry a throw into the close (11611).
+v2 motion (D-64) for every page: the route reveal, the More sheet, menus and the bell, toasts, the offline banner, the press, the focus ring, reduced motion, the skeleton delay, pushed screens, sheet drags, the phone bell, the sidebar's gliding plate, a toast held or thrown, the segmented pill, content swaps, and the press on a choice or the feature card, which tints or shades and never scales (11601 to 11617). Since 2026-10-08 (a D-64 extension, a lead decision under the owner's full-auto brief; owner to confirm), what moves and can be interrupted or thrown rides the D-64 springs (`CH_SPRINGS`, bounce 0 to 0.1): the More and bell sheets, pushed screens, the plate, the pill and a swap's incoming copy. Sheets rubber-band past their open position, spring back from the finger's speed, drag from their body at the top, and carry a throw into the close (11611).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -209,6 +210,7 @@ v2 motion (D-64) for every page: the route reveal, the More sheet, menus and the
 | 11614 | CH-1614 | `A_FINGER_HOLDS_A_TOAST_OR_THROWS` | A finger holds a toast, or throws it |
 | 11615 | CH-1615 | `A_SEGMENTED_CONTROLS_CHOICE_CHANGES` | A segmented control's choice changes |
 | 11616 | CH-1616 | `CONTENT_SWAPS_INSIDE_A_FIXED_FRAME` | Content swaps inside a fixed frame (a tab's panel, a chart's mode, a window's figures, a pager) |
+| 11617 | CH-1617 | `PRESSING_A_SEGMENTED_CONTROLS_OPTION_OR_A` | Pressing a segmented control's option or a pill that isn't on, or the kit's feature card as a link or a button |
 
 ## 17 — Haptic
 
@@ -231,7 +233,7 @@ v2 haptics (D-70) for every page: a tab change, a save that lands, a failure, th
 
 Status: DEFINED
 
-Skip to content, the modal More sheet, the current page and named landmarks, announced toasts, the bell as a dialog, focus rings, axe clean, the phone tab bar, pushed screens named and focused, the phone top bar, the phone bell as a modal sheet, and the team switcher on desktop and on the phone (11801 to 11814).
+Skip to content, the modal More sheet, the current page and named landmarks, announced toasts, the bell as a dialog, focus rings, axe clean, the phone tab bar, pushed screens named and focused, the phone top bar, the phone bell as a modal sheet, the team switcher on desktop and on the phone, and every phone key reaching 44 by 44, the search field included (11801 to 11815).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -249,6 +251,7 @@ Skip to content, the modal More sheet, the current page and named landmarks, ann
 | 11812 | CH-1812 | `A_TOAST_RAISED_WHILE_A_DIALOG_OR` | A toast raised while a dialog or sheet is open shows inside it (on the phone, from the top), so it is seen, announced and its Retry can be tapped; a modal dialog makes everything outside it inert, which had hidden them. When the dialog closes, open toasts move back to the page |
 | 11813 | CH-1813 | `ON_A_DESKTOP_A_HEAD_COACH_ON` | On a desktop a head coach on more than one team sees the sidebar's team line as a menu button (the boards' up-down chevrons): it opens a listbox of the teams with the current one `aria-selected`; arrows, Home and End move, Enter or Space picks, Esc or Tab closes and focus returns to the button; a pick switches at once and every screen re-reads for the new team |
 | 11814 | CH-1814 | `ON_THE_PHONE_THE_SAME_COACH_SEES` | On the phone the same coach sees their teams in the More sheet, under who they are, the current one marked (`aria-current`); a switch closes the sheet on the new team, a refused one leaves it open with the reason |
+| 11815 | CH-1815 | `ON_THE_PHONE_EVERY_KEY_A_FINGER` | On the phone every key a finger uses reaches at least 44 by 44: the bar's back link and text action (a pushed screen's bar has the shell bar's 44px row, with no hairline), the hero bell (its 40px disc drawn inside a 44px key, where it was), a sheet's Close (its reach leans up into the header's padding, so a title-only header no longer clips it to 43), and the search field (36px drawn, 44px to the finger; its input and clear key take their own taps, and its 16px text keeps iOS from zooming the page on focus). Measured in WebKit at 390 on 2026-10-08 |
 
 ## 19 — Responsive layout
 

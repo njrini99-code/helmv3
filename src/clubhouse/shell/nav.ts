@@ -173,3 +173,45 @@ export function isRebuilt(pathname: string, role: ChRole = 'coach'): boolean {
 export function rebuiltHref(href: string, role: ChRole = 'coach'): string | null {
   return isRebuilt(href.split('?')[0] ?? href, role) ? href : null;
 }
+
+/** The pushed top bar a phone page draws with its `PhoneTop`: a back link named for where it goes, and the title. */
+export interface ChPhonePushedTop {
+  back: string;
+  title: string;
+  /** The page draws its large title itself, so the bar's title is for VoiceOver only (Settings). */
+  quiet?: boolean;
+  /** Where Back goes from a page below another one; without it, Back steps back to wherever the user came from (D-41). */
+  parent?: string;
+}
+
+const UUID = '[0-9a-f-]{36}';
+/** Pages below another page that push in over it on the phone, as their `PhoneTop` draws them. */
+const PUSHED_BELOW: ReadonlyArray<{ path: RegExp; top: (role: ChRole, m: RegExpExecArray) => ChPhonePushedTop }> = [
+  { path: new RegExp(`^/golf/dashboard/qualifiers/${UUID}$`, 'i'), top: () => ({ back: 'Qualifiers', title: 'Qualifier', parent: '/golf/dashboard/qualifiers' }) },
+  { path: new RegExp(`^(/golf/dashboard/qualifiers/${UUID})/selection$`, 'i'), top: (_, m) => ({ back: 'Qualifier', title: 'Selections', parent: m[1] }) },
+  {
+    path: new RegExp(`^/golf/dashboard/rounds/${UUID}$`, 'i'),
+    top: (role) => (role === 'coach' ? { back: 'Stats', title: 'Round', parent: '/golf/dashboard/stats' } : { back: 'Rounds', title: 'Round', parent: '/golf/dashboard/rounds' }),
+  },
+  { path: /^\/golf\/dashboard\/rounds\/recover$/, top: () => ({ back: 'Rounds', title: 'Recover', parent: '/golf/dashboard/rounds' }) },
+];
+/** More-sheet pages whose phone page draws a tab root's title instead of "‹ More" (the player's Messages, MessagesPhone). */
+const ROOT_TITLE_UNDER_MORE: Record<ChRole, readonly string[]> = { coach: [], player: ['messages'] };
+
+/**
+ * The pushed bar a phone address draws, so the shell can draw it before the page arrives (CH-1402): a page opened from
+ * the More sheet goes back to More, a page below another goes back to it. Null for a tab root and for anything that
+ * draws its own chrome (a full-page form, the round itself). Keep in step with the pages' `PhoneTop`s.
+ */
+export function phonePushedTop(pathname: string, role: ChRole): ChPhonePushedTop | null {
+  const path = pathname.replace(/\/$/, '') || '/';
+  if (path === '/golf/dashboard/settings') return { back: 'More', title: 'Settings', quiet: true };
+  for (const p of PUSHED_BELOW) {
+    const m = p.path.exec(path);
+    if (m) return p.top(role, m);
+  }
+  if (path === '/golf/dashboard/my-qualifiers') return role === 'player' ? { back: 'More', title: 'My qualifiers' } : null;
+  const item = navFor(role).find((i) => i.href === path);
+  if (!item || CH_PHONE_TABS[role].includes(item.id) || ROOT_TITLE_UNDER_MORE[role].includes(item.id)) return null;
+  return { back: 'More', title: item.label };
+}

@@ -60,7 +60,7 @@ Three route skeletons in the page's own shapes: the list (90201: head, tools, he
 | 90206 | CH-09409 | `MANAGE_SELECTIONS_IS_LOADING` | Manage selections is loading |
 | 90207 | CH-09410 | `A_QUALIFIERS_COURSES_AND_SCORECARDS_ARE_STILL` | A qualifier's courses and scorecards are still streaming in behind its standings |
 
-From the shell (P001): 10201 CH-1401.
+From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 ## 03 — Background loading / refresh
 
@@ -302,7 +302,7 @@ Pressing a card, the hero or a status pill answers with a deeper tint, never a s
 | 91602 | CH-09602 | `OPENING_A_LEADERBOARD_ROW` | Opening a leaderboard row |
 | 91603 | CH-09603 | `CHOOSING_A_ROUND_IN_A_PLAYERS_ROUNDS` | Choosing a round in a player's rounds sheet (phone) |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617.
 
 ## 17 — Haptic
 
@@ -331,7 +331,7 @@ The leaderboard and round-by-round are tables (rows, column headers, a row heade
 | 91803 | CH-09803 | `A_LIVE_UPDATE_TO_THE_STANDINGS_IS` | A live update to the standings is announced |
 | 91804 | — | `FIELD_PROBLEMS_ARE_ALERTS` | Each problem in the form or the pick dialog is an alert tied to its field by aria-describedby, the field is marked aria-invalid, and a field with no problem is not. |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
 
 ## 19 — Responsive layout
 

@@ -168,6 +168,15 @@ before, after, baseline or evidence.
 | `P001__modal-stress__coach__320x568__popup-audit__before__43a146a.png` | before | 43a146a | modal-stress (coach), 320x568px, popup-audit; local synthetic preview; 43a146a baseline |
 | `P001__premium-audit__coach__1280__case-001-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-001-chromium-normal; /clubhouse-preview/settings; synthetic preview |
 | `P001__premium-audit__coach__390__case-001-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-001-chromium-normal; /clubhouse-preview/settings; synthetic preview |
+| `P001__hero-bell__coach__390__home__after__d22efe2.png` | after | d22efe2 | hero-bell (coach), 390px, home |
+| `P001__hero-bell__coach__390__home__before__96dcb84.png` | before | 96dcb84 | hero-bell (coach), 390px, home |
+| `P001__pushed-bar__coach__390__roster-loading__after__d22efe2.png` | after | d22efe2 | pushed-bar (coach), 390px, roster-loading |
+| `P001__pushed-bar__coach__390__roster-loading__before__96dcb84.png` | before | 96dcb84 | pushed-bar (coach), 390px, roster-loading |
+| `P001__pushed-screen-bar__coach__390__recruiting-detail__after__d22efe2.png` | after | d22efe2 | pushed-screen-bar (coach), 390px, recruiting-detail |
+| `P001__pushed-screen-bar__coach__390__recruiting-detail__before__96dcb84.png` | before | 96dcb84 | pushed-screen-bar (coach), 390px, recruiting-detail |
+| `P001__segmented-press__coach__390__held__evidence__d22efe2.png` | evidence | d22efe2 | segmented-press (coach), 390px, held |
+| `P001__sheet-close__coach__390__title-only__after__d22efe2.png` | after | d22efe2 | sheet-close (coach), 390px, title-only |
+| `P001__sheet-close__coach__390__title-only__before__96dcb84.png` | before | 96dcb84 | sheet-close (coach), 390px, title-only |
 
 ## Historical verification gaps
 

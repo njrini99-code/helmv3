@@ -827,11 +827,32 @@
   color: var(--ch-on-green-ink);
   text-decoration: none;
 }
+/* A card never scales (lib/press.ts, owner 2026-10-01): pressed, the linked card takes a shade over its green for the
+   press beat, after the beat a UIKit cell waits, so a scroll that starts on it never flashes it (CH-1617). */
 .ch-feat.is-link {
-  transition: scale var(--ch-dur-press) var(--ch-ease);
+  position: relative;
+  cursor: pointer;
 }
-.ch-feat.is-link:active {
-  scale: 0.985;
+.ch-feat.is-link::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgb(2 18 10 / 0.2);
+  opacity: 0;
+  transition: opacity var(--ch-dur-press) var(--ch-ease);
+  content: '';
+  pointer-events: none;
+}
+.ch-feat.is-link:active::after {
+  opacity: 1;
+  transition-delay: var(--ch-dur-press-delay);
+}
+/* The card as a button (FeatureCard onClick): the card's own face, not the browser's button. */
+button.ch-feat {
+  width: 100%;
+  border: 0;
+  font: inherit;
+  text-align: start;
 }
 .ch-feat__k {
   display: flex;

@@ -55,7 +55,7 @@ The route skeleton (140201, CH-14401) draws the header, the pipeline, the table 
 | 140202 | CH-14402 | `A_PROSPECTS_DOCUMENTS_ARE_LOADING` | A prospect's documents are loading |
 | 140203 | CH-14407 | `A_FILE_IS_BEING_SENT_TO_STORAGE` | A file is being sent to Storage and the browser reports progress |
 
-From the shell (P001): 10201 CH-1401.
+From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 ## 03 — Background loading / refresh
 
@@ -242,7 +242,7 @@ A stage in the pipeline lifts its ring 1px on hover and takes a second ring whil
 | 141603 | CH-14603 | `PICKING_A_STAGE_IN_THE_PIPELINE_OR` | Picking a stage in the pipeline, or letting it go |
 | 141604 | CH-14604 | `PRESSING_A_ROW_OR_A_KEY_ON` | Pressing a row or a key on the phone |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617.
 
 ## 17 — Haptic
 
@@ -272,7 +272,7 @@ The pipeline is one group named "Filter by stage", each stage a toggle named "Of
 | 141804 | CH-14804 | `A_SAVE_IS_REFUSED` | A save is refused |
 | 141805 | CH-14805 | `EMAIL_AND_CALL` | Email and Call |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
 
 ## 19 — Responsive layout
 

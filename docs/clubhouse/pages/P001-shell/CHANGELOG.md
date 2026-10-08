@@ -1,5 +1,44 @@
 # P001 — Shell: changelog
 
+## 2026-10-08 — A pushed page's bar from its first frame, 44 by 44 keys, and choices that answer a press
+
+- **The pushed bar while a page loads (CH-1402).** On the phone a page opened from More (a coach's Roster,
+  Recruiting, Qualifiers, Team Hub and Messages; a player's Calendar, Roster, My stats, Qualifiers, My qualifiers and
+  Classes; Settings for both) and a page below another (a qualifier, its selections, a round, recovery) loaded under
+  the tab root's bar, the title at the left and the bell, then jumped to "‹ More" and a centred title when the page
+  arrived: the largest shift left on the phone. The shell now draws that bar from the address (`phonePushedTop` in
+  `shell/nav.ts`, `PushedTopStandIn` in `shell/phone-chrome.tsx`), in the loading state and in the server's first
+  paint. The page's own bar replaces it where it stood and adds its action; Back works while the page loads. The
+  stand-in's title is plain text, so the heading stays the page's. `PhoneTop` and the chrome hooks
+  (`usePhoneImmersive`, `usePhoneHero`, `usePhoneTabsHidden`) now take hold in a layout effect, in the commit that
+  mounts them, so the bars never show a frame of the last page's state. The bar title's tracking is its own
+  (`.ch-pbar__title`), no longer the app's global h1 rule, so plain text and the h1 match to the pixel. If Home's
+  skeleton holds the green hero for a moment on a cold load of a pushed address, the team gives way to the address's
+  back link and title.
+- **44 by 44 (CH-1815).** A pushed screen's bar drew a hairline inside its 50px, so its row was 43px and its 44px back
+  link and text action stood half a pixel out of it; it has no hairline now, as the shell bar. The hero bell's 40px
+  disc sits in a 44px key (a clear 2px border), where it was drawn. A sheet's Close, with a title alone, was clipped
+  to 44 by 43 by its scrolling header; its reach now leans up into the header's padding. The search field carries its
+  own reach (Clubhouse changelog).
+- **A press on a choice (CH-1617).** A segmented option or a pill that isn't on takes the press tint over the press
+  beat, after the 50ms delay; the kit's feature card answers with a shade instead of a 0.985 scale.
+
+Checked in WebKit at 390 (touch), machine load 9 to 14:
+- Loading to loaded, back link and title (the text's own box): 0px on all 11 pushed routes in the preview (Roster
+  for both roles, Recruiting, Qualifiers for both, My qualifiers, Settings, Team Hub, Messages, Classes, a round).
+  Measured before on four of them (Roster, Recruiting, Qualifiers, Settings): loading drew the tab root's title and
+  bell. Sampled every frame from first paint through hydration (Roster loaded and loading, Settings, Recruiting, a
+  round, Team Hub, Classes): the pushed bar with one back link in every frame, never the tab root's. Tab roots are
+  unchanged (the coach's Calendar still trades the bell for its New event key on load).
+- Keys: a pushed screen's back link and Edit 44 by 44 at y 0 (were 44 at y -0.5, hit 43.5); a thread's bare back 44;
+  the hero bell 44 by 44 at 340,0 (was 40 by 40), pixel-identical at rest; a title-only sheet's Close hit 44 by 44
+  (was 44 by 43); the search field hit 44 tall from a 36px drawn field (3px outside lands on it, 5px outside on the
+  page), its input 16px, its clear key clearing, in the page (Rounds, Recruiting) and in a sheet (the course
+  picker).
+- A held segment tints to `--ch-ledger-row-press` after the delay, scale none, and the chip moves on release.
+- The preview's qualifier screens use `/golf/dashboard/qualifiers` for every state, so their `?state=loading` shows
+  the list's bar; the real addresses draw the qualifier's.
+
 ## 2026-10-08 — The bell, Not rebuilt and the way back, in the shared states
 
 The bell's empty (CH-1302, CH-1303) is the shared section empty and its failed

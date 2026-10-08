@@ -1,5 +1,21 @@
 # Clubhouse changelog
 
+## 2026-10-08 — The kit for pages, a search field with its own reach, choices that answer a press
+
+- **The Ledger kit** (`ui/Ledger.tsx`) is ready for the phone pages: `LedgerRow`, `FigureRow`, `FeatureCard`,
+  `PageIntro` and `LedgerList` take `className`, `code` (as `data-ch-code`) and `label` (the accessible name, where
+  ARIA allows one: a plain row's on its list item, a plain feature card's as a named group). `FeatureCard` takes
+  `onClick` (a button); a `LedgerRow` with both `href` and `onClick` runs the click as the link is followed; `PageIntro`
+  takes `level={2}` for an intro under a phone bar that already holds the h1. What already rendered renders the same.
+- **The search field** (`ui/SearchField.tsx`, `controls.css`) carries its own reach on the phone (P001 CH-1815): 36px
+  drawn, 44px to the finger, its input and clear key above the reach, and 16px text so iOS doesn't zoom the page on
+  focus. Every `SearchField` gets it without a rule of its own (checked in Rounds and Recruiting at 390); Recruiting's
+  and Qualifiers' own reach rules are now redundant.
+- **Choices answer a press** (P001 CH-1617): a segmented option or a pill that isn't on takes the press tint over the
+  press beat, after the 50ms delay a UIKit cell waits; nothing scales. The kit's feature card, as a link or a button,
+  answers with a shade over its green instead of a 0.985 scale (cards never scale, owner 2026-10-01).
+- **`PhoneBarParts`** takes `heading={false}`, for the shell's stand-in bar (P001 CH-1402).
+
 ## 2026-10-08 — The shell's own states join the family
 
 - **The bell:** its empty ("You’re all caught up", "Nothing of this kind") is the

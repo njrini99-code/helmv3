@@ -10,7 +10,7 @@ import { liftHandoffCurtain } from '../lib/handoff';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { ToastProvider } from '../ui/Toast';
 import type { ChShellData } from '../data/shell';
-import { activeNavItem, isRebuilt, routeLabel } from './nav';
+import { activeNavItem, isRebuilt, phonePushedTop, routeLabel } from './nav';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { OfflineBanner } from './OfflineBanner';
@@ -52,6 +52,8 @@ export function ClubhouseFrame({
   const teamSwitch = teamSwitchFor(userData);
   const item = activeNavItem(pathname, role);
   const rebuilt = forceRebuilt || isRebuilt(pathname, role);
+  // A pushed page's bar, drawn by the shell until the page's own arrives (CH-1402); a page not rebuilt keeps the plain bar.
+  const pushed = rebuilt ? phonePushedTop(pathname, role) : null;
   const { showAnimations } = useAppearancePreferences();
   // Smooth wheel scrolling on the desktop canvas (off on a phone, with reduced motion and with Animations off).
   useCanvasSmoothScroll();
@@ -75,7 +77,7 @@ export function ClubhouseFrame({
                 <div className="ch-app">
                   <Sidebar userData={userData} shell={shell} pathname={pathname} teamSwitch={teamSwitch} />
                   <div className="ch-canvas" id="ch-canvas">
-                    <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} />
+                    <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} pushed={pushed} />
                     <OfflineBanner />
                     {/* A new team is a new page: the route remounts, so nothing the old team's screen held (a search, an open panel, a live feed) carries over. */}
                     <RouteFrame routeKey={`${pathname}\u0000${userData.teamId ?? ''}`}>

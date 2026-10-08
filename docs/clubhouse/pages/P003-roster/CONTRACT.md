@@ -52,7 +52,7 @@ Route skeleton (30201): the header, toolbar and six face cards in their final sl
 | --- | --- | --- | --- |
 | 30201 | CH-3401 | `ROSTER_IS_LOADING` | Roster is loading |
 
-From the shell (P001): 10201 CH-1401.
+From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 ## 03 — Background loading / refresh
 
@@ -234,7 +234,7 @@ Roster's own motion: the panel slides in and players cross-fade (CH-3601), a fac
 | 31602 | CH-3602 | `HOVERING_OR_PRESSING_A_FACE_CARD_OR` | Hovering or pressing a face card or row |
 | 31603 | CH-3603 | `SWITCHING_BETWEEN_TEAM_VIEW_AND_LIST_VIEW` | Switching between Team view and List view |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617.
 
 ## 17 — Haptic
 
@@ -267,7 +267,7 @@ Roster's own (31801 to 31806): the table roles, a status as a word, Esc, the pol
 | 31806 | CH-3806 | `PHONE_A_PLAYER_ROW_IS_ONE_BUTTON` | Phone: a player row is one button that reads name, class, note, average and handicap; the form spark is decoration |
 | 31807 | CH-3807 | `THE_PLAYERS_ROSTER_A_TEAMMATE_IS_TEXT` | The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
 
 ## 19 — Responsive layout
 

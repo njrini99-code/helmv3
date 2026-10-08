@@ -28,8 +28,13 @@ export interface ChPhoneBarParts {
   titleId?: string;
 }
 
-export function PhoneBarParts({ back, title, lead = false, start = false, action, titleId }: ChPhoneBarParts) {
+/**
+ * `heading: false` draws the title as plain text, not the page's h1: the shell's stand-in for a page's own top while
+ * the page loads (CH-1402), which leaves the heading to the page.
+ */
+export function PhoneBarParts({ back, title, lead = false, start = false, action, titleId, heading = true }: ChPhoneBarParts & { heading?: boolean }) {
   const chevron = back?.chevron !== false;
+  const Title = heading ? 'h1' : 'span';
   return (
     <>
       {back && (
@@ -48,16 +53,19 @@ export function PhoneBarParts({ back, title, lead = false, start = false, action
           {title}
         </div>
       ) : (
-        <h1 className={'ch-pbar__title' + (start ? ' is-start' : '')} id={titleId} tabIndex={-1}>
+        <Title className={'ch-pbar__title' + (start ? ' is-start' : '')} id={titleId} tabIndex={heading ? -1 : undefined}>
           {title}
-        </h1>
+        </Title>
       )}
       <span className="ch-pbar__right">{action}</span>
     </>
   );
 }
 
-/** The whole top bar of a pushed screen: the parts under the status bar, on the phone's glass. */
+/**
+ * The whole top bar of a pushed screen: the parts under the status bar, on the phone's green. Its row is 44px, as the
+ * shell bar's, so the back link and a text action are full 44px keys (CH-1815).
+ */
 export function PhoneBar(props: ChPhoneBarParts) {
   return (
     <header className={'ch-pbar' + (props.lead ? ' is-lead' : '')}>

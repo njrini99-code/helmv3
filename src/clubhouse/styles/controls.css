@@ -26,7 +26,8 @@
   text-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
   cursor: pointer;
   touch-action: manipulation;
-  transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+  transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease),
+    background var(--ch-dur-press) var(--ch-ease);
 }
 .ch-seg--sm .ch-seg__b {
   border-radius: calc(var(--ch-radius-lg) - 3px);
@@ -43,6 +44,13 @@
   color: var(--ch-green-700);
   font-weight: 600;
   text-shadow: none;
+}
+/* CH-1617: pressed, an option that isn't chosen takes the Ledger's press tint over the press beat, after the beat UIKit
+   waits so a scroll that starts on it never flashes it; letting go clears it at once. It never scales (lib/press.ts):
+   the chip arriving is the answer. The chosen option has nothing to change, so it doesn't answer. */
+.ch-seg__b:not(.is-on):active {
+  background: var(--ch-ledger-row-press);
+  transition-delay: var(--ch-dur-press-delay);
 }
 .ch-seg__b:focus-visible {
   outline: 2px solid rgb(21 90 57 / 0.45);
@@ -87,6 +95,11 @@
     color: var(--ch-text-primary);
     box-shadow: inset 0 0 0 1px var(--ch-border-strong);
   }
+}
+/* CH-1617: a pill that isn't on answers a press the way a segment does. */
+.ch-pill:not([aria-pressed='true']):active {
+  background: var(--ch-ledger-row-press);
+  transition-delay: var(--ch-dur-press-delay);
 }
 .ch-pill[aria-pressed='true'] {
   background: #edf4ef;
@@ -444,6 +457,26 @@
     position: absolute;
     inset: min(0px, calc(50% - 22px));
   }
+  /* The search field carries its own reach (CH-1815): 36px drawn, 44px to the finger. The label's reach focuses the
+     input; the input and its clear key sit above it and take their own taps. Its text is 16px, so iOS doesn't zoom the
+     page when it takes focus. */
+  .ch-search {
+    position: relative;
+  }
+  .ch-search::after {
+    position: absolute;
+    inset: min(0px, calc(50% - 22px)) 0;
+    content: '';
+  }
+  .ch-search input {
+    position: relative;
+    z-index: 1;
+    font-size: 16px;
+  }
+  .ch-search .ch-search__x {
+    position: relative;
+    z-index: 1;
+  }
   /* A menu's rows are 44px tall on the phone (the rows touch, so a hit area around them would overlap). */
   .ch-menu__item {
     height: 44px;
@@ -463,11 +496,12 @@
     flex: 1;
     height: 44px;
   }
-  /* A 44px target around the 30px close. */
+  /* A 44px target around the 30px close (CH-1815). The header scrolls, so it clips: with a title alone the close is
+     its tallest part and only 6px of header lie under it, so the target leans up into the 12px above instead. */
   .ch-modal__head .ch-iconbtn::before {
     content: '';
     position: absolute;
-    inset: -7px;
+    inset: -8px -7px -6px;
   }
 }
 

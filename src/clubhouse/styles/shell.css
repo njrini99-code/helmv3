@@ -421,9 +421,10 @@
   gap: 4px;
   margin-left: auto;
 }
-/* The phone's tab-root title and the slot for a page's own top bar: phone only. */
+/* The phone's tab-root title, the slot for a page's own top bar and the shell's stand-in for it: phone only. */
 .ch-topbar__ptitle,
-.ch-topbar__pslot {
+.ch-topbar__pslot,
+.ch-topbar__pstand {
   display: none;
 }
 
@@ -1129,6 +1130,10 @@ button.ch-more__row[disabled] {
   .ch-topbar[data-phone='page'] .ch-topbar__pslot {
     display: contents;
   }
+  /* A pushed address before its page's top arrives (CH-1402): the shell draws the same parts in the same places. */
+  .ch-topbar[data-phone='page'] .ch-topbar__pstand {
+    display: contents;
+  }
   /* A tab root that draws its own title (PhoneTop start, no action): its title, and the bell stays. */
   .ch-topbar[data-phone='start'] {
     padding-left: 16px;
@@ -1189,11 +1194,21 @@ button.ch-more__row[disabled] {
     height: 20px;
     object-fit: contain;
   }
+  /* Home's skeleton can hold the hero for a moment on a cold load of a pushed address (the dashboard layout still
+     resolving): the address's own bar wins (CH-1402), so the team gives way to its back link and title. */
+  .ch-root[data-phone-hero] .ch-topbar[data-phone='page'] .ch-topbar__team {
+    display: none;
+  }
+  /* The 40px disc is a 44px key (CH-1815): a clear 2px border is the reach, the fill and ring stop inside it, and the
+     negative margin keeps the disc where it was drawn. */
   .ch-root[data-phone-hero] .ch-topbar .ch-bell {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
+    margin: -2px;
+    border: 2px solid transparent;
     border-radius: 50%;
     background: rgb(255 255 255 / 0.08);
+    background-clip: padding-box;
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
     color: var(--ch-ivory-100);
   }
@@ -1332,6 +1347,9 @@ button.ch-more__row[disabled] {
     overflow: hidden;
     transform: translateX(-50%);
     font: 600 16px/1 var(--ch-font-sans);
+    /* Its own tracking, not the app's global h1 rule: the shell's stand-in draws the title as plain text (CH-1402), and
+       the two must match to the pixel. */
+    letter-spacing: -0.025em;
     color: var(--ch-text-primary);
     white-space: nowrap;
   }
@@ -2130,6 +2148,11 @@ html[data-ch-ua-pop]:has([data-ui='clubhouse'])::view-transition-new(*) {
     border-bottom: 0;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+  }
+  /* A pushed screen's bar is the same green bar: no hairline, so its row is the full 44px, as the shell bar's is, and
+     its back link and text action are 44px keys that sit in it rather than half a pixel out of it (CH-1815). */
+  [data-ui='clubhouse'] .ch-pbar {
+    border-bottom: 0;
   }
   /* The sheet's lip: two green corner pieces under the bar, so the parchment below reads as a sheet with rounded top
      corners set into the green; the middle is open, so content scrolls up under the bar as before. */

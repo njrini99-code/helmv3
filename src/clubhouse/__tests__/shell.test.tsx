@@ -9,7 +9,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const hapticSpy = vi.hoisted(() => vi.fn());
 vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }), usePathname: () => '/golf/dashboard' }));
+const routerSpy = vi.hoisted(() => ({ push: vi.fn(), back: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => routerSpy, usePathname: () => '/golf/dashboard' }));
 vi.mock('../lib/fonts', () => ({ clubhouseFontVariables: '' }));
 vi.mock('@/hooks/golf/use-appearance-preferences', () => ({ useAppearancePreferences: () => ({ showAnimations: true, updatePreferences: vi.fn() }) }));
 const logServer = vi.hoisted(() => vi.fn());
@@ -43,7 +44,7 @@ import { CH_SLOW_SAVE_AFTER, useAction } from '../lib/use-action';
 import { loadClubhouseShell, type ChShellData } from '../data/shell';
 import { ClubhouseFrame } from '../shell/ClubhouseFrame';
 import { badgeCount, Sidebar } from '../shell/Sidebar';
-import { CH_NAV_PLAYER } from '../shell/nav';
+import { CH_NAV_PLAYER, phonePushedTop } from '../shell/nav';
 import { TabBar } from '../shell/TabBar';
 import { TopBar } from '../shell/TopBar';
 import { ClubhouseMarker } from '../shell/context';
@@ -764,23 +765,26 @@ describe('Shell · phone chrome', () => {
     await waitFor(() => expect(document.querySelector('.ch-tabbar')!.hasAttribute('inert')).toBe(false));
   });
 
-  it('CH-1810 the phone top bar names the page, and a page top swaps the bell for a named back link', async () => {
+  it('CH-1810 the phone top bar names a tab root, and a page top swaps the bell for a named back link', async () => {
     const back = vi.fn();
+    // Stats is one of the coach's tabs: its bar is the tab root's title and the bell.
     const { rerender } = render(
-      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
-        <p>Roster</p>
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/stats" forceRebuilt>
+        <p>Team stats</p>
       </ClubhouseFrame>,
     );
     const bar = document.querySelector('.ch-topbar')!;
     expect(bar.getAttribute('data-phone')).toBe('root');
-    expect(bar.querySelector('.ch-topbar__ptitle')!.textContent).toBe('Roster');
+    expect(bar.querySelector('.ch-topbar__ptitle')!.textContent).toBe('Stats');
+    expect(code('CH-1402')).toBeNull();
+    // A player's stats open on the same address with their own top: back to the team.
     rerender(
-      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
-        <PhoneTop title="Roster" back={{ label: 'More', onBack: back }} />
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/stats" forceRebuilt>
+        <PhoneTop title="Player stats" back={{ label: 'Team', onBack: back }} />
       </ClubhouseFrame>,
     );
     await waitFor(() => expect(bar.getAttribute('data-phone')).toBe('page'));
-    const link = screen.getByRole('button', { name: 'Back to More' });
+    const link = screen.getByRole('button', { name: 'Back to Team' });
     expect(bar.contains(link)).toBe(true);
     await userEvent.setup().click(link);
     expect(back).toHaveBeenCalled();
@@ -788,7 +792,7 @@ describe('Shell · phone chrome', () => {
 
   it('CH-1810 a tab root that draws its own title (PhoneTop start) keeps the bell; one with an action is a page top', async () => {
     const { rerender } = render(
-      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/coachhelm" forceRebuilt>
         <PhoneTop start title="CoachHelm" />
       </ClubhouseFrame>,
     );
@@ -796,17 +800,136 @@ describe('Shell · phone chrome', () => {
     await waitFor(() => expect(bar.getAttribute('data-phone')).toBe('start'));
     expect(bar.querySelector('.ch-topbar__actions .ch-bell, .ch-topbar__actions [aria-label^="Notifications"]')).not.toBeNull();
     rerender(
-      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
-        <PhoneTop start title="Roster" action={<button type="button">Invite</button>} />
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/coachhelm" forceRebuilt>
+        <PhoneTop start title="CoachHelm" action={<button type="button">New chat</button>} />
       </ClubhouseFrame>,
     );
     await waitFor(() => expect(bar.getAttribute('data-phone')).toBe('page'));
     rerender(
-      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
-        <p>Roster</p>
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/coachhelm" forceRebuilt>
+        <p>CoachHelm</p>
       </ClubhouseFrame>,
     );
     await waitFor(() => expect(bar.getAttribute('data-phone')).toBe('root'));
+  });
+
+  it('CH-1402 a pushed address draws its bar before its page does, and the page\'s own top replaces it in place', async () => {
+    const back = vi.fn();
+    // The route's loading skeleton: no PhoneTop yet. The bar is already the pushed one, never the tab root's title and bell.
+    const { rerender } = render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
+        <p aria-busy="true">Loading the roster</p>
+      </ClubhouseFrame>,
+    );
+    const bar = document.querySelector('.ch-topbar')!;
+    expect(bar.getAttribute('data-phone')).toBe('page');
+    const standIn = code('CH-1402')!;
+    expect(bar.contains(standIn)).toBe(true);
+    expect(within(standIn as HTMLElement).getByRole('button', { name: 'Back to More' })).toBeTruthy();
+    expect(standIn.querySelector('.ch-pbar__title')!.textContent).toBe('Roster');
+    // The heading is the page's to bring: the stand-in's title is plain text.
+    expect(within(bar as HTMLElement).queryByRole('heading')).toBeNull();
+    rerender(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
+        <PhoneTop title="Roster" back={{ label: 'More', onBack: back }} action={<button type="button">Invite players</button>} />
+      </ClubhouseFrame>,
+    );
+    // The page's top replaces it where it stood: one back link, the page's, and the page's h1.
+    expect(code('CH-1402')).toBeNull();
+    expect(bar.getAttribute('data-phone')).toBe('page');
+    expect(within(bar as HTMLElement).getAllByRole('button', { name: 'Back to More' })).toHaveLength(1);
+    expect(within(bar as HTMLElement).getByRole('heading', { level: 1, name: 'Roster' })).toBeTruthy();
+    await userEvent.setup().click(within(bar as HTMLElement).getByRole('button', { name: 'Back to More' }));
+    expect(back).toHaveBeenCalled();
+  });
+
+  it('CH-1402 the stand-in\'s Back goes where the page\'s would: back from More, up from a page below another', async () => {
+    const user = userEvent.setup();
+    routerSpy.back.mockClear();
+    routerSpy.push.mockClear();
+    window.history.pushState({}, '');
+    const { unmount } = render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/recruiting" forceRebuilt>
+        <p aria-busy="true">Loading</p>
+      </ClubhouseFrame>,
+    );
+    await user.click(within(code('CH-1402') as HTMLElement).getByRole('button', { name: 'Back to More' }));
+    expect(routerSpy.back).toHaveBeenCalledTimes(1);
+    unmount();
+    const id = '0b6f2c1e-8d1a-4c47-9a53-2f1e7b0c9d10';
+    render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname={`/golf/dashboard/qualifiers/${id}/selection`} forceRebuilt>
+        <p aria-busy="true">Loading</p>
+      </ClubhouseFrame>,
+    );
+    expect(code('CH-1402')!.querySelector('.ch-pbar__title')!.textContent).toBe('Selections');
+    await user.click(within(code('CH-1402') as HTMLElement).getByRole('button', { name: 'Back to Qualifier' }));
+    expect(routerSpy.push).toHaveBeenCalledWith(`/golf/dashboard/qualifiers/${id}`);
+  });
+
+  it('CH-1402 Settings keeps its bar title for VoiceOver only; a route not rebuilt for the role keeps the plain bar', () => {
+    const { unmount } = render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/settings" forceRebuilt>
+        <p aria-busy="true">Loading</p>
+      </ClubhouseFrame>,
+    );
+    const title = code('CH-1402')!.querySelector('.ch-pbar__title')!;
+    expect(title.textContent).toBe('Settings');
+    expect(title.firstElementChild!.className).toBe('ch-sr-only');
+    unmount();
+    // My qualifiers is the player's: a coach there gets the not-rebuilt notice under the plain bar.
+    render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/my-qualifiers">
+        <p>My qualifiers body</p>
+      </ClubhouseFrame>,
+    );
+    expect(code('CH-1301')).not.toBeNull();
+    expect(code('CH-1402')).toBeNull();
+    expect(document.querySelector('.ch-topbar')!.getAttribute('data-phone')).toBe('root');
+  });
+
+  it('CH-1402 each phone address draws the bar its page draws (kept in step with the pages\' PhoneTops)', () => {
+    const uuid = '0b6f2c1e-8d1a-4c47-9a53-2f1e7b0c9d10';
+    const bar = (path: string, role: 'coach' | 'player') => {
+      const t = phonePushedTop(path, role);
+      return t && `${t.back} | ${t.title}${t.quiet ? ' (quiet)' : ''}${t.parent ? ` -> ${t.parent}` : ''}`;
+    };
+    // Pages opened from the More sheet go back to More (D-41, D-66).
+    expect(bar('/golf/dashboard/roster', 'coach')).toBe('More | Roster');
+    expect(bar('/golf/dashboard/recruiting', 'coach')).toBe('More | Recruiting');
+    expect(bar('/golf/dashboard/qualifiers', 'coach')).toBe('More | Qualifiers');
+    expect(bar('/golf/dashboard/team-hub', 'coach')).toBe('More | Team Hub');
+    expect(bar('/golf/dashboard/messages', 'coach')).toBe('More | Messages');
+    expect(bar('/golf/dashboard/settings', 'coach')).toBe('More | Settings (quiet)');
+    expect(bar('/golf/dashboard/calendar', 'player')).toBe('More | Calendar');
+    expect(bar('/golf/dashboard/roster', 'player')).toBe('More | Roster');
+    expect(bar('/golf/dashboard/stats', 'player')).toBe('More | My stats');
+    expect(bar('/golf/dashboard/qualifiers', 'player')).toBe('More | Qualifiers');
+    expect(bar('/golf/dashboard/my-qualifiers', 'player')).toBe('More | My qualifiers');
+    expect(bar('/golf/dashboard/classes', 'player')).toBe('More | Classes');
+    expect(bar('/golf/dashboard/settings/', 'player')).toBe('More | Settings (quiet)');
+    // Pages below another go up to it.
+    expect(bar(`/golf/dashboard/qualifiers/${uuid}`, 'coach')).toBe('Qualifiers | Qualifier -> /golf/dashboard/qualifiers');
+    expect(bar(`/golf/dashboard/qualifiers/${uuid}/selection`, 'coach')).toBe(`Qualifier | Selections -> /golf/dashboard/qualifiers/${uuid}`);
+    expect(bar(`/golf/dashboard/rounds/${uuid}`, 'coach')).toBe('Stats | Round -> /golf/dashboard/stats');
+    expect(bar(`/golf/dashboard/rounds/${uuid}`, 'player')).toBe('Rounds | Round -> /golf/dashboard/rounds');
+    expect(bar('/golf/dashboard/rounds/recover', 'player')).toBe('Rounds | Recover -> /golf/dashboard/rounds');
+    // Tab roots, the player's Messages (a tab root's title under More), full-page forms and the round itself draw their own.
+    for (const [path, role] of [
+      ['/golf/dashboard', 'coach'],
+      ['/golf/dashboard/coachhelm', 'coach'],
+      ['/golf/dashboard/calendar', 'coach'],
+      ['/golf/dashboard/stats', 'coach'],
+      ['/golf/dashboard/rounds', 'player'],
+      ['/golf/dashboard/team-hub', 'player'],
+      ['/golf/dashboard/messages', 'player'],
+      ['/golf/dashboard/qualifiers/new', 'coach'],
+      [`/golf/dashboard/qualifiers/${uuid}/edit`, 'coach'],
+      ['/golf/dashboard/rounds/new', 'player'],
+      [`/golf/dashboard/rounds/continue/${uuid}`, 'player'],
+      ['/golf/dashboard/settings/notifications', 'coach'],
+    ] as const)
+      expect(bar(path, role)).toBeNull();
   });
 });
 

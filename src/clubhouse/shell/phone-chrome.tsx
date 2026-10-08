@@ -1,9 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { PhoneBarParts, type ChPhoneBarParts } from '../ui/PhoneBar';
+import type { ChPhonePushedTop } from './nav';
 
 /**
  * What a page asks of the phone chrome (owner design, docs/clubhouse/phone/foundation.md).
@@ -20,7 +21,10 @@ import { PhoneBarParts, type ChPhoneBarParts } from '../ui/PhoneBar';
  *                            each pushed screen is a history entry, so the iOS edge swipe
  *                            and the browser's back pop it instead of leaving the page
  *
- * Both hold only while the calling component is mounted. Desktop ignores them.
+ * Each holds only while the calling component is mounted, and takes hold in the commit that
+ * mounts it (a layout effect), so the shell's bars change in the same frame as the page: never
+ * a frame of the old page's bar over the new one. Desktop ignores them. Until a pushed page's
+ * own top arrives, the shell draws it from the address (`PushedTopStandIn`, CH-1402).
  */
 interface Ctx {
   slot: HTMLElement | null;
@@ -76,7 +80,7 @@ export function usePhoneChromeState(): { pageTop: boolean; rootTitle: boolean; i
 /** While `on`, the phone top bar is the green hero's bar (the v2 phone Home): the team and the bell, on green. */
 export function usePhoneHero(on: boolean): void {
   const { setHero } = useContext(PhoneChromeCtx);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!on) return;
     setHero((n) => n + 1);
     return () => setHero((n) => n - 1);
@@ -86,7 +90,7 @@ export function usePhoneHero(on: boolean): void {
 /** While `on`, the phone tab bar is hidden: a full-page form whose Cancel and submit sit in the top bar. */
 export function usePhoneTabsHidden(on: boolean): void {
   const { setNoTabs } = useContext(PhoneChromeCtx);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!on) return;
     setNoTabs((n) => n + 1);
     return () => setNoTabs((n) => n - 1);
@@ -96,7 +100,7 @@ export function usePhoneTabsHidden(on: boolean): void {
 /** While `open`, a pushed screen covers the page, so the shell's top bar and tab bar go inert. */
 export function usePhoneImmersive(open: boolean): void {
   const { setImmersive } = useContext(PhoneChromeCtx);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
     setImmersive((n) => n + 1);
     return () => setImmersive((n) => n - 1);
@@ -112,7 +116,8 @@ export function PhoneTop(props: ChPhoneBarParts) {
   const { slot, setPageTop, setRootTop } = useContext(PhoneChromeCtx);
   // A tab root's own title (`start`, no action) is still a tab root: the bell stays (CLICKABLES gap 1).
   const root = !!props.start && !props.action;
-  useEffect(() => {
+  // In the commit that mounts it, so the shell's stand-in (or the last page's bar) and this one never share a frame.
+  useLayoutEffect(() => {
     setPageTop((n) => n + 1);
     if (root) setRootTop((n) => n + 1);
     return () => {
@@ -133,6 +138,25 @@ export function useBackFromMore(): () => void {
     if (typeof window !== 'undefined' && window.history.length > 1) router.back();
     else router.push('/golf/dashboard');
   }, [router]);
+}
+
+/**
+ * The shell's stand-in for a pushed page's own top (CH-1402), drawn from the address (`phonePushedTop`) while the page
+ * loads and in the server's first paint: the same back link and title in the same places, so the page's bar replaces
+ * it without a jump. The title is plain text, not a heading: the page brings its own. Back works while it loads: to
+ * wherever the user came from for a page opened from More, to the page above for one below it.
+ */
+export function PushedTopStandIn({ top }: { top: ChPhonePushedTop }) {
+  const router = useRouter();
+  const backFromMore = useBackFromMore();
+  const { parent } = top;
+  return (
+    <PhoneBarParts
+      back={{ label: top.back, onBack: parent ? () => router.push(parent) : backFromMore }}
+      title={top.quiet ? <span className="ch-sr-only">{top.title}</span> : top.title}
+      heading={false}
+    />
+  );
 }
 
 /**

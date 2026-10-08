@@ -54,7 +54,7 @@ The route skeleton (CH-12401) is the Clubhouse one for a player inside the shell
 | 120202 | CH-12402 | `A_SCHEDULE_IS_BEING_READ` | A schedule is being read |
 | 120203 | CH-12403 | `CLASSES_ARE_BEING_PUT_ON_THE_CALENDAR` | Classes are being put on the calendar |
 
-From the shell (P001): 10201 CH-1401.
+From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 ## 03 — Background loading / refresh
 
@@ -233,7 +233,7 @@ Two motions of its own, both in `classes.css` on the v2 tokens (D-64): a hoverin
 | 121601 | CH-12601 | `HOVERING_A_CLASS` | Hovering a class |
 | 121602 | CH-12602 | `A_SCHEDULE_IS_BEING_READ_2` | A schedule is being read |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617.
 
 ## 17 — Haptic
 
@@ -266,7 +266,7 @@ The page is labelled "Classes" and each class is one button named for its code, 
 | 121805 | CH-12805 | `THE_IMPORTS_DROP_ZONE` | The import's drop zone |
 | 121806 | — | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations on the six preview states (the board's Fall 2026, empty, failed, partial, no team and loading) at 1280px and 390px, run by npm run clubhouse:a11y from the entries in scripts/clubhouse/a11y.mjs. Reserved: it ran clean on 2026-09-30 (12 of 12), but it is a dev-server run, not a test, so no test names it. |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
 
 ## 19 — Responsive layout
 
