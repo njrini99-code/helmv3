@@ -1421,12 +1421,17 @@ a.ch-rd-sc:focus-visible {
   background: rgb(28 25 18 / 0.06);
   overflow: hidden;
 }
+/* The bar is drawn at the track's full width and slid in from the left by its share (--ch-rv-p, 0 to 1), so a change
+   moves on transform, never on width (motion research A4, 2026-10-08). A slide rather than a scaleX keeps its rounded
+   end round; the track's clip draws the start. */
 .ch-rv-dist__t i {
   display: block;
+  width: 100%;
   height: 100%;
   border-radius: 6px;
   background: #bfb59c;
-  transition: width var(--ch-dur-base) var(--ch-ease);
+  transform: translateX(calc((var(--ch-rv-p, 0) - 1) * 100%));
+  transition: transform var(--ch-dur-base) var(--ch-ease);
 }
 .ch-rv-dist__r.is-birdie i,
 .ch-rv-dist__r.is-eagle i {
@@ -1804,6 +1809,12 @@ a.ch-rd-sc:focus-visible {
   .ch-rv.is-phone .ch-rv-shots__n {
     box-shadow: 0 0 0 3px var(--ch-workspace);
   }
+  /* A hole on the scorecard answers the press with the row press tint (it selects, so it does not scale; the steps beside
+     the hole are keys and compress, data-ch-press). */
+  .ch-rv.is-phone .ch-rv-nine thead button:not(.is-sel):active,
+  .ch-rv.is-phone .ch-rv-nine td[data-hole]:not(.is-sel):active {
+    background: var(--ch-ledger-row-press);
+  }
   .ch-rv.is-phone .ch-rv-cols {
     gap: 28px;
   }
@@ -1841,16 +1852,50 @@ a.ch-rd-sc:focus-visible {
     gap: 28px;
     padding: 14px 20px 110px;
   }
+  /* At the loaded geometry (measured at 390): the intro is 84.5px (the eyebrow's 24px line box, the title 10px under it), New
+     round sits at the end of the title's line, the card and season scoring stand 30px apart, a month opens 18px under the tools
+     and its rows are 67.8px. */
   .ch-rd-sk-h {
+    position: relative;
     display: flex;
     flex-direction: column;
     padding-top: 14px;
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-rd-sk-title {
+    margin-top: 10px;
+  }
+  .ch-rd-sk-new {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+  }
+  .ch-rd-sk-hero {
     display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 30px;
+  }
+  .ch-rd-sk-sec.ch-rd-sk-season {
+    gap: 0;
+  }
+  .ch-rd-sk-season > .ch-rd-sk-figs {
+    box-sizing: border-box;
+    height: 129.2px;
+    margin-top: 14px;
+  }
+  .ch-rd-sk-season > .ch-rd-sk-figs + span {
+    margin-top: 16px;
+  }
+  /* The chart scales with the page's width (its viewBox is 380 wide on the phone and about 216 tall for a usual season), so
+     its place does too. */
+  .ch-rd-sk-season > .ch-skel {
+    height: auto !important;
+    margin-top: 10px;
+    aspect-ratio: 380 / 216;
+  }
+  .ch-rd-sk-sec.ch-rd-sk-grp {
+    gap: 0;
+    margin-top: 18px;
   }
   .ch-rd-sk-sec,
   .ch-rv-sk-sec {
@@ -1887,11 +1932,43 @@ a.ch-rd-sc:focus-visible {
   .ch-rv-sk-figs > span:nth-child(3n + 1) {
     box-shadow: none;
   }
+  /* The review at its loaded geometry (measured at 390): the hero 178px, the figures 156px in two rows, each section's head
+     (the double rule, the heading and its figure) 6px over its body, strokes gained's four bars in 125px. */
+  .ch-rv-sk-phone > .ch-rv-sk-figs {
+    box-sizing: border-box;
+    height: 156px;
+    align-content: center;
+  }
+  .ch-rv-sk-sec {
+    gap: 6px;
+  }
+  .ch-rv-sk-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    height: 50.8px;
+  }
+  .ch-rv-sk-head.is-sg {
+    height: 54.2px;
+  }
+  .ch-rv-sk-head > span {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 3px;
+  }
+  .ch-rv-sk-leg {
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr) 30px;
+    gap: 10px;
+    align-items: center;
+    height: 26.8px;
+  }
   .ch-rd-sk-row {
     display: flex;
     align-items: center;
     gap: 14px;
-    min-height: 64px;
+    min-height: 67.8px;
   }
   .ch-rd-sk-row > span {
     display: flex;

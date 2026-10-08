@@ -14,6 +14,7 @@ import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
+import { Section } from '../../ui/Section';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState, Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
@@ -196,20 +197,23 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
       {data.roster.error || data.players.error ? (
         <RefreshNotice code="CH-13202" title="Your players’ insights didn’t load" body="Nothing is lost. Every insight is still saved; try again in a moment." />
       ) : !cur ? (
-        <EmptyState
-          size="page"
-          code="CH-13306"
-          icon={Sparkles}
-          title="No signals yet"
-          body="CoachHelm reads posted rounds. Each player’s insights appear once they’ve posted enough rounds to find a pattern."
-          action={
-            rosterHref ? (
-              <Button variant="primary" leftIcon={Users} href={rosterHref}>
-                View roster
-              </Button>
-            ) : undefined
-          }
-        />
+        // The pulse is on the page, so this is the players' section with nothing in it yet, not an empty page: its line
+        // and View roster sit right under the heading, in view on the desktop and the phone (states audit, 2026-10-08).
+        <Section id="ch-hl-none" title="Your players">
+          <EmptyState
+            code="CH-13306"
+            icon={Sparkles}
+            title="No signals yet"
+            body="CoachHelm reads posted rounds. Each player’s insights appear once they’ve posted enough rounds to find a pattern."
+            action={
+              rosterHref ? (
+                <Button variant="primary" leftIcon={Users} href={rosterHref}>
+                  View roster
+                </Button>
+              ) : undefined
+            }
+          />
+        </Section>
       ) : (
         <>
           {data.missing && <BoardPartial missing={data.missing} what="board" focus={false} />}

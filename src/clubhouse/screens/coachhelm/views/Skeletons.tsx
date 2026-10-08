@@ -8,7 +8,7 @@ import { Skeleton } from '../../../ui/States';
  * when the read lands. `coachhelm/loading.tsx` cannot see `?view=`, so the route wraps each view in its own Suspense
  * (routes/coachhelm.tsx) and these are the fallbacks.
  */
-function Chrome({ label, code, chained, children }: { label: string; code: string; chained?: boolean; children: React.ReactNode }) {
+function Chrome({ label, code, chained, brief = 2, children }: { label: string; code: string; chained?: boolean; brief?: 2 | 3; children: React.ReactNode }) {
   const phone = useChPhone();
   // The sub-navigation: a bar the height of the radiogroup (desktop) or the chip row (phone), where the page puts it.
   const tabs = (
@@ -20,13 +20,14 @@ function Chrome({ label, code, chained, children }: { label: string; code: strin
     <main className={'ch-hl ch-hv' + (phone ? ' is-phone' : '')} aria-busy="true" aria-label={label} data-skel={chained ? 'chained' : undefined} data-ch-code={code} data-canopy={phone ? undefined : ''}>
       {phone && tabs}
       {phone ? (
-        // The phone's intro at its loaded line heights (the Mobile clubhouse pass): the eyebrow, the 31px title and the two-line
-        // brief under the double rule.
+        // The phone's intro at its loaded line heights (the Mobile clubhouse pass): the eyebrow, the 31px title and the brief under
+        // the double rule, in the lines the view's own brief takes at the phone's width (`brief`: the Deep dive's runs to three).
         <header className="ch-hl-h" data-canopy-head="">
           <Line h={14.4} w={56} sh={11} />
           <Line h={33.5} w={176} sh={28} r={8} />
-          <span className="ch-hl-sk__line is-two">
+          <span className="ch-hl-sk__line is-two" style={brief === 3 ? { height: 65.25 } : undefined}>
             <Skeleton width="92%" height={13} />
+            {brief === 3 && <Skeleton width="96%" height={13} />}
             <Skeleton width="58%" height={13} />
           </span>
         </header>
@@ -87,7 +88,7 @@ export function ProfileSkeleton({ chained }: { chained?: boolean } = {}) {
     return (
       <Chrome label="Loading your game profile" code="CH-13460" chained={chained}>
         <div className="ch-hg-sk__hero">
-          <Skeleton width="100%" height={262} radius={14} />
+          <Skeleton width="100%" height={268} radius={14} shape="solid" />
         </div>
         <div className="ch-hg-sk__grid">
           <PhoneHead w={150} />
@@ -152,7 +153,7 @@ export function StandingSkeleton({ chained }: { chained?: boolean } = {}) {
     return (
       <Chrome label="Loading your standing" code="CH-13470" chained={chained}>
         <div className="ch-hs-sk__hero">
-          <Skeleton width="100%" height={404} radius={14} />
+          <Skeleton width="100%" height={511} radius={14} shape="solid" />
         </div>
         <StandingGroupSkeleton rows={3} />
         <StandingGroupSkeleton rows={2} />
@@ -181,11 +182,11 @@ export function StandingSkeleton({ chained }: { chained?: boolean } = {}) {
 export function DiveSkeleton({ chained }: { chained?: boolean } = {}) {
   const phone = useChPhone();
   return (
-    <Chrome label="Loading your deep dive" code="CH-13480" chained={chained}>
+    <Chrome label="Loading your deep dive" code="CH-13480" chained={chained} brief={3}>
       {phone ? (
         // The phone: what CoachHelm has found's feature card, with its figure line.
         <div className="ch-hd-sk__hero">
-          <Skeleton width="100%" height={196} radius={14} />
+          <Skeleton width="100%" height={196} radius={14} shape="solid" />
         </div>
       ) : (
         <div className="ch-hd-sk__hero">

@@ -86,7 +86,7 @@ Status: N/A — CoachHelm has no realtime, polling or pull to refresh: the serve
 
 Status: DEFINED
 
-First run is a whole-page empty state for each role and each way of having nothing: a player with no round posted (CH-13301), with rounds and no insight yet (CH-13302), with only strengths (CH-13303) and with CoachHelm off (CH-13304); a coach with CoachHelm off (CH-13305), with players and no signal (CH-13306), with no players (CH-13307) and with no team (CH-13308). Two smaller states sit in the page: nothing flagged in the pulse (CH-13309) and the count of players with no insight yet (CH-13310). A failed read is never shown as empty (130411): the delivery actions answer an empty list when a read fails, so the loaders read the insights table themselves to tell the two apart. CoachHelm has no search or filter, so it has no filtered empty state.
+First run is a whole-page empty state for each role and each way of having nothing: a player with no round posted (CH-13301), with rounds and no insight yet (CH-13302), with only strengths (CH-13303) and with CoachHelm off (CH-13304); a coach with CoachHelm off (CH-13305), with no players (CH-13307) and with no team (CH-13308). A coach with players and no signal yet has the pulse on the page, so that one is the players' section with nothing in it: its empty line and View roster under the section's heading, in view without scrolling (CH-13306; states audit, 2026-10-08). Two smaller states sit in the page: nothing flagged in the pulse (CH-13309) and the count of players with no insight yet (CH-13310). A failed read is never shown as empty (130411): the delivery actions answer an empty list when a read fails, so the loaders read the insights table themselves to tell the two apart. CoachHelm has no search or filter, so it has no filtered empty state.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -299,7 +299,7 @@ The Assigned chip and the dismissed notice rise in once, and appear at once with
 | 131603 | CH-13620 | `ASK_HIDE_CHATS` | Ask: Hide chats |
 | 131604 | CH-13621 | `ASK_THE_PHONE_DRAWER_IS_DRAGGED` | Ask: The phone drawer is dragged |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617.
 
 ## 17 — Haptic
 
@@ -346,7 +346,7 @@ The page is labelled by its title and each section is a labelled region (CH-1380
 | 131817 | CH-13880 | `STANDING_A_SCREEN_READER_MOVES_THROUGH_THE` | Standing: a screen reader moves through the page |
 | 131818 | CH-13890 | `DEEP_DIVE_A_SCREEN_READER_MOVES_THROUGH` | Deep dive: a screen reader moves through the page |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
 
 ## 19 — Responsive layout
 

@@ -105,7 +105,7 @@ export function UnfinishedCard({
             No round in progress
           </span>
         </div>
-        <b className="ch-rd-unf__c">Ready when you are.</b>
+        <b className="ch-rd-unf__c">Ready when you are</b>
         <span className="ch-rd-unf__m">Start a round and track every shot. It saves as you go, so you can pick it back up here.</span>
         <GhostStrip holes={18} />
         <div className="ch-rd-unf__f">
@@ -165,7 +165,7 @@ export function UnfinishedCard({
           )}
         </span>
         <span className="ch-rd-unf__acts">
-          <button type="button" className="ch-rd-unf__discard" onClick={() => onDiscard(round)} aria-label={`Discard the round at ${round.course}`}>
+          <button type="button" className="ch-rd-unf__discard" data-ch-press="" onClick={() => onDiscard(round)} aria-label={`Discard the round at ${round.course}`}>
             <Icon icon={Trash2} size={14} />
           </button>
           {continueHref && (
@@ -326,7 +326,7 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
         <span className="ch-rd-k" id="ch-rd-season-k">
           Season scoring
         </span>
-        <b className="ch-rd-season__none">Your season starts with your first 18-hole round.</b>
+        <b className="ch-rd-season__none">Your season starts with your first 18-hole round</b>
         <span className="ch-rd-season__nonebody">Scoring average, best round, putts and greens fill in here from 18-hole rounds posted since August 1.</span>
       </section>
     );

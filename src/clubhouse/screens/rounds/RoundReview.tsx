@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Flag, Sparkles } from 'lucide-react';
@@ -227,11 +227,11 @@ function HoleCard({
           </span>
         </div>
         <div className="ch-rv-step">
-          <button type="button" onClick={() => onStep(-1)} disabled={hole.n <= 1} aria-label="Previous hole">
+          <button type="button" data-ch-press="" onClick={() => onStep(-1)} disabled={hole.n <= 1} aria-label="Previous hole">
             <Icon icon={ChevronLeft} size={16} />
           </button>
           <ScoreMark score={hole.score} par={hole.par} />
-          <button type="button" onClick={() => onStep(1)} disabled={hole.n >= count} aria-label="Next hole">
+          <button type="button" data-ch-press="" onClick={() => onStep(1)} disabled={hole.n >= count} aria-label="Next hole">
             <Icon icon={ChevronRight} size={16} />
           </button>
         </div>
@@ -421,7 +421,7 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
                     <div key={d.label} className={`ch-rv-dist__r is-${d.label.replace('+', '').toLowerCase()}`}>
                       <span>{d.label}</span>
                       <span className="ch-rv-dist__t">
-                        <i style={{ width: `${(d.count / maxD) * 100}%` }} />
+                        <i style={{ '--ch-rv-p': d.count / maxD } as CSSProperties} />
                       </span>
                       <b className="ch-num">{d.count}</b>
                     </div>

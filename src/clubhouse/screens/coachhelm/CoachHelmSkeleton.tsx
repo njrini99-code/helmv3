@@ -16,12 +16,14 @@ function Line({ h, w, sh, r }: { h: number; w: number | string; sh: number; r?: 
 
 /**
  * The phone's focus in its loaded shape (the Mobile clubhouse pass): the claim's feature card, then the evidence, the week's
- * drill and the reasoning's row flush on the parchment under it.
+ * drill and the reasoning's row flush on the parchment under it. `claim` is the card's height for a typical claim of the role
+ * (measured at 390: the coach's one-line claim and two-line opening, 146px; the player's two-line claim and three-line opening,
+ * 194px); a longer or shorter claim still moves what follows by its difference.
  */
-function PhoneFocusSkeleton() {
+function PhoneFocusSkeleton({ claim }: { claim: number }) {
   return (
     <div className="ch-hl-sk__card">
-      <Skeleton width="100%" height={176} radius={14} />
+      <Skeleton width="100%" height={claim} radius={14} shape="solid" />
       <Skeleton width="62%" height={12} />
       <Skeleton width="100%" height={10} radius={5} />
       <Skeleton width="100%" height={10} radius={5} />
@@ -100,7 +102,15 @@ export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player';
         <header className="ch-hl-h" data-canopy-head="">
           <Line h={14.4} w={56} sh={11} />
           <Line h={33.5} w={176} sh={28} r={8} />
-          <Line h={21.75} w="74%" sh={13} />
+          {coach ? (
+            <Line h={21.75} w="74%" sh={13} />
+          ) : (
+            // The player's line runs to two lines at the phone's width.
+            <span className="ch-hl-sk__line is-two">
+              <Skeleton width="92%" height={13} />
+              <Skeleton width="48%" height={13} />
+            </span>
+          )}
         </header>
       ) : (
         <header className="ch-hl-h has-aside" data-canopy-head="">
@@ -125,12 +135,12 @@ export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player';
                   <Skeleton key={w} width={w} height={40} radius={20} />
                 ))}
               </div>
-              <PhoneFocusSkeleton />
+              <PhoneFocusSkeleton claim={146} />
             </div>
           </>
         ) : (
           <div className="ch-hl-sk ch-hl-sk--player">
-            <PhoneFocusSkeleton />
+            <PhoneFocusSkeleton claim={194} />
             <div className="ch-hl-sk__col">
               <Line h={22.8} w={170} sh={17} r={6} />
               {[0, 1].map((i) => (

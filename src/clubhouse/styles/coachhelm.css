@@ -1329,6 +1329,9 @@
   .ch-hl.is-phone .ch-hl-why {
     border-top-color: var(--ch-ledger-rule-soft);
   }
+  .ch-hl.is-phone .ch-hl-why:active {
+    background: var(--ch-ledger-row-press);
+  }
 
   /* What the coach did with a card: the dismissed note is a row between rules, not a card. */
   .ch-hl.is-phone .ch-hl-dis {

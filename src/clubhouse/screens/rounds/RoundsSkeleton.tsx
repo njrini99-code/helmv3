@@ -35,41 +35,50 @@ export function RoundsSkeleton() {
 }
 
 /**
- * The phone's loading shape (the Mobile clubhouse pass, 2026-10-08): the intro under the double rule with New round at the end
- * of the title's line, the round card, season scoring's head, average and figures, the tools, then a month and its rows. It is
- * drawn beside the desktop shape and rounds.css shows the one for the width, so the server needs no width to draw it.
+ * The phone's loading shape (the Mobile clubhouse pass, 2026-10-08), at the loaded page's geometry so nothing moves when it lands
+ * (measured at 390, 2026-10-08): the intro (the eyebrow's line box, the title 10px under it, New round at the end of its line), the
+ * round card at the idle card's height (the page at rest; a round in progress is a little shorter), season scoring (the average, the
+ * figures between hairlines, the chart and its legend), the tools, then a month and its rows. It is drawn beside the desktop shape
+ * and rounds.css shows the one for the width, so the server needs no width to draw it.
  */
 function PhoneRoundsSkeleton() {
   return (
     <div className="ch-rd-sk-phone">
       <header className="ch-rd-sk-h">
-        <SkelLine h={14.4} w={210} sh={11} />
+        <SkelLine h={24} w={210} sh={11} />
         <span className="ch-rd-sk-title">
-          <SkelLine h={43.5} w={168} sh={28} r={8} />
-          <Skeleton width={122} height={40} radius={11} />
+          <SkelLine h={33.5} w={168} sh={28} r={8} />
+        </span>
+        <span className="ch-rd-sk-new">
+          <Skeleton width={117} height={36} radius={11} />
         </span>
       </header>
-      <Skeleton width="100%" height={252} radius={14} />
-      <div className="ch-rd-sk-sec">
-        <SkelLine h={22.8} w={140} sh={17} r={6} />
-        <SkelLine h={62} w={150} sh={40} r={8} />
-        <span className="ch-rd-sk-figs">
-          {[0, 1, 2].map((i) => (
-            <span key={i}>
-              <Skeleton width={42} height={11} />
-              <Skeleton width={56} height={22} radius={6} />
-              <Skeleton width="80%" height={10} />
-            </span>
-          ))}
-        </span>
-        <Skeleton width="100%" height={176} radius={10} />
+      <div className="ch-rd-sk-hero">
+        <Skeleton width="100%" height={340} radius={14} shape="solid" />
+        <div className="ch-rd-sk-sec ch-rd-sk-season">
+          <SkelLine h={18} w={140} sh={14} r={6} />
+          <SkelLine h={62} w={150} sh={40} r={8} />
+          <span className="ch-rd-sk-figs">
+            {[0, 1, 2].map((i) => (
+              <span key={i}>
+                <Skeleton width={42} height={11} />
+                <Skeleton width={56} height={24} radius={6} />
+                <Skeleton width="86%" height={8} radius={4} />
+                <Skeleton width="80%" height={10} />
+              </span>
+            ))}
+          </span>
+          <SkelLine h={52} w="72%" sh={12} />
+          <Skeleton width="100%" height={199} radius={10} shape="solid" />
+          <SkelLine h={18} w={180} sh={10} />
+        </div>
       </div>
       <div className="ch-rd-tools">
-        <Skeleton width={180} height={38} radius={10} />
-        <Skeleton width={148} height={34} radius={11} />
+        <Skeleton width={180} height={36} radius={10} />
+        <Skeleton width={148} height={40} radius={12} />
       </div>
-      <div className="ch-rd-sk-sec">
-        <SkelLine h={22.8} w={150} sh={17} r={6} />
+      <div className="ch-rd-sk-sec ch-rd-sk-grp">
+        <SkelLine h={24.8} w={150} sh={17} r={6} />
         {[0, 1, 2, 3].map((i) => (
           <span key={i} className="ch-rd-sk-row">
             <Skeleton width={30} height={30} radius={6} />
@@ -103,29 +112,46 @@ export function RoundReviewSkeleton() {
           <Skeleton width={96} height={92} radius={12} />
         </header>
         <Skeleton width="100%" height={86} radius={12} />
-        <Skeleton width="100%" height={430} radius={18} />
+        <Skeleton width="100%" height={430} radius={18} shape="solid" />
       </div>
-      {/* The phone (the Mobile clubhouse pass): the hero's feature card, the five figures between hairlines, then strokes gained and
-          the scorecard under their double rules. rounds.css shows the shape for the width. */}
+      {/* The phone (the Mobile clubhouse pass), at the loaded page's geometry (measured at 390): the hero's feature card, the five
+          figures between hairlines in two rows, then strokes gained and the scorecard under their double rules, each head with its
+          figure. rounds.css shows the shape for the width. */}
       <div className="ch-rv-sk-phone">
-        <Skeleton width="100%" height={190} radius={14} />
+        <Skeleton width="100%" height={178} radius={14} shape="solid" />
         <span className="ch-rv-sk-figs">
           {[0, 1, 2, 3, 4].map((i) => (
             <span key={i}>
               <Skeleton width={46} height={11} />
               <Skeleton width={40} height={22} radius={6} />
+              <Skeleton width={30} height={10} />
             </span>
           ))}
         </span>
         <div className="ch-rv-sk-sec">
-          <SkelLine h={22.8} w={150} sh={17} r={6} />
+          <span className="ch-rv-sk-head is-sg">
+            <span>
+              <Skeleton width={150} height={17} radius={6} />
+              <Skeleton width={56} height={11} />
+            </span>
+            <Skeleton width={52} height={26} radius={6} />
+          </span>
           {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} width="100%" height={10} radius={5} />
+            <span key={i} className="ch-rv-sk-leg">
+              <Skeleton width={84} height={11} />
+              <Skeleton width="100%" height={8} radius={4} />
+              <Skeleton width={30} height={11} />
+            </span>
           ))}
         </div>
         <div className="ch-rv-sk-sec">
-          <SkelLine h={22.8} w={110} sh={17} r={6} />
-          <Skeleton width="100%" height={212} radius={12} />
+          <span className="ch-rv-sk-head">
+            <span>
+              <Skeleton width={110} height={17} radius={6} />
+              <Skeleton width={170} height={11} />
+            </span>
+          </span>
+          <Skeleton width="100%" height={432} radius={12} shape="solid" />
         </div>
       </div>
     </main>
@@ -170,7 +196,7 @@ export function RoundRecoverSkeleton() {
 }
 
 /** One text line's box at its measured height, with the bar centred in it. */
-function SkelLine({ h, w, sh, r }: { h: number; w: number; sh: number; r?: number }) {
+function SkelLine({ h, w, sh, r }: { h: number; w: number | string; sh: number; r?: number }) {
   return (
     <span style={{ display: 'flex', alignItems: 'center', height: h }}>
       <Skeleton width={w} height={sh} radius={r} />

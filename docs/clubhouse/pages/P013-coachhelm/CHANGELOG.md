@@ -1,5 +1,27 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-08 — States and native feel
+
+The states audit's CoachHelm findings and the owner's native-feel pass, verified in WebKit at 390x844 with touch.
+
+- **Coach board, players and no signal yet (CH-13306):** it was the page's empty medallion under the pulse, its View
+  roster below the fold on the desktop and the phone. The pulse is on the page, so it is now the players' section with
+  nothing in it: "Your players" under its rule, the empty line and View roster under it, in view.
+- **Ask:** the canvas is the Ledger's (it was the near-white surface). A conversation that is not available (CH-13320)
+  is the page's empty state, calm on the canvas, not a boxed tan card, and still an alert. A program that did not load
+  (CH-13221) and a conversation whose messages did not read (CH-13224) stand where the welcome would be, centred in the
+  column on the desktop, not at the top of a blank page. The thread fades into the dock with a wash, not a shadow.
+- **Told once:** when two or more of a read's parts did not load (its category trends, its rounds, its focus areas and
+  goals), the read says so once under its head with one Try again (CH-1209) and each part keeps its title in place;
+  Standing's scoring average and team's Tour the same. One failed part keeps its own notice.
+- **Standing:** the headline closes without a full stop. With the scoring average failed, the headline stays: it
+  compares the stats with the Tour and the team, which loaded, and the notice says the comparisons are not affected.
+- **Press:** Why we think this and How it is measured deepen to the row press tint; the composer's add and mention keys
+  compress like every key (`data-ch-press`).
+- **Loading:** the phone skeletons hold the loaded geometry, measured at 390: the player's two-line intro, the claim's
+  card per role, the views' cards and the Deep dive's three-line brief, so nothing moves when the page lands. The pulse
+  still grows past its three reserved rows when it has more (CH-13405).
+
 ## 2026-10-08 — Phone: Mobile clubhouse pass
 
 The owner's phone review ("phone too cardy, too vibe coded"; the Coach Home "Mobile clubhouse pass" board, round 3:

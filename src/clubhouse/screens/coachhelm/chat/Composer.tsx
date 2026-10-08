@@ -214,7 +214,7 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
         },
       }))}
       trigger={(t) => (
-        <button type="button" className="ch-ask-cmp__round" aria-label="Add to your question" {...t}>
+        <button type="button" className="ch-ask-cmp__round" aria-label="Add to your question" data-ch-press="" {...t}>
           <Icon icon={Plus} size={18} />
         </button>
       )}
@@ -281,7 +281,7 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
           )}
           <span className="ch-ask-cmp__grow" />
           {(!hero || phone) && (
-            <button type="button" className="ch-ask-cmp__round is-quiet" aria-label="Mention a player" onClick={openPlayers}>
+            <button type="button" className="ch-ask-cmp__round is-quiet" aria-label="Mention a player" data-ch-press="" onClick={openPlayers}>
               <Icon icon={AtSign} size={18} />
             </button>
           )}

@@ -1,5 +1,20 @@
 # P011 — Rounds: changelog
 
+## 2026-10-08 — States and native feel
+
+The states audit's Rounds findings and the owner's native-feel pass, verified in WebKit at 390x844 with touch.
+
+- **Motion:** the scoring distribution's bars change on transform, not width (motion research A4): each is drawn at the
+  track's width and slid in by its share, so its rounded end stays round.
+- **Titles:** "Ready when you are" (CH-11304) and "Your season starts with your first 18-hole round" (CH-11302) close
+  without a full stop.
+- **Press:** a hole on the review's scorecard deepens to the row press tint; the hole steps and the round card's discard
+  key compress like every key (`data-ch-press`).
+- **Loading:** on the phone the list's and the review's skeletons hold the loaded geometry, measured at 390 (the intro,
+  the round card at the idle card's height, season scoring, the tools, a month's rows; the review's hero, figures,
+  strokes gained and scorecard), so nothing moves when the page lands. On the desktop the review's scorecard loads as a
+  solid object; the rest are the Ledger's ruled blocks (shell).
+
 ## 2026-10-08 — Phone: Mobile clubhouse pass
 
 The owner's phone review ("phone too cardy, too vibe coded"; the Coach Home "Mobile clubhouse pass" board, round 3:

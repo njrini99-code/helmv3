@@ -1,9 +1,8 @@
 'use client';
 
-import { CircleAlert, Users } from 'lucide-react';
+import { MessageSquareOff, Users } from 'lucide-react';
 import { rebuiltHref } from '../../../shell/nav';
 import { Button } from '../../../ui/Button';
-import { Icon } from '../../../ui/Icon';
 import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { EmptyState } from '../../../ui/States';
 
@@ -62,20 +61,24 @@ export function AskThreadFailed({ onNew }: { onNew: () => void }) {
   );
 }
 
-/** `?c=` names a conversation that is gone or not this coach's (mockup Unavailable). The composer stays usable. */
+/**
+ * `?c=` names a conversation that is gone or not this coach's (mockup Unavailable). The composer stays usable. It is the page's
+ * empty state, calm on the canvas, not a boxed card (states audit, 2026-10-08), and still an alert, so it is announced.
+ */
 export function AskUnavailable({ onNew, phone = false }: { onNew: () => void; phone?: boolean }) {
   return (
-    <div className="ch-ask-state">
-      <div className="ch-ask-gone" role="alert" data-ch-code="CH-13320">
-        <span className="ch-ask-gone__ic" aria-hidden="true">
-          <Icon icon={CircleAlert} size={20} />
-        </span>
-        <b>That conversation isn’t available</b>
-        <span>It may have been deleted, or it belongs to another coach. {phone ? 'Your other chats are under History.' : 'Your other chats are on the left.'}</span>
-        <button type="button" className="ch-ask-gone__new" onClick={onNew}>
-          Start a new chat
-        </button>
-      </div>
+    <div className="ch-ask-state" role="alert" data-ch-code="CH-13320">
+      <EmptyState
+        size="page"
+        icon={MessageSquareOff}
+        title="That conversation isn’t available"
+        body={`It may have been deleted, or it belongs to another coach. ${phone ? 'Your other chats are under History.' : 'Your other chats are on the left.'}`}
+        action={
+          <Button variant="primary" onClick={onNew}>
+            Start a new chat
+          </Button>
+        }
+      />
     </div>
   );
 }

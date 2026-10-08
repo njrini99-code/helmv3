@@ -152,7 +152,7 @@ describe('112401 Rounds library, on screen', () => {
 
   it('CH-11304 with no round in progress: the idle card and the last round', async () => {
     show(PREVIEW_ROUNDS_IDLE);
-    await expectCode('CH-11304', /No round in progress.*Ready when you are\..*Last round Sep 26 · Finley GC/);
+    await expectCode('CH-11304', /No round in progress.*Ready when you are(?!\.).*Last round Sep 26 · Finley GC/);
     expect(document.querySelectorAll('.ch-rd-strip.is-ghost span')).toHaveLength(18);
   });
 

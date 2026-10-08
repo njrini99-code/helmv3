@@ -1429,6 +1429,13 @@
     letter-spacing: -0.02em;
     color: var(--ch-on-green-ink);
   }
+  /* Its overlaps line opens the week's overlaps: a wide control, so the press deepens its wash on the green. */
+  .ch-cl.is-phone .ch-cl-tb__over:active {
+    background: rgb(255 255 255 / 0.12);
+  }
+  .ch-cl.is-phone .ch-cl-tb__over.has-any:active {
+    background: rgb(231 184 102 / 0.26);
+  }
 
   /* A section's head: the heading under the double rule, as Home's Today. */
   .ch-cl.is-phone .ch-cl-today h2 {
@@ -1680,6 +1687,9 @@
     gap: 28px;
     padding: 14px 20px 110px;
   }
+  /* At the loaded geometry (measured at 390): the head is 91px (the term line's 24px box, 14px, the 36px actions), each
+     section's head 37.8px with its rows 4px under it on their seams, the overlaps' head two lines (59px) 14px over its rows,
+     what your coach sees 89.4px, a class row 168.4px; the blocks stand 28px apart. */
   .ch-cl-sk-h {
     display: flex;
     flex-direction: column;
@@ -1690,7 +1700,7 @@
   .ch-cl-sk-line {
     display: flex;
     align-items: center;
-    height: 15.6px;
+    height: 24px;
   }
   .ch-cl-sk-acts {
     display: grid;
@@ -1700,15 +1710,31 @@
   .ch-cl-sk-sec {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    padding-top: 15px;
+    padding-top: 12px;
     border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-cl-sk-head {
+    display: flex;
+    align-items: center;
+    height: 22.8px;
+    margin-bottom: 4px;
+  }
+  .ch-cl-sk-head.is-two {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 8px;
+    height: 44px;
+    margin-bottom: 14px;
   }
   .ch-cl-sk-row {
     display: flex;
     align-items: center;
     gap: 14px;
-    min-height: 58px;
+    min-height: 62px;
+  }
+  .ch-cl-sk-row.is-short {
+    min-height: 48.5px;
   }
   .ch-cl-sk-row > span {
     display: flex;
@@ -1716,10 +1742,26 @@
     flex-direction: column;
     gap: 8px;
   }
+  .ch-cl-sk-note {
+    box-sizing: border-box;
+    display: flex;
+    gap: 12px;
+    height: 89.4px;
+    padding-top: 14px;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-cl-sk-note > span {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 8px;
+  }
   .ch-cl-sk-class {
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: 9px;
+    min-height: 168.4px;
     padding: 14px 0;
   }
   .ch-cl-sk-row + .ch-cl-sk-row,
@@ -2201,8 +2243,8 @@
     gap: 10px;
     margin-inline: 0;
   }
+  /* Each is a row's box; the shared skeleton draws it as a ruled row (shell.css, .ch-skel--block), so it takes no radius. */
   .ch-cl[data-ch-code='CH-12401'][data-canopy] .ch-cl-deck > .ch-skel {
     height: 76px !important;
-    border-radius: var(--ch-radius-md) !important;
   }
 }

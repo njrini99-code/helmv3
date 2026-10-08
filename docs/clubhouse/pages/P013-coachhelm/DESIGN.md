@@ -267,8 +267,10 @@ control and no write: nothing to assign, dismiss or accept.
 
 **Honesty rules (all three).** A read that failed is its own notice with Try
 again and is never drawn as nothing: the Deep dive's rounds, plans and category
-trends each fail on their own, in place, without taking the insights down, and
-"In your plan" is a dash rather than a zero while plans did not load. First run,
+trends each fail on their own, in place, without taking the insights down (two
+or more are said once under the read's head with one Try again, CH-1209, each
+part keeping its title where it would be; Standing's two side reads the same),
+and "In your plan" is a dash rather than a zero while plans did not load. First run,
 early read and failed read are three different pages. A read from before the
 newest round says so (CH-13903). No sentence says strokes are being lost: a gain
 is "worth about 0.9 strokes a round" to the team's average, or to the Tour (the
@@ -281,7 +283,12 @@ page's one Suspense on a hard load, because `coachhelm/loading.tsx` cannot read
 `?view=`), first run, early or partial read, failed read, off, and the data
 states above. **Switching view** (Board, Ask, Game profile, Standing, Deep dive)
 draws no skeleton: the strip moves on the tap, the view on screen stays, dimmed
-and not tappable, and is replaced once by the next one.
+and not tappable, and is replaced once by the next one. A coach with players and
+no signal yet sees the pulse and, under it, the players' section with its empty
+line and View roster, not an empty page under the pulse (CH-13306). Ask sits on
+the Ledger's canvas; a conversation that is not available is the page's empty
+state, and a program or a conversation that did not load stands where the
+welcome would be (states audit, 2026-10-08).
 
 **Phone (DRAFT).** The owner's phone boards
 (`docs/clubhouse/phone/coachhelm.md`) cover the board only; these layouts are

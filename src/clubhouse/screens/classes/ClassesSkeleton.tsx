@@ -30,22 +30,25 @@ export function ClassesSkeleton() {
           </div>
         </div>
       </div>
-      {/* The phone (the Mobile clubhouse pass, 2026-10-08): the term line under the double rule over the two actions, the term's
-          feature card, then Today and your classes as sections of rows. classes.css shows the shape for the width, so the
-          server needs no width to draw it. */}
+      {/* The phone (the Mobile clubhouse pass, 2026-10-08), at the loaded page's geometry so nothing moves when it lands (measured
+          at 390): the term line's box under the double rule over the two actions, the term's feature card, Today and its rows, the
+          week's overlaps and what your coach sees (the rail comes first on the phone), then your classes as rows. classes.css shows
+          the shape for the width, so the server needs no width to draw it. */}
       <div className="ch-cl-sk-phone">
         <header className="ch-cl-sk-h">
           <span className="ch-cl-sk-line">
             <Skeleton width={190} height={11} />
           </span>
           <span className="ch-cl-sk-acts">
-            <Skeleton width="100%" height={40} radius={11} />
-            <Skeleton width="100%" height={40} radius={11} />
+            <Skeleton width="100%" height={36} radius={11} />
+            <Skeleton width="100%" height={36} radius={11} />
           </span>
         </header>
-        <Skeleton width="100%" height={112} radius={14} />
+        <Skeleton width="100%" height={116.7} radius={14} shape="solid" />
         <div className="ch-cl-sk-sec">
-          <Skeleton width={70} height={17} radius={6} />
+          <span className="ch-cl-sk-head">
+            <Skeleton width={70} height={17} radius={6} />
+          </span>
           {[0, 1].map((i) => (
             <span key={i} className="ch-cl-sk-row">
               <Skeleton width={72} height={13} />
@@ -56,14 +59,40 @@ export function ClassesSkeleton() {
             </span>
           ))}
         </div>
+        <div className="ch-cl-sk-sec is-over">
+          <span className="ch-cl-sk-head is-two">
+            <Skeleton width="78%" height={17} radius={6} />
+            <Skeleton width="56%" height={11} />
+          </span>
+          {[0, 1, 2].map((i) => (
+            <span key={i} className="ch-cl-sk-row is-short">
+              <span>
+                <Skeleton width={i === 0 ? '52%' : '30%'} height={13} />
+                <Skeleton width="44%" height={11} />
+              </span>
+              <Skeleton width={44} height={11} />
+            </span>
+          ))}
+        </div>
+        <span className="ch-cl-sk-note">
+          <Skeleton width={16} height={16} radius={8} />
+          <span>
+            <Skeleton width="48%" height={13} />
+            <Skeleton width="96%" height={11} />
+            <Skeleton width="88%" height={11} />
+            <Skeleton width="62%" height={11} />
+          </span>
+        </span>
         <div className="ch-cl-sk-sec">
-          <Skeleton width={120} height={17} radius={6} />
+          <span className="ch-cl-sk-head">
+            <Skeleton width={120} height={17} radius={6} />
+          </span>
           {[0, 1].map((i) => (
             <span key={i} className="ch-cl-sk-class">
               <Skeleton width={84} height={14} />
               <Skeleton width="72%" height={16} />
               <Skeleton width="40%" height={12} />
-              <Skeleton width="100%" height={42} radius={8} />
+              <Skeleton width="100%" height={42} radius={8} shape="solid" />
             </span>
           ))}
         </div>

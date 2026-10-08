@@ -665,6 +665,9 @@
   .ch-hg-m__f {
     border-top-color: var(--ch-ledger-rule-soft);
   }
+  .ch-hg-m__how summary:active {
+    background: var(--ch-ledger-row-press);
+  }
 
   /* Loading (CH-13460) in the same shapes: the feature card's place, then the measures' head and rows. */
   .ch-hg-sk__hero {

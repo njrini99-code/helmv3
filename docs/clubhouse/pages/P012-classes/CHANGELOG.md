@@ -1,5 +1,15 @@
 # P012 — Classes: changelog
 
+## 2026-10-08 — States and native feel
+
+The states audit's Classes findings and the owner's native-feel pass, verified in WebKit at 390x844 with touch.
+
+- **Loading:** on the phone the skeleton holds the loaded geometry, measured at 390: the head and its actions, the term's
+  card, Today and its rows, the week's overlaps and what your coach sees (the rail comes first on the phone), then the
+  classes, so nothing moves when the page lands. On the desktop the deck's placeholders are the Ledger's ruled rows,
+  without the radius they kept from the card era.
+- **Press:** the overlaps line on the term's card deepens its wash when pressed.
+
 ## 2026-10-08 — Phone: Mobile clubhouse pass
 
 The owner's phone review ("phone too cardy, too vibe coded"; the Coach Home "Mobile clubhouse pass" board, round 3:
