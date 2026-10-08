@@ -156,7 +156,7 @@ export function ResetForm({
               aria-required="true"
               aria-invalid={invalid || undefined}
               aria-describedby={problem ? ERROR_ID : undefined}
-              placeholder="Email"
+              placeholder="you@school.edu"
               value={email}
               // CH-15910: with the keyboard up, bring Send into view above it, as sign in does.
               onFocus={() => window.setTimeout(() => keyRowRef.current?.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' }), 320)}

@@ -1276,17 +1276,20 @@
   .ch-au-fields[data-invalid] {
     box-shadow: 0 0 0 1.5px var(--ch-danger-600);
   }
+  /* P015 D10: each field keeps a visible label, small and quiet at the top of its row, so the placeholder is never
+     the only name a field shows (it vanishes as you type). */
   .ch-au-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
+    display: block;
+    padding: 9px 16px 0;
+    font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-au-field {
+    position: relative;
+    gap: 0;
   }
   .ch-au-input {
-    height: 52px;
+    height: 40px;
     padding: 0 12px 0 16px;
     border-radius: 0;
     background: transparent;
@@ -1298,16 +1301,21 @@
     }
   }
   /* The field's own focus cue on the grouped sheet: a green hairline, never the app's black keyboard outline. */
-  .ch-au-input:focus-within {
-    box-shadow: inset 0 0 0 1.5px var(--ch-green-ring);
-  }
+  /* The ring is the whole row's, label and all. */
+  .ch-au-input:focus-within,
   .ch-au-input[data-invalid='true'] {
-    box-shadow: inset 0 0 0 1.5px var(--ch-danger-600);
-  }
-  .ch-au-fields[data-invalid] .ch-au-input[data-invalid='true'] {
     box-shadow: none;
   }
-  .ch-au-field + .ch-au-field .ch-au-input::before {
+  .ch-au-field:focus-within {
+    box-shadow: inset 0 0 0 1.5px var(--ch-green-ring);
+  }
+  .ch-au-field:has(.ch-au-input[data-invalid='true']) {
+    box-shadow: inset 0 0 0 1.5px var(--ch-danger-600);
+  }
+  .ch-au-fields[data-invalid] .ch-au-field {
+    box-shadow: none;
+  }
+  .ch-au-field + .ch-au-field::before {
     content: '';
     position: absolute;
     left: 16px;
@@ -1517,7 +1525,7 @@ html[data-fw-theme='dark'] .ch-au[data-phase='leaving'] {
   html[data-fw-theme='dark'] .ch-au-fields[data-invalid] {
     box-shadow: 0 0 0 1.5px var(--ch-danger-600);
   }
-  html[data-fw-theme='dark'] .ch-au-field + .ch-au-field .ch-au-input::before {
+  html[data-fw-theme='dark'] .ch-au-field + .ch-au-field::before {
     background: var(--ch-border-subtle);
   }
   html[data-fw-theme='dark'] .ch-au-wl-scrim {

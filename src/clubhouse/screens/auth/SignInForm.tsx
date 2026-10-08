@@ -304,7 +304,7 @@ export function SignInForm({
               aria-required="true"
               aria-invalid={emailInvalid || undefined}
               aria-describedby={describedBy}
-              placeholder="Email"
+              placeholder="you@school.edu"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onFocus={revealSubmit}
@@ -337,7 +337,6 @@ export function SignInForm({
               aria-required="true"
               aria-invalid={passwordInvalid || undefined}
               aria-describedby={describedBy}
-              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onFocus={revealSubmit}
