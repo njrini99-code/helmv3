@@ -1,5 +1,9 @@
 # P002 — Home: changelog
 
+## 2026-10-08 — premium pass: the brief loses the AI glyph (D1)
+
+The phone hero's brief is deterministic (`homeSubline`), so it no longer wears the Sparkles glyph that reads as model output; the line stands alone. The owner declined the "Why this line" sheet (P002-C1: "Take this out").
+
 ## 2026-10-08 — Copy: typographic apostrophes
 
 Home writes its apostrophes as ’ on desktop and the phone: the no-team pages

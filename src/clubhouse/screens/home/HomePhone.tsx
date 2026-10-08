@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, BarChart3, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sparkles, Sun, TriangleAlert, type LucideIcon } from 'lucide-react';
+import { ArrowRight, BarChart3, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../data/home';
@@ -55,7 +55,6 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
         <h1>{data.greeting}</h1>
         {data.subline && (
           <p className="ch-hm-hero__brief">
-            <Icon icon={Sparkles} size={14} />
             {data.subline}
           </p>
         )}

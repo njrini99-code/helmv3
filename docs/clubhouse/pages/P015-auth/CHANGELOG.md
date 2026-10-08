@@ -1,5 +1,9 @@
 # P015 — Auth: changelog
 
+## 2026-10-08 — premium pass: opaque onboarding paper (D1)
+
+The onboarding reading surface (`.ch-ox-stage`) is opaque paper on desktop and phone, light and dark: the course no longer shows through the fields and password rules, and the backdrop blur is gone. Glass stays on the step pill and the mark only.
+
 ## 2026-10-08 — dark: Clubhouse at night
 
 Sign in, welcome, sign up and onboarding follow GolfHelm's dark theme ("Clubhouse at night"). The painted course keeps its own clock (veil, say line, the phone's mark and the welcome's keyboard hint follow the hour); the panel, the phone sheet and the welcome's reading scrim are night paper; the lockup ink, link hover, focus and refusal halos, notices and the unlit Sign in key are redrawn for the dark ground; the welcome's name line, which had no colour of its own, takes the primary ink. Sign up's stationery pane, lockup, rail and Sign in pills become dark glass and its literal inks the ramp's own; the felt tray, the green choices, the crest, the member card and the seal stay card stock and felt. Sign up keeps dark only when reached from a dark sign in: ThemeScript does not run on `/golf/signup`, so a hard load there is light. Light mode is unchanged.

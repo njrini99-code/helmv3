@@ -62,6 +62,17 @@ export const CAL_START = 6;
 export const CAL_END = 21;
 export const CAL_HH = 52;
 
+/**
+ * The hour the Week and Day grids open on (P006-B1): now, when today is on show; else the first event still ahead on
+ * the days shown; else the first timed event shown; else null (the grid stays at its top).
+ */
+export function focusHour(dates: string[], events: Array<{ date: string; allDay?: boolean; start: number | null }>, now: { date: string; hour: number }): number | null {
+  if (dates.includes(now.date)) return now.hour;
+  const timed = events.filter((e) => !e.allDay && e.start != null && dates.includes(e.date)).sort((a, b) => a.date.localeCompare(b.date) || a.start! - b.start!);
+  const ahead = timed.find((e) => e.date > now.date || (e.date === now.date && e.start! >= now.hour));
+  return (ahead ?? timed[0])?.start ?? null;
+}
+
 export const TYPE_LABEL: Record<ChCalType, string> = {
   practice: 'Practice',
   qualifier: 'Qualifier',

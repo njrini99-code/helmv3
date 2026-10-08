@@ -2,7 +2,7 @@
 
 import { CalendarCheck, CalendarDays, Check, Lock, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Ellipsis, Plus, Printer, Rss, TriangleAlert, Users, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useChSessionState } from '../../lib/session-state';
 import type { ChCalendarData } from '../../data/calendar';
 import { Avatar } from '../../ui/Avatar';
@@ -18,7 +18,7 @@ import { Swap } from '../../ui/Swap';
 import { useNow } from '../../lib/use-now';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
-import { addDays, addMonths, dayNum, findOverlaps, monthCells, monthKey, monthName, viewTitle, weekDates, yearOf, type ChCalEvent, type ChCalType, type ChCalView } from './model';
+import { addDays, addMonths, CAL_HH, dayNum, findOverlaps, focusHour, monthCells, monthKey, monthName, viewTitle, weekDates, yearOf, type ChCalEvent, type ChCalType, type ChCalView } from './model';
 import { AgendaView, MonthView, TimeGrid, type ChNow } from './views';
 import { Attendance, EventDetail, Overlap, Summary, type ChInsp, type InspCtx } from './inspector';
 import { CancelEvent, EventEditor, SubscribeSheet, type EditorSeed } from './editor';
@@ -26,6 +26,8 @@ import { BusySheet } from './extras';
 import { CalendarPhone } from './CalendarPhone';
 import { Modal } from '../../ui/Modal';
 import { useChPhone } from '../../lib/use-phone';
+import { useChReducedMotion } from '../../lib/reduced-motion';
+import { canvasLenis, canvasScrollNow } from '../../lib/smooth-scroll';
 import { usePopoverFit } from '../../lib/use-popover-fit';
 import { CalendarFirstRun } from './CalendarFirstRun';
 
@@ -33,6 +35,58 @@ function zonedNow(timeZone: string, d: Date): ChNow {
   const p: Record<string, string> = {};
   for (const x of new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(d)) p[x.type] = x.value;
   return { date: `${p.year}-${p.month}-${p.day}`, hour: (Number(p.hour) % 24) + Number(p.minute) / 60 };
+}
+
+// Back and Forward return to the place RouteFrame saved; the grid only opens on now for a fresh visit.
+let poppedAt = 0;
+if (typeof window !== 'undefined') window.addEventListener('popstate', () => (poppedAt = Date.now()));
+
+/**
+ * P006-B1: the Week and Day grids open with now (or the next event) about 30% down the canvas, on first paint and on
+ * T or Today. A step to another week keeps the canvas where it is, so the same hours stay in view. Instant on open and
+ * with reduced motion; eased for Today otherwise. `tick` asks again; the request waits until the grid for `first` (the
+ * first day on show) is on the page, since Today may have to load another week first.
+ */
+function useOpenOnNow(tick: number, first: string, on: boolean, hour: number | null, reduced: boolean) {
+  const seen = useRef(0);
+  const settle = useRef<(() => void) | null>(null);
+  useLayoutEffect(() => {
+    if (!on || seen.current === tick) return;
+    const canvas = document.getElementById('ch-canvas');
+    const grid = document.querySelector<HTMLElement>(`.ch-wk__grid[data-first="${first}"]`);
+    if (!canvas || !grid) return;
+    const opening = seen.current === 0;
+    seen.current = tick;
+    if (hour == null || (opening && Date.now() - poppedAt < 1500)) return;
+    const place = () =>
+      Math.max(0, Math.round(grid.getBoundingClientRect().top - canvas.getBoundingClientRect().top + canvas.scrollTop + (hour - Number(grid.dataset.from ?? 0)) * CAL_HH - canvas.clientHeight * 0.3));
+    settle.current?.();
+    if (!opening && !reduced) {
+      const lenis = canvasLenis();
+      if (lenis) lenis.scrollTo(place());
+      else canvas.scrollTo({ top: place(), behavior: 'smooth' });
+      return;
+    }
+    // Held for a moment: RouteFrame opens a newly reached page at its top, and the page is still settling (fonts, the
+    // shell's smooth scroller). A wheel, touch or key from the coach lets go at once, and so does leaving the page.
+    const until = Date.now() + 900;
+    let frame = 0;
+    const stop = () => {
+      cancelAnimationFrame(frame);
+      for (const t of ['wheel', 'touchstart', 'pointerdown', 'keydown']) window.removeEventListener(t, stop, true);
+      settle.current = null;
+    };
+    const hold = () => {
+      if (!grid.isConnected) return stop();
+      const to = place();
+      if (Math.abs(canvas.scrollTop - to) > 2) canvasScrollNow(to);
+      if (Date.now() < until) frame = requestAnimationFrame(hold);
+      else stop();
+    };
+    for (const t of ['wheel', 'touchstart', 'pointerdown', 'keydown']) window.addEventListener(t, stop, { capture: true, passive: true });
+    settle.current = stop;
+    hold();
+  }, [tick, first, on, hour, reduced]);
 }
 
 function JumpPanel({ anchor, today, view, onPick, onClose }: { anchor: string; today: string; view: ChCalView; onPick: (d: string) => void; onClose: () => void }) {
@@ -283,8 +337,10 @@ export function Calendar({
     },
     [view, anchor, go],
   );
+  const [focusTick, setFocusTick] = useState(1);
   const goToday = useCallback(() => {
     haptic('select');
+    setFocusTick((t) => t + 1);
     go(view, now.date);
   }, [go, view, now.date]);
 
@@ -307,6 +363,8 @@ export function Calendar({
   }, [coach, editor, cancelling, subs, busyOpen, view, anchor, insp, goToday, step]);
 
   const dates = view === 'day' ? [anchor] : weekDates(anchor);
+  const reduced = useChReducedMotion();
+  useOpenOnNow(focusTick, dates[0]!, !phone && (view === 'week' || view === 'day') && !data.eventsError, focusHour(dates, events, now), reduced);
   // The day, week or month on show. Stepping to another slides the grid the way it went (CH-6605): a later period comes in
   // from the right, an earlier one from the left.
   const periodKey = view === 'week' ? weekDates(anchor)[0]! : view === 'month' ? monthKey(anchor) : view === 'day' ? anchor : 'agenda';

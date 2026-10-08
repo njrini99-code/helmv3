@@ -888,17 +888,10 @@
   }
   /* Two classes: base.css zeroes every p's margin (.ch-root p), which one class loses to, and the brief sat hard against Up next. */
   .ch-hm-hero > .ch-hm-hero__brief {
-    display: flex;
-    gap: 8px;
     margin: 0 0 18px;
     font: 400 14.5px/1.45 var(--ch-font-sans);
     color: rgb(244 241 232 / 0.82);
     text-wrap: pretty;
-  }
-  .ch-hm-hero__brief svg {
-    flex: none;
-    margin-top: 3px;
-    color: var(--ch-hero-mint);
   }
   .ch-hm-next {
     display: flex;
@@ -2523,9 +2516,6 @@
     letter-spacing:.14em;
     color:var(--ch-ledger-eyebrow);
   }
-  .ch-hm-hero__brief svg {
-    color:var(--ch-ledger-eyebrow);
-  }
   .ch-hm-next {
     padding:16px;
     border-radius:12px;
@@ -3001,9 +2991,6 @@
   }
   .ch-hm-hero > .ch-hm-hero__brief {
     color: var(--ch-text-secondary);
-  }
-  .ch-hm-hero__brief svg {
-    color: var(--ch-ledger-eyebrow);
   }
 }
 

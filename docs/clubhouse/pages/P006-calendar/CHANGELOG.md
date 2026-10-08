@@ -1,5 +1,9 @@
 # P006 — Calendar: changelog
 
+## 2026-10-08 — premium pass: open on now (P006-B1, D1)
+
+The Week and Day grids open with the now line, or the next event when today is not on show, about 30% down the canvas, on first paint and on T or Today (`focusHour` in `model.ts`, `useOpenOnNow` in `Calendar.tsx`). Opening is instant; Today eases unless motion is reduced. Back and Forward keep the place RouteFrame restored, and stepping a week keeps the canvas where it is.
+
 ## 2026-10-08 — dark: Clubhouse at night
 
 Calendar follows GolfHelm's dark theme ("Clubhouse at night"). A tournament or qualifier block, the month's competition chip and the detail panel's next-up card keep their filled green with ivory type; practice blocks, agenda times and lane events take the light text green; the competition dot, the phone's now line and its competition dots lift to the light green so they hold on the dark ground; selection, today, travel, the class hatch and the coach's busy hatch are redrawn as ivory or champagne washes. Light mode is unchanged (every rule is scoped to `html[data-fw-theme='dark']`).

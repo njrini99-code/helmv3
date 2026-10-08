@@ -188,7 +188,7 @@ export function TimeGrid({
           </div>
         ))}
       </div>
-      <div className="ch-wk__grid">
+      <div className="ch-wk__grid" data-first={dates[0]} data-from={from}>
         <div className="ch-wk__rail" aria-hidden="true">
           {hours.map(
             (h) =>
