@@ -1,9 +1,10 @@
 'use client';
 
 import { BarChart3, Check, ChevronRight, Clock, Copy, Ellipsis, UserMinus, UserPlus, Users } from 'lucide-react';
+import NumberFlow from '@number-flow/react';
 import { AnimatePresence } from 'motion/react';
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { startTransition, useCallback, useEffect, useRef, useState, ViewTransition, type ReactNode } from 'react';
 import { useChSessionState } from '../../lib/session-state';
 import type { ChRoster, ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
@@ -17,33 +18,29 @@ import { Modal } from '../../ui/Modal';
 import { PhoneBar, PhoneIconAction } from '../../ui/PhoneBar';
 import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
-import { changeTone, formatFixed, formatSigned } from '../../lib/format';
+import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
+import { CH_DUR, CH_EASE } from '../../lib/motion';
+import { useChReducedMotion } from '../../lib/reduced-motion';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneScreen } from '../../shell/PhoneScreen';
 import { PhoneTop, useBackFromMore, usePhoneStackHistory } from '../../shell/phone-chrome';
 import type { NoteSaved } from './RosterPeek';
 import { RosterProfile } from './RosterProfile';
 import { PlayerPeek } from '../../ui/PlayerPeek';
-import { formatHcp, rosterFailedParts, rosterPeek, rowNote } from './format';
+import { figureParts, formatHcp, rosterFailedParts, rosterPeek, rowNote } from './format';
+import { useRosterSort, type PhoneSort } from './sort';
 import { nameList, type ChJoinRequestsState } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
 
-export type PhoneSort = 'avg' | 'sg' | 'name';
+export type { PhoneSort } from './sort';
 
-const lastName = (n: string) => n.split(' ').slice(-1)[0] ?? n;
-/** Ascending, with missing values last. */
-const nullsLast = (a: number | null, b: number | null) => (a == null ? (b == null ? 0 : 1) : b == null ? -1 : a - b);
-
-function sortPlayers(list: ChRosterPlayer[], sort: PhoneSort): ChRosterPlayer[] {
-  return [...list].sort((a, b) =>
-    sort === 'name'
-      ? lastName(a.name).localeCompare(lastName(b.name))
-      : sort === 'sg'
-        ? nullsLast(a.sgPerRound == null ? null : -a.sgPerRound, b.sgPerRound == null ? null : -b.sgPerRound)
-        : nullsLast(a.avg, b.avg),
-  );
-}
+/** The trailing figure's roll: the base duration on the v2 ease-out (D-64), its fade on the quick one. */
+const ROLL = { duration: CH_DUR.base * 1000, easing: `cubic-bezier(${CH_EASE.join(', ')})` } as const;
+const ROLL_FADE = { duration: CH_DUR.quick * 1000, easing: 'ease-out' } as const;
+/** How long after a chosen sort the figures may roll: the roll, and a frame or so for it to end on its own (Number Flow
+ *  finishes a running roll at once when `animated` turns off). */
+const ROLL_HOLD_MS = CH_DUR.base * 1000 + 50;
 
 /**
  * The phone Roster (owner design, docs/clubhouse/phone/roster.md), inside the
@@ -87,8 +84,24 @@ export function RosterPhone({
   const activeCount = players.filter((p) => p.status === 'active').length;
   // Avg and SG order nothing while season stats are missing: the list falls back to Name (P003 #7).
   const sortBy: PhoneSort = data.statsError ? 'name' : sort;
-  const active = useMemo(() => sortPlayers(players.filter((p) => p.status === 'active'), sortBy), [players, sortBy]);
-  const inactive = useMemo(() => sortPlayers(players.filter((p) => p.status === 'inactive'), sortBy), [players, sortBy]);
+  const { active, inactive } = useRosterSort(players, sortBy);
+  // CH-3604: a chosen sort reorders inside a transition, so each moved row slides to its place (RosterPhoneList).
+  // Only a chosen sort rolls the figures (a refresh that changes an average takes the new figure at once), so the
+  // permission is set with the sort and lapses once the roll is over.
+  const [rolling, setRolling] = useState(false);
+  const chooseSort = useCallback(
+    (v: PhoneSort) =>
+      startTransition(() => {
+        setSort(v);
+        setRolling(true);
+      }),
+    [setSort],
+  );
+  useEffect(() => {
+    if (!rolling) return;
+    const t = window.setTimeout(() => setRolling(false), ROLL_HOLD_MS);
+    return () => window.clearTimeout(t);
+  }, [rolling, sortBy]);
 
   // The profile is a history entry, so the iOS edge swipe and the browser's back pop it (CH-1906).
   const popTo = useCallback((level: number) => level < 1 && onClose(), [onClose]);
@@ -186,7 +199,7 @@ export function RosterPhone({
                 size="sm"
                 label="Sort players"
                 value={sortBy}
-                onChange={setSort}
+                onChange={chooseSort}
                 options={
                   data.statsError
                     ? [{ value: 'name', label: 'Name' }]
@@ -199,7 +212,7 @@ export function RosterPhone({
               />
             </div>
             <SectionBoundary surface="roster.list" label="The roster" code="CH-3205">
-              <RosterPhoneList active={active} inactive={inactive} statsError={data.statsError} sort={sortBy} onOpen={onOpen} />
+              <RosterPhoneList active={active} inactive={inactive} statsError={data.statsError} sort={sortBy} rolling={rolling} onOpen={onOpen} />
             </SectionBoundary>
           </>
         )}
@@ -246,28 +259,45 @@ export function RosterPhone({
   );
 }
 
+/**
+ * The active players, then Inactive. A chosen sort (and only that: never a refresh, which keeps the rows where they are
+ * under the finger) slides each moved row to its new place on the smooth spring inside React's `<ViewTransition>`
+ * (class `ch-rsm-reorder`, roster.css), while its trailing figure rolls to the new sort's figure. Reduced motion and
+ * Animations off reorder at once.
+ */
 function RosterPhoneList({
   active,
   inactive,
   statsError,
   sort,
+  rolling,
   onOpen,
 }: {
   active: ChRosterPlayer[];
   inactive: ChRosterPlayer[];
   statsError: boolean;
   sort: PhoneSort;
+  /** A sort was just chosen: the figures roll to it (RosterPhone). */
+  rolling: boolean;
   onOpen: (id: string) => void;
 }) {
+  const reduced = useChReducedMotion();
+  // The sort last committed to the screen. A ref, not state: recording it must not draw the list again.
+  const drawn = useRef(sort);
+  useEffect(() => {
+    drawn.current = sort;
+  });
+  const slide = !reduced && drawn.current !== sort;
+  const row = (p: ChRosterPlayer) => (
+    <li key={p.id}>
+      <RosterPhoneRow p={p} statsError={statsError} sort={sort} onOpen={onOpen} slide={slide} roll={rolling && !reduced} />
+    </li>
+  );
   return (
     <>
       {active.length > 0 && (
         <ul className="ch-rsm-panel ch-rsm-list" aria-label="Active players">
-          {active.map((p) => (
-            <li key={p.id}>
-              <RosterPhoneRow p={p} statsError={statsError} sort={sort} onOpen={onOpen} />
-            </li>
-          ))}
+          {active.map(row)}
         </ul>
       )}
       {inactive.length > 0 && (
@@ -276,11 +306,7 @@ function RosterPhoneList({
             Inactive
           </h2>
           <ul className="ch-rsm-panel ch-rsm-list" aria-labelledby="ch-rsm-inactive">
-            {inactive.map((p) => (
-              <li key={p.id}>
-                <RosterPhoneRow p={p} statsError={statsError} sort={sort} onOpen={onOpen} />
-              </li>
-            ))}
+            {inactive.map(row)}
           </ul>
         </>
       )}
@@ -292,8 +318,24 @@ function RosterPhoneList({
  * One player: avatar, name, class and note, a form spark from three rounds (D-57), and the figure the list is sorted by
  * (native-feel audit 2026-10-08, P1-3): strokes gained per round under SG, gains green and losses amber; otherwise the
  * scoring average with the handicap. Sorted by name, the name leads the row already, so the average and handicap stay.
+ * The figure is one numeral that stays put across sorts, so a new sort rolls it to the new figure (`roll`) instead of
+ * swapping it; it never counts up on first paint. `slide` lets the row travel to its new place (RosterPhoneList).
  */
-export function RosterPhoneRow({ p, statsError, sort = 'avg', onOpen }: { p: ChRosterPlayer; statsError: boolean; sort?: PhoneSort; onOpen: (id: string) => void }) {
+export function RosterPhoneRow({
+  p,
+  statsError,
+  sort = 'avg',
+  onOpen,
+  slide = false,
+  roll = false,
+}: {
+  p: ChRosterPlayer;
+  statsError: boolean;
+  sort?: PhoneSort;
+  onOpen: (id: string) => void;
+  slide?: boolean;
+  roll?: boolean;
+}) {
   const note = rowNote(p, statsError);
   const bySg = sort === 'sg';
   const sg = p.sgPerRound;
@@ -308,33 +350,52 @@ export function RosterPhoneRow({ p, statsError, sort = 'avg', onOpen }: { p: ChR
   ]
     .filter(Boolean)
     .join(', ');
-  // P003-C1: a hold peeks at the player (the shell's PlayerPeek); a tap still opens the profile.
+  // P003-C1: a hold peeks at the player (the shell's PlayerPeek); a tap still opens the profile. The transition sits
+  // inside the peek, so the slide names the row itself.
   return (
     <PlayerPeek player={rosterPeek(p)}>
-      <button type="button" className="ch-rsm-row" aria-label={label} data-ch-code="CH-3806" onClick={() => onOpen(p.id)}>
-        <Avatar name={p.name} size={40} />
-        <span className="ch-rsm-row__b">
-          <b>{p.name}</b>
-          <span className={note?.tone ? `is-${note.tone}` : undefined}>{[p.classYear, note?.text].filter(Boolean).join(' · ') || ' '}</span>
-        </span>
-        {p.trend.length >= 3 && (
-          <span className="ch-rsm-row__spark" aria-hidden="true">
-            <FormLine data={p.trend} width={48} height={20} earlyBelow={3} bare label={`${p.name} form`} />
+      <ViewTransition name={`ch-rsm-row-${p.id}`} update={slide ? 'ch-rsm-reorder' : 'none'} enter="none" exit="none" share="none" default="none">
+        <button type="button" className="ch-rsm-row" aria-label={label} data-ch-code="CH-3806" onClick={() => onOpen(p.id)}>
+          <Avatar name={p.name} size={40} />
+          <span className="ch-rsm-row__b">
+            <b>{p.name}</b>
+            <span className={note?.tone ? `is-${note.tone}` : undefined}>{[p.classYear, note?.text].filter(Boolean).join(' · ') || ' '}</span>
           </span>
-        )}
-        {bySg ? (
-          <span className="ch-rsm-row__v" data-sort="sg">
-            <b className={`ch-num ${changeTone(sg, false)}`.trim()}>{formatSigned(sg)}</b>
-            <span className="ch-num">SG / rd</span>
+          {p.trend.length >= 3 && (
+            <span className="ch-rsm-row__spark" aria-hidden="true">
+              <FormLine data={p.trend} width={48} height={20} earlyBelow={3} bare label={`${p.name} form`} />
+            </span>
+          )}
+          <span className="ch-rsm-row__v" data-sort={bySg ? 'sg' : undefined}>
+            <b className={`ch-num ${bySg ? changeTone(sg, false) : ''}`.trim()}>
+              <RollFigure value={bySg ? sg : p.avg} signed={bySg} roll={roll} />
+            </b>
+            <span className="ch-num">{bySg ? 'SG / rd' : `${formatHcp(p.handicap)} hcp`}</span>
           </span>
-        ) : (
-          <span className="ch-rsm-row__v">
-            <b className="ch-num">{formatFixed(p.avg)}</b>
-            <span className="ch-num">{formatHcp(p.handicap)} hcp</span>
-          </span>
-        )}
-      </button>
+        </button>
+      </ViewTransition>
     </PlayerPeek>
+  );
+}
+
+/**
+ * A row's figure as a rolling numeral (Number Flow): the sign is text in front of it (`figureParts`), so a loss reads
+ * with a true minus, and its spoken value is the figure as written ("−0.9", "72.4"). No data is a dash, which does not
+ * roll. With reduced motion or Animations off it changes at once.
+ */
+export function RollFigure({ value, signed = false, roll }: { value: number | null; signed?: boolean; roll: boolean }) {
+  const fig = figureParts(value, { signed });
+  if (!fig) return <>{NO_DATA}</>;
+  return (
+    <NumberFlow
+      value={fig.size}
+      prefix={fig.prefix}
+      format={{ minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false }}
+      animated={roll}
+      transformTiming={ROLL}
+      spinTiming={ROLL}
+      opacityTiming={ROLL_FADE}
+    />
   );
 }
 

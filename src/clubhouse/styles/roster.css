@@ -1915,3 +1915,18 @@
 :where(html[data-fw-theme='dark']) .ch-rs[data-canopy] .ch-rs-face.is-sel .ch-rs-face__av::after {
   opacity: 0.45;
 }
+
+/* CH-3701: a chosen sort slides each moved phone row to its new place on the smooth spring (D-64), its figure rolling
+   inside it. No crossfade: the row's new face travels from the old place. The pseudo-elements hang off <html>, so they
+   take the spring from its tokens there (tokens.css, --ch-*-vt-push). The shell's reduced-motion rule stops it, and the
+   list never asks for it then, nor with Animations off (RosterPhoneList). */
+html:has([data-ui='clubhouse'])::view-transition-group(.ch-rsm-reorder) {
+  animation-duration: var(--ch-dur-vt-push);
+  animation-timing-function: var(--ch-ease-vt-push);
+}
+html:has([data-ui='clubhouse'])::view-transition-old(.ch-rsm-reorder) {
+  display: none;
+}
+html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
+  animation: none;
+}

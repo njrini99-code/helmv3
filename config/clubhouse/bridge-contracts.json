@@ -2472,6 +2472,17 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 31604,
+    "page": "P003",
+    "category": 16,
+    "item": 4,
+    "name": "PHONE_CHOOSING_AVG_SG_OR_NAME",
+    "chCode": "CH-3604",
+    "meaning": "Phone: choosing Avg, SG or Name",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 31701,
     "page": "P003",
     "category": 17,

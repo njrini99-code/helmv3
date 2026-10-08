@@ -1,5 +1,26 @@
 # P003 — Roster: changelog
 
+## 2026-10-08 — The phone sort runs on TanStack Table; rows slide and figures roll on a new sort
+
+Adopting the installed kits (`@tanstack/react-table` 9, `@number-flow/react` 0.6). Phone only; the desktop roster is
+unchanged. Not yet reviewed by the owner.
+
+- **Sorting model:** the phone list's Avg / SG / Name order comes from TanStack Table's sorting model, headless
+  (`useRosterSort`, `screens/roster/sort.ts`), with the same rules written out as the columns' sort functions: Avg
+  lowest first, SG highest first, Name by last name (D-59), a missing figure last, ties in the loader's order. The rows
+  keep their markup and look.
+- **Reorder (CH-3604):** choosing a sort slides each moved row to its new place on the smooth spring inside React's
+  `<ViewTransition>` (class `ch-rsm-reorder`, the pattern the qualifier board uses for P009-B1). Only a chosen sort
+  moves rows or rolls figures; a refresh takes its new figures at once and leaves the rows where they are. Reduced
+  motion and Animations off reorder at once.
+- **Rolling figure:** each row's trailing figure is one Number Flow numeral that stays across sorts, so Avg to SG
+  rolls 74.1 to −0.9 instead of swapping it (base duration on the v2 ease-out, `CH_DUR`). The sign is drawn as text in
+  front of the digits (`figureParts`), so a loss reads with a true minus and a figure that rounds to zero is an
+  unsigned 0.0; no data stays a dash and does not roll. Nothing counts up on first paint. Its spoken value equals the
+  figure as written, and the row's own label is unchanged.
+- **Haptic:** the selection tick on a sort change is still the segmented control's one tick (CH-3701), not doubled.
+- Tests: `src/clubhouse/__tests__/roster-sort.test.tsx`.
+
 ## 2026-10-08 — Join requests as a row, the sheet without wells
 
 Owner direction (2026-10-08): the card is no longer the default unit of layout on the phone. Phone only (the phone

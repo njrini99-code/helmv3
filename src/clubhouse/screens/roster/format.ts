@@ -12,6 +12,23 @@ export function formatHcp(v: number | null): string {
 export { MINUS };
 
 /**
+ * A figure split for a rolling numeral (Number Flow): the sign as text and the size as the number that rolls, so the
+ * numeral reads "−0.9" with a true minus, never Intl's hyphen. `text` is the whole figure, exactly as `formatSigned`
+ * (signed) or `formatFixed` writes it, for the row's accessible name and for no data ("—", which does not roll). A
+ * figure that rounds to zero is "0.0", unsigned, as `formatSigned` has it.
+ */
+export function figureParts(
+  value: number | null | undefined,
+  { signed = false, digits = 1 }: { signed?: boolean; digits?: number } = {},
+): { text: string; prefix: string; size: number } | null {
+  if (value == null || Number.isNaN(value)) return null;
+  const rounded = Number(value.toFixed(digits));
+  const size = Math.abs(rounded);
+  const prefix = rounded === 0 ? '' : rounded < 0 ? MINUS : signed ? '+' : '';
+  return { text: prefix + size.toFixed(digits), prefix, size };
+}
+
+/**
  * The parts of a coach's Roster that failed, as phrases inside a sentence, for the page's one notice (CH-1209). Season
  * stats count only with the roster in: without the players there are no averages to miss.
  */
