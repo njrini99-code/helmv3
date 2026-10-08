@@ -21,7 +21,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 // (__registerTriggerPlayerInsightsAfterRound) has run at module-init time —
 // the bridge no longer lazily imports insights.ts itself (that dynamic
 // back-edge was the cold-start TDZ cycle; see trigger-insights-bridge.ts).
-import '@/app/golf/actions/insights';
+import '@/app/golf/actions/insights-coachhelm';
 import { triggerPlayerInsightsAfterRound } from '@/lib/coachhelm/v2/trigger-insights-bridge';
 import { isAnalysisOutcomeCode, kindForCode, type AnalysisOutcomeKind } from '@/lib/coachhelm/v3/engine/analysis-outcome';
 import { logServerError } from '@/lib/server-error-logger';

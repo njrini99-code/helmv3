@@ -30,7 +30,7 @@ vi.mock('@/app/golf/actions/announcements', () => ({ getAnnouncementsWithMeta: a
 vi.mock('@/app/golf/actions/documents', () => ({ getDocuments: actions.docs, createGolfDocument: vi.fn(), deleteGolfDocument: vi.fn(), getPreviewUrl: vi.fn(), uploadGolfDocument: vi.fn() }));
 vi.mock('@/app/golf/actions/unified-notifications', () => ({ getUnifiedNotifications: actions.notifs, markAllNotificationsRead: vi.fn(), markNotificationRead: vi.fn() }));
 vi.mock('@/app/golf/actions/communication', () => ({ acknowledgeAnnouncement: vi.fn() }));
-vi.mock('@/app/golf/actions/golf', () => ({ respondToEvent: vi.fn() }));
+vi.mock('@/app/golf/actions/calendar-events', () => ({ respondToEvent: vi.fn() }));
 vi.mock('@/app/golf/actions/tasks', () => ({ completeTask: vi.fn(), uncompleteTask: vi.fn(), createTask: vi.fn(), deleteTask: vi.fn() }));
 vi.mock('@/app/golf/actions/travel', () => ({ createGolfTravelItinerary: vi.fn(), getTravelerClassConflicts: vi.fn() }));
 const session = vi.hoisted(() => ({ current: null as unknown }));

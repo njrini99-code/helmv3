@@ -280,15 +280,23 @@ features:
         - src/app/golf/actions/player-effectiveness.ts
         - src/app/golf/actions/player-fingerprint.ts
         - src/app/golf/actions/player-fingerprint-types.ts
-        # `insight-*.ts` never matched `insights.ts` (no hyphen), so the
-        # largest insight action file in the tree — it owns the post-round
-        # generation trigger and its coach push — resolved to NO feature and
-        # every edit to it hit the guard as an unmapped governed path.
-        - src/app/golf/actions/insights.ts
+        # `insight-*.ts` never matches the `insights*.ts` action files (no
+        # hyphen after `insight`), so the largest insight action files in the
+        # tree — insights-coachhelm.ts owns the post-round generation trigger
+        # and its coach push — resolved to NO feature and every edit to them
+        # hit the guard as an unmapped governed path. (insights.ts itself was
+        # split into these four files in plan phase 7a.)
+        - src/app/golf/actions/insights-feed.ts
+        - src/app/golf/actions/insights-player-analysis.ts
+        - src/app/golf/actions/insights-coachhelm.ts
+        - src/app/golf/actions/insights-shared.ts
         - src/app/golf/actions/intelligence-dashboard.ts
         - src/app/golf/actions/player-feedback.ts
         - src/app/golf/actions/v3/**
       services:
+        # v3 is canonical for new code; v2 is still on the live path (post-round
+        # trigger, orchestrator, insight types/upsert) and is being retired. The
+        # plan and every remaining v2 importer: src/lib/coachhelm/README.md.
         - src/lib/coachhelm/**
       db:
         - supabase/migrations/*coachhelm*.sql
@@ -449,7 +457,12 @@ features:
       api:
         - src/app/api/golf/rounds/**
       actions:
-        - src/app/golf/actions/golf.ts
+        # golf.ts was split by domain (plan phase 7a); round-submit.ts and
+        # round-partial.ts are also covered by the round-*.ts glob below.
+        - src/app/golf/actions/round-submit.ts
+        - src/app/golf/actions/round-partial.ts
+        - src/app/golf/actions/saved-courses.ts
+        - src/app/golf/actions/golf-action-shared.ts
         - src/app/golf/actions/round-*.ts
         - src/app/golf/actions/shot-analytics.ts
         - src/app/golf/actions/player-feedback.ts
@@ -594,7 +607,8 @@ features:
         - src/clubhouse/routes/qualifiers.tsx
       api: []
       actions:
-        - src/app/golf/actions/golf.ts
+        - src/app/golf/actions/qualifier-actions.ts
+        - src/app/golf/actions/golf-action-shared.ts
         - src/app/golf/actions/v3/qualifying.ts
         - src/app/golf/actions/qualifier-progress.ts
         - src/app/golf/actions/qualifier-setup.ts
@@ -659,7 +673,10 @@ features:
       api:
         - src/app/api/golf/rounds/**
       actions:
-        - src/app/golf/actions/golf.ts
+        - src/app/golf/actions/shot-actions.ts
+        - src/app/golf/actions/round-partial.ts
+        - src/app/golf/actions/round-submit.ts
+        - src/app/golf/actions/golf-action-shared.ts
         - src/app/golf/actions/round-drafts.ts
         - src/app/golf/actions/shot-analytics.ts
       services:
@@ -835,6 +852,8 @@ features:
         - src/app/api/calendar/**
       actions:
         - src/app/golf/actions/attendance.ts
+        - src/app/golf/actions/calendar-blocked-time.ts
+        - src/app/golf/actions/calendar-events.ts
         - src/app/golf/actions/calendar-feeds.ts
         - src/app/golf/actions/calendar-sync.ts
         - src/app/golf/actions/event-documents.ts
@@ -1074,6 +1093,8 @@ features:
         - src/app/golf/actions/messages.ts
         - src/app/golf/actions/message-attachments.ts
         - src/app/golf/actions/announcements.ts
+        - src/app/golf/actions/calendar-notifications.ts
+        - src/app/golf/actions/team-management.ts
         - src/app/golf/actions/communication.ts
         - src/app/golf/actions/coach-notifications.ts
         - src/app/golf/actions/player-notifications.ts
@@ -1249,6 +1270,7 @@ features:
         - src/components/fairway/pages/team/**
       actions:
         - src/app/golf/actions/roster.ts
+        - src/app/golf/actions/team-management.ts
         - src/app/golf/actions/teams.ts
         - src/app/golf/actions/player-profile-stats.ts
         - src/app/golf/actions/team-switcher.ts

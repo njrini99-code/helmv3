@@ -12,13 +12,13 @@ Scored against gold set `scripts/knowledge/bench/gold-set.v1.json` (schema 1.1.0
 | Metric | Value | What it measures |
 | --- | --- | --- |
 | Feature recall | 77% | gold feature present in knowledge:map's output for the seed file |
-| Wrong-feature rate | 23% | knowledge:map returned a feature outside the gold set |
+| Wrong-feature rate | 13% | knowledge:map returned a feature outside the gold set |
 | Gold-file recall | 33% (n=21) | other incident files reachable via the matched feature's own code globs |
 | Recall@5 (feature docs only) | 77% | gold feature doc within the first 5 feature-specific docs |
 | Recall@10 (feature docs only) | 77% | gold feature doc within the first 10 feature-specific docs |
-| Recall@5 (full ordered list) | 70% | same, but counting the 3 fixed docs (AGENTS.md/CLAUDE.md/registry.yml) against the budget |
+| Recall@5 (full ordered list) | 77% | same, but counting the 3 fixed docs (AGENTS.md/CLAUDE.md/registry.yml) against the budget |
 | Recall@10 (full ordered list) | 77% | same, K=10 |
-| Irrelevant-token % | 17% | share of feature-doc characters owned by a feature outside the gold set |
+| Irrelevant-token % | 13% | share of feature-doc characters owned by a feature outside the gold set |
 | Stale-context % | 0% | share of included docs flagged SUPERSEDED/HISTORICAL/archived |
 | Historical-analogue retrieval rate | 0% | pack includes any `memory/incidents/**` path |
 
@@ -28,13 +28,13 @@ Scored against gold set `scripts/knowledge/bench/gold-set.v1.json` (schema 1.1.0
 | --- | --- | --- | --- | --- | --- |
 | INC-2026-08-22-end-date-closed-qualifier-early | qualifiers | golf_round_lifecycle | no | golf_round_lifecycle | 50% |
 | INC-2026-08-26-error-rate-hourly-never-written | admin_platform | admin_platform, team_access_control | yes | team_access_control | 33% |
-| INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback | golf_round_lifecycle | golf_round_lifecycle, qualifiers, shot_tracking | yes | qualifiers | 0% |
+| INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback | golf_round_lifecycle | golf_round_lifecycle, shot_tracking | yes | — | 0% |
 | INC-2026-08-30-account-deletion-still-cascades-golf-history | golf_round_lifecycle | (none) | no | — | 0% |
 | INC-2026-08-25-recap-persist-schema-permission | golf_round_lifecycle | golf_round_lifecycle | yes | — | 67% |
 | INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge | admin_platform | (none) | no | — | 0% |
-| INC-2026-08-22-delete-shot-stale-id | shot_tracking | golf_round_lifecycle, qualifiers, shot_tracking | yes | qualifiers | 0% |
+| INC-2026-08-22-delete-shot-stale-id | shot_tracking | shot_tracking | yes | — | 0% |
 | INC-2026-08-22-confirmed-snapshot-recovery-prompt | shot_tracking | (none) | no | — | 0% |
-| INC-2026-08-22-partial-save-round-deletion | shot_tracking | golf_round_lifecycle, qualifiers, shot_tracking | yes | qualifiers | 0% |
+| INC-2026-08-22-partial-save-round-deletion | shot_tracking | golf_round_lifecycle, shot_tracking | yes | — | 0% |
 | INC-2026-08-25-atomic-snapshot-hole-mismatch | shot_tracking | shot_tracking | yes | — | 0% |
 | INC-2026-08-25-completed-round-sg-capability | golf_round_lifecycle | stats_analytics | no | — | 0% |
 | INC-2026-07-29-postgres-wedge-took-down-every-route | admin_platform | roster_team, auth_onboarding_join, team_access_control | no | roster_team, team_access_control | 0% |

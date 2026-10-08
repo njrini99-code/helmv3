@@ -21,7 +21,7 @@ vi.mock('../shell/phone-chrome', () => ({
   PhoneTop: (p: { back?: { label: string; onBack: () => void } }) => (p.back ? <button onClick={p.back.onBack}>{`phone back to ${p.back.label}`}</button> : null),
   usePhoneTabsHidden: () => {},
 }));
-vi.mock('@/app/golf/actions/golf', () => ({ deleteInProgressRound: vi.fn() }));
+vi.mock('@/app/golf/actions/round-partial', () => ({ deleteInProgressRound: vi.fn() }));
 vi.mock('@/lib/utils/emergency-save', () => ({ clearEmergencySave: vi.fn(), markRoundDiscarded: vi.fn() }));
 
 import { markAppRunning, RouteScope } from '../lib/session-state';

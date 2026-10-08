@@ -2,20 +2,23 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { scanActionFile } from './coverage-scanner';
-import { assertAreaFullyWrapped } from './coverage-contract.shared';
+import { assertAreaFullyWrapped, GOLF_SPLIT_ACTION_FILES } from './coverage-contract.shared';
 
 describe('coverage-scanner', () => {
-  it('parses golf.ts and finds savePartialRound wrapped with feature round_tracking', () => {
-    const scanned = scanActionFile(join(process.cwd(), 'src/app/golf/actions/golf.ts'));
-    expect(scanned.exports).toContain('savePartialRound');
-    expect(scanned.exports).toContain('invitePlayerToTeam');
-    expect(scanned.wrapped.get('savePartialRound')).toEqual({ feature: 'round_tracking' });
+  it('parses the golf action files and finds savePartialRound wrapped with feature round_tracking', () => {
+    const scan = (file: string) => scanActionFile(join(process.cwd(), `src/app/golf/actions/${file}`));
+    const partial = scan('round-partial.ts');
+    const team = scan('team-management.ts');
+    const courses = scan('saved-courses.ts');
+    expect(partial.exports).toContain('savePartialRound');
+    expect(team.exports).toContain('invitePlayerToTeam');
+    expect(partial.wrapped.get('savePartialRound')).toEqual({ feature: 'round_tracking' });
     // invitePlayerToTeam is now wrapped (roster_management, W15 Batch 5) —
     // proves the scanner distinguishes wrapped from unwrapped exports within
     // the same file. golf.ts's LAST 4 exports (getPlayerSavedCourses et al.)
     // landed in Batch 6, so as of B6 the whole file is fully wrapped.
-    expect(scanned.wrapped.get('invitePlayerToTeam')).toEqual({ feature: 'roster_management' });
-    expect(scanned.wrapped.get('getPlayerSavedCourses')).toEqual({ feature: 'course_library' });
+    expect(team.wrapped.get('invitePlayerToTeam')).toEqual({ feature: 'roster_management' });
+    expect(courses.wrapped.get('getPlayerSavedCourses')).toEqual({ feature: 'course_library' });
   });
 
   it('exports list matches a fresh regex scan (sanity: scanner is not hard-coded)', () => {
@@ -51,7 +54,7 @@ describe('coverage-scanner', () => {
 });
 
 describe('assertAreaFullyWrapped — self-test (proves the harness detects gaps)', () => {
-  it('does NOT throw for golf.ts — fully wrapped as of Batch 6', () => {
+  it('does NOT throw for the golf.ts split files — fully wrapped as of Batch 6', () => {
     // Batch 1 (round_tracking/qualifiers/my_qualifiers, 13 exports incl. the
     // pre-existing savePartialRound exemplar) + Batch 2 (calendar_events/
     // notifications, 18 exports) + Batch 4 (createAnnouncement) + Batch 5
@@ -60,7 +63,7 @@ describe('assertAreaFullyWrapped — self-test (proves the harness detects gaps)
     // savePlayerCourse, touchSavedCourse, getRecentCoursesForPlayer) cover all
     // 39 golf.ts exports — no exclusions needed anymore.
     expect(() =>
-      assertAreaFullyWrapped(['src/app/golf/actions/golf.ts']),
+      assertAreaFullyWrapped(GOLF_SPLIT_ACTION_FILES),
     ).not.toThrow();
   });
 

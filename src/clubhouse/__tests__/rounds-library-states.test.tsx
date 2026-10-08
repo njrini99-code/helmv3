@@ -14,7 +14,7 @@ vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSessi
 const refreshing = vi.hoisted(() => ({ now: false, refresh: vi.fn() }));
 vi.mock('../lib/use-refresh', () => ({ useRefresh: () => ({ refresh: refreshing.refresh, refreshing: refreshing.now }) }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn(), back: vi.fn() }), usePathname: () => '/golf/dashboard/rounds', useSearchParams: () => new URLSearchParams() }));
-vi.mock('@/app/golf/actions/golf', () => ({ deleteInProgressRound: vi.fn() }));
+vi.mock('@/app/golf/actions/round-partial', () => ({ deleteInProgressRound: vi.fn() }));
 vi.mock('@/lib/utils/emergency-save', () => ({ clearEmergencySave: vi.fn(), markRoundDiscarded: vi.fn() }));
 
 import { RoundsLibrary } from '../screens/rounds/RoundsLibrary';

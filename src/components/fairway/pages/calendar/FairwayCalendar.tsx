@@ -399,7 +399,7 @@ export function FairwayCalendar({
     }
     let cancelled = false;
     void (async () => {
-      const { getPlayerAvailability } = await import('@/app/golf/actions/golf');
+      const { getPlayerAvailability } = await import('@/app/golf/actions/calendar-events');
       const s = format(availWindow.start, 'yyyy-MM-dd');
       const e = format(availWindow.end, 'yyyy-MM-dd');
       // Anchor each player's busy window to the COACH's local day, not the UTC
@@ -568,7 +568,7 @@ export function FairwayCalendar({
             });
             if (!result.success) throw new Error(result.error || 'Failed to create recurring event');
           } else {
-            const { createGolfEvent } = await import('@/app/golf/actions/golf');
+            const { createGolfEvent } = await import('@/app/golf/actions/calendar-events');
             const result = await createGolfEvent({
               title: data.title,
               eventType: data.eventType,
@@ -613,7 +613,7 @@ export function FairwayCalendar({
           });
           if (!result.success) throw new Error(result.error || 'Failed to update recurring event');
         } else {
-          const { updateGolfEvent } = await import('@/app/golf/actions/golf');
+          const { updateGolfEvent } = await import('@/app/golf/actions/calendar-events');
           const result = await updateGolfEvent(editorEvent.id, {
             title: data.title,
             eventType: data.eventType,
@@ -692,7 +692,7 @@ export function FairwayCalendar({
     if (!editorEvent) return;
     setIsSavingEvent(true);
     try {
-      const { updateGolfEvent } = await import('@/app/golf/actions/golf');
+      const { updateGolfEvent } = await import('@/app/golf/actions/calendar-events');
       const result = await updateGolfEvent(editorEvent.id, { status: 'confirmed' } as never);
       if (!result.success) throw new Error(result.error || 'Failed to restore event');
       fairwayToast.success('Event restored');
@@ -722,7 +722,7 @@ export function FairwayCalendar({
           const result = await deleteRecurringEvent(editorEvent.id, editorEvent.start_date, scope);
           if (!result.success) throw new Error(result.error || 'Failed to delete recurring event');
         } else {
-          const { deleteGolfEvent } = await import('@/app/golf/actions/golf');
+          const { deleteGolfEvent } = await import('@/app/golf/actions/calendar-events');
           const result = await deleteGolfEvent(editorEvent.id);
           if (!result.success) throw new Error(result.error || 'Failed to delete event');
         }
@@ -761,7 +761,7 @@ export function FairwayCalendar({
     if (!editorEvent) return;
     setIsSavingEvent(true);
     try {
-      const { deleteGolfEventPermanently } = await import('@/app/golf/actions/golf');
+      const { deleteGolfEventPermanently } = await import('@/app/golf/actions/calendar-events');
       const result = await deleteGolfEventPermanently(editorEvent.id);
       if (!result.success) throw new Error(result.error || 'Failed to delete event permanently');
       fairwayToast.success('Event deleted permanently');
@@ -854,7 +854,7 @@ export function FairwayCalendar({
   //    editor uses, keyed on the drawer's own event rather than `editorEvent`.
   const drawerCancelEvent = React.useCallback(async (event: CalendarEvent) => {
     try {
-      const { deleteGolfEvent } = await import('@/app/golf/actions/golf');
+      const { deleteGolfEvent } = await import('@/app/golf/actions/calendar-events');
       const result = await deleteGolfEvent(event.id);
       if (result.success) { router.refresh(); refetchVisibleRange(); }
       return { success: result.success, error: result.error };
@@ -864,7 +864,7 @@ export function FairwayCalendar({
   }, [router, refetchVisibleRange]);
   const drawerRestoreEvent = React.useCallback(async (event: CalendarEvent) => {
     try {
-      const { updateGolfEvent } = await import('@/app/golf/actions/golf');
+      const { updateGolfEvent } = await import('@/app/golf/actions/calendar-events');
       const result = await updateGolfEvent(event.id, { status: 'confirmed' } as never);
       if (result.success) { router.refresh(); refetchVisibleRange(); }
       return { success: result.success, error: result.error };
@@ -874,7 +874,7 @@ export function FairwayCalendar({
   }, [router, refetchVisibleRange]);
   const drawerDeletePermanently = React.useCallback(async (event: CalendarEvent) => {
     try {
-      const { deleteGolfEventPermanently } = await import('@/app/golf/actions/golf');
+      const { deleteGolfEventPermanently } = await import('@/app/golf/actions/calendar-events');
       const result = await deleteGolfEventPermanently(event.id);
       if (result.success) { router.refresh(); refetchVisibleRange(); }
       return { success: result.success, error: result.error };
@@ -965,7 +965,7 @@ export function FairwayCalendar({
 
       if (isCoach) {
         try {
-          const { getEventRSVP } = await import('@/app/golf/actions/golf');
+          const { getEventRSVP } = await import('@/app/golf/actions/calendar-events');
           const result = await getEventRSVP(event.id);
           if (requestId === drawerRequestRef.current && result.success && result.data?.summary) {
             const s = result.data.summary;
@@ -982,7 +982,7 @@ export function FairwayCalendar({
         }
       } else if (!userRsvpStatuses.has(event.id)) {
         try {
-          const { getPlayerEventRSVP } = await import('@/app/golf/actions/golf');
+          const { getPlayerEventRSVP } = await import('@/app/golf/actions/calendar-events');
           const result = await getPlayerEventRSVP(event.id);
           if (result.success && result.data?.status) {
             setUserRsvpStatuses((prev) => {
@@ -1022,7 +1022,7 @@ export function FairwayCalendar({
   const handleRespond = React.useCallback(
     async (eventId: string, status: RSVPStatus): Promise<RsvpRespondResult> => {
       try {
-        const { respondToEvent } = await import('@/app/golf/actions/golf');
+        const { respondToEvent } = await import('@/app/golf/actions/calendar-events');
         const result = await respondToEvent(eventId, status);
         if (result.success) {
           setUserRsvpStatuses((prev) => {

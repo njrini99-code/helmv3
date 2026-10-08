@@ -1,5 +1,19 @@
 # P006 — Calendar: changelog
 
+## 2026-10-08 — Server-action imports follow the golf.ts split
+
+```text
+PR/commit:      #2176, agent/phase-7
+Design package: none
+Contract IDs:   none changed
+Data impact:    none
+Held items:     none
+```
+
+The screen's imports and test mocks now point at the files that own the server
+actions (calendar-events.ts and calendar-blocked-time.ts) after `golf.ts`, `insights.ts` and `admin-data.ts` were split
+by domain. No behavior change.
+
 ## 2026-10-06 — Short-screen popup and hover verification
 
 Full-page WebKit Axe checks pass with either date/people popover open and with

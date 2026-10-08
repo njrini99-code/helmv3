@@ -79,7 +79,7 @@
       "label": "Dismiss an insight (coach)",
       "component": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard",
       "handler": "dismiss",
-      "service": "src/app/golf/actions/insights.ts#dismissInsight",
+      "service": "src/app/golf/actions/insights-feed.ts#dismissInsight",
       "data": [
         "golf_coach_insights",
         "golf_insight_action"
@@ -101,7 +101,7 @@
       "label": "Undo a dismissal (coach)",
       "component": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard",
       "handler": "undo",
-      "service": "src/app/golf/actions/insights.ts#reactivateInsight",
+      "service": "src/app/golf/actions/insights-feed.ts#reactivateInsight",
       "data": [
         "golf_coach_insights"
       ],

@@ -84,7 +84,7 @@ import {
   deleteGolfEvent,
   deleteGolfEventPermanently,
   respondToEvent,
-} from '../golf';
+} from '../calendar-events';
 
 // ---------------------------------------------------------------------------
 // Seed data

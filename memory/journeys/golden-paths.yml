@@ -183,19 +183,19 @@ journeys:
             test_name: "should save round in progress"
             line: 101
           - type: flight_recorder
-            source_path: src/app/golf/actions/golf.ts
+            source_path: src/app/golf/actions/round-partial.ts
             workflow: golf.round.autosave
             step_key: db.create_or_update_draft
         notes: >
           The e2e test's "Start round →" click (line 101) triggers the
           client's first autosave, which the server serves through
           savePartialRound -> savePartialRoundImpl (source
-          src/app/golf/actions/golf.ts:6352, exported action at :7860),
+          src/app/golf/actions/round-partial.ts:351, exported action at :1995),
           running inside the `golf.round.autosave` Flight Recorder workflow
-          (workflow tag at :6375). The `db.create_or_update_draft` checkpoint
-          (first start at :7429) is the branch that fires on first save of a
+          (workflow tag at :374). The `db.create_or_update_draft` checkpoint
+          (first start at :1574) is the branch that fires on first save of a
           brand-new round, as distinguished from `db.save_partial_round_atomic`
-          (first start at :7155), which fires on every subsequent save of an
+          (first start at :1190), which fires on every subsequent save of an
           already-existing round — see player_resume_round below, which cites
           that second checkpoint as its resume-continuation evidence. ⚠️ DATA:
           this e2e test writes a real in_progress golf_rounds row (see the
@@ -226,7 +226,7 @@ journeys:
             test_name: "should continue an in-progress round"
             line: 150
           - type: flight_recorder
-            source_path: src/app/golf/actions/golf.ts
+            source_path: src/app/golf/actions/round-partial.ts
             workflow: golf.round.autosave
             step_key: db.save_partial_round_atomic
         notes: >
@@ -237,7 +237,7 @@ journeys:
           (as opposed to the first save of a new one — see
           player_start_round's start_round stage) runs the
           `db.save_partial_round_atomic` checkpoint
-          (src/app/golf/actions/golf.ts:7155), distinct from
+          (src/app/golf/actions/round-partial.ts:1190), distinct from
           `db.create_or_update_draft`.
 
   - id: player_submit_round
@@ -263,7 +263,7 @@ journeys:
         invariant_status: MISSING
         observable_signals:
           - type: flight_recorder
-            source_path: src/app/golf/actions/golf.ts
+            source_path: src/app/golf/actions/round-submit.ts
             workflow: golf.round.submit
             step_key: db.submit_round_atomic
           - type: planned
@@ -281,7 +281,7 @@ journeys:
               does not perform a submission itself and is deliberately not
               cited as e2e proof of this stage. Flight Recorder proof
               (`golf.round.submit`, workflow tag at
-              src/app/golf/actions/golf.ts:1667) is real and live in
+              src/app/golf/actions/round-submit.ts:288) is real and live in
               production today; e2e coverage is the missing half, which is
               why this journey's status is `collecting` rather than
               `active`.
@@ -290,7 +290,7 @@ journeys:
           server.player, verify.round/holes/shots, post.qualifier_transition,
           post.stats and post.coachhelm checkpoints in the same
           `golf.round.submit` Flight Recorder run (all confirmed live in
-          src/app/golf/actions/golf.ts in this pass) — db.submit_round_atomic
+          src/app/golf/actions/round-submit.ts in this pass) — db.submit_round_atomic
           is cited above as the single most load-bearing checkpoint, not the
           only one.
 

@@ -90,7 +90,7 @@ vi.mock('@/lib/notifications/push', () => ({
   sendBulkPushNotification: vi.fn(async () => {}),
 }));
 
-import { submitGolfRoundComprehensive } from '../golf';
+import { submitGolfRoundComprehensive } from '../round-submit';
 import { invalidateOnRoundComplete } from '@/lib/cache/golf-stats-calculator';
 import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
 

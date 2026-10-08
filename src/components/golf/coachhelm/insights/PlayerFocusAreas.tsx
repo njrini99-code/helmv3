@@ -9,7 +9,7 @@ import { Button } from '@/components/fairway/controls/button';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import { SkeletonList } from '@/components/fairway/feedback/Skeleton';
-import { getPlayerFocusAreas } from '@/app/golf/actions/insights';
+import { getPlayerFocusAreas } from '@/app/golf/actions/insights-player-analysis';
 import type { PlayerFocusArea } from '@/lib/coachhelm/insight-types';
 
 interface PlayerFocusAreasProps {

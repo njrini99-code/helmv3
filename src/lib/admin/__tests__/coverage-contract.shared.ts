@@ -22,6 +22,39 @@ import { join } from 'node:path';
 import { scanActionFile } from './coverage-scanner';
 import { FEATURE_REGISTRY, type FeatureKey } from '@/lib/admin/feature-registry';
 
+/**
+ * The action files that replaced the former `src/app/golf/actions/golf.ts`
+ * (split by domain, plan phase 7a). Every batch contract that used to scan
+ * golf.ts scans all of these, so the asserted export set is unchanged.
+ */
+export const GOLF_SPLIT_ACTION_FILES: string[] = [
+  'src/app/golf/actions/round-submit.ts',
+  'src/app/golf/actions/round-partial.ts',
+  'src/app/golf/actions/shot-actions.ts',
+  'src/app/golf/actions/qualifier-actions.ts',
+  'src/app/golf/actions/saved-courses.ts',
+  'src/app/golf/actions/calendar-events.ts',
+  'src/app/golf/actions/calendar-notifications.ts',
+  'src/app/golf/actions/calendar-blocked-time.ts',
+  'src/app/golf/actions/team-management.ts',
+];
+
+/** Same exclude list applied to each split file (names absent from a file are inert). */
+export function excludeAcrossGolfSplit(names: string[]): Record<string, string[]> {
+  return Object.fromEntries(GOLF_SPLIT_ACTION_FILES.map((f) => [f, names]));
+}
+
+/** The action files that replaced the former `src/app/golf/actions/insights.ts` (plan phase 7a). */
+export const INSIGHTS_SPLIT_ACTION_FILES: string[] = [
+  'src/app/golf/actions/insights-feed.ts',
+  'src/app/golf/actions/insights-player-analysis.ts',
+  'src/app/golf/actions/insights-coachhelm.ts',
+];
+
+export function excludeAcrossInsightsSplit(names: string[]): Record<string, string[]> {
+  return Object.fromEntries(INSIGHTS_SPLIT_ACTION_FILES.map((f) => [f, names]));
+}
+
 const VALID_FEATURE_KEYS = new Set<string>(FEATURE_REGISTRY.map((f) => f.key));
 
 /** Registry-declared feature for a given repo-relative file + export name. */

@@ -195,7 +195,7 @@ vi.mock('@/lib/server-error-logger', () => ({
 // Import AFTER the mocks above — importing insights.ts runs its module-scope
 // `__registerTriggerPlayerInsightsAfterRound(...)` side effect, which is
 // what the bridge needs to have a real impl to delegate to.
-import '@/app/golf/actions/insights';
+import '@/app/golf/actions/insights-coachhelm';
 import { triggerPlayerInsightsAfterRound } from '@/lib/coachhelm/v2/trigger-insights-bridge';
 
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;

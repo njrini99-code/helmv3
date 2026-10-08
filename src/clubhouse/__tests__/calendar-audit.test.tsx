@@ -44,11 +44,13 @@ const a = vi.hoisted(() => ({
   getAttendanceReport: vi.fn(),
   markAttendance: vi.fn(),
 }));
-vi.mock('@/app/golf/actions/golf', () => ({
+vi.mock('@/app/golf/actions/calendar-events', () => ({
   createGolfEvent: a.createGolfEvent,
   updateGolfEvent: a.updateGolfEvent,
   deleteGolfEvent: a.deleteGolfEvent,
   respondToEvent: a.respondToEvent,
+}));
+vi.mock('@/app/golf/actions/calendar-blocked-time', () => ({
   addCoachBlockedTime: a.addCoachBlockedTime,
   deleteCoachBlockedTime: a.deleteCoachBlockedTime,
 }));

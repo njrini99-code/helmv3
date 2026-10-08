@@ -32,7 +32,7 @@ vi.mock('next/navigation', () => ({
 
 const acknowledgeInsightMock = vi.fn(async (..._args: unknown[]) => ({ success: true }));
 const dismissInsightMock = vi.fn(async (..._args: unknown[]) => ({ success: true }));
-vi.mock('@/app/golf/actions/insights', () => ({
+vi.mock('@/app/golf/actions/insights-feed', () => ({
   acknowledgeInsight: (...args: unknown[]) => acknowledgeInsightMock(...args),
   dismissInsight: (...args: unknown[]) => dismissInsightMock(...args),
 }));

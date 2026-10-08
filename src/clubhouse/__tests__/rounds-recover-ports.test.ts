@@ -21,10 +21,12 @@ const mocks = vi.hoisted(() => ({
   retryFailed: vi.fn(),
 }));
 
-vi.mock('@/app/golf/actions/golf', () => ({
+vi.mock('@/app/golf/actions/round-partial', () => ({
   savePartialRound: (...a: unknown[]) => mocks.savePartialRound(...a),
-  submitGolfRoundComprehensive: (...a: unknown[]) => mocks.submitGolfRoundComprehensive(...a),
   deleteInProgressRound: (...a: unknown[]) => mocks.deleteInProgressRound(...a),
+}));
+vi.mock('@/app/golf/actions/round-submit', () => ({
+  submitGolfRoundComprehensive: (...a: unknown[]) => mocks.submitGolfRoundComprehensive(...a),
 }));
 vi.mock('@/lib/offline/indexed-db', () => ({
   getPendingRounds: () => mocks.getPendingRounds(),

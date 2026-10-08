@@ -44,7 +44,7 @@ import {
   type FwStatusTone,
 } from '@/components/fairway';
 import { IconCalendar, IconMapPin, IconArrowRight, IconGolf } from '@/components/icons';
-import type { PlayerQualifierInfo } from '@/app/golf/actions/golf';
+import type { PlayerQualifierInfo } from '@/app/golf/actions/qualifier-actions';
 import { formatToPar } from '@/lib/golf/format-to-par';
 
 const detailHref = (id: string) => `/golf/dashboard/qualifiers/${id}`;

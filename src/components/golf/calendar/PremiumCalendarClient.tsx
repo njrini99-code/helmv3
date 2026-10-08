@@ -176,7 +176,7 @@ export interface CalendarCapabilities {
 }
 
 async function loadGolfCalendarActions() {
-  return import('@/app/golf/actions/golf');
+  return import('@/app/golf/actions/calendar-events');
 }
 
 // Default golf action handlers - wrap to match CalendarActionHandlers signature

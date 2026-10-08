@@ -1,3 +1,4 @@
+// RETIRED SHIM — redirected by next.config.mjs; delete when the redirect entry is removed
 import { permanentRedirect } from 'next/navigation';
 
 /**

@@ -1,3 +1,4 @@
+// RETIRED SHIM — redirected by next.config.mjs; delete when the redirect entry is removed
 import { redirect } from 'next/navigation';
 
 // GOLF IA REORG (final_migrations #11) — legacy route. Keep for backward

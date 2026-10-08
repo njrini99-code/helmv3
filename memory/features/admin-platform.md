@@ -164,7 +164,7 @@ them would have broken those routes, not the dead one.
 
 ### Actions And Services
 
-- `src/app/golf/actions/admin-data.ts`
+- `src/app/golf/actions/admin-dashboard-data.ts`, `admin-incidents-data.ts`, `admin-dashboard-assemble.ts`, `admin-data-shared.ts` (split out of the former `admin-data.ts`)
 - `src/app/golf/actions/admin-people-data.ts`
 - `src/app/golf/actions/admin-system-data.ts`
 - `src/app/golf/actions/admin-tracer-data.ts`

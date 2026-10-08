@@ -1,6 +1,6 @@
 'use client';
 
-import { deleteInProgressRound } from '@/app/golf/actions/golf';
+import { deleteInProgressRound } from '@/app/golf/actions/round-partial';
 import { deleteOfflineRound } from '@/lib/offline/indexed-db';
 import { clearEmergencySave, markRoundDiscarded } from '@/lib/utils/emergency-save';
 import type { ServerResult } from '../../lib/use-action';

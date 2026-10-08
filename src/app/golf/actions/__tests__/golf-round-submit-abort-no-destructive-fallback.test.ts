@@ -76,7 +76,7 @@ vi.mock('@/lib/notifications/push', () => ({
   sendBulkPushNotification: vi.fn(async () => {}),
 }));
 
-import { submitGolfRoundComprehensive } from '../golf';
+import { submitGolfRoundComprehensive } from '../round-submit';
 
 const COURSE_ID = '11111111-1111-4111-8111-111111111111';
 const ROUND_ID = '8e89c73e-5047-4658-85b4-380250dc6245';

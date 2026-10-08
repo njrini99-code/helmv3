@@ -9,11 +9,11 @@ vi.mock('@/lib/coachhelm/v2/trigger-insights-bridge', () => ({
   triggerPlayerInsightsAfterRound: (...args: unknown[]) => mockTrigger(...args),
 }));
 
-// post-round-trigger.ts carries a side-effect `import '@/app/golf/actions/insights'`
+// post-round-trigger.ts carries a side-effect `import '@/app/golf/actions/insights-coachhelm'`
 // (registers the bridge impl at module-init time — the fix for the cold-start
 // TDZ cycle). The bridge is fully mocked above, so the registration side effect
-// is irrelevant here — stub the whole 4,400-line 'use server' module out.
-vi.mock('@/app/golf/actions/insights', () => ({}));
+// is irrelevant here — stub the whole 'use server' module out.
+vi.mock('@/app/golf/actions/insights-coachhelm', () => ({}));
 
 // Spy on the actual severity/skipSentry passed to the two logging entry
 // points. postRoundTrigger is a SECOND independent consumer of the

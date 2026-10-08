@@ -14,7 +14,7 @@ import {
   listTeamCoachingStaff,
   regenerateJoinCode,
 } from '@/app/golf/actions/teams';
-import { updateTeamCoachHelmSettings } from '@/app/golf/actions/insights';
+import { updateTeamCoachHelmSettings } from '@/app/golf/actions/insights-coachhelm';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import { clearAllCachedResources } from '@/lib/golf/client-resource-cache';
 import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';

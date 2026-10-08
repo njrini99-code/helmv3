@@ -1,5 +1,19 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-08 — Server-action imports follow the golf.ts split
+
+```text
+PR/commit:      #2176, agent/phase-7
+Design package: none
+Contract IDs:   none changed
+Data impact:    none
+Held items:     none
+```
+
+The screen's imports and test mocks now point at the files that own the server
+actions (insights-feed.ts) after `golf.ts`, `insights.ts` and `admin-data.ts` were split
+by domain. No behavior change.
+
 ## 2026-10-06 — Mention picker accessibility
 
 The desktop Ask mention list gives the option role to each clickable row,

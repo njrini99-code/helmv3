@@ -38,7 +38,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 // own top-level finishes — at synchronous module-init time, so there is no
 // async gap for a concurrent request on the same warm instance to race
 // against (the cold-start TDZ crash the bridge header documents).
-import '@/app/golf/actions/insights';
+import '@/app/golf/actions/insights-coachhelm';
 import { triggerPlayerInsightsAfterRound } from '@/lib/coachhelm/v2/trigger-insights-bridge';
 import {
   classifyThrown,
