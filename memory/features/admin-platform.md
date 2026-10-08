@@ -648,6 +648,26 @@ them would have broken those routes, not the dead one.
   feature-health rollup are promoted out of it, always visible, directly
   below the Deck. Each KPI still carries its own source note — the provenance
   is per-tile, not a separate panel.
+- **A calm Bridge says so once (deliberate all-clear, 2026-10-07).** "All clear"
+  is a page-level claim, granted only by `deriveAllClear`
+  (`src/lib/admin/incidents/all-clear.ts`, pure, tested in `all-clear.test.ts`),
+  and `AllClearBanner` renders only a granted claim, so the honesty rule lives
+  in one function and not in whichever screen draws a check mark. The verdict
+  requires every source READING (partial and unknown refuse), zero open
+  incidents in the window (actionable, regressions, repairable, stalled), a
+  healthy posture and an empty attention list where the screen has them, no
+  release alarm (`degraded`, `regression-detected`, `rollback-recommended`),
+  and a READ older backlog. Readable with older unresolved errors is a
+  `window-clear` ("Nothing new in N hours", neutral check, backlog link);
+  an unreadable backlog makes no claim. The Overview leads with `DeckHeadline`
+  (banner when granted, the posture sentence otherwise, never both) and the
+  Deck panels render a `quiet` variant. `/admin/errors` replaces its four-zero
+  summary line with the banner only in an un-narrowed view (no sport,
+  severity, source or feature filter), scopes the empty queue sentence to the
+  view it rendered, and under a granted claim collapses the org-wide Sentry
+  backlog behind a disclosure and the zero KPI tiles and breakdowns into one
+  line each. Every refusal keeps the ordinary counts and posture exactly as
+  before; `PanelAllClear` gained an opt-in `inline` variant, default unchanged.
 - Feature health renders through one component wherever it appears (Overview
   rollup, Health grid, per-app pages). Status thresholds, two-window hysteresis,
   and knownGaps annotations belong to the data layer, never to a view.

@@ -2437,3 +2437,23 @@ section for the full per-module description; not restated here.
   same session-scoped `golf_shots` query path — the same ~580x
   RLS-vs-service-role gap and the same required heavy-roster preview
   check apply before enabling this flag in any environment.
+
+## 2026-10-07 — Bridge deliberate all-clear state (`agent/bridge-all-clear`)
+
+- SHA: this branch's PR (`feat(bridge): deliberate all-clear state for the admin console`).
+- Change: when nothing is open, the Overview and `/admin/errors` lead with one
+  `AllClearBanner` instead of a run of zero counts and empty panels. The
+  decision is a single pure function, `deriveAllClear`
+  (`src/lib/admin/incidents/all-clear.ts`), stricter than `canClaimAllClear`:
+  every source reading, nothing open in the window, healthy posture and empty
+  attention list where the screen has them, no release alarm, and a read
+  older backlog. `window-clear` names older open errors and never says "All
+  clear"; an unreadable backlog makes no claim. `/admin/errors` shows the
+  banner only in an un-narrowed view. Any refusal renders the previous
+  counts and posture unchanged.
+- Also: `PanelAllClear` gained an opt-in `inline` variant (default
+  unchanged), `UnifiedIncidentQueue` scopes its empty sentence to the view it
+  rendered, the org-wide Sentry backlog collapses behind a disclosure under a
+  granted claim, and the Command Deck panels take a `quiet` prop.
+- Contract: see "A calm Bridge says so once" in the UI Contract of
+  `memory/features/admin-platform.md`.

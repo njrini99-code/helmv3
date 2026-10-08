@@ -155,6 +155,19 @@ describe('panel states are visually distinct', () => {
     expect(screen.getByText(/No errors in the last 24h/)).toBeInTheDocument();
     expect(screen.getByText(/checked/)).toBeInTheDocument();
   });
+  it('all-clear defaults to the full block; inline is an opt-in quiet row with the same label and timestamp', () => {
+    const { container, unmount } = render(
+      <PanelAllClear label="Nothing needs attention" checkedAt="2026-07-01T12:00:00Z" />,
+    );
+    expect(container.querySelector('[data-slot="panel-all-clear"]')).toHaveAttribute('data-variant', 'block');
+    unmount();
+    const inline = render(
+      <PanelAllClear label="Nothing needs attention" checkedAt="2026-07-01T12:00:00Z" variant="inline" />,
+    );
+    expect(inline.container.querySelector('[data-slot="panel-all-clear"]')).toHaveAttribute('data-variant', 'inline');
+    expect(screen.getByText('Nothing needs attention')).toBeInTheDocument();
+    expect(screen.getByText(/checked/)).toBeInTheDocument();
+  });
   it('no-data explains what WOULD appear', () => {
     render(<PanelNoData label="No data yet" description="Pitch-level rows appear here once ingestion starts" />);
     expect(screen.getByText(/once ingestion starts/)).toBeInTheDocument();
