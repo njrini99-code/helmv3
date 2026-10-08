@@ -101,7 +101,9 @@ function resolveBase(explicit) {
 }
 
 function step(name, command, args, env = {}) {
-  console.error(`\n=== ${name}\n$ ${[command, ...args].join(' ')}`);
+  // A 170-file run would otherwise print a 6,000-character command line.
+  const line = [command, ...args].join(' ');
+  console.error(`\n=== ${name}\n$ ${line.length > 240 ? `${line.slice(0, 200)} … (${args.length} arguments)` : line}`);
   const started = Date.now();
   const r = spawnSync(command, args, { cwd: ROOT, stdio: 'inherit', env: { ...process.env, ...env } });
   const code = r.status ?? (r.signal ? 1 : 0);
