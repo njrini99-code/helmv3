@@ -1636,6 +1636,7 @@ a.ch-rd-sc:focus-visible {
      as on the shared feature card (shell.css); the card's own padding insets it. */
   .ch-rd.is-phone .ch-rd-unf .ch-notice--danger {
     --ch-notice-ink: var(--ch-notice-on-green-ink);
+    --ch-notice-icon: var(--ch-notice-on-green-ink);
     --ch-notice-body: var(--ch-notice-on-green-body);
   }
 

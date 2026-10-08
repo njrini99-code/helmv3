@@ -112,7 +112,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
 
   return (
     <main className={'ch-rd' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rd-title" aria-busy={refreshing || undefined} data-canopy={phone ? undefined : ''}>
-      {phone && <PhoneTop start title="Rounds" />}
+      {phone && <PhoneTop start heading={false} title="Rounds" />}
       <header className="ch-rd-h" data-canopy-head={phone ? undefined : ''}>
         <div>
           <span className="ch-rd-k">{counted ? `Since August 1 · ${counted} counted ${counted === 1 ? 'round' : 'rounds'}` : 'Since August 1'}</span>
@@ -120,8 +120,8 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
           <span className="ch-rd-upd" role="status" data-ch-code={refreshing ? 'CH-11410' : undefined}>
             {refreshing ? 'Updating…' : ''}
           </span>
-          {/* D11: on the phone the bar's "Rounds" is the screen's h1. */}
-          {phone ? <h2 id="ch-rd-title">Your rounds</h2> : <h1 id="ch-rd-title">Your rounds</h1>}
+          {/* D11: one h1 per screen; the phone bar's "Rounds" is plain text (heading={false}). */}
+          <h1 id="ch-rd-title">Your rounds</h1>
         </div>
         {newHref && !nothing && (
           <Button variant="primary" leftIcon={Plus} href={newHref}>

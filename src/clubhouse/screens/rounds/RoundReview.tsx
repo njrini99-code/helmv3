@@ -337,7 +337,7 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
 
   return (
     <main className={'ch-rv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rv-title" data-canopy={phone ? undefined : ''}>
-      {phone && <PhoneTop title="Round" back={{ label: coach ? 'Stats' : 'Rounds', onBack: () => goBack() }} />}
+      {phone && <PhoneTop heading={false} title="Round" back={{ label: coach ? 'Stats' : 'Rounds', onBack: () => goBack() }} />}
       {!phone && (
         <Link
           href={back.href}
@@ -355,8 +355,8 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
       <header className="ch-rv-hero" data-canopy-head={phone ? undefined : ''}>
         <div className="ch-rv-hero__l">
           <span className="ch-rv-hero__k">{kicker}</span>
-          {/* D11: on the phone the bar's title is the screen's h1; the course is the hero's heading under it. */}
-          {phone ? <h2 id="ch-rv-title">{r.course}</h2> : <h1 id="ch-rv-title">{r.course}</h1>}
+          {/* D11: one h1 per screen, the course; the phone bar's "Round" is plain text (heading={false}). */}
+          <h1 id="ch-rv-title">{r.course}</h1>
           {(r.tee || r.teeFacts) && (
             <span className="ch-rv-hero__m">
               <TeeSwatch color={r.teeColor} />
