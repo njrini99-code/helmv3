@@ -1,5 +1,15 @@
 import { readFileSync } from 'fs';
 import { config as loadEnv } from 'dotenv';
+import { cliGuard } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/run-sql.mjs',
+  summary:
+    'Executes a file of SQL statements one at a time through the production REST rpc/sql endpoint with the service-role key. Prefer `npm run db:apply -- <file>` for migrations (docs/operations/APPLY_PATH.md).',
+  usage: '[sql-file]',
+  options: [['sql-file', 'Path to the SQL file (default /tmp/coach-sql-clean.sql)']],
+  secrets: 'NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (.env.local)',
+});
 
 loadEnv({ path: '.env.local' });
 
@@ -14,13 +24,19 @@ if (!supabaseUrl || !serviceRoleKey) {
 }
 
 // Read the SQL file
-const sqlFile = process.argv[2] || '/tmp/coach-sql-clean.sql';
+const sqlFile = cli.positional[0] || '/tmp/coach-sql-clean.sql';
 const sql = readFileSync(sqlFile, 'utf8');
 
 // Split into individual INSERT statements
 const statements = sql.split(';\n').filter(s => s.trim().length > 0);
 
 console.log(`Found ${statements.length} statements to execute`);
+if (!cli.apply) {
+  for (const stmt of statements.slice(0, 3)) console.log(`  [dry-run] ${stmt.trim().replace(/\s+/g, ' ').slice(0, 120)}`);
+  if (statements.length > 3) console.log(`  [dry-run] ... and ${statements.length - 3} more`);
+  console.log(`[dry-run] would execute ${statements.length} statement(s) against ${supabaseUrl}. Re-run with --apply to do it.`);
+  process.exit(0);
+}
 
 // Execute each statement
 let success = 0;

@@ -20,6 +20,15 @@
  */
 import { Resend } from 'resend';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/resend-import-crm-prospects.ts',
+  summary:
+    "Import GolfHelm CRM coaches into a dedicated Resend audience \u2014 but ONLY the ones who are not already registered users.",
+  guard: "its own --dry-run flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL, RESEND_API_KEY',
+});
 
 const AUDIENCE_NAME = 'GolfHelm Coach Demo — CRM prospects';
 

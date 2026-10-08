@@ -38,6 +38,14 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/gen-enforcement-inventory.mjs',
+  summary:
+    "Generates docs/CONTROL_PLANE_ENFORCEMENT.md from the live configuration; --check compares instead of writing.",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY',
+});
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SETTINGS = resolve(ROOT, '.claude/settings.json');

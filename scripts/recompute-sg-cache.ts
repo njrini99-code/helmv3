@@ -52,6 +52,15 @@ import {
   type HoleInfo,
   type RoundInfo,
 } from '../src/lib/utils/golf-stats-calculator-shots';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/recompute-sg-cache.ts',
+  summary:
+    "Recompute Strokes Gained values in `golf_player_stats_cache` from raw shot data.",
+  guard: "its own --dry-run flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 interface CacheRow {
   player_id: string;

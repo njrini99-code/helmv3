@@ -19,6 +19,16 @@
 import { Resend } from 'resend';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { cliGuard } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/resend-coach-broadcast.ts',
+  summary:
+    'Writes the coach demo invite HTML into a Resend broadcast DRAFT (updates BROADCAST_ID, or creates one in RESEND_SEGMENT_ID). It never sends; sending stays a dashboard click.',
+  usage: '[broadcast-id]',
+  options: [['BROADCAST_ID / RESEND_SEGMENT_ID', 'Environment: draft to update, or segment to create a new draft in']],
+  secrets: 'RESEND_API_KEY (.env.local via dotenv)',
+});
 
 const SUBJECT = 'See your whole golf program in one place — live demo inside';
 const FROM = 'Helm Sports Labs <admin@helmsportslabs.com>';
@@ -33,8 +43,15 @@ async function main() {
   const resend = new Resend(apiKey);
   const html = readFileSync(resolve(HTML_PATH), 'utf8');
 
-  const broadcastId = (process.env.BROADCAST_ID ?? process.argv[2] ?? '').trim();
+  const broadcastId = (process.env.BROADCAST_ID ?? cli.positional[0] ?? '').trim();
   const segmentId = (process.env.RESEND_SEGMENT_ID ?? '').trim();
+
+  if (!cli.apply) {
+    console.log(
+      `[dry-run] would ${broadcastId ? `update broadcast ${broadcastId}` : segmentId ? `create a draft broadcast in segment ${segmentId}` : 'fail: set BROADCAST_ID or RESEND_SEGMENT_ID'} with ${html.length} chars of HTML from ${HTML_PATH}. Re-run with --apply to write the draft.`,
+    );
+    return;
+  }
 
   if (broadcastId) {
     // Update an existing draft. The API requires from + audienceId; we set

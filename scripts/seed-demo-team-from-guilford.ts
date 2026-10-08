@@ -37,6 +37,15 @@ import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
 import { assertSafeTarget } from './lib/prod-target-guard.mjs';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/seed-demo-team-from-guilford.ts',
+  summary:
+    "Seed Demo University Golf dummy players with realistic shot data copied from Ben Potter's Guilford College Men's Golf team.",
+  guard: "its own --dry-run flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 const DEMO_TEAM_ID = '6ecdd1a6-63fe-4beb-b094-00118f334163';
 

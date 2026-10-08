@@ -25,6 +25,15 @@
 
 set -euo pipefail
 
+case "${1:-}" in
+  -h|--help)
+    sed -n '2,/^set -euo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'
+    echo ""
+    echo "Writes src/lib/types/database.ts only after a successful generation. To CHECK without writing: npm run db:types:check"
+    exit 0
+    ;;
+esac
+
 OUT="src/lib/types/database.ts"
 SUPABASE_CLI="./node_modules/.bin/supabase"
 

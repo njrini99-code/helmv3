@@ -40,6 +40,14 @@
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 import { scoreCoach, tierOf } from './coach-priority.mjs';
+import { cliGuard, dryRunClient } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/setup-coach-sequence.mjs',
+  summary:
+    "Creates or maintains the \"Coach First Touch (Cold Outreach)\" sequence, its step and one enrollment per target coach in the production CRM. It never sends email.",
+  secrets: "SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL (.env.local)",
+});
 
 const env = {};
 for (const file of ['../.env.local', '../.env']) {
@@ -50,8 +58,8 @@ for (const file of ['../.env.local', '../.env']) {
     }
   } catch { /* missing */ }
 }
-const supa = createClient(env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { autoRefreshToken: false, persistSession: false } });
+const supa = dryRunClient(createClient(env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY,
+  { auth: { autoRefreshToken: false, persistSession: false } }), cli);
 
 const SEQUENCE_NAME = 'Coach First Touch (Cold Outreach)';
 const TEMPLATE_NAME = 'Coach First Touch';

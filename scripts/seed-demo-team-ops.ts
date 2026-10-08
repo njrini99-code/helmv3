@@ -25,6 +25,15 @@
 import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/seed-demo-team-ops.ts',
+  summary:
+    "Seed \"team ops\" surfaces for the Demo University Golf team so the app looks like a real, active coaching environment.",
+  guard: "its own --dry-run flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 // ---------------------------------------------------------------------------
 // Constants

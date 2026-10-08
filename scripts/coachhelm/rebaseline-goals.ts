@@ -41,6 +41,15 @@ import {
   preStartBaseline,
 } from '../../src/lib/coachhelm/v3/goals/goal-rules';
 import { getMetricRenderConfig } from '../../src/lib/coachhelm/v3/standing/metric-config';
+import { helpOnly } from '../lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/coachhelm/rebaseline-goals.ts',
+  summary:
+    "Recompute baselines, progress and snapshots for existing golf_goals (audit row 20, 2026-09-28). NOT RUN \u2014 the owner decides when.",
+  guard: "its own --apply flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 interface GoalRow {
   id: string;

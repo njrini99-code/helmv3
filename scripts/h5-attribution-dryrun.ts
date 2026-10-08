@@ -24,6 +24,14 @@ import {
   V3_ENGINE_FILTER,
   VISIBLE_LIFECYCLE_STATES,
 } from '../src/lib/coachhelm/v3/insight-visibility';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/h5-attribution-dryrun.ts',
+  summary:
+    "Manual dry run of the H5 causality gate against the project in .env.local. Read-only.",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 function admin() {
   const url = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim();
