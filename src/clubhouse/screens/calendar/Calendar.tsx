@@ -17,9 +17,13 @@ import { Segmented } from '../../ui/Segmented';
 import { Swap } from '../../ui/Swap';
 import { useNow } from '../../lib/use-now';
 import { haptic } from '../../lib/haptics';
-import { chTrail } from '../../lib/track';
-import { addDays, addMonths, CAL_HH, dayNum, findOverlaps, focusHour, monthCells, monthKey, monthName, viewTitle, weekDates, yearOf, type ChCalEvent, type ChCalType, type ChCalView } from './model';
-import { AgendaView, MonthView, TimeGrid, type ChNow } from './views';
+import { chReport, chTrail } from '../../lib/track';
+import { addDays, addMonths, CAL_HH, dayNum, dowOf, fmtHour, findOverlaps, focusHour, monthCells, monthKey, monthName, viewTitle, weekDates, yearOf, type ChCalEvent, type ChCalType, type ChCalView } from './model';
+import { AgendaView, MonthView, TimeGrid, type ChMoveTarget, type ChNow } from './views';
+import { updateGolfEvent } from '@/app/golf/actions/calendar-events';
+import { offsetMinutesFor } from '@/lib/golf/timezone';
+import { useToast } from '../../ui/Toast';
+import { friendlyReason, isOffline } from '../../lib/use-action';
 import { Attendance, EventDetail, Overlap, Summary, type ChInsp, type InspCtx } from './inspector';
 import { CancelEvent, EventEditor, SubscribeSheet, type EditorSeed } from './editor';
 import { BusySheet } from './extras';
@@ -87,6 +91,91 @@ function useOpenOnNow(tick: number, first: string, on: boolean, hour: number | n
     settle.current = stop;
     hold();
   }, [tick, first, on, hour, reduced]);
+}
+
+/**
+ * P006-B3: how long a dragged event's move can be undone: the done toast's own life (ui/Toast.tsx DISMISS_MS.done), so
+ * Undo is on screen for the whole window. Nothing is written until it closes, so invitees hear of a move only once
+ * it stands, and an undone move never reaches anyone.
+ */
+const MOVE_UNDO_MS = 4000;
+const toHHMM = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
+
+/** Optimistic moves held for their Undo window, then written. Leaving the page writes a waiting move at once. */
+/** `preview`: the dev preview keeps a move on screen and writes nothing. */
+function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onSaved: () => void, preview: boolean) {
+  const toast = useToast();
+  const [moves, setMoves] = useState<Map<string, ChMoveTarget>>(() => new Map());
+  const held = useRef<{ id: string; timer: number; write: () => void } | null>(null);
+  const drop = useCallback((id: string) => setMoves((m) => (m.has(id) ? new Map([...m].filter(([k]) => k !== id)) : m)), []);
+  // The server's copy has caught up: the moves already written stand on their own.
+  useEffect(() => {
+    setMoves((m) => (held.current && m.has(held.current.id) ? new Map([[held.current.id, m.get(held.current.id)!]]) : new Map()));
+  }, [events]);
+  const flush = useCallback(() => {
+    const h = held.current;
+    if (!h) return;
+    window.clearTimeout(h.timer);
+    h.write();
+  }, []);
+  useEffect(() => {
+    window.addEventListener('pagehide', flush);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      flush();
+    };
+  }, [flush]);
+  const move = useCallback(
+    (e: ChCalEvent, to: ChMoveTarget) => {
+      flush();
+      if (isOffline()) {
+        haptic('error');
+        toast({ tone: 'error', title: `Couldn’t move ${e.title}: you’re offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903' });
+        return;
+      }
+      setMoves((m) => new Map(m).set(e.id, to));
+      const write = () => {
+        held.current = null;
+        if (preview) return;
+        chTrail('calendar move event');
+        const startTime = toHHMM(to.start);
+        const fail = (err: unknown) => {
+          chReport(err, { surface: 'calendar.moveEvent', action: 'calendar.moveEvent' });
+          drop(e.id);
+          haptic('error');
+          toast({ tone: 'error', title: `Couldn’t move ${e.title}`, body: (err instanceof Error && friendlyReason(err.message)) || 'It’s back where it was. Try again in a moment.', code: 'CH-6015' });
+        };
+        updateGolfEvent(e.id, {
+          startDate: to.date,
+          endDate: to.date,
+          startTime,
+          endTime: toHHMM(to.end),
+          allDay: false,
+          timezoneOffset: offsetMinutesFor(to.date, startTime, timezone) ?? undefined,
+        } as never)
+          .then((res) => (res?.success ? onSaved() : fail(new Error(res?.error || 'Move was not saved'))))
+          .catch(fail);
+      };
+      held.current = { id: e.id, timer: window.setTimeout(write, MOVE_UNDO_MS), write };
+      const day = to.date === e.date ? '' : ` ${to.date === today ? 'today' : `on ${dowOf(to.date)} ${dayNum(to.date)}`}`;
+      toast({
+        title: `Moved to ${fmtHour(to.start)}${day}`,
+        action: {
+          label: 'Undo',
+          run: () => {
+            const h = held.current;
+            if (!h || h.id !== e.id) return;
+            window.clearTimeout(h.timer);
+            held.current = null;
+            drop(e.id);
+            haptic('select');
+          },
+        },
+      });
+    },
+    [flush, drop, toast, timezone, today, onSaved, preview],
+  );
+  return { moves, move };
 }
 
 function JumpPanel({ anchor, today, view, onPick, onClose }: { anchor: string; today: string; view: ChCalView; onPick: (d: string) => void; onClose: () => void }) {
@@ -302,9 +391,12 @@ export function Calendar({
   }, [data.view, data.anchor]);
 
   const people = useMemo(() => new Map(data.people.map((p) => [p.id, p])), [data.people]);
+  const refreshQuiet = useCallback(() => router.refresh(), [router]);
+  const { moves, move } = useHeldMoves(data.timezone, data.events, data.today, refreshQuiet, preview);
+  const placed = useMemo(() => (moves.size ? data.events.map((e) => (moves.has(e.id) ? { ...e, ...moves.get(e.id)! } : e)) : data.events), [data.events, moves]);
   const events = useMemo(
-    () => (sel.length ? data.events.filter((e) => (e.type === 'class' ? e.owner != null && sel.includes(e.owner) : e.people.some((p) => sel.includes(p)))) : data.events),
-    [data.events, sel],
+    () => (sel.length ? placed.filter((e) => (e.type === 'class' ? e.owner != null && sel.includes(e.owner) : e.people.some((p) => sel.includes(p)))) : placed),
+    [placed, sel],
   );
   const overlaps = useMemo(() => (coach ? findOverlaps(data.events.filter((e) => !e.cancelled)) : []), [coach, data.events]);
   const flagged = useMemo(() => new Set(overlaps.map((o) => o.eventId)), [overlaps]);
@@ -661,7 +753,7 @@ export function Calendar({
               <Swap swapKey={view}>
                 <Swap swapKey={period.key} kind="slide" dir={period.dir}>
                   {(view === 'week' || view === 'day') && (
-                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} />
+                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} onMove={coach ? move : undefined} />
                   )}
                   {view === 'month' && (
                     <MonthView

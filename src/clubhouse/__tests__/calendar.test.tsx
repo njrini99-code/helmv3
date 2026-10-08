@@ -80,6 +80,7 @@ import { CalendarSkeleton } from '../screens/calendar/CalendarSkeleton';
 import { CalendarNoTeam } from '../screens/calendar/CalendarNoTeam';
 import { ToastProvider } from '../ui/Toast';
 import { PREVIEW_CALENDAR, PREVIEW_CALENDAR_PLAYER } from '../preview/fixtures-calendar';
+import { clashesAt, snapQuarter } from '../screens/calendar/views';
 import './dialog-polyfill';
 
 /** A numbered element that is actually on screen: a closed <dialog> doesn't count. */
@@ -127,6 +128,67 @@ beforeEach(() => {
   a.getCalendarFeeds.mockResolvedValue({ success: true, data: [] });
   a.getDocuments.mockResolvedValue({ success: true, data: [] });
   a.getAttendanceReport.mockResolvedValue({ success: true, data: { attendance: [] } });
+});
+
+describe('Calendar · drag to reschedule (P006-B3)', () => {
+  afterEach(() => vi.useRealTimers());
+  const block = (name: RegExp) => screen.getAllByRole('button', { name }).find((b) => b.classList.contains('ch-ev'))!;
+
+  it('CH-6015 Alt+↓ moves a coach’s event 15 minutes with Undo; nothing is written, so no one is told, until the window closes', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    a.updateGolfEvent.mockResolvedValue({ success: true });
+    wrap(cal());
+    const travel = block(/^Travel briefing/);
+    expect(travel.getAttribute('aria-label')).toMatch(/Alt and the arrow keys move it 15 minutes/);
+    fireEvent.keyDown(travel, { key: 'ArrowDown', altKey: true });
+    expect(screen.getByText('Moved to 1:45 PM')).toBeTruthy();
+    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:45 – 2:30 PM/);
+    expect(a.updateGolfEvent).not.toHaveBeenCalled();
+    await act(async () => {
+      vi.advanceTimersByTime(4000);
+    });
+    expect(a.updateGolfEvent).toHaveBeenCalledWith('e9', expect.objectContaining({ startDate: '2026-10-15', startTime: '13:45', endTime: '14:30', allDay: false }));
+    // A failed write puts it back and says so.
+    a.updateGolfEvent.mockResolvedValue({ success: false, error: 'nope' });
+    fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowUp', altKey: true });
+    await act(async () => {
+      vi.advanceTimersByTime(4000);
+    });
+    vi.useRealTimers();
+    await expectCode('CH-6015', /Couldn’t move Travel briefing/);
+    // Back on the server's copy (this test's refresh is a stub, so that is still the loaded 1:30).
+    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:30 – 2:15 PM/);
+  });
+
+  it('Undo inside the window puts it back and writes nothing', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    wrap(cal());
+    fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:30 – 2:15 PM/);
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(a.updateGolfEvent).not.toHaveBeenCalled();
+  });
+
+  it('a series, a class and a player’s view never drag', () => {
+    const { unmount } = wrap(cal());
+    expect(block(/^Short-game block/).classList.contains('is-draggable')).toBe(false);
+    expect(block(/^Priya · STAT 201/).classList.contains('is-draggable')).toBe(false);
+    unmount();
+    wrap(cal({ role: 'player', viewerPlayerId: 'jonah' }));
+    expect(document.querySelector('.ch-ev.is-draggable')).toBeNull();
+  });
+
+  it('the clash check lights an invitee’s other event or class where the block would land', () => {
+    const e = PREVIEW_CALENDAR.events.find((x) => x.id === 'e9')!;
+    const hits = clashesAt(e, { date: '2026-10-14', start: 15.5, end: 16.25 }, PREVIEW_CALENDAR.events);
+    expect(hits.size).toBeGreaterThan(0);
+    expect(clashesAt(e, { date: '2026-10-14', start: 20, end: 20.75 }, PREVIEW_CALENDAR.events).size).toBe(0);
+    expect(snapQuarter(13.62)).toBe(13.5);
+    expect(snapQuarter(13.63)).toBe(13.75);
+  });
 });
 
 describe('Calendar · new event deep link', () => {

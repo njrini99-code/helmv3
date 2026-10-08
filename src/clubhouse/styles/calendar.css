@@ -520,6 +520,33 @@
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 1px;
 }
+/* P006-B3: a coach's event can be picked up and moved in 15-minute steps. The block held steps back, a dashed ghost
+   shows where it would land, and an invitee's clash there lights amber. */
+.ch-ev.is-draggable {
+  cursor: grab;
+}
+.ch-wk__grid.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ch-wk__grid.is-dragging .ch-ev {
+  cursor: grabbing;
+}
+.ch-ev.is-held {
+  opacity: 0.4;
+}
+.ch-ev.is-ghost {
+  pointer-events: none;
+  outline: 2px dashed var(--ch-border-focus);
+  outline-offset: -2px;
+  box-shadow: var(--ch-elevation-floating);
+}
+.ch-ev.is-clash {
+  z-index: 5;
+  box-shadow: inset 0 0 0 2px var(--ch-warning-600);
+  background: var(--ch-warning-100);
+}
 @media (hover: hover) {
   .ch-ev:hover {
     z-index: 4;

@@ -1,5 +1,9 @@
 # P006 — Calendar: changelog
 
+## 2026-10-08 — premium pass: drag to reschedule, with Undo (P006-B3)
+
+On desktop a coach picks up one of their events and drops it on another day and time, in 15-minute detents (a selection tick per detent). The block held steps back, a dashed ghost shows where it lands, and an invitee's event or class there lights amber while it is held (`clashesAt`). Alt+↑/↓ on a focused block moves it 15 minutes. A drop shows "Moved to 4:00 PM" with Undo for the done toast's life (4 s); the move is optimistic and nothing is written until the window closes, so invitees are notified only once it stands, and an undone move never reaches anyone. Leaving the page writes a waiting move at once. A failed write puts the block back (CH-6015); offline nothing is held (CH-1903). Series, multi-day, all-day, class and busy blocks don't drag (a series still asks "this event or all" in the editor). Not built: changing length by dragging the bottom edge. The notification timing needed no server change.
+
 ## 2026-10-08 — premium pass: swipe through days and weeks on the phone (P006-B2, D5)
 
 The phone Day view's agenda pages left and right with the phone's own momentum (scroll-snap, one day a page; `DayPager` in `CalendarPhone.tsx`), with one selection tick when a page settles (`scrollend`, or the scroll going quiet where WebKit lacks it). Past Saturday the strip turns to the next week. The neighbouring days are rendered for the swipe, clipped to the day's height, inert and hidden from assistive tech; a day outside the loaded window shows only its heading until its week arrives. A swipe doesn't also slide the agenda (CH-6606 still slides for a tap). ‹ › Previous week and Next week sit at the day heading's end, the same reach for VoiceOver and the keyboard (D5). They sit there rather than at the strip's ends so the seven day keys keep their width.
