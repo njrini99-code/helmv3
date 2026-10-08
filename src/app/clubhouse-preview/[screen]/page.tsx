@@ -109,6 +109,8 @@ import '@/clubhouse/styles/coachhelm-views.css';
 import '@/clubhouse/styles/coachhelm-profile.css';
 import '@/clubhouse/styles/coachhelm-standing.css';
 import '@/clubhouse/styles/coachhelm-dive.css';
+import { ChPhoneHintProvider } from '@/clubhouse/lib/use-phone';
+import { phoneHint } from '@/clubhouse/lib/phone-hint';
 
 /**
  * Dev-only Clubhouse preview: every screen and state rendered from the
@@ -463,6 +465,8 @@ export default async function ClubhousePreview({
 
   return (
     <PreviewBell state={bell}>
+      {/* The phone hint from the request, as the dashboard layout passes it, so a phone's first paint is the phone layout. */}
+      <ChPhoneHintProvider phone={await phoneHint()}>
       <ClubhouseFrame
         userData={screen === 'coachhelm-player' || screen === 'coachhelm-views' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : user}
         shell={PREVIEW_SHELL}
@@ -473,6 +477,7 @@ export default async function ClubhousePreview({
       >
         <HeroToneProvider tone={heroTone}>{entry.node}</HeroToneProvider>
       </ClubhouseFrame>
+      </ChPhoneHintProvider>
     </PreviewBell>
   );
 }
