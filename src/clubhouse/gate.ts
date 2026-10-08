@@ -5,8 +5,10 @@ import { resolveClubhouseTeam } from './routes/team';
 
 /**
  * Teams Clubhouse is limited to while it is rolled out (owner, Q-131): a comma-separated list of golf_teams ids in
- * `HELM_CLUBHOUSE_TEAMS`. Unset or empty means no limit, so the flag alone decides, as before. A server-only env value,
- * so the canary is a configuration change, not a code change.
+ * `HELM_CLUBHOUSE_TEAMS`. Unset or empty means no limit, so the flag alone decides, as before. A server-only env value, so
+ * the list itself is not in code. Changing it is still a deploy: Vercel binds env values to a deployment, so a canary
+ * change takes a redeploy, not a hot toggle. `*` is not a wildcard (it is read as a team id nobody has); unset the
+ * variable for "every team".
  */
 export function clubhouseTeamAllowlist(): Set<string> | null {
   const ids = (process.env.HELM_CLUBHOUSE_TEAMS ?? '')
