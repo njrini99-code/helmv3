@@ -232,24 +232,49 @@ describe('Round tracking: undo, penalty, moving between holes', () => {
   it('CH-11805 the strip: finished and earlier holes are buttons, later unplayed ones are marks', async () => {
     const holes = [{ ...HOLES[0]!, score: 4 }, HOLES[1]!, HOLES[2]!];
     const { user, props } = setup({ holes, currentHoleIndex: 1 });
-    expect(screen.getByRole('button', { name: 'Go to hole 1, 4 strokes' })).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'Hole 2, current hole' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hole 1, 4, even' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Hole 2, current' })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Hole 3' })).toBeInTheDocument();
     expect(screen.getByText('Thru 1')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Go to hole 1, 4 strokes' }));
+    await user.click(screen.getByRole('button', { name: 'Hole 1, 4, even' }));
     expect(props.onNavigateToHole).toHaveBeenCalledWith(0);
+  });
+
+  it('CH-11805 each chip is named by hole, score and to par, and only an under-par score is marked for red', () => {
+    // Hole 1 par 4 in 6, hole 2 par 5 in 4, hole 3 par 3 in 3 and looked back at (the current hole).
+    const holes = [{ ...HOLES[0]!, score: 6 }, { ...HOLES[1]!, score: 4 }, { ...HOLES[2]!, score: 3 }];
+    setup({ holes, currentHoleIndex: 2 });
+    const over = screen.getByRole('button', { name: 'Hole 1, 6, 2 over' });
+    const under = screen.getByRole('button', { name: 'Hole 2, 4, 1 under' });
+    const current = screen.getByRole('img', { name: 'Hole 3, 3, even, current' });
+    expect(current).toHaveAttribute('aria-current', 'step');
+    expect(under).toHaveClass('is-under');
+    expect(over).not.toHaveClass('is-under');
+    expect(current).not.toHaveClass('is-under');
+    // The chip shows the score once played (the scorecard numeral), the hole number until then.
+    expect(over).toHaveTextContent('6');
+    expect(screen.getByText('Thru 3')).toBeInTheDocument();
+  });
+
+  it('CH-11805 an unplayed current hole is lit with its number, and later unplayed holes are plain marks', () => {
+    setup({ currentHoleIndex: 0 });
+    const current = screen.getByRole('img', { name: 'Hole 1, current' });
+    expect(current).toHaveClass('is-cur');
+    expect(current).not.toHaveClass('is-done');
+    expect(screen.getByRole('img', { name: 'Hole 2' })).not.toHaveClass('is-done');
+    expect(screen.getByRole('img', { name: 'Hole 3' })).not.toHaveClass('is-cur');
   });
 
   it('CH-11504 leaving a hole with a result picked but not recorded asks first', async () => {
     const holes = [{ ...HOLES[0]!, score: 4 }, HOLES[1]!, HOLES[2]!];
     const { user, props } = setup({ holes, currentHoleIndex: 1 });
     await user.click(pick('Fairway'));
-    await user.click(screen.getByRole('button', { name: 'Go to hole 1, 4 strokes' }));
+    await user.click(screen.getByRole('button', { name: 'Hole 1, 4, even' }));
     expect(props.onNavigateToHole).not.toHaveBeenCalled();
     const sheet = code('CH-11504') as HTMLElement;
     await user.click(within(sheet).getByRole('button', { name: 'Stay' }));
     expect(props.onNavigateToHole).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: 'Go to hole 1, 4 strokes' }));
+    await user.click(screen.getByRole('button', { name: 'Hole 1, 4, even' }));
     await user.click(within(code('CH-11504') as HTMLElement).getByRole('button', { name: 'Leave without it' }));
     expect(props.onNavigateToHole).toHaveBeenCalledWith(0);
   });
@@ -272,6 +297,23 @@ describe('Round tracking: holing out', () => {
     expect(onHoleComplete).toHaveBeenCalledTimes(2);
     await act(async () => finish(true));
     expect(code('CH-11003')).toBeNull();
+  });
+
+  it('CH-11901 the save line never says "Round saved" while the holed hole is saving or after its save failed', async () => {
+    let finish: (ok: boolean) => void = () => {};
+    const onHoleComplete = vi.fn(() => new Promise<boolean>((r) => (finish = r)));
+    const onAutoSave = vi.fn(async () => {});
+    const { user } = setup({ currentHoleIndex: 2, onHoleComplete, onAutoSave, autoSaveInterval: 10 });
+    await user.click(pick(/^Holed/));
+    await user.click(next());
+    await waitFor(() => expect(code('CH-11402')).toHaveTextContent('Saving hole 3'));
+    // The background save of the holed shot lands while the hole's own save is still running.
+    await waitFor(() => expect(onAutoSave).toHaveBeenCalled());
+    await act(async () => {});
+    expect(screen.queryByText('Round saved')).toBeNull();
+    await act(async () => finish(false));
+    expect(code('CH-11003')).toHaveTextContent('Hole 3 didn’t save');
+    expect(screen.queryByText('Round saved')).toBeNull();
   });
 
   it('a finished hole looked back at offers the way back, and a shot opens to change or delete (CH-11505)', async () => {

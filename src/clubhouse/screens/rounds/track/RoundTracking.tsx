@@ -70,6 +70,13 @@ export function RoundTracking(props: RoundTrackingProps) {
   const { distancePref } = useDistanceUnits();
   const [courseOpen, setCourseOpen] = useState(false);
   const hole = t.currentHole;
+  // The engine says "saved" for two seconds, then goes quiet. The line stays on "Round saved" for as long as what is on
+  // screen is exactly what the server acknowledged: the same hole and the same shot list (the engine replaces the list
+  // on every shot, edit, undo and hole change, so any of those drops the claim until the next acknowledgement).
+  const [acked, setAcked] = useState<{ hole: number; shots: ShotRecord[] } | null>(null);
+  if (t.autoSaveStatus === 'saved' && hole && (acked?.hole !== hole.number || acked.shots !== t.shotHistory)) {
+    setAcked({ hole: hole.number, shots: t.shotHistory });
+  }
 
   if (!hole) {
     return (
@@ -84,7 +91,11 @@ export function RoundTracking(props: RoundTrackingProps) {
   const backTo = holedOut && !!onNavigateToHole && frontier >= 0 && frontier !== currentHoleIndex ? { index: frontier, number: holes[frontier]!.number } : null;
   const stats = holedOut ? calculateHoleStats(t.shotHistory, hole) : null;
   const far = heroDistance(t.distanceToHole, t.distanceUnit, distancePref);
-  const saveState = t.autoSaveStatus !== 'idle' ? t.autoSaveStatus : t.autoSaveHeldOnDevice ? 'device' : t.autoSaveSyncing ? 'syncing' : 'idle';
+  const liveState = t.autoSaveStatus !== 'idle' ? t.autoSaveStatus : t.autoSaveHeldOnDevice ? 'device' : t.autoSaveSyncing ? 'syncing' : 'idle';
+  const heldSaved = liveState === 'idle' && acked?.hole === hole.number && acked.shots === t.shotHistory ? 'saved' : liveState;
+  // While a holed hole is being saved, or after that save failed ("kept on this device", CH-11003), the line never says
+  // "Round saved": the hole's own save is the truth then. Device, syncing and retrying still agree with it, so they stay.
+  const saveState = heldSaved === 'saved' && t.holeCheckpointStatus !== 'idle' ? 'idle' : heldSaved;
   const meta = [round.teeLabel && `${round.teeLabel} tees`, round.type && TYPE_LABEL[round.type]].filter(Boolean).join(' · ');
 
   return (
@@ -124,21 +135,6 @@ export function RoundTracking(props: RoundTrackingProps) {
           )}
         </header>
         {statusSlot}
-        {onAutoSave && saveState !== 'idle' && (
-          // CH-11901: the round's background save, in words (retrying on its own when it fails).
-          <p className={'ch-rt-sync is-' + saveState} role="status" data-ch-code="CH-11901">
-            {saveState === 'error' ? (
-              <Icon icon={CloudOff} size={13} />
-            ) : saveState === 'saved' ? (
-              <Icon icon={Check} size={13} />
-            ) : saveState === 'device' || saveState === 'syncing' ? (
-              <Icon icon={Smartphone} size={13} />
-            ) : (
-              <span className="ch-rt-spin ch-rt-spin--sm" aria-hidden="true" />
-            )}
-            {SAVE_WORDS[saveState]}
-          </p>
-        )}
         <TrackStrip holes={holes} current={currentHoleIndex} onJump={onNavigateToHole ? t.handleNavigateToHole : undefined} />
 
         <div className="ch-rt-body">
@@ -163,26 +159,44 @@ export function RoundTracking(props: RoundTrackingProps) {
                   ) : null}
                 </span>
               </div>
-              {stats ? (
-                <div className="ch-rt-hero__done">
-                  <ScoreMark score={stats.score} par={hole.par} />
-                  <div>
-                    <b>{scoreName(stats.score, hole.par)}</b>
-                    <span>
-                      {stats.score} strokes · {stats.putts} putt{stats.putts === 1 ? '' : 's'}
-                    </span>
+              <div className="ch-rt-hero__foot">
+                {stats ? (
+                  <div className="ch-rt-hero__done">
+                    <ScoreMark score={stats.score} par={hole.par} />
+                    <div>
+                      <b>{scoreName(stats.score, hole.par)}</b>
+                      <span>
+                        {stats.score} strokes · {stats.putts} putt{stats.putts === 1 ? '' : 's'}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="ch-rt-hero__dist">
-                  <span className="ch-rt-hero__shot">
-                    Shot {t.currentShot}
-                    <em>{shotKind(t.shotType)}</em>
-                  </span>
-                  <b>{far.figure}</b>
-                  <em>{far.words}</em>
-                </div>
-              )}
+                ) : (
+                  <div className="ch-rt-hero__dist">
+                    <span className="ch-rt-hero__shot">
+                      Shot {t.currentShot}
+                      <em>{shotKind(t.shotType)}</em>
+                    </span>
+                    <b>{far.figure}</b>
+                    <em>{far.words}</em>
+                  </div>
+                )}
+                {onAutoSave && saveState !== 'idle' && (
+                  // CH-11901: where the round's shots are, beside the readout (board 3), in words: retrying on its own
+                  // when a save fails, and never "saved" before the server said so.
+                  <p className={'ch-rt-sync is-' + saveState} role="status" data-ch-code="CH-11901">
+                    {saveState === 'error' ? (
+                      <Icon icon={CloudOff} size={13} />
+                    ) : saveState === 'saved' ? (
+                      <Icon icon={Check} size={13} />
+                    ) : saveState === 'device' || saveState === 'syncing' ? (
+                      <Icon icon={Smartphone} size={13} />
+                    ) : (
+                      <span className="ch-rt-spin ch-rt-spin--sm" aria-hidden="true" />
+                    )}
+                    <span>{SAVE_WORDS[saveState]}</span>
+                  </p>
+                )}
+              </div>
             </div>
             <ShotLog shots={t.shotHistory} pref={distancePref} />
           </section>

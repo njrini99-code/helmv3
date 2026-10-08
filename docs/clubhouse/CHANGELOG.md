@@ -1,5 +1,14 @@
 # Clubhouse changelog
 
+## 2026-10-08 — Two scoring tokens for numerals on the feature green
+
+A shared token change for the shot screen's hole strip (P011's log has the screen). Not yet reviewed by the owner.
+
+- **`--ch-score-under-on-green`** (`styles/tokens.css`): a bare under-par numeral on the feature green, lifted so it
+  holds 4.5:1 on green-900 and on a played chip's faint ivory wash (the same red the qualifiers board uses for its
+  to-par text). **`--ch-score-under-on-ivory`**: the same numeral on an ivory chip that sits on the green. Both
+  surfaces stay the same at night, so neither is redefined in the dark block. Red still means under par only (D-42).
+
 ## 2026-10-08 — Phone: large titles collapse into the bar; flat More sheet
 
 From the owner's cardless, native-feeling phone pass. A shared shell change; no page's own files change. Not yet reviewed by the owner.

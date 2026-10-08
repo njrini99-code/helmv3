@@ -78,6 +78,11 @@
   --ch-score-double: #1c1b18;
   /* A filled under-par mark under a light numeral; the same red in light. */
   --ch-score-under-fill: #b03a2e;
+  /* A bare under-par numeral on the feature green (the shot screen's hole strip): lifted so it holds 4.5:1 on
+     green-900 and on a played chip's faint ivory wash; and the same numeral on the ivory current-hole chip. Both are
+     surfaces that do not change at night, so neither is redefined in the dark block. */
+  --ch-score-under-on-green: #ff8b7d;
+  --ch-score-under-on-ivory: #b03a2e;
   /* Charts (yardage book) */
   --ch-chart-paper: #fbf9f3;
   --ch-chart-gain: #155a39;

@@ -4,12 +4,29 @@ import { useEffect, useMemo, useState } from 'react';
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
 import type { HoleStats, RoundHole, ShotRecord } from '@/lib/types/golf';
 import { calculateHoleStats } from '@/lib/utils/shot-helpers';
-import { RoundTracking } from '../screens/rounds/track/RoundTracking';
+import { AutoSaveHeldError } from '@/hooks/golf/use-shot-state-machine';
+import { RoundTracking, type RoundTrackingProps } from '../screens/rounds/track/RoundTracking';
 import { ExitSheet, RoundCompleteSheet, ScorecardSheet, SubmitOverlay, type ChSummaryHole } from '../screens/rounds/track/round-sheets';
 import { PREVIEW_TRACK_ROUND, trackingFixture } from './fixtures-tracking';
 
 const wait = <T,>(v: T, ms = 500) => new Promise<T>((r) => setTimeout(() => r(v), ms));
 const NONE: ShotRecord[] = [];
+
+/**
+ * The round's background save, faked for the save line's states (CH-11901): `saved` (the server acknowledged it),
+ * `phone` (held on this phone, offline), `saving` (a save that never answers) and `retrying` (a save that fails, so the
+ * engine retries). Every other state passes no save, so no line is drawn, as before.
+ */
+const PREVIEW_SAVES: Record<string, NonNullable<RoundTrackingProps['onAutoSave']>> = {
+  saved: async () => {},
+  phone: async () => {
+    throw new AutoSaveHeldError('offline', true);
+  },
+  saving: () => new Promise<void>(() => {}),
+  retrying: async () => {
+    throw new Error('Preview: the save failed');
+  },
+};
 
 /**
  * The shot screen inside a stand-in round screen, for the dev preview. It
@@ -75,6 +92,8 @@ export function PreviewTracking({ state }: { state?: string }) {
           if (s) setShotsByHole((m) => ({ ...m, [i]: s.shots }));
         }}
         onNavigateToHole={setIndex}
+        onAutoSave={state ? PREVIEW_SAVES[state] : undefined}
+        autoSaveInterval={300}
         onExit={() => setSheet('exit')}
         onOpenScorecard={() => setSheet('card')}
         holeShots={(i) => shotsByHole[i] ?? null}
