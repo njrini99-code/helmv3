@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChMessagesApi } from '../screens/messages/MessagesView';
 import { MessagesView } from '../screens/messages/MessagesScreen';
 import type { ChAnnouncement, ChConv, ChFile, ChMember, ChMsg, ChMute, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
@@ -115,7 +115,13 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
   const [convs, setConvs] = useState<ChConv[]>(state === 'empty' ? [] : baseConvs);
   const [threads, setThreads] = useState(baseThreads);
   const [reactions, setReactions] = useState(baseReactions);
-  const [selectedId, setSelectedId] = useState<string | null>(state === 'empty' || state === 'rail' || state === 'announcement' ? null : 'team');
+  // P007 D4: as the live screen does, only desktop opens the team thread beside the rail, after hydration; the phone
+  // stays on the inbox instead of pushing the thread in over it.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (state === 'empty' || state === 'rail' || state === 'announcement') return;
+    if (window.matchMedia('(min-width: 821px)').matches) setSelectedId((id) => id ?? 'team');
+  }, [state]);
   const [anns, setAnns] = useState<ChAnnouncement[]>(state === 'empty' ? [] : baseAnns);
   const [annId, setAnnId] = useState<string | null>(state === 'announcement' ? 'an1' : null);
   const [mute, setMute] = useState<ChMute>({ muted: false, until: null });

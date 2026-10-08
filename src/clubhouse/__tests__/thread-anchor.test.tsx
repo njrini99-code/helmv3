@@ -122,4 +122,20 @@ describe('useThreadAnchor · layout changes', () => {
     expect(el.scrollTop).toBe(300);
     expect(screen.queryByRole('button')).toBeNull();
   });
+
+  it('P007 D1: a thread whose scroll is reset while it settles (a push during hydration) goes back to its end, until the reader touches it', () => {
+    vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });
+    try {
+      render(<Thread convId="a" count={10} />);
+      geometry(2000, 0);
+      act(() => void vi.advanceTimersByTime(50));
+      expect(el.scrollTop).toBe(2000);
+      act(() => void el.dispatchEvent(new Event('wheel')));
+      geometry(2000, 300);
+      act(() => void vi.advanceTimersByTime(50));
+      expect(el.scrollTop).toBe(300);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

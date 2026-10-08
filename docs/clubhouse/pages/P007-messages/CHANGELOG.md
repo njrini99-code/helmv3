@@ -1,5 +1,11 @@
 # P007 — Messages: changelog
 
+## 2026-10-08 — premium pass: findings D1, D2, D4
+
+- D1: a thread is held at its newest message while it settles (`useThreadAnchor`, 700 ms). A push during hydration that resets the scroll under it no longer leaves it at the oldest message. The hold stops the moment the reader scrolls, touches or types.
+- D2: a message that didn't send keeps full-ink text, on a muted fill inside a dashed edge, beside "Not sent · Retry". It is no longer faded to about 2.8:1, so it can be read before you retry it.
+- D4: the preview opens the team thread only on desktop, after hydration, as the live screen does. The phone preview stays on the inbox. The live loader already auto-opens only at 821px and wider.
+
 ## 2026-10-08 — premium pass: announcements as letterhead (P007-A1)
 
 An announcement reads as a signed team letter. The letterhead is one engraved line, the team and the full date ("Varsity · Wednesday 14 October"), with the asks in words at its end ("Urgent · please acknowledge") instead of two chips; then the 28px title, the body in full ink at a reading measure, and the posting coach's name and title over a 1px gilt rule. Tasks, files and receipts follow as before. On desktop the sheet takes the room's light as paper (`--ch-light-paper`, never on the words); on the phone it stays flush. No monogram or crest (owner: crests are declined, D3-2). The loader adds `signers` (the program's coaches by golf_coaches.id) and the announcement carries `authorId` (`created_by`); an unknown author shows no signature.

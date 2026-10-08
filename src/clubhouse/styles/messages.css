@@ -423,8 +423,15 @@
 .ch-ms-msg.is-mine:not(.is-first) .ch-ms-bub {
   border-top-right-radius: 6px;
 }
-.ch-ms-msg.is-failed .ch-ms-bub {
-  opacity: 0.6;
+/* P007 D2: a message that didn't send must be read to retry it: full-ink text on a muted fill inside a dashed edge,
+   beside the "Not sent · Retry" line, never faded (0.6 measured about 2.8:1). */
+.ch-ms-msg.is-failed .ch-ms-bub,
+.ch-ms-msg.is-mine.is-failed .ch-ms-bub {
+  background: var(--ch-bg-subtle);
+  box-shadow: none;
+  outline: 1.5px dashed var(--ch-border-strong);
+  outline-offset: -1.5px;
+  color: var(--ch-text-primary);
 }
 .ch-ms-bub.is-deleted {
   background: transparent;
@@ -2367,4 +2374,16 @@ html[data-fw-theme='dark'] .ch-ms-below {
   html[data-fw-theme='dark'] .ch-msp-tok {
     box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.24);
   }
+}
+
+/* P007 D2, after the phone and dark bubble rules it has to win over: a failed message in full ink on a muted fill. */
+.ch-msp-thread .ch-ms-msg.is-mine.is-failed .ch-ms-bub:not(.ch-ms-bub--file),
+html[data-fw-theme='dark'] .ch-ms-msg.is-mine.is-failed .ch-ms-bub,
+html[data-fw-theme='dark'] .ch-msp-thread .ch-ms-msg.is-mine.is-failed .ch-ms-bub:not(.ch-ms-bub--file) {
+  background: var(--ch-bg-subtle);
+  box-shadow: none;
+  color: var(--ch-text-primary);
+}
+.ch-msp-thread .ch-ms-msg.is-failed .ch-ms-bub::after {
+  display: none;
 }
