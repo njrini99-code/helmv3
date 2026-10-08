@@ -86,7 +86,19 @@ Status: N/A — CoachHelm has no realtime, polling or pull to refresh: the serve
 
 Status: DEFINED
 
-First run is a whole-page empty state for each role and each way of having nothing: a player with no round posted (CH-13301), with rounds and no insight yet (CH-13302), with only strengths (CH-13303) and with CoachHelm off (CH-13304); a coach with CoachHelm off (CH-13305), with no players (CH-13307) and with no team (CH-13308). A coach with players and no signal yet has the pulse on the page, so that one is the players' section with nothing in it: its empty line and View roster under the section's heading, in view without scrolling (CH-13306; states audit, 2026-10-08). Two smaller states sit in the page: nothing flagged in the pulse (CH-13309) and the count of players with no insight yet (CH-13310). A failed read is never shown as empty (130411): the delivery actions answer an empty list when a read fails, so the loaders read the insights table themselves to tell the two apart. CoachHelm has no search or filter, so it has no filtered empty state.
+First run is a whole-page empty state for each role and each way of having
+nothing: a player with no round posted (CH-13301), with rounds and no insight
+yet (CH-13302), with only strengths (CH-13303) and with CoachHelm off
+(CH-13304); a coach with CoachHelm off (CH-13305), with no players (CH-13307)
+and with no team (CH-13308). A coach with players and no signal yet has the
+pulse on the page, so that one is the players' section with nothing in it: its
+empty line and View roster under the section's heading, in view without
+scrolling (CH-13306; states audit, 2026-10-08). Two smaller states sit in the
+page: nothing flagged in the pulse (CH-13309) and the count of players with no
+insight yet (CH-13310). A failed read is never shown as empty (130411): the
+delivery actions answer an empty list when a read fails, so the loaders read the
+insights table themselves to tell the two apart. CoachHelm has no search or
+filter, so it has no filtered empty state.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -290,7 +302,10 @@ Nothing refreshes in the background: the page is as fresh as its last read (1315
 
 Status: DEFINED
 
-The Assigned chip and the dismissed notice rise in once, and appear at once with reduced motion or Animations off (CH-13601); on desktop hovering a row or a player takes the Ledger row tint and a press deepens it (CH-13602, preview only). Everything else is the shell's (D-64).
+The Assigned chip and the dismissed notice rise in once, and appear at once with
+reduced motion or Animations off (CH-13601); on desktop hovering a row or a
+player takes the Ledger row tint and a press deepens it (CH-13602, preview
+only). Everything else is the shell's (D-64).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

@@ -2,17 +2,22 @@
 
 ## 2026-10-08 — States and native feel
 
-The states audit's Classes findings and the owner's native-feel pass, verified in WebKit at 390x844 with touch.
+The states audit's Classes findings and the owner's native-feel pass, verified
+in WebKit at 390x844 with touch.
 
-- **Loading:** on the phone the skeleton holds the loaded geometry, measured at 390: the head and its actions, the term's
-  card, Today and its rows, the week's overlaps and what your coach sees (the rail comes first on the phone), then the
-  classes, so nothing moves when the page lands. On the desktop the deck's placeholders are the Ledger's ruled rows,
-  without the radius they kept from the card era.
+- **Loading:** on the phone the skeleton holds the loaded geometry, measured at
+  390: the head and its actions, the term's card, Today and its rows, the week's
+  overlaps and what your coach sees (the rail comes first on the phone), then
+  the classes, so nothing moves when the page lands. On the desktop the deck's
+  placeholders are the Ledger's ruled rows, without the radius they kept from
+  the card era.
 - **Press:** the overlaps line on the term's card deepens its wash when pressed.
-- **A failed read keeps the head (owner decision):** when the classes do not load (CH-12201) the head keeps Import
-  schedule and Add class, desktop and phone; before, it offered neither. Delete all classes still waits for the
-  classes (CH-12503). The add sheet cannot check a new class against classes that did not load, and claims no overlap
-  either way. Contract 120407 and the catalog row say so.
+- **A failed read keeps the head (owner decision):** when the classes do not
+  load (CH-12201) the head keeps Import schedule and Add class, desktop and
+  phone; before, it offered neither. Delete all classes still waits for the
+  classes (CH-12503). The add sheet cannot check a new class against classes
+  that did not load, and claims no overlap either way. Contract 120407 and the
+  catalog row say so.
 - **Copy:** every string the page writes takes the curly apostrophe, as the
   shell's offline line now does: the no-team page (CH-12305, "You aren’t on a
   team yet"), the import's offline state (CH-12901, "You’re offline"),
@@ -24,31 +29,38 @@ The states audit's Classes findings and the owner's native-feel pass, verified i
 
 ## 2026-10-08 — Phone: Mobile clubhouse pass
 
-The owner's phone review ("phone too cardy, too vibe coded"; the Coach Home "Mobile clubhouse pass" board, round 3:
-"fewer containers, one feature card"), carried to Classes. Phone only: each new rule sits inside
+The owner's phone review ("phone too cardy, too vibe coded"; the Coach Home
+"Mobile clubhouse pass" board, round 3: "fewer containers, one feature card"),
+carried to Classes. Phone only: each new rule sits inside
 `@media (max-width: 820px)`.
 
-- **Head:** the top bar stays the page's one heading (the iPhone brief); the term and its dates are the tracked brown
-  eyebrow under the engraved double rule, over Import schedule and Add class.
-- **One feature card:** the term card ("Week 8 of 17 · 13 credits · 5 classes" and the overlaps row) is the page's
-  green feature card.
-- **No stacked cards:** Today, this week's overlaps and "Your classes" are sections under the double rule, their
-  entries rows between soft seams. A class was a tinted card; it is a row that keeps only its department key in its
-  tone, the name over the instructor, its week of day keys (the days it meets raised, today ringed green), and the
-  room and flags. Add a class is the last row; what the coach sees is a line under a soft rule. The deck is wrapped
-  in the shared Section on the phone too, so "Your classes" heads it.
-- **No team:** the page had a 400-weight "Classes" title at the desktop's edge under the bar's own "Classes"; on the
-  phone the calm empty page sits under the bar, at the phone's edge, and the title only names the page for a screen
+- **Head:** the top bar stays the page's one heading (the iPhone brief); the
+  term and its dates are the tracked brown eyebrow under the engraved double
+  rule, over Import schedule and Add class.
+- **One feature card:** the term card ("Week 8 of 17 · 13 credits · 5 classes"
+  and the overlaps row) is the page's green feature card.
+- **No stacked cards:** Today, this week's overlaps and "Your classes" are
+  sections under the double rule, their entries rows between soft seams. A class
+  was a tinted card; it is a row that keeps only its department key in its tone,
+  the name over the instructor, its week of day keys (the days it meets raised,
+  today ringed green), and the room and flags. Add a class is the last row; what
+  the coach sees is a line under a soft rule. The deck is wrapped in the shared
+  Section on the phone too, so "Your classes" heads it.
+- **No team:** the page had a 400-weight "Classes" title at the desktop's edge
+  under the bar's own "Classes"; on the phone the calm empty page sits under the
+  bar, at the phone's edge, and the title only names the page for a screen
   reader.
-- **Loading:** `ClassesSkeleton` draws a phone shape beside the desktop one; the stylesheet shows the one for the width.
+- **Loading:** `ClassesSkeleton` draws a phone shape beside the desktop one; the
+  stylesheet shows the one for the width.
 
-Kept as material: the tone keys, the day keys, the flags, the buttons, the notices and every sheet. No motion, copy,
-behaviour or catalog code changed.
+Kept as material: the tone keys, the day keys, the flags, the buttons, the
+notices and every sheet. No motion, copy, behaviour or catalog code changed.
 
 ## 2026-10-07 — A class row answers the press
 
-On the desktop Ledger a class now deepens to the row press tint over the press beat, never a lift or a scale
-(CH-12601). The contract no longer calls CH-12602 reserved.
+On the desktop Ledger a class now deepens to the row press tint over the press
+beat, never a lift or a scale (CH-12601). The contract no longer calls CH-12602
+reserved.
 
 ## 2026-10-07 — Classes takes the page head; each class a ledger row
 

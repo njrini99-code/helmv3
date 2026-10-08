@@ -2,23 +2,31 @@
 
 ## 2026-10-08 — States and native feel
 
-The states audit's Rounds findings and the owner's native-feel pass, verified in WebKit at 390x844 with touch.
+The states audit's Rounds findings and the owner's native-feel pass, verified in
+WebKit at 390x844 with touch.
 
-- **Motion:** the scoring distribution's bars change on transform, not width (motion research A4): each is drawn at the
-  track's width and slid in by its share, so its rounded end stays round.
-- **Titles:** "Ready when you are" (CH-11304) and "Your season starts with your first 18-hole round" (CH-11302) close
-  without a full stop.
-- **Press:** a hole on the review's scorecard deepens to the row press tint; the hole steps and the round card's discard
-  key compress like every key (`data-ch-press`).
-- **Notices on the green card** take the shared on-green tokens (`--ch-notice-on-green-ink`, `--ch-notice-on-green-body`)
-  instead of copied literals; the notice draws no stripe now (shell).
-- **Loading:** on the phone the list's and the review's skeletons hold the loaded geometry, measured at 390 (the intro,
-  the round card at the idle card's height, season scoring, the tools, a month's rows; the review's hero, figures,
-  strokes gained and scorecard), so nothing moves when the page lands. On the desktop the review's scorecard loads as a
-  solid object; the rest are the Ledger's ruled blocks (shell).
-- **Loading at every phone width:** the round card's place follows the idle card as the phone widens (it was 20px too
-  tall at 430): it grows with its two rows of hole squares (two ninths of the card's width, `cqw`) and drops its foot's
-  second line from a 359px card, as the card does. Measured in WebKit from 355 to 445px; within 0.3px at 390 and 430.
+- **Motion:** the scoring distribution's bars change on transform, not width
+  (motion research A4): each is drawn at the track's width and slid in by its
+  share, so its rounded end stays round.
+- **Titles:** "Ready when you are" (CH-11304) and "Your season starts with your
+  first 18-hole round" (CH-11302) close without a full stop.
+- **Press:** a hole on the review's scorecard deepens to the row press tint; the
+  hole steps and the round card's discard key compress like every key
+  (`data-ch-press`).
+- **Notices on the green card** take the shared on-green tokens
+  (`--ch-notice-on-green-ink`, `--ch-notice-on-green-body`) instead of copied
+  literals; the notice draws no stripe now (shell).
+- **Loading:** on the phone the list's and the review's skeletons hold the
+  loaded geometry, measured at 390 (the intro, the round card at the idle card's
+  height, season scoring, the tools, a month's rows; the review's hero, figures,
+  strokes gained and scorecard), so nothing moves when the page lands. On the
+  desktop the review's scorecard loads as a solid object; the rest are the
+  Ledger's ruled blocks (shell).
+- **Loading at every phone width:** the round card's place follows the idle card
+  as the phone widens (it was 20px too tall at 430): it grows with its two rows
+  of hole squares (two ninths of the card's width, `cqw`) and drops its foot's
+  second line from a 359px card, as the card does. Measured in WebKit from 355
+  to 445px; within 0.3px at 390 and 430.
 - **Copy:** the page's own words take the curly apostrophe: the list, the review,
   setup and the round-review route ("Your rounds didn’t load", "Couldn’t check
   for a round in progress", "This round isn’t here", "The round’s date can’t be
@@ -29,33 +37,42 @@ The states audit's Rounds findings and the owner's native-feel pass, verified in
 
 ## 2026-10-08 — Phone: Mobile clubhouse pass
 
-The owner's phone review ("phone too cardy, too vibe coded"; the Coach Home "Mobile clubhouse pass" board, round 3:
-"fewer containers, one feature card"), carried to the Rounds list and a round's review. Phone only: each new rule
-sits inside `@media (max-width: 820px)`.
+The owner's phone review ("phone too cardy, too vibe coded"; the Coach Home
+"Mobile clubhouse pass" board, round 3: "fewer containers, one feature card"),
+carried to the Rounds list and a round's review. Phone only: each new rule sits
+inside `@media (max-width: 820px)`.
 
-- **Titles:** "Your rounds" and the review's course were 400-weight display titles on the phone. "Your rounds" is the
-  Ledger's intro under the engraved double rule (the season line as the tracked brown eyebrow across the page, the
-  title in the 600 sans at 31px, New round at the end of its line); the course on the review is the 600 sans.
-- **List:** the round in progress (or the idle card) is the page's one green feature card and keeps its hole strip.
-  Season scoring is a section flush on the parchment: the average, the three drawn figures between hairlines, the
-  ribbon. "More unfinished rounds" and each month are sections under the double rule, and every round is a row
-  between soft seams (the date as a plain lead, the course and tee, the to par over the score with no box) that
-  deepens to the row press tint.
-- **Review:** the hero is the one green feature card; the five figures sit between hairlines; strokes gained, the
-  scorecard, the hole, the distribution and the notes are sections under the double rule; the recap is a passage
-  under a rule with a green kicker, not a second green card.
-- **Loading:** `RoundsSkeleton` and `RoundReviewSkeleton` draw a phone shape beside the desktop one; the stylesheet
-  shows the one for the width, so the server needs none.
+- **Titles:** "Your rounds" and the review's course were 400-weight display
+  titles on the phone. "Your rounds" is the Ledger's intro under the engraved
+  double rule (the season line as the tracked brown eyebrow across the page, the
+  title in the 600 sans at 31px, New round at the end of its line); the course
+  on the review is the 600 sans.
+- **List:** the round in progress (or the idle card) is the page's one green
+  feature card and keeps its hole strip. Season scoring is a section flush on
+  the parchment: the average, the three drawn figures between hairlines, the
+  ribbon. "More unfinished rounds" and each month are sections under the double
+  rule, and every round is a row between soft seams (the date as a plain lead,
+  the course and tee, the to par over the score with no box) that deepens to the
+  row press tint.
+- **Review:** the hero is the one green feature card; the five figures sit
+  between hairlines; strokes gained, the scorecard, the hole, the distribution
+  and the notes are sections under the double rule; the recap is a passage under
+  a rule with a green kicker, not a second green card.
+- **Loading:** `RoundsSkeleton` and `RoundReviewSkeleton` draw a phone shape
+  beside the desktop one; the stylesheet shows the one for the width, so the
+  server needs none.
 
-Kept as material: the hole strip, the scorecard's grid, the search, the grouping control, the hole steps, the
-notices and the discard question. A notice inside the green card (a round that would not finish) takes the card's
-ivory and coral inks, so the now-flush shared notice stays legible on green. No motion, copy, behaviour or catalog
-code changed.
+Kept as material: the hole strip, the scorecard's grid, the search, the grouping
+control, the hole steps, the notices and the discard question. A notice inside
+the green card (a round that would not finish) takes the card's ivory and coral
+inks, so the now-flush shared notice stays legible on green. No motion, copy,
+behaviour or catalog code changed.
 
 ## 2026-10-07 — A round row answers the press
 
-On the desktop Ledger a round that opens its review now deepens to the row press tint over the press beat, never a
-lift or a scale. CH-11601 says so and is referenced in `RoundRow`, so it is no longer reserved.
+On the desktop Ledger a round that opens its review now deepens to the row press
+tint over the press beat, never a lift or a scale. CH-11601 says so and is
+referenced in `RoundRow`, so it is no longer reserved.
 
 ## 2026-10-07 — The rounds list takes the page head; flush panes and rows
 
