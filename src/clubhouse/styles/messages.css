@@ -843,6 +843,23 @@
 .ch-ms-new > .ch-seg {
   align-self: flex-start;
 }
+/* A prefilled message (prefill.ts): the draft the coach will send, quoted flush under a hairline. */
+.ch-ms-new__draft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--ch-border-hairline);
+}
+.ch-ms-new__draft > span {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-ms-new__draft > q {
+  font: 400 15px/1.45 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+  quotes: '\201C' '\201D';
+}
 .ch-ms-pick {
   display: flex;
   flex-direction: column;

@@ -33,6 +33,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -174,6 +175,9 @@ export interface ChMessagesApi {
   retryDirectory: () => void;
   startDirect: (userId: string) => Promise<boolean>;
   createGroup: (userIds: string[], title: string) => Promise<boolean>;
+  /** A prefilled message (prefill.ts) waiting for New message: who it's to (user ids), the draft and the group's name. */
+  prefill?: { to: string[]; draft: string; title: string } | null;
+  clearPrefill?: () => void;
 
   searchMessages: (q: string) => Promise<ChSearchHit[] | null>;
   openHit: (hit: ChSearchHit) => void;
@@ -1860,17 +1864,21 @@ function NewMessage({
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState(false);
+  const prefill = api.prefill ?? null;
   useEffect(() => {
     if (!open) return;
-    setMode("direct");
-    setTo([]);
+    // A prefilled message (prefill.ts) opens with its people chosen and, for a group, its name.
+    // Players start direct threads only (D-15): theirs keeps the first person.
+    const group = !!prefill && prefill.to.length > 1 && api.viewer.role === "coach";
+    setMode(group ? "group" : "direct");
+    setTo(prefill ? (group ? prefill.to : prefill.to.slice(0, 1)) : []);
     setQ("");
-    setTitle("");
+    setTitle(prefill?.title ?? "");
     setBody("");
     setUrgent(false);
     setAck(true);
     setTouched(false);
-  }, [open]);
+  }, [open, prefill, api.viewer.role]);
   const coachGroup = mode === "group" && api.viewer.role === "coach";
   // A coach's group can include other coaches (D-45): they're added right after it's created.
   const people = api.directory.filter((p) =>
@@ -2041,6 +2049,12 @@ function NewMessage({
                 )}
               </label>
             )}
+            {prefill?.draft && (
+              <p className="ch-ms-new__draft" data-ch-code="CH-7105">
+                <span>Your draft, ready in the conversation to edit and send</span>
+                <q>{prefill.draft}</q>
+              </p>
+            )}
             <SearchField
               value={q}
               onChange={setQ}
@@ -2138,6 +2152,14 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
   const conv = api.convs.find((c) => c.id === api.selectedId) ?? null;
   const ann = api.announcements.find((a) => a.id === api.selectedAnnId) ?? null;
   useEffect(() => setDetails(false), [api.selectedId]);
+  useEffect(() => {
+    if (api.prefill) setCompose(true);
+  }, [api.prefill]);
+  const { clearPrefill } = api;
+  const closeCompose = useCallback(() => {
+    setCompose(false);
+    clearPrefill?.();
+  }, [clearPrefill]);
   // CH-7605: going from one open thread or announcement to another settles the new one in (base in, quick out). The
   // first one a visit opens (the newest thread, or a link's) appears at once.
   const paneKey = ann ? `a:${ann.id}` : conv ? `c:${conv.id}` : null;
@@ -2156,7 +2178,7 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
           }
         />
         <MessagesFirstRun coach={api.viewer.role === "coach"} onNew={() => setCompose(true)} />
-        <NewMessage api={api} open={compose} onClose={() => setCompose(false)} />
+        <NewMessage api={api} open={compose} onClose={closeCompose} />
       </main>
     );
   }
@@ -2241,7 +2263,7 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
           <Details api={api} conv={conv} onClose={() => setDetails(false)} />
         </SectionBoundary>
       )}
-      <NewMessage api={api} open={compose} onClose={() => setCompose(false)} />
+      <NewMessage api={api} open={compose} onClose={closeCompose} />
     </main>
   );
 }

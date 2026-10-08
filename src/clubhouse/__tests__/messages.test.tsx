@@ -1399,3 +1399,60 @@ describe('Messages · no team', () => {
     expect(within(el as HTMLElement).getByRole('heading', { level: 2, name: "You aren’t on a team yet" })).toBeTruthy();
   });
 });
+
+describe('Messages · prefilled messages (D2-7: the coach presses Send)', () => {
+  const dmEli = { id: 'dm-eli', title: null, participant_ids: ['me', 'eli'], participant_count: 2, unread_count: 0, other_participant: { id: 'eli', name: 'Eli Brandt' }, last_message: null, creator_id: 'me' };
+
+  it('one player with a thread opens it with the draft in the composer, and nothing is sent', async () => {
+    live.convs.conversations = [team, dmEli];
+    params.current = new URLSearchParams(`players=p-eli&draft=${encodeURIComponent('Can you make the 3:30 block?')}`);
+    show();
+    const box = await screen.findByRole('textbox', { name: /Message Eli/ });
+    await waitFor(() => expect((box as HTMLTextAreaElement).value).toBe('Can you make the 3:30 block?'));
+    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+    expect(a.createGolfConversation).not.toHaveBeenCalled();
+  });
+
+  it('two players open New message as a named group with the draft quoted; nothing is created until the coach presses on', async () => {
+    const user = userEvent.setup();
+    a.createGolfTeamBroadcast.mockResolvedValue({ conversationId: 'grp' });
+    params.current = new URLSearchParams(`players=p-eli,p-jonah&title=${encodeURIComponent('Short-game block')}&draft=${encodeURIComponent('Reply when you can')}`);
+    show();
+    const dialog = await screen.findByRole('dialog', { name: 'New message' });
+    expect((within(dialog).getByRole('textbox', { name: 'Group name' }) as HTMLInputElement).value).toBe('Short-game block');
+    expect(dialog.textContent).toContain('Reply when you can');
+    expect(a.createGolfTeamBroadcast).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole('button', { name: 'Create group' }));
+    await waitFor(() => expect(a.createGolfTeamBroadcast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Short-game block', selectedPlayerIds: ['p-eli', 'p-jonah'] })));
+    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('phone: Next creates the thread and leaves the draft in its composer, unsent', async () => {
+    const user = userEvent.setup();
+    a.createGolfConversation.mockResolvedValue({ conversationId: 'dm-eli' });
+    params.current = new URLSearchParams(`players=p-eli&draft=${encodeURIComponent('Can you make the 3:30 block?')}`);
+    showPhone();
+    const newMsg = await screen.findByRole('region', { name: 'New message' });
+    expect(newMsg.textContent).toContain('Can you make the 3:30 block?');
+    live.convs.conversations = [team, dmEli];
+    await user.click(within(newMsg).getByRole('button', { name: 'Next' }));
+    const box = await screen.findByRole('textbox', { name: /Message Eli/ });
+    await waitFor(() => expect((box as HTMLTextAreaElement).value).toBe('Can you make the 3:30 block?'));
+    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('a player’s prefill to two people keeps one (players start direct threads only, D-15)', async () => {
+    params.current = new URLSearchParams('players=p-eli,p-jonah&draft=hi');
+    show({ ...data, role: 'player', viewerPlayerId: 'p-me' });
+    const dialog = await screen.findByRole('dialog', { name: 'New message' });
+    // Direct mode: one person picked, and no group chips.
+    expect(dialog.querySelector('.ch-ms-to')).toBeNull();
+    expect(within(dialog).getByRole('button', { name: 'Start conversation' })).toBeTruthy();
+  });
+
+  it('CH-7001 players who are not on the team', async () => {
+    params.current = new URLSearchParams('players=nobody&draft=hi');
+    show();
+    await expectCode('CH-7001', /Those players aren’t on your team/);
+  });
+});

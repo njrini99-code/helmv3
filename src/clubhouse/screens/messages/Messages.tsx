@@ -30,6 +30,7 @@ import { haptic } from '../../lib/haptics';
 import type { ChAttachmentRecovery, ChMessagesApi } from './MessagesView';
 import { MessagesView } from './MessagesScreen';
 import { DraftStore } from './drafts';
+import { readPrefill } from './prefill';
 import { firstName, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
 const isGroup = (c: GolfConversationWithMeta) => {
@@ -59,6 +60,10 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const [drafts] = useState<Map<string, string>>(() => new DraftStore(data.viewerUserId));
   const [attachmentRecovery] = useState(() => new Map<string, ChAttachmentRecovery>());
   const [paramsDone, setParamsDone] = useState(false);
+  /** A prefilled message waiting in New message (prefill.ts): the recipients and the group's name. */
+  const [prefill, setPrefill] = useState<{ to: string[]; draft: string; title: string } | null>(null);
+  /** The prefilled draft lands in the composer of the conversation New message creates; the coach still presses Send. */
+  const pendingDraft = useRef<string | null>(null);
 
   const people = useMemo(() => new Map(data.directory.map((p) => [p.userId, p])), [data.directory]);
 
@@ -106,9 +111,27 @@ export function Messages({ data }: { data: ChMessagesData }) {
     const conv = params.get('conversation');
     const player = params.get('player');
     const user = params.get('user');
+    const pre = readPrefill(params);
     handledParams.current = true;
-    setParamsDone(!conv && !player && !user);
-    if (conv) {
+    setParamsDone(!conv && !player && !user && !pre);
+    if (pre) {
+      router.replace('/golf/dashboard/messages', { scroll: false });
+      const to = pre.players.map((id) => data.directory.find((p) => p.playerId === id)?.userId).filter((u): u is string => !!u);
+      if (!to.length) {
+        toast({ tone: 'error', title: "Couldn’t open that conversation", body: 'Those players aren’t on your team, or haven’t set up their accounts yet.', code: 'CH-7001' });
+        return;
+      }
+      chTrail('messages prefill');
+      const existing = to.length === 1 ? convs.find((c) => !c.group && c.memberIds[0] === to[0]) : undefined;
+      if (existing) {
+        // An unsent draft of the coach's own wins over the prefill.
+        if (pre.draft && !drafts.get(existing.id)) drafts.set(existing.id, pre.draft);
+        setSelectedId(existing.id);
+        return;
+      }
+      pendingDraft.current = pre.draft || null;
+      setPrefill({ to, draft: pre.draft, title: pre.title ?? '' });
+    } else if (conv) {
       setSelectedId(conv);
       router.replace('/golf/dashboard/messages', { scroll: false });
     } else if (player || user) {
@@ -176,6 +199,15 @@ export function Messages({ data }: { data: ChMessagesData }) {
     [delayedToast, toast, fail],
   );
 
+  const landDraft = useCallback(
+    (conversationId: string) => {
+      if (pendingDraft.current && !drafts.get(conversationId)) drafts.set(conversationId, pendingDraft.current);
+      pendingDraft.current = null;
+      setPrefill(null);
+    },
+    [drafts],
+  );
+
   const startDirect = useCallback(
     async (userId: string): Promise<boolean> => {
       const existing = convs.find((c) => !c.group && c.memberIds[0] === userId);
@@ -187,12 +219,13 @@ export function Messages({ data }: { data: ChMessagesData }) {
         chTrail('messages start direct');
         const res = await createGolfConversation([userId], data.teamId);
         if (!('conversationId' in res) || !res.conversationId) throw new Error('error' in res ? String(res.error) : 'Could not start the conversation');
+        landDraft(res.conversationId);
         await refetch();
         setSelectedId(res.conversationId);
         haptic('success');
       });
     },
-    [convs, data.teamId, refetch, attempt],
+    [convs, data.teamId, refetch, attempt, landDraft],
   );
 
   const createGroup = useCallback(
@@ -215,6 +248,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
             missed.push(coachId);
           }
         }
+        landDraft(res.conversationId);
         await refetch();
         setSelectedId(res.conversationId);
         haptic('success');
@@ -227,7 +261,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         }
       });
     },
-    [data.role, data.teamId, people, refetch, toast, attempt],
+    [data.role, data.teamId, people, refetch, toast, attempt, landDraft],
   );
 
   const [members, setMembers] = useState<ChMember[] | null>(null);
@@ -602,8 +636,17 @@ export function Messages({ data }: { data: ChMessagesData }) {
     directory: data.directory,
     directoryError: data.directoryError,
     retryDirectory: () => router.refresh(),
-    startDirect,
+    startDirect: async (userId) => {
+      const existing = convs.find((c) => !c.group && c.memberIds[0] === userId);
+      if (existing) landDraft(existing.id);
+      return startDirect(userId);
+    },
     createGroup,
+    prefill,
+    clearPrefill: () => {
+      pendingDraft.current = null;
+      setPrefill(null);
+    },
 
     searchMessages,
     openHit: (h) => select(h.conversationId),
