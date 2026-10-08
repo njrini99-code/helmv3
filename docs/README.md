@@ -83,9 +83,9 @@ at `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/<path>`
 (the `<path>` is the file's old in-repo path, e.g. `docs/archive/2026-07/...`).
 A living doc that still needs to cite one of them links straight to that URL.
 
-## Start here
+## Orientation by cluster
 
-For orientation before diving into a specific doc cluster, read (in rough order):
+After the "Start here" list above, read these for a specific doc cluster (in rough order):
 
 - **`CLAUDE.md`** — product rules, stack, design system, code patterns, context routing.
 - **`AGENTS.md`** — agent/session operating conventions.
