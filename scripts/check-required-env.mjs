@@ -4,6 +4,14 @@ import {
   SECRET_KEY_ENV,
   LEGACY_SERVICE_ROLE_KEY_ENV,
 } from '../src/lib/supabase/keys.mjs';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/check-required-env.mjs',
+  summary:
+    "Checks that the environment variables a production build needs are present, and fails the build when one is missing. Runs as the prebuild step; reads only the names and presence of variables.",
+  secrets: "NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY and the others it lists",
+});
 
 const REQUIRED_URL_ENV = 'NEXT_PUBLIC_SUPABASE_URL';
 

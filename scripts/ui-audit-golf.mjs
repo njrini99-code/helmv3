@@ -87,6 +87,13 @@
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/ui-audit-golf.mjs',
+  summary:
+    "Premium UI pass over every GolfHelm route as coach and as player with headless Chrome; writes a dated report and screenshots. Signs in with the demo accounts named in the file header and reads only.",
+});
 
 const arg = (k, d) => {
   const hit = process.argv.find((a) => a.startsWith(`--${k}=`));

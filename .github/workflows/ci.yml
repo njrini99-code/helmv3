@@ -1085,10 +1085,10 @@ jobs:
     # A red run there blocks the next release, not a merge.
     #
     # `static-checks` (2026-09-02) carries what used to be nine leaf jobs;
-    # `lint` ("TypeScript + Lint", 2026-09-23) carries tsc, ESLint and the
-    # ratchets. Nothing left this gate; it got fewer job names.
-    # `pr-smoke-a11y` and `sentry-snapshot-capture` are deliberately NOT in
-    # this list — both were, and remain, advisory-only.
+    # `typecheck` (tsgo; tsc too on a push) and `lint` (ESLint and the
+    # ratchets) are parallel jobs since 2026-10-07. Nothing left this gate; it
+    # got fewer job names. The advisory browser jobs (`pr-smoke-a11y`,
+    # `sentry-snapshot-capture`) are in nightly.yml and were never in this list.
     #
     # `unit-tests`, `next-build` and `supabase` no longer SKIP on a docs-only
     # PR — they apply the `code` path gate inside the job and finish green.
