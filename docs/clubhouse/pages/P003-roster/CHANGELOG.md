@@ -1,5 +1,17 @@
 # P003 — Roster: changelog
 
+## 2026-10-08 — Join requests as a row, the sheet without wells
+
+Owner direction (2026-10-08): the card is no longer the default unit of layout on the phone. Phone only (the phone
+roster is its own component); the desktop roster is unchanged.
+
+- **Join requests** is one flat row at the top of the list instead of a green feature card: the count in a green badge
+  in the avatars' column, "Join requests" lined up with the players' names, the names under it, a chevron. It sits
+  between hairlines on the gutter and tints under the finger like a player row (CH-3602). Its accessible name reads
+  "2 join requests, Grace Liu and Owen Park".
+- **The requests sheet:** each request's handicap is a figure at the end of its row, not a well, and the team code is
+  a plain row between hairlines with Copy at its end.
+
 ## 2026-10-08 — The phone list shows the figure it is sorted by
 
 From the native-feel audit (P1-3). Not yet reviewed by the owner.

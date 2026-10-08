@@ -1,5 +1,26 @@
 # P011 — Rounds: changelog
 
+## 2026-10-08 — Setup on the phone without cards
+
+Owner direction (2026-10-08): the card is no longer the default unit of layout on the phone. Phone only (820px and
+under); the desktop setup is unchanged.
+
+- **Sections, not cards:** Course, Round details and Scorecard are sections on the canvas, each under the Ledger's
+  double rule with a 19px heading, its fields and rows flush below, and air between them. Everything sits on one 20px
+  gutter, the green band's text included.
+- **The course:** before a pick, "Choose a course" is the section's heading over its line and Browse courses (the
+  dashed icon tile is gone). Once picked, the course name is the heading on the canvas (no second green band under the
+  setup band), the place and the tee's facts under it, and Change course as the section's action on the heading's line.
+- **Open qualifier:** one row between hairlines with its Play, tinting under the finger like a Ledger row.
+- **Rows on seams:** the qualifier choices (radio, name, rounds), the course list and the tees in the picker sheet,
+  and Add a course. The figure strip over the scorecard sits between two hairlines instead of in a well. Segmented
+  controls, the date field, the par keys and the yardage fields keep their material.
+- **Waiting matches loaded:** before a course (CH-11309), while the holes load (CH-11405) and when they didn't
+  (CH-11210) the scorecard shows its heading; while loading also its figure strip and ghost rows at the loaded rows'
+  52px (`ScorecardHead`, `.ch-rsu-ph`, phone only).
+- **The start dock** is the screen's one action bar: a solid toolbar across the foot with a hairline edge, no blur, its
+  padding carrying the home-indicator inset (the tab bar is away on this screen).
+
 ## 2026-10-08 — Premium pass (backlog)
 
 - **Full screen on the phone (D1):** the shot screen and setup call

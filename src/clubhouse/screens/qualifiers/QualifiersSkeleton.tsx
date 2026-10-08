@@ -75,7 +75,8 @@ export function QualifiersSkeleton({ mode = 'all' }: { mode?: 'all' | 'mine' }) 
                 <div className="ch-qf-lead__r">
                   <Skeleton width={14} height={13} />
                   <Skeleton width={120} height={13} />
-                  <Skeleton width={26} height={15} />
+                  {/* The to par is a bare numeral on the phone (no plate), so its place is one. */}
+                  <Skeleton width={28} height={17} />
                 </div>
               </div>
             ))}

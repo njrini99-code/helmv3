@@ -1262,72 +1262,95 @@
     color: var(--ch-ledger-ink);
   }
 
-  /* Join requests: the screen's one feature card (the kit's FeatureCard), the frame's green lit from its top right, a
-     gilt coin, the count and the names in ivory. A press deepens a shade over it for the press beat; it never scales
-     (CH-3602). */
+  /* Join requests: one flat row at the top of the list (owner, 2026-10-08: the card is no longer the default unit of
+     layout), between hairlines held on the gutter. The count is a green badge in the avatars' column, so the title
+     lines up with the players' names; the names sit under it, a chevron at the end. It tints under the finger like a
+     player row (CH-3602), never scales. */
   .ch-rsm-banner {
     position: relative;
     display: flex;
     align-items: center;
     gap: 14px;
     box-sizing: border-box;
-    width: 100%;
-    min-height: 76px;
-    padding: 16px 16px 16px 18px;
+    width: calc(100% + 24px);
+    min-height: 68px;
+    margin: -6px -12px;
+    padding: 12px;
     border: 0;
-    border-radius: 14px;
-    background: var(--ch-feature-bg);
-    box-shadow: var(--ch-elevation-feature);
-    color: var(--ch-on-green-ink-muted);
+    border-radius: var(--ch-radius-md);
+    background: none;
+    box-shadow: none;
+    color: var(--ch-text-tertiary);
     font: inherit;
     text-align: left;
     cursor: pointer;
     touch-action: manipulation;
+    transition: background var(--ch-dur-press) var(--ch-ease);
   }
+  .ch-rsm-banner::before,
   .ch-rsm-banner::after {
     position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: rgb(2 18 10 / 0.2);
-    opacity: 0;
-    transition: opacity var(--ch-dur-press) var(--ch-ease);
+    top: auto;
+    right: 12px;
+    bottom: auto;
+    left: 12px;
+    height: 1px;
+    border-radius: 0;
+    background: var(--ch-ledger-rule);
+    opacity: 1;
+    transition: none;
     content: '';
     pointer-events: none;
+  }
+  .ch-rsm-banner::before {
+    top: 0;
+  }
+  .ch-rsm-banner::after {
+    bottom: 0;
+    background: var(--ch-ledger-rule-soft);
+  }
+  .ch-rsm-banner:active {
+    background: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
   }
   .ch-rsm-banner:active::after {
     opacity: 1;
   }
   .ch-rsm-banner:focus-visible {
     outline: 2px solid var(--ch-border-focus);
-    outline-offset: 2px;
+    outline-offset: -2px;
   }
-  .ch-rsm-banner__ic {
+  .ch-rsm-banner__n {
     display: grid;
     flex: none;
     place-items: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    background: rgb(255 255 255 / 0.06);
-    box-shadow: inset 0 0 0 1px rgb(220 205 166 / 0.35);
-    color: var(--ch-champagne-300);
+    box-sizing: border-box;
+    min-width: 28px;
+    height: 28px;
+    margin-inline: 6px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: var(--ch-green-fill-700);
+    color: var(--ch-on-green-ink);
+    font: 600 14px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
   }
   .ch-rsm-banner__b {
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
     min-width: 0;
   }
   .ch-rsm-banner__b b {
-    font: 600 17px/1.2 var(--ch-font-sans);
-    letter-spacing: -0.02em;
-    color: var(--ch-on-green-ink);
+    font: 600 16px/1.25 var(--ch-font-sans);
+    letter-spacing: -0.012em;
+    color: var(--ch-text-primary);
   }
   .ch-rsm-banner__b span {
     overflow: hidden;
-    font: 400 13.5px/1.3 var(--ch-font-sans);
-    color: var(--ch-on-green-ink-soft);
+    font: var(--ch-type-caption);
+    color: var(--ch-text-secondary);
     white-space: nowrap;
     text-overflow: ellipsis;
   }
@@ -1371,15 +1394,14 @@
     font: 400 13px/1.2 var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
+  /* The handicap is a figure at the row's end, not a well. */
   .ch-rsm-rq__h {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
-    gap: 3px;
-    min-width: 52px;
-    height: 48px;
-    border-radius: 12px;
+    gap: 4px;
+    min-width: 44px;
   }
   .ch-rsm-rq__h b {
     font: 500 18px/1 var(--ch-font-sans);
@@ -1407,14 +1429,17 @@
     justify-content: center;
     min-height: 44px;
   }
+  /* The team code: a plain row under the requests, between hairlines, Copy at its end. */
   .ch-rsm-code {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
     margin-top: 8px;
-    padding: 12px 14px;
-    border-radius: 12px;
+    padding: 14px 0;
+    box-shadow:
+      inset 0 1px 0 var(--ch-ledger-rule),
+      inset 0 -1px 0 var(--ch-ledger-rule-soft);
   }
   .ch-rsm-code > span {
     display: flex;
