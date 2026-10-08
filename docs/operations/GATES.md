@@ -20,6 +20,11 @@ wrapped commands run at once across every worktree on the machine; the rest
 print one line and wait for a slot. A lock whose process has died is cleared on
 the next scan. The wrapped command's exit code is passed through unchanged.
 
+The wait is capped at 8 minutes (`HELM_GATE_MAX_WAIT_MS`). Past that the gate
+does not start: it exits 75 at once and prints `queued, retry with: <cmd>`.
+75 means "never ran", so a wrapper can retry exactly that and nothing else; a
+gate that ran and failed keeps its own exit code.
+
 `HELM_GATE_SLOTS=<n>` widens the queue on a bigger machine. `HELM_GATE_NOWAIT=1`
 bypasses it for a one-off. Neither is set in CI, where one job is one run and
 the wrapper is a no-op.

@@ -10,6 +10,9 @@ npm run knowledge:map -- --files <paths...>
 npm run knowledge:context -- --files <paths...> --task "<task>"
 ```
 
+The context step writes a per-run file and prints its path (`Wrote <path>`);
+read that file, not a fixed `/tmp` name. Pass `--output <file>` to choose one.
+
 Read the first doc the map step names (not all live under `memory/features/`),
 and open further ones only when the task needs them. If a path maps to nothing
 in `memory/registry.yml`, say so: that is a registry gap to map in the same

@@ -57,7 +57,8 @@ two projects, no serialize queue, for iterating on one file before the gate.
 
 ### Running a gate takes longer than a Bash call
 A full local pass is 8-12 minutes and `scripts/serialize.mjs` queues it behind
-gates in sibling worktrees (`HELM_GATE_SLOTS`, default 2), while the Bash tool
+gates in sibling worktrees (`HELM_GATE_SLOTS`, default 2; a gate that cannot
+get a slot within 8 minutes exits 75 with a retry command), while the Bash tool
 times out at 120s. Background the run and read its log; never poll it with
 `sleep`. `typecheck` and `typecheck:fast` set `--max-old-space-size=8192`
 themselves — `tsc` costs ~2.85 GB here and dies at the default heap.
