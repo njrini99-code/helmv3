@@ -54,7 +54,7 @@ authentication test.
 | `auth-forgot.test.tsx` (2026-10-07: the reset form and check your email in the panel, CH-15020 to CH-15922, and a guard that today's reset page and the panel keep the same rules and words) | pass (8) |
 | `auth.test.tsx` › the sign-in micro-motion (2026-10-07: CH-15607 to CH-15611, including the glide's WebKit offsetParent case) | pass (6) |
 | `src/app/golf/(auth)/forgot-password/page.test.tsx` (today's reset page, unchanged) | pass |
-| `onboard.test.tsx` (20 cases: codes, the staff path, the account, after the account, request access, arriving) and `onboard-logic.test.ts` (15) | pass |
+| `onboard.test.tsx` (32 cases: codes, the staff path, the account, after the account, request access, arriving, and since 2026-10-07 the motion and feedback, CH-15620 to CH-15624) and `onboard-logic.test.ts` (17, with moving on, CH-15620) | pass |
 | `handoff.test.tsx` (the curtain over the route change) | pass |
 | `src/components/auth/golf-sign-in-form.test.tsx` and `src/test/auth` (today's form unchanged) | pass |
 
@@ -79,6 +79,16 @@ authentication test.
   - Not done: a real account round trip (no reset email was sent) and a physical
     iPhone.
 
+- 2026-10-07, sign up's finishing pass, WebKit at 1440x900 and 390x844 (touch),
+  `/clubhouse-preview/onboard`:
+  - Every step and its field and error states, before and after (Screenshots,
+    below); the tray also at 1280, 1100 and 1024 wide.
+  - The handovers forward and Back, the rail's thumb, the card's ink and the
+    issue, as 30fps video and rAF samples, desktop and phone.
+  - Each step change has one long frame (about 80 to 110ms) with or without the
+    pass, and none with the course hidden. Its cause is open (CHANGELOG,
+    2026-10-07).
+  - Not done: a physical iPhone, Safari, VoiceOver.
 - Every sign-up step at 1440 and 390 wide in `/clubhouse-preview/onboard`,
   against the design's screenshots.
 - The course at 6.4, 12.5, 18.6 and 22 o'clock (sunrise, midday, golden hour,
@@ -141,6 +151,22 @@ before, after, baseline or evidence.
 | `P015__reset__none__390x844__ready__after__5a34505.png` | after | `5a34505` | After: the reset form on the phone sheet (CH-15920) |
 | `P015__reset__none__390x844__refused-invalid__after__5a34505.png` | after | `5a34505` | After: the phone's refused address (CH-15121) |
 | `P015__reset__none__390x844__check-email__after__5a34505.png` | after | `5a34505` | After: check your email on the phone (CH-15921) |
+| `P015__signup__none__1440x900__intro__before__e549642.png` | before | `e549642` | Before: the member card floats in a full-height green tray, most of it empty |
+| `P015__signup__none__1440x900__intro__after__e107280.png` | after | `e107280` | After: the tray hugs the card; the two choices sit on the raised green's depth |
+| `P015__signup__none__1440__choice-hover__after__e107280.png` | after | `e107280` | After: the team-code choice hovered, lifted 2px onto the primary hover's depth (CH-15624) |
+| `P015__signup__none__1440x900__name-typed__before__83d5721.png` | before | `83d5721` | Before: the card's answers at 11.5px in light ink beside a grey coin |
+| `P015__signup__none__1440x900__name-typed__after__e107280.png` | after | `e107280` | After: the answers at the board's 15px in green ink, the monogram in green ink on the card's stock (CH-15621) |
+| `P015__signup__none__1440x900__account-exists__before__83d5721.png` | before | `83d5721` | Before: the refused email marked red while the cursor stays in the password under its green ring |
+| `P015__signup__none__1440x900__account-exists__after__e107280.png` | after | `e107280` | After: the refused email keeps its red edge with a red halo and takes the cursor (CH-15624) |
+| `P015__signup__none__1440x900__done__before__e549642.png` | before | `e549642` | Before: the issued card and its seal high in a full-height green tray |
+| `P015__signup__none__1440x900__done__after__e107280.png` | after | `e107280` | After: the tray hugs the issued card and its seal; the issue itself is motion (CH-15623) |
+| `P015__signup__none__1100x760__done__after__e107280.png` | after | `e107280` | After: at 1100 wide the card scales down so the seal stays inside the tray |
+| `P015__signup__none__1440x900__sent__before__fbdd6ee.png` | before | `fbdd6ee` | Before: a request's card reads "Issued today" and cuts "Oakmont Universi" mid-word |
+| `P015__signup__none__1440x900__sent__after__e107280.png` | after | `e107280` | After: "Received today", and a long value ends in an ellipsis (CH-15621, CH-15623) |
+| `P015__signup__none__390x844__account__before__fbdd6ee.png` | before | `fbdd6ee` | Before: the phone's "3 of 5" alone in its pill |
+| `P015__signup__none__390x844__account__after__e107280.png` | after | `e107280` | After: "3 of 5" over a hairline filled to the same point (CH-15622) |
+| `P015__signup__none__390x844__done-joinfail__before__fbdd6ee.png` | before | `fbdd6ee` | Before: "Enter a team code" in the link's green on the green key, unreadable |
+| `P015__signup__none__390x844__done-joinfail__after__e107280.png` | after | `e107280` | After: the key's word in its own ivory |
 
 ## Historical verification gaps
 

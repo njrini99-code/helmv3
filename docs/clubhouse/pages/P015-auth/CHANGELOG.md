@@ -4,7 +4,7 @@
 
 ```text
 Design package: design/handoff/auth (approved with Q-96); no new board
-PR/commit:      agent/clubhouse-frame-hero (uncommitted at writing)
+PR/commit:      agent/clubhouse-frame-hero, e1072802a (the follow-up below uncommitted at writing)
 Contract IDs:   CH-15620 to CH-15624 (new, motion and feedback)
 Actions:        none (the same validateAccessCode, signupAction, completePlayerOnboarding, submitDemoRequest)
 Data impact:    none
@@ -79,6 +79,35 @@ tray read as unfinished, and two double-tap paths skipped a step.
   with or without this change. Hiding the course removes it (30ms), so it is the
   course behind the frosted pane, not the handover.
 - Not run: physical iPhone and Safari, VoiceOver.
+
+### Follow-up the same day
+
+- CONTRACT's intro, DESIGN's boards and "Not built", and PAGE.md no longer
+  call sign up and onboarding the next phase. "Not built" now lists what Q-96
+  dropped.
+- The manifest owns sign up and onboarding (`implementation.also`: the onboard
+  screens, loader, route, `onboard.css` and `onboard-tokens.css`, with the
+  onboard tests), so the changelog gate asks this log for them. Before,
+  `onboard.css` was gated as a shared piece and the screens were gated nowhere.
+- VERIFY: 16 screenshot rows (sign up, before and after), the tests row and a
+  Looked at entry.
+- The long frame on a step change, for a device check (no CSS shipped). Frame
+  samples could not be taken today: the machine's load was 70 to 240 and the
+  dev server took 72s per page.
+  - Hypothesis: every step re-zooms the course camera (`zoomOf` differs per
+    step). `GolfScene` promotes the camera only while it moves (`data-moving`
+    sets `will-change` on `transitionrun` and clears it on `transitionend`), so
+    each step builds a viewport-sized layer under the frosted pane, whose
+    backdrop is blurred again, and tears it down 1.8s later. The pane's blur
+    over a still course is the other suspect.
+  - Candidate, one line in `onboard.css`: `.ch-ox-land .ch-au-cam { will-change:
+    transform; }`, which keeps the camera on its own layer for all of sign up.
+    The look is unchanged. The cost is a permanent full-screen layer, about
+    12MB on a 390pt iPhone at 3x (1170 by 2532 pixels), more if WebKit draws
+    it at the zoomed scale.
+  - Check on a device: sample a step change with and without the rule, and with
+    the pane's `backdrop-filter` off. Keep the rule only if it removes the long
+    frame.
 
 ## 2026-10-07 — Reset password in the sign-in panel (up for owner review)
 

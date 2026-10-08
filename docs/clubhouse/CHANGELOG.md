@@ -1,5 +1,13 @@
 # Clubhouse changelog
 
+## 2026-10-07 — A page can own a second surface (`implementation.also`)
+
+A page manifest's `implementation` takes an optional `also`: further paths the page owns beside its root, loader,
+route and styles. The changelog gate, the registry's path check and PAGE.md's Related block read it. P015 (Auth)
+uses it for sign up and onboarding (`screens/onboard`, `data/onboard.ts`, `routes/onboard.tsx`, `onboard.css` and
+`onboard-tokens.css`): until now `onboard.css` was gated as a shared piece in this log, and the screens were gated
+nowhere. Tests: changelog-gate, registry and docs-index.
+
 ## 2026-10-08 — The phone chassis, and no serif anywhere
 
 The owner approved carrying the Coach Home "Mobile clubhouse pass" board to

@@ -8,7 +8,8 @@
  * (--base <ref> or CLUBHOUSE_BASE overrides the ref), so uncommitted work counts, and a
  * red gate can be another session's work in progress. A page's implementation files are
  * the manifest's implementation.root (a directory or a file), loader, route and styles (and
- * the page's `<stem>-*.css` sheets), and an action's component file that only this page
+ * the page's `<stem>-*.css` sheets), the paths in implementation.also (a second surface the
+ * page owns: P015's sign up and onboarding), and an action's component file that only this page
  * names. A shared piece is a file under src/clubhouse/{ui,lib,styles} (or shell, where no
  * page's root covers it) that no page owns, or a component that several pages' actions name:
  * it is logged once, in the cross-page changelog, not on every page that renders it. A root,
@@ -34,15 +35,15 @@ export const SHARED_ROOTS = ['src/clubhouse/ui/', 'src/clubhouse/shell/', 'src/c
 export const CROSS_PAGE_LOG = 'docs/clubhouse/CHANGELOG.md';
 
 /**
- * The paths a page owns (tests excluded): implementation.root, loader, route and
- * styles, plus an action's component file that lies outside them when no other
- * page's actions name it. A shared piece (src/clubhouse/ui/Notices.tsx serves
+ * The paths a page owns (tests excluded): implementation.root, loader, route,
+ * styles and also, plus an action's component file that lies outside them when no
+ * other page's actions name it. A shared piece (src/clubhouse/ui/Notices.tsx serves
  * five pages) belongs to none. A root, loader, route or styles path that two
  * manifests share (stats: P004 and P005) counts for both.
  */
 export function implementationPaths(m, manifests = [m]) {
   const impl = m.implementation ?? {};
-  const own = [impl.root, impl.loader, impl.route, impl.styles].filter(Boolean);
+  const own = [impl.root, impl.loader, impl.route, impl.styles, ...(impl.also ?? [])].filter(Boolean);
   const sole = componentFiles(m).filter((c) => !own.some((p) => covers(p, c)) && manifests.filter((o) => componentFiles(o).includes(c)).length === 1);
   return [...new Set([...own, ...sole])];
 }

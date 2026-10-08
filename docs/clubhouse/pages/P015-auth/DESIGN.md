@@ -17,7 +17,7 @@ visual fidelity or device behavior.
 ```text
 Source:   the owner's Claude Design bundle, design/handoff/auth/ (README.md, the boards, src/*.jsx and *.css, screenshots)
 Boards:   Sign in.html, Sign in - Times of day.html, Sign in - Mobile.html (built);
-          Sign up.html, Sign up - Mobile.html (phase 2, not built)
+          Sign up.html, Sign up - Mobile.html (built 2026-09-30; motion and feel finished 2026-10-07)
 Date:     2026-09-30
 Status:   approved for sign in and the welcome. Sign up and onboarding follow the same package, changed by Q-96
 ```
@@ -187,7 +187,8 @@ is no board for it, so it is drawn in the sign-in panel's own vocabulary and wai
   into the app canvas and then asks for the destination; the dashboard draws itself as it does for any visit.
 - The card flying into the sidebar on the hand-off.
 - The phone's sheet-rise hand-off (the phone fades to ivory instead).
-- Sign up and onboarding (phase 2).
+- Sign up's head-coach path, program code and role picker, and handedness and GPA (dropped by Q-96: the owner creates
+  head coaches, the roster code is players only and assistants join with the staff code).
 - Reset password (the page the email links to) in Clubhouse; and, with the flag on, `/golf/forgot-password` sending
   people to the panel's form (route integration, outside this page's files).
 

@@ -24,7 +24,10 @@ Two screens on two routes, drawn for a visitor with no role behind the flag `gol
 the reset form and its check-your-email (`?view=forgot`; owner, 2026-10-07). They have no board, so every
 contract for them is up for owner review. They call today's `requestPasswordResetAction` with today's checks
 and words. The reset link in the email still lands on today's `/golf/reset-password`. Sign up and onboarding are
-the next phase and join this contract when they are built. The auth screens sit outside the dashboard frame,
+built behind the same flag over today's server actions (2026-09-30): sign up at `/golf/signup` (the intro, the
+team code, the questions, the account, the staff path and Request access) and a new player's questions after the
+account at `/golf/player` (your game, the photo, the member card). Their contracts are the rows below named for
+sign up, onboarding and Request access. The auth screens sit outside the dashboard frame,
 so the shell's contracts (P001) do not apply and none are inherited.
 
 ## 01 — Default / core UI

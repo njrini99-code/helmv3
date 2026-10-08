@@ -33,6 +33,13 @@ test('Related block: regeneration replaces the block and is stable', () => {
   assert.equal(changed.split('clubhouse:related:start').length, 2);
 });
 
+test("Related block: the Code row links implementation.also after the page's own paths, only what exists", () => {
+  const two = { ...m, implementation: { root: 'src/clubhouse/screens/messages', also: ['src/clubhouse/screens/compose', 'src/clubhouse/styles/gone.css'] } };
+  const out = renderRelated({ m: two, audits, exists: (p) => exists(p) && !p.endsWith('gone.css'), existing: page });
+  const code = out.split('\n').find((l) => l.startsWith('| Code |'));
+  assert.equal(code, '| Code | [messages](../../../../src/clubhouse/screens/messages) · [compose](../../../../src/clubhouse/screens/compose) |');
+});
+
 test('AUDITS.md lists newest first, links the docs and the pages', () => {
   const md = renderAudits({ audits, manifests: [m, other], head: (t, w) => `# ${t}\n\n${w}\n` });
   assert.ok(md.indexOf('DEPTH_AUDIT.md') < md.indexOf('ROUNDS_PLAN.md'));
