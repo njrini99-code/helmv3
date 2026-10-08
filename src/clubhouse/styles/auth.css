@@ -374,20 +374,33 @@
 .ch-au-back {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  /* Lucide's chevron carries 6px of its own air on the right: 1px more reads as one word with "Home". */
+  gap: 1px;
   min-height: 44px;
-  padding: 0 10px 0 6px;
+  padding: 0 12px 0 6px;
   margin: -4px 0 -4px -6px;
   border-radius: 10px;
   font: 500 14px/1 var(--ch-font-sans);
   color: var(--ch-text-secondary) !important;
   text-decoration: none !important;
+  transition: background-color var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
+}
+/* CH-15611: the chevron leans back the way the link goes. */
+.ch-au-back svg {
+  transition: transform var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-au-back:hover {
     background: rgb(28 25 18 / 0.05);
     color: var(--ch-text-primary) !important;
   }
+  .ch-au-back:hover svg {
+    transform: translateX(-2px);
+  }
+}
+.ch-au-back:active {
+  background: rgb(28 25 18 / 0.09);
+  color: var(--ch-text-primary) !important;
 }
 .ch-au-form {
   margin: auto;
@@ -433,8 +446,19 @@
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
+.ch-au-nowrap {
+  white-space: nowrap;
+}
+/* One sentence a line on the desktop (the phone drops the second). */
+.ch-au-sub__more {
+  display: block;
+}
+/* A notice the URL names sits between the subtitle and the fields with even space either side. */
 .ch-au-notice-top {
-  margin-bottom: 16px;
+  margin-top: 24px;
+}
+.ch-au-notice-top + .ch-au-fields {
+  margin-top: 24px;
 }
 .ch-au-fields {
   margin-top: 32px;
@@ -510,6 +534,12 @@
   position: absolute;
   inset: -14px -8px;
 }
+/* Text links take a rounded focus ring a step off the words, not a square box on them. */
+.ch-au-forgot,
+.ch-au-foot a {
+  border-radius: 4px;
+  outline-offset: 3px;
+}
 .ch-au-forgot--below {
   display: none;
 }
@@ -530,6 +560,19 @@
   position: absolute;
   inset: -7px;
 }
+/* CH-15610: the eye and the slashed eye share one cell and crossfade, the leaving one shrinking and turning away. */
+.ch-au-eye > svg {
+  grid-area: 1 / 1;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-base) var(--ch-ease);
+}
+.ch-au-eye[aria-pressed='true'] > .ch-au-eye__show {
+  opacity: 0;
+  transform: scale(0.6) rotate(-20deg);
+}
+.ch-au-eye[aria-pressed='false'] > .ch-au-eye__hide {
+  opacity: 0;
+  transform: scale(0.6) rotate(20deg);
+}
 @media (hover: hover) {
   .ch-au-eye:hover {
     background: rgb(28 25 18 / 0.05);
@@ -543,6 +586,21 @@
 .ch-au-err {
   margin-top: 16px;
   animation: chAuIn var(--ch-au-t-err) var(--ch-au-out) both;
+}
+/* CH-15608: while the next attempt is in flight the last refusal steps back; the answer replaces it in place. */
+.ch-au-err .ch-au-notice {
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-au-err[data-stale] .ch-au-notice {
+  opacity: 0.5;
+}
+/* CH-15609: a refusal about the fields shakes them once, as a wrong team code does on sign up. Two names, so a second
+   refusal restarts it. */
+.ch-au-fields[data-shake='a'] {
+  animation: chAuShakeA var(--ch-au-t-shake) var(--ch-au-out);
+}
+.ch-au-fields[data-shake='b'] {
+  animation: chAuShakeB var(--ch-au-t-shake) var(--ch-au-out);
 }
 .ch-au-notice {
   display: flex;
@@ -594,14 +652,71 @@
   width: 100%;
   height: 48px;
   font-size: 15px;
+  transition: background-position var(--ch-dur-base) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease),
+    color var(--ch-dur-quick) var(--ch-ease), text-shadow var(--ch-dur-quick) var(--ch-ease);
+}
+/* CH-15607: off, the key is unlit: the same shape pressed into the paper, its word engraved in it. No fade or desaturated
+   green (the shared disabled look read as a washed-out key). Filling both fields lights it: the face lifts away over the
+   quick beat and the word takes the green's ink. */
+.ch-au-submit .ch-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-au-submit .ch-btn:disabled {
+  opacity: 1;
+  filter: none;
+}
+.ch-au-submit .ch-btn:disabled:not([aria-busy='true']) {
+  color: var(--ch-ink-400);
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
+  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.06);
+}
+.ch-au-submit .ch-btn:disabled:not([aria-busy='true'])::before {
+  opacity: 1;
+}
+/* In flight it stays the lit green: the key is working, not unavailable. */
+.ch-au-submit .ch-btn[aria-busy='true'] {
+  cursor: progress;
+}
+/* Both labels hold one cell, so the key never reflows: the word leaves upward as the working label rises in. */
+.ch-au-key {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.ch-au-key__idle,
+.ch-au-key__busy {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-base) var(--ch-ease);
+}
+.ch-au-key[data-busy] .ch-au-key__idle {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+.ch-au-key:not([data-busy]) .ch-au-key__busy {
+  opacity: 0;
+  transform: translateY(8px);
 }
 .ch-au-spin {
   width: 15px;
   height: 15px;
   border-radius: 50%;
-  border: 2px solid rgb(255 255 255 / 0.35);
-  border-top-color: #fff;
+  border: 2px solid rgb(244 238 221 / 0.3);
+  border-top-color: var(--ch-on-green-ink);
   animation: chAuSpin 0.8s linear infinite;
+}
+.ch-au-key:not([data-busy]) .ch-au-spin {
+  animation-play-state: paused;
 }
 .ch-au-bottom {
   display: flex;
@@ -621,6 +736,7 @@
   display: flex;
   gap: 2px;
   align-items: center;
+  margin-right: -6px;
   color: var(--ch-text-tertiary);
 }
 .ch-au-legal a {
@@ -629,6 +745,8 @@
   min-height: 44px;
   margin: -14px 0;
   padding: 0 6px;
+  border-radius: 8px;
+  outline-offset: 0;
   color: var(--ch-text-tertiary);
 }
 .ch-au-hsl {
@@ -675,6 +793,26 @@
 @keyframes chAuSpin {
   to {
     transform: rotate(360deg);
+  }
+}
+@keyframes chAuShakeA {
+  20%,
+  60% {
+    transform: translateX(-5px);
+  }
+  40%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+@keyframes chAuShakeB {
+  20%,
+  60% {
+    transform: translateX(-5px);
+  }
+  40%,
+  80% {
+    transform: translateX(5px);
   }
 }
 
@@ -865,7 +1003,8 @@
   gap: 6px;
   margin-top: 14px;
   font: 400 13px/1 var(--ch-font-sans);
-  color: var(--ch-text-secondary);
+  /* Ink, not secondary: it sits on the fairway, not on paper (secondary measured under 4.5:1 there). */
+  color: var(--ch-text-primary);
 }
 .ch-au-wl-hint kbd {
   padding: 3px 6px;
@@ -1037,6 +1176,12 @@
   .ch-au-sub__more {
     display: none;
   }
+  .ch-au-notice-top {
+    margin-top: 16px;
+  }
+  .ch-au-notice-top + .ch-au-fields {
+    margin-top: 16px;
+  }
   .ch-au-fields {
     margin-top: 20px;
     gap: 0;
@@ -1046,7 +1191,7 @@
     overflow: hidden;
   }
   .ch-au-fields[data-invalid] {
-    box-shadow: 0 0 0 1.5px #b3261e;
+    box-shadow: 0 0 0 1.5px var(--ch-danger-600);
   }
   .ch-au-label {
     position: absolute;
@@ -1133,6 +1278,7 @@
     font-size: 14px;
   }
   .ch-au-legal {
+    margin-right: 0;
     font-size: 12.5px;
   }
   .ch-au-hsl {
@@ -1167,8 +1313,9 @@
   .ch-au-wl-body {
     margin-top: 34px;
   }
+  /* "Good afternoon," holds one line on a 375px phone: 50px only where it fits. */
   .ch-au-wl h1 {
-    font-size: 50px;
+    font-size: clamp(40px, 12vw, 50px);
     margin-top: 14px;
   }
   .ch-au-wl-card {

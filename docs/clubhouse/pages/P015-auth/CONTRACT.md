@@ -43,9 +43,11 @@ The welcome draws its frame and the painted course at once and streams the greet
 Status: DEFINED
 
 A sign-in in flight: the button says "Signing in…", is off and is `aria-busy`,
-and stays so while the page navigates away (CH-15402). Repeated submissions send
-one request even before the busy button commits; failure permits another
-attempt.
+and stays so while the page navigates away (CH-15402). It stays the lit green
+(only a key that is off because a field is empty is drawn unlit). Repeated
+submissions send one request even before the busy button commits; failure
+permits another attempt, and the last refusal stays, stepped back, until that
+attempt answers.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -166,7 +168,7 @@ Status: N/A — the welcome's card is read once per visit on the server; nothing
 
 Status: DEFINED
 
-The design's own choreography (a scoped exception to D-64, DESIGN.md): the form leaving and the course taking the frame (CH-15601), the greeting and the card (CH-15602), the camera push and the ball (CH-15603), the hand-off fold (CH-15604), reduced motion (CH-15605) and the loops pausing when the tab is hidden (CH-15606).
+The design's own choreography (a scoped exception to D-64, DESIGN.md): the form leaving and the course taking the frame (CH-15601), the greeting and the card (CH-15602), the camera push and the ball (CH-15603), the hand-off fold (CH-15604), reduced motion (CH-15605) and the loops pausing when the tab is hidden (CH-15606). The form's own micro-motion is on the v2 scale (quick and base): the Sign in key lighting when both fields are filled and crossfading to "Signing in…" without reflowing (CH-15607), a refusal arriving with what it moves gliding there on transform only, the last one stepped back while the next attempt is in flight (CH-15608), the fields shaking once for a refusal about them (CH-15609, the sign-up code's 380ms shake), the password eye crossfading between its glyphs (CH-15610) and the Home link's chevron leaning back on hover (CH-15611). Reduced motion and Animations off make every one of them instant.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -176,6 +178,11 @@ The design's own choreography (a scoped exception to D-64, DESIGN.md): the form 
 | 151604 | CH-15604 | `CONTINUE_IS_PRESSED` | Continue is pressed (or Return) |
 | 151605 | CH-15605 | `REDUCED_MOTION_OR_SETTINGS_PREFERENCES_ANIMATIONS_OFF` | Reduced motion, or Settings > Preferences > Animations off |
 | 151606 | CH-15606 | `THE_TAB_IS_HIDDEN` | The tab is hidden |
+| 151607 | CH-15607 | `THE_SIGN_IN_KEY_CHANGES_STATE_OFF` | The Sign in key changes state: off (a field is empty), ready, in flight |
+| 151608 | CH-15608 | `A_REFUSAL_APPEARS_OR_THE_NEXT_ONE` | A refusal appears, or the next one replaces it |
+| 151609 | CH-15609 | `A_REFUSAL_IS_ABOUT_THE_FIELDS` | A refusal is about the fields (the credentials, or an empty field) |
+| 151610 | CH-15610 | `THE_PASSWORD_EYE_IS_PRESSED` | The password eye is pressed |
+| 151611 | CH-15611 | `THE_HOME_LINK_IS_HOVERED_OR_PRESSED` | The Home link is hovered or pressed |
 
 ## 17 — Haptic
 

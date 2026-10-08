@@ -54,7 +54,8 @@ export function SignIn({ signIn, initial, navigate }: { signIn?: typeof loginAct
       </div>
       <main className="ch-au-panel" aria-label="Sign in" aria-hidden={opening || undefined} inert={opening || undefined}>
         <div className="ch-au-top">
-          {/* The App Store build has no marketing home to go back to (the proxy sends "/" straight back here), and no sign-up (Guideline 3.1.1). */}
+          {/* The App Store build has no marketing home to go back to (the proxy sends "/" straight back here), and no sign-up (Guideline 3.1.1).
+              CH-15611: hovered, its chevron leans back the way it goes; pressed, it tints. */}
           {!native && (
             <Link href="/" className="ch-au-back" aria-label="Back to home" data-ch-code="CH-15905">
               <Icon icon={ChevronLeft} size={16} />

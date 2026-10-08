@@ -35,7 +35,7 @@ const EMAIL = { coach: 'maya.reyes@university.edu', player: 'theo.marchetti@univ
  * action, Continue on the welcome goes nowhere, and a failure can be drawn
  * straight away (`fail=`).
  */
-export function PreviewAuth({ screen, state, fail, hour, go }: { screen: 'signin' | 'welcome'; state?: string; fail?: string; hour?: number; /** Continue really navigates, into the preview dashboard, so the hand-off can be watched end to end. */ go?: boolean }) {
+export function PreviewAuth({ screen, state, fail, hour, go, pending }: { screen: 'signin' | 'welcome'; state?: string; fail?: string; hour?: number; /** Continue really navigates, into the preview dashboard, so the hand-off can be watched end to end. */ go?: boolean; /** Sign in never answers, so the submitting state can be looked at. */ pending?: boolean }) {
   const router = useRouter();
   const clock = useMemo(() => {
     const d = new Date(PREVIEW_AUTH_NOW);
@@ -51,9 +51,10 @@ export function PreviewAuth({ screen, state, fail, hour, go }: { screen: 'signin
         </WelcomeStage>
       ) : (
         <SignIn
-          signIn={go ? async () => ({ success: true, redirectTo: '/golf/dashboard' }) : async () => ({ success: false, error: 'Invalid login credentials' })}
+          signIn={pending ? () => new Promise<never>(() => {}) : go ? async () => ({ success: true, redirectTo: '/golf/dashboard' }) : async () => ({ success: false, error: 'Invalid login credentials' })}
           navigate={go ? () => router.push(`/clubhouse-preview/auth?screen=welcome&state=${state === 'player' ? 'player' : 'coach'}&go=1${hour !== undefined ? `&hour=${hour}` : ''}`) : undefined}
-          initial={{ email: EMAIL[state === 'player' ? 'player' : 'coach'], failure: fail ? PREVIEW_FAILURES[fail] : undefined }}
+          // An empty-field refusal is drawn with the field it is about left empty.
+          initial={{ email: fail === 'empty' ? '' : EMAIL[state === 'player' ? 'player' : 'coach'], failure: fail ? PREVIEW_FAILURES[fail] : undefined }}
         />
       )}
     </FixedClock.Provider>

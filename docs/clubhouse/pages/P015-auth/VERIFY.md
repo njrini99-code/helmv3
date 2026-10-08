@@ -90,6 +90,26 @@ before, after, baseline or evidence.
 | `P015__premium-audit__none__1280__case-165-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (none), 1280px, case-165-chromium-normal; /clubhouse-preview/auth; synthetic preview |
 | `P015__premium-audit__none__390__case-025-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (none), 390px, case-025-webkit-reduce; /clubhouse-preview/auth; synthetic preview |
 | `P015__premium-audit__none__390__case-165-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (none), 390px, case-165-chromium-normal; /clubhouse-preview/auth; synthetic preview |
+| `P015__signin__none__1440x900__key-off__before__e549642.png` | before | `e549642` | Before: Sign in off (password empty) is the shared 42% fade, a washed-out grey-green; the subtitle breaks "sign-" / "in." |
+| `P015__signin__none__1440x900__key-off__after__83d5721.png` | after | `83d5721` | After: the unlit key pressed into the paper, its word engraved (CH-15607); one subtitle sentence a line |
+| `P015__signin__none__1440x900__key-in-flight__before__e549642.png` | before | `e549642` | Before: "Signing in…" drawn with the disabled fade, so the working key looked unavailable |
+| `P015__signin__none__1440x900__key-in-flight__after__83d5721.png` | after | `83d5721` | After: in flight the key stays the lit green with its spinner (CH-15402, CH-15607) |
+| `P015__signin__none__1440x900__retry-in-flight__before__e549642.png` | before | `e549642` | Before: a retry cleared the refusal; the button jumped 38px up under the pointer |
+| `P015__signin__none__1440x900__retry-in-flight__after__83d5721.png` | after | `83d5721` | After: the last refusal stays at half strength while the retry is in flight; the button holds its place (CH-15608) |
+| `P015__signin__none__1440x900__refused-credentials__before__e549642.png` | before | `e549642` | Before: a credentials refusal, both fields marked, the key faded |
+| `P015__signin__none__1440x900__refused-credentials__after__83d5721.png` | after | `83d5721` | After: the same refusal with the unlit key; the glide and shake are motion (frame samples in CHANGELOG) |
+| `P015__signin__none__1440x900__url-notice__before__e549642.png` | before | `e549642` | Before: the password-reset notice hugs the subtitle with a 48px gap under it |
+| `P015__signin__none__1440x900__url-notice__after__83d5721.png` | after | `83d5721` | After: the notice sits with 24px above and below |
+| `P015__welcome__coach__1440x900__return-hint__before__e549642.png` | before | `e549642` | Before: "or press Return" in secondary grey on the fairway (3.65 to 4.03:1 measured) |
+| `P015__welcome__coach__1440x900__return-hint__after__83d5721.png` | after | `83d5721` | After: the hint in ink (6.38 to 7.05:1 measured) |
+| `P015__signin__none__390x844__key-off__before__e549642.png` | before | `e549642` | Before: the phone sheet's faded Sign in key |
+| `P015__signin__none__390x844__key-off__after__83d5721.png` | after | `83d5721` | After: the phone sheet's unlit key (CH-15607) |
+| `P015__signin__none__390x844__retry-in-flight__before__e549642.png` | before | `e549642` | Before: a phone retry cleared the refusal; the button jumped 75px up |
+| `P015__signin__none__390x844__retry-in-flight__after__83d5721.png` | after | `83d5721` | After: the refusal steps back and the button holds its place (CH-15608) |
+| `P015__signin__none__390x844__refused-empty__before__e549642.png` | before | `e549642` | Before: the preview drew the empty-email refusal with the email filled in |
+| `P015__signin__none__390x844__refused-empty__after__83d5721.png` | after | `83d5721` | After: the empty-email refusal over an empty Email row |
+| `P015__welcome__coach__390x844__afternoon-greeting__before__e549642.png` | before | `e549642` | Before: "Good afternoon," broke over two lines at 50px, a three-line greeting |
+| `P015__welcome__coach__390x844__afternoon-greeting__after__83d5721.png` | after | `83d5721` | After: the greeting scales to 46.8px on a 390px phone and holds one line (measured 375 to 430px) |
 
 ## Historical verification gaps
 

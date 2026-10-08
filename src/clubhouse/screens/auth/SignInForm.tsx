@@ -3,7 +3,7 @@
 import { Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type RefObject } from 'react';
 import { loginAction } from '@/app/golf/actions/auth';
 import { logError } from '@/lib/error-logging';
 import {
@@ -24,6 +24,7 @@ import { Icon } from '../../ui/Icon';
 import { AuthNotice } from './AuthNotice';
 import { OPENING_MS } from './auth-motion';
 import { failureFor, failureForServer, type SignInFailure } from './sign-in-state';
+import { useGlide, type Glider } from './use-glide';
 import { useQueryParam } from './use-query-param';
 
 const ERROR_ID = 'golf-signin-error';
@@ -61,8 +62,14 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const submitRef = useRef<HTMLButtonElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const submitRowRef = useRef<HTMLDivElement>(null);
+  const forgotBelowRef = useRef<HTMLAnchorElement>(null);
   const reduced = useChReducedMotion();
   const router = useRouter();
+  // CH-15608: what a refusal moves (the button, the phone's forgot link and, on the desktop, the centred form) glides there.
+  const gliders = useMemo<Glider[]>(() => [{ ref: formRef }, { ref: submitRowRef, within: formRef }, { ref: forgotBelowRef, within: formRef }], []);
+  const glide = useGlide(reduced, gliders);
 
   // /golf/login?returnTo=/golf/join/ABC123, and ?ref=coach_nick_rini for demo-login tracing: kept for the round trip.
   const returnTo = useQueryParam('returnTo');
@@ -100,6 +107,10 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
     setHydrated(true);
   }, [adoptDomValues]);
 
+  useLayoutEffect(() => {
+    if (errorNonce > 0) glide.play();
+  }, [errorNonce, glide]);
+
   // After a failed attempt focus moves to the first invalid field; role="alert" on the message covers the announcement.
   useEffect(() => {
     if (errorNonce === 0 || !failure?.field) return;
@@ -112,6 +123,7 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
   };
 
   const fail = (f: SignInFailure) => {
+    glide.capture();
     // CH-15703 a warning-toned refusal, CH-15704 a danger-toned one (failureFor picks the tone); CH-15802 it is read out.
     haptic(f.haptic);
     setFailure(f);
@@ -132,7 +144,8 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
 
     inFlight.current = true;
     setBusy(true);
-    setFailure(null);
+    // The last refusal stays (stepped back) until this attempt answers: clearing it here pulled the button up under the
+    // pointer, and the next refusal pushed it straight back down (CH-15608).
     // CH-15701: Sign in is tapped.
     haptic('press');
 
@@ -194,14 +207,18 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
   const emailInvalid = field === 'email' || field === 'both';
   const passwordInvalid = field === 'password' || field === 'both';
   const describedBy = failure ? ERROR_ID : undefined;
-  const forgot = (cls: string) => (
-    <Link href="/golf/forgot-password" className={`ch-au-forgot ${cls}`}>
+  // CH-15609: a refusal about the fields shakes them once (credentials, or an empty field). The name alternates so a second
+  // refusal restarts the animation; reduced motion holds them still (the shake token is 1ms).
+  const shake = errorNonce > 0 && field ? (errorNonce % 2 ? 'a' : 'b') : undefined;
+  const forgot = (cls: string, ref?: RefObject<HTMLAnchorElement | null>) => (
+    <Link ref={ref} href="/golf/forgot-password" className={`ch-au-forgot ${cls}`}>
       Forgot password?
     </Link>
   );
 
   return (
     <form
+      ref={formRef}
       id="ch-au-form"
       className="ch-au-form"
       onSubmit={handleSubmit}
@@ -219,7 +236,8 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
       </div>
       <h1>Sign in</h1>
       <p className="ch-au-sub">
-        Coaches and players use the same sign-in.<span className="ch-au-sub__more"> We’ll open the right clubhouse for you.</span>
+        Coaches and players use the same <span className="ch-au-nowrap">sign-in.</span>
+        <span className="ch-au-sub__more"> We’ll open the right clubhouse for you.</span>
       </p>
       {notice && (
         <div className="ch-au-notice-top">
@@ -228,7 +246,7 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
           </AuthNotice>
         </div>
       )}
-      <div className="ch-au-fields" data-invalid={field === 'both' ? '' : undefined}>
+      <div className="ch-au-fields" data-invalid={field === 'both' ? '' : undefined} data-shake={shake} data-ch-code={shake ? 'CH-15609' : undefined}>
         <div className="ch-au-field">
           <label className="ch-au-label" htmlFor="golf-signin-email">
             Email
@@ -287,15 +305,17 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
               onChange={(e) => setPassword(e.target.value)}
               onFocus={revealSubmit}
             />
-            {/* CH-15805: a named, pressed-state button with a hit area past 44px. */}
+            {/* CH-15805: a named, pressed-state button with a hit area past 44px. CH-15610: the eye turns, crossfading to its slashed state. */}
             <button type="button" className="ch-au-eye" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} aria-controls="golf-signin-password" onClick={() => setShowPassword((v) => !v)}>
-              <Icon icon={showPassword ? EyeOff : Eye} size={16} />
+              <Icon icon={Eye} size={16} className="ch-au-eye__show" />
+              <Icon icon={EyeOff} size={16} className="ch-au-eye__hide" />
             </button>
           </div>
         </div>
       </div>
       {failure && (
-        <div className="ch-au-err" key={errorNonce}>
+        // A new refusal is a new node, so it is announced again; while the next attempt is in flight this one steps back.
+        <div className="ch-au-err" key={errorNonce} data-stale={busy ? '' : undefined}>
           <AuthNotice tone={failure.tone} id={ERROR_ID} code={failure.code}>
             {failure.message}
             {failure.detail && (
@@ -307,19 +327,22 @@ export function SignInForm({ onOpening, signIn = loginAction, initial, navigate 
           </AuthNotice>
         </div>
       )}
-      <div className="ch-au-submit">
+      <div className="ch-au-submit" ref={submitRowRef}>
         <button ref={submitRef} type="submit" className="ch-btn ch-btn--primary ch-btn--lg" disabled={!canSubmit || busy} aria-busy={busy || undefined} data-ch-code={busy ? 'CH-15402' : undefined}>
-          {busy ? (
-            <>
+          {/* CH-15607: both labels hold one cell and crossfade, so the key never reflows; the one not showing is hidden from
+              assistive technology, which reads "Sign in" or "Signing in…". */}
+          <span className="ch-au-key" data-busy={busy ? '' : undefined}>
+            <span className="ch-au-key__idle" aria-hidden={busy || undefined}>
+              Sign in
+            </span>
+            <span className="ch-au-key__busy" aria-hidden={!busy || undefined}>
               <span className="ch-au-spin" aria-hidden="true" />
-              <span>Signing in…</span>
-            </>
-          ) : (
-            <span>Sign in</span>
-          )}
+              Signing in…
+            </span>
+          </span>
         </button>
       </div>
-      {forgot('ch-au-forgot--below')}
+      {forgot('ch-au-forgot--below', forgotBelowRef)}
     </form>
   );
 }

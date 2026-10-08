@@ -92,6 +92,7 @@ What is on the design's clock, and where it lives:
 | Sign-in to welcome | form leaves, the course takes the frame, the veil and tagline fade, 720ms | `AuthFrame`, `OPENING_MS` |
 | Hand-off | text slides left and fades 420ms, the course clips to the app canvas over 880ms, paper fades in, the destination is asked for at 1s; 520ms when there is nothing to fold into; a fade to ivory on the phone | `Welcome`, `HANDOFF_MS`, `auth.css` |
 | Loops | flag wave, water shimmer, oaks, clouds, birds, stars | `auth-tokens.css`, `auth.css` |
+| The form's micro-motion | on the v2 scale, not the design's clock: the key lighting and its label crossfade (quick, base), a refusal's glide (base, transform only), the eye (quick, base); the fields' shake borrows the sign-up code's 380ms | `SignInForm`, `use-glide.ts`, `auth.css` (CH-15607 to CH-15611) |
 
 How it stays inside the rest of the doctrine:
 
