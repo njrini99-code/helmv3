@@ -339,8 +339,9 @@ export function RosterPhoneRow({ p, statsError, sort = 'avg', onOpen }: { p: ChR
 }
 
 /**
- * "2 join requests · Grace Liu, Owen Park": opens the requests sheet. A failed read says so in the same slot (CH-3203),
- * as its title alone while the page's one notice covers it (CH-1209).
+ * "2 join requests · Grace Liu, Owen Park": one flat row at the top of the list (the count in a badge, the names under the
+ * title, a chevron), which opens the requests sheet. Its name says the count in words. A failed read says so in the same
+ * slot (CH-3203), as its title alone while the page's one notice covers it (CH-1209).
  */
 function RequestsBanner({ jr, error, covered, onRetry, onOpen }: { jr: ChJoinRequestsState; error: boolean; covered: boolean; onRetry: () => void; onOpen: () => void }) {
   if (error) {
@@ -357,16 +358,15 @@ function RequestsBanner({ jr, error, covered, onRetry, onOpen }: { jr: ChJoinReq
   const n = jr.reqs.length;
   if (!n) return null;
   const names = jr.reqs.slice(0, 2).map((r) => r.name);
+  const who = n > 2 ? `${names.join(', ')} and ${n - 2} more` : nameList(names);
   return (
-    <button type="button" className="ch-rsm-banner" onClick={onOpen}>
-      <span className="ch-rsm-banner__ic" aria-hidden="true">
-        <Icon icon={UserPlus} size={16} />
+    <button type="button" className="ch-rsm-banner" aria-label={`${n} join ${n === 1 ? 'request' : 'requests'}, ${who}`} onClick={onOpen}>
+      <span className="ch-rsm-banner__n ch-num" aria-hidden="true">
+        {n}
       </span>
       <span className="ch-rsm-banner__b">
-        <b className="ch-num">
-          {n} join {n === 1 ? 'request' : 'requests'}
-        </b>
-        <span>{n > 2 ? `${names.join(', ')} and ${n - 2} more` : nameList(names)}</span>
+        <b>{n === 1 ? 'Join request' : 'Join requests'}</b>
+        <span>{who}</span>
       </span>
       <Icon icon={ChevronRight} size={16} />
     </button>
@@ -411,7 +411,7 @@ function RequestsSheet({ open, onClose, data, jr }: { open: boolean; onClose: ()
                 <b>{r.name}</b>
                 <span>{[r.classYear, r.gradYear ? `Class of ${r.gradYear}` : null].filter(Boolean).join(' · ')}</span>
               </span>
-              <span className="ch-rsm-rq__h ch-well-soft">
+              <span className="ch-rsm-rq__h">
                 <b className="ch-num">{formatHcp(r.handicap)}</b>
                 <span>hcp</span>
               </span>
@@ -433,7 +433,7 @@ function RequestsSheet({ open, onClose, data, jr }: { open: boolean; onClose: ()
         ))}
         {data.joinCode && (
           <>
-            <div className="ch-rsm-code ch-well-soft">
+            <div className="ch-rsm-code">
               <span>
                 <span>Team code</span>
                 <b className="ch-num">{data.joinCode}</b>

@@ -1199,6 +1199,334 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
   color: rgb(244 241 232 / 0.62);
 }
 
+/* The scorecard's heading and figures while it waits are drawn on the phone only (below); the desktop card holds its
+   place without them. */
+.ch-rsu-ph {
+  display: none;
+}
+
+/* Cardless setup on the phone (owner, 2026-10-08: the card is no longer the default unit of layout). Each card is a
+   section on the canvas: its heading over the Ledger's double rule, its fields and rows under it, hairlines between
+   rows, and air between sections. The open qualifier is one row with its Play; the qualifier choices, the course list
+   and the tees are rows on seams; the scorecard's figures sit between two hairlines. Segmented controls, fields and the
+   par keys keep their material. The start dock is the one action bar: a solid toolbar across the foot, no blur. Every
+   rule is scoped to the setup root so it outranks the night rules above (which stay for the desktop). Everything lines
+   up on one 20px gutter, the band's text included. */
+@media (max-width: 820px) {
+  .ch-rsu {
+    gap: 28px;
+    padding: 0 20px;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-band {
+    margin: 0 -20px;
+    padding-inline: 20px;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols {
+    gap: 40px;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-col {
+    gap: 32px;
+  }
+
+  /* A section: the double rule, the heading, then its content flush on the canvas. */
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-card {
+    overflow: visible;
+    padding-top: 14px;
+    border-top: var(--ch-ledger-rule-double);
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-card__h {
+    align-items: flex-end;
+    padding: 0 0 14px;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-card__h h3,
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-course__empty b {
+    margin: 0 0 4px;
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-card__h span {
+    font: var(--ch-type-caption);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-card__h.ch-rsu-ph {
+    display: flex;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-form {
+    gap: 18px;
+    padding: 0;
+  }
+
+  /* The course: before one is picked its section heading is the ask; once picked, its name is the heading (no second
+     green band under the setup band) and the tee's facts are its subline, Change course at the end. */
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-course__empty {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding: 0;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-course__ic {
+    display: none;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-course__empty span {
+    font: var(--ch-type-body-s);
+    color: var(--ch-text-secondary);
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-course__band {
+    min-height: 0;
+    gap: 6px;
+    padding: 0 124px 2px 0;
+    background: none;
+    color: var(--ch-text-primary);
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-course__band b {
+    font: 600 26px/1.1 var(--ch-font-sans);
+    letter-spacing: -0.028em;
+    font-variation-settings: 'wdth' 92;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-course__band span {
+    font: var(--ch-type-caption);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-course {
+    position: relative;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-course__f {
+    gap: 6px 14px;
+    padding: 4px 0 0;
+  }
+  /* Change course is the section's own action, on the heading's line at the right (the tee's facts keep the width). */
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-course__f .ch-btn {
+    position: absolute;
+    top: 12px;
+    right: -10px;
+    margin: 0;
+  }
+
+  /* The open qualifier: one row between hairlines, its Play on the right. It tints under the finger like a Ledger row;
+     its hairlines stay on the gutter. */
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-qual {
+    position: relative;
+    width: calc(100% + 24px);
+    min-height: 68px;
+    margin: -8px -12px;
+    padding: 12px;
+    border-radius: var(--ch-radius-md);
+    background: none;
+    box-shadow: none;
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-qual::before,
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-qual::after {
+    position: absolute;
+    right: 12px;
+    left: 12px;
+    height: 1px;
+    background: var(--ch-ledger-rule);
+    content: '';
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-qual::before {
+    top: 0;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-qual::after {
+    bottom: 0;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-qual:active {
+    background: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-qual__ic {
+    width: 32px;
+    height: 32px;
+    background: none;
+    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+    color: var(--ch-green-700);
+  }
+
+  /* Choosing the qualifier: rows with a radio, on seams; the choice shows in its radio and its name. */
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-opts {
+    gap: 0;
+    box-shadow:
+      inset 0 1px 0 var(--ch-ledger-rule-soft),
+      inset 0 -1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-opt {
+    min-height: 56px;
+    padding: 12px 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-opt + .ch-rsu-opt {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-opt[aria-checked='true'] {
+    background: none;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-opt[aria-checked='true'] b {
+    color: var(--ch-green-700);
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-qsel {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-note {
+    padding: 0;
+  }
+
+  /* The scorecard: its figures between two hairlines, then a row per hole on a seam. */
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc__sum {
+    margin: 0 0 4px;
+    padding: 12px 0;
+    border-radius: 0;
+    background: none;
+    box-shadow:
+      inset 0 1px 0 var(--ch-ledger-rule),
+      inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc__sum.ch-rsu-ph {
+    display: grid;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc__sum > div + div {
+    border-left-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc__sum dd {
+    font-size: 20px;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc__sum dd .ch-skel {
+    width: 30px;
+    height: 20px;
+    border-radius: 5px;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc__grid {
+    padding: 0;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hole {
+    min-height: 52px;
+    border-bottom-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc .ch-notice {
+    margin: 0;
+  }
+  /* Waiting for a course, and loading its holes: the section's heading, then ghost rows at the loaded rows' height. */
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc--empty {
+    align-items: stretch;
+    gap: 0;
+    padding: 14px 0 0;
+    text-align: left;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc__ghost {
+    gap: 0;
+    padding: 0;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc__ghost span {
+    min-height: 52px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc__ghost > .ch-skel {
+    position: relative;
+    height: 36px;
+    margin: 8px 0;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc__ghost > .ch-skel::after {
+    position: absolute;
+    right: 0;
+    bottom: -8px;
+    left: 0;
+    height: 1px;
+    background: var(--ch-ledger-rule-soft);
+    content: '';
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc--empty p {
+    margin-top: 14px;
+  }
+
+  /* The start dock: the screen's one action bar, a solid toolbar across the foot over the home indicator (the tab bar
+     is away on this screen). Its hairline is its edge; nothing shows through it. It runs into the canvas's own
+     safe-area padding, so the inset is not counted twice. */
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-dock {
+    bottom: 0;
+    margin: 0 -20px calc(-1 * env(safe-area-inset-bottom));
+    padding: 10px 20px calc(10px + env(safe-area-inset-bottom));
+    border-radius: 0;
+    background: var(--ch-bg-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+  }
+
+  /* The course picker and the tees (the sheet): rows on seams, not cards in the sheet. */
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-plist {
+    overflow: visible;
+    border-radius: 0;
+    background: none;
+    box-shadow:
+      inset 0 1px 0 var(--ch-ledger-rule),
+      inset 0 -1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-crs:not(.is-skel),
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-tee:not(.is-skel) {
+    position: relative;
+    width: calc(100% + 24px);
+    margin-inline: -12px;
+    padding-inline: 12px;
+    border-radius: var(--ch-radius-md);
+    background: none;
+    box-shadow: none;
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-crs + .ch-rsu-crs {
+    border-top: 0;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-crs + .ch-rsu-crs:not(.is-skel)::before,
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-tee + .ch-rsu-tee:not(.is-skel)::before {
+    position: absolute;
+    top: 0;
+    right: 12px;
+    left: 12px;
+    height: 1px;
+    background: var(--ch-ledger-rule-soft);
+    content: '';
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-crs:not(.is-skel):active,
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-tee:not(.is-skel):not(:disabled):active {
+    background: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-crs.is-skel,
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-tee.is-skel {
+    width: 100%;
+    margin: 10px 0;
+    border-radius: 8px;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-crs.is-skel {
+    min-height: 44px;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-tee.is-skel {
+    height: 84px;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-tees {
+    gap: 0;
+    box-shadow:
+      inset 0 1px 0 var(--ch-ledger-rule),
+      inset 0 -1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-tee:not(.is-skel) {
+    padding-block: 16px;
+  }
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-add {
+    padding: 14px 0;
+    border: 0;
+    border-radius: 0;
+  }
+}
+
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */

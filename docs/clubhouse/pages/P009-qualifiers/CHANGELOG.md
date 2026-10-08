@@ -1,5 +1,17 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-08 — The live card's leaders are rows, not a board
+
+Owner direction (2026-10-08): the card is no longer the default unit of layout on the phone. Phone only; the desktop
+hero keeps its scoreboard.
+
+- **One green card, nothing nested:** the live qualifier stays the list's one feature card, and its three leaders are
+  plain aligned rows on its green (position with its movement, name, to par) between faint seams. The to-par figures
+  are bare tabular numerals instead of hung plates: under par in the board's lifted red (the same value as the board's
+  to-par text, 4.5:1 on the feature green), even and over par in the on-green ink.
+- **Loading matches:** the phone skeleton's to-par placeholder is a numeral's size (28 x 17) instead of a plate's.
+- The filter pills, the search and the Ledger rows below are unchanged.
+
 ## 2026-10-08 — Premium pass: honest Live, standings on plates, rows that move only on a change, pace beside the total
 
 Owner-approved items P009-A1, B1, B2 and C2 (docs/clubhouse/PREMIUM_PASS_AUDIT.md), with findings D1–D5, D10, D11 and D14:

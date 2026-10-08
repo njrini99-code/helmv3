@@ -41,6 +41,21 @@ export interface RoundSetupProps {
 type HolesLoad = { state: 'idle' } | { state: 'loading' } | { state: 'failed'; error: string };
 
 /**
+ * The scorecard's heading while it waits (before a course, while its holes load, and when they didn't load). On the
+ * phone the scorecard is a section on the canvas whose heading is its edge, so the heading is there from the first
+ * paint; the desktop card holds its place without one (`.ch-rsu-ph` draws on the phone only).
+ */
+function ScorecardHead() {
+  return (
+    <div className="ch-rsu-card__h ch-rsu-ph">
+      <div>
+        <h3>Scorecard</h3>
+      </div>
+    </div>
+  );
+}
+
+/**
  * New round (board `rounds-flow.jsx` Setup): pick a course and tees (or type
  * one in), the round's type, date and holes, check the scorecard, start. The
  * screen draws; the round screen's ports read the course library and start
@@ -337,6 +352,18 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
         <div className="ch-rsu-col">
           {holesLoad.state === 'loading' ? (
             <section className="ch-rsu-card ch-rsu-hc" aria-busy="true" aria-label="Loading the scorecard" data-ch-code="CH-11405">
+              {/* Phone only: the loaded scorecard's heading and figure row hold their places, so nothing moves when it lands. */}
+              <ScorecardHead />
+              <dl className="ch-rsu-hc__sum ch-rsu-ph" aria-hidden="true">
+                {['Holes', 'Par', 'Yards', 'Out', 'In'].map((k) => (
+                  <div key={k}>
+                    <dt>{k}</dt>
+                    <dd>
+                      <span className="ch-skel" />
+                    </dd>
+                  </div>
+                ))}
+              </dl>
               <div className="ch-rsu-hc__ghost">
                 {Array.from({ length: 9 }, (_, i) => (
                   <span key={i} className="ch-skel" />
@@ -345,6 +372,7 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
             </section>
           ) : holesLoad.state === 'failed' ? (
             <section className="ch-rsu-card ch-rsu-hc">
+              <ScorecardHead />
               <InlineNotice
                 code="CH-11210"
                 title="The scorecard didn’t load"
@@ -357,6 +385,7 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
           ) : (
             // CH-11309: before a course, the scorecard's place is held.
             <section className="ch-rsu-card ch-rsu-hc ch-rsu-hc--empty" data-ch-code="CH-11309">
+              <ScorecardHead />
               <div className="ch-rsu-hc__ghost" aria-hidden="true">
                 {Array.from({ length: 9 }, (_, i) => (
                   <span key={i}>
