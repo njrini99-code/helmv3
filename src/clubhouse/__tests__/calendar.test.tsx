@@ -1763,3 +1763,12 @@ describe('Calendar · this file', () => {
     expect(unnamed.map((r) => r.id)).toEqual([]);
   });
 });
+
+describe('Calendar · attendees peek (P003-C1)', () => {
+  it('the coach’s attendee rows peek at each player; nothing new is read for it', async () => {
+    wrap(cal(), { initialEvent: 'e9' });
+    await waitFor(() => expect(document.querySelectorAll('.ch-in__person').length).toBeGreaterThan(0));
+    const rows = [...document.querySelectorAll('.ch-in__person')];
+    expect(rows.every((r) => r.parentElement?.classList.contains('ch-peek-target'))).toBe(true);
+  });
+});

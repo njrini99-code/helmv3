@@ -1515,3 +1515,27 @@ describe('Messages · prefilled messages (D2-7: the coach presses Send)', () => 
     await expectCode('CH-7001', /Those players aren’t on your team/);
   });
 });
+
+describe('Messages · senders peek (P003-C1)', () => {
+  const fromJonah = { ...mine, id: 'j1', sender_id: 'jonah', content: 'Yes coach' };
+
+  it('for the coach, a player’s name and avatar in a thread peek at the player, from the directory already loaded', async () => {
+    live.convs.conversations = [team];
+    live.msgs.messages = [fromJonah];
+    show();
+    await screen.findByText('Yes coach');
+    const msg = document.getElementById('ch-ms-message-j1')!;
+    expect(msg.querySelector('.ch-peek-target .ch-ms-msg__who')!.textContent).toBe('Jonah');
+    expect(msg.querySelector('.ch-ms-msg__av .ch-peek-target')).not.toBeNull();
+    // The bubble keeps its own hold (message actions), never the peek.
+    expect(msg.querySelector('.ch-peek-target .ch-ms-bub')).toBeNull();
+  });
+
+  it('a player sees names without the coach’s player peek', async () => {
+    live.convs.conversations = [team];
+    live.msgs.messages = [fromJonah];
+    show({ ...data, role: 'player', viewerPlayerId: 'p-me' });
+    await screen.findByText('Yes coach');
+    expect(document.getElementById('ch-ms-message-j1')!.querySelector('.ch-peek-target')).toBeNull();
+  });
+});

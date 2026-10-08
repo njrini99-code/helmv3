@@ -1088,3 +1088,19 @@ describe('Home · leaderboard places (P002 D4)', () => {
     expect(leaderPlaces(rows as never).map((p) => p.label)).toEqual(['1', 'T2', 'T2', '4', '—']);
   });
 });
+
+describe('Home · phone round rows peek (P003-C1)', () => {
+  it('a latest round peeks from the board’s row when the player has one, else from the round itself', async () => {
+    const { roundPeek } = await import('../screens/home/HomePhone');
+    const rows = PREVIEW_HOME.leaderboard.rows;
+    const rounds = PREVIEW_HOME.latestRounds.rounds;
+    const r = rounds[0]!;
+    const fromBoard = roundPeek(r, rows, rounds);
+    expect(fromBoard.id).toBe(r.playerId);
+    expect(fromBoard.avg).toBe(rows.find((p) => p.playerId === r.playerId)!.avg);
+    const bare = roundPeek(r, null, rounds);
+    expect(bare).toMatchObject({ id: r.playerId, name: r.playerName, lastRound: { score: r.score, toPar: r.toPar } });
+    expect(bare.avg).toBeUndefined();
+  });
+});
+

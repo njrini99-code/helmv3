@@ -12,6 +12,7 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
 import { Nine } from '../../ui/Nine';
+import { PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { changeTone, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
@@ -25,6 +26,7 @@ import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
 import { coachFailedParts } from './model';
 import { roundHref } from './player-links';
+import { leaderPeek } from './Leaderboard';
 import { competitionExtra, DayCard, dayPhase, LaterToday, SinceYouLooked, sunsetExtra } from './DayCard';
 import { useLightPlace } from '../../shell/light';
 
@@ -460,36 +462,46 @@ function Rounds({ data, trends, onOpen, covered }: { data: ChCoachHome['latestRo
         <ul className="ch-hm-list">
           {data.rounds.map((r) => (
             <li key={r.id}>
-              <button
-                type="button"
-                className="ch-hm-rd"
-                onClick={() => {
-                  haptic('select');
-                  chTrail('home open round');
-                  onOpen(r);
-                }}
-              >
-                <Avatar name={r.playerName} size={38} />
-                <span className="ch-hm-rd__b">
-                  <b>{r.playerName}</b>
-                  <span>{r.meta.split(' · ').slice(0, 2).join(' · ')}</span>
-                </span>
-                {(trendOf.get(r.playerId)?.length ?? 0) >= 3 && (
-                  <span className="ch-hm-rd__spark" aria-hidden="true">
-                    <FormLine data={trendOf.get(r.playerId)!} width={64} height={18} earlyBelow={3} bare label={`${r.playerName}, last ${trendOf.get(r.playerId)!.length} rounds: ${trendOf.get(r.playerId)!.join(', ')}`} />
+              {/* P003-C1: a hold on the row peeks at the player, from what Home loaded (the board's row, else this round). */}
+              <PlayerPeek player={roundPeek(r, trends, data.rounds)}>
+                <button
+                  type="button"
+                  className="ch-hm-rd"
+                  onClick={() => {
+                    haptic('select');
+                    chTrail('home open round');
+                    onOpen(r);
+                  }}
+                >
+                  <Avatar name={r.playerName} size={38} />
+                  <span className="ch-hm-rd__b">
+                    <b>{r.playerName}</b>
+                    <span>{r.meta.split(' · ').slice(0, 2).join(' · ')}</span>
                   </span>
-                )}
-                <span className={'ch-hm-score ch-num' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>
-                  <b>{r.score}</b>
-                  <em>{formatToPar(r.toPar)}</em>
-                </span>
-              </button>
+                  {(trendOf.get(r.playerId)?.length ?? 0) >= 3 && (
+                    <span className="ch-hm-rd__spark" aria-hidden="true">
+                      <FormLine data={trendOf.get(r.playerId)!} width={64} height={18} earlyBelow={3} bare label={`${r.playerName}, last ${trendOf.get(r.playerId)!.length} rounds: ${trendOf.get(r.playerId)!.join(', ')}`} />
+                    </span>
+                  )}
+                  <span className={'ch-hm-score ch-num' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>
+                    <b>{r.score}</b>
+                    <em>{formatToPar(r.toPar)}</em>
+                  </span>
+                </button>
+              </PlayerPeek>
             </li>
           ))}
         </ul>
       )}
     </section>
   );
+}
+
+/** The player peek for a latest round's row: the board's row when the player has one, else what the round says. */
+export function roundPeek(r: ChLatestRound, rows: ChCoachHome['leaderboard']['rows'] | null, rounds: ChLatestRound[]): ChPlayerPeek {
+  const row = rows?.find((p) => p.playerId === r.playerId);
+  if (row) return leaderPeek(row, rounds);
+  return { id: r.playerId, name: r.playerName, lastRound: { score: r.score, toPar: r.toPar, label: r.meta.split(' · ').slice(0, 2).join(' · ') } };
 }
 
 /** A latest round's card (board 05): the figures, then Out and In; Message and the player's stats. */

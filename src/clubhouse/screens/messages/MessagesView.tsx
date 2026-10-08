@@ -42,6 +42,7 @@ import {
   type KeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
+  type ReactNode,
 } from "react";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useChReducedMotion } from "../../lib/reduced-motion";
@@ -56,6 +57,7 @@ import { SearchField } from "../../ui/SearchField";
 import { SectionBoundary } from "../../ui/SectionBoundary";
 import { Segmented } from "../../ui/Segmented";
 import { Swap } from "../../ui/Swap";
+import { PlayerPeek } from "../../ui/PlayerPeek";
 import { EmptyState, Skeleton } from "../../ui/States";
 import { haptic } from "../../lib/haptics";
 import { chReport, chTrail } from "../../lib/track";
@@ -209,6 +211,15 @@ export interface ChMessagesApi {
 
 export const personOf = (api: ChMessagesApi, userId: string) =>
   api.directory.find((p) => p.userId === userId);
+
+/**
+ * P003-C1: for the coach, a player's avatar and name in a thread peek at the player, from the team directory Messages
+ * already holds. The bubble keeps its own hold (message actions); coaches and people off the roster don't peek.
+ */
+function SenderPeek({ api, who, children }: { api: ChMessagesApi; who: ChPerson | undefined; children: ReactNode }) {
+  if (api.viewer.role !== "coach" || who?.role !== "player" || !who.playerId) return <>{children}</>;
+  return <PlayerPeek player={{ id: who.playerId, name: who.name, sub: who.subtitle || null }}>{children}</PlayerPeek>;
+}
 
 /* Rail */
 
@@ -696,14 +707,20 @@ export function Bubble({
     >
       {!m.mine && (
         <span className="ch-ms-msg__av">
-          {last && <Avatar name={who?.name ?? "Member"} size={30} />}
+          {last && (
+            <SenderPeek api={api} who={who}>
+              <Avatar name={who?.name ?? "Member"} size={30} />
+            </SenderPeek>
+          )}
         </span>
       )}
       <div className="ch-ms-msg__col">
         {!m.mine && first && group && (
-          <span className="ch-ms-msg__who">
-            {firstName(who?.name ?? "Member")}
-          </span>
+          <SenderPeek api={api} who={who}>
+            <span className="ch-ms-msg__who">
+              {firstName(who?.name ?? "Member")}
+            </span>
+          </SenderPeek>
         )}
         <div className="ch-ms-msg__line">
           <div className="ch-ms-msg__stack" {...press} {...rightClick}>

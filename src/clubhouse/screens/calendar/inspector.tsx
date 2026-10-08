@@ -28,6 +28,7 @@ import { getAttendanceReport, markAttendance, type AttendanceMark } from '@/app/
 import { respondToEvent } from '@/app/golf/actions/calendar-events';
 import { readRsvpLockCode, rsvpLockMessage } from '@/hooks/useRSVP';
 import { Avatar } from '../../ui/Avatar';
+import { PlayerPeek } from '../../ui/PlayerPeek';
 import { Badge, type BadgeTone } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
@@ -455,8 +456,9 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
                   .sort((a, b) => (ctx.people.get(a)?.name ?? '').localeCompare(ctx.people.get(b)?.name ?? ''))
                   .map((pid) => {
                     const [l, t] = RSVP_LABEL[e.rsvp[pid] ?? 'pending'];
-                    const name = ctx.people.get(pid)?.name ?? 'Former player';
-                    return (
+                    const person = ctx.people.get(pid);
+                    const name = person?.name ?? 'Former player';
+                    const row = (
                       <div key={pid} className="ch-in__person">
                         <Avatar name={name} size={26} />
                         <span>{name}</span>
@@ -464,6 +466,14 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
                           {l}
                         </Badge>
                       </div>
+                    );
+                    // P003-C1: for the coach, a player on the roster peeks (a hold on the phone, a rest of the pointer on desktop).
+                    return coach && person ? (
+                      <PlayerPeek key={pid} player={{ id: pid, name, sub: person.year }}>
+                        {row}
+                      </PlayerPeek>
+                    ) : (
+                      row
                     );
                   })}
               </div>

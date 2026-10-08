@@ -1,5 +1,9 @@
 # P006 — Calendar: changelog
 
+## 2026-10-08 — the player peek (P003-C1)
+
+The shared PlayerPeek: for the coach, each attendee row in the event panel peeks at the player (a hold on the phone, a rest of the pointer on desktop), from the roster the Calendar already loaded. No new reads.
+
 ## 2026-10-08 — premium pass: findings D2, D3, D4, D6
 
 - D2: a week or day block on its own wraps its title to the lines its height leaves above the time, up to three (`--ch-ev-lines`, `.ch-ev--wrap`), so "Bus to Pine…" reads in full. A block with room for only one line keeps the plain cut-off.

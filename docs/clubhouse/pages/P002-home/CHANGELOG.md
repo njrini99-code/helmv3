@@ -1,5 +1,9 @@
 # P002 — Home: changelog
 
+## 2026-10-08 — the player peek (P003-C1)
+
+The shared PlayerPeek: the phone's Latest rounds rows peek at the player on a hold, from the board's row when the player has one, else from the round (`roundPeek`). No new reads.
+
 ## 2026-10-08 — premium pass: findings D3, D4, D5
 
 - D3: a leaderboard row is a table row (a `div` with `role="row"`). The player's name is the link to their stats, and its `::after` covers the row, so the whole row still opens it. The row draws the focus ring (`:has(:focus-visible)`), and assistive tech now hears a row with a link in it, not a row that is a link.
