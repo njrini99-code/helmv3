@@ -826,7 +826,7 @@ Coach-facing analytics dashboard measuring CoachHelm AI system effectiveness —
 ### Key Files
 | Type | Path |
 |------|------|
-| Route | `src/app/golf/(dashboard)/dashboard/analytics/coachhelm/page.tsx` |
+| Redirect | `next.config.mjs` `redirects()`: `/golf/dashboard/analytics/coachhelm` to `/golf/dashboard/intelligence?view=effectiveness` (the page was deleted in plan phase 7b) |
 | Actions | `src/app/golf/actions/coachhelm-analytics.ts` |
 | Components | `src/app/golf/(dashboard)/dashboard/analytics` |
 
@@ -941,7 +941,7 @@ triage (honest-empty, not a placeholder).
 | Type | Path |
 |------|------|
 | Route (Dashboard, fetches the data) | `src/app/golf/(dashboard)/dashboard/page.tsx` |
-| Redirect (former Hub route) | `src/app/golf/(dashboard)/dashboard/hub/page.tsx` |
+| Redirect (former Hub route) | `next.config.mjs` `redirects()`: `/golf/dashboard/hub` to `/golf/dashboard` (the page was deleted in plan phase 7b) |
 | Data | `src/app/golf/actions/player-hub-data.ts` (`getPlayerHubSummaryData`) |
 | Component | none — src/components/fairway/pages/dashboard/PlayerActionCenter.tsx was removed and nothing replaced it |
 | Host component | `src/components/fairway/pages/dashboard/FairwayPlayerDashboard.tsx` |
@@ -978,7 +978,7 @@ Note: /golf/dashboard/my-insights REDIRECTS here (deprecated route kept for book
 | Type | Path |
 |------|------|
 | Route | `src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx` |
-| Redirect | `src/app/golf/(dashboard)/dashboard/my-insights/page.tsx` → redirects to /coachhelm |
+| Redirect | `next.config.mjs` `redirects()`: `/golf/dashboard/my-insights` to `/golf/dashboard/coachhelm` (the page was deleted in plan phase 7b) |
 | Actions | `src/app/golf/actions/shot-analytics.ts`, `intelligence-dashboard.ts` |
 | Components | `src/components/golf/coachhelm/home/PlayerCoachHelmHome.tsx` |
 
@@ -1008,7 +1008,7 @@ Player view of coach-assigned development focus areas with progress tracking. Re
 ### Key Files
 | Type | Path |
 |------|------|
-| Route | `src/app/golf/(dashboard)/dashboard/my-development/page.tsx` |
+| Redirect | `next.config.mjs` `redirects()`: `/golf/dashboard/my-development` to `/golf/dashboard/coachhelm?view=development` (the page was deleted in plan phase 7b) |
 
 ### DB Tables
 golf_player_focus_areas (read-only for players)
@@ -1155,7 +1155,7 @@ Track progress:
 ### Key Files
 | Type | Path |
 |------|------|
-| Route | `src/app/golf/(dashboard)/dashboard/development/page.tsx` |
+| Redirect | `next.config.mjs` `redirects()`: `/golf/dashboard/development` to `/golf/dashboard/intelligence?view=players` (the page was deleted in plan phase 7b) |
 | Actions | `src/app/golf/actions/development.ts` |
 | Components | `DevelopmentPlansClient` |
 

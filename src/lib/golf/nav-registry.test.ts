@@ -21,7 +21,7 @@
 // =============================================================================
 
 import { describe, it, expect } from 'vitest';
-import { existsSync, readdirSync, statSync } from 'fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import { join } from 'path';
 import {
   GOLF_COACH_HUBS,
@@ -483,8 +483,10 @@ describe('golf nav-registry — Target IA (WAVE W2, 2026-07-09)', () => {
       expect([...railHrefs, ...tabHrefs]).not.toContain('/golf/dashboard/hub');
     });
 
-    it('the route itself still resolves on disk (kept as a redirect stub)', () => {
-      expect(routeExists('/golf/dashboard/hub')).toBe(true);
+    it('the old URL still resolves through a next.config.mjs redirect (the stub page was deleted)', () => {
+      const config = readFileSync(join(process.cwd(), 'next.config.mjs'), 'utf8');
+      expect(config).toMatch(/source:\s*'\/golf\/dashboard\/hub',\s*destination:\s*'\/golf\/dashboard'/);
+      expect(routeExists('/golf/dashboard/hub')).toBe(false);
     });
   });
 

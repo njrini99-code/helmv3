@@ -1021,7 +1021,6 @@ features:
         - src/components/golf/coachhelm/insight-card/**
         - src/components/golf/coachhelm/v3/GoalCreationModal/**
         - src/components/golf/coachhelm/v3/StandingBar/**
-        - src/app/golf/(dashboard)/dashboard/my-standing/page.tsx
         - src/components/fairway/pages/coachhelm/**
       api:
         - src/app/api/coachhelm/v3/**
