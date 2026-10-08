@@ -1,5 +1,15 @@
 # P001 — Shell: changelog
 
+## 2026-10-08 — The tab bar in Safari is one toolbar with Safari's
+
+Opened in mobile Safari rather than the app, the phone tab bar used to float as
+a pill above Safari's own floating controls: two pills stacked, with the page
+showing between them. The owner chose to merge them. Outside the app
+(`body:not(.capacitor)`), the bar is now a full-width shelf on the bottom edge,
+square to the screen with one hairline on top, and Safari tints its controls'
+strip from it. The app keeps the floating pill. Owner check on an iPhone is
+pending.
+
 ## 2026-10-07 — The sidebar plate glides
 
 The selected row's ivory plate is now one object that travels (CH-1613,

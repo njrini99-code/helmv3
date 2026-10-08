@@ -1944,3 +1944,25 @@ html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
 .ch-nav--plate .ch-navitem svg {
   transition: color var(--ch-dur-base) var(--ch-ease);
 }
+
+/* The phone tab bar in Safari (owner, 2026-10-08: "merge into one bar"). In the app (body.capacitor) it floats as a
+   pill; opened in mobile Safari, Safari's own floating controls sit under it, and two pills stacked read as clutter.
+   There the bar becomes a full-width shelf on the bottom edge, square to the screen with one hairline on top: Safari
+   samples the shelf's colour for the strip behind its controls, so bar and browser read as one toolbar. */
+@media (max-width: 820px) {
+  body:not(.capacitor) [data-ui='clubhouse'] .ch-tabbar {
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: auto;
+    padding: 4px 6px max(6px, env(safe-area-inset-bottom));
+    border-radius: 0;
+    background: var(--ch-phone-tabbar-shelf-bg);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: var(--ch-phone-tabbar-shelf-edge);
+  }
+  body:not(.capacitor) [data-ui='clubhouse'] .ch-canvas {
+    padding-bottom: calc(var(--ch-tabbar-h) + env(safe-area-inset-bottom) + 16px);
+  }
+}
