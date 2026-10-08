@@ -1,31 +1,24 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Check, CloudOff, Smartphone, Table2, X } from "lucide-react";
-import { useDistanceUnits } from "@/hooks/golf/use-distance-units";
-import {
-  useShotTracking,
-  type ShotTrackingPorts,
-  type ShotTrackingProps,
-} from "@/hooks/golf/use-shot-tracking";
-import type { ShotRecord } from "@/lib/types/golf";
-import { calculateHoleStats } from "@/lib/utils/shot-helpers";
-import type { ChRoundType, ChTeeColor } from "../../../data/rounds-shape";
-import { haptic } from "../../../lib/haptics";
-import {
-  usePhoneImmersive,
-  usePhoneTabsHidden,
-} from "../../../shell/phone-chrome";
-import { Icon } from "../../../ui/Icon";
-import { ScoreMark } from "../../../ui/ScoreMark";
-import { TeeSwatch, TYPE_LABEL } from "../parts";
-import { CourseView } from "./CourseView";
-import { HoleReview } from "./HoleReview";
-import { heroDistance, scoreName, shotKind } from "./labels";
-import { HoleMap, ShotLog, TrackStrip } from "./parts";
-import { EditShotSheet, PenaltySheet, UnsavedSheet } from "./sheets";
-import { ShotEntry } from "./ShotEntry";
-import "../../../styles/rounds-track.css";
+import { useState } from 'react';
+import { Check, CloudOff, Smartphone, Table2, X } from 'lucide-react';
+import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
+import { useShotTracking, type ShotTrackingPorts, type ShotTrackingProps } from '@/hooks/golf/use-shot-tracking';
+import type { ShotRecord } from '@/lib/types/golf';
+import { calculateHoleStats } from '@/lib/utils/shot-helpers';
+import type { ChRoundType, ChTeeColor } from '../../../data/rounds-shape';
+import { haptic } from '../../../lib/haptics';
+import { usePhoneImmersive, usePhoneTabsHidden } from '../../../shell/phone-chrome';
+import { Icon } from '../../../ui/Icon';
+import { ScoreMark } from '../../../ui/ScoreMark';
+import { TeeSwatch, TYPE_LABEL } from '../parts';
+import { CourseView } from './CourseView';
+import { HoleReview } from './HoleReview';
+import { heroDistance, scoreName, shotKind } from './labels';
+import { HoleMap, ShotLog, TrackStrip } from './parts';
+import { EditShotSheet, PenaltySheet, UnsavedSheet } from './sheets';
+import { ShotEntry } from './ShotEntry';
+import '../../../styles/rounds-track.css';
 
 /** The round this screen is scoring, for its top bar. */
 export interface ChTrackingRound {
@@ -45,18 +38,18 @@ export type RoundTrackingProps = ShotTrackingProps & {
 
 // CH-11706: going to another hole is a selection tick. Module-level, so the
 // hook's navigation callbacks keep their identity (ShotTrackingPorts).
-const PORTS: ShotTrackingPorts = { haptic: () => haptic("select") };
+const PORTS: ShotTrackingPorts = { haptic: () => haptic('select') };
 
 // "Round saved" only for a server acknowledgement. A save held on the device (offline, waiting on another save, or
 // refused until a reload) says where the shots are instead (swap audit R-1), and so does a shot the server has not
 // acknowledged yet whose device copy landed ("syncing": the send is on its way). Nothing is said about a shot whose
 // device copy failed: there is no true word for it.
 const SAVE_WORDS = {
-  saving: "Saving round",
-  saved: "Round saved",
-  error: "Not synced yet, retrying",
-  device: "Saved on this phone",
-  syncing: "Saved on this phone · syncing",
+  saving: 'Saving round',
+  saved: 'Round saved',
+  error: 'Not synced yet, retrying',
+  device: 'Saved on this phone',
+  syncing: 'Saved on this phone · syncing',
 } as const;
 
 /**
@@ -68,17 +61,7 @@ const SAVE_WORDS = {
  * scorecard and submitting (see `round-sheets.tsx`).
  */
 export function RoundTracking(props: RoundTrackingProps) {
-  const {
-    round,
-    holes,
-    currentHoleIndex,
-    onExit,
-    onNavigateToHole,
-    onOpenScorecard,
-    onAutoSave,
-    statusSlot,
-    holeShots,
-  } = props;
+  const { round, holes, currentHoleIndex, onExit, onNavigateToHole, onOpenScorecard, onAutoSave, statusSlot, holeShots } = props;
   const t = useShotTracking(props, PORTS);
   // A round is a full-screen flow on the phone (P011-D1): Exit and Scorecard are in its own top bar, so the shell's top
   // bar and bell go (rounds-track.css hides them while this is up) and the tab bar goes.
@@ -91,41 +74,18 @@ export function RoundTracking(props: RoundTrackingProps) {
   if (!hole) {
     return (
       <div className="ch-rt ch-rt--empty" role="alert" data-ch-code="CH-11207">
-        <p>
-          This hole didn&rsquo;t load. Go back to Rounds and continue the round
-          from there.
-        </p>
+        <p>This hole didn&rsquo;t load. Go back to Rounds and continue the round from there.</p>
       </div>
     );
   }
 
-  const holedOut =
-    t.shotHistory.length > 0 &&
-    t.shotHistory[t.shotHistory.length - 1]?.result === "hole";
+  const holedOut = t.shotHistory.length > 0 && t.shotHistory[t.shotHistory.length - 1]?.result === 'hole';
   const frontier = holes.findIndex((h) => h.score === null);
-  const backTo =
-    holedOut &&
-    !!onNavigateToHole &&
-    frontier >= 0 &&
-    frontier !== currentHoleIndex
-      ? { index: frontier, number: holes[frontier]!.number }
-      : null;
+  const backTo = holedOut && !!onNavigateToHole && frontier >= 0 && frontier !== currentHoleIndex ? { index: frontier, number: holes[frontier]!.number } : null;
   const stats = holedOut ? calculateHoleStats(t.shotHistory, hole) : null;
   const far = heroDistance(t.distanceToHole, t.distanceUnit, distancePref);
-  const saveState =
-    t.autoSaveStatus !== "idle"
-      ? t.autoSaveStatus
-      : t.autoSaveHeldOnDevice
-        ? "device"
-        : t.autoSaveSyncing
-          ? "syncing"
-          : "idle";
-  const meta = [
-    round.teeLabel && `${round.teeLabel} tees`,
-    round.type && TYPE_LABEL[round.type],
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const saveState = t.autoSaveStatus !== 'idle' ? t.autoSaveStatus : t.autoSaveHeldOnDevice ? 'device' : t.autoSaveSyncing ? 'syncing' : 'idle';
+  const meta = [round.teeLabel && `${round.teeLabel} tees`, round.type && TYPE_LABEL[round.type]].filter(Boolean).join(' · ');
 
   return (
     <div className="ch-rt-q">
@@ -152,12 +112,7 @@ export function RoundTracking(props: RoundTrackingProps) {
             )}
           </div>
           {onOpenScorecard ? (
-            <button
-              type="button"
-              className="ch-rt-pill ch-rt-pill--card"
-              onClick={onOpenScorecard}
-              aria-label="Scorecard"
-            >
+            <button type="button" className="ch-rt-pill ch-rt-pill--card" onClick={onOpenScorecard} aria-label="Scorecard">
               <Icon icon={Table2} size={16} />
               <span className="ch-rt-pill__l">Scorecard</span>
               <span className="ch-rt-pill__s" aria-hidden="true">
@@ -169,18 +124,14 @@ export function RoundTracking(props: RoundTrackingProps) {
           )}
         </header>
         {statusSlot}
-        {onAutoSave && saveState !== "idle" && (
+        {onAutoSave && saveState !== 'idle' && (
           // CH-11901: the round's background save, in words (retrying on its own when it fails).
-          <p
-            className={"ch-rt-sync is-" + saveState}
-            role="status"
-            data-ch-code="CH-11901"
-          >
-            {saveState === "error" ? (
+          <p className={'ch-rt-sync is-' + saveState} role="status" data-ch-code="CH-11901">
+            {saveState === 'error' ? (
               <Icon icon={CloudOff} size={13} />
-            ) : saveState === "saved" ? (
+            ) : saveState === 'saved' ? (
               <Icon icon={Check} size={13} />
-            ) : saveState === "device" || saveState === "syncing" ? (
+            ) : saveState === 'device' || saveState === 'syncing' ? (
               <Icon icon={Smartphone} size={13} />
             ) : (
               <span className="ch-rt-spin ch-rt-spin--sm" aria-hidden="true" />
@@ -188,34 +139,14 @@ export function RoundTracking(props: RoundTrackingProps) {
             {SAVE_WORDS[saveState]}
           </p>
         )}
-        <TrackStrip
-          holes={holes}
-          current={currentHoleIndex}
-          onJump={onNavigateToHole ? t.handleNavigateToHole : undefined}
-        />
+        <TrackStrip holes={holes} current={currentHoleIndex} onJump={onNavigateToHole ? t.handleNavigateToHole : undefined} />
 
         <div className="ch-rt-body">
           <section className="ch-rt-hero" aria-label={`Hole ${hole.number}`}>
             {/* Board 3: the drawn hole is the hero; tapping it opens the course view (board 3b). */}
-            <button
-              type="button"
-              className="ch-rt-hero__map"
-              aria-haspopup="dialog"
-              aria-label={`Course view of hole ${hole.number}`}
-              onClick={() => setCourseOpen(true)}
-            >
-              <HoleMap
-                hole={hole}
-                shots={t.shotHistory}
-                pending={!holedOut}
-                frame="wide"
-              />
-              <HoleMap
-                hole={hole}
-                shots={t.shotHistory}
-                pending={!holedOut}
-                frame="tall"
-              />
+            <button type="button" className="ch-rt-hero__map" aria-haspopup="dialog" aria-label={`Course view of hole ${hole.number}`} onClick={() => setCourseOpen(true)}>
+              <HoleMap hole={hole} shots={t.shotHistory} pending={!holedOut} frame="wide" />
+              <HoleMap hole={hole} shots={t.shotHistory} pending={!holedOut} frame="tall" />
             </button>
             <div className="ch-rt-hero__main">
               <div className="ch-rt-hero__k">
@@ -227,8 +158,7 @@ export function RoundTracking(props: RoundTrackingProps) {
                   <b>Par {hole.par}</b>
                   {hole.yardage ? (
                     <i>
-                      {heroDistance(hole.yardage, "yards", distancePref).figure}{" "}
-                      {distancePref === "meters" ? "m" : "yds"}
+                      {heroDistance(hole.yardage, 'yards', distancePref).figure} {distancePref === 'meters' ? 'm' : 'yds'}
                     </i>
                   ) : null}
                 </span>
@@ -239,8 +169,7 @@ export function RoundTracking(props: RoundTrackingProps) {
                   <div>
                     <b>{scoreName(stats.score, hole.par)}</b>
                     <span>
-                      {stats.score} strokes · {stats.putts} putt
-                      {stats.putts === 1 ? "" : "s"}
+                      {stats.score} strokes · {stats.putts} putt{stats.putts === 1 ? '' : 's'}
                     </span>
                   </div>
                 </div>
@@ -314,18 +243,12 @@ export function RoundTracking(props: RoundTrackingProps) {
           onClose={() => setCourseOpen(false)}
           holes={holes}
           current={currentHoleIndex}
-          shotsFor={(i) =>
-            i === currentHoleIndex ? t.shotHistory : (holeShots?.(i) ?? null)
-          }
+          shotsFor={(i) => (i === currentHoleIndex ? t.shotHistory : (holeShots?.(i) ?? null))}
           pending={holedOut ? null : { shot: t.currentShot, kind: t.shotType }}
           ball={{ value: t.distanceToHole, unit: t.distanceUnit }}
           pref={distancePref}
         />
-        <UnsavedSheet
-          open={t.pendingNavHoleIndex !== null}
-          onStay={() => t.setPendingNavHoleIndex(null)}
-          onDiscard={t.confirmDiscardAndNavigate}
-        />
+        <UnsavedSheet open={t.pendingNavHoleIndex !== null} onStay={() => t.setPendingNavHoleIndex(null)} onDiscard={t.confirmDiscardAndNavigate} />
         <PenaltySheet
           open={t.showPenaltyModal}
           holeNumber={hole.number}
@@ -344,11 +267,7 @@ export function RoundTracking(props: RoundTrackingProps) {
             open
             shot={t.editingShot}
             form={t.editFormData}
-            hole={{
-              holeNumber: hole.number,
-              par: hole.par,
-              yardage: hole.yardage,
-            }}
+            hole={{ holeNumber: hole.number, par: hole.par, yardage: hole.yardage }}
             shots={t.shotHistory}
             showDeleteConfirm={t.showDeleteConfirm}
             saving={t.editSaving}

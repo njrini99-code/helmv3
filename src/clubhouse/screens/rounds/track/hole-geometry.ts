@@ -1,4 +1,4 @@
-import type { RoundHole, ShotRecord } from "@/lib/types/golf";
+import type { RoundHole, ShotRecord } from '@/lib/types/golf';
 
 /**
  * The drawn hole (Q-72c: there is no hole geometry in the data, so the shape is the par's, not the course's). One
@@ -8,7 +8,7 @@ import type { RoundHole, ShotRecord } from "@/lib/types/golf";
  * how far it is from the pin as a share of the hole's yardage, so the shots, the rings and the green all agree.
  */
 
-export type ChHoleFrame = "wide" | "tall";
+export type ChHoleFrame = 'wide' | 'tall';
 export interface ChPt {
   x: number;
   y: number;
@@ -27,13 +27,7 @@ export interface ChHoleShape {
   green: { rx: number; ry: number };
 }
 
-const SHAPES: Record<
-  ChHoleFrame,
-  Record<
-    3 | 4 | 5,
-    Omit<ChHoleShape, "frame" | "w" | "h" | "fairway" | "green">
-  >
-> = {
+const SHAPES: Record<ChHoleFrame, Record<3 | 4 | 5, Omit<ChHoleShape, 'frame' | 'w' | 'h' | 'fairway' | 'green'>>> = {
   wide: {
     3: {
       tee: { x: 226, y: 238 },
@@ -78,7 +72,7 @@ const SHAPES: Record<
 
 export function holeShape(par: number, frame: ChHoleFrame): ChHoleShape {
   const p = par <= 3 ? 3 : par >= 5 ? 5 : 4;
-  return frame === "wide"
+  return frame === 'wide'
     ? {
         frame,
         w: 390,
@@ -134,10 +128,7 @@ export function centerLine(s: ChHoleShape): string {
 }
 
 /** The point `share` of the way along the line (0 the tee, 1 the pin), and the unit normal there (to the player's right). */
-export function pointAlong(
-  s: ChHoleShape,
-  share: number,
-): ChPt & { nx: number; ny: number } {
+export function pointAlong(s: ChHoleShape, share: number): ChPt & { nx: number; ny: number } {
   const { pts, len } = table(s);
   const target = Math.max(0, Math.min(1, share)) * len[STEPS]!;
   let i = 1;
@@ -159,10 +150,8 @@ export function pointAlong(
 
 /** Yards to the pin after a shot (feet on the green become yards). */
 export function yardsLeft(shot: ShotRecord): number {
-  if (shot.result === "hole") return 0;
-  return shot.distanceUnitAfter === "feet"
-    ? shot.distanceToHoleAfter / 3
-    : shot.distanceToHoleAfter;
+  if (shot.result === 'hole') return 0;
+  return shot.distanceUnitAfter === 'feet' ? shot.distanceToHoleAfter / 3 : shot.distanceToHoleAfter;
 }
 
 export interface ChPlottedShot {
@@ -178,11 +167,7 @@ export interface ChPlottedShot {
  * pushed to the side it missed (less as it nears the green), a ball on the green set just off the cup. Penalty strokes
  * are on the card but not on the map.
  */
-export function plotShots(
-  s: ChHoleShape,
-  hole: Pick<RoundHole, "yardage">,
-  shots: ShotRecord[],
-): { plotted: ChPlottedShot[]; ball: ChPt } {
+export function plotShots(s: ChHoleShape, hole: Pick<RoundHole, 'yardage'>, shots: ShotRecord[]): { plotted: ChPlottedShot[]; ball: ChPt } {
   const total = Math.max(1, hole.yardage || 1);
   let at: ChPt = s.tee;
   const plotted: ChPlottedShot[] = [];
@@ -190,18 +175,10 @@ export function plotShots(
     if (shot.isPenalty) return;
     const left = Math.max(0, Math.min(1, yardsLeft(shot) / total));
     const p = pointAlong(s, 1 - left);
-    const dir = `${shot.approachMissDirection ?? ""} ${shot.missDirection ?? ""}`;
-    const side = dir.includes("left") ? -1 : dir.includes("right") ? 1 : 0;
-    const off =
-      shot.result === "hole"
-        ? 0
-        : shot.result === "green"
-          ? (i % 2 ? 0.12 : -0.12) * s.fairway
-          : side * 0.62 * s.fairway * Math.min(1, left * 3);
-    const to =
-      shot.result === "hole"
-        ? { ...s.pin }
-        : { x: p.x + p.nx * off, y: p.y + p.ny * off };
+    const dir = `${shot.approachMissDirection ?? ''} ${shot.missDirection ?? ''}`;
+    const side = dir.includes('left') ? -1 : dir.includes('right') ? 1 : 0;
+    const off = shot.result === 'hole' ? 0 : shot.result === 'green' ? (i % 2 ? 0.12 : -0.12) * s.fairway : side * 0.62 * s.fairway * Math.min(1, left * 3);
+    const to = shot.result === 'hole' ? { ...s.pin } : { x: p.x + p.nx * off, y: p.y + p.ny * off };
     plotted.push({ n: i + 1, shot, from: at, to });
     at = to;
   });
@@ -209,11 +186,7 @@ export function plotShots(
 }
 
 /** A yardage ring's radius around the pin: `yards` as a share of the hole, along the line. Null when it would reach past the tee. */
-export function ringRadius(
-  s: ChHoleShape,
-  yards: number,
-  holeYards: number,
-): number | null {
+export function ringRadius(s: ChHoleShape, yards: number, holeYards: number): number | null {
   if (!holeYards || yards >= holeYards) return null;
   return (yards / holeYards) * lineLength(s);
 }
