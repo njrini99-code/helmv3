@@ -1944,6 +1944,15 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     content: '';
     pointer-events: none;
   }
+  /* The tight head (P003-A3, owner yes; P014 #5): a page whose content is the point (a roster, a table) opts in with
+     data-canopy-head="tight". No double rule above, and the eyebrow and title sit just under the top bar; the hairline
+     below stays. Home and the pages that keep the full head are unchanged. */
+  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head='tight'] {
+    padding-top: 12px;
+  }
+  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head='tight']::before {
+    content: none;
+  }
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] h1 {
     margin: 0;
     font: 600 44px/1.08 var(--ch-font-sans);
