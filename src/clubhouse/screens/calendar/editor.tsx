@@ -404,7 +404,7 @@ export function EventEditor({
           haptic('warning');
           toast({
             tone: 'error',
-            title: `${!base ? 'Published' : 'Saved'} · ${title.trim()} · invitations didn't go out`,
+            title: `${!base ? 'Published' : 'Saved'} · ${title.trim()} · invitations didn’t go out`,
             body: `${note} Open the event and invite them again.`,
           });
         }
@@ -413,7 +413,7 @@ export function EventEditor({
     },
     () => ({
       done: !base ? `Published · ${title.trim()}${invited.length ? ' · players notified' : ''}` : moved ? `Moved · ${title.trim()}` : `Saved · ${title.trim()}`,
-      failed: !base ? `Couldn't publish ${title.trim() || 'the event'}` : `Couldn't save ${title.trim() || 'the event'}`,
+      failed: !base ? `Couldn’t publish ${title.trim() || 'the event'}` : `Couldn’t save ${title.trim() || 'the event'}`,
       hint: 'Your changes are still in the editor. Try again in a moment.',
       code: 'CH-6001',
     }),
@@ -576,7 +576,7 @@ export function EventEditor({
           </label>
           <label className="ch-field">
             <span className="ch-field__label">Notes · optional</span>
-            <textarea className="ch-textarea" rows={3} placeholder="What to bring, what you'll work on" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={5000} />
+            <textarea className="ch-textarea" rows={3} placeholder="What to bring, what you’ll work on" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={5000} />
           </label>
         </div>
 
@@ -612,7 +612,7 @@ export function EventEditor({
               </div>
             ) : peopleError ? (
               <p className="ch-in__quiet" data-ch-code="CH-6213">
-                The roster didn&apos;t load, so no one can be invited yet. Close this, try again, then invite players.
+                The roster didn’t load, so no one can be invited yet. Close this, try again, then invite players.
               </p>
             ) : (
               <p className="ch-in__quiet">No active players on the roster yet.</p>
@@ -705,7 +705,7 @@ export function CancelEvent({ event, onClose, onDone }: { event: ChCalEvent | nu
       if (normalise(res).success) onDone();
       return res;
     },
-    () => ({ done: `Cancelled · ${event?.title ?? 'event'} · attendees notified`, failed: `Couldn't cancel ${event?.title ?? 'the event'}`, code: 'CH-6002' }),
+    () => ({ done: `Cancelled · ${event?.title ?? 'event'} · attendees notified`, failed: `Couldn’t cancel ${event?.title ?? 'the event'}`, code: 'CH-6002' }),
   );
   return (
     <Modal
@@ -825,7 +825,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
     },
     (type) => ({
       done: type === 'team' ? 'Team schedule link ready' : 'Your schedule link ready',
-      failed: "Couldn't create the calendar link",
+      failed: "Couldn’t create the calendar link",
       code: 'CH-6003',
     }),
   );
@@ -851,7 +851,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
       }
       return res;
     },
-    (type) => ({ done: `New ${FEED_NAME[type]} link ready`, failed: `Couldn't make a new ${FEED_NAME[type]} link`, hint: 'The links below show which one works now.', retry: false, code: 'CH-6013' }),
+    (type) => ({ done: `New ${FEED_NAME[type]} link ready`, failed: `Couldn’t make a new ${FEED_NAME[type]} link`, hint: 'The links below show which one works now.', retry: false, code: 'CH-6013' }),
   );
 
   const remove = useAction(
@@ -861,7 +861,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
       if (normalise(res).success) setFeeds((cur) => cur && cur.filter((f) => f.type !== type));
       return res;
     },
-    (type) => ({ done: `${FEED_NAME[type]} link removed`, failed: `Couldn't remove the ${FEED_NAME[type]} link`, hint: 'The link is unchanged. Try again.', code: 'CH-6014' }),
+    (type) => ({ done: `${FEED_NAME[type]} link removed`, failed: `Couldn’t remove the ${FEED_NAME[type]} link`, hint: 'The link is unchanged. Try again.', code: 'CH-6014' }),
   );
   const busy = create.pending || regenerate.pending || remove.pending;
 
@@ -878,7 +878,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
     } catch (err) {
       chReport(err, { surface: 'calendar.subscribe', severity: 'low' });
       haptic('error');
-      toast({ tone: 'error', title: "Couldn't copy the link", body: 'Your browser blocked the clipboard. Select the link and copy it.', code: 'CH-6004' });
+      toast({ tone: 'error', title: "Couldn’t copy the link", body: 'Your browser blocked the clipboard. Select the link and copy it.', code: 'CH-6004' });
     }
   };
 
@@ -888,9 +888,9 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
     { type: 'personal', name: 'My schedule', desc: role === 'coach' ? 'Events you run and your busy time' : 'Events you’re invited to and your classes' },
   ];
   return (
-    <Modal open={open} onClose={onClose} width={560} icon={Rss} title="Add to your calendar app" description="One-way: changes in Helm appear in Apple, Google or Outlook within an hour. Edits made there don't come back." footer={<Button onClick={onClose}>Done</Button>}>
+    <Modal open={open} onClose={onClose} width={560} icon={Rss} title="Add to your calendar app" description="One-way: changes in Helm appear in Apple, Google or Outlook within an hour. Edits made there don’t come back." footer={<Button onClick={onClose}>Done</Button>}>
       {failed ? (
-        <InlineNotice code="CH-6206" title="Your calendar links didn't load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+        <InlineNotice code="CH-6206" title="Your calendar links didn’t load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
       ) : !feeds ? (
         <div style={{ display: 'grid', gap: 12 }} aria-busy="true" data-ch-code="CH-6402">
           <Skeleton height={44} />

@@ -1,5 +1,39 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-08 — phone: Mobile clubhouse pass
+
+Phone Team Hub follows the owner's "Mobile clubhouse pass" board (carried from Coach Home), with no cards:
+- the page opens under the engraved double rule, the role chip beside the team line set as the engraved
+  eyebrow, then a coach's New announcement and the tabs on a hairline;
+- RSVPs, Updates, tasks and folders are sections on their own double rule, the heading in the 19px bold sans,
+  their rows on soft seams (the event's line, an update and a file press with the Ledger tint, never a scale);
+- the latest announcement ("Latest", or "Needs your reply") is the screen's one green feature card, with Got it
+  as an ivory key and the reads bar in champagne;
+- a trip is an entry with its facts between two hairlines and its plan under them, the boarding-pass card and
+  its notches gone; announcements are entries ruled apart; the drop zone and the reply segments keep their
+  material.
+
+The phone route skeleton has its own shape in the loaded page's classes: for a player the head, the tabs, the first
+section heading and its first row land with 0px shift (WebKit 390). The skeleton can't know the role, so a coach's tabs
+still move down by the New announcement key (50px).
+
+## 2026-10-08 — The tab strip runs edge to edge; the skeleton takes the role's shape; curly apostrophes
+
+On a phone the tab strip's hairline now runs edge to edge and all five of a coach's tabs fit from 375px: the strip
+bleeds past the page's gutters but kept a 100% width cap that held it 40px short, which cut Tasks at 390. The route
+skeleton draws the signed-in role's opening (a coach's New announcement under the role chip) and tab count, from the
+shell's role, so the page lands where it stood for either role: 0px at 390 (a coach's tabs moved 52px before). Every
+line the page writes, its toasts and the no-team page included, takes the curly apostrophe, and a title a toast quotes
+sits in curly quotes (Posted “Waiver”) (states audit b8, held by `copy-apostrophes.test.ts`).
+
+## 2026-10-08 — One notice when several reads fail; tab empties flush; one New announcement
+
+With more than one read failed, the page says so once under its head, naming the parts, with one Try again that
+reads the page again (the shell's CH-1209); each failed section keeps only its title under its heading. One failed
+read keeps its own notice and Try again. The tabs' empties (announcements, trips, documents) lose their card and
+sit flush at the panel's edge like Tasks', and their titles drop the full stop (states audit c5, b8). A coach's
+first-run page no longer repeats New announcement under the head's: the empty offers Plan a trip (b9).
+
 ## 2026-10-07 — A file row presses with a tint
 
 A file row's tint now eases (quick), and on desktop a press deepens it to the row press tint over the press beat.

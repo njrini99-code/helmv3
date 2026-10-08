@@ -5,7 +5,8 @@ import type { ChannelPref, NotificationCategory, PrefsByCategory } from '@/lib/c
 import { channelsFor, ROUTING_GROUPS, ROUTING_QUIET_EXEMPT, type ChDevice, type ChSettingsData, type ChSettingsWrites } from '../model';
 import { useDelivery, usePushToggle, useRouting } from '../hooks';
 import { DELIVERY_GROUPS } from '../Notifications';
-import { ReadFailed } from '../parts';
+import { ReadFailed, ReadsFailed } from '../parts';
+import { notificationReadsFailed } from '../Notifications';
 import { ListSheet } from './sheets';
 import { Group, NavRow, SwitchRow } from './ui';
 
@@ -14,17 +15,24 @@ import { Group, NavRow, SwitchRow } from './ui';
  * its switches and shows what is on ("In app, Push") on the row. Same saves and catalog numbers as desktop.
  */
 export function NotificationsPhone({ data, writes, device }: { data: ChSettingsData; writes: ChSettingsWrites; device: ChDevice }) {
+  const failed = notificationReadsFailed(data);
+  const covered = failed.length > 1;
   return (
     <>
       <p className="ch-setm-lead">Which updates reach you, and how. Changes save as you make them.</p>
+      <ReadsFailed parts={failed} onRetry={writes.refresh} />
       {data.delivery.error ? (
-        <ReadFailed what="Your email and push settings" code="CH-8202" onRetry={writes.refresh} />
+        <Group title="Email and push">
+          <ReadFailed bare what="Your email and push settings" code="CH-8202" onRetry={writes.refresh} covered={covered} />
+        </Group>
       ) : (
         <DeliveryPhone prefs={data.delivery.value} digest={data.digest} writes={writes} device={device} />
       )}
       {data.playerRouting &&
         (data.playerRouting.error ? (
-          <ReadFailed what="Your CoachHelm update settings" code="CH-8203" onRetry={writes.refresh} />
+          <Group title="CoachHelm updates">
+            <ReadFailed bare what="Your CoachHelm update settings" code="CH-8203" onRetry={writes.refresh} covered={covered} />
+          </Group>
         ) : (
           <RoutingPhone initial={data.playerRouting.value} writes={writes} />
         ))}
@@ -64,7 +72,7 @@ function DeliveryPhone({ prefs, digest, writes, device }: { prefs: Record<string
             (digest.error ? (
               <SwitchRow
                 label="Weekly team email"
-                help={<span role="alert" data-ch-code="CH-8204">This setting didn&apos;t load. Reload to change it.</span>}
+                help={<span role="alert" data-ch-code="CH-8204">This setting didn’t load. Reload to change it.</span>}
                 checked={false}
                 disabled
                 onChange={() => {}}
@@ -201,7 +209,7 @@ function RoutingPhone({ initial, writes }: { initial: { prefs: PrefsByCategory; 
                   checked={state === 'all'}
                   disabled={silenced(open.categories) || r.bulkBusy || (r.groupBusy && !r.pending.has(key))}
                   busy={r.pending.has(key)}
-                  onChange={(v) => void r.setGroup(open.label, open.categories, c.key, v, `Couldn't change ${open.label.toLowerCase()} ${c.label.toLowerCase()}`)}
+                  onChange={(v) => void r.setGroup(open.label, open.categories, c.key, v, `Couldn’t change ${open.label.toLowerCase()} ${c.label.toLowerCase()}`)}
                 />
               );
             })}

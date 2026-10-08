@@ -128,7 +128,7 @@ describe('Team Hub · player', () => {
     await user.click(within(nine).getByRole('radio', { name: 'Going' }));
     expect(reply).toHaveBeenCalledTimes(2);
     settle.get('r2')!({ success: false, error: 'refused' });
-    await expectCode('CH-10001', /Couldn't send your reply for Team dinner/);
+    await expectCode('CH-10001', /Couldn’t send your reply for Team dinner/);
     await waitFor(() => expect(within(dinner).getByRole('radio', { name: 'Going' })).not.toBeDisabled());
     expect(within(dinner).getByRole('radio', { name: 'Going' })).toHaveAttribute('aria-checked', 'false');
     settle.get('r3')!({ success: true });
@@ -150,7 +150,7 @@ describe('Team Hub · player', () => {
     await user.click(screen.getByRole('button', { name: 'Post two practice rounds' }));
     expect(completeTask).toHaveBeenCalledTimes(2);
     settle.get('t1')!({ success: false, error: 'refused' });
-    await expectCode('CH-10003', /Couldn't mark Sign travel waiver done/);
+    await expectCode('CH-10003', /Couldn’t mark Sign travel waiver done/);
     await waitFor(() => expect(waiver()).not.toBeDisabled());
     expect(waiver()).toHaveAttribute('aria-pressed', 'false');
     settle.get('t2')!({ success: true });
@@ -165,7 +165,7 @@ describe('Team Hub · player', () => {
     await waitFor(() => expect(schedule()).toHaveAttribute('aria-pressed', 'false'));
     expect(w.uncompleteTask).toHaveBeenCalledWith('t3');
     await user.click(schedule());
-    await expectCode('CH-10003', /Couldn't mark Upload class schedule done/);
+    await expectCode('CH-10003', /Couldn’t mark Upload class schedule done/);
     await waitFor(() => expect(schedule()).not.toBeDisabled());
     expect(schedule()).toHaveAttribute('aria-pressed', 'false');
   });
@@ -182,7 +182,7 @@ describe('Team Hub · player', () => {
     expect(screen.queryByRole('button', { name: 'Got it' })).toBeNull();
     expect(screen.queryByText('Acknowledged')).toBeNull();
     settle({ success: false, error: 'refused' });
-    await expectCode('CH-10002', /Couldn't acknowledge/);
+    await expectCode('CH-10002', /Couldn’t acknowledge/);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Got it' })).toBeTruthy());
     await user.click(within(code('CH-10002')!).getByRole('button', { name: 'Retry' }));
     await waitFor(() => expect(acknowledge).toHaveBeenCalledTimes(2));
@@ -320,7 +320,7 @@ describe('Team Hub · player', () => {
     await user.click(within(group).getByRole('radio', { name: 'Going' }));
     expect(hapticSpy).toHaveBeenCalledWith('select');
     expect(w.reply).toHaveBeenCalledWith('r2', 'accepted');
-    await expectCode('CH-10001', /Couldn't send your reply for Team dinner/);
+    await expectCode('CH-10001', /Couldn’t send your reply for Team dinner/);
     await waitFor(() => expect(within(group).getByRole('radio', { name: 'Going' }).getAttribute('aria-checked')).toBe('false'));
   });
 
@@ -329,7 +329,7 @@ describe('Team Hub · player', () => {
     const w = show(PREVIEW_HUB_PLAYER, writes({ acknowledge: refuse() }));
     await user.click(screen.getByRole('button', { name: 'Got it' }));
     expect(w.acknowledge).toHaveBeenCalledWith('a1');
-    await expectCode('CH-10002', /Couldn't acknowledge/);
+    await expectCode('CH-10002', /Couldn’t acknowledge/);
     expect(await screen.findByRole('button', { name: 'Got it' })).toBeTruthy();
   });
 
@@ -338,7 +338,7 @@ describe('Team Hub · player', () => {
     show(PREVIEW_HUB_PLAYER, writes({ completeTask: refuse() }));
     const box = screen.getByRole('button', { name: 'Sign travel waiver' });
     await user.click(box);
-    await expectCode('CH-10003', /Couldn't mark Sign travel waiver done/);
+    await expectCode('CH-10003', /Couldn’t mark Sign travel waiver done/);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Sign travel waiver' }).getAttribute('aria-pressed')).toBe('false'));
   });
 
@@ -357,7 +357,7 @@ describe('Team Hub · player', () => {
     await user.click(box());
     await waitFor(() => expect(box().getAttribute('aria-pressed')).toBe('true'));
     await user.click(box());
-    await expectCode('CH-10011', /Couldn't reopen Sign travel waiver/);
+    await expectCode('CH-10011', /Couldn’t reopen Sign travel waiver/);
     await waitFor(() => expect(box().getAttribute('aria-pressed')).toBe('true'));
     expect(refused.completeTask).toHaveBeenCalledTimes(1);
   });
@@ -378,7 +378,7 @@ describe('Team Hub · player', () => {
     const openSpy = vi.spyOn(window, 'open').mockReturnValue(win as unknown as Window);
     show(PREVIEW_HUB_PLAYER, writes({ openDocument: refuse() }), 'docs');
     await user.click(screen.getByRole('button', { name: 'Open Travel waiver, PDF' }));
-    await expectCode('CH-10004', /Couldn't open Travel waiver/);
+    await expectCode('CH-10004', /Couldn’t open Travel waiver/);
     expect(win.close).toHaveBeenCalled();
     openSpy.mockRestore();
   });
@@ -625,7 +625,7 @@ describe('Team Hub · coach', () => {
     await waitFor(() => expect(dialogOpen()).toBe(false));
   });
 
-  it("CH-10210 CH-10312 the Event step: events that didn't load say so, and a team with none says where to add one; the trip can still go without one", async () => {
+  it("CH-10210 CH-10312 the Event step: events that didn’t load say so, and a team with none says where to add one; the trip can still go without one", async () => {
     const user = userEvent.setup();
     show({ ...PREVIEW_HUB_COACH, tripEvents: { rows: [], error: true } }, writes(), 'travel');
     await user.click(screen.getByRole('button', { name: 'Plan a trip' }));
@@ -637,7 +637,7 @@ describe('Team Hub · coach', () => {
     expect(screen.getByRole('radio', { name: /No calendar event/ }).getAttribute('aria-checked')).toBe('true');
   });
 
-  it("CH-10211 an event whose invitees didn't load: travelers can't be chosen, and Publish leaves the event's invitees alone", async () => {
+  it("CH-10211 an event whose invitees didn’t load: travelers can’t be chosen, and Publish leaves the event’s invitees alone", async () => {
     const user = userEvent.setup();
     const data = { ...PREVIEW_HUB_COACH, tripEvents: { rows: PREVIEW_HUB_COACH.tripEvents.rows.map((e) => ({ ...e, invited: null })), error: false } };
     const w = show(data, writes({ planTrip: vi.fn(async () => ({ success: true, data: { id: 'x' } })) }), 'travel');
@@ -653,7 +653,7 @@ describe('Team Hub · coach', () => {
     expect(w.setTravelers).not.toHaveBeenCalled();
   });
 
-  it("New announcement offers the next trip's travelers as an audience, and sends to exactly them", async () => {
+  it("New announcement offers the next trip’s travelers as an audience, and sends to exactly them", async () => {
     const user = userEvent.setup();
     const w = show(PREVIEW_HUB_COACH, writes());
     await user.click(screen.getByRole('button', { name: 'New announcement' }));
@@ -758,7 +758,7 @@ describe('Team Hub · coach', () => {
 
   it('CH-10201 the coach’s failed reads', () => {
     show(PREVIEW_HUB_COACH_FAILED);
-    expect(code('CH-10201')!.textContent).toMatch(/This week's replies didn't load/);
+    expect(code('CH-10201')!.textContent).toMatch(/This week’s replies didn’t load/);
   });
 
   it('CH-10309 no team: coach and player each get their own words', async () => {
@@ -769,7 +769,7 @@ describe('Team Hub · coach', () => {
     document.body.innerHTML = '';
     session.current = { userId: 'u2', coach: null, player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti' } };
     render(await ClubhouseHubRoute({}));
-    expect(code('CH-10309')!.textContent).toMatch(/Ask your coach for your team's code/);
+    expect(code('CH-10309')!.textContent).toMatch(/Ask your coach for your team’s code/);
   });
 
   it('100102 ?tab= opens a tab the role has, else Home', () => {
@@ -1024,8 +1024,8 @@ const scenarios: Scenario[] = [
     code: 'CH-10001',
     key: 'reply',
     data: PREVIEW_HUB_PLAYER,
-    failed: /Couldn't send your reply for Team dinner/,
-    done: "You're going to Team dinner",
+    failed: /Couldn’t send your reply for Team dinner/,
+    done: "You’re going to Team dinner",
     drive: (user) => user.click(going()),
     notYet: () => expect(going().getAttribute('aria-checked')).toBe('false'),
     landed: () => waitFor(() => expect(going().getAttribute('aria-checked')).toBe('true')),
@@ -1035,7 +1035,7 @@ const scenarios: Scenario[] = [
     code: 'CH-10002',
     key: 'acknowledge',
     data: PREVIEW_HUB_PLAYER,
-    failed: /Couldn't acknowledge "Pairings and tee times for Thursday"/,
+    failed: /Couldn’t acknowledge “Pairings and tee times for Thursday”/,
     done: '',
     drive: (user) => user.click(screen.getByRole('button', { name: 'Got it' })),
     notYet: () => expect(screen.getByRole('button', { name: 'Got it' })).toBeTruthy(),
@@ -1049,7 +1049,7 @@ const scenarios: Scenario[] = [
     code: 'CH-10003',
     key: 'completeTask',
     data: PREVIEW_HUB_PLAYER,
-    failed: /Couldn't mark Sign travel waiver done/,
+    failed: /Couldn’t mark Sign travel waiver done/,
     done: 'Sign travel waiver done',
     drive: (user) => user.click(screen.getByRole('button', { name: 'Sign travel waiver' })),
     notYet: () => expect(screen.getByRole('button', { name: 'Sign travel waiver' }).getAttribute('aria-pressed')).toBe('false'),
@@ -1061,7 +1061,7 @@ const scenarios: Scenario[] = [
     key: 'openDocument',
     data: PREVIEW_HUB_PLAYER,
     tab: 'docs',
-    failed: /Couldn't open Travel waiver/,
+    failed: /Couldn’t open Travel waiver/,
     done: '',
     drive: async (user) => {
       fileTabs = [fileTab(), fileTab()];
@@ -1086,7 +1086,7 @@ const scenarios: Scenario[] = [
     key: 'postAnnouncement',
     data: PREVIEW_HUB_COACH,
     failed: /Couldn’t post the announcement/,
-    done: 'Posted "Bus leaves at 6"',
+    done: 'Posted “Bus leaves at 6”',
     drive: async (user) => {
       await user.click(screen.getByRole('button', { name: 'New announcement' }));
       const d = within(await screen.findByRole('dialog', { name: 'New announcement' }));
@@ -1191,7 +1191,7 @@ const scenarios: Scenario[] = [
     data: PREVIEW_HUB_COACH,
     tab: 'ann',
     failed: /Couldn’t save the announcement/,
-    done: `Saved "${SHORT_GAME_EDITED}"`,
+    done: `Saved “${SHORT_GAME_EDITED}”`,
     drive: async (user) => {
       await openRowMenu(user, new RegExp(`More for ${SHORT_GAME}`), 'Edit announcement');
       const d = within(await screen.findByRole('dialog', { name: 'Edit announcement' }));
@@ -1219,8 +1219,8 @@ const scenarios: Scenario[] = [
     key: 'deleteAnnouncement',
     data: PREVIEW_HUB_COACH,
     tab: 'ann',
-    failed: new RegExp(`Couldn’t delete "${SHORT_GAME}"`),
-    done: `Deleted "${SHORT_GAME}"`,
+    failed: new RegExp(`Couldn’t delete “${SHORT_GAME}”`),
+    done: `Deleted “${SHORT_GAME}”`,
     drive: async (user) => {
       await openRowMenu(user, new RegExp(`More for ${SHORT_GAME}`), 'Delete announcement');
       await user.click(screen.getByRole('button', { name: 'Delete' }));
@@ -1351,7 +1351,7 @@ describe('Team Hub · every write, by the button and by the failure toast’s Re
     vi.spyOn(window, 'open').mockReturnValue(win as unknown as Window);
     show(PREVIEW_HUB_PLAYER, writes({ openDocument: vi.fn(() => Promise.reject(new Error('signed link failed'))) }), 'docs');
     await user.click(screen.getByRole('button', { name: 'Open Travel waiver, PDF' }));
-    await expectCode('CH-10004', /Couldn't open Travel waiver/);
+    await expectCode('CH-10004', /Couldn’t open Travel waiver/);
     expect(win.close).toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Open Travel waiver, PDF' }).hasAttribute('disabled')).toBe(false);
   });
@@ -1360,7 +1360,7 @@ describe('Team Hub · every write, by the button and by the failure toast’s Re
     const user = userEvent.setup();
     show(PREVIEW_HUB_PLAYER, writes({ reply: vi.fn(() => Promise.reject(new Error('socket closed'))) }));
     await user.click(going());
-    await expectCode('CH-10001', /Couldn't send your reply for Team dinner/);
+    await expectCode('CH-10001', /Couldn’t send your reply for Team dinner/);
     await waitFor(() => expect(going().getAttribute('aria-checked')).toBe('false'));
     expect(track.chReport).toHaveBeenCalledWith(expect.objectContaining({ message: 'socket closed' }), { surface: 'hub', action: 'hub.reply' });
   });
@@ -1523,12 +1523,31 @@ describe('Team Hub · roles, states and layout', () => {
 
   it('101402 CH-10201 CH-10202 Try again on a failed read has the server read the page again', async () => {
     const user = userEvent.setup();
-    show(PREVIEW_HUB_COACH_FAILED);
+    // One section failed: its own notice carries Try again.
+    show({ ...PREVIEW_HUB_COACH, rsvps: { rows: [], error: true } });
     expect(router.refresh).not.toHaveBeenCalled();
+    expect(code('CH-1209')).toBeNull();
     await user.click(within(code('CH-10201') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await refreshed();
     router.refresh.mockClear();
+    cleanup();
+    show({ ...PREVIEW_HUB_COACH, updates: { rows: [], error: true } });
     await user.click(within(code('CH-10202') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    await refreshed();
+  });
+
+  it('CH-1209 101402 several sections failed: the page says so once with one Try again, and each section keeps only its title', async () => {
+    const user = userEvent.setup();
+    show(PREVIEW_HUB_COACH_FAILED);
+    const page = code('CH-1209') as HTMLElement;
+    expect(page.textContent).toMatch(/This week’s replies, announcements, travel, updates, tasks and documents didn’t load/);
+    expect(within(page).getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    for (const c of ['CH-10201', 'CH-10202', 'CH-10206', 'CH-10207']) {
+      expect(code(c)).not.toBeNull();
+      expect(within(code(c) as HTMLElement).queryByRole('button', { name: 'Try again' })).toBeNull();
+    }
+    expect(router.refresh).not.toHaveBeenCalled();
+    await user.click(within(page).getByRole('button', { name: 'Try again' }));
     await refreshed();
   });
 
@@ -1726,7 +1745,7 @@ describe('Team Hub · Attach from Documents in New announcement', () => {
     const w = writes({ postAnnouncement: post });
     const { rerender } = render(tree(withDocuments({ folders: [], error: true }), w, 'ann'));
     const dialog = await openCompose(user);
-    await expectCode('CH-10209', /Documents didn't load/);
+    await expectCode('CH-10209', /Documents didn’t load/);
     expect(code('CH-10311')).toBeNull();
     expect(dialog.queryByRole('button', { name: 'Attach from Documents' })).toBeNull();
     await user.type(dialog.getByRole('textbox', { name: 'Headline' }), 'Bus leaves at 6');
@@ -1805,7 +1824,7 @@ describe('Team Hub · Edit an announcement', () => {
     await user.click(dialog.getByRole('button', { name: 'Save changes' }));
     await waitFor(() => expect(w.editAnnouncement).toHaveBeenCalledTimes(1));
     expect(w.editAnnouncement).toHaveBeenCalledWith('a1', { title: 'Tee times moved to 8:50', body: 'Warm-up at 7:40.', urgency: 'high', requiresAck: false });
-    await screen.findByText('Saved "Tee times moved to 8:50"');
+    await screen.findByText('Saved “Tee times moved to 8:50”');
     await waitFor(() => expect(dialogOpen()).toBe(false));
     // The card says what was saved: the headline, the message, and read (not acknowledged) receipts.
     expect(screen.getByRole('heading', { level: 3, name: 'Tee times moved to 8:50' })).toBeTruthy();
@@ -1903,13 +1922,13 @@ describe('Team Hub · a post whose files did not attach (Q-82)', () => {
     const user = userEvent.setup();
     const post = vi.fn().mockResolvedValue(attachFail);
     await compose(user, post, true);
-    await expectCode('CH-10012', /Posted "Waiver" without its files/);
+    await expectCode('CH-10012', /Posted “Waiver” without its files/);
     const toast = code('CH-10012') as HTMLElement;
     expect(toast.textContent).toMatch(/The files didn’t attach, so players see the post with no files\. They can still open them in Documents\./);
     expect(toast.getAttribute('role')).toBe('alert');
     // A Retry would post it again: there is none. And the usual "Posted" is not said beside it.
     expect(within(toast).queryByRole('button')).toBeNull();
-    expect(screen.queryByText('Posted "Waiver"')).toBeNull();
+    expect(screen.queryByText('Posted “Waiver”')).toBeNull();
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(hapticSpy).not.toHaveBeenCalledWith('success');
     await waitFor(() => expect(dialogOpen()).toBe(false));
@@ -1922,7 +1941,7 @@ describe('Team Hub · a post whose files did not attach (Q-82)', () => {
   it('a post whose files attached, and one with none, still says Posted, with no CH-10012 and the success haptic', async () => {
     const user = userEvent.setup();
     await compose(user, vi.fn().mockResolvedValue({ success: true, data: { announcementId: 'n' } }), true);
-    await screen.findByText('Posted "Waiver"');
+    await screen.findByText('Posted “Waiver”');
     expect(code('CH-10012')).toBeNull();
     expect(hapticSpy).toHaveBeenCalledWith('success');
     expect(hapticSpy).not.toHaveBeenCalledWith('error');
@@ -1936,7 +1955,7 @@ describe('Team Hub · a post whose files did not attach (Q-82)', () => {
     await user.click(screen.getByRole('button', { name: 'Retry' }));
     await expectCode('CH-10012', /without its files/);
     expect(post).toHaveBeenCalledTimes(2);
-    expect(screen.queryByText('Posted "Waiver"')).toBeNull();
+    expect(screen.queryByText('Posted “Waiver”')).toBeNull();
   });
 
   it('the live write hands the action’s attachmentsError through, so the sheet can say it', async () => {

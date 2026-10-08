@@ -7,13 +7,23 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { golfDetailsProblem, type ChGolfDetails, type ChMembership, type ChSettingsData, type ChSettingsWrites } from './model';
 import { SAVE_COPY, useMembership } from './hooks';
-import { Card, Field, ReadFailed, Row, SaveBar, useDraft, useReportDirty, useSaveAction } from './parts';
+import { Card, Field, failedReads, ReadFailed, ReadsFailed, Row, SaveBar, useDraft, useReportDirty, useSaveAction } from './parts';
+
+/** Golf profile's reads that failed, for its one section notice (shared with GolfPhone). */
+export const golfReadsFailed = (data: ChSettingsData) =>
+  failedReads([
+    [data.golf?.error, 'your golf details'],
+    [data.membership?.error, 'your team membership'],
+  ]);
 
 export function GolfSection({ data, writes }: { data: ChSettingsData; writes: ChSettingsWrites }) {
+  const failed = golfReadsFailed(data);
+  const covered = failed.length > 1;
   return (
     <>
-      {data.golf?.error ? <ReadFailed what="Your golf details" code="CH-8209" onRetry={writes.refresh} /> : data.golf && <DetailsCard details={data.golf.value} writes={writes} />}
-      {data.membership?.error ? <ReadFailed what="Your team membership" code="CH-8210" onRetry={writes.refresh} /> : data.membership && <MembershipCard m={data.membership.value} writes={writes} />}
+      <ReadsFailed parts={failed} onRetry={writes.refresh} />
+      {data.golf?.error ? <ReadFailed what="Your golf details" code="CH-8209" onRetry={writes.refresh} title="Golf details" description="Your coaches see these on the roster." covered={covered} /> : data.golf && <DetailsCard details={data.golf.value} writes={writes} />}
+      {data.membership?.error ? <ReadFailed what="Your team membership" code="CH-8210" onRetry={writes.refresh} title="Team" description="The team you play for on GolfHelm." covered={covered} /> : data.membership && <MembershipCard m={data.membership.value} writes={writes} />}
     </>
   );
 }
@@ -78,7 +88,7 @@ function MembershipCard({ m, writes }: { m: ChMembership; writes: ChSettingsWrit
           onClose={() => !leave.pending && setLeaving(false)}
           icon={LogOut}
           title={`Leave ${m.team.name}?`}
-          description="You come off the roster right away. To come back, you'll need the invite code and your coach's approval."
+          description="You come off the roster right away. To come back, you’ll need the invite code and your coach’s approval."
           footer={
             <>
               <Button variant="secondary" disabled={leave.pending} onClick={() => setLeaving(false)}>
@@ -99,7 +109,7 @@ function MembershipCard({ m, writes }: { m: ChMembership; writes: ChSettingsWrit
   }
 
   return (
-    <Card id="set-membership" code="CH-8302" title="Join a team" description="Ask your coach for the team's invite code. They approve your request from their roster.">
+    <Card id="set-membership" code="CH-8302" title="Join a team" description="Ask your coach for the team’s invite code. They approve your request from their roster.">
       {requests.length > 0 && (
         <div className="ch-set-requests">
           {requests.map((r) => (

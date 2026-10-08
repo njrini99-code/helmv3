@@ -58,7 +58,7 @@ One route skeleton in Settings' own shape (80201): the title, the rail and two c
 | --- | --- | --- | --- |
 | 80201 | CH-8401 | `THE_PAGE_IS_LOADING` | The page is loading |
 
-From the shell (P001): 10201 CH-1401.
+From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 ## 03 — Background loading / refresh
 
@@ -114,7 +114,7 @@ Each card checks its fields before anything is sent and keeps Save disabled whil
 
 Status: DEFINED
 
-Every change has its own toast (80601 to 80624) naming what failed and why when the server gave a short reason, otherwise "Check your connection and try again", with Retry on saves and switches. Every section that fails to load shows its own notice with Try again (80625 to 80635), never a blank form that could be saved over real data; its Try again reads the whole page again (81401). A crash stays in its section (80636, SectionBoundary). The route's own errors are the shell's (10603 to 10607).
+Every change has its own toast (80601 to 80624) naming what failed and why when the server gave a short reason, otherwise "Check your connection and try again", with Retry on saves and switches. Every section that fails to load shows its own notice with Try again (80625 to 80635), never a blank form that could be saved over real data; its Try again reads the whole page again (81401). When more than one of a section's reads fails (Team, Notifications, Golf), the section says so once at its top, naming each, with the one Try again (the shell's CH-1209), and each part keeps only its title under its heading (states audit b6, 2026-10-08). A crash stays in its section (80636, SectionBoundary). The route's own errors are the shell's (10603 to 10607).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -285,11 +285,11 @@ Settings is rendered on the server for each request and has no realtime. After a
 
 Status: DEFINED
 
-Settings' own motion (81601 to 81608) on the v2 tokens (D-64), and the shell's press on keys, sheets and toasts (11601 to 11613); a section in the rail and a link row deepen their tint on press instead of scaling (81607). Animations off in Preferences makes every Clubhouse transition instant (81608).
+Settings' own motion (81601 to 81609) on the v2 tokens (D-64), and the shell's press on keys, sheets and toasts (11601 to 11613); a section in the rail, a link row and the phone's list rows deepen their tint on press instead of scaling (81607). On the phone a section is pushed: it slides in from the right over the list, which fades under it, and Back slides it off the same way (81609); a pop the iOS back-swipe has already drawn swaps at once. Animations off in Preferences makes every Clubhouse transition instant (81608).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 81601 | CH-8601 | `SWITCHING_SECTION` | Switching section |
+| 81601 | CH-8601 | `SWITCHING_SECTION` | Switching section (desktop) |
 | 81602 | CH-8602 | `SAVE_STATUS_CHANGES` | Save status changes |
 | 81603 | CH-8603 | `FLIPPING_A_SWITCH` | Flipping a switch |
 | 81604 | CH-8604 | `A_CONFIRM_OPENS` | A confirm opens |
@@ -297,8 +297,9 @@ Settings' own motion (81601 to 81608) on the v2 tokens (D-64), and the shell's p
 | 81606 | CH-8606 | `MOVING_A_COACHHELM_PRIORITY` | Moving a CoachHelm priority |
 | 81607 | CH-8607 | `PRESSING_A_SECTION_OR_BUTTON` | Pressing a section or button |
 | 81608 | CH-8608 | `ANIMATIONS_TURNED_OFF_IN_PREFERENCES` | Animations turned off in Preferences |
+| 81609 | CH-8609 | `PHONE_OPENING_A_SECTION_FROM_THE_LIST` | Phone: opening a section from the list, and Back |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617.
 
 ## 17 — Haptic
 
@@ -317,7 +318,7 @@ Settings' own haptics (81701 to 81707) on the v2 grammar (D-70), with Discard ad
 | 81707 | CH-8707 | `TURNING_HAPTICS_BACK_ON` | Turning Haptics back on |
 | 81708 | — | `DISCARD_WARNS` | Discard (a card's edits, Discard changes when leaving a section, Discard and leave when following a link) fires the warning haptic before anything is dropped (D-70). |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708.
 
 ## 18 — Accessibility
 
@@ -335,7 +336,7 @@ Settings' own (81801 to 81807): the rail is a navigation with the open section m
 | 81806 | CH-8806 | `DIALOGS_TRAP_FOCUS_ESC_CLOSES_FOCUS_RETURNS` | Dialogs trap focus, Esc closes, focus returns to the button |
 | 81807 | CH-8807 | `EVERY_FIELD_HAS_A_LABEL_AND_ITS` | Every field has a label, and its help or error is read with it |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
 
 ## 19 — Responsive layout
 

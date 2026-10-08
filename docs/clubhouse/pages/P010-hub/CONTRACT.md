@@ -36,7 +36,7 @@ Team Hub opens on Home, or on the tab in `?tab=`, for a coach and for a player. 
 
 Status: DEFINED
 
-The route skeleton (CH-10405) is the Clubhouse one inside the shell and the Fairway one outside it; nothing shows for the first 150ms, then a fade (the shell's 11609). Team Hub loads no section on its own after the server render, so there are no section skeletons; a save in flight says what it is doing on its button (Uploading, Posting, Saving, Assigning).
+The route skeleton (CH-10405) is the Clubhouse one inside the shell and the Fairway one outside it; on the phone it takes the signed-in role's shape from the shell (a coach's New announcement, a coach's five tabs or a player's four), so the page lands without moving; nothing shows for the first 150ms, then a fade (the shell's 11609). Team Hub loads no section on its own after the server render, so there are no section skeletons; a save in flight says what it is doing on its button (Uploading, Posting, Saving, Assigning).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -59,7 +59,7 @@ Status: N/A — Team Hub has no realtime, polling or pull to refresh: the server
 
 Status: DEFINED
 
-First run is the whole-page empty state, one for a coach (CH-10305, with New announcement and Plan a trip) and one for a player (CH-10306); each section has its own empty too (CH-10301 to CH-10304, CH-10307, CH-10308). A failed read is never shown as empty, and the page empty state is only for a page where every read answered and was empty, Updates included (100410). No team is CH-10309. Team Hub has no search or filter, so it has no filtered empty state.
+First run is the whole-page empty state, one for a coach (CH-10305, with Plan a trip; the head's New announcement stays the page's one primary action, states audit b9) and one for a player (CH-10306); each section has its own empty too (CH-10301 to CH-10304, CH-10307, CH-10308). A failed read is never shown as empty, and the page empty state is only for a page where every read answered and was empty, Updates included (100410). No team is CH-10309. Team Hub has no search or filter, so it has no filtered empty state.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -103,7 +103,7 @@ Checked before anything is sent, with the message under the field and the warnin
 
 Status: DEFINED
 
-Every write has its own toast naming what failed and what to do, with Retry (CH-10001 to CH-10009); every section that fails to load has its own notice with Try again (CH-10201 to CH-10204, CH-10206, CH-10207); a crash stays in its section (CH-10205, SectionBoundary). The toast's Retry runs the whole change again, follow-ups included (101401).
+Every write has its own toast naming what failed and what to do, with Retry (CH-10001 to CH-10009); every section that fails to load has its own notice with Try again (CH-10201 to CH-10204, CH-10206, CH-10207), and when more than one does, the page says so once under its head with one Try again that reads the page again (the shell's CH-1209, 2026-10-08) while each failed section keeps only its title under its heading; a crash stays in its section (CH-10205, SectionBoundary). The toast's Retry runs the whole change again, follow-ups included (101401).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -255,7 +255,7 @@ Team Hub's own motion is its tabs: the underline slides to the chosen tab on the
 | 101601 | CH-10602 | `CHANGING_TABS` | Changing tabs |
 | 101602 | CH-10603 | `THE_TABS_PANEL_SWAPS` | The tab's panel swaps |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617.
 
 ## 17 — Haptic
 
@@ -268,7 +268,7 @@ Team Hub's own (CH-10701, CH-10702) on the v2 grammar (D-70): a tick for a tab, 
 | 101701 | CH-10701 | `A_TAB_AN_RSVP_REPLY_AN_AUDIENCE` | A tab, an RSVP reply, an audience or transport choice, a player chip, a file to attach or take off |
 | 101702 | CH-10702 | `DELETE_A_FORM_SENT_WITH_A_MISTAKE` | Delete (before the question), a form sent with a mistake |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708.
 
 ## 18 — Accessibility
 
@@ -281,7 +281,7 @@ The tabs are a real tablist, each controlling its panel; a reply is a radio grou
 | 101801 | CH-10801 | `THE_SECTIONS_ARE_REAL_TABS_AN_RSVP` | The sections are real tabs (selected state, each controls its panel); an RSVP is a radio group named for its event; a task's box names the task and says when it's done |
 | 101802 | CH-10802 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, 1280px and 390px |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
 
 ## 19 — Responsive layout
 

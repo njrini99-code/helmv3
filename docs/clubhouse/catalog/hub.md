@@ -62,7 +62,7 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-10201 | RSVPs don't load | Player: "Your events didn't load." Coach: "This week's replies didn't load." + Try again; never "You're all caught up" | `Rsvps`, `RefreshNotice` | hub.test › CH-10201 |
+| CH-10201 | RSVPs don't load | Player: "Your events didn't load." Coach: "This week's replies didn't load." + Try again; never "You're all caught up". With another read failed too, the page's one notice carries Try again (the shell's CH-1209: "Some of this page didn’t load" naming the parts) and each failed section keeps only its title under its heading (`covered`); this applies to CH-10201 to CH-10204, CH-10206 and CH-10207 | `Rsvps`, `RefreshNotice`, `PageRefreshNotice` in `TeamHub` | hub.test › CH-10201, CH-1209 |
 | CH-10202 | Updates don't load | "Updates didn't load." + "Your notifications are safe; the bell may still have them. Try again." | `Updates` | hub.test › CH-10202 |
 | CH-10203 | Tasks don't load | "Your tasks didn't load." (coach: "Tasks didn't load.") | `Tasks` | hub.test › CH-10203 |
 | CH-10204 | Documents don't load | "Documents didn't load." + "Your files are safe." | `Documents` | hub.test › CH-10204 |
@@ -80,13 +80,13 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-10301 | No events need a reply | Player: "You're all caught up" + "New team events that need a reply show here." (an event the player is not invited to, or that has started, was cancelled or is past its RSVP deadline, is not listed). Coach: "No events need RSVPs" + Create event | `Rsvps` | hub.test › CH-10301 |
-| CH-10302 | No updates | "Nothing new." + "Posts, trips, tasks and qualifier moves show here as they happen." | `Updates` | hub.test › CH-10302 |
-| CH-10303 | No tasks | Player: "No tasks right now." Coach: "No tasks assigned." + "Assign a task and see who has done it." | `Tasks` | hub.test › CH-10303 |
-| CH-10304 | No documents | "No documents yet." + who fills it | `Documents` | hub.test › CH-10304 |
-| CH-10305 | A coach with nothing posted (v2 first run, gh-states EMPTY.hub.coach) | "Nothing posted yet" + New announcement, Plan a trip. Only when every read answered and was empty, Updates included; a failed Updates read shows CH-10202 instead | `TeamHub` | hub.test › CH-10305 |
+| CH-10302 | No updates | "Nothing new" + "Posts, trips, tasks and qualifier moves show here as they happen." | `Updates` | hub.test › CH-10302 |
+| CH-10303 | No tasks | Player: "No tasks right now". Coach: "No tasks assigned" + "Assign a task and see who has done it." | `Tasks` | hub.test › CH-10303 |
+| CH-10304 | No documents | "No documents yet" + who fills it, flush at the panel's edge under the drop zone (no card) | `Documents` | hub.test › CH-10304 |
+| CH-10305 | A coach with nothing posted (v2 first run, gh-states EMPTY.hub.coach) | "Nothing posted yet" + Plan a trip; New announcement stays the head's one primary action, not repeated in the empty (states audit b9, 2026-10-08). Only when every read answered and was empty, Updates included; a failed Updates read shows CH-10202 instead | `TeamHub` | hub.test › CH-10305 |
 | CH-10306 | A player with nothing from their coaches (EMPTY.hub.player) | "No team updates yet" + "Announcements, trips and documents from your coaches will show up here." Only when every read answered and was empty, Updates included; a failed Updates read shows CH-10202 instead | `TeamHub` | hub.test › CH-10306 |
-| CH-10307 | No announcements | "No announcements yet." | `TeamHub` | hub.test › CH-10307 |
-| CH-10308 | No trips | "No trips planned." + who fills it | `TeamHub` | hub.test › CH-10308 |
+| CH-10307 | No announcements | "No announcements yet", flush at the panel's edge under the composer line (no card) | `TeamHub` | hub.test › CH-10307 |
+| CH-10308 | No trips | "No trips planned" + who fills it, flush at the panel's edge under Plan a trip (no card) | `TeamHub` | hub.test › CH-10308 |
 | CH-10309 | No team | "You aren't on a team yet" + the role's next step | `ClubhouseHubRoute` | hub.test › CH-10309 |
 | CH-10310 | A team with nobody on the roster | In the sheets, where players are chosen: "No players on the roster yet. Add them in Roster, then choose them here." | `PlayerPicks` | hub.test › CH-10310 |
 | CH-10311 | A team with no documents | In New announcement, where files are attached: "No documents yet. Add files in the Documents tab, then attach them here." Nothing to attach; the post still goes | `DocumentPicks` | hub.test › CH-10311 |
@@ -103,7 +103,7 @@ Every save goes through `useAction`, so these belong to the shell: offline refus
 | CH-10402 | A post is being sent | "Posting" on the button; it can't be pressed twice | `ComposeSheet` | hub.test › CH-10402 |
 | CH-10403 | A trip is being saved | "Saving" | `TripSheet` | hub.test › CH-10403 |
 | CH-10404 | A task is being assigned | "Assigning" | `AssignSheet` | hub.test › CH-10404 |
-| CH-10405 | Team Hub is loading | The header, the tab strip and the two Home columns as grey blocks, in place (nothing for the first 150ms, then a fade); read as "Loading Team Hub" | `HubSkeleton` from `team-hub/loading.tsx` through `ClubhouseSwitch` | hub.test › CH-10405 |
+| CH-10405 | Team Hub is loading | The header, the tab strip and the two Home columns as grey blocks, in place (nothing for the first 150ms, then a fade); on the phone the opening on its double rule, the tabs on their hairline and two flush sections with rows on seams, in the loaded page's geometry and the signed-in role's opening and tab count from the shell (a coach's New announcement; five tabs or four), so either role's page lands with 0px shift at 390; read as "Loading Team Hub" | `HubSkeleton` from `team-hub/loading.tsx` through `ClubhouseSwitch` | hub.test › CH-10405 |
 | CH-10406 | An edit is being saved | "Saving" on the button of Edit announcement; it can't be pressed twice | `ComposeSheet` (edit) | hub.test › CH-10406 |
 | CH-10407 | Plan a trip: the travelers' classes are being checked | "Checking their classes…" once the chosen travelers have settled (350ms; a run of taps on player chips is one question). Publish never waits for it, and an answer for travelers or days no longer on screen is not shown | `ClassClashes` (`useClassCheck`) | hub.test › CH-10407 |
 

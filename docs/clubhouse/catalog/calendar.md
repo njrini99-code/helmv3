@@ -53,39 +53,39 @@ file is optimistic with Undo, and refuses offline the same way.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-6201 | Team events don't load | "The calendar didn't load." + "Nothing was changed…" Try again. Never an empty calendar | `Calendar`; logged `clubhouse.calendar.events` | calendar.test › CH-6201 |
-| CH-6202 | The coach's busy time doesn't load | "Your busy time didn't load." + "Team events are complete, but your own blocks aren't shown." Try again | `Calendar` | calendar.test › CH-6202 |
-| CH-6203 | Class schedules don't load | Coach: "Class schedules didn't load." + "…class overlaps may be missing." Player: "Your classes didn't load." Try again | `Calendar` | calendar.test › CH-6203 |
-| CH-6204 | Replies don't load (summary) | "Replies didn't load." + "Pending replies aren't counted until they do." Try again | `Summary` | calendar.test › CH-6204 |
-| CH-6205 | Replies don't load (an event) | "Replies didn't load." + "Try again to see who's going." Try again | `EventDetail` | calendar.test › CH-6205 |
+| CH-6201 | Team events don't load | "The calendar didn’t load" + "Nothing was changed…" Try again. Never an empty calendar. With another read failed too, only the title stays in the grid's place and CH-1209 carries Try again | `Calendar`; logged `clubhouse.calendar.events` | calendar.test › CH-6201 |
+| CH-6202 | The coach's busy time doesn't load | "Your busy time didn’t load" + "Team events are complete, but your own blocks aren’t shown." Try again. With another read failed too, folded into CH-1209, which names it | `Calendar` | calendar.test › CH-6202 |
+| CH-6203 | Class schedules don't load | Coach: "Class schedules didn’t load" + "…class overlaps may be missing." Player: "Your classes didn’t load". Try again. With another read failed too, folded into CH-1209, which names it | `Calendar` | calendar.test › CH-6203 |
+| CH-6204 | Replies don't load (summary) | "Replies didn’t load" + "Pending replies aren’t counted until they do." Try again. With another read failed too, only the title stays and CH-1209 carries Try again | `Summary` | calendar.test › CH-6204 |
+| CH-6205 | Replies don't load (an event) | "Replies didn’t load" + "Try again to see who’s going." Try again. With another read failed too, only the title stays and CH-1209 carries Try again | `EventDetail` | calendar.test › CH-6205 |
 | CH-6206 | Calendar-app links don't load | "Your calendar links didn't load." Try again | `SubscribeSheet` | calendar.test › CH-6206 |
 | CH-6207 | An event's files don't load | "Files didn't load." Try again | `EventFiles` | calendar.test › CH-6207 |
 | CH-6208 | The team's documents don't load (attach) | "Documents didn't load." Try again | `FilePicker` | calendar.test › CH-6208 |
 | CH-6209 | Attendance doesn't load | "Attendance didn't load." + "Marks already saved are safe." Try again | `Attendance` | calendar.test › CH-6209 |
 | CH-6210 | The calendar view crashes | "The calendar couldn't be shown." + "The rest of the page is fine…" Try again | `SectionBoundary calendar.<view>` | calendar.test › CH-6210 |
 | CH-6211 | The detail panel crashes | "The detail panel couldn't be shown." … | `SectionBoundary calendar.panel` | calendar.test › CH-6211 |
-| CH-6212 | The team's timezone doesn't load | "Your team's timezone didn't load." + "Times are shown in Eastern time until it does." Try again | `Calendar`; logged `clubhouse.calendar.teamSettings` | calendar.test › CH-6212 |
-| CH-6213 | The roster doesn't load | "The roster didn't load." + "Events are complete, but players can't be invited or picked until it does." Try again; in the editor, "The roster didn't load, so no one can be invited yet." in place of the invite list | `Calendar`, `EventEditor`; logged `clubhouse.calendar.members` | calendar.test › CH-6213 |
+| CH-6212 | The team's timezone doesn't load | "Your team’s timezone didn’t load" + "Times are shown in Eastern time until it does." Try again. With another read failed too, folded into CH-1209, which names it (the head still names the zone) | `Calendar`; logged `clubhouse.calendar.teamSettings` | calendar.test › CH-6212 |
+| CH-6213 | The roster doesn't load | "The roster didn’t load" + "Events are complete, but players can’t be invited or picked until it does." Try again (with another read failed too, folded into CH-1209, which names it); in the editor, "The roster didn't load, so no one can be invited yet." in place of the invite list | `Calendar`, `EventEditor`; logged `clubhouse.calendar.members` | calendar.test › CH-6213 |
 
 ## 63xx Empty
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-6301 | Nothing in the agenda's range | "Nothing on the calendar in this range." (or "…these players' schedules…") + what shows here | `Calendar` agenda | calendar.test › CH-6301 |
+| CH-6301 | Nothing in the agenda's range | "Nothing on the calendar in this range" (or "…these players’ schedules…") + what shows here | `Calendar` agenda | calendar.test › CH-6301 |
 | CH-6302 | Nothing on the team calendar today | The panel title reads "Nothing on the team calendar today" | `Summary` | calendar.test › CH-6302 |
 | CH-6303 | An event has no files | "No files yet. Attach pairings, local rules or a travel sheet from Documents." | `EventFiles` | calendar.test › CH-6303 |
 | CH-6304 | The team has no documents to attach | "Your team has no documents yet. Upload one in Documents, then attach it here." | `FilePicker` | calendar.test › CH-6304 |
 | CH-6305 | An opened event left the loaded range | "This event isn't in the loaded range anymore. It may have moved or been cancelled." + back to Today | `EventDetail` | calendar.test › CH-6305 |
 | CH-6306 | Nothing needs attention this week | Coach: "No overlaps and no replies waiting." Player: "You're all caught up." | `Summary` | calendar.test › CH-6306 |
-| CH-6307 | Signed in with no team (coach or player) | The page empty state: "You aren't on a team yet" + Coach: "The calendar fills in once your team is set up." Player: "Team events show here once a coach adds you to a team roster." | `CalendarNoTeam`, from the route | calendar.test › CH-6307 |
-| CH-6308 | A day with nothing on it (phone Day view) | "Nothing on this day." + Coach: "Tap + to plan something for the team." Player: "Events your coach invites you to show here." | `EmptyState` in `CalendarPhone` | calendar.test › CH-6308 |
-| CH-6309 | A coach whose team has never scheduled anything (D-71) | The page empty state: "Nothing on the calendar" + "Add practices, qualifiers and trips. Players see them on their calendar and can reply." + Create event (the editor). Once anything exists, an empty range keeps CH-6301; a player, or a count that failed, never gets it | `CalendarFirstRun`; the loader's head count of the team's events | calendar.test › CH-6309 |
+| CH-6307 | Signed in with no team (coach or player) | The page empty state under the page's framed head ("Calendar"; on the phone the bar carries it): "You aren’t on a team yet" + Coach: "The calendar fills in once your team is set up." Player: "Team events show here once a coach adds you to a team roster." | `CalendarNoTeam`, from the route | calendar.test › CH-6307 |
+| CH-6308 | A day with nothing on it (phone Day view) | Under the day's heading, the flush section line: "Nothing on this day" + Coach: "Tap + to plan something for the team." Player: "Events your coach invites you to show here." | `EmptyState` in `CalendarPhone` | calendar.test › CH-6308 |
+| CH-6309 | A coach whose team has never scheduled anything (D-71) | The page empty state under the page's framed head ("Calendar", no action of its own; on the phone the bar carries it, and the page shows from first paint): "Nothing on the calendar" + "Add practices, qualifiers and trips. Players see them on their calendar and can reply." + Create event (the editor). Once anything exists, an empty range keeps CH-6301; a player, or a count that failed, never gets it | `CalendarFirstRun`; the loader's head count of the team's events | calendar.test › CH-6309 |
 
 ## 64xx Loading
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-6401 | Calendar is loading | Header, toolbar, the week grid and the panel as skeletons | `CalendarSkeleton` | calendar.test › CH-6401 |
+| CH-6401 | Calendar is loading | Header, toolbar, the week grid and the panel as skeletons. On the phone: the month's opening on its double rule with the view switch, the flush week, the day's heading on its rule and four rows on seams, in the loaded page's geometry (0px shift at 390, WebKit) | `CalendarSkeleton` | calendar.test › CH-6401 |
 | CH-6402 | Calendar-app links are loading | Two skeleton rows | `SubscribeSheet` | calendar.test › CH-6402 |
 | CH-6403 | An event's files are loading | A skeleton row | `EventFiles` | calendar.test › CH-6403 |
 | CH-6404 | Documents are loading (attach) | Two skeleton rows | `FilePicker` | calendar.test › CH-6404 |
@@ -111,6 +111,7 @@ file is optimistic with Undo, and refuses offline the same way.
 | CH-6603 | The current time | A green line with the time moves down the grid | `ch-wk__now` | preview |
 | CH-6604 | Switching between Day, Week, Month and Agenda (Day, Month and List on the phone) | The new view settles in with a 6px rise (260ms) while the old one fades out (180ms), hidden from assistive tech. Instant with reduced motion | `Swap` in `Calendar` and `CalendarPhone` | calendar.test › CH-6605 CH-6604; preview (the timing) |
 | CH-6605 | Stepping to another day, week or month (the arrows, the arrow keys, Today or a date) | The grid slides 12px the way it went (260ms in, 180ms out): a later period from the right, an earlier one from the left. Instant with reduced motion | `Swap kind="slide"` in `Calendar` | calendar.test › CH-6605 CH-6604; preview (the timing) |
+| CH-6606 | Choosing another day in the phone's week strip | The chosen day's green plate glides along the strip to it (260ms, ease-out) while the day's ink turns, and the day's heading and agenda slide 12px the way the day went (260ms in, 180ms out, the leaving copy hidden from assistive tech). Instant with reduced motion and Animations off | `.ch-calm-week::before` on `--ch-calm-at`; `Swap kind="slide"` in `CalendarPhone`'s `DayView` | calendar.test › CH-6606; WebKit 390 frame sampling (plate 150→201px over 260ms; reduced: one frame) |
 
 ## 67xx Haptics
 

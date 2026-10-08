@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { EmptyState } from '../../../ui/States';
 import { haptic } from '../../../lib/haptics';
 import {
@@ -19,7 +19,8 @@ import {
   type ChTeamInfo,
 } from '../model';
 import { SAVE_COPY, useInvite } from '../hooks';
-import { ReadFailed, useInstantSave, useSaveAction } from '../parts';
+import { ReadFailed, ReadsFailed, useInstantSave, useSaveAction } from '../parts';
+import { teamReadsFailed } from '../Team';
 import { TEES } from '../Team';
 import { ActionSheet, FormSheet, useSheetDraft } from './sheets';
 import { StaffPhone } from './StaffPhone';
@@ -32,9 +33,7 @@ import { FieldRow, Group, NavRow, PickerRow, Problem, SliderRow, SwitchRow } fro
 export function TeamPhone({ data, writes }: { data: ChSettingsData; writes: ChSettingsWrites }) {
   if (!data.teamId) {
     return (
-      <div className="ch-surface ch-set-failed">
-        <EmptyState code="CH-8301" title="You aren't on a team yet." body="Team settings appear once your program is set up and you're on its staff." />
-      </div>
+      <EmptyState code="CH-8301" title="You aren’t on a team yet" body="Team settings appear once your program is set up and you’re on its staff." />
     );
   }
   return <TeamBody data={data} writes={writes} />;
@@ -44,49 +43,80 @@ function TeamBody({ data, writes }: { data: ChSettingsData; writes: ChSettingsWr
   const team = data.team && !data.team.error ? data.team.value : null;
   // The timezone and the scoring choices are one saved record, so they share one state: a pick never sends a stale copy of the others.
   const scoring = useScoring(data.scoring && !data.scoring.error ? data.scoring.value : null, writes);
+  const failed = teamReadsFailed(data);
+  const covered = failed.length > 1;
   return (
     <>
-      {data.joinCode?.error ? <ReadFailed what="Your invite code" code="CH-8206" onRetry={writes.refresh} /> : data.joinCode && <InvitePhone code={data.joinCode.value} writes={writes} />}
+      <ReadsFailed parts={failed} onRetry={writes.refresh} />
+      {data.joinCode?.error ? (
+        <Group title="Invite players">
+          <ReadFailed bare what="Your invite code" code="CH-8206" onRetry={writes.refresh} covered={covered} />
+        </Group>
+      ) : (
+        data.joinCode && <InvitePhone code={data.joinCode.value} writes={writes} />
+      )}
       <StaffPhone coachId={data.coachId} writes={writes} />
-      {data.team?.error && <ReadFailed what="Team details" code="CH-8205" onRetry={writes.refresh} />}
+      {data.team?.error && (
+        <Group title="Team details">
+          <ReadFailed bare what="Team details" code="CH-8205" onRetry={writes.refresh} covered={covered} />
+        </Group>
+      )}
       {(team || scoring.s) && <DetailsPhone team={team} scoring={scoring} writes={writes} />}
-      {data.scoring?.error ? <ReadFailed what="Scoring settings" code="CH-8207" onRetry={writes.refresh} /> : scoring.s && <ScoringPhone scoring={scoring} />}
-      {data.reminders?.error ? <ReadFailed what="Event reminders" code="CH-8208" onRetry={writes.refresh} /> : data.reminders && <RemindersPhone reminders={data.reminders.value} writes={writes} />}
+      {data.scoring?.error ? (
+        <Group title="Scoring and format">
+          <ReadFailed bare what="Scoring settings" code="CH-8207" onRetry={writes.refresh} covered={covered} />
+        </Group>
+      ) : (
+        scoring.s && <ScoringPhone scoring={scoring} />
+      )}
+      {data.reminders?.error ? (
+        <Group title="Event reminders">
+          <ReadFailed bare what="Event reminders" code="CH-8208" onRetry={writes.refresh} covered={covered} />
+        </Group>
+      ) : (
+        data.reminders && <RemindersPhone reminders={data.reminders.value} writes={writes} />
+      )}
     </>
   );
 }
 
-/** The invite code with Share, and New code, which asks in an action sheet first (CH-8503). */
+/**
+ * The invite code with Share, and New code, which asks in an action sheet first (CH-8503). It is Team's one feature card
+ * (the Mobile clubhouse pass, owner 2026-10-08): the code is what a coach most often opens Team for, so it sits first,
+ * on the frame's green, with Share as its action and New code as the quiet way to replace it.
+ */
 function InvitePhone({ code: initial, writes }: { code: string; writes: ChSettingsWrites }) {
   const { code, canShare, regen, copy, share } = useInvite(initial, writes);
   const [asking, setAsking] = useState(false);
+  const labelId = useId();
   return (
     <>
-      <Group title="Invite players" note="Players join with this code, then you approve them from Roster.">
-        <div className="ch-setm-invite">
-          <div className="ch-setm-invite__top">
-            <span className="ch-setm-invite__c">
-              <span>Invite code</span>
-              <b className="ch-num" aria-live="polite">
-                {code}
-              </b>
-            </span>
-            {/* Where the device has no share sheet, Share copies the join link instead. */}
-            <button type="button" className="ch-setm-pill" onClick={() => void (canShare ? share() : copy('link'))}>
-              Share
-            </button>
-          </div>
-          <button type="button" className="ch-setm-link" disabled={regen.pending} onClick={() => setAsking(true)}>
+      <section className="ch-feat ch-setm-code" aria-labelledby={labelId}>
+        <span className="ch-feat__k">
+          <span className="ch-feat__kicker" id={labelId}>
+            Invite players
+          </span>
+          {/* Where the device has no share sheet, Share copies the join link instead. */}
+          <button type="button" className="ch-setm-pill is-on-green" onClick={() => void (canShare ? share() : copy('link'))}>
+            Share
+          </button>
+        </span>
+        <b className="ch-feat__title ch-setm-code__v ch-num" aria-live="polite">
+          {code}
+        </b>
+        <span className="ch-feat__line">Players join with this code, then you approve them from Roster.</span>
+        <span className="ch-feat__foot">
+          <button type="button" className="ch-setm-link is-on-green" disabled={regen.pending} onClick={() => setAsking(true)}>
             {regen.pending ? 'Making…' : 'New code'}
           </button>
-        </div>
-      </Group>
+        </span>
+      </section>
       <ActionSheet
         open={asking}
         onClose={() => setAsking(false)}
         code="CH-8503"
         title="Replace your invite code?"
-        message={`${code} stops working right away. Players who haven't joined yet will need the new code.`}
+        message={`${code} stops working right away. Players who haven’t joined yet will need the new code.`}
         actions={[
           {
             label: 'Replace code',
@@ -237,7 +267,7 @@ function RemindersPhone({ reminders, writes }: { reminders: ChReminders; writes:
   };
   return (
     <>
-      <Group title="Event reminders" note="Players who haven't replied get a nudge before each event.">
+      <Group title="Event reminders" note="Players who haven’t replied get a nudge before each event.">
         <SwitchRow label="Send reminders" checked={r.enabled} busy={save.pending.has('enabled')} onChange={flip} />
         {r.enabled && (
           <>

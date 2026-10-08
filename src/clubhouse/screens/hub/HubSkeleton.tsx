@@ -1,13 +1,15 @@
-import { Skeleton } from '../../ui/States';
+import { Skeleton, SkelLine, SkelRows } from '../../ui/States';
+import { HubSkeletonTop } from './HubSkeletonTop';
 import '../../styles/hub.css';
 
 /**
- * Route loading for Team Hub (CH-10405): the header, the tab strip and the two Home columns, in place. The role isn't
- * known until the page is read, so it draws the shape both roles share.
+ * Route loading for Team Hub (CH-10405): the header, the tab strip and the two Home columns, in place. On a phone the
+ * opening and the tabs take the signed-in role's shape from the shell (HubSkeletonTop); the desktop draws the shape
+ * both roles share.
  */
 export function HubSkeleton() {
   return (
-    <main className="ch-hb" data-canopy="" aria-busy="true" aria-label="Loading Team Hub" data-ch-code="CH-10405">
+    <main className="ch-hb ch-hb--skel" data-canopy="" aria-busy="true" aria-label="Loading Team Hub" data-ch-code="CH-10405">
       <header className="ch-hb-h" data-canopy-head="">
         <div>
           <Skeleton width={96} height={24} radius={12} />
@@ -43,6 +45,21 @@ export function HubSkeleton() {
             <Skeleton width="100%" height={36} radius={8} />
           </div>
         </div>
+      </div>
+      {/* The phone's shape (hub.css), in the loaded page's own classes so it lands in place: the opening on its double
+          rule with the role chip and the team line (and a coach's New announcement), the tabs on their hairline, then
+          two flush sections with their headings and rows on seams. Switched in CSS, since this renders on the server. */}
+      <div className="ch-hb-skelm">
+        <HubSkeletonTop />
+        {[3, 2].map((rows, i) => (
+          <section key={i} className="ch-hb-card">
+            <div className="ch-hb-card__h">
+              <SkelLine line={22} bar={15} width={i ? 84 : 72} />
+              <SkelLine line={16} bar={10} width={64} />
+            </div>
+            <SkelRows rows={rows} lead />
+          </section>
+        ))}
       </div>
     </main>
   );

@@ -208,7 +208,7 @@ export function SettingsView({
         code="CH-8507"
         onClose={() => setAsk(null)}
         title="Leave without saving?"
-        description="Your changes in this section haven't been saved."
+        description="Your changes in this section haven’t been saved."
         footer={
           <>
             <Button variant="secondary" onClick={() => setAsk(null)}>

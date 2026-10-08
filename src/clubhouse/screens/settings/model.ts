@@ -190,7 +190,7 @@ export function profileProblem(role: 'coach' | 'player', p: { fullName: string; 
 export function passwordProblem(current: string, next: string, confirm: string): ChProblem | null {
   if (!current) return problem('CH-8105', 'Enter your current password.');
   if (next.length < 8) return problem('CH-8106', 'Use at least 8 characters.');
-  if (next !== confirm) return problem('CH-8107', "The new passwords don't match.");
+  if (next !== confirm) return problem('CH-8107', "The new passwords don’t match.");
   return null;
 }
 

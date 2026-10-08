@@ -1013,14 +1013,21 @@
   }
 }
 
-/* Phone (Coach and Player - Team Hub - Mobile.html): the top bar carries the title */
+/* Phone (Coach and Player - Team Hub - Mobile.html for the layout; the look is the owner's "Mobile clubhouse pass"
+   board, 2026-10-08). The top bar carries the title. The page opens under an engraved double rule with the role chip
+   and the team line, then the tabs on a hairline. Every section is flush: a double rule over its heading in the bold
+   sans, its rows on soft seams, no cards. The latest announcement is the screen's one green feature card. The real
+   objects keep their material: the reply segments, the composer line, the drop zone and the date tiles. */
 @media (max-width: 820px) {
   .ch-hb {
-    gap: 16px;
-    padding: 16px 16px 28px;
+    gap: 22px;
+    padding: 26px 20px 32px;
   }
   .ch-hb-h {
-    padding-bottom: 12px;
+    gap: 16px;
+    padding: 14px 0 0;
+    border-top: var(--ch-ledger-rule-double);
+    border-bottom: 0;
   }
   /* The phone title belongs to the shell from first paint, before useChPhone hydrates. */
   .ch-hb-h h1 {
@@ -1038,59 +1045,409 @@
   .ch-hb-h > a {
     width: 100%;
   }
-  /* The route skeleton: the page title is the top bar's, so there is no title bar here either. */
-  .ch-hb[aria-busy='true'] .ch-hb-h > div > :nth-child(n + 2):nth-child(-n + 4) {
+  /* The route skeleton on a phone: its own shape (HubSkeleton's .ch-hb-skelm), the desktop's bars out of the way. */
+  .ch-hb--skel > :not(.ch-hb-skelm) {
     display: none;
   }
-  /* The role chip and the team line share one row (the title is the top bar's; the h1 is read, not drawn). */
+  .ch-hb-skelm {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .ch-hb-skelm .ch-hb-h > div {
+    height: 24px;
+  }
+  .ch-hb-skelm__tab {
+    display: flex;
+    align-items: center;
+    height: 44px;
+  }
+  .ch-hb.ch-hb--skel .ch-hb-skelm .ch-hb-card {
+    padding: 0;
+  }
+  .ch-hb-skelm .ch-hb-card + .ch-hb-card {
+    margin-top: 14px;
+  }
+  .ch-hb-skelm .ch-hb-card__h {
+    align-items: center;
+  }
+  .ch-hb-skelm .ch-skel-rows {
+    margin-top: 6px;
+  }
+  /* The role chip and the team line share one row; the team line is the page's engraved eyebrow. */
   .ch-hb-h > div:first-child {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 4px 10px;
+    gap: 6px 12px;
     min-width: 0;
   }
-  /* All five tabs sit on a 390px screen (the board draws them at 13px with no frame): spread across the row. */
+  .ch-hb-h .ch-hb-muted {
+    font: 500 11px/1.3 var(--ch-font-sans);
+    letter-spacing: 0.14em;
+    color: var(--ch-ledger-eyebrow);
+  }
+  /* All five tabs sit on a 375px screen (the board draws them at 13px with no frame), on a hairline that runs edge to
+     edge: the strip bleeds past the page's gutters, so it drops the 100% cap that held it 40px short (and cut Tasks). */
   .ch-hb-tabs {
     justify-content: space-between;
-    gap: 8px;
-    margin: -4px -16px 0;
-    padding: 0 16px;
+    gap: 4px;
+    max-width: none;
+    margin: -6px -20px 0;
+    padding: 0 20px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
   }
   .ch-hb-tabs button {
-    height: 40px;
-    font-size: 13px;
+    height: 44px;
+    font-size: 13.5px;
+  }
+
+  /* Sections: no card, a double rule over the heading. */
+  .ch-hb .ch-hb-card,
+  .ch-hb .ch-hb-pass,
+  .ch-hb .ch-hb-ann:not(.is-featured) {
+    overflow: visible;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-hb-home {
+    gap: 36px;
+  }
+  .ch-hb-col {
+    gap: 36px;
   }
   .ch-hb-card__h {
-    padding: 16px 16px 12px;
+    align-items: baseline;
+    padding: 12px 0 0;
+    border-top: var(--ch-ledger-rule-double);
   }
-  .ch-hb-rsvp__list,
-  .ch-hb-tasks,
-  .ch-hb-feed ol {
-    padding: 0 16px 14px;
+  .ch-hb-card__h h2 {
+    font: 600 19px/1.1 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
   }
-  .ch-hb-pass__main,
-  .ch-hb-pass__stub {
-    padding: 16px;
+  .ch-hb-card__h h2 svg {
+    color: var(--ch-ledger-eyebrow);
+  }
+  .ch-hb-card__h .ch-hb-muted {
+    font: var(--ch-type-caption);
+  }
+  /* A failed part with no heading of its own (the latest post, the next trip) stands on its own double rule. */
+  .ch-hb-part {
+    padding-top: 14px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  /* A failed or empty section's line stands a step under its heading, where the first row would start. */
+  .ch-hb-card__h + [role='alert'],
+  .ch-hb-card__h + .ch-notice,
+  .ch-hb-card__h + .ch-empty {
+    margin-top: 14px;
+  }
+
+  /* RSVPs: rows on seams, the date in a quiet engraved tile. */
+  .ch-hb-rsvp__list {
+    margin-top: 6px;
+    padding: 0;
+  }
+  .ch-hb-rsvp__list li {
+    padding: 14px 0;
+    border-top: 0;
+  }
+  .ch-hb-rsvp__list li + li {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-hb-rsvp__d {
+    border-radius: 10px;
+    background: none;
+    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+  }
+  .ch-hb-rsvp__b {
+    border-radius: 6px;
+    transition: background-color var(--ch-dur-press) var(--ch-ease), box-shadow var(--ch-dur-press) var(--ch-ease);
+  }
+  /* The event's line opens it in Calendar: a press tints it a little past its words, without moving them. */
+  .ch-hb-rsvp__b:active {
+    background-color: var(--ch-ledger-row-press);
+    box-shadow: 0 0 0 6px var(--ch-ledger-row-press);
+  }
+  .ch-hb-rsvp__b b {
+    font-size: 15px;
+  }
+  .ch-hb-rsvp__b > span {
+    font: var(--ch-type-caption);
+  }
+
+  /* The latest announcement: the screen's one green feature card (ui.css .ch-feat, in the announcement's own markup so
+     its byline, menu, Got it and reads stay). */
+  .ch-hb-ann.is-featured {
+    gap: 10px;
+    padding: 18px;
+    border-radius: 14px;
+    background: var(--ch-feature-bg);
+    box-shadow: var(--ch-elevation-feature);
+    color: var(--ch-on-green-ink);
+  }
+  .ch-hb-ann.is-featured .ch-hb-eyebrow {
+    font: 500 12.5px/1 var(--ch-font-sans);
+    color: var(--ch-on-green-ink-muted);
+  }
+  .ch-hb-ann.is-featured h3 {
+    margin: 2px 0 0;
+    font: 600 23px/1.15 var(--ch-font-sans);
+    letter-spacing: -0.03em;
+    color: var(--ch-on-green-ink);
+  }
+  .ch-hb-ann.is-featured p {
+    font: 400 14px/1.5 var(--ch-font-sans);
+    color: var(--ch-on-green-ink-soft);
+  }
+  .ch-hb-ann.is-featured .ch-hb-ann__h {
+    padding-top: 12px;
+    border-top-color: rgb(255 255 255 / 0.1);
+  }
+  .ch-hb-ann.is-featured .ch-hb-ann__h b {
+    color: var(--ch-on-green-ink);
+  }
+  .ch-hb-ann.is-featured .ch-hb-ann__h > div span,
+  .ch-hb-ann.is-featured .ch-hb-muted {
+    color: var(--ch-on-green-ink-muted);
+  }
+  .ch-hb-ann.is-featured .ch-hb-iconbtn {
+    color: var(--ch-on-green-ink-soft);
+  }
+  .ch-hb-ann.is-featured .ch-hb-iconbtn:active {
+    background: rgb(255 255 255 / 0.08);
+  }
+  .ch-hb-ann.is-featured .ch-hb-reads {
+    color: var(--ch-on-green-ink-soft);
+  }
+  .ch-hb-ann.is-featured .ch-hb-reads__t {
+    background: rgb(255 255 255 / 0.14);
+  }
+  .ch-hb-ann.is-featured .ch-hb-reads__t i {
+    background: var(--ch-champagne-300);
+  }
+  .ch-hb-ann.is-featured .ch-hb-acked {
+    color: var(--ch-champagne-300);
+  }
+  .ch-hb-ann.is-featured .ch-btn--primary {
+    background: var(--ch-on-green-ink);
+    box-shadow: none;
+    color: var(--ch-green-800);
+  }
+  .ch-hb-ann.is-featured .ch-hb-saving {
+    color: var(--ch-on-green-ink-soft);
+  }
+  /* The keyboard ring in champagne, so it reads on the green. */
+  .ch-hb-ann.is-featured .ch-btn:focus-visible {
+    box-shadow: 0 0 0 2px var(--ch-green-800), 0 0 0 4px var(--ch-champagne-300);
+  }
+  .ch-hb-ann.is-featured .ch-hb-iconbtn:focus-visible {
+    outline-color: var(--ch-champagne-300);
+  }
+  /* A title's figures (SerifText's spans) take the title's own sans. */
+  .ch-hb-ann h3 > span,
+  .ch-hb-pass__main > b > span {
+    font-size: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+  }
+
+  /* Announcements: entries on the canvas, ruled apart, under the composer line. */
+  .ch-hb-list {
+    gap: 0;
+    max-width: none;
+  }
+  .ch-hb-new {
+    margin-bottom: 6px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: var(--ch-sheet-bg);
+    box-shadow: 0 0 0 1px var(--ch-ledger-rule);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-hb-new:active {
+    background-color: var(--ch-bg-hover);
+  }
+  .ch-hb-list > .ch-hb-ann {
+    gap: 10px;
+    padding: 22px 0;
+  }
+  .ch-hb-list > .ch-hb-ann + .ch-hb-ann {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+  }
+  .ch-hb-list > .ch-hb-ann h3 {
+    font: 600 22px/1.15 var(--ch-font-sans);
+    letter-spacing: -0.028em;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-hb-list > .ch-hb-ann p {
+    font-size: 14.5px;
+    line-height: 1.55;
+  }
+  .ch-hb-ann__h {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-hb-list > .ch-hb-new + .ch-empty,
+  .ch-hb-list > .ch-hb-new + .ch-notice {
+    margin-top: 16px;
+  }
+
+  /* Trips: an entry on its double rule, the facts between two hairlines like the kit's figure row, the plan under
+     them; a trip after the next one is a row. */
+  .ch-hb-pass__main {
+    gap: 6px;
+    padding: 12px 0 0;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-hb-pass__main > b {
+    margin-top: 2px;
+    font: 600 19px/1.15 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-hb-pass.is-big .ch-hb-pass__main > b {
+    font-size: 23px;
+    letter-spacing: -0.03em;
   }
   .ch-hb-pass__f {
-    gap: 14px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    margin: 10px 0 0;
+    padding: 12px 0;
+    border-top: 1px solid var(--ch-ledger-rule);
+    border-bottom: 1px solid var(--ch-ledger-rule);
   }
-  /* The next trip is the page's pass; the trips after it are rows (board: hb-trip). */
-  .ch-hb-pass.is-big .ch-hb-pass__main > b {
-    font-size: 22px;
+  .ch-hb-pass__f > div {
+    min-width: 0;
+    padding: 2px 12px;
+  }
+  .ch-hb-pass__f > div:first-child {
+    padding-left: 0;
+  }
+  .ch-hb-pass__f > div + div {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-hb-pass__f dd {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+  .ch-hb-pass__stub {
+    gap: 10px;
+    padding: 14px 0 0;
+    border: 0;
+  }
+  .ch-hb-pass__stub::before,
+  .ch-hb-pass__stub::after {
+    content: none;
+  }
+  .ch-hb-plan li {
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-hb-plan li:first-child {
+    border-top: 0;
+  }
+  .ch-hb-travel {
+    gap: 22px;
+    max-width: none;
   }
   .ch-hb-travel .ch-hb-pass:not(.is-big) .ch-hb-pass__main {
     gap: 4px;
-    padding: 14px 16px;
+    padding: 14px 0 0;
+    border-top: 0;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
   }
   .ch-hb-travel .ch-hb-pass:not(.is-big) .ch-hb-pass__main > b {
     font-size: 16px;
   }
   .ch-hb-travel .ch-hb-pass:not(.is-big) .ch-hb-pass__f {
-    gap: 18px;
     margin-top: 6px;
-    padding-top: 8px;
+    padding: 8px 0 0;
+    border-bottom: 0;
+  }
+
+  /* Updates: rows on seams, a new one marked by the green dot; a row with a place to go tints on the press. */
+  .ch-hb-feed ol {
+    margin-top: 6px;
+    padding: 0;
+  }
+  .ch-hb-feed li {
+    border-top: 0;
+  }
+  .ch-hb-feed li + li {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-hb-feed li > a,
+  .ch-hb-feed li > .ch-hb-feed__row {
+    min-height: 58px;
+    padding: 10px 0 10px 16px;
+  }
+  .ch-hb-feed li > a {
+    margin: 0 -12px;
+    padding: 10px 12px 10px 28px;
+    border-radius: var(--ch-radius-md);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-hb-feed li > a:active {
+    background-color: var(--ch-ledger-row-press);
+  }
+  .ch-hb-feed li.is-new::after {
+    top: 26px;
+  }
+  .ch-hb-feed__b b {
+    font-size: 14.5px;
+  }
+  .ch-hb-feed__b > span {
+    font: var(--ch-type-caption);
+  }
+
+  /* Tasks: rows on seams. */
+  .ch-hb-tasks {
+    margin-top: 6px;
+    padding: 0;
+  }
+  .ch-hb-task {
+    min-height: 58px;
+    padding: 10px 0;
+  }
+  .ch-hb-task + .ch-hb-task {
+    border-top: 0;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-hb-task b {
+    font-size: 15px;
+  }
+
+  /* Documents: the drop zone keeps its material; a folder is a section, its files rows on seams that tint on the press. */
+  .ch-hb-docs {
+    gap: 28px;
+  }
+  .ch-hb-files {
+    margin-top: 4px;
+    padding: 0;
+  }
+  .ch-hb-file + .ch-hb-file {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-hb-file__open {
+    min-height: 58px;
+    margin-left: -12px;
+    padding: 10px 12px;
+    border-radius: var(--ch-radius-md);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-hb-file__open:active {
+    background-color: var(--ch-ledger-row-press);
+  }
+  .ch-hb-file__b b {
+    font-size: 15px;
+  }
+  .ch-hb-file__b span {
+    font: var(--ch-type-caption);
   }
 }
 
@@ -1246,6 +1603,12 @@
   }
 }
 
+/* The phone's route skeleton (HubSkeleton) shows on the phone only. */
+@media (min-width: 821px) {
+  .ch-hb-skelm {
+    display: none;
+  }
+}
 /* The route skeleton's cards carry the loaded cards' padding (the Ledger below lays them flush on desktop). */
 .ch-hb[aria-busy='true'] .ch-hb-card {
   padding: 18px;
@@ -1291,6 +1654,12 @@
   .ch-hb[data-canopy] .ch-hb-rsvp__list > li:first-child,
   .ch-hb[data-canopy] .ch-hb-feed ol > li:first-child {
     border-top: 0;
+  }
+  /* A failed part with no heading of its own (the latest post, the next trip) stands on its own engraved rule, so it
+     never reads as a part of the section above it. */
+  .ch-hb[data-canopy] .ch-hb-part {
+    padding-top: 14px;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
   }
   /* A section that didn't load: its notice stands a step under the rule, where the first row would start. */
   .ch-hb[data-canopy] .ch-hb-card__h + [role='alert'] {

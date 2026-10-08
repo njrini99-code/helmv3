@@ -18,7 +18,7 @@ import { Group, PickerRow, SliderRow, SwitchRow } from './ui';
  */
 export function CoachHelmPhone({ data, writes }: { data: ChSettingsData; writes: ChSettingsWrites }) {
   if (!data.coachhelm) return null;
-  if (data.coachhelm.error) return <ReadFailed what="Your CoachHelm settings" code="CH-8211" onRetry={writes.refresh} />;
+  if (data.coachhelm.error) return <ReadFailed bare what="Your CoachHelm settings" code="CH-8211" onRetry={writes.refresh} />;
   return <CoachHelmBody initial={data.coachhelm.value} writes={writes} />;
 }
 
@@ -27,7 +27,7 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
   const floor = confidenceFloorForSensitivity(p.alertSensitivity);
   const alertsOn = ALERT_GROUPS.reduce((n, g) => n + g.alerts.filter((a) => p[a.key as keyof CoachPhilosophy]).length, 0);
   const alertsTotal = ALERT_GROUPS.reduce((n, g) => n + g.alerts.length, 0);
-  const statusText = status === 'saving' ? 'Saving…' : status === 'saved' ? 'All changes saved' : status === 'failed' ? "A change didn't save" : 'Changes save as you make them';
+  const statusText = status === 'saving' ? 'Saving…' : status === 'saved' ? 'All changes saved' : status === 'failed' ? "A change didn’t save" : 'Changes save as you make them';
   const days = p.statsBenchmarkWindowDays;
 
   return (
@@ -100,7 +100,7 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
           description={
             p.minInsightConfidence <= floor
               ? `Your sensitivity already requires ${Math.round(floor * 100)}%, so this only matters above that.`
-              : `Above your sensitivity's ${Math.round(floor * 100)}% floor, so this is the number in effect.`
+              : `Above your sensitivity’s ${Math.round(floor * 100)}% floor, so this is the number in effect.`
           }
           value={p.minInsightConfidence}
           {...SIGNAL_CONTROL_RANGES.minInsightConfidence}
@@ -152,7 +152,7 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
         />
       </Group>
 
-      <Group title="Display" note="What CoachHelm shows on your dashboards. The strokes-gained baseline follows your team: the Tour for men's teams, the women's tour for women's.">
+      <Group title="Display" note="What CoachHelm shows on your dashboards. The strokes-gained baseline follows your team: the Tour for men’s teams, the women’s tour for women’s.">
         <SwitchRow label="Show strokes gained" checked={p.showStrokesGained} onChange={(v) => change({ showStrokesGained: v })} />
         <SwitchRow label="Show advanced statistics" checked={p.showAdvancedStats} onChange={(v) => change({ showAdvancedStats: v })} />
         <PickerRow
@@ -194,13 +194,13 @@ function PowerGroup({ initial, writes }: { initial: ChCoachHelmSettings; writes:
           help={coach.enabled ? 'Insights, predictions and patterns appear on your pages.' : 'Hidden on your pages. Your settings below are kept.'}
           checked={coach.enabled}
           busy={pending.has('enabled')}
-          onChange={(v) => (v ? void setC({ enabled: true }, "Couldn't turn CoachHelm on") : setAsking(true))}
+          onChange={(v) => (v ? void setC({ enabled: true }, "Couldn’t turn CoachHelm on") : setAsking(true))}
         />
         {coach.enabled && (
           <>
-            <SwitchRow label="Insights" help="Coaching notes on what changed and why." checked={coach.showInsights} busy={pending.has('showInsights')} onChange={(v) => void setC({ showInsights: v }, "Couldn't change insights")} />
-            <SwitchRow label="Predictions" help="Where each player's scoring is heading." checked={coach.showPredictions} busy={pending.has('showPredictions')} onChange={(v) => void setC({ showPredictions: v }, "Couldn't change predictions")} />
-            <SwitchRow label="Patterns" help="Leaks and habits that repeat across rounds." checked={coach.showPatterns} busy={pending.has('showPatterns')} onChange={(v) => void setC({ showPatterns: v }, "Couldn't change patterns")} />
+            <SwitchRow label="Insights" help="Coaching notes on what changed and why." checked={coach.showInsights} busy={pending.has('showInsights')} onChange={(v) => void setC({ showInsights: v }, "Couldn’t change insights")} />
+            <SwitchRow label="Predictions" help="Where each player’s scoring is heading." checked={coach.showPredictions} busy={pending.has('showPredictions')} onChange={(v) => void setC({ showPredictions: v }, "Couldn’t change predictions")} />
+            <SwitchRow label="Patterns" help="Leaks and habits that repeat across rounds." checked={coach.showPatterns} busy={pending.has('showPatterns')} onChange={(v) => void setC({ showPatterns: v }, "Couldn’t change patterns")} />
           </>
         )}
       </Group>
@@ -215,7 +215,7 @@ function PowerGroup({ initial, writes }: { initial: ChCoachHelmSettings; writes:
             label: 'Turn off CoachHelm',
             onClick: () => {
               setAsking(false);
-              void setC({ enabled: false }, "Couldn't turn CoachHelm off");
+              void setC({ enabled: false }, "Couldn’t turn CoachHelm off");
             },
           },
         ]}

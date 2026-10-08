@@ -631,66 +631,91 @@
   .ch-set:not([aria-busy='true']) {
     visibility: hidden;
   }
+  /* The skeleton's page has the live page's padding, and draws its list in the live page's classes, so nothing moves
+     when the list arrives. */
   .ch-set[aria-busy='true'] {
-    padding: 8px 16px 32px;
+    padding: 26px 20px 32px;
   }
   .ch-set-skel-desk {
     display: none;
   }
   .ch-setm-skel {
+    display: block;
+  }
+  /* The title's bar holds the live title's line (31px at 1.08) under the same rule and padding. */
+  .ch-setm-skel .ch-setm-title {
     display: flex;
-    flex-direction: column;
-    gap: 22px;
+    box-sizing: content-box;
+    align-items: center;
+    height: 1.08em;
   }
 
   .ch-setm {
+    position: relative;
     display: block;
     box-sizing: border-box;
-    padding: 4px 16px 32px;
+    /* A pushed section travels in from the right edge (CH-8609); the page never scrolls sideways while it does. */
+    overflow-x: clip;
+    padding: 26px 20px 32px;
     font-variant-numeric: tabular-nums;
   }
+  /* The page (the Mobile clubhouse pass, owner 2026-10-08): the board's 36px between sections. */
   .ch-setm-page {
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: 36px;
   }
-  /* The large title, in the display serif as every other phone page's title (Team stats, a profile's name); the top bar
-     carries only the back link, and the page's heading for VoiceOver. Section names are words, so the serif holds. */
+  /* A section is in front of the list while either moves (CH-8609), on the sheet's parchment, so the list fades out of
+     sight under it. */
+  .ch-setm-page.is-sub {
+    z-index: 1;
+    background: var(--ch-workspace);
+  }
+  /* The large title, as the board's page intro (ui.css .ch-intro): an engraved double rule, then the bold sans in forest
+     ink. The top bar carries only the back link, and the page's heading for VoiceOver. */
   .ch-setm-title {
     margin: 0;
-    font: 400 38px/1.05 var(--ch-font-serif);
-    letter-spacing: -0.008em;
-    color: var(--ch-text-primary);
+    padding-top: 14px;
+    border-top: var(--ch-ledger-rule-double);
+    font: 600 31px/1.08 var(--ch-font-sans);
+    letter-spacing: -0.038em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
   }
-  .ch-setm-lead {
-    margin: -14px 0 0;
-    font: 400 14px/1.4 var(--ch-font-sans);
+  /* The intro's brief, 10px under the title (ui.css .ch-intro__brief); written against the page so it outranks the
+     root's paragraph reset. */
+  .ch-setm-page > .ch-setm-lead {
+    margin: -26px 0 0;
+    font: 400 14.5px/1.5 var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
   .ch-setm-lead.is-failed {
     color: var(--ch-warning-600);
   }
 
-  /* Identity row */
+  /* Who you are, flush under the title: the portrait set into the page with the Ledger's ring, the name and the role.
+     The whole row presses with the Ledger's tint, which bleeds 12px past the section's edge. */
   .ch-setm-id {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 16px;
     box-sizing: border-box;
-    width: 100%;
-    padding: 14px 16px;
+    width: calc(100% + 24px);
+    margin: -18px -12px 0;
+    padding: 8px 12px;
     border: 0;
-    border-radius: 16px;
-    background: var(--ch-bg-surface);
-    box-shadow: var(--ch-elevation-reading);
+    border-radius: var(--ch-radius-md);
+    background: none;
     color: inherit;
     font: inherit;
     text-align: left;
     cursor: pointer;
     touch-action: manipulation;
+    transition: background var(--ch-dur-press) var(--ch-ease);
   }
   .ch-setm-id:active {
-    background: var(--ch-bg-hover);
+    background: var(--ch-ledger-row-press);
   }
   .ch-setm-id:focus-visible {
     outline: 2px solid var(--ch-border-focus);
@@ -706,6 +731,8 @@
   .ch-setm-id__b b {
     overflow: hidden;
     font: 600 17px/1.25 var(--ch-font-sans);
+    letter-spacing: -0.015em;
+    color: var(--ch-text-primary);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -728,6 +755,9 @@
     color: var(--ch-ivory-100);
     font: 600 19px/1 var(--ch-font-sans);
     transition: opacity var(--ch-dur-base) var(--ch-ease);
+  }
+  .ch-setm-id > .ch-setm-coin {
+    box-shadow: var(--ch-ledger-avatar-ring);
   }
   .ch-setm-coin.is-player {
     background: var(--ch-green-100);
@@ -1122,17 +1152,27 @@
     inset: -2px 0;
   }
 
-  /* Sign out */
+  /* Sign out: a flush destructive row at the foot of the list, on its own rule; the press is the Ledger's tint. */
   .ch-setm-signout {
+    display: flex;
+    align-items: center;
     box-sizing: border-box;
-    height: 50px;
+    width: calc(100% + 24px);
+    min-height: 58px;
+    margin: 0 -12px;
+    padding: 0 12px;
     border: 0;
-    border-radius: 16px;
-    background: var(--ch-bg-surface);
-    box-shadow: var(--ch-elevation-reading);
-    font: 500 16px/1 var(--ch-font-sans);
+    border-radius: var(--ch-radius-md);
+    background: none;
+    font: 600 15px/1.3 var(--ch-font-sans);
+    letter-spacing: -0.012em;
+    text-align: left;
     cursor: pointer;
     touch-action: manipulation;
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-setm-signout:active {
+    background: var(--ch-ledger-row-press);
   }
   .ch-setm-signout.is-danger {
     color: var(--ch-danger-600);
@@ -1237,6 +1277,164 @@
   .ch-setm-rank__i.is-held .ch-setm-rank__h {
     color: var(--ch-green-600);
     cursor: grabbing;
+  }
+
+  .ch-setm-signout:focus-visible {
+    outline: 2px solid var(--ch-border-focus);
+    outline-offset: -2px;
+  }
+
+  /* The page's groups on the Ledger (the Mobile clubhouse pass, owner 2026-10-08): each is a flush section, its heading
+     under the engraved double rule in the 19px bold sans, its rows on soft seams with the label in the bold sans, and
+     its footnote flush to the section's edge. A group with no heading (the sections list, Sign out) opens on a rule.
+     Only the page's own groups (children of the page) change: the sheets' inset forms keep their cards. */
+  .ch-setm-page > .ch-setm-group > .ch-setm-gh {
+    margin: 0 0 6px;
+    padding: 12px 0 0;
+    border-top: var(--ch-ledger-rule-double);
+    font: 600 19px/1.1 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card {
+    overflow: visible;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card:first-child {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+  }
+  .ch-setm-page > .ch-setm-group.is-end {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-note {
+    margin: 10px 0 0;
+    font: 400 13px/1.45 var(--ch-font-sans);
+  }
+  /* A section that didn't load: its notice stands where its first row would. */
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > [role='alert'] {
+    margin-top: 8px;
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row {
+    width: calc(100% + 24px);
+    min-height: 58px;
+    margin-inline: -12px;
+    padding: 0 12px;
+    border-radius: var(--ch-radius-md);
+    font: 600 15px/1.3 var(--ch-font-sans);
+    letter-spacing: -0.012em;
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row ~ .ch-setm-row::before {
+    right: 12px;
+    left: 12px;
+    background: var(--ch-ledger-rule-soft);
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > button.ch-setm-row:active,
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > a.ch-setm-row:active {
+    background: var(--ch-ledger-row-press);
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.has-tile {
+    gap: 14px;
+  }
+  /* The icon sits in an engraved tile rather than a filled one; CoachHelm keeps its dark tile. */
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row > .ch-setm-tile:not(.is-dark) {
+    background: none;
+    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.is-danger {
+    justify-content: flex-start;
+  }
+  /* An action or link row (Create invite, Report a problem, Privacy policy, Try again) has no value or chevron to say
+     it does something, so its words take the ink of a value that opens something (.is-link), the way a native list
+     tints its actions. A red row (Sign out, Leave team) is its own class and stays red. */
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.is-plain {
+    color: var(--ch-green-600);
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.is-info.has-help {
+    padding: 10px 12px 12px;
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.is-info .ch-setm-help {
+    margin: 0;
+    padding: 0;
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.is-sw {
+    padding: 0;
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.is-sw .ch-switch {
+    min-height: 58px;
+    padding: 0 12px;
+    font: 600 15px/1.3 var(--ch-font-sans);
+    letter-spacing: -0.012em;
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row .ch-setm-help {
+    margin-top: -10px;
+    padding: 0 12px 14px;
+    font: 400 13px/1.45 var(--ch-font-sans);
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.is-slider {
+    padding: 14px 12px;
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.is-slider .ch-slider__l {
+    font: 600 15px/1.3 var(--ch-font-sans);
+    letter-spacing: -0.012em;
+  }
+  /* The priorities: ranked rows on the same seams; a held row lifts on a green plate a little wider than the row. */
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-rank > .ch-setm-rank__i {
+    height: 58px;
+    padding: 0;
+    background: none;
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-rank > .ch-setm-rank__i ~ .ch-setm-rank__i::before {
+    left: 0;
+    background: var(--ch-ledger-rule-soft);
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-rank > .ch-setm-rank__i.is-held {
+    margin: 0 -10px;
+    padding: 0 10px;
+    background: var(--ch-green-50);
+  }
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-rank .ch-setm-rank__txt > span:first-child {
+    font: 600 15px/1.3 var(--ch-font-sans);
+    letter-spacing: -0.012em;
+  }
+  /* A staff invite's code, flush under its rows. */
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-invite {
+    padding: 12px 0 4px;
+  }
+
+  /* Team's one feature card: the invite code, on the kit's FeatureCard (ui.css .ch-feat). The code is its title, Share
+     stands where the card's chip would, and New code is the quiet way to replace it, in the foot. */
+  .ch-setm-code .ch-feat__k {
+    margin: -6px -6px 0 0;
+  }
+  .ch-setm-code .ch-setm-code__v {
+    font-size: 28px;
+    letter-spacing: 0.08em;
+    overflow-wrap: anywhere;
+  }
+  .ch-setm-code .ch-feat__foot {
+    padding-top: 6px;
+  }
+  .ch-setm-pill.is-on-green {
+    background: var(--ch-on-green-ink);
+    color: var(--ch-green-800);
+  }
+  .ch-setm-link.is-on-green {
+    margin-left: -4px;
+    font-weight: 600;
+    color: var(--ch-champagne-300);
+  }
+  .ch-setm-pill:focus-visible,
+  .ch-setm-link:focus-visible {
+    outline: 2px solid var(--ch-border-focus);
+    outline-offset: 2px;
+  }
+  .ch-setm-code .ch-setm-pill:focus-visible,
+  .ch-setm-code .ch-setm-link:focus-visible {
+    outline-color: var(--ch-champagne-300);
   }
 
   /* Sheets on the native <dialog> (sheets.tsx): a bottom sheet, and the iOS action sheet */

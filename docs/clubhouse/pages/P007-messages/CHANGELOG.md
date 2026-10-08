@@ -1,5 +1,45 @@
 # P007 — Messages: changelog
 
+## 2026-10-08 — phone: Mobile clubhouse pass
+
+Phone Messages now follows the owner's "Coach - Home - Mobile v2" board (round 3:
+fewer containers), carried from Home to every phone screen:
+- the inbox sits on the parchment at the board's margins: Search, then the
+  filters as engraved rings, the chosen one in the green tint (the tint and ink
+  cross over on the quick beat and the list settles in under it, CH-7606), then
+  Announcements under an engraved double rule in the bold 19px sans;
+- conversations are rows on seams inset to the text, with the Ledger's press
+  tint (never a scale); their dates (Today, This week, Earlier) are the ledger's
+  engraved date line, not section titles, so they read as entries in one list;
+- a pushed thread's name reads in the bar's ivory on the green chassis, and its
+  keyboard focus ring is gilt instead of a dark green box;
+- Details, New message and New announcement lose their white panels: sections
+  open under the double rule, rows sit on seams, and the profile name is the
+  large heavy sans in forest ink;
+- a pushed announcement is the page itself: its title in the 31px heavy sans,
+  with Tasks, Files and who has read it as sections; the acknowledgement keeps
+  its green well;
+- the route skeleton and the inbox's loading draw the inbox's own shape
+  (Search, the filters, a section and its rows), so nothing moves when it lands.
+
+## 2026-10-08 — Heads, notices and copy (states audit)
+
+- The first-run and no-team pages open under the page's framed head (Messages
+  and one line) on desktop instead of a bare canvas; the empty keeps the one
+  action (CH-7309, CH-7308).
+- The rail's title is the heavy sans in forest ink; it had kept the old display
+  serif's loose tracking.
+- A rail that didn't load gives its notice the rail's full width (CH-7201).
+- With no conversation open, the desktop's thread pane holds its empty (CH-7305)
+  in the middle of the pane, as it already stood top to bottom, instead of
+  against the rail's rule.
+- The typing dots no longer show under a conversation that didn't load or is
+  still loading (CH-7602).
+- Notice and empty titles lose their trailing period and take curly apostrophes
+  ("Conversations didn’t load", "You aren’t on a team yet"), and so does every
+  other line the page writes, its toasts included; words a server sends are
+  shown as sent (b8, held by `copy-apostrophes.test.ts`).
+
 ## 2026-10-07 — Another conversation settles in
 
 On desktop, opening another conversation or announcement settles it in with a 6px rise (base) while the last fades

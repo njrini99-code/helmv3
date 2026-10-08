@@ -20,7 +20,7 @@ export function PreferencesSection({ device }: { device: ChDevice }) {
       <Row label={<><Icon icon={Sparkle} size={15} /> Animations</>} help="Transitions when pages, panels and sheets open. Off makes every change instant.">
         <SettingSwitch label="Animations" hideLabel checked={animations} onChange={setAnimations} />
       </Row>
-      <Row label={<><Icon icon={Ruler} size={15} /> Distance units</>} help="How far a shot or a hole is shown. What you enter and what is stored don't change.">
+      <Row label={<><Icon icon={Ruler} size={15} /> Distance units</>} help="How far a shot or a hole is shown. What you enter and what is stored don’t change.">
         <Segmented label="Distance units" size="sm" value={distance} options={DISTANCE_OPTIONS} onChange={setDistance} />
       </Row>
       {device.native && (

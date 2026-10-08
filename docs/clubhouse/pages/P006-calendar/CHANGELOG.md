@@ -1,5 +1,38 @@
 # P006 — Calendar: changelog
 
+## 2026-10-08 — phone: Mobile clubhouse pass
+
+Phone Calendar follows the owner's "Mobile clubhouse pass" board (carried from Coach Home), with no cards:
+- the month opens under the engraved double rule in the 31px bold sans, with the year and the team's
+  timezone engraved over it and the Day, Month and List switch beside it (the serif title is gone);
+- the week is flush on the parchment; the chosen day is one green plate that glides along the strip to the
+  day you tap, and the day's agenda slides 12px the way the day went (CH-6606, instant with reduced motion);
+- the day is a section on its own double rule, its events rows on soft seams along Home's Today rail (time,
+  a dot in the event's colour, title and place), class and busy blocks still hatched, past rows in a
+  lighter ink;
+- Month is flush under the weekdays' rule, and List is each day on its double rule with rows on seams;
+- every row, day and month cell presses with the Ledger tint, never a scale.
+
+The phone route skeleton draws the same shape in the loaded page's geometry (0px shift at 390, WebKit).
+
+## 2026-10-08 — One notice when several reads fail; the page's own words take curly apostrophes
+
+With more than one read failed (team events, the team's timezone, the roster, busy time, classes, replies), the
+calendar says so once above the grid, naming the parts, with one Try again that reads the page again (the shell's
+CH-1209). The grid and the inspector keep only their notice's title where the data would be. The timezone, roster,
+busy-time and class notices have no place but the stack under the toolbar, so they fold into the page's notice rather
+than repeat it on the next line. One failed read keeps its own notice and Try again (states audit b6). Every line the
+page writes, its toasts included, takes the curly apostrophe; words a server sends are shown as sent (b8, held by
+`copy-apostrophes.test.ts`).
+
+## 2026-10-08 — Whole-page empties: visible on the phone, under the framed head on desktop
+
+The first-run page (CH-6309) and the no-team page (CH-6307) were blank on a phone: the rule that hides the
+server-drawn desktop page until the phone view takes over also caught them (states audit c1). They now
+carry their own class and show from first paint. On desktop both open under the page's framed head
+("Calendar", no action of its own), like every other page (c4). Empty titles drop their full stop and take
+curly apostrophes ("You aren’t on a team yet", "Nothing on this day").
+
 ## 2026-10-07 — Views settle in; weeks slide
 
 Switching Day, Week, Month and Agenda (Day, Month and List on the phone) settles the new view in with a 6px rise

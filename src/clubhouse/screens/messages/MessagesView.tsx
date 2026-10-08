@@ -86,6 +86,7 @@ import { fileMeta, fileSize, useConversationFiles } from "./files";
 // Re-exported: MessagesPhone and older callers read it from here.
 export { fileSize } from "./files";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
+import { MessagesHead } from "./MessagesNoTeam";
 
 export const REACTIONS: Array<{ key: ChReactionKey; icon: LucideIcon }> = [
   { key: "Like", icon: ThumbsUp },
@@ -240,7 +241,7 @@ export function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
       {failed ? (
         <InlineNotice
           code="CH-7203"
-          title="Message search didn't load."
+          title="Message search didn’t load"
           body="Conversations above still match by name."
           onRetry={() => setAttempt((a) => a + 1)}
         />
@@ -409,12 +410,15 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
       </div>
       <div className="ch-ms-rail__body">
         {api.convsError ? (
-          <InlineNotice
-            code="CH-7201"
-            title="Conversations didn't load."
-            body="Your messages are safe. Try again; the error has been reported."
-            onRetry={api.refetchConvs}
-          />
+          // The rail's full width (states audit c9): at the body's inset its body wrapped to a narrow column.
+          <div className="ch-ms-rail__notice">
+            <InlineNotice
+              code="CH-7201"
+              title="Conversations didn’t load"
+              body="Your messages are safe. Try again; the error has been reported."
+              onRetry={api.refetchConvs}
+            />
+          </div>
         ) : (api.convsLoading && !api.convs.length) || api.annLoading ? (
           <div className="ch-ms-sec__card" aria-busy="true" data-ch-code="CH-7402">
             {Array.from({ length: 5 }, (_, i) => (
@@ -432,7 +436,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
             code="CH-7301"
             compact
             icon={MessageSquare}
-            title="No conversations yet."
+            title="No conversations yet"
             body={
               api.viewer.role === "coach"
                 ? "Start one with a player, or create a team group."
@@ -517,7 +521,7 @@ export function Attachments({
           <Icon icon={RotateCw} size={15} />
         </span>
         <span>
-          <b>Attachment didn&apos;t load</b>
+          <b>Attachment didn’t load</b>
           <span>Tap to try again</span>
         </span>
       </button>
@@ -1109,7 +1113,7 @@ export function Composer({
   return (
     <footer className="ch-ms-comp" aria-busy={checking || sending || undefined}>
       {checkFailed && <InlineNotice code="CH-7217" title="Couldn’t check a pending send" body="Try again before sending another message." onRetry={() => setCheckAttempt((n) => n + 1)} />}
-      {unconfirmed && <InlineNotice code="CH-7023" title="Couldn't confirm this send" body="This send is unconfirmed. Retry send checks the original request; editing stays locked until its outcome is known." />}
+      {unconfirmed && <InlineNotice code="CH-7023" title="Couldn’t confirm this send" body="This send is unconfirmed. Retry send checks the original request; editing stays locked until its outcome is known." />}
       {effectiveParent && (
         <div className="ch-ms-comp__reply">
           <ReplyQuote api={api} replyToId={effectiveParent} />
@@ -1294,15 +1298,15 @@ function Thread({
           {api.msgsStale && (
             <InlineNotice
               code="CH-7216"
-              title="This conversation may be out of date."
-              body="It didn't refresh. What's here is what was last loaded. Try again; the error has been reported."
+              title="This conversation may be out of date"
+              body="It didn’t refresh. What’s here is what was last loaded. Try again; the error has been reported."
               onRetry={api.refetchMsgs}
             />
           )}
           {api.msgsError ? (
             <InlineNotice
               code="CH-7202"
-              title="This conversation didn't load."
+              title="This conversation didn’t load"
               body="Nothing was lost. Try again; the error has been reported."
               onRetry={api.refetchMsgs}
             />
@@ -1345,7 +1349,8 @@ function Thread({
               ),
             )
           )}
-          {api.typing && (
+          {/* No dots under a thread that didn't load or is still loading (states audit c9): nothing to type into yet. */}
+          {api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (
             <div className="ch-ms-msg is-first" /* CH-7602: the typing dots */>
               {/* The realtime hook says someone is typing, not who: a direct thread knows, a group doesn't. */}
               <span className="ch-ms-msg__av">{!conv.group && <Avatar name={conv.title} size={30} />}</span>
@@ -1433,7 +1438,7 @@ export function DeleteMessageModal({ api, message, onClose }: { api: ChMessagesA
       onClose={onClose}
       icon={Trash2}
       title="Delete this message?"
-      description="It's removed for everyone in the conversation. This can't be undone."
+      description="It’s removed for everyone in the conversation. This can’t be undone."
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
@@ -1529,7 +1534,7 @@ export function AddMembersModal({ api, conv, open, onClose }: { api: ChMessagesA
       onClose={onClose}
       icon={UserPlus}
       title={`Add to ${conv.title}`}
-      description="Players and coaches on the team who aren't in this group."
+      description="Players and coaches on the team who aren’t in this group."
       footer={
         <Button variant="primary" onClick={onClose}>
           Done
@@ -1539,7 +1544,7 @@ export function AddMembersModal({ api, conv, open, onClose }: { api: ChMessagesA
       {failed ? (
         <InlineNotice
           code="CH-7215"
-          title="The team list didn't load."
+          title="The team list didn’t load"
           body="Try again; the error has been reported."
           onRetry={() => setAttempt((n) => n + 1)}
         />
@@ -1660,7 +1665,7 @@ function Details({
           {api.membersError ? (
             <InlineNotice
               code="CH-7204"
-              title="Members didn't load."
+              title="Members didn’t load"
               body="Try again; the error has been reported."
               onRetry={api.retryMembers}
             />
@@ -1729,7 +1734,7 @@ function FilesSection({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
       {failed ? (
         <InlineNotice
           code="CH-7214"
-          title="Files didn't load."
+          title="Files didn’t load"
           body="Your messages are fine. Try again; the error has been reported."
           onRetry={retry}
         />
@@ -1779,7 +1784,7 @@ function MuteControl({ api }: { api: ChMessagesApi }) {
       {api.muteError ? (
         <InlineNotice
           code="CH-7208"
-          title="The mute setting didn't load."
+          title="The mute setting didn’t load"
           body="Try again; the error has been reported."
           onRetry={api.retryMute}
         />
@@ -2031,7 +2036,7 @@ function NewMessage({
                 />
                 {touched && needsTitle && (
                   <span className="ch-field__help is-error" data-ch-code="CH-7104">
-                    Name the group so players know what it&apos;s for.
+                    Name the group so players know what it’s for.
                   </span>
                 )}
               </label>
@@ -2065,7 +2070,7 @@ function NewMessage({
             {api.directoryError ? (
               <InlineNotice
                 code="CH-7205"
-                title="Your team list didn't load."
+                title="Your team list didn’t load"
                 body="Try again; the error has been reported."
                 onRetry={api.retryDirectory}
               />
@@ -2141,7 +2146,15 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
 
   if (isMessagesFirstRun(api) && !conv && !ann) {
     return (
-      <main data-view="desktop" className="ch-ms ch-ms--first">
+      // Under the page's framed head, as every page's first-run empty (states audit c4, c9); its one action is the empty's.
+      <main data-view="desktop" className="ch-ms ch-ms--first" data-canopy="">
+        <MessagesHead
+          brief={
+            api.viewer.role === "coach"
+              ? "Conversations with your players and staff, and the team’s announcements."
+              : "Conversations with your coaches and teammates, and the team’s announcements."
+          }
+        />
         <MessagesFirstRun coach={api.viewer.role === "coach"} onNew={() => setCompose(true)} />
         <NewMessage api={api} open={compose} onClose={() => setCompose(false)} />
       </main>
@@ -2198,8 +2211,8 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
               icon={MessageSquare}
               title={
                 api.convs.length
-                  ? "Pick a conversation."
-                  : "Start your first conversation."
+                  ? "Pick a conversation"
+                  : "Start your first conversation"
               }
               body={
                 api.convs.length
