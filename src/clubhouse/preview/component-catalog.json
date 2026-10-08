@@ -3662,8 +3662,24 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/stats/TeamTrendChart.tsx",
+      "group": "screens",
+      "exports": [
+        "TeamTrendChart"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
@@ -9805,15 +9821,26 @@
         "ch-stm-chart__t",
         "ch-stm-controls",
         "ch-stm-cover",
+        "ch-stm-figrow",
+        "ch-stm-figrow__d",
+        "ch-stm-figrow__ref",
+        "ch-stm-figrow__v",
         "ch-stm-figs",
         "ch-stm-gauges",
+        "ch-stm-gh",
+        "ch-stm-group",
         "ch-stm-head",
+        "ch-stm-hero",
+        "ch-stm-hero__c",
+        "ch-stm-hero__v",
         "ch-stm-leg",
         "ch-stm-leg__bar",
         "ch-stm-leg__v",
         "ch-stm-leg__z",
+        "ch-stm-legpick",
         "ch-stm-legs",
         "ch-stm-list",
+        "ch-stm-mean",
         "ch-stm-note",
         "ch-stm-overview",
         "ch-stm-overview__meta",
@@ -9821,6 +9848,7 @@
         "ch-stm-panel--bars",
         "ch-stm-panel--sg",
         "ch-stm-panel__h",
+        "ch-stm-plot",
         "ch-stm-putt",
         "ch-stm-putt__bar",
         "ch-stm-putt__r",
@@ -9828,7 +9856,10 @@
         "ch-stm-row__b",
         "ch-stm-row__chev",
         "ch-stm-row__v",
+        "ch-stm-sgfig",
         "ch-stm-sgsub",
+        "ch-stm-tip",
+        "ch-stm-trend",
         "ch-tab-t",
         "ch-tab-t__bar",
         "ch-tab-t__n",
@@ -9906,61 +9937,67 @@
           "name": "--ch-st-mean-rule",
           "value": "rgb(28 25 18 / 0.35)",
           "scope": "[data-ui='clubhouse']",
-          "line": 3932
+          "line": 3931
         },
         {
           "name": "--ch-st-dot-paper",
           "value": "#fbf8ef",
           "scope": "[data-ui='clubhouse']",
-          "line": 3933
+          "line": 3932
         },
         {
           "name": "--ch-st-miss-heat",
           "value": "rgb(154 101 18)",
           "scope": "[data-ui='clubhouse']",
-          "line": 3934
+          "line": 3933
         },
         {
           "name": "--ch-st-team-line",
           "value": "var(--ch-green-800)",
           "scope": "[data-ui='clubhouse']",
-          "line": 3935
+          "line": 3934
         },
         {
           "name": "--ch-st-other-line",
           "value": "var(--ch-ink-300)",
           "scope": "[data-ui='clubhouse']",
-          "line": 3936
+          "line": 3935
         },
         {
           "name": "--ch-st-mean-rule",
           "value": "rgb(237 231 216 / 0.4)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 3939
+          "line": 3938
         },
         {
           "name": "--ch-st-dot-paper",
           "value": "var(--ch-chart-paper)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 3940
+          "line": 3939
         },
         {
           "name": "--ch-st-miss-heat",
           "value": "var(--ch-warning-600)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 3941
+          "line": 3940
         },
         {
           "name": "--ch-st-team-line",
           "value": "#b4dfc4",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 3943
+          "line": 3942
         },
         {
           "name": "--ch-st-other-line",
           "value": "var(--ch-ink-400)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 3944
+          "line": 3943
+        },
+        {
+          "name": "--ch-stm-inset",
+          "value": "64px",
+          "scope": "@media (max-width: 820px) → .ch-stm.is-team .ch-stm-list",
+          "line": 4484
         }
       ]
     },
