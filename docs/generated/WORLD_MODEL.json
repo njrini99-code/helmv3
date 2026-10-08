@@ -3975,6 +3975,10 @@
         "definedIn": "supabase/migrations/20260825200811_helm_flight_recorder.sql"
       },
       {
+        "id": "helm_debug_record_trace_steps",
+        "definedIn": "supabase/migrations/20261007106000_helm_debug_record_trace_steps_batch.sql"
+      },
+      {
         "id": "helm_debug_start_trace",
         "definedIn": "supabase/migrations/20260825200811_helm_flight_recorder.sql"
       },
@@ -18317,6 +18321,18 @@
           "kind": "rpc_call",
           "path": "src/lib/observability/helm-flight-recorder.ts",
           "anchor": "helm_debug_record_trace_step"
+        }
+      ]
+    },
+    {
+      "source": "observability_sentry",
+      "target": "helm_debug_record_trace_steps",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/observability/helm-flight-recorder.ts",
+          "anchor": "helm_debug_record_trace_steps"
         }
       ]
     },

@@ -17,9 +17,9 @@ Two checks decide it, both in `gate.ts`, both server-side.
 
 | `HELM_CLUBHOUSE_TEAMS` | Result with the flag on |
 | --- | --- |
-| unset or empty | Every team sees Clubhouse. The flag alone decides. |
+| unset or empty | Every team sees Clubhouse. The flag alone decides. `scripts/check-required-env.mjs` fails a production build in this state while a clubhouse flag is on, so set it explicitly there. |
 | `team-a,team-b` | Only the signed-in user's **active** team, if listed. Everyone else gets Fairway. |
-| `*` | **Not a wildcard.** It is read as a team id that no team has, so nobody sees Clubhouse. Leave the variable unset for "every team". |
+| `*` | Every team, written on purpose. This is how a production deploy with the flag on says "no limit". |
 
 A user whose team cannot be read gets Fairway. Only the roles `coach` and
 `player` can get Clubhouse. Players get the shared screens (Stats, Calendar,
