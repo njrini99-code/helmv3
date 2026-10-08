@@ -74,7 +74,7 @@ import { loadCalendar, parseDate, parseNewType, parseView, type ChCalendarData }
 import { chReport, chTrail } from '../lib/track';
 import { ClubhouseCalendarRoute } from '../routes/calendar';
 import { resolveClubhouseTeam } from '../routes/team';
-import type { ChCalEvent, ChCalType } from '../screens/calendar/model';
+import { monthCells, type ChCalEvent, type ChCalType } from '../screens/calendar/model';
 import { Calendar } from '../screens/calendar/Calendar';
 import { CalendarSkeleton } from '../screens/calendar/CalendarSkeleton';
 import { CalendarNoTeam } from '../screens/calendar/CalendarNoTeam';
@@ -804,6 +804,91 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     const day = await screen.findByRole('button', { name: /^Fri 16 October: .*competition/ });
     await user.click(day);
     expect(live('.ch-calm-dayk')!.textContent).toMatch(/Fri 16 October/);
+  });
+
+  describe('Month on react-day-picker', () => {
+    beforeEach(() => freezeClock());
+    afterEach(() => vi.useRealTimers());
+    /** A window wide enough that a turned month moves in place instead of asking the server. */
+    const wide = { range: { from: '2026-01-01', to: '2026-12-31' } };
+    const grid = () => screen.getByRole('grid');
+    const days = () => within(grid()).getAllByRole('gridcell');
+    const title = () => screen.getByRole('heading', { level: 2 }).textContent;
+    const day = (name: RegExp) => within(grid()).getByRole('button', { name });
+
+    it('61901 the grid lays out the same dates as monthCells: whole weeks from Sunday, four rows or six, the other months’ days marked', () => {
+      for (const anchor of ['2026-02-11', '2026-08-19', '2026-10-14']) {
+        const { unmount } = wrap(cal({ ...wide, view: 'month', anchor }));
+        const cells = monthCells(anchor);
+        expect(days().map((d) => d.getAttribute('data-day'))).toEqual(cells.map((c) => c.date));
+        expect(days().map((d) => d.querySelector('button')!.classList.contains('is-out'))).toEqual(cells.map((c) => c.out));
+        expect(within(grid()).getAllByRole('row', { hidden: true })).toHaveLength(cells.length / 7 + 1);
+        unmount();
+      }
+      // February 2026 opens on a Sunday and fills four weeks; August 2026 needs six.
+      expect(monthCells('2026-02-11')).toHaveLength(28);
+      expect(monthCells('2026-08-19')).toHaveLength(42);
+    });
+
+    it('61901 the chosen day is the selected cell in the green ring, today the green disc, each day says its events; choosing one opens it with a tick', async () => {
+      const user = userEvent.setup();
+      wrap(cal({ ...wide, view: 'month', anchor: '2026-10-20' }));
+      const chosen = day(/^Tue 20 October/);
+      expect(chosen.className).toContain('is-on');
+      expect(chosen.closest('[role="gridcell"]')!.getAttribute('aria-selected')).toBe('true');
+      expect(day(/^Wed 14 October/).className).toContain('is-today');
+      expect(day(/^Wed 14 October/).className).not.toContain('is-on');
+      expect(day(/^Fri 16 October: .*competition/).querySelector('i.is-major')).not.toBeNull();
+      // Only the chosen day is in the tab order; the arrows walk the rest.
+      expect(within(grid()).getAllByRole('button').filter((b) => b.tabIndex === 0)).toEqual([chosen]);
+      hapticSpy.mockClear();
+      await user.click(day(/^Fri 16 October/));
+      expect(hapticSpy).toHaveBeenCalledWith('select');
+      expect(live('.ch-calm-dayk')!.textContent).toMatch(/Fri 16 October/);
+    });
+
+    it('61901 inside the grid the arrows walk the days without turning the month; Page Down turns it with one tick, as the Calendar’s arrows do from outside', async () => {
+      const user = userEvent.setup();
+      wrap(cal({ ...wide, view: 'month', anchor: '2026-10-14' }));
+      day(/^Wed 14 October/).focus();
+      hapticSpy.mockClear();
+      await user.keyboard('{ArrowRight}');
+      expect(document.activeElement).toBe(day(/^Thu 15 October/));
+      expect(title()).toBe('October');
+      expect(hapticSpy).not.toHaveBeenCalled();
+      await user.keyboard('{PageDown}');
+      await waitFor(() => expect(title()).toBe('November'));
+      expect(hapticSpy.mock.calls.filter((c) => c[0] === 'select')).toHaveLength(1);
+      expect(router.push).not.toHaveBeenCalled();
+      // From outside the grid, the Calendar's own arrows still step the month.
+      (document.activeElement as HTMLElement).blur();
+      await user.keyboard('{ArrowLeft}');
+      await waitFor(() => expect(title()).toBe('October'));
+    });
+
+    it('61901 a sideways swipe across the grid turns the month with one tick, and the tap it ends on opens nothing', async () => {
+      wrap(cal({ ...wide, view: 'month', anchor: '2026-10-14' }));
+      const swipe = (target: Element, from: number, to: number, down = 6) => {
+        act(() => {
+          target.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, isPrimary: true, pointerType: 'touch', clientX: from, clientY: 300 }));
+          target.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, isPrimary: true, pointerType: 'touch', clientX: to, clientY: 300 + down }));
+        });
+      };
+      hapticSpy.mockClear();
+      const start = day(/^Wed 14 October/);
+      swipe(start, 300, 200);
+      fireEvent.click(start);
+      await waitFor(() => expect(title()).toBe('November'));
+      expect(screen.queryByRole('grid')).not.toBeNull();
+      expect(hapticSpy.mock.calls.filter((c) => c[0] === 'select')).toHaveLength(1);
+      // Back the other way; a short or mostly vertical drag is not a swipe.
+      swipe(day(/^Wed 11 November/), 120, 260);
+      await waitFor(() => expect(title()).toBe('October'));
+      swipe(day(/^Wed 14 October/), 200, 230);
+      swipe(day(/^Wed 14 October/), 200, 260, 120);
+      expect(title()).toBe('October');
+      expect(hapticSpy.mock.calls.filter((c) => c[0] === 'select')).toHaveLength(2);
+    });
   });
 
   it('CH-6606 choosing a day moves the strip’s green plate to it and swaps in its agenda under a day heading', async () => {

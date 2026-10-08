@@ -1,5 +1,11 @@
 # P006 — Calendar: changelog
 
+## 2026-10-08 — phone: Month on react-day-picker
+
+The phone's Month grid (`screens/calendar/month.tsx`, out of `CalendarPhone.tsx`) is drawn by `react-day-picker` in Clubhouse markup and classes: the same weeks (Sunday first, whole weeks, four to six rows, the other months' days lighter), the same dots (a dark one for a competition), today the green disc and the chosen day the green ring, and a day still opens its Day view with a selection tick. Dates stay the team-timezone calendar dates: each crosses into the grid at local noon and comes back by its local fields, so the browser's zone never moves a day; data loading is unchanged.
+
+New: the grid is an ARIA grid with one day in the tab order, so the arrows walk the days (and cross into the next or previous month), Page Up and Page Down turn the month, and Home and End reach the week's ends; inside the grid the arrows no longer also step the Calendar's month. A sideways swipe across the grid turns the month (one tick), through the same step as the Calendar's arrow keys, which still turn it from outside the grid. Day and List are unchanged. Not verified on a device: the swipe against WebKit's edge gestures.
+
 ## 2026-10-08 — the player peek (P003-C1)
 
 The shared PlayerPeek: for the coach, each attendee row in the event panel peeks at the player (a hold on the phone, a rest of the pointer on desktop), from the roster the Calendar already loaded. No new reads.

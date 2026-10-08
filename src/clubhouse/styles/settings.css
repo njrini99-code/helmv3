@@ -1247,15 +1247,48 @@
     height: 1px;
     background: var(--ch-border-hairline);
   }
+  /* While a row is held (phone/Reorder.tsx, dnd-kit): the place it left is a soft recess that travels to where it will
+     land, and the row itself rides above the list as the drag overlay, the one elevated object. */
   .ch-setm-rank__i.is-held {
-    z-index: 2;
     margin: 0 4px;
     border-radius: 12px;
-    background: var(--ch-green-50);
-    box-shadow: 0 8px 20px -8px rgb(11 58 37 / 0.35);
+    background: var(--ch-bg-inset);
+    box-shadow: var(--ch-well-soft-shadow);
+  }
+  .ch-setm-rank__i.is-held > * {
+    visibility: hidden;
   }
   .ch-setm-rank__i.is-held::before {
     display: none;
+  }
+  /* The lifted row (the overlay, portaled into the Clubhouse root): its shadow rises over quick as it leaves the list
+     and falls away over release as it settles into its row (dnd-kit's drop, .is-settling). Instant with reduced motion and with
+     Animations off, where the duration tokens are zero and the drop does not animate. */
+  .ch-setm-rank__i.is-lifted {
+    margin: 0 4px;
+    border-radius: 12px;
+    background: var(--ch-green-50);
+    box-shadow: var(--ch-elevation-overlay);
+    cursor: grabbing;
+    animation: ch-setm-rank-rise var(--ch-dur-quick) var(--ch-ease) backwards;
+    transition:
+      box-shadow var(--ch-dur-release) var(--ch-ease),
+      background-color var(--ch-dur-release) var(--ch-ease);
+  }
+  .ch-setm-rank-lift .is-settling > .ch-setm-rank__i.is-lifted {
+    background-color: transparent;
+    box-shadow: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ch-setm-rank__i.is-lifted {
+      animation: none;
+      transition: none;
+    }
+  }
+  @keyframes ch-setm-rank-rise {
+    from {
+      box-shadow: none;
+    }
   }
   .ch-setm-rank__n {
     flex: none;
@@ -1295,7 +1328,7 @@
     outline: 2px solid var(--ch-border-focus);
     outline-offset: -2px;
   }
-  .ch-setm-rank__i.is-held .ch-setm-rank__h {
+  .ch-setm-rank__i.is-lifted .ch-setm-rank__h {
     color: var(--ch-green-600);
     cursor: grabbing;
   }
@@ -1415,7 +1448,17 @@
   .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-rank > .ch-setm-rank__i.is-held {
     margin: 0 -10px;
     padding: 0 10px;
-    background: var(--ch-green-50);
+    background: var(--ch-bg-inset);
+  }
+  /* The lifted row is drawn outside the list (the drag overlay), so it carries the Ledger row's measure itself. */
+  .ch-setm-rank-lift .ch-setm-rank__i.is-lifted {
+    height: 58px;
+    margin: 0 -10px;
+    padding: 0 10px;
+  }
+  .ch-setm-rank-lift .ch-setm-rank__i.is-lifted .ch-setm-rank__txt > span:first-child {
+    font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    letter-spacing: -0.012em;
   }
   .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-rank .ch-setm-rank__txt > span:first-child {
     font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);

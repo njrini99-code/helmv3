@@ -1491,11 +1491,62 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
   describe('the priority ranker', () => {
     const list = () => screen.getByRole('list', { name: 'Priorities, most important first' });
     const labels = () => within(list()).getAllByRole('listitem').map((li) => li.querySelector('.ch-setm-rank__txt > span')?.textContent);
+    /** The order the rows read in while one is held: the rows keep their place in the DOM and slide (dnd-kit), each showing the rank it would take. */
+    const visual = () =>
+      within(list())
+        .getAllByRole('listitem')
+        .map((li) => [Number(li.querySelector('.ch-setm-rank__n')!.textContent), li.querySelector('.ch-setm-rank__txt > span')!.textContent] as const)
+        .sort((x, y) => x[0] - y[0])
+        .map(([, label]) => label);
     const keyOf = (label: string) => Object.entries(PRIORITY_LABEL).find(([, v]) => v.label === label)![0];
     const savedOrder = (fn: ReturnType<typeof vi.fn>, n: number) => {
       const patch = fn.mock.calls[n]![1] as Record<string, number>;
       return Object.keys(patch).sort((a, b) => patch[a]! - patch[b]!);
     };
+    const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const spoken = () => document.querySelector('.ch-setm-rank ~ .ch-sr-only[aria-live]')!.textContent;
+    /** A mouse (or pen): dnd-kit's pointer sensor starts on the row and follows the document. */
+    const pointer = (type: string, target: EventTarget, y: number) =>
+      act(() => {
+        target.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, isPrimary: true, button: 0, pointerType: 'mouse', clientX: 60, clientY: y }));
+      });
+    /** A finger: dnd-kit's touch sensor starts on the row and follows the touch on its target. */
+    const touch = (type: 'touchstart' | 'touchmove' | 'touchend', target: EventTarget, y: number) =>
+      act(() => {
+        const e = new TouchEvent(type, { bubbles: true, cancelable: true });
+        const at = [{ clientX: 60, clientY: y }];
+        Object.defineProperty(e, 'touches', { value: type === 'touchend' ? [] : at });
+        Object.defineProperty(e, 'changedTouches', { value: at });
+        target.dispatchEvent(e);
+      });
+
+    // jsdom has no layout: each row is 56px with a 1px seam (57px a step) from y = 100, and the drag overlay sits where
+    // dnd-kit fixed it. WAAPI is missing too; the drop animation finishes at once.
+    const PITCH = 57;
+    const box = (x: number, y: number, w: number, h: number) => ({ x, y, left: x, top: y, width: w, height: h, right: x + w, bottom: y + h, toJSON: () => ({}) }) as DOMRect;
+    beforeEach(() => {
+      vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+        const el = this as HTMLElement;
+        if (el.matches('ol.ch-setm-rank > li')) return box(20, 100 + [...el.parentElement!.children].indexOf(el) * PITCH, 350, 56);
+        // dnd-kit measures the overlay's only child, inside the box it fixed at the held row's place.
+        const fixed = [el, el.parentElement].find((n) => n?.style.position === 'fixed');
+        if (fixed) return box(parseFloat(fixed.style.left) || 0, parseFloat(fixed.style.top) || 0, parseFloat(fixed.style.width) || 0, parseFloat(fixed.style.height) || 0);
+        return box(0, 0, 0, 0);
+      });
+      Object.defineProperty(HTMLElement.prototype, 'animate', {
+        configurable: true,
+        value: () => ({
+          cancel: () => {},
+          set onfinish(fn: () => void) {
+            queueMicrotask(fn);
+          },
+        }),
+      });
+    });
+    afterEach(() => {
+      vi.restoreAllMocks();
+      delete (HTMLElement.prototype as { animate?: unknown }).animate;
+    });
 
     it('81901 CH-8701 holding a row and dragging it moves it a step at a time with a tick each, and saves once, on drop', async () => {
       const savePhilosophy = vi.fn((id: string | null) => Promise.resolve({ success: true, data: { id: id ?? 'ph1' } }));
@@ -1505,30 +1556,48 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       const [a, b, c, d, e] = labels() as string[];
       const first = within(list()).getAllByRole('listitem')[0]!;
       hapticSpy.mockClear();
-      act(() => {
-        first.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientY: 100, button: 0 }));
-      });
+      pointer('pointerdown', first, 100);
       // Touch and hold: nothing lifts until the hold is over.
-      await new Promise((r) => setTimeout(r, 120));
+      await pause(120);
       expect(first.className).not.toContain('is-held');
       await waitFor(() => expect(first.className).toContain('is-held'));
-      act(() => {
-        window.dispatchEvent(new MouseEvent('pointermove', { clientY: 100 + 57 }));
-      });
-      expect(labels()).toEqual([b, a, c, d, e]);
-      act(() => {
-        window.dispatchEvent(new MouseEvent('pointermove', { clientY: 100 + 57 * 2 }));
-      });
-      expect(labels()).toEqual([b, c, a, d, e]);
+      pointer('pointermove', document, 100 + PITCH);
+      await waitFor(() => expect(visual()).toEqual([b, a, c, d, e]));
+      pointer('pointermove', document, 100 + PITCH * 2);
+      await waitFor(() => expect(visual()).toEqual([b, c, a, d, e]));
       expect(hapticSpy.mock.calls.filter((c) => c[0] === 'select')).toHaveLength(2);
-      // Still in the hand: nothing is saved yet.
+      // Still in the hand: nothing is saved yet, and the rows keep their DOM order while they slide.
       expect(savePhilosophy).not.toHaveBeenCalled();
-      act(() => {
-        window.dispatchEvent(new MouseEvent('pointerup', { clientY: 100 + 57 * 2 }));
-      });
+      expect(labels()).toEqual([a, b, c, d, e]);
+      pointer('pointerup', document, 100 + PITCH * 2);
       await waitFor(() => expect(savePhilosophy).toHaveBeenCalledTimes(1));
       expect(savedOrder(savePhilosophy, 0)).toEqual([b, c, a, d, e].map((l) => keyOf(l!)));
+      expect(labels()).toEqual([b, c, a, d, e]);
       expect(within(list()).getAllByRole('listitem')[2]!.className).not.toContain('is-held');
+      expect(spoken()).toBe(`${a}, number 3 of 5`);
+    });
+
+    it('81901 a finger held on a row lifts it and drags it the same way; the lifted copy is a picture, not a second control', async () => {
+      const savePhilosophy = vi.fn((id: string | null) => Promise.resolve({ success: true, data: { id: id ?? 'ph1' } }));
+      const { user } = phone({ writes: { savePhilosophy } });
+      await openRow(user, /^CoachHelm/);
+      await screen.findByRole('list', { name: 'Priorities, most important first' });
+      const [a, b, c, d, e] = labels() as string[];
+      const second = within(list()).getAllByRole('listitem')[1]!;
+      hapticSpy.mockClear();
+      touch('touchstart', second, 160);
+      await waitFor(() => expect(second.className).toContain('is-held'));
+      // The overlay carries the row's look, hidden from assistive tech: still one Reorder button per priority.
+      const lifted = document.querySelector('.ch-setm-rank-lift .ch-setm-rank__i.is-lifted');
+      expect(lifted?.getAttribute('aria-hidden')).toBe('true');
+      expect(lifted?.textContent).toContain(b);
+      expect(screen.getAllByRole('button', { name: `Reorder ${b}` })).toHaveLength(1);
+      touch('touchmove', second, 160 + PITCH * 3);
+      await waitFor(() => expect(visual()).toEqual([a, c, d, e, b]));
+      touch('touchend', second, 160 + PITCH * 3);
+      await waitFor(() => expect(savePhilosophy).toHaveBeenCalledTimes(1));
+      expect(savedOrder(savePhilosophy, 0)).toEqual([a, c, d, e, b].map((l) => keyOf(l!)));
+      expect(labels()).toEqual([a, c, d, e, b]);
     });
 
     it('81901 a finger that moves before the hold is over is scrolling: the row does not lift', async () => {
@@ -1538,20 +1607,63 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       await screen.findByRole('list', { name: 'Priorities, most important first' });
       const before = labels();
       const first = within(list()).getAllByRole('listitem')[0]!;
-      act(() => {
-        first.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientY: 100, button: 0 }));
-        window.dispatchEvent(new MouseEvent('pointermove', { clientY: 130 }));
-      });
-      await new Promise((r) => setTimeout(r, 320));
-      act(() => {
-        window.dispatchEvent(new MouseEvent('pointermove', { clientY: 260 }));
-        window.dispatchEvent(new MouseEvent('pointerup', { clientY: 260 }));
-      });
+      touch('touchstart', first, 100);
+      touch('touchmove', first, 130);
+      await pause(320);
+      touch('touchmove', first, 260);
+      touch('touchend', first, 260);
       expect(first.className).not.toContain('is-held');
       expect(labels()).toEqual(before);
       expect(savePhilosophy).not.toHaveBeenCalled();
     });
 
+    it('81901 space picks the row up, the arrows carry it a step at a time with a tick and a spoken place each, and space puts it down: saved once', async () => {
+      const savePhilosophy = vi.fn((id: string | null) => Promise.resolve({ success: true, data: { id: id ?? 'ph1' } }));
+      const { user } = phone({ writes: { savePhilosophy } });
+      await openRow(user, /^CoachHelm/);
+      await screen.findByRole('list', { name: 'Priorities, most important first' });
+      const [a, b, c, d, e] = labels() as string[];
+      hapticSpy.mockClear();
+      screen.getByRole('button', { name: `Reorder ${a}` }).focus();
+      await user.keyboard('[Space]');
+      await waitFor(() => expect(within(list()).getAllByRole('listitem')[0]!.className).toContain('is-held'));
+      expect(spoken()).toBe(`Picked up ${a}, number 1 of 5`);
+      await pause(10);
+      await user.keyboard('[ArrowDown]');
+      await waitFor(() => expect(visual()).toEqual([b, a, c, d, e]));
+      expect(spoken()).toBe(`${a}, number 2 of 5`);
+      await user.keyboard('[ArrowDown]');
+      await waitFor(() => expect(visual()).toEqual([b, c, a, d, e]));
+      expect(hapticSpy.mock.calls.filter((x) => x[0] === 'select')).toHaveLength(2);
+      // The arrows carried the held row only: no one-step save on the way.
+      expect(savePhilosophy).not.toHaveBeenCalled();
+      await user.keyboard('[Space]');
+      await waitFor(() => expect(savePhilosophy).toHaveBeenCalledTimes(1));
+      expect(savedOrder(savePhilosophy, 0)).toEqual([b, c, a, d, e].map((l) => keyOf(l!)));
+      expect(labels()).toEqual([b, c, a, d, e]);
+      expect(spoken()).toBe(`${a}, number 3 of 5`);
+    });
+
+    it('81901 Escape puts a row picked up with the keyboard back where it was, and nothing is saved', async () => {
+      const savePhilosophy = vi.fn((id: string | null) => Promise.resolve({ success: true, data: { id: id ?? 'ph1' } }));
+      const { user } = phone({ writes: { savePhilosophy } });
+      await openRow(user, /^CoachHelm/);
+      await screen.findByRole('list', { name: 'Priorities, most important first' });
+      const before = labels() as string[];
+      screen.getByRole('button', { name: `Reorder ${before[1]}` }).focus();
+      await user.keyboard('[Space]');
+      await waitFor(() => expect(within(list()).getAllByRole('listitem')[1]!.className).toContain('is-held'));
+      await pause(10);
+      await user.keyboard('[ArrowDown]');
+      await waitFor(() => expect(visual()).not.toEqual(before));
+      await user.keyboard('{Escape}');
+      await waitFor(() => expect(within(list()).getAllByRole('listitem')[1]!.className).not.toContain('is-held'));
+      expect(visual()).toEqual(before);
+      expect(labels()).toEqual(before);
+      expect(spoken()).toBe(`Put back, ${before[1]}, number 2 of 5`);
+      await pause(50);
+      expect(savePhilosophy).not.toHaveBeenCalled();
+    });
     it('81901 the handle takes the arrow keys, and each move saves and ticks (with a keyboard or VoiceOver)', async () => {
       const savePhilosophy = vi.fn((id: string | null) => Promise.resolve({ success: true, data: { id: id ?? 'ph1' } }));
       const { user } = phone({ writes: { savePhilosophy } });

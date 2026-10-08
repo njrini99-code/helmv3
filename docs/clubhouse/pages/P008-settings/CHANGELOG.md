@@ -1,5 +1,11 @@
 # P008 — Settings: changelog
 
+## 2026-10-08 — phone: the priority ranker on dnd-kit
+
+The phone's priority ranker (`phone/Reorder.tsx`) runs on `@dnd-kit/sortable` instead of a hand-rolled drag. What a coach feels is the same: touch and hold a row 250ms (a finger that drifts 8px first is scrolling), drag it, a selection tick for each place it passes, and one save when it is let go; a failed save still puts it back (CH-8022). The rows now slide out of the lifted row's way (base, the ease-out) instead of jumping, and each shows the rank it would take. The lifted row is the drag overlay, the one elevated object (the overlay depth token, rising over quick and falling away over release as it settles); the place it left is a soft recess. With reduced motion or Animations off nothing lifts or slides: the rows swap at once.
+
+Keyboard and VoiceOver: the handle's up and down arrows still move a row one place and save each move. New: space (or Enter) picks the row up, the arrows carry it a place at a time with a tick and the place spoken in the ranker's own live region, space puts it down (saved once) and Escape puts it back. A mouse or pen holds the same way as a finger. Not verified on a device: the hold against the page's scroll in WebKit, and the drop's settle.
+
 ## 2026-10-08 — premium pass: send a test push, feel it, text size (P008-C3, C1; findings #1, #2, #4)
 
 - C3: once push is on for this device, "Send a test" sits beside Push on this device (desktop) or as a row under it (phone). It calls `POST /api/push-subscriptions/test` (D1-6), which sends a fixed "Test from Clubhouse" to the caller's own subscriptions only and removes dead ones, limited to 3 a minute. Done: "Test sent"; failures say why (CH-8029).

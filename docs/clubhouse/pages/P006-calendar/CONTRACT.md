@@ -374,7 +374,7 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-180
 
 Status: DEFINED
 
-At 820px and below Calendar is the phone build (61901): Day with a week strip, the day's agenda, classes in their slots and the now line; Month as a compact grid; List; an event opens in a sheet and New event is the full editor as a sheet. Below a 860px container the desktop reflows without a horizontal page scroll. The phone spec is `docs/clubhouse/phone/calendar.md` (approved, D-22); its differences from the board are Q-67.
+At 820px and below Calendar is the phone build (61901): Day with a week strip, the day's agenda, classes in their slots and the now line; Month as a compact grid (the arrows walk its days, Page Up and Down and a sideways swipe turn the month); List; an event opens in a sheet and New event is the full editor as a sheet. Below a 860px container the desktop reflows without a horizontal page scroll. The phone spec is `docs/clubhouse/phone/calendar.md` (approved, D-22); its differences from the board are Q-67.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

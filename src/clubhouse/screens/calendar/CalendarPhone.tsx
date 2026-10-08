@@ -14,8 +14,9 @@ import { Swap } from '../../ui/Swap';
 import { haptic } from '../../lib/haptics';
 import { EventPeek } from './peek';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
-import { addDays, dayNum, dowOf, fmtHour, isMajor, monthCells, monthName, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
+import { addDays, dayNum, dowOf, fmtHour, monthName, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
 import { AgendaView, eventTitle, type ChNow } from './views';
+import { MonthGrid } from './month';
 
 /** The phone's three views (board: Day, Month, List); the desktop's week is the phone's Day. */
 export type ChCalPhoneView = 'day' | 'month' | 'list';
@@ -103,7 +104,7 @@ export function CalendarPhone({
           {/* CH-6604: Day, Month and List settle in as the switch moves (base in, quick out); instant with reduced motion. */}
           <Swap swapKey={pv}>
             {pv === 'day' && <DayView anchor={anchor} events={events} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} range={data.range} />}
-            {pv === 'month' && <MonthGrid anchor={anchor} events={events} now={now} onPick={(d) => onView('day', d)} />}
+            {pv === 'month' && <MonthGrid anchor={anchor} events={events} now={now} onPick={(d) => onView('day', d)} onMonth={(d) => onView('month', d)} />}
             {pv === 'list' &&
               (events.some((e) => e.date >= now.date) ? (
                 <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={(id) => onOpen(id, events.find((e) => e.id === id)?.date ?? anchor)} />
@@ -375,50 +376,5 @@ function DayPager({ anchor, onSettle, prev, next, children }: { anchor: string; 
         {next}
       </section>
     </div>
-  );
-}
-
-/** The month as a compact grid: a dot for a day with events, a dark one for a competition. A day opens its Day view. */
-function MonthGrid({ anchor, events, now, onPick }: { anchor: string; events: ChCalEvent[]; now: ChNow; onPick: (date: string) => void }) {
-  const cells = monthCells(anchor);
-  return (
-    <section className="ch-calm-month" aria-label={`${monthName(anchor)}`}>
-      <div className="ch-calm-month__h" aria-hidden="true">
-        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-          <span key={i}>{d}</span>
-        ))}
-      </div>
-      <div className="ch-calm-month__g">
-        {cells.map(({ date, out }) => {
-          const evs = events.filter((e) => e.date === date && e.type !== 'class' && e.type !== 'busy');
-          const major = evs.some((e) => isMajor(e.type));
-          return (
-            <button
-              key={date}
-              type="button"
-              className={'ch-calm-month__c' + (out ? ' is-out' : '') + (date === now.date ? ' is-today' : '') + (date === anchor ? ' is-on' : '')}
-              aria-label={`${dowOf(date)} ${dayNum(date)} ${monthName(date)}: ${evs.length ? `${evs.length} ${evs.length === 1 ? 'event' : 'events'}${major ? ', competition' : ''}` : 'no events'}`}
-              onClick={() => {
-                haptic('select');
-                onPick(date);
-              }}
-            >
-              <b className="ch-num">{dayNum(date)}</b>
-              {major ? <i className="is-major" /> : evs.length ? <i /> : null}
-            </button>
-          );
-        })}
-      </div>
-      <div className="ch-calm-month__lg" aria-hidden="true">
-        <span>
-          <i className="is-major" />
-          Competition
-        </span>
-        <span>
-          <i />
-          Practice or meeting
-        </span>
-      </div>
-    </section>
   );
 }
