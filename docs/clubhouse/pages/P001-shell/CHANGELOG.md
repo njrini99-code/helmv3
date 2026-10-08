@@ -1,5 +1,14 @@
 # P001 — Shell: changelog
 
+## 2026-10-08 — The bell, Not rebuilt and the way back, in the shared states
+
+The bell's empty (CH-1302, CH-1303) is the shared section empty and its failed
+list (CH-1201) the notice, both at the rows' inset; while the list hasn't
+loaded, the panel's head drops its unread count and Mark all read. Not rebuilt
+(CH-1301) is the page empty's anatomy, not a card. The route error's way back
+honours the route's `homePath` and names it (CH-1206). The on-green notice inks
+are tokens (`--ch-notice-on-green-ink`, `--ch-notice-on-green-body`).
+
 ## 2026-10-08 — Springs in the shell, and a tab that answers a second tap
 
 More and the bell now rise on the smooth spring (base, no bounce) and leave on it. Swiped shut, they leave at the

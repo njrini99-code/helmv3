@@ -1,11 +1,12 @@
 'use client';
 
-import { CircleAlert, House, RotateCw } from 'lucide-react';
+import { ChevronLeft, CircleAlert, House, RotateCw } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Icon } from './Icon';
 import { Button } from './Button';
 import { stateTitle } from './States';
 import { OFFLINE_LINE, useOfflineRetry } from './Retry';
+import { CH_NAV_COACH, CH_NAV_PLAYER, routeLabel } from '../shell/nav';
 
 /**
  * A part of the page could not load (catalog kind 2). Flush in the Ledger (lead decision under the owner's full-auto
@@ -139,9 +140,18 @@ const ROUTE_ERROR_CODE: Record<RouteErrorKind, string> = {
 };
 
 /**
+ * Where a route error's way back goes, by name: the route's own error boundary picks the place (`homePath`, its section
+ * for a sub-screen, such as Rounds for a round), and null is Home (the dashboard, and /golf, which leads there).
+ */
+function placeName(path: string): string | null {
+  if (path === '/' || path === '/golf' || path === '/golf/dashboard') return null;
+  return [...CH_NAV_COACH, ...CH_NAV_PLAYER].find((item) => item.href === path)?.label ?? routeLabel(path);
+}
+
+/**
  * Full-page route error inside the Clubhouse canvas. Logic lives in RouteErrorBoundary. It is the page empty state in
  * the danger tone (states audit, 2026-10-08): a brick medallion on faint rings, the title, one or two sentences, Try
- * again (Reload after an update) first and Back to Home beside it, and the error's reference as a quiet caption under
+ * again (Reload after an update) first and the way back beside it, and the error's reference as a quiet caption under
  * them (lead decision under the owner's full-auto brief; owner to confirm). No card.
  */
 export function RouteErrorView({
@@ -163,6 +173,7 @@ export function RouteErrorView({
 }) {
   const copy = COPY[kind];
   const reload = kind === 'chunk' || kind === 'stale-action';
+  const place = homePath ? placeName(homePath) : null;
   return (
     <main className="ch-notyet" role="alert" data-ch-code={ROUTE_ERROR_CODE[kind]}>
       <div className="ch-empty-page ch-empty-page--danger">
@@ -182,8 +193,8 @@ export function RouteErrorView({
               {isRetrying ? 'Trying again' : reload ? 'Reload' : 'Try again'}
             </Button>
             {homePath && (
-              <Button variant="secondary" leftIcon={House} href="/golf/dashboard">
-                Back to Home
+              <Button variant="secondary" leftIcon={place ? ChevronLeft : House} href={homePath}>
+                {place ? `Back to ${place}` : 'Back to Home'}
               </Button>
             )}
           </div>

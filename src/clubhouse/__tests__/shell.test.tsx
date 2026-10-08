@@ -165,9 +165,15 @@ describe('Shell · bell', () => {
 
   it('CH-1201 the list does not load', async () => {
     const user = userEvent.setup();
-    bell({ load: vi.fn(() => Promise.resolve({ success: false, error: 'nope' })) });
+    bell({ unread: 3, load: vi.fn(() => Promise.resolve({ success: false, error: 'nope' })) });
     await user.click(screen.getByRole('button', { name: /Notifications/ }));
-    await expectCode('CH-1201', /Notifications didn't load/);
+    await expectCode('CH-1201', /Notifications didn’t load/);
+    // The panel can't show what the badge counts, so its head says nothing of it and offers no Mark all read; the
+    // bell keeps its count.
+    const panel = screen.getByRole('dialog', { name: 'Notifications' });
+    expect(panel.querySelector('.ch-bellp__head')!.textContent).toBe('Notifications');
+    expect(within(panel).queryByRole('button', { name: 'Mark all read' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Notifications, 3 unread' })).toBeTruthy();
   });
 
   it('CH-1302 nothing to show', async () => {
@@ -175,6 +181,9 @@ describe('Shell · bell', () => {
     bell({ unread: 0, load: vi.fn(() => Promise.resolve({ success: true, data: { items: [] } })) });
     await user.click(screen.getByRole('button', { name: 'Notifications' }));
     await expectCode('CH-1302', /all caught up/);
+    // The shared section empty, not a centred block of its own.
+    expect(code('CH-1302')!.className).toBe('ch-empty ch-empty--icon ch-empty--compact');
+    expect(code('CH-1302')!.querySelector('.ch-empty__title')!.textContent).toBe('You’re all caught up');
   });
 
   it('CH-1811 on the phone the bell is a modal sheet: focus moves in, Tab stays inside, Close gives focus back', async () => {
@@ -246,6 +255,31 @@ describe('Shell · page states', () => {
   it('CH-1301 a page that is not rebuilt', async () => {
     wrap(<NotRebuilt label="Rounds" />);
     await expectCode('CH-1301', /Rounds hasn.t been rebuilt yet/);
+    // The page empty's anatomy, as the route error draws it: a medallion, no card, and the way back to Home.
+    const page = code('CH-1301')!;
+    expect(page.querySelector('.ch-sheet')).toBeNull();
+    expect(page.querySelector('.ch-empty-page:not(.ch-empty-page--danger) .ch-empty-page__ic svg')).not.toBeNull();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Rounds hasn’t been rebuilt yet');
+    const home = screen.getByRole('link', { name: 'Back to Home' });
+    expect(home.getAttribute('href')).toBe('/golf/dashboard');
+    expect(home.className).toContain('ch-btn--primary');
+    expect(home.querySelector('svg')).not.toBeNull();
+  });
+
+  it("CH-1206 the route error's way back goes where the route's boundary says, named for it", () => {
+    for (const [homePath, name] of [
+      ['/golf/dashboard', 'Back to Home'],
+      ['/golf', 'Back to Home'],
+      ['/golf/dashboard/rounds', 'Back to Rounds'],
+      ['/golf/dashboard/coachhelm', 'Back to CoachHelm'],
+      ['/golf/dashboard/settings', 'Back to Settings'],
+    ] as const) {
+      const { unmount } = wrap(<RouteErrorView kind="unknown" isRetrying={false} retryCount={0} onRetry={vi.fn()} homePath={homePath} />);
+      expect(screen.getByRole('link', { name }).getAttribute('href')).toBe(homePath);
+      unmount();
+    }
+    wrap(<RouteErrorView kind="unknown" isRetrying={false} retryCount={0} onRetry={vi.fn()} />);
+    expect(screen.queryByRole('link')).toBeNull();
   });
 });
 

@@ -23,7 +23,7 @@ import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
 import { InlineNotice } from '../ui/Notices';
 import { Menu } from '../ui/Menu';
-import { Skeleton } from '../ui/States';
+import { EmptyState, Skeleton } from '../ui/States';
 import { haptic } from '../lib/haptics';
 import { CH_POP, chSpring, chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
@@ -223,6 +223,10 @@ export function Bell() {
   };
 
   const unread = api.unread;
+  // The count is the badge's. While the list hasn't loaded the panel can't show what it counts, so its head says nothing
+  // of it and offers no Mark all read (the button keeps its badge).
+  const listFailed = failed && !items?.length;
+  const shownUnread = listFailed ? 0 : unread;
   const list = items ?? [];
   const counts = countByCategory(list);
   const cats = NOTIFICATION_CATEGORY_IDS.filter((c) => counts[c] > 0);
@@ -262,8 +266,8 @@ export function Bell() {
   );
   const body = (
     <div className="ch-bellp__body">
-      {failed && !items?.length ? (
-        <InlineNotice code="CH-1201" title="Notifications didn't load." body="Try again; the error has been reported." onRetry={() => setAttempt((x) => x + 1)} />
+      {listFailed ? (
+        <InlineNotice code="CH-1201" title="Notifications didn’t load" body="Try again; the error has been reported." onRetry={() => setAttempt((x) => x + 1)} />
       ) : items === null ? (
         <div className="ch-bellp__skel" aria-busy="true" aria-label="Loading notifications" data-ch-code="CH-1401">
           {[0, 1, 2, 3].map((k) => (
@@ -277,16 +281,21 @@ export function Bell() {
           ))}
         </div>
       ) : groups.length === 0 ? (
-        <div className="ch-bellp__empty" data-ch-code={filter === 'all' ? 'CH-1302' : 'CH-1303'}>
-          <Icon icon={BellOff} size={18} />
-          <b>{filter === 'all' ? "You're all caught up." : 'Nothing of this kind.'}</b>
-          <span>{filter === 'all' ? 'Messages, events, reminders and CoachHelm updates show up here.' : 'Clear the filter to see everything.'}</span>
-          {filter !== 'all' && (
-            <Button size="sm" variant="secondary" onClick={() => setFilter('all')}>
-              Show all
-            </Button>
-          )}
-        </div>
+        // The shared section empty (states audit, 2026-10-08): a flush line at the rows' inset, not a centred block.
+        <EmptyState
+          compact
+          icon={BellOff}
+          code={filter === 'all' ? 'CH-1302' : 'CH-1303'}
+          title={filter === 'all' ? 'You’re all caught up' : 'Nothing of this kind'}
+          body={filter === 'all' ? 'Messages, events, reminders and CoachHelm updates show up here.' : 'Clear the filter to see everything.'}
+          action={
+            filter !== 'all' && (
+              <Button size="sm" variant="secondary" onClick={() => setFilter('all')}>
+                Show all
+              </Button>
+            )
+          }
+        />
       ) : (
         groups.map((g) => (
           <section key={g.bucket} aria-label={DAY_BUCKET_LABEL[g.bucket]}>
@@ -384,13 +393,13 @@ export function Bell() {
                 <div className="ch-bellp__shead" onPointerDown={drag.onPointerDown}>
                   <span className="ch-bellp__stitle">
                     <b>Notifications</b>
-                    {unread > 0 && <span className="ch-num">{unread} unread</span>}
+                    {shownUnread > 0 && <span className="ch-num">{shownUnread} unread</span>}
                   </span>
                   <button type="button" className="ch-bellp__x" aria-label="Close" onClick={() => close()}>
                     <Icon icon={X} size={16} />
                   </button>
                 </div>
-                {(filterMenu || unread > 0) && (
+                {(filterMenu || shownUnread > 0) && (
                   <div className="ch-bellp__tools">
                     {filterMenu || <span />}
                     {markAllButton}
@@ -415,10 +424,10 @@ export function Bell() {
                 <div className="ch-bellp__head">
                   <b>
                     Notifications
-                    {unread > 0 && <span className="ch-num"> · {unread} unread</span>}
+                    {shownUnread > 0 && <span className="ch-num"> · {shownUnread} unread</span>}
                   </b>
                   {filterMenu}
-                  {markAllButton}
+                  {!listFailed && markAllButton}
                 </div>
                 {body}
               </m.div>

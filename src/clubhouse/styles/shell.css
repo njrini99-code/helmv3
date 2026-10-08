@@ -427,42 +427,12 @@
   display: none;
 }
 
-/* Placeholder and full-page error */
+/* Placeholder and full-page error: both are the page empty's anatomy (.ch-empty-page), centred in the page. */
 .ch-notyet {
   display: grid;
   place-items: center;
   min-height: calc(100dvh - var(--ch-topbar-h) - 16px);
   padding: 40px var(--ch-gutter);
-}
-.ch-notyet__card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 14px;
-  width: 100%;
-  max-width: 460px;
-  padding: 32px;
-}
-.ch-notyet__title {
-  font: var(--ch-type-display-s);
-  letter-spacing: -0.028em;
-  font-variation-settings: 'wdth' 96;
-  color: var(--ch-text-primary);
-}
-.ch-notyet__body {
-  font: 400 15px/1.55 var(--ch-font-sans);
-  color: var(--ch-text-secondary);
-  text-wrap: pretty;
-}
-.ch-notyet__meta {
-  font: var(--ch-type-caption);
-  color: var(--ch-text-tertiary);
-}
-.ch-notyet__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 4px;
 }
 .ch-notyet__dev {
   max-width: 100%;
@@ -709,8 +679,12 @@
    section's heading. The icon and the title carry the danger ink, the body the secondary ink. Try again sits beside
    the words, or under them in a narrow rail (the notice is its own size container) and on the phone. The inks and
    the fill are local properties, so a notice on a dark or a floating surface is restyled in one rule;
-   --ch-notice-rule stays as a hook but is no longer drawn. */
+   --ch-notice-rule stays as a hook but is no longer drawn. On the green (the FeatureCard, a board card) a context
+   takes the on-green inks below: --ch-notice-ink: var(--ch-notice-on-green-ink) and --ch-notice-body:
+   var(--ch-notice-on-green-body), set on the notice itself. */
 .ch-notice {
+  --ch-notice-on-green-ink: #f2c3b6;
+  --ch-notice-on-green-body: var(--ch-on-green-ink-soft);
   --ch-notice-rule: var(--ch-ledger-rule);
   --ch-notice-ink: var(--ch-text-primary);
   --ch-notice-body: var(--ch-text-secondary);
@@ -783,10 +757,10 @@
     font-size: 15px;
   }
 }
-/* On the one green feature card (ui/Ledger.tsx) the notice takes the card's ivory body ink and a light brick. */
+/* On the one green feature card (ui/Ledger.tsx) the notice takes the on-green inks. */
 .ch-feat .ch-notice--danger {
-  --ch-notice-ink: #f2c3b6;
-  --ch-notice-body: var(--ch-on-green-ink-soft);
+  --ch-notice-ink: var(--ch-notice-on-green-ink);
+  --ch-notice-body: var(--ch-notice-on-green-body);
 }
 
 /* One sweep shared by every block on the page (a viewport-fixed gradient,
@@ -1436,9 +1410,6 @@ button.ch-more__row[disabled] {
     min-height: 60dvh;
     padding: 24px 16px;
   }
-  .ch-notyet__card {
-    padding: 24px 20px;
-  }
 }
 
 /* Notifications bell */
@@ -1660,24 +1631,9 @@ button.ch-more__row[disabled] {
   flex: 1;
   gap: 6px;
 }
-.ch-bellp__empty {
-  display: grid;
-  justify-items: center;
-  gap: 6px;
-  padding: 28px 24px 30px;
-  text-align: center;
-  color: var(--ch-text-tertiary);
-}
-.ch-bellp__empty b {
-  font: 600 14px/1.3 var(--ch-font-sans);
-  color: var(--ch-text-primary);
-}
-.ch-bellp__empty span {
-  max-width: 260px;
-  font: 400 13px/1.45 var(--ch-font-sans);
-}
-.ch-bellp__empty .ch-btn {
-  margin-top: 6px;
+/* Nothing to show (CH-1302, CH-1303) is the shared section empty, at the rows' inset as the notice is. */
+.ch-bellp__body > .ch-empty {
+  margin: 6px 10px 10px;
 }
 .ch-topbar__actions .ch-iconbtn.is-on {
   color: var(--ch-green-700);

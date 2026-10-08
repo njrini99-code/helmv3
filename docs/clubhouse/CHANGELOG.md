@@ -1,5 +1,21 @@
 # Clubhouse changelog
 
+## 2026-10-08 — The shell's own states join the family
+
+- **The bell:** its empty ("You’re all caught up", "Nothing of this kind") is the
+  shared section empty at the rows' inset, not a centred block of its own. When
+  its list doesn't load, the panel's head no longer says "3 unread" or offers
+  Mark all read beside "Notifications didn’t load"; the bell keeps its count.
+- **Not rebuilt:** the placeholder for a route not rebuilt yet is the page
+  empty's anatomy (an hourglass medallion, Back to Home), no longer a white
+  card.
+- **The route error's way back** goes where the route's error boundary says
+  (`homePath`) and is named for it: Back to Home, or Back to Rounds after a
+  round crashes. It always went to Home before.
+- **On-green notice inks** are tokens, `--ch-notice-on-green-ink` and
+  `--ch-notice-on-green-body`, so a notice on the green takes them instead of
+  copying the colours.
+
 ## 2026-10-08 — Springs, thrown sheets and the gestures iOS has
 
 Motion gains real springs on D-64's durations. This is a lead decision under the owner's full-auto brief, for the

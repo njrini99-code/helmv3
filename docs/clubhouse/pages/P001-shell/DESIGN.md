@@ -152,6 +152,9 @@ blocks in `styles/shell.css`) now draws one family:
   fill are local properties (`--ch-notice-ink`, `--ch-notice-body`,
   `--ch-notice-fill`), so a notice on a dark or floating surface is restyled in
   one rule; `--ch-notice-rule` stays declared as a hook but is no longer drawn.
+  On the green (the FeatureCard, a board card) a context sets the notice's inks
+  from two tokens, `--ch-notice-on-green-ink` and `--ch-notice-on-green-body`,
+  rather than copying the colours.
 - **Several failed parts** (`PageNotice`, `PageRefreshNotice`, CH-1209): told
   once under the page head with one Try again; each failed part keeps its
   heading and a covered notice (its title alone). These are the reads the
@@ -164,8 +167,16 @@ blocks in `styles/shell.css`) now draws one family:
   alone. Browser-only, so the server HTML and hydration are unchanged. Without
   a group, or without its notice on the page, every crash keeps its own notice.
 - **Route error** (`RouteErrorView`): the page empty in the danger tone (a brick
-  medallion), Try again first, Back to Home beside it, and the reference as a
-  caption. No card.
+  medallion), Try again first, the way back beside it, and the reference as a
+  caption. No card. The way back goes where the route's error boundary says
+  (`homePath`) and is named for it: Back to Home, or a sub-screen's own section
+  (Back to Rounds, with a back chevron in place of the house).
+- **Not rebuilt** (`NotRebuilt`, CH-1301): the same anatomy with the forest
+  medallion (an hourglass) and Back to Home as its one action, not a card.
+- **The bell's own states**: its empty (CH-1302, CH-1303) is the section empty
+  and its failed list (CH-1201) the notice, both at the rows' inset. While the
+  list hasn't loaded, the panel's head drops the unread count and Mark all read;
+  the bell keeps its count.
 - **A page whose one read failed** (`EmptyState size="page" tone="danger"`,
   CH-1211): the route error's anatomy under the page's own head, as an alert,
   with Try again first (it re-runs the page through `useRefresh`) and the

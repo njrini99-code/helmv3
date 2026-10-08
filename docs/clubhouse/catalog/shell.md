@@ -42,12 +42,12 @@ phone. A state's title (a notice, an empty state, a route error) renders without
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-1201 | The bell's list doesn't load | "Notifications didn't load" + "Try again; the error has been reported." inside the panel | `InlineNotice` in `Bell` | shell.test › CH-1201 |
+| CH-1201 | The bell's list doesn't load | "Notifications didn’t load" + "Try again; the error has been reported." inside the panel, at the rows' inset. The panel's head drops its unread count and Mark all read until the list loads (the bell keeps its count) | `InlineNotice` in `Bell` | shell.test › CH-1201 |
 | CH-1202 | The page was built for an older version | "A newer version of GolfHelm is ready" and Reload, on the page empty's anatomy in the danger tone (a brick medallion, no card) | `RouteErrorView kind=chunk` | shell.test › CH-1202 |
 | CH-1203 | GolfHelm updated while the page was open | "This page is out of date". Reload | `kind=stale-action` | shell.test › CH-1203 |
 | CH-1204 | The server is busy | "GolfHelm is slow to respond". Try again | `kind=transient` | shell.test › CH-1204 |
 | CH-1205 | The connection dropped mid-load | "This page didn’t finish loading". Try again | `kind=load` | shell.test › CH-1205 |
-| CH-1206 | Anything else crashed the page | "Something went wrong on this page" + reported automatically; Try again first, then Back to Home; the error's reference as a quiet caption ("Reference …"), never in a card | `kind=unknown` | shell.test › CH-1206, states.test › CH-1206 |
+| CH-1206 | Anything else crashed the page | "Something went wrong on this page" + reported automatically; Try again first, then the way back the route's boundary names (`homePath`): Back to Home, or its section for a sub-screen, such as Back to Rounds; the error's reference as a quiet caption ("Reference …"), never in a card | `kind=unknown` | shell.test › CH-1206, states.test › CH-1206 |
 | CH-1207 | The sidebar's next event doesn't load | The next-event card is left out (never a wrong or empty card); the failure is logged as `clubhouse.shell.nextEvent` | `loadClubhouseShell` | shell.test › CH-1207 |
 | CH-1208 | The Roster badge's join requests don't load | The badge is left out rather than showing 0; logged as `clubhouse.shell.joinRequests` | `loadClubhouseShell` | shell.test › CH-1208 |
 | CH-1209 | Two or more parts of a page don't load | One notice under the page head, "Some of this page didn’t load", naming the parts in one sentence ("This week’s schedule, recent rounds and the leaderboard didn’t load. …"), with one Try again that re-runs the page. Each failed part keeps its heading and only its notice's title (covered), with no button and no second alert. One part failing keeps that part's own notice | `PageNotice`, `PageRefreshNotice`; `covered` on `InlineNotice` and `RefreshNotice`; the page passes the parts its render knows failed | states.test › CH-1209 |
@@ -58,9 +58,9 @@ phone. A state's title (a notice, an empty state, a route error) renders without
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-1301 | A page that hasn't been rebuilt in Clubhouse | "Rounds hasn't been rebuilt yet." with a way back | `NotRebuilt` | shell.test › CH-1301 |
-| CH-1302 | The bell has nothing | "You're all caught up." + what shows up here | `Bell` | shell.test › CH-1302 |
-| CH-1303 | The bell's filter has nothing | "Nothing of this kind." + Show all | `Bell` | shell.test › CH-1303 |
+| CH-1301 | A page that hasn't been rebuilt in Clubhouse | The page empty's anatomy, as the route error draws it, with no card: an hourglass medallion, "Rounds hasn’t been rebuilt yet", one sentence, and Back to Home | `NotRebuilt` | shell.test › CH-1301 |
+| CH-1302 | The bell has nothing | The shared section empty at the rows' inset: "You’re all caught up" + what shows up here | `EmptyState` in `Bell` | shell.test › CH-1302 |
+| CH-1303 | The bell's filter has nothing | The shared section empty: "Nothing of this kind" + Show all | `EmptyState` in `Bell` | shell.test › CH-1303 |
 | CH-1304 | Nothing is scheduled | No next-event card in the sidebar; with an event it shows "2 of 3 confirmed" and a bar | `Sidebar`, `NextEventCard` | shell.test › CH-1304 |
 | CH-1305 | A coach with one team, a coach who cannot switch (an assistant on several teams), or a player | The team name under GolfHelm is a plain label: no chevrons, no button, no team list in the phone More sheet | `Sidebar`, `teamSwitchFor` (the gate is `canSwitchTeams` and two or more teams, the rule `setActiveTeam` enforces) | team-switch.test › CH-1305 |
 
