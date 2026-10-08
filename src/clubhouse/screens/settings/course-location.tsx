@@ -210,8 +210,13 @@ export function CourseLocationCard({ teamId }: { teamId: string }) {
             maxLength={COURSE_LABEL_MAX}
             placeholder="Home course"
             onChange={(e) => c.setLabel(e.target.value)}
-            disabled={!c.point}
+            aria-describedby={c.point ? undefined : `${labelId}-h`}
           />
+          {!c.point && (
+            <span id={`${labelId}-h`} className="ch-field__help">
+              The name saves with the location.
+            </span>
+          )}
         </div>
       </div>
     </Card>
@@ -238,12 +243,11 @@ export function CourseLocationPhone({ teamId }: { teamId: string }) {
           {c.problem}
         </p>
       )}
-      {c.point && (
-        <label className="ch-setm-row ch-set-course__prow" htmlFor={labelId}>
-          <span className="ch-setm-row__l">Name</span>
-          <input id={labelId} className="ch-set-course__pin" value={c.label} maxLength={COURSE_LABEL_MAX} placeholder="Home course" onChange={(e) => c.setLabel(e.target.value)} />
-        </label>
-      )}
+      {/* The name is usable before there is a point (a denied or unavailable location); it saves with the location. */}
+      <label className="ch-setm-row ch-set-course__prow" htmlFor={labelId}>
+        <span className="ch-setm-row__l">Name</span>
+        <input id={labelId} className="ch-set-course__pin" value={c.label} maxLength={COURSE_LABEL_MAX} placeholder="Home course" onChange={(e) => c.setLabel(e.target.value)} />
+      </label>
       {c.dirty && value && (
         <button type="button" className="ch-setm-row is-plain" onClick={() => void c.save.run(value)} disabled={c.save.pending}>
           <span className="ch-setm-row__l ch-set-course__save">Save</span>

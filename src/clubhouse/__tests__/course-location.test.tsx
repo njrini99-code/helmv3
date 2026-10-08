@@ -100,3 +100,29 @@ describe('the course location once its columns exist', () => {
     expect(table.upserts[1]).toMatchObject({ team_id: 'team-1', course_latitude: null, course_longitude: null, course_label: null });
   });
 });
+
+describe('a location the device will not give (CH-8320)', () => {
+  it('says why inline, keeps the name usable, and offers no Save without a point', async () => {
+    const denied = { getCurrentPosition: (_ok: PositionCallback, bad: PositionErrorCallback) => bad({ code: 1 } as GeolocationPositionError) };
+    Object.defineProperty(navigator, 'geolocation', { value: denied, configurable: true });
+    const save = vi.fn(async () => ({ success: true }));
+    render(<CourseLocationCard teamId="team-1" />, { wrapper: wrap(fake({ status: 'ok', value: null }, save)) });
+    fireEvent.click(await screen.findByRole('button', { name: 'Use this device’s location' }));
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Location is off for this app/);
+    const name = screen.getByLabelText('Name') as HTMLInputElement;
+    expect(name.disabled).toBe(false);
+    fireEvent.change(name, { target: { value: 'Home course' } });
+    expect(name.value).toBe('Home course');
+    expect((screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it('on the phone too', async () => {
+    const { CourseLocationPhone } = await import('../screens/settings/course-location');
+    Object.defineProperty(navigator, 'geolocation', { value: undefined, configurable: true });
+    render(<CourseLocationPhone teamId="team-1" />, { wrapper: wrap(fake({ status: 'ok', value: null })) });
+    fireEvent.click(await screen.findByRole('button', { name: 'Use this phone’s location' }));
+    expect((await screen.findByRole('alert')).textContent).toMatch(/can’t share its location/);
+    expect((screen.getByLabelText('Name') as HTMLInputElement).disabled).toBe(false);
+  });
+});
