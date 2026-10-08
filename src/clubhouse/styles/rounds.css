@@ -118,6 +118,16 @@
   /* An unplayed hole's number still reads (4.5:1 on the green); the recess, not a faded ink, says it is to come. */
   color: var(--ch-on-green-ink-muted);
 }
+.ch-rd-strip span.is-played {
+  grid-auto-rows: min-content;
+  align-content: center;
+  gap: 1px;
+}
+.ch-rd-strip span.is-played em {
+  font: 500 9.5px/1 var(--ch-font-sans);
+  font-style: normal;
+  opacity: 0.72;
+}
 .ch-rd-strip span.is-par {
   background: rgb(255 255 255 / 0.1);
   color: var(--ch-ivory-100);
@@ -285,7 +295,10 @@
 }
 /* The figure's caption: a dd, so the list stays dt/dd pairs (axe definition-list). */
 .ch-rd-fig__m {
+  overflow: hidden;
   font: 400 12px/1.3 var(--ch-font-sans);
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: var(--ch-text-tertiary);
 }
 /* Best: the season's rounds on their range. */
@@ -402,20 +415,24 @@
   stroke: rgb(21 90 57 / 0.25);
 }
 .ch-rd-rib rect.is-under {
-  fill: var(--ch-green-500);
+  fill: var(--ch-score-under);
 }
 .ch-rd-rib rect.is-even {
   fill: var(--ch-ink-900);
 }
+/* Over par a warm grey at 3:1 on the paper (D5; #bfb59c was 1.8:1). */
 .ch-rd-rib rect.is-over {
-  fill: #bfb59c;
+  fill: var(--ch-ink-400);
 }
+/* A qualifier is a second channel: a gilt outline on whatever its score is (data gilt, 3.97:1). */
 .ch-rd-rib rect.is-q {
-  fill: #8e7b4e;
+  stroke: #927840;
+  stroke-width: 2.5;
+  paint-order: stroke;
 }
 .ch-rd-rib__t {
   font: 500 10.5px var(--ch-font-sans);
-  fill: var(--ch-ink-400);
+  fill: var(--ch-ink-500);
 }
 .ch-rd-rib__t.is-avg {
   fill: var(--ch-green-500);
@@ -451,13 +468,19 @@
   border-radius: 3px;
 }
 .ch-rd-season__lg i.is-under {
-  background: var(--ch-green-fill-500);
+  background: var(--ch-score-under);
 }
 .ch-rd-season__lg i.is-over {
-  background: #bfb59c;
+  background: var(--ch-ink-400);
+}
+.ch-rd-season__lg i.is-even {
+  height: 3px;
+  border-radius: 1.5px;
+  background: var(--ch-ink-900);
 }
 .ch-rd-season__lg i.is-q {
-  background: #8e7b4e;
+  background: none;
+  box-shadow: inset 0 0 0 2px #927840;
 }
 
 /* More unfinished rounds */
@@ -743,6 +766,16 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rd-sc__grid .is-tot {
   background: var(--ch-ivory-100);
+}
+/* D18: the score box keeps one width, so a nine-hole row (Holes, Tot) doesn't pull the meters 24px left. */
+@media (min-width: 821px) {
+  .ch-rd-sc__grid {
+    justify-content: flex-end;
+    width: 146px;
+  }
+  .ch-rd-sc__grid > span {
+    flex: 1 1 0;
+  }
 }
 .ch-rd-sc__m {
   display: flex;
@@ -2029,13 +2062,11 @@ html[data-fw-theme='dark'] .ch-rd-season__lg i.is-over,
   fill: #8a8373;
   background: #8a8373;
 }
-html[data-fw-theme='dark'] .ch-rd-rib rect.is-q,
-html[data-fw-theme='dark'] .ch-rd-season__lg i.is-q {
-  fill: var(--ch-champagne-500);
-  background: var(--ch-champagne-500);
+html[data-fw-theme='dark'] .ch-rd-rib rect.is-q {
+  stroke: var(--ch-champagne-500);
 }
-html[data-fw-theme='dark'] .ch-rd-season__lg i.is-under {
-  background: var(--ch-green-500);
+html[data-fw-theme='dark'] .ch-rd-season__lg i.is-q {
+  box-shadow: inset 0 0 0 2px var(--ch-champagne-500);
 }
 html[data-fw-theme='dark'] .ch-rd-more__go,
 html[data-fw-theme='dark'] .ch-rd-pill.is-qualifier {
@@ -2413,8 +2444,8 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   }
   /* The head: the eyebrow is set like the framed head's date line, the title is the shell's 44px sans. */
   .ch-rd[data-canopy] .ch-rd-h > div:first-child {
-    font: 500 11px/1.3 var(--ch-font-sans);
-    letter-spacing: 0.14em;
+    font: 500 13px/1.3 var(--ch-font-sans);
+    letter-spacing: 0.01em;
   }
   .ch-rd[data-canopy] .ch-rd-h .ch-rd-k {
     font: inherit;

@@ -958,6 +958,7 @@ button.ch-rt-strip__h {
   padding: 12px 14px;
   border-radius: 0 0 20px 20px;
   background: rgb(253 252 248 / 0.92);
+  -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
   box-shadow: 0 -1px 0 rgb(28 25 18 / 0.08);
 }
@@ -1101,6 +1102,11 @@ button.ch-rt-strip__h {
   border-top-color: var(--ch-hero-mint);
 }
 .ch-rt-spin.is-still {
+  animation: none;
+}
+/* D20: Settings > Animations off stills the spinner too, not only the system's reduced motion. */
+[data-ui='clubhouse'][data-motion='off'] .ch-rt-spin,
+[data-motion='off'] [data-ui='clubhouse'] .ch-rt-spin {
   animation: none;
 }
 @keyframes ch-rt-spin {
@@ -1396,28 +1402,60 @@ button.ch-rt-strip__h {
 }
 
 /* Submitting */
+/* Submitting, posted, didn't submit (D6/D7): a modal dialog on the top layer over a near-opaque green, the words on an
+   opaque card, so nothing of the round behind reads through. */
 .ch-rt-scrim {
   position: fixed;
   inset: 0;
   z-index: var(--ch-z-overlay);
-  display: grid;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  box-sizing: border-box;
+  border: 0;
   place-items: center;
   padding: 24px;
-  background: rgb(11 58 37 / 0.78);
-  backdrop-filter: blur(6px);
+  background: rgb(8 43 28 / 0.96);
+}
+.ch-rt-scrim[open] {
+  display: grid;
+}
+.ch-rt-scrim::backdrop {
+  background: transparent;
 }
 .ch-rt-subm {
   width: min(380px, 100%);
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
+  padding: 28px 24px 24px;
+  border-radius: 24px;
   text-align: center;
+  background: var(--ch-green-800);
   color: var(--ch-ivory-100);
+  box-shadow:
+    inset 0 0 0 1px rgb(244 238 221 / 0.1),
+    var(--ch-elevation-overlay);
 }
-.ch-rt-subm > b {
+/* On the card's green the one action is the ivory key. */
+.ch-rt-subm > .ch-btn.ch-btn--primary {
+  background: var(--ch-on-green-ink);
+  color: var(--ch-green-900);
+  box-shadow: var(--ch-elevation-on-frame);
+}
+.ch-rt-subm > .ch-btn.ch-btn--ghost {
+  color: var(--ch-on-green-ink);
+}
+.ch-rt-subm > h2 {
+  margin: 0;
   font: 600 26px/1.1 var(--ch-font-sans);
   letter-spacing: -0.025em;
+  color: var(--ch-on-green-ink);
+  outline: none;
 }
 .ch-rt-subm__m {
   margin-bottom: 8px;
