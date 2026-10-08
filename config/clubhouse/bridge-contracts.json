@@ -14240,7 +14240,7 @@
     "category": 7,
     "item": 2,
     "name": "WRITES_REFUSE_OFFLINE",
-    "meaning": "Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you're offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes.",
+    "meaning": "Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you’re offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes.",
     "status": "reserved",
     "where": "src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard (assign, dismiss, undo)",
     "tests": [

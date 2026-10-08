@@ -46,7 +46,7 @@ export function useRefuseOffline(): () => boolean {
   return useCallback(() => {
     if (!isOffline()) return false;
     haptic('error');
-    toast({ tone: 'error', title: "Couldn't send: you're offline", body: 'Reconnect, then try again. Nothing was sent.', code: 'CH-1903' });
+    toast({ tone: 'error', title: 'Couldn’t send: you’re offline', body: 'Reconnect, then try again. Nothing was sent.', code: 'CH-1903' });
     return true;
   }, [toast]);
 }

@@ -536,7 +536,7 @@ describe('Classes route and page', () => {
     session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'p1' } };
     teamOf.current = null;
     inProviders((await ClubhouseClassesRoute())!);
-    await expectCode('CH-12305', /You aren't on a team yet/);
+    await expectCode('CH-12305', /You aren’t on a team yet/);
     expect(screen.getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');
     expect(screen.queryByRole('button', { name: /Add|Import/ })).toBeNull();
   });
@@ -2118,7 +2118,7 @@ describe('Classes, offline and slow', () => {
     await openImport(user);
     goOffline();
     const file = chooseFile('week.png', 'image/png');
-    await expectCode('CH-12901', /You're offline.*Reading a screenshot needs a connection\. Reconnect and try again, or paste the text, which works offline\./);
+    await expectCode('CH-12901', /You’re offline.*Reading a screenshot needs a connection\. Reconnect and try again, or paste the text, which works offline\./);
     expect(w.read).not.toHaveBeenCalled();
     line!.mockReturnValue(true);
     await user.click(inSheet().getByRole('button', { name: 'Try again' }));

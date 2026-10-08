@@ -374,7 +374,7 @@ describe('the composer', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }));
     expect(chat.calls.send).not.toHaveBeenCalled();
     await waitFor(() => expect(code('CH-1903')).not.toBeNull());
-    expect(code('CH-1903')!.textContent).toMatch(/Couldn't send: you're offline.*Reconnect, then try again\. Nothing was sent\./);
+    expect(code('CH-1903')!.textContent).toMatch(/Couldn’t send: you’re offline.*Reconnect, then try again\. Nothing was sent\./);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(hapticSpy).not.toHaveBeenCalledWith('press');
     expect(box().value).toBe('Brief me');

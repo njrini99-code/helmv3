@@ -13,6 +13,9 @@ The states audit's Classes findings and the owner's native-feel pass, verified i
   schedule and Add class, desktop and phone; before, it offered neither. Delete all classes still waits for the
   classes (CH-12503). The add sheet cannot check a new class against classes that did not load, and claims no overlap
   either way. Contract 120407 and the catalog row say so.
+- **Copy:** the no-team page (CH-12305, "You aren’t on a team yet", "your team’s calendar") and the import's offline
+  state (CH-12901, "You’re offline") take the curly apostrophe, as the shell's offline line now does; the catalog's
+  CH-12002 and CH-12005 quote that line ("you’re offline").
 
 ## 2026-10-08 — Phone: Mobile clubhouse pass
 

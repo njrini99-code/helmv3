@@ -21,8 +21,8 @@ export function ClassesNoTeam() {
         size="page"
         code="CH-12305"
         icon={Users}
-        title="You aren't on a team yet"
-        body="Your classes go on your team's calendar so your coach can plan around them. Join a team, then add your classes."
+        title="You aren’t on a team yet"
+        body="Your classes go on your team’s calendar so your coach can plan around them. Join a team, then add your classes."
         action={
           settings ? (
             <Button variant="primary" href={settings}>

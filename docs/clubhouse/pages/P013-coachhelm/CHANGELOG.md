@@ -30,6 +30,10 @@ The states audit's CoachHelm findings and the owner's native-feel pass, verified
   (layout never animates). Shown, the rail fades in over base while its content slides 12px in from the edge, inside
   the rail's own clip; hidden, it goes at once. Reduced motion and Animations off show it at once. The phone's drawer
   is unchanged.
+- **Copy:** the coach's no-team page (CH-13308, "You aren’t on a team yet") and Ask's send while offline (CH-13920,
+  "Couldn’t send: you’re offline") take the curly apostrophe, as the shell's offline line now does; a failed answer's
+  offline line (CH-1905) is the shared one (`OFFLINE_LINE`) instead of its own copy. Contract 130702 quotes the curly
+  line.
 
 ## 2026-10-08 — Phone: Mobile clubhouse pass
 

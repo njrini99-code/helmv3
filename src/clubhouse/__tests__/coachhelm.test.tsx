@@ -1807,7 +1807,7 @@ describe('CoachHelm route', () => {
     session.current = { userId: 'u1', role: 'coach', coach: { id: 'c1', organization_id: 'org1' }, player: null };
     teamOf.current = null;
     render(wrap(await ClubhouseCoachHelmRoute()));
-    expect(code('CH-13308')!.textContent).toMatch(/You aren't on a team yet.*CoachHelm reads the rounds your players post/);
+    expect(code('CH-13308')!.textContent).toMatch(/You aren’t on a team yet.*CoachHelm reads the rounds your players post/);
     expect(getTopInsightsForPlayers).not.toHaveBeenCalled();
   });
 

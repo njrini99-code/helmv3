@@ -1423,7 +1423,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130635 | CH-13226 | 06 Server / system error | `ASK_A_READ_THE_PULSE_IS_MADE` | implemented | Ask: a read the pulse is made from failed (rounds, the schedule, tasks or focus areas), the rest landed |
 | 130636 | CH-13272 | 06 Server / system error | `STANDING_THE_COHORT_LOOKUP_FAILED` | implemented | Standing: the cohort lookup (their team's gender, which picks the Tour) failed |
 | 130701 | CH-13901 | 07 Network / offline | `AN_INSIGHT_IS_DISMISSED` | implemented | An insight is dismissed |
-| 130702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | reserved | Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you're offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes. |
+| 130702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | reserved | Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you’re offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes. |
 | 130703 | CH-13902 | 07 Network / offline | `A_PROPOSED_FOCUS_AREA_IS_ACCEPTED_OR` | implemented | A proposed focus area is accepted or declined |
 | 130704 | CH-13920 | 07 Network / offline | `ASK_SEND_WHILE_OFFLINE` | implemented | Ask: Send while offline |
 | 130705 | CH-13921 | 07 Network / offline | `ASK_A_SEND_FAILS` | implemented | Ask: A send fails |

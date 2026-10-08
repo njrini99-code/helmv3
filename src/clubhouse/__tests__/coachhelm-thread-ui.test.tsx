@@ -181,7 +181,7 @@ describe('CH-13251 a failed answer', () => {
   it('CH-1905 offline: Try again is held and the line says why', () => {
     show({ messages: coachAsked, error: ASK_ERRORS.rate, offline: true });
     const alert = screen.getByRole('alert');
-    expect(code('CH-1905')?.textContent).toBe("You're offline. Reconnect, then try again.");
+    expect(code('CH-1905')?.textContent).toBe('You’re offline. Reconnect, then try again.');
     expect((within(alert).getByRole('button', { name: 'Try again' }) as HTMLButtonElement).disabled).toBe(true);
   });
   it('says "Nothing was changed." only when it is true of the turn', () => {

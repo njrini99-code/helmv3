@@ -184,7 +184,7 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 130701 | CH-13901 | `AN_INSIGHT_IS_DISMISSED` | An insight is dismissed |
-| 130702 | — | `WRITES_REFUSE_OFFLINE` | Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you're offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes. |
+| 130702 | — | `WRITES_REFUSE_OFFLINE` | Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you’re offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes. |
 | 130703 | CH-13902 | `A_PROPOSED_FOCUS_AREA_IS_ACCEPTED_OR` | A proposed focus area is accepted or declined |
 | 130704 | CH-13920 | `ASK_SEND_WHILE_OFFLINE` | Ask: Send while offline |
 | 130705 | CH-13921 | `ASK_A_SEND_FAILS` | Ask: A send fails |

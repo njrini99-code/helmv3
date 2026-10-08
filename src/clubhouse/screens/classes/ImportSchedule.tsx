@@ -40,7 +40,7 @@ const FAIL: Record<ChReadFail, { icon: LucideIcon; title: string; code: string; 
   unsupported: { icon: FileQuestion, title: "We can't read that file type", code: 'CH-12112', body: 'Use a PNG, JPG or WebP screenshot, a PDF or a TXT file, or paste the text.' },
   fault: { icon: CloudOff, title: "Reading the schedule didn't finish", code: 'CH-12204', body: 'Your schedule can still be added with Paste text.' },
   none: { icon: SearchX, title: 'No classes found', code: 'CH-12114', body: "We read it but couldn't find course codes or times. Try pasting your schedule text." },
-  offline: { icon: WifiOff, title: "You're offline", code: 'CH-12901', body: 'Reading a screenshot needs a connection. Reconnect and try again, or paste the text, which works offline.' },
+  offline: { icon: WifiOff, title: 'You’re offline', code: 'CH-12901', body: 'Reading a screenshot needs a connection. Reconnect and try again, or paste the text, which works offline.' },
   empty: { icon: SearchX, title: 'Nothing to read', code: 'CH-12110', body: 'Paste your schedule text first.' },
 };
 

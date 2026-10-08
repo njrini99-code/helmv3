@@ -17,6 +17,7 @@ import { haptic } from '../../../lib/haptics';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
+import { OFFLINE_LINE } from '../../../ui/Retry';
 import { useToast } from '../../../ui/Toast';
 import { AskActionCard, AskReceiptCard } from './ActionCard';
 import { AskEvidenceView } from './Evidence';
@@ -324,7 +325,7 @@ function AskError({ notice, offline, changed, onRetry, onNewChat }: { notice: Ch
         {changed.unconfirmedWrite && <p className="ch-th-error__body">You confirmed an action in this answer. Check whether it was created before you ask again.</p>}
         {offlineRetry && (
           <p className="ch-th-error__body" data-ch-code="CH-1905">
-            You&apos;re offline. Reconnect, then try again.
+            {OFFLINE_LINE}
           </p>
         )}
       </div>
