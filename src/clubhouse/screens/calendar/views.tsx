@@ -144,49 +144,52 @@ export function TimeGrid({
       className="ch-wk ch-cal-surface"
       style={{ ['--ch-cols' as string]: dates.length, ['--ch-hours' as string]: to - from, ['--ch-hh' as string]: `${CAL_HH}px` }}
     >
-      <div className="ch-wk__head">
-        <div />
-        {dates.map((d) => (
-          <button
-            key={d}
-            type="button"
-            data-print-visible
-            className={'ch-wk__day' + (d === now.date ? ' is-today' : '')}
-            onClick={() => {
-              haptic('select');
-              onDay(d);
-            }}
-            aria-label={`${dowOf(d)} ${dayNum(d)} ${monthName(d)}${d === now.date ? ', today' : ''}. Open the day`}
-          >
-            <span className="ch-wk__d">{dowOf(d)}</span>
-            <span className="ch-wk__n">{dayNum(d)}</span>
-          </button>
-        ))}
-      </div>
-      <div className="ch-wk__allday">
-        <span>All day</span>
-        {dates.map((d) => (
-          <div key={d} className="ch-wk__allcell">
-            {events
-              .filter((e) => e.allDay && e.date === d)
-              .map((e) => (
-                <button
-                  key={e.id}
-                  type="button"
-                  data-print-visible
-                  className={`ch-ev-bar ch-ev--${e.type}${selId === e.id ? ' is-sel' : ''}`}
-                  aria-pressed={selId === e.id}
-                  onClick={() => {
-                    haptic('select');
-                    onSelect(e.id);
-                  }}
-                >
-                  <Icon icon={TYPE_ICON[e.type]} size={12} />
-                  <span>{eventTitle(e, people)}</span>
-                </button>
-              ))}
-          </div>
-        ))}
+      {/* The days and the all-day row stay pinned under the top bar while the hours scroll (P006-B1 opens mid-day). */}
+      <div className="ch-wk__top">
+        <div className="ch-wk__head">
+          <div />
+          {dates.map((d) => (
+            <button
+              key={d}
+              type="button"
+              data-print-visible
+              className={'ch-wk__day' + (d === now.date ? ' is-today' : '')}
+              onClick={() => {
+                haptic('select');
+                onDay(d);
+              }}
+              aria-label={`${dowOf(d)} ${dayNum(d)} ${monthName(d)}${d === now.date ? ', today' : ''}. Open the day`}
+            >
+              <span className="ch-wk__d">{dowOf(d)}</span>
+              <span className="ch-wk__n">{dayNum(d)}</span>
+            </button>
+          ))}
+        </div>
+        <div className="ch-wk__allday">
+          <span>All day</span>
+          {dates.map((d) => (
+            <div key={d} className="ch-wk__allcell">
+              {events
+                .filter((e) => e.allDay && e.date === d)
+                .map((e) => (
+                  <button
+                    key={e.id}
+                    type="button"
+                    data-print-visible
+                    className={`ch-ev-bar ch-ev--${e.type}${selId === e.id ? ' is-sel' : ''}`}
+                    aria-pressed={selId === e.id}
+                    onClick={() => {
+                      haptic('select');
+                      onSelect(e.id);
+                    }}
+                  >
+                    <Icon icon={TYPE_ICON[e.type]} size={12} />
+                    <span>{eventTitle(e, people)}</span>
+                  </button>
+                ))}
+            </div>
+          ))}
+        </div>
       </div>
       <div className="ch-wk__grid" data-first={dates[0]} data-from={from}>
         <div className="ch-wk__rail" aria-hidden="true">
