@@ -1,8 +1,10 @@
 'use client';
 
-import { createContext, useContext, useSyncExternalStore } from 'react';
+import { createContext, useContext, useMemo, useSyncExternalStore } from 'react';
+import { lightPlace } from '../../lib/light';
+import { sunAt } from '../../lib/sun';
 import { formatLastHere, formatWelcomeDate } from '../../data/welcome-shape';
-import { hourOfMinutes } from './scene-sky';
+import { hourOfMinutes, noonAltitude, solarSkyHour } from './scene-sky';
 
 /**
  * The viewer's own clock, for the sky and the greeting.
@@ -83,4 +85,26 @@ export function useLocalDateLabel(): string | null {
 export function useLastHereLabel(lastSeenAt: string | null): string | null {
   const now = useNowSnapshot();
   return useSyncExternalStore(subscribe, () => (lastSeenAt ? formatLastHere(lastSeenAt, now()) : null), () => null);
+}
+
+/**
+ * P015-A1: the hour the sky shows, from the sun's altitude where the viewer is (their time zone's point: no location
+ * prompt, and no team before sign-in), so the course is lit as it really is outside. The greeting stays on the clock
+ * (`useLocalHour`). Null on the server and during hydration, like the clock.
+ */
+export function useSkyHour(): number | null {
+  const fixed = useContext(FixedClock);
+  const minutes = useMinuteOfDay();
+  const day = fixed ? fixed.toDateString() : new Date().toDateString();
+  const zone = typeof Intl === 'undefined' ? null : Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const noon = useMemo(() => {
+    const at = fixed ? fixed.getTime() : Date.now();
+    const place = lightPlace(null, zone, at);
+    return noonAltitude(at, (ms) => sunAt(ms, place).altitude);
+    // The day's highest sun changes with the day, not the minute.
+  }, [day, zone]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (minutes === null) return null;
+  const at = fixed ? fixed.getTime() : Date.now();
+  const place = lightPlace(null, zone, at);
+  return solarSkyHour(at, (ms) => sunAt(ms, place).altitude, noon);
 }

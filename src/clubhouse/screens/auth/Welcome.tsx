@@ -14,7 +14,7 @@ import { Icon } from '../../ui/Icon';
 import { dropHandoffCurtain } from '../../lib/handoff';
 import { HANDOFF_MS, WELCOME_PHONE_AUTO_MS, welcomeBody, welcomeCard, welcomeDate, welcomeHint, welcomeItem, welcomeLine1, welcomeMark, welcomeName, welcomeScrim, type AuthCustom } from './auth-motion';
 import { greetingWord, isDarkSky } from './scene-sky';
-import { useLastHereLabel, useLocalDateLabel, useLocalHour } from './use-hour';
+import { useLastHereLabel, useLocalDateLabel, useLocalHour, useSkyHour } from './use-hour';
 import { useQueryParam } from './use-query-param';
 import { useWelcomeStage } from './WelcomeStage';
 
@@ -78,6 +78,7 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
   const reduced = useChReducedMotion();
   const phone = useChPhone();
   const hour = useLocalHour();
+  const sky = useSkyHour();
   const dateLabel = useLocalDateLabel();
   const lastHere = useLastHereLabel(data.lastSeenAt);
   const [armed, setArmed] = useState(false);
@@ -145,7 +146,8 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
   // Before the viewer's clock is known (the server render and the hydration pass) line 1 holds a non-breaking space, which keeps its height.
   const line1 = word === null ? ' ' : named ? `${word},` : `${word}.`;
   const spoken = word === null ? '' : named ? `${word}, ${data.name.status === 'named' ? data.name.display : ''}.` : `${word}.`;
-  const dark = hour !== null && isDarkSky(hour);
+  // P015-A1: the type flips with the real sky; the greeting above stays on the clock.
+  const dark = sky !== null && isDarkSky(sky);
   const custom: AuthCustom = { reduced };
   const { news } = data;
 

@@ -129,12 +129,19 @@ describe('the sign-in screen', () => {
     expect(email()).toHaveFocus();
   });
 
-  it('keeps the button off until both fields are filled, and takes text put in before hydration', async () => {
+  it('P015 D2 Sign in is always there once the page is live, and checks the fields when pressed: nothing is sent until both are filled', async () => {
     const user = userEvent.setup();
     render(<SignIn signIn={login} />);
-    await waitFor(() => expect(submit()).toBeDisabled());
+    await waitFor(() => expect(submit()).toBeEnabled());
     await user.type(email(), 'coach@example.com');
-    expect(submit()).toBeDisabled();
+    await user.click(submit());
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveAttribute('data-ch-code', 'CH-15101');
+    expect(login).not.toHaveBeenCalled();
+    // A3: the ring marks only the field the refusal names.
+    expect(password()).toHaveAttribute('aria-invalid', 'true');
+    expect(password().closest('.ch-au-input')).toHaveAttribute('data-invalid', 'true');
+    expect(email().closest('.ch-au-input')).not.toHaveAttribute('data-invalid');
     await user.type(password(), 'hunter22');
     expect(submit()).toBeEnabled();
   });
@@ -151,6 +158,8 @@ describe('the sign-in screen', () => {
     expect(alert).toHaveClass('ch-au-notice--danger');
     expect(email()).toHaveAttribute('aria-invalid', 'true');
     expect(password()).toHaveAttribute('aria-invalid', 'true');
+    // P015-A3: credentials name neither field, so neither is ringed; the flush notice says it.
+    expect(document.querySelector('.ch-au-input[data-invalid]')).toBeNull();
     expect(email()).toHaveAttribute('aria-describedby', alert.id);
     await waitFor(() => expect(email()).toHaveFocus());
     expect(hapticSpy).toHaveBeenCalledWith('press');

@@ -1,5 +1,12 @@
 # P015 — Auth: changelog
 
+## 2026-10-08 — premium pass: solar sky, paper in the room, one refusal anatomy, Sign in always there (P015-A1 to A3, D2, D3)
+
+- A1: the painted course's sky follows the sun, not the clock (`solarSkyHour` in `scene-sky.ts`, `useSkyHour` in `use-hour.ts`): the sun's altitude where the viewer is (their time zone's point from the global light's `lightPlace`, `lib/sun.ts`; no location prompt, no team before sign-in) picks the keyframe hour that shows it, so a December 5:30 pm is dusk and a June 7 pm is still bright. The sky, the type over it (sign in, welcome, onboarding) and the scene read it; the greetings stay on the clock. A preview's fixed `hour` still pins the sky.
+- A2: the sign-in sheet sits in the room: a fine fibre tile (a drawn image, not a live filter) and a wash of the light outside, at most 6% (`paperTint`): none by day, the sky's own ambient at twilight, a warm lamp at night. More contrast drops both. Not built: dithered sky gradients.
+- A3 (D3): a refusal is the shared flush notice (its icon carries the tone, the words the ink; no fill, no ring), and a ring marks only the field the refusal names (an empty field). Wrong credentials name neither field, so neither is ringed; both stay `aria-invalid` and described by the notice.
+- D2 (B1): Sign in is enabled as soon as the page is live and checks the fields when pressed (CH-15101); nothing is sent until both are filled.
+
 ## 2026-10-08 — premium pass: opaque onboarding paper (D1)
 
 The onboarding reading surface (`.ch-ox-stage`) is opaque paper on desktop and phone, light and dark: the course no longer shows through the fields and password rules, and the backdrop blur is gone. Glass stays on the step pill and the mark only.

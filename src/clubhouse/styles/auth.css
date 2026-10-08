@@ -354,6 +354,18 @@
   color: var(--ch-hero-mint);
 }
 
+/* P015-A2: paper that sits in the room. The sheet's stock carries a fine fibre tile (an image, drawn once, not a live
+   filter) and a wash of the light outside (--ch-au-paper, set by SignIn from the sky: a few percent at most, none by
+   day). More contrast drops both. */
+.ch-au-panel {
+  --ch-au-fibre: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .3 0 0 0 0 .2 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
+  background-image: linear-gradient(var(--ch-au-paper, transparent), var(--ch-au-paper, transparent)), var(--ch-au-fibre);
+}
+@media (prefers-contrast: more) {
+  .ch-au-panel {
+    background-image: none;
+  }
+}
 .ch-au-panel {
   position: absolute;
   top: 8px;
@@ -362,7 +374,7 @@
   width: var(--ch-au-pw);
   overflow: auto;
   border-radius: 14px;
-  background: var(--ch-bg-page);
+  background-color: var(--ch-bg-page);
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.12);
   display: flex;
   flex-direction: column;
@@ -683,15 +695,18 @@
   color: var(--ch-positive-600);
 }
 .ch-au-notice--warning {
-  background: var(--ch-warning-100);
-  box-shadow: 0 0 0 1px rgb(148 96 14 / 0.16);
+  /* P015-A3: a refusal is a flush notice (the shared states anatomy): its icon carries the tone, the words the ink. */
+  padding: 0;
+  background: none;
+  box-shadow: none;
 }
 .ch-au-notice--warning svg {
   color: var(--ch-warning-600);
 }
 .ch-au-notice--danger {
-  background: var(--ch-danger-100);
-  box-shadow: 0 0 0 1px rgb(176 58 46 / 0.16);
+  padding: 0;
+  background: none;
+  box-shadow: none;
 }
 .ch-au-notice--danger svg {
   color: var(--ch-danger-600);
@@ -1465,12 +1480,6 @@ html[data-fw-theme='dark'] .ch-au-wl-mark b {
 }
 html[data-fw-theme='dark'] .ch-au-notice--positive {
   box-shadow: 0 0 0 1px rgb(107 187 140 / 0.22);
-}
-html[data-fw-theme='dark'] .ch-au-notice--warning {
-  box-shadow: 0 0 0 1px rgb(227 169 79 / 0.24);
-}
-html[data-fw-theme='dark'] .ch-au-notice--danger {
-  box-shadow: 0 0 0 1px rgb(239 133 118 / 0.24);
 }
 /* The unlit key: engraved into the dark paper, so the word's catch-light falls below it as a shadow, not a glow. */
 html[data-fw-theme='dark'] .ch-au-submit .ch-btn:disabled:not([aria-busy='true']) {
