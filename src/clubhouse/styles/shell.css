@@ -704,10 +704,12 @@
 }
 
 /* The notice (InlineNotice, PageNotice): a part of the page could not load. Flush in the Ledger (lead decision under
-   the owner's full-auto brief, 2026-10-08; owner to confirm): no fill and no ring. A 2px rule at its left, the icon
-   and the title carry the danger ink, the body the secondary ink. Try again sits beside the words, or under them in a
-   narrow rail (the notice is its own size container) and on the phone. The inks and the fill are local properties,
-   so a notice on a dark or a floating surface is restyled in one rule. */
+   the owner's full-auto brief, 2026-10-08, revised the same day; owner to confirm): it sits between the section's
+   own engraved rules and draws nothing of its own, no fill, no ring and no stripe, so its icon lines up with the
+   section's heading. The icon and the title carry the danger ink, the body the secondary ink. Try again sits beside
+   the words, or under them in a narrow rail (the notice is its own size container) and on the phone. The inks and
+   the fill are local properties, so a notice on a dark or a floating surface is restyled in one rule;
+   --ch-notice-rule stays as a hook but is no longer drawn. */
 .ch-notice {
   --ch-notice-rule: var(--ch-ledger-rule);
   --ch-notice-ink: var(--ch-text-primary);
@@ -716,12 +718,10 @@
   container: ch-notice / inline-size;
   align-self: stretch;
   justify-self: stretch;
-  padding: 1px 0 1px 14px;
-  border-left: 2px solid var(--ch-notice-rule);
+  padding: 1px 0;
   background: var(--ch-notice-fill);
 }
 .ch-notice--danger {
-  --ch-notice-rule: var(--ch-danger-600);
   --ch-notice-ink: var(--ch-danger-600);
 }
 .ch-notice__in {
@@ -2198,7 +2198,8 @@ html[data-ch-ua-pop]:has([data-ui='clubhouse'])::view-transition-new(*) {
   [data-ui='clubhouse'] .ch-topbar .ch-iconbtn {
     color: var(--ch-on-green-ink-soft);
   }
-  [data-ui='clubhouse'] .ch-pbar__title {
+  [data-ui='clubhouse'] .ch-pbar__title,
+  [data-ui='clubhouse'] .ch-pbar__lead {
     color: var(--ch-on-green-ink);
   }
   [data-ui='clubhouse'] .ch-pbar__back,
