@@ -12,7 +12,7 @@
  *   - rpc refresh_player_stats_cache (per player)
  *   - scripts/recompute-sg-cache.ts          (correct SG, post-cache)
  *   - rpc refresh_player_standing            (team)
- *   - scripts/regen-coachhelm-from-corrected-stats.ts <TARGET_PLAYER_ID>
+ *   - scripts/regen-coachhelm-from-corrected-stats.ts <TARGET_PLAYER_ID> --apply
  *
  * Run:
  *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-demo-player.ts [--dry-run]
@@ -24,6 +24,15 @@ import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
 import { assertSafeTarget } from './lib/prod-target-guard.mjs';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/seed-demo-player.ts',
+  summary:
+    "Seed ONE demo player by cloning a source player's shot-level data, re-dated to the current window so CoachHelm's 90-day windows include the rounds and the team looks current.",
+  guard: "its own --dry-run flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 const DEMO_TEAM_ID = '6ecdd1a6-63fe-4beb-b094-00118f334163';
 

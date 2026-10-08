@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { assertAreaFullyWrapped } from '@/lib/admin/__tests__/coverage-contract.shared';
+import {
+  assertAreaFullyWrapped,
+  GOLF_SPLIT_ACTION_FILES,
+} from '@/lib/admin/__tests__/coverage-contract.shared';
 
 /**
  * W15 Batch 6 (library + recruiting + player surfaces) — coverage-contract gate.
@@ -29,7 +32,7 @@ describe('coverage-contract — B6 library + recruiting + player surfaces (cours
     expect(() =>
       assertAreaFullyWrapped([
         'src/app/golf/actions/course-library.ts',
-        'src/app/golf/actions/golf.ts',
+        ...GOLF_SPLIT_ACTION_FILES,
         'src/app/golf/actions/recruiting.ts',
         'src/app/golf/actions/recruit-documents.ts',
         'src/app/golf/actions/dashboard-data.ts',

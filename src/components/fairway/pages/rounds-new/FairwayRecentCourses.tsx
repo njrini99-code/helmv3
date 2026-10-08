@@ -29,7 +29,7 @@ import { Button } from '@/components/fairway/controls/button';
 
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { formatCourseName } from '@/components/golf/courses/CourseImage';
-import type { RecentPlayedCourse } from '@/app/golf/actions/golf';
+import type { RecentPlayedCourse } from '@/app/golf/actions/saved-courses';
 
 export interface FairwayRecentCoursesProps {
   /** Recent courses, already enriched with round counts. Empty array hides the rail. */

@@ -18,7 +18,7 @@ vi.mock('@/app/actions/notification-preferences', () => ({ updateNotificationPre
 vi.mock('@/app/golf/actions/v3/notification-prefs', () => ({ setAllChannels: vi.fn(), setCategoryChannel: vi.fn(), setQuietMode: vi.fn() }));
 vi.mock('@/app/golf/actions/coaching-philosophy', () => ({ revalidateCoachingPhilosophyPaths: vi.fn(), saveCoachingPhilosophy: vi.fn() }));
 vi.mock('@/app/golf/actions/teams', () => ({ cancelJoinRequest: vi.fn(), createTeamJoinRequest: vi.fn(), regenerateJoinCode: vi.fn() }));
-vi.mock('@/app/golf/actions/insights', () => ({ updateTeamCoachHelmSettings: vi.fn() }));
+vi.mock('@/app/golf/actions/insights-coachhelm', () => ({ updateTeamCoachHelmSettings: vi.fn() }));
 
 import { NativeSwipeBackBridge } from '@/components/golf/NativeSwipeBackBridge';
 import { createLiveWrites } from '../screens/settings/writes';

@@ -10,6 +10,9 @@ npm run knowledge:map -- --files <paths...>
 npm run knowledge:context -- --files <paths...> --task "<task>"
 ```
 
+The context step writes a per-run file and prints its path (`Wrote <path>`);
+read that file, not a fixed `/tmp` name. Pass `--output <file>` to choose one.
+
 The map step prints `contextDocs.docs`: at most three docs, primary first, with
 docs whose STATUS banner says STALE, HISTORICAL, SUPERSEDED or RETIRED already
 left out (they are listed under `contextDocs.skipped`). Read the first one (not

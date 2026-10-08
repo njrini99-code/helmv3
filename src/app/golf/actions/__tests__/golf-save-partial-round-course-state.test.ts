@@ -60,7 +60,7 @@ vi.mock('@/lib/notifications/push', () => ({
   sendPushNotification: vi.fn(async () => undefined),
 }));
 
-import { savePartialRound } from '../golf';
+import { savePartialRound } from '../round-partial';
 
 const OVIINBYRD = '13d2c110-bee4-496e-b390-e523a4bd0fbb';
 

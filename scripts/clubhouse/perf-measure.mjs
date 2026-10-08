@@ -25,6 +25,14 @@ import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { measure, report } from './perf-measure-run.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/clubhouse/perf-measure.mjs',
+  summary:
+    "Clubhouse performance harness: serves a production build against the local Supabase stack with a seeded team and measures it with Playwright. Local stack only.",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_ACCESS_TOKEN, RESEND_API_KEY, SENTRY_AUTH_TOKEN, ANTHROPIC_API_KEY',
+});
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const STATE_DIR = join(ROOT, '.helm', 'runtime', 'clubhouse-perf');

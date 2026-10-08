@@ -6,7 +6,7 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/golf/dashboard/roster/p1',
   useSearchParams: () => new URLSearchParams(),
 }));
-vi.mock('@/app/golf/actions/golf', () => ({ updatePlayerStatus: vi.fn(async () => ({ success: true })) }));
+vi.mock('@/app/golf/actions/team-management', () => ({ updatePlayerStatus: vi.fn(async () => ({ success: true })) }));
 
 import { PlayerDetailScreen } from './PlayerDetailScreen';
 import { buildPlayerDetailModel, type RawRound } from './buildPlayerDetailModel';

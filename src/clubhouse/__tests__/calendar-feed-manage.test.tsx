@@ -20,7 +20,7 @@ const feeds = vi.hoisted(() => ({
   deleteCalendarFeed: vi.fn(),
 }));
 vi.mock('@/app/golf/actions/calendar-feeds', () => feeds);
-vi.mock('@/app/golf/actions/golf', () => ({ createGolfEvent: vi.fn(), updateGolfEvent: vi.fn(), deleteGolfEvent: vi.fn() }));
+vi.mock('@/app/golf/actions/calendar-events', () => ({ createGolfEvent: vi.fn(), updateGolfEvent: vi.fn(), deleteGolfEvent: vi.fn() }));
 vi.mock('@/app/golf/actions/recurring-events', () => ({ createRecurringEvent: vi.fn(), deleteRecurringEvent: vi.fn(), editRecurringEvent: vi.fn() }));
 
 import { SubscribeSheet } from '../screens/calendar/editor';

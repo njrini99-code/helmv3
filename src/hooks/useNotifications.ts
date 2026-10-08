@@ -2,7 +2,7 @@
 
 import { describeError } from '@/lib/utils/describe-error';
 import { useState, useEffect, useCallback } from 'react';
-import { getNotifications, markNotificationRead, markAllNotificationsRead } from '@/app/golf/actions/golf';
+import { getNotifications, markNotificationRead, markAllNotificationsRead } from '@/app/golf/actions/calendar-notifications';
 
 // ============================================================================
 // TYPES

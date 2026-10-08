@@ -69,7 +69,7 @@
       "label": "Discard an unfinished round (player)",
       "component": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary",
       "handler": "confirmDiscard",
-      "service": "src/app/golf/actions/golf.ts#deleteInProgressRound",
+      "service": "src/app/golf/actions/round-partial.ts#deleteInProgressRound",
       "data": [
         "golf_rounds",
         "device emergency copy"
@@ -127,7 +127,7 @@
       "label": "Save the round for later (Exit sheet, closed-qualifier sheet)",
       "component": "src/clubhouse/screens/rounds/entry/RoundRuntime.tsx#RoundRuntime",
       "handler": "save.run (useAction rounds.saveForLater) -> engine handleSaveForLater / handleSubmitSaveAndExit",
-      "service": "src/app/golf/actions/golf.ts#savePartialRound",
+      "service": "src/app/golf/actions/round-partial.ts#savePartialRound",
       "data": [
         "golf_rounds",
         "golf_holes",
@@ -149,7 +149,7 @@
       "label": "Discard the round in play (Exit sheet, closed-qualifier sheet)",
       "component": "src/clubhouse/screens/rounds/entry/RoundRuntime.tsx#RoundRuntime",
       "handler": "discard.run (useAction rounds.discardRound) -> engine handleDeleteRound / handleSubmitDiscard",
-      "service": "src/app/golf/actions/golf.ts#deleteInProgressRound",
+      "service": "src/app/golf/actions/round-partial.ts#deleteInProgressRound",
       "data": [
         "golf_rounds (holes and shots cascade)",
         "the device emergency copy"
@@ -188,7 +188,7 @@
       "label": "Submit the finished round",
       "component": "src/clubhouse/screens/rounds/entry/RoundRuntime.tsx#RoundRuntime",
       "handler": "RoundCompleteSheet onSubmit -> engine handleRoundSubmit / requestRoundSubmission",
-      "service": "src/app/golf/actions/golf.ts#submitGolfRoundComprehensive",
+      "service": "src/app/golf/actions/round-submit.ts#submitGolfRoundComprehensive",
       "data": [
         "golf_rounds",
         "golf_holes",

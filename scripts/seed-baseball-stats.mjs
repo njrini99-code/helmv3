@@ -81,6 +81,15 @@
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/seed-baseball-stats.mjs',
+  summary:
+    "Seeds BaseballHelm player stats. Dry-run by default; env-gated.",
+  guard: "its own --confirm / --allow-prod flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 const KNOWN_PROD_PROJECT_REF = 'qmnssrrolpinvwjjnufo';
 const NS = 'baseball-stats-seed';

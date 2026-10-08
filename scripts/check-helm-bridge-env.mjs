@@ -4,6 +4,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import dotenv from 'dotenv';
 import { classifyCredential, SHAPE_HINTS } from '../src/lib/admin/credential-shape.mjs';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/check-helm-bridge-env.mjs',
+  summary:
+    "Checks that the Helm Bridge environment variables are consistent between the app, .env.example and the workflows. Read-only.",
+  secrets: 'SENTRY_AUTH_TOKEN',
+});
 
 const ROOT = process.cwd();
 const ENV_FILES = [

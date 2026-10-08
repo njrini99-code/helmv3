@@ -323,7 +323,7 @@
   today per vitest.config.ts's own note on `scripts/__tests__/`, so this was
   hygiene, not a CI fix).
 - Verification: `./node_modules/.bin/tsc --noEmit -p tsconfig.json` (pre-
-  existing errors only, all in `src/app/golf/actions/golf.ts` and a test file
+  existing errors only, all in `actions/golf.ts (pre-split)` and a test file
   under concurrent edit by another agent — zero errors reference
   `golf/admin`); `./node_modules/.bin/eslint` on the 3 changed test files
   (0 errors, 1 pre-existing unrelated warning); full

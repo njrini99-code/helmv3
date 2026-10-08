@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { assertAreaFullyWrapped } from '@/lib/admin/__tests__/coverage-contract.shared';
+import {
+  assertAreaFullyWrapped,
+  excludeAcrossGolfSplit,
+  GOLF_SPLIT_ACTION_FILES,
+} from '@/lib/admin/__tests__/coverage-contract.shared';
 
 /**
  * W15 Batch 4 (comms) — coverage-contract gate.
@@ -61,12 +65,12 @@ describe('coverage-contract — B4 comms (messaging, announcements)', () => {
           'src/app/golf/actions/message-attachments.ts',
           'src/app/golf/actions/announcements.ts',
           'src/app/golf/actions/communication.ts',
-          'src/app/golf/actions/golf.ts',
+          ...GOLF_SPLIT_ACTION_FILES,
           'src/app/actions/messages.ts',
         ],
         {
           exclude: {
-            'src/app/golf/actions/golf.ts': GOLF_TS_NOT_YET_WRAPPED_EXPORTS,
+            ...excludeAcrossGolfSplit(GOLF_TS_NOT_YET_WRAPPED_EXPORTS),
             'src/app/actions/messages.ts': MESSAGES_TS_GENERIC_AND_BASEBALL_EXPORTS,
           },
         },

@@ -38,7 +38,7 @@
       "gold_feature_secondary": [
         "shot_tracking"
       ],
-      "seed_file": "src/app/golf/actions/golf.ts",
+      "seed_file": "src/app/golf/actions/round-submit.ts",
       "gold_files": [
         "src/app/golf/actions/__tests__/golf-round-submit-abort-no-destructive-fallback.test.ts",
         "src/app/golf/actions/__tests__/golf-save-partial-round.test.ts"
@@ -53,7 +53,7 @@
       "seed_file": "src/app/api/account/delete/route.ts",
       "gold_files": [
         "src/app/golf/actions/announcements.ts",
-        "src/app/golf/actions/golf.ts",
+        "src/app/golf/actions/calendar-events.ts",
         "src/app/golf/actions/tasks.ts",
         "src/lib/coachhelm/v3/qualifying/player-notify.ts",
         "supabase/migrations/20260819200000_preserve_golf_history_on_account_deletion.sql",
@@ -97,7 +97,7 @@
       "gold_feature_secondary": [
         "golf_round_lifecycle"
       ],
-      "seed_file": "src/app/golf/actions/golf.ts",
+      "seed_file": "src/app/golf/actions/shot-actions.ts",
       "gold_files": [
         "src/hooks/golf/__tests__/shot-mutation-recovery.test.tsx",
         "src/lib/admin/__tests__/observe-action-result.test.ts",
@@ -126,7 +126,7 @@
       "gold_feature_secondary": [
         "golf_round_lifecycle"
       ],
-      "seed_file": "src/app/golf/actions/golf.ts",
+      "seed_file": "src/app/golf/actions/round-partial.ts",
       "gold_files": [
         "src/lib/utils/emergency-save.ts"
       ],

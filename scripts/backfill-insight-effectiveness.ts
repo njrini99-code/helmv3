@@ -16,6 +16,14 @@
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 import { rollupInsightEffectivenessForRange } from '../src/lib/coachhelm/v2/analytics/effectiveness-writer';
+import { cliGuard, dryRunClient } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/backfill-insight-effectiveness.ts',
+  summary:
+    'Walks every day from the earliest golf_coach_insights row to yesterday and upserts golf_insight_effectiveness for each one-day window on the project in .env.local. Idempotent.',
+  secrets: 'NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (.env.local)',
+});
 
 async function main() {
   // .trim() defends against `vercel env pull` writing values with trailing
@@ -25,9 +33,9 @@ async function main() {
   const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
   if (!supabaseUrl || !serviceKey) throw new Error('Missing SUPABASE env vars');
 
-  const supabase = createClient(supabaseUrl, serviceKey, {
+  const supabase = dryRunClient(createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false },
-  });
+  }), cli);
 
   // Find earliest insight created_at to know the range.
   const { data: earliest, error } = await supabase

@@ -175,6 +175,15 @@ import {
   type PostgameGameInput,
   type PostgamePitchingLine,
 } from '../src/lib/baseball/postgame/build-review';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/seed-baseball-demo.ts',
+  summary:
+    "Phase 1 BaseballHelm demo seed: coach, player, team and roster data.",
+  guard: "its own --confirm / --allow-prod flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 // ---------------------------------------------------------------------------
 // Stable demo identity (deterministic — survives re-runs).

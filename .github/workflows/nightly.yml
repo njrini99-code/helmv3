@@ -8,7 +8,12 @@ name: Nightly
 # 2026-09-23). Neither was a merge gate; both are release signals, and a
 # nightly run on main's head is when that signal is read.
 #
-# Job names are unchanged from ci.yml; neither is a required check.
+# 2026-10-07 (plan 5.1, 5.7): the two advisory browser jobs that ran on every
+# push to main (`Playwright PR smoke (a11y)`, `Capture + upload Sentry
+# snapshots`) moved here behind one `next-build`, and the BaseballHelm smoke was
+# split into a build job and a run job.
+#
+# Job names are unchanged from ci.yml; none is a required check.
 # Run on demand: `gh workflow run nightly.yml` (optionally `--ref <branch>`).
 
 on:
@@ -89,14 +94,8 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit --no-fund
+      - name: Setup Node and install dependencies
+        uses: ./.github/actions/setup-node-npm
 
       - name: Unit tests at ${{ matrix.tz }} (shard ${{ matrix.shard }}/3)
         env:
@@ -105,8 +104,86 @@ jobs:
           echo "Runner offset: $(date +%z)  ($(date))"
           npm run test:run -- --shard=${{ matrix.shard }}/3
 
+  # ---------------------------------------------------------------------------
+  # BaseballHelm authenticated smoke, split in two (plan 5.7, 2026-10-07).
+  #
+  # It was ONE job: Supabase stack, Playwright browser install, a full
+  # `next build`, the seed and the specs, in 45 minutes of headroom, so a build
+  # that ran long ("~9-10 min under container contention") starved the part that
+  # produces a diagnosable failure, and a red run could not say which half broke.
+  # The halves are now separate jobs with their own timeouts:
+  #
+  #   baseball-smoke-build   stack (for its URL and anon key) -> `next build`
+  #   baseball-auth-smoke    stack -> seed -> Playwright against the built output
+  #
+  # WHY THE BUILD STILL STARTS A STACK. Next inlines NEXT_PUBLIC_* at build
+  # time, so the bundle must be built with the stack's URL and anon key. Those
+  # come from `supabase status` and are the CLI's fixed local-demo values, but
+  # that is a fact about the CLI, not something this file controls. So the build
+  # job records the pair it built with (`stack.env`, shipped inside the
+  # artifact), and the smoke job REFUSES to run if its own stack reports a
+  # different pair, instead of authenticating against a bundle built for another.
+  #
+  # The ghcr.io `toomanyrequests` retry with backoff and mirror fallback lives in
+  # scripts/db/supabase-start-with-retry.sh, which the stack action runs. There
+  # is no Docker Hub secret in this repository, so there is no docker/login-action
+  # step to add; the ghcr.io login uses the job's GITHUB_TOKEN.
+  # ---------------------------------------------------------------------------
+  baseball-smoke-build:
+    name: BaseballHelm smoke build
+    permissions:
+      contents: read
+      packages: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node and install dependencies
+        uses: ./.github/actions/setup-node-npm
+
+      # Only for its NEXT_PUBLIC_* values: the stack must be up BEFORE the build
+      # (see above). Nothing is seeded or exercised here.
+      - name: Start local Supabase stack
+        uses: ./.github/actions/local-supabase-stack
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Record the stack values this bundle is built with
+        run: |
+          set -euo pipefail
+          printf 'NEXT_PUBLIC_SUPABASE_URL=%s\nNEXT_PUBLIC_SUPABASE_ANON_KEY=%s\n' \
+            "$NEXT_PUBLIC_SUPABASE_URL" "$NEXT_PUBLIC_SUPABASE_ANON_KEY" > stack.env
+
+      # No .next/cache (2026-09-23): the dedicated next-smoke cache was dropped
+      # to keep the repository's 10 GB cache budget for ci.yml's Next build.
+      - name: Build
+        run: npm run build
+
+      - name: Upload build and stack values
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: baseball-smoke-build-${{ github.run_id }}
+          path: |
+            .next
+            !.next/cache
+            stack.env
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Stop local Supabase stack
+        if: always()
+        run: supabase stop || true
+
   baseball-auth-smoke:
     name: BaseballHelm authenticated smoke
+    needs: [baseball-smoke-build]
     # packages: read lets the local-supabase-stack composite action's ghcr.io
     # login step get the authenticated (higher) pull rate limit for
     # ghcr.io/supabase/* images; the workflow-level `permissions:` block above
@@ -117,57 +194,27 @@ jobs:
       packages: read
     # NIGHTLY (2026-09-23, PR throughput). Removed from the PR gate on
     # 2026-08-26 after it blocked a golf production hotfix twice in one
-    # afternoon (the runner died during this job's in-job build). Until
-    # 2026-09-23 it still ran on every push to main: a full local Supabase
-    # stack plus a second `next build` per merge. It now runs nightly and on
-    # dispatch (`gh workflow run nightly.yml`); a red run blocks the next
-    # release, not a merge.
-    # #372: promotes the already-built, already-mandatory baseball-smoke +
-    # onboarding-smoke specs (e2e/baseball-smoke.spec.ts,
-    # e2e/baseball-onboarding-smoke.spec.ts) from push/workflow_dispatch-only
-    # (.github/workflows/playwright.yml's `e2e` job) into a required PR gate —
-    # the same mechanism that promoted Supabase RLS tests into `all` (#517)
-    # and the import-cycle ratchet (#808).
+    # afternoon (the runner died during the in-job build). Until 2026-09-23 it
+    # ran on every push to main; it now runs nightly and on dispatch
+    # (`gh workflow run nightly.yml`). A red run blocks the next release, not a
+    # merge. It promotes the already-built baseball-smoke and onboarding-smoke
+    # specs (e2e/baseball-smoke.spec.ts, e2e/baseball-onboarding-smoke.spec.ts,
+    # #372) into a release signal.
     #
-    # ── 2026-07-30: THIS JOB NO LONGER TOUCHES PRODUCTION ──────────────────
-    # It used to run `npm run seed:baseball:ci` with the production Supabase URL
-    # and service-role key in its env, on every pull request. It now stands up a
-    # throwaway Supabase stack on the runner
-    # (.github/actions/local-supabase-stack) and seeds that instead.
-    #
-    # Three consequences worth knowing:
-    #
-    # 1. NO SECRETS ARE NEEDED, so the readiness-check / fail-loud steps that
-    #    used to sit here are gone, and the fork + Dependabot `if:` skip went
-    #    with them. That skip existed only because external PRs "structurally
-    #    cannot supply these secrets" — with the secrets gone the reason is gone,
-    #    and a required gate that silently skips on forks was a hole in it.
-    #
-    # 2. THE STEP ORDER MATTERS. `supabase start` must run BEFORE `npm run
-    #    build`, because Next.js inlines NEXT_PUBLIC_* at build time — a build
-    #    made before the local URL exists would ship the old value into the
-    #    client bundle and the smoke run would authenticate against it.
-    #
-    # 3. IT TESTS THIS PR'S SCHEMA, not production's. `supabase start` applies
-    #    everything under supabase/migrations/, so a migration that breaks a
-    #    smoke path now fails on the PR that introduces it.
-    #
-    # COST NOTE: this doubles Playwright-browser-install + a full `npm run
-    # build` on every push to main, on top of the existing next-build, and adds
-    # ~1-2min of `supabase start` — a real, ongoing CI-minutes tradeoff.
+    # NO PRODUCTION ACCESS (2026-07-30). It used to run `npm run
+    # seed:baseball:ci` with the production Supabase URL and service-role key
+    # in its env, on every pull request. It stands up a throwaway Supabase stack
+    # on the runner (.github/actions/local-supabase-stack) and seeds that, so no
+    # secrets are needed and it tests THIS commit's schema (`supabase start`
+    # applies supabase/migrations/), not production's.
     runs-on: ubuntu-latest
-    # 45, not 30. Measured on this branch: a CLEAN run is ~17 min (supabase start
-    # ~1m45s, build ~9-10 min under container contention, seed ~1 min, the smoke
-    # itself ~1m30s). A run where the smoke FAILS costs ~24 min, because every spec
-    # retries twice — which left only ~6 min of head-room against 30.
-    #
-    # That head-room is what produces a diagnosable failure. When the JOB timeout
-    # fires first, GitHub cancels the job outright and the `if: always()`
-    # report-upload step never runs: exactly how #953 produced three consecutive
-    # `cancelled` runs with nothing to debug from (see the note in
-    # playwright.yml's `e2e` job). A red run that uploads its Playwright report is
-    # worth far more than a cancelled one that finishes 15 minutes sooner.
-    timeout-minutes: 45
+    # With the build in its own job a clean run is ~6 min here (stack ~1m45s,
+    # seed ~1 min, specs ~1m30s); a run where the smoke FAILS costs ~13 min,
+    # because every spec retries twice. 30 leaves room for a slow pull and still
+    # lets the `if: always()` report upload run: when a JOB timeout fires first,
+    # GitHub cancels the job outright and nothing is uploaded (how #953 produced
+    # three `cancelled` runs with nothing to debug from).
+    timeout-minutes: 30
     env:
       # NOT secrets, and deliberately not read from any. The seed script creates
       # exactly these two accounts on the local stack with exactly these values
@@ -185,14 +232,8 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit --no-fund
+      - name: Setup Node and install dependencies
+        uses: ./.github/actions/setup-node-npm
 
       # Everything below this point talks to the runner's own Postgres. See the
       # action for why, and for the loopback assertion it ends with.
@@ -200,6 +241,26 @@ jobs:
         uses: ./.github/actions/local-supabase-stack
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download build and stack values
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: baseball-smoke-build-${{ github.run_id }}
+          path: .
+
+      # The bundle inlined the build job's URL and anon key. Refuse to run the
+      # specs against a stack that reports different ones.
+      - name: Assert this stack matches the one the bundle was built for
+        run: |
+          set -euo pipefail
+          built_url="$(grep -E '^NEXT_PUBLIC_SUPABASE_URL=' stack.env | cut -d= -f2-)"
+          built_key="$(grep -E '^NEXT_PUBLIC_SUPABASE_ANON_KEY=' stack.env | cut -d= -f2-)"
+          if [ "$built_url" != "$NEXT_PUBLIC_SUPABASE_URL" ] || [ "$built_key" != "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
+            echo "::error::The local stack's URL or anon key differs from the pair baseball-smoke-build baked into the bundle (built=$built_url, now=$NEXT_PUBLIC_SUPABASE_URL)."
+            echo "::error::The Supabase CLI's local values are no longer fixed; build and run in one job again."
+            exit 1
+          fi
+          echo "Stack matches the bundle ($built_url)."
 
       - name: Cache Playwright browsers
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
@@ -212,20 +273,14 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      # MUST come after the stack is up: Next.js inlines NEXT_PUBLIC_* into the
-      # client bundle at build time, so building first would bake in whatever the
-      # env held before the local URL existed. No .next/cache here (2026-09-23):
-      # the dedicated next-smoke cache was dropped to keep the repository's
-      # 10 GB cache budget for ci.yml's Next build.
-      - name: Build (so dev server boots fast)
-        run: npm run build
-
       # No --allow-prod (see package.json). Against a loopback URL the target
       # guard allows the write with no flag; if production credentials ever leak
       # back into this job's env, the guard refuses instead of seeding prod.
       - name: Seed BaseballHelm CI accounts into the local stack
         run: npm run seed:baseball:ci
 
+      # playwright.config.ts's webServer runs `npm run start` in CI, serving the
+      # downloaded `.next`.
       - name: Run BaseballHelm mandatory smoke (blocking)
         run: |
           npx playwright test \
@@ -247,3 +302,275 @@ jobs:
       - name: Stop local Supabase stack
         if: always()
         run: supabase stop || true
+
+  # ---------------------------------------------------------------------------
+  # ADVISORY BROWSER JOBS (moved here from ci.yml 2026-10-07, plan 5.1).
+  #
+  # `Playwright PR smoke (a11y)` and `Capture + upload Sentry snapshots` are
+  # advisory: neither was ever in `CI aggregate`, and each keeps step-level
+  # `continue-on-error` on its test/capture step so it reports an honest
+  # pass/fail while being structurally incapable of blocking anything. They ran
+  # on every push to main, after a `Next build` that the push already paid for;
+  # that was two runners, two `npm ci`s and two Playwright installs per merge
+  # for a post-merge signal a nightly run gives as well.
+  #
+  # BUILD ONCE still holds, one level up: `next-build` below builds main once
+  # for both and hands them the `.next` output as an artifact (node_modules is
+  # not part of it, so each job still runs `npm ci`). Check names are unchanged
+  # from the workflows they replaced (docs/CI_RUNBOOK.md's table).
+  # ---------------------------------------------------------------------------
+  next-build:
+    name: Next build (advisory browser jobs)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node and install dependencies
+        uses: ./.github/actions/setup-node-npm
+
+      # No .next/cache restore or save: once a night does not repay an entry in
+      # the repository's 10 GB cache budget, which ci.yml's Next build owns.
+      - name: Build
+        run: npm run build
+
+      # `include-hidden-files` and `if-no-files-found: error` are BOTH
+      # load-bearing: `.next` is dot-prefixed and upload-artifact skips hidden
+      # paths by default, which once uploaded nothing and still succeeded.
+      - name: Upload Next build artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: nightly-next-build-${{ github.run_id }}
+          path: |
+            .next
+            !.next/cache
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  pr-smoke-a11y:
+    name: Playwright PR smoke (a11y)
+    # NIGHTLY / DISPATCH ONLY (2026-10-07). Advisory, never in `CI aggregate`,
+    # and until today also run on every push to main, each taking a runner slot
+    # plus an `npm ci` and a Playwright install while PRs queued for slots. It
+    # now runs once a night against main, and on demand against any branch:
+    # `gh workflow run nightly.yml --ref <branch>`. The `ci:e2e` PR label no
+    # longer exists; use the dispatch.
+    needs: [next-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy-ci-build.supabase.co' }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-anon-key-ci-build-only' }}
+      NODE_OPTIONS: --max-old-space-size=4096
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node and install dependencies
+        uses: ./.github/actions/setup-node-npm
+
+      - name: Download Next build artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: nightly-next-build-${{ github.run_id }}
+          path: .next
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # Same shared-server rationale as before (pr-smoke.yml's original
+      # comment): one `next start` shared via PLAYWRIGHT_BASE_URL by both
+      # test steps below avoids a second `playwright test` invocation racing
+      # port 3000 right after the first one's own webServer tears down.
+      # `next start` (production server against the DOWNLOADED build)
+      # replaces the old `npm run dev` — this job now exercises the same
+      # artifact the rest of CI already validated, not a fresh dev compile.
+      - name: Start production server (from downloaded build)
+        run: |
+          set -euo pipefail
+          npm run start > /tmp/next-start.log 2>&1 &
+          echo $! > /tmp/next-start.pid
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000 -o /dev/null; then
+              echo "Server ready after ${i} attempt(s)."
+              exit 0
+            fi
+            if ! kill -0 "$(cat /tmp/next-start.pid)" 2>/dev/null; then
+              echo "::error::next start process died during startup"
+              cat /tmp/next-start.log
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "::error::next start did not become ready within 120s"
+          cat /tmp/next-start.log
+          exit 1
+
+      - name: Run public accessibility smoke
+        continue-on-error: true
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+        run: npx playwright test e2e/accessibility.spec.ts --project=chromium --reporter=line
+
+      # Blocking within this advisory job (pure layout-geometry assertions,
+      # no a11y-debt exemptions) — same as pr-smoke.yml's original.
+      - name: Run public mobile viewport checks
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+        run: npx playwright test --project=mobile-public --reporter=line
+
+      - name: Stop production server
+        if: always()
+        run: kill "$(cat /tmp/next-start.pid)" 2>/dev/null || true
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: pr-smoke-playwright-report
+          path: playwright-report/
+          retention-days: 3
+          if-no-files-found: ignore
+
+  sentry-snapshot-capture:
+    name: Capture + upload Sentry snapshots
+    # NIGHTLY / DISPATCH ONLY (2026-10-07). Advisory, never in `CI aggregate`,
+    # and until today also run on every push to main, each taking a runner slot
+    # plus an `npm ci` and a Playwright install while PRs queued for slots. It
+    # now runs once a night against main, and on demand against any branch:
+    # `gh workflow run nightly.yml --ref <branch>`. The `ci:e2e` PR label no
+    # longer exists; use the dispatch.
+    needs: [next-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GOLFHELM_PLAYER_EMAIL: ${{ secrets.E2E_GOLF_EMAIL }}
+      GOLFHELM_PLAYER_PASSWORD: ${{ secrets.E2E_GOLF_PASSWORD }}
+      E2E_GOLF_EMAIL: ${{ secrets.E2E_GOLF_EMAIL }}
+      E2E_GOLF_PASSWORD: ${{ secrets.E2E_GOLF_PASSWORD }}
+      E2E_BASEBALL_COACH_EMAIL: ${{ secrets.E2E_BASEBALL_COACH_EMAIL }}
+      E2E_BASEBALL_COACH_PASSWORD: ${{ secrets.E2E_BASEBALL_COACH_PASSWORD }}
+      E2E_BASEBALL_PLAYER_EMAIL: ${{ secrets.E2E_BASEBALL_PLAYER_EMAIL }}
+      E2E_BASEBALL_PLAYER_PASSWORD: ${{ secrets.E2E_BASEBALL_PLAYER_PASSWORD }}
+      SENTRY_SNAPSHOTS: "1"
+      NODE_OPTIONS: --max-old-space-size=8192
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      # `if:` cannot read `secrets.*` directly, so this is a STEP inside the
+      # job rather than a separate gate job (2026-09-06: folding the old
+      # "Check Sentry snapshot prerequisites" job into a step here is exactly
+      # the check-row collapse this change is for — every later step in this
+      # job gates on `steps.token.outputs.enabled` instead).
+      - name: Check for SENTRY_AUTH_TOKEN
+        id: token
+        env:
+          TOKEN_SET: ${{ secrets.SENTRY_SNAPSHOTS_AUTH_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          if [ "$TOKEN_SET" = "true" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::SENTRY_AUTH_TOKEN is not set — Sentry snapshot capture and upload are skipped. See docs/observability/SENTRY_SNAPSHOTS.md OWNER ACTION."
+          fi
+
+      - name: Setup Node and install dependencies
+        if: steps.token.outputs.enabled == 'true'
+        uses: ./.github/actions/setup-node-npm
+
+      - name: Download Next build artifact
+        if: steps.token.outputs.enabled == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: nightly-next-build-${{ github.run_id }}
+          path: .next
+
+      - name: Cache Playwright browsers
+        if: steps.token.outputs.enabled == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: Install Playwright browsers
+        if: steps.token.outputs.enabled == 'true'
+        run: npx playwright install --with-deps chromium
+
+      # No manual `next start` here: playwright.config.ts's own `webServer`
+      # already runs `npm run start` in CI when PLAYWRIGHT_BASE_URL is unset
+      # (unchanged from sentry-snapshots.yml's original — it never manually
+      # started a server either). It now serves the DOWNLOADED artifact
+      # instead of a build made in this job.
+      - name: Capture Sentry snapshot screenshots
+        if: steps.token.outputs.enabled == 'true'
+        continue-on-error: true
+        id: capture
+        run: |
+          npx playwright test \
+            --project=chromium \
+            --project=baseball-coach \
+            --project=baseball-player \
+            e2e/sentry-snapshots.spec.ts \
+            e2e/sentry-snapshots-baseball.spec.ts
+
+      - name: Count captured images
+        id: count
+        if: steps.token.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          dir="test-results/sentry-snapshots"
+          if [ -d "$dir" ]; then
+            count=$(find "$dir" -name '*.png' | wc -l | tr -d ' ')
+          else
+            count=0
+          fi
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          echo "Captured $count image(s) in $dir"
+
+      - name: Upload snapshots to Sentry
+        if: steps.token.outputs.enabled == 'true' && steps.count.outputs.count != '0'
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_SNAPSHOTS_AUTH_TOKEN }}
+          SENTRY_ORG: helm-xs
+          SENTRY_PROJECT: javascript-nextjs
+        run: |
+          npx --yes @sentry/cli@3.7.0 snapshots upload test-results/sentry-snapshots \
+            --app-id helm-web \
+            --project javascript-nextjs
+
+      - name: No images captured
+        if: steps.token.outputs.enabled == 'true' && steps.count.outputs.count == '0'
+        run: |
+          echo "::warning::Sentry snapshots: 0 images captured — nothing uploaded. Check the Playwright report artifact below for the cause (likely a login failure)."
+
+      - name: Upload Playwright report (debugging)
+        if: always() && steps.token.outputs.enabled == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: sentry-snapshots-playwright-report-${{ github.run_number }}
+          path: |
+            playwright-report/
+            test-results/sentry-snapshots/
+          retention-days: 7
+          if-no-files-found: warn

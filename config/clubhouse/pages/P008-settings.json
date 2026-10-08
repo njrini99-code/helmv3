@@ -483,7 +483,7 @@
       "label": "Turn CoachHelm on or off for the whole team (head coach)",
       "component": "src/clubhouse/screens/settings/CoachHelm.tsx#PowerCard",
       "handler": "save.run (useInstantSave team)",
-      "service": "src/app/golf/actions/insights.ts#updateTeamCoachHelmSettings",
+      "service": "src/app/golf/actions/insights-coachhelm.ts#updateTeamCoachHelmSettings",
       "data": [
         "golf_team_coachhelm_settings"
       ],

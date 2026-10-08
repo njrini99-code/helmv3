@@ -11,7 +11,7 @@
  * with copy-to-clipboard affordances and a short "how it works" explainer.
  *
  * SERVER ACTION — reused VERBATIM by exact import path, never wrapped/weakened:
- *   invitePlayerToTeam('') from '@/app/golf/actions/golf'
+ *   invitePlayerToTeam('') from '@/app/golf/actions/team-management'
  *     → Promise<{ success: boolean; error?: string;
  *                 data?: { inviteCode: string; inviteLink: string } }>
  *   The `inviteLink` it returns is a RELATIVE path ("/golf/join/<code>"); we
@@ -46,7 +46,7 @@ import {
   IconLink,
   IconUsers,
 } from '@/components/icons';
-import { invitePlayerToTeam } from '@/app/golf/actions/golf';
+import { invitePlayerToTeam } from '@/app/golf/actions/team-management';
 
 /* ---------------------------------------------------------------------------
  * Props

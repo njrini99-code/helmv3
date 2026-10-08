@@ -179,14 +179,9 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'golfhelm',
     actions: {
       'src/app/golf/actions/round-drafts.ts': 'ALL',
-      'src/app/golf/actions/golf.ts': [
-        'submitGolfRoundComprehensive',
-        'savePartialRound',
-        'deleteInProgressRound',
-        'deleteShot',
-        'updateShot',
-        'getRoundShotDetails',
-      ],
+      'src/app/golf/actions/round-submit.ts': ['submitGolfRoundComprehensive'],
+      'src/app/golf/actions/round-partial.ts': ['savePartialRound', 'deleteInProgressRound'],
+      'src/app/golf/actions/shot-actions.ts': ['deleteShot', 'updateShot', 'getRoundShotDetails'],
     },
     primaryTable: 'golf_rounds',
     heartbeatTable: 'golf_rounds',
@@ -220,7 +215,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'golfhelm',
     actions: {
       'src/app/golf/actions/v3/qualifying.ts': 'ALL',
-      'src/app/golf/actions/golf.ts': [
+      'src/app/golf/actions/qualifier-actions.ts': [
         'createGolfQualifier',
         'getQualifierRoundCourses',
         'setQualifierRoundCourses',
@@ -243,7 +238,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     label: 'My Qualifiers (player)',
     app: 'golfhelm',
     actions: {
-      'src/app/golf/actions/golf.ts': ['getPlayerQualifiers'],
+      'src/app/golf/actions/qualifier-actions.ts': ['getPlayerQualifiers'],
     },
     primaryTable: 'golf_qualifier_entries',
     heartbeatTable: 'golf_qualifier_entries',
@@ -256,7 +251,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     label: 'Calendar & Events',
     app: 'golfhelm',
     actions: {
-      'src/app/golf/actions/golf.ts': [
+      'src/app/golf/actions/calendar-events.ts': [
         'createGolfEvent',
         'updateGolfEvent',
         'deleteGolfEvent',
@@ -268,6 +263,8 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
         'getCurrentUserBusyPeriods',
         'getPlayerEventRSVP',
         'getEventRSVP',
+      ],
+      'src/app/golf/actions/calendar-blocked-time.ts': [
         'addCoachBlockedTime',
         'deleteCoachBlockedTime',
         'updateCoachBlockedTime',
@@ -317,11 +314,8 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'golfhelm',
     actions: {
       'src/app/golf/actions/roster.ts': 'ALL',
-      'src/app/golf/actions/golf.ts': [
-        'invitePlayerToTeam',
-        'updatePlayerStatus',
-        'getPendingInvitations',
-      ],
+      'src/app/golf/actions/team-management.ts': ['invitePlayerToTeam', 'updatePlayerStatus'],
+      'src/app/golf/actions/calendar-events.ts': ['getPendingInvitations'],
     },
     primaryTable: 'golf_team_members',
     heartbeatTable: 'golf_team_members',
@@ -385,7 +379,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     actions: {
       'src/app/golf/actions/announcements.ts': 'ALL',
       'src/app/golf/actions/communication.ts': 'ALL',
-      'src/app/golf/actions/golf.ts': ['createAnnouncement'],
+      'src/app/golf/actions/team-management.ts': ['createAnnouncement'],
     },
     primaryTable: 'golf_announcements',
     heartbeatTable: 'golf_announcements',
@@ -490,7 +484,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'golfhelm',
     actions: {
       'src/app/golf/actions/course-library.ts': 'ALL',
-      'src/app/golf/actions/golf.ts': [
+      'src/app/golf/actions/saved-courses.ts': [
         'getPlayerSavedCourses',
         'savePlayerCourse',
         'touchSavedCourse',
@@ -565,7 +559,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
       'src/app/golf/actions/coach-notifications.ts': 'ALL',
       'src/app/golf/actions/player-notifications.ts': 'ALL',
       'src/app/golf/actions/push-notifications.ts': 'ALL',
-      'src/app/golf/actions/golf.ts': [
+      'src/app/golf/actions/calendar-notifications.ts': [
         'getNotifications',
         'markNotificationRead',
         'markAllNotificationsRead',
@@ -630,7 +624,8 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'golfhelm',
     actions: {
       'src/app/golf/actions/admin-bi-data.ts': 'ALL',
-      'src/app/golf/actions/admin-data.ts': 'ALL',
+      'src/app/golf/actions/admin-dashboard-data.ts': 'ALL',
+      'src/app/golf/actions/admin-incidents-data.ts': 'ALL',
       'src/app/golf/actions/admin-people-data.ts': 'ALL',
       'src/app/golf/actions/admin-system-data.ts': 'ALL',
       'src/app/golf/actions/admin-tracer-data.ts': 'ALL',
@@ -652,16 +647,20 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     actions: {
       'src/app/golf/actions/insight-delivery.ts': 'ALL',
       'src/app/golf/actions/player-fingerprint.ts': 'ALL',
-      'src/app/golf/actions/insights.ts': [
+      'src/app/golf/actions/insights-feed.ts': [
         'getTopInsightsByStrokeImpact',
         'generateTeamInsights',
         'getActiveInsights',
+      ],
+      'src/app/golf/actions/insights-player-analysis.ts': [
         'analyzePlayer',
         'generatePlayerInsight',
         'generatePracticeRecommendations',
         'getPlayerTrajectory',
         'getPlayerPatterns',
         'recordInteraction',
+      ],
+      'src/app/golf/actions/insights-coachhelm.ts': [
         'getCoachHelmStatus',
         'triggerPlayerInsightsAfterRound',
         'refreshPlayerAnalysisAsCoach',
@@ -715,7 +714,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'coachhelm',
     actions: {
       'src/app/golf/actions/insight-management.ts': 'ALL',
-      'src/app/golf/actions/insights.ts': [
+      'src/app/golf/actions/insights-feed.ts': [
         'acknowledgeInsight',
         'dismissInsight',
         'reactivateInsight',
@@ -789,7 +788,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     actions: {
       'src/app/golf/actions/player-feedback.ts': 'ALL',
       'src/app/golf/actions/insight-celebration.ts': 'ALL',
-      'src/app/golf/actions/insights.ts': ['getPlayerCoachHelmDashboard'],
+      'src/app/golf/actions/insights-coachhelm.ts': ['getPlayerCoachHelmDashboard'],
     },
     primaryTable: 'golf_predictions',
     heartbeatTable: 'golf_predictions',
@@ -808,7 +807,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
       'src/app/golf/actions/round-review-narrative.ts': 'ALL',
       'src/app/golf/actions/round-recap.ts': 'ALL',
       'src/app/golf/actions/v3/llm.ts': 'ALL',
-      'src/app/golf/actions/insights.ts': ['generateRoundReview'],
+      'src/app/golf/actions/insights-player-analysis.ts': ['generateRoundReview'],
     },
     primaryTable: 'golf_round_reviews',
     heartbeatTable: 'golf_round_reviews',
@@ -854,7 +853,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
         'declineFocusArea',
         'updateFocusAreaProgress',
       ],
-      'src/app/golf/actions/insights.ts': ['getPlayerFocusAreas'],
+      'src/app/golf/actions/insights-player-analysis.ts': ['getPlayerFocusAreas'],
     },
     primaryTable: 'golf_player_focus_areas',
     heartbeatTable: 'golf_player_focus_areas',
@@ -1662,7 +1661,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
  * would trade a visible gap for an invisible one.
  */
 export const FEATURE_AREA_ALIASES: Readonly<Record<string, FeatureKey>> = {
-  // src/app/golf/actions/golf.ts — savePartialRound/deleteShot/updateShot are
+  // src/app/golf/actions/round-partial.ts + shot-actions.ts — savePartialRound/deleteShot/updateShot are
   // already listed under round_tracking's own `actions` manifest above.
   shot_tracking: 'round_tracking',
   // src/app/golf/actions/stats.ts — cache invalidation for the stats surface.
@@ -1704,7 +1703,7 @@ export const FEATURE_AREA_ALIASES: Readonly<Record<string, FeatureKey>> = {
   // page.tsx, teams.validateGolfPlayerCanJoinTeam — all the join flow, and
   // validateGolfPlayerCanJoinTeam is in join_team_flow's manifest.
   teams: 'join_team_flow',
-  // src/app/golf/actions/insights.ts (verifyRoundAccess) and golf.ts
+  // src/app/golf/actions/insights-shared.ts (verifyPlayerAccess) and golf-action-shared.ts
   // (getPlayerTeamId) — round-scoped reads.
   rounds: 'round_tracking',
   //

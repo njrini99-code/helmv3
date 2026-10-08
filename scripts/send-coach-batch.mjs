@@ -4,10 +4,28 @@
  * → Resend `text:`), and log each to crm_contact_log + bump last_contacted_at so
  * the CRM's records stay intact. Honors the same exclusions/quality filter as
  * export-coach-prospects.mjs (customers + Piedmont out, valid email, last name,
- * not bounced, not suppressed). Usage: node scripts/send-coach-batch.mjs [batchNumber]
+ * not bounced, not suppressed).
+ *
+ * Usage: node scripts/send-coach-batch.mjs [size] [--apply]
+ *   size     how many of the NEXT unsent coaches to email (default 10). It is a
+ *            count, not a batch number: each run takes the next `size` coaches
+ *            with no "Coach First Touch" log row, so re-running never repeats.
+ *   --apply  actually send through Resend and write the CRM log. Without it the
+ *            script is a DRY RUN: it reads the CRM, prints who it would email,
+ *            and sends and writes nothing.
  */
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
+import { cliGuard } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/send-coach-batch.mjs',
+  summary:
+    'Emails the next N unsent cold-outreach coaches with the live "Coach First Touch" template through Resend and logs each send to crm_contact_log. Reads the production CRM.',
+  usage: '[size]',
+  options: [['size', 'How many of the next unsent coaches to email (default 10, a count and not a batch number)']],
+  secrets: 'RESEND_API_KEY, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL (.env.local)',
+});
 
 const env = {};
 for (const file of ['../.env.local', '../.env']) {
@@ -21,12 +39,16 @@ for (const file of ['../.env.local', '../.env']) {
 const apiKey = env.RESEND_API_KEY;
 const supa = createClient(env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY,
   { auth: { autoRefreshToken: false, persistSession: false } });
-if (!apiKey) { console.error('Missing RESEND_API_KEY'); process.exit(1); }
+if (cli.apply && !apiKey) { console.error('Missing RESEND_API_KEY'); process.exit(1); }
 
 // Count of coaches to send this run (default 10). Always sends the NEXT unsent
 // coaches (those without a prior "Coach First Touch" contact-log row), so
 // re-running can never double-email anyone.
-const SIZE = parseInt(process.argv[2] || '10', 10);
+const SIZE = parseInt(cli.positional[0] || '10', 10);
+if (!Number.isInteger(SIZE) || SIZE < 1 || SIZE > 200) {
+  console.error(`size must be a whole number from 1 to 200, got "${cli.positional[0]}".`);
+  process.exit(2);
+}
 const FROM = env.HELM_FROM_EMAIL ?? 'Helm Sports Labs <admin@helmsportslabs.com>';
 const CUSTOMER_SCHOOLS = new Set(['Denison University','Guilford College','Hampden-Sydney College','Shenandoah University','University of Lynchburg']);
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -58,7 +80,7 @@ const remaining = sendable.filter(c => !alreadySent.has(c.id));
 const slice = remaining.slice(0, SIZE);
 if (!slice.length) { console.error('Nothing left to send — all sendable coaches have received this campaign.'); process.exit(0); }
 
-console.log(`Sending next ${slice.length} (${alreadySent.size} already sent, ${remaining.length} unsent remaining)...\n`);
+console.log(`${cli.apply ? 'Sending' : '[dry-run] Would send'} next ${slice.length} (${alreadySent.size} already sent, ${remaining.length} unsent remaining)...\n`);
 const sub = (str, c) => {
   const parts = (c.name || '').trim().split(/\s+/);
   return str
@@ -75,6 +97,10 @@ let sent = 0; const failures = [];
 for (const c of slice) {
   const subject = sub(tpl.subject, c);
   const text = sub(tpl.body, c);
+  if (!cli.apply) {
+    console.log(`  [dry-run] ${c.name} <${c.email}> — ${c.school} — "${subject}"`);
+    continue;
+  }
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -98,4 +124,8 @@ for (const c of slice) {
   }
   await new Promise(r => setTimeout(r, 600)); // gentle spacing within the batch
 }
-console.log(`\nDone: ${sent} sent, ${failures.length} failed. ${remaining.length - sent} unsent remaining.`);
+if (!cli.apply) {
+  console.log(`\n[dry-run] ${slice.length} email(s) NOT sent and nothing written. Re-run with --apply to send them.`);
+} else {
+  console.log(`\nDone: ${sent} sent, ${failures.length} failed. ${remaining.length - sent} unsent remaining.`);
+}

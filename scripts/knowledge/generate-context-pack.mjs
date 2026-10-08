@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFile, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { loadRegistry, mapFilesToFeatures, fileExists, selectContextDocs } from './lib/registry.mjs';
 
@@ -43,7 +44,10 @@ console.log(`Wrote ${args.output}`);
 function parseArgs(argv) {
   const parsed = {
     files: [],
-    output: '/tmp/helmv3-context-pack.md',
+    // Per-run file (2026-10-07): a fixed path was shared by every session on the
+    // machine, so two concurrent runs overwrote each other's pack. The path is
+    // printed on the last line; pass --output to choose one.
+    output: join(tmpdir(), `helmv3-context-${process.pid}.md`),
     task: '',
     maxDocChars: 5000,
   };

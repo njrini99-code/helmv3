@@ -6,6 +6,15 @@
 import { config as loadEnv } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import { assertSafeTarget } from './lib/prod-target-guard.mjs';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/debug-player-insert.mjs',
+  summary:
+    "Diagnoses what blocks a golf_players insert and can delete the rows it created. Gated by --dry-run and a production target guard.",
+  guard: "its own --dry-run flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 loadEnv({ path: '.env.local' });
 

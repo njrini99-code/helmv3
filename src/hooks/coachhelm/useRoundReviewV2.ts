@@ -15,7 +15,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { RoundReview } from '@/lib/coachhelm/types';
 import type { IntelligentRoundReview } from '@/lib/coachhelm/v2/types';
-import { generateRoundReview as generateAIRoundReview, getCoachHelmStatus } from '@/app/golf/actions/insights';
+import { generateRoundReview as generateAIRoundReview } from '@/app/golf/actions/insights-player-analysis';
+import { getCoachHelmStatus } from '@/app/golf/actions/insights-coachhelm';
 import { generateAndStoreRoundReview, type RoundReviewContent } from '@/app/golf/actions/round-review-system';
 
 // Map database row to TypeScript RoundReview type

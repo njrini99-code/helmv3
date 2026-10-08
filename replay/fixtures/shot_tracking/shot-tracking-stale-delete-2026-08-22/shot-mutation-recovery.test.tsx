@@ -11,7 +11,7 @@ const actionMocks = vi.hoisted(() => ({
   updateShot: vi.fn(),
 }));
 
-vi.mock('@/app/golf/actions/golf', () => ({
+vi.mock('@/app/golf/actions/shot-actions', () => ({
   deleteShot: (...args: unknown[]) => actionMocks.deleteShot(...args),
   updateShot: (...args: unknown[]) => actionMocks.updateShot(...args),
 }));

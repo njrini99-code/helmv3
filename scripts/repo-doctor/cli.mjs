@@ -37,6 +37,14 @@ import * as worktreeHygiene from './checks/worktree-hygiene.mjs';
 import * as diskHygiene from './checks/disk-hygiene.mjs';
 import * as routines from './checks/routines.mjs';
 import { workspaceRoots } from '../../.claude/hooks/lib/workspace-identity.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/repo-doctor/cli.mjs',
+  summary:
+    "Repo:doctor, the read-only integrity entrypoint: compares the desired repo state in config/repo/manifest.yml with the actual state. CI internal.",
+  secrets: 'SUPABASE_ACCESS_TOKEN',
+});
 
 // Local-only modules would be gated on `--local`; all MVP checks are shared/CI-safe.
 // db-observability's own live-credential checks self-report Status.LOCAL_ONLY

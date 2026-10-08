@@ -29,7 +29,9 @@
  *
  * Exit: 0 for any determined status (in sync or behind), 2 undetermined.
  * With --strict, drift beyond --allow commits exits 1, which makes it a
- * post-deploy check: `npm run release:status -- --strict`.
+ * post-deploy check: `npm run release:status -- --strict`. `--check` is an
+ * alias for `--strict`, so the flag every other `*:check` script in this repo
+ * uses does what a reader expects here instead of being silently ignored.
  * UNKNOWN is never reported as fine — that is the failure mode this replaces.
  *
  * FLAGS FOR THE SESSION-START HOOK (2026-09-01). .claude/hooks/session-context.sh
@@ -51,7 +53,7 @@ const num = (flag, dflt) => {
   return i === -1 ? dflt : Number(argv[i + 1] ?? dflt);
 };
 const allow = num('--allow', 0);
-const strict = argv.includes('--strict');
+const strict = argv.includes('--strict') || argv.includes('--check');
 const depth = num('--depth', 60);
 const timeoutMs = num('--timeout-ms', 0);
 const json = argv.includes('--json');

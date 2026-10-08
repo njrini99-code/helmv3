@@ -30,6 +30,15 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../src/lib/types/database';
 import { resolveTriageMember, type AdminClient } from '../src/lib/admin/triage-apply';
 import { deriveRcaCategory } from '../src/lib/admin/rca-category';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/triage-write-analyses.ts',
+  summary:
+    "Triage \u2014 write analyses (operator path).",
+  guard: "its own --apply flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 const RCA_TITLE_PREFIX = 'RCA analysis: ';
 

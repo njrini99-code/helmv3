@@ -124,7 +124,7 @@ vi.mock('@/lib/coachhelm/v2', async (importOriginal) => ({
   isCoachHelmEnabledForPlayer: vi.fn(async () => ({ effectivelyEnabled: true })),
 }));
 
-import { getPlayerPatterns } from '../insights';
+import { getPlayerPatterns } from '../insights-player-analysis';
 
 describe('getPlayerPatterns — ranked by absolute stroke impact', () => {
   beforeEach(() => {

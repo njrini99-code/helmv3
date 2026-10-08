@@ -25,11 +25,17 @@ and `AUTOGEN:*` blocks in `memory/` (never hand-edit inside one).
 
 ## Commands
     npm run dev / typecheck / typecheck:fast / lint / test / test:all
-    npm run test:file -- <paths>   # inner loop
+    npm run check:changed          # inner loop: changed-file lint + tsgo + related tests
+    npm run test:file -- <paths>   # one test file, fast
+    npm run gates:review           # preview the Review Gate before you push
+    npm run doctor                 # is this checkout healthy (deps, env, tooling)
     npm run build                  # when a 'use server' surface changed
     npm run test:rls               # pgTAP, for policies and migrations
     npm run docs:check             # generated docs, drift, enforcement inventory
-    npm run doctor / repo:doctor / release:status
+    npm run release:status         # what production serves vs main
+`repo:doctor`, `helm-os:check`, `knowledge:check`, `control-plane:verify` and
+`guards` are CI internals (`scripts/README.md`). Scripts that hold credentials
+print `--help`, and writers are a dry run until you pass `--apply`.
 
 ## Traps that waste time
 - zsh errors on unmatched globs: quote them (`--include='*.ts'`). macOS has no
