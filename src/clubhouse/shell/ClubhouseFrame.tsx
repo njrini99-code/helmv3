@@ -85,7 +85,7 @@ export function ClubhouseFrame({
             <FrameRoot motionOff={!showAnimations} fullScreen={fullScreen} homeRoot={rebuilt && pathname.replace(/\/$/, '') === '/golf/dashboard'}>
               <ToastProvider scope={userData.teamId ?? ''}>
                 <CrumbProvider>
-                  <AskSheetProvider pathname={pathname} search={search}>
+                  <AskSheetProvider pathname={pathname} search={search} enabled={shell.askAvailable ?? false}>
                     <DockProvider>
                       {/* The first Tab on any page: jump past the navigation to the page itself (CH-1607: it slides into view). */}
                       <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">

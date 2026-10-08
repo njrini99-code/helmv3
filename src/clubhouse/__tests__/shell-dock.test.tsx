@@ -87,3 +87,14 @@ describe('the phone dock (P001-C1)', () => {
     expect(resumeRoundLabel({ ...ROUND, hole: null })).toBe('Oakmont CC');
   });
 });
+
+describe('the dock and the keyboard (CH-1820)', () => {
+  it('steps aside for a field on the page, never for a field in the dock', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const css = readFileSync(join(__dirname, '../styles/shell.css'), 'utf8');
+    expect(css).toMatch(/\.ch-root:has\(\.ch-canvas input:focus\) \.ch-dock/);
+    expect(css).not.toMatch(/\.ch-root:has\(input:focus\) \.ch-dock/);
+    expect(css).toMatch(/body\.keyboard-open \[data-ui='clubhouse'\] \.ch-dock:has\(:focus\) \{\s*bottom: calc\(var\(--keyboard-height, 0px\) \+ 8px\);/);
+  });
+});

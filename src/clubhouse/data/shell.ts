@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import { rsvpOf } from './calendar';
 import { CLASS_EVENT_TYPE, isClassEvent } from '@/lib/calendar/class-events';
+import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
 
 export interface ChNextEvent {
   id: string;
@@ -21,6 +22,8 @@ export interface ChShellData {
   pendingJoinRequests: number | null;
   /** The team's time zone: where the global light's sun is until the course location is set (P001-A1). */
   timezone?: string;
+  /** CoachHelm is on for the signed-in coach (the global, team and coach switches), so the shell offers the Ask sheet. */
+  askAvailable?: boolean;
   /** The signed-in player's round in progress, touched in the last 12 hours (P001-C1): the Resume accessory. */
   roundInProgress?: ChRoundInProgress | null;
 }
@@ -40,10 +43,10 @@ export const ROUND_IN_PROGRESS_FRESH_MS = 12 * 60 * 60_000;
  * for a player, the round in progress. All degrade to "hidden" on failure; the
  * shell must never take a page down.
  */
-export async function loadClubhouseShell(teamId: string | undefined, playerId?: string | null): Promise<ChShellData> {
+export async function loadClubhouseShell(teamId: string | undefined, playerId?: string | null, coachId?: string | null): Promise<ChShellData> {
   if (!teamId) return { nextEvent: null, pendingJoinRequests: null };
   const supabase = await createClient();
-  const [eventRes, joinRes, tzRes, roundRes] = await Promise.all([
+  const [eventRes, joinRes, tzRes, roundRes, askOn] = await Promise.all([
     supabase
       .from('golf_events')
       .select('id, title, start_time, all_day, location, event_type, description')
@@ -74,6 +77,16 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
           .limit(1)
           .maybeSingle()
       : Promise.resolve(null),
+    // The coach's Ask sheet follows CoachHelm's own switch (as the Ask page does); a lookup that fails hides the key.
+    coachId
+      ? isCoachHelmEnabledForCoach(coachId).then(
+          (gate) => gate.effectivelyEnabled,
+          (err: unknown) => {
+            chLogServer('shell', 'coachHelmGate', err, 'coachhelm');
+            return false;
+          },
+        )
+      : Promise.resolve(false),
   ]);
   // A failed timezone read falls back to the product default, same as dashboard-data.
   const timezone = (!tzRes.error && tzRes.data?.timezone) || 'America/New_York';
@@ -103,6 +116,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     nextEvent: e ? { ...describeEvent(e, timezone), ready } : null,
     pendingJoinRequests: joinRes.error ? null : (joinRes.count ?? 0),
     timezone,
+    askAvailable: askOn,
     roundInProgress: round ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null } : null,
   };
 }

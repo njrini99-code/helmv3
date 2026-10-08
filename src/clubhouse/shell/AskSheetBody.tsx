@@ -41,7 +41,7 @@ export default function AskSheetBody({
 }: {
   open: boolean;
   onClose: () => void;
-  looking: { label: string; playerId: string | null };
+  looking: { label: string; playerId: string | null; playerName: string | null };
   chat?: ChAskSheetChat;
 }) {
   const phone = useChPhone();
@@ -55,7 +55,7 @@ export default function AskSheetBody({
   const drag = useSheetDrag(ref, onClose, { enabled: phone && !reduced });
   const online = useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
   const chat = useChatImpl({
-    initialContext: looking.playerId ? [{ kind: 'player', id: looking.playerId, label: looking.label }] : [],
+    initialContext: looking.playerId ? [{ kind: 'player', id: looking.playerId, label: looking.playerName ?? 'This player' }] : [],
   });
   const [full, setFull] = useState(false);
   const fresh = chat.messages.length === 0;

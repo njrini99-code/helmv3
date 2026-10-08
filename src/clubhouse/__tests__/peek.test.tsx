@@ -65,6 +65,31 @@ describe('press-and-hold peek (P003-C1 primitive)', () => {
     expect(onRow).toHaveBeenCalledTimes(1);
   });
 
+  it('CH-1830: the lift that ends the hold neither closes the peek nor fires an action; the next tap is the row’s again', () => {
+    const onRow = vi.fn();
+    render(<Harness onRow={onRow} />);
+    fireEvent.pointerDown(row(), { pointerType: 'touch', isPrimary: true, clientX: 10, clientY: 10 });
+    act(() => vi.advanceTimersByTime(PEEK_HOLD_MS + 10));
+    const dialog = document.querySelector('dialog.ch-peek')!;
+    // The finger comes up over the peek: its click lands on the backdrop, or on an action under it.
+    fireEvent.click(dialog);
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Message' }));
+    expect(dialog.hasAttribute('open')).toBe(true);
+    act(() => {
+      window.dispatchEvent(new Event('pointerup'));
+      vi.advanceTimersByTime(1);
+    });
+    // Now a tap outside closes it.
+    fireEvent.click(dialog);
+    act(() => vi.advanceTimersByTime(500));
+    expect(dialog.hasAttribute('open')).toBe(false);
+    // The hold's swallow was never used (the lift ended on the peek): the next tap on the row is the row's.
+    fireEvent.pointerDown(row(), { pointerType: 'touch', isPrimary: true, clientX: 10, clientY: 10 });
+    fireEvent.pointerUp(row(), { pointerType: 'touch' });
+    fireEvent.click(row());
+    expect(onRow).toHaveBeenCalledTimes(1);
+  });
+
   it('CH-1830: a drag past the slop or an early lift is a scroll or a tap, not a hold', () => {
     render(<Harness />);
     fireEvent.pointerDown(row(), { pointerType: 'touch', isPrimary: true, clientX: 10, clientY: 10 });

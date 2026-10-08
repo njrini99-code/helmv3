@@ -30,21 +30,30 @@ interface AskSheetCtx {
 const Ctx = createContext<AskSheetCtx>({ open: false, setOpen: () => {}, available: false });
 
 /** What the sheet says it is looking at, from the address and the page's own trail ("Stats · Jonah Okafor"). */
-export function lookingAt(pathname: string, search: string, trail: string[] | null): { label: string; playerId: string | null } {
+export function lookingAt(
+  pathname: string,
+  search: string,
+  trail: string[] | null,
+): { label: string; playerId: string | null; playerName: string | null } {
   const item = activeNavItem(pathname, 'coach');
-  const base = trail?.length ? trail.join(' · ') : (item?.label ?? routeLabel(pathname) ?? 'Home');
+  const base = trail?.length ? trail.join(' \u00b7 ') : (item?.label ?? routeLabel(pathname) ?? 'Home');
   const playerId = new URLSearchParams(search).get('player');
-  return { label: base, playerId };
+  // A one-player page names the player last in its trail ("Stats › Jonah Okafor"): that is the chat's context chip.
+  const playerName = playerId && trail && trail.length > 1 ? (trail[trail.length - 1] ?? null) : null;
+  return { label: base, playerId, playerName };
 }
 
 export function AskSheetProvider({
   pathname,
   search,
   chat,
+  enabled = false,
   children,
 }: {
   pathname: string;
   search: string;
+  /** CoachHelm is on for this coach (the shell's read of the same switch the Ask page checks). */
+  enabled?: boolean;
   /** The preview's stand-in; the live shell leaves it to the production hook. */
   chat?: ChAskSheetChat;
   children: ReactNode;
@@ -53,15 +62,15 @@ export function AskSheetProvider({
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const onCoachHelm = pathname === '/golf/dashboard/coachhelm' || pathname.startsWith('/golf/dashboard/coachhelm/');
-  const available = role === 'coach' && !onCoachHelm;
+  const available = enabled && role === 'coach' && !onCoachHelm;
   const trail = useCrumbTrail();
   const looking = lookingAt(pathname, search, trail);
 
   useEffect(() => {
     if (open) setLoaded(true);
   }, [open]);
-  // A new page is a new context: the sheet closes as the page changes under it.
-  useEffect(() => setOpen(false), [pathname]);
+  // A new page (or another player on the same page) is a new context: the sheet closes, and the next one starts fresh.
+  useEffect(() => setOpen(false), [pathname, search]);
 
   const value = useMemo(() => ({ open, setOpen, available }), [open, available]);
   return (
@@ -69,7 +78,7 @@ export function AskSheetProvider({
       {children}
       {available && loaded && (
         <Suspense fallback={null}>
-          <AskSheetBody open={open} onClose={() => setOpen(false)} looking={looking} chat={chat} />
+          <AskSheetBody key={`${pathname}?${search}`} open={open} onClose={() => setOpen(false)} looking={looking} chat={chat} />
         </Suspense>
       )}
     </Ctx.Provider>

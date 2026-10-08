@@ -1,5 +1,28 @@
 # P001 — Shell: changelog
 
+## 2026-10-08 — Primitive fixes before pages adopt them
+
+- **Peek (CH-1830).** The hold opens the peek with the finger still down. The
+  lift, and the click it makes over the peek, no longer close it or fire an
+  action under the finger; the backdrop and the actions answer once that finger
+  is up. A hold whose lift ended on the peek no longer eats the next tap on the
+  row. Checked in WebKit.
+- **Dock (CH-1820).** Only a field on the page hides the dock. A field in the
+  dock (a ThumbDock search) keeps it, and in the app the dock rides up on the
+  keyboard.
+- **Ask sheet (CH-1840–CH-1842).**
+  - The key shows only when CoachHelm is on for the coach: the shell reads the
+    same switch as the Ask page (`isCoachHelmEnabledForCoach`), and a failed
+    lookup hides it.
+  - Each page, or each player on a page, starts a fresh sheet, so the chip and
+    the chat's player context never go stale. The chat's player chip carries the
+    player's name.
+  - In the app the sheet sits above the keyboard.
+- **Reduce Transparency (D1).** The desktop top bar's media fallback now beats
+  the glass rule after it in the file (checked in WebKit through the attribute).
+  More's inert background was checked in WebKit: inert while open, put back
+  when it closes, with focus returning to More.
+
 ## 2026-10-08 — Shared findings from the premium audit (P001 D1–D7, D5-1, P008-C1)
 
 - **Reduce Transparency everywhere it can be read (D1).** Every glass token

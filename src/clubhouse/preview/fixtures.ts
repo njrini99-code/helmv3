@@ -30,6 +30,7 @@ export const PREVIEW_SHELL: ChShellData = {
   nextEvent: { id: 'e-pinehurst', title: 'Pinehurst qualifier', whenLabel: 'In 2 days', metaLabel: 'Thu, Oct 16 · 8:42 AM · Pinehurst No. 2', ready: { accepted: 5, invited: 6 } },
   pendingJoinRequests: 2,
   timezone: 'America/New_York',
+  askAvailable: true,
 };
 
 /** A round on the course (P001-C1): the preview's &round=1. */

@@ -1897,7 +1897,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   backdrop-filter: none;
 }
 @media (min-width: 821px) and (prefers-reduced-transparency: reduce) {
-  .ch-topbar {
+  /* :root, to beat the desktop glass rule below it in the file. */
+  :root .ch-topbar {
     background: var(--ch-workspace);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -2559,11 +2560,16 @@ html[data-fw-theme='dark'] .ch-offline {
   .ch-dock__slot:empty {
     display: none;
   }
-  /* The keyboard covers the bottom of the screen: the dock steps aside while a field has focus. */
-  .ch-root:has(input:focus) .ch-dock,
-  .ch-root:has(textarea:focus) .ch-dock,
-  .ch-root:has([contenteditable='true']:focus) .ch-dock {
+  /* The keyboard covers the bottom of the screen: the dock steps aside while a field on the page has focus. A field in
+     the dock itself (a ThumbDock search) keeps it, and in the app the dock rides up on the keyboard (CapacitorProvider
+     sets body.keyboard-open and --keyboard-height). */
+  .ch-root:has(.ch-canvas input:focus) .ch-dock,
+  .ch-root:has(.ch-canvas textarea:focus) .ch-dock,
+  .ch-root:has(.ch-canvas [contenteditable='true']:focus) .ch-dock {
     display: none;
+  }
+  body.keyboard-open [data-ui='clubhouse'] .ch-dock:has(:focus) {
+    bottom: calc(var(--keyboard-height, 0px) + 8px);
   }
   .ch-dock-spacer {
     display: block;
@@ -2775,5 +2781,17 @@ html[data-fw-theme='dark'] .ch-offline {
   }
   .ch-asks__head {
     padding-top: 0;
+  }
+  /* In the app the keyboard does not resize the page (capacitor.config resize: ionic): the sheet sits on top of it, as
+     the shared Modal does, and the full detent shrinks to what is left. */
+  body.keyboard-open .ch-asks {
+    margin-bottom: var(--keyboard-height, 0px);
+  }
+  body.keyboard-open .ch-asks__panel,
+  body.keyboard-open .ch-asks__panel[data-detent='full'] {
+    height: calc(100dvh - var(--keyboard-height, 0px) - env(safe-area-inset-top) - 12px);
+  }
+  body.keyboard-open .ch-asks__dock {
+    padding-bottom: 10px;
   }
 }

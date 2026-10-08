@@ -123,6 +123,8 @@ export function PeekTarget({
     ? {}
     : {
         onPointerDown: (e: React.PointerEvent) => {
+          // A hold's lift may have ended on the peek, not here: its swallow never fired, and must not eat this tap.
+          swallowClick.current = false;
           if (e.pointerType !== 'touch' || !e.isPrimary) return;
           start.current = { x: e.clientX, y: e.clientY };
           clear();
@@ -299,6 +301,26 @@ function PressPeek({
   });
   const panel = useRef<HTMLDivElement>(null);
   const [top, setTop] = useState<number | null>(null);
+  // The peek opens under a finger that is still down: the lift (and the click it makes) belongs to the hold, so neither
+  // the backdrop nor an action under the finger answers until that finger has come up.
+  const settled = useRef(false);
+  useEffect(() => {
+    if (!open) return;
+    settled.current = false;
+    let tick = 0;
+    const settle = () => {
+      tick = window.setTimeout(() => {
+        settled.current = true;
+      }, 0);
+    };
+    window.addEventListener('pointerup', settle, { capture: true, once: true });
+    window.addEventListener('pointercancel', settle, { capture: true, once: true });
+    return () => {
+      window.clearTimeout(tick);
+      window.removeEventListener('pointerup', settle, { capture: true });
+      window.removeEventListener('pointercancel', settle, { capture: true });
+    };
+  }, [open]);
   // The card opens where the held row was, kept on screen: under the row when there is room, else lifted to fit.
   useLayoutEffect(() => {
     if (!open || !rect) return;
@@ -320,7 +342,12 @@ function PressPeek({
         onClose();
       }}
       onClick={(e) => {
-        if (e.target === ref.current) onClose();
+        if (e.target === ref.current && settled.current) onClose();
+      }}
+      onClickCapture={(e) => {
+        if (settled.current) return;
+        e.preventDefault();
+        e.stopPropagation();
       }}
     >
       {retainContent(
