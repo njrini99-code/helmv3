@@ -33,9 +33,9 @@ export interface ChRecruitingWrites {
   update(id: string, patch: Partial<RecruitInput>): Promise<ServerResult>;
   remove(id: string): Promise<ServerResult>;
   /**
-   * P014 C1: whether create and update store `next_step_label` and `next_step_date`. The live set says no until
-   * src/app/golf/actions/recruiting.ts passes them through (it whitelists columns today, so a sent next step would be
-   * dropped and still reported as saved); until then the page shows a next step read-only and never offers to edit it.
+   * P014 C1: whether create and update store `next_step_label` and `next_step_date`. The live actions do
+   * (src/app/golf/actions/recruiting.ts, only when passed). The page still sends them only once its column probe found
+   * the columns, so before the migration is applied no write names them; a set without this shows a next step read-only.
    */
   nextStepWrites?: boolean;
   documents: {
@@ -53,6 +53,7 @@ export function createLiveRecruitingWrites(): ChRecruitingWrites {
     create: (input, requestId) => createRecruit(input, requestId ? { requestId } : undefined),
     update: (id, patch) => updateRecruit(id, patch),
     remove: (id) => deleteRecruit(id),
+    nextStepWrites: true,
     documents: {
       async list(recruitId) {
         const r = await getRecruitDocuments(recruitId);

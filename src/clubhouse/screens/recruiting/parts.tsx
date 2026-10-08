@@ -213,7 +213,7 @@ export function MetaLine({ p, now, tz }: { p: ChProspect; now: Date; tz?: string
 }
 
 /**
- * C2: the recruiting calendar's quiet line ("Contact period · in-person contact allowed through Nov 8"), from the governing
+ * C2: the recruiting calendar's quiet line ("Contact period · in-person contact allowed from Aug 1 before junior year, through Nov 8"), from the governing
  * bodies' own 2026-27 rule books (data/recruiting-calendar.ts). The division comes from the team's organization; when it
  * doesn't say, the coach picks one here and it is kept on this device. Nothing sourced to say: no line.
  */

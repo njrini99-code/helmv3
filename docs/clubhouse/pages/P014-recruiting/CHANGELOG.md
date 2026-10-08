@@ -1,5 +1,22 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-08 — Next step writes, the held migration, calendar fact-check
+
+- **Next step writes (C1).** `createRecruit` and `updateRecruit` accept
+  `next_step_label` (trimmed, at most 120 characters) and `next_step_date` (a real
+  YYYY-MM-DD day) and write them only when passed, with the coach and team checks
+  unchanged. The live writes now store a next step; the page still sends one only
+  after its column probe finds the columns, so before the owner applies
+  `20261008120000_golf_recruits_next_step.sql` (held in `supabase/migrations/HELD.md`,
+  `lock_timeout` 3s) no write names them.
+- **Calendar (C2), after a fact-check of all 15 dates against the 2026-27 books.**
+  Division I's contact line carries its age rule ("in-person contact allowed from
+  Aug 1 before junior year", 13.1.1.1); Division II's line says in-person contact
+  starts June 15 before junior year (13.1.1.1); the Division I men's quiet period
+  notes evaluations at the GCAA showcase and combine (13.17.7-(c)-(1)); the NJCAA
+  line reads "The NJCAA sets no recruiting periods; staff may visit prospects
+  anywhere" (Art. VI §4 C.1).
+
 ## 2026-10-08 — Premium pass: Committed moment, next step, recruiting calendar, findings
 
 ```text

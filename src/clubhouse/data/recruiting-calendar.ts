@@ -52,6 +52,8 @@ export interface ChPeriod {
   toTime?: string;
   /** A caveat the line must carry, such as a convention whose dates the books don't give. */
   caveat?: string;
+  /** Who in-person contact reaches: the division's age rule, shown beside "in-person contact allowed". */
+  ageRule?: string;
   bylaw: string;
   source: string;
 }
@@ -66,7 +68,20 @@ const D3 = 'https://web3.ncaa.org/lsdbi/reports/getReport/90011';
 const NAIA = 'https://www.naia.org/student-athletes/prospective/high-school-students/';
 const NJCAA = 'https://ardor-prod-media.s3.us-east-2.amazonaws.com/files/404933495157163011/6b815aea7cf842719e5deeefd7dc9310-NJCAA-Handbook---Bylaws---2026-27-9-9-26.pdf';
 
-const contact = (from: string, to: string, bylaw: string, caveat?: string): ChPeriod => ({ from, to, kind: 'contact', inPerson: 'allowed', bylaw, source: D1, ...(caveat ? { caveat } : {}) });
+/** Division I's age rule: off-campus in-person contact begins Aug 1 before the prospect's junior year (13.1.1.1). */
+const D1_AGE = 'from Aug 1 before junior year';
+/** Division II's age rule: in-person contact begins June 15 before the prospect's junior year (13.1.1.1). */
+export const D2_AGE = 'from June 15 before junior year';
+const contact = (from: string, to: string, bylaw: string, caveat?: string): ChPeriod => ({
+  from,
+  to,
+  kind: 'contact',
+  inPerson: 'allowed',
+  ageRule: D1_AGE,
+  bylaw: `${bylaw}; 13.1.1.1`,
+  source: D1,
+  ...(caveat ? { caveat } : {}),
+});
 const dead = (from: string, to: string, bylaw: string): ChPeriod => ({ from, to, kind: 'dead', inPerson: 'none', bylaw, source: D1 });
 
 /**
@@ -83,8 +98,8 @@ const D1_MENS: ChPeriod[] = [
     to: '2026-12-22',
     kind: 'quiet',
     inPerson: 'on-campus-only',
-    caveat: 'dead during the GCAA convention',
-    bylaw: '13.17.7-(c)',
+    caveat: 'dead during the GCAA convention; evaluations allowed at the GCAA showcase and combine',
+    bylaw: '13.17.7-(c), 13.17.7-(c)-(1)',
     source: D1,
   },
   dead('2026-12-23', '2027-01-01', '13.17.7-(d)'),
@@ -113,7 +128,7 @@ export const RECRUITING_CALENDARS: Record<ChDivision, Partial<Record<ChProgramGe
   },
   'ncaa-d2': {
     // Outside the signing dead period there is no golf period at all: the line says so rather than inventing one.
-    all: { calendar: 'periods', periods: D2_PERIODS, outside: 'No golf recruiting periods in Division II', bylaw: '13.02.10', source: D2 },
+    all: { calendar: 'periods', periods: D2_PERIODS, outside: `No golf recruiting periods in Division II · in-person contact ${D2_AGE}`, bylaw: '13.02.10; 13.1.1.1', source: D2 },
   },
   'ncaa-d3': {
     all: { calendar: 'none', statement: 'No recruiting calendar in Division III', bylaw: '13.02.10.1, 13.4.1.1 (no recruiting periods defined)', source: D3 },
@@ -122,7 +137,7 @@ export const RECRUITING_CALENDARS: Record<ChDivision, Partial<Record<ChProgramGe
     all: { calendar: 'none', statement: 'No recruiting calendar in the NAIA', bylaw: '“No recruiting calendar restrictions of any kind”', source: NAIA },
   },
   njcaa: {
-    all: { calendar: 'none', statement: 'No recruiting calendar in the NJCAA', bylaw: 'Article VI §4 C.1', source: NJCAA },
+    all: { calendar: 'none', statement: 'The NJCAA sets no recruiting periods; staff may visit prospects anywhere', bylaw: 'Article VI §4 C.1', source: NJCAA },
   },
 };
 
@@ -176,7 +191,7 @@ function periodLine(p: ChPeriod): string {
   const through = p.toTime ? `until ${timeLabel(p.toTime)} ${dayLabel(p.to)}` : `through ${dayLabel(p.to)}`;
   const base =
     p.kind === 'contact'
-      ? `Contact period · in-person contact allowed ${through}`
+      ? `Contact period · in-person contact allowed${p.ageRule ? ` ${p.ageRule},` : ''} ${through}`
       : p.kind === 'quiet'
         ? `Quiet period · in-person contact on campus only, ${through}`
         : `Dead period · no in-person contact or visits ${through}`;

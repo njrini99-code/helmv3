@@ -1299,7 +1299,9 @@ describe('Recruiting · next step (C1)', () => {
   it('CH-14802 with the columns absent, nothing about a next step is drawn, offered or sent; a kept "Next step due" sort falls back', async () => {
     const user = userEvent.setup();
     localStorage.setItem('ch-recruiting-sort', 'next');
-    const w = fakeWrites();
+    // Writes that can store a next step, as the live set does: with the columns absent (before the migration is
+    // applied) the page still never sends one, so the live page neither breaks nor writes them.
+    const w = { ...fakeWrites(), nextStepWrites: true };
     wrap(PREVIEW_RECRUITING, w, null);
     expect(screen.queryByRole('columnheader', { name: 'Next step' })).toBeNull();
     expect(screen.queryByRole('region', { name: 'Next step' })).toBeNull();
@@ -1315,7 +1317,7 @@ describe('Recruiting · next step (C1)', () => {
     expect(Object.keys(sent)).not.toContain('next_step_date');
   });
 
-  it('with the columns present but writes that cannot store a next step (the live set today), it is read-only and never sent', async () => {
+  it('with the columns present but writes that cannot store a next step, it is read-only and never sent', async () => {
     const user = userEvent.setup();
     const w = fakeWrites();
     wrap(PREVIEW_RECRUITING_NEXT, w);
@@ -1329,7 +1331,8 @@ describe('Recruiting · next step (C1)', () => {
     await user.click(within(dlg()).getByRole('button', { name: 'Save changes' }));
     await waitFor(() => expect(w.update).toHaveBeenCalled());
     expect(Object.keys((w.update.mock.calls[0] as unknown[])[1] as object)).not.toContain('next_step_label');
-    expect(createLiveRecruitingWrites().nextStepWrites).toBeFalsy();
+    // The live set stores a next step (only once the page's probe found the columns; see the test above).
+    expect(createLiveRecruitingWrites().nextStepWrites).toBe(true);
     // A save that didn't send the step keeps the one the prospect had.
     await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Mason Reilly/ }));
     await user.click(within(panel('Mason Reilly')).getByRole('button', { name: 'Edit' }));
@@ -1487,7 +1490,7 @@ describe('Recruiting · Committed is a moment, once (B1)', () => {
 describe('Recruiting · the recruiting calendar (C2)', () => {
   it('CH-14808 the team’s division and gender give the quiet line; nothing to pick', () => {
     wrap(PREVIEW_RECRUITING_NEXT);
-    expect(code('CH-14808')?.textContent).toBe('Division I · Contact period · in-person contact allowed through Nov 8');
+    expect(code('CH-14808')?.textContent).toBe('Division I · Contact period · in-person contact allowed from Aug 1 before junior year, through Nov 8');
     expect(screen.queryByRole('button', { name: /Choose your division/ })).toBeNull();
   });
 

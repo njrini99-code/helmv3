@@ -17,13 +17,13 @@ const line = (div: Parameters<typeof calendarLine>[0], g: Parameters<typeof cale
 
 describe('recruiting calendar · Division I golf', () => {
   it('Oct 8 is a contact period that runs to the day before the signing-week dead period', () => {
-    expect(line('ncaa-d1', 'mens', '2026-10-08')).toBe('Contact period · in-person contact allowed through Nov 8');
-    expect(line('ncaa-d1', 'womens', '2026-10-08')).toBe('Contact period · in-person contact allowed through Nov 8');
+    expect(line('ncaa-d1', 'mens', '2026-10-08')).toBe('Contact period · in-person contact allowed from Aug 1 before junior year, through Nov 8');
+    expect(line('ncaa-d1', 'womens', '2026-10-08')).toBe('Contact period · in-person contact allowed from Aug 1 before junior year, through Nov 8');
   });
 
   it('signing week (Mon Nov 9 to Thu Nov 12, the week of the Nov 11 signing date) is dead, then contact resumes to Thanksgiving eve', () => {
     expect(line('ncaa-d1', 'mens', '2026-11-10')).toBe('Dead period · no in-person contact or visits through Nov 12');
-    expect(line('ncaa-d1', 'mens', '2026-11-13')).toBe('Contact period · in-person contact allowed through Nov 25');
+    expect(line('ncaa-d1', 'mens', '2026-11-13')).toBe('Contact period · in-person contact allowed from Aug 1 before junior year, through Nov 25');
   });
 
   it('Thanksgiving through the Sunday after (Nov 26 to 29) is dead for both', () => {
@@ -32,8 +32,8 @@ describe('recruiting calendar · Division I golf', () => {
   });
 
   it('Dec 1: men are in a quiet period, women in a contact period, each with its convention caveat', () => {
-    expect(line('ncaa-d1', 'mens', '2026-12-01')).toBe('Quiet period · in-person contact on campus only, through Dec 22 (dead during the GCAA convention)');
-    expect(line('ncaa-d1', 'womens', '2026-12-01')).toBe('Contact period · in-person contact allowed through Dec 23 (dead during the WGCA convention)');
+    expect(line('ncaa-d1', 'mens', '2026-12-01')).toBe('Quiet period · in-person contact on campus only, through Dec 22 (dead during the GCAA convention; evaluations allowed at the GCAA showcase and combine)');
+    expect(line('ncaa-d1', 'womens', '2026-12-01')).toBe('Contact period · in-person contact allowed from Aug 1 before junior year, through Dec 23 (dead during the WGCA convention)');
   });
 
   it('with the program gender unknown, a day the two calendars disagree says nothing; a day they agree says it', () => {
@@ -44,8 +44,8 @@ describe('recruiting calendar · Division I golf', () => {
   it('Dec 25 is dead for both, to Jan 1 (men) and Dec 27 (women); Jan 2 is contact for both', () => {
     expect(line('ncaa-d1', 'mens', '2026-12-25')).toBe('Dead period · no in-person contact or visits through Jan 1');
     expect(line('ncaa-d1', 'womens', '2026-12-25')).toBe('Dead period · no in-person contact or visits through Dec 27');
-    expect(line('ncaa-d1', 'mens', '2027-01-02')).toBe('Contact period · in-person contact allowed through Jul 31');
-    expect(line('ncaa-d1', 'womens', '2027-01-02')).toBe('Contact period · in-person contact allowed through Jul 31');
+    expect(line('ncaa-d1', 'mens', '2027-01-02')).toBe('Contact period · in-person contact allowed from Aug 1 before junior year, through Jul 31');
+    expect(line('ncaa-d1', 'womens', '2027-01-02')).toBe('Contact period · in-person contact allowed from Aug 1 before junior year, through Jul 31');
   });
 
   it('a day outside the covered season has no answer, never the nearest period', () => {
@@ -77,18 +77,18 @@ describe('recruiting calendar · Division I golf', () => {
 
 describe('recruiting calendar · Division II, III, NAIA, NJCAA', () => {
   it('Division II: the signing dead period runs 7 a.m. Nov 9 to 7 a.m. Nov 11; outside it, no golf periods', () => {
-    expect(line('ncaa-d2', 'mens', '2026-11-09', '06:59')).toBe('No golf recruiting periods in Division II');
+    expect(line('ncaa-d2', 'mens', '2026-11-09', '06:59')).toBe('No golf recruiting periods in Division II · in-person contact from June 15 before junior year');
     expect(line('ncaa-d2', 'mens', '2026-11-09', '07:00')).toBe('Dead period · no in-person contact or visits until 7 a.m. Nov 11');
     expect(line('ncaa-d2', 'womens', '2026-11-10')).toBe('Dead period · no in-person contact or visits until 7 a.m. Nov 11');
     expect(line('ncaa-d2', 'mens', '2026-11-11', '06:30')).toBe('Dead period · no in-person contact or visits until 7 a.m. Nov 11');
-    expect(line('ncaa-d2', 'mens', '2026-11-11', '15:00')).toBe('No golf recruiting periods in Division II');
-    expect(line('ncaa-d2', 'mens', '2026-10-08')).toBe('No golf recruiting periods in Division II');
+    expect(line('ncaa-d2', 'mens', '2026-11-11', '15:00')).toBe('No golf recruiting periods in Division II · in-person contact from June 15 before junior year');
+    expect(line('ncaa-d2', 'mens', '2026-10-08')).toBe('No golf recruiting periods in Division II · in-person contact from June 15 before junior year');
   });
 
   it('Division III, the NAIA and the NJCAA have no recruiting calendar, and say so, with their sources', () => {
     expect(calendarLine('ncaa-d3', 'mens', at('2026-11-10'), ET)).toMatchObject({ kind: 'none', text: 'No recruiting calendar in Division III' });
     expect(calendarLine('naia', 'womens', at('2026-12-25'), ET)).toMatchObject({ kind: 'none', text: 'No recruiting calendar in the NAIA', source: expect.stringContaining('naia.org') });
-    expect(calendarLine('njcaa', null, at('2027-01-02'), ET)).toMatchObject({ kind: 'none', text: 'No recruiting calendar in the NJCAA' });
+    expect(calendarLine('njcaa', null, at('2027-01-02'), ET)).toMatchObject({ kind: 'none', text: 'The NJCAA sets no recruiting periods; staff may visit prospects anywhere' });
   });
 
   it('periodAt honours clock edges and returns null between periods', () => {
