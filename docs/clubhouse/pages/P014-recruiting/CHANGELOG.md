@@ -1,5 +1,43 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-08 — Phone: the Mobile clubhouse pass
+
+The phone Recruiting follows the Coach Home board (round 3, "fewer containers,
+one feature card"), carried to every phone screen (owner: "phone too cardy"):
+
+- **Head:** the page opens on the engraved double rule with Recruiting in the
+  bold condensed sans (no serif). No green feature card: nothing on this list
+  outranks the rest.
+- **Timeline:** the compact pipeline sits between two hairlines instead of in a
+  box; a stage's coin takes the row press tint under the finger (CH-14601).
+- **Prospects:** rows on seams under a hairline, with no card; a press tints the
+  row 12px past its text (CH-14604). The sort's trigger tints the same way.
+- **No match** is centred on the parchment, with no box around it.
+- **Search** keeps the kit's field, 36px drawn with a 44px reach; the input
+  and its clear key still take their own taps. A stale override that lost the
+  cascade to the kit's field (a 40px grey well) is gone, so the field no
+  longer depends on stylesheet order.
+- **A prospect (pushed):** the name in the bold condensed sans; Stage, Email and
+  Call are keys drawn on the parchment (a hairline ring; the stage key keeps
+  its stage's fill); with no contact yet, Stage is a row between seams. Notes
+  and Documents open under the double rule with their headings; a part with
+  nothing in it yet is one row on a seam, and such rows run on as one ledger.
+  Documents are rows on seams. Every key, row and action tints under the
+  finger (CH-14604). Upload keeps its full 44px reach over the first
+  document under it.
+- **Loading** draws the phone page on its own classes (the double rule, the
+  title, the search, the timeline between its hairlines, the count and the
+  rows), so nothing moves when it lands.
+- The add and edit sheets, the stage picker and the delete sheet keep their
+  material: they are sheets and forms.
+- The upload bar's fill now slides by transform instead of growing its width
+  (doctrine: never animate layout). It looks the same.
+
+Desktop is otherwise unchanged: every other new rule sits in the phone
+block, and the skeleton's phone parts are hidden there. 1440 captures before
+and after match, apart from the loading page, where the shared skeleton's tone
+and ruled blocks changed in the same pass.
+
 ## 2026-10-07 — A stage settles the list in
 
 Picking a stage in the pipeline, or letting it go, settles the prospect list in with a 6px rise (base) while the old

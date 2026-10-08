@@ -1,5 +1,40 @@
 # P003 — Roster: changelog
 
+## 2026-10-08 — Phone: the Mobile clubhouse pass
+
+The phone Roster follows the Coach Home board (round 3, "fewer containers, one
+feature card"), carried to every phone screen (owner: "phone too cardy"):
+
+- **Head:** the page opens on the engraved double rule, the team and count as
+  the tracked eyebrow and Roster in the bold condensed sans (no serif).
+- **Join requests** are the screen's one green feature card: a gilt coin, the
+  count and the names in ivory. A press darkens it under a shade for the press
+  beat; it never scales (CH-3602).
+- **Players:** no white card. The list hangs from a hairline under the sort,
+  one row per seam, and a press tints the row 12px past its text (CH-3602).
+  Inactive opens under the double rule with its heading. Avatars sit on the
+  parchment with a champagne ring.
+- **Profile (pushed):** the player at the top, the three figures between two
+  hairlines (the Ledger's figure row), then Scoring trend, Recent rounds,
+  About and the coach's note, each flush under the double rule. About's facts
+  are rows on seams, not a box. The All link keeps its 44px reach over the
+  first round.
+- **Sheets:** each join request is a row on a seam inside the sheet, not a card
+  inside a card. The ⋯ sheet's actions are rows on seams that tint under the
+  finger. The team code keeps its well.
+- **States:** the empty and no-team pages stay centred on the parchment; the
+  failed reads are notices flush under the head. Loading draws the phone page
+  on its own classes (the double rule, the eyebrow, the title, the sort and
+  the rows), so nothing moves when it lands (WebKit 390 and 430). Join
+  requests are the exception: the skeleton can't know of them, so when some
+  are waiting their card arrives above the list and moves it down by the
+  card's height (99px); most days there are none.
+- The player's phone roster takes the same head and rows.
+
+Desktop is unchanged: every new rule sits in the phone block, and the
+skeleton's phone parts are hidden there (1440 captures before and after
+match).
+
 ## 2026-10-07 — Team view and List view settle in
 
 Toggling Team view and List view now settles the new layout in with a 6px rise (base) while the old one fades out

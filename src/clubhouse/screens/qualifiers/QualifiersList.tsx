@@ -16,7 +16,7 @@ import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { formatToPar } from '../../lib/format';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
-import { ctaLabel } from './model';
+import { ctaLabel, listLede } from './model';
 import { Meta, StatusPill, ToPar } from './parts';
 import { isPlainClick, noteOpenedFromList } from './return-state';
 import '../../styles/qualifiers.css';
@@ -66,11 +66,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
   };
 
   const title = coach ? 'Lineup decisions' : data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers';
-  const lede = coach
-    ? 'Run head-to-head qualifiers to decide who plays this week.'
-    : data.mode === 'mine'
-      ? 'The qualifiers you’re entered in, and where you stand.'
-      : 'Your team’s qualifiers, and where you stand in the ones you’re entered in.';
+  const lede = listLede(coach, data.mode);
 
   return (
     <main className="ch-qf ch-qf--list" data-canopy="">

@@ -127,7 +127,7 @@ Every write goes through `useAction`, which reports it (Sentry, under `recruitin
 | 140609 | CH-14202 | `A_PROSPECTS_DOCUMENTS_DONT_LOAD` | A prospect's documents don't load |
 | 140610 | CH-14203 | `A_SECTION_CRASHES_WHILE_DRAWING` | A section crashes while drawing |
 
-From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002, 10611 CH-1003.
+From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002, 10611 CH-1003, 10612 CH-1209, 10613 CH-1210, 10614 CH-1211.
 
 ## 07 — Network / offline
 
@@ -233,15 +233,16 @@ The server's list is the page's source: after a write, or Try again, the server 
 
 Status: DEFINED
 
-A stage in the pipeline lifts its ring 1px on hover and takes a second ring while it is the filter, in the quick duration (141601, CH-14601), and picking or letting go of a stage settles the list in, never when the kept stage returns or as a search is typed (141603, CH-14603). A prospect opens on the phone by sliding in over the list and back out on pop, in the base duration, and settles at once with reduced motion (141602, CH-14602). A key presses in about 6px and springs back through the shell's press (11606), while a prospect row deepens its tint instead; there is no first-paint rise; reduced motion and Animations off remove all of it (11608). This page's own CSS uses only the v2 tokens (D-64).
+A stage in the pipeline lifts its ring 1px on hover and takes a second ring while it is the filter, in the quick duration (141601, CH-14601), and picking or letting go of a stage settles the list in, never when the kept stage returns or as a search is typed (141603, CH-14603). A prospect opens on the phone by sliding in over the list and back out on pop, in the base duration, and settles at once with reduced motion (141602, CH-14602). On the phone a press lays the row press tint over a stage's coin (141601, CH-14601), and a prospect row, the sort, the Stage, Email and Call keys, the Stage row, a document, its remove key and an empty part's action take the row press tint for the press beat, never a scale (141604, CH-14604). A key presses in about 6px and springs back through the shell's press (11606), while a prospect row deepens its tint instead; there is no first-paint rise; reduced motion and Animations off remove all of it (11608). This page's own CSS uses only the v2 tokens (D-64).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 141601 | CH-14601 | `HOVERING_OR_PRESSING_A_STAGE_IN_THE` | Hovering or pressing a stage in the pipeline |
 | 141602 | CH-14602 | `A_PROSPECT_OPENS_ON_THE_PHONE` | A prospect opens on the phone |
 | 141603 | CH-14603 | `PICKING_A_STAGE_IN_THE_PIPELINE_OR` | Picking a stage in the pipeline, or letting it go |
+| 141604 | CH-14604 | `PRESSING_A_ROW_OR_A_KEY_ON` | Pressing a row or a key on the phone |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616.
 
 ## 17 — Haptic
 
@@ -255,7 +256,7 @@ v2 grammar (D-70): selection when a stage is picked as the filter or as a prospe
 | 141702 | CH-14702 | `DELETE_PROSPECT_IS_TAPPED` | Delete prospect is tapped |
 | 141703 | CH-14703 | `STORAGE_TURNS_A_FILE_DOWN` | Storage turns a file down (CH-14107, CH-14108) |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708.
 
 ## 18 — Accessibility
 
@@ -295,7 +296,7 @@ Enter in a field of the form saves it through the same checks as the button, Esc
 | --- | --- | --- | --- |
 | 142001 | CH-14913 | `KEYBOARD` | Keyboard |
 
-From the shell (P001): 12001 CH-1906.
+From the shell (P001): 12001 CH-1906, 12002 CH-1907, 12003 CH-1908.
 
 ## 21 — Performance
 

@@ -94,7 +94,7 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-3601 | Opening or switching a player | The panel slides in 16px and fades (260ms); switching players cross-fades | `RosterPeek`, `chTween('base')`; on the phone the profile is pushed instead (the shell's CH-1610) | preview |
-| CH-3602 | Hovering or pressing a face card or row | On desktop the cell takes the Ledger tint on hover and a deeper one on press (110ms), with no lift and no scale; a list row presses the same way from its name; the selected face keeps a green tint, ring and name. The phone's card keeps its lift and press | `roster.css`, `--ch-ledger-row-press` | preview |
+| CH-3602 | Hovering or pressing a face card or row | On desktop the cell takes the Ledger tint on hover and a deeper one on press (110ms), with no lift and no scale; a list row presses the same way from its name; the selected face keeps a green tint, ring and name. On the phone a player row, an action in the ⋯ sheet and the profile's All link take the row press tint over the press beat, and the join requests card (the screen's one feature card) darkens under a shade over the press beat; nothing scales | `roster.css`, `--ch-ledger-row-press` | preview |
 | CH-3603 | Switching between Team view and List view | The other layout settles in with a 6px rise (260ms) while the old one fades out (180ms), hidden from assistive tech. The kept layout coming back as the page opens never animates. Instant with reduced motion | `Swap` in `Roster` (`viewTurn`) | roster.test › CH-3603; preview (the timing) |
 
 ## 37xx Haptics

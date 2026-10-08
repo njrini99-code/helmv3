@@ -37,6 +37,11 @@ Skeletons:               QualifiersSkeleton.tsx: QualifiersSkeleton (CH-09401), 
                          QualifierFormSkeleton (CH-09403), through ClubhouseSwitch in each loading.tsx.
                          QualifierSelectionSkeleton (CH-09409) for [id]/selection.
                          qualifiers, my-qualifiers, [id], new, [id]/edit and [id]/selection each have a loading.tsx.
+                         The role's own parts come from the shell's role (useClubhouseRole): SkeletonCoachActions.tsx
+                         (a qualifier's coach actions) and SkeletonListParts.tsx (the list's Create action, its lede
+                         sentence from model.ts listLede, and a player's Mine lines). QualifiersSkeleton takes
+                         `mode="mine"` for /my-qualifiers' lede; that route's loading.tsx does not
+                         pass it yet, so it draws the team's sentence.
 ```
 
 ## End-to-end graph

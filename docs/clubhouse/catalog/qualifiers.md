@@ -143,8 +143,9 @@ Every save goes through `useAction`, so these belong to the shell:
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-09601 | Pressing a card, the hero or a status pill | A deeper tint over the press beat (110ms), easing back over 180ms; nothing scales (the shell's CH-1606). A status pill darkens, a Ledger row takes the row press tint, the desktop hero's title deepens to forest and the phone's live card darkens its face | `qualifiers.css` `:active`, `--ch-ledger-row-press` | preview |
+| CH-09601 | Pressing a card, the hero or a status pill | A deeper tint over the press beat (110ms), easing back over 180ms; nothing scales (the shell's CH-1606). A status pill darkens, a Ledger row takes the row press tint and the desktop hero's title deepens to forest. On the phone the live qualifier (the list's one green feature card) darkens under a shade, and a list row, a leaderboard row, a player in the form and a pick's player take the row press tint | `qualifiers.css` `:active`, `--ch-ledger-row-press` | preview |
 | CH-09602 | Opening a leaderboard row | The row turns selected (180ms), its chevron turns (260ms) and the scorecards drop 6px into place as they fade in (260ms), at their final values: no count-up, no stagger. Closing takes them away at once. The Live dot is static (D-33). On the phone a row opens the rounds sheet instead. Instant with reduced motion | `Leaderboard`, `.ch-qf-tray`, `.ch-qf-open` | preview |
+| CH-09603 | Choosing a round in a player's rounds sheet (phone) | The chosen round's chip takes the raised face, which fades in over 180ms as the old chip's fades out; a press tints a chip for the press beat. Instant with reduced motion | `.ch-qfm-chip::before`, `--ch-dur-quick` | preview |
 
 ## 097xx Haptics
 

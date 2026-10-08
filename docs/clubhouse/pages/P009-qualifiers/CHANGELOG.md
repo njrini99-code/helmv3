@@ -1,5 +1,61 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-08 — Phone: the Mobile clubhouse pass
+
+The phone Qualifiers follows the Coach Home board (round 3, "fewer
+containers, one feature card"), carried to every phone screen (owner: "phone
+too cardy"):
+
+- **Heads:** the list, the form and Manage selections open on the engraved
+  double rule, the eyebrow tracked in the board's brown, the title in the bold
+  condensed sans (no serif, no regular-weight display titles). A qualifier's
+  name is the same sans at 28px, under its status and dates.
+- **The list:** the live qualifier is the screen's one green feature card: its
+  status chip, name and dates in ivory, the three leaders as rows on the green
+  (no green board inside a card), the player's own standing in gilt and the
+  link at the card's foot. A press darkens it under a shade (CH-09601). Active
+  and Concluded open under the double rule, their qualifiers rows on seams
+  that tint under the finger. No match for the filters is centred with no box.
+  The search keeps the kit's field, 36px drawn with a 44px reach.
+- **A qualifier:** the three figures between two hairlines (the Ledger's figure
+  row, each still drawn); the closed note flush between seams; the
+  leaderboard, the squad, Course per round and Scoring rules each flush under
+  the double rule. A leaderboard row sits on a seam and tints under the
+  finger; its rounds, average and total are plain figures under the name, not
+  a grey well. The viewer's own row keeps its tint.
+- **The rounds sheet:** the chosen round's chip takes the raised face, which
+  now fades in as the old one's fades out (CH-09603); a chip tints under the
+  finger.
+- **The form and Manage selections:** each fieldset and each list is a section
+  flush under the double rule; the fields, the squad readout, the one-round
+  note, the steps and the keys keep their material. A player in the form and
+  a pick's player tint under the finger (CH-09601).
+- **Loading:** the list and a qualifier draw the phone's own shape at the
+  loaded lines' heights, so nothing moves when they land (a coach's, measured
+  in WebKit at 390 and 430: 0px). The list's lede is the reader's own
+  sentence drawn as a bar under each of its lines, so it wraps where the
+  page's does at any width (for /my-qualifiers once its route passes
+  `mode="mine"`); Create qualifier is held only for a coach; then the live
+  qualifier's place (its status, name, dates, three leaders and their
+  caption, a player's standing and the link) and Active and Concluded under
+  the double rule with their rows. A qualifier's skeleton holds the status
+  and dates, the name, the entrants line, the coach's two actions, the three
+  figures and the leaderboard rows, instead of the desktop's. The form drops
+  the way back the phone never shows, and Manage selections' steps no longer
+  run past the screen; both hold their heads (and the steps) in place, but
+  their sections below are still generic placeholders that move when the
+  page lands.
+- **A qualifier's head and leaderboard:** the Live badge is centred on the
+  leaderboard's heading, as on the board, so a live leaderboard's head is as
+  tall as any other. Manage selections and Edit stay 36px drawn, with a 44px
+  reach for the finger.
+
+Desktop is unchanged: every new rule sits in the phone block, and the
+skeleton's phone parts are hidden there. 1440 captures before and after differ
+only where shared pieces changed in the same pass (the failed-read notice, the
+skeleton's tone and ruled blocks) and in the form's dates, which follow the
+day.
+
 ## 2026-10-07 — Presses answer; a row's scorecards drop into place
 
 Pressing a status pill, a card or the live hero now answers with a deeper tint over the press beat, never a scale:

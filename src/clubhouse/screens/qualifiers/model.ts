@@ -187,6 +187,12 @@ export function ctaLabel(status: ChQStatus): string {
   return status === 'in_progress' ? 'View leaderboard' : status === 'completed' ? 'View results' : 'View details';
 }
 
+/** The list's lede, by who reads it. The list and its skeleton say the same sentence, so the skeleton's lines wrap where the page's do. */
+export function listLede(coach: boolean, mode: 'all' | 'mine'): string {
+  if (coach) return 'Run head-to-head qualifiers to decide who plays this week.';
+  return mode === 'mine' ? 'The qualifiers you’re entered in, and where you stand.' : 'Your team’s qualifiers, and where you stand in the ones you’re entered in.';
+}
+
 /**
  * Par for each round: the assigned tee's par, else the par every submitted
  * round in that slot agrees on (total minus to par), else unknown. The

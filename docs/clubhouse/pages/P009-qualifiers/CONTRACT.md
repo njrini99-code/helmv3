@@ -294,14 +294,15 @@ After a write lands, the server reads the page again so the page shows the serve
 
 Status: DEFINED
 
-Pressing a card, the hero or a status pill answers with a deeper tint, never a scale (91601), and opening a leaderboard row turns its chevron and drops its scorecards into place as they fade in, at their final state, with no count-up or stagger and a static Live dot; closing is instant (91602, D-33). Both are preview-checked; their catalog rows are marked preview and no test forces them. Everything uses the v2 tokens (D-64).
+Pressing a card, the hero or a status pill answers with a deeper tint, never a scale; on the phone the live qualifier (the list's one green feature card) darkens under a shade and the rows take the row press tint (91601). Opening a leaderboard row turns its chevron and drops its scorecards into place as they fade in, at their final state, with no count-up or stagger and a static Live dot; closing is instant (91602, D-33). On the phone, choosing a round in a player's rounds sheet fades the chosen chip's raised face in as the old one's fades out, at once with reduced motion (91603, CH-09603). All three are preview-checked; their catalog rows are marked preview and no test forces them. Everything uses the v2 tokens (D-64).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 91601 | CH-09601 | `PRESSING_A_CARD_THE_HERO_OR_A` | Pressing a card, the hero or a status pill |
 | 91602 | CH-09602 | `OPENING_A_LEADERBOARD_ROW` | Opening a leaderboard row |
+| 91603 | CH-09603 | `CHOOSING_A_ROUND_IN_A_PLAYERS_ROUNDS` | Choosing a round in a player's rounds sheet (phone) |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616.
 
 ## 17 — Haptic
 
@@ -315,7 +316,7 @@ Qualifiers' own haptics (91701 to 91703) on the v2 grammar (D-70): select for a 
 | 91702 | CH-09702 | `CLOSE_QUALIFIER_DISCARD` | Close qualifier, Discard |
 | 91703 | CH-09703 | `START_SELECTING_CONFIRM_SQUAD_REMOVE_A_PICK` | Start selecting, Confirm squad, Remove a pick |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708.
 
 ## 18 — Accessibility
 
@@ -359,7 +360,7 @@ Enter in a form field submits the form (92002), and a problem takes focus at its
 | 92002 | — | `ENTER_SUBMITS_THE_FORM` | Enter in a field of the form submits it, and a form with a problem shows the problem instead of sending. |
 | 92003 | — | `SCORECARDS_OPEN_FROM_THE_KEYBOARD` | A leaderboard row's scorecards open from a button that takes Enter and Space and says whether it is expanded; the row itself is not a tab stop. |
 
-From the shell (P001): 12001 CH-1906.
+From the shell (P001): 12001 CH-1906, 12002 CH-1907, 12003 CH-1908.
 
 ## 21 — Performance
 

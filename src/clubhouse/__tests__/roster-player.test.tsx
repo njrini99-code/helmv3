@@ -247,7 +247,7 @@ describe('Player roster · desktop', () => {
   it('CH-3210 a roster that did not load says so with Try again, never "no players"', async () => {
     const user = userEvent.setup();
     wrap({ ...TEAM, players: [], playersError: true });
-    expect(code('CH-3210')!.textContent).toMatch(/The roster didn't load\./);
+    expect(code('CH-3210')!.textContent).toMatch(/The roster didn't load/);
     expect(screen.queryByText(/No one on the roster/)).toBeNull();
     expect(screen.queryByText(/players on the roster/)).toBeNull();
     await user.click(within(code('CH-3210') as HTMLElement).getByRole('button', { name: 'Try again' }));

@@ -123,6 +123,15 @@ recent rounds, About and the coach's note. Its ⋯ opens View stats and Remove
 from team. The phone is a different structure, never the desktop shrunk
 (RosterPhone below 820px).
 
+Its look is the Coach Home "Mobile clubhouse pass" board (owner, 2026-10-08:
+round 3, "fewer containers, one feature card"): the page opens on the engraved
+double rule with the team and count as the tracked eyebrow and Roster in the
+bold condensed sans; join requests are the one green feature card; the players
+are rows on seams on the parchment, Inactive a section under the double rule.
+The profile puts its figures between two hairlines and each part flush under
+the double rule; the sheets list requests and actions on seams. No white
+cards, no serif.
+
 ## The player's view
 
 Owner, 2026-10-01: "the same thing as coach except they can't click". The same

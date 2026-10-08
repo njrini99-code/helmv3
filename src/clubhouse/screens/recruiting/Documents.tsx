@@ -426,7 +426,7 @@ function UploadDialog({
           {busy && progress !== null && (
             <div className="ch-rec-up__progress" data-ch-code="CH-14407">
               <div className="ch-rec-up__bar" role="progressbar" aria-label="Upload progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
-                <span style={{ width: `${progress}%` }} />
+                <span style={{ transform: `translateX(${progress - 100}%)` }} />
               </div>
               <span className="ch-rec-note">Keep this page open until it finishes.</span>
             </div>

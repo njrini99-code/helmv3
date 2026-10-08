@@ -2946,7 +2946,7 @@ describe('Qualifiers · every write', () => {
     landed.view.unmount();
     clearNav();
     const refused = await drive(sc, refuse);
-    await screen.findByText(sc.failed);
+    await screen.findByText(sc.failed, { selector: '.ch-toast *' });
     expect([sc.name, router.refresh.mock.calls.length, router.push.mock.calls.length, router.replace.mock.calls.length]).toEqual([sc.name, 0, 0, 0]);
     refused.view.unmount();
   });
@@ -2955,7 +2955,7 @@ describe('Qualifiers · every write', () => {
     for (const sc of scenarios) {
       clearNav();
       const { c, view } = await drive(sc, (write) => write.mockResolvedValueOnce({ success: false, error: 'nope' }));
-      await screen.findByText(sc.failed);
+      await screen.findByText(sc.failed, { selector: '.ch-toast *' });
       await userEvent.setup().click(screen.getByRole('button', { name: 'Retry' }));
       await waitFor(() => expect(sc.write(c)).toHaveBeenCalledTimes(2));
       expect([sc.name, sc.write(c).mock.calls[1]]).toEqual([sc.name, sc.write(c).mock.calls[0]]);

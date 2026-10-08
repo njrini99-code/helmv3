@@ -843,53 +843,57 @@
   }
   .ch-rs[aria-busy='true'],
   .ch-rs-none {
-    padding: 16px 16px 28px;
+    padding: 26px 20px 32px;
   }
   .ch-rs-skel-desk {
     display: none;
   }
   .ch-rsm-skel {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
   }
 
+  /* The Mobile clubhouse pass (owner, 2026-10-08; the Coach Home board carried to every phone screen): the page opens on
+     the engraved double rule with the eyebrow and the bold sans title, join requests are the screen's one green feature
+     card, and the players sit flush on the parchment, one row per seam. */
   .ch-rsm {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    padding: 16px 16px 28px;
+    padding: 26px 20px 32px;
   }
   .ch-rsm-page {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 22px;
   }
   .ch-rsm-head {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: 6px 2px 4px;
+    gap: 12px;
+    padding-top: 14px;
+    border-top: var(--ch-ledger-rule-double);
   }
   .ch-rsm-kicker {
-    font: 500 13px/1 var(--ch-font-sans);
-    color: var(--ch-text-tertiary);
+    font: 500 11px/1.2 var(--ch-font-sans);
+    letter-spacing: 0.14em;
+    color: var(--ch-ledger-eyebrow);
   }
-  /* The display serif, as every phone page's title. */
   .ch-rsm-title {
-    margin: 2px 0 0;
-    font: 400 34px/1.05 var(--ch-font-serif);
-    letter-spacing: -0.008em;
+    margin: 0;
+    font: 600 31px/1.08 var(--ch-font-sans);
+    letter-spacing: -0.038em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
   }
   .ch-rsm-sort {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 2px;
+    gap: 12px;
   }
   .ch-rsm-sort > span {
-    font: var(--ch-type-caption);
-    color: var(--ch-green-800);
+    font: 500 13px/1.2 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
   }
   /* Drawn at 26px; the hit area reaches 44. */
   .ch-rsm-sort .ch-seg__b::after {
@@ -897,51 +901,65 @@
     position: absolute;
     inset: -9px 0;
   }
+  /* No card: a section is its rule and its rows. */
   .ch-rsm-panel {
-    border-radius: 18px;
-    background: var(--ch-sheet-bg);
-    box-shadow: var(--ch-sheet-shadow);
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
   .ch-rsm-list {
     margin: 0;
     padding: 0;
     list-style: none;
   }
-  .ch-rsm-list > li + li .ch-rsm-row {
-    border-top: 1px solid var(--ch-border-hairline);
+  /* The list hangs from a hairline just under the sort, and each row sits on a seam. */
+  .ch-rsm-sort + .ch-rsm-list {
+    margin-top: -10px;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
   }
-  .ch-rsm-sec {
-    margin: 8px 2px 0;
-    font: 600 14px/1 var(--ch-font-sans);
+  .ch-rsm-list > li + li {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  /* Inactive is a section of its own: the double rule, then its heading, then the rows. Under .ch-rsm-page so base.css's
+     heading reset doesn't drop its margins. */
+  .ch-rsm-page > .ch-rsm-sec {
+    margin: 14px 0 -20px;
+    padding-top: 12px;
+    border-top: var(--ch-ledger-rule-double);
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
   }
 
+  /* A row's tint reaches 12px past the text on each side, so the names and figures stay on the page's edge (CH-3602). */
   .ch-rsm-row {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     box-sizing: border-box;
-    width: 100%;
+    width: calc(100% + 24px);
     min-height: 72px;
-    padding: 12px 14px;
+    margin: 0 -12px;
+    padding: 12px;
     border: 0;
+    border-radius: var(--ch-radius-md);
     background: none;
     color: inherit;
     font: inherit;
     text-align: left;
     cursor: pointer;
     touch-action: manipulation;
-    transition: background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+    transition: background var(--ch-dur-press) var(--ch-ease);
   }
   .ch-rsm-row:active {
-    background: var(--ch-bg-hover);
+    background: var(--ch-ledger-row-press);
   }
   .ch-rsm-row:focus-visible {
     outline: 2px solid var(--ch-border-focus);
     outline-offset: -2px;
   }
   .ch-rsm-row .ch-avatar {
-    box-shadow: 0 0 0 2px var(--ch-bg-surface), 0 0 0 3px rgb(176 149 96 / 0.3);
+    box-shadow: 0 0 0 2px var(--ch-workspace), 0 0 0 3px var(--ch-champagne-rule);
   }
   .ch-rsm-row__b {
     display: flex;
@@ -952,7 +970,9 @@
   }
   .ch-rsm-row__b b {
     overflow: hidden;
-    font: 600 14.5px/1.25 var(--ch-font-sans);
+    font: 600 15px/1.25 var(--ch-font-sans);
+    letter-spacing: -0.012em;
+    color: var(--ch-text-primary);
     white-space: nowrap;
     text-overflow: ellipsis;
   }
@@ -977,10 +997,12 @@
     flex: none;
     flex-direction: column;
     align-items: flex-end;
-    gap: 3px;
+    gap: 4px;
   }
   .ch-rsm-row__v b {
-    font: 600 16px/1 var(--ch-font-sans);
+    font: 600 17px/1 var(--ch-font-sans);
+    letter-spacing: -0.02em;
+    color: var(--ch-text-primary);
   }
   .ch-rsm-row__v span {
     font: 500 12px/1 var(--ch-font-sans);
@@ -988,37 +1010,38 @@
     white-space: nowrap;
   }
 
-  /* Profile: a pushed screen (PhoneScreen) with its own scroll */
+  /* Profile: a pushed screen (PhoneScreen) with its own scroll, on the same ledger: the player at the top, the figures
+     between two hairlines, then each part flush under the double rule. */
   .ch-rsm-scroll {
     flex: 1;
     min-height: 0;
     overflow: auto;
     overscroll-behavior: contain;
-    padding: 16px 16px calc(28px + env(safe-area-inset-bottom));
+    padding: 26px 20px calc(32px + env(safe-area-inset-bottom));
   }
   .ch-rsm-prof {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 30px;
   }
   .ch-rsm-hero {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    padding: 0 0 4px;
+    margin-bottom: -6px;
     text-align: center;
   }
   .ch-rsm-hero .ch-avatar {
     margin-bottom: 6px;
-    box-shadow: 0 0 0 4px var(--ch-bg-page), 0 0 0 6px var(--ch-green-600), 0 12px 28px -10px rgb(11 58 37 / 0.4);
+    box-shadow: var(--ch-ledger-avatar-ring);
   }
-  .ch-rsm-hero h2 {
-    margin: 10px 0 2px;
-    font: 600 24px/1.1 var(--ch-font-sans);
-    letter-spacing: -0.03em;
-    color: var(--ch-ink-950);
-    font-variation-settings: 'wdth' 96;
+  .ch-rsm-prof .ch-rsm-hero h2 {
+    margin: 8px 0 2px;
+    font: 600 28px/1.1 var(--ch-font-sans);
+    letter-spacing: -0.035em;
+    color: var(--ch-ledger-ink);
+    font-variation-settings: 'wdth' 88;
     text-wrap: balance;
   }
   .ch-rsm-hero__id {
@@ -1027,13 +1050,13 @@
   }
   .ch-rsm-hero__m {
     font: 400 13px/1.3 var(--ch-font-sans);
-    color: var(--ch-ink-600);
+    color: var(--ch-text-tertiary);
   }
   .ch-rsm-hero__act {
     display: flex;
     gap: 8px;
     width: 100%;
-    margin-top: 12px;
+    margin-top: 16px;
   }
   .ch-rsm-hero__act .ch-btn {
     flex: 1;
@@ -1048,32 +1071,37 @@
   .ch-rsm-hero__act .ch-btn svg {
     color: var(--ch-green-700);
   }
+  /* The figures between two hairlines, divided by soft rules (the kit's FigureRow), with no card around them. */
   .ch-rsm-figs {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     margin: 0;
-    padding: 16px 0;
-    border-radius: 16px;
-    background: var(--ch-sheet-bg);
-    box-shadow: var(--ch-sheet-shadow);
+    padding: 12px 0;
+    border-top: 1px solid var(--ch-ledger-rule);
+    border-bottom: 1px solid var(--ch-ledger-rule);
   }
   .ch-rsm-figs > div {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    padding: 0 14px;
+    min-width: 0;
+    padding: 2px 12px;
+  }
+  .ch-rsm-figs > div:first-child {
+    padding-left: 0;
   }
   .ch-rsm-figs > div + div {
-    border-left: 1px solid var(--ch-border-hairline);
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
   }
   .ch-rsm-figs dt {
-    font: 500 12px/1 var(--ch-font-sans);
+    font: 500 12px/1.2 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   .ch-rsm-figs dd {
     margin: 0;
-    font: 500 18px/1 var(--ch-font-sans);
-    letter-spacing: -0.02em;
+    font: 600 22px/1 var(--ch-font-sans);
+    letter-spacing: -0.03em;
+    color: var(--ch-text-primary);
   }
   .ch-rsm-figs dd.is-gain {
     color: var(--ch-chart-gain);
@@ -1081,33 +1109,45 @@
   .ch-rsm-figs dd.is-loss {
     color: var(--ch-chart-loss);
   }
+  /* A part's heading over the double rule, as the board's sections. */
   .ch-rsm-panel__h {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
     gap: 10px;
-    padding: 14px 16px 8px;
+    padding-top: 12px;
+    border-top: var(--ch-ledger-rule-double);
   }
   .ch-rsm-panel__h b {
-    font: 600 15.5px/1.2 var(--ch-font-sans);
-    color: var(--ch-ink-950);
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
   }
   .ch-rsm-panel__h > span {
     font: var(--ch-type-caption);
     color: var(--ch-text-tertiary);
   }
+  /* Over the first row, so its 44px reach is not cut by the row drawn after it. */
   .ch-rsm-panel__link {
+    position: relative;
+    z-index: 1;
     display: inline-flex;
     align-items: center;
     min-height: 44px;
     margin: -13px -8px -13px 0;
     padding: 0 8px;
+    border-radius: var(--ch-radius-md);
     font: 500 13px/1 var(--ch-font-sans);
     color: var(--ch-green-700);
     text-decoration: none;
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-rsm-panel__link:active {
+    background: var(--ch-ledger-row-press);
   }
   .ch-rsm-trend {
-    padding: 0 16px 14px;
+    padding: 14px 0 0;
   }
   .ch-rsm-trend .ch-form__line {
     stroke-width: 2.2;
@@ -1116,9 +1156,9 @@
     display: flex;
     justify-content: space-between;
     gap: 10px;
-    margin-top: 6px;
+    margin-top: 8px;
     font: var(--ch-type-caption);
-    color: var(--ch-green-800);
+    color: var(--ch-text-secondary);
   }
   .ch-rsm-trend__lg .is-warning {
     color: var(--ch-chart-loss);
@@ -1132,8 +1172,13 @@
     align-items: center;
     gap: 12px;
     min-height: 60px;
-    padding: 8px 16px;
-    border-top: 1px solid rgb(28 25 18 / 0.1);
+    padding: 10px 0;
+  }
+  .ch-rsm-panel__h + .ch-rsm-rd {
+    margin-top: 4px;
+  }
+  .ch-rsm-rd + .ch-rsm-rd {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
   }
   .ch-rsm-rd__ic {
     display: grid;
@@ -1154,8 +1199,9 @@
   }
   .ch-rsm-rd__b b {
     overflow: hidden;
-    font: 600 14.5px/1.25 var(--ch-font-sans);
-    color: var(--ch-ink-950);
+    font: 600 15px/1.25 var(--ch-font-sans);
+    letter-spacing: -0.012em;
+    color: var(--ch-text-primary);
     white-space: nowrap;
     text-overflow: ellipsis;
   }
@@ -1167,30 +1213,29 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 3px;
+    gap: 4px;
   }
   .ch-rsm-rd__v b {
-    font: 600 16px/1 var(--ch-font-sans);
-    color: var(--ch-ink-950);
+    font: 600 17px/1 var(--ch-font-sans);
+    letter-spacing: -0.02em;
+    color: var(--ch-text-primary);
   }
   .ch-rsm-about {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 14px 16px 16px;
+    gap: 4px;
   }
   .ch-rsm-about > b {
-    font: 600 15.5px/1.2 var(--ch-font-sans);
-    color: var(--ch-ink-950);
+    padding-top: 12px;
+    border-top: var(--ch-ledger-rule-double);
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
   }
+  /* The facts as rows on seams, not a box. */
   .ch-rsm-facts {
     display: flex;
     flex-direction: column;
     margin: 0;
-    overflow: hidden;
-    border-radius: 12px;
-    background: linear-gradient(rgb(238 245 240 / 0.5), rgb(238 245 240 / 0.5)), var(--ch-bg-surface);
-    box-shadow: var(--ch-elevation-reading);
   }
   .ch-rsm-facts > div {
     display: flex;
@@ -1198,43 +1243,65 @@
     justify-content: space-between;
     gap: 12px;
     min-height: 46px;
-    padding: 0 14px;
   }
   .ch-rsm-facts > div + div {
-    border-top: 1px solid rgb(28 25 18 / 0.1);
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
   }
   .ch-rsm-facts dt {
     font: 400 14px/1.2 var(--ch-font-sans);
-    color: var(--ch-green-800);
+    color: var(--ch-text-secondary);
   }
   .ch-rsm-facts dd {
     margin: 0;
     font: 500 14px/1.2 var(--ch-font-sans);
-    color: var(--ch-ink-950);
+    color: var(--ch-text-primary);
     text-align: right;
   }
   .ch-rsm-note {
-    padding: 14px 16px 16px;
+    padding-top: 12px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-rsm-note .ch-rs-peek__l b {
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
   }
 
-  /* Join requests banner and sheet */
+  /* Join requests: the screen's one feature card (the kit's FeatureCard), the frame's green lit from its top right, a
+     gilt coin, the count and the names in ivory. A press deepens a shade over it for the press beat; it never scales
+     (CH-3602). */
   .ch-rsm-banner {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     box-sizing: border-box;
     width: 100%;
-    min-height: 56px;
-    padding: 12px 14px;
+    min-height: 76px;
+    padding: 16px 16px 16px 18px;
     border: 0;
     border-radius: 14px;
-    background: var(--ch-green-50);
-    box-shadow: var(--ch-elevation-reading);
-    color: var(--ch-green-700);
+    background: var(--ch-feature-bg);
+    box-shadow: var(--ch-elevation-feature);
+    color: var(--ch-on-green-ink-muted);
     font: inherit;
     text-align: left;
     cursor: pointer;
-    transition: transform var(--ch-dur-quick) var(--ch-ease);
+    touch-action: manipulation;
+  }
+  .ch-rsm-banner::after {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgb(2 18 10 / 0.2);
+    opacity: 0;
+    transition: opacity var(--ch-dur-press) var(--ch-ease);
+    content: '';
+    pointer-events: none;
+  }
+  .ch-rsm-banner:active::after {
+    opacity: 1;
   }
   .ch-rsm-banner:focus-visible {
     outline: 2px solid var(--ch-border-focus);
@@ -1244,43 +1311,48 @@
     display: grid;
     flex: none;
     place-items: center;
-    width: 32px;
-    height: 32px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    background: var(--ch-ivory-0);
-    box-shadow: 0 0 0 1px rgb(21 90 57 / 0.14);
+    background: rgb(255 255 255 / 0.06);
+    box-shadow: inset 0 0 0 1px rgb(220 205 166 / 0.35);
+    color: var(--ch-champagne-300);
   }
   .ch-rsm-banner__b {
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
     min-width: 0;
   }
   .ch-rsm-banner__b b {
-    font: 600 14px/1.2 var(--ch-font-sans);
-    color: var(--ch-text-primary);
+    font: 600 17px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.02em;
+    color: var(--ch-on-green-ink);
   }
   .ch-rsm-banner__b span {
     overflow: hidden;
-    font: var(--ch-type-caption);
-    color: var(--ch-text-secondary);
+    font: 400 13.5px/1.3 var(--ch-font-sans);
+    color: var(--ch-on-green-ink-soft);
     white-space: nowrap;
     text-overflow: ellipsis;
   }
+  /* The sheet's requests are rows on seams inside it, not cards inside a card. */
   .ch-rsm-reqs {
     display: flex;
     flex-direction: column;
-    gap: 10px;
   }
   .ch-rsm-rq {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    padding: 14px;
-    border-radius: 16px;
-    background: var(--ch-bg-surface);
-    box-shadow: var(--ch-elevation-reading);
+    padding: 16px 0;
+  }
+  .ch-rsm-rq:first-child {
+    padding-top: 4px;
+  }
+  .ch-rsm-rq + .ch-rsm-rq {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
   }
   .ch-rsm-rq__top {
     display: flex;
@@ -1346,7 +1418,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-top: 4px;
+    margin-top: 8px;
     padding: 12px 14px;
     border-radius: 12px;
   }
@@ -1369,33 +1441,46 @@
     min-height: 44px;
   }
   .ch-rsm-reqs__note {
-    padding: 0 2px 6px;
+    padding: 10px 2px 6px;
     font: var(--ch-type-caption);
     color: var(--ch-text-tertiary);
   }
-  /* The profile's ⋯ action sheet */
+  /* The profile's ⋯ action sheet: rows on a seam, each tinting under the finger over the press beat (CH-3602). */
+  .ch-rsm-acts {
+    margin: 0 -12px;
+  }
   .ch-rsm-act {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 12px;
     box-sizing: border-box;
     width: 100%;
     min-height: 56px;
-    padding: 8px 16px;
+    padding: 8px 12px;
     border: 0;
+    border-radius: var(--ch-radius-md);
     background: none;
     color: var(--ch-text-primary);
     font: inherit;
     text-align: left;
     text-decoration: none;
     cursor: pointer;
-    transition: background var(--ch-dur-quick) var(--ch-ease);
+    touch-action: manipulation;
+    transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-rsm-act + .ch-rsm-act {
-    border-top: 1px solid var(--ch-border-hairline);
+  .ch-rsm-act + .ch-rsm-act::before {
+    position: absolute;
+    top: 0;
+    right: 12px;
+    left: 12px;
+    height: 1px;
+    background: var(--ch-ledger-rule-soft);
+    content: '';
+    pointer-events: none;
   }
   .ch-rsm-act:active {
-    background: var(--ch-bg-hover);
+    background: var(--ch-ledger-row-press);
   }
   .ch-rsm-act b {
     font: 500 15px/1.2 var(--ch-font-sans);

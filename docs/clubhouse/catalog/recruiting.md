@@ -96,9 +96,10 @@ A stage is saved the moment it is picked. The prospect moves at once and goes ba
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-14601 | Hovering or pressing a stage in the pipeline | The stage's ring lifts 1px on hover and takes a second ring while it is the filter (quick). With reduced motion it changes without moving | `.ch-rec-pipe__dot`, `--ch-dur-quick` | preview |
+| CH-14601 | Hovering or pressing a stage in the pipeline | The stage's ring lifts 1px on hover and takes a second ring while it is the filter (quick). On the phone a press lays the row press tint over the stage's coin for the press beat; the coin never scales. With reduced motion it changes without moving | `.ch-rec-pipe__dot`, `--ch-dur-quick`, `--ch-dur-press` | preview |
 | CH-14602 | A prospect opens on the phone | The screen slides in from the right over the list and back out on pop (base); with reduced motion it settles at once | `PhoneScreen` | preview |
 | CH-14603 | Picking a stage in the pipeline, or letting it go | The list settles in with a 6px rise (260ms) while the old one fades out (180ms), hidden from assistive tech. Typing a search doesn't animate, and nor does the kept stage coming back as the page opens. Instant with reduced motion | `Swap` keyed on `stageTurn` in `RecruitingDesktop` and `RecruitingPhone` | recruiting.test › CH-14603; preview (the timing) |
+| CH-14604 | Pressing a row or a key on the phone | A prospect row, the sort, the Stage, Email and Call keys, the Stage row, a document, its remove key and an empty part's action take the row press tint over the press beat (110ms); the committed stage key darkens under a shade instead. Nothing scales (the shell's CH-1606). Instant with reduced motion | `recruiting.css` `:active`, `--ch-ledger-row-press` | preview |
 
 ## 147xx Haptics
 
