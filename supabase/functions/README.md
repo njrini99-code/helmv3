@@ -41,16 +41,23 @@ production.
 
 ## What is actually deployed
 
-As of 2026-08-01 the project has four ACTIVE functions, and **two of them have
-no source in this directory**:
+As of 2026-08-01 the project has four ACTIVE functions, and two of them had no
+source in this directory until 2026-10-07 (`create-admin-user` and
+`verify-emails`, both now committed here exactly as deployed; the deployed
+sha256 values were `1dceaaa1…` and `ff26d564…`, versions 7 and 5):
 
 | slug | source here | deployed | note |
 | --- | --- | --- | --- |
 | `send-apns-push` | yes | yes | deployed build is stale — see above |
 | `personalize-email` | yes | yes | in sync |
 | `send-fcm-push` | yes | **NO** | Android push; invoked in `main`. See below. |
-| `create-admin-user` | no | yes | unauthenticated; see #1175 |
-| `verify-emails` | no | yes | see #1175 |
+| `create-admin-user` | yes (2026-10-07) | yes | retired stub, answers 410; see below |
+| `verify-emails` | yes (2026-10-07) | yes | copied from production; see below |
+
+**`send-fcm-push` is NOT deployed.** `main` invokes it for Android devices, so
+Android push is non-functional until it is deployed (and until the two other
+conditions in "Android push needs THREE things" below are met). Do not read the
+source in this directory as evidence that Android push works.
 
 Anything deployed but absent here cannot be reviewed, linted, secret-scanned,
 or reasoned about from the repo. If you deploy a function, commit it here in
@@ -86,3 +93,33 @@ is inert for three independent reasons, and fixing any one alone changes nothing
 Do them in that order. Deploying the function before the Firebase project exists
 gives you a function that fails on every call with a credentials error, which
 looks like a code bug and is not one.
+
+## Functions committed from production (2026-10-07)
+
+Both were fetched with the Supabase `get_edge_function` operation and committed
+unchanged, after reading them for embedded secrets (none: they read
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from the environment). Committing
+them does not deploy anything, and editing them here changes nothing in
+production until `supabase functions deploy <slug>` runs.
+
+### `create-admin-user`
+
+A retired stub (#1271). It answers `410 Gone` to every request, builds no client
+and reads no secret. The dashboard is the only place to delete it, because the
+Management API has no delete. Do not turn it back into a bootstrap.
+
+### `verify-emails`
+
+Probes the mailbox of `crm_coaches` rows over SMTP (MX lookup, `RCPT TO`) and
+sets `email_status = 'bounced'` on the ones the server rejects. It runs with the
+service-role key. Open concerns, none changed here because this change does not
+deploy:
+
+- `verify_jwt` is true, but the project's anon key is a valid JWT, so anyone
+  holding the publishable key can call it. There is no check on who the caller
+  is. A caller can make Supabase's egress open SMTP connections to chosen
+  hosts, and can mark CRM coaches `bounced` in batches.
+- It answers `Access-Control-Allow-Origin: *`.
+- It is a CRM list-hygiene job, not a request path. The usual fix is to call
+  the same logic from an authenticated admin route or a cron, then retire this
+  function the way `create-admin-user` was retired.
