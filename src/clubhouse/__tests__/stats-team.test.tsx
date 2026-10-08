@@ -112,7 +112,10 @@ describe('Stats team · reads that fail', () => {
     expect(data.roundsError).toBe(true);
     expect(logServer).toHaveBeenCalledWith('stats', 'rounds', expect.anything());
     wrap(data);
-    await expectCode('CH-4201', /Team rounds didn't load/);
+    await expectCode('CH-4201', /Team rounds didn’t load/);
+    // The page's one read failed: the page's failure (CH-1211) is its whole body, an alert, never a notice over a blank page.
+    expect(code('CH-4201')!.classList.contains('ch-empty-page--danger')).toBe(true);
+    expect(code('CH-4201')!.getAttribute('role')).toBe('alert');
     expect(screen.queryByText('Scoring average')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Export' })).toBeNull();
     expect(code('CH-4301')).toBeNull();
@@ -126,7 +129,7 @@ describe('Stats team · reads that fail', () => {
     expect(logServer).toHaveBeenCalledWith('stats', 'members', expect.anything(), 'teams');
     expect(data.roundsError).toBe(true);
     wrap(data);
-    await expectCode('CH-4201', /Team rounds didn't load/);
+    await expectCode('CH-4201', /Team rounds didn’t load/);
     expect(code('CH-4301')).toBeNull();
     // A roster that did not load is not "0 active players".
     expect(document.querySelector('.ch-hero .ch-hero__line')!.textContent).toBe('Varsity · countable rounds only');
@@ -145,7 +148,7 @@ describe('Stats team · reads that fail', () => {
     expect(data.longestError).toBe(true);
     expect(data.roundsError).toBe(false);
     wrap(data);
-    await expectCode('CH-4211', /The longest putt didn't load/);
+    await expectCode('CH-4211', /The longest putt didn’t load/);
     expect(code('CH-4307')).toBeNull();
     expect(screen.getByText('Low round')).toBeTruthy();
     await userEvent.setup().click(within(code('CH-4211') as HTMLElement).getByRole('button', { name: 'Try again' }));
@@ -165,7 +168,7 @@ describe('Stats team · reads that fail', () => {
     expect(data.figures.find((f) => f.label === 'Greens in regulation')!.value).toBeNull();
     expect(logServer).toHaveBeenCalledWith('stats', 'roundCache', expect.anything());
     wrap(data);
-    await expectCode('CH-4202', /Some team figures didn't load/);
+    await expectCode('CH-4202', /Some team figures didn’t load/);
   });
 
   it('CH-4203 putting does not load', async () => {
@@ -174,7 +177,23 @@ describe('Stats team · reads that fail', () => {
     expect(data.puttsError).toBe(true);
     expect(logServer).toHaveBeenCalledWith('stats', 'putts', expect.anything(), 'stats_analytics');
     wrap(data);
-    await expectCode('CH-4203', /Team putting didn't load/);
+    await expectCode('CH-4203', /Team putting didn’t load/);
+  });
+
+  it('CH-1209 figures and putting that both fail are told once under the head, with one Try again', async () => {
+    wrap(stats({ cacheError: true, puttsError: true, longestError: true }));
+    await expectCode('CH-1209', /Some team figures, team putting and the longest putt didn’t load/);
+    expect(document.querySelectorAll('[role="alert"]')).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    for (const c of ['CH-4202', 'CH-4203', 'CH-4211']) expect(within(code(c) as HTMLElement).queryByRole('button')).toBeNull();
+    await userEvent.setup().click(within(code('CH-1209') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalled();
+  });
+
+  it('CH-1209 one part failing keeps its own Try again, with no page notice', () => {
+    wrap(stats({ puttsError: true }));
+    expect(code('CH-1209')).toBeNull();
+    expect(within(code('CH-4203') as HTMLElement).getByRole('button', { name: 'Try again' })).toBeTruthy();
   });
 
   it('CH-4204 CH-4205 CH-4206 CH-4207 CH-4208 42301 a section that crashes stays inside its section, and is reported high with its section', () => {
@@ -251,6 +270,8 @@ describe('Stats team · empty', () => {
     const user = userEvent.setup();
     wrap(empty({ window: 'last10' }));
     await expectCode('CH-4301', /No 18-hole rounds in this window yet/);
+    // The whole body is empty, so it is the page's empty state (states audit, 2026-10-08), not a section's.
+    expect(code('CH-4301')!.classList.contains('ch-empty-page')).toBe(true);
     await user.click(screen.getByRole('button', { name: 'Show the season' }));
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?window=season', { scroll: false });
   });
@@ -578,6 +599,18 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     wrap(stats({ puttsError: true }));
     expect(code('CH-4203')).not.toBeNull();
     expect(screen.getByRole('heading', { level: 2, name: 'Players' })).toBeTruthy();
+  });
+
+  it('CH-1209 on the phone figures and putting that both fail are told once, with one Try again', () => {
+    wrap(stats({ cacheError: true, puttsError: true }));
+    expect(code('CH-1209')!.textContent).toMatch(/Some team figures and team putting didn’t load/);
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+  });
+
+  it('CH-4301 on the phone the empty window is the page’s empty state, with Show the season as its one action', () => {
+    wrap(empty());
+    expect(code('CH-4301')!.classList.contains('ch-empty-page')).toBe(true);
+    expect(screen.getByRole('button', { name: 'Show the season' }).className).toMatch(/ch-btn--primary/);
   });
 });
 

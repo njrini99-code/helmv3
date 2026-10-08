@@ -1,5 +1,15 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-08 — phone: every tap answers
+
+Measured in WebKit as an iPhone at 390 wide (touch, no hover): the Message key
+in the head, All N rounds and Game detail's "How this is measured" now answer a
+press (a tint a beat after the finger lands, CH-1606; the key and the button
+shrink as every button does), with no tap flash. The window switch glides and
+lands in one frame with reduced motion; the phone skeleton still measures
+identical to the loaded page. Game detail's section chips (the shared pill) and
+the shared switch have no press look of their own yet.
+
 ## 2026-10-08 — phone: Mobile clubhouse pass
 
 A player's stats on the phone follow the Coach Home "Mobile clubhouse pass"

@@ -186,6 +186,20 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     expect(screen.queryByRole('heading', { name: 'Your game' })).toBeNull();
   });
 
+  it('CH-1209 the reads that fail are told once under the head, naming the sections, with one Try again', () => {
+    show(PREVIEW_PLAYER_HOME_FAILED);
+    expect(code('CH-1209')!.textContent).toMatch(/This week’s schedule, your latest round and your scoring didn’t load/);
+    expect(document.querySelectorAll('[role="alert"]')).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    for (const c of ['CH-2201', 'CH-2202', 'CH-2215']) expect(within(code(c) as HTMLElement).queryByRole('button')).toBeNull();
+  });
+
+  it('CH-1209 one part failing keeps its own Try again, with no page notice', () => {
+    show(home({ legs: { ...PREVIEW_PLAYER_HOME.legs!, cacheError: true } }));
+    expect(code('CH-1209')).toBeNull();
+    expect(within(code('CH-2216') as HTMLElement).getByRole('button', { name: 'Try again' })).toBeTruthy();
+  });
+
   it('CH-2216 scrambling didn’t load: the notice, the other parts stay', () => {
     show(home({ legs: { ...PREVIEW_PLAYER_HOME.legs!, cacheError: true } }));
     expect(code('CH-2216')!.textContent).toMatch(/scrambling is missing/);
@@ -238,6 +252,14 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
   });
   afterEach(() => {
     window.matchMedia = real;
+  });
+
+  it('CH-1209 CH-2201 on the phone the reads that fail are told once under the greeting, with one Try again', () => {
+    show(PREVIEW_PLAYER_HOME_FAILED);
+    expect(code('CH-1209')!.textContent).toMatch(/This week’s schedule, your latest round and your scoring didn’t load/);
+    expect(code('CH-1209')!.closest('.ch-hm-hero')).not.toBeNull();
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    expect(code('CH-2201')!.closest('.ch-hm-next')).toBeNull();
   });
 
   it('shows an all-day event without the midnight countdown on the phone too', () => {

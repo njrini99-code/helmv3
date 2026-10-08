@@ -4,6 +4,7 @@ import { CalendarPlus, Flag, UserPlus, Users } from 'lucide-react';
 import type { ChCoachHome } from '../../data/home';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
+import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { useChPhone } from '../../lib/use-phone';
 import { rebuiltHref } from '../../shell/nav';
 import { SectionBoundary } from '../../ui/SectionBoundary';
@@ -12,6 +13,7 @@ import { LatestRound } from './LatestRound';
 import { Leaderboard } from './Leaderboard';
 import { HomeActions } from './HomeActions';
 import { HomePhone } from './HomePhone';
+import { coachFailedParts } from './model';
 import '../../styles/home.css';
 
 /**
@@ -23,6 +25,9 @@ export function CoachHome({ data, now }: { data: ChCoachHome; /** Preview and te
   const phone = useChPhone();
   if (isFirstRun(data)) return <HomeFirstRun data={data} />;
   if (phone) return <HomePhone data={data} now={now} />;
+  // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
+  const failed = coachFailedParts(data, false);
+  const covered = failed.length > 1;
   return (
     <main className="ch-h-main ch-h-main--desk" data-canopy="">
       <header className="ch-h-head" data-canopy-head="">
@@ -31,16 +36,17 @@ export function CoachHome({ data, now }: { data: ChCoachHome; /** Preview and te
         {data.subline && <p className="ch-h-head__sub">{data.subline}</p>}
         <HomeActions teamChatId={data.teamChatId} />
       </header>
+      <PageRefreshNotice parts={failed} />
       <div className="ch-h-sheet ch-sheet">
         <SectionBoundary surface="home.week" label="This week" code="CH-2205">
-          <Week week={data.week} />
+          <Week week={data.week} covered={covered} />
         </SectionBoundary>
         <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
-          <LatestRound data={data.latestRounds} />
+          <LatestRound data={data.latestRounds} covered={covered} />
         </SectionBoundary>
       </div>
       <SectionBoundary surface="home.leaderboard" label="The leaderboard" code="CH-2207">
-        <Leaderboard data={data.leaderboard} />
+        <Leaderboard data={data.leaderboard} covered={covered} />
       </SectionBoundary>
     </main>
   );
@@ -62,12 +68,15 @@ export function isFirstRun(data: ChCoachHome): boolean {
   );
 }
 
-/** The v2 first-run page empty state (gh-states.jsx, EMPTY.home.coach; D-71): the two first steps. */
+/**
+ * The v2 first-run page empty state (gh-states.jsx, EMPTY.home.coach; D-71): the two first steps, under the same framed
+ * head as the loaded page on desktop (states audit, 2026-10-08) and the Ledger's page intro on the phone (`--first`).
+ */
 function HomeFirstRun({ data }: { data: ChCoachHome }) {
   const roster = rebuiltHref('/golf/dashboard/roster');
   return (
-    <main className="ch-h-main">
-      <header className="ch-h-head">
+    <main className="ch-h-main ch-h-main--first" data-canopy="">
+      <header className="ch-h-head" data-canopy-head="">
         <span className="ch-h-head__date">{data.todayLabel}</span>
         <h1 className="ch-display">{data.greeting}</h1>
       </header>

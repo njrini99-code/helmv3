@@ -1,5 +1,33 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-08 — The empty window is the page's empty state; several failed parts, one notice
+
+Fixes from the states audit, on desktop and the phone:
+- no rounds in the window (CH-4301) or no qualifier rounds (CH-4302) is the
+  whole page body, so it is now the page's empty state, not a section's: the
+  medallion (a chart, or the qualifiers' medal), the title, its sentence and
+  Show the season as the one primary action. On desktop it sits under the
+  framed head with its own air; the section card around it is gone;
+- when two or more parts fail (team figures, team putting, the longest putt),
+  the page says so once under the head with one Try again (CH-1209), and each
+  part keeps only its notice's title. One failed part keeps its own notice;
+- a failed rounds read (CH-4201) is the page's failure (CH-1211) as its whole
+  body: the brick medallion, "Team rounds didn’t load", one sentence and Try
+  again first, instead of a notice over a blank page;
+- the notices' Try again now says so while it runs, and their titles end
+  without a full stop;
+- on the phone a player row's press tint waits a beat after the finger lands
+  (CH-1606), so a scroll that starts on a row never flashes it; the window
+  switch and the Avg / SG switch glide and land in one frame with reduced
+  motion (WebKit as an iPhone at 390).
+
+Not changed yet: a page whose sections all crash still shows one notice per
+section (CH-4204 to CH-4208); collapsing them needs a shared boundary group.
+
+New tests: stats-team.test › CH-1209 (several and one, desktop and phone),
+CH-4301 as the page's empty state on desktop and the phone, CH-4201 as the
+page's failure.
+
 ## 2026-10-08 — phone: Mobile clubhouse pass
 
 Team stats on the phone follows the Coach Home "Mobile clubhouse pass" board

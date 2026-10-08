@@ -118,7 +118,7 @@ describe('Home · reads that fail', () => {
     expect(data.week.error).toBe(true);
     logged('events');
     wrap(<Week week={data.week} />);
-    await expectCode('CH-2201', /schedule didn't load/);
+    await expectCode('CH-2201', /schedule didn’t load/);
     expect(code('CH-2301')).toBeNull();
     await userEvent.setup().click(screen.getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalled();
@@ -136,8 +136,30 @@ describe('Home · reads that fail', () => {
         <Leaderboard data={data.leaderboard} />
       </>,
     );
-    await expectCode('CH-2202', /Recent rounds didn't load/);
-    await expectCode('CH-2204', /leaderboard didn't load/);
+    await expectCode('CH-2202', /Recent rounds didn’t load/);
+    await expectCode('CH-2204', /leaderboard didn’t load/);
+  });
+
+  it('CH-1209 two or more reads that fail are told once under the head, with one Try again; each part keeps its title', async () => {
+    wrap(<CoachHome data={home({ week: { ...PREVIEW_HOME.week, error: true }, latestRounds: { rounds: [], error: true, holesError: false }, leaderboard: { ...PREVIEW_HOME.leaderboard, error: true } })} />);
+    const page = code('CH-1209') as HTMLElement;
+    expect(page.textContent).toMatch(/This week’s schedule, recent rounds and the leaderboard didn’t load/);
+    // Under the head, before the first sheet.
+    expect(page.previousElementSibling).toBe(document.querySelector('.ch-h-head'));
+    expect(document.querySelectorAll('[role="alert"]')).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    for (const c of ['CH-2201', 'CH-2202', 'CH-2204']) {
+      expect(code(c)!.textContent).toMatch(/didn’t load$/);
+      expect(within(code(c) as HTMLElement).queryByRole('button')).toBeNull();
+    }
+    await userEvent.setup().click(within(page).getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalled();
+  });
+
+  it('CH-1209 one read that fails keeps its own notice and Try again, with no page notice', () => {
+    wrap(<CoachHome data={home({ leaderboard: { ...PREVIEW_HOME.leaderboard, error: true } })} />);
+    expect(code('CH-1209')).toBeNull();
+    expect(within(code('CH-2204') as HTMLElement).getByRole('button', { name: 'Try again' })).toBeTruthy();
   });
 
   it('CH-2203 hole-by-hole does not load: the total stays, and the card says why', () => {
@@ -378,6 +400,22 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     expect(code('CH-2302')).toBeNull();
     expect(code('CH-2309')).toBeNull();
   });
+
+  it('CH-1209 CH-2201 on the phone the failed reads are told once under the greeting, and the week’s notice sits on the sheet, never inside the green card', () => {
+    wrap(<CoachHome data={{ ...PREVIEW_HOME, week: { ...PREVIEW_HOME.week, error: true }, latestRounds: { rounds: [], error: true, holesError: false }, phone: { ...PREVIEW_HOME.phone, next: null, today: [], form: null } }} now={PREVIEW_HOME_NOW} />);
+    expect(code('CH-1209')!.textContent).toMatch(/This week’s schedule, team scoring and recent rounds didn’t load/);
+    expect(code('CH-1209')!.closest('.ch-hm-hero')).not.toBeNull();
+    expect(document.querySelectorAll('[role="alert"]')).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    expect(code('CH-2201')!.closest('.ch-hm-next')).toBeNull();
+  });
+
+  it('CH-2201 the week alone failing keeps its own Try again on the sheet, outside the green card', () => {
+    wrap(<CoachHome data={{ ...PREVIEW_HOME, week: { ...PREVIEW_HOME.week, error: true }, phone: { ...PREVIEW_HOME.phone, next: null, today: [] } }} now={PREVIEW_HOME_NOW} />);
+    expect(code('CH-1209')).toBeNull();
+    expect(code('CH-2201')!.closest('.ch-hm-next')).toBeNull();
+    expect(within(code('CH-2201') as HTMLElement).getByRole('button', { name: 'Try again' })).toBeTruthy();
+  });
 });
 
 describe('Home · first run (v2 page empty state, D-71)', () => {
@@ -394,6 +432,20 @@ describe('Home · first run (v2 page empty state, D-71)', () => {
     expect(screen.getByRole('link', { name: 'Invite players' }).getAttribute('href')).toBe('/golf/dashboard/roster');
     expect(screen.getByRole('link', { name: 'Add an event' }).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1');
     expect(screen.queryByRole('link', { name: /New event/ })).toBeNull();
+  });
+
+  it('CH-2308 the first run opens under the same framed head as the loaded page', () => {
+    const empty: ChCoachHome = {
+      ...PREVIEW_HOME,
+      week: { ...PREVIEW_HOME.week, agenda: [], days: PREVIEW_HOME.week.days.map((d) => ({ ...d, eventCount: 0, hasCompetition: false })) },
+      latestRounds: { rounds: [], error: false, holesError: false },
+      leaderboard: { rows: [], scorecards: 0, rosterSize: 0, error: false },
+      phone: { next: null, today: [], form: null, weekNote: null },
+    };
+    wrap(<CoachHome data={empty} />);
+    const main = code('CH-2308')!.closest('main')!;
+    expect(main.hasAttribute('data-canopy')).toBe(true);
+    expect(main.querySelector(':scope > header')!.hasAttribute('data-canopy-head')).toBe(true);
   });
 
   it('a failed read is never taken for a first run', () => {
@@ -819,7 +871,7 @@ describe('Home · Coach Home’s own contracts', () => {
     try {
       wrap(<CoachHome data={home({ leaderboard: { ...PREVIEW_HOME.leaderboard, error: true } })} />);
       await user.click(within(code('CH-2204') as HTMLElement).getByRole('button', { name: 'Try again' }));
-      expect(code('CH-1905')!.textContent).toMatch(/You're offline/);
+      expect(code('CH-1905')!.textContent).toMatch(/You’re offline/);
       expect(router.refresh).not.toHaveBeenCalled();
     } finally {
       Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => true });

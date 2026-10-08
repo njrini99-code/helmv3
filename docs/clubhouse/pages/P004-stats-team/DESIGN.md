@@ -65,13 +65,17 @@ bars, the players as rows, and Team putting.
 ### New Clubhouse components
 
 `StatsTeam` (the server-rendered page: figures, putting, season bests), `StatsTeamFrame`,
-`TeamHeadActions`, `TeamCharts`, `ShowSeason` and `RetryNotice` (the client islands in
+`TeamHeadActions`, `TeamCharts`, `ShowSeason` (the empty window's one primary action) and `RetryNotice` (on
+`RefreshNotice`, so Try again says so while it runs; `covered` under the page notice) (the client islands in
 `StatsTeamIslands.tsx`), `StatsTeamPhone` (with `ScoreLine`), `StatsSkeleton`, `WindowSwitch`, and the
 charts in `charts.tsx` (`FigureCards`, `YardagePage`, `PuttingRings`), which the player profile shares.
 
 ### Modified Clubhouse components
 
-None for this page beyond the foundation's v2 changes (motion, haptics, page empty state).
+None for this page beyond the foundation's v2 changes (motion, haptics, page empty state). It uses the states
+components' page notice (`PageRefreshNotice`, CH-1209) when two or more parts fail, the page's failure
+(`EmptyState tone="danger"`, CH-1211) when the rounds read fails (CH-4201), and the page's empty state for an empty
+window (CH-4301, CH-4302): in both, the whole body is the state (states audit, 2026-10-08).
 
 ## Actions affected
 

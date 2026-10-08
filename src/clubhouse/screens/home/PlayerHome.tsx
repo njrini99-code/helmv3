@@ -6,6 +6,7 @@ import type { ChHomeEvent } from '../../data/home';
 import type { ChPlayerHome } from '../../data/player-home';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
+import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { Icon } from '../../ui/Icon';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useChPhone } from '../../lib/use-phone';
@@ -17,6 +18,7 @@ import { TYPE_ICON } from '../calendar/views';
 import { Countdown } from './Countdown';
 import { eventHref, whenLabel } from './HomePhone';
 import { LatestRound } from './LatestRound';
+import { playerFailedParts } from './model';
 import { PlayerGame } from './PlayerGame';
 import { PlayerHomePhone } from './PlayerHomePhone';
 import { Week } from './Week';
@@ -34,6 +36,9 @@ export function PlayerHome({ data, now }: { data: ChPlayerHome; /** Preview and 
   if (isPlayerFirstRun(data)) return <PlayerFirstRun data={data} />;
   if (phone) return <PlayerHomePhone data={data} now={now} />;
   const post = postRoundHref();
+  // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
+  const failed = playerFailedParts(data);
+  const covered = failed.length > 1;
   return (
     <main className="ch-h-main ch-h-main--desk" data-canopy="">
       <header className="ch-h-head" data-canopy-head="">
@@ -50,22 +55,23 @@ export function PlayerHome({ data, now }: { data: ChPlayerHome; /** Preview and 
           )}
         </div>
       </header>
+      <PageRefreshNotice parts={failed} />
       {/* One continuous surface (owner, 2026-10-06): the week and the latest round, then Scoring under a hairline. */}
       <div className="ch-h-flow ch-sheet">
         <div className="ch-h-sheet">
           <SectionBoundary surface="home.week" label="This week" code="CH-2205">
-            <Week week={data.week} />
+            <Week week={data.week} covered={covered} />
           </SectionBoundary>
           <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
-            <LatestRound data={data.latest} mine lead={data.next ? <DeskNext e={data.next} frozen={now} /> : null} />
+            <LatestRound data={data.latest} mine lead={data.next ? <DeskNext e={data.next} frozen={now} /> : null} covered={covered} />
           </SectionBoundary>
         </div>
         <SectionBoundary surface="home.game" label="Your scoring" code="CH-2217">
-          <PlayerGame data={data} part="scoring" />
+          <PlayerGame data={data} part="scoring" covered={covered} />
         </SectionBoundary>
       </div>
       <SectionBoundary surface="home.game" label="Your game" code="CH-2217">
-        <PlayerGame data={data} part="legs" />
+        <PlayerGame data={data} part="legs" covered={covered} />
       </SectionBoundary>
     </main>
   );
@@ -103,9 +109,10 @@ function PlayerFirstRun({ data }: { data: ChPlayerHome }) {
   const start = postRoundHref();
   const classes = rebuiltHref('/golf/dashboard/classes', 'player');
   return (
-    // `--first`: on the phone the head is the Ledger's page intro (home.css "Player Home on the phone").
-    <main className="ch-h-main ch-h-main--first">
-      <header className="ch-h-head">
+    // `--first`: the framed head on desktop, as the loaded page has (states audit, 2026-10-08), and the Ledger's page
+    // intro on the phone (home.css "Player Home on the phone").
+    <main className="ch-h-main ch-h-main--first" data-canopy="">
+      <header className="ch-h-head" data-canopy-head="">
         <span className="ch-h-head__date">{data.todayLabel}</span>
         <h1 className="ch-display">{data.greeting}</h1>
       </header>

@@ -743,10 +743,11 @@
 }
 
 /* Home's route skeleton on a phone (F-37), in the Mobile clubhouse pass (2026-10-08): the loaded page's shape on the
-   parchment sheet, so the hand-off changes nothing but the words. The loading route can't know the role, so the hero
-   holds 386px, between the coach's (388 at 390 wide: the brief and Up next) and the player's (382: Up next with its
-   countdown, and the two keys); the first section then opens under its double rule within 3px of where both pages'
-   does (WebKit 390, 2026-10-08). */
+   parchment sheet, so the hand-off changes nothing but the words. The hero is the reader's own (SkeletonPhoneHero,
+   from the shell's role): the coach's brief as three lines and Up next as the coach's card; the player's Up next with
+   its countdown directly under the greeting, and the two keys under it. The card, the keys and the first section land
+   within half a pixel of their bars (WebKit 390, 2026-10-08; a coach's brief of other than three lines moves only the
+   card, by its lines). */
 .ch-hm-skel {
   display: none;
 }
@@ -765,7 +766,6 @@
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-    min-height: 386px;
     padding: 26px 20px 22px;
   }
   /* Each bar in a box the height of its loaded line: the date (11px under the double rule), the 31px greeting's line,
@@ -787,14 +787,14 @@
   .ch-hm-skel__line {
     display: flex;
     align-items: center;
-    height: 21.75px;
+    height: 21px;
   }
   .ch-hm-skel__card {
     display: flex;
     flex-direction: column;
     gap: 12px;
     box-sizing: border-box;
-    height: 189px;
+    height: 172px;
     margin-top: 18px;
     padding: 18px;
     border-radius: 14px;
@@ -806,6 +806,18 @@
     max-width: 100%;
     border-radius: var(--ch-radius-xs);
     background: rgb(244 241 232 / 0.12);
+  }
+  /* The player's hero: no brief, so Up next sits on the greeting's own margin, and Message coach and Post a round
+     under it, as `.ch-hm--player .ch-ph-acts` sets them. */
+  .ch-hm-skel__hero.is-player .ch-hm-skel__card {
+    height: 189px;
+    margin-top: 0;
+  }
+  .ch-hm-skel__keys {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
   }
   .ch-hm-skel__body {
     display: flex;
@@ -3118,15 +3130,55 @@
   .ch-hm--player .ch-hm-week .is-today.is-major .ch-hm-week__d {
     box-shadow: 0 0 0 2px var(--ch-hero-mint-strong);
   }
+  /* A day is a link to it in the calendar: a press tints its key a beat after the finger lands, so a scroll that starts
+     on the strip never flashes it, and letting go clears it at once (CH-1606). Today's green key and the competition
+     day's tint deepen instead. */
+  .ch-hm--player .ch-hm-week__d {
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-hm--player .ch-hm-week__d:active {
+    background: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
+  }
+  .ch-hm--player .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d:active {
+    background: var(--ch-green-100);
+  }
+  .ch-hm--player .ch-hm-week .is-today .ch-hm-week__d:active {
+    background: var(--ch-green-700);
+  }
+  /* Up next is a link: a press deepens the card's green the same beat later (CH-1606: a large surface answers with a
+     deeper tint, never a scale). The card isolates its own stacking context, so the shade's negative layer paints over
+     the green and under the words whatever the hero's rules give its children. */
+  .ch-hm--player a.ch-hm-next {
+    position: relative;
+    isolation: isolate;
+  }
+  .ch-hm--player a.ch-hm-next::after {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--ch-green-900);
+    opacity: 0;
+    content: '';
+    pointer-events: none;
+    transition: opacity var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-hm--player a.ch-hm-next:active::after {
+    opacity: 0.38;
+    transition-delay: var(--ch-dur-press-delay);
+  }
   /* Today's rows sit on the section's edge like the Ledger's rows (ui.css `.ch-lgr__row.is-link`): the tap area runs
      12px past the text on each side and a press tints it. */
   .ch-hm--player .ch-hm-tl__a {
     margin-inline: -12px;
     padding-inline: 12px;
     border-radius: var(--ch-radius-md);
+    transition: background var(--ch-dur-press) var(--ch-ease);
   }
   .ch-hm--player .ch-hm-tl__a:active {
     background: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
   }
   .ch-hm--player .ch-hm-tl__a:focus-visible {
     outline: 2px solid var(--ch-border-focus);
@@ -3139,9 +3191,11 @@
   .ch-hm--player .ch-ph-pg button::before {
     background: none;
     box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+    transition: background var(--ch-dur-press) var(--ch-ease);
   }
   .ch-hm--player .ch-ph-pg button:active::before {
     background: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
   }
   .ch-hm--player .ch-ph-pg button:focus-visible::before {
     box-shadow: 0 0 0 2px var(--ch-border-focus);
@@ -3241,8 +3295,8 @@
   .ch-hm--player .ch-ph-spark__dot {
     box-shadow: 0 0 0 3px var(--ch-workspace);
   }
-  /* The first-run page (CH-2312): its head is the Ledger's page intro (ui/Ledger.tsx PageIntro), the date as the
-     eyebrow under the double rule and the greeting in the bold condensed sans, on the same 20px edge as Home. */
+  /* The first-run pages (CH-2308, CH-2312): the head is the Ledger's page intro (ui/Ledger.tsx PageIntro), the date as
+     the eyebrow under the double rule and the greeting in the bold condensed sans, on the same 20px edge as Home. */
   .ch-h-main--first {
     padding: 26px 20px 48px;
   }
@@ -3263,5 +3317,35 @@
     letter-spacing: -0.038em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
+  }
+}
+
+/* Home's page notice (CH-1209, ui/RefreshNotice.tsx): two or more failed reads are told once, under the head, with one
+   Try again, and each failed part keeps only its title (states audit, 2026-10-08). Both roles. On the desktop it keeps
+   the head's rhythm above and below; on the phone it sits under the greeting, before the week's covered title or Up
+   next. */
+.ch-h-main--desk > .ch-notice {
+  margin-top: 36px;
+}
+.ch-h-main--desk > .ch-notice + .ch-h-sheet,
+.ch-h-main--desk > .ch-notice + .ch-h-flow {
+  margin-top: 36px;
+}
+@media (max-width: 820px) {
+  .ch-hm-hero > .ch-notice + .ch-notice,
+  .ch-hm-hero > .ch-notice + .ch-hm-next {
+    margin-top: 16px;
+  }
+}
+
+/* Home's first run on desktop opens under the loaded page's framed head (states audit (c)4, 2026-10-08): the head's
+   rules run the page's width, and the date and the greeting sit where the loaded Home sets them. */
+@media (min-width: 821px) {
+  .ch-h-main--first[data-canopy] {
+    padding-top: 20px;
+  }
+  .ch-h-main--first[data-canopy] > .ch-h-head {
+    gap: 4px;
+    max-width: none;
   }
 }

@@ -143,7 +143,7 @@ export function StatsPlayerPhone({
           </p>
         </span>
         {coach && messageHref && (
-          <Link href={messageHref} className="ch-spm-head__msg" aria-label={`Message ${first}`}>
+          <Link href={messageHref} className="ch-spm-head__msg" aria-label={`Message ${first}`} data-ch-press="">
             <Icon icon={MessageSquare} size={18} />
           </Link>
         )}
@@ -371,6 +371,7 @@ function Rounds({ rounds, open }: { rounds: ChPlayerProfile['rounds']; open: boo
             <button
               type="button"
               className="ch-spm-more"
+              data-ch-press=""
               aria-expanded={all}
               onClick={() => {
                 haptic('select');

@@ -23,12 +23,13 @@ const SPANS: Span[] = [5, 10, 20];
  * rounds against par and the player's own mean, four figures, one sentence,
  * then the four parts of the game against the Tour where a benchmark exists.
  */
-export function PlayerGame({ data, phone = false, part }: { data: ChPlayerHome; phone?: boolean; part?: 'scoring' | 'legs' }) {
+export function PlayerGame({ data, phone = false, part, covered = false }: { data: ChPlayerHome; phone?: boolean; part?: 'scoring' | 'legs'; covered?: boolean }) {
   // `part`: desktop Home draws Scoring inside its one continuous surface and the parts of the game below it.
+  // `covered`: the page's notice (CH-1209) carries the one Try again, so a failed read keeps only its notice's title.
   return (
     <>
-      {part !== 'legs' && <Scoring data={data} phone={phone} />}
-      {part !== 'scoring' && <Legs legs={data.legs} tour={data.tour} phone={phone} />}
+      {part !== 'legs' && <Scoring data={data} phone={phone} covered={covered} />}
+      {part !== 'scoring' && <Legs legs={data.legs} tour={data.tour} phone={phone} covered={covered} />}
     </>
   );
 }
@@ -39,7 +40,7 @@ function commonPar(points: ChScoringPoint[]): number | null {
   return pars.length > 0 && pars.length === points.length && pars.every((v) => v === pars[0]) ? pars[0]! : null;
 }
 
-function Scoring({ data, phone }: { data: ChPlayerHome; phone: boolean }) {
+function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean; covered: boolean }) {
   // The span of rounds (Last 5, 10, 20) comes back when the player returns to Home (PAGE_PERFORMANCE.md rule 1).
   const [n, setN] = useChSessionState<Span>('home-span', 10);
   const all = data.scoring.points;
@@ -92,7 +93,7 @@ function Scoring({ data, phone }: { data: ChPlayerHome; phone: boolean }) {
     <Segmented<`${Span}`> size={phone ? 'md' : 'sm'} label="Rounds shown" value={`${n}`} onChange={(v) => setN(Number(v) as Span)} options={options} />
   );
   const body = data.scoring.error ? (
-    <RefreshNotice code="CH-2215" title="Your rounds didn't load." body="Posted rounds are safe. Try again; the error has been reported." />
+    <RefreshNotice code="CH-2215" title="Your rounds didn’t load" body="Posted rounds are safe. Try again; the error has been reported." covered={covered} />
   ) : shown.length < 2 ? (
     <EmptyState
       compact
@@ -304,7 +305,7 @@ function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolea
   );
 }
 
-function Legs({ legs, tour, phone }: { legs: ChPlayerHome['legs']; tour: ChSgTour; phone: boolean }) {
+function Legs({ legs, tour, phone, covered }: { legs: ChPlayerHome['legs']; tour: ChSgTour; phone: boolean; covered: boolean }) {
   if (!legs) return null;
   const any = legs.rows.some((l) => l.value != null);
   return (
@@ -324,7 +325,9 @@ function Legs({ legs, tour, phone }: { legs: ChPlayerHome['legs']; tour: ChSgTou
           </div>
         </div>
       )}
-      {legs.cacheError && <RefreshNotice code="CH-2216" title="Some of your figures didn't load." body="Scores, greens and putts are right; scrambling is missing. The error has been reported." />}
+      {legs.cacheError && (
+        <RefreshNotice code="CH-2216" title="Some of your figures didn’t load" body="Scores, greens and putts are right; scrambling is missing. The error has been reported." covered={covered} />
+      )}
       {/* Figures that did not load are not "nothing to break down": the notice above is the whole answer then (CH-2216). */}
       {!any ? (
         legs.cacheError ? null : (

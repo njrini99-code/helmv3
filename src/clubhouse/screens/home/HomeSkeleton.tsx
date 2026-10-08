@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Skeleton } from '../../ui/States';
 import { SkeletonHeroBar } from './SkeletonHeroBar';
+import { SkeletonPhoneHero } from './SkeletonPhoneHero';
 import '../../styles/home.css';
 
 /** A bar centred in a box the height of its real line, so the text lands where the bar was. */
@@ -15,28 +16,10 @@ export function HomeSkeleton() {
     <main className="ch-h-main" aria-busy="true" aria-label="Loading Home" data-ch-code="CH-2401" data-canopy="">
       <SkeletonHeroBar />
       {/* Phone: the page's own shape in the Mobile clubhouse pass (the date under its double rule, the greeting, the
-          brief's lines, the green Up next card, then the first section under its rule and its rows), so the hand-off
-          changes nothing but the words (F-37). */}
+          coach's brief or the player's keys around the green Up next card, then the first section under its rule and
+          its rows), so the hand-off changes nothing but the words (F-37). */}
       <div className="ch-hm-skel" aria-hidden="true">
-        <div className="ch-hm-skel__hero">
-          <span className="ch-hm-skel__date">
-            <Skeleton width={150} height={11} />
-          </span>
-          <span className="ch-hm-skel__h1">
-            <Skeleton width={240} height={28} radius={8} />
-          </span>
-          <span className="ch-hm-skel__line">
-            <Skeleton width="85%" height={14} />
-          </span>
-          <span className="ch-hm-skel__line">
-            <Skeleton width="60%" height={14} />
-          </span>
-          <span className="ch-hm-skel__card">
-            <span className="ch-hm-skel__bar" style={{ width: 120, height: 12 }} />
-            <span className="ch-hm-skel__bar" style={{ width: 210, height: 23 }} />
-            <span className="ch-hm-skel__bar" style={{ width: 170, height: 14 }} />
-          </span>
-        </div>
+        <SkeletonPhoneHero />
         <div className="ch-hm-skel__body">
           <span className="ch-hm-skel__sec">
             <Skeleton width={96} height={17} />

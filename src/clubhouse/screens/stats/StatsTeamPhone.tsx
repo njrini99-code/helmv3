@@ -1,12 +1,13 @@
 'use client';
 
-import { ChevronRight, Users } from 'lucide-react';
+import { ChartColumn, ChevronRight, Medal, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo } from 'react';
 import type { ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
 import { Avatar } from '../../ui/Avatar';
 import { EmptyState } from '../../ui/States';
+import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { Icon } from '../../ui/Icon';
 import { SectionBoundary } from '../../ui/SectionBoundary';
@@ -43,6 +44,13 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
   const nineOnly = noRounds && nineRoundsInWindow(data.filter, data.filterOptions);
   const filtered = isFiltered(data.filter);
   const showFilter = !data.roundsError && (data.filterOptions.total > 0 || filtered);
+  // Two or more parts that didn't load are told once, under the head, with one Try again; each keeps its title (CH-1209).
+  const failed: string[] = [];
+  if (!data.roundsError && !noRounds) {
+    if (data.cacheError) failed.push('some team figures');
+    if (data.puttsError) failed.push('team putting');
+  }
+  const covered = failed.length > 1;
   return (
     <div className="ch-stm">
       <header className="ch-stm-head">
@@ -56,7 +64,17 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
         <WindowSwitch value={shown} onChange={go} custom={hasRange(data.filter)} />
         {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone />}
       </div>
-      {data.roundsError && <RetryNotice code="CH-4201" title="Team rounds didn't load." body="Every figure below would be incomplete, so they're hidden. Try again; the error has been reported." />}
+      {/* The page's one read failed, so the page says so as its whole body (CH-1211), not a notice over a blank page. */}
+      {data.roundsError && (
+        <EmptyState
+          size="page"
+          tone="danger"
+          code="CH-4201"
+          title="Team rounds didn’t load"
+          body="Every figure would be incomplete, so none is shown. Try again; the error has been reported."
+        />
+      )}
+      <PageRefreshNotice parts={failed} />
       {filtered && data.roundCount > 0 && data.roundsEffective < 3 && <EarlyRead code="CH-4314" count={data.roundCount} whole={data.roundsEffective} />}
       {noRounds && !filtered && <NineHint code="CH-4319" filter={data.filter} options={data.filterOptions} who="This team has" />}
       {noRounds && filtered ? (
@@ -64,10 +82,12 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
       ) : noRounds && data.window === 'season' && !nineOnly ? (
         <StatsTeamFirstRun />
       ) : noRounds ? (
+        // The whole page body is empty, so it is the page's empty state, not a section's (states audit, 2026-10-08).
         <EmptyState
+          size="page"
           code={data.window === 'qualifiers' ? 'CH-4302' : 'CH-4301'}
-          icon={Users}
-          title={data.window === 'qualifiers' ? 'No qualifier rounds this season yet.' : 'No 18-hole rounds in this window yet.'}
+          icon={data.window === 'qualifiers' ? Medal : ChartColumn}
+          title={data.window === 'qualifiers' ? 'No qualifier rounds this season yet' : 'No 18-hole rounds in this window yet'}
           body={data.window === 'qualifiers' ? 'Qualifier rounds appear here once they are posted as qualifying.' : 'Team stats fill in as players post countable rounds.'}
           action={data.window !== 'season' ? <ShowSeason /> : undefined}
         />
@@ -76,7 +96,7 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
           <>
             <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
               {data.cacheError && (
-                <RetryNotice code="CH-4202" title="Some team figures didn't load." body="Scoring is correct; greens, putts and scrambling are missing. The error has been reported." />
+                <RetryNotice code="CH-4202" title="Some team figures didn’t load" body="Scoring is correct; greens, putts and scrambling are missing. The error has been reported." covered={covered} />
               )}
               <Figures figures={data.figures} />
               {/* The phone's cards draw no caption of their own: greens, putts and scrambling read the rounds with their holes (Q-123), and this says how many. */}
@@ -95,7 +115,7 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
               <Players data={data} />
             </SectionBoundary>
             <SectionBoundary surface="stats.team.putting" label="Team putting" code="CH-4207">
-              <Putting data={data} />
+              <Putting data={data} covered={covered} />
             </SectionBoundary>
           </>
         )
@@ -331,8 +351,8 @@ function Players({ data }: { data: ChTeamStats }) {
 }
 
 /** Make rate by distance: a bar per band, the Tour rate as a mark, a band under it in amber. */
-function Putting({ data }: { data: ChTeamStats }) {
-  if (data.puttsError) return <RetryNotice code="CH-4203" title="Team putting didn't load." body="Try again; the error has been reported." />;
+function Putting({ data, covered }: { data: ChTeamStats; covered: boolean }) {
+  if (data.puttsError) return <RetryNotice code="CH-4203" title="Team putting didn’t load" body="Try again; the error has been reported." covered={covered} />;
   if (!data.putting) return <EmptyState compact code="CH-4306" title="No putts logged in this window." body="Putting fills in from rounds posted with putt distances." />;
   const bands = data.putting.bands.slice(0, 5);
   const drawn = bands.reduce((a, b) => a + b.attempts, 0);

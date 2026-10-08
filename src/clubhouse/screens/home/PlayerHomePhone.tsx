@@ -8,7 +8,7 @@ import { FigureRow } from '../../ui/Ledger';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
 import { Nine } from '../../ui/Nine';
-import { RefreshNotice } from '../../ui/RefreshNotice';
+import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { changeTone, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
@@ -16,6 +16,7 @@ import { useNow } from '../../lib/use-now';
 import { usePhoneHero } from '../../shell/phone-chrome';
 import { Countdown } from './Countdown';
 import { Today, UpNext, WeekStrip } from './HomePhone';
+import { playerFailedParts } from './model';
 import { PlayerGame } from './PlayerGame';
 import { messageCoachHref, MY_STATS, postRoundHref, roundHref } from './player-links';
 import { GirViz, PuttsViz, SgViz } from './RoundViz';
@@ -35,6 +36,9 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
   const now = useMemo(() => (frozen ? new Date(frozen) : ticking), [frozen, ticking]);
   const nothingAhead = !data.week.error && !data.next && data.week.days.every((d) => d.eventCount === 0);
   const post = postRoundHref();
+  // Two or more failed reads are told once under the greeting, with one Try again; each part keeps its title (CH-1209).
+  const failed = playerFailedParts(data);
+  const covered = failed.length > 1;
 
   return (
     <main className="ch-hm ch-hm--player" aria-label="Home">
@@ -42,10 +46,11 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
       <header className="ch-hm-hero is-player">
         <span className="ch-hm-hero__date">{data.todayLabel}</span>
         <h1>{data.greeting}</h1>
+        <PageRefreshNotice parts={failed} />
         <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
           {data.week.error ? (
             // On the sheet, not in the green card: inside it the notice took the card's ivory ink and its words vanished.
-            <RefreshNotice code="CH-2201" title="This week's schedule didn't load." body="Your events are safe. This is a display problem, and trying again usually clears it." />
+            <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. This is a display problem, and trying again usually clears it." covered={covered} />
           ) : data.next ? (
             <UpNext e={data.next} now={now} kicker="Up next">
               {!data.next.allDay && <Countdown to={data.next.startIso} frozen={frozen} />}
@@ -100,10 +105,10 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
           </SectionBoundary>
         )}
         <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
-          <Latest data={data.latest} />
+          <Latest data={data.latest} covered={covered} />
         </SectionBoundary>
         <SectionBoundary surface="home.game" label="Your scoring" code="CH-2217">
-          <PlayerGame data={data} phone />
+          <PlayerGame data={data} phone covered={covered} />
         </SectionBoundary>
       </div>
     </main>
@@ -114,7 +119,7 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
 const figureTone = (t: string) => (t === 'is-gain' ? 'gain' : t === 'is-loss' ? 'loss' : undefined);
 
 /** My latest round (board "Latest"): paged through the last three, the scorecard inline. */
-function Latest({ data }: { data: ChPlayerHome['latest'] }) {
+function Latest({ data, covered }: { data: ChPlayerHome['latest']; covered: boolean }) {
   const [i, setI] = useState(0);
   const r = data.rounds[i];
   const go = (d: 1 | -1) => {
@@ -128,20 +133,21 @@ function Latest({ data }: { data: ChPlayerHome['latest'] }) {
         <h2 id="ch-ph-latest">My latest round</h2>
         {data.rounds.length > 1 && (
           <span className="ch-ph-pg">
-            <button type="button" aria-label="Previous round" onClick={() => go(-1)}>
+            {/* Keys: they shrink when pressed, as every button does (`data-ch-press`, CH-1606), and tint (home.css). */}
+            <button type="button" aria-label="Previous round" onClick={() => go(-1)} data-ch-press="">
               <Icon icon={ChevronLeft} size={18} />
             </button>
             <span className="ch-num" aria-live="polite">
               {i + 1} of {data.rounds.length}
             </span>
-            <button type="button" aria-label="Next round" onClick={() => go(1)}>
+            <button type="button" aria-label="Next round" onClick={() => go(1)} data-ch-press="">
               <Icon icon={ChevronRight} size={18} />
             </button>
           </span>
         )}
       </div>
       {data.error ? (
-        <RefreshNotice code="CH-2202" title="Recent rounds didn't load." body="Posted rounds are safe. Try again; the error has been reported." />
+        <RefreshNotice code="CH-2202" title="Recent rounds didn’t load" body="Posted rounds are safe. Try again; the error has been reported." covered={covered} />
       ) : !r ? (
         <EmptyState compact code="CH-2302" icon={Flag} title="No rounds posted yet this season." body="Your newest 18-hole round appears here, hole by hole, as soon as you post it." />
       ) : (

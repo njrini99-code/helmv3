@@ -1,5 +1,46 @@
 # P002 — Home: changelog
 
+## 2026-10-08 — Player Home on the phone: every tap answers; the skeleton is the reader's own
+
+Measured in WebKit as an iPhone at 390 wide (touch, no hover), every control on
+the player's phone Home now answers a press, with no tap flash:
+- Up next deepens its green (a large card answers with a tint, never a scale,
+  CH-1606); a day in the week strip tints its key, today's green key deepens;
+- Today's rows, the latest round's pager and its keys tint a beat after the
+  finger lands (the CH-1606 delay, so a scroll that starts on them never
+  flashes), and the pager's keys shrink as every button does;
+- the Scoring window switch glides (36 frames over about 300ms) and lands in
+  one frame with reduced motion.
+
+The route skeleton's phone hero follows the shell's role (SkeletonPhoneHero):
+the player's has no brief, its Up next card sits under the greeting with the two
+keys under it, and the coach's draws the brief as three lines over the coach's
+shorter card. Skeleton to page now moves nothing by more than half a pixel for
+either role (it was 61px for the player's card and 20px for the coach's).
+
+## 2026-10-08 — Home's states: one notice for several failed reads, and the framed first run
+
+Fixes from the states audit, on desktop and the phone, for both roles:
+- when two or more of Home's reads fail, the page says so once, under the head
+  (CH-1209): "Some of this page didn’t load", naming the parts ("This week’s
+  schedule, recent rounds and the leaderboard didn’t load"), with one Try
+  again. Each failed part keeps only its notice's title under its heading, with
+  no button of its own. One failed read keeps its own notice and Try again, as
+  before. The player's latest round and scoring read the same rounds, so the
+  notice names them by their sections ("your latest round and your scoring");
+- on the coach's phone the week's notice (CH-2201) is out of the green Up next
+  card, on the sheet under the greeting, as on the player's;
+- the first-run pages (CH-2308, CH-2312) open under the loaded page's framed
+  head on desktop (the double rule, the engraved date, the greeting in forest
+  ink, set where the loaded Home sets them), and the coach's phone first run
+  opens on the Ledger's page intro, as the player's does;
+- the notices' titles end without a full stop and use the curly apostrophe of
+  the page notice beside them.
+
+New tests: home.test › CH-1209 (several and one), the phone's CH-1209 and
+CH-2201 outside the card, CH-2308's framed head; player-home.test › CH-1209 on
+desktop and the phone.
+
 ## 2026-10-08 — Player Home on the phone: the Mobile clubhouse pass
 
 The player's phone Home follows the same board as the coach's (round 3, "fewer

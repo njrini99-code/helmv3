@@ -58,8 +58,11 @@ const statsHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${id
  * `mine`: the player's Home ("My latest round", Player - Home.html): a flag in
  * place of the avatar, and My stats in place of the player's stats.
  */
-/** `lead`: what opens the pane above the round (the player's Up next on desktop, so the two columns balance). */
-export function LatestRound({ data, mine = false, lead }: { data: ChCoachHome['latestRounds']; mine?: boolean; lead?: ReactNode }) {
+/**
+ * `lead`: what opens the pane above the round (the player's Up next on desktop, so the two columns balance).
+ * `covered`: the page's notice (CH-1209) carries the one Try again, so a failed read keeps only its notice's title.
+ */
+export function LatestRound({ data, mine = false, lead, covered = false }: { data: ChCoachHome['latestRounds']; mine?: boolean; lead?: ReactNode; covered?: boolean }) {
   const [i, setI] = useState(0);
   const [dir, setDir] = useState<1 | -1>(1);
   const reduced = useChReducedMotion();
@@ -90,8 +93,9 @@ export function LatestRound({ data, mine = false, lead }: { data: ChCoachHome['l
       {data.error ? (
         <RefreshNotice
           code="CH-2202"
-          title="Recent rounds didn't load."
+          title="Recent rounds didn’t load"
           body="Posted rounds are safe. Try again, and if it keeps happening the error has already been reported."
+          covered={covered}
         />
       ) : !r ? (
         <EmptyState

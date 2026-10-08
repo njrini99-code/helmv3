@@ -1,9 +1,10 @@
-import { Users } from 'lucide-react';
+import { ChartColumn, Medal } from 'lucide-react';
 import Link from 'next/link';
 import type { ChTeamStats } from '../../data/stats-team';
 import { isFiltered, type ChFilter } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { EmptyState } from '../../ui/States';
+import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { nineRoundsInWindow } from '../../data/stats-filter';
 import { EarlyRead, NineHint } from './StatsFilter';
@@ -29,6 +30,14 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
   const filtered = isFiltered(data.filter);
   // Nothing to filter before a round exists (the first-run page); a filter already on always shows, so it can be cleared.
   const showFilter = !data.roundsError && (data.filterOptions.total > 0 || filtered);
+  // Two or more parts that didn't load are told once, under the head, with one Try again; each keeps its title (CH-1209).
+  const failed: string[] = [];
+  if (!data.roundsError && !noRounds) {
+    if (data.cacheError) failed.push('some team figures');
+    if (data.puttsError) failed.push('team putting');
+    if (data.longestError) failed.push('the longest putt');
+  }
+  const covered = failed.length > 1;
 
   return (
     <StatsTeamFrame filter={data.filter} phone={<StatsTeamPhone data={data} />}>
@@ -62,9 +71,17 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
 
       {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} />}
 
+      {/* The page's one read failed, so the page says so as its whole body (CH-1211), not a notice over a blank page. */}
       {data.roundsError && (
-        <RetryNotice code="CH-4201" title="Team rounds didn't load." body="Every figure below would be incomplete, so they're hidden. Try again; the error has been reported." />
+        <EmptyState
+          size="page"
+          tone="danger"
+          code="CH-4201"
+          title="Team rounds didn’t load"
+          body="Every figure would be incomplete, so none is shown. Try again; the error has been reported."
+        />
       )}
+      <PageRefreshNotice parts={failed} />
 
       {filtered && data.roundCount > 0 && data.roundsEffective < 3 && <EarlyRead code="CH-4314" count={data.roundCount} whole={data.roundsEffective} />}
       {noRounds && !filtered && <NineHint code="CH-4319" filter={data.filter} options={data.filterOptions} who="This team has" />}
@@ -74,20 +91,20 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
       ) : noRounds && data.window === 'season' && !nineOnly ? (
         <StatsTeamFirstRun />
       ) : noRounds ? (
-        <div className="ch-st-card">
-          <EmptyState
-            code={data.window === 'qualifiers' ? 'CH-4302' : 'CH-4301'}
-            icon={Users}
-            title={data.window === 'qualifiers' ? 'No qualifier rounds this season yet.' : 'No 18-hole rounds in this window yet.'}
-            body={data.window === 'qualifiers' ? 'Qualifier rounds appear here once they are posted as qualifying.' : 'Team stats fill in as players post countable rounds.'}
-            action={data.window !== 'season' ? <ShowSeason /> : undefined}
-          />
-        </div>
+        // The whole page body is empty, so it is the page's empty state, not a section's (states audit, 2026-10-08).
+        <EmptyState
+          size="page"
+          code={data.window === 'qualifiers' ? 'CH-4302' : 'CH-4301'}
+          icon={data.window === 'qualifiers' ? Medal : ChartColumn}
+          title={data.window === 'qualifiers' ? 'No qualifier rounds this season yet' : 'No 18-hole rounds in this window yet'}
+          body={data.window === 'qualifiers' ? 'Qualifier rounds appear here once they are posted as qualifying.' : 'Team stats fill in as players post countable rounds.'}
+          action={data.window !== 'season' ? <ShowSeason /> : undefined}
+        />
       ) : (
         !data.roundsError && (
           <>
             <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
-              <TeamFigures figures={data.figures} cacheError={data.cacheError} />
+              <TeamFigures figures={data.figures} cacheError={data.cacheError} covered={covered} />
             </SectionBoundary>
 
             <TeamCharts
@@ -107,10 +124,10 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
 
             <div className="ch-st-grid2">
               <SectionBoundary surface="stats.team.putting" label="Team putting" code="CH-4207">
-                <TeamPutting putting={data.putting} failed={data.puttsError} />
+                <TeamPutting putting={data.putting} failed={data.puttsError} covered={covered} />
               </SectionBoundary>
               <SectionBoundary surface="stats.team.bests" label="Season bests" code="CH-4208">
-                <SeasonBests bests={data.bests} filter={data.filter} longestError={data.longestError} />
+                <SeasonBests bests={data.bests} filter={data.filter} longestError={data.longestError} covered={covered} />
               </SectionBoundary>
             </div>
           </>
@@ -125,7 +142,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
  * contains everything it computes: a crash in one never reaches the page.
  */
 
-function TeamFigures({ figures, cacheError }: { figures: ChTeamStats['figures']; cacheError: boolean }) {
+function TeamFigures({ figures, cacheError, covered }: { figures: ChTeamStats['figures']; cacheError: boolean; covered: boolean }) {
   // A note repeated under two or more cards is said once under the row; a card's own note stays on the card.
   const counts = new Map<string, number>();
   for (const x of figures) if (x.note) counts.set(x.note, (counts.get(x.note) ?? 0) + 1);
@@ -135,8 +152,9 @@ function TeamFigures({ figures, cacheError }: { figures: ChTeamStats['figures'];
       {cacheError && (
         <RetryNotice
           code="CH-4202"
-          title="Some team figures didn't load."
+          title="Some team figures didn’t load"
           body="Scoring is correct; greens, putts and scrambling are missing. The error has been reported."
+          covered={covered}
         />
       )}
       <FigureCards
@@ -168,8 +186,8 @@ function TeamFigures({ figures, cacheError }: { figures: ChTeamStats['figures'];
   );
 }
 
-function TeamPutting({ putting, failed }: { putting: ChTeamStats['putting']; failed: boolean }) {
-  if (failed) return <RetryNotice code="CH-4203" title="Team putting didn't load." body="Try again; the error has been reported." />;
+function TeamPutting({ putting, failed, covered }: { putting: ChTeamStats['putting']; failed: boolean; covered: boolean }) {
+  if (failed) return <RetryNotice code="CH-4203" title="Team putting didn’t load" body="Try again; the error has been reported." covered={covered} />;
   if (!putting)
     return (
       <div className="ch-st-card">
@@ -185,7 +203,7 @@ function TeamPutting({ putting, failed }: { putting: ChTeamStats['putting']; fai
   );
 }
 
-function SeasonBests({ bests, filter, longestError }: { bests: ChTeamStats['bests']; filter: ChFilter; longestError: boolean }) {
+function SeasonBests({ bests, filter, longestError, covered }: { bests: ChTeamStats['bests']; filter: ChFilter; longestError: boolean; covered: boolean }) {
   const filtered = isFiltered(filter);
   return (
     <section className="ch-st-card">
@@ -215,7 +233,7 @@ function SeasonBests({ bests, filter, longestError }: { bests: ChTeamStats['best
         ))
       )}
       {/* A best that could not be read is said so, not left out: the line would read as "nobody holed a long putt" (CH-4211). */}
-      {longestError && <RetryNotice code="CH-4211" title="The longest putt didn't load." body="The other bests are right. Try again; the error has been reported." />}
+      {longestError && <RetryNotice code="CH-4211" title="The longest putt didn’t load" body="The other bests are right. Try again; the error has been reported." covered={covered} />}
     </section>
   );
 }

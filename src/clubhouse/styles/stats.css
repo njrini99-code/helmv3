@@ -3591,9 +3591,12 @@ a.ch-lg__r:focus-visible {
     margin-inline: -12px;
     padding: 10px 12px;
     border-radius: var(--ch-radius-md);
+    transition: background var(--ch-dur-press) var(--ch-ease);
   }
+  /* The tint waits a beat after the finger lands, so a scroll that starts on a row never flashes it (CH-1606). */
   .ch-stm .ch-stm-row:active {
     background: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
   }
   .ch-stm .ch-stm-row:focus-visible {
     outline: 2px solid var(--ch-border-focus);
@@ -3618,6 +3621,21 @@ a.ch-lg__r:focus-visible {
   .ch-stm .ch-spm-more {
     align-self: flex-start;
     margin-left: -16px;
+    border-radius: var(--ch-radius-md);
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  /* All N rounds and the Message key answer a press as a ghost button and a key do: a tint, and the shrink every
+     button takes (`data-ch-press`, CH-1606). */
+  .ch-stm .ch-spm-more:active {
+    background: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
+  }
+  .ch-stm .ch-spm-head__msg {
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-stm .ch-spm-head__msg:active {
+    background: var(--ch-green-50);
+    transition-delay: var(--ch-dur-press-delay);
   }
   .ch-stm .ch-spm-dev li + li {
     border-top: 0;
@@ -3686,6 +3704,17 @@ a.ch-lg__r:focus-visible {
   }
   .ch-stm .ch-gd.is-phone .ch-gx-rule + .ch-gm-how {
     padding: 0;
+  }
+  /* "How this is measured" opens like a row: the tap area runs 12px past its words and a press tints it (CH-1606). */
+  .ch-stm .ch-gd.is-phone .ch-gm-how > summary {
+    margin-inline: -12px;
+    padding-inline: 12px;
+    border-radius: var(--ch-radius-md);
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-stm .ch-gd.is-phone .ch-gm-how > summary:active {
+    background: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
   }
   .ch-stm .ch-gd.is-phone .ch-gm__body {
     gap: 0;

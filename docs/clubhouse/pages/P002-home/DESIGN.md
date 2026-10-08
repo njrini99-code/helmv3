@@ -53,15 +53,15 @@ Coach desktop: header (date, greeting, brief, two actions); one sheet holding th
 
 ### Reused Clubhouse primitives
 
-`Avatar`, `Badge`, `Button`, `IconButton`, `Icon`, `Modal` (a sheet on the phone), `EmptyState` (section and page, D-71), `Skeleton`, `RefreshNotice` (on `InlineNotice`), `SectionBoundary`, `Segmented`, `ScoreMark`, `ScrollRegion`, `FormLine`, `Nine`, `usePhoneHero` (the shell's phone chrome), `useChPhone`, `useChReducedMotion`, `useNow`, `chSwap`. Home also imports the event type label and icon from Calendar's screens (`calendar/model`, `calendar/views`) and the handicap format from Roster's (`roster/format`).
+`Avatar`, `Badge`, `Button`, `IconButton`, `Icon`, `Modal` (a sheet on the phone), `EmptyState` (section and page, D-71), `Skeleton`, `RefreshNotice` (on `InlineNotice`) and `PageRefreshNotice` (CH-1209: two or more failed reads told once under the head with one Try again, each failed part's notice `covered`, its title alone; the parts are named by `coachFailedParts` / `playerFailedParts` in `model.ts`, from the same flags that draw each part's notice), `SectionBoundary`, `Segmented`, `ScoreMark`, `ScrollRegion`, `FormLine`, `Nine`, `usePhoneHero` (the shell's phone chrome), `useChPhone`, `useChReducedMotion`, `useNow`, `chSwap`. Home also imports the event type label and icon from Calendar's screens (`calendar/model`, `calendar/views`) and the handicap format from Roster's (`roster/format`).
 
 ### New Clubhouse components
 
-Coach: `CoachHome` (with `HomeFirstRun` and `CoachHomeNoTeam`), `HomeActions`, `Week`, `LatestRound`, `Leaderboard`, `HomeSkeleton`, and the phone's `HomePhone` with `UpNext`, `NoEvents`, `Today`, `Form`, `WeekStrip`, `Rounds` and `RoundSheet`. Player: `PlayerHome` (with `DeskNext`, `PlayerFirstRun` and `PlayerHomeNoTeam`), `PlayerHomePhone` (with its paged `Latest`), `PlayerGame` (`Scoring`, `ScoreChart`, `Legs`, `Leg`, `Spark`) and `Countdown`. `Week`, `LatestRound` (with a `mine` mode), and the phone's `UpNext`, `Today` and `WeekStrip` are shared by both roles.
+Coach: `CoachHome` (with `HomeFirstRun` and `CoachHomeNoTeam`), `HomeActions`, `Week`, `LatestRound`, `Leaderboard`, `HomeSkeleton` (shared by both roles; its phone hero is `SkeletonPhoneHero`, drawn in the reader's own shape from the shell's role), and the phone's `HomePhone` with `UpNext`, `NoEvents`, `Today`, `Form`, `WeekStrip`, `Rounds` and `RoundSheet`. Player: `PlayerHome` (with `DeskNext`, `PlayerFirstRun` and `PlayerHomeNoTeam`), `PlayerHomePhone` (with its paged `Latest`), `PlayerGame` (`Scoring`, `ScoreChart`, `Legs`, `Leg`, `Spark`) and `Countdown`. `Week`, `LatestRound` (with a `mine` mode), and the phone's `UpNext`, `Today` and `WeekStrip` are shared by both roles.
 
 ### Modified Clubhouse components
 
-`ui/Nine` became the shared phone scorecard nine (Qualifiers moved onto it); the page empty state (D-71) and `usePhoneHero` are the foundation's. Nothing else outside `screens/home` changed for this page.
+`ui/Nine` became the shared phone scorecard nine (Qualifiers moved onto it); the page empty state (D-71) and `usePhoneHero` are the foundation's. Nothing else outside `screens/home` changed for this page. `Week`, `LatestRound`, `Leaderboard` and `PlayerGame` take `covered` for the page notice; the first-run pages (`HomeFirstRun`, `PlayerFirstRun`) open under the loaded page's framed head on desktop (`main[data-canopy]`, the head `data-canopy-head`, held where the loaded Home sets its date and greeting) and under the Ledger's page intro on the phone (`ch-h-main--first`).
 
 ## Actions affected
 

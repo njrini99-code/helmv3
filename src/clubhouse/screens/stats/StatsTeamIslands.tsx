@@ -1,7 +1,7 @@
 'use client';
 
 import { useHeroTone } from '../../ui/PageHero';
-import { Download, TrendingDown, TrendingUp } from 'lucide-react';
+import { CalendarRange, Download, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { createContext, useContext, useEffect, useMemo, useState, useTransition, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
@@ -12,7 +12,7 @@ import { basisWords, clearFilters, filterFor, isFiltered, isWindowChange, hasRan
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
-import { InlineNotice } from '../../ui/Notices';
+import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Icon } from '../../ui/Icon';
 import { Segmented } from '../../ui/Segmented';
 import { Swap } from '../../ui/Swap';
@@ -143,8 +143,9 @@ export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; 
 /** The empty window's way out. */
 export function ShowSeason() {
   const go = useGoWindow();
+  // The page empty's one primary action (CH-4301, CH-4302).
   return (
-    <Button size="sm" onClick={() => go('season')}>
+    <Button variant="primary" leftIcon={CalendarRange} onClick={() => go('season')}>
       Show the season
     </Button>
   );
@@ -162,10 +163,12 @@ export function TeamFilterEmpty() {
   return <FilterEmpty code="CH-4313" onClear={() => go(clearFilters(filter))} />;
 }
 
-/** A failed read's notice; Try again re-runs the server render. */
-export function RetryNotice({ code, title, body }: { code: string; title: string; body: string }) {
-  const router = useRouter();
-  return <InlineNotice code={code} title={title} body={body} onRetry={() => router.refresh()} />;
+/**
+ * A failed read's notice; Try again re-runs the server render and says so while it runs. `covered`: the page's notice
+ * (CH-1209) carries the one Try again, so this keeps only its title.
+ */
+export function RetryNotice({ code, title, body, covered = false }: { code: string; title: string; body: string; covered?: boolean }) {
+  return <RefreshNotice code={code} title={title} body={body} covered={covered} />;
 }
 
 /** The trend, the leg cards and the grid: one island, because they share the focused player and the chosen leg. */
