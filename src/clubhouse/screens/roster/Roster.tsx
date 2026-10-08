@@ -516,9 +516,10 @@ function RosterList({
             >
               <span className="ch-rs-face__top">
                 <span />
-                {/* CH-3802: the status is a word; the dot is decoration (kept: owner 2026-10-08, P003-A3). CH-3602: on
-                    desktop the cell takes the Ledger tint on hover and a deeper one on press; the phone's card lifts. */}
-                <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />
+                {/* CH-3802: the status is a word; the dot is decoration, drawn only under All where it tells players
+                    apart (P003-A3: under Active or Inactive every dot is the same). CH-3602: on desktop the cell takes
+                    the Ledger tint on hover and a deeper one on press; the phone's card lifts. */}
+                {show === 'all' && <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />}
                 <span className="ch-sr-only">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
               </span>
               <span className="ch-rs-face__av">

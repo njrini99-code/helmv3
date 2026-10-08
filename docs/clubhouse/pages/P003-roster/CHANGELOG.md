@@ -14,7 +14,8 @@ Approved by the owner on 2026-10-08 (P003-A1, A3, C1; findings #1 to #17).
   hidden h1.
 - **Less chrome (A3).** The seven-coin initials stack above the title is gone on
   desktop, and the phone loses the double rule above the kicker, which is no
-  longer tracked (#9). The status dots stay (owner).
+  longer tracked (#9). The status dot shows only under All, where it tells
+  players apart (owner); under Active or Inactive every dot was the same.
 - **The ledger in the light (A1).** The faces' hairlines carry a 1px rim of the
   shell's light on their sun-facing side, and the open player's ring catches a
   gilt crescent on the lit side. The peek's leading hairline takes the rim too.
