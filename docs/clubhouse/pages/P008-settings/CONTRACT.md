@@ -285,7 +285,7 @@ Settings is rendered on the server for each request and has no realtime. After a
 
 Status: DEFINED
 
-Settings' own motion (81601 to 81608) on the v2 tokens (D-64), and the shell's press, sheets and toasts (11601 to 11612). Animations off in Preferences makes every Clubhouse transition instant (81608).
+Settings' own motion (81601 to 81608) on the v2 tokens (D-64), and the shell's press on keys, sheets and toasts (11601 to 11613); a section in the rail and a link row deepen their tint on press instead of scaling (81607). Animations off in Preferences makes every Clubhouse transition instant (81608).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

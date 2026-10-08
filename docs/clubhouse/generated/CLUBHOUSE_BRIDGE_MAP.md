@@ -100,19 +100,19 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | P001 | 3 | 1 | 1 | 5 |  | 11 | 4 | 3 | 1 |  |  |  | 1 | 2 |  | 13 | 7 | 14 | 1 | 1 | 1 | 3 | 1 | 1 |  | 74 |
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
-| P003 | 2 | 1 | 3 | 8 | 2 | 18 | 1 | 6 | 1 |  | 1 | 3 | 1 | 3 |  | 2 | 4 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 68 |
+| P003 | 2 | 1 | 3 | 8 | 2 | 18 | 1 | 6 | 1 |  | 1 | 3 | 1 | 3 |  | 3 | 4 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 69 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 2 | 2 | 22 | 2 | 18 | 3 | 6 | 1 |  |  | 2 |  | 1 | 1 | 4 | 3 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 85 |
-| P006 | 4 | 5 | 3 | 9 | 4 | 27 | 1 | 8 | 1 | 2 | 4 | 3 | 2 | 2 | 1 | 3 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 91 |
-| P007 | 2 | 10 | 1 | 9 | 5 | 35 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 4 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 94 |
+| P006 | 4 | 5 | 3 | 9 | 4 | 27 | 1 | 8 | 1 | 2 | 4 | 3 | 2 | 2 | 1 | 5 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 93 |
+| P007 | 2 | 10 | 1 | 9 | 5 | 35 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 5 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 95 |
 | P008 | 2 | 1 | 3 | 5 | 15 | 40 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 8 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 127 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 33 | 4 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 2 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 132 |
 | P010 | 2 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 89 |
 | P011 | 14 | 11 |  | 16 | 10 | 37 | 13 | 5 | 2 |  | 20 | 2 | 1 | 4 | 3 | 4 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 169 |
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 80 |
 | P013 | 7 | 12 |  | 29 | 1 | 36 | 22 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 156 |
-| P014 | 1 | 3 | 4 | 6 | 10 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 2 | 3 | 5 | 1 | 1 |  |  |  |  |  | 62 |
-| P015 |  | 1 | 1 | 3 | 2 | 12 | 1 | 2 | 1 |  |  | 1 |  | 1 |  | 6 | 5 | 5 | 2 | 1 | 1 |  | 1 |  |  | 46 |
+| P014 | 1 | 3 | 4 | 6 | 10 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 3 | 3 | 5 | 1 | 1 |  |  |  |  |  | 63 |
+| P015 |  | 2 | 1 | 3 | 4 | 14 | 4 | 2 | 1 |  |  | 1 |  | 1 |  | 12 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 63 |
 
 ## P001 Shell
 
@@ -155,7 +155,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 11603 | CH-1603 | 16 Micro animation | `OPENING_THE_BELL_OR_ANY_MENU` | implemented | Opening the bell or any menu |
 | 11604 | CH-1604 | 16 Micro animation | `A_TOAST_ARRIVES_OR_LEAVES` | implemented | A toast arrives or leaves |
 | 11605 | CH-1605 | 16 Micro animation | `GOING_OFFLINE_OR_BACK_ONLINE` | implemented | Going offline or back online |
-| 11606 | CH-1606 | 16 Micro animation | `PRESSING_ANY_BUTTON_ROW_OR_TAB` | implemented | Pressing any button, row, tab or link |
+| 11606 | CH-1606 | 16 Micro animation | `PRESSING_ANY_BUTTON_ROW_OR_TAB` | implemented | Pressing a key (a `.ch-btn`, or anything marked `data-ch-press`, up to 240px wide) |
 | 11607 | CH-1607 | 16 Micro animation | `THE_FIRST_TAB_ON_A_PAGE` | implemented | The first Tab on a page |
 | 11608 | CH-1608 | 16 Micro animation | `ANIMATIONS_OFF_IN_SETTINGS_OR_THE_OS` | implemented | Animations off in Settings, or the OS asks for reduced motion |
 | 11609 | CH-1609 | 16 Micro animation | `A_PAGE_OR_SECTION_IS_LOADING` | implemented | A page or section is loading |
@@ -242,7 +242,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 21401 | CH-2402 | 14 Retry / recovery | `TRY_AGAIN_WAS_PRESSED_ON_A_SECTION` | reserved | Try again was pressed on a section |
 | 21402 |  | 14 Retry / recovery | `TRY_AGAIN_ASKS_THE_SERVER_AGAIN` | implemented | Try again on a section that did not load asks the server for the whole page again (router.refresh) and, offline, says so and asks nothing; a section that crashed only draws itself again and does not ask the server. |
 | 21601 | CH-2601 | 16 Micro animation | `PAGING_THE_LATEST_ROUND` | implemented | Paging the latest round |
-| 21602 | CH-2602 | 16 Micro animation | `HOVERING_OR_PRESSING_A_LEADERBOARD_ROW` | reserved | Hovering or pressing a leaderboard row |
+| 21602 | CH-2602 | 16 Micro animation | `HOVERING_OR_PRESSING_A_LEADERBOARD_ROW` | implemented | Hovering or pressing a leaderboard row |
 | 21701 | CH-2701 | 17 Haptic | `PAGING_THE_LATEST_ROUND_2` | reserved | Paging the latest round |
 | 21702 | CH-2702 | 17 Haptic | `NEW_EVENT` | reserved | New event (button or the N key) |
 | 21703 |  | 17 Haptic | `TAPS_FOLLOW_THE_GRAMMAR` | implemented | Home's taps follow the haptic grammar: a selection tick for paging the latest round, opening a round's card, choosing a quick event type and choosing the Scoring window, the light tap for New event (button or N), Add event and, on the phone, Message coach, and nothing for Message team; Home makes no change, so none of its own controls fires a success or error haptic. |
@@ -314,6 +314,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 31403 |  | 14 Retry / recovery | `TOAST_RETRY_FINISHES_THE_JOB` | implemented | The Retry on a failed-change toast completes the change on screen as well as on the server: a retried removal removes the player and closes the dialog, a retried approval or decline keeps the request off the list, and a retried note save marks the note saved. |
 | 31601 | CH-3601 | 16 Micro animation | `OPENING_OR_SWITCHING_A_PLAYER` | implemented | Opening or switching a player |
 | 31602 | CH-3602 | 16 Micro animation | `HOVERING_OR_PRESSING_A_FACE_CARD_OR` | implemented | Hovering or pressing a face card or row |
+| 31603 | CH-3603 | 16 Micro animation | `SWITCHING_BETWEEN_TEAM_VIEW_AND_LIST_VIEW` | implemented | Switching between Team view and List view |
 | 31701 | CH-3701 | 17 Haptic | `OPENING_A_PLAYER_CHANGING_A_FILTER_LAYOUT` | implemented | Opening a player; changing a filter, layout or sort |
 | 31702 | CH-3702 | 17 Haptic | `AN_EXPORT_LANDS` | implemented | An export lands |
 | 31703 | CH-3703 | 17 Haptic | `THE_CODE_OR_LINK_IS_COPIED` | implemented | The code or link is copied |
@@ -380,8 +381,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 40901 |  | 09 Success | `EXPORT_LANDED` | implemented | Export downloads the player grid as a CSV named for the team and window (for example varsity-stats-season.csv), one row per player with a round in the window, and a toast says Team stats exported with the success haptic; with nothing to export there is no button. |
 | 41201 |  | 12 State preservation | `CHOICES_KEPT_ACROSS_WINDOWS` | implemented | Changing the window keeps the chosen leg and the focused player on the page while the new figures arrive. |
 | 41401 |  | 14 Retry / recovery | `TRY_AGAIN_REFRESHES_THE_PAGE` | implemented | Try again on a failed-read notice (team rounds, round figures, putting) asks the server for the whole page again (router.refresh), so every read is retried, not one section's. |
-| 41601 | CH-4601 | 16 Micro animation | `FOCUSING_A_PLAYER_ON_THE_TREND` | reserved | Focusing a player on the trend |
-| 41602 | CH-4602 | 16 Micro animation | `CHOOSING_A_LEG` | reserved | Choosing a leg |
+| 41601 | CH-4601 | 16 Micro animation | `FOCUSING_A_PLAYER_ON_THE_TREND` | implemented | Focusing a player on the trend |
+| 41602 | CH-4602 | 16 Micro animation | `CHOOSING_A_LEG` | implemented | Choosing a leg |
 | 41603 | CH-4603 | 16 Micro animation | `CHANGING_THE_TRENDS_MEASURE` | implemented | Changing the trend's measure |
 | 41604 | CH-4604 | 16 Micro animation | `A_NEW_WINDOWS_FIGURES_ARRIVE` | implemented | A new window's figures arrive |
 | 41701 | CH-4701 | 17 Haptic | `CHOOSING_A_LEG_FOCUSING_A_PLAYER_CHANGING` | reserved | Choosing a leg, focusing a player, changing the window or lens |
@@ -469,7 +470,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 51401 |  | 14 Retry / recovery | `TRY_AGAIN_REFRESHES_THE_PAGE` | implemented | Try again on a failed-read notice (rounds, shot detail, development items) asks the server for the whole page again (router.refresh), so every read is retried, not one tab's. |
 | 51501 |  | 15 Data freshness / sync | `PAGE_READ_AGAIN_AFTER_A_PROPOSAL` | implemented | After a focus area is proposed the page is read again (router.refresh), so Development lists it as proposed without a reload. |
 | 51601 | CH-5601 | 16 Micro animation | `CHANGING_TABS` | implemented | Changing tabs |
-| 51602 | CH-5602 | 16 Micro animation | `OPENING_ADD_FOCUS_AREA` | reserved | Opening Add focus area |
+| 51602 | CH-5602 | 16 Micro animation | `OPENING_ADD_FOCUS_AREA` | implemented | Opening Add focus area |
 | 51603 | CH-5603 | 16 Micro animation | `THE_TABS_PANEL_SWAPS` | implemented | The tab's panel swaps |
 | 51604 | CH-5604 | 16 Micro animation | `A_NEW_WINDOWS_FIGURES_ARRIVE` | implemented | A new window's figures arrive |
 | 51701 | CH-5701 | 17 Haptic | `CHANGING_TABS_THE_WINDOW_OR_PAGING_PLAYERS` | reserved | Changing tabs, the window, or paging players; choosing a Game detail leg |
@@ -573,6 +574,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 61601 | CH-6601 | 16 Micro animation | `HOVERING_OR_SELECTING_AN_EVENT` | implemented | Hovering or selecting an event |
 | 61602 | CH-6602 | 16 Micro animation | `DRAGGING_THE_TIME_BAND_IN_FIND_A` | implemented | Dragging the time band in Find a time |
 | 61603 | CH-6603 | 16 Micro animation | `THE_CURRENT_TIME` | implemented | The current time |
+| 61604 | CH-6604 | 16 Micro animation | `SWITCHING_BETWEEN_DAY_WEEK_MONTH_AND_AGENDA` | implemented | Switching between Day, Week, Month and Agenda (Day, Month and List on the phone) |
+| 61605 | CH-6605 | 16 Micro animation | `STEPPING_TO_ANOTHER_DAY_WEEK_OR_MONTH` | implemented | Stepping to another day, week or month (the arrows, the arrow keys, Today or a date) |
 | 61701 | CH-6701 | 17 Haptic | `OPENING_AN_EVENT_A_DAY_OR_A` | implemented | Opening an event, a day or a panel item; changing view, week or players; each Find a time step |
 | 61702 | CH-6702 | 17 Haptic | `A_FORM_WITH_A_PROBLEM_OR_CLOSING` | implemented | A form with a problem, or closing the editor with changes |
 | 61703 | CH-6703 | 17 Haptic | `A_LINK_IS_COPIED` | implemented | A link is copied |
@@ -670,6 +673,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 71602 | CH-7602 | 16 Micro animation | `SOMEONE_IS_TYPING` | implemented | Someone is typing |
 | 71603 | CH-7603 | 16 Micro animation | `OPENING_DETAILS_OR_A_REACTION_BAR` | implemented | Opening details or a reaction bar |
 | 71604 | CH-7604 | 16 Micro animation | `A_LONG_PRESS_ON_A_MESSAGE` | implemented | A long press on a message (phone) |
+| 71605 | CH-7605 | 16 Micro animation | `OPENING_ANOTHER_CONVERSATION_OR_ANNOUNCEMENT` | implemented | Opening another conversation or announcement (desktop) |
 | 71701 | CH-7701 | 17 Haptic | `A_CHANGE_FAILS` | implemented | A change fails |
 | 71702 | CH-7702 | 17 Haptic | `A_CHANGE_LANDS` | implemented | A change lands (edited, deleted, muted, group created; acknowledging uses the success pattern) |
 | 71703 | CH-7703 | 17 Haptic | `PICKING_A_REACTION_A_FILTER_OR_A` | implemented | Picking a reaction, a filter or a conversation |
@@ -930,8 +934,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 91401 |  | 14 Retry / recovery | `RETRY_FINISHES_THE_JOB` | implemented | The error toast's Retry runs the same write again with the same arguments, and when it lands everything a landed write does follows: the status changes, the question closes, and the page opens the qualifier or reads again. |
 | 91402 |  | 14 Retry / recovery | `TRY_AGAIN_REREADS_THE_PAGE` | implemented | Try again on a section that did not load has the server read the whole page again (router.refresh), except the course picker, which re-reads only its own list, and the edit form's round courses, which offer none so a re-read cannot drop the coach's changes. |
 | 91501 |  | 15 Data freshness / sync | `WRITES_RE_READ_THE_PAGE` | implemented | A landed close, reopen, save, start selecting, save a pick, remove a pick or confirm has the server read the page again so it shows the server's state (a create opens the new qualifier instead), and a write that fails re-reads nothing. |
-| 91601 | CH-09601 | 16 Micro animation | `PRESSING_A_CARD_THE_HERO_OR_A` | reserved | Pressing a card, the hero or a status pill |
-| 91602 | CH-09602 | 16 Micro animation | `OPENING_A_LEADERBOARD_ROW` | reserved | Opening a leaderboard row |
+| 91601 | CH-09601 | 16 Micro animation | `PRESSING_A_CARD_THE_HERO_OR_A` | implemented | Pressing a card, the hero or a status pill |
+| 91602 | CH-09602 | 16 Micro animation | `OPENING_A_LEADERBOARD_ROW` | implemented | Opening a leaderboard row |
 | 91701 | CH-09701 | 17 Haptic | `A_STATUS_PILL_A_LEADERBOARD_ROW_A` | reserved | A status pill, a leaderboard row, a player checkbox, a course, a tee, or a player in the pick dialog |
 | 91702 | CH-09702 | 17 Haptic | `CLOSE_QUALIFIER_DISCARD` | reserved | Close qualifier, Discard |
 | 91703 | CH-09703 | 17 Haptic | `START_SELECTING_CONFIRM_SQUAD_REMOVE_A_PICK` | reserved | Start selecting, Confirm squad, Remove a pick |
@@ -1190,7 +1194,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 111501 |  | 15 Data freshness / sync | `TOTALS_AND_SEASON_MATCH_HOME_AND_STATS` | implemented | A round's total is the canonical one (withCanonicalRoundTotal: front plus back over a stale stored total), in the library and in the review. The season figures and the ribbon come from countable 18-hole rounds since August 1, the rule Home and Stats use, so the numbers agree across screens; the window and the sample are stated in the words ("Since August 1", "18-hole", "Not counted"). |
 | 111502 |  | 15 Data freshness / sync | `REVIEW_SHOWS_ONLY_WHAT_WAS_RECORDED` | implemented | The review never invents a figure: a nine with a hole not scored has no total ("—") rather than a short one, a par 3 never counts a fairway whatever was stored, a hole scored without shots says so (CH-11306), a round posted as a total says so (CH-11305), and the recap and the notes are drawn only when they were written. |
 | 111503 |  | 15 Data freshness / sync | `A_STALE_TEE_READ_IS_IGNORED` | implemented | A slow read for a course the player has left never replaces the next course's tees: the picker keeps only the latest answer of each read. |
-| 111601 | CH-11601 | 16 Micro animation | `HOVERING_A_ROUND_THAT_OPENS_ITS_REVIEW` | reserved | Hovering a round that opens its review |
+| 111601 | CH-11601 | 16 Micro animation | `HOVERING_A_ROUND_THAT_OPENS_ITS_REVIEW` | implemented | Hovering a round that opens its review |
 | 111602 | CH-11602 | 16 Micro animation | `THE_SHOT_LOG_OPENS` | implemented | The shot log opens |
 | 111603 | CH-11603 | 16 Micro animation | `SUBMITTING_THE_ROUND` | implemented | Submitting the round |
 | 111604 | CH-11604 | 16 Micro animation | `STEPPING_THROUGH_A_ROUNDS_HOLES` | implemented | Stepping through a round's holes |
@@ -1436,7 +1440,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 131503 | CH-13905 | 15 Data freshness / sync | `A_CARD_SAYS_WHEN_ITS_READ_WAS` | implemented | A card says when its read was made |
 | 131504 | CH-13906 | 15 Data freshness / sync | `COACH_THE_TOP_READ_IS_OUT_OF` | implemented | Coach: the top read is out of date |
 | 131601 | CH-13601 | 16 Micro animation | `AN_INSIGHT_IS_ASSIGNED_OR_DISMISSED` | implemented | An insight is assigned or dismissed, or a proposed focus area is answered |
-| 131602 | CH-13602 | 16 Micro animation | `HOVERING_AN_INSIGHT_ROW_OR_A_PLAYER` | reserved | Hovering an insight row or a player |
+| 131602 | CH-13602 | 16 Micro animation | `HOVERING_AN_INSIGHT_ROW_OR_A_PLAYER` | implemented | Hovering an insight row or a player |
 | 131603 | CH-13620 | 16 Micro animation | `ASK_HIDE_CHATS` | implemented | Ask: Hide chats |
 | 131604 | CH-13621 | 16 Micro animation | `ASK_THE_PHONE_DRAWER_IS_DRAGGED` | implemented | Ask: The phone drawer is dragged |
 | 131701 | CH-13701 | 17 Haptic | `A_PLAYER_OR_AN_INSIGHT_ROW_IS` | implemented | A player or an insight row is picked |
@@ -1524,6 +1528,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 141501 | CH-14912 | 15 Data freshness / sync | `THE_SERVER_SENDS_A_FRESH_LIST` | implemented | The server sends a fresh list (after a write, or Try again) |
 | 141601 | CH-14601 | 16 Micro animation | `HOVERING_OR_PRESSING_A_STAGE_IN_THE` | implemented | Hovering or pressing a stage in the pipeline |
 | 141602 | CH-14602 | 16 Micro animation | `A_PROSPECT_OPENS_ON_THE_PHONE` | implemented | A prospect opens on the phone |
+| 141603 | CH-14603 | 16 Micro animation | `PICKING_A_STAGE_IN_THE_PIPELINE_OR` | implemented | Picking a stage in the pipeline, or letting it go |
 | 141701 | CH-14701 | 17 Haptic | `A_STAGE_IS_PICKED_AS_THE_FILTER` | implemented | A stage is picked, as the filter or as a prospect's stage; a row is opened; a sort is chosen |
 | 141702 | CH-14702 | 17 Haptic | `DELETE_PROSPECT_IS_TAPPED` | implemented | Delete prospect is tapped |
 | 141703 | CH-14703 | 17 Haptic | `STORAGE_TURNS_A_FILE_DOWN` | implemented | Storage turns a file down (CH-14107, CH-14108) |
@@ -1540,12 +1545,15 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | Bridge ID | Code | Category | Name | Status | Meaning |
 | --- | --- | --- | --- | --- | --- |
 | 150201 | CH-15401 | 02 Initial loading / skeleton | `THE_WELCOME_IS_READING_WHO_YOU_ARE` | implemented | The welcome is reading who you are and what is new |
+| 150202 | CH-15420 | 02 Initial loading / skeleton | `RESET_PASSWORD_A_LINK_IS_BEING_ASKED` | implemented | Reset password: a link is being asked for |
 | 150301 | CH-15402 | 03 Background loading / refresh | `A_SIGN_IN_IS_IN_FLIGHT` | implemented | A sign-in is in flight (and stays so while it navigates away) |
 | 150401 | CH-15301 | 04 Empty | `THERE_IS_AN_EARLIER_VISIT_AND_NOTHING` | implemented | There is an earlier visit and nothing new since |
 | 150402 | CH-15302 | 04 Empty | `NO_EARLIER_VISIT_ON_RECORD` | implemented | No earlier visit on record |
 | 150403 | CH-15303 | 04 Empty | `THE_NAME_COULD_NOT_BE_READ_OR` | implemented | The name could not be read, or sanitises to nothing |
 | 150501 | CH-15101 | 05 Validation | `SUBMITTED_WITH_AN_EMPTY_EMAIL_OR_PASSWORD` | implemented | Submitted with an empty email or password (the button is off until both are filled, so this is the belt and braces for a pre-hydration submit) |
 | 150502 | CH-15110 | 05 Validation | `SIGN_UP_THE_TEAM_CODE_MATCHES_NO` | implemented | Sign up: the team code matches no team (or the gate is throttled, which the server reports the same way on purpose, Q-99) |
+| 150503 | CH-15120 | 05 Validation | `RESET_PASSWORD_SEND_WITH_NO_ADDRESS` | implemented | Reset password: Send with no address |
+| 150504 | CH-15121 | 05 Validation | `RESET_PASSWORD_AN_ADDRESS_THAT_IS_NOT` | implemented | Reset password: an address that is not one |
 | 150601 | CH-15001 | 06 Server / system error | `THE_SERVER_REFUSES_THE_CREDENTIALS` | implemented | The server refuses the credentials ("Invalid login credentials") |
 | 150602 | CH-15002 | 06 Server / system error | `THE_EMAIL_IS_NOT_CONFIRMED` | implemented | The email is not confirmed |
 | 150603 | CH-15003 | 06 Server / system error | `TOO_MANY_SIGN_IN_ATTEMPTS` | implemented | Too many sign-in attempts |
@@ -1558,7 +1566,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 150610 | CH-15013 | 06 Server / system error | `ONBOARDING_THE_PHOTO_DID_NOT_UPLOAD_OR` | implemented | Onboarding: the photo did not upload, or the profile did not save |
 | 150611 | CH-15014 | 06 Server / system error | `REQUEST_ACCESS_COULD_NOT_BE_SENT` | implemented | Request access could not be sent |
 | 150612 | CH-15201 | 06 Server / system error | `THE_WELCOMES_NOTIFICATIONS_READ_FAILS` | implemented | The welcome's notifications read fails |
+| 150613 | CH-15020 | 06 Server / system error | `RESET_PASSWORD_THE_SERVER_REFUSES_THE_REQUEST` | implemented | Reset password: the server refuses the request in its own words |
+| 150614 | CH-15021 | 06 Server / system error | `RESET_PASSWORD_ANYTHING_ELSE_THROWS` | implemented | Reset password: anything else throws (the request never reached the server) |
 | 150701 | CH-15004 | 07 Network / offline | `THE_SERVER_CANNOT_BE_REACHED` | implemented | The server cannot be reached |
+| 150702 | CH-15920 | 07 Network / offline | `FORGOT_PASSWORD_IS_CLICKED` | implemented | "Forgot password?" is clicked |
+| 150703 | CH-15921 | 07 Network / offline | `A_RESET_LINK_IS_ASKED_FOR_AND_2` | implemented | A reset link is asked for and the server accepts (its answer is the same whether or not the address has an account) |
+| 150704 | CH-15922 | 07 Network / offline | `BACK_TO_SIGN_IN` | implemented | Back to sign in ("Remember it? Sign in", Back to sign in, or the browser's Back) |
 | 150801 | CH-15902 | 08 Permission / authorization | `WHERE_A_SIGN_IN_GOES` | implemented | Where a sign-in goes |
 | 150802 | CH-15903 | 08 Permission / authorization | `THE_WELCOME_IS_OPENED_WITH_A_SESSION` | implemented | The welcome is opened with a session the auth server has ruled invalid |
 | 150901 | CH-15904 | 09 Success | `GOLF_LOGIN_MESSAGE_NAMES_A_NOTICE` | implemented | `/golf/login?message=` names a notice |
@@ -1570,16 +1583,25 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 151604 | CH-15604 | 16 Micro animation | `CONTINUE_IS_PRESSED` | implemented | Continue is pressed (or Return) |
 | 151605 | CH-15605 | 16 Micro animation | `REDUCED_MOTION_OR_SETTINGS_PREFERENCES_ANIMATIONS_OFF` | implemented | Reduced motion, or Settings > Preferences > Animations off |
 | 151606 | CH-15606 | 16 Micro animation | `THE_TAB_IS_HIDDEN` | implemented | The tab is hidden |
+| 151607 | CH-15607 | 16 Micro animation | `THE_SIGN_IN_KEY_CHANGES_STATE_OFF` | implemented | The Sign in key changes state: off (a field is empty), ready, in flight |
+| 151608 | CH-15608 | 16 Micro animation | `A_REFUSAL_APPEARS_OR_THE_NEXT_ONE` | implemented | A refusal appears, or the next one replaces it |
+| 151609 | CH-15609 | 16 Micro animation | `A_REFUSAL_IS_ABOUT_THE_FIELDS` | implemented | A refusal is about the fields (the credentials, an empty field, or the reset form's address) |
+| 151610 | CH-15610 | 16 Micro animation | `THE_PASSWORD_EYE_IS_PRESSED` | implemented | The password eye is pressed |
+| 151611 | CH-15611 | 16 Micro animation | `THE_HOME_LINK_IS_HOVERED_OR_PRESSED` | implemented | The Home link is hovered or pressed |
+| 151612 | CH-15612 | 16 Micro animation | `THE_PANEL_MOVES_BETWEEN_SIGN_IN_THE` | implemented | The panel moves between sign in, the reset form and check your email |
 | 151701 | CH-15701 | 17 Haptic | `SIGN_IN_IS_TAPPED` | implemented | Sign in is tapped |
 | 151702 | CH-15702 | 17 Haptic | `A_SIGN_IN_LANDS` | implemented | A sign-in lands |
-| 151703 | CH-15703 | 17 Haptic | `A_WARNING_TONED_REFUSAL` | implemented | A warning-toned refusal (an empty field, an unverified email, a rate limit) |
-| 151704 | CH-15704 | 17 Haptic | `A_DANGER_TONED_REFUSAL` | implemented | A danger-toned refusal (the credentials, the network, a stale bundle, anything unexpected) |
+| 151703 | CH-15703 | 17 Haptic | `A_WARNING_TONED_REFUSAL` | implemented | A warning-toned refusal (an empty field, an unverified email, a rate limit; the reset form's missing or malformed address) |
+| 151704 | CH-15704 | 17 Haptic | `A_DANGER_TONED_REFUSAL` | implemented | A danger-toned refusal (the credentials, the network, a stale bundle, anything unexpected; a reset request that fails) |
 | 151705 | CH-15705 | 17 Haptic | `CONTINUE_ON_THE_WELCOME` | implemented | Continue on the welcome |
+| 151706 | CH-15720 | 17 Haptic | `SEND_RESET_LINK_IS_TAPPED` | implemented | Send reset link is tapped |
+| 151707 | CH-15721 | 17 Haptic | `A_RESET_LINK_IS_ASKED_FOR_AND` | implemented | A reset link is asked for and the server accepts |
 | 151801 | CH-15801 | 18 Accessibility | `A_SKIP_LINK_IS_THE_FIRST_TAB` | implemented | A skip link is the first Tab stop and lands on the form |
 | 151802 | CH-15802 | 18 Accessibility | `A_REFUSED_SIGN_IN_IS_READ_OUT` | implemented | A refused sign-in is read out as it appears (`role="alert"` for danger and warning) and focus moves to the first invalid field; both fields name the notice in `aria-describedby` |
 | 151803 | CH-15803 | 18 Accessibility | `THE_WELCOME_ANNOUNCES_ITS_SENTENCE_ONCE_WHEN` | implemented | The welcome announces its sentence once, when it is final ("Good morning, Coach Reyes."): `role="status"`, `aria-live="polite"`, atomic; the `h1` holds the same words |
 | 151804 | CH-15804 | 18 Accessibility | `THE_PAINTED_COURSE_THE_TAGLINE_AND_THE` | implemented | The painted course, the tagline and the marks over it are decorative and hidden from assistive technology |
 | 151805 | CH-15805 | 18 Accessibility | `THE_PASSWORD_EYE_IS_A_NAMED_PRESSED` | implemented | The password eye is a named, pressed-state button with a hit area past 44px; every other control is at least 44px on the phone |
+| 151806 | CH-15820 | 18 Accessibility | `THE_PANELS_VIEW_CHANGES` | implemented | The panel's view changes |
 | 151901 | CH-15905 | 19 Responsive layout | `THE_APP_STORE_BUILD` | implemented | The App Store build |
 | 151902 | CH-15909 | 19 Responsive layout | `THE_WINDOW_IS_820PX_WIDE_OR_LESS` | implemented | The window is 820px wide or less (a phone) |
 | 152001 | CH-15910 | 20 Keyboard / input | `THE_KEYBOARD` | implemented | The keyboard |

@@ -5,7 +5,8 @@ import type { Transition } from 'framer-motion';
  * mirrored from the tokens:
  *   press 110ms, quick 180ms (hover, toggles, the tab underline), base 260ms
  *   (sheets, panels, pushes, crossfades), release 280ms on the spring,
- *   reveal 520ms (a single deliberate rise; the routine staggered page reveal was retired 2026-10-01).
+ *   reveal 520ms (the sign-in handoff curtain lifting, lib/handoff.ts; the staggered first-paint reveal ended on
+ *   2026-10-01, so a page is visible at once under the page crossfade).
  *   Curves: ease-out (.22,1,.36,1), in-out (.65,0,.35,1), spring (.34,1.3,.64,1).
  * Banned: count-ups and staggers.
  */

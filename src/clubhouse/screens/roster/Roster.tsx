@@ -17,6 +17,7 @@ import { Modal } from '../../ui/Modal';
 import { PillGroup, Segmented } from '../../ui/Segmented';
 import { SearchField } from '../../ui/SearchField';
 import { SectionBoundary } from '../../ui/SectionBoundary';
+import { Swap } from '../../ui/Swap';
 import { useToast } from '../../ui/Toast';
 import { useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
@@ -59,6 +60,9 @@ export function Roster({ data }: { data: ChRoster }) {
   const [show, setShow] = useChSessionState<Show>('show', 'active');
   const [sort, setSort] = useChSessionState<Sort>('sort', 'avg');
   const [view, setView] = useChSessionState<View>('view', 'faces');
+  // Counts the coach's own layout changes: the cards and the table swap with motion on those (CH-3603), never when the
+  // kept layout comes back as the page opens.
+  const [viewTurn, setViewTurn] = useState(0);
   const [sel, setSel] = useState<string | null>(null);
   const [invite, setInvite] = useState(false);
   const [removing, setRemoving] = useState<ChRosterPlayer | null>(null);
@@ -93,6 +97,7 @@ export function Roster({ data }: { data: ChRoster }) {
     // setView is useChSessionState's useState setter (stable), so this still runs once.
   }, [setView]);
   const changeView = (v: View) => {
+    if (v !== view) setViewTurn((n) => n + 1);
     setView(v);
     try {
       localStorage.setItem(VIEW_KEY, v);
@@ -404,19 +409,23 @@ export function Roster({ data }: { data: ChRoster }) {
 
           <div className={'ch-rs-body' + (cur ? ' has-peek' : '')}>
             <SectionBoundary surface="roster.list" label="The roster" code="CH-3205">
-              <RosterList
-                rows={rows}
-                view={view}
-                sel={sel}
-                q={q}
-                show={show}
-                select={select}
-                menuFor={menuFor}
-                onShowEveryone={() => {
-                  setQ('');
-                  setShow('all');
-                }}
-              />
+              {/* CH-3603: Team view and List view settle in as the toggle moves (base in, quick out); instant with
+                  reduced motion. */}
+              <Swap swapKey={viewTurn}>
+                <RosterList
+                  rows={rows}
+                  view={view}
+                  sel={sel}
+                  q={q}
+                  show={show}
+                  select={select}
+                  menuFor={menuFor}
+                  onShowEveryone={() => {
+                    setQ('');
+                    setShow('all');
+                  }}
+                />
+              </Swap>
             </SectionBoundary>
             <SectionBoundary surface="roster.peek" label="The player panel" code="CH-3206">
               <RosterPeek p={cur} notesLocked={data.notesError} onClose={() => setSel(null)} onNoteSaved={noteSaved} />
@@ -485,7 +494,8 @@ function RosterList({
             >
               <span className="ch-rs-face__top">
                 <span />
-                {/* CH-3802: the status is a word; the dot is decoration. CH-3602: the card lifts on hover and presses in. */}
+                {/* CH-3802: the status is a word; the dot is decoration. CH-3602: on desktop the cell takes the Ledger tint on
+                    hover and a deeper one on press; the phone's card lifts. */}
                 <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />
                 <span className="ch-sr-only">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
               </span>

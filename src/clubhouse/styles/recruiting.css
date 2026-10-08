@@ -841,6 +841,12 @@
     flex-direction: column;
     gap: 12px;
   }
+  /* The list's swap (CH-14603) keeps the page's rhythm between the count and the list. */
+  .ch-recm-page > .ch-swap .ch-swap__body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
   /* The display serif, as every phone page's title. */
   .ch-recm-title {
     margin: 2px 0 0;
@@ -1616,6 +1622,11 @@
   }
   .ch-rec[data-canopy] .ch-rec-tb tbody tr.is-on .ch-rec-tb__name::before {
     background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+  }
+  /* A press deepens the row's tint over the press beat (the shell's CH-1606: a row never scales). */
+  .ch-rec[data-canopy] .ch-rec-tb tbody tr .ch-rec-tb__name:active::before {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
   }
   .ch-rec[data-canopy] .ch-rec-skel-row {
     padding: 0;

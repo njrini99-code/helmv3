@@ -86,7 +86,8 @@
   box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
   cursor: pointer;
   touch-action: manipulation;
-  transition: box-shadow var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+  transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease),
+    transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-qf-pill span {
   font-variant-numeric: tabular-nums;
@@ -96,6 +97,10 @@
   .ch-qf-pill:hover {
     box-shadow: inset 0 0 0 1px var(--ch-border-strong);
   }
+}
+.ch-qf-pill:active {
+  background: var(--ch-bg-subtle);
+  transition-duration: var(--ch-dur-press);
 }
 .ch-qf-pill[aria-pressed='true'] {
   background: var(--ch-bg-selected);
@@ -133,7 +138,8 @@
   color: inherit;
   text-decoration: none;
   cursor: pointer;
-  transition: box-shadow var(--ch-dur-base) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+  transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-base) var(--ch-ease),
+    transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-qf-hero {
   display: grid;
@@ -338,6 +344,11 @@
   .ch-qf-grid.is-ledger .ch-qf-card:hover {
     background: rgb(28 25 18 / 0.035);
   }
+}
+/* CH-09601: a pressed row deepens to the row press tint over the press beat; it never scales. */
+.ch-qf-grid.is-ledger .ch-qf-card:active {
+  background: var(--ch-ledger-row-press);
+  transition-duration: var(--ch-dur-press);
 }
 .ch-qf-grid.is-ledger .ch-qf-card__h p {
   -webkit-line-clamp: 1;
@@ -619,6 +630,13 @@
 .ch-qf-picker__row {
   transition: transform var(--ch-dur-quick) var(--ch-ease);
 }
+/* CH-09602: the scorecards button's chevron turns over base as its row opens, and back as it closes. */
+.ch-qf-open svg {
+  transition: transform var(--ch-dur-base) var(--ch-ease);
+}
+.ch-qf-open[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
 .ch-qf-rowbtn {
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease);
@@ -705,6 +723,17 @@
   padding: 14px 16px;
   border-radius: 0 0 10px 10px;
   background: var(--ch-green-25);
+}
+/* CH-09602: the tray opens with its row (no height animation); what is in it drops 6px into place as it fades in, over
+   base, at its final values. Closing takes it away at once. */
+.ch-qf-tray > * {
+  animation: ch-qf-tray-in var(--ch-dur-base) var(--ch-ease);
+}
+@keyframes ch-qf-tray-in {
+  from {
+    opacity: 0;
+    translate: 0 -6px;
+  }
 }
 .ch-qf-tray__avg {
   font: var(--ch-type-caption);
@@ -1449,6 +1478,11 @@
     border-radius: 16px;
     background: var(--ch-sheet-bg);
   }
+  /* CH-09601: the pressed live card darkens its face over the press beat; it never scales. */
+  .ch-qf-hero:active {
+    background: var(--ch-bg-subtle);
+    transition-duration: var(--ch-dur-press);
+  }
   .ch-qf-card__h p {
     display: none;
   }
@@ -1798,6 +1832,7 @@
     position: relative;
     padding: 18px 12px;
     border-radius: var(--ch-radius-md);
+    transition: background var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card + .ch-qf-card {
     box-shadow: none;
@@ -1816,6 +1851,16 @@
     .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card:hover {
       background: var(--ch-ledger-row-hover);
     }
+  }
+  /* CH-09601: a press deepens a row's tint, and the live qualifier's title deepens to forest, over the press beat.
+     Nothing scales (the shell's CH-1606). */
+  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card:active {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
+  }
+  .ch-qf--list[data-canopy] .ch-qf-hero:active h2 {
+    color: var(--ch-green-800);
+    transition-duration: var(--ch-dur-press);
   }
   /* A player's row keeps its link at the right of the first line; their standing runs under the row. */
   .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-cta {
@@ -1906,6 +1951,10 @@
     .ch-qf[data-canopy] .ch-qf-rowbtn:hover:not(.is-open) {
       background: var(--ch-ledger-row-hover);
     }
+  }
+  .ch-qf[data-canopy] .ch-qf-rowbtn:active {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
   }
   .ch-qf[data-canopy] .ch-qf-cap {
     padding: 14px 0 0;

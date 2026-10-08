@@ -918,6 +918,11 @@ p.ch-hd-none {
       background: color-mix(in oklab, var(--ch-green-600) 9%, transparent);
     }
   }
+  /* A press deepens a row's tint over the press beat (the shell's CH-1606: a row never scales). */
+  main[data-canopy] .ch-hd-it:active {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
+  }
 
   /* The open read: its head is the Board's ruled category line; its parts on soft rules; the plan as rows, as the
      rounds are. */
@@ -931,6 +936,10 @@ p.ch-hd-none {
     main[data-canopy] .ch-hd-r.is-link:hover {
       background: var(--ch-ledger-row-hover);
     }
+  }
+  main[data-canopy] .ch-hd-r.is-link:active {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
   }
   main[data-canopy] .ch-hd-plan {
     gap: 0;
@@ -946,6 +955,10 @@ p.ch-hd-none {
     main[data-canopy] .ch-hd-plan__i.is-link:hover {
       background: var(--ch-ledger-row-hover);
     }
+  }
+  main[data-canopy] .ch-hd-plan__i.is-link:active {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
   }
 
   /* Loading holds the loaded sections (WebKit 1440, 2026-10-07: what CoachHelm has found 156px) and draws each head's

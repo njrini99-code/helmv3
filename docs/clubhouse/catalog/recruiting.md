@@ -97,7 +97,8 @@ A stage is saved the moment it is picked. The prospect moves at once and goes ba
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-14601 | Hovering or pressing a stage in the pipeline | The stage's ring lifts 1px on hover and takes a second ring while it is the filter (quick). With reduced motion it changes without moving | `.ch-rec-pipe__dot`, `--ch-dur-quick` | preview |
-| CH-14602 | A prospect opens on the phone | The screen slides in from the right over the list and back out on pop (base); with reduced motion it fades | `PhoneScreen` | preview |
+| CH-14602 | A prospect opens on the phone | The screen slides in from the right over the list and back out on pop (base); with reduced motion it settles at once | `PhoneScreen` | preview |
+| CH-14603 | Picking a stage in the pipeline, or letting it go | The list settles in with a 6px rise (260ms) while the old one fades out (180ms), hidden from assistive tech. Typing a search doesn't animate, and nor does the kept stage coming back as the page opens. Instant with reduced motion | `Swap` keyed on `stageTurn` in `RecruitingDesktop` and `RecruitingPhone` | recruiting.test › CH-14603; preview (the timing) |
 
 ## 147xx Haptics
 

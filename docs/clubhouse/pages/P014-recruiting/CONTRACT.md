@@ -233,12 +233,13 @@ The server's list is the page's source: after a write, or Try again, the server 
 
 Status: DEFINED
 
-A stage in the pipeline lifts its ring 1px on hover and takes a second ring while it is the filter, in the quick duration (141601, CH-14601). A prospect opens on the phone by sliding in over the list and back out on pop, in the base duration, and fades with reduced motion (141602, CH-14602). Every tappable presses in about 6px and springs back through the shell's press (11606); the first paint rises once (11607); animations off remove all of it (11608). This page's own CSS uses only the v2 tokens (D-64).
+A stage in the pipeline lifts its ring 1px on hover and takes a second ring while it is the filter, in the quick duration (141601, CH-14601), and picking or letting go of a stage settles the list in, never when the kept stage returns or as a search is typed (141603, CH-14603). A prospect opens on the phone by sliding in over the list and back out on pop, in the base duration, and settles at once with reduced motion (141602, CH-14602). A key presses in about 6px and springs back through the shell's press (11606), while a prospect row deepens its tint instead; there is no first-paint rise; reduced motion and Animations off remove all of it (11608). This page's own CSS uses only the v2 tokens (D-64).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 141601 | CH-14601 | `HOVERING_OR_PRESSING_A_STAGE_IN_THE` | Hovering or pressing a stage in the pipeline |
 | 141602 | CH-14602 | `A_PROSPECT_OPENS_ON_THE_PHONE` | A prospect opens on the phone |
+| 141603 | CH-14603 | `PICKING_A_STAGE_IN_THE_PIPELINE_OR` | Picking a stage in the pipeline, or letting it go |
 
 From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613.
 

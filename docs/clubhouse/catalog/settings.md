@@ -141,7 +141,7 @@ rail to switch). The tests for the phone are the "Settings · phone" group in `s
 | CH-8604 | A confirm opens | The dialog rises and fades in (260ms) | `Modal` | preview |
 | CH-8605 | A toast appears or leaves | Slides up 10px and fades in; stacks reflow (260ms) | `ToastProvider` | preview |
 | CH-8606 | Moving a CoachHelm priority | The moved row glows green briefly (260ms). On the phone the row lifts (green tint, shadow) while it is held and follows the finger | `ch-set-moved` keyframes; `.is-held` in `phone/Reorder.tsx` | preview |
-| CH-8607 | Pressing a section or button | It shrinks about 6px (110ms) and springs back (280ms) (the shell's CH-1606) | `useChPress` | preview |
+| CH-8607 | Pressing a section or button | A button shrinks about 6px (110ms) and springs back (280ms) (the shell's CH-1606); a section in the rail and a link row deepen their tint instead (110ms), never a scale | `useChPress`; `.ch-set-rail__i:active`, `--ch-ledger-row-press` | preview |
 | CH-8608 | Animations turned off in Preferences | Every Clubhouse transition becomes instant | `data-motion="off"` + `useChReducedMotion` | settings.test › CH-8608 |
 
 ## 87xx Haptics (iOS app only; off when Haptics is off)

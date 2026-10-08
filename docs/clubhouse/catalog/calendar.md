@@ -106,9 +106,11 @@ file is optimistic with Undo, and refuses offline the same way.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-6601 | Hovering or selecting an event | It lifts and takes a green ring (180ms); pressing shrinks about 6px (110ms) and springs back (280ms) | `calendar.css` | preview |
+| CH-6601 | Hovering or selecting an event | On hover it lifts on a soft shadow and comes to the front (180ms); selected, it takes a green ring (180ms). A press doesn't scale it: the ring is the answer (the shell's CH-1606) | `calendar.css` | preview |
 | CH-6602 | Dragging the time band in Find a time | The band follows in 15-minute steps; the overlapped lanes turn amber as it passes | `FindTime` | preview |
 | CH-6603 | The current time | A green line with the time moves down the grid | `ch-wk__now` | preview |
+| CH-6604 | Switching between Day, Week, Month and Agenda (Day, Month and List on the phone) | The new view settles in with a 6px rise (260ms) while the old one fades out (180ms), hidden from assistive tech. Instant with reduced motion | `Swap` in `Calendar` and `CalendarPhone` | calendar.test › CH-6605 CH-6604; preview (the timing) |
+| CH-6605 | Stepping to another day, week or month (the arrows, the arrow keys, Today or a date) | The grid slides 12px the way it went (260ms in, 180ms out): a later period from the right, an earlier one from the left. Instant with reduced motion | `Swap kind="slide"` in `Calendar` | calendar.test › CH-6605 CH-6604; preview (the timing) |
 
 ## 67xx Haptics
 

@@ -142,7 +142,7 @@ None. Dismiss is undoable, so it doesn't ask: the notice (CH-13901) keeps Undo i
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-13601 | An insight is assigned or dismissed, or a proposed focus area is answered | The Assigned chip, the dismissed notice or the Started or Declined chip (CH-13902) rises in (base). With reduced motion or Animations off it appears at once | `.ch-hl-done`, `.ch-hl-dis`, `ch-hl-rise` | coachhelm.test › CH-13601 |
-| CH-13602 | Hovering an insight row or a player | The row tints (quick) | `.ch-hl-row:hover`, `.ch-hl-pl:hover` | preview |
+| CH-13602 | Hovering an insight row or a player | On desktop the row takes the Ledger row tint (quick) and a press deepens it (press), never a scale | `.ch-hl-row`, `.ch-hl-pl`, `--ch-ledger-row-press` | preview |
 | CH-13620 | Ask: Hide chats | The panel folds away (inert) and Show chats and New chat move into the header; Show chats brings it back | `History` | coachhelm-ask.test › CH-13620 |
 | CH-13621 | Ask: The phone drawer is dragged | A drag left past 80px closes it; a nudge of a few pixels leaves it open | `History` | coachhelm-ask.test › CH-13621 |
 

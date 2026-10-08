@@ -1,5 +1,10 @@
 # P008 — Settings: changelog
 
+## 2026-10-07 — Sections press with a tint
+
+A section in the rail and a link row now deepen their tint over the press beat (`--ch-ledger-row-press`); buttons
+keep the shell's 6px press. CH-8607 says so instead of claiming every control shrinks.
+
 ## 2026-10-07 — The Ledger: sections on the canvas
 
 On desktop each settings card is now a section on the framed canvas, in the

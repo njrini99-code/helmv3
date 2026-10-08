@@ -1,5 +1,11 @@
 # P007 — Messages: changelog
 
+## 2026-10-07 — Another conversation settles in
+
+On desktop, opening another conversation or announcement settles it in with a 6px rise (base) while the last fades
+out (quick), hidden from assistive tech; each keeps its own scroll and a thread still opens at its end (CH-7605). The
+first one a visit opens appears at once. Instant with reduced motion. New test: messages.test › CH-7605.
+
 ## 2026-10-07 — One continuous conversation rail
 
 The inbox rail is no longer three boxed cards (Announcements, Today, This week).

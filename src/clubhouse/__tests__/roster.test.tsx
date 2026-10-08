@@ -932,6 +932,21 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     expect(errors).toEqual([]);
   });
 
+  it('CH-3603 the kept layout comes back in place; only the coach’s own toggle swaps it, the old layout leaving the accessibility tree at once', async () => {
+    const user = userEvent.setup();
+    const leaving = () => document.querySelector('.ch-rs-body .ch-swap__body[aria-hidden]');
+    localStorage.setItem('ch-roster-view', 'list');
+    wrap(roster());
+    expect(await screen.findByRole('table', { name: 'Roster' })).toBeTruthy();
+    // Restoring the kept layout draws it in place: nothing is left fading behind it.
+    expect(leaving()).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Team view' }));
+    // The table fades out behind the cards (jsdom never finishes the fade), hidden from assistive tech while it does.
+    expect(leaving()?.querySelector('[role="table"]')).not.toBeNull();
+    expect(screen.queryByRole('table', { name: 'Roster' })).toBeNull();
+    expect(screen.getAllByRole('button', { name: new RegExp(theo.name) }).length).toBeGreaterThan(0);
+  });
+
   it('31203 a saved note reads back: close the player and open them again, and the new text is there', async () => {
     const user = userEvent.setup();
     actions.intent.mockResolvedValue({ ok: true });

@@ -219,6 +219,24 @@
   text-align: center;
 }
 
+/* CH-7605: the thread pane's swap (ui/Swap) fills the grid cell at every level, so the thread keeps its own
+   scrolling column while one conversation settles in over the last. */
+.ch-ms-pane {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+}
+.ch-ms-pane > .ch-swap__item {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+}
+.ch-ms-pane > .ch-swap__item > .ch-swap__body {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+}
+
 /* Thread */
 .ch-ms-thread {
   display: flex;
@@ -863,11 +881,17 @@
   .ch-ms-thread {
     display: none;
   }
+  .ch-ms-pane {
+    display: none;
+  }
   .ch-ms.has-open .ch-ms-rail {
     display: none;
   }
   .ch-ms.has-open .ch-ms-thread {
     display: flex;
+  }
+  .ch-ms.has-open .ch-ms-pane {
+    display: grid;
   }
   .ch-ms-back {
     display: inline-flex;

@@ -45,10 +45,11 @@ const ICON: Record<ChSettingsSection, LucideIcon> = {
  * a grouped list that pushes to each section (phone/SettingsPhone, owner
  * design docs/clubhouse/phone/settings.md), over the same data and writes.
  *
- * Feedback it shares with the shell: toasts slide and fade (CH-8605, ToastProvider), every control presses in
- * (CH-8607, useChPress), a primary button taps lightly (CH-8706, Button's default feel), a Save changes that lands
- * gives the success pattern and a failed save the error pattern (CH-8702, CH-8703, useAction and the instant saves in
- * parts.tsx), and Animations off makes every transition instant (CH-8608, data-motion and useChReducedMotion).
+ * Feedback it shares with the shell: toasts slide and fade (CH-8605, ToastProvider), a button presses in (useChPress)
+ * while a section or a link row deepens its tint instead (CH-8607), a primary button taps lightly (CH-8706, Button's
+ * default feel), a Save changes that lands gives the success pattern and a failed save the error pattern (CH-8702,
+ * CH-8703, useAction and the instant saves in parts.tsx), and Animations off makes every transition instant (CH-8608,
+ * data-motion and useChReducedMotion).
  */
 export function SettingsView({
   data: served,

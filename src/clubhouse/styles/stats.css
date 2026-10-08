@@ -554,13 +554,33 @@
 .ch-sgt__end b {
   font: 600 13px/1 var(--ch-font-sans);
 }
+/* CH-4601: a player in focus turns green and comes forward while the others fade back, all over quick. Their line is
+   drawn again over the others (.ch-sgt__front), fading in, and the pointer meets each line along a wider band. */
 .ch-sgt__line {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
-  cursor: pointer;
+  pointer-events: none;
   transition: stroke var(--ch-dur-quick) var(--ch-ease), stroke-width var(--ch-dur-quick) var(--ch-ease),
     stroke-opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-sgt__front {
+  pointer-events: none;
+  animation: ch-sgt-front var(--ch-dur-quick) var(--ch-ease);
+}
+@keyframes ch-sgt-front {
+  from {
+    opacity: 0;
+  }
+}
+.ch-sgt__hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 12px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: stroke;
+  cursor: pointer;
 }
 /* Two classes, so the base reset (`.ch-root p`) doesn't take the margin. */
 .ch-sgt .ch-note {
@@ -678,6 +698,11 @@ a.ch-lg__r {
   a.ch-lg__r:hover {
     background: var(--ch-ivory-50);
   }
+}
+/* A press deepens the row's tint over the press beat (the shell's CH-1606: a row never scales). */
+a.ch-lg__r:active {
+  background: var(--ch-ledger-row-press);
+  transition-duration: var(--ch-dur-press);
 }
 /* Inside the grid's scroller an outset ring would be clipped. */
 a.ch-lg__r:focus-visible {

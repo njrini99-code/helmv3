@@ -270,13 +270,15 @@ Status: DEFINED
 
 Status: DEFINED
 
-Calendar's own motion (61601 to 61603): an event lifts and takes a ring, the Find a time band follows the pointer in 15-minute steps, and the now line moves down the grid. The shell's: v2 press, reveal, sheets and pushes (11601 to 11612, D-64). All three are checked in the browser preview and none has a test.
+Calendar's own motion (61601 to 61605): an event lifts on a soft shadow and takes a ring when selected, the Find a time band follows the pointer in 15-minute steps, the now line moves down the grid, another view settles in (Day, Week, Month and Agenda; Day, Month and List on the phone), and another day, week or month slides the way it went; an agenda row deepens its tint on press. The shell's: the page crossfade, the press on keys, sheets and pushes (11601 to 11613, D-64); there is no first-paint rise. All five are checked in the browser preview; calendar.test also forces the view and period swaps (CH-6604, CH-6605).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 61601 | CH-6601 | `HOVERING_OR_SELECTING_AN_EVENT` | Hovering or selecting an event |
 | 61602 | CH-6602 | `DRAGGING_THE_TIME_BAND_IN_FIND_A` | Dragging the time band in Find a time |
 | 61603 | CH-6603 | `THE_CURRENT_TIME` | The current time |
+| 61604 | CH-6604 | `SWITCHING_BETWEEN_DAY_WEEK_MONTH_AND_AGENDA` | Switching between Day, Week, Month and Agenda (Day, Month and List on the phone) |
+| 61605 | CH-6605 | `STEPPING_TO_ANOTHER_DAY_WEEK_OR_MONTH` | Stepping to another day, week or month (the arrows, the arrow keys, Today or a date) |
 
 From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613.
 

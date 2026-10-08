@@ -136,6 +136,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7602 | Someone is typing | Three dots pulse under the last message | `.ch-ms-typing` | preview |
 | CH-7603 | Opening details or a reaction bar | It opens from its button (180ms) | `CH_POP` | preview |
 | CH-7604 | A long press on a message (phone) | The message sheet rises (260ms), retaining selected text and its actual timestamp: six reactions, Reply, Copy, and Edit and Delete on your own. Screens push and pop as the shell's CH-1610 | `PhoneThread`, `Modal` | messages.test › CH-7804 (the sheet and its actions); preview (the rise) |
+| CH-7605 | Opening another conversation or announcement (desktop) | The new one settles in with a 6px rise (260ms) while the last fades out (180ms), hidden from assistive tech; each keeps its own scroll and a thread opens at its end. The first one a visit opens (the newest thread, or a link's) appears at once. Instant with reduced motion | `Swap` keyed on the pane's turn in `MessagesDesktop` | messages.test › CH-7605; preview (the timing) |
 
 ## 77xx Haptics
 

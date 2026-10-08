@@ -290,7 +290,7 @@ Nothing refreshes in the background: the page is as fresh as its last read (1315
 
 Status: DEFINED
 
-The Assigned chip and the dismissed notice rise in once (CH-13601), still with reduced motion or Animations off; hovering a row or a player tints it (CH-13602, preview only). Everything else is the shell's (D-64).
+The Assigned chip and the dismissed notice rise in once, and appear at once with reduced motion or Animations off (CH-13601); on desktop hovering a row or a player takes the Ledger row tint and a press deepens it (CH-13602, preview only). Everything else is the shell's (D-64).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

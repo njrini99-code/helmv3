@@ -390,7 +390,8 @@ function Meter({ label, value, pct, muted }: { label: string; value: string; pct
 
 /**
  * One round in the book (rounds-flow.jsx `rf-sc`): date, course and tee, Out · In · Tot, the three meters, to par.
- * CH-11801: one link (or one group) named for the round. CH-11702: opening it is a selection tap.
+ * CH-11801: one link (or one group) named for the round. CH-11702: opening it is a selection tap. CH-11601: on the
+ * desktop Ledger a round that opens its review takes the row tint on hover (quick) and a deeper one on press, no lift.
  */
 export function RoundRow({ r, href, onOpen }: { r: ChLibraryRound; href: string | null; /** Called as the review opens (the library notes it, so the review's Back is a step back). */ onOpen?: () => void }) {
   const under = r.toPar != null && r.toPar < 0;

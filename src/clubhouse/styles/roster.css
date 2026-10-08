@@ -250,7 +250,7 @@
     box-shadow: var(--ch-elevation-reading-hover);
   }
 }
-/* Pressing drops the hover lift; the shrink is the shell's press (D-64), so it isn't doubled here. */
+/* Pressing drops the hover lift. A card never scales: the shell's press is for keys (lib/press.ts, CH-1606). */
 .ch-rs-face:not(.ch-rs-face--static):active {
   transform: translateY(0);
 }
@@ -1582,8 +1582,10 @@
       background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
     }
   }
+  /* CH-3602: a press deepens the tint over the press beat (the row press tint). */
   .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):active {
-    background: color-mix(in oklab, var(--ch-green-600) 11%, transparent);
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
   }
   .ch-rs[data-canopy] .ch-rs-face:focus-visible {
     outline-offset: -3px;
@@ -1647,6 +1649,11 @@
       border-bottom-color: var(--ch-ledger-rule-soft);
       background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
     }
+  }
+  /* Pressing a player's name deepens the row's tint over the press beat; the row menu's key presses on its own. */
+  .ch-rs[data-canopy] .ch-rs-row:has(.ch-rs-who:active) {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
   }
 
   /* The open player: a column beside the players, divided by a hairline, its sections under rules. */

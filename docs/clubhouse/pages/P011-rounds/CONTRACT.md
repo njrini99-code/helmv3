@@ -365,8 +365,8 @@ zone (America/New_York for a player with no team).
 Status: DEFINED
 
 Rounds adds a little motion of its own, all on the v2 tokens (D-64): a round in the book takes the Ledger row tint on hover on
-desktop, with no lift (CH-11601, preview only; owner Ledger, 2026-10-07), the shot log's chevron turns (CH-11602) and the submit spinner turns and holds still with reduced motion
-(CH-11603); a hole's shots slide in the direction of travel when stepping holes (CH-11604). Presses, sheets and skeleton fades are the shell's. Nothing counts up.
+desktop and a deeper one on press, with no lift (CH-11601, preview only; owner Ledger, 2026-10-07), the shot log's chevron turns (CH-11602) and the submit spinner turns and holds still with reduced motion
+(CH-11603); a hole's shots slide in the direction of travel when stepping holes (CH-11604). Key presses, sheets and skeleton fades are the shell's. Nothing counts up.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

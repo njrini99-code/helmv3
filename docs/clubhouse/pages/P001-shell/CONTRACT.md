@@ -195,7 +195,7 @@ v2 motion (D-64) for every page: the route reveal, the More sheet, menus and the
 | 11603 | CH-1603 | `OPENING_THE_BELL_OR_ANY_MENU` | Opening the bell or any menu |
 | 11604 | CH-1604 | `A_TOAST_ARRIVES_OR_LEAVES` | A toast arrives or leaves |
 | 11605 | CH-1605 | `GOING_OFFLINE_OR_BACK_ONLINE` | Going offline or back online |
-| 11606 | CH-1606 | `PRESSING_ANY_BUTTON_ROW_OR_TAB` | Pressing any button, row, tab or link |
+| 11606 | CH-1606 | `PRESSING_ANY_BUTTON_ROW_OR_TAB` | Pressing a key (a `.ch-btn`, or anything marked `data-ch-press`, up to 240px wide) |
 | 11607 | CH-1607 | `THE_FIRST_TAB_ON_A_PAGE` | The first Tab on a page |
 | 11608 | CH-1608 | `ANIMATIONS_OFF_IN_SETTINGS_OR_THE_OS` | Animations off in Settings, or the OS asks for reduced motion |
 | 11609 | CH-1609 | `A_PAGE_OR_SECTION_IS_LOADING` | A page or section is loading |

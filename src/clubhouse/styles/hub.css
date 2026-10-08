@@ -721,6 +721,7 @@
   color: inherit;
   text-align: left;
   cursor: pointer;
+  transition: background var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-hb-file__open:hover {
@@ -1421,6 +1422,11 @@
     .ch-hb[data-canopy] .ch-hb-file__open:hover {
       background: var(--ch-ledger-row-hover);
     }
+  }
+  /* A press deepens a file row's tint over the press beat (the shell's CH-1606: a row never scales). */
+  .ch-hb[data-canopy] .ch-hb-file__open:active {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
   }
 
   /* The route skeleton lays its bars flush, as the loaded sections are, and its tab strip is as tall as the tabs. */

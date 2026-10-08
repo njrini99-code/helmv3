@@ -1,5 +1,13 @@
 # P002 — Home: changelog
 
+## 2026-10-07 — A leaderboard row answers the press
+
+On desktop a leaderboard row keeps its Ledger tint and sliding chevron on hover, and a press now deepens the tint
+(`--ch-ledger-row-press`) and nudges the chevron 2px on over the press beat, easing back over quick. Before, the
+press tint was masked by the hover rule. The row never lifts or scales; CH-2602 now says so and is referenced in
+`Leaderboard.tsx`. CH-2601's reduced-motion wording is corrected: paging is instant, not a fade. Frame-sampled in
+WebKit at 1440 (tint 180ms, chevron 260ms).
+
 ## 2026-10-07 — Home on the Ledger
 
 On desktop, the week and the latest round no longer share a lit sheet. They sit

@@ -605,7 +605,8 @@
     box-shadow var(--ch-dur-quick) var(--ch-ease),
     transform var(--ch-dur-quick) var(--ch-ease);
 }
-/* CH-11601: a round that opens its review lifts and rings green on hover (quick). */
+/* Off the Ledger (a narrow window), a round card that opens its review lifts 1px with a deeper shadow on hover (quick);
+   on the desktop Ledger it takes the row tint instead (CH-11601, below). */
 @media (hover: hover) {
   a.ch-rd-sc:hover {
     transform: translateY(-1px);
@@ -1905,6 +1906,11 @@ a.ch-rd-sc:focus-visible {
     .ch-rd[data-canopy] a.ch-rd-sc:hover + .ch-rd-sc::before {
       opacity: 0;
     }
+  }
+  /* CH-11601: a press deepens the tint over the press beat (the shell's CH-1606: a row never scales). */
+  .ch-rd[data-canopy] a.ch-rd-sc:active {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
   }
 
   /* One column below a 860px page: the panes stack, the column rule goes. */

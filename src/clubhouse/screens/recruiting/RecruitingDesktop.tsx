@@ -7,6 +7,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { SearchField } from '../../ui/SearchField';
 import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
+import { Swap } from '../../ui/Swap';
 import { EmptyState } from '../../ui/States';
 import type { RecCtx } from './ctx';
 import { Documents } from './Documents';
@@ -70,7 +71,10 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
                       <Segmented size="sm" label="Sort prospects" value={c.sort} onChange={c.setSort} options={CH_SORTS.map((s) => ({ value: s.value, label: s.label }))} />
                     )}
                   </div>
-                  {c.rows.length === 0 ? <NoMatch query={c.query} stage={c.stage} onClear={() => c.setQuery('')} onAll={() => c.setStage(null)} /> : <ProspectTable c={c} />}
+                  {/* CH-14603: a stage picked or let go settles the list in (base in, quick out); typing a search does not. */}
+                  <Swap swapKey={c.stageTurn}>
+                    {c.rows.length === 0 ? <NoMatch query={c.query} stage={c.stage} onClear={() => c.setQuery('')} onAll={() => c.setStage(null)} /> : <ProspectTable c={c} />}
+                  </Swap>
                 </section>
               </SectionBoundary>
               <SectionBoundary surface="recruiting.panel" label="The prospect panel" code="CH-14203">

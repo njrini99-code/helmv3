@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, ChevronUp, Lock, LockOpen, Flag, Pencil, Users } from 'lucide-react';
+import { ChevronDown, Lock, LockOpen, Flag, Pencil, Users } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChQDetailCore, ChQDetailSecondary } from '../../data/qualifiers';
@@ -477,11 +477,14 @@ function Leaderboard({ data, status, stale }: { data: ChQDetailCore; status: ChQ
                           toggle(r);
                         }}
                       >
-                        <Icon icon={isOpen ? ChevronUp : ChevronDown} size={15} />
+                        {/* One chevron that turns over base (CH-09602), not two that swap. */}
+                        <Icon icon={ChevronDown} size={15} />
                       </button>
                     )}
                   </span>
                 </div>
+                {/* CH-09602: the row turns selected (quick) and its scorecards drop 6px into place as they fade in (base),
+                    at their final values; closing takes the tray away at once. */}
                 {isOpen && (
                   <div role="row" id={`ch-qf-tray-${r.playerId}`}>
                     <div role="cell" className="ch-qf-tray">

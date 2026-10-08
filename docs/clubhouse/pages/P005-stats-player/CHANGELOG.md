@@ -1,5 +1,11 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-07 — Add focus area's sheet is on the record
+
+No visible change. CH-5602 now describes the shared Modal's entrance as it runs (a 6px rise from 98% on desktop, a
+rise from the bottom edge on the phone, instant with reduced motion or Animations off) and is referenced at
+`FocusAreaSheet`.
+
 ## 2026-10-07 — Tabs answer on the press
 
 The underline and the selected tab move as soon as you press. The panel, the

@@ -97,7 +97,7 @@ its own boundary, so a crash stays inside the tab.
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-5601 | Changing tabs | The underline slides to the new tab (260ms) | `layoutId` on `.ch-tab-t__bar` | preview |
-| CH-5602 | Opening Add focus area | The sheet rises and fades in (260ms) | `Modal` | preview |
+| CH-5602 | Opening Add focus area | On desktop the sheet rises 6px and fades in from 98% (260ms); on the phone it rises from the bottom edge (260ms) and drags down to close (the shell's CH-1611). Instant with reduced motion or Animations off | `Modal` in `FocusAreaSheet` | preview |
 | CH-5604 | A new window's figures arrive | Each figure that changed crossfades to its new value with a 6px rise (base in, quick out) (the gauges move with the data). No count-up. Instant with reduced motion | `Swap inline` in `FigureCard` | preview |
 | CH-5603 | The tab's panel swaps | The underline moves on the press and the panel renders just behind it (`useDeferredValue`); the new panel fades in with a 6px rise (base) while the old one fades out (quick), hidden from assistive tech. Instant with reduced motion; never on first paint | `Swap` (`ui/Swap.tsx`) | stats-player.test › CH-5201 51402 |
 

@@ -143,8 +143,8 @@ Every save goes through `useAction`, so these belong to the shell:
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-09601 | Pressing a card, the hero or a status pill | It shrinks about 6px (110ms) and springs back (280ms) (the shell's CH-1606) | `useChPress` | preview |
-| CH-09602 | Opening a leaderboard row | The scorecards appear in place, final on mount; no count-up, no stagger. The Live dot is static (D-33) | `Leaderboard` | preview |
+| CH-09601 | Pressing a card, the hero or a status pill | A deeper tint over the press beat (110ms), easing back over 180ms; nothing scales (the shell's CH-1606). A status pill darkens, a Ledger row takes the row press tint, the desktop hero's title deepens to forest and the phone's live card darkens its face | `qualifiers.css` `:active`, `--ch-ledger-row-press` | preview |
+| CH-09602 | Opening a leaderboard row | The row turns selected (180ms), its chevron turns (260ms) and the scorecards drop 6px into place as they fade in (260ms), at their final values: no count-up, no stagger. Closing takes them away at once. The Live dot is static (D-33). On the phone a row opens the rounds sheet instead. Instant with reduced motion | `Leaderboard`, `.ch-qf-tray`, `.ch-qf-open` | preview |
 
 ## 097xx Haptics
 

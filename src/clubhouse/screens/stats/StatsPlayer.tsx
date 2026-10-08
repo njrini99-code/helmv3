@@ -643,6 +643,8 @@ function FocusAreaSheet({ open, onClose, playerId, coachId, first }: { open: boo
       router.refresh();
     }
   };
+  // CH-5602: the shared Modal's entrance: on desktop the sheet rises 6px and fades in from 98% (base), on the phone it
+  // rises from the bottom edge (base) and drags down to close (CH-1611). Instant with reduced motion or Animations off.
   return (
     <Modal
       open={open}

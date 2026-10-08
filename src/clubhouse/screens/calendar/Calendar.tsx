@@ -14,6 +14,7 @@ import { EmptyState } from '../../ui/States';
 import { SearchField } from '../../ui/SearchField';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
+import { Swap } from '../../ui/Swap';
 import { useNow } from '../../lib/use-now';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
@@ -306,6 +307,11 @@ export function Calendar({
   }, [coach, editor, cancelling, subs, busyOpen, view, anchor, insp, goToday, step]);
 
   const dates = view === 'day' ? [anchor] : weekDates(anchor);
+  // The day, week or month on show. Stepping to another slides the grid the way it went (CH-6605): a later period comes in
+  // from the right, an earlier one from the left.
+  const periodKey = view === 'week' ? weekDates(anchor)[0]! : view === 'month' ? monthKey(anchor) : view === 'day' ? anchor : 'agenda';
+  const [period, setPeriod] = useState<{ key: string; dir: 1 | -1 }>({ key: periodKey, dir: 1 });
+  if (period.key !== periodKey) setPeriod({ key: periodKey, dir: periodKey > period.key ? 1 : -1 });
   const title = viewTitle(view === 'agenda' ? 'month' : view, anchor);
   const away = view === 'day' ? anchor !== now.date : view === 'week' ? !weekDates(anchor).includes(now.date) : monthKey(anchor) !== monthKey(now.date);
   const inView = (d: string) => (view === 'day' || view === 'week' ? dates.includes(d) : monthKey(d) === monthKey(anchor));
@@ -576,37 +582,43 @@ export function Calendar({
         <div className="ch-cal-body">
           <div style={{ minWidth: 0 }}>
             <SectionBoundary surface={`calendar.${view}`} label="The calendar" code="CH-6210">
-              {(view === 'week' || view === 'day') && (
-                <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} />
-              )}
-              {view === 'month' && (
-                <MonthView
-                  anchor={anchor}
-                  events={events}
-                  now={now}
-                  selDate={anchor}
-                  onPick={(d) => {
-                    setAnchor(d);
-                    window.history.replaceState(null, '', buildUrl('month', d, data.today));
-                    const firstEv = events.filter((e) => e.date === d && e.type !== 'class').sort((a, b) => (a.start ?? -1) - (b.start ?? -1))[0];
-                    if (firstEv) open(firstEv.id, d);
-                    else if (monthKey(d) !== monthKey(anchor)) go('month', d);
-                  }}
-                />
-              )}
-              {view === 'agenda' &&
-                (events.some((e) => e.date >= now.date) || events.length ? (
-                  <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} />
-                ) : (
-                  <div className="ch-cal-surface">
-                    <EmptyState
-                      code="CH-6301"
-                      icon={CalendarDays}
-                      title={sel.length ? 'Nothing on these players’ schedules in this range.' : 'Nothing on the calendar in this range.'}
-                      body={coach ? 'Events you publish show here, with replies and overlaps.' : 'Events your coach invites you to show here.'}
+              {/* CH-6604: another view settles in (base in, quick out); CH-6605: another day, week or month slides 12px the
+                  way it went. Both instant with reduced motion. */}
+              <Swap swapKey={view}>
+                <Swap swapKey={period.key} kind="slide" dir={period.dir}>
+                  {(view === 'week' || view === 'day') && (
+                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} />
+                  )}
+                  {view === 'month' && (
+                    <MonthView
+                      anchor={anchor}
+                      events={events}
+                      now={now}
+                      selDate={anchor}
+                      onPick={(d) => {
+                        setAnchor(d);
+                        window.history.replaceState(null, '', buildUrl('month', d, data.today));
+                        const firstEv = events.filter((e) => e.date === d && e.type !== 'class').sort((a, b) => (a.start ?? -1) - (b.start ?? -1))[0];
+                        if (firstEv) open(firstEv.id, d);
+                        else if (monthKey(d) !== monthKey(anchor)) go('month', d);
+                      }}
                     />
-                  </div>
-                ))}
+                  )}
+                  {view === 'agenda' &&
+                    (events.some((e) => e.date >= now.date) || events.length ? (
+                      <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} />
+                    ) : (
+                      <div className="ch-cal-surface">
+                        <EmptyState
+                          code="CH-6301"
+                          icon={CalendarDays}
+                          title={sel.length ? 'Nothing on these players’ schedules in this range.' : 'Nothing on the calendar in this range.'}
+                          body={coach ? 'Events you publish show here, with replies and overlaps.' : 'Events your coach invites you to show here.'}
+                        />
+                      </div>
+                    ))}
+                </Swap>
+              </Swap>
             </SectionBoundary>
           </div>
           <aside className="ch-in-wrap ch-cal-surface" aria-label="Details" aria-live="polite" /* CH-6802 */>

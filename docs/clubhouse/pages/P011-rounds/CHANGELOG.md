@@ -1,5 +1,10 @@
 # P011 — Rounds: changelog
 
+## 2026-10-07 — A round row answers the press
+
+On the desktop Ledger a round that opens its review now deepens to the row press tint over the press beat, never a
+lift or a scale. CH-11601 says so and is referenced in `RoundRow`, so it is no longer reserved.
+
 ## 2026-10-07 — The rounds list takes the page head; flush panes and rows
 
 On desktop, the library opens on the framed page head and its sections sit on

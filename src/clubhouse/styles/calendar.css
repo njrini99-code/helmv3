@@ -1691,6 +1691,12 @@
     gap: 12px;
     padding: 14px 14px 24px;
   }
+  /* The view's swap (CH-6604) keeps the page's rhythm between a view's parts (the week strip, the day, its events). */
+  .ch-calm > .ch-swap .ch-swap__body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
   /* The route skeleton on a phone: its own shape, the desktop's bars out of the way. Only the skeleton: the live page
      is aria-busy while a step or a retry is on its way, and must keep its week on screen (PAGE_PERFORMANCE.md rule 4). */
   .ch-cal--skel {
@@ -2247,6 +2253,11 @@
     .ch-cal[data-canopy] .ch-ag__row:hover {
       background: var(--ch-ledger-row-hover);
     }
+  }
+  /* A press deepens an agenda row's tint over the press beat (the shell's CH-1606: a row never scales). */
+  .ch-cal[data-canopy] .ch-ag__row:active {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
   }
   .ch-cal[data-canopy] .ch-ag__now {
     padding: 0 12px;

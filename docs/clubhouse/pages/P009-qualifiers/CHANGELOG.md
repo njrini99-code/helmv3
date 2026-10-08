@@ -1,5 +1,13 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-07 — Presses answer; a row's scorecards drop into place
+
+Pressing a status pill, a card or the live hero now answers with a deeper tint over the press beat, never a scale:
+a pill darkens, a Ledger row takes the row press tint, the desktop hero's title deepens to forest and the phone's
+live card darkens its face (CH-09601). Opening a leaderboard row turns one chevron (base) instead of swapping two
+icons, and the scorecards drop 6px into place as they fade in (base) at their final values; closing is instant
+(CH-09602). A leaderboard row presses with the row press tint. The list rows' hover tint now eases (quick).
+
 ## 2026-10-07 — The Ledger: flush sections, sub-screens on the framed head
 
 On desktop the Qualifiers pages sit on the ivory canvas instead of in cards

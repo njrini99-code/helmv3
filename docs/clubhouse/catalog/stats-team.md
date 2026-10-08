@@ -84,10 +84,10 @@ component inside its own boundary, so a crash in one never reaches the page.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-4601 | Focusing a player on the trend | Their line comes forward in green, the others fade back (180ms) | `TeamTrend` | preview |
+| CH-4601 | Focusing a player on the trend | Pointing at or tabbing to a player's name or line brings their line forward in green, drawn over the others, while the others fade back (180ms); moving away returns to the chosen player, and a press chooses them (the note, the legend and the grid follow the choice). Instant with reduced motion | `TeamTrend` (`peek`, `.ch-sgt__front`, `.ch-sgt__hit`) | stats-team.test › CH-4601; preview (the timing) |
 | CH-4604 | A new window's figures arrive | As on a player's profile (CH-5604): each changed figure crossfades to its new value (the gauges move with the data). No count-up. Instant with reduced motion | `Swap inline` in `FigureCard` | preview |
 | CH-4603 | Changing the trend's measure | Strokes gained and Scoring crossfade with a 6px rise (base in, quick out); the old plot is hidden from assistive tech while it fades. Instant with reduced motion | `Swap` in `TeamTrend` | strokes-gained.test › sorted by the window’s mean |
-| CH-4602 | Choosing a leg | The card takes the green ring and the grid column highlights (180ms) | `LegTrend`, `.is-col` | preview |
+| CH-4602 | Choosing a leg | The card takes the green ring (180ms) and the grid, re-sorted by that leg, settles in with its column ringed: a 6px rise (260ms) while the old order fades out (180ms), hidden from assistive tech. Instant with reduced motion | `LegTrend`, `Swap` in `LegGrid` | stats-team.test › CH-4602; preview (the timing) |
 
 ## 47xx Haptics
 

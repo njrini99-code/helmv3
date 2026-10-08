@@ -222,7 +222,7 @@ The page is `force-dynamic` and a new visit reads afresh (going back or forward 
 
 Status: DEFINED
 
-Home's own motion is two states, both seen in the preview only: paging the latest round slides the card 12px out and the next in from that side, or fades when motion is reduced (21601), and a leaderboard row lifts on hover and shrinks on press (21602). The player's countdown ticks in place (20301). The shell's: the v2 press, the first-paint reveal, sheets and skeletons (11601 to 11612, D-64).
+Home's own motion is two states, both seen in the preview only: paging the latest round slides the card 12px out and the next in from that side, instantly when motion is reduced (21601), and on desktop a leaderboard row takes the Ledger tint on hover as its chevron slides in, and a deeper tint on press, never a lift or a scale (21602). The player's countdown ticks in place (20301). The shell's: the page crossfade, the press on keys, sheets and skeletons (11601 to 11613, D-64); there is no first-paint rise.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

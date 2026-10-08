@@ -1,5 +1,13 @@
 # P006 — Calendar: changelog
 
+## 2026-10-07 — Views settle in; weeks slide
+
+Switching Day, Week, Month and Agenda (Day, Month and List on the phone) settles the new view in with a 6px rise
+(base) while the old one fades out (quick), hidden from assistive tech (CH-6604). Stepping to another day, week or
+month slides the grid 12px the way it went (CH-6605). Both are instant with reduced motion. An agenda row presses
+with the row press tint. CH-6601 no longer claims an event shrinks on a press: it lifts on hover and rings when
+selected. New test: calendar.test › CH-6605 CH-6604.
+
 ## 2026-10-07 — The Ledger: the calendar sits flush on the canvas
 
 On desktop the week, day, month and agenda views lose their card. The grid sits

@@ -253,7 +253,7 @@ After a proposal lands the page is read again, so Development lists it as propos
 
 Status: DEFINED
 
-The profile's own motion is the tab underline, the tab panel's swap, a new window's figures and the focus-area sheet (51601, 51603, 51604, 51602), and the busy dim of a window change or paging (50302). Everything else is the shell's: v2 press, reveal, sheets and pushes (11601 to 11612, D-64).
+The profile's own motion is the tab underline, the tab panel's swap, a new window's figures and the focus-area sheet, which is the shared Modal's entrance (51601, 51603, 51604, 51602), and the busy dim of a window change or paging (50302). Everything else is the shell's: the page crossfade, the press on keys, sheets and pushes (11601 to 11613, D-64); there is no first-paint rise.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

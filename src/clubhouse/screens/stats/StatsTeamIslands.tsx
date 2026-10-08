@@ -3,7 +3,7 @@
 import { useHeroTone } from '../../ui/PageHero';
 import { Download, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
-import { createContext, useContext, useEffect, useMemo, useState, useTransition, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, useTransition, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
@@ -237,6 +237,17 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   // Players' scores read in whole strokes, as in the handoff; the team keeps its decimal.
   const fmtEnd = (v: number) => (isSg ? formatSigned(v) : v.toFixed(0));
   const sel = lines.find((l) => l.p.id === focus);
+  // CH-4601: the player the pointer or the keyboard rests on comes forward without being chosen; a press chooses them
+  // (focus, which the note, the legend and the grid follow). Their line turns green and is drawn again over the others,
+  // which fade back, all over quick.
+  const [peek, setPeek] = useState<string | null>(null);
+  const litId = peek ?? focus;
+  const lit = lines.find((l) => l.p.id === litId);
+  const litPath = lit ? gappedPath(lit.v, x, y) : null;
+  const litEnd = lit ? lastValue(lit.v) : null;
+  const point = (id: string) => (e: ReactPointerEvent) => {
+    if (e.pointerType !== 'touch') setPeek(id);
+  };
   const tFirst = firstValue(team);
   const tLast = lastValue(team);
   const tMean = isSg ? data.team.sgMean : data.team.scoreMean;
@@ -336,22 +347,39 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               ))}
               {lines.map(({ p, v }) => {
                 const d = gappedPath(v, x, y);
-                const on = p.id === focus;
+                const on = p.id === litId;
                 return d ? (
                   <path
                     key={p.id}
                     d={d}
                     className="ch-sgt__line"
                     stroke={on ? 'var(--ch-green-600)' : 'var(--ch-ink-300)'}
-                    strokeOpacity={on ? 1 : 0.45}
+                    strokeOpacity={on ? 1 : litId ? 0.2 : 0.45}
                     strokeWidth={on ? 2.25 : 1.25}
-                    onClick={() => setFocus(on ? null : p.id)}
                   />
                 ) : null;
               })}
+              {/* The player in front, drawn again over the other lines; the team's line stays on top. */}
+              {litPath && (
+                <path key={`front-${litId}`} d={litPath} className="ch-sgt__front" fill="none" stroke="var(--ch-green-600)" strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round" />
+              )}
               {teamPath && <path d={teamPath} fill="none" stroke="var(--ch-green-800)" strokeWidth={3} strokeLinecap="round" />}
               {tLast && <circle cx={x(tLast.i)} cy={y(tLast.v)} r={4.5} fill="var(--ch-ivory-25)" stroke="var(--ch-green-800)" strokeWidth={2.5} />}
-              {sel && lastValue(sel.v) && <circle cx={x(lastValue(sel.v)!.i)} cy={y(lastValue(sel.v)!.v)} r={4} fill="var(--ch-ivory-25)" stroke="var(--ch-green-600)" strokeWidth={2} />}
+              {litEnd && <circle key={`end-${litId}`} className="ch-sgt__front" cx={x(litEnd.i)} cy={y(litEnd.v)} r={4} fill="var(--ch-ivory-25)" stroke="var(--ch-green-600)" strokeWidth={2} />}
+              {/* A line is 1.25px: each takes the pointer along a wider invisible band, over everything drawn. */}
+              {lines.map(({ p, v }) => {
+                const d = gappedPath(v, x, y);
+                return d ? (
+                  <path
+                    key={`hit-${p.id}`}
+                    d={d}
+                    className="ch-sgt__hit"
+                    onPointerEnter={point(p.id)}
+                    onPointerLeave={() => setPeek(null)}
+                    onClick={() => setFocus(p.id === focus ? null : p.id)}
+                  />
+                ) : null;
+              })}
             </svg>
             <div className="ch-sgt__ends">
               <div className="ch-sgt__team">
@@ -365,6 +393,12 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                     type="button"
                     className={'ch-sgt__end' + (p.id === focus ? ' is-sel' : '')}
                     aria-pressed={p.id === focus}
+                    onPointerEnter={point(p.id)}
+                    onPointerLeave={() => setPeek(null)}
+                    onFocus={(e) => {
+                      if (focusVisible(e.currentTarget)) setPeek(p.id);
+                    }}
+                    onBlur={() => setPeek(null)}
                     onClick={() => {
                       haptic('select');
                       chTrail('stats focus player');
@@ -384,6 +418,15 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
       <p className="ch-note">{note}</p>
     </section>
   );
+}
+
+/** Focus from the keyboard (a Tab), not the focus a click leaves behind. */
+function focusVisible(el: Element): boolean {
+  try {
+    return el.matches(':focus-visible');
+  } catch {
+    return false;
+  }
 }
 
 function niceTicks(lo: number, hi: number): number[] {
@@ -464,61 +507,65 @@ function LegGrid({
       {rows.length === 0 ? (
         <EmptyState code="CH-4305" compact title="No player rounds in this window." />
       ) : (
-        <div className="ch-lg__tbl" role="table" aria-label="Strokes gained by leg per player">
-          <div className="ch-lg__r ch-lg__r--h" role="row">
-            <span role="columnheader">Player</span>
-            {LEGS_LIST.map((l) => (
-              <span key={l} role="columnheader" className={'c' + (l === leg ? ' is-col' : '')}>
-                {l}
-              </span>
-            ))}
-            <span role="columnheader" className="r">Total</span>
-            <span role="columnheader" className="r">Trend</span>
-          </div>
-          {rows.map((g) => (
-            <Link
-              key={g.id}
-              href={playerHref(g.id)}
-              role="row"
-              className={'ch-lg__r' + (g.id === focus ? ' is-sel' : '')}
-              onMouseEnter={() => setFocus(g.id)}
-              onFocus={() => setFocus(g.id)}
-            >
-              <span role="cell" className="ch-who">
-                <Avatar name={g.name} size={30} />
-                <span>
-                  <b>{g.name}</b>
-                  <span className="ch-who__m ch-num">
-                    {g.rounds} {g.rounds === 1 ? 'round' : 'rounds'}
-                  </span>
-                </span>
-              </span>
-              {g.legs.map((v, i) => (
-                <span key={i} role="cell" className={'ch-lg__cell ch-num' + (i === li ? ' is-col' : '')} style={{ background: fill(v) }}>
-                  <span className={v == null ? '' : v >= 0 ? 'ch-gain' : 'ch-loss'}>{v == null ? NO_DATA : formatSigned(v)}</span>
+        // CH-4602: choosing a leg re-sorts the grid, so the table settles in with the leg's column ringed (base in,
+        // quick out) instead of its rows jumping; the whole table swaps, so its rows stay inside role=table.
+        <Swap swapKey={leg}>
+          <div className="ch-lg__tbl" role="table" aria-label="Strokes gained by leg per player">
+            <div className="ch-lg__r ch-lg__r--h" role="row">
+              <span role="columnheader">Player</span>
+              {LEGS_LIST.map((l) => (
+                <span key={l} role="columnheader" className={'c' + (l === leg ? ' is-col' : '')}>
+                  {l}
                 </span>
               ))}
-              <span
-                role="cell"
-                data-ch-code={g.total == null ? 'CH-4308' : undefined}
-                className={'r ch-num ch-lg__tot ' + (g.total == null ? '' : g.total >= 0 ? 'ch-gain' : 'ch-loss')}
+              <span role="columnheader" className="r">Total</span>
+              <span role="columnheader" className="r">Trend</span>
+            </div>
+            {rows.map((g) => (
+              <Link
+                key={g.id}
+                href={playerHref(g.id)}
+                role="row"
+                className={'ch-lg__r' + (g.id === focus ? ' is-sel' : '')}
+                onMouseEnter={() => setFocus(g.id)}
+                onFocus={() => setFocus(g.id)}
               >
-                {g.total == null ? 'Early read' : formatSigned(g.total)}
-              </span>
-              <span role="cell" className={'r ch-num ch-lg__ch ' + (g.change == null ? '' : g.change >= 0 ? 'ch-gain' : 'ch-loss')}>
-                {g.change == null ? (
-                  NO_DATA
-                ) : (
-                  <>
-                    <Icon icon={g.change >= 0 ? TrendingUp : TrendingDown} size={14} />
-                    {formatSigned(g.change)}
-                  </>
-                )}
-              </span>
-              <LinkPending />
-            </Link>
-          ))}
-        </div>
+                <span role="cell" className="ch-who">
+                  <Avatar name={g.name} size={30} />
+                  <span>
+                    <b>{g.name}</b>
+                    <span className="ch-who__m ch-num">
+                      {g.rounds} {g.rounds === 1 ? 'round' : 'rounds'}
+                    </span>
+                  </span>
+                </span>
+                {g.legs.map((v, i) => (
+                  <span key={i} role="cell" className={'ch-lg__cell ch-num' + (i === li ? ' is-col' : '')} style={{ background: fill(v) }}>
+                    <span className={v == null ? '' : v >= 0 ? 'ch-gain' : 'ch-loss'}>{v == null ? NO_DATA : formatSigned(v)}</span>
+                  </span>
+                ))}
+                <span
+                  role="cell"
+                  data-ch-code={g.total == null ? 'CH-4308' : undefined}
+                  className={'r ch-num ch-lg__tot ' + (g.total == null ? '' : g.total >= 0 ? 'ch-gain' : 'ch-loss')}
+                >
+                  {g.total == null ? 'Early read' : formatSigned(g.total)}
+                </span>
+                <span role="cell" className={'r ch-num ch-lg__ch ' + (g.change == null ? '' : g.change >= 0 ? 'ch-gain' : 'ch-loss')}>
+                  {g.change == null ? (
+                    NO_DATA
+                  ) : (
+                    <>
+                      <Icon icon={g.change >= 0 ? TrendingUp : TrendingDown} size={14} />
+                      {formatSigned(g.change)}
+                    </>
+                  )}
+                </span>
+                <LinkPending />
+              </Link>
+            ))}
+          </div>
+        </Swap>
       )}
     </section>
   );

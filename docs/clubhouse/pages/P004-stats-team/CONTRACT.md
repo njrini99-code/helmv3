@@ -214,7 +214,7 @@ Status: N/A — Team stats has no live data and no write to reconcile: every fig
 
 Status: DEFINED
 
-Team stats' own motion is the trend focus, the leg choice, the trend's measure swap and a new window's figures (41601, 41602, 41603, 41604), and the busy dim of a window change (40301). Everything else is the shell's: v2 press, reveal, sheets and pushes (11601 to 11612, D-64).
+Team stats' own motion is the trend focus (a player pointed at, tabbed to or chosen comes forward in green while the others fade back), the leg choice (the card's ring, and the re-sorted grid settling in), the trend's measure swap and a new window's figures (41601, 41602, 41603, 41604), and the busy dim of a window change (40301). Everything else is the shell's: the page crossfade, the press on keys, sheets and pushes (11601 to 11613, D-64); there is no first-paint rise.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

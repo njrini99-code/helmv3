@@ -1364,6 +1364,21 @@ describe('Messages · behaviour contracts (P007, docs/clubhouse/pages/P007-messa
     expect(((await screen.findByRole('textbox', { name: /Message Varsity team/ })) as HTMLTextAreaElement).value).toBe('Half-written note');
   });
 
+  it('CH-7605 the first thread opens in place; another settles in over it, the last leaving the accessibility tree at once', async () => {
+    const user = userEvent.setup();
+    live.convs.conversations = [team, dm];
+    show();
+    const leaving = () => document.querySelector('.ch-ms-pane .ch-swap__body[aria-hidden]');
+    await screen.findByRole('textbox', { name: /Message Varsity team/ });
+    expect(leaving()).toBeNull();
+    await user.click(screen.getAllByRole('button', { name: /Jonah Okafor/ })[0]!);
+    await screen.findByRole('textbox', { name: /Message Jonah$/ });
+    // Varsity team fades out behind Jonah's thread (jsdom never finishes the fade), hidden from assistive tech.
+    expect(leaving()?.querySelector('[aria-label="Conversation with Varsity team"]')).not.toBeNull();
+    expect(screen.queryByRole('region', { name: 'Conversation with Varsity team' })).toBeNull();
+    expect(screen.getByRole('region', { name: 'Conversation with Jonah Okafor' })).toBeTruthy();
+  });
+
   it('72301 a failed change is reported with its messages surface before the toast', async () => {
     const { chReport } = await import('../lib/track');
     vi.mocked(chReport).mockClear();

@@ -1,5 +1,11 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-07 — Rows answer the press
+
+On desktop an insight row or a player in By player now deepens to the row press tint over the press beat, as the
+deep dive's list, read and plan rows do (CH-13602, now referenced in `InsightRow`). The contract no longer says the
+Assigned chip rises under reduced motion: it appears at once, as the catalog says.
+
 ## 2026-10-07 — The Ledger: the board and the views on the canvas
 
 On desktop CoachHelm's reading cards now sit on the framed canvas, under

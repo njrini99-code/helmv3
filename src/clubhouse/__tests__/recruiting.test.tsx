@@ -83,8 +83,11 @@ import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 import { PREVIEW_DOCUMENTS, PREVIEW_PROSPECTS, PREVIEW_RECRUITING, PREVIEW_RECRUITING_EMPTY, PREVIEW_RECRUITING_FAILED, PREVIEW_RECRUITING_NOW } from '../preview/fixtures-recruiting';
 
-const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
-const codes = (c: string) => [...document.querySelectorAll(`[data-ch-code="${c}"]`)];
+// A swap's leaving copy (ui/Swap.tsx: the list as a stage is picked, CH-14603) is hidden from assistive tech while it
+// fades; jsdom never finishes the fade, so read the live copy only.
+const LEAVING = '.ch-swap__body[aria-hidden]';
+const code = (c: string) => [...document.querySelectorAll(`[data-ch-code="${c}"]`)].find((e) => !e.closest(LEAVING)) ?? null;
+const codes = (c: string) => [...document.querySelectorAll(`[data-ch-code="${c}"]`)].filter((e) => !e.closest(LEAVING));
 async function expectCode(c: string, text?: RegExp) {
   await waitFor(() => expect(code(c)).not.toBeNull());
   if (text) expect(code(c)!.textContent).toMatch(text);
@@ -425,6 +428,23 @@ describe('Recruiting · desktop', () => {
     await user.type(screen.getByRole('searchbox', { name: 'Search prospects' }), 'tampa');
     expect(screen.getByRole('button', { name: 'Watched, 3 prospects' })).toBeTruthy();
     expect(screen.getByText('8 prospects · 1 committed')).toBeTruthy();
+  });
+
+  it('CH-14603 the kept stage comes back in place and a search narrows in place; picking or letting go of a stage settles the list in', async () => {
+    const user = userEvent.setup();
+    const leaving = () => document.querySelector('.ch-rec-list .ch-swap__body[aria-hidden]');
+    localStorage.setItem('ch-recruiting-stage', 'offered');
+    wrap(PREVIEW_RECRUITING, fakeWrites(), null);
+    await waitFor(() => expect(rowNames()).toEqual(['Mason Reilly']));
+    expect(leaving()).toBeNull();
+    const search = screen.getByRole('searchbox', { name: 'Search prospects' });
+    await user.type(search, 'zzz');
+    await user.clear(search);
+    expect(leaving()).toBeNull();
+    await user.click(screen.getByRole('button', { name: /^Show all/ }));
+    // The one-prospect list fades out behind all eight (jsdom never finishes the fade), hidden from assistive tech.
+    expect(leaving()?.textContent).toContain('Mason Reilly');
+    expect(rowNames()).toHaveLength(8);
   });
 
   it('search finds a prospect by name, hometown, state, email or notes, Esc clears it, and the list keeps the open prospect', async () => {

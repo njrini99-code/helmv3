@@ -1,5 +1,9 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-07 — A file row presses with a tint
+
+A file row's tint now eases (quick), and on desktop a press deepens it to the row press tint over the press beat.
+
 ## 2026-10-07 — Tabs that move
 
 The tabs' underline is now one bar that slides to the chosen tab on the press

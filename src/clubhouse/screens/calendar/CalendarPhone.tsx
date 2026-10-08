@@ -9,6 +9,7 @@ import { Icon } from '../../ui/Icon';
 import { PhoneIconAction } from '../../ui/PhoneBar';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
+import { Swap } from '../../ui/Swap';
 import { haptic } from '../../lib/haptics';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
 import { dayNum, dowOf, fmtHour, isMajor, monthCells, monthName, weekDates, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
@@ -88,14 +89,17 @@ export function CalendarPhone({
       {notices}
       {!data.eventsError && (
         <SectionBoundary surface={`calendar.phone.${pv}`} label="The calendar" code="CH-6210">
-          {pv === 'day' && <DayView anchor={anchor} events={events} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} />}
-          {pv === 'month' && <MonthGrid anchor={anchor} events={events} now={now} onPick={(d) => onView('day', d)} />}
-          {pv === 'list' &&
-            (events.some((e) => e.date >= now.date) ? (
-              <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={(id) => onOpen(id, events.find((e) => e.id === id)?.date ?? anchor)} />
-            ) : (
-              <EmptyState code="CH-6301" icon={CalendarDays} title="Nothing on the calendar in this range." body={coach ? 'Events you publish show here, with replies and overlaps.' : 'Events your coach invites you to show here.'} />
-            ))}
+          {/* CH-6604: Day, Month and List settle in as the switch moves (base in, quick out); instant with reduced motion. */}
+          <Swap swapKey={pv}>
+            {pv === 'day' && <DayView anchor={anchor} events={events} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} />}
+            {pv === 'month' && <MonthGrid anchor={anchor} events={events} now={now} onPick={(d) => onView('day', d)} />}
+            {pv === 'list' &&
+              (events.some((e) => e.date >= now.date) ? (
+                <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={(id) => onOpen(id, events.find((e) => e.id === id)?.date ?? anchor)} />
+              ) : (
+                <EmptyState code="CH-6301" icon={CalendarDays} title="Nothing on the calendar in this range." body={coach ? 'Events you publish show here, with replies and overlaps.' : 'Events your coach invites you to show here.'} />
+              ))}
+          </Swap>
         </SectionBoundary>
       )}
     </main>

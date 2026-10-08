@@ -77,6 +77,11 @@
     background: rgb(21 90 57 / 0.09);
   }
 }
+/* CH-8607: a section presses with a deeper tint over the press beat, never a scale (the shell's CH-1606). */
+.ch-set-rail__i:active {
+  background: var(--ch-ledger-row-press);
+  transition-duration: var(--ch-dur-press);
+}
 .ch-set-rail__i.is-on {
   /* Flat selection: a soft green tint, no lift (owner, 2026-09-29). */
   background: rgb(21 90 57 / 0.07);
@@ -1547,6 +1552,11 @@
     .ch-set[data-canopy] .ch-surface .ch-set-link:hover {
       background: var(--ch-ledger-row-hover);
     }
+  }
+  /* A press deepens a link row's tint over the press beat (the shell's CH-1606: a row never scales). */
+  .ch-set[data-canopy] .ch-surface .ch-set-link:active {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
   }
   /* The notification table: its labels and switches align to the section's edge and a row's hover tint reaches 12px
      past it, as the Home leaderboard's does, so its seams are drawn inset to that edge instead of as full-width

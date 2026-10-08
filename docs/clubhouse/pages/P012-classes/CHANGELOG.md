@@ -1,5 +1,10 @@
 # P012 — Classes: changelog
 
+## 2026-10-07 — A class row answers the press
+
+On the desktop Ledger a class now deepens to the row press tint over the press beat, never a lift or a scale
+(CH-12601). The contract no longer calls CH-12602 reserved.
+
 ## 2026-10-07 — Classes takes the page head; each class a ledger row
 
 On desktop, Classes opens on the framed page head, and the term, the classes

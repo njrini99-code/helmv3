@@ -89,6 +89,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
 
   const [query, setQuery] = useState(initial?.query ?? '');
   const [stage, setStageState] = useState<ChStage | null>(initial?.stage ?? null);
+  const [stageTurn, setStageTurn] = useState(0);
   const [sort, setSortState] = useState<ChSort>(initial?.sort ?? 'updated');
   // The last sort and stage are a per-browser convenience, not account state (the current page keeps them the same way).
   useEffect(() => {
@@ -111,6 +112,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
     }
   };
   const setStage = (s: ChStage | null) => {
+    if (s !== stage) setStageTurn((n) => n + 1);
     setStageState(s);
     try {
       if (s) localStorage.setItem(STAGE_KEY, s);
@@ -258,6 +260,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
     setQuery,
     stage,
     setStage,
+    stageTurn,
     sort,
     setSort,
     open,

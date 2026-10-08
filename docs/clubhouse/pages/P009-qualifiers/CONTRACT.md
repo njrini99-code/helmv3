@@ -294,7 +294,7 @@ After a write lands, the server reads the page again so the page shows the serve
 
 Status: DEFINED
 
-Pressing a card, the hero or a status pill (91601), and a leaderboard row's scorecards appearing in place at their final state, with no count-up or stagger and a static Live dot (91602, D-33). Both are preview-checked; their catalog rows are marked preview and no test forces them. Everything uses the v2 tokens (D-64).
+Pressing a card, the hero or a status pill answers with a deeper tint, never a scale (91601), and opening a leaderboard row turns its chevron and drops its scorecards into place as they fade in, at their final state, with no count-up or stagger and a static Live dot; closing is instant (91602, D-33). Both are preview-checked; their catalog rows are marked preview and no test forces them. Everything uses the v2 tokens (D-64).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

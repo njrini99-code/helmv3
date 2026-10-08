@@ -54,6 +54,7 @@ import { InlineNotice } from "../../ui/Notices";
 import { SearchField } from "../../ui/SearchField";
 import { SectionBoundary } from "../../ui/SectionBoundary";
 import { Segmented } from "../../ui/Segmented";
+import { Swap } from "../../ui/Swap";
 import { EmptyState, Skeleton } from "../../ui/States";
 import { haptic } from "../../lib/haptics";
 import { chReport, chTrail } from "../../lib/track";
@@ -2132,6 +2133,11 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
   const conv = api.convs.find((c) => c.id === api.selectedId) ?? null;
   const ann = api.announcements.find((a) => a.id === api.selectedAnnId) ?? null;
   useEffect(() => setDetails(false), [api.selectedId]);
+  // CH-7605: going from one open thread or announcement to another settles the new one in (base in, quick out). The
+  // first one a visit opens (the newest thread, or a link's) appears at once.
+  const paneKey = ann ? `a:${ann.id}` : conv ? `c:${conv.id}` : null;
+  const [pane, setPane] = useState({ key: paneKey, turn: 0 });
+  if (pane.key !== paneKey) setPane({ key: paneKey, turn: pane.key === null ? pane.turn : pane.turn + 1 });
 
   if (isMessagesFirstRun(api) && !conv && !ann) {
     return (
@@ -2158,59 +2164,61 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
       >
         <Rail api={api} onNew={() => setCompose(true)} />
       </SectionBoundary>
-      {ann ? (
-        <SectionBoundary
-          surface="messages.announcement"
-          label="This announcement"
-          code="CH-7211"
-        >
-          <AnnouncementPane
-            api={api}
-            a={ann}
-            onBack={() => api.selectAnn(null)}
-          />
-        </SectionBoundary>
-      ) : conv ? (
-        <SectionBoundary
-          surface="messages.thread"
-          label="This conversation"
-          code="CH-7212"
-        >
-          <Thread
-            api={api}
-            conv={conv}
-            detailsOpen={details}
-            setDetails={setDetails}
-            onBack={() => api.select(null)}
-          />
-        </SectionBoundary>
-      ) : (
-        <section className="ch-ms-thread is-empty">
-          <EmptyState
-            code="CH-7305"
-            icon={MessageSquare}
-            title={
-              api.convs.length
-                ? "Pick a conversation."
-                : "Start your first conversation."
-            }
-            body={
-              api.convs.length
-                ? "Threads open here, with replies as they arrive."
-                : "Message a player, a coach or the whole team."
-            }
-            action={
-              <Button
-                variant="primary"
-                leftIcon={SquarePen}
-                onClick={() => setCompose(true)}
-              >
-                New message
-              </Button>
-            }
-          />
-        </section>
-      )}
+      <Swap swapKey={pane.turn} className="ch-ms-pane">
+        {ann ? (
+          <SectionBoundary
+            surface="messages.announcement"
+            label="This announcement"
+            code="CH-7211"
+          >
+            <AnnouncementPane
+              api={api}
+              a={ann}
+              onBack={() => api.selectAnn(null)}
+            />
+          </SectionBoundary>
+        ) : conv ? (
+          <SectionBoundary
+            surface="messages.thread"
+            label="This conversation"
+            code="CH-7212"
+          >
+            <Thread
+              api={api}
+              conv={conv}
+              detailsOpen={details}
+              setDetails={setDetails}
+              onBack={() => api.select(null)}
+            />
+          </SectionBoundary>
+        ) : (
+          <section className="ch-ms-thread is-empty">
+            <EmptyState
+              code="CH-7305"
+              icon={MessageSquare}
+              title={
+                api.convs.length
+                  ? "Pick a conversation."
+                  : "Start your first conversation."
+              }
+              body={
+                api.convs.length
+                  ? "Threads open here, with replies as they arrive."
+                  : "Message a player, a coach or the whole team."
+              }
+              action={
+                <Button
+                  variant="primary"
+                  leftIcon={SquarePen}
+                  onClick={() => setCompose(true)}
+                >
+                  New message
+                </Button>
+              }
+            />
+          </section>
+        )}
+      </Swap>
       {conv && details && (
         <SectionBoundary
           surface="messages.details"

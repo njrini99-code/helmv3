@@ -81,8 +81,8 @@ events follow Calendar's date-span rules. Owner decision: Safari review,
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-2601 | Paging the latest round | The round slides 12px out and the next slides in from that side (260ms); a fade only when motion is reduced | `chSwap`, `AnimatePresence popLayout` | preview |
-| CH-2602 | Hovering or pressing a leaderboard row | The row lifts onto a raised surface (180ms) and shrinks about 6px (110ms) and springs back (280ms) | `.ch-h-lb__row.is-link` | preview |
+| CH-2601 | Paging the latest round | The round slides 12px out and the next slides in from that side (260ms); instant when motion is reduced | `chSwap`, `AnimatePresence popLayout` | preview |
+| CH-2602 | Hovering or pressing a leaderboard row | On desktop the row takes the Ledger row tint (180ms) as its chevron slides in from the left (260ms); a press deepens the tint and nudges the chevron 2px on (110ms), easing back over 180ms. No lift and no scale (the shell's CH-1606) | `.ch-h-lb__row.is-link`, `--ch-ledger-row-press` | preview |
 
 ## 27xx Haptics
 

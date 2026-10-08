@@ -269,11 +269,10 @@ A send the client can't confirm says to check the thread before sending again
 
 Status: DEFINED
 
-Messages' own motion (71601 to 71604), and the shell's: v2 press, reveal, sheets
-and pushes (11601 to 11612, D-64).
-
-CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609
-CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
+Messages' own motion (71601 to 71605): a message appears in place, the typing dots, details and the reaction bar
+opening from their buttons, the phone's message sheet, and on desktop another conversation or announcement settling
+in over the last (never the first one a visit opens). The shell's: the page crossfade, the press on keys, sheets and
+pushes (11601 to 11613, D-64); there is no first-paint rise.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -281,6 +280,7 @@ CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
 | 71602 | CH-7602 | `SOMEONE_IS_TYPING` | Someone is typing |
 | 71603 | CH-7603 | `OPENING_DETAILS_OR_A_REACTION_BAR` | Opening details or a reaction bar |
 | 71604 | CH-7604 | `A_LONG_PRESS_ON_A_MESSAGE` | A long press on a message (phone) |
+| 71605 | CH-7605 | `OPENING_ANOTHER_CONVERSATION_OR_ANNOUNCEMENT` | Opening another conversation or announcement (desktop) |
 
 From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613.
 

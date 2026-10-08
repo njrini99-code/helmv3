@@ -1,5 +1,13 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-07 — The trend brings a player forward; a leg re-sorts the grid in place
+
+Pointing at a player's name or line, or tabbing to the name, brings their line forward in green, drawn over the
+others, while the others fade back to 0.2, all over quick; moving away returns to the chosen player, and a press
+chooses them, as before (CH-4601). Each line takes the pointer along a 12px band. Choosing a leg keeps the card's
+ring and now settles the re-sorted grid in with its column ringed (base in, quick out) instead of the rows jumping
+(CH-4602). A grid row presses with the row press tint. New tests: stats-team.test › CH-4601, CH-4602.
+
 ## 2026-10-07 — The trend crossfades between measures
 
 Switching the trend between Strokes gained and Scoring now crossfades the plot

@@ -328,7 +328,8 @@
     transform var(--ch-dur-quick) var(--ch-ease),
     box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
-/* CH-12601: hovering a class lifts it 2px (quick). */
+/* Off the Ledger (a narrow window), a class card lifts 2px on hover (quick); on the desktop Ledger it takes the row tint
+   instead (CH-12601, below). */
 @media (hover: hover) {
   .ch-cl-card:hover {
     transform: translateY(-2px);
@@ -1600,6 +1601,11 @@
     .ch-cl[data-canopy] .ch-cl-card:hover + .ch-cl-add::before {
       opacity: 0;
     }
+  }
+  /* CH-12601: a press deepens the tint over the press beat (the shell's CH-1606: a row never scales). */
+  .ch-cl[data-canopy] .ch-cl-card:active {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
   }
   .ch-cl[data-canopy] .ch-cl-card__top {
     grid-area: top;

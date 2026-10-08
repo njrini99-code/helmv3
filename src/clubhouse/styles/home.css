@@ -2466,6 +2466,21 @@
       background: var(--ch-ledger-row-hover);
     }
   }
+  /* The row's chevron sits in its 12px end padding, clear of the SG figure. */
+  .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link::after {
+    right: 0;
+  }
+  /* CH-2602: a press deepens the row's tint and nudges its chevron 2px on, over the press beat; letting go eases back
+     over quick. A row never scales (lib/press.ts, owner F02). */
+  .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:active {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
+  }
+  .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:active::after {
+    opacity: 1;
+    translate: 2px -50%;
+    transition-duration: var(--ch-dur-press);
+  }
   /* Player Home: Scoring runs from the week without a card, at the head's edge; "Your game" is four figures on the
      canvas divided by soft rules, not four cards. */
   .ch-h-main--desk[data-canopy] .ch-ph-game {

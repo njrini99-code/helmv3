@@ -790,6 +790,41 @@ describe('Stats team · the page', () => {
     expect(document.querySelector('.ch-sgt__end.is-sel')!.textContent).toMatch(/Theo/);
   });
 
+  it('CH-4601 pointing at a player brings their line forward and fades the others without choosing them; a press chooses, and moving away returns to the choice', async () => {
+    const user = userEvent.setup();
+    wrap(stats());
+    const front = () => document.querySelector('.ch-sgt__front');
+    const faded = () => document.querySelectorAll('.ch-sgt__line[stroke-opacity="0.2"]').length;
+    const theo = screen.getAllByRole('button', { name: /Theo/ })[0]!;
+    expect(front()).toBeNull();
+    expect(faded()).toBe(0);
+    await user.hover(theo);
+    expect(front()).not.toBeNull();
+    expect(faded()).toBeGreaterThan(0);
+    expect(theo.getAttribute('aria-pressed')).toBe('false');
+    await user.unhover(theo);
+    expect(front()).toBeNull();
+    expect(faded()).toBe(0);
+    await user.click(theo);
+    await user.unhover(theo);
+    expect(theo.getAttribute('aria-pressed')).toBe('true');
+    expect(front()).not.toBeNull();
+    expect(faded()).toBeGreaterThan(0);
+  });
+
+  it('CH-4602 choosing a leg settles the re-sorted grid in, its column ringed; the old order leaves the accessibility tree at once', async () => {
+    const user = userEvent.setup();
+    wrap(stats());
+    const leaving = () => document.querySelector('.ch-lg .ch-swap__body[aria-hidden]');
+    expect(leaving()).toBeNull();
+    await user.click(screen.getByRole('button', { name: /^Putting/ }));
+    // The Approach order fades out behind the Putting one (jsdom never finishes the fade).
+    expect(leaving()?.querySelector('[role="columnheader"].is-col')?.textContent).toBe('Approach');
+    const grids = screen.getAllByRole('table', { name: 'Strokes gained by leg per player' });
+    expect(grids).toHaveLength(1);
+    expect(grids[0]!.querySelector('[role="columnheader"].is-col')?.textContent).toBe('Putting');
+  });
+
   it('42001 the window switch moves with the arrow keys, a leg card takes Enter, and a grid row focuses its player', async () => {
     const user = userEvent.setup();
     wrap(stats({ window: 'last10' }));

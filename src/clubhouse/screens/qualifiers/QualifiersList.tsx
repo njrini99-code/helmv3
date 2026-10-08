@@ -144,6 +144,9 @@ export function QualifiersList({ data }: { data: ChQList }) {
       ) : (
         <>
           <div className="ch-qf-tools">
+            {/* CH-09601: a status pill, a card or the hero answers a press with a deeper tint over the press beat, never a
+                scale (the shell's CH-1606): pills and the phone's live card darken, the Ledger's rows take the row press
+                tint, and the desktop hero's title deepens. */}
             <div className="ch-qf-pills" role="group" aria-label="Filter qualifiers by status">
               {(
                 [

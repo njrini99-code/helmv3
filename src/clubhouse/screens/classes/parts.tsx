@@ -156,7 +156,8 @@ export function TermBar({
  * A class with days but no start and end time says so, and that it isn't on the calendar, as one with times but no days does.
  * CH-12801: the whole card is one button named for the class and when it meets.
  * CH-12802: the week strip is drawing, so it is hidden from screen readers.
- * CH-12701: opening a class is a selection tap. CH-12601: hovering lifts the card (quick).
+ * CH-12701: opening a class is a selection tap. CH-12601: on the desktop Ledger it takes the row tint on hover (quick)
+ * and a deeper one on press, no lift.
  */
 export function ClassCard({
   c,

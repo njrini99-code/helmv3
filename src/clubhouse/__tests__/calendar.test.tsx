@@ -1397,6 +1397,23 @@ describe('Calendar · moving around', () => {
     replace.mockRestore();
   });
 
+  it('CH-6605 CH-6604 another week slides in and another view settles in; the one before leaves the accessibility tree at once', async () => {
+    const user = userEvent.setup();
+    wrap(cal());
+    const leaving = () => [...document.querySelectorAll('.ch-cal-body .ch-swap__body[aria-hidden]')];
+    expect(leaving()).toHaveLength(0);
+    await user.click(screen.getByRole('button', { name: 'Next week' }));
+    // The week before slides out behind the next one (jsdom never finishes the fade).
+    expect(leaving()).toHaveLength(1);
+    expect(leaving()[0]!.querySelector('.ch-wk')).not.toBeNull();
+    await user.click(screen.getByRole('radio', { name: 'Month' }));
+    // The week view as a whole now fades out behind the month (the outer swap's leaving copy).
+    const outer = leaving().filter((e) => !e.parentElement!.closest('.ch-swap__body[aria-hidden]'));
+    expect(outer.some((e) => e.querySelector('.ch-wk'))).toBe(true);
+    const live = [...document.querySelectorAll('.ch-cal-body .ch-mo')].filter((e) => !e.closest('.ch-swap__body[aria-hidden]'));
+    expect(live).toHaveLength(1);
+  });
+
   it('60303 when the server sends a new view or day, the screen follows it', () => {
     const view = wrap(cal());
     expect(title()).toBe('Oct 11 – 17');

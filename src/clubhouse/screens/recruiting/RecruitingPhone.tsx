@@ -14,6 +14,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { PhoneBar, PhoneIconAction, PhoneTextAction } from '../../ui/PhoneBar';
 import { SearchField } from '../../ui/SearchField';
 import { SectionBoundary } from '../../ui/SectionBoundary';
+import { Swap } from '../../ui/Swap';
 import { EmptyState } from '../../ui/States';
 import type { RecCtx } from './ctx';
 import { Documents } from './Documents';
@@ -71,42 +72,45 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
             <SectionBoundary surface="recruiting.pipeline" label="The pipeline" code="CH-14203">
               <Pipeline compact counts={c.counts} shares={c.shares} total={c.total} stage={c.stage} onPick={c.setStage} />
             </SectionBoundary>
-            {c.rows.length === 0 ? (
-              <NoMatch phone query={c.query} stage={c.stage} onClear={() => c.setQuery('')} onAll={() => c.setStage(null)} />
-            ) : (
-              <>
-                <div className="ch-recm-count">
-                  <span className="ch-num">{c.rows.length === c.total ? `${c.total} ${c.total === 1 ? 'prospect' : 'prospects'}` : `${c.rows.length} of ${c.total}`}</span>
-                  <Menu
-                    label="Sort prospects"
-                    align="end"
-                    items={CH_SORTS.map((s) => ({ label: s.label, checked: c.sort === s.value, onSelect: () => c.setSort(s.value) }))}
-                    trigger={(t) => (
-                      <button type="button" className="ch-recm-sort" {...t}>
-                        {CH_SORTS.find((s) => s.value === c.sort)?.label}
-                        <Icon icon={ChevronDown} size={15} />
-                      </button>
-                    )}
-                  />
-                </div>
-                <SectionBoundary surface="recruiting.list" label="The prospect list" code="CH-14203">
-                  <ul className="ch-recm-list" data-ch-code="CH-14802">
-                    {c.rows.map((p) => (
-                      <li key={p.id}>
-                        <button type="button" className="ch-recm-row" onClick={() => c.select(p.id)}>
-                          <ProspectAvatar name={p.name} size={36} />
-                          <span className="ch-recm-row__b">
-                            <b>{p.name}</b>
-                            <span>{rowLineOf(p) || 'No class or hometown yet'}</span>
-                          </span>
-                          <StageChip stage={p.stage} />
+            {/* CH-14603: a stage picked or let go settles the list in (base in, quick out); typing a search does not. */}
+            <Swap swapKey={c.stageTurn}>
+              {c.rows.length === 0 ? (
+                <NoMatch phone query={c.query} stage={c.stage} onClear={() => c.setQuery('')} onAll={() => c.setStage(null)} />
+              ) : (
+                <>
+                  <div className="ch-recm-count">
+                    <span className="ch-num">{c.rows.length === c.total ? `${c.total} ${c.total === 1 ? 'prospect' : 'prospects'}` : `${c.rows.length} of ${c.total}`}</span>
+                    <Menu
+                      label="Sort prospects"
+                      align="end"
+                      items={CH_SORTS.map((s) => ({ label: s.label, checked: c.sort === s.value, onSelect: () => c.setSort(s.value) }))}
+                      trigger={(t) => (
+                        <button type="button" className="ch-recm-sort" {...t}>
+                          {CH_SORTS.find((s) => s.value === c.sort)?.label}
+                          <Icon icon={ChevronDown} size={15} />
                         </button>
-                      </li>
-                    ))}
-                  </ul>
-                </SectionBoundary>
-              </>
-            )}
+                      )}
+                    />
+                  </div>
+                  <SectionBoundary surface="recruiting.list" label="The prospect list" code="CH-14203">
+                    <ul className="ch-recm-list" data-ch-code="CH-14802">
+                      {c.rows.map((p) => (
+                        <li key={p.id}>
+                          <button type="button" className="ch-recm-row" onClick={() => c.select(p.id)}>
+                            <ProspectAvatar name={p.name} size={36} />
+                            <span className="ch-recm-row__b">
+                              <b>{p.name}</b>
+                              <span>{rowLineOf(p) || 'No class or hometown yet'}</span>
+                            </span>
+                            <StageChip stage={p.stage} />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </SectionBoundary>
+                </>
+              )}
+            </Swap>
           </>
         )}
       </div>

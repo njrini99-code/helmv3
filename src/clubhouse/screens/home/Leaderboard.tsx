@@ -58,6 +58,8 @@ function Row({ p, pos }: { p: ChLeaderRow; pos: number }) {
       </span>
     </>
   );
+  // CH-2602: on desktop the row takes the Ledger tint on hover (quick) as its chevron slides in (base), and a press
+  // deepens the tint (press). It never lifts or scales.
   return href ? (
     <Link href={href} className="ch-h-lb__row is-link" role="row">
       {cells}

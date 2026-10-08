@@ -433,7 +433,7 @@
     "item": 6,
     "name": "PRESSING_ANY_BUTTON_ROW_OR_TAB",
     "chCode": "CH-1606",
-    "meaning": "Pressing any button, row, tab or link",
+    "meaning": "Pressing a key (a `.ch-btn`, or anything marked `data-ch-press`, up to 240px wide)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -1369,7 +1369,7 @@
     "name": "HOVERING_OR_PRESSING_A_LEADERBOARD_ROW",
     "chCode": "CH-2602",
     "meaning": "Hovering or pressing a leaderboard row",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
@@ -2153,6 +2153,17 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 31603,
+    "page": "P003",
+    "category": 16,
+    "item": 3,
+    "name": "SWITCHING_BETWEEN_TEAM_VIEW_AND_LIST_VIEW",
+    "chCode": "CH-3603",
+    "meaning": "Switching between Team view and List view",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 31701,
     "page": "P003",
     "category": 17,
@@ -2859,7 +2870,7 @@
     "name": "FOCUSING_A_PLAYER_ON_THE_TREND",
     "chCode": "CH-4601",
     "meaning": "Focusing a player on the trend",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
@@ -2870,7 +2881,7 @@
     "name": "CHOOSING_A_LEG",
     "chCode": "CH-4602",
     "meaning": "Choosing a leg",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
@@ -3821,7 +3832,7 @@
     "name": "OPENING_ADD_FOCUS_AREA",
     "chCode": "CH-5602",
     "meaning": "Opening Add focus area",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
@@ -4960,6 +4971,28 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 61604,
+    "page": "P006",
+    "category": 16,
+    "item": 4,
+    "name": "SWITCHING_BETWEEN_DAY_WEEK_MONTH_AND_AGENDA",
+    "chCode": "CH-6604",
+    "meaning": "Switching between Day, Week, Month and Agenda (Day, Month and List on the phone)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61605,
+    "page": "P006",
+    "category": 16,
+    "item": 5,
+    "name": "STEPPING_TO_ANOTHER_DAY_WEEK_OR_MONTH",
+    "chCode": "CH-6605",
+    "meaning": "Stepping to another day, week or month (the arrows, the arrow keys, Today or a date)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 61701,
     "page": "P006",
     "category": 17,
@@ -5998,6 +6031,17 @@
     "name": "A_LONG_PRESS_ON_A_MESSAGE",
     "chCode": "CH-7604",
     "meaning": "A long press on a message (phone)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 71605,
+    "page": "P007",
+    "category": 16,
+    "item": 5,
+    "name": "OPENING_ANOTHER_CONVERSATION_OR_ANNOUNCEMENT",
+    "chCode": "CH-7605",
+    "meaning": "Opening another conversation or announcement (desktop)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -8896,7 +8940,7 @@
     "name": "PRESSING_A_CARD_THE_HERO_OR_A",
     "chCode": "CH-09601",
     "meaning": "Pressing a card, the hero or a status pill",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
@@ -8907,7 +8951,7 @@
     "name": "OPENING_A_LEADERBOARD_ROW",
     "chCode": "CH-09602",
     "meaning": "Opening a leaderboard row",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
@@ -11779,7 +11823,7 @@
     "name": "HOVERING_A_ROUND_THAT_OPENS_ITS_REVIEW",
     "chCode": "CH-11601",
     "meaning": "Hovering a round that opens its review",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
@@ -14478,7 +14522,7 @@
     "name": "HOVERING_AN_INSIGHT_ROW_OR_A_PLAYER",
     "chCode": "CH-13602",
     "meaning": "Hovering an insight row or a player",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -15389,6 +15433,17 @@
     "catalog": "docs/clubhouse/catalog/recruiting.md"
   },
   {
+    "id": 141603,
+    "page": "P014",
+    "category": 16,
+    "item": 3,
+    "name": "PICKING_A_STAGE_IN_THE_PIPELINE_OR",
+    "chCode": "CH-14603",
+    "meaning": "Picking a stage in the pipeline, or letting it go",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/recruiting.md"
+  },
+  {
     "id": 141701,
     "page": "P014",
     "category": 17,
@@ -15510,6 +15565,17 @@
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
+    "id": 150202,
+    "page": "P015",
+    "category": 2,
+    "item": 2,
+    "name": "RESET_PASSWORD_A_LINK_IS_BEING_ASKED",
+    "chCode": "CH-15420",
+    "meaning": "Reset password: a link is being asked for",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
     "id": 150301,
     "page": "P015",
     "category": 3,
@@ -15572,6 +15638,28 @@
     "name": "SIGN_UP_THE_TEAM_CODE_MATCHES_NO",
     "chCode": "CH-15110",
     "meaning": "Sign up: the team code matches no team (or the gate is throttled, which the server reports the same way on purpose, Q-99)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150503,
+    "page": "P015",
+    "category": 5,
+    "item": 3,
+    "name": "RESET_PASSWORD_SEND_WITH_NO_ADDRESS",
+    "chCode": "CH-15120",
+    "meaning": "Reset password: Send with no address",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150504,
+    "page": "P015",
+    "category": 5,
+    "item": 4,
+    "name": "RESET_PASSWORD_AN_ADDRESS_THAT_IS_NOT",
+    "chCode": "CH-15121",
+    "meaning": "Reset password: an address that is not one",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
@@ -15708,6 +15796,28 @@
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
+    "id": 150613,
+    "page": "P015",
+    "category": 6,
+    "item": 13,
+    "name": "RESET_PASSWORD_THE_SERVER_REFUSES_THE_REQUEST",
+    "chCode": "CH-15020",
+    "meaning": "Reset password: the server refuses the request in its own words",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150614,
+    "page": "P015",
+    "category": 6,
+    "item": 14,
+    "name": "RESET_PASSWORD_ANYTHING_ELSE_THROWS",
+    "chCode": "CH-15021",
+    "meaning": "Reset password: anything else throws (the request never reached the server)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
     "id": 150701,
     "page": "P015",
     "category": 7,
@@ -15715,6 +15825,39 @@
     "name": "THE_SERVER_CANNOT_BE_REACHED",
     "chCode": "CH-15004",
     "meaning": "The server cannot be reached",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150702,
+    "page": "P015",
+    "category": 7,
+    "item": 2,
+    "name": "FORGOT_PASSWORD_IS_CLICKED",
+    "chCode": "CH-15920",
+    "meaning": "\"Forgot password?\" is clicked",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150703,
+    "page": "P015",
+    "category": 7,
+    "item": 3,
+    "name": "A_RESET_LINK_IS_ASKED_FOR_AND_2",
+    "chCode": "CH-15921",
+    "meaning": "A reset link is asked for and the server accepts (its answer is the same whether or not the address has an account)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 150704,
+    "page": "P015",
+    "category": 7,
+    "item": 4,
+    "name": "BACK_TO_SIGN_IN",
+    "chCode": "CH-15922",
+    "meaning": "Back to sign in (\"Remember it? Sign in\", Back to sign in, or the browser's Back)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
@@ -15840,6 +15983,72 @@
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
   {
+    "id": 151607,
+    "page": "P015",
+    "category": 16,
+    "item": 7,
+    "name": "THE_SIGN_IN_KEY_CHANGES_STATE_OFF",
+    "chCode": "CH-15607",
+    "meaning": "The Sign in key changes state: off (a field is empty), ready, in flight",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151608,
+    "page": "P015",
+    "category": 16,
+    "item": 8,
+    "name": "A_REFUSAL_APPEARS_OR_THE_NEXT_ONE",
+    "chCode": "CH-15608",
+    "meaning": "A refusal appears, or the next one replaces it",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151609,
+    "page": "P015",
+    "category": 16,
+    "item": 9,
+    "name": "A_REFUSAL_IS_ABOUT_THE_FIELDS",
+    "chCode": "CH-15609",
+    "meaning": "A refusal is about the fields (the credentials, an empty field, or the reset form's address)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151610,
+    "page": "P015",
+    "category": 16,
+    "item": 10,
+    "name": "THE_PASSWORD_EYE_IS_PRESSED",
+    "chCode": "CH-15610",
+    "meaning": "The password eye is pressed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151611,
+    "page": "P015",
+    "category": 16,
+    "item": 11,
+    "name": "THE_HOME_LINK_IS_HOVERED_OR_PRESSED",
+    "chCode": "CH-15611",
+    "meaning": "The Home link is hovered or pressed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151612,
+    "page": "P015",
+    "category": 16,
+    "item": 12,
+    "name": "THE_PANEL_MOVES_BETWEEN_SIGN_IN_THE",
+    "chCode": "CH-15612",
+    "meaning": "The panel moves between sign in, the reset form and check your email",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
     "id": 151701,
     "page": "P015",
     "category": 17,
@@ -15868,7 +16077,7 @@
     "item": 3,
     "name": "A_WARNING_TONED_REFUSAL",
     "chCode": "CH-15703",
-    "meaning": "A warning-toned refusal (an empty field, an unverified email, a rate limit)",
+    "meaning": "A warning-toned refusal (an empty field, an unverified email, a rate limit; the reset form's missing or malformed address)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
@@ -15879,7 +16088,7 @@
     "item": 4,
     "name": "A_DANGER_TONED_REFUSAL",
     "chCode": "CH-15704",
-    "meaning": "A danger-toned refusal (the credentials, the network, a stale bundle, anything unexpected)",
+    "meaning": "A danger-toned refusal (the credentials, the network, a stale bundle, anything unexpected; a reset request that fails)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
@@ -15891,6 +16100,28 @@
     "name": "CONTINUE_ON_THE_WELCOME",
     "chCode": "CH-15705",
     "meaning": "Continue on the welcome",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151706,
+    "page": "P015",
+    "category": 17,
+    "item": 6,
+    "name": "SEND_RESET_LINK_IS_TAPPED",
+    "chCode": "CH-15720",
+    "meaning": "Send reset link is tapped",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151707,
+    "page": "P015",
+    "category": 17,
+    "item": 7,
+    "name": "A_RESET_LINK_IS_ASKED_FOR_AND",
+    "chCode": "CH-15721",
+    "meaning": "A reset link is asked for and the server accepts",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
@@ -15946,6 +16177,17 @@
     "name": "THE_PASSWORD_EYE_IS_A_NAMED_PRESSED",
     "chCode": "CH-15805",
     "meaning": "The password eye is a named, pressed-state button with a hit area past 44px; every other control is at least 44px on the phone",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 151806,
+    "page": "P015",
+    "category": 18,
+    "item": 6,
+    "name": "THE_PANELS_VIEW_CHANGES",
+    "chCode": "CH-15820",
+    "meaning": "The panel's view changes",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
   },
