@@ -1,5 +1,9 @@
 # P009 — Qualifiers: changelog
 
+
+## 2026-10-08 — the rank slide runs on the smooth spring
+
+- P009-B1: the moved rows' slide read `--ch-dur-spring-smooth` and `--ch-ease-spring-smooth` on view-transition pseudos that hang off `<html>`, where those tokens are not defined, so it ran on the browser's default timing. It now reads the `<html>`-scoped `--ch-dur-vt-push` and `--ch-ease-vt-push`, the same smooth spring (462ms) the phone push uses.
 ## 2026-10-08 — The live card's leaders are rows, not a board
 
 Owner direction (2026-10-08): the card is no longer the default unit of layout on the phone. Phone only; the desktop

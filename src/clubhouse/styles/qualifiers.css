@@ -2376,8 +2376,9 @@
    crossfade and no digits rolling: the row's new face travels from the old place. The shell's reduced-motion rule
    stops it, and the board never asks for it then (rank-slide.ts). */
 html:has([data-ui='clubhouse'])::view-transition-group(.ch-rank) {
-  animation-duration: var(--ch-dur-spring-smooth);
-  animation-timing-function: var(--ch-ease-spring-smooth);
+  /* The <html>-scoped smooth spring: --ch-*-spring-smooth live on [data-ui='clubhouse'] and never reach these pseudos. */
+  animation-duration: var(--ch-dur-vt-push);
+  animation-timing-function: var(--ch-ease-vt-push);
 }
 html:has([data-ui='clubhouse'])::view-transition-old(.ch-rank) {
   display: none;
