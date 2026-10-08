@@ -32,6 +32,12 @@ export interface ChRecruitingWrites {
   create(input: RecruitInput, requestId?: string): Promise<ServerResult<{ id: string }>>;
   update(id: string, patch: Partial<RecruitInput>): Promise<ServerResult>;
   remove(id: string): Promise<ServerResult>;
+  /**
+   * P014 C1: whether create and update store `next_step_label` and `next_step_date`. The live set says no until
+   * src/app/golf/actions/recruiting.ts passes them through (it whitelists columns today, so a sent next step would be
+   * dropped and still reported as saved); until then the page shows a next step read-only and never offers to edit it.
+   */
+  nextStepWrites?: boolean;
   documents: {
     list(recruitId: string): Promise<ServerResult<ChDocument[]>>;
     /** The file goes straight to Storage (./upload.ts), so a film is not held to a server action's body limit. A refusal of the file itself comes back as `refused`. */

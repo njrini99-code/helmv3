@@ -1323,6 +1323,7 @@ features:
         - src/clubhouse/screens/recruiting/**
         - src/clubhouse/data/recruiting.ts
         - src/clubhouse/data/recruiting-shape.ts
+        - src/clubhouse/data/recruiting-calendar.ts
         - src/clubhouse/routes/recruiting.tsx
       api: []
       actions:
@@ -1333,6 +1334,7 @@ features:
       services: []
       db:
         - supabase/migrations/*recruit_documents*.sql
+        - supabase/migrations/*golf_recruits_next_step*.sql
       tests:
         - src/clubhouse/__tests__/recruiting.test.tsx
         - src/clubhouse/__tests__/recruiting-upload.test.tsx

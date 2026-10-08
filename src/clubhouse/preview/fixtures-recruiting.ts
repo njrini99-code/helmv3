@@ -61,3 +61,23 @@ export const PREVIEW_DOCUMENTS: Record<string, ChDocument[]> = {
 export const PREVIEW_RECRUITING: ChRecruiting = { prospects: PREVIEW_PROSPECTS, error: false, now: PREVIEW_RECRUITING_NOW };
 export const PREVIEW_RECRUITING_EMPTY: ChRecruiting = { prospects: [], error: false, now: PREVIEW_RECRUITING_NOW };
 export const PREVIEW_RECRUITING_FAILED: ChRecruiting = { prospects: [], error: true, now: PREVIEW_RECRUITING_NOW };
+
+/**
+ * The premium pass (P014 C1, C2): the same list once the next-step columns exist (`nextStep`), with steps on four
+ * prospects, and a Division I men's program from the team, so the calendar line reads from the team. Mason's visit is
+ * this month and due; Lila's decision is past; Caleb's call is beyond the two-week plate; Owen has a label and no day.
+ */
+const NEXT_STEPS: Record<string, Pick<ChProspect, 'nextStepLabel' | 'nextStepDate'>> = {
+  'p-mason': { nextStepLabel: 'Official visit', nextStepDate: '2026-09-30' },
+  'p-lila': { nextStepLabel: 'Decision due', nextStepDate: '2026-09-20' },
+  'p-caleb': { nextStepLabel: 'Call', nextStepDate: '2026-10-28' },
+  'p-owen': { nextStepLabel: 'Unofficial visit', nextStepDate: null },
+};
+export const PREVIEW_RECRUITING_NEXT: ChRecruiting = {
+  ...PREVIEW_RECRUITING,
+  prospects: PREVIEW_PROSPECTS.map((x) => ({ nextStepLabel: null, nextStepDate: null, ...x, ...NEXT_STEPS[x.id] })),
+  nextStep: true,
+  program: { division: 'ncaa-d1', gender: 'mens' },
+};
+/** The team's organization names no division the calendar can read: the coach picks one on this device. */
+export const PREVIEW_RECRUITING_NO_DIVISION: ChRecruiting = { ...PREVIEW_RECRUITING, program: { division: null, gender: 'womens' } };

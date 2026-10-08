@@ -4,6 +4,7 @@ import { UserPlus, UserRoundPen } from 'lucide-react';
 import { useEffect, useId, useState, type InputHTMLAttributes } from 'react';
 import {
   CH_STAGES,
+  NEXT_STEP_SUGGESTIONS,
   checkDraft,
   draftOf,
   inputFromDraft,
@@ -11,9 +12,9 @@ import {
   type ChDraftField,
   type ChDraftProblem,
   type ChProspect,
+  type ChRecruitInput,
   type ChStage,
 } from '../../data/recruiting-shape';
-import type { RecruitInput } from '@/app/golf/actions/recruiting';
 import { haptic } from '../../lib/haptics';
 import { Button } from '../../ui/Button';
 import { Modal } from '../../ui/Modal';
@@ -39,6 +40,7 @@ const keyOf = (f: RecFormState | null) => (f ? `${f.mode}:${f.prospect?.id ?? ''
 export function ProspectForm({
   form,
   phone,
+  nextStep = false,
   saving,
   onSave,
   onClose,
@@ -46,8 +48,10 @@ export function ProspectForm({
 }: {
   form: RecFormState | null;
   phone: boolean;
+  /** C1: the next-step columns exist, so the form shows and sends the next step. */
+  nextStep?: boolean;
   saving: boolean;
-  onSave: (input: RecruitInput, form: RecFormState) => void;
+  onSave: (input: ChRecruitInput, form: RecFormState) => void;
   onClose: () => void;
   onDelete: (p: ChProspect) => void;
 }) {
@@ -78,7 +82,7 @@ export function ProspectForm({
       requestAnimationFrame(() => document.getElementById(`${uid}-${found[0]!.field}`)?.focus());
       return;
     }
-    onSave(inputFromDraft(draft), form);
+    onSave(inputFromDraft(draft, { nextStep }), form);
   };
 
   const adding = form?.mode === 'add';
@@ -96,11 +100,22 @@ export function ProspectForm({
         <div className="ch-rec-form__grp">
           <Field uid={uid} name="hometown" label="Hometown" draft={draft} problems={problems} onChange={setDraft} placeholder="City" autoComplete="off" />
           <div className="ch-rec-form__pair">
-            <Field uid={uid} name="state" label="State" draft={draft} problems={problems} onChange={setDraft} placeholder="NC" autoComplete="off" clean={(v) => v.toUpperCase().slice(0, 2)} />
-            <Field uid={uid} name="classYear" label="Class of" draft={draft} problems={problems} onChange={setDraft} inputMode="numeric" placeholder="2028" autoComplete="off" clean={(v) => v.replace(/\D/g, '').slice(0, 4)} />
+            <Field uid={uid} name="state" label="State" draft={draft} problems={problems} onChange={setDraft} autoComplete="off" clean={(v) => v.toUpperCase().slice(0, 2)} />
+            <Field uid={uid} name="classYear" label="Class of" draft={draft} problems={problems} onChange={setDraft} inputMode="numeric" placeholder="e.g. 2028" autoComplete="off" clean={(v) => v.replace(/\D/g, '').slice(0, 4)} />
           </div>
         </div>
       </div>
+      {nextStep && (
+        <div className="ch-rec-form__grp ch-rec-form__next">
+          <Field uid={uid} name="nextLabel" label="Next step" draft={draft} problems={problems} onChange={setDraft} placeholder="e.g. Official visit" autoComplete="off" list={`${uid}-next-list`} />
+          <Field uid={uid} name="nextDate" label="Due" draft={draft} problems={problems} onChange={setDraft} type="date" autoComplete="off" />
+          <datalist id={`${uid}-next-list`}>
+            {NEXT_STEP_SUGGESTIONS.map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
+        </div>
+      )}
       {(!phone || adding) && (
         <div className="ch-rec-field">
           <span className="ch-field__label">Stage</span>
@@ -206,7 +221,7 @@ function Field({
   onChange: (d: ChDraft) => void;
   /** Keeps the value in shape as it is typed (the state in capitals, the year in digits). */
   clean?: (v: string) => string;
-} & Pick<InputHTMLAttributes<HTMLInputElement>, 'type' | 'inputMode' | 'placeholder' | 'autoComplete'>) {
+} & Pick<InputHTMLAttributes<HTMLInputElement>, 'type' | 'inputMode' | 'placeholder' | 'autoComplete' | 'list'>) {
   const problem = problems.find((p) => p.field === name);
   return (
     <div className="ch-field ch-rec-f">

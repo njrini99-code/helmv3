@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -60,6 +60,9 @@ import {
   screenFile,
   sharesOf,
   sortProspects,
+  isNextStepDue,
+  nextStepKind,
+  nextStepSummary,
   telHref,
   toDocument,
   toProspect,
@@ -79,7 +82,7 @@ import { ClubhouseMarker } from '../shell/context';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
-import { PREVIEW_DOCUMENTS, PREVIEW_PROSPECTS, PREVIEW_RECRUITING, PREVIEW_RECRUITING_EMPTY, PREVIEW_RECRUITING_FAILED, PREVIEW_RECRUITING_NOW } from '../preview/fixtures-recruiting';
+import { PREVIEW_DOCUMENTS, PREVIEW_PROSPECTS, PREVIEW_RECRUITING, PREVIEW_RECRUITING_EMPTY, PREVIEW_RECRUITING_FAILED, PREVIEW_RECRUITING_NEXT, PREVIEW_RECRUITING_NO_DIVISION, PREVIEW_RECRUITING_NOW } from '../preview/fixtures-recruiting';
 
 // A swap's leaving copy (ui/Swap.tsx: the list as a stage is picked, CH-14603) is hidden from assistive tech while it
 // fades; jsdom never finishes the fade, so read the live copy only.
@@ -384,10 +387,11 @@ describe('Recruiting · desktop', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Recruiting' })).toBeTruthy();
     const group = screen.getByRole('group', { name: 'Filter by stage' });
     expect(group.getAttribute('data-ch-code')).toBe('CH-14801');
-    for (const [name, pct] of [['Watched, 3 prospects', '38% of list'], ['Recruiting, 3 prospects', '38% of list'], ['Offered, 1 prospect', '12% of list'], ['Committed, 1 prospect', '12% of list']] as const) {
+    // P014 finding #4 (intentional change): the share of the list is no longer drawn; the count and its label carry it.
+    for (const name of ['Watched, 3 prospects', 'Recruiting, 3 prospects', 'Offered, 1 prospect', 'Committed, 1 prospect']) {
       const b = within(group).getByRole('button', { name });
       expect(b.getAttribute('aria-pressed')).toBe('false');
-      expect(b.textContent).toContain(pct);
+      expect(b.textContent).not.toContain('% of list');
     }
     expect(screen.getByText('8 prospects · 1 committed')).toBeTruthy();
     expect(screen.getByRole('table').getAttribute('data-ch-code')).toBe('CH-14802');
@@ -489,7 +493,7 @@ describe('Recruiting · desktop', () => {
     const user = userEvent.setup();
     wrap(PREVIEW_RECRUITING, fakeWrites(), { query: 'Tampa', stage: 'offered', openId: 'p-owen' });
     expect(code('CH-14302')?.textContent).toContain('No prospects match “Tampa” in Offered');
-    expect(code('CH-14302')?.textContent).toContain('Search looks at names, hometowns, email and notes. Try another word, or look across every stage.');
+    expect(code('CH-14302')?.textContent).toContain('Search looks at names, hometowns, states, email and notes. Try another word, or look across every stage.');
     expect(panel('Owen Park')).toBeTruthy();
     expect(screen.queryByRole('table')).toBeNull();
     expect(screen.getByRole('button', { name: 'Offered, 1 prospect' }).getAttribute('aria-pressed')).toBe('true');
@@ -618,6 +622,9 @@ describe('Recruiting · desktop', () => {
     await act(async () => save.resolve({ success: true }));
     await waitFor(() => expect(document.querySelector('p[data-ch-code="CH-14803"]')?.textContent).toBe('Mason Reilly is now Committed'));
     expect(document.querySelector('p[data-ch-code="CH-14803"]')?.getAttribute('role')).toBe('status');
+    // P014 B1 (intentional change): a commit's success haptic lands as its gilt rule finishes drawing, not as the save lands.
+    expect(hapticSpy).not.toHaveBeenCalledWith('success');
+    fireEvent.animationEnd(document.querySelector('.ch-rec-commit.is-drawing')!);
     expect(hapticSpy).toHaveBeenCalledWith('success');
     // A picked stage is the most recently updated.
     expect(rowNames()[0]).toBe('Mason Reilly');
@@ -692,11 +699,18 @@ describe('Recruiting · desktop', () => {
 
   // ── Delete, and the question first ─────────────────────────────────────────
 
+  /** P014 finding #3 (intentional change): on desktop Delete sits in the panel's overflow menu, not as a link always in view. */
+  const askDelete = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
+    expect(within(panel(name)).queryByRole('button', { name: 'Delete prospect' })).toBeNull();
+    await user.click(within(panel(name)).getByRole('button', { name: `More for ${name}` }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Delete prospect' }));
+  };
+
   it('CH-14501 CH-14702 CH-14907 CH-14406 delete asks first, with a warning felt before the question; Keep them leaves everything; Delete removes the prospect and opens the next', async () => {
     const user = userEvent.setup();
     const w = fakeWrites();
     wrap(PREVIEW_RECRUITING, w);
-    await user.click(within(panel('Mason Reilly')).getByRole('button', { name: 'Delete prospect' }));
+    await askDelete(user, 'Mason Reilly');
     expect(hapticSpy).toHaveBeenCalledWith('warning');
     expect(code('CH-14501')?.textContent).toMatch(/Delete Mason Reilly\?.*This removes them from your list, with their notes and documents\. This can’t be undone\./);
     expect(w.remove).not.toHaveBeenCalled();
@@ -706,7 +720,7 @@ describe('Recruiting · desktop', () => {
     // Delete, answered slowly: "Deleting" and nothing can be double-tapped.
     const slow = deferred<{ success: boolean }>();
     w.remove.mockReturnValue(slow.promise);
-    await user.click(within(panel('Mason Reilly')).getByRole('button', { name: 'Delete prospect' }));
+    await askDelete(user, 'Mason Reilly');
     await user.click(within(dlg()).getByRole('button', { name: 'Delete prospect' }));
     expect(code('CH-14406')?.textContent).toBe('Deleting');
     expect((within(dlg()).getByRole('button', { name: 'Deleting' }) as HTMLButtonElement).disabled).toBe(true);
@@ -727,7 +741,7 @@ describe('Recruiting · desktop', () => {
     const w = fakeWrites();
     w.remove.mockImplementation(() => fail());
     wrap(PREVIEW_RECRUITING, w);
-    await user.click(within(panel('Mason Reilly')).getByRole('button', { name: 'Delete prospect' }));
+    await askDelete(user, 'Mason Reilly');
     await user.click(within(dlg()).getByRole('button', { name: 'Delete prospect' }));
     await expectCode('CH-14004', /Couldn’t delete Mason Reilly/);
     expect(code('CH-14501')).not.toBeNull();
@@ -1264,5 +1278,253 @@ describe('Recruiting · phone', () => {
     expect(top().queryByRole('button', { name: 'Add prospect' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalled();
+  });
+});
+
+// ── The premium pass (P014 B1, C1, C2) ───────────────────────────────────────
+
+const mediaWith = (matches: (q: string) => boolean) =>
+  ((q: string) => ({
+    matches: matches(q),
+    media: q,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  })) as never;
+
+describe('Recruiting · next step (C1)', () => {
+  it('CH-14802 with the columns absent, nothing about a next step is drawn, offered or sent; a kept "Next step due" sort falls back', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('ch-recruiting-sort', 'next');
+    const w = fakeWrites();
+    wrap(PREVIEW_RECRUITING, w, null);
+    expect(screen.queryByRole('columnheader', { name: 'Next step' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Next step' })).toBeNull();
+    expect(screen.queryByRole('radio', { name: 'Next step due' })).toBeNull();
+    expect(rowNames()[0]).toBe('Mason Reilly');
+    expect(screen.queryByText(/visits? this month|decisions? due/)).toBeNull();
+    await user.click(within(panel('Mason Reilly')).getByRole('button', { name: 'Edit' }));
+    expect(within(dlg()).queryByRole('textbox', { name: 'Next step' })).toBeNull();
+    await user.click(within(dlg()).getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(w.update).toHaveBeenCalled());
+    const sent = (w.update.mock.calls[0] as unknown[])[1] as Record<string, unknown>;
+    expect(Object.keys(sent)).not.toContain('next_step_label');
+    expect(Object.keys(sent)).not.toContain('next_step_date');
+  });
+
+  it('with the columns present but writes that cannot store a next step (the live set today), it is read-only and never sent', async () => {
+    const user = userEvent.setup();
+    const w = fakeWrites();
+    wrap(PREVIEW_RECRUITING_NEXT, w);
+    expect(within(panel('Mason Reilly')).getByRole('region', { name: 'Next step' }).textContent).toContain('Official visit · Sep 30');
+    expect(within(panel('Mason Reilly')).queryByRole('button', { name: /Change/ })).toBeNull();
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Hannah Duarte/ }));
+    expect(within(panel('Hannah Duarte')).queryByRole('region', { name: 'Next step' })).toBeNull();
+    expect(code('CH-14307')).toBeNull();
+    await user.click(within(panel('Hannah Duarte')).getByRole('button', { name: 'Edit' }));
+    expect(within(dlg()).queryByRole('combobox', { name: 'Next step' })).toBeNull();
+    await user.click(within(dlg()).getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(w.update).toHaveBeenCalled());
+    expect(Object.keys((w.update.mock.calls[0] as unknown[])[1] as object)).not.toContain('next_step_label');
+    expect(createLiveRecruitingWrites().nextStepWrites).toBeFalsy();
+    // A save that didn't send the step keeps the one the prospect had.
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Mason Reilly/ }));
+    await user.click(within(panel('Mason Reilly')).getByRole('button', { name: 'Edit' }));
+    await user.click(within(dlg()).getByRole('button', { name: 'Save changes' }));
+    await expectCode('CH-14906');
+    expect(within(panel('Mason Reilly')).getByRole('region', { name: 'Next step' }).textContent).toContain('Official visit · Sep 30');
+  });
+
+  it('CH-14802 CH-14307 with the columns present: the column, the panel field, the head count, the sort, and the edit sends the step', async () => {
+    const user = userEvent.setup();
+    const w = { ...fakeWrites(), nextStepWrites: true };
+    wrap(PREVIEW_RECRUITING_NEXT, w);
+    expect(screen.getByRole('columnheader', { name: 'Next step' })).toBeTruthy();
+    const masonRow = within(screen.getByRole('table')).getByRole('button', { name: /^Mason Reilly/ }).closest('tr')!;
+    expect(within(masonRow).getByText('Official visit · Sep 30')).toBeTruthy();
+    expect(screen.getByText(/1 visit this month · 1 decision due/)).toBeTruthy();
+    expect(within(panel('Mason Reilly')).getByRole('region', { name: 'Next step' }).textContent).toContain('Official visit · Sep 30');
+    // Sorted by the soonest step: Lila (past), Mason, Caleb, then everyone without a dated step by recency.
+    await user.click(screen.getByRole('radio', { name: 'Next step due' }));
+    expect(rowNames().slice(0, 4)).toEqual(['Lila Brennan', 'Mason Reilly', 'Caleb Nguyen', 'Hannah Duarte']);
+    // A prospect with no step offers to add one, straight into the form's field.
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Hannah Duarte/ }));
+    await user.click(within(code('CH-14307') as HTMLElement).getByRole('button', { name: 'Add' }));
+    const form = within(dlg());
+    await waitFor(() => expect(document.activeElement).toBe(form.getByRole('combobox', { name: 'Next step' })));
+    await user.type(form.getByRole('combobox', { name: 'Next step' }), 'Unofficial visit');
+    fireEvent.change(form.getByLabelText('Due'), { target: { value: '2026-10-03' } });
+    await user.click(form.getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(w.update).toHaveBeenCalledWith('p-hannah', expect.objectContaining({ next_step_label: 'Unofficial visit', next_step_date: '2026-10-03' })));
+    await waitFor(() => expect(within(panel('Hannah Duarte')).getByRole('region', { name: 'Next step' }).textContent).toContain('Unofficial visit · Oct 3'));
+  });
+
+  it('the rules: kinds, due, the head count and the sort', () => {
+    const now = new Date(PREVIEW_RECRUITING_NOW);
+    expect(nextStepKind('Official visit')).toBe('visit');
+    expect(nextStepKind('Decision due')).toBe('decision');
+    expect(nextStepKind('Commitment deadline')).toBe('decision');
+    expect(nextStepKind('Call the parents')).toBe('other');
+    expect(isNextStepDue({ nextStepDate: '2026-10-09' }, now, 'UTC')).toBe(true);
+    expect(isNextStepDue({ nextStepDate: '2026-10-10' }, now, 'UTC')).toBe(false);
+    expect(isNextStepDue({ nextStepDate: null }, now, 'UTC')).toBe(false);
+    expect(nextStepSummary(PREVIEW_RECRUITING_NEXT.prospects, now, 'UTC')).toBe('1 visit this month · 1 decision due');
+    expect(nextStepSummary(PREVIEW_PROSPECTS, now, 'UTC')).toBeNull();
+    expect(checkDraft({ ...draftOf(null), first: 'A', nextDate: '2026-02-30' })).toEqual([expect.objectContaining({ field: 'nextDate', code: 'CH-14111' })]);
+    expect(inputFromDraft({ ...draftOf(null), first: 'A', nextLabel: ' Call ', nextDate: '' }, { nextStep: true })).toMatchObject({ next_step_label: 'Call', next_step_date: null });
+    expect('next_step_label' in inputFromDraft({ ...draftOf(null), first: 'A', nextLabel: 'Call' })).toBe(false);
+    // A row read before the migration has no next-step fields at all; after it, they are read.
+    expect('nextStepLabel' in toProspect({ id: 'x', team_id: 't', first_name: 'A', last_name: null, hs_class: null, email: null, phone: null, hometown: null, state: null, notes: null, status: 'watched', created_at: '', updated_at: '' })).toBe(false);
+    expect(
+      toProspect({ id: 'x', team_id: 't', first_name: 'A', last_name: null, hs_class: null, email: null, phone: null, hometown: null, state: null, notes: null, status: 'watched', created_at: '', updated_at: '', next_step_label: 'Call', next_step_date: '2026-10-01' } as never),
+    ).toMatchObject({ nextStepLabel: 'Call', nextStepDate: '2026-10-01' });
+  });
+});
+
+describe('Recruiting · Committed is a moment, once (B1)', () => {
+  const realMatchMedia = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = realMatchMedia;
+  });
+
+  it('CH-14806 a successful move to Committed draws the gilt rule and the success haptic lands at its end, not on the tap; it never replays', async () => {
+    const user = userEvent.setup();
+    const w = fakeWrites();
+    const save = deferred<{ success: boolean }>();
+    w.update.mockReturnValue(save.promise);
+    wrap(PREVIEW_RECRUITING, w);
+    await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Committed' }));
+    expect(hapticSpy).not.toHaveBeenCalledWith('success');
+    expect(document.querySelector('.ch-rec-commit.is-drawing')).toBeNull();
+    await act(async () => save.resolve({ success: true }));
+    const rule = await waitFor(() => {
+      const r = document.querySelector('.ch-rec-commit.is-drawing');
+      expect(r).not.toBeNull();
+      return r!;
+    });
+    expect(hapticSpy).not.toHaveBeenCalledWith('success');
+    expect(panel('Mason Reilly').querySelector('.ch-rec-av.is-gilt')).not.toBeNull();
+    fireEvent.animationEnd(rule);
+    expect(hapticSpy.mock.calls.filter(([k]) => k === 'success')).toHaveLength(1);
+    expect(document.querySelector('.ch-rec-commit.is-drawing')).toBeNull();
+    expect(code('CH-14806')).not.toBeNull();
+    // Away and back: the committed prospect shows the rule at rest, with no second beat.
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Caleb Nguyen/ }));
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Mason Reilly/ }));
+    expect(document.querySelector('.ch-rec-commit.is-drawing')).toBeNull();
+    expect(hapticSpy.mock.calls.filter(([k]) => k === 'success')).toHaveLength(1);
+  });
+
+  it('CH-14806 leaving the prospect before the rule finishes drops the moment: coming back never replays it', async () => {
+    const user = userEvent.setup();
+    wrap();
+    await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Committed' }));
+    await waitFor(() => expect(document.querySelector('.ch-rec-commit.is-drawing')).not.toBeNull());
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Caleb Nguyen/ }));
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Mason Reilly/ }));
+    expect(panel('Mason Reilly').querySelector('.ch-rec-commit')).not.toBeNull();
+    expect(document.querySelector('.ch-rec-commit.is-drawing')).toBeNull();
+  });
+
+  it('a move to another stage, or a commit that fails, has no moment', async () => {
+    const user = userEvent.setup();
+    const w = fakeWrites();
+    wrap(PREVIEW_RECRUITING, w);
+    await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Recruiting' }));
+    await waitFor(() => expect(w.update).toHaveBeenCalled());
+    expect(document.querySelector('.ch-rec-commit')).toBeNull();
+    // An ordinary move keeps the save's own success haptic.
+    await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('success'));
+    hapticSpy.mockClear();
+    w.update.mockImplementation(() => fail());
+    await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Committed' }));
+    await expectCode('CH-14003');
+    expect(document.querySelector('.ch-rec-commit.is-drawing')).toBeNull();
+    expect(hapticSpy).not.toHaveBeenCalledWith('success');
+  });
+
+  it('with reduced motion the rule is simply there and the haptic fires at once', async () => {
+    window.matchMedia = mediaWith((q) => q === '(prefers-reduced-motion: reduce)');
+    const user = userEvent.setup();
+    wrap();
+    await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Committed' }));
+    await waitFor(() => expect(hapticSpy).toHaveBeenCalledWith('success'));
+    expect(document.querySelector('.ch-rec-commit')).not.toBeNull();
+    expect(document.querySelector('.ch-rec-commit.is-drawing')).toBeNull();
+  });
+
+  it('on the phone the moment waits under the stage sheet and plays as Done closes it', async () => {
+    window.matchMedia = mediaWith((q) => q === '(max-width: 820px)');
+    window.history.replaceState(null, '', '/golf/dashboard/recruiting');
+    const user = userEvent.setup();
+    const w = fakeWrites();
+    wrap(PREVIEW_RECRUITING, w);
+    await user.click(within(screen.getByRole('list')).getByRole('button', { name: /^Mason Reilly/ }));
+    const d = document.querySelector('section.ch-recm-screen') as HTMLElement;
+    // P014 finding #8: Stage is the full-width row; Email and Call are the two actions under it.
+    expect(within(d).getByRole('button', { name: /Stage\s*Offered/ })).toBeTruthy();
+    expect(within(d).getByRole('link', { name: 'Email' })).toBeTruthy();
+    await user.click(within(d).getByRole('button', { name: /Stage\s*Offered/ }));
+    await user.click(within(dlg()).getByRole('radio', { name: /Committed/ }));
+    await waitFor(() => expect(w.update).toHaveBeenCalledWith('p-mason', { status: 'committed' }));
+    await waitFor(() => expect(d.querySelector('.ch-rec-commit.is-waiting')).not.toBeNull());
+    expect(hapticSpy).not.toHaveBeenCalledWith('success');
+    await user.click(within(dlg()).getByRole('button', { name: 'Done' }));
+    const rule = await waitFor(() => {
+      const r = d.querySelector('.ch-rec-commit.is-drawing');
+      expect(r).not.toBeNull();
+      return r!;
+    });
+    fireEvent.animationEnd(rule);
+    expect(hapticSpy).toHaveBeenCalledWith('success');
+    window.history.replaceState(null, '', '/');
+  });
+});
+
+describe('Recruiting · the recruiting calendar (C2)', () => {
+  it('CH-14808 the team’s division and gender give the quiet line; nothing to pick', () => {
+    wrap(PREVIEW_RECRUITING_NEXT);
+    expect(code('CH-14808')?.textContent).toBe('Division I · Contact period · in-person contact allowed through Nov 8');
+    expect(screen.queryByRole('button', { name: /Choose your division/ })).toBeNull();
+  });
+
+  it('CH-14808 with no division on the team, the coach picks one, kept on this device', async () => {
+    const user = userEvent.setup();
+    wrap(PREVIEW_RECRUITING_NO_DIVISION, fakeWrites(), null);
+    expect(code('CH-14808')?.textContent).toContain('Recruiting calendar');
+    await user.click(screen.getByRole('button', { name: /Choose your division/ }));
+    await user.click(await screen.findByRole('menuitemradio', { name: 'NCAA Division III' }));
+    expect(code('CH-14808')?.textContent).toContain('No recruiting calendar in Division III');
+    expect(localStorage.getItem('ch-recruiting-division')).toBe('ncaa-d3');
+  });
+
+  it('CH-14807 Division I: Email and Call carry a quiet note for a prospect before June 15 of sophomore year; never blocked', async () => {
+    const user = userEvent.setup();
+    const data = { ...PREVIEW_RECRUITING_NEXT, prospects: PREVIEW_RECRUITING_NEXT.prospects.map((p) => (p.id === 'p-owen' ? { ...p, email: 'owen@example.com' } : p)) };
+    wrap(data);
+    expect(code('CH-14807')).toBeNull();
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Owen Park/ }));
+    expect(code('CH-14807')?.textContent).toBe('Division I: no calls or email before June 15, 2027, the end of sophomore year');
+    expect(within(panel('Owen Park')).getByRole('link', { name: /Email/ }).getAttribute('href')).toBe('mailto:owen@example.com');
+  });
+});
+
+describe('Recruiting · findings (P014 #1, #6, #7)', () => {
+  it('the Add form’s short fields carry hints, not plausible values; the search names state; the privacy line moved to first run', async () => {
+    const user = userEvent.setup();
+    wrap();
+    expect(screen.getByRole('searchbox', { name: 'Search prospects' }).getAttribute('placeholder')).toBe('Search');
+    // The search covers state too, and the no-match line says so (P014 finding #7).
+    await user.type(screen.getByRole('searchbox', { name: 'Search prospects' }), 'zz');
+    expect(code('CH-14302')?.textContent).toContain('names, hometowns, states, email and notes');
+    await user.clear(screen.getByRole('searchbox', { name: 'Search prospects' }));
+    expect(screen.queryByText(/Only coaches see this page/)).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    const form = within(dlg());
+    expect(form.getByRole('textbox', { name: 'State' }).getAttribute('placeholder')).toBeNull();
+    expect(form.getByRole('textbox', { name: 'Class of' }).getAttribute('placeholder')).toBe('e.g. 2028');
   });
 });
