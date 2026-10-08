@@ -17,7 +17,7 @@ export function localSupabase(): { url: string; serviceKey: string } | null {
   // The repo's one reader of the secret key (Review Gate: no direct env read outside it).
   const serviceKey = tryGetSecretKey().key ?? '';
   if (!url || !serviceKey) return null;
-  let host = '';
+  let host: string;
   try {
     host = new URL(url).hostname;
   } catch {

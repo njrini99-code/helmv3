@@ -225,7 +225,7 @@ let cwdHoldersCache;
  */
 export function listCwdHolders(exec = execFileSync) {
   if (cwdHoldersCache !== undefined && exec === execFileSync) return cwdHoldersCache;
-  let out = null;
+  let out;
   try {
     out = exec('lsof', ['-d', 'cwd', '-Fpn'], { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 * 1024 * 1024 });
   } catch (e) {

@@ -1,3 +1,4 @@
+/* global document, getComputedStyle -- the PROBE body runs inside the page via page.evaluate */
 // Premium UI pass over every GolfHelm route, as coach and as player.
 //
 //   DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/ui-audit-golf.mjs
@@ -448,7 +449,7 @@ async function auditRoute(page, route, vp, findings, persona) {
   // /documents, /courses, /settings and /whats-new never reached disk, which is
   // precisely where "same route, wrong persona's UI" bugs live.
   const slug = persona + '__' + route.replace(/\//g, '_').replace(/^_/, '') + '__' + vp.name;
-  try { await page.screenshot({ path: path.join(SHOTS, slug + '.png'), fullPage: false }); } catch {}
+  try { await page.screenshot({ path: path.join(SHOTS, slug + '.png'), fullPage: false }); } catch { /* a failed screenshot must not fail the audit */ }
   return probe;
 }
 

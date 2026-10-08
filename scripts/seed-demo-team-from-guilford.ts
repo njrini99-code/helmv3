@@ -77,7 +77,7 @@ async function copyForPair(
   pair: CopyPair,
   dryRun: boolean,
 ): Promise<CopyResult> {
-  let result: CopyResult = { pair, rounds: 0, holes: 0, shots: 0, deletedStubs: 0 };
+  const result: CopyResult = { pair, rounds: 0, holes: 0, shots: 0, deletedStubs: 0 };
 
   // Step 1: count + (optionally) delete existing stub rounds for the dst player.
   // Stub = round with no shots. Real seed data we just copied has shots, so we

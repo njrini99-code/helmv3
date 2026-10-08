@@ -1,3 +1,4 @@
+/* global document -- page.evaluate callbacks run in the browser */
 // Headless-Chrome smoke test for the team-toggle build.
 // Logs in as the demo coach and visits every coach surface touched in Phase B,
 // asserting no console errors / page errors / 5xx / Next error overlay.

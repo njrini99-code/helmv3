@@ -64,7 +64,7 @@ export function fileToFormat(input, root, deps = {}) {
 }
 
 function main() {
-  let input = {};
+  let input;
   try {
     const raw = readFileSync(0, 'utf8');
     input = raw.trim() ? JSON.parse(raw) : {};
