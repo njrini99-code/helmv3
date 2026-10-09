@@ -109,8 +109,8 @@
   --ch-bg-hover: var(--ch-ivory-50);
   --ch-bg-selected: var(--ch-green-50);
   --ch-text-primary: var(--ch-ink-900);
-  --ch-text-secondary: var(--ch-ink-600);
-  --ch-text-tertiary: var(--ch-ink-500);
+  --ch-text-secondary: var(--ch-ink-700);
+  --ch-text-tertiary: var(--ch-ink-600);
   --ch-text-disabled: var(--ch-ink-300);
   --ch-text-on-accent: #ffffff;
   --ch-accent: var(--ch-green-600);

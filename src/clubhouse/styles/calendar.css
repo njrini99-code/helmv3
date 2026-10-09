@@ -1122,6 +1122,15 @@
   top: 16px;
   max-height: calc(100vh - 110px);
   overflow: auto;
+  /* The panel scrolls itself (usePanelSmoothScroll): its ends don't hand the wheel on to the canvas behind it, and
+     Lenis eases it with no native smooth scrolling underneath. */
+  overscroll-behavior: contain;
+}
+.ch-in-wrap.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.ch-in-wrap.lenis.lenis-stopped {
+  overflow: clip;
 }
 .ch-in {
   display: flex;
@@ -1396,6 +1405,90 @@
 .ch-in__fact.is-own > svg {
   background: color-mix(in oklab, var(--ch-champagne-500) 18%, var(--ch-bg-surface));
   color: color-mix(in oklab, var(--ch-champagne-500) 70%, var(--ch-ink-900));
+}
+/* The panel's head plate (owner, 2026-10-08: "black on ivory"): every event type opens on a lit plate in the colour its
+   block has on the grid, in ivory ink. data-tone: green practice, forest competition, slate class and travel, ink
+   meeting and other, champagne busy time, amber overlap. */
+.ch-in__plate {
+  --ch-plate: var(--ch-ink-700);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 16px 14px;
+  border-radius: 16px;
+  background: var(--ch-light-sky), var(--ch-plate);
+  color: var(--ch-ivory-50);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14), var(--ch-elevation-reading);
+}
+.ch-in__plate[data-tone='green'] {
+  --ch-plate: var(--ch-green-fill-600);
+}
+.ch-in__plate[data-tone='forest'] {
+  --ch-plate: var(--ch-green-800);
+}
+.ch-in__plate[data-tone='slate'] {
+  --ch-plate: var(--ch-info-600);
+}
+.ch-in__plate[data-tone='champagne'] {
+  --ch-plate: color-mix(in oklab, var(--ch-champagne-500) 55%, var(--ch-ink-900));
+}
+.ch-in__plate[data-tone='amber'] {
+  --ch-plate: color-mix(in oklab, var(--ch-warning-600) 80%, var(--ch-ink-900));
+}
+.ch-in__plate .ch-in__kick {
+  justify-content: flex-start;
+  gap: 8px;
+  color: rgb(255 255 255 / 0.8);
+}
+.ch-in__plate .ch-in__kick .ch-badge {
+  background: rgb(255 255 255 / 0.18);
+  color: var(--ch-ivory-50);
+  box-shadow: none;
+}
+.ch-in__plate .ch-in__kick .ch-btn {
+  margin-left: auto;
+  color: var(--ch-ivory-50);
+}
+.ch-in__plate .ch-cal-sub {
+  color: rgb(255 255 255 / 0.84);
+}
+[data-ui='clubhouse'] main[data-canopy] .ch-in__plate h2.ch-in__title {
+  color: var(--ch-ivory-50);
+}
+.ch-in__chip {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.18);
+  font: 600 12px/1.2 var(--ch-font-sans);
+  color: var(--ch-ivory-50);
+}
+.ch-in__by {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font: 500 13px/1.3 var(--ch-font-sans);
+  color: rgb(255 255 255 / 0.84);
+}
+.ch-in__by b {
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.16);
+  font-weight: 600;
+  color: var(--ch-ivory-50);
+}
+.ch-in__note {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--ch-info-100);
+  font: var(--ch-type-caption);
+  color: var(--ch-info-600);
+}
+.ch-in__note > svg {
+  margin-top: 1px;
 }
 .ch-in__att {
   display: grid;

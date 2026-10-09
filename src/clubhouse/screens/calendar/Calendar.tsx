@@ -32,7 +32,7 @@ import { Modal } from '../../ui/Modal';
 import { useChPhone } from '../../lib/use-phone';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useLightPlace } from '../../shell/light';
-import { canvasLenis, canvasScrollNow } from '../../lib/smooth-scroll';
+import { canvasLenis, canvasScrollNow, usePanelSmoothScroll } from '../../lib/smooth-scroll';
 import { usePopoverFit } from '../../lib/use-popover-fit';
 import { CalendarFirstRun } from './CalendarFirstRun';
 
@@ -463,6 +463,8 @@ export function Calendar({
     };
   }, [lightPlace.place, data.timezone]);
   const reduced = useChReducedMotion();
+  const panel = useRef<HTMLElement | null>(null);
+  usePanelSmoothScroll(panel);
   useOpenOnNow(focusTick, dates[0]!, !phone && (view === 'week' || view === 'day') && !data.eventsError, focusHour(dates, events, now), reduced);
   // The day, week or month on show. Stepping to another slides the grid the way it went (CH-6605): a later period comes in
   // from the right, an earlier one from the left.
@@ -795,7 +797,7 @@ export function Calendar({
               </Swap>
             </SectionBoundary>
           </div>
-          <aside className="ch-in-wrap ch-cal-surface" aria-label="Details" aria-live="polite" /* CH-6802 */>
+          <aside ref={panel} className="ch-in-wrap ch-cal-surface" aria-label="Details" aria-live="polite" /* CH-6802 */>
             <SectionBoundary surface="calendar.panel" label="The detail panel" code="CH-6211">
               {!insp && <Summary ctx={ctx} />}
               {insp?.kind === 'event' && <EventDetail key={`${insp.id}${insp.date}`} ctx={ctx} id={insp.id} date={insp.date} />}
