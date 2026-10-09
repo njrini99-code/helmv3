@@ -1,4 +1,6 @@
-import { useId, type ReactNode } from 'react';
+'use client';
+
+import { useId, useState, type ReactNode } from 'react';
 import type { ChReviewHole } from '../../data/round-review-shape';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { costliest, flow, puttBands, puttSplit, trail, type HoleResult } from './round-insights';
@@ -44,29 +46,50 @@ export function RzBig({ value, tone, unit }: { value: string; tone?: 'good' | 'b
   );
 }
 
+/** The marks on the deep-green stage: under par is red (D-42), par recedes, over par is gold, a double is ivory. */
 const COLOR: Record<HoleResult, string> = {
-  eagle: '#7f2a21',
-  birdie: 'var(--ch-chart-flag)',
-  par: 'var(--ch-ivory-400)',
-  bogey: '#8f8b81',
-  double: '#1c1b18',
+  eagle: '#ff6f5e',
+  birdie: '#ff8a7a',
+  par: 'rgb(244 238 221 / 0.55)',
+  bogey: '#e7b866',
+  double: '#f4eedd',
 };
+const WORD: Record<HoleResult, string> = { eagle: 'Eagle', birdie: 'Birdie', par: 'Par', bogey: 'Bogey', double: 'Double bogey or worse' };
 
 const pos = (v: number, lo: number, hi: number) => Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
 
-/** The round as a running score to par: a line that rises when the player is gaining on par and falls when losing to it, the holes below as columns. */
-export function ScoreFlow({ holes, outScore, outToPar, inScore, inToPar }: { holes: ChReviewHole[]; outScore: number | null; outToPar: number | null; inScore: number | null; inToPar: number | null }) {
+/**
+ * The round as a running score to par on a deep-green stage: a line that rises when the player is gaining on par and falls
+ * when strokes go back, the holes below as columns. Move across it to read a hole; a click picks the hole on the scorecard.
+ */
+export function ScoreFlow({
+  holes,
+  outScore,
+  outToPar,
+  inScore,
+  inToPar,
+  onPick,
+}: {
+  holes: ChReviewHole[];
+  outScore: number | null;
+  outToPar: number | null;
+  inScore: number | null;
+  inToPar: number | null;
+  onPick?: (n: number) => void;
+}) {
   const id = useId();
+  const [hover, setHover] = useState<number | null>(null);
   const pts = flow(holes);
   if (pts.length < 2) return <p className="ch-rzmiss">The running score needs two holes with scores.</p>;
   const n = Math.max(...holes.map((h) => h.n));
+  const W = 720;
   const X0 = 52;
   const X1 = 690;
   const x = (hole: number) => X0 + ((hole - 1) / Math.max(1, n - 1)) * (X1 - X0);
   // The plot runs from just under the best the round got to just over its worst, always with par inside it; up is better.
   const lo = Math.min(0, ...pts.map((p) => p.cum)) - 1;
   const hi = Math.max(0, ...pts.map((p) => p.cum)) + 1;
-  const TOP = 40;
+  const TOP = 44;
   const H = 150;
   const y = (v: number) => TOP + ((v - lo) / (hi - lo)) * H;
   const Y0 = y(0);
@@ -77,78 +100,124 @@ export function ScoreFlow({ holes, outScore, outToPar, inScore, inToPar }: { hol
   for (let v = Math.ceil(lo / stepBy) * stepBy; v <= hi; v += stepBy) ticks.push(v);
   const worst = costliest(holes, 1)[0];
   const colBase = TOP + H + 44;
+  const height = colBase + 52;
   const label = (v: number) => (v === 0 ? 'E' : v > 0 ? `+${v}` : `−${Math.abs(v)}`);
   const summary = pts.map((p) => `Hole ${p.n} ${formatToPar(p.cum)}`).join(', ');
   const split = n > 9 ? x(9) + (x(10) - x(9)) / 2 : null;
+  const cur = hover == null ? null : (pts.find((p) => p.n === hover) ?? null);
+  const near = (clientX: number, el: SVGSVGElement) => {
+    const r = el.getBoundingClientRect();
+    const vx = ((clientX - r.left) / r.width) * W;
+    return pts.reduce((a, b) => (Math.abs(x(b.n) - vx) < Math.abs(x(a.n) - vx) ? b : a)).n;
+  };
   return (
-    <svg className="ch-rzsvg" viewBox={`0 0 720 ${colBase + 52}`} role="img" aria-label={`Running score to par: ${summary}`}>
-      <defs>
-        <clipPath id={`${id}-up`}>
-          <rect x={0} y={0} width={720} height={Y0} />
-        </clipPath>
-        <clipPath id={`${id}-down`}>
-          <rect x={0} y={Y0} width={720} height={400} />
-        </clipPath>
-        <linearGradient id={`${id}-g`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="var(--ch-warning-600)" stopOpacity="0.34" />
-          <stop offset="1" stopColor="var(--ch-warning-600)" stopOpacity="0.04" />
-        </linearGradient>
-      </defs>
-      {ticks.map((v) => (
-        <g key={v}>
-          <line x1={X0 - 8} y1={y(v)} x2={X1 + 10} y2={y(v)} stroke={v === 0 ? 'var(--ch-text-primary)' : 'var(--ch-ledger-rule)'} strokeWidth={v === 0 ? 1.5 : 1} />
-          <text x={X0 - 14} y={y(v) + 4} textAnchor="end" fontSize={12} fontWeight={v === 0 ? 700 : 500} fill="var(--ch-text-tertiary)">
-            {label(v)}
-          </text>
-        </g>
-      ))}
-      <text className="ch-rzsvg__hint" x={X1 + 10} y={TOP - 12} textAnchor="end" fontSize={11} fill="var(--ch-text-tertiary)">Better than par</text>
-      <text className="ch-rzsvg__hint" x={X1 + 10} y={TOP + H + 22} textAnchor="end" fontSize={11} fill="var(--ch-text-tertiary)">Worse than par</text>
-      {split != null && (
-        <g>
-          <line x1={split} y1={26} x2={split} y2={colBase + 28} stroke="var(--ch-ledger-rule)" strokeDasharray="4 5" />
-          <text x={(x(1) + x(9)) / 2} y={16} textAnchor="middle" fontSize={12.5} fontWeight={600} fill="var(--ch-text-secondary)">
-            Out {outScore ?? NO_DATA} · {formatToPar(outToPar)}
-          </text>
-          <text x={(x(10) + x(n)) / 2} y={16} textAnchor="middle" fontSize={12.5} fontWeight={600} fill="var(--ch-text-secondary)">
-            In {inScore ?? NO_DATA} · {formatToPar(inToPar)}
-          </text>
-        </g>
-      )}
-      <polygon points={area} fill="var(--ch-green-500)" fillOpacity={0.22} clipPath={`url(#${id}-up)`} />
-      <polygon points={area} fill={`url(#${id}-g)`} clipPath={`url(#${id}-down)`} />
-      <polyline points={line} fill="none" stroke="var(--ch-green-800)" strokeWidth={3} strokeLinejoin="round" strokeLinecap="round" />
-      {pts.map((p) => (
-        <circle key={p.n} cx={x(p.n)} cy={y(p.cum)} r={p.delta === 0 ? 4 : 6.5} fill={COLOR[p.result]} stroke="var(--ch-ivory-25)" strokeWidth={2.5} />
-      ))}
-      {worst && (
-        <g>
-          <text x={x(worst.n)} y={y(worst.cum) + 28} textAnchor="middle" fontSize={12} fontWeight={700} fill="var(--ch-warning-600)">
+    <div className="ch-rzstage">
+      <svg
+        className="ch-rzsvg"
+        viewBox={`0 0 ${W} ${height}`}
+        role="img"
+        aria-label={`Running score to par: ${summary}`}
+        onPointerMove={(e) => setHover(near(e.clientX, e.currentTarget))}
+        onPointerLeave={() => setHover(null)}
+        onClick={(e) => onPick?.(near(e.clientX, e.currentTarget))}
+      >
+        <defs>
+          <clipPath id={`${id}-up`}>
+            <rect x={0} y={0} width={W} height={Y0} />
+          </clipPath>
+          <clipPath id={`${id}-down`}>
+            <rect x={0} y={Y0} width={W} height={400} />
+          </clipPath>
+          <linearGradient id={`${id}-gu`} x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stopColor="#9fe0b6" stopOpacity="0.04" />
+            <stop offset="1" stopColor="#9fe0b6" stopOpacity="0.42" />
+          </linearGradient>
+          <linearGradient id={`${id}-gd`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#e7b866" stopOpacity="0.5" />
+            <stop offset="1" stopColor="#e7b866" stopOpacity="0.04" />
+          </linearGradient>
+          <filter id={`${id}-glow`} x="-10%" y="-30%" width="120%" height="160%">
+            <feGaussianBlur stdDeviation="4" result="b" />
+            <feMerge>
+              <feMergeNode in="b" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        {ticks.map((v) => (
+          <g key={v}>
+            <line x1={X0 - 8} y1={y(v)} x2={X1 + 10} y2={y(v)} stroke={v === 0 ? 'rgb(244 238 221 / 0.7)' : 'rgb(244 238 221 / 0.12)'} strokeWidth={v === 0 ? 1.5 : 1} />
+            <text x={X0 - 14} y={y(v) + 4} textAnchor="end" fontSize={12} fontWeight={v === 0 ? 700 : 500} fill="rgb(244 238 221 / 0.62)">
+              {label(v)}
+            </text>
+          </g>
+        ))}
+        <text className="ch-rzsvg__hint" x={X1 + 10} y={TOP - 14} textAnchor="end" fontSize={11} fill="rgb(244 238 221 / 0.5)">Better than par</text>
+        <text className="ch-rzsvg__hint" x={X1 + 10} y={TOP + H + 22} textAnchor="end" fontSize={11} fill="rgb(244 238 221 / 0.5)">Worse than par</text>
+        {split != null && (
+          <g>
+            <line x1={split} y1={28} x2={split} y2={colBase + 28} stroke="rgb(244 238 221 / 0.18)" strokeDasharray="4 5" />
+            <text x={(x(1) + x(9)) / 2} y={18} textAnchor="middle" fontSize={12.5} fontWeight={600} fill="rgb(244 238 221 / 0.8)">
+              Out {outScore ?? NO_DATA} · {formatToPar(outToPar)}
+            </text>
+            <text x={(x(10) + x(n)) / 2} y={18} textAnchor="middle" fontSize={12.5} fontWeight={600} fill="rgb(244 238 221 / 0.8)">
+              In {inScore ?? NO_DATA} · {formatToPar(inToPar)}
+            </text>
+          </g>
+        )}
+        <polygon points={area} fill={`url(#${id}-gu)`} clipPath={`url(#${id}-up)`} />
+        <polygon points={area} fill={`url(#${id}-gd)`} clipPath={`url(#${id}-down)`} />
+        <polyline points={line} fill="none" stroke="#9fe0b6" strokeWidth={3.5} strokeLinejoin="round" strokeLinecap="round" filter={`url(#${id}-glow)`} />
+        {cur && (
+          <g>
+            <line x1={x(cur.n)} y1={30} x2={x(cur.n)} y2={colBase + 20} stroke="rgb(244 238 221 / 0.4)" strokeWidth={1.5} />
+          </g>
+        )}
+        {pts.map((p) => (
+          <g key={p.n}>
+            {p.delta !== 0 && <circle cx={x(p.n)} cy={y(p.cum)} r={13} fill={COLOR[p.result]} opacity={cur?.n === p.n ? 0.3 : 0.16} />}
+            <circle cx={x(p.n)} cy={y(p.cum)} r={cur?.n === p.n ? 8 : p.delta === 0 ? 4 : 6.5} fill={COLOR[p.result]} stroke="#0b3a25" strokeWidth={2.5} />
+          </g>
+        ))}
+        {worst && !cur && (
+          <text x={x(worst.n)} y={y(worst.cum) + 30} textAnchor="middle" fontSize={12} fontWeight={700} fill="#e7b866">
             Hole {worst.n}: {formatSigned(worst.delta, 0)}
           </text>
-        </g>
-      )}
-      <line x1={X0 - 8} y1={colBase} x2={X1 + 10} y2={colBase} stroke="var(--ch-ledger-rule)" />
-      {pts.map((p) => (
-        <rect
-          key={p.n}
-          x={x(p.n) - 9}
-          y={p.delta > 0 ? colBase : colBase + p.delta * 11}
-          width={18}
-          height={Math.max(2, Math.abs(p.delta) * 11)}
-          rx={3}
-          fill={COLOR[p.result]}
-          opacity={p.delta === 0 ? 0.55 : 1}
-        />
-      ))}
-      <g fontSize={12} fill="var(--ch-text-secondary)" textAnchor="middle">
+        )}
+        <line x1={X0 - 8} y1={colBase} x2={X1 + 10} y2={colBase} stroke="rgb(244 238 221 / 0.25)" />
         {pts.map((p) => (
-          <text key={p.n} x={x(p.n)} y={colBase + 36} fontWeight={worst?.n === p.n ? 700 : 500}>
-            {p.n}
-          </text>
+          <rect
+            key={p.n}
+            x={x(p.n) - 9}
+            y={p.delta > 0 ? colBase : colBase + p.delta * 11}
+            width={18}
+            height={Math.max(2, Math.abs(p.delta) * 11)}
+            rx={3}
+            fill={COLOR[p.result]}
+            opacity={p.delta === 0 ? 0.4 : cur && cur.n !== p.n ? 0.55 : 1}
+          />
         ))}
-      </g>
-    </svg>
+        <g fontSize={12} textAnchor="middle">
+          {pts.map((p) => (
+            <text key={p.n} x={x(p.n)} y={colBase + 36} fontWeight={cur?.n === p.n || worst?.n === p.n ? 700 : 500} fill={cur?.n === p.n ? '#f4eedd' : 'rgb(244 238 221 / 0.6)'}>
+              {p.n}
+            </text>
+          ))}
+        </g>
+      </svg>
+      {cur && (
+        <div className="ch-rzstage__tip" style={{ left: `${(x(cur.n) / W) * 100}%` }} role="presentation">
+          <b>
+            Hole {cur.n} · par {cur.par}
+          </b>
+          <span>
+            <i style={{ background: COLOR[cur.result] }} />
+            {cur.score} · {WORD[cur.result]}
+          </span>
+          <em className="ch-num">{formatToPar(cur.cum)} through {cur.n}</em>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -232,71 +301,73 @@ export function PuttingViz({ holes }: { holes: ChReviewHole[] }) {
 }
 
 const LIE_COLOR: Record<string, string> = {
-  fairway: 'var(--ch-green-400)',
-  green: 'var(--ch-green-600)',
-  hole: 'var(--ch-green-800)',
-  rough: 'var(--ch-champagne-500)',
-  sand: 'var(--ch-champagne-500)',
-  other: 'var(--ch-champagne-500)',
-  penalty: 'var(--ch-warning-600)',
-  tee: 'var(--ch-green-400)',
+  fairway: '#9fe0b6',
+  green: '#7bc79a',
+  hole: '#f4eedd',
+  rough: '#e7b866',
+  sand: '#e7b866',
+  other: '#e7b866',
+  penalty: '#ff8a7a',
+  tee: '#9fe0b6',
 };
 
 /** The selected hole's full shots as arcs along its length, tee to pin, each coloured by where it finished; putts counted at the pin. */
 export function ShotTrail({ hole }: { hole: ChReviewHole }) {
   const t = trail(hole);
   if (!t) return null;
-  const X0 = 24;
-  const X1 = 590;
-  const base = 96;
+  const X0 = 30;
+  const X1 = 600;
+  const base = 104;
   const x = (p: number) => X0 + pos(p, 0, 1) * (X1 - X0);
   const label = `Hole ${hole.n} shots along the hole: ${t.steps.map((s) => `${s.kind}${s.penalty ? ' penalty' : ''}${s.left ? ` to ${s.left}` : ''}`).join(', ')}${t.putts ? `, then ${t.putts} ${t.putts === 1 ? 'putt' : 'putts'}` : ''}`;
   return (
-    <svg className="ch-rzsvg ch-rztrail" viewBox="0 0 740 150" role="img" aria-label={label}>
-      <line x1={X0} y1={base} x2={X1} y2={base} stroke="var(--ch-ledger-rule)" strokeWidth={6} strokeLinecap="round" />
-      <line x1={X0} y1={base} x2={X1} y2={base} stroke="var(--ch-green-200)" strokeWidth={2} strokeLinecap="round" />
-      {t.steps.map((s) => {
-        const a = x(s.from);
-        const b = x(s.to);
-        if (s.penalty) {
+    <div className="ch-rzplate">
+      <svg className="ch-rzsvg ch-rztrail" viewBox="0 0 740 150" role="img" aria-label={label}>
+        <line x1={X0} y1={base} x2={X1} y2={base} stroke="rgb(244 238 221 / 0.14)" strokeWidth={8} strokeLinecap="round" />
+        <line x1={X0} y1={base} x2={X1} y2={base} stroke="rgb(244 238 221 / 0.35)" strokeWidth={2} strokeLinecap="round" strokeDasharray="1 7" />
+        {t.steps.map((s) => {
+          const a = x(s.from);
+          const b = x(s.to);
+          if (s.penalty) {
+            return (
+              <g key={s.n}>
+                <circle cx={a} cy={base - 20} r={10} fill="#ff8a7a" />
+                <text x={a} y={base - 16} textAnchor="middle" fontSize={11} fontWeight={700} fill="#0b3a25">+1</text>
+              </g>
+            );
+          }
+          const rise = Math.min(66, 16 + Math.abs(b - a) * 0.16);
+          const mid = (a + b) / 2;
+          const color = LIE_COLOR[s.lie] ?? LIE_COLOR.other;
           return (
             <g key={s.n}>
-              <circle cx={a} cy={base - 18} r={9} fill="var(--ch-warning-600)" />
-              <text x={a} y={base - 14} textAnchor="middle" fontSize={11} fontWeight={700} fill="#fff">+1</text>
+              <path d={`M ${a} ${base} Q ${mid} ${base - rise * 2} ${b} ${base}`} fill="none" stroke={color} strokeWidth={3.5} strokeLinecap="round" opacity={0.95} />
+              <circle cx={b} cy={base} r={9} fill={color} stroke="#0b3a25" strokeWidth={2.5} />
+              <text x={b} y={base + 3.5} textAnchor="middle" fontSize={10} fontWeight={700} fill="#0b3a25">{s.n}</text>
+              {s.left && (
+                <text x={b} y={base + 30} textAnchor="middle" fontSize={11.5} fontWeight={600} fill="rgb(244 238 221 / 0.78)">{s.left} out</text>
+              )}
             </g>
           );
-        }
-        const rise = Math.min(64, 14 + Math.abs(b - a) * 0.16);
-        const mid = (a + b) / 2;
-        const color = LIE_COLOR[s.lie] ?? LIE_COLOR.other;
-        return (
-          <g key={s.n}>
-            <path d={`M ${a} ${base} Q ${mid} ${base - rise * 2} ${b} ${base}`} fill="none" stroke={color} strokeWidth={3.5} strokeLinecap="round" />
-            <circle cx={b} cy={base} r={7} fill={color} stroke="var(--ch-ivory-25)" strokeWidth={2.5} />
-            <text x={b} y={base + 4} textAnchor="middle" fontSize={9.5} fontWeight={700} fill="#fff">{s.n}</text>
-            {s.left && (
-              <text x={b} y={base + 26} textAnchor="middle" fontSize={11.5} fontWeight={600} fill="var(--ch-text-secondary)">{s.left} out</text>
-            )}
+        })}
+        <circle cx={X0} cy={base} r={6} fill="#f4eedd" />
+        <text x={X0} y={base + 30} textAnchor="middle" fontSize={11.5} fontWeight={600} fill="rgb(244 238 221 / 0.78)">
+          {hole.yards ? `Tee · ${hole.yards} yds` : 'Tee'}
+        </text>
+        <line x1={X1 + 16} y1={base} x2={X1 + 16} y2={base - 36} stroke="#f4eedd" strokeWidth={2} />
+        <path d={`M ${X1 + 16} ${base - 36} l 20 7 l -20 7 z`} fill="#ff8a7a" />
+        {t.putts > 0 && (
+          <g>
+            {Array.from({ length: Math.min(t.putts, 5) }, (_, i) => (
+              <circle key={i} cx={X1 + 54 + i * 14} cy={base} r={4.5} fill={t.putts >= 3 ? '#e7b866' : '#9fe0b6'} />
+            ))}
+            <text x={X1 + 54} y={base + 30} fontSize={11.5} fontWeight={600} fill="rgb(244 238 221 / 0.78)">
+              {t.putts} {t.putts === 1 ? 'putt' : 'putts'}
+              {t.firstPutt != null ? ` · from ${t.firstPutt} ft` : ''}
+            </text>
           </g>
-        );
-      })}
-      <circle cx={X0} cy={base} r={6} fill="var(--ch-ink-900)" />
-      <text x={X0} y={base + 26} textAnchor="middle" fontSize={11.5} fontWeight={600} fill="var(--ch-text-secondary)">
-        {hole.yards ? `Tee · ${hole.yards} yds` : 'Tee'}
-      </text>
-      <line x1={X1 + 14} y1={base} x2={X1 + 14} y2={base - 34} stroke="var(--ch-ink-900)" strokeWidth={2} />
-      <path d={`M ${X1 + 14} ${base - 34} l 20 7 l -20 7 z`} fill="var(--ch-chart-flag)" />
-      {t.putts > 0 && (
-        <g>
-          {Array.from({ length: Math.min(t.putts, 5) }, (_, i) => (
-            <circle key={i} cx={X1 + 52 + i * 14} cy={base} r={4.5} fill={t.putts >= 3 ? 'var(--ch-warning-600)' : 'var(--ch-green-600)'} />
-          ))}
-          <text x={X1 + 52} y={base + 26} fontSize={11.5} fontWeight={600} fill="var(--ch-text-secondary)">
-            {t.putts} {t.putts === 1 ? 'putt' : 'putts'}
-            {t.firstPutt != null ? ` · from ${t.firstPutt} ft` : ''}
-          </text>
-        </g>
-      )}
-    </svg>
+        )}
+      </svg>
+    </div>
   );
 }

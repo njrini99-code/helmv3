@@ -1,5 +1,26 @@
 # P011 — Rounds: changelog
 
+## 2026-10-09 — The round review, more premium
+
+```text
+Design package: owner direction "make it more premium"
+PR/commit: agent/clubhouse-premium-backlog
+Contract IDs: none (presentation only)
+Actions: none changed
+Data impact: none
+Held items: none
+```
+
+- The running score to par sits on a deep-green stage with a glowing line, mint and gold washes against par, and a
+  scrubber: move across it for a card with the hole, its score and the running total; click a hole to open its shots.
+- The picked hole's shots are drawn on a matching stage (arcs in mint for the fairway and green, gold for rough and
+  sand, a red pin flag).
+- The bands carry depth: a gradient and a gold rule on top, a gold-ringed number, a short gold rule under each title,
+  and the reading in a soft plate with a gradient figure. The scorecard zone's reading follows the picked hole.
+- Strokes gained bars, fairway and green marks, putt columns and the first-putt bars are gradient fills with soft
+  shadows; marks grow slightly under the pointer. The figures row has a gold hairline and green numerals.
+- The left column holds in view while a band's pictures scroll.
+
 ## 2026-10-09 — The round review as zones, with insights drawn from the round
 
 ```text
