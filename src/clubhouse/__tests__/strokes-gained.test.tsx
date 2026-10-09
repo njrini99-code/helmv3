@@ -612,7 +612,7 @@ describe('player profile · desktop', () => {
       }),
     );
     const table = document.querySelector('table.ch-ft')!;
-    expect([...table.querySelectorAll('thead th')].map((h) => h.textContent)).toEqual(['Stat', 'You', 'Tour']);
+    expect([...table.querySelectorAll('thead th')].map((h) => h.textContent)).toEqual(['Stat', 'You', 'Tour', 'Against the Tour']);
     const total = [...table.querySelectorAll('tbody tr')].find((r) => r.querySelector('td'))!.querySelectorAll('td');
     expect([total[0]!.textContent, total[1]!.textContent, total[2]!.textContent]).toEqual(['SG total', '−0.9', '—']);
   });

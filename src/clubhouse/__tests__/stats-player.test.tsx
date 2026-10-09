@@ -928,6 +928,10 @@ describe('Stats player · the page', () => {
     expect(screen.getByTestId('trail').textContent).toBe('Stats › Jonah Okafor');
     // The five figures follow as a tape, each drawn against the reference its words name: a ring with the team's mark for a
     // coach's rates, putts against two a green, and the best round as its distance from par.
+    // The comparison table sets each row's player against the team and Tour on one axis, a mark where they sit.
+    const axes = [...document.querySelectorAll('.ch-ft .ch-ra')];
+    expect(axes.length).toBeGreaterThan(5);
+    expect(axes.every((a) => a.querySelector('.ch-ra__dot') && (a.querySelector('.is-team') || a.querySelector('.is-tour')))).toBe(true);
     const cells = [...document.querySelectorAll('.ch-tp__c')];
     expect(cells.map((c) => c.querySelector('.ch-tp__l')!.textContent)).toEqual(['Fairways hit', 'Greens in regulation', 'Putts per round', 'Scrambling', 'Best round']);
     expect(cells.map((c) => c.querySelector('.ch-tp__tick') != null)).toEqual([true, true, true, true, false]);
