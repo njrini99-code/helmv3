@@ -34,7 +34,7 @@ import { rebuiltHref } from '../../shell/nav';
 import { formatHcp } from '../roster/format';
 import { usePageCrumbs } from '../../shell/crumbs';
 import { LEGS_LIST } from './legs';
-import { FieldTable, FigureCards, LegRoute, ScoreBoardTrend, SgChangeChip, YardagePage } from './charts';
+import { FieldTable, LegRoute, SgChangeChip, YardagePage } from './charts';
 import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
 import { RoundsExtra } from './RoundsExtra';
@@ -42,7 +42,9 @@ import { ProposalAnswer } from './ProposalAnswer';
 import { StatsPlayerPhone } from './StatsPlayerPhone';
 import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { useChSessionState } from '../../lib/session-state';
-import { CACHE_ERROR, countWords, shotsWords } from './notes';
+import { CACHE_ERROR, countWords, FORM_STEADY, shotsWords } from './notes';
+import { PlayerStage } from './PlayerStage';
+import { TeamTape } from './TeamTape';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { devProgress, devTitle, goalLine } from './dev-format';
 
@@ -55,8 +57,8 @@ export function formNote(first: string, scores: number[]): string {
   const half = Math.floor(scores.length / 2);
   const m = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
   const c = m(scores.slice(scores.length - half)) - m(scores.slice(0, half));
-  if (c <= -0.5) return `${first} is scoring ${Math.abs(c).toFixed(1)} lower in the newer half of these rounds.`;
-  if (c >= 0.5) return `${first} is scoring ${c.toFixed(1)} higher in the newer half of these rounds.`;
+  if (c <= -FORM_STEADY) return `${first} is scoring ${Math.abs(c).toFixed(1)} lower in the newer half of these rounds.`;
+  if (c >= FORM_STEADY) return `${first} is scoring ${c.toFixed(1)} higher in the newer half of these rounds.`;
   return `${first} is holding steady across these rounds.`;
 }
 
@@ -406,30 +408,45 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
       ? `${weakest.label} is the only leg losing strokes, about ${Math.abs(weakest.value).toFixed(1)} a round.`
       : `Strongest leg is ${strongest!.label.toLowerCase()}${weakest && weakest.value < 0 ? `; ${weakest.label.toLowerCase()} gives back the most` : ''}.`;
 
+  // The newest rounds oldest first, as the line is drawn; each tape figure's own line is these rounds' value (a round with none to count leaves a gap).
+  const plotted = [...data.rounds].reverse().slice(-10);
+  const seriesOf = (pick: (r: (typeof plotted)[number]) => number | null) => plotted.map(pick);
+  const tapeFig = (label: string, short: string, series: Array<number | null>) => {
+    const f = fig(label, short);
+    return { ...f, lowerIsBetter: f.lowerIsBetter ?? false, series };
+  };
   return (
     <>
-      <FigureCards
-        profile
+      <PlayerStage
+        rounds={trendRounds.map((r) => ({ label: r.label, score: r.score, toPar: r.toPar, holes: r.holes }))}
+        first={first}
+        coach={coach}
+        teamAvg={data.teamAvg}
+        meta={`Last ${trendRounds.length} ${HOLES_ADJ[data.filter.holes]} ${trendRounds.length === 1 ? 'round' : 'rounds'}${trendRounds.some((r) => r.holes === 9) ? ' · 9-hole scores doubled' : ''}`}
+        note={trendRounds.length ? formNote(first, trendRounds.map((r) => r.score)) : undefined}
+      />
+      <TeamTape
         items={[
-          fig('Fairways hit', 'Fairways hit'),
-          fig('Greens in regulation', 'Greens in regulation'),
-          fig('Putts per round', 'Putts per round'),
-          fig('Scrambling', 'Scrambling'),
-          { label: 'Best round', value: best == null ? NO_DATA : String(best), n: best, gauge: { kind: 'par', toPar: bestToPar }, context: bestHoles === 18 && data.filter.holes === '18' ? `${w.rounds} rounds in window` : `${bestPool.length} ${bestHoles}-hole ${bestPool.length === 1 ? 'round' : 'rounds'} in window` },
+          tapeFig('Fairways hit', 'Fairways hit', seriesOf((r) => r.fairwaysPct)),
+          tapeFig('Greens in regulation', 'Greens in regulation', seriesOf((r) => r.girPct)),
+          tapeFig('Putts per round', 'Putts per round', seriesOf((r) => (r.putts == null ? null : per18(r.putts, r.holes)))),
+          tapeFig('Scrambling', 'Scrambling', seriesOf((r) => r.scramblePct)),
+          {
+            label: 'Best round',
+            value: best == null ? NO_DATA : String(best),
+            delta: null,
+            deltaDigits: 0,
+            lowerIsBetter: true,
+            context: bestHoles === 18 && data.filter.holes === '18' ? `${w.rounds} rounds in window` : `${bestPool.length} ${bestHoles}-hole ${bestPool.length === 1 ? 'round' : 'rounds'} in window`,
+            n: best,
+            gauge: { kind: 'par', toPar: bestToPar },
+            series: seriesOf((r) => (r.holes === bestHoles ? r.score : null)),
+          },
         ]}
       />
-      <div className="ch-st-grid2">
-        <YardagePage
-          title="Scoring"
-          meta={`Last ${trendRounds.length} ${HOLES_ADJ[data.filter.holes]} ${trendRounds.length === 1 ? 'round' : 'rounds'}${trendRounds.some((r) => r.holes === 9) ? ' · 9-hole scores doubled' : ''}`}
-          note={trendRounds.length ? formNote(first, trendRounds.map((r) => r.score)) : undefined}
-        >
-          <ScoreBoardTrend rounds={trendRounds} />
-        </YardagePage>
-        <YardagePage title="Strokes gained by leg" meta={`Per round ${baseline.vs}${w.sgPerRound != null ? ` · total ${formatSigned(w.sgPerRound)}` : ''}`} note={legNote}>
-          <LegRoute rows={legs} />
-        </YardagePage>
-      </div>
+      <YardagePage title="Strokes gained by leg" meta={`Per round ${baseline.vs}${w.sgPerRound != null ? ` · total ${formatSigned(w.sgPerRound)}` : ''}`} note={legNote}>
+        <LegRoute rows={legs} />
+      </YardagePage>
       <YardagePage
         title={coach ? `${first} vs. team` : 'You vs. the Tour'}
         meta={coach ? `Same window, active players · strokes gained ${baseline.vs}` : `Tour averages where the benchmark exists · strokes gained ${baseline.vs}`}

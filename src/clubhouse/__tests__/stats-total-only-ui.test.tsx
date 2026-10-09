@@ -59,7 +59,7 @@ afterEach(() => cleanup());
 describe('Player stats · desktop', () => {
   it('Overview: greens, fairways, putts and scrambling say how many rounds they read, and count that many, when some are totals', () => {
     shell(<StatsPlayer data={player({ rounds: 5, effRounds: 5, holeRounds: 3 }, { holeRounds: 3 })} coachId="c1" />);
-    const notes = [...document.querySelectorAll('.ch-fg__n')].map((n) => n.textContent);
+    const notes = [...document.querySelectorAll('.ch-tp__n')].map((n) => n.textContent);
     expect(notes).toEqual([COVERAGE, COVERAGE, COVERAGE, COVERAGE]);
     // The scoring card is a score: it counts all five.
     expect(screen.getAllByText(/\b5 rounds\b/).length).toBeGreaterThan(0);
@@ -72,7 +72,7 @@ describe('Player stats · desktop', () => {
 
   it('Overview: with every round holed there is no coverage line', () => {
     shell(<StatsPlayer data={player({ rounds: 10, effRounds: 10, holeRounds: 10 }, { holeRounds: 10 })} coachId="c1" />);
-    expect(document.querySelector('.ch-fg__n')).toBeNull();
+    expect(document.querySelector('.ch-tp__n')).toBeNull();
     expect(screen.queryByText(/Hole stats from/)).toBeNull();
   });
 

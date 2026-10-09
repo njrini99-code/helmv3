@@ -916,12 +916,23 @@ describe('Stats player · the page', () => {
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Overview', 'Game detail', 'Rounds10', 'Development']);
     expect(screen.getByRole('tab', { selected: true }).textContent).toBe('Overview');
     expect(screen.getByRole('heading', { level: 2, name: 'Jonah vs. team' })).toBeTruthy();
+    // The overview opens on the scoring ribbon: one column a round, each a bar from the player's own average.
+    expect(document.querySelector('.ch-fm__head h2')!.textContent).toBe('Scoring form');
+    expect(document.querySelectorAll('.ch-fm__c')).toHaveLength(10);
+    const ups = document.querySelectorAll('.ch-fm__c.is-up').length;
+    const downs = document.querySelectorAll('.ch-fm__c.is-down').length;
+    expect(ups + downs).toBeGreaterThan(0);
+    expect(document.querySelector('.ch-fm__c.is-last')).not.toBeNull();
     expect(screen.getByRole('link', { name: 'Team stats' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Add focus area' })).toBeTruthy();
     expect(screen.getByTestId('trail').textContent).toBe('Stats › Jonah Okafor');
-    // Each overview figure drawn against the reference its words name: the team's mark for a coach, 36 putts, par for the best round.
-    const marks = [...document.querySelectorAll('.ch-fg__c')].map((c) => c.querySelector('.ch-fg__gauge em')?.textContent ?? null);
-    expect(marks).toEqual(['Team', 'Team', '36', 'Team', 'Par']);
+    // The five figures follow as a tape, each drawn against the reference its words name: a ring with the team's mark for a
+    // coach's rates, putts against two a green, and the best round as its distance from par.
+    const cells = [...document.querySelectorAll('.ch-tp__c')];
+    expect(cells.map((c) => c.querySelector('.ch-tp__l')!.textContent)).toEqual(['Fairways hit', 'Greens in regulation', 'Putts per round', 'Scrambling', 'Best round']);
+    expect(cells.map((c) => c.querySelector('.ch-tp__tick') != null)).toEqual([true, true, true, true, false]);
+    expect(cells[4]!.querySelector('.ch-tp__par')!.textContent).toBe('Eto par');
+    expect(cells.every((c) => c.querySelector('.ch-tp__line') != null)).toBe(true);
   });
 
   it("50104 a coach's Message opens the direct thread with this player, on desktop and on the phone; a player's profile has none", () => {
