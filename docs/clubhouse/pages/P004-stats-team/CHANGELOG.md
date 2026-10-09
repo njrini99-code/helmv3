@@ -26,6 +26,10 @@ Held items: none
   green, and the scoring average as its distance from par.
 - The figure cards (`FigureCards`) are no longer used on Team stats; the player page keeps them. Figures are found by
   `key`, not by place in the list.
+- Polish pass: the wash is a gradient that is strongest at the line and fades into the baseline (mint ahead, gold
+  behind); the latest value is called out on the line and the best week is marked; each player in the list carries a
+  bar from the reference on one scale; the tape's weekly lines fade out under the line; a faint contour texture and a
+  gold hairline finish the stage. Text on the stage is at least 7:1 and on the tape band at least 8.9:1 (measured).
 - The skeleton draws the same: the stage, then five tape cells.
 - The strokes gained headline keeps CH-4311 (no rounds with shots) and CH-4312 (no earlier rounds: the headline says so
   instead of a change).

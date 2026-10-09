@@ -223,7 +223,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   const lines = data.players.map((p) => ({ p, v: isSg ? p.sg : p.score, m: isSg ? p.sgMean : p.scoreMean })).filter((l) => l.v.some((x) => x != null));
   const all = [...team, ...lines.flatMap((l) => l.v)].filter((v): v is number => v != null);
   const w = 900;
-  const h = 300;
+  const h = 430;
   const padL = 38;
   const padR = 16;
   const padT = 16;
@@ -297,6 +297,9 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   });
   const teamPath = gappedPath(team, x, y);
   const baseline = sgBaseline(data.tour);
+  // Each player's window average as a bar from the reference, all on one scale (the widest gap), gold or mint by which side it is on.
+  const gapOf = (m: number | null) => (m == null ? null : m - (ref ?? 0));
+  const widest = Math.max(0, ...sorted.map((r) => Math.abs(gapOf(r.m) ?? 0)));
   // The headline: the window's own figure (strokes gained or scoring average) and how it moved against the previous window.
   const lead = data.figures.find((x) => x.key === (isSg ? 'sg' : 'score'));
   const leadValue = lead?.value ?? null;
@@ -319,6 +322,12 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
     setScrub(best);
   };
   const yRef = ref != null ? y(ref) : null;
+  // The wash reaches full strength at the team's furthest week from the reference, so it reads at any scale.
+  const reach = (side: 'up' | 'down') => {
+    const ys = team.flatMap((v) => (v == null ? [] : [y(v)]));
+    if (yRef == null || !ys.length) return yRef ?? 0;
+    return side === 'up' ? Math.min(yRef - 1, ...ys) : Math.max(yRef + 1, ...ys);
+  };
 
   return (
     <section className="ch-sgt">
@@ -431,6 +440,19 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               onPointerLeave={() => setScrub(null)}
             >
               <defs>
+                {yRef != null && (
+                  <>
+                    {/* The wash is strongest at the line and fades into the baseline: mint where the team is ahead of it, gold where behind. */}
+                    <linearGradient id={`${uid}-gu`} gradientUnits="userSpaceOnUse" x1={0} x2={0} y1={yRef} y2={reach('up')}>
+                      <stop offset="0" stopColor="var(--ch-green-200)" stopOpacity={0.04} />
+                      <stop offset="1" stopColor="var(--ch-green-200)" stopOpacity={0.62} />
+                    </linearGradient>
+                    <linearGradient id={`${uid}-gd`} gradientUnits="userSpaceOnUse" x1={0} x2={0} y1={yRef} y2={reach('down')}>
+                      <stop offset="0" stopColor="var(--ch-champagne-300)" stopOpacity={0.04} />
+                      <stop offset="1" stopColor="var(--ch-champagne-300)" stopOpacity={0.58} />
+                    </linearGradient>
+                  </>
+                )}
                 <clipPath id={`${uid}-up`}>
                   <rect x={0} y={0} width={w} height={yRef ?? 0} />
                 </clipPath>
@@ -454,8 +476,8 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               {/* The team's line holds a wash to the reference: green where it sits above it (better), amber below. */}
               {teamPath && tFirst && tLast && yRef != null && (
                 <g aria-hidden="true">
-                  <path d={`${teamPath} L${x(tLast.i)},${yRef} L${x(tFirst.i)},${yRef} Z`} className="ch-sgt__wash is-up" clipPath={`url(#${uid}-up)`} />
-                  <path d={`${teamPath} L${x(tLast.i)},${yRef} L${x(tFirst.i)},${yRef} Z`} className="ch-sgt__wash is-down" clipPath={`url(#${uid}-down)`} />
+                  <path d={`${teamPath} L${x(tLast.i)},${yRef} L${x(tFirst.i)},${yRef} Z`} className="ch-sgt__wash is-up" fill={`url(#${uid}-gu)`} clipPath={`url(#${uid}-up)`} />
+                  <path d={`${teamPath} L${x(tLast.i)},${yRef} L${x(tFirst.i)},${yRef} Z`} className="ch-sgt__wash is-down" fill={`url(#${uid}-gd)`} clipPath={`url(#${uid}-down)`} />
                 </g>
               )}
               {yRef != null && (
@@ -486,6 +508,19 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               )}
               {teamPath && <path d={teamPath} className="ch-sgt__team" fill="none" stroke="var(--ch-st-team-line)" strokeWidth={3} strokeLinecap="round" />}
               {tLast && <circle className="ch-sgt__tdot" cx={x(tLast.i)} cy={y(tLast.v)} r={4.5} fill="var(--ch-ivory-25)" stroke="var(--ch-st-team-line)" strokeWidth={2.5} />}
+              {scrub == null && tLast && (
+                <text x={x(tLast.i) - 12} y={y(tLast.v) - 13} textAnchor="end" className="ch-sgt__callout">
+                  {fmt(tLast.v)}
+                </text>
+              )}
+              {best && tLast && best.i !== tLast.i && known.length > 2 && (
+                <g aria-hidden="true" className="ch-sgt__best">
+                  <circle cx={x(best.i)} cy={y(best.v)} r={4} />
+                  <text x={x(best.i)} y={y(best.v) - 11} textAnchor="middle">
+                    Best
+                  </text>
+                </g>
+              )}
               {litEnd && <circle key={`end-${litId}`} className="ch-sgt__front" cx={x(litEnd.i)} cy={y(litEnd.v)} r={4} fill="var(--ch-ivory-25)" stroke="var(--ch-green-600)" strokeWidth={2} />}
               {scrub != null && team[scrub] != null && (
                 <g aria-hidden="true" className="ch-sgt__scrub">
@@ -537,6 +572,11 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                   >
                     <Avatar name={p.name} size={22} />
                     <span>{p.first}</span>
+                    <i
+                      className={'ch-sgt__bar' + (m != null && good(m) ? ' is-up' : '')}
+                      style={{ ['--ch-bar' as string]: `${widest > 0 ? (Math.abs(gapOf(m) ?? 0) / widest) * 100 : 0}%` }}
+                      aria-hidden="true"
+                    />
                     <b className={`ch-num ${m == null ? '' : good(m) ? 'ch-gain' : 'ch-loss'}`}>{m != null ? fmtEnd(m) : NO_DATA}</b>
                   </button>
                 );
