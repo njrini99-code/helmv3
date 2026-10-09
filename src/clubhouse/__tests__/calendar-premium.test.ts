@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { focusHour } from '../screens/calendar/model';
+import { focusHour, groupClasses, isClassGroup, type ChCalEvent } from '../screens/calendar/model';
 
 /** P006 premium pass: the pure rules behind the Week and Day grids. */
 
@@ -97,5 +97,30 @@ describe('Calendar · a new event opens on free time (P006 D3)', () => {
     const { seedWindow } = await import('../screens/calendar/model');
     expect(seedWindow(day, ['p2'], '2026-10-14', { date: '2026-10-13', hour: 16 })).toEqual([9, 11]);
     expect(seedWindow(day, ['p1', 'p2'], '2026-10-14', { date: '2026-10-14', hour: 19 })).toEqual([7, 9]);
+  });
+});
+
+describe('Calendar · players\u2019 classes fold into one block (P006)', () => {
+  const cls = (id: string, owner: string, start: number, end: number) =>
+    ({ id, type: 'class', title: id, date: '2026-10-05', start, end, allDay: false, owner, people: [], rsvp: {} }) as unknown as ChCalEvent;
+
+  it('groups classes that start in the same half hour, and a lone class joins the group it overlaps most', () => {
+    const out = groupClasses([cls('a', 'p1', 10, 11.25), cls('b', 'p2', 10, 11.25), cls('c', 'p3', 11.5, 12.75), cls('d', 'p4', 11.5, 12.75), cls('e', 'p5', 11, 12.25)]);
+    const groups = out.filter(isClassGroup);
+    expect(groups).toHaveLength(2);
+    expect(groups[1]!.items.map((e) => e.id).sort()).toEqual(['c', 'd', 'e']);
+    expect(out.some((x) => !isClassGroup(x))).toBe(false);
+  });
+
+  it('stacks groups that only brush at full width, keeping the true end', () => {
+    const [first] = groupClasses([cls('a', 'p1', 10, 11.25), cls('b', 'p2', 10, 11.25), cls('c', 'p3', 11, 12.25), cls('d', 'p4', 11, 12.25)]).filter(isClassGroup);
+    expect(first!.end).toBe(11);
+    expect(first!.until).toBe(11.25);
+  });
+
+  it('leaves a lone class and team events as they are', () => {
+    const practice = { ...cls('p', 'x', 9, 10), type: 'practice' } as ChCalEvent;
+    expect(groupClasses([cls('a', 'p1', 8, 9), practice])).toEqual(expect.arrayContaining([cls('a', 'p1', 8, 9), practice]));
+    expect(groupClasses([cls('a', 'p1', 8, 9), practice])).toHaveLength(2);
   });
 });

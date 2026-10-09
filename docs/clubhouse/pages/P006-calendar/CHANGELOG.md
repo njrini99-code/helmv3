@@ -1,5 +1,25 @@
 # P006 — Calendar: changelog
 
+## 2026-10-08 — players' classes fold into one block per slot
+
+Owner review on a coach whose whole roster's class schedules are in: the Week and
+Day grids drew every class as its own block, cascading up to eight deep into
+one-letter slivers that also painted over the pinned day header. Now:
+
+- Classes that start in the same half hour are one block (`groupClasses` in
+  `model.ts`); a class alone in its slot joins the group it overlaps most, and
+  groups that only brush (half an hour or less) stack at full width.
+- The block reads the first player and "N more" (whole words, nothing cut off);
+  a press opens the list of every class in it (`ui/Menu`), and picking one opens
+  it in the inspector as before. A one-player filter still shows that player's
+  classes one by one.
+- Classes take the info slate (fill, text, edge and legend dot) instead of ivory
+  on ivory; no side stripe. The legend reads "Classes", not "Class · busy".
+- The grid isolates its stacking, so no block paints over the pinned days.
+
+Covered in `calendar-premium.test.ts`. Seen in Safari at 1440 on a live coach
+account (read only).
+
 ## 2026-10-08 — the page opens at its top (P006-B1)
 
 Owner call: the Calendar opens at the top of the page, like every other page.

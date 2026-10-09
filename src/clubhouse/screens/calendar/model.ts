@@ -187,6 +187,76 @@ export function viewTitle(view: ChCalView, anchor: string): { main: string; year
   return { main: monthName(anchor), year: String(yearOf(anchor)) };
 }
 
+/** Players' classes that start in the same half hour, drawn as one block on the Week and Day grids. */
+export interface ChClassGroup {
+  id: string;
+  date: string;
+  start: number;
+  /** Where the block is drawn to: the next group's start when the two only brush (half an hour or less). */
+  end: number;
+  /** The last class's end. */
+  until: number;
+  items: ChCalEvent[];
+}
+
+export const isClassGroup = (x: ChCalEvent | ChClassGroup): x is ChClassGroup => 'items' in x;
+
+/**
+ * P006 (owner, 2026-10-08: a full roster's class schedules crushed the week into slivers): a day's classes that start
+ * in the same half hour fold into one block, earliest start to latest end, listed by player. A class alone in its
+ * half hour, and every other event, stays itself, so a one-player filter shows that player's classes as before.
+ */
+export function groupClasses(events: ChCalEvent[]): Array<ChCalEvent | ChClassGroup> {
+  const out: Array<ChCalEvent | ChClassGroup> = [];
+  const slots = new Map<string, ChCalEvent[]>();
+  for (const e of events) {
+    if (e.type !== 'class' || e.allDay || e.start == null || e.end == null) {
+      out.push(e);
+      continue;
+    }
+    const key = `${e.date}:${Math.floor(e.start * 2) / 2}`;
+    const slot = slots.get(key);
+    if (slot) slot.push(e);
+    else slots.set(key, [e]);
+  }
+  // A class alone in its half hour (a player on another timetable) joins the group it overlaps most, so it doesn't
+  // lie across two groups as a third block.
+  const groups = [...slots.values()].filter((items) => items.length > 1);
+  const span = (items: ChCalEvent[]) => [Math.min(...items.map((e) => e.start!)), Math.max(...items.map((e) => e.end!))];
+  for (const [key, items] of [...slots]) {
+    if (items.length > 1) continue;
+    const e = items[0]!;
+    let best: ChCalEvent[] | null = null;
+    let most = 0;
+    for (const g of groups) {
+      const [s0, s1] = span(g);
+      const shared = Math.min(e.end!, s1!) - Math.max(e.start!, s0!);
+      if (shared > most) [best, most] = [g, shared];
+    }
+    if (best) {
+      best.push(e);
+      slots.delete(key);
+    }
+  }
+  const made: ChClassGroup[] = [];
+  for (const [key, items] of slots) {
+    if (items.length === 1) {
+      out.push(items[0]!);
+      continue;
+    }
+    items.sort((a, b) => a.start! - b.start! || a.end! - b.end! || a.id.localeCompare(b.id));
+    const until = Math.max(...items.map((e) => e.end!));
+    made.push({ id: `classes:${key}`, date: items[0]!.date, start: items[0]!.start!, end: until, until, items });
+  }
+  // Back-to-back groups that only brush (10:00–11:15, then 11:00) stack at full width instead of splitting the column.
+  made.sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start);
+  for (let i = 0; i + 1 < made.length; i += 1) {
+    const [a, b] = [made[i]!, made[i + 1]!];
+    if (a.date === b.date && b.start < a.end && a.end - b.start <= 0.5 && b.start > a.start) a.end = b.start;
+  }
+  return [...out, ...made];
+}
+
 export interface ChLaid<E> {
   e: E;
   lane: number;
