@@ -88,31 +88,35 @@ function Sec({
   if (hide) return null;
   return (
     <section className="ch-gm" id={`gm-${id}`} aria-labelledby={`gm-${id}-t`}>
-      <header className="ch-gm__head">
-        <span className="ch-gm__ic">
-          <Icon icon={icon} size={16} />
-        </span>
-        <div className="ch-gm__t">
-          <h2 id={`gm-${id}-t`}>{title}</h2>
-          <p>{lead}</p>
-        </div>
-        <span className="ch-gm__sub">{sub}</span>
-      </header>
-      <dl className="ch-gm__figs">
-        {figs.map(([l, v, n, t]) => {
-          const reason = v === NO_DATA ? NONE_REASON[`${id}:${l}`] : undefined;
-          return (
-            <div key={l}>
-              <dt>{l}</dt>
-              <dd className={reason ? 'ch-gm__none' : `ch-num${t ? ` ch-${t}` : ''}`}>{reason ?? v}</dd>
-              {n && <dd className="ch-gm__sub">{n}</dd>}
-            </div>
-          );
-        })}
-      </dl>
-      <Rule how={how}>{rule}</Rule>
-      <div className="ch-gm__body">{children}</div>
-      {more}
+      <div className="ch-gm__id">
+        <header className="ch-gm__head">
+          <span className="ch-gm__ic">
+            <Icon icon={icon} size={16} />
+          </span>
+          <div className="ch-gm__t">
+            <h2 id={`gm-${id}-t`}>{title}</h2>
+            <p>{lead}</p>
+          </div>
+          <span className="ch-gm__sub">{sub}</span>
+        </header>
+        <dl className="ch-gm__figs">
+          {figs.map(([l, v, n, t]) => {
+            const reason = v === NO_DATA ? NONE_REASON[`${id}:${l}`] : undefined;
+            return (
+              <div key={l}>
+                <dt>{l}</dt>
+                <dd className={reason ? 'ch-gm__none' : `ch-num${t ? ` ch-${t}` : ''}`}>{reason ?? v}</dd>
+                {n && <dd className="ch-gm__sub">{n}</dd>}
+              </div>
+            );
+          })}
+        </dl>
+        <Rule how={how}>{rule}</Rule>
+      </div>
+      <div className="ch-gm__vis">
+        <div className="ch-gm__body">{children}</div>
+        {more}
+      </div>
     </section>
   );
 }

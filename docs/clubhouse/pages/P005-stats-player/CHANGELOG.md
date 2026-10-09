@@ -1,6 +1,6 @@
 # P005 — Stats (player): changelog
 
-## 2026-10-09 — Overview: seven zones, one per stat area
+## 2026-10-09 — Seven zones: Overview, Game detail, Rounds and Development
 
 ```text
 Design package: owner direction "it's not separated very well or organized, and there needs to be visuals that make sense for each stat", then "yes this all looks good, get it done"
@@ -29,6 +29,15 @@ Held items: none
 - Putting: the make rate by distance as a curve against the Tour's, the gap between shaded, with putt counts and the
   Tour's rate under each distance.
 - The last rounds: the scoring-form ribbon, unchanged, as the seventh zone.
+- Game detail, Rounds and Development take the same zone style on desktop. Game detail: each of the five areas is a band
+  with what it is and its four figures on the left (held in view while the right scrolls) and every panel and the More
+  detail disclosure on the right, flush with hairlines instead of cards; nothing was dropped (scrambling, greens by
+  distance and lie, proximity, misses, putting by break and the rest are where they were). Rounds: score by round with the
+  personal bests, this window against the one before with the scoring change as the reading, and the rounds table in a
+  full-width zone that fits without sideways scrolling. Development: each focus area and goal is a track from where it
+  started to its target with the current value on it and the share of the way. The phone keeps its stacked layouts.
+- The comparison table's axis column (a mark per row against the team and Tour) is removed; the table itself is no
+  longer on the player pages.
 - When some rounds were posted as a total only, one line above the zones says how many rounds the hole stats read
   and that the scoring average counts all of them.
 

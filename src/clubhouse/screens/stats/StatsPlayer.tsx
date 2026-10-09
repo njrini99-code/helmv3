@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarPlus, Check, ChevronLeft, ChevronRight, Info, MessageSquare, Plus, Target } from 'lucide-react';
+import { CalendarPlus, ChevronLeft, ChevronRight, Info, MessageSquare, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
 import { m } from 'motion/react';
 import { useDeferredValue, useEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from 'react';
@@ -43,9 +43,9 @@ import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { useChSessionState } from '../../lib/session-state';
 import { CACHE_ERROR, countWords, FORM_STEADY, shotsWords } from './notes';
 import { PlayerStage } from './PlayerStage';
-import { OverviewZones } from './OverviewZones';
+import { Big, OverviewZones, Zone } from './OverviewZones';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
-import { devProgress, devTitle, goalLine } from './dev-format';
+import { devMetric, devProgress, devTitle, devValue, goalLine } from './dev-format';
 
 type Tab = 'overview' | 'game' | 'rounds' | 'dev';
 const TABS: readonly Tab[] = ['overview', 'game', 'rounds', 'dev'];
@@ -330,12 +330,21 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
 
             {shownTab === 'rounds' && !emptyFilter && !failed && (
               <SectionBoundary surface="stats.player.rounds" label="The rounds table" code="CH-5206">
-                {data.rounds.length > 0 && (
-                  <div className="ch-st-grid2">
-                    <RoundsExtra x={data.extra} filter={data.filter} share={{ viewer: data.viewer, name: data.name, coach: data.attestingCoach }} />
-                  </div>
-                )}
-                <RoundsTable rounds={data.rounds} role={coach ? 'coach' : 'player'} tour={data.tour} holes={data.filter.holes} />
+                <div className="ch-zones">
+                  {data.rounds.length > 0 && <RoundsExtra zones x={data.extra} filter={data.filter} share={{ viewer: data.viewer, name: data.name, coach: data.attestingCoach }} />}
+                  <Zone
+                    n={data.rounds.length > 0 ? 3 : 1}
+                    wide
+                    title="Round by round"
+                    def={
+                      <>
+                        Every countable {HOLES_ADJ[data.filter.holes]} round, newest first, with strokes gained {sgBaseline(data.tour).vs} split by the shots it counts.
+                      </>
+                    }
+                  >
+                    <RoundsTable rounds={data.rounds} role={coach ? 'coach' : 'player'} tour={data.tour} holes={data.filter.holes} />
+                  </Zone>
+                </div>
               </SectionBoundary>
             )}
 
@@ -384,13 +393,7 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
 function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['rounds']; role: 'coach' | 'player'; tour: ChPlayerProfile['tour']; holes: ChHoles }) {
   const baseline = sgBaseline(tour);
   return (
-    <section className="ch-st-card">
-      <div className="ch-st-card__head">
-        <div>
-          <h2>Rounds</h2>
-          <span>Countable {HOLES_ADJ[holes]} rounds &middot; newest first &middot; strokes gained {baseline.vs}</span>
-        </div>
-      </div>
+    <div className="ch-zt" aria-label={`Rounds: countable ${HOLES_ADJ[holes]} rounds, newest first, strokes gained ${baseline.vs}`}>
       {rounds.length === 0 ? (
         <EmptyState code="CH-5302" compact title="No rounds in this window." body="Try This season to see every round posted since August." />
       ) : (
@@ -443,81 +446,131 @@ function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['r
           </div>
         </ScrollRegion>
       )}
-    </section>
+    </div>
+  );
+}
+
+/** One focus area or goal as a track from where it started to its target, the player's current value marked on it. */
+function DevTrack({ title, state, line, baseline, current, target, metric, done = false, extra }: { title: string; state?: string | null; line: string; baseline: number | null; current: number | null; target: number | null; metric: string | null; done?: boolean; extra?: ReactNode }) {
+  const progress = progressOf(baseline, current, target);
+  return (
+    <li className={'ch-dv' + (done ? ' is-done' : '')}>
+      <div className="ch-dv__top">
+        <div>
+          <b>{title}</b>
+          <span>{state ?? line}</span>
+          {extra}
+        </div>
+        <em className="ch-num">{done ? 'Achieved' : progress == null ? NO_DATA : `${progress}% of the way`}</em>
+      </div>
+      {progress != null && (
+        <div className="ch-dv__rail" role="img" aria-label={`${title}: ${devValue(baseline, metric)} to start, ${devValue(current, metric)} now, ${devValue(target, metric)} target, ${progress} percent of the way`}>
+          <i className="ch-dv__done" style={{ width: `${progress}%` }} />
+          <i className="ch-dv__dot" style={{ left: `${progress}%` }} />
+          <b className="ch-dv__now ch-num" style={{ left: `${Math.min(88, Math.max(12, progress))}%` }}>{devValue(current, metric)} now</b>
+          <span className="ch-dv__end is-start">
+            <b className="ch-num">{devValue(baseline, metric)}</b>Started
+          </span>
+          <span className="ch-dv__end is-target">
+            <b className="ch-num">{devValue(target, metric)}</b>Target
+          </span>
+          <i className="ch-dv__flag" />
+        </div>
+      )}
+    </li>
   );
 }
 
 function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coach: boolean; first: string; onAdd: (() => void) | null }) {
   const router = useRouter();
+  const active = data.focusAreas.filter((f) => f.status === 'active').length;
+  const waiting = data.focusAreas.filter((f) => f.status === 'proposed').length;
   return (
     <>
       {data.devError && <InlineNotice code="CH-5203" title="Some development items didn’t load." body="Try again; the error has been reported." onRetry={() => router.refresh()} />}
-      <div className="ch-st-grid2">
-        <section className="ch-st-card">
-          <div className="ch-st-card__head">
-            <div>
-              <h2>Focus areas</h2>
-              <span>
-                {data.focusAreas.filter((f) => f.status === 'active').length} active
-                {data.focusAreas.some((f) => f.status === 'proposed') && ` · ${data.focusAreas.filter((f) => f.status === 'proposed').length} waiting on ${coach ? first : 'you'}`}
-              </span>
-            </div>
-            {onAdd && (
-              <Button size="sm" leftIcon={Plus} onClick={onAdd}>
-                Add
-              </Button>
-            )}
-          </div>
+      <div className="ch-zones">
+        <Zone
+          n={1}
+          title="Focus areas"
+          def={<>What {coach ? `${first} and the coach are` : 'you and your coach are'} working on. Each is measured by the same stat the other tabs show, so progress here is that number moving there.</>}
+          read={
+            <>
+              <Big value={String(active)} />
+              <div className="ch-zlines">
+                <span>
+                  <b>active</b>
+                  {waiting > 0 && ` · ${waiting} waiting on ${coach ? first : 'you'}`}
+                </span>
+                {onAdd && (
+                  <Button size="sm" leftIcon={Plus} onClick={onAdd}>
+                    Add focus area
+                  </Button>
+                )}
+              </div>
+            </>
+          }
+        >
           {data.focusAreas.length === 0 ? (
             <EmptyState code="CH-5303" compact title="No focus areas yet." body={coach ? 'Add one from a weak leg in Game detail.' : 'Your coach adds focus areas; they show here.'} />
           ) : (
-            data.focusAreas.map((f) => {
-              const progress = progressOf(f.baseline, f.current, f.target);
-              return (
-                <div key={f.id} className="ch-pf-focus">
-                  <div>
-                    <b>{devTitle(f.title)}</b>
-                    <span>{f.status === 'proposed' ? 'Proposed, waiting to be accepted' : devProgress(f)}</span>
-                    {!coach && f.status === 'proposed' && <ProposalAnswer id={f.id} title={f.title} />}
-                  </div>
-                  <div className="ch-pf-bar" aria-hidden="true">
-                    {progress != null && <span style={{ width: `${progress}%` }} />}
-                  </div>
-                  <span className="ch-num ch-n2">{progress == null ? NO_DATA : `${progress}%`}</span>
-                </div>
-              );
-            })
+            <ul className="ch-dvl" aria-label="Focus areas">
+              {data.focusAreas.map((f) => (
+                <DevTrack
+                  key={f.id}
+                  title={devTitle(f.title)}
+                  state={f.status === 'proposed' ? 'Proposed, waiting to be accepted' : null}
+                  line={devProgress(f)}
+                  baseline={f.baseline}
+                  current={f.current}
+                  target={f.target}
+                  metric={devMetric(f.title, f.metric)}
+                  extra={!coach && f.status === 'proposed' ? <ProposalAnswer id={f.id} title={f.title} /> : undefined}
+                />
+              ))}
+            </ul>
           )}
-        </section>
-        <section className="ch-st-card">
-          <div className="ch-st-card__head">
-            <div>
-              <h2>Goals</h2>
-              <span>{data.goals.length} this season</span>
-            </div>
-          </div>
+        </Zone>
+        <Zone
+          n={2}
+          alt
+          title="Goals"
+          def={<>Results {coach ? first : 'you'} {coach ? 'is' : 'are'} chasing this season, set by the player and the coach.</>}
+          read={
+            <>
+              <Big value={String(data.goals.length)} />
+              <div className="ch-zlines">
+                <span>
+                  <b>this season</b>
+                </span>
+              </div>
+            </>
+          }
+        >
           {data.goals.length === 0 ? (
             <EmptyState code="CH-5304" compact title="No goals set." body={coach ? `${first} sets goals from the player app.` : 'Set goals from your development page.'} />
           ) : (
-            data.goals.map((g) => {
-              const done = g.state === 'achieved' || g.state === 'completed';
-              return (
-                <div key={g.id} className="ch-pf-goal">
-                  <span className={'ch-pf-goal__c' + (done ? ' is-done' : '')} aria-hidden="true">
-                    {done && <Icon icon={Check} size={12} />}
-                  </span>
-                  <span className="ch-sr-only">{done ? 'Achieved:' : 'In progress:'}</span>
-                  <div>
-                    <b>{devTitle(g.title)}</b>
-                    <span>{goalLine(g)}</span>
-                  </div>
-                </div>
-              );
-            })
+            <ul className="ch-dvl" aria-label="Goals">
+              {data.goals.map((g) => {
+                const done = g.state === 'achieved' || g.state === 'completed';
+                return (
+                  <DevTrack
+                    key={g.id}
+                    title={devTitle(g.title)}
+                    line={goalLine(g)}
+                    state={null}
+                    baseline={g.baseline}
+                    current={g.current}
+                    target={g.target}
+                    metric={devMetric(g.title)}
+                    done={done}
+                    extra={<span className="ch-sr-only">{done ? 'Achieved' : 'In progress'}</span>}
+                  />
+                );
+              })}
+            </ul>
           )}
-        </section>
+        </Zone>
       </div>
-
     </>
   );
 }

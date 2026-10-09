@@ -184,10 +184,10 @@ describe('Skeletons draw the loaded page\'s lines', () => {
 
   it('a profile holds its overview figures (measured in WebKit 2026-10-07: 169px, 194px in the middle band), the serif name and the switch\'s width', () => {
     const { container } = render(<StatsProfileSkeleton coach />);
-    // The scoring ribbon and then the five-figure tape sit after the filter bar, as loaded.
+    // The first zones sit after the filter bar, as loaded.
     const order = [...container.querySelector('main')!.children].map((c) => c.className.split(' ')[0]);
-    expect(order.slice(order.indexOf('ch-sf'), order.indexOf('ch-sf') + 3)).toEqual(['ch-sf', 'ch-fm', 'ch-tp']);
-    expect(container.querySelectorAll('.ch-tp > .ch-tp__c')).toHaveLength(5);
+    expect(order.slice(order.indexOf('ch-sf'), order.indexOf('ch-sf') + 2)).toEqual(['ch-sf', 'ch-zones']);
+    expect(container.querySelectorAll('.ch-zones > .ch-z')).toHaveLength(2);
     // The change line under strokes gained never wraps (it grew the hero 24px on a 680–770px canvas).
     expect(css).toMatch(/\.ch-pf-hero__figs \.ch-sgchg\s*{\s*flex-wrap: nowrap/);
     // The window switch keeps the loaded one's foot.
