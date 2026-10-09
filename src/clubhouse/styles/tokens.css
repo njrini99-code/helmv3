@@ -257,6 +257,13 @@
     color-mix(in oklab, var(--ch-light-key) calc(var(--ch-sun-intensity, 1) * 14% + var(--ch-sun-warmth, 0) * 12%), transparent),
     transparent 80%
   );
+  /* The light across a reading surface (the Calendar's week): the key falling from the sun's side over its whole height,
+     strongest along the top edge, so the grid sits in the same daylight as the canvas around it. */
+  --ch-light-surface: radial-gradient(
+    85% 75% at calc(var(--ch-sun-x, 0.5) * 100%) 0%,
+    color-mix(in oklab, var(--ch-light-key) calc(6% + var(--ch-sun-intensity, 1) * 14% + var(--ch-sun-warmth, 0) * 12%), transparent),
+    transparent 85%
+  );
   /* Paper temperature: a flat wash over the canvas, warm toward golden hour and cool at night (a few percent at most). */
   --ch-light-paper-tint: color-mix(
     in oklab,
@@ -577,6 +584,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     70% 420px at calc(var(--ch-sun-x, 0.5) * 100%) 0%,
     color-mix(in oklab, var(--ch-light-key) calc(2.5% + var(--ch-sun-intensity, 1) * 1.5% + var(--ch-sun-warmth, 0) * 2%), transparent),
     transparent 80%
+  );
+  --ch-light-surface: radial-gradient(
+    85% 75% at calc(var(--ch-sun-x, 0.5) * 100%) 0%,
+    color-mix(in oklab, var(--ch-light-key) calc(3% + var(--ch-sun-intensity, 1) * 3% + var(--ch-sun-warmth, 0) * 3%), transparent),
+    transparent 85%
   );
   --ch-light-paper-tint: transparent;
   --ch-highlight: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim);

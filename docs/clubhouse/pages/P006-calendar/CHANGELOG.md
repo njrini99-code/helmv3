@@ -1,5 +1,22 @@
 # P006 — Calendar: changelog
 
+## 2026-10-08 — the class block and card; the week in the day's light
+
+Owner review, same session:
+
+- A class block's title is "Class", set apart from the words under it: the
+  first player, then "N more" (or "Holden +3" on one line). Nothing is cut
+  mid-word.
+- The slate deepens with how many are in class (2–3, 4–6, 7 and up; the
+  deepest is filled slate with light text), so the full hours read at a glance.
+- A press opens the class card (`class-group.tsx`) instead of the generic menu,
+  whose rows overlapped on long registrar titles: a slate band with the day,
+  the slot and the count, then a row a player (avatar, name, course code in
+  slate and the course name). A row opens that class in the inspector.
+- The week sits in the global light: a new derived token, `--ch-light-surface`
+  (tokens.css, both themes), washes the grid and the pinned days from the sun's
+  side.
+
 ## 2026-10-08 — players' classes fold into one block per slot
 
 Owner review on a coach whose whole roster's class schedules are in: the Week and
