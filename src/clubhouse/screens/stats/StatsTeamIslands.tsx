@@ -223,7 +223,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   const lines = data.players.map((p) => ({ p, v: isSg ? p.sg : p.score, m: isSg ? p.sgMean : p.scoreMean })).filter((l) => l.v.some((x) => x != null));
   const all = [...team, ...lines.flatMap((l) => l.v)].filter((v): v is number => v != null);
   const w = 900;
-  const h = 430;
+  const h = 300;
   const padL = 38;
   const padR = 16;
   const padT = 16;
