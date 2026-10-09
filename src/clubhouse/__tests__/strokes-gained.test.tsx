@@ -176,15 +176,23 @@ describe('bar scale', () => {
     expect(cell.className).toContain('is-worst');
   });
 
-  it('desktop player: the leg route draws a −2.6 leg at 2.6 of 3, not clamped at 1.4', () => {
+  it('desktop player: the leg bars draw a −2.6 leg at 2.6 of 3 on one scale from the zero line, not clamped at 1.4', () => {
     const win = { ...PREVIEW_PLAYER.win, sgLegs: { tee: 0.3, approach: -2.6, around: 0.1, putting: -1.9 } };
     showPlayer(player({ win }));
-    const rects = [...document.querySelectorAll('svg.ch-route rect')];
-    const heights = rects.map((r) => parseFloat(r.getAttribute('height')!));
-    // Half-height 64: approach 2.6/3, putting 1.9/3, tee 0.3/3.
-    expect(heights[1]).toBeCloseTo((2.6 / 3) * 64, 1);
-    expect(heights[3]).toBeCloseTo((1.9 / 3) * 64, 1);
-    expect(heights[0]).toBeCloseTo((0.3 / 3) * 64, 1);
+    const bars = [...document.querySelectorAll('.ch-lb__bar')] as HTMLElement[];
+    expect(bars).toHaveLength(4);
+    // Half the rail is the scale (3, the widest value rounded up): approach 2.6/3, putting 1.9/3, tee 0.3/3.
+    const w = (el: HTMLElement) => parseFloat(el.style.width);
+    expect(w(bars[1]!)).toBeCloseTo((2.6 / 3) * 50, 1);
+    expect(w(bars[3]!)).toBeCloseTo((1.9 / 3) * 50, 1);
+    expect(w(bars[0]!)).toBeCloseTo((0.3 / 3) * 50, 1);
+    // A loss grows left of the zero line, a gain right of it.
+    expect(bars[1]!.className).toContain('is-loss');
+    expect(bars[1]!.style.right).toBe('50%');
+    expect(bars[0]!.className).toContain('is-gain');
+    expect(bars[0]!.style.left).toBe('50%');
+    // Each leg says which shots it counts.
+    expect([...document.querySelectorAll('.ch-lb__who span')].map((e) => e.textContent).every((t) => (t ?? '').length > 10)).toBe(true);
   });
 
 });

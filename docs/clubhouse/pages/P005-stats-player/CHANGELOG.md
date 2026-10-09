@@ -22,6 +22,10 @@ Held items: none
   mark (or the best round's distance from par). The player page's own figure cards are no longer used.
 - Wide canvases (1280px and up) set the four hero figures beside the name instead of under it, so the Overview opens
   in view. The figures still show on every tab.
+- Strokes gained by leg is four aligned bars from one zero line (green right for a gain, gold left for a loss, all on one
+  scale), each leg with a line on which shots it counts (off the tee: tee shots on par 4s and 5s; approach: full shots
+  from over 30 yards and par-3 tee shots; around the green: within 30 yards; putting: every shot on the green) and, for
+  a coach, the team's mark on the same rail. It replaces the small stepping-stone graphic.
 - The loading skeleton draws the ribbon and the tape.
 
 ## 2026-10-08 — Premium pass: one round set, one chart, one surface, the best card
