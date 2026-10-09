@@ -4627,14 +4627,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 .ch-st[data-canopy] .ch-sgt__wash {
   stroke: none;
-}
-.ch-st[data-canopy] .ch-sgt__wash.is-up {
-  fill: var(--ch-chart-gain);
-  opacity: 0.17;
-}
-.ch-st[data-canopy] .ch-sgt__wash.is-down {
-  fill: var(--ch-chart-loss);
-  opacity: 0.2;
+  opacity: 1;
 }
 .ch-st[data-canopy] .ch-sgt__reflab {
   fill: var(--ch-champagne-600, var(--ch-text-tertiary));
@@ -4734,7 +4727,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 .ch-st[data-canopy] .ch-tp__area {
   stroke: none;
-  opacity: 0.1;
 }
 .ch-st[data-canopy] .ch-tp__dot {
   stroke-width: 2;
@@ -4743,20 +4735,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-tp__svg.is-good :is(.ch-tp__line, .ch-tp__dot) {
   stroke: var(--ch-chart-gain);
 }
-.ch-st[data-canopy] .ch-tp__svg.is-good .ch-tp__area {
-  fill: var(--ch-chart-gain);
-}
 .ch-st[data-canopy] .ch-tp__svg.is-bad :is(.ch-tp__line, .ch-tp__dot) {
   stroke: var(--ch-chart-loss);
 }
-.ch-st[data-canopy] .ch-tp__svg.is-bad .ch-tp__area {
-  fill: var(--ch-chart-loss);
-}
 .ch-st[data-canopy] .ch-tp__svg.is-flat :is(.ch-tp__line, .ch-tp__dot) {
   stroke: var(--ch-text-tertiary);
-}
-.ch-st[data-canopy] .ch-tp__svg.is-flat .ch-tp__area {
-  fill: var(--ch-text-tertiary);
 }
 .ch-st[data-canopy] .ch-tp__n {
   font: var(--ch-type-caption);
@@ -4765,9 +4748,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-sgt__plot {
   align-items: start;
   padding: 0;
-}
-.ch-st[data-canopy] .ch-tp__area {
-  opacity: 0.07;
 }
 
 /* P004 stage (owner, 2026-10-08: "the color and separation needs to look better … more premium and contrast and cool
@@ -4901,14 +4881,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] circle.ch-sgt__front {
   fill: var(--ch-green-800);
 }
-.ch-st[data-canopy] .ch-sgt__wash.is-up {
-  fill: var(--ch-green-200);
-  opacity: 0.3;
-}
-.ch-st[data-canopy] .ch-sgt__wash.is-down {
-  fill: var(--ch-champagne-500);
-  opacity: 0.36;
-}
 .ch-st[data-canopy] .ch-sgt__reflab {
   fill: var(--ch-champagne-300);
 }
@@ -4993,9 +4965,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 .ch-st[data-canopy] .ch-tp__v {
   color: var(--ch-green-800);
-}
-.ch-st[data-canopy] .ch-tp__svg.is-good .ch-tp__area {
-  opacity: 0.14;
 }
 .ch-st[data-canopy] .ch-tp__dial {
   position: absolute;
@@ -5089,4 +5058,88 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 .ch-st[data-canopy] .ch-tp__par {
   top: 40px;
+}
+
+/* P004 polish: contour texture on the stage, the latest-value callout, the best-week marker, the players' bars. */
+.ch-st[data-canopy] .ch-sgt {
+  background:
+    radial-gradient(120% 90% at 85% -10%, rgb(79 138 100 / 0.38), transparent 60%),
+    repeating-radial-gradient(circle at 92% -18%, rgb(255 255 255 / 0.028) 0 1px, transparent 1px 34px),
+    linear-gradient(165deg, var(--ch-green-700), var(--ch-green-900) 70%);
+}
+.ch-st[data-canopy] .ch-sgt::before {
+  position: absolute;
+  top: 0;
+  right: 24px;
+  left: 24px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ch-champagne-300), transparent);
+  content: '';
+  pointer-events: none;
+}
+.ch-st[data-canopy] .ch-sgt__callout {
+  font: 700 15px var(--ch-font-sans);
+  fill: var(--ch-ivory-25);
+  paint-order: stroke;
+  stroke: var(--ch-green-800);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.ch-st[data-canopy] .ch-sgt__best {
+  pointer-events: none;
+}
+.ch-st[data-canopy] .ch-sgt__best circle {
+  fill: var(--ch-champagne-300);
+  stroke: var(--ch-green-800);
+  stroke-width: 2;
+}
+.ch-st[data-canopy] .ch-sgt__best text {
+  font: 600 11px var(--ch-font-sans);
+  fill: var(--ch-champagne-300);
+  paint-order: stroke;
+  stroke: var(--ch-green-800);
+  stroke-width: 4px;
+}
+.ch-st[data-canopy] .ch-sgt__end {
+  grid-template-columns: 22px minmax(0, 1fr) 46px auto;
+}
+.ch-st[data-canopy] .ch-sgt__bar {
+  position: relative;
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.1);
+}
+.ch-st[data-canopy] .ch-sgt__bar::after {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--ch-bar, 0%);
+  border-radius: 2px;
+  background: var(--ch-champagne-300);
+  content: '';
+}
+.ch-st[data-canopy] .ch-sgt__bar.is-up::after {
+  background: var(--ch-green-200);
+}
+.ch-st[data-canopy] .ch-tp__v {
+  font-size: 38px;
+}
+.ch-st[data-canopy] .ch-tp__c::before {
+  height: 4px;
+}
+
+.ch-st[data-canopy] .ch-sgt__plot {
+  grid-template-columns: minmax(0, 1fr) 210px;
+  gap: 16px;
+}
+.ch-st[data-canopy] .ch-sgt__end {
+  grid-template-columns: 22px minmax(0, 1fr) 44px 34px;
+}
+.ch-st[data-canopy] .ch-sgt__end b {
+  text-align: right;
+}
+.ch-st[data-canopy] .ch-tp + .ch-st-cover {
+  margin-top: -18px;
 }

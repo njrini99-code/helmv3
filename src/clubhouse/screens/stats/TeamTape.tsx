@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
 import { Icon } from '../../ui/Icon';
 import type { ChGauge } from '../../data/stats-team';
@@ -64,6 +65,8 @@ function TapeCell({ it }: { it: TapeItem }) {
   const end = lastValue(it.series);
   const first = it.series.findIndex((v) => v != null);
   const tone = d == null || flat ? 'is-flat' : good ? 'is-good' : 'is-bad';
+  const gid = useId().replace(/:/g, '');
+  const ink = tone === 'is-good' ? 'var(--ch-chart-gain)' : tone === 'is-bad' ? 'var(--ch-chart-loss)' : 'var(--ch-text-tertiary)';
   return (
     <li className={`ch-tp__c ${tone}`} data-ch-code={it.code}>
       <Dial it={it} tone={tone} />
@@ -82,9 +85,15 @@ function TapeCell({ it }: { it: TapeItem }) {
         <em>{it.context}</em>
       </span>
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className={`ch-tp__svg ${tone}`} aria-hidden="true">
+        <defs>
+          <linearGradient id={gid} x1={0} x2={0} y1={0} y2={1}>
+            <stop offset="0" stopColor={ink} stopOpacity={0.32} />
+            <stop offset="1" stopColor={ink} stopOpacity={0} />
+          </linearGradient>
+        </defs>
         {path && end && (
           <>
-            <path d={`${path} L${x(end.i)},${H} L${x(first)},${H} Z`} className="ch-tp__area" />
+            <path d={`${path} L${x(end.i)},${H} L${x(first)},${H} Z`} className="ch-tp__area" fill={`url(#${gid})`} />
             <path d={path} className="ch-tp__line" vectorEffect="non-scaling-stroke" />
           </>
         )}
