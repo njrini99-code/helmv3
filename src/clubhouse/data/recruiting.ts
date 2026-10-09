@@ -32,8 +32,8 @@ async function programOf(supabase: Supabase): Promise<NonNullable<ChRecruiting['
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data: coach } = await supabase.from('golf_coaches').select('id, organization_id').eq('user_id', user.id).maybeSingle();
-  if (!coach?.organization_id) return null;
+  const { data: coach, error: coachError } = await supabase.from('golf_coaches').select('id, organization_id').eq('user_id', user.id).maybeSingle();
+  if (coachError || !coach?.organization_id) return null;
   const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
   if (!teamId) return null;
   const { data: team, error } = await supabase.from('golf_teams').select('gender, organization:organizations(division)').eq('id', teamId).maybeSingle();

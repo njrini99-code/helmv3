@@ -7,7 +7,7 @@ import { PeekTarget, type PeekAction } from '../../ui/Peek';
 import { rebuiltHref } from '../../shell/nav';
 import { messagesPrefillHref } from '../messages/prefill';
 import { dayNum, dowOf, fmtHour, monthName, rangeLabel, TYPE_LABEL, type ChCalEvent, type ChCalPerson } from './model';
-import { TYPE_ICON } from './views';
+import { TYPE_ICON } from './type-icon';
 
 /**
  * P006-C3: an event peeks where it is listed: a hold on the phone's agenda row, a rest of the pointer on a week block.

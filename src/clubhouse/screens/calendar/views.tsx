@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpen, Bus, ChevronDown, ChevronUp, Flag, Lock, Target, TriangleAlert, Trophy, Users, CalendarDays, type LucideIcon } from 'lucide-react';
+import { ChevronDown, ChevronUp, TriangleAlert } from 'lucide-react';
 import { useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
@@ -23,20 +23,11 @@ import {
   addDays,
   type ChCalEvent,
   type ChCalPerson,
-  type ChCalType,
   type ChDaylight,
 } from './model';
 
-export const TYPE_ICON: Record<ChCalType, LucideIcon> = {
-  practice: Flag,
-  qualifier: Target,
-  tournament: Trophy,
-  meeting: Users,
-  travel: Bus,
-  class: BookOpen,
-  other: CalendarDays,
-  busy: Lock,
-};
+import { TYPE_ICON } from './type-icon';
+export { TYPE_ICON };
 
 export interface ChNow {
   date: string;

@@ -20,7 +20,6 @@ import { chTrail } from '../../lib/track';
 import { useNow } from '../../lib/use-now';
 import { rebuiltHref } from '../../shell/nav';
 import { LinkPending } from '../../shell/LinkPending';
-import { getValidTimezone } from '@/lib/calendar/timezone';
 import { usePhoneHero } from '../../shell/phone-chrome';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
@@ -30,8 +29,8 @@ import { leaderPeek } from './Leaderboard';
 import { competitionExtra, DayCard, dayPhase, LaterToday, SinceYouLooked, sunsetExtra } from './DayCard';
 import { useLightPlace } from '../../shell/light';
 
-export const CALENDAR = '/golf/dashboard/calendar';
-export const eventHref = (e: ChHomeEvent) => `${CALENDAR}?date=${e.date}&event=${e.id}`;
+export { CALENDAR, eventHref, whenLabel } from './event-links';
+import { CALENDAR, eventHref, whenLabel } from './event-links';
 const newEventHref = (type?: ChHomeEvent['type']) => `${CALENDAR}?new=1${type ? `&type=${type}` : ''}`;
 
 /**
@@ -138,28 +137,6 @@ function Later({ data, rounds, now, today, quiet, onOpenRound }: DayProps & { da
   );
 }
 
-/** "In 50 min", "Happening now", "Tomorrow · 3:30 PM", "Thu · 8:42 AM". Before the clock is known, the day only. */
-export function whenLabel(e: ChHomeEvent, now: Date | null): { text: string; soon: boolean } {
-  if (e.allDay) return { text: now && dayDiff(e.date, now, e.timezone) === 0 ? 'Today · all day' : `${weekday(e.date)} · all day`, soon: false };
-  if (!now) return { text: e.startLabel, soon: false };
-  const mins = Math.round((Date.parse(e.startIso) - now.getTime()) / 60000);
-  const days = dayDiff(e.date, now, e.timezone);
-  if (days === 0) {
-    const end = e.endIso ? Date.parse(e.endIso) : Date.parse(e.startIso);
-    if (mins <= 0 && now.getTime() < end) return { text: 'Happening now', soon: true };
-    if (mins < 60) return { text: `In ${Math.max(1, mins)} min`, soon: true };
-    return { text: `In ${Math.floor(mins / 60)} h ${mins % 60} min`, soon: false };
-  }
-  return { text: `${days === 1 ? 'Tomorrow' : weekday(e.date)} · ${e.startLabel}`, soon: false };
-}
-
-/** Whole days on the same team clock that produced the event's calendar date. */
-function dayDiff(date: string, now: Date, timezone?: string): number {
-  const local = new Intl.DateTimeFormat('en-CA', { timeZone: getValidTimezone(timezone), year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
-  return Math.round((Date.parse(`${date}T12:00:00Z`) - Date.parse(`${local}T12:00:00Z`)) / 86400000);
-}
-const WD = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' });
-const weekday = (date: string) => WD.format(new Date(`${date}T12:00:00Z`));
 
 /** `children`: what closes the card (the player's countdown). `kicker`: the player's "Up next · Qualifier" (the coach's card names the type alone). */
 export function UpNext({ e, now, children, kicker }: { e: ChHomeEvent; now: Date | null; children?: ReactNode; kicker?: string }) {

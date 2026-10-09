@@ -845,6 +845,22 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/calendar/month.tsx",
+      "group": "screens",
+      "exports": [
+        "MonthGrid"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/calendar/peek.tsx",
       "group": "screens",
       "exports": [
@@ -3313,11 +3329,16 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds-setup.css",
+        "src/clubhouse/styles/rounds-track.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5390,6 +5411,7 @@
         "ch-au-forgot--field",
         "ch-au-form",
         "ch-au-grain",
+        "ch-au-hero",
         "ch-au-hsl",
         "ch-au-input",
         "ch-au-key",
@@ -5420,6 +5442,7 @@
         "ch-au-poster__wide",
         "ch-au-pw",
         "ch-au-reeds",
+        "ch-au-rise",
         "ch-au-say",
         "ch-au-scene",
         "ch-au-sent",
@@ -5531,25 +5554,31 @@
           "name": "--ch-au-phone-sheet-top",
           "value": "clamp(200px, 42svh, 352px)",
           "scope": "@media (max-width: 820px) → .ch-au",
-          "line": 1146
+          "line": 1152
         },
         {
           "name": "--ch-au-phone-window",
           "value": "calc(var(--ch-au-phone-sheet-top) + 40px)",
           "scope": "@media (max-width: 820px) → .ch-au",
-          "line": 1147
+          "line": 1153
         },
         {
           "name": "--ch-au-inl",
           "value": "0px",
           "scope": "@media (max-width: 820px) → .ch-au-photo > .ch-au-poster,\n  .ch-au-photo > .ch-au-scene",
-          "line": 1169
+          "line": 1175
         },
         {
           "name": "--ch-au-inr",
           "value": "0px",
           "scope": "@media (max-width: 820px) → .ch-au-photo > .ch-au-poster,\n  .ch-au-photo > .ch-au-scene",
-          "line": 1170
+          "line": 1176
+        },
+        {
+          "name": "--ch-au-hb",
+          "value": "calc(env(safe-area-inset-top, 0px) + var(--ch-phone-topbar-h))",
+          "scope": "@media (max-width: 820px) → .ch-au",
+          "line": 1457
         }
       ]
     },
@@ -5707,9 +5736,11 @@
         "ch-calm-head",
         "ch-calm-month",
         "ch-calm-month__c",
+        "ch-calm-month__d",
         "ch-calm-month__g",
         "ch-calm-month__h",
         "ch-calm-month__lg",
+        "ch-calm-month__w",
         "ch-calm-now",
         "ch-calm-page",
         "ch-calm-pager",
@@ -9223,6 +9254,7 @@
         "ch-setm-pill",
         "ch-setm-problem",
         "ch-setm-rank",
+        "ch-setm-rank-lift",
         "ch-setm-rank__h",
         "ch-setm-rank__i",
         "ch-setm-rank__n",

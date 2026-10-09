@@ -16,7 +16,7 @@ import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
 import { messagesPrefillHref } from '../messages/prefill';
 import { sunTimes, type LatLng } from '../../lib/sun';
-import { CALENDAR, eventHref, whenLabel } from './HomePhone';
+import { CALENDAR, eventHref, whenLabel } from './event-links';
 
 /**
  * The coach's phone Home as one living card (owner-approved phone concept, board 1 "The day, not a dashboard"): the

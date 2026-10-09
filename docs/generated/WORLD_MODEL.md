@@ -6,8 +6,8 @@
 
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
-**Node counts:** 31 features, 69 routes, 74 components, 27 apis, 106 actions, 121 services, 87 tests, 134 tables, 166 rpcs, 25 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
-**Edges:** 1089 (merged; an edge with more than one evidence kind is a stronger claim).
+**Node counts:** 31 features, 69 routes, 75 components, 27 apis, 106 actions, 121 services, 87 tests, 134 tables, 166 rpcs, 25 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
+**Edges:** 1090 (merged; an edge with more than one evidence kind is a stronger claim).
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
 
 ---
