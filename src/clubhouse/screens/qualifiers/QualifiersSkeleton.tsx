@@ -15,7 +15,8 @@ export function QualifiersSkeleton({ mode = 'all' }: { mode?: 'all' | 'mine' }) 
       <header className="ch-qf-head" data-canopy-head="">
         <div>
           <Skeleton width={200} height={11} />
-          <Skeleton width={300} height={38} radius={10} />
+          {/* The phone's large title in waiting: the shell's bar hides its title from the first paint (large-title.tsx). */}
+          <Skeleton width={300} height={38} radius={10} largeTitle />
           <Skeleton width={380} height={16} />
           {/* The phone draws the lede as the reader's own sentence instead of the bar above (qualifiers.css). */}
           <SkeletonLede mode={mode} />

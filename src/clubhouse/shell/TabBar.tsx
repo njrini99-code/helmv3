@@ -320,7 +320,7 @@ export function TabBar({
                   </span>
                   <span className="ch-more__label">Help</span>
                 </Link>
-                <button type="button" className="ch-more__row" onClick={() => void signOut()} disabled={leaving}>
+                <button type="button" className="ch-more__row is-danger" onClick={() => void signOut()} disabled={leaving}>
                   <span className="ch-more__ic">
                     <Icon icon={LogOut} size={17} />
                   </span>

@@ -1336,7 +1336,7 @@
   .ch-msp .ch-ms-sec.is-date > .ch-ms-sec__l {
     padding-top: 13px;
     font: 500 12px/1.2 var(--ch-font-sans);
-    letter-spacing: 0.12em;
+    letter-spacing: 0.01em;
     font-variation-settings: normal;
     color: var(--ch-ledger-eyebrow);
   }

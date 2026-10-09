@@ -21,6 +21,7 @@ import { StatsPlayer } from '../screens/stats/StatsPlayer';
 import { StatsProfileSkeleton, StatsSkeleton } from '../screens/stats/StatsSkeleton';
 import { StatsPlayerPhoneSkeleton, StatsTeamPhoneSkeleton } from '../screens/stats/StatsPhoneSkeleton';
 import { HomeSkeleton } from '../screens/home/HomeSkeleton';
+import { findLargeTitle } from '../shell/large-title';
 import { ToastProvider } from '../ui/Toast';
 import { PREVIEW_PLAYER, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
 import { filterFor } from '../data/stats-filter';
@@ -241,5 +242,33 @@ describe('Skeletons draw the loaded page\'s lines', () => {
     const { container } = render(<HomeSkeleton />);
     const head = container.querySelector('.ch-h-head')!;
     expect(head.querySelector('.ch-h-head__actions')!.children).toHaveLength(2);
+  });
+});
+
+describe('Team stats on the phone: figures, the leg wash and the loading title (final design review, 2026-10-08)', () => {
+  it('sets every figure tabular again after the font shorthands, last in the Team stats phone block', () => {
+    const block = css.slice(css.indexOf('/* Team stats on the phone, direction A'));
+    const rule = /\.ch-stm\.is-team\s*:is\(([^)]*)\)\s*{\s*font-variant-numeric: tabular-nums;\s*font-feature-settings: 'tnum';\s*}\s*}\s*$/.exec(block);
+    expect(rule).not.toBeNull();
+    const covered = rule![1]!.split(',').map((s) => s.trim());
+    for (const sel of ['.ch-num', '.ch-stm-hero__v', '.ch-stm-figrow__v', '.ch-stm-figrow__d', '.ch-stm-sgfig b', '.ch-stm-leg b', '.ch-stm-row__v span']) {
+      expect(covered).toContain(sel);
+    }
+  });
+
+  it("slides the chosen leg's wash on the smooth spring, the wash alone with no ring", () => {
+    const pick = /\.ch-stm\.is-team \.ch-stm-legpick\s*{([^}]*)}/.exec(css)![1]!;
+    expect(pick).toMatch(/transition: translate var\(--ch-dur-spring-smooth\) var\(--ch-ease-spring-smooth\);/);
+    expect(pick).not.toMatch(/box-shadow/);
+    expect(pick).toMatch(/background: var\(--ch-bg-selected\);/);
+  });
+
+  it("the skeleton's title block is the page's large title, so the bar never shows its title and then fades it", () => {
+    const { container, unmount } = render(<StatsTeamPhoneSkeleton />);
+    const title = findLargeTitle(container);
+    expect(title).not.toBeNull();
+    expect(title!.parentElement?.classList.contains('ch-stm-head')).toBe(true);
+    expect(title!.parentElement?.children[1]).toBe(title);
+    unmount();
   });
 });

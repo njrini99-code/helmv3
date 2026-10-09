@@ -136,20 +136,31 @@ const BLOCK_FROM = 56;
  * is drawn as the Ledger draws one: a rule along its top and two lines of type under it, never a filled card (states
  * audit, 2026-10-08). It keeps its box either way, so nothing moves when the page lands. `shape="solid"` keeps a real
  * object filled at any size (a scorecard, a chart, a portrait); `shape="block"` asks for the ruled block at any size.
+ * `largeTitle`: the bar stands for the page's phone large title, so the shell's bar hides its own title from the first
+ * paint rather than showing it and fading it out as the page lands (shell/large-title.tsx).
  */
 export function Skeleton({
   width,
   height = 12,
   radius = 6,
   shape,
+  largeTitle = false,
 }: {
   width?: number | string;
   height?: number;
   radius?: number;
   shape?: 'block' | 'solid';
+  largeTitle?: boolean;
 }) {
   const block = shape === 'block' || (shape === undefined && height >= BLOCK_FROM && typeof width !== 'number');
-  return <span className={block ? 'ch-skel ch-skel--block' : 'ch-skel'} style={{ width, height, borderRadius: radius }} aria-hidden="true" />;
+  return (
+    <span
+      className={block ? 'ch-skel ch-skel--block' : 'ch-skel'}
+      style={{ width, height, borderRadius: radius }}
+      aria-hidden="true"
+      data-ch-large-title={largeTitle ? '' : undefined}
+    />
+  );
 }
 
 /**

@@ -1,5 +1,40 @@
 # Clubhouse changelog
 
+## 2026-10-08 — Final design review: phone polish across seven findings
+
+Fixes from the final design review, phone only unless noted; desktop is
+unchanged apart from the Qualifiers canopy eyebrow below. Not yet reviewed by
+the owner.
+
+- **Tabular numbers** (`styles/stats.css`, `styles/home.css`). The `font:`
+  shorthands on the Team stats phone figures reset `.ch-num`'s tabular
+  numerals. One rule closes the Team stats phone block and sets them again on
+  `.ch-num` and the hero, rows, legs and strokes gained figures. Home's phone
+  view does the same for "+3", "+0.3" and "3:30 – 5:00 PM".
+- **Number Flow timing** (`lib/motion.ts`). `CH_NUMBER_FLOW` is the one roll:
+  transform and spin over base, the fade over quick, all on the v2 ease-out
+  (no raw `ease-out`). Team stats (`StatsTeamPhone.tsx`) and Roster
+  (`RosterPhone.tsx`) spread it instead of their own copies.
+- **Strokes gained leg wash** (`styles/stats.css`). The chosen leg's wash
+  slides on the smooth spring tokens (`--ch-dur-spring-smooth`,
+  `--ch-ease-spring-smooth`) and drops its green ring: the wash alone marks
+  the row.
+- **No tracked eyebrows** (`styles/qualifiers.css`, `styles/coachhelm.css`,
+  `styles/messages.css`). Six engraved eyebrows at 0.12em and 0.14em take
+  PageIntro's 0.01em, at the same size and weight. One is the Qualifiers
+  canopy eyebrow on desktop.
+- **Skeleton large titles** (`ui/States.tsx`, `StatsPhoneSkeleton.tsx`,
+  `QualifiersSkeleton.tsx`). `Skeleton` takes `largeTitle`, which marks it
+  `data-ch-large-title`. The Team stats phone skeleton and the Qualifiers list
+  skeleton mark their title block, so the bar hides its title from the first
+  paint instead of showing it and fading it out as the page lands.
+- **More sheet Sign out** (`shell/TabBar.tsx`, `styles/shell.css`). Sign out
+  is red, with its glyph, as Settings' Sign out is (D-42); while it is signing
+  out it takes the disabled ink.
+- **Round setup segments** (`styles/rounds-setup.css`). Round type and Holes
+  stay 38px drawn; a hit box on each segment reaches 44px into the well's 3px
+  padding.
+
 ## 2026-10-08 — Two scoring tokens for numerals on the feature green
 
 A shared token change for the shot screen's hole strip (P011's log has the

@@ -17,7 +17,7 @@ import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/Sect
 import { Segmented } from '../../ui/Segmented';
 import { changeTone, formatFixed, formatSigned, formatToPar, MINUS, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
-import { CH_DUR, CH_EASE } from '../../lib/motion';
+import { CH_NUMBER_FLOW } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { sgBaseline, sgScale, sgShare } from '../../lib/sg';
 import { gridPeek, teamPlayerHref } from './links';
@@ -40,12 +40,6 @@ export type ChLegPick = 'total' | ChLeg;
 // The page holds the chart's box and its accessible summary, so nothing waits on it or moves when it lands.
 const TeamTrendChart = dynamic(() => import('./TeamTrendChart'), { ssr: false, loading: () => null });
 
-/** Number Flow on the Clubhouse curve: digits roll over base, fade over quick (D-64); instant when reduced. */
-const FLOW_TIMING = {
-  transformTiming: { duration: CH_DUR.base * 1000, easing: `cubic-bezier(${CH_EASE.join(',')})` },
-  spinTiming: { duration: CH_DUR.base * 1000, easing: `cubic-bezier(${CH_EASE.join(',')})` },
-  opacityTiming: { duration: CH_DUR.quick * 1000, easing: 'ease-out' },
-} as const;
 const ONE_PLACE = { minimumFractionDigits: 1, maximumFractionDigits: 1 } as const;
 
 /**
@@ -64,7 +58,7 @@ function SignedFlow({ value, suffix = '' }: { value: number; suffix?: string }) 
         {suffix}
       </span>
       <span aria-hidden="true">
-        <NumberFlow value={Number(Math.abs(value).toFixed(1))} format={ONE_PLACE} prefix={sign} suffix={suffix} animated={!reduced} {...FLOW_TIMING} />
+        <NumberFlow value={Number(Math.abs(value).toFixed(1))} format={ONE_PLACE} prefix={sign} suffix={suffix} animated={!reduced} {...CH_NUMBER_FLOW} />
       </span>
     </>
   );

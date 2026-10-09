@@ -5,7 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, cleanup, fireEvent } from '@testing-library/react';
 import { PRESS_MAX_WIDTH, pressScale, useChPress } from '../lib/press';
-import { CH_DUR, chTween, chSwap } from '../lib/motion';
+import { CH_DUR, CH_EASE, CH_NUMBER_FLOW, chTween, chSwap } from '../lib/motion';
 
 function Harness({ enabled }: { enabled: boolean }) {
   useChPress(enabled);
@@ -98,6 +98,15 @@ describe('CH-1606 press', () => {
 describe('v2 durations', () => {
   it('are press 110, quick 180, base 260, release 280 and reveal 520ms', () => {
     expect(CH_DUR).toEqual({ press: 0.11, quick: 0.18, base: 0.26, release: 0.28, reveal: 0.52 });
+  });
+
+  it('Number Flow rolls and spins over base and fades over quick, every part on the v2 ease-out (no raw ease-out)', () => {
+    const ease = `cubic-bezier(${CH_EASE.join(', ')})`;
+    expect(CH_NUMBER_FLOW).toEqual({
+      transformTiming: { duration: 260, easing: ease },
+      spinTiming: { duration: 260, easing: ease },
+      opacityTiming: { duration: 180, easing: ease },
+    });
   });
 });
 

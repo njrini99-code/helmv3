@@ -10,8 +10,12 @@ import '../../styles/stats.css';
  * Perf 2026-10-01: the blocks are the loaded page's height (measured with `npm run clubhouse:perf`, geometry), so what is
  * on screen does not move when the figures land. A bar sits in a box the height of its real line.
  */
-function Bar({ height, children }: { height: number; children: ReactNode }) {
-  return <span style={{ display: 'flex', alignItems: 'center', height }}>{children}</span>;
+function Bar({ height, children, largeTitle = false }: { height: number; children: ReactNode; largeTitle?: boolean }) {
+  return (
+    <span style={{ display: 'flex', alignItems: 'center', height }} data-ch-large-title={largeTitle ? '' : undefined}>
+      {children}
+    </span>
+  );
 }
 
 /** The trend uses the loaded chart aspect ratio; other panels retain their measured minimum. */
@@ -59,12 +63,13 @@ function Figures({ count, line = false }: { count: number; line?: boolean }) {
 export function StatsTeamPhoneSkeleton() {
   return (
     <main className="ch-stm is-team" aria-busy="true" aria-label="Loading stats" data-ch-code="CH-4401">
-      {/* Direction A's large title: the 15px context line, then the 34px title's line. */}
+      {/* Direction A's large title: the 15px context line, then the 34px title's line. The title's block is the page's
+          large title while it loads, so the shell's bar hides its title from the first paint (shell/large-title.tsx). */}
       <header className="ch-stm-head" aria-hidden="true">
         <Bar height={19.5}>
           <Skeleton width={230} height={12} />
         </Bar>
-        <Bar height={37.4}>
+        <Bar height={37.4} largeTitle>
           <Skeleton width={170} height={30} radius={8} />
         </Bar>
       </header>

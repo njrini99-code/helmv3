@@ -23,6 +23,18 @@ export const CH_DUR = {
   reveal: 0.52,
 } as const;
 
+const CH_EASE_CSS = `cubic-bezier(${CH_EASE.join(', ')})`;
+
+/**
+ * Number Flow on the Clubhouse curve (D-64): digits roll and spin over base and fade over quick, all on the v2
+ * ease-out. Spread it onto `<NumberFlow>`, with `animated={false}` under reduced motion and Animations off.
+ */
+export const CH_NUMBER_FLOW = {
+  transformTiming: { duration: CH_DUR.base * 1000, easing: CH_EASE_CSS },
+  spinTiming: { duration: CH_DUR.base * 1000, easing: CH_EASE_CSS },
+  opacityTiming: { duration: CH_DUR.quick * 1000, easing: CH_EASE_CSS },
+} as const;
+
 /** Wheel easing on the desktop canvas (smooth-scroll.ts): how long a wheel step glides. Scrolling, not UI motion, so it
  *  sits outside CH_DUR; reduced motion and Animations off turn it off entirely. */
 export const CH_SCROLL_DUR = 0.85;

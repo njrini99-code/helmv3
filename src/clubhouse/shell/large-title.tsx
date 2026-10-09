@@ -12,8 +12,9 @@ import { useEffect, type RefObject } from 'react';
  * `data-ch-large-title`, and the screens that already draw one are listed by their own title class. The same list
  * drives the CSS (styles/shell.css, "Phone large titles"), whose `:has()` hides the bar's title from the first paint;
  * this hook only adds `data-large-title="tucked"` to the bar once the title has gone under it. The Settings and
- * Recruiting skeletons draw the title's block and match too; the other skeletons do not yet, so while they show, the
- * bar keeps its title and fades it out as the page lands (a skeleton can opt in with `data-ch-large-title`).
+ * Recruiting skeletons draw the title's block and match too, and the Roster, Team stats and Qualifiers list skeletons
+ * opt in with `data-ch-large-title` (`<Skeleton largeTitle>`); a skeleton that does not keeps the bar's title while it
+ * shows and fades it out as the page lands.
  *
  * Calendar's month, a round's course and a qualifier's name are deliberately not here: they are the content's
  * heading, not the page's name, and the bar keeps "Calendar", "Round" and "Qualifier" over them.

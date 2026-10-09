@@ -498,6 +498,8 @@ describe('Shell · navigation and accessibility', () => {
     expect(within(sheet).getByRole('link', { name: /^Maya Reyes Player · Varsity/ }).getAttribute('href')).toBe('/golf/dashboard/settings');
     expect(within(sheet).getByRole('link', { name: 'Calendar Thursday · Pinehurst qualifier' })).toBeTruthy();
     expect(within(sheet).getByRole('link', { name: 'Help' }).getAttribute('href')).toBe('/golf/dashboard/settings#set-help');
+    // Sign out is destructive: red, as Settings' Sign out is (D-42).
+    expect(within(sheet).getByRole('button', { name: 'Sign out' }).classList.contains('is-danger')).toBe(true);
     signOutSpy.mockResolvedValueOnce(undefined);
     await user.click(within(sheet).getByRole('button', { name: 'Sign out' }));
     expect(signOutSpy).toHaveBeenCalledTimes(1);

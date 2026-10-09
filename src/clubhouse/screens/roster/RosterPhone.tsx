@@ -20,7 +20,7 @@ import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
-import { CH_DUR, CH_EASE } from '../../lib/motion';
+import { CH_DUR, CH_NUMBER_FLOW } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneScreen } from '../../shell/PhoneScreen';
@@ -35,9 +35,6 @@ import { useCopyText } from './useCopyText';
 
 export type { PhoneSort } from './sort';
 
-/** The trailing figure's roll: the base duration on the v2 ease-out (D-64), its fade on the quick one. */
-const ROLL = { duration: CH_DUR.base * 1000, easing: `cubic-bezier(${CH_EASE.join(', ')})` } as const;
-const ROLL_FADE = { duration: CH_DUR.quick * 1000, easing: 'ease-out' } as const;
 /** How long after a chosen sort the figures may roll: the roll, and a frame or so for it to end on its own (Number Flow
  *  finishes a running roll at once when `animated` turns off). */
 const ROLL_HOLD_MS = CH_DUR.base * 1000 + 50;
@@ -392,9 +389,7 @@ export function RollFigure({ value, signed = false, roll }: { value: number | nu
       prefix={fig.prefix}
       format={{ minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false }}
       animated={roll}
-      transformTiming={ROLL}
-      spinTiming={ROLL}
-      opacityTiming={ROLL_FADE}
+      {...CH_NUMBER_FLOW}
     />
   );
 }

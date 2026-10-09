@@ -1082,6 +1082,15 @@
     position: absolute;
     inset: min(0px, calc(50% - 22px));
   }
+  /* Round type and Holes: each 38px segment's touch area reaches 44px into the well's 3px padding, drawn as before. */
+  .ch-rsu-seg:not(.ch-rsu-seg--sm) button {
+    position: relative;
+  }
+  .ch-rsu-seg:not(.ch-rsu-seg--sm) button::before {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc(50% - 22px)) 0;
+  }
 }
 
 /* Dark ("Clubhouse at night"). The ivory ramp turns into the dark surfaces, so ivory type on a green band reads the

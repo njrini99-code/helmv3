@@ -62,6 +62,7 @@ import { QualifierForm } from '../screens/qualifiers/QualifierForm';
 import { QualifierSelection } from '../screens/qualifiers/QualifierSelection';
 import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifierSelectionSkeleton, QualifiersSkeleton } from '../screens/qualifiers/QualifiersSkeleton';
 import { useLiveStandings } from '../screens/qualifiers/live';
+import { findLargeTitle } from '../shell/large-title';
 import { buildBoard, roundPars, validateForm, type ChQFormValues, type ChQRound } from '../screens/qualifiers/model';
 import { LIVE_SELECTION_WRITES, runEditPlan, selectionReason, startSelecting, type ChQSelectionWrites, type ChQWrites } from '../screens/qualifiers/writes';
 import { DETAIL_INDEX, PLAYER_ID, PREVIEW_COURSES, PREVIEW_TEES, previewCreateForm, previewDetail, previewEditForm, previewList, previewSelection } from '../preview/fixtures-qualifiers';
@@ -2042,6 +2043,10 @@ describe('Qualifiers · loading', () => {
       </>,
     );
     expect(code('CH-09401')!.getAttribute('aria-busy')).toBe('true');
+    // The list's title block is the phone's large title while it loads (the bar never shows its title, then fades it),
+    // and it stays the head's second bar, which the phone sizes by position (qualifiers.css).
+    const listTitle = findLargeTitle(code('CH-09401') as HTMLElement);
+    expect(listTitle).toBe(code('CH-09401')!.querySelector('.ch-qf-head > div > .ch-skel:nth-child(2)'));
     expect(code('CH-09402')!.getAttribute('aria-label')).toBe('Loading the qualifier');
     expect(code('CH-09403')!.getAttribute('aria-label')).toBe('Loading the qualifier form');
     // The detail's skeleton holds the loaded head and facts (measured 2026-10-07): a coach's three actions, and each fact's four lines.

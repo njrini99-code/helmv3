@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -291,5 +293,16 @@ describe('Round setup: details and starting', () => {
     await user.click(startBtn());
     await waitFor(() => expect(ports.start).toHaveBeenCalled());
     expect(vi.mocked(ports.start).mock.calls[0]![0]).toMatchObject({ pick: { courseId: null, teeId: null, courseName: 'Chapel Ridge GC' }, count: 9, saveCourse: true });
+  });
+});
+
+describe('Round setup: segment touch areas on the phone (docs/clubhouse/MOBILE.md, 44px)', () => {
+  const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/rounds-setup.css'), 'utf8');
+
+  it('Round type and Holes stay 38px drawn, and each segment touches 44px through a hit box in the phone block', () => {
+    expect(css).toMatch(/\.ch-rsu-seg button\s*{[^}]*height: 38px;/);
+    const phone = css.slice(css.indexOf('/* Phone: every control\'s touch area reaches 44 x 44'));
+    expect(phone).toMatch(/\.ch-rsu-seg:not\(\.ch-rsu-seg--sm\) button\s*{\s*position: relative;\s*}/);
+    expect(phone).toMatch(/\.ch-rsu-seg:not\(\.ch-rsu-seg--sm\) button::before\s*{[^}]*position: absolute;[^}]*inset: min\(0px, calc\(50% - 22px\)\) 0;/);
   });
 });
