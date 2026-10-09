@@ -5143,3 +5143,67 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-tp + .ch-st-cover {
   margin-top: -18px;
 }
+
+/* Scaled down (owner, 2026-10-08: "that's up very large"): a compact stage. */
+.ch-st[data-canopy] .ch-sgt {
+  padding: 20px 26px 16px;
+  border-radius: 20px;
+}
+.ch-st[data-canopy] .ch-sgt__n {
+  font-size: clamp(44px, 4.4vw, 62px);
+}
+.ch-st[data-canopy] .ch-sgt__chg {
+  padding: 4px 9px 4px 7px;
+  font-size: 15px;
+}
+.ch-st[data-canopy] .ch-sgt__k {
+  margin-bottom: 2px;
+  font-size: 12.5px;
+}
+.ch-st[data-canopy] .ch-sgt__vs {
+  margin-top: 6px;
+}
+.ch-st[data-canopy] .ch-sgt__facts {
+  gap: 8px 28px;
+  margin-top: 12px;
+  padding-top: 12px;
+}
+.ch-st[data-canopy] .ch-sgt__facts dd {
+  font-size: 18px;
+}
+.ch-st[data-canopy] .ch-sgt__plot {
+  grid-template-columns: minmax(0, 1fr) 190px;
+  gap: 12px;
+  min-height: calc(26px + var(--ch-ends, 0) * 27px);
+}
+.ch-st[data-canopy] .ch-sgt__end {
+  padding: 3px 6px;
+  font-size: 12.5px;
+}
+.ch-st[data-canopy] .ch-sgt__ends {
+  gap: 0;
+}
+.ch-st[data-canopy] .ch-sgt .ch-note {
+  margin-top: 6px;
+  font-size: 13px;
+}
+.ch-st[data-canopy] .ch-tp__v {
+  font-size: 32px;
+}
+.ch-st[data-canopy] .ch-tp__c {
+  padding: 14px 18px 12px;
+}
+.ch-st[data-canopy] .ch-tp__svg {
+  height: 38px;
+}
+.ch-st[data-canopy] .ch-tp__c {
+  grid-template-rows: auto auto auto 38px auto;
+}
+.ch-st[data-canopy] .ch-tp__dial {
+  top: 34px;
+  width: 38px;
+  height: 38px;
+}
+.ch-st[data-canopy] .ch-tp__par {
+  top: 36px;
+}
