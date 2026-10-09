@@ -76,18 +76,23 @@ export function StatsProfileSkeleton({ coach = false }: { coach?: boolean }) {
       <div className="ch-sf" aria-hidden="true">
         <Skeleton width={78} height={30} radius={10} />
       </div>
-      {/* The overview: the scoring ribbon, then the tape of five figures, as loaded (PlayerStage, TeamTape). */}
-      <div className="ch-fm" aria-hidden="true">
-        <div className="ch-fm__head">
-          <div>
-            <Skeleton width={160} height={20} />
-            <div style={{ height: 8 }} />
-            <Skeleton width={300} height={13} />
+      {/* The overview: the first zones of the loaded page (OverviewZones): what the stat is and its reading on the left, its picture on the right. */}
+      <div className="ch-zones" aria-hidden="true">
+        {[0, 1].map((i) => (
+          <div key={i} className={'ch-z' + (i % 2 ? ' ch-z--alt' : '')}>
+            <div className="ch-z__id">
+              <Skeleton width={30} height={30} radius={15} />
+              <Skeleton width={180} height={27} />
+              <Skeleton width="100%" height={64} radius={8} />
+              <Skeleton width={120} height={60} radius={8} />
+            </div>
+            <div className="ch-z__vis">
+              <Skeleton width="100%" height={i ? 150 : 230} radius={12} />
+              <Skeleton width="100%" height={120} radius={12} />
+            </div>
           </div>
-        </div>
-        <Skeleton width="100%" height={196} radius={12} />
+        ))}
       </div>
-      <TapeSkeleton />
     </main>
   );
 }

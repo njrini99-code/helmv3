@@ -5513,70 +5513,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   background: var(--ch-ink-700);
 }
 
-/* P005: a stat against its references (RefAxis), in the comparison table. */
-.ch-st[data-canopy] .ch-ft__axis {
-  width: 190px;
-  padding-left: 18px;
-}
-.ch-st[data-canopy] .ch-ra {
-  position: relative;
-  display: block;
-  width: 100%;
-  min-width: 140px;
-  height: 20px;
-  background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) center / 100% 1px no-repeat;
-}
-.ch-st[data-canopy] .ch-ra__seg {
-  position: absolute;
-  top: 8px;
-  height: 4px;
-  border-radius: 2px;
-}
-.ch-st[data-canopy] .ch-ra.is-good .ch-ra__seg {
-  background: var(--ch-green-400);
-}
-.ch-st[data-canopy] .ch-ra.is-bad .ch-ra__seg {
-  background: var(--ch-champagne-500);
-}
-.ch-st[data-canopy] .ch-ra__zero {
-  position: absolute;
-  top: 3px;
-  bottom: 3px;
-  width: 1px;
-  background: var(--ch-champagne-500);
-}
-.ch-st[data-canopy] .ch-ra__tick {
-  position: absolute;
-  top: 3px;
-  bottom: 3px;
-  width: 2px;
-  margin-left: -1px;
-  border-radius: 1px;
-  text-decoration: none;
-}
-.ch-st[data-canopy] .ch-ra__tick.is-team {
-  background: var(--ch-ink-700);
-}
-.ch-st[data-canopy] .ch-ra__tick.is-tour {
-  background: var(--ch-champagne-500);
-}
-.ch-st[data-canopy] .ch-ra__dot {
-  position: absolute;
-  top: 4px;
-  width: 12px;
-  height: 12px;
-  margin-left: -6px;
-  border-radius: 50%;
-  border: 2px solid var(--ch-ivory-25);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.25);
-}
-.ch-st[data-canopy] .ch-ra.is-good .ch-ra__dot {
-  background: var(--ch-green-600);
-}
-.ch-st[data-canopy] .ch-ra.is-bad .ch-ra__dot {
-  background: var(--ch-warning-600);
-}
-
 /* P005: the player Overview as seven zones (OverviewZones). Each stat area is a band set off by a gold rule, an alternating tint
    and, left, what the stat is with one big reading; right, the picture that fits it. Prefix .ch-z. */
 .ch-st[data-canopy] .ch-zones {
@@ -6009,4 +5945,255 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-zfloor {
   font: italic 400 13px/1.35 var(--ch-font-sans, inherit);
   color: var(--ch-text-tertiary);
+}
+
+/* P005: Game detail on desktop in the same zone style as the Overview: each area is a band under a gold rule, what it is and its four
+   figures on the left, the pictures and More detail on the right. The phone keeps its stacked sections (the wrappers dissolve). */
+.ch-gd.is-phone .ch-gm__id,
+.ch-gd.is-phone .ch-gm__vis {
+  display: contents;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) {
+  gap: 0;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 48px;
+  padding: 36px 36px 40px;
+  overflow: visible;
+  border-top: 3px solid var(--ch-champagne-500);
+  border-radius: 0;
+  background: var(--ch-ivory-25);
+  box-shadow: none;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) #gm-tee,
+.ch-st[data-canopy] .ch-gd:not(.is-phone) #gm-short {
+  background: var(--ch-bg-subtle);
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__id {
+  display: grid;
+  position: sticky;
+  top: 24px;
+  align-content: start;
+  align-self: start;
+  gap: 18px;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__head {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  padding: 0;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__ic {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--ch-green-800);
+  color: var(--ch-ivory-50);
+  box-shadow: none;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__t h2 {
+  margin: 0 0 12px;
+  font: 600 27px/1.1 var(--ch-font-sans);
+  letter-spacing: -0.015em;
+  color: var(--ch-green-800);
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__t p {
+  font: 400 14.5px/1.5 var(--ch-font-sans);
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__head > .ch-gm__sub {
+  padding: 0;
+  white-space: normal;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__figs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  border-top: 1px solid var(--ch-ledger-rule);
+  border-bottom: 0;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__figs div {
+  padding: 16px 12px 6px 0;
+  box-shadow: none;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__figs div + div {
+  padding-left: 0;
+  box-shadow: none;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__figs div:nth-child(even) {
+  padding-left: 14px;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__figs dd:not(.ch-gm__sub) {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--ch-green-800);
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__figs dd.ch-gain {
+  color: var(--ch-green-600);
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__figs dd.ch-loss {
+  color: var(--ch-warning-600);
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm .ch-gx-rule {
+  padding: 0;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__vis {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__body {
+  gap: 28px 40px;
+  margin-top: 0;
+  border-top: 0;
+  background: transparent;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm-p {
+  padding: 14px 0 0;
+  border-top: 1px solid var(--ch-ledger-rule);
+  background: transparent;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gx-more {
+  margin-top: 8px;
+  border-top: 1px solid var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gx-more > summary {
+  padding: 0;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gx-more > .ch-gm__body {
+  margin-top: 12px;
+}
+
+/* the wide zone: what the stat is on one row above, the table full width */
+.ch-st[data-canopy] .ch-z--wide {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+}
+.ch-st[data-canopy] .ch-z--wide .ch-z__id {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 16px;
+}
+.ch-st[data-canopy] .ch-z--wide .ch-z__def {
+  grid-column: 2;
+}
+.ch-st[data-canopy] .ch-z--wide .ch-z__n {
+  grid-row: span 2;
+}
+.ch-st[data-canopy] .ch-zt {
+  min-width: 0;
+}
+.ch-st[data-canopy] .ch-zt .ch-tr {
+  grid-template-columns: minmax(160px, 1.4fr) 64px 52px 52px 56px 52px 68px repeat(4, minmax(72px, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+/* Development: each focus area or goal as a track from where it started to its target, with the current value marked on it. */
+.ch-st[data-canopy] .ch-dvl {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-st[data-canopy] .ch-dv {
+  display: grid;
+  gap: 12px;
+  padding: 20px 0 8px;
+  border-top: 1px solid var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-dv:first-child {
+  padding-top: 4px;
+  border-top: 0;
+}
+.ch-st[data-canopy] .ch-dv__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.ch-st[data-canopy] .ch-dv__top b {
+  display: block;
+  font: 600 19px/1.2 var(--ch-font-sans);
+  color: var(--ch-green-800);
+}
+.ch-st[data-canopy] .ch-dv__top span {
+  display: block;
+  margin-top: 4px;
+  font: 400 14px/1.4 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-st[data-canopy] .ch-dv__top em {
+  flex: none;
+  padding: 5px 10px;
+  border-radius: 99px;
+  background: var(--ch-bg-inset);
+  font: 600 13px/1 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-green-700);
+}
+.ch-st[data-canopy] .ch-dv.is-done .ch-dv__top em {
+  background: var(--ch-green-800);
+  color: var(--ch-ivory-50);
+}
+.ch-st[data-canopy] .ch-dv__rail {
+  position: relative;
+  height: 12px;
+  margin: 30px 6px 40px;
+  border-radius: 99px;
+  background: var(--ch-bg-inset);
+  box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-dv__done {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-600));
+}
+.ch-st[data-canopy] .ch-dv__dot {
+  position: absolute;
+  top: -5px;
+  width: 22px;
+  height: 22px;
+  margin-left: -11px;
+  border-radius: 50%;
+  background: var(--ch-green-600);
+  border: 3px solid var(--ch-ivory-25);
+  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.25);
+}
+.ch-st[data-canopy] .ch-dv__now {
+  position: absolute;
+  top: -28px;
+  transform: translateX(-50%);
+  font: 700 15px/1 var(--ch-font-sans);
+  white-space: nowrap;
+  color: var(--ch-green-700);
+}
+.ch-st[data-canopy] .ch-dv__end {
+  position: absolute;
+  top: 22px;
+  font: 500 13px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-dv__end b {
+  display: block;
+  font: 600 15px/1.1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-dv__end.is-start {
+  left: 0;
+}
+.ch-st[data-canopy] .ch-dv__end.is-target {
+  right: 0;
+  text-align: right;
+}
+.ch-st[data-canopy] .ch-dv__flag {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--ch-champagne-500);
+  border: 3px solid var(--ch-ivory-25);
 }

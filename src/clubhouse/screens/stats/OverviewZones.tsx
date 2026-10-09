@@ -19,33 +19,33 @@ const fixed = (v: number | null | undefined, d = 1) => (v == null || Number.isNa
 const clamp = (v: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
 const pos = (v: number, lo: number, hi: number) => clamp(((v - lo) / (hi - lo)) * 100);
 
-function Zone({ n, title, def, alt = false, read, children }: { n: number; title: string; def: ReactNode; alt?: boolean; read: ReactNode; children: ReactNode }) {
+export function Zone({ n, title, def, alt = false, wide = false, read, children }: { n: number; title: string; def: ReactNode; alt?: boolean; wide?: boolean; read?: ReactNode; children: ReactNode }) {
   return (
-    <section className={'ch-z' + (alt ? ' ch-z--alt' : '')} aria-labelledby={`ch-z-${n}`}>
+    <section className={'ch-z' + (alt ? ' ch-z--alt' : '') + (wide ? ' ch-z--wide' : '')} aria-labelledby={`ch-z-${n}`}>
       <div className="ch-z__id">
         <span className="ch-z__n" aria-hidden="true">
           {n}
         </span>
         <h2 id={`ch-z-${n}`}>{title}</h2>
         <p className="ch-z__def">{def}</p>
-        <div className="ch-z__read">{read}</div>
+        {read && <div className="ch-z__read">{read}</div>}
       </div>
       <div className="ch-z__vis">{children}</div>
     </section>
   );
 }
 
-function Vis({ title, note, children }: { title: string; note?: ReactNode; children: ReactNode }) {
+export function Vis({ title, note, id, children }: { title: string; note?: ReactNode; id?: string; children: ReactNode }) {
   return (
-    <div className="ch-zv">
-      <h3>{title}</h3>
+    <section className="ch-zv" aria-labelledby={id}>
+      <h3 id={id}>{title}</h3>
       {note && <p>{note}</p>}
       {children}
-    </div>
+    </section>
   );
 }
 
-function Big({ value, unit, tone }: { value: string; unit?: string; tone?: 'good' | 'bad' }) {
+export function Big({ value, unit, tone }: { value: string; unit?: string; tone?: 'good' | 'bad' }) {
   return (
     <span className={'ch-zbig ch-num' + (tone ? ` is-${tone}` : '')}>
       {value}
