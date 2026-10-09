@@ -1,5 +1,14 @@
 # P006 — Calendar: changelog
 
+## 2026-10-08 — the page opens at its top (P006-B1)
+
+Owner call: the Calendar opens at the top of the page, like every other page.
+The Week and Day grids no longer scroll to now on first paint (at 10 PM that
+parked the canvas on the empty bottom of the grid). T and Today still bring now,
+or the next event, about 30% down; outside 6 AM to 9 PM they bring the next
+timed event in view instead of the grid's empty end. `useOpenOnNow` in
+`Calendar.tsx`, `focusHour` in `model.ts`; covered in `calendar-premium.test.ts`.
+
 ## 2026-10-08 — phone: Month on react-day-picker
 
 The phone's Month grid (`screens/calendar/month.tsx`, out of
