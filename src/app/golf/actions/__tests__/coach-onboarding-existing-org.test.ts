@@ -286,12 +286,12 @@ describe('completeCoachOnboarding — school already has a team of that gender',
 
     const result = await completeCoachOnboarding({ ...ALLEN, gender: 'womens' });
 
-    expect(result).toEqual({
-      success: false,
-      error:
-        "University of Lynchburg is already set up on Helm — so there's nothing to create. Ask your head coach for the team code and enter it at sign-up; that joins you to the existing program as an assistant coach, with full access.",
-      redirectTo: '/golf/signup',
-    });
+    // Stable fragments, not the whole sentence (see program-onboarding.test.ts:
+    // pinning whole prose is how a copy fix turns main red).
+    expect(result.success).toBe(false);
+    expect((result as { redirectTo?: string }).redirectTo).toBe('/golf/signup');
+    expect(result.error).toMatch(/^University of Lynchburg is already set up on Helm/);
+    expect(result.error).toMatch(/team code/i);
     expect(find((c) => c.table === 'golf_coaches' && c.op === 'upsert')).toEqual([]);
     expect(find((c) => c.table === 'golf_teams' && c.op === 'insert')).toEqual([]);
     expect(find((c) => c.table === 'golf_team_coach_staff')).toEqual([]);
