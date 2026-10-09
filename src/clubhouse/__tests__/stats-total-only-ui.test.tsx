@@ -57,12 +57,12 @@ const COVERAGE = 'Hole stats from 3 of 5 rounds';
 afterEach(() => cleanup());
 
 describe('Player stats · desktop', () => {
-  it('Overview: greens, fairways, putts and scrambling say how many rounds they read, and count that many, when some are totals', () => {
+  it('Overview: the zones say how many rounds the hole stats read, and that the scoring average counts all of them, when some are totals', () => {
     shell(<StatsPlayer data={player({ rounds: 5, effRounds: 5, holeRounds: 3 }, { holeRounds: 3 })} coachId="c1" />);
-    const notes = [...document.querySelectorAll('.ch-tp__n')].map((n) => n.textContent);
-    expect(notes).toEqual([COVERAGE, COVERAGE, COVERAGE, COVERAGE]);
-    // The scoring card is a score: it counts all five.
-    expect(screen.getAllByText(/\b5 rounds\b/).length).toBeGreaterThan(0);
+    const note = document.querySelector('.ch-zones__note')!.textContent!;
+    expect(note.startsWith(COVERAGE)).toBe(true);
+    // The scoring average is a score: it counts all five.
+    expect(note).toContain('read all 5');
   });
 
   it('Overview: the table against the team or the Tour says it too, and that the scoring rows read every round', () => {
@@ -72,7 +72,7 @@ describe('Player stats · desktop', () => {
 
   it('Overview: with every round holed there is no coverage line', () => {
     shell(<StatsPlayer data={player({ rounds: 10, effRounds: 10, holeRounds: 10 }, { holeRounds: 10 })} coachId="c1" />);
-    expect(document.querySelector('.ch-tp__n')).toBeNull();
+    expect(document.querySelector('.ch-zones__note')).toBeNull();
     expect(screen.queryByText(/Hole stats from/)).toBeNull();
   });
 
