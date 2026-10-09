@@ -1,5 +1,18 @@
 # Clubhouse changelog
 
+## 2026-10-08 — the selected sidebar row is an ivory plate; secondary text one step darker
+
+Owner review (not yet signed off):
+
+- **Sidebar:** the open row's plate (`--ch-nav-well-bg`, `--ch-nav-well-shadow` in
+  `styles/tokens.css`) is ivory with green text and icon, where it had been a dark
+  well. `NavPlate` still glides it between rows.
+- **Text:** in the light theme `--ch-text-secondary` is ink-700 and
+  `--ch-text-tertiary` ink-600 (they were ink-600 and ink-500), one step darker
+  everywhere the shared tokens are used. This landed with the Calendar details
+  panel commit (`3ae8479b7`, P006's log) and is recorded here because the tokens are
+  shared.
+
 ## 2026-10-08 — Two scoring tokens for numerals on the feature green
 
 A shared token change for the shot screen's hole strip (P011's log has the
