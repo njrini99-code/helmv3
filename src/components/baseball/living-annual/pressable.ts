@@ -64,7 +64,7 @@ export interface PressableOptions {
 export function pressableClass({ ink = 'team', tint = true, lift = false, className }: PressableOptions = {}): string {
   return cn(
     'cursor-pointer outline-none',
-    'transition-[transform,background-color,border-color] duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)]', // EASE_PRESS
+    'transition-[transform,background-color,border-color] [transition-duration:120ms] [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]', // EASE_PRESS
     'active:scale-[0.98] active:duration-75',
     tint && HOVER_TINT[ink],
     lift && '[@media(hover:hover)]:hover:-translate-y-px',

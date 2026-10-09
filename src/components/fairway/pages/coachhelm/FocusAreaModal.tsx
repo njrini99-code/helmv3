@@ -635,7 +635,7 @@ export function FocusAreaModal({
                         aria-pressed={active}
                         className={cn(
                           'group flex items-center justify-between gap-3 rounded-fw-md border px-3 py-2.5 text-left',
-                          'transition duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]',
+                          'transition duration-200 [transition-timing-function:cubic-bezier(0.32,0.72,0,1)]',
                           active
                             ? 'border-accent-400 bg-accent-50 ring-1 ring-accent-300'
                             : 'border-border-subtle bg-surface hover:border-border-strong hover:bg-surface-tint',
