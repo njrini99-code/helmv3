@@ -219,7 +219,7 @@ export const authPrimaryButtonClass = cn(
   // The primary-action role fill (green is the contrasting colour).
   'bg-accent-fill text-body-lg font-semibold text-text-on-accent-fill',
   '[@media(hover:hover)]:hover:bg-accent-fill-hover active:bg-accent-fill-hover',
-  'transition-transform duration-[120ms] ease-out motion-reduce:transition-none',
+  'transition-transform [transition-duration:120ms] ease-out motion-reduce:transition-none',
   fwPress,
   'outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
 );

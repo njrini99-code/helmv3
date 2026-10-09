@@ -46,7 +46,7 @@ import { cn } from '@/lib/utils';
 // `data-fw-keyboard-aware` so the provider's global keyboardWillShow
 // scrollIntoView leaves this surface to its own clearance.
 const KEYBOARD_LIFT =
-  'bottom-[var(--keyboard-height,0px)] transition-[bottom] duration-[250ms] motion-reduce:transition-none';
+  'bottom-[var(--keyboard-height,0px)] transition-[bottom] [transition-duration:250ms] motion-reduce:transition-none';
 
 // ---------------------------------------------------------------------------
 // Types

@@ -57,7 +57,7 @@ export type SheetSide = 'bottom' | 'top' | 'left' | 'right';
 // slide; vaul's inline transform transition is only present while it opens
 // or closes, so the two never fight.
 const KEYBOARD_LIFT =
-  'bottom-[var(--keyboard-height,0px)] transition-[bottom] duration-[250ms] motion-reduce:transition-none ';
+  'bottom-[var(--keyboard-height,0px)] transition-[bottom] [transition-duration:250ms] motion-reduce:transition-none ';
 
 const SIDE_CLASS: Record<SheetSide, string> = {
   bottom:
