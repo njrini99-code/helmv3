@@ -286,13 +286,26 @@ describe('createGolfEvent RSVP config', () => {
     const tables = seedAs('u-coach', withUuidPlayers(baseTables()));
     tables.golf_event_attendance = [];
 
-    const result = await createGolfEvent({ title: 'Practice', eventType: 'practice', startDate: '2099-07-01', attendeeIds: [P1] });
+    const result = await createGolfEvent({ title: 'Practice', eventType: 'practice', startDate: '2099-07-01', attendeeIds: [P1], requiresRsvp: true });
     expect(result.success).toBe(true);
     await runAfterCallbacks();
 
     const told = (tables.golf_calendar_notifications as Array<{ user_id: string }>).map((n) => n.user_id);
     expect([...new Set(told)]).toEqual(['u-p1']);
     expect(sendEmailNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it('an event that does not ask for replies tells nobody, but still records its invitees (owner, 2026-10-08)', async () => {
+    const tables = seedAs('u-coach', withUuidPlayers(baseTables()));
+    tables.golf_event_attendance = [];
+
+    const result = await createGolfEvent({ title: 'Practice', eventType: 'practice', startDate: '2099-07-01', attendeeIds: [P1] });
+    expect(result.success).toBe(true);
+    await runAfterCallbacks();
+
+    expect(tables.golf_calendar_notifications).toHaveLength(0);
+    expect(sendEmailNotification).not.toHaveBeenCalled();
+    expect((tables.golf_event_attendance as Array<{ player_id: string }>).map((a) => a.player_id)).toEqual([P1]);
   });
 });
 
