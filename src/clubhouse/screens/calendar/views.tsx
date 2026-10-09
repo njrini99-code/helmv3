@@ -6,7 +6,7 @@ import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
 import { haptic } from '../../lib/haptics';
-import { Menu } from '../../ui/Menu';
+import { ClassGroupBlock } from './class-group';
 import { EventPeek } from './peek';
 import {
   CAL_END,
@@ -26,7 +26,6 @@ import {
   addDays,
   type ChCalEvent,
   type ChCalPerson,
-  type ChClassGroup,
   type ChDaylight,
 } from './model';
 
@@ -74,48 +73,6 @@ export function clashesAt(e: ChCalEvent, to: ChMoveTarget, events: ChCalEvent[])
 }
 
 const byStart = (a: ChCalEvent, b: ChCalEvent) => (a.allDay ? -1 : (a.start ?? 0)) - (b.allDay ? -1 : (b.start ?? 0));
-
-/**
- * P006: players' classes that start in the same half hour, as one block in the cascade: how many, then who, as far as
- * the height allows. It opens a list of the classes; picking one opens it in the inspector as a single class would.
- */
-function ClassGroupBlock({ g, lane, lanes, selId, people, onSelect, from, to }: { g: ChClassGroup; lane: number; lanes: number; selId: string | null; people: Map<string, ChCalPerson>; onSelect: (id: string) => void; from: number; to: number }) {
-  const start = Math.max(g.start, from);
-  const end = Math.min(g.end, to);
-  const top = (start - from) * CAL_HH;
-  const h = Math.max((end - start) * CAL_HH - 2, 20);
-  const step = lanes > 1 ? Math.min(46, 70 / (lanes - 1)) : 0;
-  const left = step * lane;
-  const names = [...new Set(g.items.map((e) => (e.owner ? people.get(e.owner)?.name.split(' ')[0] : null) ?? e.title))];
-  const sel = g.items.some((e) => e.id === selId);
-  const more = names.length - 1;
-  const short = h < 40;
-  return (
-    <Menu
-      label={`${names.length} players in class from ${fmtHour(g.start, false)}`}
-      align="start"
-      items={g.items.map((e) => ({ label: `${eventTitle(e, people)} · ${rangeLabel(e)}`, onSelect: () => onSelect(e.id), checked: e.id === selId || undefined }))}
-      trigger={(t) => (
-        <button
-          {...t}
-          type="button"
-          data-print-visible
-          className={`ch-ev ch-ev--class ch-ev--group${short ? ' ch-ev--short' : ''}${lanes > 1 ? ' ch-ev--lane' : ''}${sel ? ' is-sel' : ''}`}
-          style={{ top, height: h, left: `calc(${left}% + 3px)`, width: `calc(${100 - left}% - 6px)`, zIndex: lanes > 1 ? lane + 1 : undefined }}
-          aria-label={`${names.length} players in class, ${fmtHour(g.start)} to ${fmtHour(g.until)}: ${names.join(', ')}`}
-          onClick={() => {
-            haptic('select');
-            t.onClick();
-          }}
-        >
-          {/* Owner, 2026-10-08: the first player in class, then how many more; the list behind it has every class. */}
-          <span className="ch-ev__t">{short ? `${names[0]} and ${more} more` : names[0]}</span>
-          {!short && <span className="ch-ev__m ch-num">{more} more</span>}
-        </button>
-      )}
-    />
-  );
-}
 
 function EventBlock({
   e,
