@@ -126,59 +126,50 @@ export function StatsSkeleton() {
       <div className="ch-sf" aria-hidden="true">
         <Skeleton width={78} height={30} radius={10} />
       </div>
-      {/* The loaded layout: strokes gained on its own card, the five supporting figures on one surface. */}
-      <div className="ch-fg ch-fg--lead" style={{ ['--ch-fg-n' as string]: 5 }}>
-        <div className="ch-fg__c ch-fg__c--lead ch-fg__c--skel">
-          <Line height={17}>
-            <Skeleton width={130} height={13} />
-          </Line>
-          <Line height={48}>
-            <Skeleton width={110} height={44} radius={10} />
-          </Line>
-          <Line height={22}>
-            <Skeleton width={150} height={12} />
-          </Line>
-        </div>
-        <div className="ch-fg__group">
-          {Array.from({ length: 5 }, (_, i) => (
-            <div key={i} className="ch-fg__c ch-fg__c--skel">
-              <Line height={17}>
-                <Skeleton width={110} height={13} />
-              </Line>
-              <Line height={36}>
-                <Skeleton width={80} height={34} radius={8} />
-              </Line>
-              <Line height={22}>
-                <Skeleton width={120} height={12} />
-              </Line>
-            </div>
-          ))}
-        </div>
-      </div>
-      {/* The caption line under the cards (the loaded page keeps it in every window). */}
-      <p className="ch-st-cover" aria-hidden="true" />
+      {/* The loaded layout: the trend with its headline first, then the tape of the other five figures (TeamTrend, TeamTape). */}
       <TrendSkeleton />
+      <TapeSkeleton />
+      {/* The caption line under the tape (the loaded page keeps it in every window). */}
+      <p className="ch-st-cover" aria-hidden="true" />
     </main>
   );
 }
 
-/** The trend card: its own head and plot frame (the plot is as tall as a team of eight, the usual one), and the note's line, so the cards below it land where they will be. */
+/** The trend: the headline's label, its large figure and change, the plot as tall as a team of eight (the usual one), and the note's line, so the tape below lands where it will be. */
 function TrendSkeleton() {
   return (
     <div className="ch-sgt" aria-hidden="true">
-      {/* With the serif card title the head is 95px (WebKit 1440, 2026-10-07). */}
-      <div className="ch-sgt__head" style={{ minHeight: 95 }}>
-        <div>
-          <Skeleton width={200} height={17} />
-          <div style={{ height: 8 }} />
-          <Skeleton width={320} height={12} />
+      <div className="ch-sgt__hero">
+        <div className="ch-sgt__big">
+          <Skeleton width={190} height={14} />
+          <div style={{ height: 10 }} />
+          <Skeleton width={150} height={64} radius={12} />
+          <div style={{ height: 14 }} />
+          <Skeleton width={340} height={12} />
         </div>
         <Skeleton width={236} height={32} radius={11} />
       </div>
-      <div className="ch-sgt__hold" style={{ ['--ch-ends' as string]: 8, padding: '0 10px' }}>
+      <div className="ch-sgt__hold" style={{ ['--ch-ends' as string]: 8 }}>
         <Skeleton width="100%" height={240} radius={12} />
       </div>
       <div style={{ height: 26 }} />
+    </div>
+  );
+}
+
+/** The tape: five cells at the loaded cell's rows (label, value, change, weekly line). */
+function TapeSkeleton() {
+  return (
+    <div className="ch-tp" aria-hidden="true">
+      {Array.from({ length: 5 }, (_, i) => (
+        <div key={i} className="ch-tp__c">
+          <Skeleton width={110} height={13} />
+          <Skeleton width={80} height={32} radius={8} />
+          <Skeleton width={120} height={12} />
+          <Skeleton width="100%" height={46} radius={8} />
+          <span />
+        </div>
+      ))}
     </div>
   );
 }

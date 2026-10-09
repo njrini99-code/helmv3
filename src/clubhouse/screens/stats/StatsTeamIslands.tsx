@@ -1,9 +1,9 @@
 'use client';
 
 import { useHeroTone } from '../../ui/PageHero';
-import { CalendarRange, Download, TrendingDown, TrendingUp } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, CalendarRange, Download, Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
-import { createContext, useContext, useEffect, useMemo, useState, useTransition, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useId, useMemo, useState, useTransition, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
@@ -45,7 +45,7 @@ type Lens = 'sg' | 'score';
 const asText = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
 
 /** What the trend, the leg cards and the grid read; the rest of the page stays on the server. */
-export type ChTeamCharts = Pick<ChTeamStats, 'window' | 'filter' | 'weeks' | 'team' | 'players' | 'legWeeks' | 'legTotals' | 'grid' | 'tour' | 'roundCount'>;
+export type ChTeamCharts = Pick<ChTeamStats, 'window' | 'filter' | 'weeks' | 'team' | 'players' | 'legWeeks' | 'legTotals' | 'grid' | 'tour' | 'roundCount' | 'figures'>;
 
 /** The filter in force and the one way to change it: the frame's offline refusal and slow notice, then the new address. */
 const GoFilter = createContext<{ filter: ChFilter; go: (next: ChFilter) => void; shown: ChWindow }>({ filter: filterFor(), go: () => {}, shown: 'last10' });
@@ -173,7 +173,7 @@ export function RetryNotice({ code, title, body, covered = false }: { code: stri
 }
 
 /** The trend, the leg cards and the grid: one island, because they share the focused player and the chosen leg. */
-export function TeamCharts({ data }: { data: ChTeamCharts }) {
+export function TeamCharts({ data, tape }: { data: ChTeamCharts; tape?: ReactNode }) {
   const [focus, setFocus] = useState<string | null>(null);
   // The chosen leg and lens come back when the coach returns to the page (PAGE_PERFORMANCE.md rule 1).
   const [leg, setLeg] = useChSessionState<ChLeg>('team-leg', 'Approach');
@@ -182,6 +182,9 @@ export function TeamCharts({ data }: { data: ChTeamCharts }) {
       <SectionBoundary surface="stats.team.trend" label="The trend chart" code="CH-4205">
         <TeamTrend data={data} focus={focus} setFocus={setFocus} />
       </SectionBoundary>
+
+      {/* The other figures sit under the trend as one open tape (server-rendered, passed in so the island keeps its focus state). */}
+      {tape}
 
       <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
         <LegTrends legWeeks={data.legWeeks} legTotals={data.legTotals} leg={leg} setLeg={setLeg} />
@@ -219,24 +222,28 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   // `m` is the window's own mean: what the list beside the chart shows and is sorted by (never the last week's value).
   const lines = data.players.map((p) => ({ p, v: isSg ? p.sg : p.score, m: isSg ? p.sgMean : p.scoreMean })).filter((l) => l.v.some((x) => x != null));
   const all = [...team, ...lines.flatMap((l) => l.v)].filter((v): v is number => v != null);
-  const w = 760;
-  const h = 260;
+  const w = 900;
+  const h = 300;
   const padL = 38;
   const padR = 16;
   const padT = 16;
   const padB = 28;
+  // Par is what the window's rounds were played against (the average score less the average to par), not a number written here.
+  const scoreFig = data.figures.find((f) => f.key === 'score');
+  const toPar = scoreFig?.gauge?.kind === 'par' ? scoreFig.gauge.toPar : null;
+  const par = data.team.scoreMean != null && toPar != null ? data.team.scoreMean - toPar : null;
+  const ref: number | null = isSg ? 0 : par;
   const [lo, hi] = useMemo(() => {
-    if (!all.length) return isSg ? [-2, 2] : [70, 78];
-    const mn = Math.min(...all, isSg ? 0 : 72);
-    const mx = Math.max(...all, isSg ? 0 : 72);
+    if (!all.length) return isSg ? [-2, 2] : [par != null ? par - 2 : 0, par != null ? par + 6 : 8];
+    const mn = Math.min(...all, ...(ref != null ? [ref] : []));
+    const mx = Math.max(...all, ...(ref != null ? [ref] : []));
     const pad = isSg ? 0.4 : 0.8;
     return isSg ? [mn - pad, mx + pad] : [mx + pad, mn - pad];
-  }, [all, isSg]);
+  }, [all, isSg, par, ref]);
   const x = (i: number) => (n <= 1 ? (padL + w - padR) / 2 : padL + (i * (w - padL - padR)) / (n - 1));
   const y = (v: number) => padT + ((hi - v) / (hi - lo)) * (h - padT - padB);
-  const ref = isSg ? 0 : 72;
   const ticks = isSg ? niceTicks(lo, hi) : niceTicks(Math.min(lo, hi), Math.max(lo, hi));
-  const good = (v: number) => (isSg ? v >= 0 : v <= 72);
+  const good = (v: number) => (isSg ? v >= 0 : par != null && v <= par);
   const fmt = (v: number) => (isSg ? formatSigned(v) : v.toFixed(1));
   // Players' scores read in whole strokes, as in the handoff; the team keeps its decimal.
   const fmtEnd = (v: number) => (isSg ? formatSigned(v) : v.toFixed(0));
@@ -256,6 +263,11 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   const tLast = lastValue(team);
   const tMean = isSg ? data.team.sgMean : data.team.scoreMean;
   // A change reads as a change ("up about 1.0 a round since Aug 30"), never as a level the team has "gained".
+  // What the weeks say, from the weekly line itself: the best week, the latest, and how many of them beat the reference.
+  const known = team.flatMap((v, i) => (v == null ? [] : [{ v, i }]));
+  const best = known.length ? known.reduce((a, b) => ((isSg ? b.v > a.v : b.v < a.v) ? b : a)) : null;
+  const beats = (v: number) => ref != null && (isSg ? v >= ref : v <= ref);
+  const ahead = ref != null ? known.filter((t) => beats(t.v)).length : null;
   const sgChangeNote = (who: string, from: number, to: number, since: string) => {
     const d = to - from;
     return Math.abs(d) < 0.15
@@ -285,17 +297,92 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   });
   const teamPath = gappedPath(team, x, y);
   const baseline = sgBaseline(data.tour);
+  // The headline: the window's own figure (strokes gained or scoring average) and how it moved against the previous window.
+  const lead = data.figures.find((x) => x.key === (isSg ? 'sg' : 'score'));
+  const leadValue = lead?.value ?? null;
+  const leadText = leadValue == null ? NO_DATA : isSg ? formatSigned(leadValue, lead!.digits) : leadValue.toFixed(lead!.digits);
+  const leadFlat = lead?.delta != null && Math.abs(lead.delta) < 0.05;
+  const leadGood = lead?.delta != null && !leadFlat && (lead.lowerIsBetter ? lead.delta < 0 : lead.delta > 0);
+  const uid = useId().replace(/:/g, '');
+  // The scrubber: a pointer on the plot reads the week under it (mouse and pen; a finger scrolls the page).
+  const [scrub, setScrub] = useState<number | null>(null);
+  const onScrub = (e: ReactPointerEvent<SVGSVGElement>) => {
+    if (e.pointerType === 'touch') return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const px = ((e.clientX - r.left) / r.width) * w;
+    const at = n <= 1 ? 0 : Math.max(0, Math.min(n - 1, Math.round(((px - padL) / (w - padL - padR)) * (n - 1))));
+    // The nearest week that has a team value (a week with no rounds is skipped, so the newest week always reads once it has one).
+    let best: number | null = null;
+    team.forEach((v, i) => {
+      if (v != null && (best == null || Math.abs(i - at) < Math.abs(best - at))) best = i;
+    });
+    setScrub(best);
+  };
+  const yRef = ref != null ? y(ref) : null;
 
   return (
     <section className="ch-sgt">
-      <div className="ch-sgt__head">
-        <div>
-          <h2>{isSg ? 'Strokes gained · total' : 'Scoring average'}</h2>
-          <span>
+      <div className="ch-sgt__hero" data-ch-code={lead?.state === 'empty' ? 'CH-4311' : lead?.state === 'no-comparison' ? 'CH-4312' : undefined}>
+        <div className="ch-sgt__big">
+          <h2 className="ch-sgt__k">{isSg ? 'Team strokes gained per round' : 'Team scoring average'}</h2>
+          <span className="ch-sgt__row">
+            <b className={'ch-sgt__n ch-num' + (!isSg || leadValue == null ? '' : leadValue >= 0 ? ' ch-gain' : ' ch-loss')}>
+              <Swap swapKey={`${lens}${leadText}`} inline>
+                {leadText}
+              </Swap>
+            </b>
+            {lead?.delta == null && lead?.context && (
+              <span className="ch-sgt__chg is-flat">
+                <em>{lead.context}</em>
+              </span>
+            )}
+            {lead?.delta != null && (
+              <span className={`ch-sgt__chg ch-num ${leadFlat ? 'is-flat' : leadGood ? 'is-good' : 'is-bad'}`}>
+                <Icon icon={leadFlat ? Minus : lead.delta > 0 ? ArrowUpRight : ArrowDownRight} size={16} />
+                {formatSigned(lead.delta, lead.digits)}
+                <em>{lead.context}</em>
+              </span>
+            )}
+          </span>
+          <span className="ch-sgt__vs">
             {isSg
               ? `Per round, weekly average · dashed line is ${baseline.noun} · names show the window average`
-              : `Team and players · par 72 · ${data.roundCount} ${data.roundCount === 1 ? 'round' : 'rounds'} · dashed line is par · lower is better · names show the window average`}
+              : `Against par · ${data.roundCount} ${data.roundCount === 1 ? 'round' : 'rounds'} · lower is better · names show the window average`}
           </span>
+          {best && (
+            <dl className="ch-sgt__facts">
+              <div>
+                <dt>Best week</dt>
+                <dd className="ch-num">
+                  {fmt(best.v)}
+                  <em>{data.weeks[best.i]}</em>
+                </dd>
+              </div>
+              {tLast && (
+                <div>
+                  <dt>Latest week</dt>
+                  <dd className="ch-num">
+                    {fmt(tLast.v)}
+                    <em>{data.weeks[tLast.i]}</em>
+                  </dd>
+                </div>
+              )}
+              {ahead != null && (
+                <div>
+                  <dt>{isSg ? 'Weeks ahead of the baseline' : 'Weeks at or under par'}</dt>
+                  <dd className="ch-num">
+                    {ahead}
+                    <em>of {known.length}</em>
+                    <span className="ch-sgt__pips" aria-hidden="true">
+                      {known.map((t) => (
+                        <i key={t.i} className={beats(t.v) ? 'is-up' : undefined} />
+                      ))}
+                    </span>
+                  </dd>
+                </div>
+              )}
+            </dl>
+          )}
         </div>
         <div className="ch-sgt__tools">
           <div className="ch-sgt__legend" aria-hidden="true">
@@ -335,10 +422,25 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
           </div>
         ) : (
           <div className="ch-sgt__plot" style={{ ['--ch-ends' as string]: data.players.length }}>
-            <svg viewBox={`0 0 ${w} ${h}`} className="ch-sgt__svg" role="img" aria-label={`${isSg ? 'Strokes gained' : 'Scoring average'} by week. ${note}`}>
+            <svg
+              viewBox={`0 0 ${w} ${h}`}
+              className="ch-sgt__svg"
+              role="img"
+              aria-label={`${isSg ? 'Strokes gained' : 'Scoring average'} by week. ${note}`}
+              onPointerMove={onScrub}
+              onPointerLeave={() => setScrub(null)}
+            >
+              <defs>
+                <clipPath id={`${uid}-up`}>
+                  <rect x={0} y={0} width={w} height={yRef ?? 0} />
+                </clipPath>
+                <clipPath id={`${uid}-down`}>
+                  <rect x={0} y={yRef ?? 0} width={w} height={h - (yRef ?? 0)} />
+                </clipPath>
+              </defs>
               {ticks.map((t) => (
                 <g key={t}>
-                  <line x1={padL} x2={w - padR} y1={y(t)} y2={y(t)} stroke={t === ref ? 'var(--ch-champagne-500)' : 'var(--ch-ivory-200)'} strokeDasharray={t === ref ? '4 4' : undefined} />
+                  <line x1={padL} x2={w - padR} y1={y(t)} y2={y(t)} stroke="var(--ch-ivory-200)" strokeOpacity={0.7} />
                   <text x={padL - 8} y={y(t) + 4} textAnchor="end" className="ch-tick">
                     {isSg ? (t > 0 ? `+${t}` : t === 0 ? '0' : `−${Math.abs(t)}`) : t}
                   </text>
@@ -349,6 +451,21 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                   {wk}
                 </text>
               ))}
+              {/* The team's line holds a wash to the reference: green where it sits above it (better), amber below. */}
+              {teamPath && tFirst && tLast && yRef != null && (
+                <g aria-hidden="true">
+                  <path d={`${teamPath} L${x(tLast.i)},${yRef} L${x(tFirst.i)},${yRef} Z`} className="ch-sgt__wash is-up" clipPath={`url(#${uid}-up)`} />
+                  <path d={`${teamPath} L${x(tLast.i)},${yRef} L${x(tFirst.i)},${yRef} Z`} className="ch-sgt__wash is-down" clipPath={`url(#${uid}-down)`} />
+                </g>
+              )}
+              {yRef != null && (
+                <g aria-hidden="true">
+                  <line x1={padL} x2={w - padR} y1={yRef} y2={yRef} stroke="var(--ch-champagne-500)" strokeDasharray="4 4" />
+                  <text x={w - padR} y={yRef - 7} textAnchor="end" className="ch-tick ch-sgt__reflab">
+                    {isSg ? baseline.noun.charAt(0).toUpperCase() + baseline.noun.slice(1) : 'Par'}
+                  </text>
+                </g>
+              )}
               {lines.map(({ p, v }) => {
                 const d = gappedPath(v, x, y);
                 const on = p.id === litId;
@@ -356,9 +473,9 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                   <path
                     key={p.id}
                     d={d}
-                    className="ch-sgt__line"
+                    className={'ch-sgt__line' + (on ? ' is-on' : '')}
                     stroke={on ? 'var(--ch-green-600)' : 'var(--ch-st-other-line)'}
-                    strokeOpacity={on ? 1 : litId ? 0.2 : 0.45}
+                    strokeOpacity={on ? 1 : litId ? 0.12 : 0.28}
                     strokeWidth={on ? 2.25 : 1.25}
                   />
                 ) : null;
@@ -367,9 +484,18 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               {litPath && (
                 <path key={`front-${litId}`} d={litPath} className="ch-sgt__front" fill="none" stroke="var(--ch-green-600)" strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round" />
               )}
-              {teamPath && <path d={teamPath} fill="none" stroke="var(--ch-st-team-line)" strokeWidth={3} strokeLinecap="round" />}
-              {tLast && <circle cx={x(tLast.i)} cy={y(tLast.v)} r={4.5} fill="var(--ch-ivory-25)" stroke="var(--ch-st-team-line)" strokeWidth={2.5} />}
+              {teamPath && <path d={teamPath} className="ch-sgt__team" fill="none" stroke="var(--ch-st-team-line)" strokeWidth={3} strokeLinecap="round" />}
+              {tLast && <circle className="ch-sgt__tdot" cx={x(tLast.i)} cy={y(tLast.v)} r={4.5} fill="var(--ch-ivory-25)" stroke="var(--ch-st-team-line)" strokeWidth={2.5} />}
               {litEnd && <circle key={`end-${litId}`} className="ch-sgt__front" cx={x(litEnd.i)} cy={y(litEnd.v)} r={4} fill="var(--ch-ivory-25)" stroke="var(--ch-green-600)" strokeWidth={2} />}
+              {scrub != null && team[scrub] != null && (
+                <g aria-hidden="true" className="ch-sgt__scrub">
+                  <line x1={x(scrub)} x2={x(scrub)} y1={padT} y2={h - padB} />
+                  <circle cx={x(scrub)} cy={y(team[scrub]!)} r={5} />
+                  <text x={Math.min(Math.max(x(scrub), padL + 44), w - padR - 44)} y={padT - 3} textAnchor="middle">
+                    {data.weeks[scrub]} · {fmt(team[scrub]!)}
+                  </text>
+                </g>
+              )}
               {/* A line is 1.25px: each takes the pointer along a wider invisible band, over everything drawn. */}
               {lines.map(({ p, v }) => {
                 const d = gappedPath(v, x, y);

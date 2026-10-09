@@ -50,7 +50,7 @@ From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS
 
 Status: DEFINED
 
-The route's loading state is the Stats skeleton (40201, CH-4401), in Team stats' shape: title, window switch, five figure cards and the trend card, sized to the loaded page so nothing below moves when the data lands. It shows inside the Clubhouse shell only. v2 timing: nothing for 150ms, then a fade (the shell's 11609). Nothing else on this page loads on its own: every section is rendered with the page, so there is no per-section skeleton.
+The route's loading state is the Stats skeleton (40201, CH-4401), in Team stats' shape: title, window switch, the trend stage and the five-cell tape, sized to the loaded page so nothing below moves when the data lands. It shows inside the Clubhouse shell only. v2 timing: nothing for 150ms, then a fade (the shell's 11609). Nothing else on this page loads on its own: every section is rendered with the page, so there is no per-section skeleton.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

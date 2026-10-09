@@ -41,26 +41,24 @@ const team = (over: Partial<ChTeamStats> = {}): ChTeamStats => ({ ...PREVIEW_TEA
 const player = (over: Partial<ChPlayerProfile> = {}): ChPlayerProfile => ({ ...PREVIEW_PLAYER, ...over });
 
 describe('Team stats hold their geometry across windows', () => {
-  it('the figure cards are the held kind on Team stats only (a profile\'s five cards are the same height in every window already)', () => {
+  it('Team stats draw no figure cards (the trend and its tape replace them); a profile keeps its five cards at the same height in every window', () => {
     const { container, unmount } = render(shell(<StatsTeam data={team()} />));
-    expect(container.querySelector('.ch-fg')!.classList.contains('ch-fg--hold')).toBe(true);
+    expect(container.querySelector('.ch-fg')).toBeNull();
     unmount();
     const profile = render(shell(<StatsPlayer data={player()} coachId="c1" />));
     for (const g of profile.container.querySelectorAll('.ch-fg')) expect(g.classList.contains('ch-fg--hold')).toBe(false);
   });
 
-  it('strokes gained leads the team figures on its own card, the five supporting figures share one surface, and the skeleton draws the same', () => {
+  it('strokes gained heads the trend, the five supporting figures follow as one tape under it, and the skeleton draws the same', () => {
     const { container, unmount } = render(shell(<StatsTeam data={team()} />));
-    const fg = container.querySelector('.ch-fg')!;
-    expect(fg.classList.contains('ch-fg--lead')).toBe(true);
-    expect(fg.querySelector(':scope > .ch-fg__c--lead .ch-fg__l')!.textContent).toBe('Team SG per round');
-    expect(fg.querySelectorAll(':scope > .ch-fg__group > .ch-fg__c')).toHaveLength(5);
+    const order = [...container.querySelectorAll('.ch-sgt, .ch-tp')].map((c) => c.className.split(' ')[0]);
+    expect(order).toEqual(['ch-sgt', 'ch-tp']);
+    expect(container.querySelector('.ch-sgt__hero .ch-sgt__k')!.textContent).toBe('Team strokes gained per round');
+    expect(container.querySelectorAll(':scope .ch-tp > .ch-tp__c')).toHaveLength(5);
     unmount();
     const skel = render(shell(<StatsSkeleton />));
-    const sfg = skel.container.querySelector('.ch-fg')!;
-    expect(sfg.classList.contains('ch-fg--lead')).toBe(true);
-    expect(sfg.querySelectorAll(':scope > .ch-fg__c--lead.ch-fg__c--skel')).toHaveLength(1);
-    expect(sfg.querySelectorAll(':scope > .ch-fg__group > .ch-fg__c--skel')).toHaveLength(5);
+    expect(skel.container.querySelector('.ch-sgt .ch-sgt__hero')).not.toBeNull();
+    expect(skel.container.querySelectorAll('.ch-tp > .ch-tp__c')).toHaveLength(5);
     skel.unmount();
     // The profile keeps its five equal cards.
     const profile = render(shell(<StatsPlayer data={player()} coachId="c1" />));
@@ -165,10 +163,10 @@ describe('A profile holds its hero across windows', () => {
 });
 
 describe('Skeletons draw the loaded page\'s lines', () => {
-  it('Team stats: the caption line under the cards, and a trend card with the head, a plot as tall as a team of eight and the note line', () => {
+  it('Team stats: the caption line under the cards, and a trend with its headline, a plot as tall as a team of eight and the note line', () => {
     const { container } = render(<StatsSkeleton />);
-    expect(container.querySelector('.ch-fg + .ch-st-cover')).not.toBeNull();
-    expect(container.querySelector('.ch-sgt .ch-sgt__head')).not.toBeNull();
+    expect(container.querySelector('.ch-tp + .ch-st-cover')).not.toBeNull();
+    expect(container.querySelector('.ch-sgt .ch-sgt__hero')).not.toBeNull();
     expect((container.querySelector('.ch-sgt__hold') as HTMLElement).style.getPropertyValue('--ch-ends')).toBe('8');
   });
 
