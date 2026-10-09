@@ -213,6 +213,28 @@
   color: var(--ch-green-700);
 }
 
+/* Roster controls (owner, 2026-10-08: "ivory buttons ... need to be green"): the chosen sort, filter and layout is a green
+   chip with ivory ink, on every width. Avg score, Handicap, Rounds, Name; Active, Inactive, All; the grid and list toggle. */
+.ch-rs .ch-seg__pill {
+  background: var(--ch-green-fill-700);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 2px rgb(21 90 57 / 0.35);
+}
+.ch-rs .ch-seg__b.is-on {
+  color: var(--ch-ivory-50);
+}
+.ch-rs .ch-pill[aria-pressed='true'],
+.ch-rs .ch-rs-vt__b[aria-pressed='true'] {
+  background: var(--ch-green-fill-700);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 2px rgb(21 90 57 / 0.35);
+  color: var(--ch-ivory-50);
+}
+@media (hover: hover) {
+  .ch-rs .ch-pill[aria-pressed='true']:hover,
+  .ch-rs .ch-rs-vt__b[aria-pressed='true']:hover {
+    background: var(--ch-green-800);
+  }
+}
+
 /* Face cards */
 .ch-rs-faces {
   display: grid;
@@ -1702,6 +1724,72 @@
   }
   .ch-rs[data-canopy] .ch-rs-face:focus-visible {
     outline-offset: -3px;
+  }
+  /* Owner, 2026-10-08: "more contrast and depth separating players". Each player is a raised white tile with room
+     around it, so the roster reads as people, not a ruled sheet: a hairline ring, a close and a far shadow that lean
+     away from the light, a lift on hover, and the open player a green-ringed tile. */
+  .ch-rs[data-canopy] .ch-rs-faces {
+    gap: 16px;
+    overflow: visible;
+    padding: 4px 2px 12px;
+  }
+  .ch-rs[data-canopy] .ch-rs-face,
+  .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
+    padding: 24px 20px 24px;
+    border-radius: 22px;
+    background: linear-gradient(180deg, #fff 0%, var(--ch-bg-surface) 42%, var(--ch-ivory-50) 100%);
+    box-shadow:
+      0 0 0 1px rgb(176 149 96 / 0.55),
+      inset 0 1px 0 #fff,
+      inset 0 -3px 0 rgb(28 25 18 / 0.05),
+      var(--ch-light-drift-near) 1px 3px rgb(28 25 18 / 0.12),
+      var(--ch-light-drift-mid) 8px 16px -6px rgb(28 25 18 / 0.24),
+      var(--ch-light-drift) 20px 32px -16px rgb(28 25 18 / 0.28);
+    transition:
+      box-shadow var(--ch-dur-base) var(--ch-ease),
+      transform var(--ch-dur-base) var(--ch-ease),
+      background var(--ch-dur-quick) var(--ch-ease);
+  }
+  @media (hover: hover) {
+    .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
+      transform: translateY(-8px);
+      box-shadow:
+        0 0 0 1px var(--ch-champagne-500),
+        inset 0 1px 0 var(--ch-light-rim),
+        var(--ch-light-drift-near) 3px 6px rgb(28 25 18 / 0.1),
+        var(--ch-light-drift-mid) 22px 36px -12px rgb(28 25 18 / 0.34),
+        var(--ch-light-drift) 40px 56px -24px rgb(21 90 57 / 0.3);
+    }
+  }
+  .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):active {
+    background: var(--ch-green-50);
+    transform: translateY(-2px);
+  }
+  .ch-rs[data-canopy] .ch-rs-face.is-sel,
+  .ch-rs[data-canopy] .ch-rs-face.is-sel:hover {
+    background: var(--ch-green-50);
+    box-shadow:
+      0 0 0 2px var(--ch-green-600),
+      var(--ch-light-drift-mid) 12px 24px -10px rgb(21 90 57 / 0.35);
+  }
+  /* The indented border: a second hairline frame set 7px inside the tile's edge, so the portrait sits in a recess. */
+  .ch-rs[data-canopy] .ch-rs-face::before {
+    position: absolute;
+    inset: 7px;
+    border: 1px solid rgb(176 149 96 / 0.6);
+    border-radius: 16px;
+    box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.06);
+    content: '';
+    pointer-events: none;
+  }
+  .ch-rs[data-canopy] .ch-rs-face.is-sel::before {
+    border-color: var(--ch-champagne-500);
+  }
+  .ch-rs[data-canopy] .ch-rs-face__name {
+    color: var(--ch-ink-950);
+  }
+  .ch-rs[data-canopy] .ch-rs-face__meta {
+    color: var(--ch-text-secondary);
   }
   /* An inactive player dims its contents, not its cell, so its hairlines match every other. */
   .ch-rs[data-canopy] .ch-rs-face.is-off {

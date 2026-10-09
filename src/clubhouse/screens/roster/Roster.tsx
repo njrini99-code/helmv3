@@ -143,6 +143,17 @@ export function Roster({ data }: { data: ChRoster }) {
     haptic('select');
     setSel((s) => (s === id ? null : id));
   }, []);
+  /** A player's face or name goes to their profile (owner, 2026-10-08); where that page isn't rebuilt it opens the peek. */
+  const openProfile = useCallback(
+    (id: string) => {
+      const href = rebuiltHref(`/golf/dashboard/stats?player=${id}`);
+      if (!href) return select(id);
+      chTrail('roster open profile');
+      haptic('select');
+      router.push(href);
+    },
+    [router, select],
+  );
   /** A Needs-a-look chip only opens its player; closing stays on X or Esc (P003 #11). */
   const openSel = useCallback((id: string) => {
     chTrail('roster open player');
@@ -438,7 +449,7 @@ export function Roster({ data }: { data: ChRoster }) {
                   sel={sel}
                   q={q}
                   show={show}
-                  select={select}
+                  openProfile={openProfile}
                   menuFor={menuFor}
                   onShowEveryone={() => {
                     setQ('');
@@ -470,7 +481,7 @@ function RosterList({
   sel,
   q,
   show,
-  select,
+  openProfile,
   menuFor,
   onShowEveryone,
 }: {
@@ -480,7 +491,7 @@ function RosterList({
   sel: string | null;
   q: string;
   show: Show;
-  select: (id: string | null) => void;
+  openProfile: (id: string) => void;
   menuFor: (p: ChRosterPlayer) => MenuItem[];
   onShowEveryone: () => void;
 }) {
@@ -509,10 +520,8 @@ function RosterList({
               key={p.id}
               type="button"
               className={'ch-rs-face' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
-              aria-expanded={sel === p.id}
-              aria-controls={sel === p.id ? 'ch-rs-peek' : undefined}
-              aria-label={faceLabel(p, standings.byId.get(p.id))}
-              onClick={() => select(p.id)}
+              aria-label={`${faceLabel(p, standings.byId.get(p.id))}. Open profile`}
+              onClick={() => openProfile(p.id)}
             >
               <span className="ch-rs-face__top">
                 <span />
@@ -559,9 +568,8 @@ function RosterList({
                 <button
                   type="button"
                   className="ch-rs-who"
-                  onClick={() => select(p.id)}
-                  aria-expanded={sel === p.id}
-                  aria-controls={sel === p.id ? 'ch-rs-peek' : undefined}
+                  onClick={() => openProfile(p.id)}
+                  aria-label={`${p.name}. Open profile`}
                 >
                   <Avatar name={p.name} size={40} />
                   <span>
