@@ -92,9 +92,9 @@ export interface InspCtx {
 
 const first = (name: string | undefined) => (name ?? '').split(' ')[0] ?? '';
 
-function Fact({ icon, children }: { icon: LucideIcon; children: ReactNode }) {
+function Fact({ icon, tone, children }: { icon: LucideIcon; tone?: 'team' | 'class' | 'own'; children: ReactNode }) {
   return (
-    <div className="ch-in__fact">
+    <div className={'ch-in__fact' + (tone ? ` is-${tone}` : '')}>
       <Icon icon={icon} size={15} />
       <div>{children}</div>
     </div>
@@ -147,13 +147,15 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
 
   return (
     <div className="ch-in">
-      <div className="ch-in__kick">
-        <span>
-          Today · {dowOf(now.date)} {dayNum(now.date)}
-        </span>
-        <span className="ch-num">{fmtHour(now.hour)}</span>
-      </div>
-      <h2 className="ch-in__title">
+      {/* Owner, 2026-10-08: the day is a lit green plate at the head of the panel, not ink on parchment. */}
+      <div className="ch-in__today">
+        <div className="ch-in__kick">
+          <span>
+            Today · {dowOf(now.date)} {dayNum(now.date)}
+          </span>
+          <span className="ch-num">{fmtHour(now.hour)}</span>
+        </div>
+        <h2 className="ch-in__title">
         {today.length === 0 ? <span data-ch-code="CH-6302">Nothing on the team calendar today</span> : `${today.length} team ${today.length === 1 ? 'event' : 'events'} today`}
       </h2>
       {next && (
@@ -176,6 +178,7 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
           <Icon icon={ArrowRight} size={15} />
         </button>
       )}
+      </div>
 
       <div className="ch-in__sec">
         <div className="ch-in__sechead">
@@ -238,16 +241,16 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
           <span className="ch-num">Checked {fmtHour(ctx.loadedHour)}</span>
         </div>
         <div className="ch-in__facts">
-          <Fact icon={CalendarCheck}>Team events from Helm</Fact>
+          <Fact icon={CalendarCheck} tone="team">Team events from Helm</Fact>
           {role === 'coach' ? (
             <>
-              <Fact icon={BookOpen}>
+              <Fact icon={BookOpen} tone="class">
                 Class schedules for {classOwners.size} {classOwners.size === 1 ? 'player' : 'players'}
               </Fact>
-              <Fact icon={Lock}>Your busy time · only you see it</Fact>
+              <Fact icon={Lock} tone="own">Your busy time · only you see it</Fact>
             </>
           ) : (
-            <Fact icon={Lock}>Your classes · only you and your coaches see them</Fact>
+            <Fact icon={Lock} tone="class">Your classes · only you and your coaches see them</Fact>
           )}
         </div>
       </div>

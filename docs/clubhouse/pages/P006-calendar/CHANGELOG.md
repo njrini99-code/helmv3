@@ -1,5 +1,14 @@
 # P006 — Calendar: changelog
 
+## 2026-10-08 — the day panel gets colour
+
+Owner review: the panel beside the week (nothing selected) was black text on
+ivory. Today is now a lit green plate (the day, the count, the next event on a
+translucent chip), what needs attention sits on raised tiles, and each source
+carries the colour it has on the grid: green for team events, slate for
+classes, champagne for your own busy time. `inspector.tsx` (`Summary`, `Fact`)
+and `calendar.css`; the plate's title outranks the canopy's `h2` ink.
+
 ## 2026-10-08 — the class block and card; the week in the day's light
 
 Owner review, same session:
