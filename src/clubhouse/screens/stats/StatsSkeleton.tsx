@@ -76,27 +76,18 @@ export function StatsProfileSkeleton({ coach = false }: { coach?: boolean }) {
       <div className="ch-sf" aria-hidden="true">
         <Skeleton width={78} height={30} radius={10} />
       </div>
-      {/* The overview's five figures, held at the loaded row's height (`.ch-fg--profile`), so they land without moving the page. */}
-      <div className="ch-fg ch-fg--profile" style={{ ['--ch-fg-n' as string]: 5 }} aria-hidden="true">
-        {Array.from({ length: 5 }, (_, i) => (
-          <div key={i} className="ch-fg__c ch-fg__c--skel">
-            <Line height={17}>
-              <Skeleton width={110} height={13} />
-            </Line>
-            <Line height={36}>
-              <Skeleton width={80} height={34} radius={8} />
-            </Line>
-            <Line height={22}>
-              <Skeleton width={120} height={12} />
-            </Line>
+      {/* The overview: the scoring ribbon, then the tape of five figures, as loaded (PlayerStage, TeamTape). */}
+      <div className="ch-fm" aria-hidden="true">
+        <div className="ch-fm__head">
+          <div>
+            <Skeleton width={160} height={20} />
+            <div style={{ height: 8 }} />
+            <Skeleton width={300} height={13} />
           </div>
-        ))}
+        </div>
+        <Skeleton width="100%" height={196} radius={12} />
       </div>
-      <div className="ch-sgt" style={{ padding: 20 }} aria-hidden="true">
-        <Skeleton width={200} height={17} />
-        <div style={{ height: 16 }} />
-        <Skeleton width="100%" height={240} radius={12} />
-      </div>
+      <TapeSkeleton />
     </main>
   );
 }
@@ -158,7 +149,7 @@ function TrendSkeleton() {
 }
 
 /** The tape: five cells at the loaded cell's rows (label, value, change, weekly line). */
-function TapeSkeleton() {
+export function TapeSkeleton() {
   return (
     <div className="ch-tp" aria-hidden="true">
       {Array.from({ length: 5 }, (_, i) => (

@@ -444,12 +444,12 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                   <>
                     {/* The wash is strongest at the line and fades into the baseline: mint where the team is ahead of it, gold where behind. */}
                     <linearGradient id={`${uid}-gu`} gradientUnits="userSpaceOnUse" x1={0} x2={0} y1={yRef} y2={reach('up')}>
-                      <stop offset="0" stopColor="var(--ch-green-200)" stopOpacity={0.04} />
-                      <stop offset="1" stopColor="var(--ch-green-200)" stopOpacity={0.62} />
+                      <stop offset="0" stopColor="var(--ch-stage-up)" stopOpacity={0.04} />
+                      <stop offset="1" stopColor="var(--ch-stage-up)" stopOpacity={0.62} />
                     </linearGradient>
                     <linearGradient id={`${uid}-gd`} gradientUnits="userSpaceOnUse" x1={0} x2={0} y1={yRef} y2={reach('down')}>
-                      <stop offset="0" stopColor="var(--ch-champagne-300)" stopOpacity={0.04} />
-                      <stop offset="1" stopColor="var(--ch-champagne-300)" stopOpacity={0.58} />
+                      <stop offset="0" stopColor="var(--ch-stage-down)" stopOpacity={0.04} />
+                      <stop offset="1" stopColor="var(--ch-stage-down)" stopOpacity={0.58} />
                     </linearGradient>
                   </>
                 )}

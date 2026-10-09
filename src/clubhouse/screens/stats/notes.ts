@@ -29,3 +29,6 @@ export function puttingNote(all: NonNullable<ChTeamStats['putting']>['bands']): 
   if (below.length === 1) return `${below[0]!.label.replace('–', ' to ').replace(' ft', ' feet')} is the only band below the Tour make rate.`;
   return `${below.length} bands are below the Tour make rate: ${below.map((b) => b.label).join(', ')}.`;
 }
+
+/** Strokes a round: the change in form (newer half of the rounds against the older) that counts as a move, not as holding steady. */
+export const FORM_STEADY = 0.5;

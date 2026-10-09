@@ -1,5 +1,29 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-09 — Overview: the scoring form ribbon and the figure tape
+
+```text
+Design package: owner direction "premium sleek, trend first" carried from Team stats, then "I don't want the big thing on the player profile page, go a different direction"
+PR/commit: agent/clubhouse-premium-backlog
+Contract IDs: CH-5204, CH-5213, CH-5305, CH-5308, CH-5310 (no new codes)
+Actions: none changed
+Data impact: none to the schema (no migration). Each round in the profile now carries its own fairways, greens and scrambling percentages, read from the round cache the loader already holds.
+Held items: none
+```
+
+### Changed (desktop Overview)
+
+- No big panel. The scoring trend is a flush ribbon under a gold rule: one column a recent round, a bar from the
+  player's own average (green rising when the round beat it, gold hanging when it did not, all on one scale), the
+  score at its tip, the date and to-par under it, the newest column marked. The head says the form change in a
+  sentence (the newer half of the rounds against the older) with the average, the team's (coach), and the best round.
+- The five figures (fairways, greens, putts, scrambling, best round) follow as the same tape Team stats uses: value,
+  change against the team (coach) or the Tour (player), a weekly line from the rounds, and a ring with the reference's
+  mark (or the best round's distance from par). The player page's own figure cards are no longer used.
+- Wide canvases (1280px and up) set the four hero figures beside the name instead of under it, so the Overview opens
+  in view. The figures still show on every tab.
+- The loading skeleton draws the ribbon and the tape.
+
 ## 2026-10-08 — Premium pass: one round set, one chart, one surface, the best card
 
 Approved by the owner on 2026-10-08 (P005-A2, C2; findings D1, D2, D5 to D8, D12, D13).
