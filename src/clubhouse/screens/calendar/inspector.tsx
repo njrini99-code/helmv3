@@ -53,10 +53,12 @@ import {
   type ChCalEvent,
   type ChCalOverlap,
   type ChCalPerson,
+  type ChCalType,
   type ChRsvp,
 } from './model';
 import type { ChNow } from './views';
 import { BusyDetail, EventFiles } from './extras';
+import { courseParts } from './class-group';
 
 export type ChInsp =
   | { kind: 'event'; id: string; date: string }
@@ -100,6 +102,9 @@ function Fact({ icon, tone, children }: { icon: LucideIcon; tone?: 'team' | 'cla
     </div>
   );
 }
+
+/** The panel plate's tone for an event type: the colour its block has on the grid, deepened for ivory ink. */
+const plateTone = (t: ChCalType) => (t === 'practice' ? 'green' : isMajor(t) ? 'forest' : t === 'travel' || t === 'class' ? 'slate' : t === 'busy' ? 'champagne' : 'ink');
 
 function Back({ label, onClick }: { label: string; onClick: () => void }) {
   return (
@@ -397,7 +402,8 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
   return (
     <div className="ch-in">
       <Back label="Today" onClick={() => ctx.go(null)} />
-      <div className="ch-in__kick">
+      <div className="ch-in__plate" data-tone={plateTone(e.type)}>
+<div className="ch-in__kick">
         <Badge tone={isMajor(e.type) ? 'info' : 'accent'}>{TYPE_LABEL[e.type]}</Badge>
         {e.cancelled && <Badge tone="warning">Cancelled</Badge>}
         <Menu
@@ -419,6 +425,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
       <h2 className="ch-in__title" style={e.cancelled ? { textDecoration: 'line-through' } : undefined}>
         {e.title}
       </h2>
+      </div>
       <div className="ch-in__facts">
         <Fact icon={Clock}>
           {e.span ? `${dowOf(e.span.from)} ${dayNum(e.span.from)} – ${dowOf(e.span.to)} ${dayNum(e.span.to)}` : dayLabel(e.date, ctx.now.date)}
@@ -514,43 +521,57 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
 function ClassDetail({ ctx, e }: { ctx: InspCtx; e: ChCalEvent }) {
   const owner = e.owner ? ctx.people.get(e.owner) : undefined;
   const mine = ctx.role === 'player';
+  const [code, course] = courseParts(e.title);
   return (
     <div className="ch-in">
       <Back label="Today" onClick={() => ctx.go(null)} />
-      <div className="ch-in__kick">
-        <Badge tone="neutral">Class</Badge>
-        <span>{mine ? 'From your class list' : owner ? `From ${first(owner.name)}’s class list` : 'Owner unknown'}</span>
-      </div>
-      <div>
-        <h2 className="ch-in__title">{e.title}</h2>
-        {owner && !mine && (
-          <div className="ch-cal-sub">
-            {owner.name}
-            {owner.year ? ` · ${owner.year}` : ''}
-          </div>
-        )}
+      {/* Owner, 2026-10-08: a class is a slate plate (who, the course code, the course), not ink on parchment. */}
+      <div className="ch-in__plate ch-in__class" data-tone="slate">
+        <div className="ch-in__kick">
+          <span className="ch-in__chip">Class</span>
+          <span>{mine ? 'Your class list' : owner ? `${first(owner.name)}’s class list` : 'Owner unknown'}</span>
+        </div>
+        <h2 className="ch-in__title">{course}</h2>
+        <div className="ch-in__by">
+          {owner && !mine && <Avatar name={owner.name} size={26} />}
+          <span>
+            {owner && !mine ? owner.name : null}
+            {owner && !mine && owner.year ? ` · ${owner.year}` : ''}
+            {code && (owner && !mine ? ' · ' : '')}
+            {code && <b>{code}</b>}
+          </span>
+        </div>
       </div>
       <div className="ch-in__facts">
-        <Fact icon={Clock}>
+        <Fact icon={Clock} tone="class">
           {dayLabel(e.date, ctx.now.date)}
           <br />
           <span className="ch-num">{rangeLabel(e)}</span> · {ctx.zoneLabel}
         </Fact>
-        {e.location && <Fact icon={MapPin}>{e.location}</Fact>}
-        {e.instructor && <Fact icon={UserRound}>{e.instructor}</Fact>}
-        {e.pattern && <Fact icon={Repeat}>Meets {e.pattern}</Fact>}
+        {e.location && (
+          <Fact icon={MapPin} tone="team">
+            {e.location}
+          </Fact>
+        )}
+        {e.instructor && (
+          <Fact icon={UserRound} tone="own">
+            {e.instructor}
+          </Fact>
+        )}
+        {e.pattern && (
+          <Fact icon={Repeat} tone="class">
+            Meets {e.pattern}
+          </Fact>
+        )}
       </div>
-      <div className="ch-in__sec">
-        <p className="ch-in__quiet">
-          {mine ? 'Teammates never see your classes. Coaches see them so practice avoids them.' : 'Only coaches see class details. Teammates never see another player’s classes.'}
-        </p>
-      </div>
+      <p className="ch-in__note">
+        <Icon icon={Lock} size={14} />
+        <span>{mine ? 'Teammates never see your classes. Coaches see them so practice avoids them.' : 'Only coaches see class details. Teammates never see another player’s classes.'}</span>
+      </p>
       {!mine && owner && ctx.onFind && (
-        <div className="ch-in__sec">
-          <Button leftIcon={Users} onClick={() => ctx.onFind!(e.date, [owner.id])}>
-            Compare schedules
-          </Button>
-        </div>
+        <Button leftIcon={Users} onClick={() => ctx.onFind!(e.date, [owner.id])}>
+          Compare schedules
+        </Button>
       )}
     </div>
   );
@@ -779,12 +800,12 @@ export function Overlap({ ctx, id }: { ctx: InspCtx; id: string }) {
   return (
     <div className="ch-in">
       <Back label="Today" onClick={() => ctx.go(null)} />
-      <div className="ch-in__kick">
-        <Badge tone="warning" dot>
-          Overlap
-        </Badge>
-      </div>
-      <div>
+      <div className="ch-in__plate" data-tone="amber">
+        <div className="ch-in__kick">
+          <Badge tone="warning" dot>
+            Overlap
+          </Badge>
+        </div>
         <h2 className="ch-in__title">{e.title}</h2>
         <div className="ch-cal-sub">
           {dowOf(e.date)} {dayNum(e.date)} · {rangeLabel(e)}

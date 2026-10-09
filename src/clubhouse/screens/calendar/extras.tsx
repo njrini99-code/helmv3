@@ -60,13 +60,15 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
       <Button className="ch-in__back" size="sm" variant="ghost" leftIcon={ChevronLeft} onClick={onBack}>
         Today
       </Button>
-      <div className="ch-in__kick">
-        <Badge tone="neutral">
-          <Icon icon={Lock} size={11} />
-          Your busy time
-        </Badge>
+      <div className="ch-in__plate" data-tone="champagne">
+        <div className="ch-in__kick">
+          <Badge tone="neutral">
+            <Icon icon={Lock} size={11} />
+            Your busy time
+          </Badge>
+        </div>
+        <h2 className="ch-in__title">{e.title}</h2>
       </div>
-      <h2 className="ch-in__title">{e.title}</h2>
       <div className="ch-in__facts">
         <div className="ch-in__fact">
           <Icon icon={Clock} size={15} />

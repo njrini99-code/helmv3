@@ -1,5 +1,21 @@
 # P006 — Calendar: changelog
 
+## 2026-10-08 — the details panel: a plate for every event type, darker grey text, smooth scroll
+
+Owner review of the column beside the week ("black on ivory", "rough to scroll"):
+
+- Every panel opens on a lit plate in the colour its block has on the grid, in
+  ivory ink: green for practice, forest for competition, slate for a class or
+  travel, ink for a meeting or other, champagne for busy time, amber for an
+  overlap (`ch-in__plate`, `data-tone`; `inspector.tsx`, `extras.tsx`). A class
+  names the course on the plate with its code and the player.
+- The secondary and tertiary text tokens are one step darker everywhere in the
+  light theme (`--ch-text-secondary` ink-700, `--ch-text-tertiary` ink-600;
+  tokens.css); the dark theme gets a step more contrast the same way.
+- The panel scrolls with Lenis like the canvas (`usePanelSmoothScroll` in
+  `lib/smooth-scroll.ts`): same duration and curve, a trackpad left native, and
+  `overscroll-behavior: contain` so its ends don't drag the page behind it.
+
 ## 2026-10-08 — the day panel gets colour
 
 Owner review: the panel beside the week (nothing selected) was black text on
