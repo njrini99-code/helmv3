@@ -80,7 +80,8 @@ User signs in
   -> route to coach/player onboarding or dashboard
 
 Coach onboarding
-  -> create coach profile/team/org context
+  -> create org (or, when the school exists without a team of this gender,
+     reuse its org) -> coach profile -> team -> head_coach staff row
   -> prepare invite/join path
 
 Player onboarding
@@ -108,6 +109,21 @@ Join code
   signed token. There is no service-role assistant join; pinned by
   `src/app/golf/actions/__tests__/assistant-join-surface.test.ts` and
   `auth-signup-gate.test.ts`.
+- New-program coach onboarding (`completeCoachOnboarding`) never creates a
+  second organization for a school: `organizations_normalized_name_uidx`
+  (`lower(btrim(name))`) rejects it with 23505. On that collision the action
+  looks the existing org up with the admin client, matching the index key
+  exactly. If that org has no `golf_teams` row of the requested gender, the
+  coach becomes head coach of a new team of that gender inside it, as a
+  separate account on a separate team (not the `addSecondTeam` switcher). The
+  org's division, conference and location are left unchanged. If the org
+  already has a team of that gender, or the lookup fails or is ambiguous, the
+  action returns the "already set up on Helm" error with
+  `redirectTo: '/golf/signup'`. Rollback deletes an organization only when this
+  call created it (`createdOrg`). A pre-existing coach row re-pointed by the
+  upsert gets its `organization_id` and `onboarding_completed` restored on
+  failure. Pinned by
+  `src/app/golf/actions/__tests__/coach-onboarding-existing-org.test.ts`.
 
 ## UI Contract
 

@@ -6,7 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { z } from 'zod';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import { revalidatePath } from 'next/cache';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { processGolfTeamInvitation } from '@/app/golf/actions/teams';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
@@ -68,6 +68,9 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
   let createdOrgId: string | null = null;
   let createdCoachId: string | null = null;
   let createdTeamId: string | null = null;
+  // Puts a pre-existing coach row back the way it was (set once the coach
+  // upsert below has run against a row that already existed).
+  let restorePreExistingCoach: (() => Promise<void>) | null = null;
 
   try {
     // Validate input server-side
@@ -166,12 +169,37 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
       .select('id')
       .single();
 
-    if (orgError || !org) {
+    // The organization this program lives in, and whether THIS call created it.
+    //
+    // `createdOrg` gates every organization delete below. When the school
+    // already exists and we only add a team of the other gender to it, the org
+    // is someone else's live program (e.g. Lynchburg's women's team): rolling
+    // back a failed men's signup must never delete it.
+    let orgId: string;
+    let orgDisplayName = orgName;
+    let createdOrg = false;
+
+    if (!orgError && org) {
+      orgId = org.id;
+      createdOrg = true;
+      createdOrgId = org.id;
+    } else if ((orgError as { code?: string } | null)?.code === '23505') {
       // 23505 = unique violation on organizations_normalized_name_uidx: a school
-      // with this name already exists. Don't silently create a duplicate org —
-      // direct the coach to be added to the existing program instead.
-      if ((orgError as { code?: string } | null)?.code === '23505') {
-        await logServerError(`[Onboarding] Duplicate organization name rejected: "${orgName}"`, { action: 'onboarding.completeCoachOnboarding' });
+      // with this name already exists. Never create a duplicate org. If that
+      // school has no team of the requested gender yet, this coach is starting
+      // that program inside the existing org (a separate account on a separate
+      // team, not the multi-team switcher). Otherwise the program already
+      // exists, and the coach should join it with the team code.
+      const existing = await findExistingOrgForNewTeam(orgName, validatedData.gender);
+      if (existing.status === 'reuse') {
+        orgId = existing.id;
+        orgDisplayName = existing.name.trim();
+        await logServerEvent(
+          `[Onboarding] Adding a ${validatedData.gender} team to existing organization ${existing.id} ("${existing.name}") for user ${user.id}`,
+          { action: 'onboarding.completeCoachOnboarding' },
+        );
+      } else {
+        await logServerError(`[Onboarding] Duplicate organization name rejected: "${orgName}" (${existing.reason})`, { action: 'onboarding.completeCoachOnboarding' });
         // THIS MESSAGE STRANDED PEOPLE. It used to read "Ask your program's head
         // coach to add you to the team", which named an action that did not
         // exist — there is no add-a-coach control, and the person reading it had
@@ -190,16 +218,20 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
           redirectTo: '/golf/signup',
         };
       }
+    } else {
       await logServerError(`[Onboarding] Organization creation failed: ${describeError(orgError)}`, { action: 'onboarding.completeCoachOnboarding' });
       return { success: false, error: 'Failed to create organization. Please try again.' };
     }
 
-    createdOrgId = org.id;
+    // Roll back the organization only when this call created it.
+    const rollbackOrg = async () => {
+      if (createdOrg) await supabase.from('organizations').delete().eq('id', orgId);
+    };
 
     // Step 2: Create coach record first (team needs created_by reference)
     const coachData = {
       user_id: user.id,
-      organization_id: org.id,
+      organization_id: orgId,
       full_name: validatedData.fullName,
       title: validatedData.title || null,
       email: validatedData.email || null,
@@ -235,7 +267,7 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
     // { data: null, error: null }, so first-time onboarding is unaffected.
     const { data: preExistingCoach, error: preExistingCoachError } = await supabase
       .from('golf_coaches')
-      .select('id')
+      .select('id, organization_id, onboarding_completed')
       .eq('user_id', user.id)
       .maybeSingle();
 
@@ -244,7 +276,7 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
         `[Onboarding] pre-existing coach check failed for user ${user.id}; refusing rather than risk deleting a real coach profile on rollback: ${describeError(preExistingCoachError)}`,
         { action: 'onboarding.completeCoachOnboarding' },
       );
-      await supabase.from('organizations').delete().eq('id', org.id);
+      await rollbackOrg();
       return { success: false, error: 'Could not verify your account. Please try again.' };
     }
 
@@ -256,9 +288,33 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
 
     if (coachError || !coach) {
       await logServerError(`[Onboarding] Coach creation failed: ${describeError(coachError)}`, { action: 'onboarding.completeCoachOnboarding' });
-      // Cleanup: Delete the organization we created
-      await supabase.from('organizations').delete().eq('id', org.id);
+      // Cleanup: Delete the organization, if we created it
+      await rollbackOrg();
       return { success: false, error: 'Failed to create coach profile. Please try again.' };
+    }
+
+    // The upsert re-pointed a pre-existing row (a declined assistant with no
+    // program) at this org. If a later step fails, put organization_id and
+    // onboarding_completed back: left pointing at a REUSED org with no staff
+    // row, the coach would fall into the legacy org-wide team fallback (e.g.
+    // the women's team of the school they tried to add a men's team to).
+    if (preExistingCoach) {
+      const previous = preExistingCoach;
+      restorePreExistingCoach = async () => {
+        const { error: restoreError } = await supabase
+          .from('golf_coaches')
+          .update({
+            organization_id: previous.organization_id,
+            onboarding_completed: previous.onboarding_completed,
+          })
+          .eq('id', previous.id);
+        if (restoreError) {
+          await logServerError(
+            `[Onboarding] could not restore pre-existing coach ${previous.id} after a failed onboarding: ${describeError(restoreError)}`,
+            { action: 'onboarding.completeCoachOnboarding' },
+          );
+        }
+      };
     }
 
     // Only ever roll back a coach row THIS call created. With the upsert above,
@@ -280,8 +336,8 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
     const { error: teamError } = await supabase
       .from('golf_teams')
       .insert({
-        organization_id: org.id,
-        name: validatedData.teamName || `${orgName} Golf`,
+        organization_id: orgId,
+        name: validatedData.teamName || `${orgDisplayName} Golf`,
         season: validatedData.season || getCurrentSeason(),
         join_code: joinCode,
         created_by: coach.id,
@@ -300,11 +356,12 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
 
     if (teamError || !team) {
       await logServerError(`[Onboarding] Team creation failed: ${describeError(teamError)}`, { action: 'onboarding.completeCoachOnboarding' });
-      // Cleanup: Delete coach and organization
+      // Cleanup: Delete coach and (only if this call created it) organization
       // #1250 — only a row THIS call created; `coach.id` may now be a
       // pre-existing profile (the write above is an upsert).
       if (createdCoachId) await supabase.from('golf_coaches').delete().eq('id', createdCoachId);
-      await supabase.from('organizations').delete().eq('id', org.id);
+      if (restorePreExistingCoach) await restorePreExistingCoach();
+      await rollbackOrg();
       return { success: false, error: 'Failed to create team. Please try again.' };
     }
 
@@ -328,12 +385,13 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
 
     if (staffError) {
       await logServerError(`[Onboarding] Team staff assignment failed: ${describeError(staffError)}`, { action: 'onboarding.completeCoachOnboarding' });
-      // Cleanup: Delete team, coach, and organization
+      // Cleanup: Delete team, coach, and (only if this call created it) organization
       await supabase.from('golf_teams').delete().eq('id', team.id);
       // #1250 — only a row THIS call created; `coach.id` may now be a
       // pre-existing profile (the write above is an upsert).
       if (createdCoachId) await supabase.from('golf_coaches').delete().eq('id', createdCoachId);
-      await supabase.from('organizations').delete().eq('id', org.id);
+      if (restorePreExistingCoach) await restorePreExistingCoach();
+      await rollbackOrg();
       return { success: false, error: 'Failed to assign coach to team. Please try again.' };
     }
 
@@ -342,7 +400,7 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
     return {
       success: true,
       data: {
-        organizationId: org.id,
+        organizationId: orgId,
         teamId: team.id,
         joinCode,
       }
@@ -359,6 +417,10 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
     if (createdCoachId) {
       await supabase.from('golf_coaches').delete().eq('id', createdCoachId);
     }
+    if (restorePreExistingCoach) {
+      await restorePreExistingCoach();
+    }
+    // Only ever an org THIS call created: a reused org is never assigned here.
     if (createdOrgId) {
       await supabase.from('organizations').delete().eq('id', createdOrgId);
     }
@@ -649,6 +711,76 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput, joi
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
+
+/**
+ * The key `organizations_normalized_name_uidx` enforces: `lower(btrim(name))`
+ * (migration 20260613150000). `btrim` with no second argument strips spaces
+ * only, so this strips spaces only too.
+ */
+function normalizeOrgName(name: string): string {
+  return name.replace(/^ +| +$/g, '').toLowerCase();
+}
+
+type ExistingOrgForNewTeam =
+  | { status: 'reuse'; id: string; name: string }
+  | { status: 'refuse'; reason: string };
+
+/**
+ * After the org insert hit `organizations_normalized_name_uidx`: find the one
+ * existing organization with this school name, and say whether a new team of
+ * `gender` may be started inside it.
+ *
+ * Reads with the admin client: the onboarding coach is not yet a member of that
+ * org, so RLS may hide it from them. The match is EXACT on the index key. The
+ * ILIKE only narrows the candidates (it is case-insensitive and tolerant of
+ * stored edge spaces), and the normalized comparison decides. Anything other
+ * than exactly one match, a team of that gender already in the org, or any
+ * failed read refuses, which keeps today's "already set up" answer.
+ */
+async function findExistingOrgForNewTeam(
+  orgName: string,
+  gender: 'mens' | 'womens',
+): Promise<ExistingOrgForNewTeam> {
+  try {
+    const admin = createAdminClient();
+    const target = normalizeOrgName(orgName);
+    const pattern = `%${orgName.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+
+    const { data: candidates, error: lookupError } = await admin
+      .from('organizations')
+      .select('id, name')
+      .ilike('name', pattern)
+      .limit(100);
+    if (lookupError) {
+      return { status: 'refuse', reason: `organization lookup failed: ${describeError(lookupError)}` };
+    }
+
+    const matches = (candidates ?? []).filter(
+      (c) => typeof c.name === 'string' && normalizeOrgName(c.name) === target,
+    );
+    const existing = matches[0];
+    if (matches.length !== 1 || !existing) {
+      return { status: 'refuse', reason: `expected one organization matching the name, found ${matches.length}` };
+    }
+
+    const { data: sameGenderTeams, error: teamsError } = await admin
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', existing.id)
+      .eq('gender', gender)
+      .limit(1);
+    if (teamsError) {
+      return { status: 'refuse', reason: `team lookup failed for organization ${existing.id}: ${describeError(teamsError)}` };
+    }
+    if ((sameGenderTeams ?? []).length > 0) {
+      return { status: 'refuse', reason: `organization ${existing.id} already has a ${gender} team` };
+    }
+
+    return { status: 'reuse', id: existing.id, name: existing.name };
+  } catch (error) {
+    return { status: 'refuse', reason: `organization lookup threw: ${describeError(error)}` };
+  }
+}
 
 /**
  * Generate a random 6-character alphanumeric join code
