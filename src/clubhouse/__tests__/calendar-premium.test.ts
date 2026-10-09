@@ -11,6 +11,13 @@ describe('Calendar · open on now (P006-B1)', () => {
     expect(focusHour(week, [ev('2026-10-08', 15.5)], { date: '2026-10-08', hour: 14.25 })).toBe(14.25);
   });
 
+  it('opens on the next event, not the empty end of the grid, when now is outside the working hours', () => {
+    const evs = [ev('2026-10-08', 9), ev('2026-10-09', 8.5), ev('2026-10-09', 13)];
+    expect(focusHour(week, evs, { date: '2026-10-08', hour: 22.25 })).toBe(8.5);
+    expect(focusHour(week, evs, { date: '2026-10-08', hour: 5 })).toBe(9);
+    expect(focusHour(week, [ev('2026-10-05', 10)], { date: '2026-10-10', hour: 23 })).toBe(10);
+  });
+
   it('opens on the first event still ahead when today is not on show', () => {
     const next = ['2026-10-11', '2026-10-12'];
     expect(focusHour(next, [ev('2026-10-12', 9), ev('2026-10-11', 16), ev('2026-10-11', 7, true)], { date: '2026-10-08', hour: 14 })).toBe(16);

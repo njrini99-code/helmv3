@@ -42,14 +42,10 @@ function zonedNow(timeZone: string, d: Date): ChNow {
   return { date: `${p.year}-${p.month}-${p.day}`, hour: (Number(p.hour) % 24) + Number(p.minute) / 60 };
 }
 
-// Back and Forward return to the place RouteFrame saved; the grid only opens on now for a fresh visit.
-let poppedAt = 0;
-if (typeof window !== 'undefined') window.addEventListener('popstate', () => (poppedAt = Date.now()));
-
 /**
- * P006-B1: the Week and Day grids open with now (or the next event) about 30% down the canvas, on first paint and on
- * T or Today. A step to another week keeps the canvas where it is, so the same hours stay in view. Instant on open and
- * with reduced motion; eased for Today otherwise. `tick` asks again; the request waits until the grid for `first` (the
+ * P006-B1: T or Today puts now (or the next event) about 30% down the canvas; the page itself opens at its top. A step
+ * to another week keeps the canvas where it is, so the same hours stay in view. Instant with reduced motion; eased
+ * otherwise. `tick` asks again; the request waits until the grid for `first` (the
  * first day on show) is on the page, since Today may have to load another week first.
  */
 function useOpenOnNow(tick: number, first: string, on: boolean, hour: number | null, reduced: boolean) {
@@ -62,18 +58,19 @@ function useOpenOnNow(tick: number, first: string, on: boolean, hour: number | n
     if (!canvas || !grid) return;
     const opening = seen.current === 0;
     seen.current = tick;
-    if (hour == null || (opening && Date.now() - poppedAt < 1500)) return;
+    // The page opens at its top (RouteFrame owns that); only T or Today moves the grid to now.
+    if (hour == null || opening) return;
     const place = () =>
       Math.max(0, Math.round(grid.getBoundingClientRect().top - canvas.getBoundingClientRect().top + canvas.scrollTop + (hour - Number(grid.dataset.from ?? 0)) * CAL_HH - canvas.clientHeight * 0.3));
     settle.current?.();
-    if (!opening && !reduced) {
+    if (!reduced) {
       const lenis = canvasLenis();
       if (lenis) lenis.scrollTo(place());
       else canvas.scrollTo({ top: place(), behavior: 'smooth' });
       return;
     }
-    // Held for a moment: RouteFrame opens a newly reached page at its top, and the page is still settling (fonts, the
-    // shell's smooth scroller). A wheel, touch or key from the coach lets go at once, and so does leaving the page.
+    // Held for a moment while a newly loaded week settles. A wheel, touch or key from the coach lets go at once, and so
+    // does leaving the page.
     const until = Date.now() + 900;
     let frame = 0;
     const stop = () => {

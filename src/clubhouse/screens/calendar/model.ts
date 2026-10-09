@@ -88,7 +88,8 @@ export function daylightOn(date: string, place: LatLng, timeZone: string): ChDay
  * the days shown; else the first timed event shown; else null (the grid stays at its top).
  */
 export function focusHour(dates: string[], events: Array<{ date: string; allDay?: boolean; start: number | null }>, now: { date: string; hour: number }): number | null {
-  if (dates.includes(now.date)) return now.hour;
+  // Now only leads inside the day's working hours: at 10 PM or 5 AM it would park the grid on its empty bottom or top.
+  if (dates.includes(now.date) && now.hour >= CAL_START && now.hour < CAL_END) return now.hour;
   const timed = events.filter((e) => !e.allDay && e.start != null && dates.includes(e.date)).sort((a, b) => a.date.localeCompare(b.date) || a.start! - b.start!);
   const ahead = timed.find((e) => e.date > now.date || (e.date === now.date && e.start! >= now.hour));
   return (ahead ?? timed[0])?.start ?? null;
