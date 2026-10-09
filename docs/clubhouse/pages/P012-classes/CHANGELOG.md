@@ -1,5 +1,13 @@
 # P012 — Classes: changelog
 
+## 2026-10-08 — The no-team page opens the player's Golf settings
+
+- **CH-12305** (`ClassesNoTeam.tsx`). "Open team settings" linked to
+  `settings?section=team`, a section only coaches have.
+  It now opens `settings?section=golf`, the Golf
+  profile section with the Join a team card (CH-8302). The label is unchanged.
+  No screenshots were taken in this change (no dev server).
+
 ## 2026-10-08 — Premium pass (backlog)
 
 - **One timetable (A1):** "Your classes" takes one row of days (Mon to Fri; the

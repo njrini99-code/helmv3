@@ -116,7 +116,7 @@ The sidebar (School, for a player) and the More sheet on the phone (D-66).
 
 ### Exits to
 
-Settings, only from the no-team page ("Open team settings", `?section=team`). Classes has no other link: a class
+Settings, only from the no-team page ("Open team settings", `?section=golf`, the player's Golf profile section with its Join a team card). Classes has no other link: a class
 opens its own sheet, and the calendar shows the class events the sync writes.
 
 ## Ownership

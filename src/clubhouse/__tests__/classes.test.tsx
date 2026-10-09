@@ -537,7 +537,8 @@ describe('Classes route and page', () => {
     teamOf.current = null;
     inProviders((await ClubhouseClassesRoute())!);
     await expectCode('CH-12305', /You aren’t on a team yet/);
-    expect(screen.getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');
+    // Joining a team is the player's Golf profile section; Settings has no player Team section.
+    expect(screen.getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=golf');
     expect(screen.queryByRole('button', { name: /Add|Import/ })).toBeNull();
   });
 

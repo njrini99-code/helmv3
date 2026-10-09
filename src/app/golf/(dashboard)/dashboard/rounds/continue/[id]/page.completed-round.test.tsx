@@ -46,6 +46,7 @@ vi.mock('@/clubhouse/routes/round-continue', () => ({ ClubhouseContinueRoundRout
 vi.mock('./continue-round-client', () => ({ default: () => null }));
 vi.mock('@/components/fairway/pages/rounds/RoundTypeEditor', () => ({ RoundTypeEditor: () => null }));
 
+import { ClubhouseMarker } from '@/clubhouse/shell/context';
 import ContinueRoundPage from './page';
 
 describe('Continue Round: a round that is no longer in progress', () => {
@@ -65,6 +66,22 @@ describe('Continue Round: a round that is no longer in progress', () => {
     expect(screen.getByRole('status')).toHaveTextContent('This round is complete');
     // Decided before any UI branch: the Fairway page answers without asking
     // which UI the player is on.
+    expect(mocks.clubhouse).not.toHaveBeenCalled();
+  });
+
+  it('inside the Clubhouse shell the hand-off draws the round review skeleton, never the Fairway line', async () => {
+    mocks.round.current = { id: ID, player_id: 'p-1', status: 'completed' };
+
+    const el = (await ContinueRoundPage({ params: Promise.resolve({ id: ID }) })) as ReactElement;
+    render(
+      // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
+      <ClubhouseMarker role="player">{el}</ClubhouseMarker>,
+    );
+
+    expect(mocks.router.replace).toHaveBeenCalledWith(`/golf/dashboard/rounds/${ID}`);
+    expect(screen.queryByText(/This round is complete/)).toBeNull();
+    expect(screen.queryByRole('link', { name: 'View round' })).toBeNull();
+    expect(screen.getByRole('main', { name: 'Loading the round' }).getAttribute('data-ch-code')).toBe('CH-11406');
     expect(mocks.clubhouse).not.toHaveBeenCalled();
   });
 

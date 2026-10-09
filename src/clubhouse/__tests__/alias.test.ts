@@ -113,3 +113,33 @@ describe('swap audit §14 aliases (D6, D8)', () => {
     expect(redirect).not.toHaveBeenCalled();
   });
 });
+
+describe('a player on a coach-only legacy address opens their nearest Clubhouse screen, never NotRebuilt', () => {
+  const ID = '0b6c1d2e-3f40-4a51-8b62-7c83d94e0f15';
+
+  beforeEach(() => {
+    session = { player: {} };
+  });
+
+  it('/intelligence opens their CoachHelm and /courses opens Home', async () => {
+    const { default: IntelligenceLayout } = await import('@/app/golf/(dashboard)/dashboard/intelligence/layout');
+    await expect(IntelligenceLayout({ children: null })).rejects.toThrow('REDIRECT /golf/dashboard/coachhelm');
+    const { default: CoursesLayout } = await import('@/app/golf/(dashboard)/dashboard/courses/layout');
+    await expect(CoursesLayout({ children: null })).rejects.toThrow(/^REDIRECT \/golf\/dashboard$/);
+  });
+
+  it("a player's page, genome and compare open their own Stats, without the coach's ?player=", async () => {
+    const { default: PlayerPagesLayout } = await import('@/app/golf/(dashboard)/dashboard/players/[playerId]/layout');
+    await expect(PlayerPagesLayout({ children: null, params: Promise.resolve({ playerId: ID }) })).rejects.toThrow(/^REDIRECT \/golf\/dashboard\/stats$/);
+    const { default: GenomeLayout } = await import('@/app/golf/(dashboard)/dashboard/coachhelm/genome/[playerId]/layout');
+    await expect(GenomeLayout({ children: null, params: Promise.resolve({ playerId: ID }) })).rejects.toThrow(/^REDIRECT \/golf\/dashboard\/stats$/);
+    const { default: CompareLayout } = await import('@/app/golf/(dashboard)/dashboard/coachhelm/genome/compare/layout');
+    await expect(CompareLayout({ children: null })).rejects.toThrow(/^REDIRECT \/golf\/dashboard\/stats$/);
+  });
+
+  it('the old qualifying workspace opens the qualifier itself (selection is the coach’s)', async () => {
+    const { default: QualifyingWorkspaceLayout } = await import('@/app/golf/(dashboard)/dashboard/coachhelm/qualifying/[id]/layout');
+    await expect(QualifyingWorkspaceLayout({ children: null, params: Promise.resolve({ id: ID }) })).rejects.toThrow(`REDIRECT /golf/dashboard/qualifiers/${ID}`);
+    expect(redirect).toHaveBeenLastCalledWith(`/golf/dashboard/qualifiers/${ID}`);
+  });
+});

@@ -10760,7 +10760,7 @@
     "category": 1,
     "item": 9,
     "name": "A_ROUND_STILL_BEING_PLAYED_GOES_TO_BE_CONTINUED",
-    "meaning": "Opening a round that is still in progress at /rounds/[id] redirects to /rounds/continue/[id], as the legacy page does. A Clubhouse player lands on the rebuilt Continue screen, which draws the round the page loaded over the continue engine.",
+    "meaning": "Opening a round that is still in progress at /rounds/[id] redirects the player who is playing it to /rounds/continue/[id], as the legacy page does. A Clubhouse player lands on the rebuilt Continue screen, which draws the round the page loaded over the continue engine. Continuing is the player's own (the continue page sends anyone else to sign in), so a coach of the player's team goes to that player's Stats, /stats?player=[id], instead; a coach off the team still gets the not-here page (CH-11307).",
     "status": "implemented",
     "where": "src/clubhouse/routes/round-review.tsx#ClubhouseRoundReviewRoute; src/clubhouse/routes/round-continue.tsx#ClubhouseContinueRoundRoute",
     "tests": [

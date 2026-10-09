@@ -15,7 +15,7 @@ export type * from './round-review-shape';
  *
  * `notFound` covers a round that doesn't exist and one this viewer may not
  * see, so the page never confirms that someone else's round exists.
- * `inProgress`: the round is still being played; the page sends it to be
+ * `inProgress` (with whose round it is): the round is still being played; the page sends it to be
  * continued, as the legacy page does. `error`: the round itself didn't load.
  * The holes and the shots each carry their own error, so a failed shot read
  * still shows the card; the tee, the coach's read of the player's name and the
@@ -27,7 +27,7 @@ export type * from './round-review-shape';
 /** A player's `teamId` names the strokes gained baseline (a women's team is measured on the women's Tour curve); without it no baseline is claimed. */
 export type ChReviewViewer = { role: 'player'; playerId: string; teamId?: string | null } | { role: 'coach'; teamId: string };
 
-export type ChRoundReviewResult = { kind: 'ok'; review: ChRoundReview } | { kind: 'notFound' } | { kind: 'inProgress' } | { kind: 'error' };
+export type ChRoundReviewResult = { kind: 'ok'; review: ChRoundReview } | { kind: 'notFound' } | { kind: 'inProgress'; playerId: string } | { kind: 'error' };
 
 const ROUND_COLUMNS =
   'id, player_id, status, course_name, tees_played, tee_id, round_date, round_type, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, course_rating, course_slope, ai_recap, notes, is_test, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting';
@@ -64,7 +64,7 @@ export async function loadRoundReview(roundId: string, viewerIn: ChReviewViewer 
     }
     if (!member?.length) return { kind: 'notFound' };
   }
-  if (round.status === 'in_progress') return { kind: 'inProgress' };
+  if (round.status === 'in_progress') return { kind: 'inProgress', playerId: round.player_id };
 
   const [holesRes, shotsRes, teeRes, playerRes, teamRes] = await Promise.all([
     supabase.from('golf_holes').select('hole_number, par, yardage, score, putts, fairway_hit, gir, penalty_strokes').eq('round_id', roundId).order('hole_number', { ascending: true }),

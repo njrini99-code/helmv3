@@ -3,6 +3,8 @@ import { Compass } from 'lucide-react';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { Button } from '@/components/fairway/controls/button';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { ClubhouseNotFound } from '@/clubhouse/shell/ClubhouseNotFound';
 
 /**
  * Golf dashboard-scoped 404 (P431).
@@ -21,6 +23,9 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
  * Also reached for any unmatched `/golf/dashboard/*` URL via the
  * `[...missing]` catch-all (DASH-13). The secondary link is role-aware
  * (DASH-14): a coach goes back to the roster, a player to their rounds.
+ *
+ * Inside the Clubhouse shell it steps aside for Clubhouse's own not-here page
+ * (ClubhouseSwitch, as loading.tsx does), so no Fairway UI draws in that frame.
  */
 export default async function GolfDashboardNotFound() {
   const session = await getGolfSessionProfile().catch(() => null);
@@ -28,7 +33,7 @@ export default async function GolfDashboardNotFound() {
     session?.role === 'coach'
       ? { href: '/golf/dashboard/roster', label: 'Back to roster' }
       : { href: '/golf/dashboard/rounds', label: 'Your rounds' };
-  return (
+  const fairway = (
     <div className="flex min-h-[60vh] items-center justify-center px-4 py-16">
       <EmptyState
         icon={<Compass strokeWidth={1.75} />}
@@ -47,4 +52,5 @@ export default async function GolfDashboardNotFound() {
       />
     </div>
   );
+  return <ClubhouseSwitch clubhouse={<ClubhouseNotFound />} fallback={fairway} />;
 }

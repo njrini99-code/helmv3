@@ -1,5 +1,31 @@
 # P011 — Rounds: changelog
 
+## 2026-10-08 — A coach on a live round goes to the player's Stats; the completed hand-off stays in Clubhouse
+
+Route fixes for Clubhouse going on in production. Not yet reviewed by the owner;
+no screenshots were taken in this change (no dev server).
+
+```text
+Design package: none (routing)
+PR/commit: agent/route-fixes
+Contract IDs: 110109
+Actions: none added or removed
+Data impact: none
+Held items: none
+```
+
+- **110109, coach** (`routes/round-review.tsx`, `data/round-review.ts`). A coach
+  of the player's team who opens a round still being played used to be sent to
+  `/rounds/continue/[id]`, whose page sends anyone but the player to sign in.
+  The coach now goes to that player's `stats?player=<id>`. The player keeps the
+  continue redirect. The membership check still runs first, so a coach off the
+  team gets "This round isn’t here" (CH-11307), never a redirect that confirms
+  the round. The loader's `inProgress` answer now carries the round's player.
+- **Continue Round, a round already complete**
+  (`rounds/continue/[id]/completed-round-redirect.tsx`). Inside the Clubhouse
+  shell the client hand-off to `/rounds/[id]` now draws the round review
+  skeleton (CH-11406) instead of Fairway's "This round is complete. Opening your
+  round…" line. Outside the shell it is unchanged.
 
 ## 2026-10-08 — the shot screen's field is centred
 

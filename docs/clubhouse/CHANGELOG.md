@@ -1,5 +1,27 @@
 # Clubhouse changelog
 
+## 2026-10-08 — Routing: no Fairway or NotRebuilt page for a player on a legacy address
+
+Shared routing fixes for Clubhouse going on in production for every coach and
+player. Not yet reviewed by the owner; no screenshots were taken in this change
+(no dev server).
+
+- **Not found** (`shell/ClubhouseNotFound.tsx`, the dashboard's
+  `not-found.tsx`). A `notFound()` inside the Clubhouse shell (Continue Round
+  for a missing round, an unmatched address) drew Fairway's empty state in the
+  Clubhouse frame. The shared 404 now switches with `ClubhouseSwitch`, as the
+  route skeletons do: inside the shell it is "This page isn’t here" with one
+  action, Back to Home. Fairway's page is unchanged outside it.
+- **Player aliases** (route `layout.tsx` files over `routes/alias.ts`). A player
+  on a legacy coach-only address got NotRebuilt. Now `/intelligence` (and the
+  addresses that redirect to it) opens their CoachHelm, `/courses` opens Home,
+  `/players/[id]/*`, `/coachhelm/genome/[id]` and `/coachhelm/genome/compare`
+  open their own Stats, and `/coachhelm/qualifying/[id]` opens that qualifier.
+  `docs/clubhouse/SWAP_AUDIT.md` §3 lists every legacy address and where each
+  role lands.
+- The round review's coach redirect and Continue Round's hand-off are in P011's
+  log; the Classes no-team link is in P012's.
+
 ## 2026-10-08 — Two scoring tokens for numerals on the feature green
 
 A shared token change for the shot screen's hole strip (P011's log has the

@@ -13,7 +13,9 @@ import '../styles/rounds.css';
 /**
  * /golf/dashboard/rounds/[id] in Clubhouse: one round's review, for the
  * player who played it or a coach of their team. A round still being played
- * goes to be continued, as on the legacy page. Anyone else, and a round that
+ * goes to be continued, as on the legacy page, for the player; continuing is
+ * the player's own (the continue page sends anyone else to sign in), so a
+ * coach goes to that player's Stats instead. Anyone else, and a round that
  * doesn't exist, get the same "not here" page, so the page never confirms
  * that someone else's round exists.
  */
@@ -26,7 +28,9 @@ export async function ClubhouseRoundReviewRoute({ id }: { id: string }) {
   );
   const [viewer, result] = await Promise.all([viewerRead, loadRoundReview(id, viewerRead)]);
 
-  if (result.kind === 'inProgress') redirect(`/golf/dashboard/rounds/continue/${id}`);
+  if (result.kind === 'inProgress') {
+    redirect(viewer?.role === 'coach' ? `/golf/dashboard/stats?player=${encodeURIComponent(result.playerId)}` : `/golf/dashboard/rounds/continue/${id}`);
+  }
   if (result.kind === 'error') return <ReviewLoadFailed />;
   if (result.kind === 'notFound') {
     const coach = viewer?.role === 'coach';

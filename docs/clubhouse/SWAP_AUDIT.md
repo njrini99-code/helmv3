@@ -66,7 +66,8 @@ when the flag is on. An alias is `redirectToClubhouse` in a route layout
 - **Aliased:** `tasks`, `announcements`, `documents` and `travel` go to Team Hub
   tabs; `roster/[id]` goes to `stats?player=` (coach) or to `roster` (player);
   `rounds/[id]/review` goes to `rounds/[id]`; `coachhelm/chat` goes to
-  `coachhelm?view=ask` (coach).
+  `coachhelm?view=ask` (coach). The remaining legacy addresses are in the
+  table below.
 - **Player roster (built 2026-10-01, Q-130):** `/roster` for a player is the
   coach's roster, read-only. A teammate shows name, class year and handicap
   (what Fairway's player roster showed) and no scores, so no row is a link or a
@@ -84,21 +85,37 @@ when the flag is on. An alias is `redirectToClubhouse` in a route layout
   player see the team as a plain label. Catalog CH-1003, CH-1305, CH-1813,
   CH-1814; `team-switch.test.tsx`.
 
-### Not rebuilt with the flag on (owner decides after this audit)
+### Legacy addresses with the flag on (production since 2026-10-08)
 
-| Route | Role | Today (flag on) | Suggested destination |
-| --- | --- | --- | --- |
-| `/intelligence` (and `/alerts`, `/insights`, `/patterns`, `/analytics/coachhelm`, `/development`, which redirect to it) | coach | NotRebuilt | Alias to `coachhelm` (`?player=` kept) |
-| `coachhelm?view=profile\|standing\|deep-dive`; `/my-game-profile`, `/my-standing` (and `/my-development`, which goes to `coachhelm?view=development`) | player | **Built** (F-04): Game profile `28f83d3a8`, Standing `a657a7d15`, Deep dive `438781162`; `?view=development` goes to Stats' Development | Nothing left on this row |
-| `/players/[id]`, `/players/[id]/game`, `/game/print`, `/genome`; `/coachhelm/genome/[id]` | coach | NotRebuilt | Alias to `stats?player=<id>` |
-| `/coachhelm/genome/compare` | coach | NotRebuilt | Owner: retire or build |
-| `/team` | both | NotRebuilt | Coach: `settings?section=team`; player: `settings?section=golf` |
-| `/rounds` | coach | NotRebuilt (v2 has no coach library, Q-79) | Alias to `stats/team` |
-| `/coachhelm/chat` | player | NotRebuilt | Alias to `coachhelm` |
-| `/courses` | coach | NotRebuilt | Owner: build or retire (course management) |
-| `/whats-new` | both | NotRebuilt | Retire, or alias to Home |
-| `/hub`, `/my-insights` | both | redirect to rebuilt routes | none needed |
-| `/dev/haptics`, `[...missing]` | — | dev and catch-all | none needed |
+The flag (`golf_clubhouse_ui`) is on in production for coaches and players.
+Every legacy address below now lands on a Clubhouse screen; none draws
+NotRebuilt for the role shown. The aliases are `redirectToClubhouse` in the
+route's `layout.tsx`, which redirects only when the target is rebuilt for the
+signed-in role (`isRebuilt`), so a player target is always a player screen. A
+layout never receives `searchParams`, so these aliases drop the query string.
+
+| Route | Coach goes to | Player goes to |
+| --- | --- | --- |
+| `/intelligence` (and `/alerts`, `/insights`, `/patterns`, `/analytics/coachhelm`, `/development`, which redirect to it) | `coachhelm` | `coachhelm` |
+| `/players/[id]`, `/players/[id]/game`, `/game/print`, `/genome`; `/coachhelm/genome/[id]` | `stats?player=<id>` | `stats` (their own; `?player=` is the coach's form) |
+| `/coachhelm/genome/compare` | `stats/team` | `stats` |
+| `/coachhelm/qualifying/[id]` | `qualifiers/[id]/selection` | `qualifiers/[id]` |
+| `/team` | `settings?section=team` | `settings?section=golf` |
+| `/rounds` | `stats/team` (a page redirect in `rounds/page.tsx`; v2 has no coach library, Q-79) | rebuilt |
+| `/coachhelm/chat` | `coachhelm?view=ask` | `coachhelm` |
+| `/courses` | Home | Home |
+| `/whats-new` | Home | Home |
+| `coachhelm?view=profile\|standing\|deep-dive`; `/my-game-profile`, `/my-standing`, `/my-development` | — | **Built** (F-04): Game profile `28f83d3a8`, Standing `a657a7d15`, Deep dive `438781162`; `?view=development` goes to Stats' Development |
+| `/hub`, `/my-insights` | redirect to rebuilt routes | redirect to rebuilt routes |
+| `/dev/haptics`, `[...missing]` | dev and catch-all | dev and catch-all |
+
+Two route-level states also stay in Clubhouse (2026-10-08): the dashboard's
+`not-found.tsx` (a `notFound()` from a page such as Continue Round, or an
+unmatched address) switches to Clubhouse's "This page isn’t here" with Back to
+Home inside the shell, and Continue Round's hand-off for a round that is already
+complete draws the round review skeleton instead of Fairway's line. A coach who
+opens a round still being played (`rounds/[id]`) goes to that player's
+`stats?player=<id>`; continuing is the player's own.
 
 ### Live notification destinations (production, read-only, last 180 days)
 
@@ -110,7 +127,7 @@ when the flag is on. An alias is `redirectToClubhouse` in a route layout
 | `announcements` | 136 | aliased to Team Hub (announcements tab) |
 | `coachhelm` | 94 | rebuilt |
 | `roster` | 65 | rebuilt. `roster?tab=requests` (code source) is **ignored** by Clubhouse Roster; requests show in the Roster header instead (P2) |
-| `team` | 3 | **NotRebuilt** (see table) |
+| `team` | 3 | aliased: coach to `settings?section=team`, player to `settings?section=golf` |
 
 Code-only link sources not seen in recent rows: `tasks?task=<id>` (the alias
 drops `task`; P2. Source-confirmed against Next.js 16.2.9: a layout never

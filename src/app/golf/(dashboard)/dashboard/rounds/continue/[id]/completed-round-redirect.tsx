@@ -4,6 +4,8 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { useInClubhouse } from '@/clubhouse/shell/context';
+import { RoundReviewSkeleton } from '@/clubhouse/screens/rounds/RoundsSkeleton';
 
 /**
  * Continue Round for a round that is no longer in progress.
@@ -18,14 +20,20 @@ import { fairwayScope } from '@/lib/redesign/flag';
  *
  * Rendering a client-side replace instead works in every render context and
  * lands on the same page the success overlay navigates to.
+ *
+ * Inside the Clubhouse shell the hand-off draws the round review's own
+ * skeleton (where it is going) rather than Fairway's line, so no Fairway UI
+ * shows in the Clubhouse frame.
  */
 export function CompletedRoundRedirect({ href }: { href: string }) {
   const router = useRouter();
+  const inClubhouse = useInClubhouse();
 
   useEffect(() => {
     router.replace(href);
   }, [href, router]);
 
+  if (inClubhouse) return <RoundReviewSkeleton />;
   return (
     <div
       className={fairwayScope('flex min-h-[50vh] flex-col items-center justify-center gap-3 bg-canvas px-4 text-center')}
