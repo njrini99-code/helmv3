@@ -216,7 +216,7 @@ describe('Stats team · reads that fail', () => {
   it('CH-1210 sections that crash together are told once under the head, with one Try again; each keeps its title', async () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     wrap(stats({ figures: null as never, players: null as never, legWeeks: null as never, putting: { putts: 1, bands: null as never }, bests: null as never }));
-    await expectCode('CH-1210', /Team figures, the trend chart, strokes gained by leg, team putting and season bests couldn’t be shown/);
+    await expectCode('CH-1210', /The trend chart, team figures, strokes gained by leg, team putting and season bests couldn’t be shown/);
     expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
     for (const c of ['CH-4204', 'CH-4205', 'CH-4206', 'CH-4207', 'CH-4208']) expect(within(code(c) as HTMLElement).queryByRole('button')).toBeNull();
     quiet.mockRestore();
@@ -817,7 +817,8 @@ describe('Stats team · the page', () => {
     for (const text of ['Team stats', 'Varsity', 'active', 'Scoring average', 'Greens in regulation', 'Putts per round', 'Scrambling', 'Birdies per round', 'Team putting', 'Season bests']) expect(html).toContain(text);
     wrap(stats());
     expect(screen.getByRole('heading', { level: 1, name: 'Team stats' })).toBeTruthy();
-    expect([...document.querySelectorAll('.ch-fg__l')].map((l) => l.textContent)).toEqual(['Team SG per round', 'Scoring average', 'Greens in regulation', 'Putts per round', 'Scrambling', 'Birdies per round']);
+    expect(document.querySelector('.ch-sgt__k')!.textContent).toBe('Team strokes gained per round');
+    expect([...document.querySelectorAll('.ch-tp__l')].map((l) => l.textContent)).toEqual(['Scoring average', 'Greens in regulation', 'Putts per round', 'Scrambling', 'Birdies per round']);
     expect(screen.getByRole('radio', { name: 'Last 10' }).getAttribute('aria-checked')).toBe('true');
     expect(screen.getByRole('button', { name: 'Export' })).toBeTruthy();
     expect(screen.getAllByRole('button', { name: /^(Off the tee|Approach|Around green|Putting)/ })).toHaveLength(4);
@@ -885,7 +886,7 @@ describe('Stats team · the page', () => {
     const user = userEvent.setup();
     wrap(stats());
     const front = () => document.querySelector('.ch-sgt__front');
-    const faded = () => document.querySelectorAll('.ch-sgt__line[stroke-opacity="0.2"]').length;
+    const faded = () => document.querySelectorAll('.ch-sgt__line[stroke-opacity="0.12"]').length;
     const theo = screen.getAllByRole('button', { name: /Theo/ })[0]!;
     expect(front()).toBeNull();
     expect(faded()).toBe(0);

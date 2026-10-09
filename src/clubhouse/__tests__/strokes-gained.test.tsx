@@ -89,7 +89,6 @@ const showPlayerPhone = (data: ChPlayerProfile, coachId: string | null = 'c1') =
       <StatsPlayer data={data} coachId={coachId} />
     </>,
   );
-const card = (label: string) => [...document.querySelectorAll('.ch-fg__c')].find((c) => c.querySelector('.ch-fg__l')?.textContent === label) as HTMLElement;
 const barWidth = (row: Element) => parseFloat((row.querySelector('[class*="__v"]') as HTMLElement).style.width);
 
 beforeEach(() => {
@@ -220,72 +219,51 @@ describe('bar scale · team phone', () => {
 /* ─── Team, desktop: the headline, the sort, the notes ─── */
 
 describe('team stats · desktop', () => {
-  it('the SG headline card: a signed figure, gain green or loss amber, its change chip, and what it is measured against', () => {
+  it('the SG headline: a signed figure set large, gain green or loss amber, its change, and what it is measured against', () => {
     showTeam(team());
-    const c = card('Team SG per round');
-    expect(c.querySelector('.ch-fg__v')!.textContent).toBe('−0.5');
-    expect(c.querySelector('.ch-fg__v')!.className).toContain('ch-loss');
-    expect(c.querySelector('.ch-delta')!.textContent).toBe('+0.4');
-    expect(c.querySelector('.ch-delta')!.className).toContain('is-good');
-    expect(c.querySelector('.ch-fg__n')!.textContent).toBe('vs Tour · 58 rounds with shots');
-    // Strokes gained leads; the five supporting figures share the group beside it, five columns.
-    const fg = document.querySelector('.ch-fg') as HTMLElement;
-    expect(fg.className).toContain('ch-fg--lead');
-    expect(fg.firstElementChild!.className).toContain('ch-fg__c--lead');
-    expect(fg.querySelectorAll('.ch-fg__group > .ch-fg__c')).toHaveLength(5);
-    expect(fg.style.getPropertyValue('--ch-fg-n')).toBe('5');
+    const hero = document.querySelector('.ch-sgt__hero') as HTMLElement;
+    expect(hero.querySelector('.ch-sgt__k')!.textContent).toBe('Team strokes gained per round');
+    expect(hero.querySelector('.ch-sgt__n')!.textContent).toBe('−0.5');
+    expect(hero.querySelector('.ch-sgt__n')!.className).toContain('ch-loss');
+    expect(hero.querySelector('.ch-sgt__chg')!.textContent).toContain('+0.4');
+    expect(hero.querySelector('.ch-sgt__chg')!.className).toContain('is-good');
+    expect(hero.querySelector('.ch-sgt__vs')!.textContent).toContain('dashed line is the Tour baseline');
+    // The trend comes first and the other five figures follow as one tape: no card, one cell each.
+    expect(document.querySelector('.ch-fg')).toBeNull();
+    expect(document.querySelectorAll('.ch-tp > .ch-tp__c')).toHaveLength(5);
   });
 
-  it('every team figure is drawn against a real reference: Tour zero, par, the Tour mark, 36 putts, 18 holes', () => {
+  it('every tape figure carries its own weekly line from its series, and its tone follows how it moved', () => {
     showTeam(team());
-    const g = (label: string) => card(label).querySelector('.ch-fg__gauge') as HTMLElement;
-    // Strokes gained −0.5: an amber bar left of the Tour's zero, a sixth of the way to its three-stroke end.
-    const sg = g('Team SG per round').querySelector('i')!;
-    expect(sg.className).toBe('is-loss');
-    expect(sg.style.right).toBe('50%');
-    expect(sg.style.width).toBe(`${(0.5 / 3) * 50}%`);
-    expect(g('Team SG per round').querySelector('em')!.textContent).toBe('Tour');
-    // Scoring +1.6 to par: amber, right of par.
-    expect(g('Scoring average').querySelector('i')!.className).toBe('is-loss');
-    expect(g('Scoring average').querySelector('i')!.style.left).toBe('50%');
-    expect(g('Scoring average').querySelector('em')!.textContent).toBe('Par');
-    // Greens 61% with the Tour's 66% marked.
-    expect(g('Greens in regulation').querySelector('i')!.style.width).toBe('61%');
-    expect(g('Greens in regulation').querySelector('b')!.style.left).toBe('66%');
-    // Putts 30.4 under the two-putt 36.
-    expect(g('Putts per round').querySelector('i')!.className).toBe('is-gain');
-    expect(g('Putts per round').querySelector('em')!.textContent).toBe('36');
-    // Scrambling has no Tour figure, so no mark is claimed.
-    expect(g('Scrambling').querySelector('b')).toBeNull();
-    // Birdies 2.6: two holes full, the third 60% filled, of 18.
-    const holes = g('Birdies per round').querySelectorAll('i');
-    expect(holes).toHaveLength(18);
-    expect(holes[2]!.style.getPropertyValue('--ch-fg-part')).toMatch(/^60(\.0+\d*)?%$|^59\.9+\d*%$/);
-    // Decorative: the value and its words say it.
-    expect(g('Putts per round').getAttribute('aria-hidden')).toBe('true');
-    // The lead draws its gauge before its note, so its gauge sits on the supporting figures' line.
-    const lead = card('Team SG per round');
-    expect(lead.querySelector('.ch-fg__gauge + .ch-fg__n')).not.toBeNull();
+    const cell = (label: string) => [...document.querySelectorAll('.ch-tp__c')].find((c) => c.querySelector('.ch-tp__l')!.textContent === label) as HTMLElement;
+    for (const f of PREVIEW_TEAM_STATS.figures.filter((x) => x.key !== 'sg')) {
+      const c = cell(f.label);
+      expect(c.querySelector('.ch-tp__line'), f.label).not.toBeNull();
+      // Lower scores and fewer putts improved when they fell: green for those, by the figure's own direction.
+      const good = f.delta != null && (f.lowerIsBetter ? f.delta < 0 : f.delta > 0);
+      expect(c.querySelector('.ch-tp__svg')!.getAttribute('class'), f.label).toContain(good ? 'is-good' : 'is-bad');
+      expect(c.querySelector('.ch-tp__svg')!.getAttribute('aria-hidden')).toBe('true');
+    }
   });
 
-  it('a figure with no value draws no gauge', () => {
+  it('a figure with no value says so in the headline and draws no line there', () => {
     const [sg, ...rest] = PREVIEW_TEAM_STATS.figures;
     showTeam(team({ figures: [{ ...sg!, value: null, delta: null, context: 'Needs rounds with shots', state: 'empty' }, ...rest] }));
-    expect(card('Team SG per round').querySelector('.ch-fg__gauge')).toBeNull();
+    expect(document.querySelector('.ch-sgt__hero')!.textContent).toContain('Needs rounds with shots');
   });
 
   it('CH-4311 no rounds with shots: a dash and what it needs, never a zero', () => {
     const [sg, ...rest] = PREVIEW_TEAM_STATS.figures;
     showTeam(team({ figures: [{ ...sg!, value: null, delta: null, context: 'Needs rounds with shots', note: 'vs Tour', state: 'empty' }, ...rest] }));
-    expect(code('CH-4311')!.querySelector('.ch-fg__v')!.textContent).toBe('—');
+    expect(code('CH-4311')!.querySelector('.ch-sgt__n')!.textContent).toBe('—');
     expect(code('CH-4311')!.textContent).toContain('Needs rounds with shots');
   });
 
-  it('CH-4312 no earlier rounds to compare: the headline says so instead of a chip', () => {
+  it('CH-4312 no earlier rounds to compare: the headline says so instead of a change', () => {
     const [sg, ...rest] = PREVIEW_TEAM_STATS.figures;
     showTeam(team({ figures: [{ ...sg!, delta: null, context: 'No earlier rounds', state: 'no-comparison' }, ...rest] }));
     expect(code('CH-4312')!.textContent).toContain('No earlier rounds');
-    expect(code('CH-4312')!.querySelector('.ch-delta')).toBeNull();
+    expect(code('CH-4312')!.querySelector('svg')).toBeNull();
   });
 
   it('each leg card’s headline is the window’s mean a round, not the latest week: putting is −0.3 (amber) though its last week was +0.3', () => {
@@ -334,10 +312,10 @@ describe('team stats · desktop', () => {
 
   it('the trend says what the dashed line is: the Tour baseline, or the women’s; the list is the window average', () => {
     showTeam(team());
-    expect(document.querySelector('.ch-sgt__head span')!.textContent).toBe('Per round, weekly average · dashed line is the Tour baseline · names show the window average');
+    expect(document.querySelector('.ch-sgt__vs')!.textContent).toBe('Per round, weekly average · dashed line is the Tour baseline · names show the window average');
     document.body.innerHTML = '';
     showTeam(team({ tour: 'lpga' }));
-    expect(document.querySelector('.ch-sgt__head span')!.textContent).toContain("dashed line is the women's Tour baseline");
+    expect(document.querySelector('.ch-sgt__vs')!.textContent).toContain("dashed line is the women's Tour baseline");
   });
 });
 

@@ -1,5 +1,35 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-08 — Desktop: trend first, on a deep-green stage
+
+```text
+Design package: owner direction "premium sleek, visual first and trend first", then "more premium, contrast and cool widgets"
+PR/commit: agent/clubhouse-premium-backlog
+Contract IDs: CH-4204 to CH-4206, CH-4311, CH-4312, CH-4401 (no new codes)
+Actions: ACT-P004-CHANGE-WINDOW, ACT-P004-OPEN-PLAYER (unchanged)
+Data impact: none to the schema (no migration). Each team figure now carries a `key` and its weekly `series`, read from rounds the loader already has.
+Held items: none
+```
+
+### Changed (desktop)
+
+- The trend is the page. The window's strokes gained (or scoring average) is set large over a wide weekly line on a
+  deep-green stage: ivory line, a wash that glows green above the baseline and gold below it, the baseline dashed in gold
+  and labelled, and the players faint behind. A pointer on the plot reads the week under it (the nearest week with a
+  value, so the newest always reads).
+- Under the figure: the best week, the latest week and how many weeks beat the baseline (par in the scoring lens), each
+  worked out from the weekly line and the loader's reference, never typed in. Par is the average score less the average
+  to par.
+- The five other figures are one tape on a faint green band between gold rules: value, change, context and a weekly line
+  at one height and scale rule (a line always reads up as better), with a dial at the corner for the figure's own
+  reference: a ring with the Tour's mark for greens and scrambling, birdies as holes of 18, putts against two on every
+  green, and the scoring average as its distance from par.
+- The figure cards (`FigureCards`) are no longer used on Team stats; the player page keeps them. Figures are found by
+  `key`, not by place in the list.
+- The skeleton draws the same: the stage, then five tape cells.
+- The strokes gained headline keeps CH-4311 (no rounds with shots) and CH-4312 (no earlier rounds: the headline says so
+  instead of a change).
+
 ## 2026-10-08 — Phone: direction A, native analysis, with the kit interactions
 
 ```text

@@ -38,6 +38,10 @@ export const LEGS = ['Off the tee', 'Approach', 'Around green', 'Putting'] as co
 export type ChLeg = (typeof LEGS)[number];
 
 export interface ChFigure {
+  /** Which figure this is, so a view finds it by name and never by its place in the list. */
+  key: 'sg' | 'score' | 'gir' | 'putts' | 'scramble' | 'birdies';
+  /** The figure on each week of `weeks`, the line drawn under it; null where a week has no rounds for it. */
+  series: Array<number | null>;
   label: string;
   value: number | null;
   unit: '' | '%';
@@ -216,8 +220,15 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const sgPaired = weightedMean(holePaired, (r) => r.strokes_gained_total);
   const sgDelta = sgBase.delta != null ? { ...sgBase, delta: sgPaired != null && sgPrev != null ? sgPaired - sgPrev : null } : sgBase;
   const baseline = sgBaseline(tour);
+  // Weekly trend: team and each player, strokes gained and scoring.
+  const weekKeys = [...new Set(windowRounds.map((r) => weekOf(r.round_date)))].sort().slice(-10);
+  const inWeek = (rs: ChRound[], wk: string) => rs.filter((r) => weekOf(r.round_date) === wk);
+  const avgOf = (rs: ChRound[], pick: (r: ChRound) => number | null) => weightedMean(rs, pick);
+  const weekRows = (wk: string) => rowsFor(inWeek(holeWindow, wk));
   const figures: ChFigure[] = [
     {
+      key: 'sg',
+      series: weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), (r) => r.strokes_gained_total)),
       label: 'Team SG per round',
       value: sgTotal,
       unit: '',
@@ -231,12 +242,14 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
       note: `${baseline.vs}${sgNow.length && sgDelta.context ? ` · ${sgNow.length} ${sgNow.length === 1 ? 'round' : 'rounds'} with shots` : ''}`,
       gauge: { kind: 'sg' },
     },
-    { label: 'Scoring average', value: scoring, unit: '', digits: 1, delta: d(weightedMean(windowPaired, (r) => r.total_score), prevScoring), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : sample, gauge: { kind: 'par', toPar } },
+    { key: 'score', series: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), (r) => r.total_score)), label: 'Scoring average', value: scoring, unit: '', digits: 1, delta: d(weightedMean(windowPaired, (r) => r.total_score), prevScoring), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : sample, gauge: { kind: 'par', toPar } },
     // CH-4209: without Tour benchmarks, greens read against the sample instead of "Tour averages".
-    { label: 'Greens in regulation', value: gir, unit: '%', digits: 0, delta: d(rate(curPaired, 'greens_hit', 'greens_total'), rate(prev, 'greens_hit', 'greens_total')), lowerIsBetter: false, context: benchGir != null ? `Tour averages ${Math.round(benchGir)}%` : holeSample, note: coverage, gauge: { kind: 'rate', ref: benchGir ?? null } },
-    { label: 'Putts per round', value: puttsPer, unit: '', digits: 1, delta: d(weightedMean(holePaired, (r) => cacheNum(r, 'total_putts')), weightedMean(holePrev, (r) => cacheNum(r, 'total_putts'))), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : holeSample, note: coverage, gauge: { kind: 'putts' } },
-    { label: 'Scrambling', value: scramble, unit: '%', digits: 0, delta: d(rate(curPaired, 'scrambles_converted', 'scramble_attempts'), rate(prev, 'scrambles_converted', 'scramble_attempts')), lowerIsBetter: false, context: hasPrev ? 'vs. previous 10' : holeSample, note: coverage, gauge: { kind: 'rate' } },
+    { key: 'gir', series: weekKeys.map((wk) => rate(weekRows(wk), 'greens_hit', 'greens_total')), label: 'Greens in regulation', value: gir, unit: '%', digits: 0, delta: d(rate(curPaired, 'greens_hit', 'greens_total'), rate(prev, 'greens_hit', 'greens_total')), lowerIsBetter: false, context: benchGir != null ? `Tour averages ${Math.round(benchGir)}%` : holeSample, note: coverage, gauge: { kind: 'rate', ref: benchGir ?? null } },
+    { key: 'putts', series: weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), (r) => cacheNum(r, 'total_putts'))), label: 'Putts per round', value: puttsPer, unit: '', digits: 1, delta: d(weightedMean(holePaired, (r) => cacheNum(r, 'total_putts')), weightedMean(holePrev, (r) => cacheNum(r, 'total_putts'))), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : holeSample, note: coverage, gauge: { kind: 'putts' } },
+    { key: 'scramble', series: weekKeys.map((wk) => rate(weekRows(wk), 'scrambles_converted', 'scramble_attempts')), label: 'Scrambling', value: scramble, unit: '%', digits: 0, delta: d(rate(curPaired, 'scrambles_converted', 'scramble_attempts'), rate(prev, 'scrambles_converted', 'scramble_attempts')), lowerIsBetter: false, context: hasPrev ? 'vs. previous 10' : holeSample, note: coverage, gauge: { kind: 'rate' } },
     {
+      key: 'birdies',
+      series: weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), birdiesOf)),
       label: 'Birdies per round',
       value: birdies,
       unit: '',
@@ -249,10 +262,6 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     },
   ];
 
-  // Weekly trend: team and each player, strokes gained and scoring.
-  const weekKeys = [...new Set(windowRounds.map((r) => weekOf(r.round_date)))].sort().slice(-10);
-  const inWeek = (rs: ChRound[], wk: string) => rs.filter((r) => weekOf(r.round_date) === wk);
-  const avgOf = (rs: ChRound[], pick: (r: ChRound) => number | null) => weightedMean(rs, pick);
   const playerSeries = players
     .map((p) => {
       const mine = roundsInFilter(byPlayer.get(p.id) ?? [], f);
