@@ -341,8 +341,12 @@ function deferRecurringDeleteNotify(opts: {
   startTime: string | null;
   location: string | null;
   scope: RecurringEditScope;
+  requiresRsvp: boolean;
 }): void {
   const { userIds, eventIds, title, startTime, location, scope } = opts;
+  // Owner, 2026-10-08: RSVPs are off unless the coach turns them on, and players get no notification for an event
+  // that doesn't ask for replies, including its cancellation.
+  if (!opts.requiresRsvp) return;
   if (userIds.length === 0 || eventIds.length === 0) return;
 
   after(async () => {
@@ -956,7 +960,11 @@ async function createRecurringEventImpl(
     const fanOutTitle = input.title;
     const fanOutStartDate = input.startDate;
     const fanOutLocation = input.location || '';
+    const fanOutNotifies = input.requiresRsvp === true;
     after(async () => {
+      // Owner, 2026-10-08: RSVPs are off unless the coach turns them on, and players get no notification for an event
+      // that doesn't ask for replies.
+      if (!fanOutNotifies) return;
       try {
         const adminClient = createAdminClient();
         // Same silent fan-out as createGolfEvent, and worse in scope: this one
@@ -1722,6 +1730,7 @@ async function deleteRecurringEventImpl(
                 startTime: targetEvent.start_time,
                 location: targetEvent.location,
                 scope: 'thisAndFuture',
+                requiresRsvp: targetEvent.requires_rsvp === true,
               });
               break;
             }
@@ -1756,6 +1765,7 @@ async function deleteRecurringEventImpl(
             startTime: targetEvent.start_time,
             location: targetEvent.location,
             scope: 'thisAndFuture',
+            requiresRsvp: targetEvent.requires_rsvp === true,
           });
           break;
         }
@@ -1802,6 +1812,7 @@ async function deleteRecurringEventImpl(
           startTime: targetEvent.start_time,
           location: targetEvent.location,
           scope: 'thisAndFuture',
+          requiresRsvp: targetEvent.requires_rsvp === true,
         });
         break;
       }
@@ -1855,6 +1866,7 @@ async function deleteRecurringEventImpl(
           startTime: targetEvent.start_time,
           location: targetEvent.location,
           scope: 'all',
+          requiresRsvp: targetEvent.requires_rsvp === true,
         });
         break;
       }
