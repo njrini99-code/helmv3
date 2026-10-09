@@ -112,13 +112,14 @@ describe('the strokes gained baseline', () => {
     showPlayer(player());
     const hero = [...document.querySelectorAll('.ch-pf-hero__figs > div')].find((d) => d.querySelector('dt')!.textContent === 'SG / round')!;
     expect(hero.querySelector('.ch-pf-hero__sub')!.textContent).toBe('Per round vs Tour');
-    expect(screen.getByText(/Same window, active players · strokes gained vs Tour/)).toBeTruthy();
+    expect(document.querySelector('.ch-z__def')!.textContent).toContain('Zero is the Tour baseline');
   });
 
   it('a women’s team reads the women’s Tour baseline on the hero and the leg card', () => {
     showPlayer(player({ tour: 'lpga' }));
     expect(document.querySelector('.ch-pf-hero__figs')!.textContent).toContain("Per round vs the women's Tour baseline");
-    expect(screen.getByText(/Per round vs the women's Tour baseline/, { selector: '.ch-yb__meta' })).toBeTruthy();
+    expect(document.querySelector('.ch-z__def')!.textContent).toContain("Zero is the women's Tour baseline");
+    expect(document.querySelector('.ch-lb__axis')!.textContent).toContain("Zero is the women's Tour baseline");
   });
 
   describe('on the phone', () => {
@@ -590,31 +591,31 @@ describe('player profile · desktop', () => {
     expect(within(first).getAllByRole('cell')[8]!.className).toContain('ch-loss');
   });
 
-  it('the comparison table leads with strokes gained: signed, green for a gain and amber for a loss, the team’s figure beside it for a coach', () => {
+  it('the first zone leads with strokes gained: signed, green for a gain and amber for a loss, the team’s mark beside each leg for a coach', () => {
     showPlayer(player());
-    // A group heading is a row of its own; the figures are the rows with cells.
-    const rows = [...document.querySelectorAll('table.ch-ft tbody tr')].filter((r) => r.querySelector('td'));
-    expect(rows.slice(0, 5).map((r) => r.querySelector('td')!.textContent)).toEqual(['SG total', 'SG off the tee', 'SG approach', 'SG around green', 'SG putting']);
-    expect(document.querySelector('table.ch-ft tbody tr.ch-ft__g')!.textContent).toBe('Strokes gained');
-    const total = rows[0]!.querySelectorAll('td');
-    expect(total[1]!.textContent).toBe('−0.9');
-    expect(total[1]!.querySelector('span')!.className).toContain('ch-loss');
-    expect(total[2]!.textContent).toBe('−0.5');
+    const rows = [...document.querySelectorAll('.ch-lb__r')];
+    expect(rows.map((r) => r.querySelector('b')!.textContent)).toEqual(['Off the tee', 'Approach', 'Around green', 'Putting']);
+    const read = document.querySelector('.ch-z .ch-zbig')!;
+    expect(read.textContent).toBe('−0.9');
+    expect(read.className).toContain('is-bad');
+    expect(document.querySelector('.ch-z__read')!.textContent).toContain('Team −0.5');
     // Putting +0.2 is a gain even though the team is at −0.3, and a loss stays a loss when it beats the team.
-    expect(rows[4]!.querySelectorAll('td')[1]!.querySelector('span')!.className).toContain('ch-gain');
+    expect(rows[3]!.querySelector('.ch-lb__bar')!.className).toContain('is-gain');
+    expect(rows[1]!.querySelector('.ch-lb__bar')!.className).toContain('is-loss');
+    expect(document.querySelectorAll('.ch-lb__team')).toHaveLength(4);
   });
 
-  it('a player’s own table has strokes gained with no team column and no Tour value for it', () => {
+  it('a player’s own zone has strokes gained with no team mark, against the Tour', () => {
     showPlayer(
       player({
         viewer: 'player',
         comparisons: PREVIEW_PLAYER.comparisons.map((c) => ({ ...c, team: null })),
       }),
     );
-    const table = document.querySelector('table.ch-ft')!;
-    expect([...table.querySelectorAll('thead th')].map((h) => h.textContent)).toEqual(['Stat', 'You', 'Tour', 'Against the Tour']);
-    const total = [...table.querySelectorAll('tbody tr')].find((r) => r.querySelector('td'))!.querySelectorAll('td');
-    expect([total[0]!.textContent, total[1]!.textContent, total[2]!.textContent]).toEqual(['SG total', '−0.9', '—']);
+    expect(document.querySelector('.ch-lb__team')).toBeNull();
+    expect(document.querySelector('.ch-z .ch-zbig')!.textContent).toBe('−0.9');
+    expect(document.querySelector('.ch-zlegend')!.textContent).toContain('Tour 0.0');
+    expect(document.querySelector('.ch-zlegend')!.textContent).not.toContain('Team');
   });
 });
 
@@ -868,8 +869,8 @@ describe('the Tour is the only benchmark (Q-88)', () => {
     document.body.innerHTML = '';
     showPlayer(player({ viewer: 'player', comparisons: PREVIEW_PLAYER.comparisons.map((c) => ({ ...c, team: null })) }));
     expect(everythingSaid()).not.toMatch(BENCHMARK_WORDS);
-    // The player's own table reads "You vs. the Tour", with the Tour's value where there is one.
-    expect(screen.getByRole('heading', { level: 2, name: 'You vs. the Tour' })).toBeTruthy();
+    // The player's own zones read against the Tour, with its mark where there is one.
+    expect(document.querySelector('.ch-zones')!.textContent).toContain('Tour');
   });
 
   it('Game detail names the Tour wherever it marks a benchmark (figures, notes, ticks)', async () => {

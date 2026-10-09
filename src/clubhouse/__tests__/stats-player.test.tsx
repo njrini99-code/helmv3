@@ -645,8 +645,8 @@ describe('Stats player · who may open what', () => {
     expect(screen.queryByRole('link', { name: /player$/ })).toBeNull();
     // The crumb trail is the navigation's, not "Stats › name".
     expect(screen.getByTestId('trail').textContent).toBe('nav');
-    expect(screen.getByRole('heading', { level: 2, name: 'You vs. the Tour' })).toBeTruthy();
-    expect(screen.queryByRole('columnheader', { name: 'Team' })).toBeNull();
+    expect(document.querySelector('.ch-zones')!.textContent).toContain('Tour');
+    expect(document.querySelector('.ch-lb__team')).toBeNull();
   });
 });
 
@@ -915,7 +915,8 @@ describe('Stats player · the page', () => {
     expect([...document.querySelectorAll('.ch-pf-hero__figs dt')].map((d) => d.textContent)).toEqual(['Scoring avg', 'Handicap', 'SG / round', 'Rounds']);
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Overview', 'Game detail', 'Rounds10', 'Development']);
     expect(screen.getByRole('tab', { selected: true }).textContent).toBe('Overview');
-    expect(screen.getByRole('heading', { level: 2, name: 'Jonah vs. team' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2, name: 'Strokes gained' })).toBeTruthy();
+    expect(document.querySelectorAll('.ch-zones .ch-z')).toHaveLength(7);
     // The overview opens on the scoring ribbon: one column a round, each a bar from the player's own average.
     expect(document.querySelector('.ch-fm__head h2')!.textContent).toBe('Scoring form');
     expect(document.querySelectorAll('.ch-fm__c')).toHaveLength(10);
@@ -926,17 +927,12 @@ describe('Stats player · the page', () => {
     expect(screen.getByRole('link', { name: 'Team stats' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Add focus area' })).toBeTruthy();
     expect(screen.getByTestId('trail').textContent).toBe('Stats › Jonah Okafor');
-    // The five figures follow as a tape, each drawn against the reference its words name: a ring with the team's mark for a
-    // coach's rates, putts against two a green, and the best round as its distance from par.
-    // The comparison table sets each row's player against the team and Tour on one axis, a mark where they sit.
-    const axes = [...document.querySelectorAll('.ch-ft .ch-ra')];
-    expect(axes.length).toBeGreaterThan(5);
-    expect(axes.every((a) => a.querySelector('.ch-ra__dot') && (a.querySelector('.is-team') || a.querySelector('.is-tour')))).toBe(true);
-    const cells = [...document.querySelectorAll('.ch-tp__c')];
-    expect(cells.map((c) => c.querySelector('.ch-tp__l')!.textContent)).toEqual(['Fairways hit', 'Greens in regulation', 'Putts per round', 'Scrambling', 'Best round']);
-    expect(cells.map((c) => c.querySelector('.ch-tp__tick') != null)).toEqual([true, true, true, true, false]);
-    expect(cells[4]!.querySelector('.ch-tp__par')!.textContent).toBe('Eto par');
-    expect(cells.every((c) => c.querySelector('.ch-tp__line') != null)).toBe(true);
+    // Each zone reads its stat beside its picture, against the team for a coach: the fairway strip, the green with its misses, the funnel and the make-rate curve.
+    expect(document.querySelector('.ch-zfw')).not.toBeNull();
+    expect(document.querySelector('.ch-zgreen')).not.toBeNull();
+    expect(document.querySelector('.ch-zfn')).not.toBeNull();
+    expect(document.querySelector('svg[aria-label*="percent"]')).not.toBeNull();
+    expect(document.querySelector('.ch-z__read')!.textContent).toContain('Team');
   });
 
   it("50104 a coach's Message opens the direct thread with this player, on desktop and on the phone; a player's profile has none", () => {

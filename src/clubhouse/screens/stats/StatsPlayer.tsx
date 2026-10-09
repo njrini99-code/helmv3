@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import type { ChWindow } from '../../data/stats-common';
-import { holeCoverage } from '../../data/round-scope';
 import { basisWords, clearFilters, HOLES_ADJ, hasRange, per18, type ChHoles, isFiltered, isWindowChange, statsHref, withWindow, type ChFilter } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -34,8 +33,7 @@ import { rebuiltHref } from '../../shell/nav';
 import { formatHcp } from '../roster/format';
 import { usePageCrumbs } from '../../shell/crumbs';
 import { LEGS_LIST } from './legs';
-import { FieldTable, SgChangeChip, YardagePage } from './charts';
-import { LegBars } from './LegBars';
+import { SgChangeChip } from './charts';
 import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
 import { RoundsExtra } from './RoundsExtra';
@@ -45,7 +43,7 @@ import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { useChSessionState } from '../../lib/session-state';
 import { CACHE_ERROR, countWords, FORM_STEADY, shotsWords } from './notes';
 import { PlayerStage } from './PlayerStage';
-import { TeamTape } from './TeamTape';
+import { OverviewZones } from './OverviewZones';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { devProgress, devTitle, goalLine } from './dev-format';
 
@@ -362,102 +360,24 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
  */
 
 function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
-  const w = data.win;
   const first = data.firstName;
-  const baseline = sgBaseline(data.tour);
-  const cmp = (label: string) => data.comparisons.find((c) => c.label === label);
-  // These four are hole-level: they read the window's rounds with their holes scored, not a round posted as a total only (Q-123), and say so when that is fewer.
-  const holeCount = data.extra.holeRounds ?? w.rounds;
-  const coverage = holeCoverage(holeCount, w.rounds);
-  const fig = (label: string, short: string) => {
-    const c = cmp(label);
-    const ref = coach ? c?.team : c?.bench;
-    return {
-      label: short,
-      value: c?.you == null ? NO_DATA : c.you.toFixed(c.digits),
-      unit: c?.unit,
-      delta: c?.you != null && ref != null ? c.you - ref : null,
-      deltaDigits: c?.digits ?? 0,
-      lowerIsBetter: c?.lowerIsBetter,
-      context: ref == null ? `${holeCount} ${holeCount === 1 ? 'round' : 'rounds'}` : `vs. ${coach ? 'team' : 'Tour'} ${ref.toFixed(c?.digits ?? 0)}${c?.unit ?? ''}`,
-      note: coverage ?? undefined,
-      // Drawn against the same reference the words name: a rate on 0–100 with the team's or the Tour's mark, putts against 36.
-      n: c?.you ?? null,
-      gauge: label === 'Putts per round' ? ({ kind: 'putts' } as const) : ({ kind: 'rate', ref: ref ?? null, refLabel: coach ? 'Team' : 'Tour' } as const),
-    };
-  };
-  // Best round: one length at a time (a 9-hole score and an 18-hole score are not the same best): the 9-hole rounds when that is all
-  // the window holds, else the 18-hole ones. The lines draw scores per 18 holes, a 9-hole score doubled.
-  const bestHoles = data.filter.holes === '9' ? 9 : 18;
-  const bestPool = data.rounds.filter((r) => r.holes === bestHoles);
-  const best = bestPool.length ? Math.min(...bestPool.map((r) => r.score)) : null;
-  // The best round's own score against par, for its gauge.
-  const bestToPar = best == null ? null : (bestPool.find((r) => r.score === best)?.toPar ?? null);
   const trendRounds = [...data.rounds].reverse().slice(-10).map((r) => ({ label: r.date, score: per18(r.score, r.holes), toPar: r.toPar == null ? null : per18(r.toPar, r.holes), holes: r.holes }));
-  // Each leg beside the shots it counts (strokes gained is only readable when the reader knows which shots those are) and, for a coach, the team's mark.
-  const legs = [
-    { label: 'Off the tee', means: 'Tee shots on par 4s and 5s: distance and accuracy together', value: w.sgLegs.tee, team: coach ? (cmp('SG off the tee')?.team ?? null) : null },
-    { label: 'Approach', means: 'Full shots from over 30 yards, and par-3 tee shots', value: w.sgLegs.approach, team: coach ? (cmp('SG approach')?.team ?? null) : null },
-    { label: 'Around green', means: 'Chips, pitches and bunker shots within 30 yards', value: w.sgLegs.around, team: coach ? (cmp('SG around green')?.team ?? null) : null },
-    { label: 'Putting', means: 'Every shot on the green', value: w.sgLegs.putting, team: coach ? (cmp('SG putting')?.team ?? null) : null },
-  ];
-  const known = legs.filter((l) => l.value != null) as Array<{ label: string; value: number }>;
-  const strongest = [...known].sort((a, b) => b.value - a.value)[0];
-  const weakest = [...known].sort((a, b) => a.value - b.value)[0];
-  const legNote = !known.length
-    ? 'Strokes gained by leg appears after three rounds with shot data.'
-    : weakest && weakest.value < 0 && known.filter((l) => l.value < 0).length === 1
-      ? `${weakest.label} is the only leg losing strokes, about ${Math.abs(weakest.value).toFixed(1)} a round.`
-      : `Strongest leg is ${strongest!.label.toLowerCase()}${weakest && weakest.value < 0 ? `; ${weakest.label.toLowerCase()} gives back the most` : ''}.`;
-
-  // The newest rounds oldest first, as the line is drawn; each tape figure's own line is these rounds' value (a round with none to count leaves a gap).
-  const plotted = [...data.rounds].reverse().slice(-10);
-  const seriesOf = (pick: (r: (typeof plotted)[number]) => number | null) => plotted.map(pick);
-  const tapeFig = (label: string, short: string, series: Array<number | null>) => {
-    const f = fig(label, short);
-    return { ...f, lowerIsBetter: f.lowerIsBetter ?? false, series };
-  };
+  // Seven zones, one per stat area; the last holds the scoring-form ribbon. Every figure is read from the profile (see OverviewZones).
   return (
-    <>
-      <PlayerStage
-        rounds={trendRounds.map((r) => ({ label: r.label, score: r.score, toPar: r.toPar, holes: r.holes }))}
-        first={first}
-        coach={coach}
-        teamAvg={data.teamAvg}
-        meta={`Last ${trendRounds.length} ${HOLES_ADJ[data.filter.holes]} ${trendRounds.length === 1 ? 'round' : 'rounds'}${trendRounds.some((r) => r.holes === 9) ? ' · 9-hole scores doubled' : ''}`}
-        note={trendRounds.length ? formNote(first, trendRounds.map((r) => r.score)) : undefined}
-      />
-      <TeamTape
-        items={[
-          tapeFig('Fairways hit', 'Fairways hit', seriesOf((r) => r.fairwaysPct)),
-          tapeFig('Greens in regulation', 'Greens in regulation', seriesOf((r) => r.girPct)),
-          tapeFig('Putts per round', 'Putts per round', seriesOf((r) => (r.putts == null ? null : per18(r.putts, r.holes)))),
-          tapeFig('Scrambling', 'Scrambling', seriesOf((r) => r.scramblePct)),
-          {
-            label: 'Best round',
-            value: best == null ? NO_DATA : String(best),
-            delta: null,
-            deltaDigits: 0,
-            lowerIsBetter: true,
-            context: bestHoles === 18 && data.filter.holes === '18' ? `${w.rounds} rounds in window` : `${bestPool.length} ${bestHoles}-hole ${bestPool.length === 1 ? 'round' : 'rounds'} in window`,
-            n: best,
-            gauge: { kind: 'par', toPar: bestToPar },
-            series: seriesOf((r) => (r.holes === bestHoles ? r.score : null)),
-          },
-        ]}
-      />
-      <YardagePage title="Strokes gained by leg" meta={`Per round ${baseline.vs}${w.sgPerRound != null ? ` · total ${formatSigned(w.sgPerRound)}` : ''}`} note={legNote}>
-        <LegBars rows={legs} baseline={`Zero is ${baseline.noun}`} teamName={coach ? 'Team' : null} />
-      </YardagePage>
-      <YardagePage
-        title={coach ? `${first} vs. team` : 'You vs. the Tour'}
-        meta={coach ? `Same window, active players · strokes gained ${baseline.vs}` : `Tour averages where the benchmark exists · strokes gained ${baseline.vs}`}
-        note={`${coverage ? `${coverage}; the scoring average and the pressure gap read all ${w.rounds}. ` : ''}${coach ? 'Team values are pooled from the active players’ rounds in the same window, where the round cache has the figure. ' : ''}Bands need 10 shots or putts. Par scoring is strokes a hole; the pressure gap (tournament and qualifier rounds against practice) and the opening hole are strokes to par, and lower is better.`}
-      >
-        <FieldTable rows={data.comparisons} showTeam={coach} />
-      </YardagePage>
-
-    </>
+    <OverviewZones
+      data={data}
+      coach={coach}
+      ribbon={
+        <PlayerStage
+          rounds={trendRounds.map((r) => ({ label: r.label, score: r.score, toPar: r.toPar, holes: r.holes }))}
+          first={first}
+          coach={coach}
+          teamAvg={data.teamAvg}
+          meta={`Last ${trendRounds.length} ${HOLES_ADJ[data.filter.holes]} ${trendRounds.length === 1 ? 'round' : 'rounds'}${trendRounds.some((r) => r.holes === 9) ? ' · 9-hole scores doubled' : ''}`}
+          note={trendRounds.length ? formNote(first, trendRounds.map((r) => r.score)) : undefined}
+        />
+      }
+    />
   );
 }
 

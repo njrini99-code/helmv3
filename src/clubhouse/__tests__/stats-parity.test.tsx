@@ -765,49 +765,34 @@ describe('Rounds on the phone', () => {
 
 /* ─── The standing table ─── */
 
-describe('Overview · the standing table', () => {
-  it('rows sit under their groups, each group named, with the Tour beside what has one', () => {
+describe('Overview · the zones', () => {
+  it('seven zones, one per stat area, each named, with the Tour beside what has one', () => {
     showPlayer(player());
-    const groups = [...document.querySelectorAll('table.ch-ft tr.ch-ft__g')].map((g) => g.textContent);
-    expect(groups).toEqual(['Strokes gained', 'Scoring', 'Driving', 'Approach', 'Short game', 'Putting', 'Course management', 'Pressure']);
-    const body = document.querySelector('table.ch-ft tbody')!;
-    const get = (label: string) => [...body.querySelectorAll('tr')].find((r) => r.querySelector('td')?.firstChild?.textContent === label)!;
-    const par4 = get('Par 4 scoring').querySelectorAll('td');
-    expect([par4[1]!.textContent, par4[2]!.textContent, par4[3]!.textContent]).toEqual(['4.32', '—', '3.97']);
-    // Lower is better: 4.32 against the Tour's 3.97 is amber.
-    expect(par4[1]!.querySelector('span')!.className).toContain('ch-loss');
-    const prox = get('Proximity 50–125 yd').querySelectorAll('td');
-    expect(prox[1]!.textContent).toBe('26 ft');
-    expect(prox[3]!.textContent).toBe('18 ft');
-    // The pressure gap reads with its sign, in strokes to par.
-    const gap = get('Pressure gap').querySelectorAll('td');
-    expect([gap[1]!.textContent, gap[3]!.textContent]).toEqual(['+0.8', '+0.5']);
+    const zones = [...document.querySelectorAll('.ch-zones .ch-z__id h2')].map((h) => h.textContent);
+    expect(zones).toEqual(['Strokes gained', 'Scoring', 'Off the tee', 'Approach', 'Short game', 'Putting', 'The last rounds']);
+    // Each par against the Tour's: the picture names the Tour and a value sits beside every par.
+    const pars = document.querySelector('svg[aria-label^="Par 3"]')!;
+    expect(pars.getAttribute('aria-label')).toMatch(/Par 3 \+0\.\d+, Par 4 \+\d\.\d+, Par 5/);
+    // The approach ranges: 50–125 yd reads 26 ft against the Tour's 18 ft, and amber because it is further.
+    const rows = [...document.querySelectorAll('.ch-zrow')];
+    const near = rows.find((r) => r.textContent?.startsWith('50-125 yd'))!;
+    expect(near.textContent).toContain('26 ft');
+    expect(near.querySelector('.ch-ztrack__fill')!.className).toContain('is-bad');
+    expect(near.querySelector('.ch-ztrack__tick.is-tour')).not.toBeNull();
   });
 
-  it('CH-5318 a row under its sample floor says what it needs, and only while it has no value', () => {
+  it('CH-5318 a range under its sample floor says what it needs, and only while it has no value', () => {
     showPlayer(player());
     // Proximity 175+ has no value (7 shots): its floor shows; 50–125 has one: none.
     const floors = [...document.querySelectorAll('[data-ch-code="CH-5318"]')].map((f) => f.textContent);
     expect(floors).toEqual(['Needs 10 approaches from the range.']);
-    cleanup();
-    showPlayer(
-      player({
-        comparisons: PREVIEW_PLAYER.comparisons.map((c) => (c.label === 'Pressure gap' || c.label === 'Opening hole' || c.label === 'Make 25+ ft' ? { ...c, you: null } : c)),
-      }),
-    );
-    expect([...document.querySelectorAll('[data-ch-code="CH-5318"]')].map((f) => f.textContent)).toEqual([
-      'Needs 10 approaches from the range.',
-      'Needs 10 putts in the band.',
-      'Needs 3 tournament or qualifier rounds and 3 practice rounds.',
-      'Needs 5 rounds scored hole by hole.',
-    ]);
   });
 
-  it('a player sees the Tour and no team column, for every new row too (Q-91)', () => {
+  it('a player sees the Tour and no team mark, for every zone too (Q-91)', () => {
     showPlayer(player({ viewer: 'player', comparisons: PREVIEW_PLAYER.comparisons.map((c) => ({ ...c, team: null })) }), null);
-    expect(screen.queryByRole('columnheader', { name: 'Team' })).toBeNull();
-    expect([...document.querySelectorAll('table.ch-ft thead th')].map((h) => h.textContent)).toEqual(['Stat', 'You', 'Tour', 'Against the Tour']);
-    expect(document.querySelector('.ch-yb__note')!.textContent).not.toContain('Team values');
+    expect(document.querySelector('.ch-zones')!.textContent).not.toMatch(/\bTeam\b/);
+    expect(document.querySelector('.ch-lb__team')).toBeNull();
+    expect(document.querySelector('.ch-zones')!.textContent).toContain('Tour');
   });
 
   it('the Tour is the only benchmark in the new panels: no D1, division or college anywhere on a full profile', async () => {

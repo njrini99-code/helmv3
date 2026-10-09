@@ -5576,3 +5576,437 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-ra.is-bad .ch-ra__dot {
   background: var(--ch-warning-600);
 }
+
+/* P005: the player Overview as seven zones (OverviewZones). Each stat area is a band set off by a gold rule, an alternating tint
+   and, left, what the stat is with one big reading; right, the picture that fits it. Prefix .ch-z. */
+.ch-st[data-canopy] .ch-zones {
+  display: grid;
+  margin-top: 4px;
+}
+.ch-st[data-canopy] .ch-z {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 48px;
+  padding: 36px 36px 40px;
+  border-top: 3px solid var(--ch-champagne-500);
+  background: var(--ch-ivory-25);
+}
+.ch-st[data-canopy] .ch-z--alt {
+  background: var(--ch-bg-subtle);
+}
+.ch-st[data-canopy] .ch-z__id {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+.ch-st[data-canopy] .ch-z__n {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--ch-green-800);
+  color: var(--ch-ivory-50);
+  font: 700 14px/1 var(--ch-font-sans, inherit);
+}
+.ch-st[data-canopy] .ch-z__id h2 {
+  margin: 0;
+  font: 600 27px/1.1 var(--ch-font-sans, inherit);
+  letter-spacing: -0.015em;
+  color: var(--ch-green-800);
+}
+.ch-st[data-canopy] .ch-z__def {
+  margin: 0;
+  font: 400 14.5px/1.5 var(--ch-font-sans, inherit);
+  color: var(--ch-text-secondary);
+}
+.ch-st[data-canopy] .ch-z__def b {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-z__read {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-zbig {
+  font-size: 60px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--ch-green-800);
+}
+.ch-st[data-canopy] .ch-zbig small {
+  margin-left: 3px;
+  font-size: 26px;
+  letter-spacing: 0;
+  color: var(--ch-text-secondary);
+}
+.ch-st[data-canopy] .ch-zbig.is-good {
+  color: var(--ch-green-600);
+}
+.ch-st[data-canopy] .ch-zbig.is-bad {
+  color: var(--ch-warning-600);
+}
+.ch-st[data-canopy] .ch-zlines {
+  display: grid;
+  gap: 6px;
+  font: 500 14px/1.3 var(--ch-font-sans, inherit);
+  color: var(--ch-text-secondary);
+}
+.ch-st[data-canopy] .ch-zlines b {
+  font-weight: 700;
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-z__vis {
+  display: grid;
+  align-content: start;
+  gap: 28px;
+  min-width: 0;
+}
+.ch-st[data-canopy] .ch-zv h3 {
+  margin: 0 0 4px;
+  font: 600 15px/1.2 var(--ch-font-sans, inherit);
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-zv > p {
+  margin: 0 0 14px;
+  max-width: 60ch;
+  font: 400 13.5px/1.45 var(--ch-font-sans, inherit);
+  color: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-zsvg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  font-family: inherit;
+}
+.ch-st[data-canopy] .ch-zgreen {
+  max-width: 400px;
+}
+.ch-st[data-canopy] .ch-zmiss {
+  margin: 0;
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: var(--ch-bg-inset);
+  font: 400 14px/1.5 var(--ch-font-sans, inherit);
+  color: var(--ch-text-secondary);
+}
+.ch-st[data-canopy] .ch-zmeta {
+  margin: 18px 0 0;
+  font: 400 13.5px/1.4 var(--ch-font-sans, inherit);
+  color: var(--ch-text-secondary);
+}
+.ch-st[data-canopy] .ch-zmeta b {
+  font-weight: 700;
+  color: var(--ch-text-primary);
+}
+
+/* a bar against the team and Tour marks */
+.ch-st[data-canopy] .ch-ztrack {
+  position: relative;
+  height: 12px;
+  border-radius: 99px;
+  background: var(--ch-bg-inset);
+  box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-ztrack__fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 99px;
+  background: var(--ch-green-500);
+}
+.ch-st[data-canopy] .ch-ztrack__fill.is-bad {
+  background: var(--ch-warning-600);
+}
+.ch-st[data-canopy] .ch-ztrack__tick {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  width: 3px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  text-decoration: none;
+}
+.ch-st[data-canopy] .ch-ztrack__tick.is-team {
+  background: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-ztrack__tick.is-tour {
+  background: var(--ch-champagne-500);
+}
+.ch-st[data-canopy] .ch-zpin {
+  position: relative;
+  height: 22px;
+}
+.ch-st[data-canopy] .ch-zpin span {
+  position: absolute;
+  bottom: 4px;
+  transform: translateX(-50%);
+  font: 700 14px/1 var(--ch-font-sans, inherit);
+  white-space: nowrap;
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-zlegend {
+  display: flex;
+  gap: 18px;
+  margin-top: 12px;
+  font: 500 13px/1 var(--ch-font-sans, inherit);
+  color: var(--ch-text-secondary);
+}
+.ch-st[data-canopy] .ch-zlegend i {
+  display: inline-block;
+  width: 3px;
+  height: 12px;
+  margin-right: 7px;
+  vertical-align: -2px;
+  border-radius: 2px;
+}
+.ch-st[data-canopy] .ch-zlegend i.is-team {
+  background: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-zlegend i.is-tour {
+  background: var(--ch-champagne-500);
+}
+
+/* every hole by result */
+.ch-st[data-canopy] .ch-zmix {
+  display: flex;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-zmix i {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  font: 700 13px/1 var(--ch-font-sans, inherit);
+  font-style: normal;
+}
+.ch-st[data-canopy] .ch-zmix .is-eagle,
+.ch-st[data-canopy] .ch-zmixkey i.is-eagle {
+  background: #7f2a21;
+  color: #fff;
+}
+.ch-st[data-canopy] .ch-zmix .is-birdie,
+.ch-st[data-canopy] .ch-zmixkey i.is-birdie {
+  background: var(--ch-chart-flag);
+  color: #fff;
+}
+.ch-st[data-canopy] .ch-zmix .is-par,
+.ch-st[data-canopy] .ch-zmixkey i.is-par {
+  background: var(--ch-ivory-300);
+  color: var(--ch-ink-900);
+}
+.ch-st[data-canopy] .ch-zmix .is-bogey,
+.ch-st[data-canopy] .ch-zmixkey i.is-bogey {
+  background: #8f8b81;
+  color: #fff;
+}
+.ch-st[data-canopy] .ch-zmix .is-double,
+.ch-st[data-canopy] .ch-zmixkey i.is-double {
+  background: #1c1b18;
+  color: #fff;
+}
+.ch-st[data-canopy] .ch-zmixkey {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.ch-st[data-canopy] .ch-zmixkey div {
+  display: grid;
+  gap: 3px;
+  font: 500 12.5px/1.2 var(--ch-font-sans, inherit);
+  color: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-zmixkey b {
+  font: 700 18px/1 var(--ch-font-sans, inherit);
+  letter-spacing: -0.02em;
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-zmixkey i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  border-radius: 2px;
+}
+
+/* the fairway strip */
+.ch-st[data-canopy] .ch-zfw {
+  display: flex;
+  height: 74px;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-zfw > div {
+  display: grid;
+  flex-basis: 0;
+  min-width: 64px;
+  align-content: center;
+  justify-items: center;
+  gap: 4px;
+  font: 500 12.5px/1.1 var(--ch-font-sans, inherit);
+}
+.ch-st[data-canopy] .ch-zfw b {
+  font: 700 22px/1 var(--ch-font-sans, inherit);
+  letter-spacing: -0.03em;
+}
+.ch-st[data-canopy] .ch-zfw .is-rough {
+  background: repeating-linear-gradient(135deg, var(--ch-ivory-300) 0 6px, var(--ch-ivory-200) 6px 12px);
+  color: var(--ch-ink-900);
+}
+.ch-st[data-canopy] .ch-zfw .is-other {
+  background: var(--ch-ivory-200);
+  color: var(--ch-text-secondary);
+  text-align: center;
+}
+.ch-st[data-canopy] .ch-zfw .is-fw {
+  background: linear-gradient(180deg, var(--ch-green-400), var(--ch-green-600));
+  color: #fff;
+}
+
+/* the funnel */
+.ch-st[data-canopy] .ch-zfn {
+  display: grid;
+  gap: 10px;
+}
+.ch-st[data-canopy] .ch-zfn .r {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr) 54px;
+  align-items: center;
+  gap: 14px;
+}
+.ch-st[data-canopy] .ch-zfn .r.is-gap {
+  margin-top: 14px;
+}
+.ch-st[data-canopy] .ch-zfn .r > span {
+  font: 600 14px/1.2 var(--ch-font-sans, inherit);
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-zfn .r > span small {
+  display: block;
+  margin-top: 2px;
+  font: 400 12px/1.3 var(--ch-font-sans, inherit);
+  color: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-zfn .r > div {
+  position: relative;
+  height: 34px;
+  overflow: hidden;
+  border-radius: 9px;
+  background: var(--ch-bg-inset);
+  box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-zfn .r > div i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 9px;
+  background: var(--ch-ivory-400);
+}
+.ch-st[data-canopy] .ch-zfn .r > div i.is-win {
+  background: var(--ch-green-500);
+}
+.ch-st[data-canopy] .ch-zfn .r > div i.is-sand {
+  background: var(--ch-champagne-500);
+}
+.ch-st[data-canopy] .ch-zfn .r > b {
+  text-align: right;
+  font: 700 20px/1 var(--ch-font-sans, inherit);
+  letter-spacing: -0.03em;
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-zfn .r > b.is-win {
+  color: var(--ch-green-600);
+}
+
+/* readings side by side, and proximity rows */
+.ch-st[data-canopy] .ch-zpair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+}
+.ch-st[data-canopy] .ch-zmini {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-zmini .l {
+  font: 600 14px/1.2 var(--ch-font-sans, inherit);
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-zmini .l span {
+  display: block;
+  margin-top: 3px;
+  font: 400 12.5px/1.35 var(--ch-font-sans, inherit);
+  color: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-zmini > b {
+  font: 600 30px/1 var(--ch-font-sans, inherit);
+  letter-spacing: -0.04em;
+  color: var(--ch-green-800);
+}
+.ch-st[data-canopy] .ch-zmini > b small {
+  font-size: 14px;
+  letter-spacing: 0;
+  color: var(--ch-text-secondary);
+}
+.ch-st[data-canopy] .ch-zrows {
+  display: grid;
+  gap: 14px;
+}
+.ch-st[data-canopy] .ch-zrow {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 64px;
+  align-items: center;
+  gap: 14px;
+}
+.ch-st[data-canopy] .ch-zrow .l {
+  font: 600 14px/1.2 var(--ch-font-sans, inherit);
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-zrow .l small {
+  display: block;
+  margin-top: 2px;
+  font: 400 12px/1.2 var(--ch-font-sans, inherit);
+  color: var(--ch-text-tertiary);
+}
+.ch-st[data-canopy] .ch-zrow > b {
+  text-align: right;
+  font: 700 17px/1 var(--ch-font-sans, inherit);
+  letter-spacing: -0.02em;
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-z .ch-fm {
+  border-top: 0;
+  padding-top: 0;
+}
+@media (max-width: 960px) {
+  .ch-st[data-canopy] .ch-z {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    padding: 28px 20px 32px;
+  }
+  .ch-st[data-canopy] .ch-zpair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ch-st[data-canopy] .ch-zones__note {
+  margin: 0;
+  padding: 0 0 14px;
+  font: 400 13px/1.45 var(--ch-font-sans, inherit);
+  color: var(--ch-text-tertiary);
+}
+
+.ch-st[data-canopy] .ch-zfloor {
+  font: italic 400 13px/1.35 var(--ch-font-sans, inherit);
+  color: var(--ch-text-tertiary);
+}

@@ -1,5 +1,37 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-09 — Overview: seven zones, one per stat area
+
+```text
+Design package: owner direction "it's not separated very well or organized, and there needs to be visuals that make sense for each stat", then "yes this all looks good, get it done"
+PR/commit: agent/clubhouse-premium-backlog
+Contract IDs: CH-5204, CH-5213, CH-5305, CH-5308, CH-5310, CH-5318 (no new codes)
+Actions: none changed
+Data impact: none (no migration). Every figure is read from the profile the page already loads.
+Held items: none
+```
+
+### Changed (desktop Overview)
+
+- The Overview is seven zones, each a band set off by a gold rule with an alternating tint: strokes gained, scoring,
+  off the tee, approach, short game, putting, and the last rounds. On the left, what the stat is in a sentence and one
+  large reading with the team's (coach) or the Tour's (player) figure beside it; on the right, the picture that fits it.
+  The comparison table, its axis column and the figure tape are no longer on the player Overview.
+- Strokes gained: the four legs as bars from one zero (each with the shots it counts and, for a coach, the team's
+  mark), and the total against the team and the Tour on one rail.
+- Scoring: every hole by result as one stacked bar with the per-round counts, and each par's average to par against
+  the Tour's on a dot plot.
+- Off the tee: where tee shots finish (left, fairway, right, and the misses whose side was not logged) as a strip,
+  penalty strokes against the Tour's, and fairways by par 4 and par 5.
+- Approach: a green with its four edges thickened by where missed approaches finish, and how close approaches finish
+  by range on one scale with the Tour's tick. A range under its sample floor says what it needs (CH-5318).
+- Short game: greens missed to saves and bunker shots to sand saves, as a funnel with counts.
+- Putting: the make rate by distance as a curve against the Tour's, the gap between shaded, with putt counts and the
+  Tour's rate under each distance.
+- The last rounds: the scoring-form ribbon, unchanged, as the seventh zone.
+- When some rounds were posted as a total only, one line above the zones says how many rounds the hole stats read
+  and that the scoring average counts all of them.
+
 ## 2026-10-09 — Overview: the scoring form ribbon and the figure tape
 
 ```text
