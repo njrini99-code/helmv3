@@ -1139,6 +1139,12 @@
   transition: opacity var(--ch-au-t-paper) var(--ch-au-out) var(--ch-au-paper-delay);
 }
 
+/* The phone hand-off's green and sheet (drawn in the phone block below) are not part of the desktop fold. */
+.ch-au-hero,
+.ch-au-rise {
+  display: none;
+}
+
 /* ── The phone: the course on top, the form on a sheet ────────────────────── */
 
 @media (max-width: 820px) {
@@ -1442,9 +1448,56 @@
   .ch-au-wl-hint {
     display: none;
   }
-  /* The phone's hand-off: the sheet rises to the dashboard's hero, rather than folding into a canvas. */
+  /* The phone's hand-off, as the design reference draws it (design/handoff/auth/src/login.css, .ml-hero and .ml-rise;
+     owner 2026-10-08: "it was supposed to fold into the dashboard, check the design ref"). The welcome lifts away; the
+     frame's green fades up over the course and collapses to the dashboard's bar (the status bar plus
+     --ch-phone-topbar-h), while the parchment sheet rises from the foot to meet it with the sheet's 16px top corners.
+     That is the dashboard's own frame, which the curtain (lib/handoff.ts) holds over the route change. */
+  .ch-au {
+    --ch-au-hb: calc(env(safe-area-inset-top, 0px) + var(--ch-phone-topbar-h));
+  }
   .ch-au-photo[data-fold] {
     clip-path: none;
+  }
+  .ch-au-photo[data-fold] .ch-au-paper {
+    opacity: 0;
+  }
+  .ch-au-hero,
+  .ch-au-rise {
+    position: absolute;
+    inset: 0;
+    display: block;
+    pointer-events: none;
+  }
+  .ch-au-hero {
+    z-index: 3;
+    opacity: 0;
+    background:
+      radial-gradient(90% 60% at 100% 0%, rgb(123 199 154 / 0.16), transparent 60%),
+      radial-gradient(70% 50% at 0% 100%, rgb(255 255 255 / 0.05), transparent 70%),
+      var(--ch-frame);
+    clip-path: inset(0 0 0 0);
+  }
+  .ch-au-rise {
+    z-index: 4;
+    border-radius: 16px 16px 0 0;
+    background: var(--ch-bg-page);
+    box-shadow: var(--ch-shadow-lg);
+    transform: translateY(102%);
+  }
+  .ch-au[data-phase='leaving']:has(.ch-au-photo[data-fold]) .ch-au-hero {
+    opacity: 1;
+    clip-path: inset(0 0 calc(100% - var(--ch-au-hb)) 0);
+    transition:
+      opacity var(--ch-au-t-hero) var(--ch-au-out),
+      clip-path var(--ch-au-t-rise) var(--ch-au-ease) var(--ch-au-rise-delay);
+  }
+  .ch-au[data-phase='leaving']:has(.ch-au-photo[data-fold]) .ch-au-rise {
+    transform: translateY(var(--ch-au-hb));
+    transition: transform var(--ch-au-t-rise) var(--ch-au-ease) var(--ch-au-rise-delay);
+  }
+  .ch-au[data-phase='leaving'] .ch-au-wl {
+    z-index: 5;
   }
 }
 @media (pointer: coarse) {

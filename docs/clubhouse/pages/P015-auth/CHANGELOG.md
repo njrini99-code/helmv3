@@ -1,5 +1,24 @@
 # P015 — Auth: changelog
 
+## 2026-10-08 — the phone hand-off follows the design reference
+
+- Owner: "it was supposed to fold into the dashboard, check the design ref". The
+  phone used to fade the course to a flat ivory page, then the dashboard's green
+  bar appeared on top of it. It now plays the reference's phone hand-off
+  (design/handoff/auth/src/login.css, `.ml-hero` and `.ml-rise`):
+  - the welcome lifts away;
+  - the frame's green fades up over the course and collapses to the dashboard's
+    bar (status bar plus 50px);
+  - the parchment sheet rises from the foot to meet it, with the sheet's 16px
+    top corners, 820ms after a 200ms beat (the `--ch-au-t-rise` and
+    `--ch-au-t-hero` tokens, which were defined but never used);
+  - the curtain (`lib/handoff.ts`) holds that same bar and sheet over the route
+    change;
+  - the dashboard fades in over 380ms, and its content rises 10px into place,
+    55ms apart (gh-core's `GH.reveal`), on this hand-off only.
+- Reduced motion and Animations off skip all of it, as before. WebKit 390 × 844,
+  player, recorded frame by frame.
+
 ## 2026-10-08 — premium pass: findings D6, D11
 
 - D6: the welcome card holds its news as rows between hairlines, not bordered, shadowed cards inside a card. A vertical hairline parts them side by side on a wide screen, a horizontal one when stacked. Empty and failed states are a flush notice.
@@ -301,6 +320,7 @@ widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on
 every Clubhouse page. Layout and content are unchanged.
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Whole-app release audit
 
 Reconciled page purpose, design acceptance, contract status, wiring and

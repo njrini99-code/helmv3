@@ -7,6 +7,10 @@
   where those tokens are not defined, so it ran on the browser's default timing.
   It now reads the `<html>`-scoped `--ch-dur-vt-push` and `--ch-ease-vt-push`,
   the same smooth spring (462ms) the phone push uses.
+  `--ch-ease-spring-smooth` on view-transition pseudos that hang off `<html>`,
+  where those tokens are not defined, so it ran on the browser's default timing.
+  It now reads the `<html>`-scoped `--ch-dur-vt-push` and `--ch-ease-vt-push`,
+  the same smooth spring (462ms) the phone push uses.
 
 ## 2026-10-08 — The live card's leaders are rows, not a board
 
