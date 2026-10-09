@@ -189,6 +189,16 @@ legacy `is_recurring` flag in sync for older consumers.
 - Recurring event edits must respect scope: this, thisAndFuture, or all.
 - Feed tokens must be treated as secrets and rate limited.
 - Calendar conflict detection should consider classes, blocked time, and exclusions.
+- **No player notifications unless the event asks for replies** (owner,
+  2026-10-08). RSVPs are off unless the coach turns `golf_events.requires_rsvp`
+  on. With it off, players get no new-event, invitation, update, cancellation or
+  reminder notification (in-app, email or push): the gates are in
+  `createGolfEvent` / `deleteGolfEvent` (`calendar-events.ts`),
+  `sendEventInvitations` / `notifyEventUpdate` (`src/lib/calendar/rsvp.ts`), the
+  recurring series create and delete fan-outs (`recurring-events.ts`) and the
+  reminder cron's query (`api/cron/event-reminders`). Invitations still write
+  attendance rows, so who is on the event is unchanged. Tests: `rsvp.test.ts`,
+  `golf-events.test.ts`, `event-reminders.test.ts`.
 - **Only players are invitable.** The golf calendar page passes the editor a
   roster merged with every organisation coach (`role: 'coach'`);
   `FairwayEventEditor` drops coach rows from the invite picker. Attendance
