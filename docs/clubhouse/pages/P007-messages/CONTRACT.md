@@ -207,13 +207,18 @@ the coach is told how to finish.
 
 Status: DEFINED
 
-Delete a message and Leave a group ask first (71101, 71102) and fire the warning
-haptic. Delete conversation is hidden: no policy defines it (D-48).
+Delete a message, Leave a group and Delete a conversation ask first (71101, 71102,
+71103) and fire the warning haptic. Delete a conversation (owner request,
+2026-10-08, superseding D-48's "hidden") hides the thread from the person's own
+inbox only: the others keep theirs, a new message brings it back, and a team
+channel can't be deleted. It is offered only where the database has the
+per-person hide (held migration 20261008160000).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 71101 | CH-7501 | `DELETE_A_MESSAGE` | Delete a message |
 | 71102 | CH-7502 | `LEAVE_A_GROUP` | Leave a group |
+| 71103 | CH-7503 | `DELETE_A_CONVERSATION` | Delete a conversation |
 
 ## 12 — State preservation
 
@@ -235,8 +240,9 @@ it used to be lost).
 Status: DEFINED
 
 Sends are optimistic and reconciled in place by id; a refused one stays marked
-Not sent (71301). Reactions are not optimistic: a tap waits for the write, and a
-failure toasts (70607).
+Not sent (71301). Reactions are not optimistic: picking one waits for the write. A click on a
+reaction chip opens who reacted, and adding or taking back your own from that
+card waits for the write too; a failure toasts (70607).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

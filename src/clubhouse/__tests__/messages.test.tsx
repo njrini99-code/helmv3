@@ -61,6 +61,8 @@ const a = vi.hoisted(() => ({
   addGolfGroupMember: vi.fn(),
   getGolfGroupAddCandidates: vi.fn(),
   getGolfConversationFiles: vi.fn(),
+  canHideGolfConversations: vi.fn(),
+  hideGolfConversation: vi.fn(),
 }));
 vi.mock('@/app/golf/actions/messages', () => ({
   createGolfConversation: a.createGolfConversation,
@@ -72,6 +74,7 @@ vi.mock('@/app/golf/actions/messages', () => ({
   addGolfGroupMember: a.addGolfGroupMember,
   getGolfGroupAddCandidates: a.getGolfGroupAddCandidates,
 }));
+vi.mock('@/app/golf/actions/conversation-hide', () => ({ canHideGolfConversations: a.canHideGolfConversations, hideGolfConversation: a.hideGolfConversation }));
 vi.mock('@/app/golf/actions/message-attachments', () => ({ getGolfConversationFiles: a.getGolfConversationFiles }));
 vi.mock('@/app/golf/actions/message-mute', () => ({ getGolfConversationMute: a.getGolfConversationMute, setGolfConversationMute: a.setGolfConversationMute }));
 vi.mock('@/app/golf/actions/announcements', () => ({
@@ -174,6 +177,7 @@ beforeEach(() => {
   params.current = new URLSearchParams();
   for (const f of Object.values(a)) f.mockReset();
   a.getAnnouncementsWithMeta.mockResolvedValue({ success: true, data: [] });
+  a.canHideGolfConversations.mockResolvedValue(false);
   a.getGolfConversationMute.mockResolvedValue({ success: true, data: { muted: false, until: null } });
   a.getGolfConversationParticipantIdentities.mockResolvedValue({ participants: [] });
   a.searchGolfMessages.mockResolvedValue({ results: [] });
@@ -288,6 +292,23 @@ describe('Messages · actions that fail', () => {
     await expectCode('CH-7502', /Leave Varsity team\?/);
     await user.click(within(code('CH-7502') as HTMLElement).getByRole('button', { name: 'Leave group' }));
     await expectCode('CH-7010', /Couldn’t leave the group/);
+  });
+
+  it('CH-7503 CH-7011 deleting a conversation asks first, hides it for you only, and a failed delete says so', async () => {
+    const user = userEvent.setup();
+    a.canHideGolfConversations.mockResolvedValue(true);
+    a.hideGolfConversation.mockResolvedValueOnce({ success: false, error: 'nope' }).mockResolvedValueOnce({ success: true });
+    live.convs.conversations = [team];
+    show();
+    await openDetails(user);
+    await user.click(await screen.findByRole('button', { name: 'Delete conversation' }));
+    await expectCode('CH-7503', /Delete Varsity team\?/);
+    expect(a.hideGolfConversation).not.toHaveBeenCalled();
+    await user.click(within(code('CH-7503') as HTMLElement).getByRole('button', { name: 'Delete conversation' }));
+    await expectCode('CH-7011', /Couldn’t delete the conversation/);
+    expect(a.hideGolfConversation).toHaveBeenCalledWith('team');
+    await user.click(within(code('CH-7503') as HTMLElement).getByRole('button', { name: 'Delete conversation' }));
+    await waitFor(() => expect(a.hideGolfConversation).toHaveBeenCalledTimes(2));
   });
 
   it('CH-1902 the Messages progress notice ends when mute settles and its failure stays visible', async () => {

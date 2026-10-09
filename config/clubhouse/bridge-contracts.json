@@ -6278,6 +6278,17 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 71103,
+    "page": "P007",
+    "category": 11,
+    "item": 3,
+    "name": "DELETE_A_CONVERSATION",
+    "chCode": "CH-7503",
+    "meaning": "Delete a conversation",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 71201,
     "page": "P007",
     "category": 12,

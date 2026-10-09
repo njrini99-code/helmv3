@@ -52,6 +52,14 @@
 .ch-ms-rail__head .ch-seg__b {
   flex: 1;
 }
+/* All, Unread, Groups (owner, 2026-10-08: never ivory on ivory): the chosen filter is a green chip with ivory ink. */
+.ch-ms-rail__head .ch-seg__pill {
+  background: var(--ch-green-fill-700);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 2px rgb(21 90 57 / 0.3);
+}
+.ch-ms-rail__head .ch-seg__b.is-on {
+  color: var(--ch-ivory-50);
+}
 .ch-ms-rail__title {
   display: flex;
   align-items: center;
@@ -234,6 +242,95 @@
   font: 600 11.5px/1 var(--ch-font-sans);
   color: var(--ch-text-on-accent);
 }
+/* The conversation list (owner, 2026-10-08: "too card heavy"): a flat list on the rail, thin dividers inset to the text,
+   the open conversation the one filled row (green, ivory ink). The unread count is a green chip, ivory on the open row. */
+.ch-ms-sec__card {
+  gap: 0;
+}
+.ch-ms-row {
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 13px;
+  padding: 12px 12px;
+  border-radius: 14px;
+  background: transparent;
+  box-shadow: none;
+}
+.ch-ms-row + .ch-ms-row::before {
+  top: 0;
+  right: 12px;
+  left: 69px;
+  height: 1px;
+  box-shadow: none;
+  background: var(--ch-border-hairline);
+}
+@media (hover: hover) {
+  .ch-ms-row:hover {
+    background: rgb(28 25 18 / 0.05);
+  }
+}
+.ch-ms-row:active {
+  background: rgb(28 25 18 / 0.08);
+}
+.ch-ms-row .ch-avatar {
+  --ch-av-size: 44px !important;
+}
+.ch-ms-grp {
+  width: 44px;
+  height: 44px;
+  background: var(--ch-green-fill-700);
+  color: var(--ch-ivory-50);
+}
+.ch-ms-row__top b {
+  /* A long name wraps to a second line rather than being cut mid-word ("26-27 Group C…"). */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font: 600 15px/1.25 var(--ch-font-sans);
+  letter-spacing: -0.01em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.ch-ms-row__top {
+  align-items: flex-start;
+}
+.ch-ms-row__top > span {
+  padding-top: 2px;
+}
+.ch-ms-row__bot > span:first-child {
+  color: var(--ch-text-secondary);
+}
+.ch-ms-row.is-unread .ch-ms-row__top b {
+  font-weight: 700;
+}
+.ch-ms-row.is-sel {
+  background: var(--ch-green-fill-700);
+  box-shadow: none;
+}
+.ch-ms-row.is-sel::before,
+.ch-ms-row.is-sel + .ch-ms-row::before {
+  opacity: 0;
+}
+.ch-ms-row.is-sel .ch-ms-row__top b,
+.ch-ms-row.is-sel.is-unread .ch-ms-row__top b {
+  color: var(--ch-ivory-50);
+}
+.ch-ms-row.is-sel .ch-ms-row__top > span,
+.ch-ms-row.is-sel.is-unread .ch-ms-row__top > span {
+  color: rgb(255 255 255 / 0.76);
+}
+.ch-ms-row.is-sel .ch-ms-row__bot > span:first-child,
+.ch-ms-row.is-sel.is-unread .ch-ms-row__bot > span:first-child,
+.ch-ms-row.is-sel .ch-ms-row__bot em {
+  color: rgb(255 255 255 / 0.86);
+}
+.ch-ms-row.is-sel .ch-ms-grp {
+  background: rgb(255 255 255 / 0.2);
+}
+.ch-ms-row.is-sel .ch-ms-count {
+  background: var(--ch-ivory-50);
+  color: var(--ch-green-800);
+}
 .ch-ms-empty {
   padding: 30px 12px;
   font: var(--ch-type-body-s);
@@ -310,6 +407,35 @@
 }
 .ch-ms-back {
   display: none;
+}
+/* Lenis on the thread and the conversation list (usePanelSmoothScroll): no native smooth scrolling underneath, and a
+   stopped scroller does not scroll. */
+.ch-ms-scroll.lenis.lenis-smooth,
+.ch-ms-rail__body.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.ch-ms-scroll.lenis.lenis-stopped,
+.ch-ms-rail__body.lenis.lenis-stopped {
+  overflow: clip;
+}
+.ch-ms-rail__body {
+  overscroll-behavior: contain;
+}
+/* A photo in a thread: a fixed 4:3 frame, cropped to fit, so a late image never moves the messages around it. */
+.ch-ms-img {
+  display: block;
+  width: min(280px, 100%);
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--ch-green-100);
+  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08);
+}
+.ch-ms-img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .ch-ms-scroll {
   flex: 1;
@@ -571,24 +697,148 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  height: 24px;
-  padding: 0 8px;
+  height: 26px;
+  padding: 0 9px;
   border: 0;
   border-radius: 999px;
-  background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-control);
-  font: 600 11.5px/1 var(--ch-font-sans);
-  color: var(--ch-text-secondary);
+  font: 600 12px/1 var(--ch-font-sans);
   cursor: pointer;
+}
+/* A reaction is the opposite colour of the message it sits under (owner, 2026-10-08): ivory under a green bubble, a
+   green chip under an ivory one. Yours carries a ring so you can tell it from the rest. */
+.ch-ms-reacts.on-mine .ch-ms-react {
+  background: var(--ch-ivory-50);
+  color: var(--ch-green-800);
+  box-shadow: 0 0 0 1px rgb(21 90 57 / 0.2), 0 1px 2px rgb(28 25 18 / 0.12);
+}
+.ch-ms-reacts.on-theirs .ch-ms-react {
+  background: var(--ch-green-fill-700);
+  color: var(--ch-ivory-50);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 2px rgb(21 90 57 / 0.3);
+}
+.ch-ms-reacts .ch-ms-react.is-mine {
+  outline: 2px solid var(--ch-champagne-500);
+  outline-offset: 1px;
 }
 @media (hover: hover) {
   .ch-ms-react:hover {
-    background: var(--ch-ivory-0);
+    transform: translateY(-1px);
   }
 }
-.ch-ms-react.is-mine {
-  background: var(--ch-green-50);
+/* The reaction glyphs (owner, 2026-10-08: "more contrast ... ivory lines and clear inside"): outline only, heavier than
+   the page's stroke, in the full ink of their chip: pure ivory lines on a green chip or head, deep green on ivory. */
+.ch-ms-react svg,
+.ch-rx__glyph svg,
+.ch-ms-reactbar__b svg {
+  fill: none;
+  stroke-width: 2.3;
+}
+.ch-ms-reacts.on-mine .ch-ms-react {
+  color: var(--ch-green-900);
+}
+.ch-ms-reacts.on-theirs .ch-ms-react,
+.ch-rx__head {
+  color: #fffdf6;
+}
+.ch-rx__glyph {
+  background: rgb(255 255 255 / 0.22);
+}
+.ch-ms-reactbar__b {
+  color: var(--ch-green-800);
+}
+.ch-ms-reactbar__b.is-on {
+  background: var(--ch-green-fill-700);
+  color: #fffdf6;
+}
+@media (hover: hover) {
+  .ch-ms-reactbar__b:hover {
+    background: var(--ch-green-100);
+    color: var(--ch-green-900);
+  }
+  .ch-ms-reactbar__b.is-on:hover {
+    background: var(--ch-green-800);
+    color: #fffdf6;
+  }
+}
+/* Who reacted: a green head naming the reaction, a row a person, one action under them. */
+.ch-rx {
+  position: fixed;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  width: 248px;
+  max-height: min(60vh, 360px);
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--ch-bg-surface);
+  box-shadow: 0 0 0 1px rgb(21 90 57 / 0.16), var(--ch-elevation-overlay);
+}
+.ch-rx__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--ch-green-fill-700);
+  color: var(--ch-ivory-50);
+}
+.ch-rx__head b {
+  font: 650 14px/1.2 var(--ch-font-sans);
+}
+.ch-rx__glyph {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 9px;
+  background: rgb(255 255 255 / 0.16);
+}
+.ch-rx__n {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.18);
+  font: 600 12px/1 var(--ch-font-sans);
+}
+.ch-rx__list {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 6px;
+  background: color-mix(in oklab, var(--ch-green-50) 70%, var(--ch-bg-surface));
+}
+.ch-rx__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 10px;
+  font: 500 13.5px/1.25 var(--ch-font-sans);
+  color: var(--ch-ink-900);
+}
+.ch-rx__none {
+  margin: 0;
+  padding: 8px;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-secondary);
+}
+.ch-rx__act {
+  padding: 11px 14px;
+  border: 0;
+  border-top: 1px solid var(--ch-border-hairline);
+  background: var(--ch-bg-surface);
+  font: 600 13px/1 var(--ch-font-sans);
   color: var(--ch-green-700);
+  text-align: left;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .ch-rx__act:hover {
+    background: var(--ch-green-50);
+  }
+}
+.ch-rx__act:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: -2px;
 }
 .ch-ms-msg__t {
   padding: 0 6px;
@@ -728,6 +978,67 @@
   padding: 0 10px;
   font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
+}
+
+/* The composer (owner, 2026-10-08: "more premium"): a taller, rounder bar that lifts and takes a green glow when you write;
+   Attach a quiet green-wash disc, Send a green disc that is already tinted when empty (never a grey well). */
+.ch-ms-comp {
+  padding: 12px 28px 18px;
+}
+.ch-ms-comp__field {
+  align-items: center;
+  gap: 8px;
+  min-height: 56px;
+  padding: 8px 8px 8px 10px;
+  border-radius: 28px;
+  background: var(--ch-ivory-0, #fff);
+  box-shadow:
+    0 0 0 1px rgb(21 90 57 / 0.14),
+    var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.06),
+    var(--ch-light-drift-mid) 10px 24px -14px rgb(28 25 18 / 0.2);
+}
+.ch-ms-comp__field:focus-within {
+  box-shadow:
+    0 0 0 1.5px var(--ch-green-fill-600),
+    0 0 0 5px rgb(21 90 57 / 0.12),
+    var(--ch-light-drift-mid) 12px 28px -14px rgb(21 90 57 / 0.3);
+}
+.ch-ms-comp__field textarea {
+  padding: 9px 6px;
+  font: 400 15px/1.4 var(--ch-font-sans);
+}
+.ch-ms-comp__field .ch-iconbtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--ch-green-50);
+  color: var(--ch-green-700);
+  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.12);
+}
+@media (hover: hover) {
+  .ch-ms-comp__field .ch-iconbtn:hover {
+    background: var(--ch-green-100);
+  }
+}
+.ch-ms-send {
+  width: 40px;
+  height: 40px;
+  background: var(--ch-green-100);
+  color: var(--ch-green-700);
+}
+.ch-ms-send.is-ready {
+  background: var(--ch-green-fill-700);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18), 0 4px 10px -3px rgb(11 58 37 / 0.5);
+  color: var(--ch-ivory-50);
+}
+@media (hover: hover) {
+  .ch-ms-send.is-ready:hover {
+    background: var(--ch-green-800);
+    transform: translateY(-1px);
+  }
+}
+.ch-ms-comp__hint {
+  padding: 0 16px;
 }
 
 /* Details */
