@@ -1,5 +1,36 @@
 # P011 — Rounds: changelog
 
+## 2026-10-09 — The round review as zones, with insights drawn from the round
+
+```text
+Design package: owner direction "redesign round review to be really nice and good looking like stats, cool insights and visuals"
+PR/commit: agent/clubhouse-premium-backlog
+Contract IDs: CH-11203, CH-11204, CH-11205, CH-11217, CH-11305, CH-11306, CH-11313 (no new codes)
+Actions: none changed
+Data impact: none (no migration). Every figure is derived from the holes and shots the review already loads.
+Held items: none
+```
+
+### Changed (the review, desktop and phone)
+
+- The review is six zones under gold rules with an alternating tint, in the same style as the player stats page: what the
+  area is and one reading on the left, the picture that fits it on the right. The hero and the five figures stay.
+- The hero gains one line on what the round was, from the figures: the leg that carried it and the one that gave strokes
+  back ("Approach gained +1.3, putting gave back 0.9"), else its birdies and doubles.
+- The round: the running score to par as a line (rising when strokes are gained on par, falling when given back, the
+  front and back nine labelled, the costliest hole marked) with each hole's strokes against par as a column under it, and
+  the scoring distribution.
+- Where the strokes went: the four strokes-gained legs on one scale, and the holes that cost the most, each opening on
+  the scorecard with its shots.
+- Tee to green: a mark a hole for fairways and greens in regulation, which side fairways were missed, and how close
+  approaches finished (average and closest, in feet).
+- Putting: the putts on every hole as columns (one putt green, three or more gold), the one, two and three-putt split,
+  and the first putts by length with how many dropped.
+- Scorecard and shots: the scorecard as before; the picked hole now draws its shots as arcs along the hole from tee to
+  pin, each coloured by where it finished, the penalty and the putts marked, above the shot list.
+- In words: the recap and the player's notes.
+- On the phone the zones stack and the pictures' words are set larger; the scorecard keeps its sideways scroll.
+
 ## 2026-10-08 — the shot screen's field is centred
 
 - Owner: "center this, way too much white space". The drawn hole, its readout
