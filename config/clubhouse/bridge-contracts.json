@@ -2445,7 +2445,7 @@
     "item": 1,
     "name": "OPENING_OR_SWITCHING_A_PLAYER",
     "chCode": "CH-3601",
-    "meaning": "Opening or switching a player",
+    "meaning": "Opening or switching a player (desktop: from a Needs a look chip)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },

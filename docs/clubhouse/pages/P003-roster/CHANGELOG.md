@@ -1,5 +1,30 @@
 # P003 — Roster: changelog
 
+## 2026-10-08 — a player opens their profile; raised player tiles; green chosen chips
+
+Owner review (not yet signed off):
+
+- **Click goes to the profile:** on desktop a click on a player's face (cards) or
+  name (list) goes to that player's profile, `/golf/dashboard/stats?player=<id>`,
+  through `openProfile` in `Roster.tsx` (`router.push`, with the select haptic).
+  Where that page isn't rebuilt it opens the peek, as before. The peek
+  (`RosterPeek`) now opens only from a Needs a look chip. The face and name
+  buttons are named "... Open profile" and no longer carry `aria-expanded`. The
+  phone is unchanged.
+- **Depth and contrast:** on desktop each player is a raised tile
+  (`roster.css`, `.ch-rs[data-canopy] .ch-rs-face`): 16px between tiles, a 22px
+  radius, a lit white-to-ivory gradient, a gold 1px ring, a gold inset frame 7px
+  inside the edge (`::before`), layered shadows, and a hover lift of 8px with a
+  stronger gold ring. The open player is green-50 with a 2px green ring and a
+  stronger gold frame. Names are ink-950 and the meta line secondary ink.
+- **Green chips:** the chosen sort (Avg score, Handicap, Rounds, Name), the
+  Active, Inactive and All pills, and the grid and list toggle are green with
+  ivory ink (`.ch-rs .ch-seg__pill`, `.ch-pill[aria-pressed]`,
+  `.ch-rs-vt__b[aria-pressed]`).
+- **Tests:** `roster.test.tsx` treats the stats profile as not rebuilt except in
+  the phone block, so the peek tests keep driving the panel; a new case forces the
+  face and name clicks to `router.push` and the chip to open the peek.
+
 ## 2026-10-08 — The phone sort runs on TanStack Table; rows slide and figures roll on a new sort
 
 Adopting the installed kits (`@tanstack/react-table` 9, `@number-flow/react`

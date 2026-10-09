@@ -346,7 +346,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 31401 |  | 14 Retry / recovery | `APPROVE_ALL_RETRIES_ONLY_FAILURES` | implemented | Approve all goes one request at a time; those that landed leave the list, and the toast's Retry re-runs only the ones that failed, never approving anyone twice. |
 | 31402 |  | 14 Retry / recovery | `TRY_AGAIN_REFRESHES_THE_PAGE` | implemented | Try again on the roster, season stats, join requests or join code notice asks the server for the whole page again (router.refresh), not one section alone. |
 | 31403 |  | 14 Retry / recovery | `TOAST_RETRY_FINISHES_THE_JOB` | implemented | The Retry on a failed-change toast completes the change on screen as well as on the server: a retried removal removes the player and closes the dialog, a retried approval or decline keeps the request off the list, and a retried note save marks the note saved. |
-| 31601 | CH-3601 | 16 Micro animation | `OPENING_OR_SWITCHING_A_PLAYER` | implemented | Opening or switching a player |
+| 31601 | CH-3601 | 16 Micro animation | `OPENING_OR_SWITCHING_A_PLAYER` | implemented | Opening or switching a player (desktop: from a Needs a look chip) |
 | 31602 | CH-3602 | 16 Micro animation | `HOVERING_OR_PRESSING_A_FACE_CARD_OR` | implemented | Hovering or pressing a face card or row |
 | 31603 | CH-3603 | 16 Micro animation | `SWITCHING_BETWEEN_TEAM_VIEW_AND_LIST_VIEW` | implemented | Switching between Team view and List view |
 | 31604 | CH-3604 | 16 Micro animation | `PHONE_CHOOSING_AVG_SG_OR_NAME` | implemented | Phone: choosing Avg, SG or Name |
