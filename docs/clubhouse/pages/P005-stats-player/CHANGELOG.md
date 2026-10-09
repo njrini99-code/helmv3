@@ -26,6 +26,13 @@ Held items: none
   scale), each leg with a line on which shots it counts (off the tee: tee shots on par 4s and 5s; approach: full shots
   from over 30 yards and par-3 tee shots; around the green: within 30 yards; putting: every shot on the green) and, for
   a coach, the team's mark on the same rail. It replaces the small stepping-stone graphic.
+- The comparison table ("vs. team" for a coach, "vs. the Tour" for a player) gains an axis on every row that has a
+  reference: the player's mark, the team's tick and the Tour's tick, with a bar from the reference to the player that is
+  green when they are better and gold when not, in the stat's own direction (fewer putts, a lower score). The axis is
+  the data's own range with room either side and never narrower than a fixed minimum, so two close values sit close;
+  a rate stays inside 0 to 100 and strokes gained is centred on zero.
+- Game detail's "Doubles or worse" now says its share of holes beside the Tour's share of holes (it set a per-round
+  count against a share of holes before).
 - The loading skeleton draws the ribbon and the tape.
 
 ## 2026-10-08 — Premium pass: one round set, one chart, one surface, the best card

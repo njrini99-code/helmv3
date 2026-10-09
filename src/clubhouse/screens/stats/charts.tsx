@@ -1,3 +1,4 @@
+import { RefAxis } from './RefAxis';
 import { ArrowDownRight, ArrowUpRight, Flag, Minus } from 'lucide-react';
 import { Fragment, type ReactNode } from 'react';
 import type { ChSgChange } from '../../data/stats-common';
@@ -351,7 +352,10 @@ export function FieldTable({
   const fmt = (v: number | null, r: (typeof rows)[number]) => (v == null ? NO_DATA : r.sg || r.signed ? `${formatSigned(v, r.digits)}${r.unit}` : `${v.toFixed(r.digits)}${r.unit}`);
   const signTone = (v: number | null, r: (typeof rows)[number]) => (r.sg && v != null ? (v >= 0 ? 'ch-gain' : 'ch-loss') : '');
   const hasBench = rows.some((r) => r.bench != null);
-  const cols = 2 + (showTeam ? 1 : 0) + (hasBench ? 1 : 0);
+  // A row's axis needs something to set the player against: the team's figure (a coach) or the Tour's.
+  const refOf = (r: (typeof rows)[number]) => ({ team: showTeam ? r.team : null, tour: r.bench });
+  const hasAxis = rows.some((r) => r.you != null && (refOf(r).team != null || refOf(r).tour != null));
+  const cols = 2 + (showTeam ? 1 : 0) + (hasBench ? 1 : 0) + (hasAxis ? 1 : 0);
   return (
     <table className="ch-ft">
       <thead>
@@ -360,6 +364,7 @@ export function FieldTable({
           <th>You</th>
           {showTeam && <th>Team</th>}
           {hasBench && <th>Tour</th>}
+          {hasAxis && <th className="ch-ft__axis">Against {showTeam ? 'team and Tour' : 'the Tour'}</th>}
         </tr>
       </thead>
       <tbody>
@@ -390,6 +395,11 @@ export function FieldTable({
                 </td>
                 {showTeam && <td className="ch-num">{fmt(r.team, r)}</td>}
                 {hasBench && <td className="ch-num">{fmt(r.bench, r)}</td>}
+                {hasAxis && (
+                  <td className="ch-ft__axis">
+                    <RefAxis you={r.you} team={refOf(r).team} tour={refOf(r).tour} lowerIsBetter={r.lowerIsBetter} rate={r.unit === '%'} signed={!!(r.sg || r.signed)} />
+                  </td>
+                )}
               </tr>
             </Fragment>
           );

@@ -5512,3 +5512,67 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   border-radius: 2px;
   background: var(--ch-ink-700);
 }
+
+/* P005: a stat against its references (RefAxis), in the comparison table. */
+.ch-st[data-canopy] .ch-ft__axis {
+  width: 190px;
+  padding-left: 18px;
+}
+.ch-st[data-canopy] .ch-ra {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 140px;
+  height: 20px;
+  background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) center / 100% 1px no-repeat;
+}
+.ch-st[data-canopy] .ch-ra__seg {
+  position: absolute;
+  top: 8px;
+  height: 4px;
+  border-radius: 2px;
+}
+.ch-st[data-canopy] .ch-ra.is-good .ch-ra__seg {
+  background: var(--ch-green-400);
+}
+.ch-st[data-canopy] .ch-ra.is-bad .ch-ra__seg {
+  background: var(--ch-champagne-500);
+}
+.ch-st[data-canopy] .ch-ra__zero {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  width: 1px;
+  background: var(--ch-champagne-500);
+}
+.ch-st[data-canopy] .ch-ra__tick {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  text-decoration: none;
+}
+.ch-st[data-canopy] .ch-ra__tick.is-team {
+  background: var(--ch-ink-700);
+}
+.ch-st[data-canopy] .ch-ra__tick.is-tour {
+  background: var(--ch-champagne-500);
+}
+.ch-st[data-canopy] .ch-ra__dot {
+  position: absolute;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border-radius: 50%;
+  border: 2px solid var(--ch-ivory-25);
+  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.25);
+}
+.ch-st[data-canopy] .ch-ra.is-good .ch-ra__dot {
+  background: var(--ch-green-600);
+}
+.ch-st[data-canopy] .ch-ra.is-bad .ch-ra__dot {
+  background: var(--ch-warning-600);
+}

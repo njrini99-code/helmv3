@@ -806,7 +806,7 @@ describe('Overview · the standing table', () => {
   it('a player sees the Tour and no team column, for every new row too (Q-91)', () => {
     showPlayer(player({ viewer: 'player', comparisons: PREVIEW_PLAYER.comparisons.map((c) => ({ ...c, team: null })) }), null);
     expect(screen.queryByRole('columnheader', { name: 'Team' })).toBeNull();
-    expect([...document.querySelectorAll('table.ch-ft thead th')].map((h) => h.textContent)).toEqual(['Stat', 'You', 'Tour']);
+    expect([...document.querySelectorAll('table.ch-ft thead th')].map((h) => h.textContent)).toEqual(['Stat', 'You', 'Tour', 'Against the Tour']);
     expect(document.querySelector('.ch-yb__note')!.textContent).not.toContain('Team values');
   });
 
