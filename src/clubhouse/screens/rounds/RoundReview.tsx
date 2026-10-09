@@ -18,6 +18,8 @@ import { Swap } from '../../ui/Swap';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { dateOf, TeeSwatch, TYPE_LABEL } from './parts';
+import { approachFinish, costliest, flow, headline, puttSplit, teeMisses } from './round-insights';
+import { PuttingViz, RzBig, RzBlock, RzZone, ScoreFlow, ShotTrail, TeeToGreen } from './RoundZones';
 import { checkedRecap } from './recap-check';
 import { openedFromLibrary } from './return-state';
 
@@ -245,6 +247,7 @@ function HoleCard({
       </div>
       {/* The shots slide in the direction of travel (CH-11604). */}
       <Swap swapKey={hole.n} kind="slide" dir={dir}>
+        {!shotsError && <ShotTrail hole={hole} />}
         {shotsError ? (
           <InlineNotice code="CH-11205" title="The shots for this round didn’t load" body="The scorecard is right; only the shot-by-shot detail is missing. Try again in a moment." onRetry={onRetry} retrying={retrying} />
         ) : hole.shots.length === 0 ? (
@@ -303,6 +306,12 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
   const holesScored = r.holes.filter((h) => h.score != null).length || r.holesPlayed;
   const maxD = Math.max(1, ...dist.map((d) => d.count));
   const back = reviewBack(r);
+  const insight = useMemo(() => headline(r), [r]);
+  const points = useMemo(() => flow(r.holes), [r.holes]);
+  const costly = useMemo(() => costliest(r.holes, 3), [r.holes]);
+  const putting = useMemo(() => puttSplit(r.holes), [r.holes]);
+  const approach = useMemo(() => approachFinish(r.holes), [r.holes]);
+  const misses = useMemo(() => teeMisses(r.holes), [r.holes]);
   // Rule 8: a player's review opened from the library goes back in history, so the library returns with its search and its place
   // (screens/rounds/return-state.ts); anywhere else (a deep link, a reload in a fresh tab, a coach's Stats) it goes to the address as before.
   // A tab with no history behind it (a copied note in a new tab) has nothing to step back to: it goes to the address.
@@ -357,6 +366,7 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
           <span className="ch-rv-hero__k">{kicker}</span>
           {/* D11: one h1 per screen, the course; the phone bar's "Round" is plain text (heading={false}). */}
           <h1 id="ch-rv-title">{r.course}</h1>
+          {insight && <p className="ch-rv-hero__h">{insight}</p>}
           {(r.tee || r.teeFacts) && (
             <span className="ch-rv-hero__m">
               <TeeSwatch color={r.teeColor} />
@@ -391,81 +401,277 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
         />
       )}
 
-      <SectionBoundary surface="rounds.review.strokesGained" label="Strokes gained" code="CH-11203">
-        <StrokesGained review={r} onRetry={refresh} retrying={refreshing} />
-      </SectionBoundary>
-
-      {r.holesError ? (
-        <InlineNotice code="CH-11204" title="The scorecard didn’t load" body="The round’s totals are right; the hole-by-hole card is missing. Try again in a moment." onRetry={refresh} retrying={refreshing} />
-      ) : r.holes.length === 0 ? (
-        <EmptyState code="CH-11305" compact icon={Flag} title="Posted as a total" body="This round was posted with its score only, so there’s no hole-by-hole card or shots to show." />
-      ) : (
-        <>
-          <SectionBoundary surface="rounds.review.card" label="The scorecard" code="CH-11203">
-            <section className="ch-rv-card" aria-labelledby="ch-rv-card-h">
+      <div className="ch-rzs">
+        <RzZone
+          n={1}
+          title="The round"
+          def={
+            <>
+              The score hole by hole against par. The line rises when {coach ? 'the player gains' : 'you gain'} on par and falls when strokes go back. <b>Lower is better.</b>
+            </>
+          }
+          read={
+            <>
+              <RzBig value={formatToPar(r.toPar)} tone={r.toPar == null ? undefined : r.toPar <= 0 ? 'good' : 'bad'} />
+              <div className="ch-rzlines">
+                {r.holesPlayed === 18 && r.front.score != null && r.back.score != null && (
+                  <span>
+                    <b>
+                      Out {r.front.score} · In {r.back.score}
+                    </b>
+                  </span>
+                )}
+                {points.length > 0 && (
+                  <span>
+                    <b>{points.filter((p) => p.delta < 0).length}</b> under par · <b>{points.filter((p) => p.delta >= 1).length}</b> over
+                  </span>
+                )}
+              </div>
+            </>
+          }
+        >
+          {points.length >= 2 ? (
+            <RzBlock title="Running score to par" note="One dot a hole. The columns under it are each hole’s strokes against par.">
+              <ScoreFlow holes={r.holes} outScore={r.front.score} outToPar={r.front.toPar} inScore={r.back.score} inToPar={r.back.toPar} />
+            </RzBlock>
+          ) : (
+            <p className="ch-rzmiss">The hole-by-hole picture needs holes posted with their scores.</p>
+          )}
+          {r.holes.length > 0 && !r.holesError && (
+            <section className="ch-rv-card" aria-labelledby="ch-rv-dist-h">
               <div className="ch-rv-card__h">
                 <div>
-                  <h2 id="ch-rv-card-h">Scorecard</h2>
-                  <span>{phone ? 'Tap a hole to see every shot' : 'Select a hole to see every shot'}</span>
+                  <h3 id="ch-rv-dist-h">Scoring distribution</h3>
+                  <span className="ch-num">{r.holes.filter((h) => h.score != null).length} holes</span>
                 </div>
               </div>
-              <div className="ch-rv-cardw">
-                <ReviewNine label="Out" holes={r.holes.filter((h) => h.n <= 9)} sel={sel} onPick={pick} />
-                <ReviewNine label="In" holes={r.holes.filter((h) => h.n > 9)} sel={sel} onPick={pick} />
+              <div className="ch-rv-dist">
+                {dist.map((d) => (
+                  <div key={d.label} className={`ch-rv-dist__r is-${d.label.replace('+', '').toLowerCase()}`}>
+                    <span>{d.label}</span>
+                    <span className="ch-rv-dist__t">
+                      <i style={{ '--ch-rv-p': d.count / maxD } as CSSProperties} />
+                    </span>
+                    <b className="ch-num">{d.count}</b>
+                  </div>
+                ))}
               </div>
             </section>
-          </SectionBoundary>
-          <div className="ch-rv-cols">
-            <SectionBoundary surface="rounds.review.hole" label="This hole" code="CH-11203">
-              {hole && <HoleCard hole={hole} dir={holeDir} count={r.holes[r.holes.length - 1]?.n ?? 18} shotsError={r.shotsError} onStep={step} onRetry={refresh} retrying={refreshing} />}
-            </SectionBoundary>
-            <div className="ch-rv-side">
-              <section className="ch-rv-card" aria-labelledby="ch-rv-dist-h">
-                <div className="ch-rv-card__h">
-                  <div>
-                    <h3 id="ch-rv-dist-h">Scoring distribution</h3>
-                    <span className="ch-num">{r.holes.filter((h) => h.score != null).length} holes</span>
-                  </div>
-                </div>
-                <div className="ch-rv-dist">
-                  {dist.map((d) => (
-                    <div key={d.label} className={`ch-rv-dist__r is-${d.label.replace('+', '').toLowerCase()}`}>
-                      <span>{d.label}</span>
-                      <span className="ch-rv-dist__t">
-                        <i style={{ '--ch-rv-p': d.count / maxD } as CSSProperties} />
-                      </span>
-                      <b className="ch-num">{d.count}</b>
-                    </div>
-                  ))}
-                </div>
-              </section>
-              {recap && (
-                // C2: a passage under a rule, labelled in words for who wrote it (no sparkle, D14).
-                <section className="ch-rv-recap" aria-labelledby="ch-rv-recap-k">
-                  <h3 className="ch-rv-recap__k" id="ch-rv-recap-k">
-                    Round recap
-                  </h3>
-                  <p>{recap}</p>
-                  <span className="ch-rv-recap__by">
-                    Written by CoachHelm from {holesScored} hole{holesScored === 1 ? '' : 's'}
+          )}
+        </RzZone>
+
+        <RzZone
+          n={2}
+          alt
+          title="Where the strokes went"
+          def={
+            <>
+              Strokes won or lost against the Tour, shot by shot. <b>Zero is the {sgBaseline(r.tour).noun.replace(/^the /, '')}.</b> Each leg counts its own shots, so the round shows where the strokes went.
+            </>
+          }
+          read={
+            r.strokesGained?.total != null ? (
+              <>
+                <RzBig value={formatSigned(r.strokesGained.total)} tone={r.strokesGained.total >= 0 ? 'good' : 'bad'} />
+                <div className="ch-rzlines">
+                  <span>
+                    <b>Total</b> {sgBaseline(r.tour).vs}
                   </span>
-                </section>
+                </div>
+              </>
+            ) : undefined
+          }
+        >
+          <SectionBoundary surface="rounds.review.strokesGained" label="Strokes gained" code="CH-11203">
+            <StrokesGained review={r} onRetry={refresh} retrying={refreshing} />
+          </SectionBoundary>
+          {costly.length > 0 && (
+            <RzBlock title="Where the strokes were lost" note="The holes that cost the most against par. Pick one on the scorecard to see its shots.">
+              <div className="ch-rzcost">
+                {costly.map((c) => (
+                  <div key={c.n} className="ch-rzcost__r">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        haptic('select');
+                        pick(c.n);
+                        document.getElementById('ch-rz-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }}
+                    >
+                      <span className="ch-rzcost__n ch-num">{c.n}</span>
+                      <span className="ch-rzcost__t">
+                        Hole {c.n} · par {c.par}
+                        <small>{r.holes.find((h) => h.n === c.n)?.shots.length ? `${r.holes.find((h) => h.n === c.n)!.shots.length} shots` : 'Scored as a total'}</small>
+                      </span>
+                      <b className="ch-num">{c.score}</b>
+                      <em className="ch-num">{formatSigned(c.delta, 0)}</em>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </RzBlock>
+          )}
+        </RzZone>
+
+        {r.holesError ? (
+          <div className="ch-rz ch-rz--note">
+            <InlineNotice code="CH-11204" title="The scorecard didn’t load" body="The round’s totals are right; the hole-by-hole card is missing. Try again in a moment." onRetry={refresh} retrying={refreshing} />
+          </div>
+        ) : r.holes.length === 0 ? (
+          <div className="ch-rz ch-rz--note">
+            <EmptyState code="CH-11305" compact icon={Flag} title="Posted as a total" body="This round was posted with its score only, so there’s no hole-by-hole card or shots to show." />
+          </div>
+        ) : (
+          <>
+            <RzZone
+              n={3}
+              title="Tee to green"
+              def={
+                <>
+                  Fairways found off the tee, and <b>greens in regulation</b>: the green reached in par minus two strokes.
+                </>
+              }
+              read={
+                r.greens ? (
+                  <>
+                    <RzBig value={pct(r.greens.hit, r.greens.of)} unit="" tone="good" />
+                    <div className="ch-rzlines">
+                      <span>
+                        <b>
+                          {r.greens.hit} of {r.greens.of}
+                        </b>{' '}
+                        greens
+                      </span>
+                      {r.fairways && (
+                        <span>
+                          <b>
+                            {r.fairways.hit} of {r.fairways.of}
+                          </b>{' '}
+                          fairways
+                        </span>
+                      )}
+                    </div>
+                  </>
+                ) : undefined
+              }
+            >
+              <RzBlock title="Fairways and greens" note="A filled dot found it, a hollow dot missed it, a dash does not apply (a par 3 has no fairway).">
+                <TeeToGreen holes={r.holes} />
+                {(misses.left > 0 || misses.right > 0) && (
+                  <p className="ch-rzmeta">
+                    Fairways missed: <b>{misses.left}</b> left, <b>{misses.right}</b> right{misses.other ? `, ${misses.other} with no side recorded` : ''}.
+                  </p>
+                )}
+              </RzBlock>
+              {approach && (
+                <RzBlock title="How close approaches finished" note={`${approach.n} approach ${approach.n === 1 ? 'shot' : 'shots'} that found the green.`}>
+                  <div className="ch-rzpair">
+                    <div>
+                      <b className="ch-num">{Math.round(approach.avg)}</b>
+                      <small>ft on average</small>
+                    </div>
+                    <div>
+                      <b className="ch-num">{approach.best}</b>
+                      <small>ft closest, hole {approach.hole}</small>
+                    </div>
+                  </div>
+                </RzBlock>
               )}
-              {r.notes && (
-                <section className="ch-rv-card ch-rv-notes" aria-labelledby="ch-rv-notes-h">
+            </RzZone>
+
+            <RzZone
+              n={4}
+              alt
+              title="Putting"
+              def={
+                <>
+                  Putts a hole, and the first putt on each green by its length. <b>Fewer is better,</b> and a three-putt is the stroke most worth finding.
+                </>
+              }
+              read={
+                putting ? (
+                  <>
+                    <RzBig value={r.putts == null ? NO_DATA : String(r.putts)} />
+                    <div className="ch-rzlines">
+                      <span>
+                        <b>{formatFixed(putting.perHole, 1)}</b> a hole
+                      </span>
+                      {r.strokesGained?.putting != null && (
+                        <span>
+                          Strokes gained <b>{formatSigned(r.strokesGained.putting)}</b>
+                        </span>
+                      )}
+                    </div>
+                  </>
+                ) : undefined
+              }
+            >
+              <PuttingViz holes={r.holes} />
+            </RzZone>
+
+            <RzZone
+              n={5}
+              title="Scorecard and shots"
+              def={
+                <>
+                  Every hole’s score, putts, fairway and green. {phone ? 'Tap' : 'Select'} a hole number to see each shot on it, in order, and where it finished.
+                </>
+              }
+            >
+              <SectionBoundary surface="rounds.review.card" label="The scorecard" code="CH-11203">
+                <section className="ch-rv-card" id="ch-rz-card" aria-labelledby="ch-rv-card-h">
                   <div className="ch-rv-card__h">
                     <div>
-                      <h3 id="ch-rv-notes-h">{r.playerName ? `${r.playerName.split(' ')[0]}’s notes` : coach ? 'The player’s notes' : 'Your notes'}</h3>
-                      <span>Written when the round was posted</span>
+                      <h2 id="ch-rv-card-h">Scorecard</h2>
+                      <span>{phone ? 'Tap a hole to see every shot' : 'Select a hole to see every shot'}</span>
                     </div>
                   </div>
-                  <p>{r.notes}</p>
+                  <div className="ch-rv-cardw">
+                    <ReviewNine label="Out" holes={r.holes.filter((h) => h.n <= 9)} sel={sel} onPick={pick} />
+                    <ReviewNine label="In" holes={r.holes.filter((h) => h.n > 9)} sel={sel} onPick={pick} />
+                  </div>
                 </section>
-              )}
-            </div>
-          </div>
-        </>
-      )}
+              </SectionBoundary>
+              <SectionBoundary surface="rounds.review.hole" label="This hole" code="CH-11203">
+                {hole && <HoleCard hole={hole} dir={holeDir} count={r.holes[r.holes.length - 1]?.n ?? 18} shotsError={r.shotsError} onStep={step} onRetry={refresh} retrying={refreshing} />}
+              </SectionBoundary>
+            </RzZone>
+
+            {(recap || r.notes) && (
+              <RzZone
+                n={6}
+                alt
+                title="In words"
+                def={<>What CoachHelm read in the round, and what the player wrote when posting it.</>}
+              >
+                {recap && (
+                  // C2: a passage under a rule, labelled in words for who wrote it (no sparkle, D14).
+                  <section className="ch-rv-recap" aria-labelledby="ch-rv-recap-k">
+                    <h3 className="ch-rv-recap__k" id="ch-rv-recap-k">
+                      Round recap
+                    </h3>
+                    <p>{recap}</p>
+                    <span className="ch-rv-recap__by">
+                      Written by CoachHelm from {holesScored} hole{holesScored === 1 ? '' : 's'}
+                    </span>
+                  </section>
+                )}
+                {r.notes && (
+                  <section className="ch-rv-card ch-rv-notes" aria-labelledby="ch-rv-notes-h">
+                    <div className="ch-rv-card__h">
+                      <div>
+                        <h3 id="ch-rv-notes-h">{r.playerName ? `${r.playerName.split(' ')[0]}’s notes` : coach ? 'The player’s notes' : 'Your notes'}</h3>
+                        <span>Written when the round was posted</span>
+                      </div>
+                    </div>
+                    <p>{r.notes}</p>
+                  </section>
+                )}
+              </RzZone>
+            )}
+          </>
+        )}
+      </div>
     </main>
   );
 }
