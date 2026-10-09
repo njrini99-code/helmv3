@@ -71,6 +71,7 @@ import {
   DeleteMessageModal,
   EditMessageModal,
   LeaveGroupModal,
+  DeleteConversationModal,
   MessageHits,
   REACTIONS,
   addAttachments,
@@ -564,6 +565,7 @@ function Panel({ title, action, children, code }: { title?: string; action?: Rea
 function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv; onBack: () => void }) {
   const coach = api.viewer.role === "coach";
   const [leaving, setLeaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [adding, setAdding] = useState(false);
   const [muteBusy, setMuteBusy] = useState(false);
   const titleId = `ch-msp-details-${conv.id}`;
@@ -693,11 +695,17 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
                   Leave group
                 </button>
               )}
+              {api.deleteConversation && (
+                <button type="button" className="ch-msp-danger" onClick={() => setDeleting(true)}>
+                  Delete conversation
+                </button>
+              )}
             </Panel>
           </div>
         </SectionBoundary>
       </div>
       <LeaveGroupModal api={api} conv={conv} open={leaving} onClose={() => setLeaving(false)} onLeft={() => {}} />
+      <DeleteConversationModal api={api} conv={conv} open={deleting} onClose={() => setDeleting(false)} onDeleted={() => {}} />
       {mine && conv.group && <AddMembersModal api={api} conv={conv} open={adding} onClose={() => setAdding(false)} />}
     </PhoneScreen>
   );

@@ -61,7 +61,8 @@ Physical iPhone scrolling and keyboard performance remain unverified.
 
 | Test | Contract | Result |
 | --- | --- | --- |
-| `src/clubhouse/__tests__/messages.test.tsx` (63 cases, each named by the codes it forces) | every catalog row of kinds 0 to 5 (706xx, 705xx, 704xx, 702xx, 711xx), plus 7604, 7704, 7804 | pass (`messages.test.tsx` 63/63, 2026-09-30) |
+| `src/clubhouse/__tests__/messages.test.tsx` (96 cases, each named by the codes it forces) | every catalog row of kinds 0 to 5 (706xx, 705xx, 704xx, 702xx, 711xx), plus 7604, 7704, 7804, and CH-7503 (Delete conversation asks first; a failed one shows CH-7011) | pass (`messages.test.tsx` 96/96, 2026-10-08) |
+| `src/test/actions/hide-golf-conversation.test.ts` (4 cases) | 71103 (the per-person hide action) | pass (4/4, 2026-10-08) |
 | `src/app/golf/actions/__tests__/message-attachments-conversation-files.test.ts` (7 cases) | 72302, 70630 | pass |
 | `src/clubhouse/__tests__/shell.test.tsx` | the shell contracts this page inherits (10703, 10702, 11611, 11811 and the rest) | pass |
 

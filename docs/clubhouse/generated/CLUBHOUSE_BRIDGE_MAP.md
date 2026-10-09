@@ -110,7 +110,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 2 | 2 | 22 | 2 | 19 | 3 | 6 | 1 |  |  | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 87 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 28 | 1 | 8 | 1 | 2 | 4 | 3 | 2 | 2 | 1 | 6 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 95 |
-| P007 | 2 | 10 | 1 | 9 | 5 | 35 | 1 | 2 | 2 | 1 | 2 | 2 | 1 | 2 | 1 | 6 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 96 |
+| P007 | 2 | 10 | 1 | 9 | 5 | 35 | 1 | 2 | 2 | 1 | 3 | 2 | 1 | 2 | 1 | 6 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 97 |
 | P008 | 2 | 1 | 3 | 6 | 15 | 41 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 130 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 33 | 4 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 133 |
 | P010 | 2 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 89 |
@@ -702,6 +702,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 71001 | CH-7019 | 10 Warning | `A_COACHS_NEW_GROUP_IS_CREATED_BUT` | implemented | A coach's new group is created, but a coach picked for it couldn't be added (D-45) |
 | 71101 | CH-7501 | 11 Destructive | `DELETE_A_MESSAGE` | implemented | Delete a message |
 | 71102 | CH-7502 | 11 Destructive | `LEAVE_A_GROUP` | implemented | Leave a group |
+| 71103 | CH-7503 | 11 Destructive | `DELETE_A_CONVERSATION` | implemented | Delete a conversation |
 | 71201 |  | 12 State preservation | `DRAFT_KEPT_ON_FAILURE` | implemented | A send that fails puts the text and files back in the composer; nothing the person wrote is lost. |
 | 71202 |  | 12 State preservation | `DRAFT_KEPT_ACROSS_THREADS` | implemented | An unsent draft is kept per conversation: switching to another thread and back finds it where it was; a send that lands clears it. |
 | 71301 |  | 13 Optimistic UI | `OPTIMISTIC_SEND` | implemented | A sent message appears at once under its final id and is reconciled in place when the server echoes it; a refused send stays in the thread marked Not sent (CH-7016), never silently removed. |

@@ -140,7 +140,7 @@ export function useCanvasSmoothScroll(): void {
  * A panel that scrolls on its own (the Calendar's details column) eases like the canvas does: the same duration and
  * curve, a trackpad left native, and a nested scroller or open menu left alone. Pass the panel's ref.
  */
-export function usePanelSmoothScroll(ref: { current: HTMLElement | null }): void {
+export function usePanelSmoothScroll(ref: { current: HTMLElement | null }, { duration = CH_SCROLL_DUR }: { duration?: number } = {}): void {
   const reduced = useChReducedMotion();
   useEffect(() => {
     const wrapper = ref.current;
@@ -155,7 +155,7 @@ export function usePanelSmoothScroll(ref: { current: HTMLElement | null }): void
       lenis = new Lenis({
         wrapper,
         content: wrapper,
-        duration: CH_SCROLL_DUR,
+        duration,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         smoothWheel: true,
         syncTouch: false,
@@ -191,5 +191,5 @@ export function usePanelSmoothScroll(ref: { current: HTMLElement | null }): void
       desk.removeEventListener('change', sync);
       stop();
     };
-  }, [ref, reduced]);
+  }, [ref, reduced, duration]);
 }

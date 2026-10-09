@@ -58,6 +58,8 @@ export interface ChReaction {
   key: ChReactionKey;
   count: number;
   mine: boolean;
+  /** Who reacted (auth user ids), for the card a click on the chip opens; the preview omits it. */
+  userIds?: string[];
 }
 
 export interface ChMember {

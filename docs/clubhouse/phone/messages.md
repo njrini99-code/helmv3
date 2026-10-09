@@ -179,7 +179,7 @@ A pushed screen: "‹ Chat", "Details", and Edit on groups.
 | Switch: Mute notifications | `Switch` | The same call as the Mute tile (D-47) |
 | Switch: Only coaches can post | — | Hidden (D-48) |
 | Leave group (groups) | Row, in `--ch-danger-600` | `api.leave` → `leaveGolfGroup` (CH-7502, CH-7010). Desktop hides it from the creator; the design shows it on "created by you" (D-47) |
-| Delete conversation (direct) | — | Hidden (D-48) |
+| Delete conversation (direct) | Row, in `--ch-danger-600` | Built 2026-10-08 (owner request) for direct and group conversations, not a team channel: `api.deleteConversation` → `hideGolfConversation` (CH-7503), a per-person hide of the viewer's own inbox row. Offered only once the held migration `20261008160000` is applied (`canHideGolfConversations`) |
 | Edit (groups) | — | Hidden (D-48) |
 | Not drawn: View stats (a coach, in a player's direct details) | Row | `rebuiltHref('/golf/dashboard/stats')?player=` (D-49) |
 
@@ -215,7 +215,7 @@ Every board shows a head coach. The player's view below comes from D-15 and the 
 | Name a group after sending | Broadcasts need a title, and are de-duplicated by it | The same rename action | Named first (CH-7104, D-45) |
 | An assistant coach in a new group; "2 coaches" on Whole team | `createGolfTeamBroadcast` adds players only; `addGolfGroupMember` can add a coach afterwards | Two calls in one flow, with a failure state for the second | Built with the phone: coaches are added after the group is created (D-45). EXISTING under D-61: both actions predate Clubhouse and are unchanged |
 | Travel squad | No membership source (the itineraries hold `room_assignments` JSON; events hold invitees) | A source | Hidden (D-45) |
-| Delete conversation | No delete policy on `golf_conversations` | Defined semantics, and an action | Hidden (D-48) |
+| Delete conversation | No delete policy on `golf_conversations`; a per-person hide instead (`golf_conversation_participants.hidden_at`, held migration `20261008160000`) | Defined semantics (hide for you only; a new message brings it back), and an action | Built 2026-10-08 (71103, CH-7503), offered only once the migration is applied |
 | Event card in a thread | `kind = 'event'` allowed, with 0 rows and no writer | A writer (Calendar to Messages) and rendering in the hook | Hidden (D-49) |
 | Group icon by type (bus) | No group type | A column | People mark (D-49) |
 | Check reaction | Six stored reactions (D-14) | A new stored value | Not offered (D-49) |
