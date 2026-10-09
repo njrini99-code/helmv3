@@ -431,8 +431,19 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
           }
         >
           {points.length >= 2 ? (
-            <RzBlock title="Running score to par" note="One dot a hole. The columns under it are each hole’s strokes against par.">
-              <ScoreFlow holes={r.holes} outScore={r.front.score} outToPar={r.front.toPar} inScore={r.back.score} inToPar={r.back.toPar} />
+            <RzBlock title="Running score to par" note="One dot a hole; the columns under it are each hole’s strokes against par. Move across it to read a hole, click one to see its shots.">
+              <ScoreFlow
+                holes={r.holes}
+                outScore={r.front.score}
+                outToPar={r.front.toPar}
+                inScore={r.back.score}
+                inToPar={r.back.toPar}
+                onPick={(n) => {
+                  haptic('select');
+                  pick(n);
+                  document.getElementById('ch-rz-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+              />
             </RzBlock>
           ) : (
             <p className="ch-rzmiss">The hole-by-hole picture needs holes posted with their scores.</p>
@@ -612,6 +623,28 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
             <RzZone
               n={5}
               title="Scorecard and shots"
+              read={
+                hole ? (
+                  <>
+                    <RzBig
+                      value={hole.score == null ? NO_DATA : String(hole.score)}
+                      tone={hole.score == null || hole.par == null ? undefined : hole.score < hole.par ? 'good' : hole.score > hole.par ? 'bad' : undefined}
+                    />
+                    <div className="ch-rzlines">
+                      <span>
+                        <b>Hole {hole.n}</b>
+                        {hole.par != null ? ` · par ${hole.par}` : ''}
+                        {hole.yards ? ` · ${hole.yards} yds` : ''}
+                      </span>
+                      {hole.putts != null && (
+                        <span>
+                          <b>{hole.putts}</b> {hole.putts === 1 ? 'putt' : 'putts'}
+                        </span>
+                      )}
+                    </div>
+                  </>
+                ) : undefined
+              }
               def={
                 <>
                   Every hole’s score, putts, fairway and green. {phone ? 'Tap' : 'Select'} a hole number to see each shot on it, in order, and where it finished.
