@@ -34,7 +34,8 @@ import { rebuiltHref } from '../../shell/nav';
 import { formatHcp } from '../roster/format';
 import { usePageCrumbs } from '../../shell/crumbs';
 import { LEGS_LIST } from './legs';
-import { FieldTable, LegRoute, SgChangeChip, YardagePage } from './charts';
+import { FieldTable, SgChangeChip, YardagePage } from './charts';
+import { LegBars } from './LegBars';
 import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
 import { RoundsExtra } from './RoundsExtra';
@@ -393,11 +394,12 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
   // The best round's own score against par, for its gauge.
   const bestToPar = best == null ? null : (bestPool.find((r) => r.score === best)?.toPar ?? null);
   const trendRounds = [...data.rounds].reverse().slice(-10).map((r) => ({ label: r.date, score: per18(r.score, r.holes), toPar: r.toPar == null ? null : per18(r.toPar, r.holes), holes: r.holes }));
+  // Each leg beside the shots it counts (strokes gained is only readable when the reader knows which shots those are) and, for a coach, the team's mark.
   const legs = [
-    { label: 'Off the tee', value: w.sgLegs.tee },
-    { label: 'Approach', value: w.sgLegs.approach },
-    { label: 'Around green', value: w.sgLegs.around },
-    { label: 'Putting', value: w.sgLegs.putting },
+    { label: 'Off the tee', means: 'Tee shots on par 4s and 5s: distance and accuracy together', value: w.sgLegs.tee, team: coach ? (cmp('SG off the tee')?.team ?? null) : null },
+    { label: 'Approach', means: 'Full shots from over 30 yards, and par-3 tee shots', value: w.sgLegs.approach, team: coach ? (cmp('SG approach')?.team ?? null) : null },
+    { label: 'Around green', means: 'Chips, pitches and bunker shots within 30 yards', value: w.sgLegs.around, team: coach ? (cmp('SG around green')?.team ?? null) : null },
+    { label: 'Putting', means: 'Every shot on the green', value: w.sgLegs.putting, team: coach ? (cmp('SG putting')?.team ?? null) : null },
   ];
   const known = legs.filter((l) => l.value != null) as Array<{ label: string; value: number }>;
   const strongest = [...known].sort((a, b) => b.value - a.value)[0];
@@ -445,7 +447,7 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
         ]}
       />
       <YardagePage title="Strokes gained by leg" meta={`Per round ${baseline.vs}${w.sgPerRound != null ? ` · total ${formatSigned(w.sgPerRound)}` : ''}`} note={legNote}>
-        <LegRoute rows={legs} />
+        <LegBars rows={legs} baseline={`Zero is ${baseline.noun}`} teamName={coach ? 'Team' : null} />
       </YardagePage>
       <YardagePage
         title={coach ? `${first} vs. team` : 'You vs. the Tour'}
