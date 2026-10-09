@@ -94,9 +94,9 @@ describe('the standing rows as the page draws them', () => {
     expect(figure('gir_pct', 'percent', Number.NaN)).toBe('—');
   });
 
-  it('against the Tour: strokes gained is against the field average, every other stat against the Tour, by the metric’s own direction', () => {
+  it('against the Tour: every stat, strokes gained included, is named against the Tour as Stats names it (Q-88, P013 D4), by the metric’s own direction', () => {
     const sg = rowOf(PREVIEW_STANDING, 'sg_total');
-    expect(sg).toMatchObject({ you: '−2.14', tour: { label: 'Field average', ref: 'the field average', text: '0.00' }, vsTour: { sense: 'behind', text: '2.14 strokes behind the field average' } });
+    expect(sg).toMatchObject({ you: '−2.14', tour: { label: 'Tour', ref: 'the Tour', text: '0.00' }, vsTour: { sense: 'behind', text: '2.14 strokes behind the Tour' } });
     expect(rowOf(PREVIEW_STANDING, 'putts_made_3_5ft_pct')).toMatchObject({ you: '71%', tour: { label: 'Tour', text: '88%' }, vsTour: { sense: 'behind', text: '17 pts behind the Tour' } });
     // A lower-is-better distance: farther is behind, closer is ahead.
     expect(rowOf(PREVIEW_STANDING, 'approach_proximity_125_175ft').vsTour).toEqual({ sense: 'behind', text: '13 ft farther than the Tour' });
@@ -133,7 +133,7 @@ describe('the standing rows as the page draws them', () => {
   it('a women’s team is against the LPGA Tour, by name, in the row and in the page', () => {
     expect(PREVIEW_STANDING_WOMENS.tour).toBe('LPGA Tour');
     expect(rowOf(PREVIEW_STANDING_WOMENS, 'gir_pct')).toMatchObject({ tour: { label: 'LPGA Tour', ref: 'the LPGA Tour' }, vsTour: { text: '8 pts behind the LPGA Tour' } });
-    expect(rowOf(PREVIEW_STANDING_WOMENS, 'sg_total').tour!.label).toBe('Field average');
+    expect(rowOf(PREVIEW_STANDING_WOMENS, 'sg_total').tour!.label).toBe('LPGA Tour');
     expect(PREVIEW_STANDING.tour).toBe('Tour');
   });
 
@@ -269,7 +269,11 @@ describe('the Standing screen', () => {
   it('CH-13880 the page is labelled by CoachHelm; where they stand, each group and the most to gain are labelled regions', () => {
     show();
     expect(screen.getByRole('main').getAttribute('aria-labelledby')).toBe('ch-hl-title');
-    expect(screen.getByRole('region', { name: /Ahead of the Tour on 0 of 19 stats and ahead of your team on 16 of 18/ })).toBeTruthy();
+    // P013 D4: the hero leads with the most to gain, and its counts use one denominator, the Tour's.
+    const top = PREVIEW_STANDING.gaps[0]!;
+    const hero = screen.getByRole('region', { name: `${top.label} is worth about ${top.strokes} strokes a round` });
+    expect(hero.querySelector('.ch-hs-hero__sub')!.textContent).toBe('Ahead of the Tour on 0 of 19 stats. Every stat, strokes gained included, is against the Tour.');
+    expect(hero.textContent).not.toMatch(/field average|of 18|20 stats/);
     for (const g of PREVIEW_STANDING.groups) expect(screen.getByRole('region', { name: g.label })).toBeTruthy();
     expect(screen.getByRole('complementary', { name: 'Most to gain' })).toBeTruthy();
     expect(screen.getByText('14 rounds · Scoring average 77.2 · Refreshed Sep 30')).toBeTruthy();
@@ -277,7 +281,7 @@ describe('the Standing screen', () => {
 
   it('each row: the stat, how they stand in words and in colour-free text, the three figures with their keys, and what closing it is worth', () => {
     show();
-    const li = screen.getByRole('heading', { name: 'Putts made, 3–5 ft', level: 4 }).closest('li') as HTMLElement;
+    const li = screen.getByRole('heading', { name: 'Putts made, 3–5 ft', level: 3 }).closest('li') as HTMLElement;
     expect(within(li).getByText('17 pts behind the Tour')).toBeTruthy();
     expect(within(li).getByText('Upper half of your team')).toBeTruthy();
     const figures = li.querySelector('dl')!;
@@ -294,7 +298,7 @@ describe('the Standing screen', () => {
 
   it('CH-13372 a team too small to compare says so in the row, and shows no team figure or rank', () => {
     show();
-    const li = screen.getByRole('heading', { name: 'Scrambling from sand', level: 4 }).closest('li') as HTMLElement;
+    const li = screen.getByRole('heading', { name: 'Scrambling from sand', level: 3 }).closest('li') as HTMLElement;
     expect(within(li).getByText('Team comparison needs 5 teammates with this stat (3 so far).')).toBeTruthy();
     expect(li.querySelector('dl .is-team dd')!.textContent).toBe('—');
     expect(li.querySelector('.ch-hs-pct')).toBeNull();
@@ -302,7 +306,7 @@ describe('the Standing screen', () => {
 
   it('CH-13373 a Tour value that is not comparable says why in the row, and its Tour figure is a dash', () => {
     show();
-    const li = screen.getByRole('heading', { name: 'Approach proximity, 50–125 yd', level: 4 }).closest('li') as HTMLElement;
+    const li = screen.getByRole('heading', { name: 'Approach proximity, 50–125 yd', level: 3 }).closest('li') as HTMLElement;
     expect(within(li).getByText(/Tour proximity counts every approach, misses included/)).toBeTruthy();
     expect(li.querySelector('dl .is-tour dd')!.textContent).toBe('—');
     expect(li.querySelector('.ch-hs-proj')).toBeNull();
@@ -320,7 +324,7 @@ describe('the Standing screen', () => {
     show(standingLoad(PREVIEW_STANDING_NOBASELINE));
     expect(code('CH-13271')!.textContent).toMatch(/Your projections didn’t load.*not affected/);
     expect(code('CH-13371')).toBeNull();
-    expect(screen.getByRole('heading', { name: 'Putts made, 3–5 ft', level: 4 })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Putts made, 3–5 ft', level: 3 })).toBeTruthy();
     await userEvent.click(within(code('CH-13271') as HTMLElement).getByRole('button', { name: /Try again/ }));
     expect(router.refresh).toHaveBeenCalledTimes(1);
   });

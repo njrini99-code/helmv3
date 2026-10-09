@@ -1,5 +1,16 @@
 [
   {
+    "file": "PREMIUM_PASS_AUDIT.md",
+    "title": "Premium pass: owner answers and backlog",
+    "kind": "audit",
+    "date": "2026-10-08",
+    "scope": "All 15 families, desktop and phone: 135 look/feel/feature ideas, 189 findings, 120 owner questions with the owner's answers and the resulting build backlog.",
+    "status": "in_progress",
+    "note": "answered 2026-10-08; build after the release",
+    "allPages": true,
+    "pages": []
+  },
+  {
     "file": "AUDIT_PLAN.md",
     "title": "Swap audit: execution plan",
     "kind": "plan",
@@ -194,5 +205,25 @@
     "note": "383 local Chromium/WebKit cases; partial visual rubric; physical iPhone, authenticated performance and full manual state acceptance remain open",
     "allPages": true,
     "pages": []
+  },
+  {
+    "file": "NATIVE_FEEL_PERF_AUDIT_2026-10-08.md",
+    "title": "Native feel and performance audit (phone, measured)",
+    "kind": "audit",
+    "date": "2026-10-08",
+    "scope": "Coach phone screens on the iPhone 17 Pro simulator against the Vercel preview: frame-timed transitions, gestures, scroll, and the production query and RLS cost behind them.",
+    "status": "in_progress",
+    "note": "Tab switches 715-1350 ms with full skeletons; golf_shots/golf_holes RLS re-checked per row (553 ms vs 4.7 ms raw). Fix plan inside.",
+    "allPages": true
+  },
+  {
+    "file": "NATIVE_FEEL_RESEARCH_2026-10-08.md",
+    "title": "Native feel research: what makes a phone web app feel native",
+    "kind": "audit",
+    "date": "2026-10-08",
+    "scope": "Sourced research on iOS-native feel and desktop-to-phone transfer: a 27-item checklist (tab bar, revisits, pushes, edge swipe, large titles, pressed states, frames, offline launch), each with a simulator test, plus conflicts with Clubhouse rules for the owner.",
+    "status": "in_progress",
+    "note": "Checklist runs against the native app after the transition fixes; SF vs Instrument Sans and the page crossfade are owner calls.",
+    "allPages": true
   }
 ]

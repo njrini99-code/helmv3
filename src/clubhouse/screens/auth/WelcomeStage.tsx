@@ -33,6 +33,10 @@ export function WelcomeStage({ children }: { children?: ReactNode }) {
           <SceneMount camera={handoff === 'fold' ? 'leave' : 'push'} play />
           <div className="ch-au-paper" />
         </div>
+        {/* The phone's hand-off (design/handoff/auth, Sign in - Mobile): the green collapses to the dashboard's bar while
+            the parchment sheet rises from the foot to meet it, so the dashboard opens on its own frame. */}
+        <div className="ch-au-hero" aria-hidden="true" />
+        <div className="ch-au-rise" aria-hidden="true" />
         {children}
       </AuthFrame>
     </StageContext.Provider>

@@ -29,7 +29,12 @@ export const PREVIEW_PLAYER: GolfUserData = {
 export const PREVIEW_SHELL: ChShellData = {
   nextEvent: { id: 'e-pinehurst', title: 'Pinehurst qualifier', whenLabel: 'In 2 days', metaLabel: 'Thu, Oct 16 · 8:42 AM · Pinehurst No. 2', ready: { accepted: 5, invited: 6 } },
   pendingJoinRequests: 2,
+  timezone: 'America/New_York',
+  askAvailable: true,
 };
+
+/** A round on the course (P001-C1): the preview's &round=1. */
+export const PREVIEW_ROUND_IN_PROGRESS = { id: '6f1c2a8e-4b5d-4c3e-9f7a-1b2c3d4e5f60', course: 'Oakmont CC', hole: 7 };
 
 const PARS = [4, 4, 3, 4, 4, 3, 4, 5, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5];
 const holes = (off: number[]): ChHoleScore[] => PARS.map((par, i) => ({ n: i + 1, par, score: par + (off[i] ?? 0) }));
@@ -108,6 +113,8 @@ export const PREVIEW_HOME: ChCoachHome = {
       location: 'Practice green',
       invitees: ['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Jonah Okafor', 'Eli Brandt', 'Priya Natarajan'],
       going: 5,
+      awaiting: [{ id: 'eli', name: 'Eli Brandt' }],
+      inviteeIds: ['theo', 'sofia', 'ava', 'jonah', 'eli', 'priya'],
       conflict: false,
     },
     today: [

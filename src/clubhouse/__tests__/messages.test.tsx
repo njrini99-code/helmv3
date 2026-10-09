@@ -87,6 +87,7 @@ import { Messages } from '../screens/messages/Messages';
 import { DraftStore } from '../screens/messages/drafts';
 import { MessagesSkeleton } from '../screens/messages/MessagesSkeleton';
 import { MessagesNoTeam } from '../screens/messages/MessagesNoTeam';
+import { messagesPrefillHref, onRoster, takePrefill } from '../screens/messages/prefill';
 import { ToastProvider } from '../ui/Toast';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import './dialog-polyfill';
@@ -551,6 +552,20 @@ describe('Messages · more actions that fail', () => {
     await expectCode('CH-7406');
     await user.click(screen.getByRole('button', { name: 'Acknowledge' }));
     await expectCode('CH-7012', /Couldn’t send your acknowledgement/);
+  });
+
+  it('P007-A1 an announcement reads as a signed letter: team and date, the asks in words, the coach’s signature', async () => {
+    const user = userEvent.setup();
+    a.getAnnouncementsWithMeta.mockResolvedValue({ success: true, data: [{ ...annRow, urgency: 'urgent', created_by: 'c-maya' }] });
+    a.getAnnouncementDetail.mockImplementation(never);
+    show({ ...player, signers: { 'c-maya': { name: 'Maya Reyes', title: 'Head coach' } } });
+    await openAnnouncement(user);
+    const head = document.querySelector('.ch-ms-ann__head')!;
+    expect(head.textContent).toMatch(/Wednesday 14 October/);
+    expect(head.textContent).toMatch(/Urgent · please acknowledge/);
+    expect(document.querySelector('.ch-ms-ann__sig')!.textContent).toBe('Maya ReyesHead coach');
+    // No chips: the asks are words.
+    expect(document.querySelector('.ch-ms-ann .ch-badge')).toBeNull();
   });
 
   it('CH-7013 marking a task done fails', async () => {
@@ -1397,5 +1412,130 @@ describe('Messages · no team', () => {
     const el = code('CH-7308')!;
     expect(el.classList.contains('ch-empty-page')).toBe(true);
     expect(within(el as HTMLElement).getByRole('heading', { level: 2, name: "You aren’t on a team yet" })).toBeTruthy();
+  });
+});
+
+describe('Messages · prefilled messages (D2-7: the coach presses Send)', () => {
+  /** What an action elsewhere does: keeps the prefill in this tab's storage, and hands Messages only its key. */
+  const stash = (p: { players: string[]; draft: string; title?: string }) => new URL(messagesPrefillHref(p)!, 'https://x.test').searchParams;
+  afterEach(() => window.sessionStorage.clear());
+
+  it('the URL carries only an opaque key: no draft, no group name, no player ids', () => {
+    const href = messagesPrefillHref({ players: ['p-eli', 'p-jonah'], draft: 'Eli, how is the wrist after physio?', title: 'Injury check-in' })!;
+    expect(href).toMatch(/^\/golf\/dashboard\/messages\?prefill=[a-z0-9]+$/);
+    expect(href).not.toMatch(/wrist|physio|Injury|p-eli|p-jonah|draft|title|players/i);
+    // The same prefill gives the same href, on the server and in the browser.
+    expect(messagesPrefillHref({ players: ['p-eli', 'p-jonah'], draft: 'Eli, how is the wrist after physio?', title: 'Injury check-in' })).toBe(href);
+    expect(messagesPrefillHref({ players: [], draft: 'hi' })).toBeNull();
+  });
+
+  it('the key is single-use, and a key with nothing stored (a cold link, a new tab) gives nothing', () => {
+    const q = stash({ players: ['p-eli'], draft: 'Can you make the 3:30 block?' });
+    expect(takePrefill(q)).toEqual({ players: ['p-eli'], draft: 'Can you make the 3:30 block?', title: undefined });
+    expect(takePrefill(q)).toBeNull();
+    expect(takePrefill(new URLSearchParams('prefill=unknown'))).toBeNull();
+    expect(takePrefill(new URLSearchParams('players=p-eli&draft=hi'))).toBeNull();
+  });
+
+  it('players not on the team are left out, in order, and the rest are kept', () => {
+    expect(onRoster(['p-eli', 'stranger', 'p-jonah'], (id) => id.startsWith('p-'))).toEqual({ kept: ['p-eli', 'p-jonah'], dropped: ['stranger'] });
+  });
+
+  it('a cold link opens Messages as usual, with nothing prefilled and nothing sent', async () => {
+    live.convs.conversations = [team];
+    params.current = new URLSearchParams('prefill=gone');
+    show();
+    await screen.findByRole('textbox', { name: /Message Varsity team/ });
+    expect(screen.queryByRole('dialog', { name: 'New message' })).toBeNull();
+    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('CH-7001 a foreign id is dropped and reported; the teammate stays chosen and nothing is sent', async () => {
+    params.current = stash({ players: ['p-eli', 'stranger', 'p-jonah'], title: 'Short-game block', draft: 'Reply when you can' });
+    show();
+    await expectCode('CH-7001', /One player was left out/);
+    const dialog = await screen.findByRole('dialog', { name: 'New message' });
+    expect(dialog.textContent).toContain('Reply when you can');
+    expect(a.createGolfTeamBroadcast).not.toHaveBeenCalled();
+    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+  });
+
+  const dmEli = { id: 'dm-eli', title: null, participant_ids: ['me', 'eli'], participant_count: 2, unread_count: 0, other_participant: { id: 'eli', name: 'Eli Brandt' }, last_message: null, creator_id: 'me' };
+
+  it('one player with a thread opens it with the draft in the composer, and nothing is sent', async () => {
+    live.convs.conversations = [team, dmEli];
+    params.current = stash({ players: ['p-eli'], draft: 'Can you make the 3:30 block?' });
+    show();
+    const box = await screen.findByRole('textbox', { name: /Message Eli/ });
+    await waitFor(() => expect((box as HTMLTextAreaElement).value).toBe('Can you make the 3:30 block?'));
+    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+    expect(a.createGolfConversation).not.toHaveBeenCalled();
+  });
+
+  it('two players open New message as a named group with the draft quoted; nothing is created until the coach presses on', async () => {
+    const user = userEvent.setup();
+    a.createGolfTeamBroadcast.mockResolvedValue({ conversationId: 'grp' });
+    params.current = stash({ players: ['p-eli', 'p-jonah'], title: 'Short-game block', draft: 'Reply when you can' });
+    show();
+    const dialog = await screen.findByRole('dialog', { name: 'New message' });
+    expect((within(dialog).getByRole('textbox', { name: 'Group name' }) as HTMLInputElement).value).toBe('Short-game block');
+    expect(dialog.textContent).toContain('Reply when you can');
+    expect(a.createGolfTeamBroadcast).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole('button', { name: 'Create group' }));
+    await waitFor(() => expect(a.createGolfTeamBroadcast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Short-game block', selectedPlayerIds: ['p-eli', 'p-jonah'] })));
+    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('phone: Next creates the thread and leaves the draft in its composer, unsent', async () => {
+    const user = userEvent.setup();
+    a.createGolfConversation.mockResolvedValue({ conversationId: 'dm-eli' });
+    params.current = stash({ players: ['p-eli'], draft: 'Can you make the 3:30 block?' });
+    showPhone();
+    const newMsg = await screen.findByRole('region', { name: 'New message' });
+    expect(newMsg.textContent).toContain('Can you make the 3:30 block?');
+    live.convs.conversations = [team, dmEli];
+    await user.click(within(newMsg).getByRole('button', { name: 'Next' }));
+    const box = await screen.findByRole('textbox', { name: /Message Eli/ });
+    await waitFor(() => expect((box as HTMLTextAreaElement).value).toBe('Can you make the 3:30 block?'));
+    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('a player’s prefill to two people keeps one (players start direct threads only, D-15)', async () => {
+    params.current = stash({ players: ['p-eli', 'p-jonah'], draft: 'hi' });
+    show({ ...data, role: 'player', viewerPlayerId: 'p-me' });
+    const dialog = await screen.findByRole('dialog', { name: 'New message' });
+    // Direct mode: one person picked, and no group chips.
+    expect(dialog.querySelector('.ch-ms-to')).toBeNull();
+    expect(within(dialog).getByRole('button', { name: 'Start conversation' })).toBeTruthy();
+  });
+
+  it('CH-7001 players who are not on the team', async () => {
+    params.current = stash({ players: ['nobody'], draft: 'hi' });
+    show();
+    await expectCode('CH-7001', /Those players aren’t on your team/);
+  });
+});
+
+describe('Messages · senders peek (P003-C1)', () => {
+  const fromJonah = { ...mine, id: 'j1', sender_id: 'jonah', content: 'Yes coach' };
+
+  it('for the coach, a player’s name and avatar in a thread peek at the player, from the directory already loaded', async () => {
+    live.convs.conversations = [team];
+    live.msgs.messages = [fromJonah];
+    show();
+    await screen.findByText('Yes coach');
+    const msg = document.getElementById('ch-ms-message-j1')!;
+    expect(msg.querySelector('.ch-peek-target .ch-ms-msg__who')!.textContent).toBe('Jonah');
+    expect(msg.querySelector('.ch-ms-msg__av .ch-peek-target')).not.toBeNull();
+    // The bubble keeps its own hold (message actions), never the peek.
+    expect(msg.querySelector('.ch-peek-target .ch-ms-bub')).toBeNull();
+  });
+
+  it('a player sees names without the coach’s player peek', async () => {
+    live.convs.conversations = [team];
+    live.msgs.messages = [fromJonah];
+    show({ ...data, role: 'player', viewerPlayerId: 'p-me' });
+    await screen.findByText('Yes coach');
+    expect(document.getElementById('ch-ms-message-j1')!.querySelector('.ch-peek-target')).toBeNull();
   });
 });

@@ -65,7 +65,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
     <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''}>
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone && tabs}
-      <Head who="Player" aside={!phone ? tabs : undefined}>
+      <Head who="Player" phone={phone} aside={!phone ? tabs : undefined}>
         One thing to work on this week, based on the rounds you’ve posted.
       </Head>
 

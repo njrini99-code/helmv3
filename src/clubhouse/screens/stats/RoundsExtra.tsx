@@ -4,6 +4,9 @@ import type { ChBests } from '../../data/stats-figures';
 import type { ChProfileExtra } from '../../data/stats-player';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { DataTable, Empty, RoundLine, Rule, Tiles } from './detail';
+import { BestCardShare } from './BestCard';
+import { bestCardFields } from './best-card-fields';
+import type { ChViewer } from '../../data/stats-player';
 
 /**
  * The Rounds tab's parity figures (PARITY.md SC12 to SC14): the score of every
@@ -48,8 +51,20 @@ function BestTiles({ b, at, label }: { b: ChBests; at: (v: { course: string; dat
   );
 }
 
-export function RoundsExtra({ x, filter, phone = false }: { x: ChProfileExtra; filter: ChFilter; phone?: boolean }) {
+export function RoundsExtra({
+  x,
+  filter,
+  phone = false,
+  share,
+}: {
+  x: ChProfileExtra;
+  filter: ChFilter;
+  phone?: boolean;
+  /** Who the personal-best card is for (P005-C2); omitted, the bests have no Share. */
+  share?: { viewer: ChViewer; name: string; coach: string | null | undefined };
+}) {
   const b = x.bests;
+  const card = share ? bestCardFields({ ...share, bests: b }) : null;
   const c = x.compare;
   const at = (v: { course: string; date: string } | null) => (v ? `${v.course} · ${v.date}` : null);
   // Only the newest-ten cut has an earlier window; a date range, picked rounds, the season and the qualifiers have none by design.
@@ -74,17 +89,25 @@ export function RoundsExtra({ x, filter, phone = false }: { x: ChProfileExtra; f
   };
   return (
     <>
-      <Card id="rx-score" title="Score by round" meta={`Every ${HOLES_ADJ[filter.holes]} round in this window, oldest first${x.nineRounds ? ' · 9-hole scores doubled (per 18)' : ''}`} phone={phone}>
-        {x.series.score.length >= 2 ? (
-          <RoundLine points={x.series.score} digits={0} label="Score by round" />
-        ) : (
-          <Empty code="CH-5314">A line needs two rounds; this window has {x.series.score.length}.</Empty>
-        )}
-      </Card>
+      {/* P005-D1: the phone's Scoring trend already draws these rounds one panel up, so the phone shows one chart. */}
+      {!phone && (
+        <Card id="rx-score" title="Score by round" meta={`Every ${HOLES_ADJ[filter.holes]} round in this window, oldest first${x.nineRounds ? ' · 9-hole scores doubled (per 18)' : ''}`} phone={phone}>
+          {x.series.score.length >= 2 ? (
+            <RoundLine points={x.series.score} digits={0} label="Score by round" lowerIsBetter />
+          ) : (
+            <Empty code="CH-5314">A line needs two rounds; this window has {x.series.score.length}.</Empty>
+          )}
+        </Card>
+      )}
       {/* A 9-hole score and an 18-hole score are not the same best: each length is listed on its own. */}
       {(filter.holes === '18' || (filter.holes === 'all' && hasBest(b))) && (
         <Card id="rx-bests" title="Personal bests" meta="In this window, 18 holes" phone={phone}>
           <BestTiles b={b} at={at} label="Personal bests" />
+          {card && (
+            <div className="ch-bestcard__act">
+              <BestCardShare card={card} />
+            </div>
+          )}
         </Card>
       )}
       {x.bests9 && filter.holes !== '18' && (

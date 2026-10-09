@@ -111,10 +111,15 @@ describe('112401 Rounds library, on screen', () => {
     show(PREVIEW_ROUNDS);
     const strip = document.querySelector('.ch-rd-unf .ch-rd-strip')!;
     expect(strip.getAttribute('aria-hidden')).toBe('true');
-    const cells = strip.querySelectorAll('span');
+    const cells = strip.querySelectorAll(':scope > span');
     expect(cells).toHaveLength(18);
-    // 4 on a 4, 6 on a 5, 3 on a 3; the fourth is next.
-    expect([...cells].slice(0, 4).map((c) => `${c.className}:${c.textContent}`)).toEqual(['is-par:4', 'is-over:6', 'is-par:3', 'is-next:4']);
+    // 4 on a 4, 6 on a 5, 3 on a 3, each under its hole's number (P011-D15); the fourth is next.
+    expect([...cells].slice(0, 4).map((c) => `${c.className}:${c.querySelector('em')?.textContent ?? '-'}/${c.lastChild!.textContent}`)).toEqual([
+      'is-par is-played:1/4',
+      'is-over is-played:2/6',
+      'is-par is-played:3/3',
+      'is-next:-/4',
+    ]);
   });
 
   it('a hole under par is marked as under in the strip; over and par are not', () => {
@@ -128,8 +133,8 @@ describe('112401 Rounds library, on screen', () => {
       nextHole: 3,
     };
     show({ ...PREVIEW_ROUNDS, unfinished: { list: [birdie], error: false } });
-    const cells = [...document.querySelectorAll('.ch-rd-unf .ch-rd-strip span')].slice(0, 3);
-    expect(cells.map((c) => c.className)).toEqual(['is-under', 'is-par', 'is-next']);
+    const cells = [...document.querySelectorAll('.ch-rd-unf .ch-rd-strip > span')].slice(0, 3);
+    expect(cells.map((c) => c.className)).toEqual(['is-under is-played', 'is-par is-played', 'is-next']);
     expect(document.querySelector('.ch-rd-unf__f > span')!.textContent).toBe('−1 through 2');
   });
 
@@ -228,7 +233,10 @@ describe('112401 Rounds library, on screen', () => {
     expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Finley GC', 'Hope Valley CC', 'Old Chatham GC', 'Carolina GC']);
     const finley = screen.getByRole('region', { name: 'Finley GC' });
     expect(within(finley).getByText(/rounds$/).textContent).toBe('5 rounds');
-    expect(within(finley).getByText('low').textContent).toBe('low 38');
+    // P011-D2: the low is an 18-hole figure, like the average (Finley's nine-hole 38 is not its low).
+    const low = within(finley).getByText('low').textContent!;
+    expect(low).toMatch(/^low \d+$/);
+    expect(Number(low.slice(4))).toBeGreaterThan(60);
   });
 
   it('110107 a round under par is marked in red on its score only; a round that does not count says Not counted', () => {
@@ -274,7 +282,8 @@ describe('112401 Rounds library, on screen', () => {
     expect(within(season).getByText('73.4')).toBeTruthy();
     expect(within(season).getByText('avg · +1.9 to par')).toBeTruthy();
     expect(within(season).getByText('Best').nextSibling!.textContent).toBe('69');
-    expect(within(season).getByText('Carolina · Aug 18')).toBeTruthy();
+    // P011-D16: the whole course name, not its first word.
+    expect(within(season).getByText('Carolina GC').parentElement!.textContent).toBe('Carolina GC · Aug 18');
     expect(within(season).getByText('GIR').nextSibling!.textContent).toBe('62%');
   });
 });

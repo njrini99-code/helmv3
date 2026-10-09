@@ -56,8 +56,8 @@ export const ASK_EV_SLOPE = envelope({
       metric_label: 'Make rate from 4 to 6 feet, by slope',
       entity: who('team-1', 'Finley University', 'team'),
       points: [
-        { at: '2026-09-29', value: 81, bucket: 'Uphill', sample_size: 44 },
-        { at: '2026-09-29', value: 76, bucket: 'Flat', sample_size: 51 },
+        { at: '2026-09-29', value: 76, bucket: 'Uphill', sample_size: 51 },
+        { at: '2026-09-29', value: 81, bucket: 'Level', sample_size: 44 },
         { at: '2026-09-29', value: 58, bucket: 'Downhill', sample_size: 31 },
       ],
     }),
@@ -80,7 +80,7 @@ export const ASK_EV_JONAH = envelope({
   measurements: [
     measurement({ metric_id: 'putt_make_rate_downhill', metric_label: 'Downhill, 4 to 6 feet', entity: who('p-jonah', 'Jonah Okafor'), value: 33, denominator: 9, sample_size: 9 }),
     measurement({ metric_id: 'putt_make_rate_downhill', metric_label: 'Downhill, 4 to 6 feet', entity: who('team-1', 'Finley University', 'team'), value: 58, denominator: 31, sample_size: 31 }),
-    measurement({ metric_id: 'putt_make_rate_uphill', metric_label: 'Uphill, 4 to 6 feet', entity: who('p-jonah', 'Jonah Okafor'), value: 78, denominator: 9, sample_size: 9 }),
+    measurement({ metric_id: 'putt_make_rate_level', metric_label: 'Level, 4 to 6 feet', entity: who('p-jonah', 'Jonah Okafor'), value: 78, denominator: 9, sample_size: 9 }),
   ],
   series: [
     series({
@@ -177,7 +177,7 @@ export const ASK_MSGS_ANSWER: UIMessage[] = [
     step(2, 'Reading the last 38 recorded rounds', 'get_recent_rounds'),
     step(3, 'Comparing putting by distance', 'get_putting_distance_profile'),
     step(4, 'Ranking the team', 'get_team_metric_ranking'),
-    text('Most of it is **downhill putts from 4 to 6 feet**. The team makes 58% of those, against 81% uphill from the same distance. Flat putts in that range look normal, so this is a slope problem more than a stroke problem.'),
+    text('Most of it is **downhill putts from 4 to 6 feet**. The team makes 58% of those, against 81% of level putts from the same distance. Uphill putts in that range look normal, so this is a slope problem more than a stroke problem.'),
     ev('slope', ASK_EV_SLOPE, 'get_putting_distance_profile'),
     text('Three players account for most of the downhill misses:'),
     ev('ranking', ASK_EV_RANKING, 'get_team_metric_ranking'),

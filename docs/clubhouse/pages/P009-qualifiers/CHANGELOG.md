@@ -1,5 +1,66 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-08 — the rank slide runs on the smooth spring
+
+- P009-B1: the moved rows' slide read `--ch-dur-spring-smooth` and
+  `--ch-ease-spring-smooth` on view-transition pseudos that hang off `<html>`,
+  where those tokens are not defined, so it ran on the browser's default timing.
+  It now reads the `<html>`-scoped `--ch-dur-vt-push` and `--ch-ease-vt-push`,
+  the same smooth spring (462ms) the phone push uses.
+  `--ch-ease-spring-smooth` on view-transition pseudos that hang off `<html>`,
+  where those tokens are not defined, so it ran on the browser's default timing.
+  It now reads the `<html>`-scoped `--ch-dur-vt-push` and `--ch-ease-vt-push`,
+  the same smooth spring (462ms) the phone push uses.
+
+## 2026-10-08 — The live card's leaders are rows, not a board
+
+Owner direction (2026-10-08): the card is no longer the default unit of layout
+on the phone. Phone only; the desktop
+hero keeps its scoreboard.
+
+- **One green card, nothing nested:** the live qualifier stays the list's one
+  feature card, and its three leaders are
+  plain aligned rows on its green (position with its movement, name, to par)
+  between faint seams. The to-par figures
+  are bare tabular numerals instead of hung plates: under par in the board's
+  lifted red (the same value as the board's
+  to-par text, 4.5:1 on the feature green), even and over par in the on-green
+  ink.
+- **Loading matches:** the phone skeleton's to-par placeholder is a numeral's
+  size (28 x 17) instead of a plate's.
+- The filter pills, the search and the Ledger rows below are unchanged.
+
+## 2026-10-08 — Premium pass: honest Live, standings on plates, rows that move only on a change, pace beside the total
+
+Owner-approved items P009-A1, B1, B2 and C2 (docs/clubhouse/PREMIUM_PASS_AUDIT.md), with findings D1–D5, D10, D11 and D14:
+
+- **Honest Live (B2, D1):** `useLiveStandings` returns the realtime feed's state (`feedReduce`). The board's chip
+  reads "Live · updated 4:12 PM" only while the channel is SUBSCRIBED; on CHANNEL_ERROR, TIMED_OUT or CLOSED, or
+  after the tab was hidden 5 minutes or more, it reads "Paused · standings from 4:12 PM" with Refresh, which re-reads
+  the page and reopens a dropped channel. A channel error is still reported. The dot stays static (D-33). The time is
+  stamped after hydration, by the chip alone.
+- **Ended (D3):** a live qualifier past its end date reads "Ended · n rounds outstanding" in its status pill (list hero
+  and cards, detail, phone), never Live. The loader stamps `today` as the date at UTC−12 (`endDayFor`), so a qualifier
+  ends only once its last day is over everywhere; a fixture or test without `today` is not reconciled.
+- **Plates (A1):** to par sits on a fixed-aspect ivory plate (condensed cell numeral; red only under par) on the
+  desktop board, the phone rows and the list's live card; ties read "T3" with a raised T; movement since the previous
+  round ("▲2", "▼1") is computed against the board with the latest round number left out (`ChQRow.move`). Nothing
+  animates in. The phone board is one 56pt row a player under a header drawn once (D4).
+- **Rows that move only on a change (B1):** when a refresh changes the ranked order (`rankOrderChanged`), each moved
+  row slides to its new place inside React's `<ViewTransition>` (class `ch-rank`, the smooth spring). No digit
+  rolling or count-ups (owner override of the spec's NumberFlow). Skipped with reduced motion or Animations off,
+  within 300ms of a scroll, with a scorecard tray, sheet or dialog open (`useRankSlide`).
+- **Pace (C2, D2):** the desktop board adds Thru and Avg; a ranked row with fewer rounds in than the most anyone has
+  carries "1 of 3 rounds"; Bubble needs at least half the scheduled rounds in, rounded up (`bubbleMinRounds`: 2 of 3),
+  and the caption says so. The ranking rule is unchanged.
+- **Findings:** the Refresh and the desktop scorecards chevron are 44pt to a finger, as is Choose a player on the phone
+  (D5; the pills and the phone action row already were); the form's description help reads "format and stakes" and a
+  round with no course of its own names the qualifier's course (D10); list dates drop the year inside the current
+  year (D11); the "Active" section is "Upcoming and live" (D14).
+- Preview: `/clubhouse-preview/qualifier?q=live&state=paused | ended | reorder` (reorder refreshes to three more
+  signed rounds after 2s).
+- Tests: `src/clubhouse/__tests__/qualifiers-premium.test.tsx`.
+
 ## 2026-10-08 — States: a failed read keeps the head; one save failure, said once
 
 From the states audit (2026-10-08, findings c14 and b8) and the lead's

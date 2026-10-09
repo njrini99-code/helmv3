@@ -142,8 +142,8 @@ Mobile/UI authority for Fairway surfaces: `src/styles/design-tokens.css`, then
 (`src/clubhouse/**`, including its route integration) uses its own scoped
 tokens, shell and owner handoffs: see `src/clubhouse/AGENTS.md` and
 `.claude/rules/clubhouse.md`, and do not apply Fairway primitives or motion
-rules there. Clubhouse is off in production today (its feature flag is false in
-`config/feature-flags.yml`); Fairway is the live UI. Reuse the shared shell, safe areas, navigation,
+rules there. Clubhouse is the live golf UI for coaches and players (its feature flag is on in
+`config/feature-flags.yml` since 2026-10-08); Fairway still serves every other surface. Reuse the shared shell, safe areas, navigation,
 buttons, cards and empty states, and keep one primary action per screen. Golf
 reliability model: `memory/system/golfhelm-engineering-os.md`.
 

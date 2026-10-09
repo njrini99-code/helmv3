@@ -1,5 +1,122 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-08 — Ask: the @ picker is cmdk, and offers the stats
+
+```text
+Design package: none; no owner board draws the picker (phone spec note in docs/clubhouse/phone/coachhelm.md)
+Contract IDs:   CH-13821 (catalog row widened: stats, docked list, Tab, the select haptic)
+Data impact:    none; the stats are the agent's metric catalog (metrics-catalog.ts), no new read
+Held items:     before and after screenshots (no dev server in this pass)
+```
+
+- **One picker, phone and desktop:** typing `@` (or the `@` key, the Players
+  chip, the Add player starter) opens a
+  cmdk list of the roster and, under it, the stats CoachHelm can read (the
+  agent's own metric catalog, so a stat the
+  coach names is one the model can measure). Both narrow as the coach types;
+  `@gir` and `@sg` find a metric by its short
+  name. A player or stat already in the question is not offered again.
+- **The phone's sheet is gone:** on the phone the list docks above the composer,
+  about four and a half 44px rows tall
+  and never more than two fifths of the space the keyboard leaves. The text box
+  keeps the focus throughout (the `@` key
+  and a row press never take it), so the keyboard stays up; the composer's
+  keyboard-height layout is untouched.
+- **Keys:** the arrows move and wrap, Enter and Tab pick, Esc closes;
+  Shift+Enter is still a new line, and a closed
+  picker never takes a key. VoiceOver hears cmdk's listbox through the box's
+  `aria-controls` and
+  `aria-activedescendant`, the two groups by their headings, and a fragment that
+  matches nothing as one dimmed row.
+- **Never clipped:** the composer measures the room between its box and the
+  nearest edge that would cut the list off
+  (a clipping ancestor such as the Ask sheet's panel, or the visible viewport
+  above the keyboard) and the CSS caps the
+  list to the smaller of that and its own height (296px, the phone's 212px).
+- **Without a roster:** a host that loads no roster passes `roster={false}` (the
+  shell's Ask sheet does); its picker
+  offers the stats alone, named "Mention a stat", with no Players group and no
+  "No active players" that is not true of
+  the team. A fragment no stat matches is one dimmed row, "No stat by that
+  name".
+- **Look:** rows are 44px everywhere (were 38px on the desktop): a player's
+  initials coin or a stat's chart coin, then
+  the name. The list floats on the overlay elevation with a 180ms fade and rise,
+  none under reduced motion or with
+  Animations off. A pick ticks the select haptic.
+
+## 2026-10-08 — the cardless pass: Ask on the phone
+
+Phone only; the desktop is unchanged.
+
+- **New chat:** the opener and the questions sit together at the foot of the
+  screen, just above the composer,
+  instead of a centered greeting over an empty page with a sideways rail of
+  outlined 164px cards at the bottom. The
+  opener is left-aligned (28px), and the three questions are action rows between
+  the Ledger's soft seams, their
+  words in the green ink as an iPhone action row's are, a 60px row with a
+  full-width tap area and a press tint, no
+  chevron (a row asks; it does not go somewhere).
+- **Evidence:** the figure stays the one object. Its metric tiles are no longer
+  cards inside it but its rows: the
+  label at the left with the sample under it, the value at the right, parted by
+  the figure's hairline and closed by
+  one above and below. The Evidence sheet draws the same rows, and its trend
+  sits on the sheet under a hairline
+  instead of in a ringed card. The scrolling table keeps its card.
+- **Action card:** the notes (who is told, and the impact) are lines under the
+  facts' hairline, not filled boxes
+  inside the card; the impact's icon keeps the warning ink.
+- **Loading:** the phone skeleton draws the new chat's shape (the opener's
+  lines, three rows, the composer) at the
+  foot of the screen, not the desktop's centered block.
+
+## 2026-10-08 — The green card is where the light lands (P013-A3)
+
+Approved by the owner on 2026-10-08. On the phone the focus's claim, the page's one
+green card, takes the only light-aimed rim: a 1px rim of the shell's light on its
+sun-facing top and side, a darker hairline opposite. Its "Worth closing" stance is
+gilt that catches the light on its sun side. Nothing else on the page gains depth,
+no figure is lit, nothing moves, and the rim goes under Increase Contrast.
+
+## 2026-10-08 — Premium pass findings (D3 to D13)
+
+The premium audit's CoachHelm findings, checked in WebKit at 1440x900 and
+390x844, light and dark. A1 (decision above the pulse) is not built: the owner
+said no.
+
+- **Ask trend (D3):** the chart is drawn at its measured width (ResizeObserver),
+  so a viewBox unit is a pixel and its axis type is 10.5px on the desktop and
+  12px on the phone, not about 20px scaled up. The reference label takes the
+  first place clear of the line (above or below the dashed line, at the right
+  or the left); when none is clear it is a key under the chart. The Deep dive
+  and the evidence panel draw the same trend.
+- **Standing (D4):** the hero leads with the most to gain and gives one count,
+  against the Tour's denominator; strokes gained is named against the Tour, as
+  Stats says it (Q-88), never "field average".
+- **Game profile fixture (D5):** scrambling is 35%, "Reliable", the live
+  dimension's own label. "Mixed" under Strong is the live persona's call
+  (driver usage peaks at a 60% mix in `normalize.ts`), not the fixture's.
+- **Deep dive (D6, D13):** the full write-up drops the sentence that repeats
+  the drill "This week" draws; the diagnosis lines end with a full stop; the
+  hero says "In your plan" overlaps the two lists. Even ("E") is ink on the
+  plain plate, not mint.
+- **Ask fixture (D7):** the slope bars are Uphill 76%, Level 81%, Downhill 58%,
+  as the board's level 81% says; the ranking's footer counts what its rows list
+  (24 attempts, not the first row's 9), asserted in the tests.
+- **One h1 (D8):** on the phone the page's large "CoachHelm" is text (the top
+  bar has the h1) and still labels the main landmark; every skeleton has a
+  hidden h1; Standing's rows are h3 under their group's h2.
+- **Reach (D9):** the Ask step toggle and the ranked list's name links have a
+  44px hit area.
+- **One primary (D10):** with more than one proposal each Accept is secondary.
+- **Card in card (D11):** the Ask ranking and tables inside a figure are rows on
+  rules in the figure's one card.
+- **Coach board (D12):** a player with no open signal shows no count (it was
+  "0"); generator labels are sentence case ("Penalties per round"); the gauge
+  legend keeps the spaces round its dot.
+
 ## 2026-10-08 — States and native feel
 
 The states audit's CoachHelm findings and the owner's native-feel pass, verified

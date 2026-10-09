@@ -208,6 +208,18 @@ function asOfFor(ins: EvidenceInsight): string | null {
   return label ? `As of ${label}` : null;
 }
 
+/** Names kept capitalised when a generator's Title Case label is set in sentence case. */
+const PROPER = new Set(['Tour', 'PGA', 'LPGA', 'SG', 'GIR', 'OB']);
+
+/** "Penalties per Round" to "Penalties per round": a generator's Title Case label in the house's sentence case (P013 D12). Words with
+ *  more than one capital (an acronym) and proper names keep theirs. */
+export function sentenceCase(label: string): string {
+  return label
+    .split(' ')
+    .map((w, i) => (i === 0 || PROPER.has(w) || !/^[A-Z][a-z]+[,:;]?$/.test(w) ? w : w.toLowerCase()))
+    .join(' ');
+}
+
 function evidenceFor(ins: EvidenceInsight, kind: ChKind, tour: ChTourBaseline | null, say: (text: string) => string): ChHelmEvidence {
   const ev = ins.evidence;
   const asOf = asOfFor(ins);
@@ -218,7 +230,7 @@ function evidenceFor(ins: EvidenceInsight, kind: ChKind, tour: ChTourBaseline | 
   const bars = barsFor(ev);
   const gauge = bars ? null : gaugeFor(ev, kind === 'strength', tour);
   return {
-    label: say(ev.metric_label),
+    label: sentenceCase(say(ev.metric_label)),
     bars,
     // The bars say it for the slope finding; a gauge of its penalty (23 points against none) would say it twice.
     gauge: gauge ? { ...gauge, cmp: say(gauge.cmp), sec: gauge.sec != null ? say(gauge.sec) : null } : null,

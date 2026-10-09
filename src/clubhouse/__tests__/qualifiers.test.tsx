@@ -572,7 +572,7 @@ describe('Qualifiers · list', () => {
     expect(within(hero).getByText('Leaders')).toBeTruthy();
     const titles = (heading: string) =>
       [...(screen.getByRole('heading', { level: 2, name: heading }).closest('section') as HTMLElement).querySelectorAll('h3')].map((h) => h.textContent);
-    expect(titles('Active')).toEqual(['Conference qualifier']);
+    expect(titles('Upcoming and live')).toEqual(['Conference qualifier']);
     expect(titles('Concluded')).toEqual(['Fall invitational qualifier', 'Preseason qualifier', 'Spring conference qualifier']);
   });
 
@@ -2479,7 +2479,10 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
     const writes = fakeWrites();
     inPhone(<QualifierForm data={previewCreateForm()} writes={writes} />);
     const top = screen.getByTestId('phone-top');
-    expect(within(top).getByRole('heading', { level: 1, name: 'New qualifier' })).toBeTruthy();
+    // One h1 per screen (P009-D6): the bar names the screen as text; the page draws its own h1.
+    expect(top.textContent).toContain('New qualifier');
+    expect(within(top).queryByRole('heading')).toBeNull();
+    expect(document.querySelectorAll('h1')).toHaveLength(1);
     expect(screen.getByTestId('tabs-hidden').textContent).toBe('true');
     await user.click(within(top).getByRole('button', { name: 'Create' }));
     await expectCode('CH-09101', /Give the qualifier a name/);
@@ -2499,7 +2502,10 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
     const data = previewSelection('standings');
     inPhone(<QualifierSelection data={data} writes={selWrites()} />);
     const top = screen.getByTestId('phone-top');
-    expect(within(top).getByRole('heading', { level: 1, name: 'Selections' })).toBeTruthy();
+    // One h1 per screen (P009-D6): the bar names the screen as text; the page draws its own h1.
+    expect(top.textContent).toContain('Selections');
+    expect(within(top).queryByRole('heading')).toBeNull();
+    expect(document.querySelectorAll('h1')).toHaveLength(1);
     await user.click(within(top).getByRole('button', { name: 'Back to Qualifier' }));
     expect(router.push).toHaveBeenCalledWith(`/golf/dashboard/qualifiers/${data.id}`);
     expect(within(document.querySelector('.ch-qfs-foot') as HTMLElement).getByRole('button', { name: 'Start selecting' })).toBeTruthy();
@@ -2509,13 +2515,19 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
     const user = userEvent.setup();
     const first = inPhone(<QualifiersList data={list()} />);
     let top = screen.getByTestId('phone-top');
-    expect(within(top).getByRole('heading', { level: 1, name: 'Qualifiers' })).toBeTruthy();
+    // One h1 per screen (P009-D6): the bar names the screen as text; the page draws its own h1.
+    expect(top.textContent).toContain('Qualifiers');
+    expect(within(top).queryByRole('heading')).toBeNull();
+    expect(document.querySelectorAll('h1')).toHaveLength(1);
     await user.click(within(top).getByRole('button', { name: 'Back to More' }));
     expect(router.back.mock.calls.length + router.push.mock.calls.length).toBe(1);
     first.unmount();
     inPhone(<QualifiersList data={list('player', 'mine')} />);
     top = screen.getByTestId('phone-top');
-    expect(within(top).getByRole('heading', { level: 1, name: 'My qualifiers' })).toBeTruthy();
+    // One h1 per screen (P009-D6): the bar names the screen as text; the page draws its own h1.
+    expect(top.textContent).toContain('My qualifiers');
+    expect(within(top).queryByRole('heading')).toBeNull();
+    expect(document.querySelectorAll('h1')).toHaveLength(1);
   });
 
   it('90808 on the phone a player has no Qualifier actions, no Edit and no Manage selections, and the coach has all three', () => {
@@ -2740,7 +2752,7 @@ describe('Qualifiers · live standings (background refresh)', () => {
   }
   afterEach(() => vi.useRealTimers());
 
-  it('90304 a live qualifier listens for signed rounds, a burst of them re-reads the page once, and a dropped feed is reported rather than shown', () => {
+  it('90304 a live qualifier listens for signed rounds, a burst of them re-reads the page once, and a dropped feed is reported (and shown as Paused: P009-B2, qualifiers-premium.test)', () => {
     vi.useFakeTimers();
     const { chan, handle } = openChannel();
     const { unmount } = renderHook(() => useLiveStandings('q1', true));

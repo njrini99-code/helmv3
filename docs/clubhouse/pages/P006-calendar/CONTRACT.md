@@ -175,6 +175,7 @@ write here carries an idempotency key).
 | 60625 | CH-6213 | `THE_ROSTER_DOESNT_LOAD` | The roster doesn't load |
 | 60626 | CH-6013 | `MAKING_A_NEW_CALENDAR_APP_LINK_FAILS` | Making a new calendar-app link fails |
 | 60627 | CH-6014 | `REMOVING_A_CALENDAR_APP_LINK_FAILS` | Removing a calendar-app link fails |
+| 60628 | CH-6015 | `MOVING_AN_EVENT_BY_DRAG_OR_ALT` | Moving an event by drag or Alt+arrow fails (P006-B3) |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002, 10611 CH-1003, 10612 CH-1209, 10613 CH-1210, 10614 CH-1211.
 
@@ -367,13 +368,13 @@ Calendar's own (61801 to 61804): each event is a button named with its title and
 | 61803 | CH-6803 | `CHANGING_THE_PLAYER_FILTER_IS_ANNOUNCED` | Changing the player filter is announced ("Showing 2 players") |
 | 61804 | CH-6804 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_VIEW` | No axe violations in any preview view and state, 1280px and 390px. One known exception, listed in the scan: the 7-day week at 390px squeezes overlapping events under 24px until the phone Calendar is designed |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842.
 
 ## 19 — Responsive layout
 
 Status: DEFINED
 
-At 820px and below Calendar is the phone build (61901): Day with a week strip, the day's agenda, classes in their slots and the now line; Month as a compact grid; List; an event opens in a sheet and New event is the full editor as a sheet. Below a 860px container the desktop reflows without a horizontal page scroll. The phone spec is `docs/clubhouse/phone/calendar.md` (approved, D-22); its differences from the board are Q-67.
+At 820px and below Calendar is the phone build (61901): Day with a week strip, the day's agenda, classes in their slots and the now line; Month as a compact grid (the arrows walk its days, Page Up and Down and a sideways swipe turn the month); List; an event opens in a sheet and New event is the full editor as a sheet. Below a 860px container the desktop reflows without a horizontal page scroll. The phone spec is `docs/clubhouse/phone/calendar.md` (approved, D-22); its differences from the board are Q-67.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

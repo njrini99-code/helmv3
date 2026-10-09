@@ -112,7 +112,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
 
   return (
     <main className={'ch-rd' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rd-title" aria-busy={refreshing || undefined} data-canopy={phone ? undefined : ''}>
-      {phone && <PhoneTop start title="Rounds" />}
+      {phone && <PhoneTop start heading={false} title="Rounds" />}
       <header className="ch-rd-h" data-canopy-head={phone ? undefined : ''}>
         <div>
           <span className="ch-rd-k">{counted ? `Since August 1 · ${counted} counted ${counted === 1 ? 'round' : 'rounds'}` : 'Since August 1'}</span>
@@ -120,6 +120,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
           <span className="ch-rd-upd" role="status" data-ch-code={refreshing ? 'CH-11410' : undefined}>
             {refreshing ? 'Updating…' : ''}
           </span>
+          {/* D11: one h1 per screen; the phone bar's "Rounds" is plain text (heading={false}). */}
           <h1 id="ch-rd-title">Your rounds</h1>
         </div>
         {newHref && !nothing && (
@@ -225,7 +226,6 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                 <EmptyState code="CH-11303" compact title={`No rounds at “${q.trim()}”`} body="Check the spelling, or search part of the course name." />
               ) : (
                 groups.map((g) => {
-                  const scores = g.rounds.map((r) => r.score);
                   const full = g.rounds.filter((r) => r.holes === 18);
                   return (
                     <section key={g.key} className="ch-rd-grp" aria-label={g.key}>
@@ -240,9 +240,12 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                             avg <b>{formatFixed(full.reduce((a, r) => a + r.score, 0) / full.length, 1)}</b>
                           </span>
                         )}
-                        <span className="ch-num">
-                          low <b>{Math.min(...scores)}</b>
-                        </span>
+                        {/* D2: like the average, the low is an 18-hole figure; a nine-hole 38 is not a month's low. */}
+                        {full.length > 0 && (
+                          <span className="ch-num">
+                            low <b>{Math.min(...full.map((r) => r.score))}</b>
+                          </span>
+                        )}
                       </div>
                       <div className="ch-rd-book">
                         {g.rounds.map((r) => (

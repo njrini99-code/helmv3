@@ -16,7 +16,7 @@ import { formatSigned, NO_DATA } from '../lib/format';
  * Wording follows the one standing doctrine the StandingBar carries (its `utils.ts`, which this imports): ranks are never
  * "averages"; percentile language starts at 20 teammates (a smaller roster says "top of your team"); the team marker and the
  * percentile need five measured teammates (`TEAM_MARKER_MIN_N`, the floor the SQL refresh uses as well); strokes gained is
- * against the field average, not a Tour player's score; a women's team's Tour is the LPGA's; a Tour reference that is not
+ * named against the Tour, as Stats names it (Q-88); a women's team's Tour is the LPGA's; a Tour reference that is not
  * comparable says why and is never drawn.
  */
 
@@ -51,8 +51,8 @@ export interface ChStandRow {
   you: string;
   /** Where the player's marker, and the other two, sit on the row's scale (0 to 100). */
   youPct: number;
-  /** The Tour's value ("Tour", "LPGA Tour", or "Field average" for strokes gained); null when it is not comparable, with `tourNote` saying why. */
-  tour: { label: string; /** How a sentence names it: "the Tour", "the LPGA Tour", "the field average". */ ref: string; text: string; pct: number } | null;
+  /** The Tour's value ("Tour" or "LPGA Tour", strokes gained included); null when it is not comparable, with `tourNote` saying why. */
+  tour: { label: string; /** How a sentence names it: "the Tour", "the LPGA Tour". */ ref: string; text: string; pct: number } | null;
   tourNote: string | null;
   /** The team average and how many teammates it counts; null below five (`teamNote` says so). */
   team: { text: string; pct: number; n: number } | null;
@@ -140,7 +140,7 @@ const LABEL: Record<MetricId, string> = {
 };
 
 const GROUPS: ReadonlyArray<{ id: ChStandGroupId; label: string; description: string }> = [
-  { id: 'sg', label: 'Strokes gained', description: 'Strokes gained or lost per round, against the field.' },
+  { id: 'sg', label: 'Strokes gained', description: 'Strokes gained or lost per round, against the Tour.' },
   { id: 'putting', label: 'Putting', description: 'How often putts drop from each distance, and how your misses break.' },
   { id: 'approach', label: 'Approach', description: 'How close your approach shots finish, and how often you find the green.' },
   { id: 'short_game', label: 'Short game', description: 'How often you save par from each lie.' },
@@ -219,9 +219,9 @@ function toRow(s: PlayerStanding, id: MetricId, baseline: number | null): ChStan
   const tourShown = !s.pga_omitted && Number.isFinite(s.pga_value);
   const teamShown = s.team_avg != null && s.team_n >= TEAM_MARKER_MIN_N;
   const scale = fitScale(cfg.default_scale, [s.player_value, tourShown ? s.pga_value : null, teamShown ? s.team_avg : null]);
-  // The Tour's name on the row: the field average for strokes gained, else the team's own Tour (Q-88).
-  const tourLabel = /^sg_/.test(id) ? 'Field average' : womens ? 'LPGA Tour' : 'Tour';
-  const tourRef = /^sg_/.test(id) ? 'the field average' : womens ? 'the LPGA Tour' : 'the Tour';
+  // The Tour's name on the row: the team's own Tour, strokes gained included, as Stats says "vs Tour" (Q-88, P013 D4).
+  const tourLabel = womens ? 'LPGA Tour' : 'Tour';
+  const tourRef = womens ? 'the LPGA Tour' : 'the Tour';
   const projection =
     tourShown && baseline != null
       ? computeCounterfactual({ metric_id: id, direction: cfg.direction, player_value: s.player_value, pga_value: s.pga_value, player_30d_scoring_avg: baseline })

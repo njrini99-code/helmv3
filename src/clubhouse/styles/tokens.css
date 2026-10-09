@@ -78,6 +78,11 @@
   --ch-score-double: #1c1b18;
   /* A filled under-par mark under a light numeral; the same red in light. */
   --ch-score-under-fill: #b03a2e;
+  /* A bare under-par numeral on the feature green (the shot screen's hole strip): lifted so it holds 4.5:1 on
+     green-900 and on a played chip's faint ivory wash; and the same numeral on the ivory current-hole chip. Both are
+     surfaces that do not change at night, so neither is redefined in the dark block. */
+  --ch-score-under-on-green: #ff8b7d;
+  --ch-score-under-on-ivory: #b03a2e;
   /* Charts (yardage book) */
   --ch-chart-paper: #fbf9f3;
   --ch-chart-gain: #155a39;
@@ -177,22 +182,26 @@
      resolves to the sans, so any title still naming it reads in the house sans. */
   --ch-font-serif: var(--ch-font-sans);
   --ch-font-mono: var(--ch-font-jetbrains), ui-monospace, 'SF Mono', Menlo, monospace;
+  /* Real Dynamic Type (P008-C1): every type step is a multiple of --ch-type-k, one CSS pixel at the default size. It
+     follows the root size (a browser's default text size, or a 130% root: rem) and the iPhone's Text Size
+     (--ch-type-scale on <html>, from -apple-system-body, capped at XXL: lib/dynamic-type.ts). */
+  --ch-type-k: calc(var(--ch-type-scale, 1) * 1rem / 16);
   /* Title steps (once the serif titles; the owner moved titles to the heavy sans on 2026-10-07): page and section titles
      only, never data or controls. The names stay so every consumer follows. */
-  --ch-type-serif-l: 600 36px/1.08 var(--ch-font-sans);
-  --ch-type-serif-m: 600 24px/1.15 var(--ch-font-sans);
-  --ch-type-serif-s: 600 20px/1.2 var(--ch-font-sans);
-  --ch-type-display-l: 600 36px/1.08 var(--ch-font-sans);
-  --ch-type-display-s: 600 22px/1.2 var(--ch-font-sans);
-  --ch-type-title: 600 15px/1.35 var(--ch-font-sans);
-  --ch-type-body-l: 400 16px/1.55 var(--ch-font-sans);
-  --ch-type-body: 400 14px/1.5 var(--ch-font-sans);
-  --ch-type-body-s: 400 13px/1.45 var(--ch-font-sans);
-  --ch-type-label: 500 13.5px/1.3 var(--ch-font-sans);
-  --ch-type-label-s: 500 12.5px/1.3 var(--ch-font-sans);
-  --ch-type-caption: 400 12.5px/1.4 var(--ch-font-sans);
-  --ch-type-figure-l: 500 40px/1 var(--ch-font-sans);
-  --ch-type-mono: 500 11px/1 var(--ch-font-mono);
+  --ch-type-serif-l: 600 calc(36 * var(--ch-type-k))/1.08 var(--ch-font-sans);
+  --ch-type-serif-m: 600 calc(24 * var(--ch-type-k))/1.15 var(--ch-font-sans);
+  --ch-type-serif-s: 600 calc(20 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  --ch-type-display-l: 600 calc(36 * var(--ch-type-k))/1.08 var(--ch-font-sans);
+  --ch-type-display-s: 600 calc(22 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  --ch-type-title: 600 calc(15 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+  --ch-type-body-l: 400 calc(16 * var(--ch-type-k))/1.55 var(--ch-font-sans);
+  --ch-type-body: 400 calc(14 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  --ch-type-body-s: 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  --ch-type-label: 500 calc(13.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  --ch-type-label-s: 500 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  --ch-type-caption: 400 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  --ch-type-figure-l: 500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
+  --ch-type-mono: 500 calc(11 * var(--ch-type-k))/1 var(--ch-font-mono);
 
   /* Space and layout */
   --ch-gutter: 40px;
@@ -202,6 +211,70 @@
   --ch-phone-topbar-h: 50px; /* a 44px row and 6px below it, under the status bar */
   --ch-tabbar-h: 56px;
 
+  /* The global light (P001-A1, D3-1; owner 2026-10-08). One sun for the whole Clubhouse, from the team's course location
+     (Team settings; the team's time zone until it is set) and the time. shell/light.tsx writes these unitless numbers on
+     <html> a few times an hour (lib/light.ts computes them; useClubhouseLight() reads them in TS):
+       --ch-sun-x          0 left (morning) .. 0.5 overhead .. 1 right (evening)
+       --ch-sun-y          0 zenith .. 1 horizon
+       --ch-sun-dir        -1 .. 1, the light's side (x as a direction)
+       --ch-sun-intensity  0 night .. 1 high sun
+       --ch-sun-warmth     0 .. 1, golden hour
+       --ch-sun-night      0 day .. 1 night
+       --ch-sun-drift      the contact shadow's lean in px, away from the light (|drift| <= 6)
+     Each is read with its noon fallback, so the server, the first paint and a page outside the shell draw noon. Consume
+     the derived tokens below, never the raw numbers, and only on the frame and materials: never on data (scores, charts,
+     figures). Nothing transitions them: values change in place, so reduced motion and Animations off need nothing. */
+  /* The key light's colour: warm white by day, gold at golden hour, moon blue at night. */
+  --ch-light-key: color-mix(
+    in oklab,
+    color-mix(in oklab, #fff6e0, #ffbf73 calc(var(--ch-sun-warmth, 0) * 100%)),
+    #a9bbdd calc(var(--ch-sun-night, 0) * 100%)
+  );
+  /* The 1px rim on a material's sun-facing edges (top, and the side the sun is on), and its softer twin for keys. */
+  --ch-light-rim: color-mix(in oklab, rgb(255 255 255 / 0.9), rgb(255 228 182 / 0.95) calc(var(--ch-sun-warmth, 0) * 75%));
+  --ch-light-rim-soft: color-mix(in oklab, rgb(255 255 255 / 0.7), rgb(255 228 182 / 0.8) calc(var(--ch-sun-warmth, 0) * 75%));
+  --ch-light-rim-x: calc(var(--ch-sun-dir, 0) * -1px);
+  /* Contact shadows lean away from the light: the near layer a little, the far layer the full drift. */
+  --ch-light-drift: calc(var(--ch-sun-drift, 0) * 1px);
+  --ch-light-drift-mid: calc(var(--ch-sun-drift, 0) * 0.6px);
+  --ch-light-drift-near: calc(var(--ch-sun-drift, 0) * 0.25px);
+  /* The sky falling across the green frame, brightest under the sun (desktop frame and sidebar field). */
+  --ch-light-sky: radial-gradient(
+    110% 120% at calc(var(--ch-sun-x, 0.5) * 100%) calc(var(--ch-sun-y, 0.25) * 40% - 30%),
+    color-mix(in oklab, var(--ch-light-key) calc(5% + var(--ch-sun-intensity, 1) * 9% + var(--ch-sun-warmth, 0) * 10%), transparent),
+    transparent 75%
+  );
+  /* The same sky through the phone chassis bar: a horizontal falloff that is gone before the bar's lower edge, so the
+     sheet's lip below keeps the flat green it is cut from. */
+  --ch-light-bar: radial-gradient(
+    60% 150% at calc(var(--ch-sun-x, 0.5) * 100%) -45%,
+    color-mix(in oklab, var(--ch-light-key) calc(4% + var(--ch-sun-intensity, 1) * 6% + var(--ch-sun-warmth, 0) * 9%), transparent),
+    transparent 70%
+  );
+  /* The light falling across the top of the parchment canvas. */
+  --ch-light-canvas: radial-gradient(
+    70% 420px at calc(var(--ch-sun-x, 0.5) * 100%) 0%,
+    color-mix(in oklab, var(--ch-light-key) calc(var(--ch-sun-intensity, 1) * 14% + var(--ch-sun-warmth, 0) * 12%), transparent),
+    transparent 80%
+  );
+  /* Paper temperature: a flat wash over the canvas, warm toward golden hour and cool at night (a few percent at most). */
+  --ch-light-paper-tint: color-mix(
+    in oklab,
+    color-mix(in oklab, #e8b46a, #5d74a6 calc(var(--ch-sun-night, 0) * 100%))
+      calc(var(--ch-sun-warmth, 0) * 7% + var(--ch-sun-night, 0) * 4%),
+    transparent
+  );
+  --ch-light-paper: linear-gradient(var(--ch-light-paper-tint), var(--ch-light-paper-tint));
+
+  /* Shell literals promoted to tokens (P001-D6), so dark mode and the light can reach them. */
+  --ch-on-green-bright: #fbfaf6;
+  --ch-on-green-glyph: #cfc7b2;
+  --ch-on-green-plate: #f4f1e8;
+  --ch-on-green-label: #e9e4d6;
+  --ch-press-well: #ece8de;
+  --ch-skel-base: #e2dbca;
+  --ch-skel-sheen: #ece6d8;
+  --ch-topbar-paper: #f7f2e6;
   /* Radius */
   --ch-radius-xs: 5px;
   --ch-radius-sm: 7px;
@@ -223,30 +296,37 @@
      under ordinary fields/cards. Reading surfaces are quiet; floating controls
      and overlays retain a small, progressively stronger separation. */
   --ch-edge: rgb(28 25 18 / 0.08);
-  --ch-highlight: inset 0 1px 0 rgb(255 255 255 / 0.7);
+  --ch-highlight: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim-soft);
   /* Reading surfaces (premium brief, October 6): layered light rather than one broad shadow. A lit top edge, a crisp
      hairline, a tight contact shadow and an ambient falloff with negative spread, so the shadow sits under the card
      instead of hazing the canvas around it. */
-  --ch-elevation-reading: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 0 0 1px rgb(28 25 18 / 0.085),
-    0 1px 2px rgb(28 25 18 / 0.08), 0 8px 18px -10px rgb(28 25 18 / 0.16), 0 22px 40px -24px rgb(28 25 18 / 0.18);
+  --ch-elevation-reading: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(28 25 18 / 0.085),
+    var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.08), var(--ch-light-drift-mid) 8px 18px -10px rgb(28 25 18 / 0.16),
+    var(--ch-light-drift) 22px 40px -24px rgb(28 25 18 / 0.18);
   /* The reading surface's cast shadow alone, for dark and branded surfaces where a white top edge or ink hairline
      would draw a line (the green hero, the green Up next card). */
-  --ch-elevation-cast: 0 1px 2px rgb(28 25 18 / 0.06), 0 8px 18px -10px rgb(28 25 18 / 0.16),
-    0 22px 40px -24px rgb(28 25 18 / 0.18);
-  --ch-elevation-reading-hover: inset 0 1px 0 rgb(255 255 255 / 0.95), 0 0 0 1px rgb(28 25 18 / 0.1),
-    0 2px 4px rgb(28 25 18 / 0.07), 0 12px 24px -12px rgb(28 25 18 / 0.2), 0 28px 48px -26px rgb(28 25 18 / 0.22);
+  --ch-elevation-cast: var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.06),
+    var(--ch-light-drift-mid) 8px 18px -10px rgb(28 25 18 / 0.16), var(--ch-light-drift) 22px 40px -24px rgb(28 25 18 / 0.18);
+  --ch-elevation-reading-hover: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(28 25 18 / 0.1),
+    var(--ch-light-drift-near) 2px 4px rgb(28 25 18 / 0.07), var(--ch-light-drift-mid) 12px 24px -12px rgb(28 25 18 / 0.2),
+    var(--ch-light-drift) 28px 48px -26px rgb(28 25 18 / 0.22);
   --ch-elevation-reading-accent: 0 1px 3px rgb(8 43 28 / 0.08), 0 4px 12px -6px rgb(8 43 28 / 0.12);
-  --ch-elevation-control: var(--ch-highlight), 0 1px 2px rgb(28 25 18 / 0.06);
-  --ch-elevation-floating: 0 2px 6px rgb(28 25 18 / 0.06), 0 8px 20px -8px rgb(28 25 18 / 0.12);
+  --ch-elevation-control: var(--ch-highlight), var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.06);
+  --ch-elevation-floating: var(--ch-light-drift-near) 2px 6px rgb(28 25 18 / 0.06), var(--ch-light-drift-mid) 8px 20px -8px rgb(28 25 18 / 0.12);
   --ch-elevation-floating-focus: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo),
     var(--ch-elevation-floating);
   /* The phone's floating tab bar: a lit edge, a hairline and a long soft shadow that separates it from the scrolling page. */
-  --ch-elevation-tabbar: inset 0 1px 0 rgb(255 255 255 / 0.7), 0 0 0 1px rgb(28 25 18 / 0.07),
-    0 2px 6px rgb(28 25 18 / 0.08), 0 14px 32px -12px rgb(28 25 18 / 0.32);
+  --ch-elevation-tabbar: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim-soft), 0 0 0 1px rgb(28 25 18 / 0.07),
+    var(--ch-light-drift-near) 2px 6px rgb(28 25 18 / 0.08), var(--ch-light-drift-mid) 14px 32px -12px rgb(28 25 18 / 0.32);
   /* Depth on the Frame's green (owner, 2026-10-07): the framed dashboard panel, and a plate or card lifted off the
      green (the selected nav row, the next-event card). A gilt ring, then a deeper drop than ivory needs. */
-  --ch-elevation-framed: 0 1px 3px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.12), inset 1px 0 0 rgb(11 58 37 / 0.12);
-  --ch-elevation-on-frame: 0 0 0 1px rgb(176 149 96 / 0.45), 0 1px 2px rgb(2 18 10 / 0.3);
+  --ch-elevation-framed: var(--ch-light-drift-near) 1px 3px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.12), inset 1px 0 0 rgb(11 58 37 / 0.12);
+  --ch-elevation-on-frame: 0 0 0 1px rgb(176 149 96 / 0.45), var(--ch-light-drift-near) 1px 2px rgb(2 18 10 / 0.3);
+  /* The sidebar's selected row (P001-A2, owner 2026-10-08): an inset well in the frame rather than a lit plate, so the
+     page title stays the brightest thing on screen. The frame a step darker, one champagne hairline (3:1 against the
+     rows around it, WCAG 1.4.11) and a pressed-in top shade. */
+  --ch-nav-well-bg: color-mix(in oklab, var(--ch-frame) 80%, #000);
+  --ch-nav-well-shadow: inset 0 0 0 1px rgb(205 187 142 / 0.58), inset 0 1px 3px rgb(0 0 0 / 0.32), 0 1px 0 rgb(255 255 255 / 0.04);
   --ch-elevation-on-frame-hover: 0 0 0 1px rgb(176 149 96 / 0.6), 0 2px 6px rgb(2 18 10 / 0.35);
   /* The Ledger (owner, 2026-10-07: "flush, not so card heavy"): inside the framed workspace a section is a rule and a
      heading on the canvas, not a card. Engraved gilt-brown rules, forest ink for headings, the head's eyebrow brown. */
@@ -272,8 +352,9 @@
   --ch-elevation-on-frame-card-hover: 0 0 0 1px rgb(176 149 96 / 0.6), 0 10px 22px -10px rgb(0 0 0 / 0.55), inset 0 1px 0 #fff;
   --ch-elevation-primary-hover: 0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), 0 2px 4px rgb(12 65 40 / 0.22),
     0 8px 16px -8px rgb(12 65 40 / 0.45);
-  --ch-elevation-overlay: 0 4px 12px rgb(28 25 18 / 0.08), 0 16px 36px -12px rgb(28 25 18 / 0.16);
-  --ch-elevation-sheet: 0 -4px 12px rgb(28 25 18 / 0.06), 0 -12px 32px -12px rgb(28 25 18 / 0.12);
+  --ch-elevation-overlay: var(--ch-light-drift-near) 4px 12px rgb(28 25 18 / 0.08), var(--ch-light-drift-mid) 16px 36px -12px rgb(28 25 18 / 0.16);
+  --ch-elevation-sheet: inset 0 1px 0 var(--ch-light-rim), var(--ch-light-drift-near) -4px 12px rgb(28 25 18 / 0.06),
+    var(--ch-light-drift-mid) -12px 32px -12px rgb(28 25 18 / 0.12);
   --ch-elevation-bubble: 0 1px 2px rgb(28 25 18 / 0.04);
   --ch-bubble-mine-bg: linear-gradient(180deg, #1e6a45 0%, #155a39 60%, #0f4a2f 100%);
   --ch-elevation-bubble-mine: 0 1px 2px rgb(11 58 37 / 0.08);
@@ -478,17 +559,41 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 
   --ch-glass-bg: rgb(22 27 23 / 0.74);
   --ch-edge: rgb(255 255 255 / 0.07);
-  --ch-highlight: inset 0 1px 0 rgb(255 255 255 / 0.06);
-  --ch-elevation-reading: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 0 0 1px rgb(255 255 255 / 0.06),
-    0 1px 2px rgb(0 0 0 / 0.35), 0 8px 18px -10px rgb(0 0 0 / 0.5), 0 22px 40px -24px rgb(0 0 0 / 0.5);
-  --ch-elevation-cast: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 18px -10px rgb(0 0 0 / 0.5), 0 22px 40px -24px rgb(0 0 0 / 0.5);
-  --ch-elevation-reading-hover: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 0 0 1px rgb(255 255 255 / 0.09),
-    0 2px 4px rgb(0 0 0 / 0.4), 0 12px 24px -12px rgb(0 0 0 / 0.55), 0 28px 48px -26px rgb(0 0 0 / 0.55);
+  /* The night's light is the dark theme's own: a cool moon key, very faint, warming only a touch at golden hour. */
+  --ch-light-key: color-mix(in oklab, #b9cbea, #e9c48c calc(var(--ch-sun-warmth, 0) * 45%));
+  --ch-light-rim: color-mix(in oklab, rgb(214 226 246 / 0.06), rgb(240 214 170 / 0.08) calc(var(--ch-sun-warmth, 0) * 60%));
+  --ch-light-rim-soft: color-mix(in oklab, rgb(214 226 246 / 0.06), rgb(240 214 170 / 0.07) calc(var(--ch-sun-warmth, 0) * 60%));
+  --ch-light-sky: radial-gradient(
+    75% 90% at calc(var(--ch-sun-x, 0.5) * 100%) calc(var(--ch-sun-y, 0.25) * 40% - 30%),
+    color-mix(in oklab, var(--ch-light-key) calc(3% + var(--ch-sun-intensity, 1) * 2% + var(--ch-sun-warmth, 0) * 2%), transparent),
+    transparent 72%
+  );
+  --ch-light-bar: radial-gradient(
+    60% 150% at calc(var(--ch-sun-x, 0.5) * 100%) -45%,
+    color-mix(in oklab, var(--ch-light-key) calc(3% + var(--ch-sun-intensity, 1) * 2% + var(--ch-sun-warmth, 0) * 2%), transparent),
+    transparent 70%
+  );
+  --ch-light-canvas: radial-gradient(
+    70% 420px at calc(var(--ch-sun-x, 0.5) * 100%) 0%,
+    color-mix(in oklab, var(--ch-light-key) calc(2.5% + var(--ch-sun-intensity, 1) * 1.5% + var(--ch-sun-warmth, 0) * 2%), transparent),
+    transparent 80%
+  );
+  --ch-light-paper-tint: transparent;
+  --ch-highlight: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim);
+  --ch-elevation-reading: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(255 255 255 / 0.06),
+    var(--ch-light-drift-near) 1px 2px rgb(0 0 0 / 0.35), var(--ch-light-drift-mid) 8px 18px -10px rgb(0 0 0 / 0.5),
+    var(--ch-light-drift) 22px 40px -24px rgb(0 0 0 / 0.5);
+  --ch-elevation-cast: var(--ch-light-drift-near) 1px 2px rgb(0 0 0 / 0.3), var(--ch-light-drift-mid) 8px 18px -10px rgb(0 0 0 / 0.5),
+    var(--ch-light-drift) 22px 40px -24px rgb(0 0 0 / 0.5);
+  --ch-elevation-reading-hover: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(255 255 255 / 0.09),
+    var(--ch-light-drift-near) 2px 4px rgb(0 0 0 / 0.4), var(--ch-light-drift-mid) 12px 24px -12px rgb(0 0 0 / 0.55),
+    var(--ch-light-drift) 28px 48px -26px rgb(0 0 0 / 0.55);
   --ch-elevation-reading-accent: 0 1px 3px rgb(0 0 0 / 0.35), 0 4px 12px -6px rgb(0 0 0 / 0.45);
-  --ch-elevation-control: var(--ch-highlight), 0 1px 2px rgb(0 0 0 / 0.35);
-  --ch-elevation-floating: 0 0 0 1px rgb(255 255 255 / 0.06), 0 2px 6px rgb(0 0 0 / 0.35), 0 8px 20px -8px rgb(0 0 0 / 0.55);
-  --ch-elevation-tabbar: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 1px rgb(255 255 255 / 0.07),
-    0 2px 6px rgb(0 0 0 / 0.4), 0 14px 32px -12px rgb(0 0 0 / 0.7);
+  --ch-elevation-control: var(--ch-highlight), var(--ch-light-drift-near) 1px 2px rgb(0 0 0 / 0.35);
+  --ch-elevation-floating: 0 0 0 1px rgb(255 255 255 / 0.06), var(--ch-light-drift-near) 2px 6px rgb(0 0 0 / 0.35),
+    var(--ch-light-drift-mid) 8px 20px -8px rgb(0 0 0 / 0.55);
+  --ch-elevation-tabbar: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(255 255 255 / 0.07),
+    var(--ch-light-drift-near) 2px 6px rgb(0 0 0 / 0.4), var(--ch-light-drift-mid) 14px 32px -12px rgb(0 0 0 / 0.7);
   --ch-elevation-framed: 0 1px 3px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.04), inset 1px 0 0 rgb(255 255 255 / 0.03);
   --ch-elevation-on-frame: 0 0 0 1px rgb(201 173 116 / 0.4), 0 1px 2px rgb(0 0 0 / 0.5);
   --ch-elevation-on-frame-hover: 0 0 0 1px rgb(201 173 116 / 0.55), 0 2px 6px rgb(0 0 0 / 0.55);
@@ -508,8 +613,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-elevation-on-frame-card-hover: 0 0 0 1px rgb(201 173 116 / 0.55), 0 10px 22px -10px rgb(0 0 0 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.06);
   --ch-elevation-primary-hover: 0 0 0 1px rgb(107 187 140 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.1), 0 2px 4px rgb(0 0 0 / 0.4),
     0 8px 16px -8px rgb(0 0 0 / 0.55);
-  --ch-elevation-overlay: 0 0 0 1px rgb(255 255 255 / 0.07), 0 4px 12px rgb(0 0 0 / 0.4), 0 16px 36px -12px rgb(0 0 0 / 0.6);
-  --ch-elevation-sheet: 0 -1px 0 rgb(255 255 255 / 0.06), 0 -4px 12px rgb(0 0 0 / 0.35), 0 -12px 32px -12px rgb(0 0 0 / 0.5);
+  --ch-elevation-overlay: 0 0 0 1px rgb(255 255 255 / 0.07), var(--ch-light-drift-near) 4px 12px rgb(0 0 0 / 0.4),
+    var(--ch-light-drift-mid) 16px 36px -12px rgb(0 0 0 / 0.6);
+  --ch-elevation-sheet: 0 -1px 0 rgb(255 255 255 / 0.06), inset 0 1px 0 var(--ch-light-rim), var(--ch-light-drift-near) -4px 12px rgb(0 0 0 / 0.35),
+    var(--ch-light-drift-mid) -12px 32px -12px rgb(0 0 0 / 0.5);
   --ch-elevation-bubble: 0 1px 2px rgb(0 0 0 / 0.3);
   --ch-elevation-bubble-mine: 0 1px 2px rgb(0 0 0 / 0.3);
   --ch-field-pill-edge: inset 0 0 0 1px rgb(237 231 216 / 0.16);
@@ -535,6 +642,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     0 1px 0 rgb(255 255 255 / 0.04);
   --ch-raised-bg: linear-gradient(180deg, #262d27 0%, #212722 60%, #1d231e 100%);
   --ch-sheet-bg: #1b201c;
+  --ch-skel-base: #252c26;
+  --ch-skel-sheen: #2e362f;
 }
 
 /* Phone: warm ivory with the layered surfaces in the supplied design boards.
@@ -600,6 +709,21 @@ html:has([data-ui='clubhouse']) {
   --ch-dur-vt-gap: 0ms;
   --ch-ease-vt-out: cubic-bezier(0.4, 0, 1, 1);
   --ch-ease-vt-in: cubic-bezier(0.22, 1, 0.36, 1);
+  /* How long a navigation onto a route skeleton keeps the old page up before the skeleton shows (native-feel audit
+     2026-10-08, P0-2): a load that finishes sooner never shows a skeleton. base.css delays the skeleton by the same. */
+  --ch-dur-vt-hold: 300ms;
+  /* A drill-in's push and Back's pop (lib/nav-motion.ts): the smooth spring, as a pushed phone screen moves
+     (PhoneScreen), and how far the page beneath draws back (UIKit's parallax, about a third). */
+  --ch-dur-vt-push: 260ms;
+  --ch-ease-vt-push: cubic-bezier(0.22, 1, 0.36, 1);
+  --ch-vt-parallax: -30%;
+}
+/* The smooth spring as CSS linear(), as [data-ui='clubhouse'] has it above (motion-physics.test pins the two). */
+@supports (transition-timing-function: linear(0, 1)) {
+  html:has([data-ui='clubhouse']) {
+    --ch-ease-vt-push: linear(0, 0.0418, 0.136, 0.2508, 0.3677, 0.477, 0.5739, 0.657, 0.7266, 0.7839, 0.8303, 0.8675, 0.8971, 0.9204, 0.9387, 0.953, 0.964, 0.9725, 0.9791, 0.9841, 0.988, 0.9909, 0.9931, 0.9948, 0.9961, 0.9971, 0.9978, 0.9983, 0.9988, 1);
+    --ch-dur-vt-push: 462ms;
+  }
 }
 
 /* The document under Clubhouse (high-fidelity audit F05): the overscroll bounce and the frame before first paint show
@@ -631,12 +755,75 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
    use them. Desktop keeps the compact board sizes for dense tables. */
 @media (max-width: 820px) {
   [data-ui='clubhouse'] {
-    --ch-type-title: 600 16px/1.35 var(--ch-font-sans);
-    --ch-type-body-l: 400 17px/1.5 var(--ch-font-sans);
-    --ch-type-body: 400 16px/1.5 var(--ch-font-sans);
-    --ch-type-body-s: 400 14px/1.45 var(--ch-font-sans);
-    --ch-type-label: 500 14px/1.3 var(--ch-font-sans);
-    --ch-type-label-s: 500 13px/1.3 var(--ch-font-sans);
-    --ch-type-caption: 400 13px/1.4 var(--ch-font-sans);
+    --ch-type-title: 600 calc(16 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+    --ch-type-body-l: 400 calc(17 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+    --ch-type-body: 400 calc(16 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+    --ch-type-body-s: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+    --ch-type-label: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    --ch-type-label-s: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    --ch-type-caption: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  }
+}
+
+/* Reduce Transparency (P001-D1): every glass token turns opaque and the blur goes to nothing, so any surface built on
+   the tokens follows. The OS setting arrives as the media query where the browser has it, and as
+   html[data-reduce-transparency] where it does not (iOS WebKit; the iPhone app's native bridge sets it, wave 2). Keep
+   these blocks after the phone and dark ones above, which they must beat. */
+@media (prefers-reduced-transparency: reduce) {
+  [data-ui='clubhouse'] {
+    --ch-glass-bg: var(--ch-bg-page);
+    --ch-glass-blur: 0px;
+    --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
+    --ch-phone-composer-bg: var(--ch-bg-surface);
+  }
+  html[data-fw-theme='dark'] [data-ui='clubhouse'] {
+    --ch-glass-bg: var(--ch-bg-page);
+    --ch-glass-blur: 0px;
+    --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
+    --ch-phone-composer-bg: var(--ch-bg-surface);
+  }
+}
+:root[data-reduce-transparency] [data-ui='clubhouse'],
+:root[data-reduce-transparency][data-fw-theme='dark'] [data-ui='clubhouse'] {
+  --ch-glass-bg: var(--ch-bg-page);
+  --ch-glass-blur: 0px;
+  --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
+  --ch-phone-composer-bg: var(--ch-bg-surface);
+}
+
+/* Increase Contrast (P001-D7): the engraved rules, hairlines and the champagne eyebrow gain definition, and glass is
+   opaque. One block, so every surface on the tokens follows. */
+@media (prefers-contrast: more) {
+  [data-ui='clubhouse'] {
+    --ch-border-hairline: rgb(28 25 18 / 0.2);
+    --ch-border-subtle: rgb(28 25 18 / 0.28);
+    --ch-border-control: rgb(28 25 18 / 0.4);
+    --ch-border-strong: rgb(28 25 18 / 0.55);
+    --ch-ledger-rule: rgb(28 25 18 / 0.3);
+    --ch-ledger-rule-soft: rgb(28 25 18 / 0.2);
+    --ch-ledger-rule-double: 3px double rgb(28 25 18 / 0.4);
+    --ch-ledger-eyebrow: var(--ch-text-secondary);
+    --ch-text-tertiary: var(--ch-ink-600);
+    --ch-glass-bg: var(--ch-bg-page);
+    --ch-glass-blur: 0px;
+    --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
+    --ch-light-rim: transparent;
+    --ch-light-rim-soft: transparent;
+  }
+  html[data-fw-theme='dark'] [data-ui='clubhouse'] {
+    --ch-border-hairline: rgb(237 231 216 / 0.24);
+    --ch-border-subtle: rgb(237 231 216 / 0.3);
+    --ch-border-control: rgb(237 231 216 / 0.42);
+    --ch-border-strong: rgb(237 231 216 / 0.58);
+    --ch-ledger-rule: rgb(237 231 216 / 0.32);
+    --ch-ledger-rule-soft: rgb(237 231 216 / 0.22);
+    --ch-ledger-rule-double: 3px double rgb(237 231 216 / 0.42);
+    --ch-ledger-eyebrow: var(--ch-text-secondary);
+    --ch-text-tertiary: var(--ch-ink-600);
+    --ch-glass-bg: var(--ch-bg-page);
+    --ch-glass-blur: 0px;
+    --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
+    --ch-light-rim: transparent;
+    --ch-light-rim-soft: transparent;
   }
 }

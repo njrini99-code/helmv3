@@ -209,6 +209,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
     <main className="ch-qf ch-qf--form" data-canopy="">
       {phone && (
         <PhoneTop
+        heading={false}
           title={editing ? 'Edit qualifier' : 'New qualifier'}
           back={{ label: 'Cancel', chevron: false, onBack: cancel }}
           action={
@@ -375,7 +376,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                   {fieldHelp('oneRoundAck')}
                 </div>
               )}
-              <RoundCourses rounds={rounds} courses={courses} failed={editing && data.coursesError} onPick={setPicking} onClear={clearCourse} />
+              <RoundCourses rounds={rounds} courses={courses} fallback={v.course.trim() || null} failed={editing && data.coursesError} onPick={setPicking} onClear={clearCourse} />
               <div className="ch-field">
                 <label htmlFor="qf-rules" className="ch-field__label ch-qf-label">
                   Scoring rules <span className="ch-qf-optional">Optional</span>
@@ -528,12 +529,15 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
 function RoundCourses({
   rounds,
   courses,
+  fallback,
   failed,
   onPick,
   onClear,
 }: {
   rounds: number;
   courses: Map<number, ChQFormRoundCourse>;
+  /** The qualifier's own course: a round without one of its own is played there (P009-D10: the default, not a gap). */
+  fallback: string | null;
   failed: boolean;
   onPick: (round: number) => void;
   onClear: (round: number) => void;
@@ -554,8 +558,8 @@ function RoundCourses({
               <div key={i} className="ch-qf-rc" role="listitem">
                 <span className="ch-qf-rn">{i + 1}</span>
                 <span>
-                  <b>{c?.courseName ?? 'No course set'}</b>
-                  <small>{c ? [c.teeName, c.par != null ? `Par ${c.par}` : null].filter(Boolean).join(' · ') || 'Tees not set' : 'Uses the qualifier’s course'}</small>
+                  <b>{c?.courseName ?? fallback ?? 'No course set'}</b>
+                  <small>{c ? [c.teeName, c.par != null ? `Par ${c.par}` : null].filter(Boolean).join(' · ') || 'Tees not set' : fallback ? 'The qualifier’s course' : 'Uses the qualifier’s course'}</small>
                 </span>
                 <span className="ch-qf-rc__act">
                   <Button size="sm" variant="ghost" leftIcon={MapPin} onClick={() => onPick(i + 1)}>

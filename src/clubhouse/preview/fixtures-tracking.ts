@@ -124,7 +124,13 @@ export function trackingFixture(state: string | undefined): ChTrackFixture {
   const base: ChTrackFixture = { holes: upTo(3), index: 3, shotsByHole: shotsUpTo(3), sheet: null, submit: null, checkpointFails: false, meters: false };
   const on4 = (shots: ShotRecord[]) => ({ ...base.shotsByHole, 3: shots });
   switch (state) {
+    // The save line's states (saved, phone, saving, retrying; PreviewTracking fakes the save) play the approach, so the
+    // line sits beside a live readout.
     case 'approach':
+    case 'saved':
+    case 'phone':
+    case 'saving':
+    case 'retrying':
       return { ...base, shotsByHole: on4([H4_TEE]) };
     case 'meters':
       return { ...base, shotsByHole: on4([H4_TEE]), meters: true };

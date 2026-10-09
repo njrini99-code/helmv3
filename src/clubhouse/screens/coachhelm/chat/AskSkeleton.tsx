@@ -9,6 +9,8 @@ import { Skeleton } from '../../../ui/States';
 export function AskSkeleton({ chained }: { chained?: boolean } = {}) {
   return (
     <main className="ch-ask ch-ask-sk" aria-busy="true" aria-label="Loading Ask CoachHelm" data-skel={chained ? 'chained' : undefined} data-ch-code="CH-13420">
+      {/* The screen's one h1 while it loads, for the page outline (P013 D8). */}
+      <h1 className="ch-sr-only">Ask CoachHelm</h1>
       <div className="ch-ask-top">
         <Skeleton width={150} height={38} radius={12} />
       </div>
@@ -29,6 +31,24 @@ export function AskSkeleton({ chained }: { chained?: boolean } = {}) {
             <Skeleton width="62%" height={30} radius={8} />
             <Skeleton width="40%" height={14} />
             <Skeleton width="100%" height={112} radius={24} />
+          </div>
+          {/* The phone's shape (CSS shows one or the other): the opener and its three question rows at the foot, over the
+              composer, as the new chat draws them. */}
+          <div className="ch-ask-sk__ph" aria-hidden="true">
+            <div className="ch-ask-sk__phgreet">
+              <Skeleton width="86%" height={26} radius={7} />
+              <Skeleton width="58%" height={26} radius={7} />
+              <Skeleton width="72%" height={13} />
+            </div>
+            <ul className="ch-ask-sk__phrows">
+              {[34, 46, 40].map((w, i) => (
+                <li key={i}>
+                  <Skeleton width={`${w}%`} height={14} />
+                  <Skeleton width={`${w + 22}%`} height={11} />
+                </li>
+              ))}
+            </ul>
+            <Skeleton width="100%" height={60} radius={24} />
           </div>
         </section>
       </div>

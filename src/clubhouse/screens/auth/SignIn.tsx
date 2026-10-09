@@ -2,7 +2,7 @@
 
 import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { Icon } from '../../ui/Icon';
@@ -13,9 +13,9 @@ import { ResetForm, ResetSent } from './ForgotPassword';
 import { SceneMount } from './SceneMount';
 import { SignInForm, type SignInPreview } from './SignInForm';
 import type { loginAction, requestPasswordResetAction } from '@/app/golf/actions/auth';
-import { isDarkSky } from './scene-sky';
+import { isDarkSky, paperTint } from './scene-sky';
 import { useGlide, type Glider } from './use-glide';
-import { useLocalHour } from './use-hour';
+import { useSkyHour } from './use-hour';
 import { useQueryParam } from './use-query-param';
 
 /**
@@ -57,9 +57,12 @@ export function SignIn({
   const returnTo = useQueryParam('returnTo');
   const signupHref = returnTo ? `/golf/signup?returnTo=${encodeURIComponent(returnTo)}` : '/golf/signup';
   const opening = phase === 'opening';
-  const hour = useLocalHour();
+  // P015-A1: the sun decides dusk, as it does for the sky behind.
+  const hour = useSkyHour();
   // At dusk and night the wordmark over the sky flips to ivory, as the welcome's type does.
   const dark = hour !== null && isDarkSky(hour);
+  // P015-A2: the sheet takes a few percent of the light outside.
+  const tint = hour === null ? null : paperTint(hour);
 
   return (
     <AuthFrame screen="signin" phase={phase}>
@@ -83,7 +86,7 @@ export function SignIn({
           </p>
         </div>
       </div>
-      <main className="ch-au-panel" aria-label={view === 'signin' ? 'Sign in' : 'Reset your password'} aria-hidden={opening || undefined} inert={opening || undefined}>
+      <main className="ch-au-panel" style={tint ? ({ ['--ch-au-paper' as string]: tint } as CSSProperties) : undefined} aria-label={view === 'signin' ? 'Sign in' : 'Reset your password'} aria-hidden={opening || undefined} inert={opening || undefined}>
         <div className="ch-au-top">
           {/* The App Store build has no marketing home to go back to (the proxy sends "/" straight back here), and no sign-up (Guideline 3.1.1).
               CH-15611: hovered, its chevron leans back the way it goes; pressed, it tints. */}

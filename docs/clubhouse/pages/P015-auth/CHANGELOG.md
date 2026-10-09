@@ -1,5 +1,49 @@
 # P015 — Auth: changelog
 
+## 2026-10-08 — the phone hand-off follows the design reference
+
+- Owner: "it was supposed to fold into the dashboard, check the design ref". The
+  phone used to fade the course to a flat ivory page, then the dashboard's green
+  bar appeared on top of it. It now plays the reference's phone hand-off
+  (design/handoff/auth/src/login.css, `.ml-hero` and `.ml-rise`):
+  - the welcome lifts away;
+  - the frame's green fades up over the course and collapses to the dashboard's
+    bar (status bar plus 50px);
+  - the parchment sheet rises from the foot to meet it, with the sheet's 16px
+    top corners, 820ms after a 200ms beat (the `--ch-au-t-rise` and
+    `--ch-au-t-hero` tokens, which were defined but never used);
+  - the curtain (`lib/handoff.ts`) holds that same bar and sheet over the route
+    change;
+  - the dashboard fades in over 380ms, and its content rises 10px into place,
+    55ms apart (gh-core's `GH.reveal`), on this hand-off only.
+- Reduced motion and Animations off skip all of it, as before. WebKit 390 × 844,
+  player, recorded frame by frame.
+
+## 2026-10-08 — premium pass: findings D6, D11
+
+- D6: the welcome card holds its news as rows between hairlines, not bordered, shadowed cards inside a card. A vertical hairline parts them side by side on a wide screen, a horizontal one when stacked. Empty and failed states are a flush notice.
+- D11: the preview's round reads "74 · +2 · Pine Needles", as Home's latest rounds do. The live welcome carries no score.
+- D10 (owner, 2026-10-08): the phone's sign-in fields keep a visible label, small and quiet at the top of each row of the grouped sheet; the focus and error rings take the whole row. The email placeholder is `you@school.edu` on sign in and Forgot password, and the password field has none, since its label names it.
+
+## 2026-10-08 — premium pass: Continue keeps honest time, and findings (P015-B3, D4, D5, D7)
+
+- B3: on the phone, where the welcome goes on by itself, a 1px gilt hairline draws across under Continue over the time left (transform only; held still under reduced motion), so the page says it will continue and a tap just goes now.
+- D4: the welcome's date uses Home's style (en-GB, "Tuesday 14 October") in the viewer's own zone, not the browser's locale.
+- D5: the member seal reads "Member since 2026", in order.
+- D7: the password meter's empty steps are a visible track (`--ch-border-strong`).
+- Not changed: D8 (the onboarding felt tray inside the paper pane) is an approved material; dropping it is left to the owner.
+
+## 2026-10-08 — premium pass: solar sky, paper in the room, one refusal anatomy, Sign in always there (P015-A1 to A3, D2, D3)
+
+- A1: the painted course's sky follows the sun, not the clock (`solarSkyHour` in `scene-sky.ts`, `useSkyHour` in `use-hour.ts`): the sun's altitude where the viewer is (their time zone's point from the global light's `lightPlace`, `lib/sun.ts`; no location prompt, no team before sign-in) picks the keyframe hour that shows it, so a December 5:30 pm is dusk and a June 7 pm is still bright. The sky, the type over it (sign in, welcome, onboarding) and the scene read it; the greetings stay on the clock. A preview's fixed `hour` still pins the sky.
+- A2: the sign-in sheet sits in the room: a fine fibre tile (a drawn image, not a live filter) and a wash of the light outside, at most 6% (`paperTint`): none by day, the sky's own ambient at twilight, a warm lamp at night. More contrast drops both. Not built: dithered sky gradients.
+- A3 (D3): a refusal is the shared flush notice (its icon carries the tone, the words the ink; no fill, no ring), and a ring marks only the field the refusal names (an empty field). Wrong credentials name neither field, so neither is ringed; both stay `aria-invalid` and described by the notice.
+- D2 (B1): Sign in is enabled as soon as the page is live and checks the fields when pressed (CH-15101); nothing is sent until both are filled.
+
+## 2026-10-08 — premium pass: opaque onboarding paper (D1)
+
+The onboarding reading surface (`.ch-ox-stage`) is opaque paper on desktop and phone, light and dark: the course no longer shows through the fields and password rules, and the backdrop blur is gone. Glass stays on the step pill and the mark only.
+
 ## 2026-10-08 — dark: Clubhouse at night
 
 Sign in, welcome, sign up and onboarding follow GolfHelm's dark theme ("Clubhouse at night"). The painted course keeps its own clock (veil, say line, the phone's mark and the welcome's keyboard hint follow the hour); the panel, the phone sheet and the welcome's reading scrim are night paper; the lockup ink, link hover, focus and refusal halos, notices and the unlit Sign in key are redrawn for the dark ground; the welcome's name line, which had no colour of its own, takes the primary ink. Sign up's stationery pane, lockup, rail and Sign in pills become dark glass and its literal inks the ramp's own; the felt tray, the green choices, the crest, the member card and the seal stay card stock and felt. Sign up keeps dark only when reached from a dark sign in: ThemeScript does not run on `/golf/signup`, so a hard load there is light. Light mode is unchanged.
@@ -276,6 +320,7 @@ widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on
 every Clubhouse page. Layout and content are unchanged.
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Whole-app release audit
 
 Reconciled page purpose, design acceptance, contract status, wiring and

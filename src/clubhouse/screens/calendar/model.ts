@@ -1,3 +1,5 @@
+import { sunTimes, type LatLng } from '../../lib/sun';
+
 /**
  * Calendar view model. The loader resolves every time into the team's
  * timezone on the server, so the client only works with calendar dates
@@ -61,6 +63,36 @@ export interface ChCalOverlap {
 export const CAL_START = 6;
 export const CAL_END = 21;
 export const CAL_HH = 52;
+
+/** A day's light on the grid (P006-A1), as decimal hours on the team's clock; null where the sun doesn't rise or set. */
+export interface ChDaylight {
+  rise: number | null;
+  set: number | null;
+  golden: number | null;
+}
+
+/** Sunrise, sunset and the start of golden hour for a calendar day, from the global light's sun (lib/sun.ts sunTimes). */
+export function daylightOn(date: string, place: LatLng, timeZone: string): ChDaylight {
+  const t = sunTimes(date, place, timeZone);
+  const fmt = new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', hour: '2-digit', minute: '2-digit' });
+  const hour = (ms: number | null) => {
+    if (ms === null) return null;
+    const p = Object.fromEntries(fmt.formatToParts(ms).map((x) => [x.type, x.value]));
+    return (Number(p.hour) % 24) + Number(p.minute) / 60;
+  };
+  return { rise: hour(t.sunrise), set: hour(t.sunset), golden: hour(t.goldenStart) };
+}
+
+/**
+ * The hour the Week and Day grids open on (P006-B1): now, when today is on show; else the first event still ahead on
+ * the days shown; else the first timed event shown; else null (the grid stays at its top).
+ */
+export function focusHour(dates: string[], events: Array<{ date: string; allDay?: boolean; start: number | null }>, now: { date: string; hour: number }): number | null {
+  if (dates.includes(now.date)) return now.hour;
+  const timed = events.filter((e) => !e.allDay && e.start != null && dates.includes(e.date)).sort((a, b) => a.date.localeCompare(b.date) || a.start! - b.start!);
+  const ahead = timed.find((e) => e.date > now.date || (e.date === now.date && e.start! >= now.hour));
+  return (ahead ?? timed[0])?.start ?? null;
+}
 
 export const TYPE_LABEL: Record<ChCalType, string> = {
   practice: 'Practice',
@@ -252,6 +284,24 @@ export function openTimes(events: ChCalEvent[], people: string[], date: string, 
     if (!out.some((o) => overlaps(o, w))) out.push(w);
   }
   return out.sort((a, b) => a[0] - b[0]);
+}
+
+/**
+ * Where a new event opens (P006 D3): the first two hours on the date, on the quarter hour, when none of `people` is
+ * busy, from now on today (from 9 AM on another day), within 7 AM to 8 PM. Practice every afternoon no longer makes
+ * every new event open with the whole team Busy. Late in the day, or on a full day, the first free window of the day;
+ * failing that the old 3:30.
+ */
+export function seedWindow(events: ChCalEvent[], people: string[], date: string, now: { date: string; hour: number }): [number, number] {
+  const len = 2;
+  const busy = people.flatMap((p) => busyFor(events, p, date)).map((b) => [b.start!, b.end!] as [number, number]);
+  const firstFree = (from: number): [number, number] | null => {
+    for (let s = Math.max(7, Math.ceil(from * 4) / 4); s + len <= 20; s += 0.25) {
+      if (!busy.some((b) => overlaps([s, s + len], b))) return [s, s + len];
+    }
+    return null;
+  };
+  return firstFree(date === now.date ? now.hour : 9) ?? firstFree(7) ?? [15.5, 17.5];
 }
 
 /**

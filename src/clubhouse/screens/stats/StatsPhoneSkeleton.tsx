@@ -58,27 +58,85 @@ function Figures({ count, line = false }: { count: number; line?: boolean }) {
 
 export function StatsTeamPhoneSkeleton() {
   return (
-    <main className="ch-stm" aria-busy="true" aria-label="Loading stats" data-ch-code="CH-4401">
-      {/* The Ledger's page intro as loaded: the 11px eyebrow's line under the double rule, then the 31px title's. */}
+    <main className="ch-stm is-team" aria-busy="true" aria-label="Loading stats" data-ch-code="CH-4401">
+      {/* Direction A's large title: the 15px context line, then the 34px title's line. */}
       <header className="ch-stm-head" aria-hidden="true">
-        <Bar height={14.4}>
-          <Skeleton width={250} height={11} />
+        <Bar height={19.5}>
+          <Skeleton width={230} height={12} />
         </Bar>
-        <Bar height={33.5}>
-          <Skeleton width={150} height={28} radius={8} />
+        <Bar height={37.4}>
+          <Skeleton width={170} height={30} radius={8} />
         </Bar>
       </header>
       <div className="ch-stm-controls" aria-hidden="true">
         <Skeleton width="100%" height={44} radius={12} />
       </div>
-      {/* The team's stat line: the figures, then the gauge row's height held empty. */}
-      <div className="ch-stm-line" aria-hidden="true">
-        <Figures count={4} line />
-        <div className="ch-stm-gauges" />
-      </div>
-      <p className="ch-stm-cover" aria-hidden="true"><Skeleton width={180} height={12} /></p>
-      <Panel rows={0} chart height={0} title="Scoring trend" />
-      <Panel rows={5} height={266} title="Strokes gained by leg" />
+      {/* The hero: its label's line, then the 64px figure's line with the comparison on its baseline. */}
+      <dl className="ch-stm-hero" aria-hidden="true">
+        <dt>
+          <Bar height={19.5}>
+            <Skeleton width={110} height={12} />
+          </Bar>
+        </dt>
+        <dd className="ch-stm-hero__v">
+          <Bar height={64}>
+            <Skeleton width={136} height={52} radius={10} />
+          </Bar>
+        </dd>
+        <dd className="ch-stm-hero__c" />
+      </dl>
+      {/* The trend's box at the plot's 340:120, and the reading's line. */}
+      <section className="ch-stm-trend" aria-hidden="true">
+        <div className="ch-stm-chart-hold">
+          <Skeleton width="100%" height={60} radius={10} />
+        </div>
+        <p className="ch-stm-note">
+          <Bar height={19.6}>
+            <Skeleton width={220} height={12} />
+          </Bar>
+        </p>
+      </section>
+      {/* The round: its header, three 60px rows in their group, and the coverage line held. */}
+      <section className="ch-stm-panel" aria-hidden="true">
+        <div className="ch-stm-panel__h">
+          <h2>The round</h2>
+        </div>
+        <div className="ch-stm-group">
+          {Array.from({ length: 3 }, (_, i) => (
+            <div key={i} className="ch-stm-figrow">
+              <Skeleton width={150} height={14} />
+              <Skeleton width={40} height={14} />
+              <Skeleton width={28} height={12} />
+            </div>
+          ))}
+        </div>
+        <p className="ch-stm-cover" aria-hidden="true" />
+      </section>
+      {/* Strokes gained: the header, the 64px figure and five 44px rows in their group. */}
+      <section className="ch-stm-panel" aria-hidden="true">
+        <div className="ch-stm-panel__h">
+          <h2>Strokes gained by leg</h2>
+          <Bar height={18.9}>
+            <Skeleton width={110} height={11} />
+          </Bar>
+        </div>
+        <div className="ch-stm-group">
+          <p className="ch-stm-sgfig">
+            <Skeleton width={84} height={34} radius={8} />
+          </p>
+          <div className="ch-stm-legs">
+            {Array.from({ length: 5 }, (_, i) => (
+              <div key={i} className="ch-stm-leg">
+                <Skeleton width={84} height={13} />
+                <Skeleton width="100%" height={6} />
+                <Skeleton width={32} height={13} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      {/* P004-D7: the page keeps its one h1 while it loads (last, so the loaded order stays). */}
+      <h1 className="ch-sr-only">Team stats</h1>
     </main>
   );
 }
@@ -113,6 +171,7 @@ export function StatsPlayerPhoneSkeleton() {
       </div>
       <Panel rows={5} height={266} title="Strokes gained" />
       <Panel rows={4} height={175} title="Game detail" />
+      <h1 className="ch-sr-only">Player stats</h1>
     </main>
   );
 }

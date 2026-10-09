@@ -95,7 +95,7 @@ component inside its own boundary, so a crash in one never reaches the page.
 | --- | --- | --- | --- | --- |
 | CH-4701 | Choosing a leg, focusing a player, changing the window or lens | A selection tick | `TeamCharts` `haptic('select')`, `Segmented` | stats-team.test › CH-4701 |
 | CH-4702 | An export lands / fails | The OS success pattern / the OS error pattern (D-70) | `TeamHeadActions` export | stats-team.test › CH-4702 |
-| CH-4703 | Sorting the phone's players by Avg or SG | A selection tick; the current sort is silent | `StatsTeamPhone` `Segmented` | stats-team.test › phone players sort |
+| CH-4703 | Sorting the phone's players by Avg or SG, or picking a strokes gained leg (a row of the leg list: Off the tee, Approach, Around green, Putting or Team total) | A selection tick; the current sort or leg is silent. A leg rolls the team figure to it and ranks the players by it on SG (the sort moves to SG with no second tick) | `StatsTeamPhone` `Segmented`; the leg rows are Base UI `Tabs` (vertical) | stats-team.test › phone players sort; leg row picks the leg |
 | CH-4704 | Choosing a round type, a length (18 holes, 9 holes, Both), a course or a round in the filter sheet, choosing a window or a pick mode there, or removing a chip / Clear | A selection tick. Done is a primary button and taps lightly; a range error plays the warning pattern (CH-4101) | `StatsFilter` (`haptic('select')`, `Checkbox`, `Segmented`), `haptic('warning')` | stats-filter-ui.test › CH-4101 |
 
 ## 48xx Accessibility
@@ -106,7 +106,7 @@ component inside its own boundary, so a crash in one never reaches the page.
 | CH-4802 | The strokes gained grid is a table with a header for every value | `role="table|row|cell|columnheader"` | stats-team.test › CH-4802 |
 | CH-4803 | Loss amber on a tinted grid cell is darkened to hold 4.5:1 | `--ch-chart-loss-on-tint` | a11y scan |
 | CH-4804 | No axe violations in any preview state, 1280px and 390px | `npm run clubhouse:a11y` | a11y scan |
-| CH-4805 | The phone's scoring line is an image with a written reading ("Team scoring average by week, from 74.8 to 73.4. Down 1.4 strokes…"); each player row is one link read as name, rounds, average and strokes gained ("Early read" under three rounds) | `ScoreLine` `role="img"`; `.ch-stm-row` | stats-team.test › phone view |
+| CH-4805 | The phone's scoring line is an image with a written reading ("Team scoring average by round day, from 74.8 to 73.4. Down 1.4 strokes…"); a finger on it reads a round day (pointer only, the reading carries it for assistive technology); each player row is one link read as name, rounds, average and strokes gained ("Early read" under three rounds) | `.ch-stm-plot` `role="img"` around `TeamTrendChart` (Recharts, its own chunk); `.ch-stm-row` | stats-team.test › phone view |
 | CH-4806 | The round filter: the Filter button says it opens a dialog and how many filters are on; each chip is a button named "Remove filter: Tournament"; Clear is "Clear filters"; the count line is a polite status region; the sheet is a labelled dialog whose groups (Round type, Holes, Time, Course, Pick rounds) are labelled, round type, holes and pick mode are toggle buttons (`aria-pressed`), courses and rounds are checkboxes in labelled lists, and the dates are labelled inputs whose error is their description | `StatsFilter`, `Modal`, `Checkbox`, `Segmented` | stats-filter-ui.test › CH-4806; a11y scan |
 
 ## 49xx Network and UX

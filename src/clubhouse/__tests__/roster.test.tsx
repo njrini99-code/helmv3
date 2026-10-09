@@ -394,11 +394,16 @@ describe('Roster · loading, haptics, accessibility', () => {
       for (const child of row.children) expect(['cell', 'columnheader']).toContain(child.getAttribute('role'));
   });
 
-  it('CH-3802 a player card reads its status as a word', () => {
+  it('CH-3802 a player card reads its status as a word; the dot is decoration, drawn only under All (P003-A3)', async () => {
+    const user = userEvent.setup();
     wrap(roster());
     const card = screen.getAllByRole('button', { name: new RegExp(theo.name) })[0]!;
     expect(card.textContent).toMatch(/Active/);
-    expect(card.querySelector('.ch-rs-face__dot')!.getAttribute('aria-hidden')).toBe('true');
+    // Under Active every dot is the same, so none is drawn.
+    expect(card.querySelector('.ch-rs-face__dot')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'All' }));
+    const all = screen.getAllByRole('button', { name: new RegExp(theo.name) })[0]!;
+    expect(all.querySelector('.ch-rs-face__dot')!.getAttribute('aria-hidden')).toBe('true');
   });
 
   it("View insights, the row menu's first item, opens CoachHelm on that player", async () => {

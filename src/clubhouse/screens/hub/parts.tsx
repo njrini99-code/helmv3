@@ -13,6 +13,8 @@ import { RefreshNotice } from '../../ui/RefreshNotice';
 import { haptic } from '../../lib/haptics';
 import { useAction, type ActionCopy, type ActionResult, type ServerResult } from '../../lib/use-action';
 import { SerifText } from '../../ui/SerifText';
+import { useChPhone } from '../../lib/use-phone';
+import { radioKeys, rovingRadios } from './radio';
 
 /*
  * Team Hub's sections (design/handoff/hub.jsx). Each takes what it shows and
@@ -101,8 +103,12 @@ export function Rsvps({
                   {r.title}
                   {r.mandatory && <span className="ch-hb-req">Required</span>}
                 </b>
+                {/* P010 D9: the date tile says the day; the line keeps time and place, the date only for a screen reader. */}
                 <span className="ch-num">
-                  {r.weekday} {r.day} · {r.meta}
+                  <span className="ch-sr-only">
+                    {r.weekday} {r.day} ·{' '}
+                  </span>
+                  {r.meta}
                 </span>
               </Link>
               {coach ? (
@@ -142,7 +148,7 @@ function ReplyChoices({ r, mine, pending, onReply }: {
   }), quietBusy);
   return (
     <div className="ch-hb-rsvp__choice">
-      <span className="ch-hb-rsvp__a" role="radiogroup" aria-label={`Your reply for ${r.title}`} aria-busy={pending}>
+      <span className="ch-hb-rsvp__a" role="radiogroup" tabIndex={-1} ref={rovingRadios} onKeyDown={radioKeys(false)} aria-label={`Your reply for ${r.title}`} aria-busy={pending}>
         {REPLIES.map(([answer, label]) => (
           <button key={answer} type="button" role="radio" aria-checked={mine === answer} disabled={pending} onClick={() => {
             if (mine === answer) return;
@@ -172,6 +178,7 @@ export function Announcement({
   a,
   role,
   featured = false,
+  rank,
   acked,
   pending,
   onAck,
@@ -181,6 +188,11 @@ export function Announcement({
   a: ChHubAnnouncement;
   role: ChTeamHub['role'];
   featured?: boolean;
+  /**
+   * P010-A3, the Announcements tab as an edited page: the newest is the lead (the 36px headline); the older ones step
+   * down to 22px with their date in the margin, and on the phone fold to the title and a first line until opened.
+   */
+  rank?: 'lead' | 'older';
   acked: boolean;
   pending: boolean;
   onAck: (a: ChHubAnnouncement) => Promise<ServerResult>;
@@ -189,13 +201,28 @@ export function Announcement({
 }) {
   const coach = role === 'coach';
   const pct = a.recipients ? Math.round((a.ackCount / a.recipients) * 100) : 0;
+  const phone = useChPhone();
+  const [open, setOpen] = useState(false);
+  const fold = rank === 'older' && phone && !open && !!a.body;
   return (
-    <article className={'ch-hb-ann' + (featured ? ' is-featured' : '')} aria-labelledby={`ch-hb-ann-${a.id}`}>
-      {featured && <span className="ch-hb-eyebrow">{coach ? 'Latest' : a.needAck && !acked ? 'Needs your reply' : 'Latest from your coaches'}</span>}
+    <article className={'ch-hb-ann' + (featured ? ' is-featured' : '') + (rank ? ` is-${rank}` : '')} aria-labelledby={`ch-hb-ann-${a.id}`} data-ann={a.id}>
+      {rank === 'older' && (
+        <span className="ch-hb-ann__margin ch-num" aria-hidden="true">
+          {a.when}
+        </span>
+      )}
+      {featured && <span className="ch-hb-eyebrow">{coach ? 'Latest' : a.needAck && !acked ? 'Needs your acknowledgement' : 'Latest from your coaches'}</span>}
       <h3 id={`ch-hb-ann-${a.id}`}>
         <SerifText text={a.title} />
       </h3>
-      {a.body && <p>{a.body}</p>}
+      {fold ? (
+        <button type="button" className="ch-hb-ann__fold" aria-expanded={false} onClick={() => (haptic('select'), setOpen(true))}>
+          <span>{a.body}</span>
+          <span className="ch-sr-only">, show all</span>
+        </button>
+      ) : (
+        a.body && <p>{a.body}</p>
+      )}
       <div className="ch-hb-ann__h">
         <Avatar name={a.by} size={32} />
         <div>
@@ -262,7 +289,8 @@ export function TripPass({
     t.back && ([t.back, 'Home'] as const),
   ].filter((x): x is readonly [string, string] => !!x);
   return (
-    <article className={'ch-hb-pass' + (big ? ' is-big' : '')} aria-labelledby={`ch-hb-trip-${t.id}`}>
+    // P010-A1: the next trip is the page's one paper object (hub.css `.is-next`); the trips after it stay flat rows.
+    <article className={'ch-hb-pass' + (big ? ' is-big' : '') + (t.upcoming && !later ? ' is-next' : '')} aria-labelledby={`ch-hb-trip-${t.id}`}>
       <div className="ch-hb-pass__main">
         <div className="ch-hb-pass__top">
           <span className="ch-hb-eyebrow ch-num">
@@ -289,15 +317,20 @@ export function TripPass({
           <SerifText text={t.name} />
         </b>
         {t.destination && <span className="ch-hb-muted">{t.destination}</span>}
+        {/* P010 D4: on the big pass the plan beside it already says when it leaves and where it stays. */}
         <dl className="ch-hb-pass__f">
-          <div>
-            <dt>Departs</dt>
-            <dd className="ch-num">{t.depart ?? 'To be set'}</dd>
-          </div>
-          <div>
-            <dt>Stay</dt>
-            <dd>{t.hotel ?? 'Same day'}</dd>
-          </div>
+          {!(big && t.depart) && (
+            <div>
+              <dt>Departs</dt>
+              <dd className="ch-num">{t.depart ?? 'To be set'}</dd>
+            </div>
+          )}
+          {!(big && t.hotel) && (
+            <div>
+              <dt>Stay</dt>
+              <dd>{t.hotel ?? 'Same day'}</dd>
+            </div>
+          )}
           <div>
             <dt>{role === 'coach' ? 'Travelers' : 'You'}</dt>
             <dd className="ch-num">{role === 'coach' ? (t.travelerCount ?? '—') : t.mine == null ? '—' : t.mine ? 'Traveling' : 'Not traveling'}</dd>

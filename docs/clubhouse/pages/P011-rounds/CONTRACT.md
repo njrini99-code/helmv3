@@ -198,7 +198,7 @@ Status: DEFINED
 
 Discard and Start refuse while offline before anything is sent, with the shell's toast naming what did not happen, and
 Try again on a hole that did not save only warns while offline (110702, reserved: no P011 test forces offline). The
-shot screen's background save says "Saving round", "Round saved" or "Not synced yet, retrying" in a small pill
+shot screen's background save says "Saving round", "Round saved" or "Not synced yet, retrying" in a quiet line beside the distance readout
 (CH-11901); the engine retries on its own. Setup's course, tee and scorecard reads that fail, offline or not, say they
 did not load, with Try again (CH-11208 to CH-11210).
 
@@ -321,7 +321,7 @@ Status: DEFINED
 
 Nothing on the library is optimistic: Discard waits for the server, and the card leaves only on success (111301). The
 shot screen adds a shot to the hole at once, and the round screen's engine saves it in the background and retries on its own
-(the pill, CH-11901): that is the engine's contract, not an optimistic write of this page.
+(the save line, CH-11901): that is the engine's contract, not an optimistic write of this page.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -429,7 +429,7 @@ the choices, the distance box and the hole map are named in words (CH-11805 to C
 | 111810 | — | `THE_SCORECARD_SCROLLS_IN_A_FOCUSABLE_REGION` | The scorecard on the shot screen's sheets (Scorecard and Round complete) scrolls sideways inside a labelled, focusable region (role region, tabIndex 0, "Scorecard"), so the keyboard can scroll it (axe scrollable-region-focusable). Found and fixed on 2026-09-30 by clubhouse:a11y; no vitest test asserts the region. |
 | 111811 | — | `FIGURES_ARE_DEFINITION_LISTS` | The season and review figures are description lists in which a term is followed by its value and then its sub-line as a second description (label, figure, then "avg · +1.9 to par" or "+1"), never a bare span inside the list (axe definition-list). |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842.
 
 ## 19 — Responsive layout
 

@@ -602,7 +602,7 @@
   transition: opacity var(--ch-dur-quick) var(--ch-ease), translate var(--ch-dur-base) var(--ch-ease);
   content: '';
 }
-.ch-h-lb__row.is-link:focus-visible::after {
+.ch-h-lb__row.is-link:has(.ch-h-lb__go:focus-visible)::after {
   opacity: 1;
   translate: 0 -50%;
 }
@@ -615,7 +615,7 @@
 .ch-h-lb__row.is-link:active {
   background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
 }
-.ch-h-lb__row.is-link:focus-visible {
+.ch-h-lb__row.is-link:has(.ch-h-lb__go:focus-visible) {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: -2px;
   border-radius: var(--ch-radius-md);
@@ -638,6 +638,10 @@
   background: var(--ch-raised-bg);
   box-shadow: var(--ch-key-raised-shadow);
 }
+.ch-h-lb__pos.is-tie {
+  font-size: 11px;
+  letter-spacing: -0.02em;
+}
 .ch-h-lb__pos.is-lead {
   color: var(--ch-ivory-25);
   background: linear-gradient(180deg, var(--ch-green-fill-500), var(--ch-green-fill-700));
@@ -648,6 +652,22 @@
   align-items: center;
   gap: 12px;
   min-width: 0;
+}
+/* P002 D3: the name is the row's link; its ::after covers the row (the row is positioned, the cells are not), so the
+   whole row still opens the player while assistive tech hears a row with a link in it. The row draws the focus ring. */
+.ch-h-lb__go {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+.ch-h-lb__go::after {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  content: '';
+}
+.ch-root .ch-h-lb__go:focus-visible {
+  outline: none;
 }
 .ch-h-lb__name {
   display: block;
@@ -888,17 +908,10 @@
   }
   /* Two classes: base.css zeroes every p's margin (.ch-root p), which one class loses to, and the brief sat hard against Up next. */
   .ch-hm-hero > .ch-hm-hero__brief {
-    display: flex;
-    gap: 8px;
     margin: 0 0 18px;
     font: 400 14.5px/1.45 var(--ch-font-sans);
     color: rgb(244 241 232 / 0.82);
     text-wrap: pretty;
-  }
-  .ch-hm-hero__brief svg {
-    flex: none;
-    margin-top: 3px;
-    color: var(--ch-hero-mint);
   }
   .ch-hm-next {
     display: flex;
@@ -2519,11 +2532,9 @@
   .ch-hm-hero__date {
     padding-top:14px;
     border-top:3px double rgb(110 98 62/.2);
-    font:500 12px/1.2 var(--ch-font-sans);
-    letter-spacing:.14em;
-    color:var(--ch-ledger-eyebrow);
-  }
-  .ch-hm-hero__brief svg {
+    /* P002 D8 (as P001 D5): the date in mixed case reads as words, not a tracked label. */
+    font:500 13px/1.2 var(--ch-font-sans);
+    letter-spacing:.01em;
     color:var(--ch-ledger-eyebrow);
   }
   .ch-hm-next {
@@ -3002,9 +3013,6 @@
   .ch-hm-hero > .ch-hm-hero__brief {
     color: var(--ch-text-secondary);
   }
-  .ch-hm-hero__brief svg {
-    color: var(--ch-ledger-eyebrow);
-  }
 }
 
 /* Home on the phone, both roles (owner, 2026-10-08: the coach's and the player's Home match): the parts the coach's
@@ -3172,8 +3180,8 @@
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-h-main--first > .ch-h-head > .ch-h-head__date {
-    font: 500 12px/1.2 var(--ch-font-sans);
-    letter-spacing: 0.14em;
+    font: 500 13px/1.2 var(--ch-font-sans);
+    letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-h-main--first > .ch-h-head > h1 {
@@ -3485,5 +3493,182 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
   html[data-fw-theme='dark'] .ch-hm-week__n,
   html[data-fw-theme='dark'] .ch-hm-form__top > span:first-child::after {
     color: var(--ch-text-tertiary);
+  }
+}
+
+/* The day card (phone concept board 1, P002 premium pass): Up next's green card as a section, so it can carry real
+   actions. The title's link covers the card (it opens the event) under the actions; Nudge and Message prefill Messages
+   (the coach presses Send), Directions is a plain maps link for off-site events. */
+@media (max-width: 820px) {
+  .ch-hm-day {
+    position: relative;
+    isolation: isolate;
+  }
+  /* P002 D7: the hero's 22px foot and the body's 30px head stacked into a 52px gap under the card; one 34px step. */
+  .ch-hm-hero + .ch-hm-body {
+    padding-top: 12px;
+  }
+  .ch-hm-day__open {
+    color: inherit;
+    text-decoration: none;
+  }
+  .ch-hm-day__open::after {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    content: '';
+  }
+  .ch-hm-day__open:focus-visible {
+    outline: none;
+  }
+  .ch-hm-day__open:focus-visible::after {
+    box-shadow: inset 0 0 0 2px var(--ch-on-green-ink);
+  }
+  /* P002 D2: 28px coins whose 2px rings just touch, so two initials always clear the next coin. */
+  .ch-hm-day__stack .ch-avatar + .ch-avatar {
+    margin-left: -2px;
+  }
+  .ch-hm-day__people {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .ch-hm-day__people .ch-hm-next__rsvp {
+    line-height: 1.35;
+  }
+  .ch-hm-day__acts {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .ch-hm-day__act {
+    display: inline-flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 0 14px;
+    border-radius: 14px;
+    background: rgb(244 238 221 / 0.12);
+    color: var(--ch-on-green-ink);
+    font: 500 15px/1.2 var(--ch-font-sans);
+    text-decoration: none;
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-hm-day__act.is-primary {
+    background: var(--ch-on-green-ink);
+    color: var(--ch-green-800);
+    font-weight: 600;
+  }
+  .ch-hm-day__act:active {
+    background: rgb(244 238 221 / 0.2);
+    transition-delay: var(--ch-dur-press-delay);
+  }
+  .ch-hm-day__act.is-primary:active {
+    background: var(--ch-champagne-100);
+  }
+  .ch-hm-day__act:focus-visible {
+    outline: 2px solid var(--ch-on-green-ink);
+    outline-offset: 2px;
+  }
+  /* The recap: the day's rounds as rows on the green, each opening its scorecard. */
+  .ch-hm-day__rounds {
+    position: relative;
+    z-index: 1;
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .ch-hm-day__rounds li + li {
+    border-top: 1px solid rgb(255 255 255 / 0.1);
+  }
+  .ch-hm-day__rounds button {
+    display: flex;
+    width: 100%;
+    min-height: 44px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ch-on-green-ink);
+    font: 500 15px/1.2 var(--ch-font-sans);
+    cursor: pointer;
+  }
+  .ch-hm-day__rounds b {
+    font-weight: 600;
+  }
+  .ch-hm-day__rounds em {
+    font-style: normal;
+    font-weight: 400;
+    color: var(--ch-on-green-ink-muted);
+  }
+  /* Later today: the sunset's mark on the rail is champagne, and its glyph sits where a clash warning would. */
+  .ch-hm-tl__rail i.is-sun {
+    background: var(--ch-champagne-300);
+  }
+  .ch-hm-tl__w.is-sun {
+    background: none;
+    color: var(--ch-champagne-500);
+  }
+  span.ch-hm-tl__a {
+    cursor: default;
+  }
+  /* Since you last looked (the cardless pass, 2026-10-08): Ledger rows (ui.css .ch-lgr) set to Later today's measure.
+     The figure stands in the lead, 68px wide so each title starts where Later today's titles do (its 48px time, 14px
+     rail and their gaps); the titles and lines take that list's sizes. */
+  .ch-hm-since__c .ch-lgr__lead {
+    min-width: 68px;
+  }
+  .ch-hm-since__fig {
+    font: 600 17px/1 var(--ch-font-sans);
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ch-text-primary);
+    white-space: nowrap;
+  }
+  .ch-hm-since__fig em {
+    font-size: 13px;
+    font-style: normal;
+    letter-spacing: 0;
+    color: var(--ch-text-secondary);
+  }
+  .ch-hm-since__fig em.is-under {
+    color: var(--ch-score-under);
+  }
+  .ch-hm-since__c .ch-lgr__title {
+    font-size: 14.5px;
+  }
+  .ch-hm-since__c .ch-lgr__meta {
+    font: 400 12.5px/1.3 var(--ch-font-sans);
+  }
+  /* Home's lists open on a tap without a chevron (Later today, Latest rounds); these rows read the same way. */
+  .ch-hm-since__c .ch-lgr__go {
+    display: none;
+  }
+}
+
+/* P002-C2: each latest round's player's last rounds as a word-sized line beside the score (FormLine, bare). */
+@media (max-width: 820px) {
+  .ch-hm-rd__spark {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    margin-left: auto;
+    padding-left: 8px;
+  }
+  .ch-hm-rd__spark + .ch-hm-score {
+    margin-left: 10px;
+  }
+}
+
+/* P002 D5: Up next's failed section sits in the hero, under the page notice: the same space above its rule as the
+   body's sections keep between them, not flush against Try again. */
+@media (max-width: 820px) {
+  .ch-hm-hero .ch-hm-sec.is-failed {
+    margin-top: 18px;
   }
 }

@@ -19,6 +19,8 @@ function Line({ height, children }: { height: number; children: ReactNode }) {
 export function StatsProfileSkeleton({ coach = false }: { coach?: boolean }) {
   return (
     <main className="ch-st" aria-busy="true" aria-label="Loading player stats" data-ch-code="CH-5403" data-canopy="">
+      {/* P004-D7: the page keeps its one h1 while it loads. */}
+      <h1 className="ch-sr-only">Player stats</h1>
       {coach && (
         <div className="ch-st-back" aria-hidden="true">
           <Skeleton width={112} height={30} radius={10} />
@@ -103,6 +105,8 @@ export function StatsProfileSkeleton({ coach = false }: { coach?: boolean }) {
 export function StatsSkeleton() {
   return (
     <main className="ch-st" aria-busy="true" aria-label="Loading stats" data-ch-code="CH-4401" data-canopy="">
+      {/* P004-D7: the page keeps its one h1 while it loads. */}
+      <h1 className="ch-sr-only">Team stats</h1>
       {/* The framed page head in place (PageHero): the section line, the sans title's line and the line under it, the window switch on the right. */}
       <header className="ch-hero" data-canopy-head="" aria-hidden="true">
         <Line height={14.3}>

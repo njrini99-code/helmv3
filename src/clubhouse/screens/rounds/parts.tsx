@@ -47,7 +47,9 @@ function Strip({ holes, played, next }: { holes: number; played: ChUnfinishedRou
         if (h) {
           const cls = h.par == null ? 'is-par' : h.score < h.par ? 'is-under' : h.score > h.par ? 'is-over' : 'is-par';
           return (
-            <span key={n} className={cls}>
+            // D15: the hole's number over its score, so "4" on hole 1 never reads as hole 4.
+            <span key={n} className={cls + ' is-played'}>
+              <em>{n}</em>
               {h.score}
             </span>
           );
@@ -219,7 +221,8 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
         const cx = L + bw * i + bw / 2;
         const h = Math.max(3, Math.abs(d) * u);
         const y0 = d >= 0 ? base - h : base;
-        const cls = d < 0 ? 'is-under' : d === 0 ? 'is-even' : x.type === 'qualifier' ? 'is-q' : 'is-over';
+        // D3: one scoring language, red under par as everywhere else; a qualifier is a gilt outline on any bar.
+        const cls = (d < 0 ? 'is-under' : d === 0 ? 'is-even' : 'is-over') + (x.type === 'qualifier' ? ' is-q' : '');
         return (
           <g key={x.id}>
             <title>{`${shortDay(x.date)} · ${x.score} (${formatToPar(d)})${x.type ? ` · ${TYPE_LABEL[x.type]}` : ''}`}</title>
@@ -284,7 +287,14 @@ function SeasonFigures({ season }: { season: ChRoundsSeason }) {
             </span>
           </dd>
         )}
-        <dd className="ch-rd-fig__m">{season.best ? `${season.best.course.split(' ')[0]} · ${shortDay(season.best.date)}` : ''}</dd>
+        <dd className="ch-rd-fig__m">{season.best ? (
+            // D16: the whole course name, cut by the column's ellipsis rather than at its first word.
+            <>
+              <span className="ch-rd-fig__course">{season.best.course}</span> · {shortDay(season.best.date)}
+            </>
+          ) : (
+            ''
+          )}</dd>
       </div>
       <div className="ch-rd-fig">
         <dt>Putts</dt>
@@ -351,7 +361,7 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
         <>
           <div className="ch-rd-season__ch">
             <b>Every round vs par</b>
-            <span>Bar height is strokes over par · the number on top is your score · shorter is better</span>
+            <span>Above the line is over par, below it under · lower is better · the number on top is your score</span>
           </div>
           <Ribbon rounds={phone ? season.ribbon.slice(-PHONE_RIBBON) : season.ribbon} avg={season.toPar} compact={phone} />
           <div className="ch-rd-season__lg">
@@ -365,6 +375,12 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
               <i className="is-over" />
               Over par
             </span>
+            {season.ribbon.some((x) => x.toPar === 0) && (
+              <span>
+                <i className="is-even" />
+                Even
+              </span>
+            )}
             {q && (
               <span>
                 <i className="is-q" />
@@ -406,6 +422,7 @@ export function RoundRow({ r, href, onOpen }: { r: ChLibraryRound; href: string 
         <span>
           <TeeSwatch color={r.teeColor} />
           {r.tee ?? `${r.holes} holes`}
+          {r.tee && r.holes === 9 && <span className="ch-rd-pill is-nine">9 holes</span>}
           <TypePill type={r.type} />
           {!r.countable && <span className="ch-rd-pill is-nc">Not counted</span>}
         </span>

@@ -1,5 +1,53 @@
 # P002 — Home: changelog
 
+## 2026-10-08 — the cardless pass: Since you last looked
+
+On the phone, "Since you last looked" is a list, not a sideways rail of filled
+tiles. Each change is a Ledger row
+(`LedgerRow`) between soft seams: the figure (a posted score with its to-par in
+the under-par red, or the new
+replies) stands in the lead, 68px wide, so the titles start where Later today's
+titles do, and a posted round
+carries its course and day under the name. The rows take Later today's sizes
+and, like Home's other lists, show no
+chevron. The single green Up next card is unchanged; the desktop does not draw
+this section.
+
+## 2026-10-08 — the player peek (P003-C1)
+
+The shared PlayerPeek: the phone's Latest rounds rows peek at the player on a hold, from the board's row when the player has one, else from the round (`roundPeek`). No new reads.
+
+## 2026-10-08 — premium pass: findings D3, D4, D5
+
+- D3: a leaderboard row is a table row (a `div` with `role="row"`). The player's name is the link to their stats, and its `::after` covers the row, so the whole row still opens it. The row draws the focus ring (`:has(:focus-visible)`), and assistive tech now hears a row with a link in it, not a row that is a link.
+- D4: players on the same season average, to the tenth, share a place with a T, and the next place counts them all: 1, T2, T2, 4 (`leaderPlaces`). An early read has no place yet ("—"); the loader already sorts early reads last.
+- D5: on the phone, a part that didn't load keeps its section and the same head as the others (Up next, Team scoring, Latest rounds: a title over the rule), at one rhythm. Up next's failed section keeps 18px below the page notice.
+- D8: the phone date line is no longer tracked: 13px, weight 500, 0.01em, the values P001 D5 sets for the shell's eyebrow. D2 was already fixed: the stack overlaps by 4px (aesthetic audit H-1), so no initials are clipped.
+- Not changed: D6. With the Day card the coach's desktop columns end about 90px apart in the preview, not 300px. P002-A1, the alternative fix, is on the not-building list.
+
+## 2026-10-08 — premium pass: the sunset on the day's rail
+
+"Later today" carries today's sunset at the team's place (the global light's `sunTimes` and `useLightPlace`) while it is still ahead, with when the light turns golden; a champagne mark on the rail and a sunset glyph. Nothing after sunset.
+
+## 2026-10-08 — premium pass: trend sparkline in the phone's Latest rounds (P002-C2)
+
+Each latest round on the coach's phone carries its player's last rounds as a 64x18 bare FormLine between the player and the score (from the leaderboard rows Home already loads; three rounds or more). It is decorative beside the figures (the trend itself lives in Stats), and absent when the leaderboard read failed.
+
+## 2026-10-08 — premium pass: the coach's phone Home is the day (concept board 1)
+
+The coach's phone Home opens on one living green card for the next thing that matters (`screens/home/DayCard.tsx`, owner-approved phone concept board 1, "The day, not a dashboard"); desktop keeps its dashboard, and the player's phone keeps Up next.
+
+- The card holds the event under way ("Now · until 5:00 PM") or next ("Next up · 3:30 PM") with its time chip, the invitees (28px coins that no longer clip their initials, P002 D2) and "5 of 6 going · Eli hasn't replied". Once today's events are over and rounds came in today, it becomes the day's recap, each round opening its card. A live round has no read on Home yet, so that phase isn't drawn.
+- Actions are the coach's and prefill Messages only (D2-7): Nudge the people who haven't replied, or Message the invitees when everyone has. Directions is a plain Apple Maps link, only for competitions and travel with a place (no maps API, D1-2).
+- "Later today" replaces Today when the day has events: the rest of today on the same rail (the card's event and what is over left out), then the week's next competition. A slot is ready for the sunset row from the global light.
+- "Since you last looked": chips for rounds posted since this device last showed Home and for new replies to the card's event, kept on the device only; nothing on a first visit.
+- The loader adds `awaiting` (who hasn't replied, id and name) and `inviteeIds` to the coach's events, null when replies didn't load; the player's Home strips both. Latest rounds carry their `date`.
+- The gap under the hero is one 34px step (P002 D7).
+
+## 2026-10-08 — premium pass: the brief loses the AI glyph (D1)
+
+The phone hero's brief is deterministic (`homeSubline`), so it no longer wears the Sparkles glyph that reads as model output; the line stands alone. The owner declined the "Why this line" sheet (P002-C1: "Take this out").
+
 ## 2026-10-08 — Copy: typographic apostrophes
 
 Home writes its apostrophes as ’ on desktop and the phone: the no-team pages

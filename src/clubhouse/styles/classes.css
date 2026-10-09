@@ -614,11 +614,14 @@
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
-.ch-cl-dot {
+/* D1: an overlap's class is named by its department key, as in the list (the old 10px square read as a checkbox). */
+.ch-cl-key {
   flex: none;
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
+  align-self: center;
+  padding: 4px 6px 3px;
+  border-radius: var(--ch-radius-xs);
+  font: 700 11px/1 var(--ch-font-sans);
+  color: var(--ch-cl-tf);
   background: var(--ch-cl-t);
   box-shadow: inset 0 0 0 1px var(--ch-cl-tb);
 }
@@ -1404,7 +1407,7 @@
   }
   .ch-cl.is-phone .ch-cl-k {
     font: 500 12px/1.3 var(--ch-font-sans);
-    letter-spacing: 0.14em;
+    letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-cl.is-phone .ch-cl-sync {
@@ -1581,27 +1584,6 @@
   }
   .ch-cl.is-phone .ch-cl-card__week {
     padding-top: 8px;
-  }
-  .ch-cl.is-phone .ch-cl-card__week > span {
-    border-radius: var(--ch-radius-sm);
-    background: var(--ch-ledger-row-hover);
-  }
-  .ch-cl.is-phone .ch-cl-card__week em {
-    color: var(--ch-text-tertiary);
-    opacity: 1;
-  }
-  .ch-cl.is-phone .ch-cl-card__week > span.is-on {
-    background: var(--ch-raised-bg);
-    box-shadow: var(--ch-key-raised-shadow);
-  }
-  .ch-cl.is-phone .ch-cl-card__week > span.is-on em {
-    color: var(--ch-cl-tf);
-  }
-  .ch-cl.is-phone .ch-cl-card__week > span.is-today {
-    box-shadow: 0 0 0 1.5px var(--ch-green-500);
-  }
-  .ch-cl.is-phone .ch-cl-card__week > span.is-on.is-today {
-    box-shadow: 0 0 0 1.5px var(--ch-green-500), var(--ch-key-raised-shadow);
   }
   .ch-cl.is-phone .ch-cl-card__flex {
     margin-top: 6px;
@@ -1816,18 +1798,8 @@ html[data-fw-theme='dark'] .ch-cl-card__cr,
 html[data-fw-theme='dark'] .ch-cl-card__term {
   background: rgb(255 255 255 / 0.08);
 }
-html[data-fw-theme='dark'] .ch-cl-card__week > span,
 html[data-fw-theme='dark'] .ch-cl-card__flex {
   background: rgb(255 255 255 / 0.04);
-}
-html[data-fw-theme='dark'] .ch-cl-card__week > span.is-on {
-  background: var(--ch-ivory-200);
-  box-shadow: var(--ch-elevation-control);
-}
-html[data-fw-theme='dark'] .ch-cl-card__week > span.is-today {
-  box-shadow:
-    0 0 0 1.5px var(--ch-green-500),
-    var(--ch-elevation-control);
 }
 html[data-fw-theme='dark'] .ch-cl-add {
   border-color: var(--ch-border-control);
@@ -1910,6 +1882,198 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   box-shadow: 0 0 0 8px var(--ch-green-50);
 }
 
+/* P012-A1/A2: one timetable. A single row of days over Your classes; each class's days are cells under it: an ink bar
+   as long as the meeting with its start in the cell numeral, empty paper on a day off. Today is one soft light band
+   down the list; a day a team event meets a class is a field-green band, named in the header; a meeting it overlaps
+   carries an amber notch. The header and the cells are drawing (aria-hidden): each class names when it meets. */
+.ch-cl-tthead {
+  display: none;
+}
+.ch-cl .ch-cl-card__week {
+  gap: 4px;
+}
+.ch-cl .ch-cl-card__week > span {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 5px;
+  min-height: 44px;
+  padding: 6px 6px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-cl .ch-cl-card__week em {
+  display: none;
+}
+.ch-cl .ch-cl-card__week b {
+  font: 600 12px/1 var(--ch-font-sans);
+  font-variation-settings: 'wdth' 88;
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-ink-900);
+}
+.ch-cl .ch-cl-card__week > span.is-today,
+.ch-cl-tthead__days > span.is-today {
+  background: color-mix(in oklab, var(--ch-champagne-300) 24%, transparent);
+  box-shadow: none;
+}
+.ch-cl .ch-cl-card__week > span.is-team,
+.ch-cl-tthead__days > span.is-team {
+  background: color-mix(in oklab, var(--ch-green-500) 11%, transparent);
+  box-shadow:
+    inset 2px 0 0 color-mix(in oklab, var(--ch-green-500) 45%, transparent),
+    inset -2px 0 0 color-mix(in oklab, var(--ch-green-500) 45%, transparent);
+}
+.ch-cl-tt__bar {
+  display: block;
+  width: calc(var(--ch-cl-len, 0.3) * 100%);
+  min-width: 10px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--ch-ink-900);
+}
+.ch-cl .ch-cl-card__week > span.is-clash .ch-cl-tt__bar {
+  position: relative;
+}
+.ch-cl .ch-cl-card__week > span.is-clash .ch-cl-tt__bar::after {
+  position: absolute;
+  top: -4px;
+  right: -3px;
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--ch-warning-600);
+  box-shadow: 0 0 0 2px var(--ch-bg-page);
+  content: '';
+}
+.ch-cl-tthead {
+  box-sizing: border-box;
+  align-items: end;
+  padding: 0 12px 8px;
+  box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+}
+.ch-cl-tthead__lead {
+  font: 500 12.5px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-cl-tthead__days {
+  display: grid;
+  grid-template-columns: repeat(var(--ch-cl-cols, 5), minmax(0, 1fr));
+  gap: 4px;
+}
+.ch-cl-tthead__days > span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 6px 6px 4px;
+}
+.ch-cl-tthead__days em {
+  font: 600 12.5px/1 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-secondary);
+}
+.ch-cl-tthead__days > span.is-today em {
+  color: var(--ch-ledger-ink);
+}
+.ch-cl-tthead__days i {
+  overflow: hidden;
+  padding: 3px 5px;
+  border-radius: var(--ch-radius-xs);
+  font: 600 11px/1.1 var(--ch-font-sans);
+  font-style: normal;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: var(--ch-green-800);
+  color: var(--ch-on-green-ink);
+}
+/* The desktop Ledger: the header shares the rows' grid, and the day cells run the row's full height so today and a team
+   day read as bands down the whole list. */
+@media (min-width: 821px) {
+  .ch-cl[data-canopy] .ch-cl-tthead {
+    display: grid;
+    grid-template-columns: var(--ch-cl-codew) minmax(0, 1fr) 300px;
+    column-gap: 24px;
+  }
+  .ch-cl[data-canopy] .ch-cl-deck > .ch-cl-card {
+    grid-template-columns: var(--ch-cl-codew) minmax(0, 1fr) 300px;
+  }
+  .ch-cl[data-canopy] .ch-cl-tthead__lead {
+    grid-column: 1 / 3;
+  }
+  .ch-cl[data-canopy] .ch-cl-card .ch-cl-card__week {
+    align-self: stretch;
+    margin-block: -16px;
+  }
+  .ch-cl[data-canopy] .ch-cl-card .ch-cl-card__week > span {
+    min-height: 0;
+  }
+}
+@container chcl (max-width: 1000px) {
+  .ch-cl[data-canopy] .ch-cl-tthead {
+    grid-template-columns: var(--ch-cl-codew) minmax(0, 1fr);
+  }
+  .ch-cl[data-canopy] .ch-cl-tthead__lead {
+    grid-column: 1;
+  }
+  .ch-cl[data-canopy] .ch-cl-deck > .ch-cl-card {
+    grid-template-columns: var(--ch-cl-codew) minmax(0, 1fr);
+  }
+  .ch-cl[data-canopy] .ch-cl-card .ch-cl-card__week {
+    margin-block: 10px 0;
+  }
+}
+/* The phone: the days once, sticky while Your classes is in view; each class's cells under its name. */
+@media (max-width: 820px) {
+  .ch-cl.is-phone .ch-cl-tthead {
+    position: sticky;
+    top: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
+    z-index: 2;
+    display: block;
+    padding: 8px 0 6px;
+    background: var(--ch-workspace);
+  }
+  .ch-cl.is-phone .ch-cl-tthead__lead {
+    display: none;
+  }
+  .ch-cl.is-phone .ch-cl-card__week {
+    padding-top: 6px;
+  }
+}
+/* D5: Animations off stills the sync spinner. D9: "This week" and "Today" no longer collide on the term line. */
+[data-ui='clubhouse'][data-motion='off'] .ch-cl-sync__sp {
+  animation: none;
+}
+.ch-cl .ch-cl-tb__wkb em {
+  display: none;
+}
+
+/* P012-B1: the read shows its work: the line that counts the rows as they arrive, each row's tag, and the read's first
+   beat (no state yet). */
+.ch-cl-read.is-wait {
+  min-height: 220px;
+}
+.ch-cl-rv__line {
+  margin: 4px 0 0;
+  font: 500 13px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-cl-rv__tag {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font: 600 11.5px/1 var(--ch-font-sans);
+  background: var(--ch-green-50);
+  color: var(--ch-green-700);
+}
+.ch-cl-rv__tag.is-check {
+  background: var(--ch-warning-100);
+  color: var(--ch-warning-600);
+}
+
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
@@ -1945,7 +2109,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   /* The head: the term line is set like the framed head's date line, the title is the shell's 44px sans. */
   .ch-cl[data-canopy] .ch-cl-h > div:first-child {
     font: 500 11px/1.3 var(--ch-font-sans);
-    letter-spacing: 0.14em;
+    letter-spacing: 0.01em;
   }
   .ch-cl[data-canopy] .ch-cl-k {
     font: inherit;
@@ -2207,27 +2371,6 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   .ch-cl[data-canopy] .ch-cl-card__week {
     gap: 4px;
     padding: 0;
-  }
-  .ch-cl[data-canopy] .ch-cl-card__week > span {
-    border-radius: var(--ch-radius-sm);
-    background: var(--ch-ledger-row-hover);
-  }
-  .ch-cl[data-canopy] .ch-cl-card__week em {
-    color: var(--ch-text-tertiary);
-    opacity: 1;
-  }
-  .ch-cl[data-canopy] .ch-cl-card__week > span.is-on {
-    background: var(--ch-raised-bg);
-    box-shadow: var(--ch-key-raised-shadow);
-  }
-  .ch-cl[data-canopy] .ch-cl-card__week > span.is-on em {
-    color: var(--ch-cl-tf);
-  }
-  .ch-cl[data-canopy] .ch-cl-card__week > span.is-today {
-    box-shadow: 0 0 0 1.5px var(--ch-green-500);
-  }
-  .ch-cl[data-canopy] .ch-cl-card__week > span.is-on.is-today {
-    box-shadow: 0 0 0 1.5px var(--ch-green-500), var(--ch-key-raised-shadow);
   }
   .ch-cl[data-canopy] .ch-cl-card__flex {
     padding: 12px;

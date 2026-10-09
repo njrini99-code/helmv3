@@ -612,7 +612,7 @@
 .ch-hb-task em.is-soon {
   color: var(--ch-warning-600);
 }
-.ch-hb-task.is-done b {
+.ch-hb-task.is-done > div > b {
   color: var(--ch-text-tertiary);
   text-decoration: line-through;
 }
@@ -1083,8 +1083,8 @@
     min-width: 0;
   }
   .ch-hb-h .ch-hb-muted {
-    font: 500 11px/1.3 var(--ch-font-sans);
-    letter-spacing: 0.14em;
+    font: 500 12px/1.3 var(--ch-font-sans);
+    letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
   /* All five tabs sit on a 375px screen (the board draws them at 13px with no frame), on a hairline that runs edge to
@@ -1908,5 +1908,233 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 @container chhb (max-width: 900px) {
   html[data-fw-theme='dark'] .ch-hb-pass__stub {
     border-top-color: var(--ch-border-control);
+  }
+}
+
+/* ── Premium pass (P010) ─────────────────────────────────────────────────────────────────────────────────────────
+   A1: the next trip is the page's one physical paper object, lit by the global light (tokens.css --ch-light-*): the
+   rim on its sun-facing edges, a contact shadow and a long soft green-black falloff leaning away from the sun. The
+   light falls on the paper, never on the facts. The stub is joined by a perforation with two notches. Its eyebrow is
+   the page's one gilt. Later trips stay flat rows. A2: the latest announcement, a lacquered plate on the phone and a
+   debossed headline on desktop. Both drop the rim and the deboss when more contrast is asked for. */
+.ch-hb-pass.is-next .ch-hb-pass__top .ch-hb-eyebrow {
+  /* The gilt the Ledger's eyebrows use: dark enough for its small text on paper, light on the night palette. */
+  color: var(--ch-ledger-eyebrow);
+}
+/* D4: the plan and the pass's own lines share one label column. */
+.ch-hb-plan li {
+  grid-template-columns: 96px 1fr;
+}
+.ch-hb-pass__line {
+  grid-template-columns: 96px 1fr;
+}
+@media (min-width: 821px) {
+  .ch-hb[data-canopy] .ch-hb-pass.is-next {
+    padding: 0;
+    overflow: hidden;
+    margin-bottom: 28px;
+    border-radius: 16px;
+    background: var(--ch-light-paper), var(--ch-sheet-bg);
+    box-shadow:
+      inset 0 1px 0 var(--ch-light-rim),
+      inset var(--ch-light-rim-x) 0 0 var(--ch-light-rim-soft),
+      0 0 0 1px rgb(28 25 18 / 0.05),
+      var(--ch-elevation-cast);
+  }
+  .ch-hb[data-canopy] .ch-hb-pass.is-next .ch-hb-pass__main,
+  .ch-hb[data-canopy] .ch-hb-pass.is-next .ch-hb-pass__stub {
+    padding: 22px 24px;
+  }
+  /* The perforation: a dashed hairline down the join, notched where it meets the pass's edges. */
+  .ch-hb[data-canopy] .ch-hb-pass.is-next .ch-hb-pass__stub {
+    border-left: 1.5px dashed rgb(28 25 18 / 0.16);
+    box-shadow: none;
+  }
+  .ch-hb[data-canopy] .ch-hb-pass.is-next .ch-hb-pass__stub::before,
+  .ch-hb[data-canopy] .ch-hb-pass.is-next .ch-hb-pass__stub::after {
+    content: '';
+    left: -10.75px;
+    width: 20px;
+    height: 20px;
+    background: var(--ch-workspace, var(--ch-bg-page));
+    box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.05);
+  }
+  .ch-hb[data-canopy] .ch-hb-pass.is-next .ch-hb-pass__f {
+    border-top-color: rgb(28 25 18 / 0.08);
+  }
+  :where(html[data-fw-theme='dark']) .ch-hb[data-canopy] .ch-hb-pass.is-next {
+    box-shadow:
+      inset 0 1px 0 var(--ch-light-rim),
+      0 0 0 1px rgb(255 255 255 / 0.06),
+      var(--ch-elevation-cast);
+  }
+  :where(html[data-fw-theme='dark']) .ch-hb[data-canopy] .ch-hb-pass.is-next .ch-hb-pass__stub {
+    border-left-color: rgb(255 255 255 / 0.14);
+  }
+  /* A2 on desktop: the featured headline pressed into the paper (20px and up only). */
+  .ch-hb[data-canopy] .ch-hb-ann.is-featured h3 {
+    text-shadow: 0 1px 0 rgb(255 255 255 / 0.7);
+  }
+  :where(html[data-fw-theme='dark']) .ch-hb[data-canopy] .ch-hb-ann.is-featured h3 {
+    text-shadow: 0 -1px 0 rgb(0 0 0 / 0.5);
+  }
+}
+@media (max-width: 820px) {
+  /* A1 on the phone: the approved flush entry; only the perforated rule and its notches part the facts from the plan. */
+  .ch-hb-pass.is-next.is-big .ch-hb-pass__stub {
+    margin-top: 2px;
+    border-top: 1.5px dashed var(--ch-ledger-rule);
+  }
+  .ch-hb-pass.is-next.is-big .ch-hb-pass__stub::before,
+  .ch-hb-pass.is-next.is-big .ch-hb-pass__stub::after {
+    content: '';
+    position: absolute;
+    top: -6px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--ch-workspace, var(--ch-bg-page));
+    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+  }
+  .ch-hb-pass.is-next.is-big .ch-hb-pass__stub::before {
+    left: -5px;
+  }
+  .ch-hb-pass.is-next.is-big .ch-hb-pass__stub::after {
+    right: -5px;
+    left: auto;
+    bottom: auto;
+  }
+  .ch-hb-pass.is-next.is-big .ch-hb-pass__f {
+    border-bottom: 0;
+  }
+  /* A2 on the phone: the plate, lacquered. The rim lights its sun-facing edges; the headline is pressed in. */
+  .ch-hb-ann.is-featured {
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--ch-light-rim) 40%, transparent),
+      inset var(--ch-light-rim-x) 0 0 color-mix(in oklab, var(--ch-light-rim-soft) 25%, transparent),
+      var(--ch-elevation-feature);
+  }
+  .ch-hb-ann.is-featured h3 {
+    text-shadow:
+      0 -1px 0 rgb(0 0 0 / 0.28),
+      0 1px 0 rgb(244 238 221 / 0.1);
+  }
+}
+/* The brand green on a wide-gamut screen: the plate's turf where the display can show it. */
+@media (max-width: 820px) and (color-gamut: p3) {
+  :where(html:not([data-fw-theme='dark'])) .ch-hb-ann.is-featured {
+    background:
+      radial-gradient(120% 90% at 100% 0%, color(display-p3 0.5 0.79 0.6 / 0.14), transparent 60%),
+      color(display-p3 0.06 0.23 0.15);
+  }
+}
+@media (prefers-contrast: more) {
+  .ch-hb .ch-hb-pass.is-next,
+  .ch-hb .ch-hb-ann.is-featured {
+    box-shadow: 0 0 0 1px var(--ch-border-strong);
+  }
+  .ch-hb .ch-hb-ann.is-featured h3 {
+    text-shadow: none;
+  }
+}
+
+/* P010-A3: Announcements as an edited page. The newest is the lead (36px); older posts step down to 22px with their
+   date in the left margin, as a printed page paginates. The coach's desktop margin on the right holds the read count
+   of the post in view, pinned while the page scrolls. On the phone an older post folds to its title and first line. */
+.ch-hb-ann__margin {
+  display: none;
+}
+@media (min-width: 821px) {
+  .ch-hb[data-canopy] .ch-hb-list.is-edited {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+  .ch-hb[data-canopy] .ch-hb-list.has-margin {
+    max-width: none;
+    grid-template-columns: minmax(0, 760px) 240px;
+    column-gap: 56px;
+  }
+  .ch-hb[data-canopy] .ch-hb-list.is-edited > :not(.ch-hb-margin) {
+    grid-column: 1;
+  }
+  .ch-hb[data-canopy] .ch-hb-ann.is-lead h3 {
+    font-size: 36px;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+  }
+  .ch-hb[data-canopy] .ch-hb-ann.is-older {
+    position: relative;
+    padding-left: 120px;
+  }
+  .ch-hb[data-canopy] .ch-hb-ann.is-older h3 {
+    font-size: 22px;
+    line-height: 1.2;
+  }
+  .ch-hb[data-canopy] .ch-hb-ann.is-older .ch-hb-ann__margin {
+    position: absolute;
+    top: 36px;
+    left: 0;
+    display: block;
+    width: 100px;
+    font: 500 12.5px/1.35 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-hb[data-canopy] .ch-hb-ann.is-older:first-of-type .ch-hb-ann__margin,
+  .ch-hb[data-canopy] .ch-hb-new + .ch-hb-ann.is-older .ch-hb-ann__margin {
+    top: 4px;
+  }
+  .ch-hb-margin {
+    position: sticky;
+    top: calc(var(--ch-topbar-h) + 24px);
+    grid-column: 2;
+    grid-row: 1 / span 40;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 0 0 20px;
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-hb-margin__k {
+    font: 500 12.5px/1.2 var(--ch-font-sans);
+    color: var(--ch-ledger-eyebrow);
+  }
+  .ch-hb-margin__t {
+    font: 600 15px/1.3 var(--ch-font-sans);
+    color: var(--ch-ledger-ink);
+    text-wrap: balance;
+  }
+  .ch-hb-margin__n {
+    font: var(--ch-type-caption);
+    color: var(--ch-text-tertiary);
+  }
+}
+@media (max-width: 820px) {
+  .ch-hb-list > .ch-hb-ann.is-older h3 {
+    font-size: 17px;
+  }
+  .ch-hb-ann__fold {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    margin: -10px 0 -6px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ch-text-secondary);
+    font: 400 14px/44px var(--ch-font-sans);
+    text-align: left;
+    cursor: pointer;
+  }
+  .ch-hb-ann__fold > span:first-child {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ch-hb-ann__fold:focus-visible {
+    outline: 2px solid var(--ch-border-focus);
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 }

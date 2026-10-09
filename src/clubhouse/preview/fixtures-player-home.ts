@@ -33,9 +33,11 @@ const leg = (key: ChPlayerLeg['key'], label: string, stat: string, value: number
   note,
 });
 
-const { invitees: _i, going: _g, ...nextEvent } = PREVIEW_HOME.phone.next!;
+const { invitees: _i, going: _g, awaiting: _a, inviteeIds: _ids, ...nextEvent } = PREVIEW_HOME.phone.next!;
 void _i;
 void _g;
+void _a;
+void _ids;
 
 export const PREVIEW_PLAYER_HOME: ChPlayerHome = {
   greeting: 'Good afternoon, Theo.',

@@ -161,6 +161,11 @@
 .ch-cal-step {
   display: inline-flex;
 }
+/* P006 D6: in Agenda the arrows keep their place but are hidden, and visibility takes them out of tab order and the
+   accessibility tree. */
+.ch-cal-step.is-off {
+  visibility: hidden;
+}
 .ch-cal-legend {
   display: flex;
   align-items: center;
@@ -356,10 +361,19 @@
   }
 }
 
-/* Week and day grid */
+/* Week and day grid. Clipped, not hidden: an overflow container would hold the pinned head below in place. */
 .ch-wk {
   padding: 10px 10px 0;
-  overflow: hidden;
+  overflow: clip;
+}
+.ch-wk__top {
+  position: sticky;
+  top: var(--ch-topbar-h);
+  z-index: 3;
+  margin: -10px -10px 0;
+  padding: 10px 10px 0;
+  border-radius: 16px 16px 0 0;
+  background: var(--ch-bg-surface);
 }
 .ch-wk__head,
 .ch-wk__allday,
@@ -511,6 +525,33 @@
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 1px;
 }
+/* P006-B3: a coach's event can be picked up and moved in 15-minute steps. The block held steps back, a dashed ghost
+   shows where it would land, and an invitee's clash there lights amber. */
+.ch-ev.is-draggable {
+  cursor: grab;
+}
+.ch-wk__grid.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ch-wk__grid.is-dragging .ch-ev {
+  cursor: grabbing;
+}
+.ch-ev.is-held {
+  opacity: 0.4;
+}
+.ch-ev.is-ghost {
+  pointer-events: none;
+  outline: 2px dashed var(--ch-border-focus);
+  outline-offset: -2px;
+  box-shadow: var(--ch-elevation-floating);
+}
+.ch-ev.is-clash {
+  z-index: 5;
+  box-shadow: inset 0 0 0 2px var(--ch-warning-600);
+  background: var(--ch-warning-100);
+}
 @media (hover: hover) {
   .ch-ev:hover {
     z-index: 4;
@@ -521,6 +562,16 @@
   font: 600 12.5px/1.25 var(--ch-font-sans);
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+/* P006 D2: a block on its own wraps its title to the lines its height leaves (views.tsx sets --ch-ev-lines). */
+.ch-ev--wrap .ch-ev__t {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--ch-ev-lines, 2);
+  line-clamp: var(--ch-ev-lines, 2);
+  flex-shrink: 0;
+  white-space: normal;
+  overflow-wrap: normal;
 }
 .ch-ev__m {
   overflow: hidden;
@@ -1245,7 +1296,12 @@
   color: var(--ch-text-secondary);
   box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.1);
 }
+/* P006 D4: a clash stays in sight over the proposed time, in amber; it lets the pointer through to the band and lane. */
 .ch-lane__b.is-clash {
+  z-index: 4;
+  pointer-events: none;
+  background: var(--ch-warning-100);
+  color: var(--ch-text-primary);
   box-shadow: inset 0 0 0 1.5px var(--ch-warning-600);
 }
 .ch-lane__b.is-overlap {
@@ -1253,10 +1309,11 @@
   background: rgb(154 101 18 / 0.16);
   box-shadow: inset 0 0 0 1px rgb(154 101 18 / 0.35);
 }
+/* The proposed time is an outline over a faint wash (P006 D4): an opaque band hid the blocks it clashed with. */
 .ch-lane__b.is-prop {
   z-index: 3;
-  background: var(--ch-raised-bg);
-  box-shadow: var(--ch-raised-shadow), 0 0 0 1.5px var(--ch-green-600);
+  background: rgb(21 90 57 / 0.07);
+  box-shadow: 0 0 0 1.5px var(--ch-green-600);
   color: var(--ch-green-700);
 }
 .ch-cal-ft {
@@ -1873,6 +1930,48 @@
     margin-top: 14px;
   }
 
+  /* P006-B2: the day pages sideways with native momentum, one day a page. The neighbours take the day's height (the
+     pager measures it) so a long neighbour never leaves space under a short day. */
+  .ch-calm-pager {
+    display: flex;
+    align-items: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  .ch-calm-pager::-webkit-scrollbar {
+    display: none;
+  }
+  .ch-calm-page {
+    flex: 0 0 100%;
+    min-width: 0;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+  .ch-calm-page.is-side {
+    max-height: var(--ch-calm-page-h, none);
+    overflow: hidden;
+  }
+  .ch-calm-dayk.is-waiting h3 {
+    color: var(--ch-text-tertiary);
+  }
+  /* The week steps sit at the heading's end; the count wraps under the date. */
+  .ch-calm-weekstep {
+    display: inline-flex;
+    gap: 2px;
+    margin-left: auto;
+    align-self: center;
+  }
+  .ch-calm-dayk:has(.ch-calm-weekstep) {
+    flex-wrap: wrap;
+  }
+  .ch-calm-dayk:has(.ch-calm-weekstep) > .ch-num {
+    order: 3;
+    flex-basis: 100%;
+  }
+
   /* The day's events: rows on soft seams along Home's Today rail (time, a dot in the event's colour, the title and
      place). A press tints the row over the press beat and never scales it (CH-1606). A class or busy block stays an
      unlifted hatch, so time a player isn't free never reads as an event (Q-142); a row that has passed steps back by
@@ -2048,8 +2147,15 @@
   section.ch-calm-month {
     padding: 0;
   }
-  .ch-calm-month__h,
+  /* The grid is react-day-picker's (screens/calendar/month.tsx) in Clubhouse markup: the weekdays' row, then a column
+     of week rows, each seven days across. The page scrolls up and down over it; a sideways swipe turns the month. */
   .ch-calm-month__g {
+    display: flex;
+    flex-direction: column;
+    touch-action: pan-y;
+  }
+  .ch-calm-month__h,
+  .ch-calm-month__w {
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
   }
@@ -2066,11 +2172,15 @@
     row-gap: 2px;
     padding-top: 6px;
   }
+  .ch-calm-month__d {
+    min-width: 0;
+  }
   .ch-calm-month__c {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 4px;
+    width: 100%;
     height: 52px;
     padding: 5px 0 0;
     border: 0;
@@ -2078,7 +2188,7 @@
     background: none;
     color: inherit;
     cursor: pointer;
-    touch-action: manipulation;
+    touch-action: pan-y;
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-calm-month__c:active {
@@ -2584,6 +2694,12 @@ html[data-fw-theme='dark'] .ch-lane__b.is-overlap {
 html[data-fw-theme='dark'] .ch-lane__b.is-clash {
   box-shadow: inset 0 0 0 1.5px var(--ch-warning-600);
 }
+html[data-fw-theme='dark'] .ch-lane__b.is-clash {
+  background: var(--ch-warning-100);
+}
+html[data-fw-theme='dark'] .ch-lane__b.is-prop {
+  background: rgb(120 200 150 / 0.08);
+}
 html[data-fw-theme='dark'] .ch-switch__t {
   box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.4), inset 0 0 0 1px rgb(255 255 255 / 0.06);
 }
@@ -2628,4 +2744,83 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   html[data-fw-theme='dark'] .ch-cal[data-canopy] .ch-ag__day.is-today .ch-ag__list {
     box-shadow: none;
   }
+}
+
+/* P006-A1: daylight on the grid. Night before sunrise and after sunset, golden hour before sunset, and "Sunset 6:31" on
+   one column: washes on the frame under the events (z-index 0), never on an event. Dark mode has its own night. */
+.ch-wk__sky {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.ch-wk__sky > i {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+.ch-wk__sky > i.is-night {
+  background: rgb(46 58 92 / 0.055);
+}
+.ch-wk__sky > i.is-golden {
+  background: linear-gradient(to bottom, rgb(232 180 106 / 0), rgb(232 180 106 / 0.14));
+}
+.ch-wk__sunset {
+  position: absolute;
+  right: 6px;
+  transform: translateY(-100%);
+  padding-bottom: 2px;
+  font: 500 10.5px/1 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-ledger-eyebrow);
+  white-space: nowrap;
+}
+:where(html[data-fw-theme='dark']) .ch-wk__sky > i.is-night {
+  background: rgb(0 0 0 / 0.18);
+}
+:where(html[data-fw-theme='dark']) .ch-wk__sky > i.is-golden {
+  background: linear-gradient(to bottom, rgb(201 173 116 / 0), rgb(201 173 116 / 0.1));
+}
+@media print {
+  .ch-wk__sky {
+    display: none;
+  }
+}
+
+/* P006-C3: an event's peek card (screens/calendar/peek.tsx), inside the shared peek and hover card. Kind, title, when
+   and where; for the coach, who has answered. Tokens only, so the dark theme follows. */
+.ch-evpeek {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  max-width: 320px;
+}
+.ch-evpeek__k {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+  font: var(--ch-type-k);
+  color: var(--ch-text-tertiary);
+}
+.ch-evpeek__t {
+  font: var(--ch-type-title);
+  color: var(--ch-text-primary);
+  overflow-wrap: anywhere;
+}
+.ch-evpeek__m {
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-secondary);
+}
+.ch-evpeek__r {
+  margin-top: 6px;
+  padding-top: 8px;
+  box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-secondary);
+}
+.ch-evpeek__r b {
+  font-weight: 600;
+  color: var(--ch-text-primary);
 }

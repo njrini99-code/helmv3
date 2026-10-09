@@ -1,5 +1,20 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-08 — the radio groups take programmatic focus
+
+Every Hub radio group (an RSVP's reply, Send to, Event, and Getting there in
+the trip sheet and the trip editor) takes `tabIndex={-1}`. The checked radio is still the one Tab stop and the group
+still routes the arrow keys, Home and End (D7); the group itself is now
+focusable, as `jsx-a11y/interactive-supports-focus` requires of an element
+that handles keys, without adding a Tab stop.
+
+## 2026-10-08 — premium pass: the lit pass, the plate, the edited page and findings (P010-A1 to A3, D1 to D9, D14)
+
+- A1: the next trip is the page's one paper object. On desktop it keeps the paper (the room's light as `--ch-light-paper`), a rim on its sun-facing edges and a contact shadow with a long falloff leaning away from the sun (`--ch-light-*`, never on the facts), joined to its stub by a dashed perforation with two notches; its eyebrow is the page's one gilt (`--ch-ledger-eyebrow`). Later trips stay flat rows. On the phone the approved flush entry keeps everything but gains the perforated rule and notches between the facts and the plan. More contrast drops the rim and shadow for a plain border.
+- A2: the latest announcement is a lacquered plate on the phone (a rim on its sun-facing edges, a pressed headline, the Display-P3 green where the screen has it, light theme only); on desktop the flush entry's headline is debossed.
+- A3: the Announcements tab is an edited page: the newest at 36px, older posts at 22px with their date in the left margin; on desktop the coach's right margin holds the read count of the post in view, pinned while the page scrolls (only the count the page already has). On the phone an older post folds to its title and first line until tapped.
+- D1 a done task strikes its title only, not the ring's fraction. D2 the tab is in the URL (`?tab=`, replaced in place). D3 the coach preview's Updates are coach-shaped. D4 the big pass doesn't repeat Departs and Stay beside its plan, and the plan and the pass's lines share one 96px label column. D5 failure titles are ink (the shell's D5-1). D6 the head's one primary follows the tab (New announcement, Plan a trip, Assign a task; none on Documents, whose drop zone is its primary, or on a tab whose read failed); the in-panel Plan a trip and Assign duplicates are gone. D7 every radio group is one Tab stop and the arrow keys, Home and End walk it (an RSVP's arrows move without sending; Space chooses). D8 "Needs your acknowledgement". D9 an RSVP row's line keeps time and place; the date tile says the day (the full date is still read). D14 the tab underline glides on the base spring.
+
 ## 2026-10-08 — dark: Clubhouse at night
 
 Team Hub follows GolfHelm's dark theme ("Clubhouse at night"). Row rules, the pass's perforation, task checkboxes, RSVP and read tracks become ivory hairlines; the tab underline and Going in the RSVP bar take the light green; ivory type on a filled green (RSVP choice, task tick, upload mark, audience choice, step) takes the on-green ink; the featured announcement is unchanged. Light mode is unchanged.

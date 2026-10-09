@@ -75,9 +75,13 @@ Reopen (Q-20).
 - "8 entrants · course".
 - An action row: "Manage selections" (secondary, full width) and "Edit" (ghost).
 - Three facts: Rounds in "13/24", Spots "4+1", Deadline.
-- Leaderboard. Each row is a card:
-  - position, a 32px avatar, the name with its state badge, and to-par at 17px/600;
-  - underneath, a soft-well grid of Rounds, Avg and Total.
+- Leaderboard (changed by P009-A1, owner 2026-10-08). The column header Pos, Player, To par, Thru is drawn once; then one 56pt row a player:
+  - the position (a tie as "T3", its T small and raised) with the movement since the previous round under it ("▲2" gain green, "▼1" loss amber);
+  - the name, with the state badge (compact) or the sample-size note ("1 of 3 rounds", P009-C2) on its second line;
+  - to par on a fixed-aspect ivory plate (52 × 30, the condensed cell numeral; red only under par);
+  - Thru ("2/3").
+  - The average moved to the player's sheet; there is no avatar and no per-row Rounds/Avg/Total labels.
+- The Live chip in the leaderboard head: "Live · updated 4:12 PM" only while the feed is subscribed, "Paused · standings from 4:12 PM" and Refresh when it is not (P009-B2); past the end date the status pill says "Ended · n rounds outstanding" and the board claims no feed (D3).
 - The cut lines, the unscored entrants, and a caption.
 - Course per round.
 - Scoring rules.

@@ -1,5 +1,62 @@
 # P006 — Calendar: changelog
 
+## 2026-10-08 — phone: Month on react-day-picker
+
+The phone's Month grid (`screens/calendar/month.tsx`, out of
+`CalendarPhone.tsx`) is drawn by `react-day-picker` in Clubhouse markup and
+classes: the same weeks (Sunday first, whole weeks, four to six rows, the other
+months' days lighter), the same dots (a dark one for a competition), today the
+green disc and the chosen day the green ring, and a day still opens its Day view
+with a selection tick. Dates stay the team-timezone calendar dates: each crosses
+into the grid at local noon and comes back by its local fields, so the browser's
+zone never moves a day; data loading is unchanged.
+
+New: the grid is an ARIA grid with one day in the tab order, so the arrows walk
+the days (and cross into the next or previous month), Page Up and Page Down turn
+the month, and Home and End reach the week's ends; inside the grid the arrows no
+longer also step the Calendar's month. A sideways swipe across the grid turns
+the month, and so does the keyboard inside it, through the Calendar's own step
+(`step`, one tick), as its arrow keys still do from outside the grid: a second
+turn while the next window loads steps on from the month it is headed to
+(60302). A longer jump (Shift with Page Up or Down, a year) goes straight to
+that month. Day and List are unchanged. Not verified on a device: the swipe
+against WebKit's edge gestures.
+
+## 2026-10-08 — the player peek (P003-C1)
+
+The shared PlayerPeek: for the coach, each attendee row in the event panel peeks at the player (a hold on the phone, a rest of the pointer on desktop), from the roster the Calendar already loaded. No new reads.
+
+## 2026-10-08 — premium pass: findings D2, D3, D4, D6
+
+- D2: a week or day block on its own wraps its title to the lines its height leaves above the time, up to three (`--ch-ev-lines`, `.ch-ev--wrap`), so "Bus to Pine…" reads in full. A block with room for only one line keeps the plain cut-off.
+- D3: a new event opens on the first two free hours for everyone invited (`seedWindow`): after now today, from 9 AM on another day, and on the first free window when the day's free time is past. It no longer opens on daily practice with the whole team Busy.
+- D4: Find a time's proposed band is an outline over a faint wash, and a clashing block sits above it in amber, so you can see the clash in the lanes, not only in the list.
+- D6: Agenda keeps the arrows' place in the toolbar, hidden and inert, so the toolbar doesn't shift by about 80px when you switch views.
+
+## 2026-10-08 — premium pass: peek an event (P006-C3)
+
+An event peeks where it is listed, through the shared peek (`ui/Peek.tsx`): a hold on a phone agenda row, a rest of the pointer (or keyboard focus) on a desktop week block. The card (`screens/calendar/peek.tsx`) shows kind, title, day and time, and place; for the coach, how many are going, how many can't, and who hasn't replied. Its actions are Open; for the coach, Nudge the people who haven't replied, which opens Messages prefilled with them and a short draft that the coach sends; and, for a qualifier, tournament or trip with a place, Directions as a plain Apple Maps link. Classes and busy time don't peek; a block that is being dragged doesn't either. Not built: answering the invite from the peek.
+
+## 2026-10-08 — premium pass: daylight on the grid (P006-A1)
+
+The Week and Day grids carry the day's light from the global light's sun at the team's place (`daylightOn` over `sunTimes`, `useLightPlace`): a night wash before sunrise and after sunset, a warm band through golden hour, and "Sunset 6:31" on the last column shown. Washes sit on the frame under the events and never tint an event; dark mode has its own night; print drops them.
+
+## 2026-10-08 — premium pass: drag to reschedule, with Undo (P006-B3)
+
+On desktop a coach picks up one of their events and drops it on another day and time, in 15-minute detents (a selection tick per detent). The block held steps back, a dashed ghost shows where it lands, and an invitee's event or class there lights amber while it is held (`clashesAt`). Alt+↑/↓ on a focused block moves it 15 minutes. A drop shows "Moved to 4:00 PM" with Undo for the done toast's life (4 s); the move is optimistic and nothing is written until the window closes, so invitees are notified only once it stands, and an undone move never reaches anyone. Leaving the page writes a waiting move at once. A failed write puts the block back (CH-6015); offline nothing is held (CH-1903). Series, multi-day, all-day, class and busy blocks don't drag (a series still asks "this event or all" in the editor). Not built: changing length by dragging the bottom edge. The notification timing needed no server change.
+
+## 2026-10-08 — premium pass: swipe through days and weeks on the phone (P006-B2, D5)
+
+The phone Day view's agenda pages left and right with the phone's own momentum (scroll-snap, one day a page; `DayPager` in `CalendarPhone.tsx`), with one selection tick when a page settles (`scrollend`, or the scroll going quiet where WebKit lacks it). Past Saturday the strip turns to the next week. The neighbouring days are rendered for the swipe, clipped to the day's height, inert and hidden from assistive tech; a day outside the loaded window shows only its heading until its week arrives. A swipe doesn't also slide the agenda (CH-6606 still slides for a tap). ‹ › Previous week and Next week sit at the day heading's end, the same reach for VoiceOver and the keyboard (D5). They sit there rather than at the strip's ends so the seven day keys keep their width.
+
+## 2026-10-08 — premium pass: coach-only meetings (D2-8, D7)
+
+A meeting with no invitees is the coach's own (a parent call, a staff meeting): the Calendar loader leaves it out of a player's payload, and the player's Home leaves it out of Up next and Today. Only once the invite list has loaded; when replies fail to load, nothing is hidden. No schema change.
+
+## 2026-10-08 — premium pass: open on now (P006-B1, D1)
+
+The Week and Day grids open with the now line, or the next event when today is not on show, about 30% down the canvas, on first paint and on T or Today (`focusHour` in `model.ts`, `useOpenOnNow` in `Calendar.tsx`). Opening is instant; Today eases unless motion is reduced. Back and Forward keep the place RouteFrame restored, and stepping a week keeps the canvas where it is.
+
 ## 2026-10-08 — dark: Clubhouse at night
 
 Calendar follows GolfHelm's dark theme ("Clubhouse at night"). A tournament or qualifier block, the month's competition chip and the detail panel's next-up card keep their filled green with ivory type; practice blocks, agenda times and lane events take the light text green; the competition dot, the phone's now line and its competition dots lift to the light green so they hold on the dark ground; selection, today, travel, the class hatch and the coach's busy hatch are redrawn as ivory or champagne washes. Light mode is unchanged (every rule is scoped to `html[data-fw-theme='dark']`).

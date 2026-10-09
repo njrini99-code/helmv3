@@ -27,7 +27,8 @@ export const VIEWS_NOW = new Date('2026-10-01T15:00:00Z');
 const FULL_VECTOR: GenomeVector = {
   miss_side_bias: { value: -0.42, confidence: 0.85, label: 'Left bias' },
   pressure_delta: { value: 0.82, confidence: 0.5, label: 'Tightens up' },
-  scrambling_rate: { value: 0.438, confidence: 0.9, label: 'Wizard' },
+  // Labels are the live dimensions' own (scrambling-rate.ts: Reliable from 27.6%, Wizard from 40.6%).
+  scrambling_rate: { value: 0.352, confidence: 0.9, label: 'Reliable' },
   par3_proficiency: { value: -0.38, confidence: 1, label: 'Under par' },
   back_nine_delta: { value: 0.31, confidence: 0.7, label: 'Fades late' },
   scoring_trend: { value: -0.64, confidence: 0.33, label: 'Improving' },

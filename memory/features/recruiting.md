@@ -90,7 +90,10 @@ change prospect writes, stage choices, or unsaved-draft dismissal policy.
 ## Core Data
 
 - `golf_recruits` — `first_name`, `last_name`, `email`, `phone`, `hometown`,
-  `state`, `hs_class`, `status`, `notes`, `team_id`, `created_by`
+  `state`, `hs_class`, `status`, `notes`, `team_id`, `created_by`; and, once
+  `supabase/migrations/20261008120000_golf_recruits_next_step.sql` is applied
+  (written 2026-10-08, not applied), `next_step_label` (text, at most 120) and
+  `next_step_date` (date), both nullable
 - `golf_recruit_documents`
 - storage bucket `recruit-documents` (private; 25 MB per file, no video, until
   `supabase/migrations/20260930140000_recruit_documents_film.sql` is applied:
@@ -164,6 +167,18 @@ and one migration (film), written and not applied.
   as a generic failure. The project's upload limit could not be read when this
   was written: confirm it is at least 100 MB before applying the migration.
 - Email and Call are `mailto:` and `tel:` links; nothing is sent from GolfHelm.
+- Premium pass (2026-10-08). The pipeline no longer draws each stage's share.
+  A landed move to Committed plays one gilt-rule moment and its success haptic
+  lands as the rule ends (CH-14806). A **next step** (label and day) shows only
+  while its columns exist: the loader probes `next_step_date` with a zero-row
+  head request (any error, 42703 included, means off), the list read stays
+  `select('*')`, and the page sends the fields only while the probe succeeds.
+  Writing them also needs `createRecruit`/`updateRecruit` to accept the two
+  fields (they whitelist columns today). A **recruiting calendar** line reads
+  `src/clubhouse/data/recruiting-calendar.ts` (2026-27 NCAA D-I, D-II, D-III,
+  NAIA, NJCAA, each entry sourced; re-author each season) for the team's
+  division (`organizations.division`, parsed conservatively) and gender
+  (`golf_teams.gender`), or the coach's pick on the device.
 - A prospect's documents are read when it opens; a failed read is a notice in
   that section and the rest of the prospect still works.
 

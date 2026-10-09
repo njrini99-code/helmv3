@@ -5,6 +5,9 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObje
 /** Within this of the end counts as reading the newest messages. */
 export const NEAR_END_PX = 120;
 
+/** How long a newly shown thread is held at its end while a push or hydration settles (P007 D1). */
+const SETTLE_MS = 700;
+
 /**
  * Where a thread sits as messages arrive (high-fidelity audit §6.6, T25). A conversation opens at its end. A new
  * message, or someone starting to type, follows the end only while the reader is already there or the message is
@@ -74,9 +77,33 @@ export function useThreadAnchor(
     else setUnseen((n) => n + arrived);
   }, [convId, count, lastMine, typing, toEnd]);
 
-  // First paint of a thread: its end.
+  // First paint of a thread: its end, held there while the thread settles (P007 D1). A thread pushed during hydration
+  // slides in and has its layout and scroll reset under it, which left it at its oldest message; until the reader
+  // touches it, each frame of the settle puts it back at the end. Scroll events in that window are the reset's,
+  // not the reader's, so they don't decide `nearEnd`.
   useLayoutEffect(() => {
     toEnd();
+    const s = scroller.current;
+    if (!s || typeof requestAnimationFrame === 'undefined') return;
+    const until = performance.now() + SETTLE_MS;
+    let frame = 0;
+    let stopped = false;
+    const stop = () => {
+      stopped = true;
+      cancelAnimationFrame(frame);
+    };
+    const hold = () => {
+      if (stopped || !s.isConnected) return;
+      if (s.scrollHeight - s.scrollTop - s.clientHeight > 1) toEnd();
+      if (performance.now() < until) frame = requestAnimationFrame(hold);
+    };
+    frame = requestAnimationFrame(hold);
+    const input = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const;
+    for (const t of input) s.addEventListener(t, stop, { passive: true });
+    return () => {
+      stop();
+      for (const t of input) s.removeEventListener(t, stop);
+    };
     // Once per mount; conversation changes are handled above.
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

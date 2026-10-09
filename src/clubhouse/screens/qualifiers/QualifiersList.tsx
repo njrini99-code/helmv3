@@ -16,8 +16,8 @@ import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { formatToPar, NO_DATA } from '../../lib/format';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
-import { ctaLabel, listLede } from './model';
-import { Meta, StatusPill, ToPar } from './parts';
+import { ctaLabel, endedLive, listLede } from './model';
+import { Meta, Pos, StatusPill, ToParPlate } from './parts';
 import { isPlainClick, noteOpenedFromList } from './return-state';
 import '../../styles/qualifiers.css';
 import { SerifText } from '../../ui/SerifText';
@@ -71,7 +71,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
   return (
     <main className="ch-qf ch-qf--list" data-canopy="">
       {/* Phone (board 01): Qualifiers opens from More (D-66), so the top bar goes back there. */}
-      <PhoneTop title={data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} back={{ label: 'More', onBack: backFromMore }} />
+      <PhoneTop heading={false} title={data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} back={{ label: 'More', onBack: backFromMore }} />
       <header className="ch-qf-head" data-canopy-head="">
         <div>
           <span className="ch-qf-eyebrow ch-num">
@@ -192,13 +192,14 @@ export function QualifiersList({ data }: { data: ChQList }) {
               </div>
             ) : (
               <>
-                {hero && <Hero item={hero} standingsError={data.standingsError} />}
+                {hero && <Hero item={hero} standingsError={data.standingsError} today={data.today} />}
                 {rest.length > 0 && (
                   <section className="ch-qf-sec" aria-labelledby="ch-qf-active">
-                    <h2 id="ch-qf-active">Active</h2>
+                    {/* P009-D14: the section holds upcoming qualifiers as well as live ones. */}
+                    <h2 id="ch-qf-active">Upcoming and live</h2>
                     <div className="ch-qf-grid is-ledger">
                       {rest.map((i) => (
-                        <Card key={i.id} item={i} standingsError={data.standingsError} />
+                        <Card key={i.id} item={i} standingsError={data.standingsError} today={data.today} />
                       ))}
                     </div>
                   </section>
@@ -209,7 +210,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
                     {concluded.length ? (
                       <div className="ch-qf-grid is-ledger">
                         {concluded.map((i) => (
-                          <Card key={i.id} item={i} standingsError={data.standingsError} />
+                          <Card key={i.id} item={i} standingsError={data.standingsError} today={data.today} />
                         ))}
                       </div>
                     ) : (
@@ -239,17 +240,22 @@ function Mine({ item }: { item: ChQListItem }) {
   );
 }
 
-function Hero({ item, standingsError }: { item: ChQListItem; standingsError: boolean }) {
+/** P009-D3: a live qualifier past its last day; its outstanding rounds are unknown when the standings didn't load. */
+const endedOf = (item: ChQListItem, standingsError: boolean, today: string | undefined) =>
+  endedLive({ status: item.status, endDate: item.endDate, today, entrants: item.entrants, numRounds: item.numRounds, submitted: standingsError ? null : item.submitted });
+
+function Hero({ item, standingsError, today }: { item: ChQListItem; standingsError: boolean; today?: string }) {
   const live = item.status === 'in_progress' && !standingsError && item.leaders.length > 0;
+  const ended = endedOf(item, standingsError, today);
   return (
     <Link href={detailHref(item.id)} className="ch-qf-hero" onClick={opened(item.id, 'hero')}>
       <div className="ch-qf-hero__main">
-        <StatusPill status={item.status} />
+        <StatusPill status={item.status} ended={ended} />
         <h2>
           <SerifText text={item.name} />
         </h2>
         {item.description && <p>{item.description}</p>}
-        <Meta startDate={item.startDate} endDate={item.endDate} squad={item.squad} course={item.course} />
+        <Meta startDate={item.startDate} endDate={item.endDate} squad={item.squad} course={item.course} today={today} />
         {!standingsError && <Mine item={item} />}
         <span className="ch-qf-cta">
           {ctaLabel(item.status)}
@@ -271,13 +277,14 @@ function Hero({ item, standingsError }: { item: ChQListItem; standingsError: boo
                   <span>Top-score line</span>
                 </div>
               )}
+              {/* P009-A1: the leaders hang on plates, as on the board, with their movement since the previous round. */}
               <div className="ch-qf-lead__r">
-                <span className="ch-qf-pos">{r.position}</span>
+                <Pos position={r.position} tied={r.position.startsWith('T')} move={r.move} />
                 <span className="ch-qf-lead__n">{r.name}</span>
                 <span className="ch-qf-lead__th">
                   {r.played}/{item.numRounds}
                 </span>
-                <ToPar value={r.toPar} />
+                <ToParPlate value={r.toPar} size="card" />
               </div>
             </div>
           ))}
@@ -287,7 +294,7 @@ function Hero({ item, standingsError }: { item: ChQListItem; standingsError: boo
   );
 }
 
-function Card({ item, standingsError }: { item: ChQListItem; standingsError: boolean }) {
+function Card({ item, standingsError, today }: { item: ChQListItem; standingsError: boolean; today?: string }) {
   return (
     <Link href={detailHref(item.id)} className="ch-qf-card" onClick={opened(item.id, 'card')}>
       <div className="ch-qf-card__h">
@@ -295,9 +302,9 @@ function Card({ item, standingsError }: { item: ChQListItem; standingsError: boo
           <h3>{item.name}</h3>
           {item.description && <p>{item.description}</p>}
         </div>
-        <StatusPill status={item.status} />
+        <StatusPill status={item.status} ended={endedOf(item, standingsError, today)} />
       </div>
-      <Meta startDate={item.startDate} endDate={item.endDate} squad={item.squad} course={item.course} />
+      <Meta startDate={item.startDate} endDate={item.endDate} squad={item.squad} course={item.course} today={today} />
       {!standingsError && <Mine item={item} />}
       <span className="ch-qf-cta is-quiet">
         {ctaLabel(item.status)}

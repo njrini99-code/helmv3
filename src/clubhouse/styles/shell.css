@@ -3,7 +3,8 @@
 .ch-app {
   display: flex;
   height: 100dvh;
-  background: var(--ch-shell);
+  /* The global light's sky falls across the frame (P001-A1, tokens.css "The global light"). */
+  background: var(--ch-light-sky), var(--ch-shell);
 }
 .ch-canvas {
   position: relative;
@@ -68,7 +69,8 @@
   height: 100%;
   padding: 14px 10px 12px;
   overflow-y: auto;
-  background: var(--ch-shell);
+  /* Clear, so the frame's sky (.ch-app) lights the sidebar field as one plane with the frame. */
+  background: transparent;
   color: var(--ch-text-primary);
 }
 .ch-brand {
@@ -97,12 +99,12 @@
   font: 600 18px/1 var(--ch-font-sans);
   letter-spacing: -0.03em;
   font-variation-settings: 'wdth' 92;
-  color: #fbfaf6;
+  color: var(--ch-on-green-bright);
 }
 .ch-brand__team {
   overflow: hidden;
   font: 500 12.5px/1.2 var(--ch-font-sans);
-  color: #cfc7b2;
+  color: var(--ch-on-green-glyph);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -127,7 +129,7 @@
   }
 }
 .ch-brand--switch:focus-visible {
-  outline: 2px solid #dccda6;
+  outline: 2px solid var(--ch-champagne-300);
   outline-offset: 1px;
 }
 .ch-brand--switch[aria-busy='true'] {
@@ -160,7 +162,7 @@
 }
 .ch-brand__team--switch svg {
   flex: none;
-  color: #cfc7b2;
+  color: var(--ch-on-green-glyph);
 }
 /* The coach's teams, under the brand block: a popover panel (.ch-popover) of two or three rows. */
 .ch-tsw {
@@ -189,13 +191,13 @@
 }
 .ch-tsw__opt:focus-visible {
   outline: none;
-  background: #ece8de;
+  background: var(--ch-press-well);
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
 }
 @media (hover: hover) {
   .ch-tsw__opt:hover {
     outline: none;
-    background: #ece8de;
+    background: var(--ch-press-well);
     box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
   }
 }
@@ -239,7 +241,7 @@
 .ch-nav__section {
   padding: 18px 10px 6px;
   font: 500 12px/1 var(--ch-font-sans);
-  color: #dccda6;
+  color: var(--ch-champagne-300);
   opacity: 0.8;
 }
 .ch-navitem {
@@ -249,7 +251,7 @@
   height: 32px;
   padding: 0 10px;
   border-radius: var(--ch-radius-md);
-  color: #e9e4d6;
+  color: var(--ch-on-green-label);
   font: 500 13.5px/1 var(--ch-font-sans);
   letter-spacing: -0.006em;
   text-decoration: none;
@@ -257,28 +259,28 @@
     box-shadow var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-navitem svg {
-  color: #cfc7b2;
+  color: var(--ch-on-green-glyph);
   transition: color var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-navitem:hover {
     background: rgb(250 248 241 / 0.07);
-    color: #fbfaf6;
+    color: var(--ch-on-green-bright);
   }
 }
 @media (hover: hover) {
   .ch-navitem:hover svg {
-    color: #f4f1e8;
+    color: var(--ch-on-green-plate);
   }
 }
 .ch-navitem:focus-visible {
-  outline: 2px solid #dccda6;
+  outline: 2px solid var(--ch-champagne-300);
   outline-offset: 1px;
 }
 /* A tapped row takes the selected look on the first frame and the old one lets go of it (LinkPending). */
 .ch-navitem[aria-current='page'],
 .ch-navitem:has(.ch-lp) {
-  background: linear-gradient(180deg, #fdfcf8, #f4f1e8);
+  background: linear-gradient(180deg, var(--ch-ivory-25), var(--ch-on-green-plate));
   color: var(--ch-green-800);
   font-weight: 600;
   box-shadow: 0 0 0 1px rgb(176 149 96 / 0.45), 0 1px 2px rgb(0 0 0 / 0.25), 0 6px 14px -8px rgb(0 0 0 / 0.45),
@@ -293,7 +295,7 @@
 .ch-navitem__count {
   margin-left: auto;
   font: 500 12px/1 var(--ch-font-sans);
-  color: #dccda6;
+  color: var(--ch-champagne-300);
 }
 .ch-sidebar__foot {
   display: flex;
@@ -309,7 +311,7 @@
   gap: 8px;
   padding: 12px;
   border-radius: var(--ch-radius-lg);
-  background: linear-gradient(180deg, #fdfcf8, #f4f1e8);
+  background: linear-gradient(180deg, var(--ch-ivory-25), var(--ch-on-green-plate));
   color: var(--ch-text-primary);
   text-decoration: none;
   box-shadow: 0 0 0 1px rgb(176 149 96 / 0.4), 0 8px 18px -10px rgb(0 0 0 / 0.5), inset 0 1px 0 #fff;
@@ -378,11 +380,11 @@
 }
 .ch-identity__name {
   font: 600 14px/1.3 var(--ch-font-sans);
-  color: #fbfaf6;
+  color: var(--ch-on-green-bright);
 }
 .ch-identity__meta {
   font: var(--ch-type-caption);
-  color: #cfc7b2;
+  color: var(--ch-on-green-glyph);
 }
 
 /* Top bar */
@@ -481,7 +483,7 @@
    route error (RouteErrorView) is the same anatomy in the danger tone. */
 .ch-empty-page {
   --ch-medallion-bg: var(--ch-green-800);
-  --ch-medallion-ink: #f4f1e8;
+  --ch-medallion-ink: var(--ch-on-green-plate);
   --ch-medallion-rings: rgb(21 90 57 / 0.1);
   display: grid;
   place-items: center;
@@ -681,7 +683,8 @@
 /* The notice (InlineNotice, PageNotice): a part of the page could not load. Flush in the Ledger (lead decision under
    the owner's full-auto brief, 2026-10-08, revised the same day; owner to confirm): it sits between the section's
    own engraved rules and draws nothing of its own, no fill, no ring and no stripe, so its icon lines up with the
-   section's heading. The icon and the title carry the danger ink, the body the secondary ink. Try again sits beside
+   section's heading. The icon carries the danger ink; the title keeps the page's ink (D5-1, owner 2026-10-08: red is for
+   under par and destructive actions, so a failure is named in ink and flagged by its icon), the body the secondary ink. Try again sits beside
    the words, or under them in a narrow rail (the notice is its own size container) and on the phone. The inks and
    the fill are local properties, so a notice on a dark or a floating surface is restyled in one rule;
    --ch-notice-rule stays as a hook but is no longer drawn. On the green (the FeatureCard, a board card) a context
@@ -692,6 +695,7 @@
   --ch-notice-on-green-body: var(--ch-on-green-ink-soft);
   --ch-notice-rule: var(--ch-ledger-rule);
   --ch-notice-ink: var(--ch-text-primary);
+  --ch-notice-icon: var(--ch-notice-ink);
   --ch-notice-body: var(--ch-text-secondary);
   --ch-notice-fill: none;
   container: ch-notice / inline-size;
@@ -701,7 +705,7 @@
   background: var(--ch-notice-fill);
 }
 .ch-notice--danger {
-  --ch-notice-ink: var(--ch-danger-600);
+  --ch-notice-icon: var(--ch-danger-600);
 }
 .ch-notice__in {
   display: grid;
@@ -712,7 +716,7 @@
 }
 .ch-notice .ch-notice__icon {
   margin-top: 1.5px;
-  color: var(--ch-notice-ink);
+  color: var(--ch-notice-icon);
 }
 .ch-notice__txt {
   display: flex;
@@ -764,7 +768,8 @@
 }
 /* On the one green feature card (ui/Ledger.tsx) the notice takes the on-green inks. */
 .ch-feat .ch-notice--danger {
-  --ch-notice-ink: var(--ch-notice-on-green-ink);
+  --ch-notice-ink: var(--ch-on-green-ink);
+  --ch-notice-icon: var(--ch-notice-on-green-ink);
   --ch-notice-body: var(--ch-notice-on-green-body);
 }
 
@@ -775,7 +780,7 @@
    parchment): about 1.2:1 on the workspace, with a soft sheen. */
 .ch-skel {
   display: block;
-  background: linear-gradient(100deg, #e2dbca 42%, #ece6d8 50%, #e2dbca 58%) 0 0 / 200vw 100% fixed;
+  background: linear-gradient(100deg, var(--ch-skel-base) 42%, var(--ch-skel-sheen) 50%, var(--ch-skel-base) 58%) 0 0 / 200vw 100% fixed;
   animation: ch-shimmer var(--ch-dur-shimmer) linear infinite;
 }
 @media (min-width: 821px) {
@@ -793,7 +798,7 @@
     position: absolute;
     left: 0;
     border-radius: 6px;
-    background: linear-gradient(100deg, #e2dbca 42%, #ece6d8 50%, #e2dbca 58%) 0 0 / 200vw 100% fixed;
+    background: linear-gradient(100deg, var(--ch-skel-base) 42%, var(--ch-skel-sheen) 50%, var(--ch-skel-base) 58%) 0 0 / 200vw 100% fixed;
     animation: ch-shimmer var(--ch-dur-shimmer) linear infinite;
     content: '';
   }
@@ -1106,7 +1111,7 @@ button.ch-more__row[disabled] {
     gap: 8px;
     height: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
     padding: env(safe-area-inset-top) 8px 6px 16px;
-    background: var(--ch-phone-bar-bg);
+    background: var(--ch-light-bar), var(--ch-phone-bar-bg);
   }
   .ch-topbar__crumbs,
   .ch-topbar__settings {
@@ -1166,7 +1171,7 @@ button.ch-more__row[disabled] {
   /* The green hero's bar (usePhoneHero, the v2 phone Home, m-home.css .mh-hero__bar): the team and the bell on green. */
   .ch-root[data-phone-hero] .ch-topbar {
     border-bottom-color: transparent;
-    background: var(--ch-green-800);
+    background: var(--ch-light-bar), var(--ch-green-800);
     box-shadow: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -1216,9 +1221,25 @@ button.ch-more__row[disabled] {
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
     color: var(--ch-ivory-100);
   }
+  /* The Ask key (CH-1840) is the bell's twin on the hero. */
+  .ch-root[data-phone-hero] .ch-topbar .ch-topbar__ask {
+    width: 44px;
+    height: 44px;
+    margin: -2px;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 0.08);
+    background-clip: padding-box;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+    color: var(--ch-ivory-100);
+  }
   /* Keyboard focus on the green (CH-1806): the keys' focus shadow loses to the disc's own ring here, and its green would
      vanish on the hero anyway, so the bell takes a champagne ring 2px off the disc (the clear border's width), no shadow. */
   .ch-root[data-phone-hero] .ch-topbar .ch-bell:focus-visible {
+    outline: 2px solid var(--ch-champagne-300);
+    outline-offset: 0;
+  }
+  .ch-root[data-phone-hero] .ch-topbar .ch-topbar__ask:focus-visible {
     outline: 2px solid var(--ch-champagne-300);
     outline-offset: 0;
   }
@@ -1315,7 +1336,7 @@ button.ch-more__row[disabled] {
     padding: env(safe-area-inset-top) 8px 6px 16px;
     box-sizing: border-box;
     border-bottom: 1px solid var(--ch-border-hairline);
-    background: var(--ch-phone-bar-bg);
+    background: var(--ch-light-bar), var(--ch-phone-bar-bg);
   }
   .ch-pbar.is-lead {
     gap: 4px;
@@ -1601,14 +1622,14 @@ button.ch-more__row[disabled] {
 .ch-bellp__row:focus-visible {
   /* .ch-menu__item hover: the design system's popover item */
   outline: none;
-  background: #ece8de;
+  background: var(--ch-press-well);
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
 }
 @media (hover: hover) {
   .ch-bellp__row:hover {
     /* .ch-menu__item hover: the design system's popover item */
     outline: none;
-    background: #ece8de;
+    background: var(--ch-press-well);
     box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
   }
 }
@@ -1773,6 +1794,83 @@ html:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
 html:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
   animation: var(--ch-dur-vt-in) var(--ch-ease-vt-in) var(--ch-dur-vt-gap) both ch-vt-in;
 }
+/* The bars never fade or move during a page change (native-feel audit 2026-10-08, P0-3). As part of root they sat under
+   the page's group, so the fading old page and the new page's skeleton drew over the tab bar. Named, each is its own
+   group, captured after the page and so painted above it, and shown in its new state at once. */
+[data-ui='clubhouse'] .ch-topbar {
+  view-transition-name: ch-topbar;
+}
+[data-ui='clubhouse'] .ch-tabbar {
+  view-transition-name: ch-tabbar;
+}
+html:has([data-ui='clubhouse'])::view-transition-group(ch-topbar),
+html:has([data-ui='clubhouse'])::view-transition-group(ch-tabbar),
+html:has([data-ui='clubhouse'])::view-transition-new(ch-topbar),
+html:has([data-ui='clubhouse'])::view-transition-new(ch-tabbar) {
+  animation: none;
+}
+html:has([data-ui='clubhouse'])::view-transition-old(ch-topbar),
+html:has([data-ui='clubhouse'])::view-transition-old(ch-tabbar) {
+  display: none;
+}
+/* A navigation onto a route skeleton (RouteFrame, data-ch-vt-hold): the old page stays whole until the skeleton is due
+   (--ch-dur-vt-hold, the skeleton's own delay in base.css), then the two crossfade. A page that arrives sooner takes the
+   attribute off, and with it the delay, so the old page's fade jumps to where it would be: gone, or nearly. One fade,
+   never a blank page between them. */
+html[data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
+  animation-delay: var(--ch-dur-vt-hold);
+}
+/* A drill-in pushes and Back pops (P1-1, P1-2; lib/nav-motion.ts sets data-ch-nav), as a pushed phone screen does
+   (PhoneScreen): the new page slides in from the right edge on the smooth spring while the one under it draws back by
+   a parallax share, and Back plays it in reverse with the leaving page on top. Transform only. Phone only: desktop
+   keeps the crossfade. */
+@keyframes ch-vt-push-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes ch-vt-push-out {
+  to {
+    transform: translateX(var(--ch-vt-parallax));
+  }
+}
+@keyframes ch-vt-pop-in {
+  from {
+    transform: translateX(var(--ch-vt-parallax));
+  }
+}
+@keyframes ch-vt-pop-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+@media (max-width: 820px) {
+  /* The pages are opaque while they slide, so neither shows through the other. */
+  html[data-ch-nav] [data-ui='clubhouse'] .ch-frame-route {
+    background: var(--ch-bg-page);
+  }
+  html[data-ch-nav='push']:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
+    animation: var(--ch-dur-vt-push) var(--ch-ease-vt-push) both ch-vt-push-out;
+  }
+  html[data-ch-nav='push']:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
+    animation: var(--ch-dur-vt-push) var(--ch-ease-vt-push) both ch-vt-push-in;
+  }
+  html[data-ch-nav='pop']:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
+    z-index: 1;
+    animation: var(--ch-dur-vt-push) var(--ch-ease-vt-push) both ch-vt-pop-out;
+  }
+  html[data-ch-nav='pop']:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
+    animation: var(--ch-dur-vt-push) var(--ch-ease-vt-push) both ch-vt-pop-in;
+  }
+  /* Back's pop (lib/nav-motion.ts playPop): the copy of the leaving page, over the page and under the bars. */
+  .ch-root.ch-frame-popping {
+    z-index: calc(var(--ch-z-sticky) - 1);
+    min-height: 0;
+    overflow: hidden;
+    background: var(--ch-bg-page);
+    pointer-events: none;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   html:has([data-ui='clubhouse'])::view-transition-group(*),
   html:has([data-ui='clubhouse'])::view-transition-old(*),
@@ -1860,10 +1958,32 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     background: var(--ch-bg-page);
   }
 }
+/* Less transparency (the media query, or html[data-reduce-transparency] where WebKit lacks it, P001-D1): the tab bar and
+   the desktop top bar are solid. The phone's top bar is the opaque green chassis already, so it is left alone. The glass
+   tokens themselves turn opaque in tokens.css. */
 @media (prefers-reduced-transparency: reduce) {
-  .ch-topbar,
   .ch-tabbar {
     background: var(--ch-bg-page);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+:root[data-reduce-transparency] .ch-tabbar {
+  background: var(--ch-bg-page);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+@media (min-width: 821px) and (prefers-reduced-transparency: reduce) {
+  /* :root, to beat the desktop glass rule below it in the file. */
+  :root .ch-topbar {
+    background: var(--ch-workspace);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (min-width: 821px) {
+  :root[data-reduce-transparency] .ch-topbar {
+    background: var(--ch-workspace);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
@@ -1901,6 +2021,15 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     content: '';
     pointer-events: none;
   }
+  /* The tight head (P003-A3, owner yes; P014 #5): a page whose content is the point (a roster, a table) opts in with
+     data-canopy-head="tight". No double rule above, and the eyebrow and title sit just under the top bar; the hairline
+     below stays. Home and the pages that keep the full head are unchanged. */
+  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head='tight'] {
+    padding-top: 12px;
+  }
+  [data-ui='clubhouse'] main[data-canopy] [data-canopy-head='tight']::before {
+    content: none;
+  }
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] h1 {
     margin: 0;
     font: 600 44px/1.08 var(--ch-font-sans);
@@ -1909,9 +2038,10 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     color: var(--ch-ledger-ink);
     text-shadow: 0 1px 0 rgb(255 255 255 / 0.9), 0 -1px 0 rgb(28 25 18 / 0.18);
   }
+  /* P001-D5: not tracked (letterspaced mixed case read as a mistake); colour and the double rule carry the hierarchy. */
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] :is(.ch-h-head__date, .ch-hl-role, .ch-hero__eyebrow) {
-    font: 500 11px/1.3 var(--ch-font-sans);
-    letter-spacing: 0.14em;
+    font: 500 12.5px/1.3 var(--ch-font-sans);
+    letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] p {
@@ -1997,16 +2127,16 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 }
 .ch-navitem[aria-current='page'],
 .ch-navitem:has(.ch-lp) {
-  background: var(--ch-ivory-25);
-  color: var(--ch-green-800);
-  box-shadow: var(--ch-elevation-on-frame);
+  background: var(--ch-nav-well-bg);
+  color: var(--ch-on-green-ink);
+  box-shadow: var(--ch-nav-well-shadow);
   text-shadow: none;
 }
 .ch-navitem[aria-current='page'] svg,
 .ch-navitem[aria-current='page'] .ch-navitem__count,
 .ch-navitem:has(.ch-lp) svg,
 .ch-navitem:has(.ch-lp) .ch-navitem__count {
-  color: var(--ch-green-700);
+  color: var(--ch-champagne-300);
 }
 .ch-navitem__count {
   color: var(--ch-champagne-300);
@@ -2038,8 +2168,11 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   .ch-canvas {
     isolation: isolate;
     border-radius: 14px;
+    /* The light across the canvas top and the paper's temperature come from the global light (P001-A1). */
     background:
+      var(--ch-light-canvas) local,
       linear-gradient(90deg, rgb(11 58 37 / 0.04), rgb(11 58 37 / 0.012) 90px, transparent 200px) local,
+      var(--ch-light-paper),
       var(--ch-workspace);
     box-shadow: var(--ch-elevation-framed);
   }
@@ -2061,7 +2194,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   }
   .ch-topbar {
     border-bottom-color: rgb(110 98 62 / 0.08);
-    background: color-mix(in oklab, #f7f2e6 88%, transparent);
+    background: color-mix(in oklab, var(--ch-topbar-paper) 88%, transparent);
   }
 }
 
@@ -2128,8 +2261,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   left: 0;
   z-index: 0;
   border-radius: var(--ch-radius-md);
-  background: var(--ch-ivory-25);
-  box-shadow: var(--ch-elevation-on-frame);
+  background: var(--ch-nav-well-bg);
+  box-shadow: var(--ch-nav-well-shadow);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
@@ -2165,8 +2298,14 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     backdrop-filter: none;
     box-shadow: var(--ch-phone-tabbar-shelf-edge);
   }
-  body:not(.capacitor) [data-ui='clubhouse'] .ch-canvas {
+  /* Only while the shelf is shown: a full-page form (notabs) or a pushed screen (immersive) hides it, and the canvas
+     then ends at the safe area, not a tab bar's height above it. */
+  body:not(.capacitor) [data-ui='clubhouse']:not([data-phone-notabs]):not([data-phone-immersive]) .ch-canvas {
     padding-bottom: calc(var(--ch-tabbar-h) + env(safe-area-inset-bottom) + 16px);
+  }
+  body:not(.capacitor) [data-ui='clubhouse'][data-phone-immersive] .ch-canvas,
+  body:not(.capacitor) [data-ui='clubhouse'][data-phone-notabs] .ch-canvas {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 
@@ -2181,7 +2320,11 @@ html[data-ch-ua-pop] .ch-pscreen::after {
      a band of shell grey above the tab bar. */
   [data-ui='clubhouse'] .ch-app,
   [data-ui='clubhouse'] .ch-canvas {
-    background: var(--ch-workspace);
+    background: var(--ch-light-paper), var(--ch-workspace);
+  }
+  /* The light falls across the top of the parchment sheet, under the chassis (P001-A1). */
+  [data-ui='clubhouse'] .ch-canvas {
+    background: var(--ch-light-canvas), var(--ch-light-paper), var(--ch-workspace);
   }
   [data-ui='clubhouse'] .ch-topbar {
     border-bottom: 0;
@@ -2376,16 +2519,7 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
     box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.25);
   }
 }
-/* Under .ch-nav--plate, which clears the row's own plate once the gliding one has measured. */
-:where(html[data-fw-theme='dark']) .ch-navitem[aria-current='page'],
-:where(html[data-fw-theme='dark']) .ch-navitem:has(.ch-lp),
-html[data-fw-theme='dark'] .ch-nav__plate {
-  background: var(--ch-green-200);
-}
-html[data-fw-theme='dark'] .ch-navitem[aria-current='page'],
-html[data-fw-theme='dark'] .ch-navitem:has(.ch-lp) {
-  color: var(--ch-on-green-ink);
-}
+/* The selected row's well (P001-A2) is drawn from the frame, so the night frame darkens it without a rule here. */
 @media (min-width: 821px) {
   /* The frame is darker than the workspace at night: a faint ivory hairline keeps the join reading as an edge. */
   html[data-fw-theme='dark'] .ch-canvas {
@@ -2417,7 +2551,7 @@ html[data-fw-theme='dark'] .ch-navitem:has(.ch-lp) {
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::before,
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::after {
-    background: linear-gradient(100deg, #252c26 42%, #2e362f 50%, #252c26 58%) 0 0 / 200vw 100% fixed;
+    background: linear-gradient(100deg, var(--ch-skel-base) 42%, var(--ch-skel-sheen) 50%, var(--ch-skel-base) 58%) 0 0 / 200vw 100% fixed;
   }
 }
 @media (min-width: 821px) and (prefers-reduced-transparency: reduce) {
@@ -2435,7 +2569,7 @@ html[data-fw-theme='dark'] .ch-empty-page__seg i {
   background: rgb(237 231 216 / 0.12);
 }
 :where(html[data-fw-theme='dark']) .ch-skel {
-  background: linear-gradient(100deg, #252c26 42%, #2e362f 50%, #252c26 58%) 0 0 / 200vw 100% fixed;
+  background: linear-gradient(100deg, var(--ch-skel-base) 42%, var(--ch-skel-sheen) 50%, var(--ch-skel-base) 58%) 0 0 / 200vw 100% fixed;
 }
 html[data-fw-theme='dark'] .ch-scrim {
   background: rgb(0 0 0 / 0.55);
@@ -2466,12 +2600,15 @@ html[data-fw-theme='dark'] .ch-offline {
   html[data-fw-theme='dark'] body [data-ui='clubhouse'] {
     --ch-phone-bar-bg: var(--ch-frame);
   }
-  html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-topbar,
   html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-ptr {
     background: var(--ch-frame);
   }
+  html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-topbar {
+    background: var(--ch-light-bar), var(--ch-frame);
+  }
   html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-topbar__team,
-  html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-topbar .ch-bell {
+  html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-topbar .ch-bell,
+  html[data-fw-theme='dark'] .ch-root[data-phone-hero] .ch-topbar .ch-topbar__ask {
     color: var(--ch-on-green-ink);
   }
   /* The crest's coin stays ivory on the green, as in the day. */
@@ -2484,5 +2621,381 @@ html[data-fw-theme='dark'] .ch-offline {
   }
   html[data-fw-theme='dark'] .ch-tabbar .ch-tab:focus-visible {
     background: rgb(107 187 140 / 0.12);
+  }
+}
+
+/* The phone dock (shell/Dock.tsx; owner, 2026-10-08): the band just above the tab bar, in the thumb's reach. A page's
+   primary controls (ThumbDock) ride on top, and the Resume round accessory (P001-C1, CH-1821) sits on the tab bar the
+   way a UITabAccessory does. Desktop has neither: the page keeps its controls in place and the sidebar card resumes. */
+.ch-dock,
+.ch-dock-spacer {
+  display: none;
+}
+.ch-next--round .ch-next__k span:last-child {
+  color: var(--ch-green-700);
+}
+@media (max-width: 820px) {
+  .ch-dock {
+    position: fixed;
+    right: 12px;
+    bottom: calc(max(12px, calc(env(safe-area-inset-bottom) - 10px)) + var(--ch-tabbar-h) + 8px);
+    left: 12px;
+    z-index: var(--ch-z-sticky);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  body:not(.capacitor) [data-ui='clubhouse'] .ch-dock {
+    bottom: calc(var(--ch-tabbar-h) + max(6px, env(safe-area-inset-bottom)) + 8px);
+  }
+  .ch-dock[hidden],
+  .ch-dock__slot:empty {
+    display: none;
+  }
+  /* The keyboard covers the bottom of the screen: the dock steps aside while a field on the page has focus. A field in
+     the dock itself (a ThumbDock search) keeps it, and in the app the dock rides up on the keyboard (CapacitorProvider
+     sets body.keyboard-open and --keyboard-height). */
+  .ch-root:has(.ch-canvas input:focus) .ch-dock,
+  .ch-root:has(.ch-canvas textarea:focus) .ch-dock,
+  .ch-root:has(.ch-canvas [contenteditable='true']:focus) .ch-dock {
+    display: none;
+  }
+  body.keyboard-open [data-ui='clubhouse'] .ch-dock:has(:focus) {
+    bottom: calc(var(--keyboard-height, 0px) + 8px);
+  }
+  .ch-dock-spacer {
+    display: block;
+    height: var(--ch-dock-h, 0px);
+  }
+  .ch-dock__page {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ch-resume {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 6px 8px 6px 6px;
+    border-radius: 24px;
+    background: var(--ch-sheet-bg);
+    color: var(--ch-text-primary);
+    text-decoration: none;
+    box-shadow: var(--ch-elevation-floating), 0 0 0 1px var(--ch-border-subtle), var(--ch-highlight);
+    transition: transform var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-resume:active {
+    transform: scale(0.98);
+  }
+  .ch-resume__ic {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--ch-feature-bg);
+    color: var(--ch-hero-mint);
+  }
+  .ch-resume__t {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .ch-resume__t b {
+    font: var(--ch-type-label-s);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-resume__m {
+    overflow: hidden;
+    font: var(--ch-type-title);
+    color: var(--ch-green-800);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ch-resume__go {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 2px;
+    min-height: 36px;
+    padding: 0 6px 0 10px;
+    color: var(--ch-green-700);
+    font: var(--ch-type-label);
+  }
+}
+:where(html[data-fw-theme='dark']) .ch-resume__m {
+  color: var(--ch-text-primary);
+}
+:where(html[data-fw-theme='dark']) .ch-resume__go {
+  color: var(--ch-hero-mint-strong);
+}
+
+/* Ask as a sheet (shell/AskSheet.tsx, CH-1840–CH-1842; owner, 2026-10-08): CoachHelm's Ask over any screen. Desktop: a
+   centred sheet. Phone: a bottom sheet with a half and a full detent; the page stays in view above the half one. */
+.ch-asks {
+  box-sizing: border-box;
+  width: min(calc(100% - 32px), 620px);
+  max-width: none;
+  height: auto;
+  max-height: none;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  color: var(--ch-text-primary);
+}
+.ch-asks::backdrop {
+  background: rgb(20 20 18 / 0.32);
+  animation: ch-fade var(--ch-dur-base) var(--ch-ease);
+}
+:where(html[data-fw-theme='dark']) .ch-asks::backdrop {
+  background: rgb(0 0 0 / 0.55);
+}
+.ch-asks__panel {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  max-height: min(calc(100dvh - 64px), 760px);
+  overflow: hidden;
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-elevation-overlay), var(--ch-highlight);
+  animation: ch-pop var(--ch-dur-base) var(--ch-ease);
+}
+.ch-asks__head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 12px 4px 20px;
+}
+.ch-asks__title {
+  flex: 1;
+  margin: 0;
+  font: var(--ch-type-display-s);
+  color: var(--ch-text-primary);
+}
+.ch-root .ch-asks__title:focus {
+  outline: none;
+}
+.ch-asks .ch-asks__ctx {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  margin: 4px 20px 8px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
+  background: var(--ch-bg-inset);
+  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  font: var(--ch-type-label-s);
+  color: var(--ch-text-secondary);
+}
+.ch-asks__ctx b {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+.ch-asks__scroll {
+  flex: 1;
+  min-height: 72px;
+  padding: 4px 20px 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.ch-asks__hint {
+  margin: 8px 0 0;
+  font: var(--ch-type-body);
+  color: var(--ch-text-secondary);
+}
+.ch-asks__dock {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 16px calc(14px + env(safe-area-inset-bottom));
+  box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+}
+.ch-asks__open {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: 5px;
+  min-height: 32px;
+  font: var(--ch-type-label-s);
+  color: var(--ch-green-700);
+  text-decoration: none;
+}
+.ch-asks__grab {
+  display: none;
+}
+/* The sheet has no roster to mention from; the full Ask (Open in CoachHelm) has. */
+.ch-asks .ch-ask-cmp__round[aria-label='Mention a player or stat'] {
+  display: none;
+}
+@media (max-width: 820px) {
+  .ch-asks {
+    position: fixed;
+    inset: auto 0 0;
+    width: 100%;
+    height: auto;
+    margin: 0;
+  }
+  .ch-asks__panel {
+    height: 56dvh;
+    max-height: none;
+    border-radius: 22px 22px 0 0;
+    box-shadow: var(--ch-elevation-sheet);
+  }
+  .ch-asks__panel[data-detent='full'] {
+    height: calc(100dvh - env(safe-area-inset-top) - 12px);
+  }
+  .ch-asks__grab {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 100%;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    background: none;
+    touch-action: none;
+  }
+  .ch-asks__grab i {
+    width: 36px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--ch-border-strong);
+  }
+  .ch-asks__head {
+    padding-top: 0;
+  }
+  /* In the app the keyboard does not resize the page (capacitor.config resize: ionic): the sheet sits on top of it, as
+     the shared Modal does, and the full detent shrinks to what is left. */
+  body.keyboard-open .ch-asks {
+    margin-bottom: var(--keyboard-height, 0px);
+  }
+  body.keyboard-open .ch-asks__panel,
+  body.keyboard-open .ch-asks__panel[data-detent='full'] {
+    height: calc(100dvh - var(--keyboard-height, 0px) - env(safe-area-inset-top) - 12px);
+  }
+  body.keyboard-open .ch-asks__dock {
+    padding-bottom: 10px;
+  }
+}
+
+/* Phone large titles (shell/large-title.tsx, owner 2026-10-08: "cardless, native-feeling phone Clubhouse"). A page that
+   opens with its own large title does not also show its name in the bar: while the large title is in view the bar's
+   title is hidden, and as it scrolls up under the bar (the bar is marked data-large-title="tucked") the bar's title
+   fades in, on opacity and a 3px rise only. The :has() list is CH_LARGE_TITLES and must stay in step with it; it holds
+   from the first paint, so a loaded page never shows the bar's title and then takes it away (a skeleton matches only if
+   it draws the title's block: Settings and Recruiting today). The bar's title keeps its
+   place in the accessibility tree and stays the focus target for a pushed page. Pages with no large title, the green
+   hero's bar and desktop are untouched. The scroll edge: a soft shade under the bar once content has scrolled under
+   it (data-scrolled), drawn on ::before because ::after is the sheet's lip. */
+@media (max-width: 820px) {
+  [data-ui='clubhouse'] .ch-topbar :is(.ch-topbar__ptitle, .ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
+    transition:
+      opacity var(--ch-dur-quick) var(--ch-ease),
+      translate var(--ch-dur-quick) var(--ch-ease);
+  }
+  [data-ui='clubhouse']:not([data-phone-hero]):has(
+      #ch-canvas
+        :is(
+          [data-ch-large-title],
+          .ch-rsm-title,
+          .ch-recm-title,
+          .ch-setm-title,
+          .ch-qf-head h1,
+          .ch-rd-h h1,
+          .ch-hl-h__t,
+          .ch-stm-head h1
+        ):not(.ch-sr-only, .ch-pscreen *, dialog *)
+    )
+    .ch-topbar:not([data-large-title='tucked'])
+    :is(.ch-topbar__ptitle, .ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
+    opacity: 0;
+    translate: 0 3px;
+  }
+  [data-ui='clubhouse'] .ch-topbar::before {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    height: 14px;
+    background: linear-gradient(color-mix(in oklab, var(--ch-frame) 26%, transparent), transparent);
+    opacity: 0;
+    content: '';
+    pointer-events: none;
+    transition: opacity var(--ch-dur-quick) var(--ch-ease);
+  }
+  [data-ui='clubhouse']:not([data-phone-hero]) .ch-topbar[data-scrolled]::before {
+    opacity: 1;
+  }
+  [data-ui='clubhouse'][data-motion='off'] .ch-topbar::before,
+  [data-ui='clubhouse'][data-motion='off'] .ch-topbar :is(.ch-topbar__ptitle, .ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
+    transition: none;
+  }
+}
+@media (max-width: 820px) and (prefers-reduced-motion: reduce) {
+  [data-ui='clubhouse'] .ch-topbar::before,
+  [data-ui='clubhouse'] .ch-topbar :is(.ch-topbar__ptitle, .ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
+    transition: none;
+  }
+}
+
+/* The More sheet's rows (owner 2026-10-08, the cardless phone pass): native inset grouped rows inside the sheet, not
+   cards on it. Each group is a rounded tint of the sheet with no shadow, the separators are hairlines that start at the
+   label (the icon column hangs to their left), and the icons are plain glyphs, not tiles. Who you are is one more
+   group. The sheet itself stays: it is a real overlay. Phone only; desktop never opens it. */
+@media (max-width: 820px) {
+  .ch-more__list,
+  .ch-more__me {
+    border-radius: 12px;
+    background: color-mix(in oklab, var(--ch-text-primary) 4.5%, transparent);
+    box-shadow: none;
+  }
+  /* A list row's type, not a card's label: 16px, a shade over regular (the current page and team keep their 600). */
+  .ch-more__row,
+  button.ch-more__row {
+    position: relative;
+    gap: 14px;
+    min-height: 50px;
+    border-top: 0;
+    font-size: 16px;
+    font-weight: 450;
+    letter-spacing: -0.01em;
+  }
+  /* 16px padding, the 24px icon column and the 14px gap: the hairline starts where the label does. */
+  .ch-more__row + .ch-more__row::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 54px;
+    height: 1px;
+    background: var(--ch-border-subtle);
+    content: '';
+    pointer-events: none;
+  }
+  .ch-more__row:active {
+    background: var(--ch-ledger-row-press);
+  }
+  .ch-more__ic,
+  .ch-more__row[aria-current='page'] .ch-more__ic,
+  .ch-more__row[aria-current='true'] .ch-more__ic {
+    width: 24px;
+    height: 24px;
+    border-radius: 0;
+    background: none;
+  }
+  .ch-more__row[aria-current] .ch-more__ic {
+    color: var(--ch-green-700);
+  }
+  .ch-more__cap {
+    padding: 0 16px 6px;
   }
 }

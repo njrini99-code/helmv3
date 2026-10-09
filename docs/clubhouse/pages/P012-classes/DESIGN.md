@@ -46,9 +46,12 @@ and see whether any of them meets over practice or travel this week.
 Header (the framed page head on desktop: the term and its dates, the title, the
 sync status, Import schedule and Add class), the term overview (on desktop three
 figures between column rules, not a green band), then "Your classes": a ruled
-list where each class keeps only its department key in its tone and the day keys
-align down the list (on the phone the same rows, its week of day keys under the
-name), beside a side column (this week's overlaps, and what the coach sees).
+list under one timetable header (P012-A1, owner 2026-10-08): the days once, each
+class's days as cells under them (an ink bar as long as the meeting with its start
+in the cell numeral, empty paper on a day off), today one soft light band down the
+list, a team day a field-green band named in the header, an overlapped meeting an
+amber notch (A2); on the phone the same cells under each name, the header sticky,
+beside a side column (this week's overlaps, and what the coach sees).
 Below a 1000px container the side column goes under the deck; below 640px the
 deck is one column, the overview stacks (the week tile beside the credits and
 the bar, the overlap count on its own row) and the two header buttons share the
@@ -123,11 +126,11 @@ schedule and Add class. The term card is the page's one green feature card. Toda
 this week's overlaps and "Your classes" are sections flush on the parchment under
 the double rule, their entries rows between soft seams that deepen to the row
 press tint: a class keeps only its department key in its tone, the name over the
-instructor, its week of day keys (the days it meets raised, today ringed green)
-and the room and flags; Add a class is the last row. What the coach sees is a line
+instructor, its timetable cells under the one sticky header (A1/A2) and the room
+and flags; Add a class is the last row. What the coach sees is a line
 under a soft rule. A player on no team sees the calm empty page under the top bar
 with no second "Classes" title. The route skeleton draws the same shapes at the
-phone's width. Kept as material: the tone keys, the day keys, the flags, the
+phone's width. Kept as material: the tone keys, the timetable cells, the flags, the
 buttons, the notices and every sheet.
 
 ## Accessibility

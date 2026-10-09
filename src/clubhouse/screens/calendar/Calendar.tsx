@@ -2,7 +2,7 @@
 
 import { CalendarCheck, CalendarDays, Check, Lock, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Ellipsis, Plus, Printer, Rss, TriangleAlert, Users, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useChSessionState } from '../../lib/session-state';
 import type { ChCalendarData } from '../../data/calendar';
 import { Avatar } from '../../ui/Avatar';
@@ -17,15 +17,22 @@ import { Segmented } from '../../ui/Segmented';
 import { Swap } from '../../ui/Swap';
 import { useNow } from '../../lib/use-now';
 import { haptic } from '../../lib/haptics';
-import { chTrail } from '../../lib/track';
-import { addDays, addMonths, dayNum, findOverlaps, monthCells, monthKey, monthName, viewTitle, weekDates, yearOf, type ChCalEvent, type ChCalType, type ChCalView } from './model';
-import { AgendaView, MonthView, TimeGrid, type ChNow } from './views';
+import { chReport, chTrail } from '../../lib/track';
+import { addDays, addMonths, CAL_HH, daylightOn, dayNum, dowOf, fmtHour, type ChDaylight, findOverlaps, focusHour, monthCells, monthKey, monthName, viewTitle, weekDates, yearOf, type ChCalEvent, type ChCalType, type ChCalView } from './model';
+import { AgendaView, MonthView, TimeGrid, type ChMoveTarget, type ChNow } from './views';
+import { updateGolfEvent } from '@/app/golf/actions/calendar-events';
+import { offsetMinutesFor } from '@/lib/golf/timezone';
+import { useToast } from '../../ui/Toast';
+import { friendlyReason, isOffline } from '../../lib/use-action';
 import { Attendance, EventDetail, Overlap, Summary, type ChInsp, type InspCtx } from './inspector';
 import { CancelEvent, EventEditor, SubscribeSheet, type EditorSeed } from './editor';
 import { BusySheet } from './extras';
 import { CalendarPhone } from './CalendarPhone';
 import { Modal } from '../../ui/Modal';
 import { useChPhone } from '../../lib/use-phone';
+import { useChReducedMotion } from '../../lib/reduced-motion';
+import { useLightPlace } from '../../shell/light';
+import { canvasLenis, canvasScrollNow } from '../../lib/smooth-scroll';
 import { usePopoverFit } from '../../lib/use-popover-fit';
 import { CalendarFirstRun } from './CalendarFirstRun';
 
@@ -33,6 +40,143 @@ function zonedNow(timeZone: string, d: Date): ChNow {
   const p: Record<string, string> = {};
   for (const x of new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(d)) p[x.type] = x.value;
   return { date: `${p.year}-${p.month}-${p.day}`, hour: (Number(p.hour) % 24) + Number(p.minute) / 60 };
+}
+
+// Back and Forward return to the place RouteFrame saved; the grid only opens on now for a fresh visit.
+let poppedAt = 0;
+if (typeof window !== 'undefined') window.addEventListener('popstate', () => (poppedAt = Date.now()));
+
+/**
+ * P006-B1: the Week and Day grids open with now (or the next event) about 30% down the canvas, on first paint and on
+ * T or Today. A step to another week keeps the canvas where it is, so the same hours stay in view. Instant on open and
+ * with reduced motion; eased for Today otherwise. `tick` asks again; the request waits until the grid for `first` (the
+ * first day on show) is on the page, since Today may have to load another week first.
+ */
+function useOpenOnNow(tick: number, first: string, on: boolean, hour: number | null, reduced: boolean) {
+  const seen = useRef(0);
+  const settle = useRef<(() => void) | null>(null);
+  useLayoutEffect(() => {
+    if (!on || seen.current === tick) return;
+    const canvas = document.getElementById('ch-canvas');
+    const grid = document.querySelector<HTMLElement>(`.ch-wk__grid[data-first="${first}"]`);
+    if (!canvas || !grid) return;
+    const opening = seen.current === 0;
+    seen.current = tick;
+    if (hour == null || (opening && Date.now() - poppedAt < 1500)) return;
+    const place = () =>
+      Math.max(0, Math.round(grid.getBoundingClientRect().top - canvas.getBoundingClientRect().top + canvas.scrollTop + (hour - Number(grid.dataset.from ?? 0)) * CAL_HH - canvas.clientHeight * 0.3));
+    settle.current?.();
+    if (!opening && !reduced) {
+      const lenis = canvasLenis();
+      if (lenis) lenis.scrollTo(place());
+      else canvas.scrollTo({ top: place(), behavior: 'smooth' });
+      return;
+    }
+    // Held for a moment: RouteFrame opens a newly reached page at its top, and the page is still settling (fonts, the
+    // shell's smooth scroller). A wheel, touch or key from the coach lets go at once, and so does leaving the page.
+    const until = Date.now() + 900;
+    let frame = 0;
+    const stop = () => {
+      cancelAnimationFrame(frame);
+      for (const t of ['wheel', 'touchstart', 'pointerdown', 'keydown']) window.removeEventListener(t, stop, true);
+      settle.current = null;
+    };
+    const hold = () => {
+      if (!grid.isConnected) return stop();
+      const to = place();
+      if (Math.abs(canvas.scrollTop - to) > 2) canvasScrollNow(to);
+      if (Date.now() < until) frame = requestAnimationFrame(hold);
+      else stop();
+    };
+    for (const t of ['wheel', 'touchstart', 'pointerdown', 'keydown']) window.addEventListener(t, stop, { capture: true, passive: true });
+    settle.current = stop;
+    hold();
+  }, [tick, first, on, hour, reduced]);
+}
+
+/**
+ * P006-B3: how long a dragged event's move can be undone: the done toast's own life (ui/Toast.tsx DISMISS_MS.done), so
+ * Undo is on screen for the whole window. Nothing is written until it closes, so invitees hear of a move only once
+ * it stands, and an undone move never reaches anyone.
+ */
+const MOVE_UNDO_MS = 4000;
+const toHHMM = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
+
+/** Optimistic moves held for their Undo window, then written. Leaving the page writes a waiting move at once. */
+/** `preview`: the dev preview keeps a move on screen and writes nothing. */
+function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onSaved: () => void, preview: boolean) {
+  const toast = useToast();
+  const [moves, setMoves] = useState<Map<string, ChMoveTarget>>(() => new Map());
+  const held = useRef<{ id: string; timer: number; write: () => void } | null>(null);
+  const drop = useCallback((id: string) => setMoves((m) => (m.has(id) ? new Map([...m].filter(([k]) => k !== id)) : m)), []);
+  // The server's copy has caught up: the moves already written stand on their own.
+  useEffect(() => {
+    setMoves((m) => (held.current && m.has(held.current.id) ? new Map([[held.current.id, m.get(held.current.id)!]]) : new Map()));
+  }, [events]);
+  const flush = useCallback(() => {
+    const h = held.current;
+    if (!h) return;
+    window.clearTimeout(h.timer);
+    h.write();
+  }, []);
+  useEffect(() => {
+    window.addEventListener('pagehide', flush);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      flush();
+    };
+  }, [flush]);
+  const move = useCallback(
+    (e: ChCalEvent, to: ChMoveTarget) => {
+      flush();
+      if (isOffline()) {
+        haptic('error');
+        toast({ tone: 'error', title: `Couldn’t move ${e.title}: you’re offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903' });
+        return;
+      }
+      setMoves((m) => new Map(m).set(e.id, to));
+      const write = () => {
+        held.current = null;
+        if (preview) return;
+        chTrail('calendar move event');
+        const startTime = toHHMM(to.start);
+        const fail = (err: unknown) => {
+          chReport(err, { surface: 'calendar.moveEvent', action: 'calendar.moveEvent' });
+          drop(e.id);
+          haptic('error');
+          toast({ tone: 'error', title: `Couldn’t move ${e.title}`, body: (err instanceof Error && friendlyReason(err.message)) || 'It’s back where it was. Try again in a moment.', code: 'CH-6015' });
+        };
+        updateGolfEvent(e.id, {
+          startDate: to.date,
+          endDate: to.date,
+          startTime,
+          endTime: toHHMM(to.end),
+          allDay: false,
+          timezoneOffset: offsetMinutesFor(to.date, startTime, timezone) ?? undefined,
+        } as never)
+          .then((res) => (res?.success ? onSaved() : fail(new Error(res?.error || 'Move was not saved'))))
+          .catch(fail);
+      };
+      held.current = { id: e.id, timer: window.setTimeout(write, MOVE_UNDO_MS), write };
+      const day = to.date === e.date ? '' : ` ${to.date === today ? 'today' : `on ${dowOf(to.date)} ${dayNum(to.date)}`}`;
+      toast({
+        title: `Moved to ${fmtHour(to.start)}${day}`,
+        action: {
+          label: 'Undo',
+          run: () => {
+            const h = held.current;
+            if (!h || h.id !== e.id) return;
+            window.clearTimeout(h.timer);
+            held.current = null;
+            drop(e.id);
+            haptic('select');
+          },
+        },
+      });
+    },
+    [flush, drop, toast, timezone, today, onSaved, preview],
+  );
+  return { moves, move };
 }
 
 function JumpPanel({ anchor, today, view, onPick, onClose }: { anchor: string; today: string; view: ChCalView; onPick: (d: string) => void; onClose: () => void }) {
@@ -248,9 +392,12 @@ export function Calendar({
   }, [data.view, data.anchor]);
 
   const people = useMemo(() => new Map(data.people.map((p) => [p.id, p])), [data.people]);
+  const refreshQuiet = useCallback(() => router.refresh(), [router]);
+  const { moves, move } = useHeldMoves(data.timezone, data.events, data.today, refreshQuiet, preview);
+  const placed = useMemo(() => (moves.size ? data.events.map((e) => (moves.has(e.id) ? { ...e, ...moves.get(e.id)! } : e)) : data.events), [data.events, moves]);
   const events = useMemo(
-    () => (sel.length ? data.events.filter((e) => (e.type === 'class' ? e.owner != null && sel.includes(e.owner) : e.people.some((p) => sel.includes(p)))) : data.events),
-    [data.events, sel],
+    () => (sel.length ? placed.filter((e) => (e.type === 'class' ? e.owner != null && sel.includes(e.owner) : e.people.some((p) => sel.includes(p)))) : placed),
+    [placed, sel],
   );
   const overlaps = useMemo(() => (coach ? findOverlaps(data.events.filter((e) => !e.cancelled)) : []), [coach, data.events]);
   const flagged = useMemo(() => new Set(overlaps.map((o) => o.eventId)), [overlaps]);
@@ -283,8 +430,10 @@ export function Calendar({
     },
     [view, anchor, go],
   );
+  const [focusTick, setFocusTick] = useState(1);
   const goToday = useCallback(() => {
     haptic('select');
+    setFocusTick((t) => t + 1);
     go(view, now.date);
   }, [go, view, now.date]);
 
@@ -307,6 +456,17 @@ export function Calendar({
   }, [coach, editor, cancelling, subs, busyOpen, view, anchor, insp, goToday, step]);
 
   const dates = view === 'day' ? [anchor] : weekDates(anchor);
+  // P006-A1: the global light's sun at the team's place, on the team's clock; one read per day shown.
+  const lightPlace = useLightPlace();
+  const daylight = useMemo(() => {
+    const memo = new Map<string, ChDaylight>();
+    return (d: string) => {
+      if (!memo.has(d)) memo.set(d, daylightOn(d, lightPlace.place, data.timezone));
+      return memo.get(d)!;
+    };
+  }, [lightPlace.place, data.timezone]);
+  const reduced = useChReducedMotion();
+  useOpenOnNow(focusTick, dates[0]!, !phone && (view === 'week' || view === 'day') && !data.eventsError, focusHour(dates, events, now), reduced);
   // The day, week or month on show. Stepping to another slides the grid the way it went (CH-6605): a later period comes in
   // from the right, an earlier one from the left.
   const periodKey = view === 'week' ? weekDates(anchor)[0]! : view === 'month' ? monthKey(anchor) : view === 'day' ? anchor : 'agenda';
@@ -418,6 +578,7 @@ export function Calendar({
           peopleError={!!data.membersError}
           timezone={data.timezone}
           today={now.date}
+          nowHour={now.hour}
         />
       )}
       {coach && (
@@ -475,6 +636,7 @@ export function Calendar({
             </>
           }
           onView={go}
+          onStep={step}
           onOpen={open}
           onNew={(d) => setEditor({ event: null, date: d })}
           onSubscribe={() => setSubs(true)}
@@ -548,12 +710,11 @@ export function Calendar({
 
       <div className="ch-cal-bar">
         <div className="ch-cal-viewctl">
-          {view !== 'agenda' && (
-            <span className="ch-cal-step">
-              <IconButton icon={ChevronLeft} label={`Previous ${view}`} onClick={() => step(-1)} />
-              <IconButton icon={ChevronRight} label={`Next ${view}`} onClick={() => step(1)} />
-            </span>
-          )}
+          {/* P006 D6: Agenda keeps the arrows' place (hidden, out of reach), so the toolbar doesn't shift as views change. */}
+          <span className={'ch-cal-step' + (view === 'agenda' ? ' is-off' : '')} inert={view === 'agenda'} aria-hidden={view === 'agenda' || undefined}>
+            <IconButton icon={ChevronLeft} label={`Previous ${view === 'agenda' ? 'month' : view}`} onClick={() => step(-1)} />
+            <IconButton icon={ChevronRight} label={`Next ${view === 'agenda' ? 'month' : view}`} onClick={() => step(1)} />
+          </span>
           <Segmented<ChCalView>
             label="View"
             value={view}
@@ -603,7 +764,7 @@ export function Calendar({
               <Swap swapKey={view}>
                 <Swap swapKey={period.key} kind="slide" dir={period.dir}>
                   {(view === 'week' || view === 'day') && (
-                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} />
+                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} onMove={coach ? move : undefined} daylight={daylight} coach={coach} />
                   )}
                   {view === 'month' && (
                     <MonthView

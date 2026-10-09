@@ -3,7 +3,7 @@
 import { ClipboardList, Megaphone, Plane, Plus, User, UsersRound } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { m } from 'motion/react';
-import { useDeferredValue, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChRsvp, ChTeamHub } from '../../data/hub';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -11,7 +11,7 @@ import { Icon } from '../../ui/Icon';
 import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Swap } from '../../ui/Swap';
-import { chTween } from '../../lib/motion';
+import { chSpring } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
@@ -63,6 +63,45 @@ async function optimistic<T>(apply: () => void, undo: () => void, write: () => P
  * done each. Every change is optimistic where it can be undone by a failure,
  * and every failure keeps what was typed (useAction's toasts, D-69).
  */
+/**
+ * P010-A3: the Announcements tab's right margin on desktop, for the coach: the post in view and how many have read it,
+ * held in place while the page scrolls. Only what the page already has (the count and the recipients); the names are
+ * in Messages' announcement pane.
+ */
+function ReadMargin({ anns }: { anns: ChHubAnnouncement[] }) {
+  const [id, setId] = useState(anns[0]!.id);
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return;
+    const seen = new Map<string, number>();
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) seen.set((e.target as HTMLElement).dataset.ann!, e.isIntersecting ? e.intersectionRatio : 0);
+        const best = [...seen].sort((a, b) => b[1] - a[1])[0];
+        if (best && best[1] > 0) setId(best[0]);
+      },
+      { threshold: [0, 0.25, 0.5, 0.75, 1] },
+    );
+    for (const el of document.querySelectorAll<HTMLElement>('.ch-hb-list [data-ann]')) io.observe(el);
+    return () => io.disconnect();
+  }, [anns]);
+  const a = anns.find((x) => x.id === id) ?? anns[0]!;
+  const left = Math.max(0, a.recipients - a.ackCount);
+  const pct = a.recipients ? Math.round((a.ackCount / a.recipients) * 100) : 0;
+  return (
+    <aside className="ch-hb-margin" aria-label="Who has read it" aria-live="polite">
+      <span className="ch-hb-margin__k">{a.needAck ? 'Acknowledged' : 'Read'}</span>
+      <b className="ch-hb-margin__t">{a.title}</b>
+      <span className="ch-hb-reads ch-num">
+        <span className="ch-hb-reads__t" aria-hidden="true">
+          <i style={{ width: `${pct}%` }} />
+        </span>
+        {a.ackCount} of {a.recipients}
+      </span>
+      <span className="ch-hb-margin__n ch-num">{left === 0 ? 'Everyone has.' : `${left} ${left === 1 ? 'hasn’t' : 'haven’t'} yet.`}</span>
+    </aside>
+  );
+}
+
 export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName }: { data: ChTeamHub; writes?: ChHubWrites; initialTab?: ChHubTab; viewerName: string }) {
   const router = useRouter();
   const phone = useChPhone();
@@ -293,6 +332,13 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
     chTrail(`hub tab ${t}`);
     setTab(t);
   };
+  // P010 D2: the tab is in the URL (?tab=), so a reload, Back from a page it opened and a shared link land on it.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (tab === 'home') url.searchParams.delete('tab');
+    else url.searchParams.set('tab', tab);
+    if (url.href !== window.location.href) window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+  }, [tab]);
   const tabKeys = tabListKeys(
     HUB_TABS[data.role].map(([k]) => k),
     tab,
@@ -303,11 +349,22 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
     setTab('ann');
     setCompose(true);
   };
+  // P010 D6: the head's one primary follows the tab (Documents' own drop zone is its primary), and a tab whose read
+  // failed offers none.
+  const primary = !coach
+    ? null
+    : (tab === 'home' || tab === 'ann') && !data.announcements.error
+      ? { label: 'New announcement', icon: Plus, run: openCompose }
+      : tab === 'travel' && !data.trips.error
+        ? { label: 'Plan a trip', icon: Plane, run: () => setTripOpen(true) }
+        : tab === 'tasks' && !data.tasks.error
+          ? { label: 'Assign a task', icon: Plus, run: () => setAssign(true) }
+          : null;
 
   return (
     <main className={'ch-hb' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hb-title" data-canopy={phone ? undefined : ''}>
-      {phone && !coach && <PhoneTop start title="Team Hub" />}
-      {phone && coach && <PhoneTop title="Team Hub" back={{ label: 'More', onBack: backFromMore }} />}
+      {phone && !coach && <PhoneTop start title="Team Hub" heading={false} />}
+      {phone && coach && <PhoneTop title="Team Hub" back={{ label: 'More', onBack: backFromMore }} heading={false} />}
       <header className="ch-hb-h" data-canopy-head="">
         <div>
           <span className="ch-hb-role">
@@ -319,9 +376,9 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
           </h1>
           <span className="ch-hb-muted">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
         </div>
-        {coach && (
-          <Button variant="primary" leftIcon={Plus} onClick={openCompose}>
-            New announcement
+        {primary && (
+          <Button variant="primary" leftIcon={primary.icon} onClick={primary.run}>
+            {primary.label}
           </Button>
         )}
       </header>
@@ -343,7 +400,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
             onKeyDown={tabKeys}
           >
             {l}
-            {tab === k && <m.span className="ch-hb-tabs__bar" layoutId={reduced ? undefined : 'hb-tab'} transition={chTween('quick', reduced)} aria-hidden="true" />}
+            {tab === k && <m.span className="ch-hb-tabs__bar" layoutId={reduced ? undefined : 'hb-tab'} transition={chSpring('smooth', reduced)} aria-hidden="true" />}
           </button>
         ))}
       </div>
@@ -417,15 +474,16 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
 
           {shownTab === 'ann' && (
             <SectionBoundary surface="hub.announcements" label="Announcements" code="CH-10205">
-              <div className="ch-hb-list">
+              <div className={'ch-hb-list' + (anns.length ? ' is-edited' : '') + (coach && !phone && anns.length ? ' has-margin' : '')}>
                 {coach && <NewAnnouncementLine name={viewerName} onOpen={() => setCompose(true)} />}
                 {data.announcements.error ? (
                   <RefreshNotice code="CH-10206" title="Announcements didn’t load." body="Nothing was lost. Try again; the error has been reported." covered={covered} />
                 ) : !anns.length ? (
                   <EmptyState compact code="CH-10307" icon={Megaphone} title="No announcements yet" body={coach ? 'Post one and see who has read it.' : 'Posts from your coaches show here.'} />
                 ) : (
-                  anns.map((a) => <Announcement key={a.id} a={a} role={data.role} acked={isAcked(a)} pending={ackPending(a)} onAck={onAck} onEdit={setEditing} onDelete={(x) => askDelete({ kind: 'ann', a: x })} />)
+                  anns.map((a, i) => <Announcement key={a.id} a={a} role={data.role} rank={i === 0 ? 'lead' : 'older'} acked={isAcked(a)} pending={ackPending(a)} onAck={onAck} onEdit={setEditing} onDelete={(x) => askDelete({ kind: 'ann', a: x })} />)
                 )}
+                {coach && !phone && anns.length > 0 && !data.announcements.error && <ReadMargin anns={anns} />}
               </div>
             </SectionBoundary>
           )}
@@ -433,11 +491,6 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
           {shownTab === 'travel' && (
             <SectionBoundary surface="hub.travel" label="Travel" code="CH-10205">
               <div className="ch-hb-travel">
-                {coach && (
-                  <Button leftIcon={Plane} onClick={() => setTripOpen(true)} className="ch-hb-travel__plan">
-                    Plan a trip
-                  </Button>
-                )}
                 {data.trips.error ? (
                   <RefreshNotice code="CH-10207" title="Travel didn’t load." body="Trips are safe. Try again; the error has been reported." covered={covered} />
                 ) : !tripRows.length ? (
@@ -465,7 +518,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
           {shownTab === 'tasks' && coach && (
             <SectionBoundary surface="hub.tasks" label="Tasks" code="CH-10205">
               <div className="ch-hb-list">
-                <Tasks role={data.role} data={tasks} isDone={taskDone} isPending={taskPending} onToggle={onToggle} onAssign={() => setAssign(true)} onDelete={(t) => askDelete({ kind: 'task', t })} covered={covered} />
+                <Tasks role={data.role} data={tasks} isDone={taskDone} isPending={taskPending} onToggle={onToggle} onDelete={(t) => askDelete({ kind: 'task', t })} covered={covered} />
               </div>
             </SectionBoundary>
           )}

@@ -1,5 +1,79 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-08 — Phone: direction A, native analysis, with the kit interactions
+
+```text
+Design package: owner-chosen direction A (hand mockup "Team stats, native analysis") + the stats kits prototype's interactions
+PR/commit: agent/stats-a-kits
+Contract IDs: CH-4204 to CH-4207, CH-4303, CH-4305, CH-4306, CH-4401, CH-4703, CH-4805 (no new codes)
+Actions: ACT-P004-CHANGE-WINDOW, ACT-P004-OPEN-PLAYER (unchanged)
+Data impact: none (same loader and fields)
+Held items: none
+```
+
+### Changed (phone direction A)
+
+- Phone only; desktop Team stats is unchanged. The page is recomposed, not
+  re-sourced: same loader, window
+  change, filter sheet, notices, empty and failure states, and catalog codes.
+- The head is the team's context line in plain sentence case (it was
+  letter-spaced) over a 34px large title.
+- One hero figure: the scoring average at 64px with its change and what the
+  loader says it is against, and
+  where it sits against par (the stat line's par gauge, as words); its trend
+  sits directly under it. Readings
+  under the trend and the groups hold two lines, so a wrap never moves what
+  follows. The trend is Recharts on its own chunk (never loaded on desktop): the
+  mean dashed, lower
+  scores higher, a finger on it reads a round day; the page keeps the written
+  reading and the 340:120 box.
+- Greens, putts and scrambling are an iOS inset group (no chevrons: nothing to
+  open), each with its reference
+  where the data has one; the hole-coverage line sits under the group.
+- Strokes gained by leg: the chosen leg's team figure rolls (Number Flow) over
+  the legs and team total as rows
+  with bars on the data's own scale. The rows are the leg picker (Base UI Tabs,
+  vertical, a sliding wash); one
+  selection tick per pick. Team total is the window's mean, never the legs
+  summed.
+- Players keep Avg and SG; on SG they rank by the chosen leg and each value
+  rolls to it. Picking a leg moves the
+  sort to SG.
+- Team putting is an inset group with the Tour mark explained in its note.
+- The phone skeleton draws the new geometry (head, controls, hero, trend box,
+  the round, strokes gained) from
+  the same fixed CSS heights.
+
+### Why (phone direction A)
+
+- The owner chose direction A plus the kit's interactions for the phone Team
+  stats (2026-10-08).
+
+### Verification (phone direction A)
+
+- stats-team, stats-geometry, strokes-gained, stats-player, stats-parity,
+  large-title and the reduced-motion
+  coverage tests; clubhouse:css; typecheck. No browser or device screenshots in
+  this change (none recorded in
+  VERIFY); skeleton geometry is set from fixed CSS heights, not measured in
+  WebKit.
+
+## 2026-10-08 — Premium pass: the ledger grid, one scoring axis
+
+Approved by the owner on 2026-10-08 (P004-A1; findings D1, D4, D6, D7).
+
+- **The ledger grid (A1).** "Where each player gains and loses" is a ruled
+  ledger, not 28 tinted boxes: hairline rows, right-aligned tabular figures
+  coloured by sign, a hairline track under each with a tick at the team's median
+  for that leg and a dot at the player's value. The chosen leg is a 2px column
+  rule and a 4% wash; the worst losing leg in a row keeps an 8% amber wash.
+- **Rows are divs (D4).** `role="row"` moved off the link; the name is the link
+  and its hit area covers the row, so the whole row still opens the player.
+- **One scoring axis (D1).** Every scoring chart puts lower scores higher and
+  says "Lower is better" (the phone's ScoreLine, the desktop trend's caption).
+- **Loading (D6, D7).** The preview's loading state draws the phone's own
+  skeleton on a phone, and every skeleton keeps a hidden h1.
+
 ## 2026-10-08 — Copy: typographic apostrophes
 
 Team stats writes its apostrophes as ’: the export's failure (CH-4001), the

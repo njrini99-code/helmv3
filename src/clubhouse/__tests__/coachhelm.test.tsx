@@ -514,7 +514,7 @@ describe('CoachHelm for the player, on screen', () => {
     showPlayer(PREVIEW_HELM_PLAYER);
     await user.click(inList('Also worth knowing').getByRole('button', { name: /Penalty strokes/ }));
     const card = within(document.querySelector('.ch-hl-focus') as HTMLElement);
-    expect(card.getByText('Penalties per Round')).toBeTruthy();
+    expect(card.getByText('Penalties per round')).toBeTruthy(); // the generator's Title Case, sentence-cased (P013 D12)
     // The track is drawing only; the legend carries the numbers.
     expect(document.querySelector('.ch-hl-g__t')!.getAttribute('aria-hidden')).toBe('true');
     expect(card.getByText(/^You ·/).textContent).toBe('You · 1.1');
@@ -669,6 +669,17 @@ describe('CoachHelm proposals, on the player’s board', () => {
     expect(screen.queryByRole('region', { name: 'Proposed for you' })).toBeNull();
   });
 
+  it('P013 D10: with more than one proposal each Accept is secondary (one primary per screen); a lone proposal keeps its primary Accept', () => {
+    showProposed();
+    const accepts = screen.getAllByRole('button', { name: 'Accept' });
+    expect(accepts.length).toBeGreaterThan(1);
+    for (const b of accepts) expect(b.className).toContain('ch-btn--secondary');
+    cleanup();
+    const one = { ...PREVIEW_HELM_PLAYER_PROPOSED, proposals: { ...PREVIEW_HELM_PLAYER_PROPOSED.proposals, list: PREVIEW_HELM_PLAYER_PROPOSED.proposals.list.slice(0, 1) } };
+    showProposed(okPlayerWrites(), one);
+    expect(screen.getByRole('button', { name: 'Accept' }).className).toContain('ch-btn--primary');
+  });
+
   it('CH-13704 CH-13404 CH-13902 Accept: the focus id is sent, both buttons wait and say Accepting, then it is Started in place, with the light press and then success', async () => {
     const u = user();
     let done!: (v: { success: boolean }) => void;
@@ -794,7 +805,7 @@ describe('CoachHelm for the coach, on screen', () => {
       'EBEli BrandtPenalty strokes: 1.1 per round2',
       'JOJonah OkaforDownhill putts inside 4-6 ft: a real penalty3',
       'PNPriya NatarajanPutting break: under-reading left-to-right (10-20 ft)1',
-      'TMTheo MarchettiDouble bogey-or-worse rate: 1.6%0',
+      'TMTheo MarchettiDouble bogey-or-worse rate: 1.6%', // no open signal: no count (P013 D12)
     ]);
     expect(players.getByRole('button', { name: /Eli Brandt/ }).getAttribute('aria-pressed')).toBe('true');
     expect(focusHeading()).toBe('Penalty strokes: 1.1 per round');
@@ -969,7 +980,8 @@ describe('CoachHelm for the coach, on screen', () => {
     await u.click(screen.getByRole('button', { name: 'Dismiss' }));
     await expectCode('CH-13901');
     expect(screen.getByText('2 players have an open signal.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Priya Natarajan/ }).textContent).toMatch(/Dismissed0$/);
+    // P013 D12: no open signal draws no count, never a 0 beside the line.
+    expect(screen.getByRole('button', { name: /Priya Natarajan/ }).textContent).toMatch(/Dismissed$/);
   });
 
   it('CH-13002 a failed dismiss says so and keeps the insight; Retry that works shows the notice', async () => {

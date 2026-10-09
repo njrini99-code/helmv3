@@ -9,6 +9,7 @@ import { haptic } from '../../lib/haptics';
 import { normalise, useAction } from '../../lib/use-action';
 import { Field, TRANSPORTS } from './sheets';
 import type { ChHubWrites, ChTripEdit, ChTripInput } from './writes';
+import { radioKeys, rovingRadios } from './radio';
 
 type Draft = Omit<ChTripEdit, 'id'>;
 
@@ -122,7 +123,7 @@ export function TripEditSheet({
         {input('destination', 'Where', 'text', errs.destination, 'CH-10104')}
         <div className="ch-field">
           <span className="ch-field__label">Getting there</span>
-          <div className="ch-hb-aud" role="radiogroup" aria-label="Getting there">
+          <div className="ch-hb-aud" role="radiogroup" tabIndex={-1} ref={rovingRadios} onKeyDown={radioKeys()} aria-label="Getting there">
             {TRANSPORTS.map(([k, l]) => (
               <button
                 key={k}

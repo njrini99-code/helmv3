@@ -74,18 +74,20 @@ import { loadCalendar, parseDate, parseNewType, parseView, type ChCalendarData }
 import { chReport, chTrail } from '../lib/track';
 import { ClubhouseCalendarRoute } from '../routes/calendar';
 import { resolveClubhouseTeam } from '../routes/team';
-import type { ChCalEvent, ChCalType } from '../screens/calendar/model';
+import { monthCells, type ChCalEvent, type ChCalType } from '../screens/calendar/model';
 import { Calendar } from '../screens/calendar/Calendar';
 import { CalendarSkeleton } from '../screens/calendar/CalendarSkeleton';
 import { CalendarNoTeam } from '../screens/calendar/CalendarNoTeam';
 import { ToastProvider } from '../ui/Toast';
 import { PREVIEW_CALENDAR, PREVIEW_CALENDAR_PLAYER } from '../preview/fixtures-calendar';
+import { clashesAt, snapQuarter } from '../screens/calendar/views';
 import './dialog-polyfill';
 
 /** A numbered element that is actually on screen: a closed <dialog> doesn't count. */
 const code = (c: string) => [...document.querySelectorAll(`[data-ch-code="${c}"]`)].find((el) => el.tagName !== 'DIALOG' || el.hasAttribute('open')) ?? null;
 /** The live copy of a swapped part (a view or a day): the leaving one is aria-hidden while it fades (CH-6604, CH-6606). */
-const live = (sel: string) => [...document.querySelectorAll(sel)].find((el) => !el.closest('.ch-swap__body[aria-hidden]')) ?? null;
+// What is on screen: not a view on its way out, nor the phone's neighbouring days (the day pager's hidden pages, P006-B2).
+const live = (sel: string) => [...document.querySelectorAll(sel)].find((el) => !el.closest('.ch-swap__body[aria-hidden], .ch-calm-page[aria-hidden]')) ?? null;
 async function expectCode(c: string, text?: RegExp) {
   await waitFor(() => expect(code(c)).not.toBeNull());
   if (text) expect(code(c)!.textContent).toMatch(text);
@@ -126,6 +128,67 @@ beforeEach(() => {
   a.getCalendarFeeds.mockResolvedValue({ success: true, data: [] });
   a.getDocuments.mockResolvedValue({ success: true, data: [] });
   a.getAttendanceReport.mockResolvedValue({ success: true, data: { attendance: [] } });
+});
+
+describe('Calendar · drag to reschedule (P006-B3)', () => {
+  afterEach(() => vi.useRealTimers());
+  const block = (name: RegExp) => screen.getAllByRole('button', { name }).find((b) => b.classList.contains('ch-ev'))!;
+
+  it('CH-6015 Alt+↓ moves a coach’s event 15 minutes with Undo; nothing is written, so no one is told, until the window closes', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    a.updateGolfEvent.mockResolvedValue({ success: true });
+    wrap(cal());
+    const travel = block(/^Travel briefing/);
+    expect(travel.getAttribute('aria-label')).toMatch(/Alt and the arrow keys move it 15 minutes/);
+    fireEvent.keyDown(travel, { key: 'ArrowDown', altKey: true });
+    expect(screen.getByText('Moved to 1:45 PM')).toBeTruthy();
+    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:45 – 2:30 PM/);
+    expect(a.updateGolfEvent).not.toHaveBeenCalled();
+    await act(async () => {
+      vi.advanceTimersByTime(4000);
+    });
+    expect(a.updateGolfEvent).toHaveBeenCalledWith('e9', expect.objectContaining({ startDate: '2026-10-15', startTime: '13:45', endTime: '14:30', allDay: false }));
+    // A failed write puts it back and says so.
+    a.updateGolfEvent.mockResolvedValue({ success: false, error: 'nope' });
+    fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowUp', altKey: true });
+    await act(async () => {
+      vi.advanceTimersByTime(4000);
+    });
+    vi.useRealTimers();
+    await expectCode('CH-6015', /Couldn’t move Travel briefing/);
+    // Back on the server's copy (this test's refresh is a stub, so that is still the loaded 1:30).
+    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:30 – 2:15 PM/);
+  });
+
+  it('Undo inside the window puts it back and writes nothing', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    wrap(cal());
+    fireEvent.keyDown(block(/^Travel briefing/), { key: 'ArrowDown', altKey: true });
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(block(/^Travel briefing/).getAttribute('aria-label')).toMatch(/1:30 – 2:15 PM/);
+    await act(async () => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(a.updateGolfEvent).not.toHaveBeenCalled();
+  });
+
+  it('a series, a class and a player’s view never drag', () => {
+    const { unmount } = wrap(cal());
+    expect(block(/^Short-game block/).classList.contains('is-draggable')).toBe(false);
+    expect(block(/^Priya · STAT 201/).classList.contains('is-draggable')).toBe(false);
+    unmount();
+    wrap(cal({ role: 'player', viewerPlayerId: 'jonah' }));
+    expect(document.querySelector('.ch-ev.is-draggable')).toBeNull();
+  });
+
+  it('the clash check lights an invitee’s other event or class where the block would land', () => {
+    const e = PREVIEW_CALENDAR.events.find((x) => x.id === 'e9')!;
+    const hits = clashesAt(e, { date: '2026-10-14', start: 15.5, end: 16.25 }, PREVIEW_CALENDAR.events);
+    expect(hits.size).toBeGreaterThan(0);
+    expect(clashesAt(e, { date: '2026-10-14', start: 20, end: 20.75 }, PREVIEW_CALENDAR.events).size).toBe(0);
+    expect(snapQuarter(13.62)).toBe(13.5);
+    expect(snapQuarter(13.63)).toBe(13.75);
+  });
 });
 
 describe('Calendar · new event deep link', () => {
@@ -229,6 +292,8 @@ describe('Calendar · saves that fail', () => {
     const user = userEvent.setup();
     wrap(cal(), { initialNew: true });
     await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Range');
+    // A new event opens on the first free time (P006 D3): start it in the afternoon, then end it in the morning.
+    fireEvent.change(screen.getByLabelText('Start time'), { target: { value: '15:30' } });
     fireEvent.change(screen.getByLabelText('End time'), { target: { value: '09:00' } });
     await user.click(screen.getByRole('button', { name: 'Publish event' }));
     await expectCode('CH-6102', /End has to be after the start/);
@@ -709,13 +774,16 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
       const { unmount } = wrap(cal());
       const lines = screen.getAllByRole('separator', { name: /^Now,/ });
       expect(lines).toHaveLength(1);
-      expect(document.querySelector('.ch-calm-agenda')!.lastElementChild!.contains(lines[0]!)).toBe(true);
+      expect(live('.ch-calm-agenda')!.lastElementChild!.contains(lines[0]!)).toBe(true);
       unmount();
       // 2:40 PM: the line sits before the first event still to start.
       vi.setSystemTime(new Date('2026-10-14T18:40:00Z'));
       wrap(cal());
       const mid = screen.getByRole('separator', { name: /^Now,/ });
-      expect(mid.nextElementSibling!.getAttribute('aria-label')).toMatch(/^Short-game block/);
+      // The row after the line; it sits in its peek wrapper (P006-C3), which draws no box.
+      const after = mid.nextElementSibling!;
+      const row = after.matches('.ch-peek-target') ? after.querySelector('button')! : after;
+      expect(row.getAttribute('aria-label')).toMatch(/^Short-game block/);
     } finally {
       vi.useRealTimers();
     }
@@ -738,6 +806,114 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     expect(live('.ch-calm-dayk')!.textContent).toMatch(/Fri 16 October/);
   });
 
+  describe('Month on react-day-picker', () => {
+    beforeEach(() => freezeClock());
+    afterEach(() => vi.useRealTimers());
+    /** A window wide enough that a turned month moves in place instead of asking the server. */
+    const wide = { range: { from: '2026-01-01', to: '2026-12-31' } };
+    const grid = () => screen.getByRole('grid');
+    const days = () => within(grid()).getAllByRole('gridcell');
+    const title = () => screen.getByRole('heading', { level: 2 }).textContent;
+    const day = (name: RegExp) => within(grid()).getByRole('button', { name });
+
+    it('61901 the grid lays out the same dates as monthCells: whole weeks from Sunday, four rows or six, the other months’ days marked', () => {
+      for (const anchor of ['2026-02-11', '2026-08-19', '2026-10-14']) {
+        const { unmount } = wrap(cal({ ...wide, view: 'month', anchor }));
+        const cells = monthCells(anchor);
+        expect(days().map((d) => d.getAttribute('data-day'))).toEqual(cells.map((c) => c.date));
+        expect(days().map((d) => d.querySelector('button')!.classList.contains('is-out'))).toEqual(cells.map((c) => c.out));
+        expect(within(grid()).getAllByRole('row', { hidden: true })).toHaveLength(cells.length / 7 + 1);
+        unmount();
+      }
+      // February 2026 opens on a Sunday and fills four weeks; August 2026 needs six.
+      expect(monthCells('2026-02-11')).toHaveLength(28);
+      expect(monthCells('2026-08-19')).toHaveLength(42);
+    });
+
+    it('61901 the chosen day is the selected cell in the green ring, today the green disc, each day says its events; choosing one opens it with a tick', async () => {
+      const user = userEvent.setup();
+      wrap(cal({ ...wide, view: 'month', anchor: '2026-10-20' }));
+      const chosen = day(/^Tue 20 October/);
+      expect(chosen.className).toContain('is-on');
+      expect(chosen.closest('[role="gridcell"]')!.getAttribute('aria-selected')).toBe('true');
+      expect(day(/^Wed 14 October/).className).toContain('is-today');
+      expect(day(/^Wed 14 October/).className).not.toContain('is-on');
+      expect(day(/^Fri 16 October: .*competition/).querySelector('i.is-major')).not.toBeNull();
+      // Only the chosen day is in the tab order; the arrows walk the rest.
+      expect(within(grid()).getAllByRole('button').filter((b) => b.tabIndex === 0)).toEqual([chosen]);
+      hapticSpy.mockClear();
+      await user.click(day(/^Fri 16 October/));
+      expect(hapticSpy).toHaveBeenCalledWith('select');
+      expect(live('.ch-calm-dayk')!.textContent).toMatch(/Fri 16 October/);
+    });
+
+    it('61901 inside the grid the arrows walk the days without turning the month; Page Down turns it with one tick, as the Calendar’s arrows do from outside', async () => {
+      const user = userEvent.setup();
+      wrap(cal({ ...wide, view: 'month', anchor: '2026-10-14' }));
+      day(/^Wed 14 October/).focus();
+      hapticSpy.mockClear();
+      await user.keyboard('{ArrowRight}');
+      expect(document.activeElement).toBe(day(/^Thu 15 October/));
+      expect(title()).toBe('October');
+      expect(hapticSpy).not.toHaveBeenCalled();
+      await user.keyboard('{PageDown}');
+      await waitFor(() => expect(title()).toBe('November'));
+      expect(hapticSpy.mock.calls.filter((c) => c[0] === 'select')).toHaveLength(1);
+      expect(router.push).not.toHaveBeenCalled();
+      // From outside the grid, the Calendar's own arrows still step the month.
+      (document.activeElement as HTMLElement).blur();
+      await user.keyboard('{ArrowLeft}');
+      await waitFor(() => expect(title()).toBe('October'));
+    });
+
+    it('61901 a sideways swipe across the grid turns the month with one tick, and the tap it ends on opens nothing', async () => {
+      wrap(cal({ ...wide, view: 'month', anchor: '2026-10-14' }));
+      const swipe = (target: Element, from: number, to: number, down = 6) => {
+        act(() => {
+          target.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, isPrimary: true, pointerType: 'touch', clientX: from, clientY: 300 }));
+          target.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, isPrimary: true, pointerType: 'touch', clientX: to, clientY: 300 + down }));
+        });
+      };
+      hapticSpy.mockClear();
+      const start = day(/^Wed 14 October/);
+      swipe(start, 300, 200);
+      fireEvent.click(start);
+      await waitFor(() => expect(title()).toBe('November'));
+      expect(screen.queryByRole('grid')).not.toBeNull();
+      expect(hapticSpy.mock.calls.filter((c) => c[0] === 'select')).toHaveLength(1);
+      // Back the other way; a short or mostly vertical drag is not a swipe.
+      swipe(day(/^Wed 11 November/), 120, 260);
+      await waitFor(() => expect(title()).toBe('October'));
+      swipe(day(/^Wed 14 October/), 200, 230);
+      swipe(day(/^Wed 14 October/), 200, 260, 120);
+      expect(title()).toBe('October');
+      expect(hapticSpy.mock.calls.filter((c) => c[0] === 'select')).toHaveLength(2);
+    });
+
+    it('60302 a month past the loaded window is asked for; a second swipe or Page Down while it loads steps on from it, as the arrows do', async () => {
+      const user = userEvent.setup();
+      // The fixture's window ends on 25 November, so November's whole weeks are not loaded yet.
+      wrap(cal({ view: 'month', anchor: '2026-10-14' }));
+      const swipeLeft = (target: Element) =>
+        act(() => {
+          target.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, isPrimary: true, pointerType: 'touch', clientX: 300, clientY: 300 }));
+          target.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, isPrimary: true, pointerType: 'touch', clientX: 200, clientY: 300 }));
+        });
+      swipeLeft(day(/^Wed 14 October/));
+      await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
+      expect(router.push).toHaveBeenLastCalledWith(expect.stringContaining('date=2026-11-01'), { scroll: false });
+      // The page still shows October while November is on its way: the next turn asks for December, not November again.
+      expect(title()).toBe('October');
+      swipeLeft(day(/^Wed 14 October/));
+      await waitFor(() => expect(router.push).toHaveBeenCalledTimes(2));
+      expect(router.push).toHaveBeenLastCalledWith(expect.stringContaining('date=2026-12-01'), { scroll: false });
+      day(/^Wed 14 October/).focus();
+      await user.keyboard('{PageDown}');
+      await waitFor(() => expect(router.push).toHaveBeenCalledTimes(3));
+      expect(router.push).toHaveBeenLastCalledWith(expect.stringContaining('date=2027-01-01'), { scroll: false });
+    });
+  });
+
   it('CH-6606 choosing a day moves the strip’s green plate to it and swaps in its agenda under a day heading', async () => {
     const user = userEvent.setup();
     wrap(cal());
@@ -749,6 +925,25 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     expect(live('.ch-calm-dayk')!.textContent).toMatch(/Thu 15 October/);
     // The day that left is hidden from assistive tech while it fades.
     for (const h of screen.queryAllByRole('heading', { level: 3 })) expect(h.textContent).not.toMatch(/Wed 14 October/);
+  });
+
+  it('P006-B2 a swipe that settles on the next day turns to it with one tick; the week steps reach the weeks around', async () => {
+    const user = userEvent.setup();
+    wrap(cal());
+    const pager = document.querySelector('.ch-calm-pager') as HTMLElement;
+    Object.defineProperty(pager, 'clientWidth', { configurable: true, value: 350 });
+    hapticSpy.mockClear();
+    act(() => {
+      pager.scrollLeft = 700;
+      pager.dispatchEvent(new Event('scroll'));
+      pager.dispatchEvent(new Event('scrollend'));
+    });
+    await waitFor(() => expect(live('.ch-calm-dayk')!.textContent).toMatch(/Thu 15 October/));
+    expect(hapticSpy.mock.calls).toEqual([['select']]);
+    // The neighbouring days are there for the swipe, but hidden from assistive tech.
+    expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Thu 15 October']);
+    await user.click(screen.getByRole('button', { name: 'Next week' }));
+    await waitFor(() => expect(live('.ch-calm-dayk')!.textContent).toMatch(/Thu 22 October/));
   });
 
   it('CH-6308 a day with nothing on it says so', async () => {
@@ -1087,6 +1282,19 @@ describe('Calendar · the loader', () => {
   beforeEach(freezeClock);
   afterEach(() => vi.useRealTimers());
 
+  it('D2-8 a meeting with no invitees is the coach’s own: players never get it, unless the invite list failed to load', async () => {
+    const rows = { data: [eventRow('e1'), eventRow('m-private', { event_type: 'meeting', title: 'Parent call' }), eventRow('m-team', { event_type: 'meeting' })] };
+    const replies = { data: [replyRow('e1', 'p2', 'accepted'), replyRow('m-team', 'p2', null)] };
+    serve({ ...healthy(), golf_events: rows, golf_event_attendance: replies });
+    expect((await load()).events.map((e) => e.id)).toEqual(expect.arrayContaining(['m-private', 'm-team']));
+    serve({ ...healthy(), golf_events: rows, golf_event_attendance: replies });
+    const ids = (await load(asPlayer('p2'))).events.map((e) => e.id);
+    expect(ids).toContain('m-team');
+    expect(ids).not.toContain('m-private');
+    serve({ ...healthy(), golf_events: rows, golf_event_attendance: { error: { message: 'boom' } } });
+    expect((await load(asPlayer('p2'))).events.map((e) => e.id)).toContain('m-private');
+  });
+
   it('CH-6309 the loader counts the team’s events for a coach: none ever is the first run; any, a failed count, or a player is not', async () => {
     serve({ ...healthy(), golf_events: { data: [], count: 0 } as { data?: unknown } });
     expect((await load()).firstRun).toBe(true);
@@ -1392,6 +1600,9 @@ describe('Calendar · what each role is given', () => {
     a.createGolfEvent.mockResolvedValue({ success: true });
     wrap(cal(), { initialNew: true, initialWith: 'jonah' });
     await screen.findByRole('button', { name: 'Publish event' });
+    // A new event opens on Jonah's free time (P006 D3); the coach moves it onto practice, where he is busy.
+    expect(screen.queryByText('Jonah is busy at this time.')).toBeNull();
+    fireEvent.change(screen.getByLabelText('Start time'), { target: { value: '15:30' } });
     expect(screen.getByText('Jonah is busy at this time.')).toBeTruthy();
     expect(screen.getByText('Busy at this time')).toBeTruthy();
     await user.type(screen.getByRole('textbox', { name: 'Event title' }), '1:1 with Jonah');
@@ -1658,5 +1869,14 @@ describe('Calendar · this file', () => {
     const titles = (file: string) => read(file).split('\n').filter((l) => /^\s*(it|describe|test)(\.each\(.*\))?\(/.test(l) || /^\s*(it|test)\(`/.test(l));
     const unnamed = bridge.filter((r) => r.page === 'P006' && !r.chCode && r.status === 'implemented').filter((r) => !(r.tests ?? []).some((f) => titles(f).some((l) => l.includes(String(r.id)))));
     expect(unnamed.map((r) => r.id)).toEqual([]);
+  });
+});
+
+describe('Calendar · attendees peek (P003-C1)', () => {
+  it('the coach’s attendee rows peek at each player; nothing new is read for it', async () => {
+    wrap(cal(), { initialEvent: 'e9' });
+    await waitFor(() => expect(document.querySelectorAll('.ch-in__person').length).toBeGreaterThan(0));
+    const rows = [...document.querySelectorAll('.ch-in__person')];
+    expect(rows.every((r) => r.parentElement?.classList.contains('ch-peek-target'))).toBe(true);
   });
 });

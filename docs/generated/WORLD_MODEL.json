@@ -608,6 +608,11 @@
         "category": "components"
       },
       {
+        "id": "components:src/clubhouse/data/recruiting-calendar.ts",
+        "pattern": "src/clubhouse/data/recruiting-calendar.ts",
+        "category": "components"
+      },
+      {
         "id": "components:src/clubhouse/data/recruiting-shape.ts",
         "pattern": "src/clubhouse/data/recruiting-shape.ts",
         "category": "components"
@@ -21025,6 +21030,18 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/recruiting.ts",
           "anchor": "src/lib/supabase/server"
+        }
+      ]
+    },
+    {
+      "source": "recruiting",
+      "target": "components:src/clubhouse/data/recruiting-calendar.ts",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/data/recruiting-calendar.ts"
         }
       ]
     },

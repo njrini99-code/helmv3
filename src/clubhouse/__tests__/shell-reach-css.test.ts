@@ -100,3 +100,19 @@ describe('CH-1617 choices and the feature card answer a press without scaling', 
     expect(withProp(ui, '.ch-feat.is-link::after', 'pointer-events')).toMatch(/pointer-events:\s*none/);
   });
 });
+
+describe('P011-D9 the shared button reaches 44 under a finger', () => {
+  it('grows an invisible hit box to 44 on coarse pointers', () => {
+    const css = readFileSync(join(__dirname, '../styles/ui.css'), 'utf8');
+    expect(css).toMatch(/@media \(pointer: coarse\) \{\s*\.ch-btn::after \{\s*position: absolute;\s*inset: min\(0px, calc\(50% - 22px\)\);/);
+  });
+});
+
+describe('the Safari canvas pads for the tab bar only while it is shown', () => {
+  it('drops the tab-bar padding under a full-page form or a pushed screen', () => {
+    const css = readFileSync(join(__dirname, '../styles/shell.css'), 'utf8');
+    expect(css).toMatch(/body:not\(\.capacitor\) \[data-ui='clubhouse'\]:not\(\[data-phone-notabs\]\):not\(\[data-phone-immersive\]\) \.ch-canvas \{\s*padding-bottom: calc\(var\(--ch-tabbar-h\)/);
+    expect(css).toMatch(/\[data-ui='clubhouse'\]\[data-phone-notabs\] \.ch-canvas \{\s*padding-bottom: env\(safe-area-inset-bottom\);/);
+    expect(css).not.toMatch(/body:not\(\.capacitor\) \[data-ui='clubhouse'\] \.ch-canvas \{/);
+  });
+});

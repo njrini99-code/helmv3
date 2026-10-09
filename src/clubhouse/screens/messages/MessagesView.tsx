@@ -33,6 +33,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -41,6 +42,7 @@ import {
   type KeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
+  type ReactNode,
 } from "react";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useChReducedMotion } from "../../lib/reduced-motion";
@@ -55,6 +57,7 @@ import { SearchField } from "../../ui/SearchField";
 import { SectionBoundary } from "../../ui/SectionBoundary";
 import { Segmented } from "../../ui/Segmented";
 import { Swap } from "../../ui/Swap";
+import { PlayerPeek } from "../../ui/PlayerPeek";
 import { EmptyState, Skeleton } from "../../ui/States";
 import { haptic } from "../../lib/haptics";
 import { chReport, chTrail } from "../../lib/track";
@@ -118,6 +121,8 @@ export interface ChAttachmentRecovery {
 
 export interface ChMessagesApi {
   viewer: { userId: string; role: "coach" | "player"; name: string };
+  /** Coaches by golf_coaches.id, for an announcement's signature (P007-A1). */
+  signers?: Record<string, { name: string; title: string }>;
   timeZone: string;
   now: string;
   teamName: string | null;
@@ -174,6 +179,9 @@ export interface ChMessagesApi {
   retryDirectory: () => void;
   startDirect: (userId: string) => Promise<boolean>;
   createGroup: (userIds: string[], title: string) => Promise<boolean>;
+  /** A prefilled message (prefill.ts) waiting for New message: who it's to (user ids), the draft and the group's name. */
+  prefill?: { to: string[]; draft: string; title: string } | null;
+  clearPrefill?: () => void;
 
   searchMessages: (q: string) => Promise<ChSearchHit[] | null>;
   openHit: (hit: ChSearchHit) => void;
@@ -203,6 +211,15 @@ export interface ChMessagesApi {
 
 export const personOf = (api: ChMessagesApi, userId: string) =>
   api.directory.find((p) => p.userId === userId);
+
+/**
+ * P003-C1: for the coach, a player's avatar and name in a thread peek at the player, from the team directory Messages
+ * already holds. The bubble keeps its own hold (message actions); coaches and people off the roster don't peek.
+ */
+function SenderPeek({ api, who, children }: { api: ChMessagesApi; who: ChPerson | undefined; children: ReactNode }) {
+  if (api.viewer.role !== "coach" || who?.role !== "player" || !who.playerId) return <>{children}</>;
+  return <PlayerPeek player={{ id: who.playerId, name: who.name, sub: who.subtitle || null }}>{children}</PlayerPeek>;
+}
 
 /* Rail */
 
@@ -690,14 +707,20 @@ export function Bubble({
     >
       {!m.mine && (
         <span className="ch-ms-msg__av">
-          {last && <Avatar name={who?.name ?? "Member"} size={30} />}
+          {last && (
+            <SenderPeek api={api} who={who}>
+              <Avatar name={who?.name ?? "Member"} size={30} />
+            </SenderPeek>
+          )}
         </span>
       )}
       <div className="ch-ms-msg__col">
         {!m.mine && first && group && (
-          <span className="ch-ms-msg__who">
-            {firstName(who?.name ?? "Member")}
-          </span>
+          <SenderPeek api={api} who={who}>
+            <span className="ch-ms-msg__who">
+              {firstName(who?.name ?? "Member")}
+            </span>
+          </SenderPeek>
         )}
         <div className="ch-ms-msg__line">
           <div className="ch-ms-msg__stack" {...press} {...rightClick}>
@@ -1860,17 +1883,21 @@ function NewMessage({
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState(false);
+  const prefill = api.prefill ?? null;
   useEffect(() => {
     if (!open) return;
-    setMode("direct");
-    setTo([]);
+    // A prefilled message (prefill.ts) opens with its people chosen and, for a group, its name.
+    // Players start direct threads only (D-15): theirs keeps the first person.
+    const group = !!prefill && prefill.to.length > 1 && api.viewer.role === "coach";
+    setMode(group ? "group" : "direct");
+    setTo(prefill ? (group ? prefill.to : prefill.to.slice(0, 1)) : []);
     setQ("");
-    setTitle("");
+    setTitle(prefill?.title ?? "");
     setBody("");
     setUrgent(false);
     setAck(true);
     setTouched(false);
-  }, [open]);
+  }, [open, prefill, api.viewer.role]);
   const coachGroup = mode === "group" && api.viewer.role === "coach";
   // A coach's group can include other coaches (D-45): they're added right after it's created.
   const people = api.directory.filter((p) =>
@@ -2041,6 +2068,12 @@ function NewMessage({
                 )}
               </label>
             )}
+            {prefill?.draft && (
+              <p className="ch-ms-new__draft">
+                <span>Your draft, ready in the conversation to edit and send</span>
+                <q>{prefill.draft}</q>
+              </p>
+            )}
             <SearchField
               value={q}
               onChange={setQ}
@@ -2138,6 +2171,14 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
   const conv = api.convs.find((c) => c.id === api.selectedId) ?? null;
   const ann = api.announcements.find((a) => a.id === api.selectedAnnId) ?? null;
   useEffect(() => setDetails(false), [api.selectedId]);
+  useEffect(() => {
+    if (api.prefill) setCompose(true);
+  }, [api.prefill]);
+  const { clearPrefill } = api;
+  const closeCompose = useCallback(() => {
+    setCompose(false);
+    clearPrefill?.();
+  }, [clearPrefill]);
   // CH-7605: going from one open thread or announcement to another settles the new one in (base in, quick out). The
   // first one a visit opens (the newest thread, or a link's) appears at once.
   const paneKey = ann ? `a:${ann.id}` : conv ? `c:${conv.id}` : null;
@@ -2156,7 +2197,7 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
           }
         />
         <MessagesFirstRun coach={api.viewer.role === "coach"} onNew={() => setCompose(true)} />
-        <NewMessage api={api} open={compose} onClose={() => setCompose(false)} />
+        <NewMessage api={api} open={compose} onClose={closeCompose} />
       </main>
     );
   }
@@ -2241,7 +2282,7 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
           <Details api={api} conv={conv} onClose={() => setDetails(false)} />
         </SectionBoundary>
       )}
-      <NewMessage api={api} open={compose} onClose={() => setCompose(false)} />
+      <NewMessage api={api} open={compose} onClose={closeCompose} />
     </main>
   );
 }

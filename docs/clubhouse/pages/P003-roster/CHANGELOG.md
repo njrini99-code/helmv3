@@ -1,5 +1,92 @@
 # P003 — Roster: changelog
 
+## 2026-10-08 — The phone sort runs on TanStack Table; rows slide and figures roll on a new sort
+
+Adopting the installed kits (`@tanstack/react-table` 9, `@number-flow/react`
+0.6). Phone only; the desktop roster is
+unchanged. Not yet reviewed by the owner.
+
+- **Sorting model:** the phone list's Avg / SG / Name order comes from TanStack
+  Table's sorting model, headless
+  (`useRosterSort`, `screens/roster/sort.ts`), with the same rules written out
+  as the columns' sort functions: Avg
+  lowest first, SG highest first, Name by last name (D-59), a missing figure
+  last, ties in the loader's order. The rows
+  keep their markup and look.
+- **Reorder (CH-3604):** choosing a sort slides each moved row to its new place
+  on the smooth spring inside React's
+  `<ViewTransition>` (class `ch-rsm-reorder`, the pattern the qualifier board
+  uses for P009-B1). Only a chosen sort
+  moves rows or rolls figures; a refresh takes its new figures at once and
+  leaves the rows where they are. Reduced
+  motion and Animations off reorder at once.
+- **Rolling figure:** each row's trailing figure is one Number Flow numeral that
+  stays across sorts, so Avg to SG
+  rolls 74.1 to −0.9 instead of swapping it (base duration on the v2 ease-out,
+  `CH_DUR`). The sign is drawn as text in
+  front of the digits (`figureParts`), so a loss reads with a true minus and a
+  figure that rounds to zero is an
+  unsigned 0.0; no data stays a dash and does not roll. Nothing counts up on
+  first paint. Its spoken value equals the
+  figure as written, and the row's own label is unchanged.
+- **Haptic:** the selection tick on a sort change is still the segmented
+  control's one tick (CH-3701), not doubled.
+- Tests: `src/clubhouse/__tests__/roster-sort.test.tsx`.
+
+## 2026-10-08 — Join requests as a row, the sheet without wells
+
+Owner direction (2026-10-08): the card is no longer the default unit of layout
+on the phone. Phone only (the phone
+roster is its own component); the desktop roster is unchanged.
+
+- **Join requests** is one flat row at the top of the list instead of a green
+  feature card: the count in a green badge
+  in the avatars' column, "Join requests" lined up with the players' names, the
+  names under it, a chevron. It sits
+  between hairlines on the gutter and tints under the finger like a player row
+  (CH-3602). Its accessible name reads
+  "2 join requests, Grace Liu and Owen Park".
+- **The requests sheet:** each request's handicap is a figure at the end of its
+  row, not a well, and the team code is
+  a plain row between hairlines with Copy at its end.
+
+## 2026-10-08 — The phone list shows the figure it is sorted by
+
+From the native-feel audit (P1-3). Not yet reviewed by the owner.
+
+- **Sorted by SG**, each phone row's trailing column shows strokes gained per round (`+0.8`, `−1.2`, `—` when there is none) over "SG / rd", with gains in green and losses in amber. The row's VoiceOver label reads the same figure. Sorted by Avg or Name, the column keeps the average and handicap; under Name, the name already leads the row (`RosterPhoneRow`'s `sort` prop).
+
+## 2026-10-08 — Premium pass: ranks, one material, the lit ledger, the peek
+
+Approved by the owner on 2026-10-08 (P003-A1, A3, C1; findings #1 to #17).
+
+- **Ranks from the active roster (#2, #3).** A card's place ("4th of 7") and the
+  team strip rank the active players with an average and at least three rounds
+  (`rosterStandings`), never the rows a search or filter left: searching "Jo"
+  keeps Jonah's place, and All doesn't rank inactive players. Under three rounds
+  the card says "Needs 1 more" instead of a place.
+- **One material (#1).** The player's Roster and the no-team page take the
+  coach's canopy (`data-canopy`, `data-canopy-head`); the no-team page has a
+  hidden h1.
+- **Less chrome (A3).** The seven-coin initials stack above the title is gone on
+  desktop, and the phone loses the double rule above the kicker, which is no
+  longer tracked (#9). The status dot shows only under All, where it tells
+  players apart (owner); under Active or Inactive every dot was the same.
+- **The ledger in the light (A1).** The faces' hairlines carry a 1px rim of the
+  shell's light on their sun-facing side, and the open player's ring catches a
+  gilt crescent on the lit side. The peek's leading hairline takes the rim too.
+  Nothing on a figure is lit, and dark, Increase Contrast and noon draw no rim.
+- **The player peek (C1).** A hold on a phone row, or a rest on a desktop
+  Needs-a-look chip, shows the shell's `PlayerPeek` from what the roster holds
+  (`rosterPeek`: the newest round, the average, the form, the warning).
+- **Findings.** The desktop panel sticks under the top bar and scrolls inside
+  itself (#4); the phone requests sheet has one primary, Approve all (#5);
+  without season stats the sort falls back to Name and offers no Avg or SG (#7);
+  a failed team read says "your team" mid-sentence (#8); a chip only opens its
+  player (#11); "a round" hides when SG is missing (#12); cards and names are
+  `aria-expanded` with a short label (#13); the phone profile has one secondary
+  style (#15).
+
 ## 2026-10-08 — Copy: typographic apostrophes
 
 Roster writes its apostrophes as ’ on desktop and the phone, as Home, Stats and

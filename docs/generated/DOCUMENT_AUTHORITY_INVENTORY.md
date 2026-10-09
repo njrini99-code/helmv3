@@ -43,8 +43,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 43 | 5 | 17 | 63 |
-| `AUDIT_SNAPSHOT` | 67 | 6 | 35 | 35 |
-| `STATE_SNAPSHOT` | 7 | 2 | 6 | 0 |
+| `AUDIT_SNAPSHOT` | 69 | 6 | 35 | 35 |
+| `STATE_SNAPSHOT` | 8 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 51 | 15 | 2 | 4 |
 | `ADR` | 6 | 0 | 3 | 2 |
@@ -478,8 +478,10 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/DEPTH_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/HIGH_FIDELITY_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/INTUITIVE_SECONDARY_AUDIT.md` | current | - | - | - | - |
+| `docs/clubhouse/NATIVE_FEEL_PERF_AUDIT_2026-10-08.md` | current | - | - | - | - |
 | `docs/clubhouse/POPUP_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/PREMIUM_AUDIT.md` | current | - | - | yes | - |
+| `docs/clubhouse/PREMIUM_PASS_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/SMOOTHNESS_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/SWAP_AUDIT.md` | current | - | - | yes | - |
 | `docs/clubhouse/foundation-v2/01_REPO_AUDIT_AND_RECOMMENDATION.md` | current | - | - | yes | - |
@@ -509,6 +511,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/ai-system/briefs/SUPABASE_ZERO_COST_OBSERVABILITY_BRIEF_2026-09-03.md` | current | yes | - | yes | - |
 | `docs/ai-system/selfheal/STATE-2026-08-28.md` | current | yes | - | yes | - |
 | `docs/baseball/COHERENCE_RULING_2026-07-08.md` | current | - | - | yes | - |
+| `docs/clubhouse/NATIVE_FEEL_RESEARCH_2026-10-08.md` | current | - | - | - | - |
 | `docs/clubhouse/RELEASE_2026-09-30.md` | current | - | - | yes | - |
 | `docs/reports/HELM_OS_TRUTH_CONVERGENCE_2026-08-30.md` | current | - | - | yes | - |
 | `docs/reports/MIGRATION_REPO_PROD_CLASSIFICATION_2026-08-30.md` | current | - | - | - | - |

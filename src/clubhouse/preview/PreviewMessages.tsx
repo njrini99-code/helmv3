@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChMessagesApi } from '../screens/messages/MessagesView';
 import { MessagesView } from '../screens/messages/MessagesScreen';
 import type { ChAnnouncement, ChConv, ChFile, ChMember, ChMsg, ChMute, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
@@ -86,8 +86,8 @@ const baseReactions: Record<string, ChReaction[]> = {
 };
 
 const baseAnns: ChAnnouncement[] = [
-  { id: 'an1', title: 'Pinehurst travel: bus at 6:15', body: 'Bus leaves the field house at 6:15 Thursday. Breakfast on the bus. Bring your rain gear and two dozen balls.', urgent: true, publishedAt: at(14, 8, 5), requiresAck: true, ackCount: 5, total: 6, acknowledgedByMe: false, taskCount: 1, completedTaskCount: 4, docCount: 1 },
-  { id: 'an2', title: 'Qualifier pairings posted', body: 'Pairings for the Pinehurst qualifier are in Documents.', urgent: false, publishedAt: at(12, 17, 30), requiresAck: false, ackCount: 0, total: 6, acknowledgedByMe: false, taskCount: 0, completedTaskCount: 0, docCount: 0 },
+  { id: 'an1', title: 'Pinehurst travel: bus at 6:15', body: 'Bus leaves the field house at 6:15 Thursday. Breakfast on the bus. Bring your rain gear and two dozen balls.', urgent: true, publishedAt: at(14, 8, 5), requiresAck: true, ackCount: 5, total: 6, acknowledgedByMe: false, taskCount: 1, completedTaskCount: 4, docCount: 1, authorId: 'c-maya' },
+  { id: 'an2', title: 'Qualifier pairings posted', body: 'Pairings for the Pinehurst qualifier are in Documents.', urgent: false, publishedAt: at(12, 17, 30), requiresAck: false, ackCount: 0, total: 6, acknowledgedByMe: false, taskCount: 0, completedTaskCount: 0, docCount: 0, authorId: 'c-maya' },
 ];
 const annDetail = async (id: string) =>
   id === 'an1'
@@ -115,7 +115,13 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
   const [convs, setConvs] = useState<ChConv[]>(state === 'empty' ? [] : baseConvs);
   const [threads, setThreads] = useState(baseThreads);
   const [reactions, setReactions] = useState(baseReactions);
-  const [selectedId, setSelectedId] = useState<string | null>(state === 'empty' || state === 'rail' || state === 'announcement' ? null : 'team');
+  // P007 D4: as the live screen does, only desktop opens the team thread beside the rail, after hydration; the phone
+  // stays on the inbox instead of pushing the thread in over it.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (state === 'empty' || state === 'rail' || state === 'announcement') return;
+    if (window.matchMedia('(min-width: 821px)').matches) setSelectedId((id) => id ?? 'team');
+  }, [state]);
   const [anns, setAnns] = useState<ChAnnouncement[]>(state === 'empty' ? [] : baseAnns);
   const [annId, setAnnId] = useState<string | null>(state === 'announcement' ? 'an1' : null);
   const [mute, setMute] = useState<ChMute>({ muted: false, until: null });
@@ -131,6 +137,7 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
 
   const api: ChMessagesApi = {
     viewer: { userId: 'me', role, name: role === 'coach' ? 'Maya Reyes' : 'Jonah Okafor' },
+    signers: { 'c-maya': { name: 'Maya Reyes', title: 'Head coach' } },
     timeZone: TZ,
     now: NOW,
     teamName: 'Varsity',

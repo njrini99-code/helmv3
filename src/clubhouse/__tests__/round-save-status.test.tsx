@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { RoundHole, ShotRecord } from '@/lib/types/golf';
 import { AutoSaveHeldError } from '@/hooks/golf/use-shot-state-machine';
@@ -116,6 +116,81 @@ describe('CH-11901 the round save line', () => {
 
     expect(await screen.findByText('Round saved')).toBeInTheDocument();
     expect(screen.queryByText('Saved on this phone')).toBeNull();
+  });
+
+  it('says "Not synced yet, retrying" when the save failed, and never "Round saved"', async () => {
+    setup(vi.fn(async () => {
+      throw new Error('network');
+    }));
+
+    expect(await screen.findByText('Not synced yet, retrying')).toBeInTheDocument();
+    expect(screen.queryByText('Round saved')).toBeNull();
+  });
+
+  it('says "Saving round" while the save is in flight, and nothing else', async () => {
+    setup(vi.fn(() => new Promise<void>(() => {})));
+
+    expect(await screen.findByText('Saving round')).toBeInTheDocument();
+    expect(screen.queryByText('Round saved')).toBeNull();
+    expect(screen.queryByText('Saved on this phone')).toBeNull();
+  });
+
+  it('sits beside the readout, inside the hole, not under the top bar (board 3)', async () => {
+    setup(vi.fn(async () => {
+      throw new AutoSaveHeldError('offline', true);
+    }));
+
+    const hero = screen.getByRole('region', { name: 'Hole 1' });
+    await waitFor(() => expect(within(hero).getByText('Saved on this phone')).toBeInTheDocument());
+    expect(hero.querySelector('[data-ch-code="CH-11901"]')).not.toBeNull();
+    expect(document.querySelectorAll('[data-ch-code="CH-11901"]')).toHaveLength(1);
+  });
+});
+
+describe('CH-11901 "Round saved" holds only while it is true', () => {
+  it('stays after the engine goes quiet while the acknowledged shots are on screen, and drops when they change (an undo)', async () => {
+    const save = vi.fn(async () => {});
+    setup(save);
+    const user = userEvent.setup();
+
+    expect(await screen.findByText('Round saved')).toBeInTheDocument();
+    // Past the engine's own two seconds: from here the line holds only because nothing on screen has changed.
+    await new Promise((r) => setTimeout(r, 2300));
+    expect(screen.getByText('Round saved')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Undo last shot' }));
+    await user.click(within(screen.getByRole('group', { name: 'Undo shot 1' })).getByRole('button', { name: 'Undo' }));
+
+    await waitFor(() => expect(screen.queryByText('Round saved')).toBeNull());
+    expect(document.querySelector('[data-ch-code="CH-11901"]')).toBeNull();
+  }, 8000);
+
+  it('never carries "Round saved" over to a newly recorded shot the server has not answered for', async () => {
+    let calls = 0;
+    const save = vi.fn(() => (++calls === 1 ? Promise.resolve() : new Promise<void>(() => {})));
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <RoundTracking
+          round={{ course: 'Finley GC', teeLabel: 'Blue', teeColor: 'blue', type: 'practice' }}
+          holes={HOLES}
+          currentHoleIndex={0}
+          initialShots={[TEE]}
+          initialShotNumber={2}
+          onHoleComplete={vi.fn(async () => true)}
+          onSaveShot={() => false}
+          onAutoSave={save}
+          autoSaveInterval={10}
+        />
+      </ToastProvider>,
+    );
+    expect(await screen.findByText('Round saved')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('radio', { name: /^Green/ }));
+    await user.type(screen.getByLabelText(/Proximity to hole/), '20');
+    await user.click(screen.getByRole('button', { name: /Record next shot/ }));
+
+    expect(await screen.findByText('Saving round')).toBeInTheDocument();
+    expect(screen.queryByText('Round saved')).toBeNull();
   });
 });
 

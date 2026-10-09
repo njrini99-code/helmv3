@@ -1,5 +1,208 @@
 # P001 — Shell: changelog
 
+## 2026-10-08 — The course location sets the sun (P001-A1, D3-1)
+
+- **Settings > Team, Course location (CH-8320).** A coach can set where the team
+  plays, with the browser's Geolocation ("Use this device's location"), rounded
+  to two decimals (about 1 km), plus a short name. There is no geocoding
+  service. They can also clear it. Desktop shows a card, the phone a group
+  (`screens/settings/course-location.tsx`).
+- **The light takes its sun from there.** Once the course is set, the shell
+  reads it (`loadClubhouseShell` → `LightProvider course`). Until then the light
+  follows the team's time zone.
+- **Held migration.** The columns arrive with
+  `supabase/migrations/20261008150000_golf_team_settings_course_location.sql`
+  (HELD.md, awaiting the owner's apply). Until then the select that names them
+  fails as a missing column, the Team row draws nothing and the light stays on
+  the time zone; nothing else in Team is touched. The fields are typed locally
+  until `npm run db:types` runs after the apply.
+- **For the light's other readers:**
+  - `sunTimes(day, place, timeZone)` (`lib/sun.ts`) gives sunrise, sunset and
+    the start of golden hour.
+  - `useLightPlace()` (`shell/light.tsx`) gives the place and the zone.
+
+## 2026-10-08 — Primitive fixes before pages adopt them
+
+- **Peek (CH-1830).** The hold opens the peek with the finger still down. The
+  lift, and the click it makes over the peek, no longer close it or fire an
+  action under the finger; the backdrop and the actions answer once that finger
+  is up. A hold whose lift ended on the peek no longer eats the next tap on the
+  row. Checked in WebKit.
+- **Dock (CH-1820).** Only a field on the page hides the dock. A field in the
+  dock (a ThumbDock search) keeps it, and in the app the dock rides up on the
+  keyboard.
+- **Ask sheet (CH-1840–CH-1842).**
+  - The key shows only when CoachHelm is on for the coach: the shell reads the
+    same switch as the Ask page (`isCoachHelmEnabledForCoach`), and a failed
+    lookup hides it.
+  - Each page, or each player on a page, starts a fresh sheet, so the chip and
+    the chat's player context never go stale. The chat's player chip carries the
+    player's name.
+  - In the app the sheet sits above the keyboard.
+- **Reduce Transparency (D1).** The desktop top bar's media fallback now beats
+  the glass rule after it in the file (checked in WebKit through the attribute).
+  More's inert background was checked in WebKit: inert while open, put back
+  when it closes, with focus returning to More.
+
+## 2026-10-08 — Shared findings from the premium audit (P001 D1–D7, D5-1, P008-C1)
+
+- **Reduce Transparency everywhere it can be read (D1).** Every glass token
+  (`--ch-glass-bg`, the blur, the tab bar and composer fills) turns opaque under
+  `prefers-reduced-transparency` and under `html[data-reduce-transparency]`.
+  WebKit on iOS has no media query, so the iPhone app's native bridge will set
+  that attribute (wave 2). The phone's green top bar is no longer turned to
+  parchment by the old fallback.
+- **More is modal for VoiceOver too (D3).** While the sheet is up, the page, its
+  bars and the dock are `inert`; they are put back before focus returns to More.
+  The scrim already dims the green bar (D2, re-checked in WebKit: the bar goes
+  from 19/57/38 to 16/46/30).
+- **Home's phone bar is right from the first paint (D4).** On a phone (the
+  layout cookie), Home's server HTML already draws the green hero bar, so it no
+  longer flips from "Home" to the team after hydration.
+- **The date eyebrow is not tracked (D5).** 0.01em at 12.5–13px in the canopy
+  head and `PageIntro`.
+- **Shell colours on tokens (D6).** The repeated literals in shell.css
+  (champagne, on-green inks, the press well, the skeleton sweep) are `--ch-*`
+  tokens. The dark skeleton reads the same tokens. 44 hex literals are down to
+  20, mostly mask blacks and whites.
+- **Increase Contrast (D7).** Under `prefers-contrast: more`, one token block
+  strengthens rules, hairlines and borders, sets the eyebrow and tertiary text
+  to the secondary ink, makes glass opaque and drops the light's rim.
+- **Failure titles in ink (D5-1).** A notice's title is the page's ink; only its
+  icon carries the danger colour (`--ch-notice-icon`).
+- **Sheets open on their title.** `Modal` focuses its heading, so a sheet opened
+  by a tap shows no ring on Close and VoiceOver starts on the title. A field
+  that asked for focus keeps it (`useDialogLifetime`).
+- **One h1 per screen.** `PhoneTop` and `PhoneBar` take `heading={false}` when
+  the page draws its own h1.
+- **Real Dynamic Type (P008-C1).** Every `--ch-type-*` step is a multiple of
+  `--ch-type-k`, which follows the root size (rem) and the iPhone's Text Size
+  (`--ch-type-scale`, read from `-apple-system-body`, capped at XXL;
+  `lib/dynamic-type.ts`). At a 130% root a 13px step draws at 16.9px (WebKit).
+  Pages still sized in raw px do not scale until they move to the tokens.
+
+## 2026-10-08 — Ask as a sheet over any screen
+
+Approved by the owner on 2026-10-08.
+
+- **Ask from anywhere (CH-1840–CH-1842).** A coach's top bar has an Ask key on
+  every page except CoachHelm itself. It opens CoachHelm's Ask as a sheet over
+  the page:
+  - Phone: half height with the page in view, growing to full when a thread
+    starts.
+  - Desktop: centred.
+
+  A "Looking at" chip names the page, and a one-player page hands the chat that
+  player as context. It is the same chat hook and route, so there is no new
+  spend, and the chat is saved and opens in CoachHelm. The chat's code and
+  styles load on first open (`shell/AskSheet.tsx`, `AskSheetBody.tsx`); the
+  CoachHelm chat files are imported, not edited.
+- The sheet has no roster, so its message box hides the mention key.
+
+## 2026-10-08 — Press-and-hold peek and the player peek (P003-C1 primitive)
+
+Approved by the owner on 2026-10-08.
+
+- **`PeekTarget` (`ui/Peek.tsx`, CH-1830, CH-1831).** Anything that names an
+  object can show a card of it without leaving the page:
+  - Phone: hold about 450ms (a selection tick) and the card rises over the
+    dimmed page where the row was, with the actions under it. The tap the hold
+    ends with does not open the row, and a scroll cancels the hold.
+  - Desktop: rest the pointer for 400ms, or focus from the keyboard for 600ms,
+    for a hover card with the same actions.
+
+  The target always keeps its own tap.
+- **`PlayerPeek` (`ui/PlayerPeek.tsx`, CH-1832).** A player's card:
+  - why they need a look;
+  - the last round and the average;
+  - a word-sized line of the last scores.
+
+  Its actions are Message (prefills Messages with the player, never sends),
+  View stats and Plan 1:1. Pages map what they have already loaded into
+  `ChPlayerPeek`, so the peek makes no reads. It is wired on Home's
+  leaderboard (`leaderPeek`); page builders wrap their own names.
+
+## 2026-10-08 — Deep links inside the app (P001-C2, shell part)
+
+Approved by the owner on 2026-10-08.
+
+- **A tapped link opens its screen in the app.** In the iPhone app, a
+  helmsportslabs.com link opened from Messages or Mail (`appUrlOpen` when
+  warm, `getLaunchUrl` once per launch when cold) becomes a client navigation
+  to its Clubhouse screen, so the app is not restarted (`shell/DeepLinks.tsx`).
+  Only the app's own hosts and internal paths get through
+  (`lib/deep-link.ts`, over `lib/utils/safe-redirect`). A link to the screen
+  already open does nothing. Nothing changes on the web.
+- **Native, still to do (wave 2).** The AASA `components` (today `/golf/*` and
+  `/baseball/*`, `public/.well-known/apple-app-site-association`) and the
+  `applinks:` entitlement need a device check on the production domain. A cold
+  open lands on the screen itself; Back follows the page's own back link.
+
+## 2026-10-08 — The phone dock and Resume round (P001-C1)
+
+Approved by the owner on 2026-10-08.
+
+- **The dock (CH-1820).** A band just above the phone tab bar, in the thumb's
+  reach. A page lowers its primary controls into it with
+  `<ThumbDock label>` (a window switch, a search); on desktop `ThumbDock`
+  renders nothing and the page keeps them in place. The dock hides with the tab
+  bar (a pushed screen, a full-page form) and while a field has focus, and the
+  canvas grows by its height (`--ch-dock-h`, `.ch-dock-spacer`).
+- **Resume round (CH-1821, CH-1822).** While the player has a round in progress
+  (touched in the last 12 hours), a parchment accessory rides on the tab bar:
+  "Round in progress, Oakmont CC · Hole 7". One tap opens the shot screen. It is
+  never shown on the round's own screens. On desktop the sidebar's card slot
+  resumes the round in place of the next event. The shell reads it with the
+  next event (`loadClubhouseShell(teamId, playerId)`, the player's own
+  `golf_rounds` row, RLS-scoped) and hides it if the read fails.
+- Preview: `&round=1` on any screen.
+
+## 2026-10-08 — A quieter selected row (P001-A2)
+
+Approved by the owner on 2026-10-08.
+
+- **The sidebar's selected row is a well, not a plate.** The bright ivory plate
+  was the loudest object on the desktop and drew the eye from the page title.
+  The selected row is now pressed into the frame instead: the frame's green a
+  step darker, one champagne hairline (3:1 against the rows around it), ivory
+  text and a champagne glyph (`--ch-nav-well-bg`, `--ch-nav-well-shadow`). The
+  gliding plate (CH-1613) draws the same well. At night the well is cut from the
+  night frame, so dark mode needs no rule of its own.
+
+## 2026-10-08 — The global light (P001-A1, D3-1)
+
+Approved by the owner on 2026-10-08 ("the ambient light has really transformed
+the app").
+
+- **One sun for the whole Clubhouse.** The shell computes the sun's altitude and
+  azimuth locally (`lib/sun.ts`, NOAA's low-precision formula; no network) for
+  the team's course location, or for the team's time zone until the course is
+  set (`lib/light.ts` `ZONE_POINTS`, else the zone's offset meridian). It turns
+  them into seven unitless numbers (`--ch-sun-x`, `-y`, `-dir`, `-intensity`,
+  `-warmth`, `-night`, `-drift`), and `LightProvider` (`shell/light.tsx`) writes
+  them on `<html>` every five minutes and when the tab comes back. Portaled
+  sheets and menus share the frame's sun this way. The server and first paint
+  draw noon, the CSS fallbacks.
+- **What it lights.** tokens.css derives the rest per theme:
+  - a sky across the green frame and the sidebar field (`--ch-light-sky`), the
+    phone chassis bar (`--ch-light-bar`) and the parchment's top
+    (`--ch-light-canvas`);
+  - the paper's temperature, warm toward golden hour and cool at night
+    (`--ch-light-paper`);
+  - a 1px rim on the sun-facing top and side of cards, sheets, keys and the tab
+    bar (`--ch-light-rim`, `--ch-light-rim-x` inside the elevation tokens);
+  - contact shadows that lean up to 6px away from the light
+    (`--ch-light-drift*`).
+
+  Morning light comes from the left and evening light from the right, as in the
+  sign-in sky. The dark theme keeps its own faint, cool moonlight and no paper
+  tint. Nothing is drawn over data, and nothing animates: the values change in
+  place.
+- **For TS consumers,** `useClubhouseLight()` returns the same numbers. The dev
+  preview holds the light with `?at=HH:MM` in the fixture team's zone.
+- **Not yet.** The course location needs a column on `golf_team_settings`
+  (proposed to the lead). Until then every team's sun is its time zone's.
+
 ## 2026-10-08 — The page under a screen, a skeleton's reveal, pull to refresh
 
 Approved by the owner on 2026-10-08.

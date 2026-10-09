@@ -515,24 +515,33 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     window.matchMedia = real;
   });
 
-  it('41901 CH-4805 the phone view replaces desktop: four figures, the trend with a written reading, legs, players and putting', () => {
+  it('41901 CH-4805 the phone view replaces desktop: one hero figure, its trend with a written reading, the round, legs, players and putting', () => {
     wrap(stats());
     expect(document.querySelector('.ch-st-desk')).toBeNull();
     expect(document.querySelector('.ch-st.is-phone')).not.toBeNull();
     expect(screen.getByRole('heading', { level: 1, name: 'Team stats' })).toBeTruthy();
-    const figs = document.querySelector('.ch-stm-figs')!;
-    expect([...figs.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Scoring avg', 'GIR', 'Putts', 'Scrambling']);
+    // Direction A (owner, 2026-10-08): the scoring average is the one hero, its change against what the loader names.
+    const hero = document.querySelector('.ch-stm-hero')!;
+    expect(hero.querySelector('dt')!.textContent).toBe('Scoring average');
+    expect(hero.querySelector('.ch-stm-hero__v')!.textContent).toBe('73.6');
+    // Drawn against par, as the stat line's gauge drew it (no bare numbers).
+    expect(hero.querySelector('.ch-stm-hero__par')!.textContent).toBe('+1.6 to par');
+    expect(hero.querySelector('.ch-stm-hero__c')!.textContent).toBe('−0.9 vs. previous 10');
     // Scoring down 0.9 is better (green); putts up 0.3 is worse (amber).
-    const deltas = [...figs.querySelectorAll('dd:last-of-type')];
-    expect(deltas[0]!.className).toMatch(/ch-gain/);
-    expect(deltas[2]!.className).toMatch(/ch-loss/);
-    // Each figure drawn against its reference under it (par, the Tour's greens mark, 36 putts, scrambling's 0–100), decorative.
-    const gauges = document.querySelector('.ch-stm-gauges')!;
-    expect(gauges.getAttribute('aria-hidden')).toBe('true');
-    expect([...gauges.children].map((g) => g.querySelector('em')?.textContent ?? null)).toEqual(['Par', 'Tour', '36', null]);
-    for (const h of ['Scoring trend', 'Strokes gained by leg', 'Players', 'Team putting']) expect(screen.getByRole('heading', { level: 2, name: h })).toBeTruthy();
+    expect(hero.querySelector('.ch-stm-hero__c b')!.className).toMatch(/ch-gain/);
+    const rows = [...document.querySelectorAll('.ch-stm-figrow')];
+    expect(rows.map((r) => r.querySelector('dt > span')!.textContent)).toEqual(['Greens in regulation', 'Putts per round', 'Scrambling']);
+    expect(rows[1]!.querySelector('.ch-stm-figrow__d')!.className).toMatch(/ch-loss/);
+    // No bare numbers: each figure says what it is read against where the data has a reference (the Tour's greens, 36 putts).
+    expect(rows.map((r) => r.querySelector('.ch-stm-figrow__ref')?.textContent ?? null)).toEqual(['Tour average 66%', 'Two putts a green is 36', null]);
+    for (const h of ['Scoring trend', 'The round', 'Strokes gained by leg', 'Players', 'Team putting']) expect(screen.getByRole('heading', { level: 2, name: h })).toBeTruthy();
+    // The trend sits right under the hero, before the round's other figures.
+    const order = [...document.querySelectorAll('.ch-stm-hero, .ch-stm-trend, section[aria-labelledby="ch-stm-round"]')];
+    expect(order.map((el) => el.className.split(' ')[0])).toEqual(['ch-stm-hero', 'ch-stm-trend', 'ch-stm-panel']);
     expect(screen.getByRole('img', { name: /Team scoring average by round day, from 74\.8 to 73\.4\. Down 1\.4 strokes since Aug 30/ })).toBeTruthy();
     expect(screen.getByText('2 legs are losing strokes: Approach, Putting.')).toBeTruthy();
+    // Sentence case, never tracked: the context line is the team, its active players and its sample.
+    expect(document.querySelector('.ch-stm-head span')!.textContent).toBe('Varsity · 7 active · countable rounds');
   });
 
   it('CH-4703 CH-4805 players sort by scoring average, or by strokes gained; a row opens the player and reads as one link', async () => {
@@ -566,7 +575,8 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
       figures: data.figures.map((figure) => ({ ...figure, delta: null })),
     });
     view.rerender(tree(next));
-    const slots = [...document.querySelectorAll('.ch-stm-figs dd:last-of-type')];
+    // The hero's comparison line and the three rows' change slots stay, empty and hidden; none says "0.0".
+    const slots = [...document.querySelectorAll('.ch-stm-hero__c, .ch-stm-figrow__d')];
     expect(slots).toHaveLength(4);
     for (const slot of slots) {
       expect(slot.textContent).toBe('');
@@ -575,17 +585,56 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     const coverage = document.querySelector('.ch-stm-cover')!;
     expect(coverage.textContent).toBe('');
     expect(coverage.getAttribute('aria-hidden')).toBe('true');
-    expect([...document.querySelectorAll('.ch-stm-figs dd:first-of-type')].map((value) => value.textContent)).toEqual(['73.6', '61%', '30.4', '52%']);
+    expect([...document.querySelectorAll('.ch-stm-hero__v, .ch-stm-figrow__v')].map((value) => value.textContent)).toEqual(['73.6', '61%', '30.4', '52%']);
     view.rerender(tree(data));
     expect(document.querySelector('.ch-stm-cover')?.textContent).toMatch(/Hole stats from/);
     expect(document.querySelector('.ch-stm-cover')?.getAttribute('aria-hidden')).toBeNull();
-    expect(document.querySelector('.ch-stm-figs dd:last-of-type')?.textContent).toBe('−0.9');
+    expect(document.querySelector('.ch-stm-hero__c b')?.textContent).toBe('−0.9');
+  });
+
+  it('CH-4703 a strokes gained leg row picks the leg: one selection tick, the team figure reads it, and the players rank by it', async () => {
+    const user = userEvent.setup();
+    wrap(stats());
+    const legs = within(document.getElementById('ch-stm-legs')!.closest('section')!);
+    const figure = () => document.querySelector('.ch-stm-sgfig b .ch-sr-only')!.textContent;
+    const names = () => [...document.querySelectorAll('.ch-stm-row__b b')].map((b) => b.textContent);
+    // The team total by default: the window's own mean.
+    expect(figure()).toBe('−0.5');
+    expect(legs.getByRole('tab', { name: /^Team total/ }).getAttribute('aria-selected')).toBe('true');
+    hapticSpy.mockClear();
+    await user.click(legs.getByRole('tab', { name: /^Approach/ }));
+    expect(hapticSpy.mock.calls).toEqual([['select']]);
+    expect(figure()).toBe('−0.7');
+    expect(document.querySelector('.ch-stm-sgfig')!.textContent).toContain('Approach, a round');
+    expect(legs.getByRole('tab', { name: /^Approach/ }).getAttribute('aria-selected')).toBe('true');
+    // Picking a leg ranks the players by it: the sort moves to SG, with no second tick, and a player without the leg sorts last.
+    expect(screen.getByRole('radio', { name: 'SG, strokes gained' }).getAttribute('aria-checked')).toBe('true');
+    expect(names()).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Eli Brandt', 'Priya Natarajan', 'Jonah Okafor', 'Luca Ferraro']);
+    expect(document.getElementById('ch-stm-players')!.parentElement!.textContent).toContain('by Approach SG');
+    expect(screen.getByRole('link', { name: /Theo Marchetti/ }).querySelector('.ch-stm-row__v .ch-sr-only')!.textContent).toBe('+0.7 SG');
+    expect(screen.getByRole('link', { name: /Luca Ferraro/ }).textContent).toMatch(/Early read/);
+    // The chosen leg again is silent; the tabs point at no panel that isn't there.
+    await user.click(legs.getByRole('tab', { name: /^Approach/ }));
+    expect(hapticSpy).toHaveBeenCalledTimes(1);
+    for (const tab of legs.getAllByRole('tab')) expect(tab.getAttribute('aria-controls')).toBeNull();
+    // Back on Avg, the list orders by scoring average and each row shows its total.
+    await user.click(screen.getByRole('radio', { name: 'Avg, scoring average' }));
+    expect(names().slice(0, 3)).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist']);
+    expect(screen.getByRole('link', { name: /Theo Marchetti/ }).querySelector('.ch-stm-row__v .ch-sr-only')!.textContent).toBe('+1.7 SG');
+  });
+
+  it('the team total leg is the window’s mean, never the legs added up', () => {
+    wrap(stats({ team: { ...PREVIEW_TEAM_STATS.team, sgMean: -1.4 } }));
+    expect(document.querySelector('.ch-stm-sgfig b .ch-sr-only')!.textContent).toBe('−1.4');
+    const total = within(document.getElementById('ch-stm-legs')!.closest('section')!).getByRole('tab', { name: /^Team total/ });
+    expect(total.querySelector('b')!.textContent).toBe('−1.4');
   });
 
   it('CH-4201 rounds do not load: the notice, never an empty team, and no count of active players', () => {
     wrap(stats({ roundsError: true, activeCount: 0 }));
     expect(code('CH-4201')).not.toBeNull();
-    expect(document.querySelector('.ch-stm-figs')).toBeNull();
+    expect(document.querySelector('.ch-stm-hero')).toBeNull();
+    expect(document.querySelector('.ch-stm-figrow')).toBeNull();
     expect(document.querySelector('.ch-stm-head')!.textContent).toMatch(/countable rounds/);
     expect(document.querySelector('.ch-stm-head')!.textContent).not.toMatch(/active/);
   });
@@ -879,10 +928,12 @@ describe('Stats team · the page', () => {
     await user.keyboard('{Enter}');
     expect(putting.getAttribute('aria-pressed')).toBe('true');
     expect(hapticSpy).toHaveBeenCalledWith('select');
-    // A row is a link, so Tab reaches it; focusing it marks the same player on the trend.
-    const row = screen.getByRole('table', { name: 'Strokes gained by leg per player' }).querySelector('a[href*="player=sofia"]') as HTMLElement;
-    expect(row.getAttribute('role')).toBe('row');
-    await act(async () => row.focus());
+    // A row's name is a link (P004-D4: role=row is not allowed on a link), so Tab reaches it; focusing it marks the
+    // same player on the trend.
+    const link = screen.getByRole('table', { name: 'Strokes gained by leg per player' }).querySelector('a[href*="player=sofia"]') as HTMLElement;
+    const row = link.closest('[role="row"]') as HTMLElement;
+    expect(row.tagName).toBe('DIV');
+    await act(async () => link.focus());
     expect(row.className).toMatch(/is-sel/);
     expect(document.querySelector('.ch-sgt__end.is-sel')!.textContent).toMatch(/Sofia/);
   });

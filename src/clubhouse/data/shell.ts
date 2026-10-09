@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import { rsvpOf } from './calendar';
 import { CLASS_EVENT_TYPE, isClassEvent } from '@/lib/calendar/class-events';
+import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
 
 export interface ChNextEvent {
   id: string;
@@ -19,16 +20,35 @@ export interface ChShellData {
   nextEvent: ChNextEvent | null;
   /** Null when the read failed: the badge hides rather than claiming zero. */
   pendingJoinRequests: number | null;
+  /** The team's time zone: where the global light's sun is until the course location is set (P001-A1). */
+  timezone?: string;
+  /** The team's course location (Settings > Team), the global light's place; null until set or before its migration. */
+  course?: { lat: number; lng: number } | null;
+  /** CoachHelm is on for the signed-in coach (the global, team and coach switches), so the shell offers the Ask sheet. */
+  askAvailable?: boolean;
+  /** The signed-in player's round in progress, touched in the last 12 hours (P001-C1): the Resume accessory. */
+  roundInProgress?: ChRoundInProgress | null;
 }
 
+export interface ChRoundInProgress {
+  id: string;
+  course: string;
+  /** The hole the player is on, when the round has recorded one. */
+  hole: number | null;
+}
+
+/** A round untouched for this long is not "in progress" for the accessory; the Rounds library still lists it. */
+export const ROUND_IN_PROGRESS_FRESH_MS = 12 * 60 * 60_000;
+
 /**
- * The shell's own reads: the sidebar's next-event card and the Roster badge.
- * Both degrade to "hidden" on failure; the shell must never take a page down.
+ * The shell's own reads: the sidebar's next-event card, the Roster badge and,
+ * for a player, the round in progress. All degrade to "hidden" on failure; the
+ * shell must never take a page down.
  */
-export async function loadClubhouseShell(teamId: string | undefined): Promise<ChShellData> {
+export async function loadClubhouseShell(teamId: string | undefined, playerId?: string | null, coachId?: string | null): Promise<ChShellData> {
   if (!teamId) return { nextEvent: null, pendingJoinRequests: null };
   const supabase = await createClient();
-  const [eventRes, joinRes, tzRes] = await Promise.all([
+  const [eventRes, joinRes, tzRes, roundRes, askOn, courseRes] = await Promise.all([
     supabase
       .from('golf_events')
       .select('id, title, start_time, all_day, location, event_type, description')
@@ -46,6 +66,35 @@ export async function loadClubhouseShell(teamId: string | undefined): Promise<Ch
       .eq('team_id', teamId)
       .eq('status', 'pending'),
     supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle(),
+    // The player's own round in progress (RLS: a player reads their own rounds). Only a fresh one is a round "on the course".
+    playerId
+      ? supabase
+          .from('golf_rounds')
+          .select('id, course_name, current_hole')
+          .eq('player_id', playerId)
+          .eq('is_test', false)
+          .eq('status', 'in_progress')
+          .gte('updated_at', new Date(Date.now() - ROUND_IN_PROGRESS_FRESH_MS).toISOString())
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : Promise.resolve(null),
+    // The coach's Ask sheet follows CoachHelm's own switch (as the Ask page does); a lookup that fails hides the key.
+    coachId
+      ? isCoachHelmEnabledForCoach(coachId).then(
+          (gate) => gate.effectivelyEnabled,
+          (err: unknown) => {
+            chLogServer('shell', 'coachHelmGate', err, 'coachhelm');
+            return false;
+          },
+        )
+      : Promise.resolve(false),
+    // The light's place (migration 20261008150000, held for the owner's apply). Its own read, so a missing column only
+    // leaves the light on the time zone: it never touches the reads above. The generated types gain the columns at db:types.
+    (supabase.from('golf_team_settings') as unknown as CourseQuery)
+      .select('course_latitude, course_longitude')
+      .eq('team_id', teamId)
+      .maybeSingle(),
   ]);
   // A failed timezone read falls back to the product default, same as dashboard-data.
   const timezone = (!tzRes.error && tzRes.data?.timezone) || 'America/New_York';
@@ -57,6 +106,10 @@ export async function loadClubhouseShell(teamId: string | undefined): Promise<Ch
   if (joinRes.error) {
     chLogServer('shell', 'joinRequests', joinRes.error, 'teams');
   }
+  if (roundRes?.error) {
+    chLogServer('shell', 'roundInProgress', roundRes.error, 'rounds');
+  }
+  const round = roundRes && !roundRes.error ? roundRes.data : null;
 
   const e = eventRes.error ? null : ((eventRes.data ?? []).find((row) => !isClassEvent(row)) ?? null);
   let ready: ChNextEvent['ready'] = null;
@@ -70,6 +123,10 @@ export async function loadClubhouseShell(teamId: string | undefined): Promise<Ch
   return {
     nextEvent: e ? { ...describeEvent(e, timezone), ready } : null,
     pendingJoinRequests: joinRes.error ? null : (joinRes.count ?? 0),
+    timezone,
+    askAvailable: askOn,
+    course: courseOf(courseRes),
+    roundInProgress: round ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null } : null,
   };
 }
 
@@ -94,4 +151,21 @@ function describeEvent(
     : new Intl.DateTimeFormat('en-US', { timeZone: timezone, hour: 'numeric', minute: '2-digit' }).format(start);
   const metaLabel = [date, time, e.location].filter(Boolean).join(' \u00b7 ');
   return { id: e.id, title: e.title, whenLabel, metaLabel };
+}
+
+type CourseRow = { course_latitude: number | null; course_longitude: number | null };
+type CourseQuery = {
+  select(cols: string): { eq(c: string, v: string): { maybeSingle(): Promise<{ data: CourseRow | null; error: { code?: string; message?: string } | null }> } };
+};
+
+/** The course point, or null: unset, unread, or the columns not there yet (42703 / PGRST204, logged only when it is something else). */
+function courseOf(res: { data: CourseRow | null; error: { code?: string; message?: string } | null }): { lat: number; lng: number } | null {
+  if (res.error) {
+    const missing = res.error.code === '42703' || res.error.code === 'PGRST204';
+    if (!missing) chLogServer('shell', 'courseLocation', res.error, 'teams');
+    return null;
+  }
+  const lat = res.data?.course_latitude;
+  const lng = res.data?.course_longitude;
+  return lat != null && lng != null ? { lat, lng } : null;
 }

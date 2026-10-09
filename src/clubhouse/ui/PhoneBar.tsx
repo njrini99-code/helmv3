@@ -26,13 +26,18 @@ export interface ChPhoneBarParts {
   action?: ReactNode;
   /** The title's id, for the screen's aria-labelledby. */
   titleId?: string;
+  /**
+   * `false`: the bar's title is plain text, not an h1, because the page draws its own h1 (one h1 per screen; P001 shared
+   * finding). The default keeps the bar's title as the page's h1.
+   */
+  heading?: boolean;
 }
 
 /**
- * `heading: false` draws the title as plain text, not the page's h1: the shell's stand-in for a page's own top while
- * the page loads (CH-1402), which leaves the heading to the page.
+ * `heading: false` draws the title as plain text, not the page's h1: a page that has its own h1, and the shell's stand-in
+ * for a page's own top while the page loads (CH-1402), which leaves the heading to the page.
  */
-export function PhoneBarParts({ back, title, lead = false, start = false, action, titleId, heading = true }: ChPhoneBarParts & { heading?: boolean }) {
+export function PhoneBarParts({ back, title, lead = false, start = false, action, titleId, heading = true }: ChPhoneBarParts) {
   const chevron = back?.chevron !== false;
   const Title = heading ? 'h1' : 'span';
   return (

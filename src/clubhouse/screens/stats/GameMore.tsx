@@ -138,7 +138,7 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
             { label: 'Most birdies in a round', value: String(s.mostBirdiesRound) },
             { label: 'Most birdies in a row', value: String(s.mostBirdiesRow) },
             { label: 'Most pars in a row', value: String(s.mostParsRow) },
-            { label: 'Longest no-3-putt streak', value: String(s.longestNo3PuttStreak), sub: 'Holes' },
+            { label: 'Longest no-3-putt streak', value: String(s.longestNo3PuttStreak), sub: 'holes' },
             { label: 'Longest hole-out', value: s.longestHoleOut == null ? NO_DATA : `${s.longestHoleOut.toFixed(0)} yds`, empty: s.longestHoleOut == null, code: NOTHING },
           ]}
         />

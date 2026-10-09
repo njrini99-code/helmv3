@@ -169,10 +169,12 @@ describe('bar scale', () => {
     expect(sgTint(null, 3)).toBe('var(--ch-ivory-100)');
   });
 
-  it('the team grid uses that scale in the page: a −2.6 cell is tinted 0.32, not the full tint a fixed 1.2 gave', () => {
+  it('the team grid uses that scale in the page: a −2.6 cell sits at 6.7% of its track on a scale of 3, not at the end a fixed 1.2 gave', () => {
+    // P004-A1: the ledger draws the value as a dot on a track scaled to the grid, not a tint; the worst loss keeps a wash.
     showTeam(team({ grid: [{ ...PREVIEW_TEAM_STATS.grid[0]!, legs: [-2.6, 0.3, 0.1, 0.2] }] }));
     const cell = document.querySelector('.ch-lg__r:not(.ch-lg__r--h) .ch-lg__cell') as HTMLElement;
-    expect(cell.getAttribute('style') ?? '').toContain('0.32');
+    expect((cell.querySelector('.ch-lg__dot') as HTMLElement).style.left).toBe('6.7%');
+    expect(cell.className).toContain('is-worst');
   });
 
   it('desktop player: the leg route draws a −2.6 leg at 2.6 of 3, not clamped at 1.4', () => {
@@ -706,7 +708,8 @@ describe('player profile · phone', () => {
     expect(figures.nextElementSibling!.nextElementSibling).toBe(footer);
     const change = footer.querySelector('.ch-sgchg')!;
     expect(change.querySelector('.ch-delta')!.textContent).toBe('−1.3');
-    expect(change.lastElementChild!.textContent).toBe('vs. previous 10');
+    // P005-D6: away from the SG figure, the chip names what it measures.
+    expect(change.lastElementChild!.textContent).toBe('SG a round vs. previous 10');
     const rows = [...document.querySelectorAll('.ch-spm-round')];
     expect(rows[0]!.querySelector('.ch-loss')!.textContent).toBe('−1.1 SG');
     expect(rows[1]!.querySelector('.ch-gain')!.textContent).toBe('+0.6 SG');
@@ -880,7 +883,7 @@ describe('the Tour is the only benchmark (Q-88)', () => {
     showPlayer(player({ viewer: 'player', comparisons: PREVIEW_PLAYER.comparisons.map((c) => ({ ...c, team: null })) }));
     expect(everythingSaid()).not.toMatch(BENCHMARK_WORDS);
     // The player's own table reads "You vs. the Tour", with the Tour's value where there is one.
-    expect(screen.getByRole('heading', { level: 3, name: 'You vs. the Tour' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2, name: 'You vs. the Tour' })).toBeTruthy();
   });
 
   it('Game detail names the Tour wherever it marks a benchmark (figures, notes, ticks)', async () => {

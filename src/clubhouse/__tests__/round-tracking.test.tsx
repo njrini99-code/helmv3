@@ -5,6 +5,7 @@ import type { RoundHole, ShotRecord } from '@/lib/types/golf';
 import { RoundTracking, type RoundTrackingProps } from '../screens/rounds/track/RoundTracking';
 import { ExitSheet, RoundCompleteSheet, ScorecardSheet, SubmitOverlay } from '../screens/rounds/track/round-sheets';
 import { heroDistance, quickPicks, roundSoFar, scoreName, shotLine, shotTitle } from '../screens/rounds/track/labels';
+import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 
@@ -231,24 +232,49 @@ describe('Round tracking: undo, penalty, moving between holes', () => {
   it('CH-11805 the strip: finished and earlier holes are buttons, later unplayed ones are marks', async () => {
     const holes = [{ ...HOLES[0]!, score: 4 }, HOLES[1]!, HOLES[2]!];
     const { user, props } = setup({ holes, currentHoleIndex: 1 });
-    expect(screen.getByRole('button', { name: 'Go to hole 1, 4 strokes' })).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'Hole 2, current hole' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hole 1, 4, even' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Hole 2, current' })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Hole 3' })).toBeInTheDocument();
     expect(screen.getByText('Thru 1')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Go to hole 1, 4 strokes' }));
+    await user.click(screen.getByRole('button', { name: 'Hole 1, 4, even' }));
     expect(props.onNavigateToHole).toHaveBeenCalledWith(0);
+  });
+
+  it('CH-11805 each chip is named by hole, score and to par, and only an under-par score is marked for red', () => {
+    // Hole 1 par 4 in 6, hole 2 par 5 in 4, hole 3 par 3 in 3 and looked back at (the current hole).
+    const holes = [{ ...HOLES[0]!, score: 6 }, { ...HOLES[1]!, score: 4 }, { ...HOLES[2]!, score: 3 }];
+    setup({ holes, currentHoleIndex: 2 });
+    const over = screen.getByRole('button', { name: 'Hole 1, 6, 2 over' });
+    const under = screen.getByRole('button', { name: 'Hole 2, 4, 1 under' });
+    const current = screen.getByRole('img', { name: 'Hole 3, 3, even, current' });
+    expect(current).toHaveAttribute('aria-current', 'step');
+    expect(under).toHaveClass('is-under');
+    expect(over).not.toHaveClass('is-under');
+    expect(current).not.toHaveClass('is-under');
+    // The chip shows the score once played (the scorecard numeral), the hole number until then.
+    expect(over).toHaveTextContent('6');
+    expect(screen.getByText('Thru 3')).toBeInTheDocument();
+  });
+
+  it('CH-11805 an unplayed current hole is lit with its number, and later unplayed holes are plain marks', () => {
+    setup({ currentHoleIndex: 0 });
+    const current = screen.getByRole('img', { name: 'Hole 1, current' });
+    expect(current).toHaveClass('is-cur');
+    expect(current).not.toHaveClass('is-done');
+    expect(screen.getByRole('img', { name: 'Hole 2' })).not.toHaveClass('is-done');
+    expect(screen.getByRole('img', { name: 'Hole 3' })).not.toHaveClass('is-cur');
   });
 
   it('CH-11504 leaving a hole with a result picked but not recorded asks first', async () => {
     const holes = [{ ...HOLES[0]!, score: 4 }, HOLES[1]!, HOLES[2]!];
     const { user, props } = setup({ holes, currentHoleIndex: 1 });
     await user.click(pick('Fairway'));
-    await user.click(screen.getByRole('button', { name: 'Go to hole 1, 4 strokes' }));
+    await user.click(screen.getByRole('button', { name: 'Hole 1, 4, even' }));
     expect(props.onNavigateToHole).not.toHaveBeenCalled();
     const sheet = code('CH-11504') as HTMLElement;
     await user.click(within(sheet).getByRole('button', { name: 'Stay' }));
     expect(props.onNavigateToHole).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: 'Go to hole 1, 4 strokes' }));
+    await user.click(screen.getByRole('button', { name: 'Hole 1, 4, even' }));
     await user.click(within(code('CH-11504') as HTMLElement).getByRole('button', { name: 'Leave without it' }));
     expect(props.onNavigateToHole).toHaveBeenCalledWith(0);
   });
@@ -271,6 +297,23 @@ describe('Round tracking: holing out', () => {
     expect(onHoleComplete).toHaveBeenCalledTimes(2);
     await act(async () => finish(true));
     expect(code('CH-11003')).toBeNull();
+  });
+
+  it('CH-11901 the save line never says "Round saved" while the holed hole is saving or after its save failed', async () => {
+    let finish: (ok: boolean) => void = () => {};
+    const onHoleComplete = vi.fn(() => new Promise<boolean>((r) => (finish = r)));
+    const onAutoSave = vi.fn(async () => {});
+    const { user } = setup({ currentHoleIndex: 2, onHoleComplete, onAutoSave, autoSaveInterval: 10 });
+    await user.click(pick(/^Holed/));
+    await user.click(next());
+    await waitFor(() => expect(code('CH-11402')).toHaveTextContent('Saving hole 3'));
+    // The background save of the holed shot lands while the hole's own save is still running.
+    await waitFor(() => expect(onAutoSave).toHaveBeenCalled());
+    await act(async () => {});
+    expect(screen.queryByText('Round saved')).toBeNull();
+    await act(async () => finish(false));
+    expect(code('CH-11003')).toHaveTextContent('Hole 3 didn’t save');
+    expect(screen.queryByText('Round saved')).toBeNull();
   });
 
   it('a finished hole looked back at offers the way back, and a shot opens to change or delete (CH-11505)', async () => {
@@ -366,5 +409,64 @@ describe('Round tracking: the round sheets', () => {
     expect(code('CH-11005')).toHaveTextContent('The round didn’t submit');
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(onRetry).toHaveBeenCalled();
+  });
+});
+
+describe('P011-D1 Round tracking: full screen on the phone', () => {
+  it('marks the shell immersive and hides its tabs while the shot screen is up, and names the screen with one h1', () => {
+    let state: ReturnType<typeof usePhoneChromeState> | null = null;
+    function Probe() {
+      state = usePhoneChromeState();
+      return null;
+    }
+    const { unmount } = render(
+      <ToastProvider>
+        <PhoneChromeProvider>
+          <Probe />
+          <RoundTracking round={ROUND} holes={HOLES} currentHoleIndex={0} onHoleComplete={vi.fn(async () => true)} />
+        </PhoneChromeProvider>
+      </ToastProvider>,
+    );
+    expect(state!.immersive).toBe(true);
+    expect(state!.noTabs).toBe(true);
+    expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual(['Finley GC, hole 1']);
+    unmount();
+  });
+});
+
+describe('P011 board 3b: the drawn hole and the course view', () => {
+  it('plots each shot along the hole by the yards it left, and scales the rings from the yardage', async () => {
+    const { holeShape, plotShots, pointAlong, ringRadius, lineLength } = await import('../screens/rounds/track/hole-geometry');
+    const s = holeShape(4, 'tall');
+    const approach = shot({ shotNumber: 2, shotType: 'approach', result: 'green', distanceToHoleBefore: 150, distanceToHoleAfter: 18, distanceUnitAfter: 'feet' });
+    const { plotted, ball } = plotShots(s, HOLES[0]!, [TEE, approach]);
+    expect(plotted.map((p) => p.n)).toEqual([1, 2]);
+    expect(plotted[0]!.from).toEqual(s.tee);
+    // 150 of 420 yards left: the tee shot finishes about 64% of the way along the line.
+    const at = pointAlong(s, 1 - 150 / 420);
+    expect(Math.hypot(plotted[0]!.to.x - at.x, plotted[0]!.to.y - at.y)).toBeLessThan(1);
+    // Each shot ends nearer the pin than the last.
+    const d = (p: { x: number; y: number }) => Math.hypot(p.x - s.pin.x, p.y - s.pin.y);
+    expect(d(ball)).toBeLessThan(d(plotted[0]!.to));
+    expect(ringRadius(s, 150, 420)).toBeCloseTo((150 / 420) * lineLength(s), 5);
+    expect(ringRadius(s, 150, 140)).toBeNull();
+  });
+
+  it('opens from the hole, shows the hole’s shots, and its ‹ › only change what it shows', async () => {
+    const holes: RoundHole[] = [
+      { number: 1, par: 4, yardage: 420, score: 4 },
+      { number: 2, par: 5, yardage: 540, score: null },
+      { number: 3, par: 3, yardage: 170, score: null },
+    ];
+    const { props, user } = setup({ holes, currentHoleIndex: 1, holeShots: (i) => (i === 0 ? [TEE] : null) });
+    await user.click(screen.getByRole('button', { name: 'Course view of hole 2' }));
+    const view = await screen.findByRole('dialog', { name: 'Course view, hole 2' });
+    expect(within(view).getByRole('heading', { name: 'This hole' })).toBeInTheDocument();
+    expect(within(view).getByText('to play')).toBeInTheDocument();
+    expect(within(view).queryByText(/Your last 3|Team average/)).toBeNull();
+    await user.click(within(view).getByRole('button', { name: 'Hole 1' }));
+    expect(within(view).getByRole('heading', { name: 'Hole 1' })).toBeInTheDocument();
+    expect(within(view).getByText('Tee · Driver')).toBeInTheDocument();
+    expect(props.onNavigateToHole).not.toHaveBeenCalled();
   });
 });

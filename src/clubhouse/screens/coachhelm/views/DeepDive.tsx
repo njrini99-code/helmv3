@@ -25,6 +25,21 @@ import { useHydrated } from '../use-hydrated';
 import { HelmOff, PlayerHelmFrame } from './Frame';
 import { SerifText } from '../../../ui/SerifText';
 
+/** A sentence ends in its stop: a generator's line without one gets a full stop (P013 D6). */
+export const sentence = (t: string): string => (/[.!?…”"’)]$/.test(t.trim()) ? t.trim() : `${t.trim()}.`);
+
+/**
+ * The write-up without the drill, when "This week" draws it (P013 D6): a sentence that opens with the drill's first three words is
+ * the drill again. Nothing else is touched; with no drill, or no such sentence, the write-up is as written.
+ */
+export function withoutDrill(why: string, drill: string | null | undefined): string | null {
+  const head = (t: string) => t.toLowerCase().replace(/[^a-z0-9\s-]/g, '').split(/\s+/).filter(Boolean).slice(0, 3).join(' ');
+  const key = drill ? head(drill) : '';
+  if (!key) return why;
+  const kept = why.split(/(?<=[.!?])\s+/).filter((s) => head(s) !== key);
+  return kept.join(' ').trim() || null;
+}
+
 const LINE = 'Every read CoachHelm has made on your game: what it measured, the rounds behind it, how it has moved, and where it goes in your plan.';
 
 const developmentHref = () => rebuiltHref(PLAYER_HELM_DEVELOPMENT_HREF, 'player');
@@ -175,7 +190,8 @@ function RoundRow({ r }: { r: ChDiveRound }) {
 
 function Why({ i }: { i: ChDeepInsight }) {
   const d = i.diagnosis;
-  if (!d && !i.base.why) return null;
+  const why = i.base.why ? withoutDrill(i.base.why, i.base.week?.text) : null;
+  if (!d && !why) return null;
   return (
     <Section id={`${i.base.id}-why`} title="Why CoachHelm thinks so">
       {d && (
@@ -184,7 +200,7 @@ function Why({ i }: { i: ChDeepInsight }) {
           <span className={'ch-hd-dx__lvl is-' + d.level} data-ch-code="CH-13982">
             {d.level === 'observed' ? 'Measured in your shots' : 'Likely, not measured'}
           </span>
-          <p className="ch-hd-dx__c">{d.cause}</p>
+          <p className="ch-hd-dx__c">{sentence(d.cause)}</p>
           {d.drivers.length > 0 && (
             <dl className="ch-hd-dx__d">
               {d.drivers.map((x) => (
@@ -198,13 +214,13 @@ function Why({ i }: { i: ChDeepInsight }) {
               ))}
             </dl>
           )}
-          {d.reason && <p className="ch-hd-dx__r">{d.reason}</p>}
+          {d.reason && <p className="ch-hd-dx__r">{sentence(d.reason)}</p>}
         </div>
       )}
-      {i.base.why && (
+      {why && (
         <div className="ch-hd-full">
           {d && <span className="ch-hd-full__k">The full write-up</span>}
-          <p className="ch-hd-why">{i.base.why}</p>
+          <p className="ch-hd-why">{why}</p>
         </div>
       )}
     </Section>
@@ -382,7 +398,7 @@ function Hero({ d }: { d: ChDeepDive }) {
         <h2 id="ch-hd-hero-t">
           CoachHelm has <span className="ch-hd-hero__n ch-num">{insights}</span> {insights === 1 ? 'read' : 'reads'} on your game.
         </h2>
-        <p className="ch-hd-hero__sub">Open one to see what was measured, the rounds it was made from, how it has moved and where it goes in your plan. A read from before your newest round says so.</p>
+        <p className="ch-hd-hero__sub">Open one to see what was measured, the rounds it was made from, how it has moved and where it goes in your plan. In your plan counts reads from both lists, so it overlaps them. A read from before your newest round says so.</p>
       </div>
       <dl className="ch-hd-hero__f">
         <div className="is-needs">

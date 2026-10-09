@@ -1,5 +1,27 @@
 # P007 — Messages: changelog
 
+## 2026-10-08 — the player peek (P003-C1)
+
+The shared PlayerPeek: for the coach, a player's avatar and name in a thread peek at the player, from the team directory Messages already holds. The bubble keeps its own hold for message actions; coaches and people off the roster don't peek. No new reads.
+
+## 2026-10-08 — premium pass: a stale chunk reloads once, in Clubhouse's voice (D3)
+
+`ClubhouseRouteError` (`shell/ClubhouseRouteError.tsx`) is a route `error.tsx` body for Clubhouse screens, inside the shell or above it. On a ChunkLoadError ("Loading chunk …", stale assets after a deploy), the shared RouteErrorBoundary asks the one recovery coordinator (`lib/recovery/client`) for a reload. The coordinator reloads once, under the session's attempt budget and latch, and never over unsaved work; there is no second sessionStorage flag, because the coordinator's own doc forbids any other `location.reload()`. Any other error shows Clubhouse's route error (CH-1206). Above the shell it brings its own `.ch-root`, fonts and tokens. `/clubhouse-preview` now uses it, where the audit's crash fell through to the app's generic Helm page. The live Messages route already reached the same view through the shell.
+
+## 2026-10-08 — premium pass: findings D1, D2, D4
+
+- D1: a thread is held at its newest message while it settles (`useThreadAnchor`, 700 ms). A push during hydration that resets the scroll under it no longer leaves it at the oldest message. The hold stops the moment the reader scrolls, touches or types.
+- D2: a message that didn't send keeps full-ink text, on a muted fill inside a dashed edge, beside "Not sent · Retry". It is no longer faded to about 2.8:1, so it can be read before you retry it.
+- D4: the preview opens the team thread only on desktop, after hydration, as the live screen does. The phone preview stays on the inbox. The live loader already auto-opens only at 821px and wider.
+
+## 2026-10-08 — premium pass: announcements as letterhead (P007-A1)
+
+An announcement reads as a signed team letter. The letterhead is one engraved line, the team and the full date ("Varsity · Wednesday 14 October"), with the asks in words at its end ("Urgent · please acknowledge") instead of two chips; then the 28px title, the body in full ink at a reading measure, and the posting coach's name and title over a 1px gilt rule. Tasks, files and receipts follow as before. On desktop the sheet takes the room's light as paper (`--ch-light-paper`, never on the words); on the phone it stays flush. No monogram or crest (owner: crests are declined, D3-2). The loader adds `signers` (the program's coaches by golf_coaches.id) and the announcement carries `authorId` (`created_by`); an unknown author shows no signature.
+
+## 2026-10-08 — premium pass: prefilled messages (D2-7)
+
+Actions that reach players open Messages prefilled and never send: `messagesPrefillHref({ players, draft, title })` (`screens/messages/prefill.ts`) links to `?prefill=<key>`: the key is an opaque hash, and the people, the draft and the group name stay in this tab's sessionStorage under it, never in the URL (query strings land in logs and history, and a draft can name a minor's health or schoolwork). Messages takes the entry once and deletes it (`takePrefill`); a cold link, a new tab or a used key opens Messages with nothing prefilled. Players not on the team are left out and reported (CH-7001); the rest stay chosen. One player with a thread opens it with the draft in its composer (an unsent draft of the coach's own wins); otherwise New message opens with the people chosen (a coach's two or more as a group named `title`) and the draft quoted. Nothing is created until the coach presses on, and the draft lands in the new thread's composer, where the coach presses Send. A player's prefill keeps one person (D-15). When nobody in it is on the team, CH-7001 says so.
+
 ## 2026-10-08 — dark: Clubhouse at night
 
 Messages follows GolfHelm's dark theme ("Clubhouse at night"). Sent bubbles keep the green gradient with ivory type (not white); row hover and press, tool hovers and the reaction hover become ivory washes; the selected thread's rail, the To chips and the announcement acknowledgement take the light text green; announcement marks, the phone's group marks and Jump to latest keep their filled green with ivory type; the phone's idle Send glyph reads on its grey plate. Light mode is unchanged.

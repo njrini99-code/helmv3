@@ -10,6 +10,7 @@ import type { ChShellData } from "../data/shell";
 import { activeNavItem, CH_NAV_SECTIONS, navFor, type ChNavItem } from "./nav";
 import { NavPlate } from "./NavPlate";
 import { NextEventCard } from "./NextEventCard";
+import { ResumeRoundCard } from "./Dock";
 import { BrandTeamSwitch } from "./TeamSwitch";
 import type { ChTeamSwitch } from "./team-switch";
 
@@ -102,7 +103,8 @@ export function Sidebar({
       </nav>
 
       <div className="ch-sidebar__foot">
-        {shell.nextEvent && <NextEventCard event={shell.nextEvent} />}
+        {/* A player's round in progress takes the card slot (P001-C1); otherwise the team's next event. */}
+        {shell.roundInProgress ? <ResumeRoundCard round={shell.roundInProgress} /> : shell.nextEvent && <NextEventCard event={shell.nextEvent} />}
         <div className="ch-identity">
           <Avatar name={userData.name} size={30} />
           <div className="ch-identity__txt">

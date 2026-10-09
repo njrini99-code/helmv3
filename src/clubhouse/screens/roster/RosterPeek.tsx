@@ -56,6 +56,7 @@ export function RosterPeek({
         <m.aside
           key={p.id}
           ref={panel}
+          id="ch-rs-peek"
           className="ch-rs-peek"
           aria-label={p.name}
           initial={reduced ? { opacity: 0 } : { opacity: 0, x: 16 }}

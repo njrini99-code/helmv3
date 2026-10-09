@@ -60,7 +60,7 @@ describe('the genome as the profile draws it', () => {
     const by = Object.fromEntries(PREVIEW_PROFILE.measures.map((m) => [m.id, m]));
     expect(by.miss_side_bias).toMatchObject({ headline: 'Left bias', figure: '71% left', figureNote: 'of the misses that name a side (29% right)' });
     expect(by.pressure_delta).toMatchObject({ headline: 'Tightens up', figure: '+0.82', figureNote: 'strokes per 18 holes, tournaments against practice' });
-    expect(by.scrambling_rate).toMatchObject({ headline: 'Wizard', figure: '44%' });
+    expect(by.scrambling_rate).toMatchObject({ headline: 'Reliable', figure: '35%' });
     expect(by.par3_proficiency).toMatchObject({ figure: '−0.38', figureNote: 'strokes to par per par 3' });
     expect(by.scoring_trend).toMatchObject({ headline: 'Improving', figure: '−0.64' });
     expect(by.driver_usage).toMatchObject({ headline: 'Mixed', figure: '62%' });
@@ -80,7 +80,7 @@ describe('the genome as the profile draws it', () => {
 
   it('a measure is coloured by the persona’s call, else by the verdict in its own word; a bias and a profile are plain', () => {
     const tone = Object.fromEntries(PREVIEW_PROFILE.measures.map((m) => [m.id, m.tone]));
-    expect(tone).toEqual({ miss_side_bias: 'plain', pressure_delta: 'warn', scrambling_rate: 'good', par3_proficiency: 'good', back_nine_delta: 'warn', scoring_trend: 'good', driver_usage: 'good' });
+    expect(tone).toEqual({ miss_side_bias: 'plain', pressure_delta: 'warn', scrambling_rate: 'plain', par3_proficiency: 'good', back_nine_delta: 'warn', scoring_trend: 'good', driver_usage: 'good' });
   });
 
   it('every word the tone list names is a word a dimension can give (the dimension files are read, so a rename cannot drop one silently)', () => {
