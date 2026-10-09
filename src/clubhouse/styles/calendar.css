@@ -197,7 +197,7 @@
   background: var(--ch-ink-300);
 }
 .ch-dot-class {
-  background: var(--ch-ivory-400);
+  background: var(--ch-info-600);
 }
 
 /* People picker */
@@ -444,6 +444,8 @@
 .ch-wk__grid {
   position: relative;
   height: calc(var(--ch-hours) * var(--ch-hh));
+  /* The cascade's lane z-indexes stay inside the grid, so a stack of blocks never paints over the pinned days. */
+  isolation: isolate;
 }
 .ch-wk__rail {
   position: relative;
@@ -665,18 +667,17 @@
   outline: 1px dashed rgb(28 25 18 / 0.28);
   outline-offset: -1px;
 }
+/* Players' classes (owner, 2026-10-08: never ivory on ivory, and never a coloured side stripe): the info slate, a cool
+   tint of their own beside the team's greens. */
 .ch-ev--class {
-  background: var(--ch-bg-subtle);
-  color: var(--ch-text-tertiary);
-  box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
+  background: var(--ch-info-100);
+  color: var(--ch-info-600);
+  box-shadow: inset 0 0 0 1px rgb(45 92 119 / 0.16);
 }
-.ch-ev--class::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: repeating-linear-gradient(135deg, transparent 0 5px, rgb(28 25 18 / 0.035) 5px 6px);
-  pointer-events: none;
+@media (hover: hover) {
+  .ch-ev--class:hover {
+    box-shadow: inset 0 0 0 1px rgb(45 92 119 / 0.28), var(--ch-elevation-chip-hover);
+  }
 }
 .ch-ev.is-sel {
   z-index: 5;
@@ -2619,8 +2620,8 @@ html[data-fw-theme='dark'] .ch-ev--travel {
   background: rgb(255 255 255 / 0.03);
   outline-color: rgb(237 231 216 / 0.3);
 }
-html[data-fw-theme='dark'] .ch-ev--class::after {
-  background: repeating-linear-gradient(135deg, transparent 0 5px, rgb(237 231 216 / 0.04) 5px 6px);
+html[data-fw-theme='dark'] .ch-ev--class {
+  box-shadow: inset 0 0 0 1px rgb(134 182 212 / 0.2);
 }
 html[data-fw-theme='dark'] .ch-ev.is-sel {
   box-shadow: 0 0 0 2px var(--ch-green-600), var(--ch-elevation-floating);

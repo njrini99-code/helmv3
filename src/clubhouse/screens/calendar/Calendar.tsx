@@ -741,7 +741,7 @@ export function Calendar({
           {view !== 'month' && (
             <span>
               <i className="ch-dot-class" />
-              Class · busy
+              Classes
             </span>
           )}
         </div>
