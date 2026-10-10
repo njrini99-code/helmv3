@@ -160,11 +160,16 @@ export function UpNext({ e, now, children, kicker }: { e: ChHomeEvent; now: Date
               <Avatar key={n} name={n} size={24} />
             ))}
           </span>
-          {e.going != null && (
-            <span className="ch-hm-next__rsvp ch-num">
-              <b>{e.going}</b> of {people.length} going
-            </span>
-          )}
+          <span className="ch-hm-next__rsvp ch-num">
+            {e.going != null ? (
+              <>
+                <b>{e.going}</b> of {people.length} going
+              </>
+            ) : (
+              // An event that doesn't ask for replies (or whose replies didn't load) says who is on it, as the desk card does.
+              `${people.length} invited`
+            )}
+          </span>
           <Icon icon={ChevronRight} size={17} />
         </span>
       )}

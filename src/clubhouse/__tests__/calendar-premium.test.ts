@@ -60,6 +60,7 @@ describe('Calendar · peek actions (P006-C3)', () => {
     location: 'Pine Hollow GC',
     people: ['p1', 'p2'],
     rsvp: { p1: 'accepted' },
+    rsvpRequired: true,
   } as never;
 
   it('the coach can nudge the one player who hasn’t replied, through a prefilled message, and get directions off site', async () => {
@@ -79,6 +80,17 @@ describe('Calendar · peek actions (P006-C3)', () => {
     expect(eventPeekActions(base, false, people, () => {}).map((a) => a.label)).toEqual(['Open', 'Directions']);
     const practice = { ...(base as object), type: 'practice' } as never;
     expect(eventPeekActions(practice, true, people, () => {}).map((a) => a.label)).toEqual(['Open', 'Nudge Ben']);
+  });
+
+  it('an event that doesn’t require an RSVP offers no nudge, and its card says who is invited, never a reply count (owner, 2026-10-08)', async () => {
+    const { eventPeekActions, EventPeekCard } = await import('../screens/calendar/peek');
+    const off = { ...(base as object), rsvpRequired: false } as never;
+    expect(eventPeekActions(off, true, people, () => {}).map((a) => a.label)).toEqual(['Open', 'Directions']);
+    const { renderToStaticMarkup } = await import('react-dom/server');
+    const { createElement } = await import('react');
+    const html = renderToStaticMarkup(createElement(EventPeekCard, { e: off, coach: true, people }));
+    expect(html).toMatch(/<b>2<\/b> invited/);
+    expect(html).not.toMatch(/going|no reply/);
   });
 });
 

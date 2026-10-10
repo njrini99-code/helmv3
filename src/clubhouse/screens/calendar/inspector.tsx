@@ -141,6 +141,8 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
   const seen = new Set<string>();
   const pendingRows = upcoming
     .filter((e) => (seen.has(e.id) ? false : (seen.add(e.id), true)))
+    // Only events that ask for replies have replies waiting (owner, 2026-10-08).
+    .filter((e) => e.rsvpRequired)
     .map((e) => ({ e, pending: e.people.filter((p) => (e.rsvp[p] ?? 'pending') === 'pending') }))
     .filter((r) => (role === 'coach' ? r.pending.length > 0 : ctx.viewerPlayerId != null && r.pending.includes(ctx.viewerPlayerId)))
     .sort((a, b) => (a.e.date + String(a.e.start ?? 0).padStart(5, '0')).localeCompare(b.e.date + String(b.e.start ?? 0).padStart(5, '0')));
@@ -449,18 +451,26 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
           {first(ctx.people.get(overlap.who)?.name)} is busy {fmtHour(overlap.from, false)}–{fmtHour(overlap.to)}.
         </Warn>
       )}
-      {!coach && ctx.viewerPlayerId && e.people.includes(ctx.viewerPlayerId) && <PlayerReply e={e} playerId={ctx.viewerPlayerId} now={ctx.now} onDone={ctx.refresh} />}
+      {/* Owner, 2026-10-08: a player answers only an event that asks for replies; any other shows no reply control. */}
+      {!coach && e.rsvpRequired && ctx.viewerPlayerId && e.people.includes(ctx.viewerPlayerId) && <PlayerReply e={e} playerId={ctx.viewerPlayerId} now={ctx.now} onDone={ctx.refresh} />}
       {coach && e.people.length > 0 && (
         <div className="ch-in__sec">
           <div className="ch-in__sechead">
-            <b>Responses</b>
-            <span>{e.people.length} invited</span>
+            {/* Replies are counted only when the coach asked for them; otherwise this is the invite list (owner, 2026-10-08). */}
+            <b>{e.rsvpRequired ? 'Responses' : 'Invited'}</b>
+            <span>{e.rsvpRequired ? `${e.people.length} invited` : `${e.people.length} ${e.people.length === 1 ? 'player' : 'players'}`}</span>
           </div>
           {ctx.rsvpError ? (
-            <InlineNotice code="CH-6205" title="Replies didn’t load." body="Try again to see who’s going." onRetry={ctx.refresh} covered={ctx.covered} />
+            <InlineNotice
+              code="CH-6205"
+              title={e.rsvpRequired ? 'Replies didn’t load.' : 'The invite list didn’t load.'}
+              body={e.rsvpRequired ? 'Try again to see who’s going.' : 'Try again to see who’s invited.'}
+              onRetry={ctx.refresh}
+              covered={ctx.covered}
+            />
           ) : (
             <>
-              <Responses e={e} />
+              {e.rsvpRequired && <Responses e={e} />}
               <div>
                 {[...e.people]
                   .sort((a, b) => (ctx.people.get(a)?.name ?? '').localeCompare(ctx.people.get(b)?.name ?? ''))
@@ -472,9 +482,11 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
                       <div key={pid} className="ch-in__person">
                         <Avatar name={name} size={26} />
                         <span>{name}</span>
-                        <Badge tone={t} dot>
-                          {l}
-                        </Badge>
+                        {e.rsvpRequired && (
+                          <Badge tone={t} dot>
+                            {l}
+                          </Badge>
+                        )}
                       </div>
                     );
                     // P003-C1: for the coach, a player on the roster peeks (a hold on the phone, a rest of the pointer on desktop).
@@ -495,9 +507,9 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
       {coach && e.people.length === 0 && (
         <div className="ch-in__sec">
           {ctx.rsvpError ? (
-            <InlineNotice code="CH-6205" title="Replies didn’t load." body="Try again to see who’s going." onRetry={ctx.refresh} covered={ctx.covered} />
+            <InlineNotice code="CH-6205" title="The invite list didn’t load." body="Try again to see who’s invited." onRetry={ctx.refresh} covered={ctx.covered} />
           ) : (
-            <p className="ch-in__quiet">No players invited. Invite players to collect replies and take attendance.</p>
+            <p className="ch-in__quiet">{e.rsvpRequired ? 'No players invited. Invite players to collect replies and take attendance.' : 'No players invited. Invite players to take attendance.'}</p>
           )}
         </div>
       )}
@@ -693,7 +705,8 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
                     <Avatar name={name} size={26} />
                     <span>
                       {first(name)}
-                      <small>{dirty ? 'Unsaved' : saved[pid] ? 'Saved' : RSVP_LABEL[e.rsvp[pid] ?? 'pending'][0]}</small>
+                      {/* Attendance stands on its own: the reply shows beside it only on an event that asked for replies. */}
+                      <small>{dirty ? 'Unsaved' : saved[pid] ? 'Saved' : e.rsvpRequired ? RSVP_LABEL[e.rsvp[pid] ?? 'pending'][0] : 'Not marked'}</small>
                     </span>
                   </span>
                   <AttendanceSeg name={name} value={v} onChange={(m) => setMarks((s) => ({ ...s, [pid]: m }))} />

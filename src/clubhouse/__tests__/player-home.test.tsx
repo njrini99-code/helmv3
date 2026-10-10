@@ -433,7 +433,7 @@ describe('Player Home · what the loader reads and whom it names', () => {
       golf_events: {
         data: [
           { id: 'e1', title: 'Putting ladder', event_type: 'practice', start_time: '2026-10-12T21:30:00Z', end_time: '2026-10-12T22:30:00Z', all_day: false, location: 'Green 2' },
-          { id: 'e2', title: 'Pinehurst qualifier', event_type: 'qualifier', start_time: '2026-10-15T12:42:00Z', end_time: null, all_day: false, location: null },
+          { id: 'e2', title: 'Pinehurst qualifier', event_type: 'qualifier', start_time: '2026-10-15T12:42:00Z', end_time: null, all_day: false, location: null, requires_rsvp: true },
         ],
       },
       golf_event_attendance: {
@@ -452,6 +452,11 @@ describe('Player Home · what the loader reads and whom it names', () => {
     expect(data.today[0]!.invitees).toEqual([]);
     expect(data.next!.invitees).toEqual([]);
     expect(JSON.stringify(data)).not.toMatch(/p-priya|p-ava|priya|natarajan/i);
+    // The same qualifier without RSVP reads no confirmed count (owner, 2026-10-08).
+    const events = tables.current.golf_events as { data: Array<Record<string, unknown>> };
+    events.data[1]!.requires_rsvp = false;
+    const off = await loadPlayerHome(player);
+    expect(off.week.agenda.map((r) => r.detail)).toEqual(['Green 2 · 2 players', 'First tee 8:42']);
   });
 
   it('20805 Message coach goes to the coach who created the team, else a coach with an account, else plain Messages', async () => {

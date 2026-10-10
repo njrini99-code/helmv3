@@ -12,7 +12,10 @@ export interface ChNextEvent {
   whenLabel: string;
   /** "Thu, Oct 16 · 8:42 AM · Pinehurst No. 2" */
   metaLabel: string;
-  /** Accepted RSVPs of those invited; null with no invitees or when the read failed. */
+  /**
+   * Accepted RSVPs of those invited; null with no invitees, when the read failed, or when the event doesn't ask for
+   * replies (owner, 2026-10-08: the card then shows when and where, never a confirmed count).
+   */
   ready: { accepted: number; invited: number } | null;
 }
 
@@ -51,7 +54,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
   const [eventRes, joinRes, tzRes, roundRes, askOn, courseRes] = await Promise.all([
     supabase
       .from('golf_events')
-      .select('id, title, start_time, all_day, location, event_type, description')
+      .select('id, title, start_time, all_day, location, event_type, description, requires_rsvp')
       .eq('team_id', teamId)
       // A player's synced class is never "the team's next event" (F-40): it would show one player's timetable to the
       // whole roster. Both class markers are checked, as every team-schedule read does (lib/calendar/class-events).
@@ -113,7 +116,8 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
 
   const e = eventRes.error ? null : ((eventRes.data ?? []).find((row) => !isClassEvent(row)) ?? null);
   let ready: ChNextEvent['ready'] = null;
-  if (e) {
+  // Only an event that asks for replies has a confirmed count; null (older rows) reads as off.
+  if (e && e.requires_rsvp === true) {
     // One event's invitees: at most a roster, well under the row cap.
     const { data, error } = await supabase.from('golf_event_attendance').select('status').eq('event_id', e.id).limit(1000);
     if (error) chLogServer('shell', 'nextEventAttendance', error, 'calendar');

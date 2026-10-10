@@ -33,6 +33,11 @@ export interface ChCalEvent {
   people: string[];
   /** Per-player reply, keyed by player id. */
   rsvp: Record<string, ChRsvp>;
+  /**
+   * The coach asked for replies (`golf_events.requires_rsvp`, null read as off). Off is the default (owner, 2026-10-08):
+   * an event without it shows no reply controls, counts or "no reply" nudges. Invitees still make up who is on it.
+   */
+  rsvpRequired: boolean;
   /** Class blocks: the player whose schedule this is. */
   owner: string | null;
   /** Classes a viewer may only see as Busy carry no title or room. */

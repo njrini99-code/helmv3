@@ -194,6 +194,8 @@ interface EditRecurringEventInput {
     endTime?: string;
     location?: string;
     recurrenceRule?: string;
+    /** Require RSVP for every event in scope; undefined leaves each event's own setting. */
+    requiresRsvp?: boolean;
   };
 }
 
@@ -1173,6 +1175,7 @@ async function editRecurringEventImpl(
     if (input.updates.title) literalUpdates.title = input.updates.title;
     if (input.updates.description !== undefined) literalUpdates.description = input.updates.description;
     if (input.updates.location !== undefined) literalUpdates.location = input.updates.location;
+    if (input.updates.requiresRsvp !== undefined) literalUpdates.requires_rsvp = input.updates.requiresRsvp === true;
 
     const targetDate = (targetEvent.start_time ?? '').slice(0, 10);
     const oldStartMs = targetEvent.start_time ? Date.parse(targetEvent.start_time) : NaN;

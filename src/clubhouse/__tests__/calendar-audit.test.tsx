@@ -100,6 +100,8 @@ const ev = (o: Partial<ChCalEvent>): ChCalEvent => ({
   seriesId: null,
   startIso: '2026-10-14T19:00:00Z',
   span: null,
+  // These cases cover an event that asks for replies; the off case sets it false.
+  rsvpRequired: true,
   ...o,
 });
 const cal = (events: ChCalEvent[], over: Partial<ChCalendarData> = {}): ChCalendarData => ({ ...PREVIEW_CALENDAR, events, ...over });
@@ -235,6 +237,80 @@ describe('Calendar · swap audit §8 edits', () => {
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     await waitFor(() => expect(a.editRecurringEvent).toHaveBeenCalled());
     expect(a.editRecurringEvent.mock.calls[0]![0]).toMatchObject({ scope: 'all', updates: { description: '', location: '' } });
+  });
+});
+
+describe('Calendar · RSVP off unless the coach turns it on (owner, 2026-10-08)', () => {
+  const off = (o: Partial<ChCalEvent> = {}) => ev({ id: 'np', title: 'Range work', date: '2026-10-15', people: ['theo', 'sofia'], rsvp: { theo: 'accepted' }, rsvpRequired: false, ...o });
+
+  it('the coach’s detail lists who is invited with no reply counts or badges, and Needs attention never asks for replies', async () => {
+    wrap(cal([off()]), 'np');
+    await screen.findByRole('heading', { name: 'Range work' });
+    expect(screen.getByText('Invited')).toBeTruthy();
+    expect(screen.getByText('2 players')).toBeTruthy();
+    expect(screen.queryByText('Responses')).toBeNull();
+    expect(screen.queryByText('Going')).toBeNull();
+    expect(screen.queryByText('No reply')).toBeNull();
+    expect(screen.queryByText(/replies pending|reply pending/)).toBeNull();
+  });
+
+  it('a player invited to it gets no reply control', async () => {
+    wrap(cal([off()], { role: 'player', viewerPlayerId: 'sofia' }), 'np');
+    await screen.findByRole('heading', { name: 'Range work' });
+    expect(screen.queryByRole('radiogroup', { name: 'Your reply' })).toBeNull();
+    expect(screen.queryByText('Your reply')).toBeNull();
+    expect(screen.queryByText('Coach is waiting on you')).toBeNull();
+  });
+
+  it('the same event with RSVP on shows the responses and the reply control', async () => {
+    const view = wrap(cal([off({ rsvpRequired: true })]), 'np');
+    await screen.findByText('Responses');
+    view.unmount();
+    wrap(cal([off({ rsvpRequired: true })], { role: 'player', viewerPlayerId: 'sofia' }), 'np');
+    expect(await screen.findByRole('radiogroup', { name: 'Your reply' })).toBeTruthy();
+  });
+
+  it('cancelling it says no one is notified, and the toast claims no notification', async () => {
+    const user = userEvent.setup();
+    a.deleteGolfEvent.mockResolvedValue({ success: true });
+    wrap(cal([off()]), 'np');
+    await user.click(await screen.findByRole('button', { name: 'More actions' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Cancel event' }));
+    await screen.findByText(/No one is notified, since this event doesn’t ask for replies/);
+    await user.click(screen.getByRole('button', { name: 'Cancel event' }));
+    await screen.findByText(/^Cancelled · Range work$/);
+  });
+
+  it('a series edit sends the RSVP setting only when the coach changed it', async () => {
+    const user = userEvent.setup();
+    wrap(cal([off({ seriesId: 'np', recurring: 'Weekly on Thu' })]), 'np');
+    await user.click(await screen.findByRole('button', { name: 'Edit event' }));
+    await retitle(user, 'Range and wedges');
+    await user.click(screen.getByRole('radio', { name: 'All in series' }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(a.editRecurringEvent).toHaveBeenCalledTimes(1));
+    expect('requiresRsvp' in (a.editRecurringEvent.mock.calls[0]![0] as { updates: Record<string, unknown> }).updates).toBe(false);
+  });
+
+  it('a series edit that turns RSVP on sends it for the whole scope', async () => {
+    const user = userEvent.setup();
+    wrap(cal([off({ seriesId: 'np', recurring: 'Weekly on Thu' })]), 'np');
+    await user.click(await screen.findByRole('button', { name: 'Edit event' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Require RSVP' }));
+    await user.click(screen.getByRole('radio', { name: 'All in series' }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(a.editRecurringEvent).toHaveBeenCalledTimes(1));
+    expect(a.editRecurringEvent.mock.calls[0]![0]).toMatchObject({ scope: 'all', updates: { requiresRsvp: true } });
+  });
+
+  it('taking attendance on it shows no reply beside each player', async () => {
+    const user = userEvent.setup();
+    a.getAttendanceReport.mockResolvedValue({ success: true, data: { attendance: [] } });
+    wrap(cal([off()]), 'np');
+    await user.click(await screen.findByRole('button', { name: 'Attendance' }));
+    await screen.findByRole('button', { name: 'Mark all present' });
+    expect(screen.getAllByText('Not marked')).toHaveLength(2);
+    expect(screen.queryByText('Going')).toBeNull();
   });
 });
 
