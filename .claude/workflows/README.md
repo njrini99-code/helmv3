@@ -7,7 +7,8 @@ that edit inside a worktree) and do not merge, deploy or touch production themse
 are the caller's next step, per AGENTS.md).
 
 - `helm-review.js` — five-dimension review of a PR (`/helm-review 1875`, read
-  from a detached checkout of the PR head) or the current checkout's diff (no
+  from a detached checkout of the PR head, removed afterwards) or the current
+  checkout's diff (no
   args), each finding adversarially verified by three independent readers;
   two refutations kill a finding and the severity lens re-grades rather than
   kills.

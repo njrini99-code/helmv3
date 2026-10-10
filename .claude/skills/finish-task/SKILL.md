@@ -27,7 +27,7 @@ for them explicitly — no gate catches them:
 
 1. **The bundle boundary.** `export type { … }` inside a `'use server'`
    module registers the type as a server action and throws `ReferenceError` at
-   runtime. Typecheck, lint, and 8,763 unit tests were all green while golf
+   runtime. Typecheck, lint, and the full unit suite were all green while golf
    messaging was 100% dead. Only `npm run build` or a real browser click
    proves this. If you touched a `'use server'` file, run the build.
 
