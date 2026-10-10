@@ -69,6 +69,8 @@ export interface EmergencySaveData {
     roundDate: string;
     qualifierId?: string;
     qualifierRoundNumber?: number;
+    /** Shotgun start: the hole position the round started on (play-order.ts). Omitted, hole 1. */
+    startHole?: number;
   };
   holes: RoundHole[];
   completedHoleStats: HoleStats[];

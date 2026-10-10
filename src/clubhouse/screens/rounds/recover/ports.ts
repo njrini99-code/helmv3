@@ -1,6 +1,7 @@
 'use client';
 
 import { savePartialRound, type PartialRoundData } from '@/app/golf/actions/round-partial';
+import { normalizeStartHole } from '@/lib/golf/round-session/play-order';
 import { submitGolfRoundComprehensive } from '@/app/golf/actions/round-submit';
 import { deleteOfflineRound, deleteOfflineRoundThrough } from '@/lib/offline/indexed-db';
 import { clearRoundRecoverySnapshotThrough, deleteRoundRecoverySnapshot } from '@/lib/offline/shot-storage';
@@ -70,6 +71,7 @@ function partialRoundOf(copy: ChDeviceCopy, scored: HoleStats[]): PartialRoundDa
     qualifierId: draft.setupData.qualifierId || undefined,
     qualifierRoundNumber: draft.setupData.qualifierRoundNumber || undefined,
     currentHole: Math.max(1, Math.min(draft.currentHoleIndex + 1, holesToPlay)),
+    startHole: normalizeStartHole(draft.setupData.startHole, holesToPlay),
     holesToPlay,
     holes: scored,
     inProgressShots,

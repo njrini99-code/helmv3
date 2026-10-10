@@ -15,6 +15,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { RoundTypeEditor } from '@/components/fairway/pages/rounds/RoundTypeEditor';
 import { isClubhouseFor } from '@/clubhouse/gate';
 import { ClubhouseContinueRoundRoute } from '@/clubhouse/routes/round-continue';
+import { frontierIndex, lastPlayIndex, normalizeStartHole } from '@/lib/golf/round-session/play-order';
 
 export const metadata: Metadata = {
   title: 'Continue Round',
@@ -527,6 +528,13 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     throw new Error("Couldn't load this course's hole yardages. Nothing was changed; please try again.");
   }
 
+  // Shotgun start: the hole the round started on, kept in draft_data by every autosave (`startHole`) or, from a
+  // legacy draft save, in its setup. Only the play order uses it; holes stay indexed by their number.
+  const draftSetup = draftData?.setupData && typeof draftData.setupData === 'object'
+    ? (draftData.setupData as Record<string, unknown>)
+    : null;
+  const startHole = normalizeStartHole(draftData?.startHole ?? draftSetup?.startHole, totalHoles);
+
   // Setup data from round
   const setupData = {
     courseName: round.course_name || 'Unknown Course',
@@ -541,6 +549,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     roundDate: round.round_date,
     qualifierId: round.qualifier_id || undefined,
     qualifierRoundNumber,
+    startHole,
   };
 
   // Determine the starting hole index
@@ -553,11 +562,16 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   for (let i = 0; i < completedHoleStats.length; i++) {
     if (completedHoleStats[i]) maxCompletedHoleIndex = i;
   }
+  // A shotgun start picks up at the first unscored hole in play order instead (its frontier wraps past the card's
+  // last hole), or its last hole when every one is scored.
+  const shotgunFrontier = frontierIndex(totalHoles, startHole, (i) => !!completedHoleStats[i]);
   const startHoleIndex = round.current_hole
     ? Math.min(Math.max(0, round.current_hole - 1), totalHoles - 1)
-    : maxCompletedHoleIndex >= 0
-      ? Math.min(maxCompletedHoleIndex + 1, totalHoles - 1)
-      : 0;
+    : startHole > 1
+      ? (shotgunFrontier >= 0 ? shotgunFrontier : lastPlayIndex(totalHoles, startHole))
+      : maxCompletedHoleIndex >= 0
+        ? Math.min(maxCompletedHoleIndex + 1, totalHoles - 1)
+        : 0;
 
   // Get shots for the starting hole to restore progress
   const startHoleNumber = startHoleIndex + 1;
