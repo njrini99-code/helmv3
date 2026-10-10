@@ -275,6 +275,7 @@ export function RoundRuntime({
         round={session.round}
         holes={session.holes}
         currentHoleIndex={session.currentHoleIndex}
+        startHole={session.startHole}
         initialShots={session.activeHoleShots}
         initialShotNumber={session.activeShotNumber}
         onHoleComplete={session.onHoleComplete}
@@ -313,6 +314,7 @@ export function RoundRuntime({
         open={finishOpen}
         heading={session.heading}
         holes={summaryHoles(session.holes, session.pendingFinalStats ?? [])}
+        backHole={current}
         onBack={() => s.current.setShowFinishConfirm(false)}
         onSubmit={() => {
           const stats = s.current.pendingFinalStats;

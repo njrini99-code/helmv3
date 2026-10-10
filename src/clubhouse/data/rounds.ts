@@ -1,6 +1,7 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { frontierIndex, normalizeStartHole } from '@/lib/golf/round-session/play-order';
 import { chLogServer } from '../lib/track-server';
 import { homeClock } from './home';
 import { seasonStartDate } from './season';
@@ -31,7 +32,8 @@ type Supabase = Awaited<ReturnType<typeof createClient>>;
 const LIST_COLUMNS =
   'id, course_name, tees_played, round_date, round_type, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways';
 
-const UNFINISHED_COLUMNS = 'id, course_name, tees_played, round_date, round_type, holes_played, current_hole, updated_at';
+// `start_hole` is the shotgun start each autosave keeps in draft_data (lib/golf/round-session/play-order.ts), not a column.
+const UNFINISHED_COLUMNS = 'id, course_name, tees_played, round_date, round_type, holes_played, current_hole, updated_at, start_hole:draft_data->startHole';
 
 const log = (what: string, err: unknown) => chLogServer('rounds', what, err);
 
@@ -91,12 +93,9 @@ async function loadUnfinished(supabase: Supabase, playerId: string, completed: P
       const played = (byRound.get(r.id) ?? []).sort((a, b) => a.n - b.n);
       const withPar = played.filter((h): h is { n: number; score: number; par: number } => h.par != null);
       const scored = new Set(played.map((h) => h.n));
-      let next: number | null = null;
-      for (let n = 1; n <= total; n++)
-        if (!scored.has(n)) {
-          next = n;
-          break;
-        }
+      // The next hole to play, in play order: a round started on hole 6 continues at hole 1 once 6 to 18 are in.
+      const at = frontierIndex(total, normalizeStartHole(r.start_hole, total), (i) => scored.has(i + 1));
+      const next: number | null = at >= 0 ? at + 1 : null;
       const course = courseName(r.course_name);
       const date = r.round_date.slice(0, 10);
       const finished = !holes.error && total > 0 && played.length >= total;
