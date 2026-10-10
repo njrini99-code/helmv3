@@ -182,7 +182,7 @@ export async function loadCalendar(input: {
     fetchAllRowsResult((from, to) =>
       supabase
         .from('golf_events')
-        .select('id, title, event_type, start_time, end_time, location, description, status, all_day, recurrence_rule, parent_event_id')
+        .select('id, title, event_type, start_time, end_time, location, description, status, all_day, recurrence_rule, parent_event_id, requires_rsvp')
         .eq('team_id', input.teamId)
         .gte('start_time', fromIso)
         .lt('start_time', toIso)
@@ -275,6 +275,8 @@ export async function loadCalendar(input: {
       recurring,
       people: input.role === 'coach' ? invitees : me && invitees.includes(me) ? [me] : [],
       rsvp: input.role === 'coach' ? replies : me && replies[me] ? { [me]: replies[me] } : {},
+      // Owner, 2026-10-08: replies are off unless the coach turned them on; null (older rows) reads as off.
+      rsvpRequired: !cls && r.requires_rsvp === true,
       owner,
       busyOnly: false,
       instructor: klass?.instructor ?? null,
@@ -334,6 +336,7 @@ export async function loadCalendar(input: {
           recurring: rule ? describeRecurrenceRule(rule) : null,
           people: [],
           rsvp: {},
+          rsvpRequired: false,
           owner: null,
           busyOnly: false,
           instructor: null,

@@ -789,7 +789,7 @@ export function Calendar({
                           code="CH-6301"
                           icon={CalendarDays}
                           title={sel.length ? 'Nothing on these players’ schedules in this range.' : 'Nothing on the calendar in this range.'}
-                          body={coach ? 'Events you publish show here, with replies and overlaps.' : 'Events your coach invites you to show here.'}
+                          body={coach ? 'Events you publish show here, with any overlaps and replies.' : 'Events your coach invites you to show here.'}
                         />
                       </div>
                     ))}

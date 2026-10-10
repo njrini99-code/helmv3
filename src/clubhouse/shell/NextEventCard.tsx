@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { ChNextEvent } from '../data/shell';
 
-/** The sidebar's next-event card: when, what, and how many invitees have said yes. */
+/** The sidebar’s next-event card: when, what, and, for an event that asks for replies, how many invitees have said yes. */
 export function NextEventCard({ event }: { event: ChNextEvent }) {
   const r = event.ready;
   return (

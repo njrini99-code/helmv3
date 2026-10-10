@@ -277,15 +277,59 @@ describe('Calendar · saves that fail', () => {
     expect(screen.queryByText(/players notified/)).toBeNull();
   });
 
-  it('C-17 a clean publish still says players were notified', async () => {
+  it('C-17 a clean publish of an event that requires an RSVP still says players were notified', async () => {
     const user = userEvent.setup();
     a.createGolfEvent.mockResolvedValue({ success: true, data: { eventId: 'new-1' } });
     wrap(cal(), { initialNew: true });
     await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Short game');
+    await user.click(screen.getByRole('checkbox', { name: 'Require RSVP' }));
     await user.click(screen.getByRole('button', { name: 'Publish event' }));
     await waitFor(() => expect(a.createGolfEvent).toHaveBeenCalledTimes(1));
+    expect(a.createGolfEvent.mock.calls[0]![0]).toMatchObject({ requiresRsvp: true });
     await screen.findByText(/Published · Short game · players notified/);
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('RSVP is off by default: a new event goes out with requiresRsvp false, and nothing claims anyone was notified (owner, 2026-10-08)', async () => {
+    const user = userEvent.setup();
+    a.createGolfEvent.mockResolvedValue({ success: true, data: { eventId: 'new-1' } });
+    wrap(cal(), { initialNew: true });
+    await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Short game');
+    const toggle = screen.getByRole('checkbox', { name: 'Require RSVP' }) as HTMLInputElement;
+    expect(toggle.checked).toBe(false);
+    expect(screen.getByText('Invited players see it on their calendar.')).toBeTruthy();
+    expect(screen.getByText('No notification sent')).toBeTruthy();
+    expect(screen.queryByText('Attendees will be notified')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(a.createGolfEvent).toHaveBeenCalledTimes(1));
+    expect(a.createGolfEvent.mock.calls[0]![0]).toMatchObject({ requiresRsvp: false });
+    await screen.findByText(/^Published · Short game$/);
+    expect(screen.queryByText(/players notified/)).toBeNull();
+  });
+
+  it('RSVP: a repeating series sends the toggle too, off unless turned on', async () => {
+    const user = userEvent.setup();
+    a.createRecurringEvent.mockResolvedValue({ success: true });
+    wrap(cal(), { initialNew: true });
+    await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Lifting');
+    await user.click(screen.getByRole('radio', { name: 'Weekly' }));
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(a.createRecurringEvent).toHaveBeenCalledTimes(1));
+    expect(a.createRecurringEvent.mock.calls[0]![0]).toMatchObject({ requiresRsvp: false });
+  });
+
+  it('RSVP: editing keeps the event’s own setting, and turning it off is sent', async () => {
+    const user = userEvent.setup();
+    a.updateGolfEvent.mockResolvedValue({ success: true });
+    // Travel briefing (e9) asks for replies.
+    wrap(cal(), { initialEvent: 'e9' });
+    await user.click(await screen.findByRole('button', { name: 'Edit event' }));
+    const toggle = (await screen.findByRole('checkbox', { name: 'Require RSVP' })) as HTMLInputElement;
+    expect(toggle.checked).toBe(true);
+    await user.click(toggle);
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(a.updateGolfEvent).toHaveBeenCalledTimes(1));
+    expect(a.updateGolfEvent.mock.calls[0]![1]).toMatchObject({ requiresRsvp: false });
   });
 
   it('CH-6102 an end before the start is refused', async () => {
@@ -1029,7 +1073,8 @@ describe('Calendar · the failure toast’s Retry', () => {
       code: 'CH-6001',
       write: () => a.createGolfEvent,
       failed: /Couldn’t publish Short game/,
-      done: 'Published · Short game · players notified',
+      // RSVP is off by default, and an event without it notifies nobody (owner, 2026-10-08).
+      done: 'Published · Short game',
       drive: async (user) => {
         wrap(cal(), { initialNew: true });
         await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Short game');
@@ -1234,6 +1279,8 @@ const eventRow = (id: string, over: Record<string, unknown> = {}) => ({
   all_day: false,
   recurrence_rule: null,
   parent_event_id: null,
+  // The loader cases below are about replies, so their events ask for them; the RSVP-off case sets this itself.
+  requires_rsvp: true,
   ...over,
 });
 const classRow = (id: string, playerId: string) => ({ id, player_id: playerId, instructor: 'Dr. Osei', days: ['T', 'R'], semester: 'Fall 2026', building: 'Hanes', room: '120' });
@@ -1373,6 +1420,14 @@ describe('Calendar · the loader', () => {
     const p3 = await load(asPlayer('p3'));
     wrap(p3);
     expect(document.querySelector('.ch-in__need')!.textContent).toMatch(/Event e1/);
+  });
+
+  it('RSVP off by default: a row with requires_rsvp false or null loads as not asking for replies, and a class never does (owner, 2026-10-08)', async () => {
+    const { asked } = serve({ ...healthy(), golf_events: { data: [eventRow('e1'), eventRow('e2', { requires_rsvp: false }), eventRow('e3', { requires_rsvp: null }), classEventRow('c1', 'k1')] } });
+    const d = await load();
+    const flags = Object.fromEntries(d.events.filter((e) => e.type !== 'busy').map((e) => [e.id, e.rsvpRequired]));
+    expect(flags).toEqual({ e1: true, e2: false, e3: false, c1: false });
+    expect(JSON.stringify(asked.golf_events![0])).toMatch(/requires_rsvp/);
   });
 
   it('62101 the loader reads each table once for the whole screen (the events twice: the window, and the coach’s count for CH-6309), in three rounds: the team, then events with classes and busy time, then every event’s replies together', async () => {

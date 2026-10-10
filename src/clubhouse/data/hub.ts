@@ -280,8 +280,10 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
       tripEvents: { rows: [], error: false },
       rsvps: {
         // Only events that still take a reply: respondToEvent refuses the rest, so they get no Going / Maybe / Can't.
+        // An event that doesn't ask for replies is never listed (owner, 2026-10-08); when that couldn't be read, the
+        // section says so rather than offering replies the coach never asked for.
         rows: replyable
-          .filter((e) => !closed.has(e.event_id))
+          .filter((e) => !closed.error && !closed.has(e.event_id))
           .map((e) => ({
             eventId: e.event_id,
             title: e.title,
@@ -291,7 +293,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
             mine: (e.rsvp_status ?? 'pending') as ChRsvp,
             counts: null,
           })),
-        error: !summary,
+        error: !summary || closed.error,
       },
       announcements: { rows: (annList ?? []).map((a) => announcement(a, authors, f, 'player')), error: !annList },
       trips: {
@@ -332,11 +334,13 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
       .is('parent_task_id', null)
       .order('due_date', { ascending: false, nullsFirst: true })
       .limit(HUB_TASK_CAP),
+    // The RSVPs section: this week's events that ask for replies (owner, 2026-10-08: off unless the coach turns it on).
     supabase
       .from('golf_events')
       .select('id, title, event_type, start_time, all_day, location')
       .eq('team_id', input.teamId)
       .neq('event_type', CLASS_EVENT_TYPE)
+      .eq('requires_rsvp', true)
       .is('cancelled_at', null)
       .gte('start_time', now.toISOString())
       .lt('start_time', `${weekEnd}T23:59:59Z`)
@@ -466,9 +470,14 @@ async function invitedTo(supabase: Awaited<ReturnType<typeof createClient>>, eve
 
 /**
  * The rules respondToEvent enforces (updateRSVP in lib/calendar/rsvp.ts): a cancelled event takes no reply, nor one that
- * has started (an all-day event a day after its stored start), nor one past its RSVP deadline.
+ * has started (an all-day event a day after its stored start), nor one past its RSVP deadline. And an event that doesn't
+ * ask for replies takes none (owner, 2026-10-08: RSVP is off unless the coach turns it on; null reads as off).
  */
-export function replyIsClosed(e: { status: string | null; cancelled_at: string | null; all_day: boolean | null; start_time: string | null; rsvp_deadline: string | null }, nowMs: number): boolean {
+export function replyIsClosed(
+  e: { status: string | null; cancelled_at: string | null; all_day: boolean | null; start_time: string | null; rsvp_deadline: string | null; requires_rsvp?: boolean | null },
+  nowMs: number,
+): boolean {
+  if (e.requires_rsvp !== true) return true;
   if (e.status === 'cancelled' || e.cancelled_at) return true;
   const start = e.start_time ? new Date(e.start_time).getTime() : NaN;
   if (Number.isFinite(start) && (e.all_day ? start + 86400000 : start) <= nowMs) return true;
@@ -476,15 +485,20 @@ export function replyIsClosed(e: { status: string | null; cancelled_at: string |
 }
 
 /**
- * Which of these events no longer take a reply, and which are all day (the hub summary carries no all_day, F-53).
- * A read that fails closes nothing: the row stays and the server still decides.
+ * Which of these events take no reply, and which are all day (the hub summary carries no all_day, F-53). A read that
+ * fails sets `error`: whether an event asks for replies is unknown then, so the caller lists none and says so.
  */
-async function closedReplies(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[], nowMs: number): Promise<Set<string> & { allDay: Set<string> }> {
-  const closed = Object.assign(new Set<string>(), { allDay: new Set<string>() });
+async function closedReplies(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  eventIds: string[],
+  nowMs: number,
+): Promise<Set<string> & { allDay: Set<string>; error: boolean }> {
+  const closed = Object.assign(new Set<string>(), { allDay: new Set<string>(), error: false });
   for (const ids of chunkIds([...new Set(eventIds)])) {
-    const { data, error } = await supabase.from('golf_events').select('id, status, cancelled_at, all_day, start_time, rsvp_deadline').in('id', ids);
+    const { data, error } = await supabase.from('golf_events').select('id, status, cancelled_at, all_day, start_time, rsvp_deadline, requires_rsvp').in('id', ids);
     if (error) {
       log('eventReplyRules', error);
+      closed.error = true;
       continue;
     }
     for (const e of data ?? []) {

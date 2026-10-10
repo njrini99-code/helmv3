@@ -20,7 +20,7 @@ export function CalendarFirstRun({ onNew }: { onNew: () => void }) {
         code="CH-6309"
         icon={CalendarDays}
         title="Nothing on the calendar"
-        body="Add practices, qualifiers and trips. Players see them on their calendar and can reply."
+        body="Add practices, qualifiers and trips. Players see them on their calendar, and reply when you require an RSVP."
         action={
           <Button variant="primary" leftIcon={Plus} onClick={onNew}>
             Create event

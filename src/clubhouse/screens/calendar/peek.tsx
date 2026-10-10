@@ -11,13 +11,14 @@ import { TYPE_ICON } from './type-icon';
 
 /**
  * P006-C3: an event peeks where it is listed: a hold on the phone's agenda row, a rest of the pointer on a week block.
- * The card says what, when, where and who has answered; the actions open it, and for the coach, Nudge the people who
- * haven't replied (Messages, prefilled; the coach presses Send) and, off site, Directions (a plain maps link).
+ * The card says what, when, where and, when the event asks for replies, who has answered; the actions open it, and for
+ * the coach, Nudge the people who haven't replied (Messages, prefilled; the coach presses Send) and, off site, Directions (a plain maps link).
  */
 const OFF_SITE = new Set(['qualifier', 'tournament', 'travel']);
 
 export function eventPeekActions(e: ChCalEvent, coach: boolean, people: Map<string, ChCalPerson>, onOpen: () => void): PeekAction[] {
-  const waiting = coach ? e.people.filter((p) => (e.rsvp[p] ?? 'pending') === 'pending') : [];
+  // An event that doesn't ask for replies has no one to nudge (owner, 2026-10-08).
+  const waiting = coach && e.rsvpRequired ? e.people.filter((p) => (e.rsvp[p] ?? 'pending') === 'pending') : [];
   const when = e.allDay ? `${dowOf(e.date)} ${dayNum(e.date)} ${monthName(e.date)}` : `${dowOf(e.date)} ${dayNum(e.date)} ${monthName(e.date)} at ${fmtHour(e.start!)}`;
   const href = waiting.length ? messagesPrefillHref({ players: waiting, draft: `Can you let me know if you’re coming to ${e.title} (${when})? You can reply on the event in Calendar.`, title: e.title }) : null;
   const nudge = href ? rebuiltHref(href) : null;
@@ -44,7 +45,13 @@ export function EventPeekCard({ e, coach, people }: { e: ChCalEvent; coach: bool
         {dowOf(e.date)} {dayNum(e.date)} {monthName(e.date)} · {rangeLabel(e)}
       </span>
       {e.location && <span className="ch-evpeek__m">{e.location}</span>}
-      {coach && e.people.length > 0 && (
+      {coach && e.people.length > 0 && !e.rsvpRequired && (
+        // No replies asked for: the card says who is on it, never a reply count.
+        <span className="ch-evpeek__r ch-num">
+          <b>{e.people.length}</b> invited
+        </span>
+      )}
+      {coach && e.people.length > 0 && e.rsvpRequired && (
         <span className="ch-evpeek__r ch-num">
           <b>{counts.accepted}</b> of {e.people.length} going
           {counts.declined ? ` · ${counts.declined} can’t` : ''}

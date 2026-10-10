@@ -378,16 +378,33 @@ describe('Shell · sidebar data', () => {
     expect(screen.getByRole('link', { name: 'Roster' }).querySelector('.ch-navitem__count')).toBeNull();
   });
 
-  it('CH-1304 nothing upcoming: no card; with one, the card shows who has confirmed', async () => {
+  it('CH-1304 nothing upcoming: no card; with one that requires an RSVP, the card shows who has confirmed', async () => {
     const none = await loadClubhouseShell('t1');
     expect(none.nextEvent).toBeNull();
     supabaseTables.current = {
-      golf_events: { data: [upcoming] },
+      golf_events: { data: [{ ...upcoming, requires_rsvp: true }] },
       golf_event_attendance: { data: [{ status: 'accepted' }, { status: 'accepted' }, { status: 'pending' }] },
     };
     const shell = await loadClubhouseShell('t1');
     wrap(<Sidebar userData={coach} shell={shell} pathname="/golf/dashboard" />);
     expect(document.querySelector('.ch-next')!.textContent).toMatch(/2 of 3 confirmed/);
+  });
+
+  it('CH-1304 an event that doesn’t require an RSVP shows when and where, with no confirmed count, and its replies are never read (owner, 2026-10-08)', async () => {
+    for (const requires_rsvp of [false, null]) {
+      supabaseTables.current = {
+        golf_events: { data: [{ ...upcoming, requires_rsvp }] },
+        golf_event_attendance: { data: [{ status: 'accepted' }, { status: 'pending' }] },
+      };
+      const shell = await loadClubhouseShell('t1');
+      expect(shell.nextEvent?.ready).toBeNull();
+      const { unmount } = wrap(<Sidebar userData={coach} shell={shell} pathname="/golf/dashboard" />);
+      const card = document.querySelector('.ch-next')!;
+      expect(card.textContent).not.toMatch(/confirmed/);
+      expect(card.querySelector('.ch-next__bar')).toBeNull();
+      expect(card.textContent).toContain(shell.nextEvent!.metaLabel);
+      unmount();
+    }
   });
 
   it('F-40 a player\'s synced class is never the team\'s next event', async () => {
