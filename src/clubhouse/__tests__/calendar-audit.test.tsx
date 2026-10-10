@@ -240,7 +240,7 @@ describe('Calendar · swap audit §8 edits', () => {
   });
 });
 
-describe('Calendar · RSVP off unless the coach turns it on (owner, 2026-10-08)', () => {
+describe('60807 Calendar · RSVP off unless the coach turns it on (owner, 2026-10-08)', () => {
   const off = (o: Partial<ChCalEvent> = {}) => ev({ id: 'np', title: 'Range work', date: '2026-10-15', people: ['theo', 'sofia'], rsvp: { theo: 'accepted' }, rsvpRequired: false, ...o });
 
   it('the coach’s detail lists who is invited with no reply counts or badges, and Needs attention never asks for replies', async () => {

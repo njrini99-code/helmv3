@@ -1,5 +1,23 @@
 # P006 — Calendar: changelog
 
+## 2026-10-10 — RSVP only when the coach requires it
+
+Owner: do not always require RSVPs unless the coach explicitly toggles it.
+
+- The editor has a Require RSVP switch under the invite list, off for a new
+  event and seeded from the event on edit or Duplicate. It is sent as
+  `requiresRsvp` on create, series create and edit; a series edit sends it only
+  when the coach changed it (`editRecurringEvent` now accepts it). The receipt
+  gains an RSVP row (Required / Not asked).
+- Copy follows the switch: the header, footer and Published toast promise a
+  notification only when RSVP is on, and the cancel question says no one is
+  notified for an event without it (the 2026-10-08 notification gates).
+- An event without RSVP shows no reply counts, badges, player reply control,
+  Needs attention row, peek count or Nudge; the coach's panel lists it as
+  Invited with the player count, and attendance shows Not marked instead of a
+  reply. `ChCalEvent.rsvpRequired` carries the flag (null reads as off).
+- The first-run line says players reply when you require an RSVP.
+
 ## 2026-10-08 — the details panel: a plate for every event type, darker grey text, smooth scroll
 
 Owner review of the column beside the week ("black on ivory", "rough to scroll"):
