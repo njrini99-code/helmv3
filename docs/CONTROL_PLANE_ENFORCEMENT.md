@@ -45,10 +45,10 @@ asserted here — see `.claude/rules/database.md`.
 | WorktreeRemove | `(all tools)` | `.claude/hooks/worktree-remove.mjs` | yes | no — records/reports only |
 | UserPromptSubmit | `(all tools)` | `.claude/hooks/route-prompt.mjs` | yes | no — records/reports only |
 | PreCompact | `(all tools)` | `.claude/hooks/save-session-state.mjs` | yes | no — records/reports only |
-| PreToolUse | `Bash` | `.claude/hooks/deps-hygiene.mjs` | yes | yes |
 | PostToolUse | `Write\|Edit` | `.claude/hooks/format-on-edit.mjs` | yes | no — records/reports only |
+| PostToolUse | `Bash` | `.claude/hooks/deps-hygiene.mjs` | yes | no — records/reports only |
 
-Exactly one hook can refuse a tool call: `deps-hygiene.mjs` under matcher `Bash`. Every other wired hook observes.
+No hook can refuse a tool call; every wired hook observes or reports.
 
 ## Permission rules
 

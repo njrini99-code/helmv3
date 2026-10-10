@@ -1,4 +1,4 @@
-// Fixture tests for .claude/hooks/deps-hygiene.mjs (advisory SessionStart + PreToolUse(Bash))
+// Fixture tests for .claude/hooks/deps-hygiene.mjs (advisory SessionStart + PostToolUse(Bash))
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, symlinkSync, writeFileSync, rmSync, realpathSync } from 'node:fs';
@@ -55,19 +55,19 @@ describe('SessionStart', () => {
   });
 });
 
-describe('PreToolUse(Bash)', () => {
-  it('warns on install-ish npm through a symlinked node_modules, even lockfile-only', () => {
-    expect(run('PreToolUse', dirs.linked, 'npm uninstall x --package-lock-only')).toMatch(/symlink/);
-    expect(run('PreToolUse', dirs.linked, 'npm ci')).toMatch(/symlink/);
+describe('PostToolUse(Bash)', () => {
+  it('warns after install-ish npm through a symlinked node_modules, even lockfile-only', () => {
+    expect(run('PostToolUse', dirs.linked, 'npm uninstall x --package-lock-only')).toMatch(/ran through node_modules/);
+    expect(run('PostToolUse', dirs.linked, 'npm ci')).toMatch(/ran through node_modules/);
   });
   it('is silent for unrelated commands and for read-only npm', () => {
-    expect(run('PreToolUse', dirs.linked, 'git status && npm run guards')).toBe('');
-    expect(run('PreToolUse', dirs.linked, 'npm ls --all')).toBe('');
+    expect(run('PostToolUse', dirs.linked, 'git status && npm run guards')).toBe('');
+    expect(run('PostToolUse', dirs.linked, 'npm ls --all')).toBe('');
   });
   it('points bare on-demand tools at their pinned invocation, and not pinned calls', () => {
     for (const tool of Object.keys(ON_DEMAND_TOOLS)) {
-      expect(run('PreToolUse', dirs.plain, `npx ${tool} run x`)).toMatch(new RegExp(`${tool} is not a repo dependency`));
-      expect(run('PreToolUse', dirs.plain, `npx --yes ${tool}@1.2.3 run x`)).toBe('');
+      expect(run('PostToolUse', dirs.plain, `npx ${tool} run x`)).toMatch(new RegExp(`${tool} is not a repo dependency`));
+      expect(run('PostToolUse', dirs.plain, `npx --yes ${tool}@1.2.3 run x`)).toBe('');
     }
   });
   it('never fails on malformed stdin', () => {

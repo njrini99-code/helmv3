@@ -152,17 +152,18 @@ fetches and never changes the checkout.
 
 Most worktrees symlink the canonical checkout's `node_modules` ("deps: symlinked"),
 so one `npm` write is felt by every worktree sharing it. `.claude/hooks/deps-hygiene.mjs`
-is advisory only (it never blocks, per `AGENTS.md`) and runs on SessionStart and before
-every Bash call:
+is advisory only (it never blocks, per `AGENTS.md`) and runs on SessionStart and after
+every Bash call (PostToolUse on purpose: this repo keeps no PreToolUse hook, see
+`src/test/scripts/control-plane-enforcement.test.ts`):
 
 - **SessionStart:** reports a broken `node_modules` link, a borrowed `node_modules` whose
   donor `package-lock.json` differs from this checkout's, and a Node major that differs
   from `.nvmrc`. Silent when healthy. A branch that deliberately changes the lockfile
   will see the skew note; that is expected until its own install.
-- **Before Bash:** warns when `npm ci|install|uninstall|dedupe|…` would write through a
+- **After Bash:** warns when `npm ci|install|uninstall|dedupe|…` would write through a
   symlinked `node_modules` (this includes `--package-lock-only`, which still rewrites
   `node_modules/.package-lock.json`; detach the link first), or when the canonical
-  checkout is about to install while other worktrees share it and `next dev|build` is
+  checkout just installed while other worktrees share it and `next dev|build` is
   running. It also points a bare `promptfoo` / `momentic` call at its pinned form.
 - **On-demand tools** (not dependencies, so they do not bloat every install):
   `npm run evals` / `npx --yes promptfoo@0.124.0 <cmd>`; `npx --yes momentic@3.63.1 <cmd>`.

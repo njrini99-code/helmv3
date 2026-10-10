@@ -1,5 +1,9 @@
 #!/usr/bin/env node
-// .claude/hooks/deps-hygiene.mjs — SessionStart + PreToolUse(Bash). ADVISORY ONLY.
+// .claude/hooks/deps-hygiene.mjs — SessionStart + PostToolUse(Bash). ADVISORY ONLY.
+//
+// PostToolUse on purpose: the repo's owner grant is "no PreToolUse hook" (a test and the
+// enforcement inventory treat any PreToolUse hook as a blocking mechanism), so this
+// hook reports right after the command instead of before it.
 //
 // Why: most worktrees do not own a node_modules, they symlink the canonical
 // checkout's (scripts/lib/create-workspace.mjs, "deps: symlinked"). That makes
@@ -12,11 +16,11 @@
 //   3. heavy, rarely-run tools (momentic, promptfoo) were dependencies of every
 //      install; they now run through pinned npx and a bare/unpinned call drifts.
 //
-// Never blocks (AGENTS.md: no hook blocks Bash) and never throws; every failure
+// Never blocks and never throws; every failure
 // degrades to a silent exit 0. Silent when there is nothing to say.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, lstatSync, readFileSync, readlinkSync, realpathSync } from 'node:fs';
+import { existsSync, lstatSync, statSync, readFileSync, readlinkSync, realpathSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
 // name -> pinned invocation. Keep in sync with package.json scripts / CI.
@@ -96,6 +100,14 @@ export function sharers(root) {
   return out;
 }
 
+function hiddenLockTouchedRecently(root, seconds = 180) {
+  try {
+    return Date.now() - statSync(join(root, 'node_modules', '.package-lock.json')).mtimeMs < seconds * 1000;
+  } catch {
+    return true; // cannot tell: say it, rather than stay silent
+  }
+}
+
 function liveBuilds() {
   try {
     const ps = execFileSync('ps', ['-axo', 'command'], { encoding: 'utf-8', timeout: 3000 });
@@ -132,35 +144,37 @@ function sessionStart(root) {
   if (notes.length) emit('SessionStart', `deps-hygiene: ${notes.join(' | ')}`);
 }
 
-function preBash(root, command) {
+function postBash(root, command) {
   const notes = [];
   const nm = nodeModulesState(root);
   if (INSTALLISH.test(command)) {
     const shared = nm.kind === 'link' ? [root] : sharers(root);
     if (nm.kind === 'link') {
-      notes.push(
-        `node_modules here is a symlink to ${nm.target}; npm writes through it (even with --package-lock-only it rewrites node_modules/.package-lock.json for every worktree sharing it). For a lockfile-only change, detach first: rm node_modules && npm install --package-lock-only --ignore-scripts && ln -s ${nm.target} node_modules`,
-      );
+      if (hiddenLockTouchedRecently(root)) {
+        notes.push(
+          `that npm command ran through node_modules -> ${nm.target}; npm writes through the link (even --package-lock-only rewrites node_modules/.package-lock.json for every worktree sharing it). Check ${nm.target}/.package-lock.json still matches the donor package-lock.json; for lockfile-only work, detach first: rm node_modules && npm install --package-lock-only --ignore-scripts && ln -s ${nm.target} node_modules`,
+        );
+      }
     } else if (nm.kind === 'dir' && shared.length && !LOCK_ONLY.test(command)) {
       const builds = liveBuilds();
       notes.push(
-        `${shared.length} worktree(s) share this node_modules${builds ? ` and ${builds} next dev/build process(es) are running` : ''}; an install here changes what all of them resolve. Run it when nothing is running, then restart dev servers.`,
+        `that install changed a node_modules shared by ${shared.length} worktree(s)${builds ? ` while ${builds} next dev/build process(es) were running` : ''}; restart their dev servers and re-run their checks. Install here only when nothing is running.`,
       );
     }
   }
   for (const [tool, how] of Object.entries(ON_DEMAND_TOOLS)) {
     const bare = new RegExp(`(?:^|[;&|(]\\s*|npx\\s+(?:--yes\\s+|-y\\s+)?)${tool}(?![@\\w/.-])`);
-    if (bare.test(command)) notes.push(`${tool} is not a repo dependency any more; use ${how}`);
+    if (bare.test(command)) notes.push(`${tool} is not a repo dependency any more; use ${how} (a bare call only works from a stale install)`);
   }
-  if (notes.length) emit('PreToolUse', `deps-hygiene: ${notes.join(' | ')}`);
+  if (notes.length) emit('PostToolUse', `deps-hygiene: ${notes.join(' | ')}`);
 }
 
 function main() {
   const input = readStdinJson();
   const root = process.env.CLAUDE_PROJECT_DIR || input.cwd || process.cwd();
   if (input.hook_event_name === 'SessionStart') return sessionStart(root);
-  if (input.hook_event_name === 'PreToolUse' && input.tool_name === 'Bash') {
-    return preBash(root, String(input.tool_input?.command ?? ''));
+  if (input.hook_event_name === 'PostToolUse' && input.tool_name === 'Bash') {
+    return postBash(root, String(input.tool_input?.command ?? ''));
   }
 }
 
