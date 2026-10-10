@@ -304,7 +304,6 @@
     "knip": "^6.39.0",
     "madge": "^8.0.0",
     "markdownlint-cli2": "^0.23.3",
-    "momentic": "^3.63.1",
     "next-devtools-mcp": "0.4.0",
     "postcss-load-config": "^6.0.1",
     "postgres": "^3.4.9",
