@@ -385,6 +385,14 @@ describe('Round tracking: tap in (CH-11913)', () => {
     await waitFor(() => expect(screen.getByText(/^Shot 4/)).toBeInTheDocument());
     expect(onHoleStatsUpdate).toHaveBeenCalledWith(0, null);
     expect(code('CH-11913')).toHaveTextContent('Holed from 1 ft · score 4');
+
+    // A tap in again after the undo holes the 1 ft putt that is left: one row, the same score.
+    await user.click(tapIn()!);
+    await waitFor(() => expect(onHoleComplete).toHaveBeenCalledTimes(2));
+    expect(onHoleComplete).toHaveBeenLastCalledWith(0, expect.objectContaining({ score: 4, putts: 2 }));
+    expect(onSaveShot).toHaveBeenCalledTimes(3);
+    expect(onSaveShot).toHaveBeenLastCalledWith(expect.objectContaining({ shotNumber: 4, result: 'hole', distanceToHoleBefore: 1, puttDistanceFeet: 1 }));
+    expect(screen.getByText('Par')).toBeInTheDocument();
   });
 
   it('follows the meters preference; feet are what is stored', async () => {
