@@ -52,6 +52,11 @@
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stamp-workspace.mjs",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deps-hygiene.mjs",
+            "timeout": 10
           }
         ]
       },
@@ -121,6 +126,16 @@
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-on-edit.mjs",
             "timeout": 20
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deps-hygiene.mjs",
+            "timeout": 10
           }
         ]
       }
