@@ -35,9 +35,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Category | Files | Routed | Claims authority | Dead refs |
 | --- | --- | --- | --- | --- |
 | `POLICY` | 16 | 3 | 6 | 0 |
-| `AGENT_SKILL` | 131 | 0 | 8 | 0 |
+| `AGENT_SKILL` | 130 | 0 | 8 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 14 | 0 |
-| `REFERENCE` | 52 | 15 | 20 | 0 |
+| `REFERENCE` | 52 | 15 | 20 | 1 |
 | `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
@@ -205,7 +205,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/skills/supabase-postgres-best-practices/references/security-privileges.md` | current | - | - | - | - |
 | `.claude/skills/supabase-postgres-best-practices/references/security-rls-basics.md` | current | - | - | - | - |
 | `.claude/skills/supabase-postgres-best-practices/references/security-rls-performance.md` | current | - | - | - | - |
-| `.claude/skills/supabase-server/SKILL.md` | current | - | - | - | - |
 | `.claude/skills/supabase/CHANGELOG.md` | current | - | - | - | - |
 | `.claude/skills/supabase/SKILL.md` | current | - | - | - | - |
 | `.claude/skills/supabase/assets/feedback-issue-template.md` | current | - | - | - | - |
@@ -269,7 +268,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/security/GITHUB_APPS_2026-09-06.md` | current | - | - | - | - |
 | `docs/security/accepted-risks.md` | current | - | - | - | - |
 | `docs/security/auth-config.md` | current | yes | - | yes | - |
-| `docs/setup/BACKUP_AND_DISASTER_RECOVERY.md` | current | - | - | - | - |
+| `docs/setup/BACKUP_AND_DISASTER_RECOVERY.md` | current | - | - | - | 1 |
 | `docs/setup/DEPLOY.md` | current | - | - | yes | - |
 | `docs/setup/ENVIRONMENT_VARIABLES.md` | current | - | - | - | - |
 | `docs/setup/ERROR_MONITORING_SETUP.md` | current | - | - | - | - |
