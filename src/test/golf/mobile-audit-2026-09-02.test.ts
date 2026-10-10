@@ -55,7 +55,8 @@ describe('mobile audit 2026-09-02', () => {
 
   it('UI-10: Prev/Next move to a hole under the pill rule, or are disabled with the reason', () => {
     const src = read('src/components/fairway/pages/rounds-tracking/FairwayScorecardHeader.tsx');
-    expect(src).toContain('const canGoNext = Boolean(onNavigateToHole) && nextIndex < holes.length && holes[nextIndex]?.score != null;');
+    // Shotgun start (2026-10-10): next/previous follow play order, so `hasNext` replaces `nextIndex < holes.length`.
+    expect(src).toContain('const canGoNext = Boolean(onNavigateToHole) && hasNext && holes[nextIndex]?.score != null;');
     expect(src).toContain('disabled={!canGoNext}');
     expect(src).toContain("'Finish this hole to move on'");
     expect(src).toContain('disabled={!canGoPrev}');
