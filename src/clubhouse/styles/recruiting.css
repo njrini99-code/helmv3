@@ -96,15 +96,15 @@
 }
 .ch-rec-pipe__seg.is-1 {
   left: calc(12.5% + 32px);
-  background: #ddd8cb;
+  background: var(--ch-ivory-300);
 }
 .ch-rec-pipe__seg.is-2 {
   left: calc(37.5% + 32px);
-  background: #b3d0bd;
+  background: var(--ch-green-200);
 }
 .ch-rec-pipe__seg.is-3 {
   left: calc(62.5% + 32px);
-  background: #6f9f83;
+  background: var(--ch-green-400);
 }
 .ch-rec-pipe__stage {
   position: relative;
@@ -133,20 +133,20 @@
   border-radius: 50%;
   font: 600 21px/1 var(--ch-font-sans);
   letter-spacing: -0.02em;
-  --ch-rec-ring: #cfc9ba;
+  --ch-rec-ring: var(--ch-ivory-400);
   background: var(--ch-ivory-25);
   color: var(--ch-text-primary);
   box-shadow: 0 0 0 2px var(--ch-rec-ring), 0 6px 14px -10px rgb(28 25 18 / 0.35);
   transition: transform var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-rec-pipe__stage.is-recruiting > .ch-rec-pipe__dot {
-  --ch-rec-ring: #8dbb9f;
+  --ch-rec-ring: color-mix(in oklab, var(--ch-green-400) 60%, var(--ch-ivory-25));
   background: var(--ch-green-50);
   color: var(--ch-green-600);
 }
 .ch-rec-pipe__stage.is-offered > .ch-rec-pipe__dot {
-  --ch-rec-ring: #4f8a67;
-  background: #cfe6d7;
+  --ch-rec-ring: var(--ch-green-400);
+  background: var(--ch-green-100);
   color: var(--ch-green-800);
 }
 .ch-rec-pipe__stage.is-committed > .ch-rec-pipe__dot {
@@ -351,7 +351,7 @@
   width: var(--ch-rec-av, 32px);
   height: var(--ch-rec-av, 32px);
   border-radius: 50%;
-  background: #e3ece6;
+  background: var(--ch-green-50);
   color: var(--ch-green-800);
   font: 600 calc(var(--ch-rec-av, 32px) * 0.36) / 1 var(--ch-font-sans);
 }
@@ -381,7 +381,7 @@
   color: var(--ch-green-600);
 }
 .ch-rec-chip.is-offered {
-  background: #cfe6d7;
+  background: var(--ch-green-100);
   color: var(--ch-green-800);
 }
 .ch-rec-chip.is-committed {
@@ -2166,4 +2166,25 @@
   :where(html[data-fw-theme='dark']) .ch-rec-act__b.is-cancel {
     background: rgb(36 42 37 / 0.97);
   }
+}
+
+/* Premium polish (2026-10-10): the pipeline's coins and the stage chips are filled with a gradient and a soft shadow, and the open
+   prospect's row carries a green rail, so the page reads as one instrument. Tokens only; presentation only. */
+.ch-rec-pipe__stage.is-offered > .ch-rec-pipe__dot,
+.ch-rec-pipe__stage.is-recruiting > .ch-rec-pipe__dot {
+  box-shadow:
+    0 0 0 2px var(--ch-rec-ring),
+    0 10px 16px -10px rgb(21 90 57 / 0.55);
+}
+@media (hover: hover) {
+  .ch-rec-pipe__stage:not(:disabled):hover > .ch-rec-pipe__dot {
+    transform: translateY(-2px);
+  }
+}
+.ch-rec-pipe__stage:not(:disabled):active > .ch-rec-pipe__dot {
+  transform: scale(0.96);
+  transition-duration: var(--ch-dur-press);
+}
+.ch-rec-pipe__seg {
+  transition: background var(--ch-dur-base) var(--ch-ease);
 }

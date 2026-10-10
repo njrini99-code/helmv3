@@ -2531,3 +2531,24 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
     height: 76px !important;
   }
 }
+
+/* Premium polish (2026-10-10): a team event's chip wraps rather than clipping to "Pine…", and a meeting's bar is a readable green
+   capsule (still as long as the meeting is) instead of a 6px black mark. The clash flag keeps its place on the bar's end. */
+.ch-cl-tthead__days i {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  line-height: 1.15;
+  word-break: break-word;
+}
+.ch-cl-tt__bar {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--ch-green-500), var(--ch-green-700));
+  box-shadow: 0 4px 8px -4px rgb(21 90 57 / 0.55);
+  transition: width var(--ch-dur-base) var(--ch-ease);
+}
+.ch-cl-tb__wk b {
+  font-weight: 600;
+}

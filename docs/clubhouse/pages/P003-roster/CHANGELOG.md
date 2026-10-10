@@ -1,5 +1,13 @@
 # P003 — Roster: changelog
 
+## 2026-10-10 — Where the team sits
+
+Presentation only. A new block between "Needs a look" and the toolbar (desktop): every ranked player is a coin on one scoring axis
+(lower is better) under a gold team-average line, with their average and first name; coins that would touch take another lane, and
+the first time it is seen they glide from the team line to their place. It is drawn from the roster's own standings (a player under
+the early floor is not on it) and is a pointer shortcut to the faces below, which stay the keyboard and screen-reader route. The
+team average is now memoised on the active players.
+
 ## 2026-10-08 — a player opens their profile; raised player tiles; green chosen chips
 
 Owner review (not yet signed off):

@@ -1,5 +1,10 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-10 — Gradient fills and warmer rows
+
+Presentation only. The RSVP split and the read bar are gradient fills that glide when a count changes; the date tile is a plate with a
+gold hairline; an RSVP row warms under the pointer.
+
 ## 2026-10-08 — the radio groups take programmatic focus
 
 Every Hub radio group (an RSVP's reply, Send to, Event, and Getting there in

@@ -2018,3 +2018,116 @@ html:has([data-ui='clubhouse'])::view-transition-old(.ch-rsm-reorder) {
 html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   animation: none;
 }
+
+/* P003: where the team sits (RosterSpread). Coins on one scoring axis under a gold team line; flat ground, the picture is the point. */
+.ch-rs-sp {
+  display: grid;
+  gap: 14px;
+  margin: 8px 0 22px;
+  padding: 22px 24px 8px;
+  border-radius: 18px;
+  background: var(--ch-bg-surface);
+  box-shadow:
+    inset 0 3px 0 var(--ch-champagne-500),
+    0 0 0 1px rgb(176 149 96 / 0.3),
+    0 18px 28px -24px rgb(28 25 18 / 0.5);
+}
+.ch-rs-sp__h h2 {
+  margin: 0 0 4px;
+  font: 600 19px/1.2 var(--ch-font-sans);
+  color: var(--ch-green-800);
+}
+.ch-rs-sp__h p {
+  margin: 0;
+  font: 400 13.5px/1.45 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-rs-sp__plot {
+  position: relative;
+  margin: 0 22px;
+}
+.ch-rs-sp__team {
+  position: absolute;
+  top: 0;
+  z-index: 0;
+  width: 0;
+  border-left: 2px solid var(--ch-champagne-500);
+  transition: left var(--ch-dur-base) var(--ch-ease);
+}
+.ch-rs-sp__team span {
+  position: absolute;
+  bottom: -26px;
+  left: 0;
+  transform: translateX(-50%);
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: var(--ch-champagne-500);
+  color: var(--ch-ink-950);
+  font: 700 12px/1.2 var(--ch-font-sans);
+  white-space: nowrap;
+}
+.ch-rs-sp__coins {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-rs-sp__coins li {
+  position: absolute;
+  width: 0;
+  transition: left var(--ch-dur-reveal) var(--ch-ease);
+}
+.ch-rs-sp__coins button {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: 76px;
+  margin-left: -38px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--ch-text-primary);
+  cursor: pointer;
+}
+.ch-rs-sp__coins .ch-avatar {
+  box-shadow: 0 0 0 3px var(--ch-ivory-25), 0 8px 14px -6px rgb(28 25 18 / 0.5);
+  transition: transform var(--ch-dur-quick) var(--ch-ease-spring);
+}
+@media (hover: hover) {
+  .ch-rs-sp__coins button:hover .ch-avatar {
+    transform: translateY(-3px) scale(1.08);
+  }
+}
+.ch-rs-sp__coins button:active .ch-avatar {
+  transform: scale(0.96);
+  transition-duration: var(--ch-dur-press);
+}
+.ch-rs-sp__coins b {
+  font: 700 14px/1.1 var(--ch-font-sans);
+  letter-spacing: -0.02em;
+}
+.ch-rs-sp__coins em {
+  font: 500 12px/1.1 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-rs-sp__axis {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 22px;
+  border-top: 1px solid var(--ch-ledger-rule);
+}
+.ch-rs-sp__axis span {
+  position: absolute;
+  top: 5px;
+  transform: translateX(-50%);
+  font: 500 12px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-rs-sp__coins li {
+    transition-delay: 0s;
+  }
+}

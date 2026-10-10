@@ -2811,3 +2811,124 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
     color: var(--ch-green-700);
   }
 }
+
+/* P009: the field on one number line (StandingsSpread), on the deep-green stage: coins at their total to par, the even-par line, and a
+   gold cut where the top-score places end. Presentation only; the leaderboard under it is the data. */
+.ch-qf-sp {
+  margin: 0 0 18px;
+  padding: 18px 22px 8px;
+  border-radius: 18px;
+  background:
+    radial-gradient(90% 140% at 0% 0%, rgb(159 224 182 / 0.16), transparent 58%),
+    var(--ch-stage-bg);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    0 0 0 1px var(--ch-green-900),
+    0 24px 36px -28px rgb(8 43 28 / 0.7);
+}
+.ch-qf-sp__plot {
+  position: relative;
+  margin: 18px 18px 0;
+}
+.ch-qf-sp__plot ul {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-qf-sp__plot li {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-left: -16px;
+  border-radius: 50%;
+  font: 700 11px/1 var(--ch-font-sans);
+  letter-spacing: 0.01em;
+  background: var(--ch-stage-ink-soft);
+  color: var(--ch-green-900);
+  box-shadow: 0 6px 10px -4px rgb(0 0 0 / 0.5);
+  transition:
+    left var(--ch-dur-reveal) var(--ch-ease),
+    transform var(--ch-dur-quick) var(--ch-ease-spring);
+}
+.ch-qf-sp__plot li.is-score {
+  background: var(--ch-stage-line);
+}
+.ch-qf-sp__plot li.is-pick {
+  background: var(--ch-stage-gold);
+}
+.ch-qf-sp__plot li.is-bubble {
+  background: transparent;
+  color: var(--ch-stage-gold);
+  box-shadow: inset 0 0 0 2px var(--ch-stage-gold);
+}
+.ch-qf-sp__plot li.is-hot {
+  transform: scale(1.18);
+}
+.ch-qf-sp__even,
+.ch-qf-sp__cut {
+  position: absolute;
+  top: 0;
+  width: 0;
+}
+.ch-qf-sp__even {
+  border-left: 1px solid var(--ch-stage-ink-soft);
+}
+.ch-qf-sp__cut {
+  border-left: 2px dashed var(--ch-stage-gold);
+}
+.ch-qf-sp__cut span {
+  position: absolute;
+  top: -8px;
+  left: 0;
+  transform: translate(-50%, -100%);
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: var(--ch-stage-gold);
+  color: var(--ch-green-900);
+  font: 700 11.5px/1.2 var(--ch-font-sans);
+  white-space: nowrap;
+}
+.ch-qf-sp__axis {
+  position: absolute;
+  inset: auto 0 0;
+  height: 22px;
+  border-top: 1px solid var(--ch-stage-rule);
+}
+.ch-qf-sp__axis span {
+  position: absolute;
+  top: 6px;
+  transform: translateX(-50%);
+  font: 500 12px/1 var(--ch-font-sans);
+  color: var(--ch-stage-ink-soft);
+}
+.ch-qf-sp__tip {
+  position: absolute;
+  z-index: 2;
+  top: 22px;
+  display: grid;
+  gap: 2px;
+  padding: 7px 11px;
+  border-radius: 10px;
+  background: var(--ch-stage-ink);
+  color: var(--ch-ink-900);
+  box-shadow: 0 12px 24px -10px rgb(0 0 0 / 0.55);
+  pointer-events: none;
+  transform: translate(-50%, 0);
+  white-space: nowrap;
+}
+.ch-qf-sp__tip b {
+  font: 700 13px/1.2 var(--ch-font-sans);
+}
+.ch-qf-sp__tip span {
+  font: 500 12px/1.2 var(--ch-font-sans);
+  color: var(--ch-ink-700);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-qf-sp__plot li {
+    transition-delay: 0s;
+  }
+}
