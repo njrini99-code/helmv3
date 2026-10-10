@@ -84,6 +84,11 @@ export interface ChSetupForm {
   qualifierRound: number | null;
   /** A course typed by hand: save it for next time and offer it to the library (the legacy "save course" opt-in). */
   saveCourse: boolean;
+  /**
+   * Shotgun start: the card's number of the hole the round starts on (15 on a back nine). Omitted, null or not one of
+   * the holes played, the first hole played. Only the play order changes; every hole is still played once.
+   */
+  start?: number | null;
 }
 
 export type ChResult<T> = { ok: true; data: T } | { ok: false; error: string };
@@ -119,6 +124,15 @@ export interface ChSetupPorts {
 export function holesForRound(holes: ChSetupHole[], count: 9 | 18, nine: 'front' | 'back'): ChSetupHole[] {
   if (count === 18 || holes.length <= 9) return holes.slice(0, count);
   return nine === 'back' ? holes.slice(9, 18) : holes.slice(0, 9);
+}
+
+/**
+ * Where the round starts, as a position 1..N in the holes it plays (what the engine takes: it numbers the holes it
+ * plays 1..N, a back nine included). The first hole when `start` is not one of them.
+ */
+export function startPosition(form: Pick<ChSetupForm, 'holes' | 'count' | 'nine' | 'start'>): number {
+  const at = holesForRound(form.holes, form.count, form.nine).findIndex((h) => h.n === form.start);
+  return at >= 0 ? at + 1 : 1;
 }
 
 export const parOf = (holes: ChSetupHole[]) => holes.reduce((s, h) => s + h.par, 0);

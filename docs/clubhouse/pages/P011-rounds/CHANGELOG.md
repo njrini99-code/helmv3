@@ -18,6 +18,27 @@ Held items: none
 - A tap in is a real stroke and putt (Rules of Golf 3.3c; concessions are match play only, 3.2b), so score, putts and
   strokes gained count it like any holed putt. Undo lifts one stroke at a time.
 - Medium on the tap, success once the hole's save lands (D-70).
+## 2026-10-10 — Shotgun start: choose the starting hole
+
+```text
+Design package: owner request "Shotgun start - select which hole they start on"
+PR/commit: agent/agent-a2f230fc2a2574d84 (based on agent/clubhouse-premium-backlog)
+Contract IDs: 110115 (new)
+Actions: none new (start(form) and savePartialRound carry `startHole`)
+Data impact: golf_rounds.draft_data.startHole on every autosave; no column, no migration
+Held items: none
+```
+
+- Round details gains a quiet "Starting hole" select (the shared `ui/Select`), once the scorecard is in. It lists the
+  holes the round plays by the card's numbers (10 to 18 on a back nine) and defaults to the first. The dock adds
+  "· Starts on hole N" only when the start is not the first hole.
+- Only the play order changes. Holes keep their numbers, pars and order on the strip, the scorecard and Round complete
+  (Out/In and Front · Back stay by hole number). A round started on 6 plays 6 to 18, then 1 to 5, and finishes after
+  the 18th hole played. A 9-hole round wraps inside its nine.
+- The strip lets the player go back to holes already played in this round's order, and not ahead to holes 1 to 5
+  before the round wraps to them. "Back to hole" on Round complete names the hole the round ended on.
+- The unfinished card's "Continue at hole N" follows the play order (a round started on 6 with 6 to 18 in continues at
+  hole 1).
 
 ## 2026-10-10 — Micro motion on the review
 

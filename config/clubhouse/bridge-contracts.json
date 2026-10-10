@@ -10847,6 +10847,19 @@
     ]
   },
   {
+    "id": 110115,
+    "page": "P011",
+    "category": 1,
+    "item": 15,
+    "name": "A_SHOTGUN_START_CHANGES_ONLY_THE_ORDER",
+    "meaning": "Once the scorecard is in, Round details offers \"Starting hole\": the holes the round plays, by the card's numbers, the first played by default; the dock adds \"· Starts on hole N\" when it is not the first. Start hands the engine the start as a position in the holes played (setup-reads#toStartForm `setup.startHole`); every autosave keeps it in draft_data, so Continue resumes in the same order. Holes keep their numbers and places everywhere (strip, scorecard, Out/In, Front · Back, the review); only the walk changes: from 6 the round plays 6 to 18, then 1 to 5, and finishes after the 18th hole played. A 9-hole round wraps inside its nine. The strip lets the player go back to holes played earlier in that order, never ahead past the next one; Round complete's Back names the hole the round ended on; the unfinished card's next hole follows the order (lib/golf/round-session/play-order.ts).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup; src/clubhouse/screens/rounds/entry/setup-reads.ts#toStartForm; src/clubhouse/screens/rounds/track/parts.tsx#TrackStrip; src/clubhouse/data/rounds.ts; src/lib/golf/round-session/play-order.ts",
+    "tests": [
+      "src/clubhouse/__tests__/rounds-shotgun-start.test.tsx"
+    ]
+  },
+  {
     "id": 110201,
     "page": "P011",
     "category": 2,

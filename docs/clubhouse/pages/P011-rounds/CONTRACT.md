@@ -34,7 +34,7 @@ both before first paint, so nothing is fetched in the browser to draw them. Roun
 qualifiers in the browser after the shell draws (a skeleton, CH-11407, until the day and the qualifiers are known), and
 the continue page hands over the round it loaded on the server (110114). Setup and the shot screen draw the same way
 in the preview, from fixtures and fake ports. Picking a hole in the review changes state only, so a reload opens
-on the first hole over par again. A test covers 110101 to 110114.
+on the first hole over par again. A test covers 110101 to 110115.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -52,6 +52,7 @@ on the first hole over par again. A test covers 110101 to 110114.
 | 110112 | — | `TRACKING_FOLLOWS_THE_DISTANCE_UNIT` | The shot screen follows the player's distance unit: the hero, the section labels ("Distance remaining (m)") and the quick picks read in meters when the preference is meters. What the engine stores stays yards and feet. |
 | 110113 | — | `THE_OPEN_QUALIFIER_SETS_THE_ROUND` | When the player has an open qualifier, it is offered above Round details. Play sets the type to Qualifier, the course and the tees, and the note says which round it counts as ("This counts as round 3 of 3 in Fall qualifier 2"). Choosing the Qualifier type lists the player's qualifiers; one with no round open is listed but cannot be chosen (110805). |
 | 110114 | — | `ROUND_ENTRY_FOLLOWS_THE_FLAG` | /golf/dashboard/rounds/new and /golf/dashboard/rounds/continue/[id] draw Clubhouse's screens for a player when golf_clubhouse_ui is on: the pages branch on isClubhouseFor('player'), Continue's page loads the round once (its owner, that it is still in progress, its holes, shots and yardages, the qualifier round numbers left to choose) and hands it to Clubhouse, and each route's loading is Clubhouse's skeleton inside the shell (CH-11407). With the flag off the Fairway client renders exactly as before, with its round-type editor. A coach on /rounds/new keeps the legacy message. The Fairway-only type editor is not passed to Clubhouse. |
+| 110115 | — | `A_SHOTGUN_START_CHANGES_ONLY_THE_ORDER` | Once the scorecard is in, Round details offers "Starting hole": the holes the round plays, by the card's numbers, the first played by default; the dock adds "· Starts on hole N" when it is not the first. Start hands the engine the start as a position in the holes played (setup-reads#toStartForm `setup.startHole`); every autosave keeps it in draft_data, so Continue resumes in the same order. Holes keep their numbers and places everywhere (strip, scorecard, Out/In, Front · Back, the review); only the walk changes: from 6 the round plays 6 to 18, then 1 to 5, and finishes after the 18th hole played. A 9-hole round wraps inside its nine. The strip lets the player go back to holes played earlier in that order, never ahead past the next one; Round complete's Back names the hole the round ended on; the unfinished card's next hole follows the order (lib/golf/round-session/play-order.ts). |
 
 ## 02 — Initial loading / skeleton
 

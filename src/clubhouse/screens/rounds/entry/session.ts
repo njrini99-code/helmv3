@@ -28,6 +28,8 @@ export interface ChRoundSession {
 
   holes: RoundHole[];
   currentHoleIndex: number;
+  /** Shotgun start: the hole position the round started on (lib/golf/round-session/play-order.ts). Omitted, hole 1. */
+  startHole?: number;
   setCurrentHoleIndex: (index: number) => void;
   completedHoleStats: ReadonlyArray<HoleStats | undefined | null>;
   activeHoleShots: ShotRecord[];
