@@ -94,6 +94,8 @@ export default function FairwayShotTracking(props: ShotTrackingProps) {
     isReadyForNextShot,
     handleResultSelect,
     handleNextShot,
+    tapIn,
+    handleTapIn,
     handleRetryHoleCheckpoint,
     handleSelectShot,
   } = useShotTracking(props, { haptic });
@@ -285,6 +287,8 @@ export default function FairwayShotTracking(props: ShotTrackingProps) {
               onResultSelect={handleResultSelect}
               isReadyForNextShot={isReadyForNextShot}
               onNextShot={handleNextShot}
+              tapIn={tapIn}
+              onTapIn={handleTapIn}
               onAddPenalty={handleAddPenalty}
               onUndoLastShot={handleUndoLastShot}
             />
