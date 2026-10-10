@@ -1,5 +1,19 @@
 # Clubhouse changelog
 
+## 2026-10-10 — Premium polish across the app: baseline control feel, line breaks, radius tokens, one contrast fix
+
+Found by scanning every main preview screen in WebKit (contrast, controls with no transition, tap sizes, radii, heading sizes), then fixed
+where the cause was shared:
+
+- **Controls ease between states everywhere.** 24 buttons, inputs and links across Messages, Recruiting, Hub, Home, Stats and the round
+  review had no transition at all. `styles/base.css` now gives every control a zero-specificity baseline (background, colour, border,
+  shadow and opacity over `--ch-dur-quick`); a component's own transition still wins. Transform is left out because drags and scrubs set
+  it every frame. After the change the scan finds none on 14 of 16 screens.
+- **Lines break well.** Headings use `text-wrap: balance` and running text `pretty`, app-wide.
+- **Radius tokens.** 37 `9px` and `11px` corner literals (not on the 5/7/10/14/20 scale) are `--ch-radius-md`.
+- **Contrast.** White on the grey bogey segment of the scoring mix was 3.4:1; it is a darker grey (5.3:1).
+- Scan result otherwise: no text under 4.5:1 outside dark-gradient panels the scanner cannot read, headings on a consistent 44/30/19/15 scale.
+
 ## 2026-10-10 — one Zone for player stats and the round review, stage tokens, and micro motion
 
 Audit of the stats and round-review work, then fixes (owner: "create cool micro animations, look for inefficiencies and non cohesion"):

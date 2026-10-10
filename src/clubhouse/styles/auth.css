@@ -1025,7 +1025,7 @@
   place-items: center;
   width: 30px;
   height: 30px;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
   color: var(--ch-green-700);

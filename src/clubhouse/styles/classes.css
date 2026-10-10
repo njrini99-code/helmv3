@@ -183,7 +183,7 @@
   display: flex;
   gap: 3px;
   height: 36px;
-  border-radius: 11px;
+  border-radius: var(--ch-radius-md);
   overflow: hidden;
 }
 .ch-cl-tb__bar i {
@@ -556,7 +556,7 @@
   flex: none;
   width: 36px;
   height: 36px;
-  border-radius: 11px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-warning-100);
   color: var(--ch-warning-600);
 }
@@ -690,7 +690,7 @@
 .ch-cl-daypick button {
   height: 40px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
   background: none;
   color: var(--ch-ink-600);
   font: 500 13.5px/1 var(--ch-font-sans);
@@ -1130,7 +1130,7 @@
   width: 36px;
   height: 36px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
   background: none;
   color: var(--ch-text-tertiary);
   cursor: pointer;

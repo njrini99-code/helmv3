@@ -168,7 +168,7 @@
   align-items: center;
   gap: 6px;
   padding: 9px 0 8px;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
 }
 /* On the week strip's well tertiary measured 4.1:1 (UX360 sampled 3.7:1); secondary holds 5.4:1. Aesthetic audit X-2. */
 .ch-h-day__d {

@@ -657,7 +657,7 @@
 .ch-hl-pl__c {
   min-width: 22px;
   height: 22px;
-  border-radius: 11px;
+  border-radius: var(--ch-radius-md);
   display: grid;
   place-items: center;
   font: 600 11.5px/1 var(--ch-font-sans);

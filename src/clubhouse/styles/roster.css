@@ -187,7 +187,7 @@
   display: flex;
   gap: 2px;
   padding: 2px;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
   box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
 }
 .ch-rs-vt__b {
@@ -1532,7 +1532,7 @@
     place-items: center;
     width: 32px;
     height: 32px;
-    border-radius: 9px;
+    border-radius: var(--ch-radius-md);
     background: var(--ch-bg-subtle);
     color: var(--ch-text-secondary);
   }
