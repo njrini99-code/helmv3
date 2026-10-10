@@ -32,6 +32,7 @@ import { useCopyText } from './useCopyText';
 import { RosterPeek } from './RosterPeek';
 import { RosterPhone } from './RosterPhone';
 import { PlayerPeek } from '../../ui/PlayerPeek';
+import { RosterSpread } from './RosterSpread';
 import { earlyNeed, formatHcp, rosterFailedParts, rosterPeek, rosterStandings, teamInSentence, type RosterStanding } from './format';
 import '../../styles/roster.css';
 
@@ -110,7 +111,7 @@ export function Roster({ data }: { data: ChRoster }) {
     }
   };
 
-  const active = players.filter((p) => p.status === 'active');
+  const active = useMemo(() => players.filter((p) => p.status === 'active'), [players]);
   const inactiveCount = players.length - active.length;
   const teamAvg = useMemo(() => {
     const avgs = active.map((p) => p.avg).filter((v): v is number => v != null);
@@ -119,6 +120,7 @@ export function Roster({ data }: { data: ChRoster }) {
 
   // Places and the team strip rank the active roster, never the rows a search or filter left (P003 #2).
   const standings = useMemo(() => rosterStandings(players), [players]);
+  const spreadPlayers = useMemo(() => active.filter((p) => standings.byId.has(p.id)), [active, standings]);
   // Avg sorts nothing while season stats are missing: the order falls back to Name (P003 #7).
   const sortBy: Sort = data.statsError && sort === 'avg' ? 'name' : sort;
 
@@ -386,6 +388,7 @@ export function Roster({ data }: { data: ChRoster }) {
         />
       ) : (
         <>
+          {!phone && !data.statsError && <RosterSpread players={spreadPlayers} teamAvg={teamAvg} onOpen={openSel} />}
           <div className="ch-rs-bar">
             <SearchField className="ch-rs-search" value={q} onChange={setQ} placeholder="Search players by name" label="Search players" />
             <div className="ch-rs-bar__r">

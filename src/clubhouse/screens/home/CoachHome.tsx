@@ -5,6 +5,7 @@ import type { ChCoachHome } from '../../data/home';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { PageRefreshNotice } from '../../ui/RefreshNotice';
+import { TeamForm } from './TeamForm';
 import { useChPhone } from '../../lib/use-phone';
 import { rebuiltHref } from '../../shell/nav';
 import { SectionBoundary } from '../../ui/SectionBoundary';
@@ -37,6 +38,7 @@ export function CoachHome({ data, now }: { data: ChCoachHome; /** Preview and te
         <HomeActions teamChatId={data.teamChatId} />
       </header>
       <PageRefreshNotice parts={failed} />
+      {data.phone.form && <TeamForm form={data.phone.form} />}
       <div className="ch-h-sheet ch-sheet">
         <SectionBoundary surface="home.week" label="This week" code="CH-2205">
           <Week week={data.week} covered={covered} />

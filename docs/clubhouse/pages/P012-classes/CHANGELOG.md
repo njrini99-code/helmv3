@@ -1,5 +1,10 @@
 # P012 — Classes: changelog
 
+## 2026-10-10 — Readable timetable marks
+
+Presentation only. A team event's chip in the timetable header wraps to two lines instead of clipping to "Pine…"; a meeting's bar is an
+8px green capsule (still as long as the meeting) instead of a 6px black mark, and it glides when the times change.
+
 ## 2026-10-08 — Premium pass (backlog)
 
 - **One timetable (A1):** "Your classes" takes one row of days (Mon to Fri; the

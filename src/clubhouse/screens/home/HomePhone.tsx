@@ -303,7 +303,7 @@ export function formBasis(b: ChTeamForm['basis']): string {
 }
 
 /** "2 of 3 rounds" when a figure rests on fewer rounds than the average; blank when it rests on all of them, or on none (the figure is then —). */
-function partOf(n: number, of: number): string {
+export function partOf(n: number, of: number): string {
   return n > 0 && n < of ? `${n} of ${of} rounds` : ' ';
 }
 

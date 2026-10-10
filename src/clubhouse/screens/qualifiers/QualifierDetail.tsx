@@ -26,6 +26,7 @@ import { PlayerPeek } from '../../ui/PlayerPeek';
 import { useLiveStandings, type ChLiveFeed, type LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
 import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSections';
+import { StandingsSpread } from './StandingsSpread';
 import { QualifierDetailPhone } from './QualifierDetailPhone';
 import { LIST_HREF, noteIfSelectionLink, useStepBack } from './return-state';
 import { CardBodySkeleton, ParLineSkeleton, SecondaryProvider, Streamed, fulfilled, secondaryOf, settled, type ChQDetailView } from './streamed';
@@ -413,6 +414,7 @@ function Leaderboard({ data, status, stale, feed }: { data: ChQDetailCore; statu
       <p className="ch-sr-only" aria-live="polite" data-ch-code="CH-09803">
         {announce}
       </p>
+      <StandingsSpread rows={b.rows} topScore={b.topScore} />
       <div className="ch-qf-table" role="table" aria-labelledby="ch-qf-lb">
         <div role="rowgroup">
           <div className="ch-qf-row ch-qf-row--head" role="row" style={{ gridTemplateColumns: LB_COLS }}>

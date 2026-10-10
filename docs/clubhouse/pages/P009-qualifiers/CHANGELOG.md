@@ -1,5 +1,12 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-10 — The field on one number line
+
+Presentation only. Above the leaderboard (coach and player, once three players have a round in): each player is a coin at their total
+to par on a deep-green line (lower, better, on the left), the even-par line, and a gold cut between the last player who qualifies on
+score and the next. A coin's colour is its leaderboard state; a pointer reads the name, place and score. It is drawn from the board's
+own rows and top-score count, and the leaderboard under it stays the keyboard and screen-reader route.
+
 ## 2026-10-08 — the rank slide runs on the smooth spring
 
 - P009-B1: the moved rows' slide read `--ch-dur-spring-smooth` and
