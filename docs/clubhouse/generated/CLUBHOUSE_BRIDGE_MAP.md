@@ -114,7 +114,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P008 | 2 | 1 | 3 | 6 | 15 | 41 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 130 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 33 | 4 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 133 |
 | P010 | 2 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 89 |
-| P011 | 14 | 11 |  | 16 | 10 | 37 | 13 | 5 | 2 |  | 20 | 2 | 1 | 4 | 3 | 4 | 9 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 169 |
+| P011 | 14 | 11 |  | 16 | 10 | 37 | 14 | 5 | 2 |  | 20 | 2 | 1 | 4 | 3 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 171 |
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 80 |
 | P013 | 7 | 12 |  | 29 | 1 | 36 | 22 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 156 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
@@ -1202,6 +1202,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110711 | CH-11910 | 07 Network / offline | `EVERY_HOLE_IS_IN_BUT_THE_FINISH` | implemented | Every hole is in but the finish sheet was closed |
 | 110712 | CH-11911 | 07 Network / offline | `OPENED_FROM_A_SUBMIT_THAT_COULDNT_REACH` | implemented | Opened from a submit that couldn't reach the server (`?from=submit`) |
 | 110713 | CH-11912 | 07 Network / offline | `BACK_FROM_A_ROUND_TO_THE_LIBRARY` | implemented | Back from a round to the library |
+| 110714 | CH-11913 | 07 Network / offline | `THE_BALL_IS_ON_THE_GREEN_AND` | implemented | The ball is on the green and the putt result is not picked yet |
 | 110801 |  | 08 Permission / authorization | `LIBRARY_IS_FOR_PLAYERS` | implemented | /golf/dashboard/rounds is Clubhouse only for a player: a coach session renders nothing from the Clubhouse route and the Fairway page keeps the coach (v2 has no coach Rounds library), and the shell does not list the library as rebuilt for a coach. A player's rounds are theirs with or without a team (the team only sets the time zone that decides today). |
 | 110802 |  | 08 Permission / authorization | `REVIEW_IS_FOR_THE_PLAYER_AND_THEIR_COACHES` | implemented | A round's review opens for the player who played it and for a coach of a team the player is an active member of. Anyone else, a missing round and a test round get the same "This round isn't here" page, so it never confirms that someone else's round exists (CH-11307). A failed access check is not a permission answer: a round or a coach's membership read that fails gives "This round didn't load" with Try again (CH-11206), never "not found". |
 | 110803 |  | 08 Permission / authorization | `LIBRARY_HOLDS_ONLY_THE_PLAYERS_OWN_ROUNDS` | reserved | The library loader reads golf_rounds for the signed-in player only (their player id, no test rounds): completed rounds for the book and in-progress rounds for the card, through the RLS-scoped client, so no teammate's round is drawn. Read in this pass, not run: no test asserts the player filter. |
@@ -1252,6 +1253,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 111707 | CH-11707 | 17 Haptic | `UNDO_DELETE_SHOT_DISCARD_ROUND_LEAVE_WITHOUT` | implemented | Undo, Delete shot, Discard round, Leave without it |
 | 111708 | CH-11708 | 17 Haptic | `THE_SECOND_TAP_OF_A_DISCARD_IN` | implemented | The second tap of a discard in round entry: the saved shots, the round already in progress, or the closed-qualifier round |
 | 111709 | CH-11709 | 17 Haptic | `A_FAILURE_APPEARS_IN_ROUND_ENTRY_AN` | implemented | A failure appears in round entry: an inline line, a toast or a banner (CH-11008 to CH-11013, CH-11902) |
+| 111710 | CH-11710 | 17 Haptic | `TAP_IN_IS_TAPPED` | implemented | Tap in is tapped (CH-11913) |
 | 111801 | CH-11801 | 18 Accessibility | `A_SCREEN_READER_MOVES_THROUGH_THE_BOOK` | implemented | A screen reader moves through the book |
 | 111802 | CH-11802 | 18 Accessibility | `THE_IN_PROGRESS_CARDS_HOLE_STRIP` | implemented | The in-progress card's hole strip |
 | 111803 | CH-11803 | 18 Accessibility | `THE_SEASON_RIBBON` | implemented | The season ribbon |

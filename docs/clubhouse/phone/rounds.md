@@ -111,6 +111,42 @@ Board: `Player - Rounds - Mobile.html`, the tracking frames.
 - Sheets (penalty, change a shot, leave this shot, exit, scorecard, round complete) are bottom sheets that drag to close.
 - Not yet: the numeric pad has no Done key on iOS (the Fairway screen adds a bar for it); an iPhone pass.
 
+## Tap in on the phone (draft, no owner board)
+
+Status: draft, 2026-10-10. The owner asked for a tap in on the putting
+screen, "hidden somewhere"; no board draws it, so this note is the spec until
+one does.
+
+The golf: in stroke play every ball is holed out (Rules of Golf 3.3c); a
+concession exists only in match play (3.2b), and a conceded stroke still
+counts in the score. So a tap in is a real stroke and a real putt, recorded
+like any holed putt. Nothing new is stored: it is a putt with result `hole`,
+so `putt_made` and the strokes gained putting baseline (0 to 3 ft) read it
+as they read every other make.
+
+- **Where.** Inside the entry card, under the Putt result choices, as one
+  quiet line: a small ghost button "Tap in" and, beside it in the muted
+  caption, what it writes. Never in the action bar, never a second primary.
+- **When.** Only on a putt (the ball's lie is the green) before a result or a
+  leave distance is picked; picking anything hides it, so nothing the player
+  chose is thrown away. Hidden once the hole is holed, while an undo or the
+  hole's save runs, and when the strokes it adds would pass the hole's limit.
+- **What one tap writes.**
+  - Ball within 2 ft: one holed putt from where it lies. Caption "Holes it
+    from 2 ft · 4" (the score).
+  - Farther: the putt on screen left 1 ft, then a holed 1 ft putt. Caption
+    "Leaves 1 ft, holes it · 2 putts · 5". The caption always names the
+    strokes, so a putt that was actually holed is never tapped in by
+    mistake without the score saying so.
+  - The break and slope picked above go with the putt on screen.
+  - Meters: the caption reads 0.3 m and 0.6 m; feet are stored.
+- **After.** The same path as Hole out: the hole saves, the review shows
+  "Saving hole N", a failed save shows Try again, and the round moves to the
+  next hole. Undo lifts one stroke at a time, so undoing a two-stroke tap in
+  leaves the 1 ft putt to play.
+- **Feel.** Medium on the tap (a shot recorded, CH-11705), success once the
+  hole is saved (D-70, a write that landed). No motion of its own.
+
 ## Setup: board to source
 
 The board is `rounds-flow.jsx` (Setup, Picker, HoleConfig) and `rounds-course.jsx` (AddCourse). The screen draws; the round screen's ports (`ChSetupPorts` in `setup/shape.ts`) read the course library (`listCourses`, `getRecentlyPlayedCourses`, `getTeamSavedCourses`, `getCourseDetail`, `getTeeWithHoles` in `actions/course-library.ts`) and start the round (the legacy engine's start, when the engine moves; ROUNDS_PLAN step 4).

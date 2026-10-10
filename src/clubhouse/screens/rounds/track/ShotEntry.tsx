@@ -4,7 +4,18 @@ import { useState, type Dispatch, type RefObject } from 'react';
 import { ArrowRight, Check, FlagTriangleRight, TriangleAlert, Undo2 } from 'lucide-react';
 import type { ShotAction } from '@/hooks/golf/use-shot-state-machine';
 import { displayToFeet, displayToYards, yardsToDisplay, type DistancePreference } from '@/lib/golf/distance-units';
-import { lockedAfterUnit, nextShotBlocker, plausibilityKey, shotPlausibility, shotResultOptions, togglePuttMissTag, type ShotEntryInput, type ShotResult } from '@/lib/golf/shot-entry-rules';
+import {
+  lockedAfterUnit,
+  nextShotBlocker,
+  plausibilityKey,
+  shotPlausibility,
+  shotResultOptions,
+  tapInWords,
+  togglePuttMissTag,
+  type ShotEntryInput,
+  type ShotResult,
+  type TapInPlan,
+} from '@/lib/golf/shot-entry-rules';
 import type { ApproachMissDirection, PuttMissTag, RoundHole, ShotRecord } from '@/lib/types/golf';
 import { calculateShotDistanceWithDirection } from '@/lib/utils/shot-helpers';
 import { haptic } from '../../../lib/haptics';
@@ -42,6 +53,10 @@ export interface ShotEntryProps {
   onNextShot: () => void;
   onAddPenalty: () => void;
   onUndoLastShot: () => void;
+  /** What a tap in would write here (useShotTracking's `tapIn`); null hides it. */
+  tapIn?: TapInPlan | null;
+  /** Resolves true once the tap in's hole is saved. */
+  onTapIn?: () => Promise<boolean>;
 }
 
 const DIST_ID = 'ch-rt-dist';
@@ -174,6 +189,7 @@ export function ShotEntry(p: ShotEntryProps) {
             }))}
           />
           {!noticeAtDistance && notice}
+          {p.tapIn && p.onTapIn && <TapIn plan={p.tapIn} pref={p.pref} onTapIn={p.onTapIn} />}
         </Sec>
 
         {teeMiss && (
@@ -334,6 +350,35 @@ export function ShotEntry(p: ShotEntryProps) {
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * CH-11913: the tap in, one quiet line under the putt result (docs/clubhouse/phone/rounds.md, "Tap in on the phone").
+ * The caption names every stroke it writes and the score, so it is never a silent shortcut.
+ */
+function TapIn({ plan, pref, onTapIn }: { plan: TapInPlan; pref: DistancePreference; onTapIn: () => Promise<boolean> }) {
+  const words = tapInWords(plan, pref);
+  return (
+    <div className="ch-rt-tapin" data-ch-code="CH-11913">
+      <button
+        type="button"
+        className="ch-btn ch-btn--ghost ch-btn--sm"
+        aria-label={words.label}
+        onClick={() => {
+          // CH-11705: a shot logged is the medium tap; CH-11710: success once the hole's save lands.
+          haptic('commit');
+          void onTapIn().then((saved) => {
+            if (saved) haptic('success');
+          });
+        }}
+      >
+        <span>Tap in</span>
+      </button>
+      <span className="ch-rt-tapin__w" aria-hidden="true">
+        {words.caption}
+      </span>
+    </div>
   );
 }
 

@@ -874,6 +874,23 @@ button.ch-rt-strip__h {
   color: var(--ch-green-700);
   font-variant-numeric: tabular-nums;
 }
+/* CH-11913: the tap in, a quiet line under the putt result (docs/clubhouse/phone/rounds.md). */
+.ch-rt-tapin {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 10px 0 0;
+}
+.ch-rt-tapin > .ch-btn {
+  min-height: 44px;
+}
+.ch-rt-tapin__w {
+  flex: 1 1 12em;
+  font: 400 12.5px/1.35 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
 .ch-rt-error {
   display: block;
   margin: 8px 0 0;

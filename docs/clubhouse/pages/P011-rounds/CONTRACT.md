@@ -217,6 +217,7 @@ did not load, with Try again (CH-11208 to CH-11210).
 | 110711 | CH-11910 | `EVERY_HOLE_IS_IN_BUT_THE_FINISH` | Every hole is in but the finish sheet was closed |
 | 110712 | CH-11911 | `OPENED_FROM_A_SUBMIT_THAT_COULDNT_REACH` | Opened from a submit that couldn't reach the server (`?from=submit`) |
 | 110713 | CH-11912 | `BACK_FROM_A_ROUND_TO_THE_LIBRARY` | Back from a round to the library |
+| 110714 | CH-11913 | `THE_BALL_IS_ON_THE_GREEN_AND` | The ball is on the green and the putt result is not picked yet |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
 
@@ -388,7 +389,8 @@ Status: DEFINED
 Rounds' own haptics are on the v2 grammar (D-70): a warning before Discard (CH-11701), a selection tick for opening a round, a
 hole picked in the review and going to another hole (CH-11702, CH-11704, CH-11706), light for Continue, Submit and Start a round
 (CH-11703), a medium tap once per recorded shot (CH-11705), and a warning for Undo, Delete shot, Discard round and Leave
-without it (CH-11707); success and error come from the shell for every write.
+without it (CH-11707); success and error come from the shell for every write. Tap in (CH-11913) is a medium tap and then
+success once the hole it holed is saved (CH-11710).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -401,6 +403,7 @@ without it (CH-11707); success and error come from the shell for every write.
 | 111707 | CH-11707 | `UNDO_DELETE_SHOT_DISCARD_ROUND_LEAVE_WITHOUT` | Undo, Delete shot, Discard round, Leave without it |
 | 111708 | CH-11708 | `THE_SECOND_TAP_OF_A_DISCARD_IN` | The second tap of a discard in round entry: the saved shots, the round already in progress, or the closed-qualifier round |
 | 111709 | CH-11709 | `A_FAILURE_APPEARS_IN_ROUND_ENTRY_AN` | A failure appears in round entry: an inline line, a toast or a banner (CH-11008 to CH-11013, CH-11902) |
+| 111710 | CH-11710 | `TAP_IN_IS_TAPPED` | Tap in is tapped (CH-11913) |
 
 From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
 
