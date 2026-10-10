@@ -248,6 +248,8 @@ export function RoundTracking(props: RoundTrackingProps) {
               onNextShot={t.handleNextShot}
               onAddPenalty={t.handleAddPenalty}
               onUndoLastShot={t.handleUndoLastShot}
+              tapIn={t.tapIn}
+              onTapIn={t.handleTapIn}
             />
           )}
         </div>

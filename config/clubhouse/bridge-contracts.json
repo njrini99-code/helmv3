@@ -11809,6 +11809,17 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110714,
+    "page": "P011",
+    "category": 7,
+    "item": 14,
+    "name": "THE_BALL_IS_ON_THE_GREEN_AND",
+    "chCode": "CH-11913",
+    "meaning": "The ball is on the green and the putt result is not picked yet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110801,
     "page": "P011",
     "category": 8,
@@ -12384,6 +12395,17 @@
     "name": "A_FAILURE_APPEARS_IN_ROUND_ENTRY_AN",
     "chCode": "CH-11709",
     "meaning": "A failure appears in round entry: an inline line, a toast or a banner (CH-11008 to CH-11013, CH-11902)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111710,
+    "page": "P011",
+    "category": 17,
+    "item": 10,
+    "name": "TAP_IN_IS_TAPPED",
+    "chCode": "CH-11710",
+    "meaning": "Tap in is tapped (CH-11913)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },

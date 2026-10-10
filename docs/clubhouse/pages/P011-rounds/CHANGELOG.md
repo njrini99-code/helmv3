@@ -1,5 +1,24 @@
 # P011 — Rounds: changelog
 
+## 2026-10-10 — Tap in on the putting screen
+
+```text
+Design package: owner direction "tap in in the shot tracking, on the green, hidden somewhere"; no owner board, draft in docs/clubhouse/phone/rounds.md ("Tap in on the phone")
+PR/commit: agent/golf-tap-in
+Contract IDs: CH-11913, CH-11710 (new)
+Actions: none changed (the shot and hole-out writes are the engine's own)
+Data impact: none (no migration). A tap in is a holed putt: result hole, putt_made true, its putt length in feet
+Held items: none
+```
+
+- On a putt, before a result is picked, a quiet "Tap in" sits under the putt result with a caption naming what it
+  writes and the score: one holed putt from where the ball lies within 2 ft, or the putt on screen left at 1 ft and
+  the holed 1 ft putt. One tap records it through the same path as Hole out (`useShotTracking.handleTapIn`, shared
+  with the Fairway screen), and the hole saves and moves on as usual.
+- A tap in is a real stroke and putt (Rules of Golf 3.3c; concessions are match play only, 3.2b), so score, putts and
+  strokes gained count it like any holed putt. Undo lifts one stroke at a time.
+- Medium on the tap, success once the hole's save lands (D-70).
+
 ## 2026-10-10 — Micro motion on the review
 
 The running-score line draws once the first time its stage is seen; the scrub card fades and the hovered dot lifts; a picked hole's shots

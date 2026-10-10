@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { RoundHole, ShotRecord } from '@/lib/types/golf';
@@ -333,6 +333,71 @@ describe('Round tracking: holing out', () => {
     expect(within(sheet).getByText(/Delete shot 1\?/)).toBeInTheDocument();
     await user.click(within(sheet).getByRole('button', { name: 'Keep it' }));
     expect(within(sheet).getByRole('button', { name: 'Save shot' })).toBeInTheDocument();
+  });
+});
+
+describe('Round tracking: tap in (CH-11913)', () => {
+  const onGreen = (feet: number) => [
+    TEE,
+    shot({ shotNumber: 2, shotType: 'approach', distanceToHoleBefore: 150, result: 'green', distanceToHoleAfter: feet, distanceUnitAfter: 'feet', shotDistance: 150 }),
+  ];
+  const tapIn = () => screen.queryByRole('button', { name: /^Tap in/ });
+
+  it('is not offered off the green, and goes once a putt result is picked', async () => {
+    setup();
+    expect(tapIn()).toBeNull();
+    cleanup();
+    const { user } = setup({ initialShots: onGreen(25), initialShotNumber: 3 });
+    expect(tapIn()).not.toBeNull();
+    await user.click(pick('Green'));
+    expect(tapIn()).toBeNull();
+  });
+
+  it('from 2 ft: one tap records a holed putt, counts it as a stroke and a putt, and saves the hole', async () => {
+    const onSaveShot = vi.fn(() => true);
+    const onHoleComplete = vi.fn(async () => true);
+    const { user } = setup({ initialShots: onGreen(2), initialShotNumber: 3, onSaveShot, onHoleComplete });
+    expect(code('CH-11913')).toHaveTextContent('Holed from 2 ft · score 3');
+    await user.click(tapIn()!);
+    await waitFor(() => expect(onHoleComplete).toHaveBeenCalledWith(0, expect.objectContaining({ holeNumber: 1, score: 3, putts: 1 })));
+    expect(onSaveShot).toHaveBeenCalledTimes(1);
+    expect(onSaveShot).toHaveBeenCalledWith(expect.objectContaining({ shotNumber: 3, shotType: 'putting', result: 'hole', distanceToHoleBefore: 2, puttDistanceFeet: 2 }));
+    expect(screen.getByText('Birdie')).toBeInTheDocument();
+    expect(screen.getByText('3 strokes · 1 putt')).toBeInTheDocument();
+  });
+
+  it('from 25 ft: the putt leaves 1 ft and the 1 ft putt is holed; Undo lifts the holed putt and leaves the 1 ft putt to play', async () => {
+    const onSaveShot = vi.fn(() => true);
+    const onHoleComplete = vi.fn(async () => true);
+    const onHoleStatsUpdate = vi.fn();
+    const { user } = setup({ initialShots: onGreen(25), initialShotNumber: 3, onSaveShot, onHoleComplete, onHoleStatsUpdate });
+    expect(code('CH-11913')).toHaveTextContent('Two putts: leaves 1 ft, then holed · score 4');
+    await user.click(tapIn()!);
+    await waitFor(() => expect(onHoleComplete).toHaveBeenCalledWith(0, expect.objectContaining({ score: 4, putts: 2 })));
+    expect(onSaveShot.mock.calls.map(([s]) => [s.shotNumber, s.result, s.distanceToHoleBefore, s.distanceToHoleAfter])).toEqual([
+      [3, 'green', 25, 1],
+      [4, 'hole', 1, 0],
+    ]);
+    expect(screen.getByText('Par')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Undo last shot' }));
+    await user.click(within(code('CH-11502') as HTMLElement).getByRole('button', { name: 'Undo' }));
+    await waitFor(() => expect(screen.getByText(/^Shot 4/)).toBeInTheDocument());
+    expect(onHoleStatsUpdate).toHaveBeenCalledWith(0, null);
+    expect(code('CH-11913')).toHaveTextContent('Holed from 1 ft · score 4');
+  });
+
+  it('follows the meters preference; feet are what is stored', async () => {
+    localStorage.setItem('golf_distance_unit_pref', 'meters');
+    setup({ initialShots: onGreen(25), initialShotNumber: 3 });
+    expect(code('CH-11913')).toHaveTextContent('Two putts: leaves 0.3 m, then holed · score 4');
+  });
+
+  it('a resumed hole that ended in a tap in opens holed, with no tap in offered', () => {
+    const done = [...onGreen(1), shot({ shotNumber: 3, shotType: 'putting', clubType: 'putter', lieBefore: 'green', distanceToHoleBefore: 1, distanceUnitBefore: 'feet', result: 'hole', distanceUnitAfter: 'feet', puttDistanceFeet: 1 })];
+    setup({ holes: [{ ...HOLES[0]!, score: 3 }, HOLES[1]!, HOLES[2]!], initialShots: done, initialShotNumber: 4 });
+    expect(screen.getByText('Birdie')).toBeInTheDocument();
+    expect(tapIn()).toBeNull();
   });
 });
 
