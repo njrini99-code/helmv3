@@ -408,7 +408,7 @@ function Leaderboard({ data, status, stale, feed }: { data: ChQDetailCore; statu
   const canOpen = (row: ChQRow) => coach || row.playerId === data.viewerPlayerId;
 
   return (
-    <section className="ch-qf-panel ch-qf-board ch-scoreboard" aria-labelledby="ch-qf-lb">
+    <section className="ch-qf-panel ch-qf-board" aria-labelledby="ch-qf-lb">
       {head}
       {stale && <StaleStandings />}
       <p className="ch-sr-only" aria-live="polite" data-ch-code="CH-09803">
