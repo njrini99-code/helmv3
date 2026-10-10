@@ -1,5 +1,23 @@
 # Clubhouse changelog
 
+## 2026-10-10 — one Zone for player stats and the round review, stage tokens, and micro motion
+
+Audit of the stats and round-review work, then fixes (owner: "create cool micro animations, look for inefficiencies and non cohesion"):
+
+- **One zone, not two.** `ui/Zone.tsx` (`Zones`, `Zone`, `ZoneBlock`, `ZoneBig`, `ZoneNote`) and its `.ch-zn*` rules in `styles/ui.css`
+  replace the two copies that had grown in `stats.css` (`.ch-z*`) and `rounds.css` (`.ch-rz*`), which had already drifted apart (the
+  round review had the plate, the gold-ringed number and the depth; the stats page did not). Both pages now read as one family. About
+  560 lines of duplicated CSS are gone.
+- **Flat grounds.** The review's soft ivory gradients on its bands are gone: `tokens.css` records that large soft gradients band on
+  8-bit screens (owner, 2026-10-06). Gradients stay only where they are drawn on purpose (the deep-green stage, bars, figures).
+- **Stage tokens.** `--ch-stage-bg`, `-line`, `-gold`, `-red`, `-ink`, `-ink-soft`, `-rule` in `tokens.css` replace the hex values
+  repeated through the review's SVGs.
+- **Micro motion**, all from the `--ch-dur-*` tokens so Animations off and reduced motion make every one instant (a delay is zeroed
+  for reduced motion): lengths glide to a new value when a window, filter or hole changes (bars, tracks, mix, fairway strip, focus
+  rails); a stage's line draws once the first time it scrolls into view (`lib/use-in-view.ts`); a picked hole's shots draw in the
+  order they were hit; a hole's reading settles in; rows warm and the marks lift under the pointer; the scrub card fades rather than
+  vanishing. No count-ups, no first-paint staggers.
+- **Efficiency.** The player Overview is memoised, so a focus sheet or a transition no longer recomputes its seven zones.
 ## 2026-10-08 — the selected sidebar row is an ivory plate; secondary text one step darker
 
 Owner review (not yet signed off):

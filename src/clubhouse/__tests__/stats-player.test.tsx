@@ -645,7 +645,7 @@ describe('Stats player · who may open what', () => {
     expect(screen.queryByRole('link', { name: /player$/ })).toBeNull();
     // The crumb trail is the navigation's, not "Stats › name".
     expect(screen.getByTestId('trail').textContent).toBe('nav');
-    expect(document.querySelector('.ch-zones')!.textContent).toContain('Tour');
+    expect(document.querySelector('.ch-zns')!.textContent).toContain('Tour');
     expect(document.querySelector('.ch-lb__team')).toBeNull();
   });
 });
@@ -916,7 +916,7 @@ describe('Stats player · the page', () => {
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Overview', 'Game detail', 'Rounds10', 'Development']);
     expect(screen.getByRole('tab', { selected: true }).textContent).toBe('Overview');
     expect(screen.getByRole('heading', { level: 2, name: 'Strokes gained' })).toBeTruthy();
-    expect(document.querySelectorAll('.ch-zones .ch-z')).toHaveLength(7);
+    expect(document.querySelectorAll('.ch-zns .ch-zn')).toHaveLength(7);
     // The overview opens on the scoring ribbon: one column a round, each a bar from the player's own average.
     expect(document.querySelector('.ch-fm__head h2')!.textContent).toBe('Scoring form');
     expect(document.querySelectorAll('.ch-fm__c')).toHaveLength(10);
@@ -932,7 +932,7 @@ describe('Stats player · the page', () => {
     expect(document.querySelector('.ch-zgreen')).not.toBeNull();
     expect(document.querySelector('.ch-zfn')).not.toBeNull();
     expect(document.querySelector('svg[aria-label*="percent"]')).not.toBeNull();
-    expect(document.querySelector('.ch-z__read')!.textContent).toContain('Team');
+    expect(document.querySelector('.ch-zn__read')!.textContent).toContain('Team');
   });
 
   it("50104 a coach's Message opens the direct thread with this player, on desktop and on the phone; a player's profile has none", () => {

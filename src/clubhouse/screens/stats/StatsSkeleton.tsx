@@ -77,16 +77,16 @@ export function StatsProfileSkeleton({ coach = false }: { coach?: boolean }) {
         <Skeleton width={78} height={30} radius={10} />
       </div>
       {/* The overview: the first zones of the loaded page (OverviewZones): what the stat is and its reading on the left, its picture on the right. */}
-      <div className="ch-zones" aria-hidden="true">
+      <div className="ch-zns" aria-hidden="true">
         {[0, 1].map((i) => (
-          <div key={i} className={'ch-z' + (i % 2 ? ' ch-z--alt' : '')}>
-            <div className="ch-z__id">
+          <div key={i} className={'ch-zn' + (i % 2 ? ' ch-zn--alt' : '')}>
+            <div className="ch-zn__id">
               <Skeleton width={30} height={30} radius={15} />
               <Skeleton width={180} height={27} />
               <Skeleton width="100%" height={64} radius={8} />
               <Skeleton width={120} height={60} radius={8} />
             </div>
-            <div className="ch-z__vis">
+            <div className="ch-zn__vis">
               <Skeleton width="100%" height={i ? 150 : 230} radius={12} />
               <Skeleton width="100%" height={120} radius={12} />
             </div>

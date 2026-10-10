@@ -112,13 +112,13 @@ describe('the strokes gained baseline', () => {
     showPlayer(player());
     const hero = [...document.querySelectorAll('.ch-pf-hero__figs > div')].find((d) => d.querySelector('dt')!.textContent === 'SG / round')!;
     expect(hero.querySelector('.ch-pf-hero__sub')!.textContent).toBe('Per round vs Tour');
-    expect(document.querySelector('.ch-z__def')!.textContent).toContain('Zero is the Tour baseline');
+    expect(document.querySelector('.ch-zn__def')!.textContent).toContain('Zero is the Tour baseline');
   });
 
   it('a women’s team reads the women’s Tour baseline on the hero and the leg card', () => {
     showPlayer(player({ tour: 'lpga' }));
     expect(document.querySelector('.ch-pf-hero__figs')!.textContent).toContain("Per round vs the women's Tour baseline");
-    expect(document.querySelector('.ch-z__def')!.textContent).toContain("Zero is the women's Tour baseline");
+    expect(document.querySelector('.ch-zn__def')!.textContent).toContain("Zero is the women's Tour baseline");
     expect(document.querySelector('.ch-lb__axis')!.textContent).toContain("Zero is the women's Tour baseline");
   });
 
@@ -595,10 +595,10 @@ describe('player profile · desktop', () => {
     showPlayer(player());
     const rows = [...document.querySelectorAll('.ch-lb__r')];
     expect(rows.map((r) => r.querySelector('b')!.textContent)).toEqual(['Off the tee', 'Approach', 'Around green', 'Putting']);
-    const read = document.querySelector('.ch-z .ch-zbig')!;
+    const read = document.querySelector('.ch-zn .ch-znbig')!;
     expect(read.textContent).toBe('−0.9');
     expect(read.className).toContain('is-bad');
-    expect(document.querySelector('.ch-z__read')!.textContent).toContain('Team −0.5');
+    expect(document.querySelector('.ch-zn__read')!.textContent).toContain('Team −0.5');
     // Putting +0.2 is a gain even though the team is at −0.3, and a loss stays a loss when it beats the team.
     expect(rows[3]!.querySelector('.ch-lb__bar')!.className).toContain('is-gain');
     expect(rows[1]!.querySelector('.ch-lb__bar')!.className).toContain('is-loss');
@@ -613,7 +613,7 @@ describe('player profile · desktop', () => {
       }),
     );
     expect(document.querySelector('.ch-lb__team')).toBeNull();
-    expect(document.querySelector('.ch-z .ch-zbig')!.textContent).toBe('−0.9');
+    expect(document.querySelector('.ch-zn .ch-znbig')!.textContent).toBe('−0.9');
     expect(document.querySelector('.ch-zlegend')!.textContent).toContain('Tour 0.0');
     expect(document.querySelector('.ch-zlegend')!.textContent).not.toContain('Team');
   });
@@ -870,7 +870,7 @@ describe('the Tour is the only benchmark (Q-88)', () => {
     showPlayer(player({ viewer: 'player', comparisons: PREVIEW_PLAYER.comparisons.map((c) => ({ ...c, team: null })) }));
     expect(everythingSaid()).not.toMatch(BENCHMARK_WORDS);
     // The player's own zones read against the Tour, with its mark where there is one.
-    expect(document.querySelector('.ch-zones')!.textContent).toContain('Tour');
+    expect(document.querySelector('.ch-zns')!.textContent).toContain('Tour');
   });
 
   it('Game detail names the Tour wherever it marks a benchmark (figures, notes, ticks)', async () => {

@@ -7,7 +7,7 @@ import { DataTable, Empty, RoundLine, Rule, Tiles } from './detail';
 import { BestCardShare } from './BestCard';
 import { bestCardFields } from './best-card-fields';
 import type { ChViewer } from '../../data/stats-player';
-import { Big, Vis, Zone } from './OverviewZones';
+import { Zone, ZoneBig as Big, ZoneBlock as Vis } from '../../ui/Zone';
 
 /**
  * The Rounds tab's parity figures (PARITY.md SC12 to SC14): the score of every
@@ -109,7 +109,7 @@ export function RoundsExtra({
             best ? (
               <>
                 <Big value={String(best.value)} tone="good" />
-                <div className="ch-zlines">
+                <div className="ch-znlines">
                   <span>
                     <b>Best round</b>
                   </span>
@@ -147,7 +147,7 @@ export function RoundsExtra({
             sc && sc.v !== NO_DATA ? (
               <>
                 <Big value={sc.v} tone={sc.tone === 'gain' ? 'good' : sc.tone === 'loss' ? 'bad' : undefined} />
-                <div className="ch-zlines">
+                <div className="ch-znlines">
                   <span>
                     <b>Scoring average</b> against the 10 before
                   </span>

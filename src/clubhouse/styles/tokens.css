@@ -48,6 +48,14 @@
   --ch-green-fill-600: var(--ch-green-600);
   --ch-green-fill-700: var(--ch-green-700);
   /* The mint accents on the green hero (v2 phone Home, m-home.css). */
+  /* The deep-green stage (round review, player ribbon): one set of colours for every picture drawn on it. */
+  --ch-stage-bg: linear-gradient(160deg, #0f4430 0%, #0a3322 55%, #082b1c 100%);
+  --ch-stage-line: #9fe0b6;
+  --ch-stage-gold: #e7b866;
+  --ch-stage-red: #ff8a7a;
+  --ch-stage-ink: #f4eedd;
+  --ch-stage-ink-soft: rgb(244 238 221 / 0.62);
+  --ch-stage-rule: rgb(244 238 221 / 0.14);
   --ch-hero-mint: #9fe0b6;
   --ch-hero-mint-strong: #7bc79a;
   --ch-frame: #0a331f;

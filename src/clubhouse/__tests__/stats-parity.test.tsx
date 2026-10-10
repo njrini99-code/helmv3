@@ -768,7 +768,7 @@ describe('Rounds on the phone', () => {
 describe('Overview · the zones', () => {
   it('seven zones, one per stat area, each named, with the Tour beside what has one', () => {
     showPlayer(player());
-    const zones = [...document.querySelectorAll('.ch-zones .ch-z__id h2')].map((h) => h.textContent);
+    const zones = [...document.querySelectorAll('.ch-zns .ch-zn__id h2')].map((h) => h.textContent);
     expect(zones).toEqual(['Strokes gained', 'Scoring', 'Off the tee', 'Approach', 'Short game', 'Putting', 'The last rounds']);
     // Each par against the Tour's: the picture names the Tour and a value sits beside every par.
     const pars = document.querySelector('svg[aria-label^="Par 3"]')!;
@@ -790,9 +790,9 @@ describe('Overview · the zones', () => {
 
   it('a player sees the Tour and no team mark, for every zone too (Q-91)', () => {
     showPlayer(player({ viewer: 'player', comparisons: PREVIEW_PLAYER.comparisons.map((c) => ({ ...c, team: null })) }), null);
-    expect(document.querySelector('.ch-zones')!.textContent).not.toMatch(/\bTeam\b/);
+    expect(document.querySelector('.ch-zns')!.textContent).not.toMatch(/\bTeam\b/);
     expect(document.querySelector('.ch-lb__team')).toBeNull();
-    expect(document.querySelector('.ch-zones')!.textContent).toContain('Tour');
+    expect(document.querySelector('.ch-zns')!.textContent).toContain('Tour');
   });
 
   it('the Tour is the only benchmark in the new panels: no D1, division or college anywhere on a full profile', async () => {

@@ -630,7 +630,7 @@
 }
 @media (hover: hover) {
   .ch-sgm:hover::before,
-  .ch-sgm:hover + .ch-sgm::before {
+.ch-sgm:hover + .ch-sgm::before {
     opacity: 0;
   }
 }
@@ -1964,7 +1964,7 @@
     grid-area: label;
   }
   .ch-fg__group .ch-fg__v,
-  .ch-fg--lead .ch-fg__group .ch-fg__v {
+.ch-fg--lead .ch-fg__group .ch-fg__v {
     grid-area: value;
     justify-self: end;
     /* As rows, the value sits beside its words: the wide layout's 48px line does not apply. */
@@ -1996,7 +1996,7 @@
   }
   /* The players wrap in rows under the chart here, so their count no longer sets a height. */
   .ch-sgt__plot,
-  .ch-sgt__hold {
+.ch-sgt__hold {
     min-height: 0;
   }
   .ch-sgt__ends {
@@ -2043,7 +2043,7 @@
 @media (max-width: 820px) {
   /* The server renders desktop; on a phone it stays hidden until the phone view takes over at hydration. */
   .ch-st-desk,
-  .ch-st.is-desk > * {
+.ch-st.is-desk > * {
     visibility: hidden;
   }
   .ch-st.is-phone {
@@ -2124,7 +2124,7 @@
     border-top: 1px solid var(--ch-champagne-rule);
   }
   .ch-stm-figs.is-line > div + div,
-  .ch-stm-gauges > span + span {
+.ch-stm-gauges > span + span {
     border-left: 0;
     box-shadow: var(--ch-seam-y);
   }
@@ -2236,13 +2236,13 @@
     stroke-linejoin: round;
   }
   .ch-stm-legs,
-  .ch-stm-putt {
+.ch-stm-putt {
     display: flex;
     flex-direction: column;
     gap: 10px;
   }
   .ch-stm-leg,
-  .ch-stm-putt__r {
+.ch-stm-putt__r {
     display: grid;
     grid-template-columns: 96px minmax(0, 1fr) 44px;
     align-items: center;
@@ -2254,7 +2254,7 @@
     grid-template-columns: 52px minmax(0, 1fr) 40px;
   }
   .ch-stm-leg b,
-  .ch-stm-putt__r b {
+.ch-stm-putt__r b {
     font: 600 13px/1 var(--ch-font-sans);
     text-align: right;
     color: var(--ch-text-primary);
@@ -2263,11 +2263,11 @@
     color: var(--ch-chart-gain);
   }
   .ch-stm-leg b.ch-loss,
-  .ch-stm-putt__r b.ch-loss {
+.ch-stm-putt__r b.ch-loss {
     color: var(--ch-chart-loss);
   }
   .ch-stm-leg__bar,
-  .ch-stm-putt__bar {
+.ch-stm-putt__bar {
     position: relative;
     height: 8px;
     border-radius: 999px;
@@ -2352,7 +2352,7 @@
     white-space: nowrap;
   }
   .ch-stm-row__b span,
-  .ch-stm-row__v span {
+.ch-stm-row__v span {
     font: var(--ch-type-caption);
     color: var(--ch-text-tertiary);
   }
@@ -2569,19 +2569,25 @@
    is the one card; inside it the tiles lose their boxes and sit between hairlines, divided by soft rules, as the
    phone's ledger tiles. Each tile draws the rule to its left and above it, and the grid clips the outer ones. */
 @media (min-width: 821px) {
-  .ch-gd:not(.is-phone) :is(.ch-gx-tiles, .ch-par3, .ch-gx-pars) {
+  .ch-gd:not(.is-phone) :is(.ch-gx-tiles,
+.ch-par3,
+.ch-gx-pars) {
     gap: 0;
     overflow: hidden;
     border-top: 1px solid var(--ch-ledger-rule);
     border-bottom: 1px solid var(--ch-ledger-rule);
   }
-  .ch-gd:not(.is-phone) :is(.ch-gx-tiles > div, .ch-par3__t, .ch-gx-pm) {
+  .ch-gd:not(.is-phone) :is(.ch-gx-tiles > div,
+.ch-par3__t,
+.ch-gx-pm) {
     padding: 14px 16px;
     border-radius: 0;
     background: none;
     box-shadow: -1px 0 0 var(--ch-ledger-rule-soft), 0 -1px 0 var(--ch-ledger-rule-soft);
   }
-  :where(html[data-fw-theme='dark']) .ch-gd:not(.is-phone) :is(.ch-gx-tiles > div, .ch-par3__t, .ch-gx-pm) {
+  :where(html[data-fw-theme='dark']) .ch-gd:not(.is-phone) :is(.ch-gx-tiles > div,
+.ch-par3__t,
+.ch-gx-pm) {
     box-shadow: -1px 0 0 var(--ch-ledger-rule-soft), 0 -1px 0 var(--ch-ledger-rule-soft);
   }
 }
@@ -3029,11 +3035,11 @@
   }
   /* Every control's hit area reaches 44 x 44 without changing how it is drawn (the shell does the same for buttons and pills). */
   .ch-sf.is-phone .ch-sf__chip,
-  .ch-sf.is-phone .ch-sf__clear {
+.ch-sf.is-phone .ch-sf__clear {
     position: relative;
   }
   .ch-sf.is-phone .ch-sf__chip::after,
-  .ch-sf.is-phone .ch-sf__clear::after {
+.ch-sf.is-phone .ch-sf__clear::after {
     content: '';
     position: absolute;
     inset: min(0px, calc(50% - 22px));
@@ -3403,25 +3409,25 @@
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
 @media (max-width: 820px) {
   .ch-tick,
-  .ch-lg__r--h,
-  .ch-board__d,
-  .ch-pf-tag,
-  .ch-pf-hero__figs dt,
-  .ch-tab-t__n,
-  .ch-fws__z em,
-  .ch-lad__b,
-  .ch-gmiss__c em,
-  .ch-gmiss__g em,
-  .ch-mk__v,
-  .ch-mk__b,
-  .ch-mk__n,
-  .ch-cup__lbl,
-  .ch-cup__split span,
-  .ch-stm-figs dt,
-  .ch-stm-figs dd + dd,
-  .ch-gx-sec__c em,
-  .ch-gx-type,
-  .ch-sf__n {
+.ch-lg__r--h,
+.ch-board__d,
+.ch-pf-tag,
+.ch-pf-hero__figs dt,
+.ch-tab-t__n,
+.ch-fws__z em,
+.ch-lad__b,
+.ch-gmiss__c em,
+.ch-gmiss__g em,
+.ch-mk__v,
+.ch-mk__b,
+.ch-mk__n,
+.ch-cup__lbl,
+.ch-cup__split span,
+.ch-stm-figs dt,
+.ch-stm-figs dd + dd,
+.ch-gx-sec__c em,
+.ch-gx-type,
+.ch-sf__n {
     font-size: 12px;
   }
   .ch-stm-chart__t {
@@ -3484,7 +3490,8 @@
   .ch-st[data-canopy] .ch-pf-hero__figs div + div {
     box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
   }
-  .ch-st[data-canopy] .ch-pf-hero__figs dd:not(.ch-pf-hero__sub, .ch-pf-hero__chg) {
+  .ch-st[data-canopy] .ch-pf-hero__figs dd:not(.ch-pf-hero__sub,
+.ch-pf-hero__chg) {
     font-size: 28px;
   }
   .ch-st[data-canopy] .ch-pf-tabs {
@@ -3520,7 +3527,8 @@
   .ch-st[data-canopy] .ch-yb__head h2 {
     color: var(--ch-ledger-ink);
   }
-  .ch-st[data-canopy] :is(.ch-sgt, .ch-lg) {
+  .ch-st[data-canopy] :is(.ch-sgt,
+.ch-lg) {
     padding: 0;
     border-radius: 0;
     background: none;
@@ -4144,9 +4152,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     padding: 18px 16px 40px;
   }
   .ch-stm.is-team > .ch-stm-head,
-  .ch-stm.is-team > .ch-stm-controls,
-  .ch-stm.is-team > .ch-stm-hero,
-  .ch-stm.is-team > .ch-stm-trend {
+.ch-stm.is-team > .ch-stm-controls,
+.ch-stm.is-team > .ch-stm-hero,
+.ch-stm.is-team > .ch-stm-trend {
     padding-inline: 4px;
   }
   /* The large title: the team and its sample on one quiet line, then the title (the shell's bar takes it once tucked). */
@@ -4271,7 +4279,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     color: var(--ch-text-tertiary);
   }
   .ch-stm.is-team .ch-stm-panel > .ch-stm-note,
-  .ch-stm.is-team .ch-stm-panel > .ch-stm-cover {
+.ch-stm.is-team .ch-stm-panel > .ch-stm-cover {
     margin: 0;
     padding-inline: 16px;
   }
@@ -4310,7 +4318,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     color: var(--ch-text-secondary);
   }
   .ch-stm.is-team .ch-stm-panel__h > span,
-  .ch-stm.is-team .ch-stm-gh > span {
+.ch-stm.is-team .ch-stm-gh > span {
     font: 400 13px/1.45 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
     text-align: right;
@@ -4336,7 +4344,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   }
   /* A hairline between rows, inset to where the text starts (iOS separator inset). */
   .ch-stm.is-team .ch-stm-group .ch-stm-figrow + .ch-stm-figrow::before,
-  .ch-stm.is-team .ch-stm-group li + li::before {
+.ch-stm.is-team .ch-stm-group li + li::before {
     position: absolute;
     top: 0;
     right: 0;
@@ -4381,10 +4389,19 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     font: 500 14px/1 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
-  .ch-stm.is-team :is(.ch-stm-figrow__d, .ch-stm-hero__c b, .ch-stm-sgfig b, .ch-stm-leg b, .ch-stm-row__v span).ch-gain {
+  .ch-stm.is-team :is(.ch-stm-figrow__d,
+.ch-stm-hero__c b,
+.ch-stm-sgfig b,
+.ch-stm-leg b,
+.ch-stm-row__v span).ch-gain {
     color: var(--ch-chart-gain);
   }
-  .ch-stm.is-team :is(.ch-stm-figrow__d, .ch-stm-hero__c b, .ch-stm-sgfig b, .ch-stm-leg b, .ch-stm-row__v span, .ch-stm-putt__r b).ch-loss {
+  .ch-stm.is-team :is(.ch-stm-figrow__d,
+.ch-stm-hero__c b,
+.ch-stm-sgfig b,
+.ch-stm-leg b,
+.ch-stm-row__v span,
+.ch-stm-putt__r b).ch-loss {
     color: var(--ch-chart-loss);
   }
 
@@ -4732,13 +4749,16 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   stroke-width: 2;
   fill: var(--ch-ivory-25);
 }
-.ch-st[data-canopy] .ch-tp__svg.is-good :is(.ch-tp__line, .ch-tp__dot) {
+.ch-st[data-canopy] .ch-tp__svg.is-good :is(.ch-tp__line,
+.ch-tp__dot) {
   stroke: var(--ch-chart-gain);
 }
-.ch-st[data-canopy] .ch-tp__svg.is-bad :is(.ch-tp__line, .ch-tp__dot) {
+.ch-st[data-canopy] .ch-tp__svg.is-bad :is(.ch-tp__line,
+.ch-tp__dot) {
   stroke: var(--ch-chart-loss);
 }
-.ch-st[data-canopy] .ch-tp__svg.is-flat :is(.ch-tp__line, .ch-tp__dot) {
+.ch-st[data-canopy] .ch-tp__svg.is-flat :is(.ch-tp__line,
+.ch-tp__dot) {
   stroke: var(--ch-text-tertiary);
 }
 .ch-st[data-canopy] .ch-tp__n {
@@ -5228,7 +5248,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   .ch-st.is-desk[data-canopy] .ch-pf-hero__figs div {
     padding: 4px 16px;
   }
-  .ch-st.is-desk[data-canopy] .ch-pf-hero__figs dd:not(.ch-pf-hero__sub, .ch-pf-hero__chg) {
+  .ch-st.is-desk[data-canopy] .ch-pf-hero__figs dd:not(.ch-pf-hero__sub,
+.ch-pf-hero__chg) {
     font-size: 24px;
   }
 }
@@ -5330,7 +5351,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   background: linear-gradient(180deg, var(--ch-champagne-500), var(--ch-champagne-300));
   box-shadow: 0 6px 12px -8px rgb(148 96 14 / 0.6);
 }
-.ch-st[data-canopy] .ch-fm__c:not(.is-up, .is-down) .ch-fm__bar {
+.ch-st[data-canopy] .ch-fm__c:not(.is-up,
+.is-down) .ch-fm__bar {
   top: 50%;
   height: 3px;
   background: var(--ch-ink-400);
@@ -5351,7 +5373,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   top: calc(50% + var(--ch-bar, 0%) * 0.82 * 0.5 + 6px);
   color: var(--ch-warning-600);
 }
-.ch-st[data-canopy] .ch-fm__c:not(.is-up, .is-down) .ch-fm__score {
+.ch-st[data-canopy] .ch-fm__c:not(.is-up,
+.is-down) .ch-fm__score {
   top: calc(50% + 10px);
 }
 .ch-st[data-canopy] .ch-fm__c.is-last .ch-fm__d {
@@ -5515,103 +5538,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 
 /* P005: the player Overview as seven zones (OverviewZones). Each stat area is a band set off by a gold rule, an alternating tint
    and, left, what the stat is with one big reading; right, the picture that fits it. Prefix .ch-z. */
-.ch-st[data-canopy] .ch-zones {
-  display: grid;
-  margin-top: 4px;
-}
-.ch-st[data-canopy] .ch-z {
-  display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
-  gap: 48px;
-  padding: 36px 36px 40px;
-  border-top: 3px solid var(--ch-champagne-500);
-  background: var(--ch-ivory-25);
-}
-.ch-st[data-canopy] .ch-z--alt {
-  background: var(--ch-bg-subtle);
-}
-.ch-st[data-canopy] .ch-z__id {
-  display: grid;
-  align-content: start;
-  gap: 14px;
-}
-.ch-st[data-canopy] .ch-z__n {
-  display: inline-grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--ch-green-800);
-  color: var(--ch-ivory-50);
-  font: 700 14px/1 var(--ch-font-sans, inherit);
-}
-.ch-st[data-canopy] .ch-z__id h2 {
-  margin: 0;
-  font: 600 27px/1.1 var(--ch-font-sans, inherit);
-  letter-spacing: -0.015em;
-  color: var(--ch-green-800);
-}
-.ch-st[data-canopy] .ch-z__def {
-  margin: 0;
-  font: 400 14.5px/1.5 var(--ch-font-sans, inherit);
-  color: var(--ch-text-secondary);
-}
-.ch-st[data-canopy] .ch-z__def b {
-  font-weight: 600;
-  color: var(--ch-text-primary);
-}
-.ch-st[data-canopy] .ch-z__read {
-  display: grid;
-  gap: 8px;
-  margin-top: 4px;
-  padding-top: 16px;
-  border-top: 1px solid var(--ch-ledger-rule);
-}
-.ch-st[data-canopy] .ch-zbig {
-  font-size: 60px;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: -0.04em;
-  color: var(--ch-green-800);
-}
-.ch-st[data-canopy] .ch-zbig small {
-  margin-left: 3px;
-  font-size: 26px;
-  letter-spacing: 0;
-  color: var(--ch-text-secondary);
-}
-.ch-st[data-canopy] .ch-zbig.is-good {
+.ch-st[data-canopy] .ch-znbig.is-good {
   color: var(--ch-green-600);
 }
-.ch-st[data-canopy] .ch-zbig.is-bad {
+.ch-st[data-canopy] .ch-znbig.is-bad {
   color: var(--ch-warning-600);
-}
-.ch-st[data-canopy] .ch-zlines {
-  display: grid;
-  gap: 6px;
-  font: 500 14px/1.3 var(--ch-font-sans, inherit);
-  color: var(--ch-text-secondary);
-}
-.ch-st[data-canopy] .ch-zlines b {
-  font-weight: 700;
-  color: var(--ch-text-primary);
-}
-.ch-st[data-canopy] .ch-z__vis {
-  display: grid;
-  align-content: start;
-  gap: 28px;
-  min-width: 0;
-}
-.ch-st[data-canopy] .ch-zv h3 {
-  margin: 0 0 4px;
-  font: 600 15px/1.2 var(--ch-font-sans, inherit);
-  color: var(--ch-text-primary);
-}
-.ch-st[data-canopy] .ch-zv > p {
-  margin: 0 0 14px;
-  max-width: 60ch;
-  font: 400 13.5px/1.45 var(--ch-font-sans, inherit);
-  color: var(--ch-text-tertiary);
 }
 .ch-st[data-canopy] .ch-zsvg {
   display: block;
@@ -5622,14 +5553,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 .ch-st[data-canopy] .ch-zgreen {
   max-width: 400px;
-}
-.ch-st[data-canopy] .ch-zmiss {
-  margin: 0;
-  padding: 18px 20px;
-  border-radius: 14px;
-  background: var(--ch-bg-inset);
-  font: 400 14px/1.5 var(--ch-font-sans, inherit);
-  color: var(--ch-text-secondary);
 }
 .ch-st[data-canopy] .ch-zmeta {
   margin: 18px 0 0;
@@ -5920,26 +5843,14 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   letter-spacing: -0.02em;
   color: var(--ch-text-primary);
 }
-.ch-st[data-canopy] .ch-z .ch-fm {
+.ch-st[data-canopy] .ch-zn .ch-fm {
   border-top: 0;
   padding-top: 0;
 }
 @media (max-width: 960px) {
-  .ch-st[data-canopy] .ch-z {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 24px;
-    padding: 28px 20px 32px;
-  }
   .ch-st[data-canopy] .ch-zpair {
     grid-template-columns: minmax(0, 1fr);
   }
-}
-
-.ch-st[data-canopy] .ch-zones__note {
-  margin: 0;
-  padding: 0 0 14px;
-  font: 400 13px/1.45 var(--ch-font-sans, inherit);
-  color: var(--ch-text-tertiary);
 }
 
 .ch-st[data-canopy] .ch-zfloor {
@@ -6065,21 +5976,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 
 /* the wide zone: what the stat is on one row above, the table full width */
-.ch-st[data-canopy] .ch-z--wide {
-  grid-template-columns: minmax(0, 1fr);
-  gap: 24px;
-}
-.ch-st[data-canopy] .ch-z--wide .ch-z__id {
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 4px 16px;
-}
-.ch-st[data-canopy] .ch-z--wide .ch-z__def {
-  grid-column: 2;
-}
-.ch-st[data-canopy] .ch-z--wide .ch-z__n {
-  grid-row: span 2;
-}
 .ch-st[data-canopy] .ch-zt {
   min-width: 0;
 }
@@ -6196,4 +6092,41 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   border-radius: 50%;
   background: var(--ch-champagne-500);
   border: 3px solid var(--ch-ivory-25);
+}
+
+/* Micro motion on the stats zones: lengths glide to their new value when the window, the filter or a focus area changes, and
+   a row lifts a little under the pointer. Tokens only, so Animations off and reduced motion make them instant. */
+.ch-st[data-canopy] .ch-lb__bar,
+.ch-st[data-canopy] .ch-ztrack__fill,
+.ch-st[data-canopy] .ch-ztrack__tick,
+.ch-st[data-canopy] .ch-zfn .r > div i,
+.ch-st[data-canopy] .ch-dv__done {
+  transition:
+    width var(--ch-dur-base) var(--ch-ease),
+    left var(--ch-dur-base) var(--ch-ease),
+    right var(--ch-dur-base) var(--ch-ease);
+}
+.ch-st[data-canopy] .ch-dv__dot {
+  transition: left var(--ch-dur-base) var(--ch-ease);
+}
+.ch-st[data-canopy] .ch-zmix i,
+.ch-st[data-canopy] .ch-zfw > div {
+  transition:
+    flex-grow var(--ch-dur-base) var(--ch-ease),
+    width var(--ch-dur-base) var(--ch-ease),
+    filter var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-st[data-canopy] .ch-lb__r,
+.ch-st[data-canopy] .ch-zrow {
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+  border-radius: 10px;
+}
+@media (hover: hover) {
+  .ch-st[data-canopy] .ch-lb__r:hover,
+  .ch-st[data-canopy] .ch-zrow:hover {
+    background: rgb(176 149 96 / 0.1);
+  }
+  .ch-st[data-canopy] .ch-zmix i:hover {
+    filter: brightness(1.12);
+  }
 }
