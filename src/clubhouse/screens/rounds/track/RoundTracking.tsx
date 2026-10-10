@@ -35,8 +35,6 @@ export type RoundTrackingProps = ShotTrackingProps & {
   onOpenScorecard?: () => void;
   /** A finished hole's shots, for the course view's ‹ › (the round screen already holds them). Without it other holes show no shots. */
   holeShots?: (index: number) => ShotRecord[] | null;
-  /** Shotgun start: the hole position the round started on (play-order.ts). Omitted, hole 1. */
-  startHole?: number;
 };
 
 // CH-11706: going to another hole is a selection tick. Module-level, so the

@@ -31,6 +31,11 @@ export interface ShotTrackingProps {
   holes: Hole[];
   currentHoleIndex: number;
   /**
+   * Shotgun start: the hole position the round started on (lib/golf/round-session/play-order.ts). Omitted, hole 1.
+   * The screens use it for which holes count as earlier and which one is next; the hook's own rules don't need it.
+   */
+  startHole?: number;
+  /**
    * A hole is only considered complete once its parent has durably checkpointed
    * the score and every shot. The caller resolves after that write succeeds.
    */
