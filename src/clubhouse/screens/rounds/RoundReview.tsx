@@ -19,7 +19,8 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { dateOf, TeeSwatch, TYPE_LABEL } from './parts';
 import { approachFinish, costliest, flow, headline, puttSplit, teeMisses } from './round-insights';
-import { PuttingViz, RzBig, RzBlock, RzZone, ScoreFlow, ShotTrail, TeeToGreen } from './RoundZones';
+import { Zone, ZoneBig, ZoneBlock, Zones } from '../../ui/Zone';
+import { PuttingViz, ScoreFlow, ShotTrail, TeeToGreen } from './RoundZones';
 import { checkedRecap } from './recap-check';
 import { openedFromLibrary } from './return-state';
 
@@ -246,8 +247,9 @@ function HoleCard({
         </div>
       </div>
       {/* The shots slide in the direction of travel (CH-11604). */}
+      {/* The trail is not slid with the list: its shots draw themselves in order, so the hole changes under a still frame. */}
+      {!shotsError && <ShotTrail key={hole.n} hole={hole} />}
       <Swap swapKey={hole.n} kind="slide" dir={dir}>
-        {!shotsError && <ShotTrail hole={hole} />}
         {shotsError ? (
           <InlineNotice code="CH-11205" title="The shots for this round didn’t load" body="The scorecard is right; only the shot-by-shot detail is missing. Try again in a moment." onRetry={onRetry} retrying={retrying} />
         ) : hole.shots.length === 0 ? (
@@ -401,8 +403,8 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
         />
       )}
 
-      <div className="ch-rzs">
-        <RzZone
+      <Zones>
+        <Zone
           n={1}
           title="The round"
           def={
@@ -412,8 +414,8 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
           }
           read={
             <>
-              <RzBig value={formatToPar(r.toPar)} tone={r.toPar == null ? undefined : r.toPar <= 0 ? 'good' : 'bad'} />
-              <div className="ch-rzlines">
+              <ZoneBig value={formatToPar(r.toPar)} tone={r.toPar == null ? undefined : r.toPar <= 0 ? 'good' : 'bad'} />
+              <div className="ch-znlines">
                 {r.holesPlayed === 18 && r.front.score != null && r.back.score != null && (
                   <span>
                     <b>
@@ -431,7 +433,7 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
           }
         >
           {points.length >= 2 ? (
-            <RzBlock title="Running score to par" note="One dot a hole; the columns under it are each hole’s strokes against par. Move across it to read a hole, click one to see its shots.">
+            <ZoneBlock title="Running score to par" note="One dot a hole; the columns under it are each hole’s strokes against par. Move across it to read a hole, click one to see its shots.">
               <ScoreFlow
                 holes={r.holes}
                 outScore={r.front.score}
@@ -444,9 +446,9 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
                   document.getElementById('ch-rz-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }}
               />
-            </RzBlock>
+            </ZoneBlock>
           ) : (
-            <p className="ch-rzmiss">The hole-by-hole picture needs holes posted with their scores.</p>
+            <p className="ch-znmiss">The hole-by-hole picture needs holes posted with their scores.</p>
           )}
           {r.holes.length > 0 && !r.holesError && (
             <section className="ch-rv-card" aria-labelledby="ch-rv-dist-h">
@@ -469,9 +471,9 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
               </div>
             </section>
           )}
-        </RzZone>
+        </Zone>
 
-        <RzZone
+        <Zone
           n={2}
           alt
           title="Where the strokes went"
@@ -483,8 +485,8 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
           read={
             r.strokesGained?.total != null ? (
               <>
-                <RzBig value={formatSigned(r.strokesGained.total)} tone={r.strokesGained.total >= 0 ? 'good' : 'bad'} />
-                <div className="ch-rzlines">
+                <ZoneBig value={formatSigned(r.strokesGained.total)} tone={r.strokesGained.total >= 0 ? 'good' : 'bad'} />
+                <div className="ch-znlines">
                   <span>
                     <b>Total</b> {sgBaseline(r.tour).vs}
                   </span>
@@ -497,7 +499,7 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
             <StrokesGained review={r} onRetry={refresh} retrying={refreshing} />
           </SectionBoundary>
           {costly.length > 0 && (
-            <RzBlock title="Where the strokes were lost" note="The holes that cost the most against par. Pick one on the scorecard to see its shots.">
+            <ZoneBlock title="Where the strokes were lost" note="The holes that cost the most against par. Pick one on the scorecard to see its shots.">
               <div className="ch-rzcost">
                 {costly.map((c) => (
                   <div key={c.n} className="ch-rzcost__r">
@@ -520,21 +522,21 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
                   </div>
                 ))}
               </div>
-            </RzBlock>
+            </ZoneBlock>
           )}
-        </RzZone>
+        </Zone>
 
         {r.holesError ? (
-          <div className="ch-rz ch-rz--note">
+          <div className="ch-zn ch-zn--note">
             <InlineNotice code="CH-11204" title="The scorecard didn’t load" body="The round’s totals are right; the hole-by-hole card is missing. Try again in a moment." onRetry={refresh} retrying={refreshing} />
           </div>
         ) : r.holes.length === 0 ? (
-          <div className="ch-rz ch-rz--note">
+          <div className="ch-zn ch-zn--note">
             <EmptyState code="CH-11305" compact icon={Flag} title="Posted as a total" body="This round was posted with its score only, so there’s no hole-by-hole card or shots to show." />
           </div>
         ) : (
           <>
-            <RzZone
+            <Zone
               n={3}
               title="Tee to green"
               def={
@@ -545,8 +547,8 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
               read={
                 r.greens ? (
                   <>
-                    <RzBig value={pct(r.greens.hit, r.greens.of)} unit="" tone="good" />
-                    <div className="ch-rzlines">
+                    <ZoneBig value={pct(r.greens.hit, r.greens.of)} unit="" tone="good" />
+                    <div className="ch-znlines">
                       <span>
                         <b>
                           {r.greens.hit} of {r.greens.of}
@@ -566,16 +568,16 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
                 ) : undefined
               }
             >
-              <RzBlock title="Fairways and greens" note="A filled dot found it, a hollow dot missed it, a dash does not apply (a par 3 has no fairway).">
+              <ZoneBlock title="Fairways and greens" note="A filled dot found it, a hollow dot missed it, a dash does not apply (a par 3 has no fairway).">
                 <TeeToGreen holes={r.holes} />
                 {(misses.left > 0 || misses.right > 0) && (
                   <p className="ch-rzmeta">
                     Fairways missed: <b>{misses.left}</b> left, <b>{misses.right}</b> right{misses.other ? `, ${misses.other} with no side recorded` : ''}.
                   </p>
                 )}
-              </RzBlock>
+              </ZoneBlock>
               {approach && (
-                <RzBlock title="How close approaches finished" note={`${approach.n} approach ${approach.n === 1 ? 'shot' : 'shots'} that found the green.`}>
+                <ZoneBlock title="How close approaches finished" note={`${approach.n} approach ${approach.n === 1 ? 'shot' : 'shots'} that found the green.`}>
                   <div className="ch-rzpair">
                     <div>
                       <b className="ch-num">{Math.round(approach.avg)}</b>
@@ -586,11 +588,11 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
                       <small>ft closest, hole {approach.hole}</small>
                     </div>
                   </div>
-                </RzBlock>
+                </ZoneBlock>
               )}
-            </RzZone>
+            </Zone>
 
-            <RzZone
+            <Zone
               n={4}
               alt
               title="Putting"
@@ -602,8 +604,8 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
               read={
                 putting ? (
                   <>
-                    <RzBig value={r.putts == null ? NO_DATA : String(r.putts)} />
-                    <div className="ch-rzlines">
+                    <ZoneBig value={r.putts == null ? NO_DATA : String(r.putts)} />
+                    <div className="ch-znlines">
                       <span>
                         <b>{formatFixed(putting.perHole, 1)}</b> a hole
                       </span>
@@ -618,19 +620,21 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
               }
             >
               <PuttingViz holes={r.holes} />
-            </RzZone>
+            </Zone>
 
-            <RzZone
+            <Zone
               n={5}
               title="Scorecard and shots"
               read={
                 hole ? (
                   <>
-                    <RzBig
+                    <ZoneBig
+                      key={hole.n}
+                      settle
                       value={hole.score == null ? NO_DATA : String(hole.score)}
                       tone={hole.score == null || hole.par == null ? undefined : hole.score < hole.par ? 'good' : hole.score > hole.par ? 'bad' : undefined}
                     />
-                    <div className="ch-rzlines">
+                    <div className="ch-znlines">
                       <span>
                         <b>Hole {hole.n}</b>
                         {hole.par != null ? ` · par ${hole.par}` : ''}
@@ -668,10 +672,10 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
               <SectionBoundary surface="rounds.review.hole" label="This hole" code="CH-11203">
                 {hole && <HoleCard hole={hole} dir={holeDir} count={r.holes[r.holes.length - 1]?.n ?? 18} shotsError={r.shotsError} onStep={step} onRetry={refresh} retrying={refreshing} />}
               </SectionBoundary>
-            </RzZone>
+            </Zone>
 
             {(recap || r.notes) && (
-              <RzZone
+              <Zone
                 n={6}
                 alt
                 title="In words"
@@ -700,11 +704,11 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
                     <p>{r.notes}</p>
                   </section>
                 )}
-              </RzZone>
+              </Zone>
             )}
           </>
         )}
-      </div>
+      </Zones>
     </main>
   );
 }

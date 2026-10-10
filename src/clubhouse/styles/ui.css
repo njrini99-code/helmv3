@@ -1378,3 +1378,197 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   color: var(--ch-green-700);
   font-weight: 600;
 }
+
+/* Zones (ui/Zone.tsx): one area of a page set off by a gold rule, shared by player stats and the round review. What the area is
+   and one reading on the left, the picture that fits it on the right. Flat grounds: large soft gradients band (owner, 2026-10-06). */
+.ch-zns {
+  container-type: inline-size;
+  container-name: chzn;
+  display: grid;
+  margin-top: 4px;
+}
+.ch-zns__note {
+  margin: 0;
+  padding: 0 0 14px;
+  font: 400 13px/1.45 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-zn {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 48px;
+  padding: 36px 36px 40px;
+  background: var(--ch-ivory-25);
+  box-shadow: inset 0 3px 0 var(--ch-champagne-500);
+}
+.ch-zn--alt {
+  background: var(--ch-bg-subtle);
+}
+.ch-zn--note {
+  display: block;
+}
+.ch-zn__id {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+.ch-zn__n {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, var(--ch-green-700), var(--ch-green-900));
+  color: var(--ch-ivory-50);
+  font: 700 14px/1 var(--ch-font-sans);
+  box-shadow:
+    0 0 0 2px var(--ch-ivory-25),
+    0 0 0 3.5px var(--ch-champagne-500),
+    0 8px 14px -8px rgb(8 43 28 / 0.7);
+}
+.ch-zn__id h2 {
+  margin: 0;
+  font: 600 30px/1.1 var(--ch-font-sans);
+  letter-spacing: -0.02em;
+  color: var(--ch-green-800);
+}
+.ch-zn__id h2::after {
+  content: '';
+  display: block;
+  width: 36px;
+  height: 3px;
+  margin-top: 12px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--ch-champagne-500), rgb(176 149 96 / 0));
+}
+.ch-zn__def {
+  margin: 0;
+  font: 400 14.5px/1.5 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-zn__def b {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+.ch-zn__read {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 18px 18px 16px;
+  border-radius: 16px;
+  background: var(--ch-bg-surface);
+  box-shadow:
+    inset 0 0 0 1px rgb(176 149 96 / 0.3),
+    0 14px 24px -22px rgb(28 25 18 / 0.5);
+}
+.ch-znbig {
+  font-size: 64px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  background: linear-gradient(180deg, var(--ch-green-600), var(--ch-green-900));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.ch-znbig small {
+  margin-left: 3px;
+  font-size: 26px;
+  letter-spacing: 0;
+  -webkit-text-fill-color: var(--ch-text-secondary);
+}
+.ch-znbig.is-good {
+  background-image: linear-gradient(180deg, var(--ch-green-500), var(--ch-green-800));
+}
+.ch-znbig.is-bad {
+  background-image: linear-gradient(180deg, #c58a2c, #7a4a08);
+}
+.ch-znlines {
+  display: grid;
+  gap: 6px;
+  font: 500 14px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-znlines b {
+  font-weight: 700;
+  color: var(--ch-text-primary);
+}
+.ch-zn__vis {
+  display: grid;
+  align-content: start;
+  gap: 28px;
+  min-width: 0;
+}
+.ch-zn__vis > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.ch-znb h3 {
+  margin: 0 0 4px;
+  font: 600 15px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-znb > p {
+  margin: 0 0 14px;
+  max-width: 62ch;
+  font: 400 13.5px/1.45 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-znmiss {
+  margin: 0;
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: var(--ch-bg-inset);
+  font: 400 14px/1.5 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+/* the wide zone: what the area is on one row above, the picture full width */
+.ch-zn--wide {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+}
+.ch-zn--wide .ch-zn__id {
+  position: static;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 16px;
+}
+.ch-zn--wide .ch-zn__id h2::after {
+  display: none;
+}
+.ch-zn--wide .ch-zn__def {
+  grid-column: 2;
+}
+.ch-zn--wide .ch-zn__n {
+  grid-row: span 2;
+}
+@container chzn (max-width: 900px) {
+  .ch-zn {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+    padding: 26px 18px 30px;
+  }
+  .ch-zn__id {
+    position: static;
+  }
+}
+@container chzn (max-width: 640px) {
+  .ch-znbig {
+    font-size: 48px;
+  }
+}
+
+/* A reading that is replaced by another (a picked hole): the new one settles in. Not a count-up, and not on first paint. */
+@keyframes ch-zn-settle {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.ch-znbig.is-settle {
+  display: inline-block;
+  animation: ch-zn-settle var(--ch-dur-base) var(--ch-ease) backwards;
+}

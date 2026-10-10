@@ -186,8 +186,8 @@ describe('Skeletons draw the loaded page\'s lines', () => {
     const { container } = render(<StatsProfileSkeleton coach />);
     // The first zones sit after the filter bar, as loaded.
     const order = [...container.querySelector('main')!.children].map((c) => c.className.split(' ')[0]);
-    expect(order.slice(order.indexOf('ch-sf'), order.indexOf('ch-sf') + 2)).toEqual(['ch-sf', 'ch-zones']);
-    expect(container.querySelectorAll('.ch-zones > .ch-z')).toHaveLength(2);
+    expect(order.slice(order.indexOf('ch-sf'), order.indexOf('ch-sf') + 2)).toEqual(['ch-sf', 'ch-zns']);
+    expect(container.querySelectorAll('.ch-zns > .ch-zn')).toHaveLength(2);
     // The change line under strokes gained never wraps (it grew the hero 24px on a 680–770px canvas).
     expect(css).toMatch(/\.ch-pf-hero__figs \.ch-sgchg\s*{\s*flex-wrap: nowrap/);
     // The window switch keeps the loaded one's foot.

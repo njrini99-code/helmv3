@@ -59,7 +59,7 @@ afterEach(() => cleanup());
 describe('Player stats · desktop', () => {
   it('Overview: the zones say how many rounds the hole stats read, and that the scoring average counts all of them, when some are totals', () => {
     shell(<StatsPlayer data={player({ rounds: 5, effRounds: 5, holeRounds: 3 }, { holeRounds: 3 })} coachId="c1" />);
-    const note = document.querySelector('.ch-zones__note')!.textContent!;
+    const note = document.querySelector('.ch-zns__note')!.textContent!;
     expect(note.startsWith(COVERAGE)).toBe(true);
     // The scoring average is a score: it counts all five.
     expect(note).toContain('read all 5');
@@ -72,7 +72,7 @@ describe('Player stats · desktop', () => {
 
   it('Overview: with every round holed there is no coverage line', () => {
     shell(<StatsPlayer data={player({ rounds: 10, effRounds: 10, holeRounds: 10 }, { holeRounds: 10 })} coachId="c1" />);
-    expect(document.querySelector('.ch-zones__note')).toBeNull();
+    expect(document.querySelector('.ch-zns__note')).toBeNull();
     expect(screen.queryByText(/Hole stats from/)).toBeNull();
   });
 

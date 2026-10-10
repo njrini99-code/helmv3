@@ -1,5 +1,11 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-10 — Zones on the shared Zone, and micro motion
+
+Presentation only; see the shared entry in `docs/clubhouse/CHANGELOG.md`. The zones now come from `ui/Zone.tsx` (the reading sits in a
+plate with a gradient figure and a gold-ringed number, as on the round review). Bars, tracks and focus rails glide to a new value when
+the window or filter changes; rows warm under the pointer; the Overview is memoised.
+
 ## 2026-10-09 — Seven zones: Overview, Game detail, Rounds and Development
 
 ```text

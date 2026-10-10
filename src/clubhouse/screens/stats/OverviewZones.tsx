@@ -3,6 +3,7 @@ import type { ChPlayerProfile } from '../../data/stats-player';
 import { formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
 import { holeCoverage } from '../../data/round-scope';
+import { Zone, ZoneBig as Big, ZoneBlock as Vis, ZoneNote as Missing, Zones } from '../../ui/Zone';
 import { LegBars } from './LegBars';
 
 /**
@@ -18,45 +19,6 @@ type Stats = NonNullable<ChPlayerProfile['stats']>;
 const fixed = (v: number | null | undefined, d = 1) => (v == null || Number.isNaN(v) ? NO_DATA : v.toFixed(d));
 const clamp = (v: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
 const pos = (v: number, lo: number, hi: number) => clamp(((v - lo) / (hi - lo)) * 100);
-
-export function Zone({ n, title, def, alt = false, wide = false, read, children }: { n: number; title: string; def: ReactNode; alt?: boolean; wide?: boolean; read?: ReactNode; children: ReactNode }) {
-  return (
-    <section className={'ch-z' + (alt ? ' ch-z--alt' : '') + (wide ? ' ch-z--wide' : '')} aria-labelledby={`ch-z-${n}`}>
-      <div className="ch-z__id">
-        <span className="ch-z__n" aria-hidden="true">
-          {n}
-        </span>
-        <h2 id={`ch-z-${n}`}>{title}</h2>
-        <p className="ch-z__def">{def}</p>
-        {read && <div className="ch-z__read">{read}</div>}
-      </div>
-      <div className="ch-z__vis">{children}</div>
-    </section>
-  );
-}
-
-export function Vis({ title, note, id, children }: { title: string; note?: ReactNode; id?: string; children: ReactNode }) {
-  return (
-    <section className="ch-zv" aria-labelledby={id}>
-      <h3 id={id}>{title}</h3>
-      {note && <p>{note}</p>}
-      {children}
-    </section>
-  );
-}
-
-export function Big({ value, unit, tone }: { value: string; unit?: string; tone?: 'good' | 'bad' }) {
-  return (
-    <span className={'ch-zbig ch-num' + (tone ? ` is-${tone}` : '')}>
-      {value}
-      {unit && <small>{unit}</small>}
-    </span>
-  );
-}
-
-function Missing({ children }: { children: ReactNode }) {
-  return <p className="ch-zmiss">{children}</p>;
-}
 
 /** A single bar against the team and Tour marks: fill from the start, the team's tick (ink) and the Tour's (gold). */
 function Track({ value, lo = 0, hi = 100, team, tour, bad = false, from }: { value: number; lo?: number; hi?: number; team?: number | null; tour?: number | null; bad?: boolean; from?: number }) {
@@ -152,9 +114,9 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
   // Hole-level stats read the rounds that have their holes scored, not a round posted as a total only (Q-123): say so when that is fewer.
   const coverage = holeCoverage(data.extra.holeRounds ?? w.rounds, w.rounds);
   return (
-    <div className="ch-zones">
+    <Zones>
       {coverage && (
-        <p className="ch-zones__note">
+        <p className="ch-zns__note">
           {coverage}; the scoring average and the pressure gap read all {w.rounds}. {coach ? 'Team values are pooled from the active players’ rounds in the same window, where the round cache has the figure. ' : ''}Bands need 10 shots or putts.
         </p>
       )}
@@ -169,7 +131,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
         read={
           <>
             <Big value={sg == null ? NO_DATA : formatSigned(sg)} tone={sg == null ? undefined : sg >= 0 ? 'good' : 'bad'} />
-            <div className="ch-zlines">
+            <div className="ch-znlines">
               {sgTeam != null && sg != null && (
                 <span>
                   <b>Team {formatSigned(sgTeam)}</b> · {Math.abs(sg - sgTeam).toFixed(1)} {sg >= sgTeam ? 'ahead of' : 'behind'} them
@@ -217,7 +179,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
         read={
           <>
             <Big value={fixed(w.avg)} />
-            <div className="ch-zlines">
+            <div className="ch-znlines">
               {toParAvg != null && (
                 <span>
                   <b>{toParAvg > 0.05 ? `+${toParAvg.toFixed(1)}` : toParAvg < -0.05 ? `−${Math.abs(toParAvg).toFixed(1)}` : 'E'}</b> to par a round
@@ -274,7 +236,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
         read={
           <>
             <Big value={fixed(cmp('Fairways hit')?.you, 0)} unit="%" tone="good" />
-            <div className="ch-zlines">
+            <div className="ch-znlines">
               <span>
                 fairways hit{ref('Fairways hit') != null && <> · <b>{refName} {Math.round(ref('Fairways hit')!)}%</b></>}
               </span>
@@ -359,7 +321,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
         read={
           <>
             <Big value={fixed(girYou, 0)} unit="%" tone={girYou != null && ref('Greens in regulation') != null && girYou < ref('Greens in regulation')! ? 'bad' : 'good'} />
-            <div className="ch-zlines">
+            <div className="ch-znlines">
               <span>
                 greens in regulation
                 {ref('Greens in regulation') != null && <> · <b>{refName} {Math.round(ref('Greens in regulation')!)}%</b></>}
@@ -426,7 +388,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
         read={
           <>
             <Big value={fixed(scrYou, 0)} unit="%" tone="good" />
-            <div className="ch-zlines">
+            <div className="ch-znlines">
               <span>
                 scrambling{ref('Scrambling') != null && <> · <b>{refName} {Math.round(ref('Scrambling')!)}%</b></>}
               </span>
@@ -509,7 +471,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
         read={
           <>
             <Big value={fixed(puttsYou)} />
-            <div className="ch-zlines">
+            <div className="ch-znlines">
               <span>
                 putts a round{ref('Putts per round') != null && <> · <b>{refName} {ref('Putts per round')!.toFixed(1)}</b></>}
               </span>
@@ -545,11 +507,11 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
             Each round against {first}’s own average. Green rises when a round beat it, gold hangs when it didn’t. <b>Lower is better.</b>
           </>
         }
-        read={<div className="ch-zlines">{data.rounds.length} {data.rounds.length === 1 ? 'round' : 'rounds'} in this window</div>}
+        read={<div className="ch-znlines">{data.rounds.length} {data.rounds.length === 1 ? 'round' : 'rounds'} in this window</div>}
       >
         {ribbon}
       </Zone>
-    </div>
+    </Zones>
   );
 }
 

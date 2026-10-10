@@ -3,7 +3,7 @@
 import { CalendarPlus, ChevronLeft, ChevronRight, Info, MessageSquare, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
 import { m } from 'motion/react';
-import { useDeferredValue, useEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from 'react';
+import { memo, useDeferredValue, useEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';
 import type { ChPlayerProfile } from '../../data/stats-player';
@@ -43,7 +43,8 @@ import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { useChSessionState } from '../../lib/session-state';
 import { CACHE_ERROR, countWords, FORM_STEADY, shotsWords } from './notes';
 import { PlayerStage } from './PlayerStage';
-import { Big, OverviewZones, Zone } from './OverviewZones';
+import { OverviewZones } from './OverviewZones';
+import { Zone, ZoneBig as Big, Zones } from '../../ui/Zone';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { devMetric, devProgress, devTitle, devValue, goalLine } from './dev-format';
 
@@ -330,7 +331,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
 
             {shownTab === 'rounds' && !emptyFilter && !failed && (
               <SectionBoundary surface="stats.player.rounds" label="The rounds table" code="CH-5206">
-                <div className="ch-zones">
+                <Zones>
                   {data.rounds.length > 0 && <RoundsExtra zones x={data.extra} filter={data.filter} share={{ viewer: data.viewer, name: data.name, coach: data.attestingCoach }} />}
                   <Zone
                     n={data.rounds.length > 0 ? 3 : 1}
@@ -344,7 +345,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
                   >
                     <RoundsTable rounds={data.rounds} role={coach ? 'coach' : 'player'} tour={data.tour} holes={data.filter.holes} />
                   </Zone>
-                </div>
+                </Zones>
               </SectionBoundary>
             )}
 
@@ -368,7 +369,8 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
  * everything the tab computes: a crash stays inside the tab.
  */
 
-function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
+/** Memoised: the seven zones are the page's heaviest read, and the tab's own state (the focus sheet, a transition) must not recompute them. */
+const Overview = memo(function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
   const first = data.firstName;
   const trendRounds = [...data.rounds].reverse().slice(-10).map((r) => ({ label: r.date, score: per18(r.score, r.holes), toPar: r.toPar == null ? null : per18(r.toPar, r.holes), holes: r.holes }));
   // Seven zones, one per stat area; the last holds the scoring-form ribbon. Every figure is read from the profile (see OverviewZones).
@@ -388,7 +390,7 @@ function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
       }
     />
   );
-}
+});
 
 function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['rounds']; role: 'coach' | 'player'; tour: ChPlayerProfile['tour']; holes: ChHoles }) {
   const baseline = sgBaseline(tour);
@@ -488,7 +490,7 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
   return (
     <>
       {data.devError && <InlineNotice code="CH-5203" title="Some development items didn’t load." body="Try again; the error has been reported." onRetry={() => router.refresh()} />}
-      <div className="ch-zones">
+      <Zones>
         <Zone
           n={1}
           title="Focus areas"
@@ -496,7 +498,7 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
           read={
             <>
               <Big value={String(active)} />
-              <div className="ch-zlines">
+              <div className="ch-znlines">
                 <span>
                   <b>active</b>
                   {waiting > 0 && ` · ${waiting} waiting on ${coach ? first : 'you'}`}
@@ -538,7 +540,7 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
           read={
             <>
               <Big value={String(data.goals.length)} />
-              <div className="ch-zlines">
+              <div className="ch-znlines">
                 <span>
                   <b>this season</b>
                 </span>
@@ -570,7 +572,7 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
             </ul>
           )}
         </Zone>
-      </div>
+      </Zones>
     </>
   );
 }

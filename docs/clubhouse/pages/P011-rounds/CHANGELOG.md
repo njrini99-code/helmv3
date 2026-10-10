@@ -1,5 +1,12 @@
 # P011 — Rounds: changelog
 
+## 2026-10-10 — Micro motion on the review
+
+The running-score line draws once the first time its stage is seen; the scrub card fades and the hovered dot lifts; a picked hole's shots
+draw in the order they were hit and its reading settles in; strokes gained, putt columns and the first-putt bars glide to a new
+length; the costliest-hole rows press and warm. All from motion tokens (instant with Animations off or reduced motion). The zones come
+from the shared `ui/Zone.tsx`.
+
 ## 2026-10-09 — The round review, more premium
 
 ```text
