@@ -36,6 +36,11 @@
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stamp-workspace.mjs",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deps-hygiene.mjs",
+            "timeout": 10
           }
         ]
       },
@@ -93,6 +98,18 @@
             "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/save-session-state.mjs",
             "timeout": 10,
             "statusMessage": "engineering-os: save session state"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deps-hygiene.mjs",
+            "timeout": 10
           }
         ]
       }
