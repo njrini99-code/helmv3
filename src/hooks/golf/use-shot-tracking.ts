@@ -511,6 +511,7 @@ export function useShotTracking(
         distanceAfterShot,
         puttBreak,
         puttSlope,
+        puttMissTags,
       })
     : null;
 

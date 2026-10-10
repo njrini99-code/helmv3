@@ -120,3 +120,10 @@ describe('tapInWords: the caption names every stroke and the score', () => {
     expect([tapInDistance(1, 'yards'), tapInDistance(0.5, 'yards'), tapInDistance(1, 'meters')]).toEqual(['1 ft', '0.5 ft', '0.3 m']);
   });
 });
+
+describe('planTapIn: never over a choice the player made', () => {
+  it('is not offered once a putt miss tag is picked, so the tag is not dropped', () => {
+    expect(planTapIn(input({ puttMissTags: ['short'] }))).toBeNull();
+    expect(planTapIn(input({ puttMissTags: [] }))).not.toBeNull();
+  });
+});

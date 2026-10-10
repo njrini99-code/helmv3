@@ -284,6 +284,8 @@ export interface TapInInput {
   distanceAfterShot: string;
   puttBreak: ShotRecord['puttBreak'] | null;
   puttSlope: ShotRecord['puttSlope'] | null;
+  /** Miss tags picked on screen; a tap in is not offered over them, so a tag the player chose is never dropped. */
+  puttMissTags?: readonly string[];
 }
 
 export interface TapInPlan {
@@ -307,6 +309,7 @@ export function planTapIn(s: TapInInput): TapInPlan | null {
   if (!s.isPutting || s.currentLie !== 'green') return null;
   if (s.shotHistory.some((shot) => shot.result === 'hole')) return null;
   if (s.resultOfShot !== null || s.distanceAfterShot.trim() !== '') return null;
+  if (s.puttMissTags && s.puttMissTags.length > 0) return null;
   const fromFeet = s.distanceUnit === 'yards' ? s.distanceToHole * 3 : s.distanceToHole;
   if (!Number.isFinite(fromFeet) || fromFeet <= 0) return null;
 
