@@ -292,7 +292,7 @@ function Board({
   }
   const canOpen = (r: ChQRow) => coach || r.playerId === data.viewerPlayerId;
   return (
-    <section className="ch-qf-panel ch-qf-board ch-scoreboard" aria-labelledby="ch-qfm-lb">
+    <section className="ch-qf-panel ch-qf-board" aria-labelledby="ch-qfm-lb">
       {head}
       {stale && <StaleStandings />}
       <p className="ch-sr-only" aria-live="polite" data-ch-code="CH-09803">
