@@ -1,5 +1,12 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-10 — RSVP only when the coach requires it
+
+- The coach's RSVPs section lists only this week's events that require an
+  RSVP (empty state: "No events need RSVPs"). A player is offered a reply only
+  on an event that requires one (`replyIsClosed` closes the rest); when that
+  can't be read the section says it didn't load instead of offering replies.
+
 ## 2026-10-10 — Gradient fills and warmer rows
 
 Presentation only. The RSVP split and the read bar are gradient fills that glide when a count changes; the date tile is a plate with a

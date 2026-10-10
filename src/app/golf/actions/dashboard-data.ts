@@ -448,7 +448,30 @@ async function getCoachDashboardDataImpl(
     // the cheerful "clear schedule" empty state. The flag lets the UI surface a
     // distinct degraded notice instead (same honesty rule as the page catch).
     const todayScheduleError = todayEventsResult.error != null;
-    const todayEvents: TodayEvent[] = (todayEventsResult.data as TodayEvent[] | null) ?? [];
+    const todayEventsFromRpc: TodayEvent[] = (todayEventsResult.data as TodayEvent[] | null) ?? [];
+    // Owner, 2026-10-08: RSVP is off unless the coach turns it on, so "3/6 confirmed" belongs only on an event that
+    // asks for replies. The RPC doesn't return the flag, so it is read here for today's few events; a failed read
+    // drops every count rather than showing one the coach never asked for. Null (older rows) reads as off.
+    let asksForReplies = new Set<string>();
+    if (todayEventsFromRpc.length > 0) {
+        const { data: rsvpFlags, error: rsvpFlagsError } = await supabase
+            .from('golf_events')
+            .select('id, requires_rsvp')
+            .in('id', todayEventsFromRpc.map((e) => e.id));
+        if (rsvpFlagsError) {
+            await logServerError(
+                `[getCoachDashboardData] requires_rsvp read failed; today's confirmed counts hidden: ${describeError(rsvpFlagsError)}`,
+                { action: 'getCoachDashboardData', featureArea: 'coach_dashboard' },
+            );
+        } else {
+            asksForReplies = new Set((rsvpFlags ?? []).filter((e) => e.requires_rsvp === true).map((e) => e.id));
+        }
+    }
+    const todayEvents: TodayEvent[] = todayEventsFromRpc.map((e) => {
+        if (asksForReplies.has(e.id)) return e;
+        const { rsvp_yes: _yes, rsvp_total: _total, ...rest } = e;
+        return rest;
+    });
 
     // Extract players. The roster error is the highest-impact of these: a
     // swallowed failure here empties playerIds, which skips the whole

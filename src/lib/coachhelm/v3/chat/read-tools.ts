@@ -1071,14 +1071,20 @@ export async function getUpcomingEvents(
       timezone: ctx.timezone,
       events: rows.map((e) => {
         const b = byEvent.get(e.id)!;
-        return {
+        const base = {
           event_id: e.id,
           title: e.title,
           event_type: e.event_type,
           starts_at: e.start_time,
           ends_at: e.end_time,
           location: e.location,
-          requires_rsvp: e.requires_rsvp,
+          requires_rsvp: e.requires_rsvp === true,
+        };
+        // Owner, 2026-10-08: RSVP is off unless the coach turned it on (null reads as off). An event without it has
+        // no replies to count, so the model is never handed "6 have not responded" to nag about.
+        if (e.requires_rsvp !== true) return base;
+        return {
+          ...base,
           rsvp_deadline: e.rsvp_deadline,
           rsvp_accepted: b.accepted,
           rsvp_declined: b.declined,

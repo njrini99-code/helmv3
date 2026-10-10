@@ -420,6 +420,35 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
     ]);
   });
 
+  it('carries no reply counts for an event that does not require an RSVP, so nothing nags about it (owner, 2026-10-08)', async () => {
+    const envelope = await getUpcomingEvents(
+      sbWith({
+        golf_events: [{
+          data: [
+            { id: 'event-off', title: 'Practice', event_type: 'practice', start_time: '2026-08-20T18:00:00Z', end_time: null, location: 'Range', requires_rsvp: false, rsvp_deadline: null, status: 'scheduled' },
+            { id: 'event-null', title: 'Lift', event_type: 'practice', start_time: '2026-08-21T18:00:00Z', end_time: null, location: 'Gym', requires_rsvp: null, rsvp_deadline: null, status: 'scheduled' },
+          ],
+        }],
+        golf_event_attendance: [{
+          data: [
+            { event_id: 'event-off', player_id: 'p1', status: 'pending' },
+            { event_id: 'event-null', player_id: 'p2', status: 'pending' },
+          ],
+        }],
+      }),
+      ctx,
+      { days_ahead: 7 },
+    );
+    const events = (envelope.detail as { events: Array<Record<string, unknown>> }).events;
+    expect(events).toHaveLength(2);
+    for (const e of events) {
+      expect(e.requires_rsvp).toBe(false);
+      expect(e).not.toHaveProperty('rsvp_pending_count');
+      expect(e).not.toHaveProperty('rsvp_pending_names');
+      expect(e).not.toHaveProperty('rsvp_accepted');
+    }
+  });
+
   it('decides overdue status in the team timezone rather than UTC', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-08-18T01:00:00.000Z')); // Aug 17 in New York.

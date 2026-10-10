@@ -130,7 +130,8 @@ export function planRecurringPractice(
     .map((id) => ctx.roster.find((p) => p.id === id)?.name)
     .filter((n): n is string => Boolean(n));
 
-  const requiresRsvp = input.requires_rsvp ?? true;
+  // Owner, 2026-10-08: RSVP is off unless the coach asks for it.
+  const requiresRsvp = input.requires_rsvp ?? false;
   const title = input.title?.trim() || 'Team practice';
 
   const plan: RecurringPracticePlan = {
@@ -158,7 +159,8 @@ export function planRecurringPractice(
         `An in-app invitation, email and push notification to ${invitedIds.length} player${invitedIds.length === 1 ? '' : 's'}`,
         'Each player is asked to RSVP',
       ]
-    : [`An in-app notification, email and push notification to ${invitedIds.length} player${invitedIds.length === 1 ? '' : 's'}`];
+    : // An event that doesn't ask for replies notifies nobody (calendar-events / recurring-events fan-out gates).
+      [];
 
   const dayLabel = weekdays.map((d) => WEEKDAY_NAMES[d]).join(' and ');
   const facts = [
@@ -310,7 +312,8 @@ export async function executeRecurringPractice(
         ? [{ kind: 'RSVP request', count: invited, href: '/golf/dashboard/calendar' }]
         : []),
     ],
-    notifications: [
+    // Only a series that asks for replies notifies anyone (owner, 2026-10-08).
+    notifications: !plan.requires_rsvp || invited === 0 ? [] : [
       { channel: 'In-app', recipients: invited, status: 'sent' as const },
       // Email and push are dispatched in an `after()` callback inside the
       // server action, so at this point they are handed off, not confirmed.

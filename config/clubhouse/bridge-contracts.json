@@ -5084,11 +5084,12 @@
     "category": 8,
     "item": 7,
     "name": "REPLY_IS_FOR_INVITED_PLAYERS",
-    "meaning": "A player is offered the reply (Going, Maybe, Can't make it) only on an event whose invite list they are on that has not started and is not cancelled; once it starts the panel says replies are closed.",
+    "meaning": "A player is offered the reply (Going, Maybe, Can't make it) only on an event that requires an RSVP, whose invite list they are on, that has not started and is not cancelled; once it starts the panel says replies are closed. An event without RSVP (requires_rsvp off or null, the default) shows no reply control, reply counts or badges, Needs attention row or Nudge; the coach panel lists it as Invited. The editor Require RSVP switch is off for a new event and is sent on create, edit and series edit (series only when changed).",
     "status": "implemented",
     "where": "src/clubhouse/screens/calendar/inspector.tsx#EventDetail, PlayerReply",
     "tests": [
-      "src/clubhouse/__tests__/calendar.test.tsx"
+      "src/clubhouse/__tests__/calendar.test.tsx",
+      "src/clubhouse/__tests__/calendar-audit.test.tsx"
     ]
   },
   {

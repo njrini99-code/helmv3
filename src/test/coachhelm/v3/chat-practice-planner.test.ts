@@ -116,6 +116,16 @@ describe('planRecurringPractice', () => {
     expect(proposal.notifications.join(' ')).toMatch(/RSVP/i);
   });
 
+  it('leaves RSVP off unless the coach asks, and then promises no notification (owner, 2026-10-08)', () => {
+    const { plan, proposal } = planRecurringPractice(ctx, {
+      weekdays: [TUESDAY],
+      start_time: '15:00',
+      occurrence_count: 4,
+    });
+    expect(plan.requires_rsvp).toBe(false);
+    expect(proposal.notifications).toEqual([]);
+  });
+
   it('caps a runaway series', () => {
     const { plan } = planRecurringPractice(ctx, {
       weekdays: [TUESDAY],

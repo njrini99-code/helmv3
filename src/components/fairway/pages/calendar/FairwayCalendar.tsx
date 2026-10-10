@@ -963,6 +963,8 @@ export function FairwayCalendar({
       setDrawerOpen(true);
       setDrawerRsvpSummary(null);
 
+      // An event that doesn't ask for replies has no reply summary or reply of the viewer's to read (owner, 2026-10-08).
+      if (event.requires_rsvp !== true) return;
       if (isCoach) {
         try {
           const { getEventRSVP } = await import('@/app/golf/actions/calendar-events');
@@ -1072,7 +1074,8 @@ export function FairwayCalendar({
     return (
       events
         .filter((e) => {
-          if (e.requires_rsvp === false) return false;
+          // RSVP is off unless the coach turned it on (owner, 2026-10-08); null reads as off.
+          if (e.requires_rsvp !== true) return false;
           if (e.status === 'cancelled') return false; // never prompt for cancelled events
           const s = e.start_time || e.start_date;
           if (!s) return false;

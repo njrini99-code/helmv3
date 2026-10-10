@@ -1,5 +1,11 @@
 # P001 — Shell: changelog
 
+## 2026-10-10 — RSVP only when the coach requires it
+
+- The sidebar's Next event card shows "N of M confirmed" only for an event
+  that requires an RSVP; otherwise it shows when and where, and the replies are
+  not read (`data/shell.ts`).
+
 ## 2026-10-08 — The course location sets the sun (P001-A1, D3-1)
 
 - **Settings > Team, Course location (CH-8320).** A coach can set where the team

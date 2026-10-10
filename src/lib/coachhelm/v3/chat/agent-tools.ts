@@ -527,7 +527,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
 
     get_upcoming_events: tool({
       description:
-        'Scheduled events in the next N days with RSVP status: how many accepted, declined, and who has not responded.',
+        'Scheduled events in the next N days. For events that require an RSVP, how many accepted, declined, and who has not responded; events without one carry no reply counts.',
       inputSchema: z.object({ days_ahead: z.number().int().min(1).max(60).default(14) }),
       execute: read('get_upcoming_events', (input) => getUpcomingEvents(sb, ctx, input)),
     }),
@@ -602,7 +602,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
 
     create_recurring_practice: tool({
       description:
-        'Create a recurring practice on the team calendar and invite players to RSVP. This REQUIRES the coach to confirm — calling it shows them a preview with every date, it does not create anything. An occurrence_count is mandatory; never create an open-ended series.',
+        'Create a recurring practice on the team calendar and invite players. Set requires_rsvp only when the coach asks for replies (it is off by default, and with it off players get no notification). This REQUIRES the coach to confirm — calling it shows them a preview with every date, it does not create anything. An occurrence_count is mandatory; never create an open-ended series.',
       inputSchema: z.object({
         title: z.string().max(120).optional().describe('Defaults to "Team practice".'),
         description: z.string().max(500).optional(),
@@ -620,7 +620,8 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
           .max(26)
           .describe('How many practices. Required — ask the coach if they did not say.'),
         first_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-        requires_rsvp: z.boolean().default(true),
+        // Owner, 2026-10-08: RSVP is off unless the coach asks for replies.
+        requires_rsvp: z.boolean().default(false),
         rsvp_deadline: z.string().datetime().nullable().optional(),
         invited_player_ids: z.array(PlayerId).optional().describe('Omit to invite the whole active roster.'),
       }),

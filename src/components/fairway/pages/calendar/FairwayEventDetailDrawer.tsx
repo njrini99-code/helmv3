@@ -440,13 +440,8 @@ export function FairwayEventDetailDrawer({
                 ) : null}
               </div>
             )
-          ) : !isCoach && !requiresRsvp ? (
-            // No response required — say so explicitly rather than leaving a
-            // silent gap where the RSVP section would otherwise sit.
-            <p className="font-fw-sans text-caption text-text-tertiary">
-              No response needed for this event.
-            </p>
-          ) : null}
+          ) : null /* RSVP is off unless the coach turns it on (owner, 2026-10-08), so an event without it shows
+                       no reply section at all: the details card below closes the gap. */}
 
           {/* Details card — owner, location, description, linked trip. Each
               is a 44px row with a tinted icon disc; rows that navigate carry
@@ -529,7 +524,8 @@ export function FairwayEventDetailDrawer({
           {/* Coach aggregate — 4 Readouts, tabular-nums, 0 rendered as 0.
               Sits directly above the per-person People list below: one
               summary, one roster, not two disconnected counts. */}
-          {isCoach && rsvpSummary ? (
+          {/* Only an event that asks for replies has a reply summary (owner, 2026-10-08). */}
+          {isCoach && requiresRsvp && rsvpSummary ? (
             <div className={cn('flex flex-col gap-3 rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
               <div className="flex items-center gap-3">
                 {rowIcon(ClipboardCheck)}
@@ -566,7 +562,7 @@ export function FairwayEventDetailDrawer({
 
           {/* People — who is involved and their status (§2.10, §18). */}
           <div className={cn('rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
-            <EventPeopleSection eventId={event.id} active={open} />
+            <EventPeopleSection eventId={event.id} active={open} showReplies={requiresRsvp} />
           </div>
 
           {/* Files (§2.6) — attach-from-library, count in the heading. */}
