@@ -315,14 +315,15 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
                 </div>
               </div>
               {played.length > 0 && (
-                <label className="ch-rsu-field">
-                  <span>Starting hole</span>
+                <div className="ch-rsu-field">
+                  <label htmlFor="ch-rsu-start">Starting hole</label>
                   <Select
+                    id="ch-rsu-start"
                     value={String(startHole ?? played[0]!.n)}
                     options={played.map((h) => ({ value: String(h.n), label: `Hole ${h.n}` }))}
                     onChange={(v) => set({ start: Number(v) })}
                   />
-                </label>
+                </div>
               )}
               {form.type === 'qualifier' &&
                 (qualifiers === null ? (
