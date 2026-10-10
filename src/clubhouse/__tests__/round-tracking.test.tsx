@@ -354,7 +354,7 @@ describe('Round tracking: tap in (CH-11913)', () => {
   });
 
   it('from 2 ft: one tap records a holed putt, counts it as a stroke and a putt, and saves the hole', async () => {
-    const onSaveShot = vi.fn(() => true);
+    const onSaveShot = vi.fn((_shot: ShotRecord) => true);
     const onHoleComplete = vi.fn(async () => true);
     const { user } = setup({ initialShots: onGreen(2), initialShotNumber: 3, onSaveShot, onHoleComplete });
     expect(code('CH-11913')).toHaveTextContent('Holed from 2 ft · score 3');
@@ -367,7 +367,7 @@ describe('Round tracking: tap in (CH-11913)', () => {
   });
 
   it('from 25 ft: the putt leaves 1 ft and the 1 ft putt is holed; Undo lifts the holed putt and leaves the 1 ft putt to play', async () => {
-    const onSaveShot = vi.fn(() => true);
+    const onSaveShot = vi.fn((_shot: ShotRecord) => true);
     const onHoleComplete = vi.fn(async () => true);
     const onHoleStatsUpdate = vi.fn();
     const { user } = setup({ initialShots: onGreen(25), initialShotNumber: 3, onSaveShot, onHoleComplete, onHoleStatsUpdate });

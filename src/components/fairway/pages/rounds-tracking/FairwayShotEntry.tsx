@@ -39,6 +39,7 @@ import {
   type ValidatableShot,
 } from '@/lib/golf/round-entry-validation';
 import { KeyboardDoneBar } from '@/components/fairway/primitives/KeyboardDoneBar';
+import { tapInWords, type TapInPlan } from '@/lib/golf/shot-entry-rules';
 import type { ShotRecord, RoundHole, PuttMissTag, ApproachMissDirection } from '@/lib/types/golf';
 import type { ShotAction } from '@/hooks/golf/use-shot-state-machine';
 
@@ -70,6 +71,9 @@ interface FairwayShotEntryProps {
   onNextShot: () => void;
   onAddPenalty: () => void;
   onUndoLastShot: () => void;
+  /** What a tap in would write here (useShotTracking's `tapIn`, shot-entry-rules planTapIn); null hides it. */
+  tapIn?: TapInPlan | null;
+  onTapIn?: () => Promise<boolean>;
 }
 
 /* Shared chip styles — thumb-sized selectable options */
@@ -180,6 +184,8 @@ export function FairwayShotEntry({
   onNextShot,
   onAddPenalty,
   onUndoLastShot,
+  tapIn = null,
+  onTapIn,
 }: FairwayShotEntryProps) {
   // Distance-unit preference — mirrors the parent's read so the entry panel's
   // labels, quick-select chips and shot-distance preview stay honest for
@@ -456,6 +462,29 @@ export function FairwayShotEntry({
               })()}
             </div>
             {!noticeAtDistance && plausibilityNotice}
+            {/* Tap in: a quiet secondary action, only on a putt before a result
+                is picked. One tap records the holed putt through the same path
+                as Complete hole; the caption names every stroke and the score.
+                `checkpoint` is the hole-out weight, as Complete hole uses. */}
+            {tapIn && onTapIn && (() => {
+              const words = tapInWords(tapIn, distancePref);
+              return (
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    haptic="checkpoint"
+                    onClick={() => void onTapIn()}
+                    aria-label={words.label}
+                  >
+                    Tap in
+                  </Button>
+                  <span aria-hidden="true" className="font-fw-sans text-caption tabular-nums text-text-tertiary">
+                    {words.caption}
+                  </span>
+                </div>
+              );
+            })()}
           </Section>
 
           {/* Miss Direction */}
