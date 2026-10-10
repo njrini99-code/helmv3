@@ -162,9 +162,8 @@ side by side at 1280px (and the phone at 390px), and record it in the page's
 
 The manifest's status, the six page docs, the checklist, the `PROGRESS.md`
 gates, the Bridge registry, the tests and any held plan must match reality
-(checked where it can be). Then send the owner screenshots. The flag stays
-off in production, migrations stay unapplied, and deploys are the owner's
-call.
+(checked where it can be). Then send the owner screenshots. Migrations and
+deploys are the owner's call.
 
 Docs and screenshots move with the code: a page whose implementation changed
 needs a dated entry in its `CHANGELOG.md` (`clubhouse:check` fails without one),

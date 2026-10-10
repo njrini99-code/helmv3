@@ -65,7 +65,7 @@ vi.mock('@/lib/server-error-logger', () => ({
   logServerEvent: vi.fn(async () => {}),
 }));
 
-import { createGolfQualifier } from '../golf';
+import { createGolfQualifier } from '../qualifier-actions';
 
 describe('createGolfQualifier', () => {
   beforeEach(() => {

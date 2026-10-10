@@ -1,13 +1,18 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
-import { loadRegistry, mapFilesToFeatures } from './lib/registry.mjs';
+import { loadRegistry, mapFilesToFeatures, selectContextDocs } from './lib/registry.mjs';
 
 const args = parseArgs(process.argv.slice(2));
 const files = args.files.length > 0 ? args.files : getChangedFiles();
 const registry = await loadRegistry(process.cwd());
 const impactedFeatures = mapFilesToFeatures(registry, files);
 
-console.log(JSON.stringify({ files, impactedFeatures }, null, 2));
+// `contextDocs` is the capped, primary-first, STATUS-filtered shortlist to read
+// (see selectContextDocs); `impactedFeatures[].docs` stays the full registry list.
+const contextDocs = selectContextDocs(impactedFeatures, process.cwd());
+
+const printable = impactedFeatures.map(({ docGroups: _docGroups, ...rest }) => rest);
+console.log(JSON.stringify({ files, impactedFeatures: printable, contextDocs }, null, 2));
 
 function parseArgs(argv) {
   const parsed = { files: [] };

@@ -1,6 +1,6 @@
 'use client';
 
-import { LazyMotion } from 'framer-motion';
+import { LazyMotion } from 'motion/react';
 import type { ReactNode } from 'react';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { clubhouseFontVariables } from '../../lib/fonts';

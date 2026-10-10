@@ -15,7 +15,7 @@
  *  3. Reopening shows the cached library, not a skeleton.
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 

@@ -33,19 +33,17 @@
  * older than the threshold, so a silent backlog can never again hide
  * behind a query window that simply stopped looking.
  *
- * 2026-07-25 companion change (Fix 3 of the same plan, layered on top of
- * the rewrite above — same file, applied second): round submits now route
- * through Inngest for durable retries when INNGEST_EVENT_KEY/
- * INNGEST_SIGNING_KEY are configured (src/app/golf/actions/golf.ts,
- * src/lib/inngest/functions.ts's onCoachHelmRoundSubmitted). This cron is
- * still the correct backstop either way — Inngest delivery isn't
- * guaranteed to be configured, and even when it is, a durable retry can
- * still exhaust its attempts. MIN_AGE_MS below adds a floor so this cron
- * doesn't fire a redundant direct call while a round is still inside its
- * first Inngest attempt's own retry backoff window; see the constant's own
- * comment for the exact math. This cron never calls Inngest itself — it
- * always calls postRoundTrigger directly, which is fine: a 30-minute
- * re-scheduled cron tick is itself already a durable retry mechanism.
+ * Round submits trigger the analysis via the pgmq queue when enabled
+ * (HELM_QUEUE_ENABLED, src/lib/jobs/enqueue.ts) and otherwise by a direct
+ * `postRoundTrigger` call from `after()` (src/app/golf/actions/golf.ts).
+ * Neither is guaranteed to complete (an `after()` callback can be torn down
+ * with its instance), so this cron is the correct backstop either way.
+ * MIN_AGE_MS below adds a floor so this cron doesn't fire a redundant direct
+ * call while a round's own trigger may still be running; see the constant's
+ * own comment. This cron always calls postRoundTrigger directly, which is
+ * fine: a 30-minute re-scheduled cron tick is itself already a durable retry
+ * mechanism. (Inngest, which used to carry a third trigger path, was removed
+ * 2026-10-06; nothing about this cron's contract depended on it.)
  *
  * 2026-09-12 (repair plan R3 / Package 4): the engine's result is a typed
  * `AnalysisOutcome` and the round columns now carry THREE populations, not
@@ -131,28 +129,18 @@ function getSoftDeadlineMs(): number {
     : DEFAULT_SOFT_DEADLINE_MS;
 }
 
-// 2026-07-25 addition (Fix 3 of the CoachHelm remediation plan, layered on
-// top of the 2026-07-25 rewrite above): a floor so this cron never
-// re-triggers a round that's still inside its first Inngest attempt's own
-// retry backoff window. Inngest's documented default retry backoff is a
-// fixed table — 15s, 30s, 1m, 2m, ... — plus up to 30s of jitter per
-// attempt (github.com/inngest/inngest pkg/backoff/backoff.go). For
-// `retries: 3` (see onCoachHelmRoundSubmitted in
-// src/lib/inngest/functions.ts), the worst case delay before the LAST
-// retry attempt even starts is 15s+30s+60s = 105s base + up to 3*30s = 90s
-// jitter = up to 195s (3m15s). The plan's starting suggestion was 5
-// minutes; this uses 10 minutes instead — over 3x the 195s backoff-only
-// figure, leaving ~405s of headroom for the final attempt's own execution
-// time (including LLM calls) instead of the ~105s a 5-minute floor would
-// leave. The extra 5 minutes costs nothing in practice: this cron only
-// runs every 30 minutes, so a 5-vs-10-minute floor changes which of the
-// next one or two ticks first sees a given round, not whether it's
-// eventually recovered — the age-independent eligibility gate above
-// guarantees that regardless. NOT required for correctness:
-// postRoundTrigger's terminal write is idempotent at the column level and
-// duplicate insight rows are structurally prevented by
-// golf_coach_insights's unique dedup index — this floor only avoids
-// wasted duplicate engine runs while an Inngest retry may still succeed.
+// A floor so this cron never re-triggers a round whose own post-submit trigger
+// (the `after()` direct call or the queue consumer) may still be running.
+// 10 minutes leaves ample headroom for that run's own execution time
+// (including LLM calls). The floor costs nothing in practice: this cron only
+// runs every 30 minutes, so a 5-vs-10-minute floor changes which of the next
+// one or two ticks first sees a given round, not whether it's eventually
+// recovered — the age-independent eligibility gate above guarantees that
+// regardless. NOT required for correctness: postRoundTrigger's terminal write
+// is idempotent at the column level and duplicate insight rows are
+// structurally prevented by golf_coach_insights's unique dedup index — this
+// floor only avoids wasted duplicate engine runs while the first attempt may
+// still succeed.
 const MIN_AGE_MS = 10 * 60 * 1000;
 
 export async function GET(req: NextRequest) {
@@ -176,9 +164,8 @@ async function handleSafetyNet(): Promise<NextResponse> {
   // query cheap without needing a date filter to narrow the scan.
   //
   // The `.lte('created_at', ...)` MIN_AGE_MS floor (see const above) is
-  // layered on top for Fix 3: it excludes rounds still inside their first
-  // Inngest attempt's own retry window so this cron doesn't race a
-  // still-in-flight durable retry with a redundant direct call.
+  // layered on top: it excludes rounds whose own post-submit trigger may still
+  // be in flight so this cron doesn't race it with a redundant direct call.
   const minAgeCutoffIso = new Date(Date.now() - MIN_AGE_MS).toISOString();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rounds, error } = await (supabase as any)

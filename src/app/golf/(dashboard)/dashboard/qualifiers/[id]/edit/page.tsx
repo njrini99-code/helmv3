@@ -6,7 +6,7 @@ import { redirect, notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayEditQualifier } from '@/components/fairway/pages/qualifiers/FairwayEditQualifier';
-import { getQualifierRoundCourses } from '@/app/golf/actions/golf';
+import { getQualifierRoundCourses } from '@/app/golf/actions/qualifier-actions';
 
 export const metadata: Metadata = {
   title: 'Edit Qualifier',

@@ -11,7 +11,7 @@ vi.mock('../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn(), back: vi.fn(), replace: vi.fn() }), usePathname: () => '/golf/dashboard/qualifiers' }));
 vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({ channel: () => ({ on() { return this; }, subscribe() { return this; } }), removeChannel: vi.fn() }) }));
-vi.mock('@/app/golf/actions/golf', () => ({ createGolfQualifier: vi.fn(), setQualifierRoundCourses: vi.fn(), updateGolfQualifierDetails: vi.fn(), updateQualifierStatus: vi.fn() }));
+vi.mock('@/app/golf/actions/qualifier-actions', () => ({ createGolfQualifier: vi.fn(), setQualifierRoundCourses: vi.fn(), updateGolfQualifierDetails: vi.fn(), updateQualifierStatus: vi.fn() }));
 vi.mock('@/app/golf/actions/qualifier-setup', () => ({ setQualifierEntrants: vi.fn(), setQualifierSquadSize: vi.fn() }));
 vi.mock('@/app/golf/actions/v3/qualifying', () => ({ advanceSelectionState: vi.fn(), confirmQualifierSelection: vi.fn(), removeQualifierCoachPick: vi.fn(), setQualifierCoachPick: vi.fn() }));
 vi.mock('@/app/golf/actions/course-library', () => ({ getCourseDetail: vi.fn(), getTeamSavedCourses: vi.fn(), listCoursesStrict: vi.fn() }));

@@ -8,7 +8,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
  * `page.tsx` (my-development/page.tsx:1-23) is a pure `permanentRedirect` to
  * `/golf/dashboard/coachhelm?view=development` — Player Development is now
  * the `development` drill of the Player CoachHelm Spine & Stage home, not a
- * standalone route (`.claude/rules/golf-feature-ownership.md`:
+ * standalone route (`.claude/rules/golf.md`:
  * "editing a shim does not change what any user sees"). `surface-registry.ts`
  * marks this entry `legacy: true, hidden: true`, and `next.config.mjs`
  * additionally intercepts this path at the framework routing layer before

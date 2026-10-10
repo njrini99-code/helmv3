@@ -25,8 +25,8 @@
 .ch-rcv-h h1 {
   margin: 8px 0 0;
   font: 600 36px/1.05 var(--ch-font-sans);
-  letter-spacing: -0.036em;
-  font-variation-settings: 'wdth' 86;
+  letter-spacing: -0.026em;
+  font-variation-settings: 'wdth' 96;
 }
 .ch-rcv.is-phone .ch-rcv-h h1 {
   font-size: 28px;

@@ -19,7 +19,7 @@ The foundation everything runs on.
 | **Next.js 16 (App Router)** | Web app framework (server + client rendering) | Open-source | `next ^16.0.10` in package.json; `next.config.mjs` | No (they see the app it produces) | Build runs `next build --webpack` |
 | **TypeScript (strict)** | Typed language for all app code | Open-source | `typescript ^5.9.3`; `tsconfig.json` | No | `npm run typecheck` gate |
 | **Supabase** | Postgres DB + Auth (JWT) + Storage + Realtime + Row-Level Security | Paid project (single shared prod) | `@supabase/ssr ^0.10`, `@supabase/supabase-js ^2.107`; `supabase` CLI; `src/lib/supabase/` | No | **One shared prod project across golf + baseball + lifting.** RLS is a hard merge gate |
-| **Vercel** | Hosting + deploys + serverless/cron runtime | Paid | `vercel.json` (region `iad1`); Vercel CLI | Indirectly (they use the deployed site) | **Auto-deploys `main` only** (`git.deploymentEnabled: {"*": false, "main": true}` in vercel.json). Project **`helmv3`** — confirmed via `package.json` `name`. Vercel team name **unverified (memory)** |
+| **Vercel** | Hosting + deploys + serverless/cron runtime | Paid | `vercel.json` (region `iad1`); Vercel CLI | Indirectly (they use the deployed site) | **No Git auto-deploys** (`git.deploymentEnabled: {"*": false}` in vercel.json): merging to `main` does not deploy; see `docs/setup/DEPLOY.md`. Project **`helmv3`** — confirmed via `package.json` `name`. Vercel team name **unverified (memory)** |
 | **Tailwind CSS** | Utility CSS / design tokens | Open-source | `tailwindcss ^3.4.19`; `tailwind.config.ts` | No | v3.x (not v4) |
 | **Capacitor** | Native iOS wrapper for the web app | Open-source | `@capacitor/* ^8.x`; `capacitor.config.ts`; `ios/` | No (ships as the iOS app) | Also provides haptics, keyboard, share, splash, status-bar, network plugins |
 | **Upstash Redis + Ratelimit** | Serverless Redis for rate limiting | Free / pay-as-you-go | `@upstash/redis ^1.38`, `@upstash/ratelimit ^2.0.8` | No | — |
@@ -76,7 +76,7 @@ Two AI reviewers run in parallel on every PR, plus a local gate that mirrors the
 
 | Tool | Purpose | Tier/plan | Where configured | Partner-visible? | Notes |
 |------|---------|-----------|------------------|------------------|-------|
-| **Inngest** | Durable/retryable background workflows (replaces scattered cron + retry loops) | Free tier | `inngest ^4.5`; `src/lib/inngest/client.ts`, `functions.ts`; `src/app/api/inngest/route.ts` | No | Prod needs `INNGEST_EVENT_KEY` + `INNGEST_SIGNING_KEY`. Local: `npx inngest-cli@latest dev` (:8288). Covers weekly backfills W12/W20/W27/W33/W35 (per CLAUDE.md) |
+| **pgmq (Supabase queues)** | Durable/retryable background work | Included w/ Supabase | `src/lib/jobs/enqueue.ts`; `docs/operations/JOBS_QUEUE.md` | No | Gated by `HELM_QUEUE_ENABLED`; see JOBS_QUEUE.md |
 | **Vercel Cron** | Scheduled route hits (digests, sweeps, calibration, reminders) | Included w/ Vercel | `vercel.json` → `crons[]` (14 entries); routes under `src/app/api/cron/` | No | **Verified in vercel.json:** `coachhelm-roster-sweep` (45 3 * * *), `coach-morning-digest` (30 6 * * *), `coachhelm-calibration` (30 3 * * *), `coachhelm-validation`, `coachhelm-safety-net`, `coachhelm-insight-lifecycle`, `event-reminders`, `task-reminders`, `v3/standing-refresh`, `v3/genome-nightly`, `v3/causality-attribute`, `v3/weekly-coach-email`, `v3/goal-suggestions-write`, `v3/goal-suggestions-evaluate` |
 
 ---
@@ -103,12 +103,12 @@ All verified in `package.json`.
 | **Sonner** | Toast notifications | Open-source | `sonner ^2.0`; Toaster in `src/app/layout.tsx` | Yes | — |
 | **cmdk** | Command palette | Open-source | `cmdk ^1.1`; `src/components/CommandPalette.tsx`, `src/components/golf/CommandPalette.tsx` | Yes | — |
 | **Number Flow** | Animated stat numbers | Open-source | `@number-flow/react ^0.6`; `src/components/ui/animated-number.tsx` | Yes | — |
-| **framer-motion** | Animations / motion | Open-source | `framer-motion ^12.40` | Yes | — |
+| **Motion** (formerly framer-motion) | Animations / motion, imported from `motion/react` | Open-source | `motion ^14.0` | Yes | — |
 | **Recharts + visx** | Charts / data-viz | Open-source | `recharts ^3.8`, `@visx/visx ^3.12` | Yes | — |
 | **react-day-picker** | Date/calendar picker | Open-source | `react-day-picker ^10.0` | Yes | — |
 | **dnd-kit** | Drag-and-drop | Open-source | `@dnd-kit/core`, `/sortable`, `/utilities` | Yes | — |
 | **Radix UI** | Accessible headless primitives (dialog, dropdown, popover, tabs, tooltip, toggle-group, etc.) | Open-source | `@radix-ui/react-*` | Yes | — |
-| **Base UI** | Additional headless UI primitives | Open-source | `@base-ui-components/react ^1.0.0-rc` | Yes | — |
+| **Base UI** | Additional headless UI primitives | Open-source | `@base-ui/react ^1.8` | Yes | — |
 | **Also present** (verified): `lucide-react` (icons), `geist` (font), `vaul` (drawer), `lenis` (smooth scroll), `@tanstack/react-table`, `html2canvas`, `jspdf`, `zustand` (state), `zod` (validation) | Supporting UI/util libs | Open-source | package.json | Yes/No (mixed) | Listed for completeness |
 
 ---

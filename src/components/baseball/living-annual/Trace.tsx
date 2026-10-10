@@ -21,7 +21,7 @@
  * drawn and static, per the motion contract. The stroke color is applied via
  * `style` (SVG presentation attributes do not resolve `var(--…)`).
  */
-import { m, useReducedMotion } from 'framer-motion';
+import { m, useReducedMotion } from 'motion/react';
 import { traceDraw } from './motion';
 
 export interface TraceProps {

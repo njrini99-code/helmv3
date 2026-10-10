@@ -58,7 +58,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7020 | Copying a message fails (phone, from the long-press sheet) | "Couldn't copy the message" + "Try again in a moment." Done: "Copied" | `PhoneThread` | messages.test › CH-7020 |
 | CH-7021 | A shared file won't open (Details › Files) | "Couldn't open Room list · Pinehurst.pdf" + "Try again in a moment." | `FilesPanel`, `FilesSection` | messages.test › CH-7021 |
 | CH-7022 | Text delivered, attachment metadata refused | "Message sent; attachments not saved". Only unsaved files and the original reply remain; retry sends no copy of delivered text | `sendFiles`, `Composer` | messages.test › CH-7022 |
-| CH-7023 | Attachment send cannot be confirmed | Frozen original text/files/reply, "Couldn't confirm this send", Retry send; reload restores stored filenames/request identity; queued later draft survives pending Retry and resumes after confirmation | `sendFiles`, `Composer` | messages.test › CH-7023 |
+| CH-7023 | Attachment send cannot be confirmed | Frozen original text/files/reply, "Couldn’t confirm this send", Retry send; reload restores stored filenames/request identity; queued later draft survives pending Retry and resumes after confirmation | `sendFiles`, `Composer` | messages.test › CH-7023 |
 
 ## 71xx Validation
 
@@ -74,36 +74,36 @@ the thread with Retry (CH-7016), and the draft is never lost.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-7201 | Conversations don't load | "Conversations didn't load." + "Your messages are safe…" Try again | `Rail` | messages.test › CH-7201 |
-| CH-7202 | A conversation's messages don't load | "This conversation didn't load." + "Nothing was lost…" Try again | `Thread` | messages.test › CH-7202 |
-| CH-7203 | Message search doesn't load | "Message search didn't load." + "Conversations above still match by name." Try again | `MessageHits` | messages.test › CH-7203 |
-| CH-7204 | Group members don't load | "Members didn't load." Try again | `Details` | messages.test › CH-7204 |
-| CH-7205 | The team list doesn't load (New message) | "Your team list didn't load." Try again | `NewMessage` | messages.test › CH-7205 |
-| CH-7206 | Announcements don't load | "Announcements didn't load." Try again | `Announcements` | messages.test › CH-7206 |
-| CH-7207 | An announcement's replies, tasks and files don't load | "The details didn't load." + "The announcement above is complete." Try again | `AnnouncementPane` | messages.test › CH-7207 |
-| CH-7208 | The mute setting doesn't load | "The mute setting didn't load." Try again | `Details` | messages.test › CH-7208 |
-| CH-7209 | A message's attachments don't load | "Attachment didn't load" + "Tap to try again" in place of the file tile | `Attachments` | messages.test › CH-7209 |
+| CH-7201 | Conversations don't load | "Conversations didn’t load" + "Your messages are safe…" Try again | `Rail` | messages.test › CH-7201 |
+| CH-7202 | A conversation's messages don't load | "This conversation didn’t load" + "Nothing was lost…" Try again | `Thread` | messages.test › CH-7202 |
+| CH-7203 | Message search doesn't load | "Message search didn’t load" + "Conversations above still match by name." Try again | `MessageHits` | messages.test › CH-7203 |
+| CH-7204 | Group members don't load | "Members didn’t load" Try again | `Details` | messages.test › CH-7204 |
+| CH-7205 | The team list doesn't load (New message) | "Your team list didn’t load" Try again | `NewMessage` | messages.test › CH-7205 |
+| CH-7206 | Announcements don't load | "Announcements didn’t load" Try again | `Announcements` | messages.test › CH-7206 |
+| CH-7207 | An announcement's replies, tasks and files don't load | "The details didn’t load" + "The announcement above is complete." Try again | `AnnouncementPane` | messages.test › CH-7207 |
+| CH-7208 | The mute setting doesn't load | "The mute setting didn’t load" Try again | `Details` | messages.test › CH-7208 |
+| CH-7209 | A message's attachments don't load | "Attachment didn’t load" + "Tap to try again" in place of the file tile | `Attachments` | messages.test › CH-7209 |
 | CH-7210 | The conversation list crashes | "Your conversations couldn't be shown." + "The rest of the page is fine…" Try again | `SectionBoundary messages.rail` | messages.test › CH-7210 |
 | CH-7211 | An announcement crashes | "This announcement couldn't be shown." … | `SectionBoundary messages.announcement` | messages.test › CH-7211 |
 | CH-7212 | The thread crashes | "This conversation couldn't be shown." …; the rail stays | `SectionBoundary messages.thread` | messages.test › CH-7212 |
 | CH-7213 | Details crash | "Details couldn't be shown." … | `SectionBoundary messages.details` | messages.test › CH-7213 |
-| CH-7214 | The shared files don't load (Details) | "Files didn't load." + "Your messages are fine…" Try again | `FilesPanel`, `FilesSection` | messages.test › CH-7214 |
-| CH-7215 | The Add sheet's team list doesn't load | "The team list didn't load." Try again | `AddMembersModal` | messages.test › CH-7215 |
-| CH-7216 | A conversation's messages don't refresh while an earlier copy is shown | The messages stay; above them "This conversation may be out of date." + "It didn't refresh…" Try again | `Thread`, `PhoneThread` | messages.test › CH-7216 |
+| CH-7214 | The shared files don't load (Details) | "Files didn’t load" + "Your messages are fine…" Try again | `FilesPanel`, `FilesSection` | messages.test › CH-7214 |
+| CH-7215 | The Add sheet's team list doesn't load | "The team list didn’t load" Try again | `AddMembersModal` | messages.test › CH-7215 |
+| CH-7216 | A conversation's messages don't refresh while an earlier copy is shown | The messages stay; above them "This conversation may be out of date" + "It didn’t refresh…" Try again | `Thread`, `PhoneThread` | messages.test › CH-7216 |
 | CH-7217 | Pending attachment recovery cannot be checked | "Couldn’t check a pending send" + "Try again before sending another message." Try again; ordinary Send stays locked | `Composer` | messages.test › CH-7217 |
 
 ## 73xx Empty
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-7301 | No conversations yet | "No conversations yet." + (coach) "Start one with a player, or create a team group." | `Rail` | messages.test › CH-7301 |
+| CH-7301 | No conversations yet | "No conversations yet" + (coach) "Start one with a player, or create a team group." | `Rail` | messages.test › CH-7301 |
 | CH-7302 | A rail search or the Unread filter has nothing | "No conversation matches "zzz"." / "Nothing unread. You're caught up." | `Rail` | messages.test › CH-7302 |
 | CH-7303 | No message mentions the search | "No messages mention "bus"." | `MessageHits` | messages.test › CH-7303 |
 | CH-7304 | A thread with no messages | "No messages yet. Say hello to the group." (or the person's first name) | `Thread` | messages.test › CH-7304 |
-| CH-7305 | Nothing open | "Start your first conversation." / "Pick a conversation." | `MessagesView` | messages.test › CH-7305 |
+| CH-7305 | Nothing open | "Start your first conversation" / "Pick a conversation" | `MessagesView` | messages.test › CH-7305 |
 | CH-7306 | Nothing has been shared in the conversation (Details) | "No files shared yet." | `FilesPanel`, `FilesSection` | messages.test › CH-7306 |
 | CH-7307 | Everyone on the team is already in the group (Add) | "Everyone on the team is already in this group." | `AddMembersModal` | messages.test › CH-7307 |
-| CH-7308 | Signed in with no team (coach or player) | The page empty state: "You aren't on a team yet" + "Messages open once you're on a team roster, with your coaches and teammates." | `MessagesNoTeam`, from the route | messages.test › CH-7308 |
+| CH-7308 | Signed in with no team (coach or player) | The page empty state: "You aren’t on a team yet" + "Messages open once you’re on a team roster, with your coaches and teammates." | `MessagesNoTeam`, from the route | messages.test › CH-7308 |
 | CH-7309 | Nothing at all yet: no conversation and no announcement (D-71) | The page empty state: "No conversations yet" + (coach) "Start a thread with the whole team or message a player directly." / (player) "Message a coach or a teammate. Team announcements show up here too." + New message; the rail and thread empties (CH-7301, CH-7305) show only once something is listed | `MessagesFirstRun` (desktop and phone) | messages.test › CH-7309 |
 
 ## 74xx Loading
@@ -136,6 +136,8 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7602 | Someone is typing | Three dots pulse under the last message | `.ch-ms-typing` | preview |
 | CH-7603 | Opening details or a reaction bar | It opens from its button (180ms) | `CH_POP` | preview |
 | CH-7604 | A long press on a message (phone) | The message sheet rises (260ms), retaining selected text and its actual timestamp: six reactions, Reply, Copy, and Edit and Delete on your own. Screens push and pop as the shell's CH-1610 | `PhoneThread`, `Modal` | messages.test › CH-7804 (the sheet and its actions); preview (the rise) |
+| CH-7605 | Opening another conversation or announcement (desktop) | The new one settles in with a 6px rise (260ms) while the last fades out (180ms), hidden from assistive tech; each keeps its own scroll and a thread opens at its end. The first one a visit opens (the newest thread, or a link's) appears at once. Instant with reduced motion | `Swap` keyed on the pane's turn in `MessagesDesktop` | messages.test › CH-7605; preview (the timing) |
+| CH-7606 | Changing the inbox filter on the phone (All, Unread, Groups) | The chosen chip takes the green tint and ink over the quick beat while the last one lets go; the list under it settles in with a 6px rise (260ms) as the last fades out (180ms), hidden from assistive tech. Typing in Search filters in place. Instant with reduced motion | `.ch-msp-chip` transitions; `Swap` keyed on the filter in `PhoneInbox` | preview (the timing, WebKit 390) |
 
 ## 77xx Haptics
 

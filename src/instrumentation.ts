@@ -198,9 +198,8 @@ function makeTracesSampler(isDev: boolean): Sentry.NodeOptions['tracesSampler'] 
  * message around that code embeds table names, column names and constraint
  * names. Grouping on the message therefore scatters one bad policy across many
  * Sentry issues — the same splitting already documented for
- * `normalizeIncidentMessagePrefix`, and visible in production right now, where
- * one Inngest key mismatch occupies four fingerprints because the message
- * carries "signature was 1s old" vs "2s".
+ * `normalizeIncidentMessagePrefix`, where one underlying fault occupied four
+ * fingerprints because the message carried a varying value ("1s old" vs "2s").
  *
  * Fingerprinting on the code makes the class countable: "42501 is up 40x this
  * hour" is actionable, where forty separately-named issues are not.
@@ -431,34 +430,11 @@ export async function register() {
       .then((m) => m.recordDeployMarker())
       .catch(() => {});
 
-    // Helm Bridge: an absent or malformed Inngest credential in production is
-    // a fault, not a config state — every durable job silently turns off. The
-    // SDK's own "no signing key found" console.error fires here at start-up
-    // (3 of the 4 Sentry events on 2026-09-01 carried no request URL), so
-    // start-up is where the Bridge row is written too. Production-gated,
-    // throttled, collapsed across cold starts — see src/lib/inngest/credentials.ts.
-    //
-    // Started here, AWAITED below. register() runs before the first request
-    // and has no request scope, so `after()` is unavailable and the write
-    // takes scheduleBridgeWrite's awaited fallback (bounded at 2.5s, and handed
-    // to the Vercel request context's waitUntil when one exists). `void`ing
-    // that made it a promise nobody held on a function that freezes: the row
-    // never landed, and the throttle window it had opened silenced the next
-    // `send`/`inbound` report. In the healthy case it returns before any I/O,
-    // so cold start pays nothing.
-    const inngestCredentialReport = import('@/lib/inngest/credentials')
-      .then((m) => m.reportInngestCredentialFault('startup'))
-      .catch(() => false);
-
     // `process.on` is a Node-only API. Load the handler module only from the
     // Node runtime so Edge builds never evaluate that implementation.
     void import('@/lib/observability/register-process-error-handlers')
       .then((m) => m.registerProcessErrorHandlers())
       .catch(() => {});
-
-    // After the handlers are on their way, never before them: a slow Bridge
-    // must not delay the process-level catch-all.
-    await inngestCredentialReport;
   }
 
   if (process.env.NEXT_RUNTIME === 'edge') {

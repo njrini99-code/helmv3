@@ -3,28 +3,36 @@
 import { useState } from 'react';
 import type { ChannelPref, NotificationCategory, PrefsByCategory } from '@/lib/coachhelm/v3/notifications/router';
 import { channelsFor, ROUTING_GROUPS, ROUTING_QUIET_EXEMPT, type ChDevice, type ChSettingsData, type ChSettingsWrites } from '../model';
-import { useDelivery, usePushToggle, useRouting } from '../hooks';
+import { useDelivery, usePushToggle, useRouting, useTestPush } from '../hooks';
 import { DELIVERY_GROUPS } from '../Notifications';
-import { ReadFailed } from '../parts';
+import { ReadFailed, ReadsFailed } from '../parts';
+import { notificationReadsFailed } from '../Notifications';
 import { ListSheet } from './sheets';
-import { Group, NavRow, SwitchRow } from './ui';
+import { ActionRow, Group, NavRow, SwitchRow } from './ui';
 
 /**
  * Notifications on the phone: the notification matrix becomes one row per kind of update, which opens a sheet with
  * its switches and shows what is on ("In app, Push") on the row. Same saves and catalog numbers as desktop.
  */
 export function NotificationsPhone({ data, writes, device }: { data: ChSettingsData; writes: ChSettingsWrites; device: ChDevice }) {
+  const failed = notificationReadsFailed(data);
+  const covered = failed.length > 1;
   return (
     <>
       <p className="ch-setm-lead">Which updates reach you, and how. Changes save as you make them.</p>
+      <ReadsFailed parts={failed} onRetry={writes.refresh} />
       {data.delivery.error ? (
-        <ReadFailed what="Your email and push settings" code="CH-8202" onRetry={writes.refresh} />
+        <Group title="Email and push">
+          <ReadFailed bare what="Your email and push settings" code="CH-8202" onRetry={writes.refresh} covered={covered} />
+        </Group>
       ) : (
         <DeliveryPhone prefs={data.delivery.value} digest={data.digest} writes={writes} device={device} />
       )}
       {data.playerRouting &&
         (data.playerRouting.error ? (
-          <ReadFailed what="Your CoachHelm update settings" code="CH-8203" onRetry={writes.refresh} />
+          <Group title="CoachHelm updates">
+            <ReadFailed bare what="Your CoachHelm update settings" code="CH-8203" onRetry={writes.refresh} covered={covered} />
+          </Group>
         ) : (
           <RoutingPhone initial={data.playerRouting.value} writes={writes} />
         ))}
@@ -36,6 +44,7 @@ function DeliveryPhone({ prefs, digest, writes, device }: { prefs: Record<string
   const { p, dg, quiet, pending, flip, flipDigest } = useDelivery(prefs, digest, writes);
   const push = device.push;
   const togglePush = usePushToggle(push);
+  const test = useTestPush(push);
   const [kind, setKind] = useState<string | null>(null);
   const open = DELIVERY_GROUPS.find((g) => g.id === kind);
   const denied = push.status === 'denied';
@@ -48,39 +57,48 @@ function DeliveryPhone({ prefs, digest, writes, device }: { prefs: Record<string
 
   return (
     <>
-      {(push.status !== 'unsupported' || digest) && (
+      {/* P008 #2: Quiet mode first, as on desktop: it decides what every row below can do. */}
+      <Group note="Pauses everything except messages from your team.">
+        <SwitchRow label="Quiet mode" checked={quiet} busy={pending.has('quiet_mode')} onChange={flip('quiet_mode', 'quiet mode')} />
+      </Group>
+
+      {push.status !== 'unsupported' && (
         <Group title="This device">
-          {push.status !== 'unsupported' && (
-            <SwitchRow
-              label="Push on this device"
-              help={denied ? 'Notifications are blocked for GolfHelm in this browser. Allow them in its site settings, then come back.' : undefined}
-              checked={push.status === 'subscribed'}
-              disabled={denied || push.status === 'checking'}
-              busy={push.pending}
-              onChange={(v) => void togglePush(v)}
-            />
-          )}
-          {digest &&
-            (digest.error ? (
-              <SwitchRow
-                label="Weekly team email"
-                help={<span role="alert" data-ch-code="CH-8204">This setting didn&apos;t load. Reload to change it.</span>}
-                checked={false}
-                disabled
-                onChange={() => {}}
-              />
-            ) : (
-              <SwitchRow label="Weekly team email" checked={dg} busy={pending.has('digest')} onChange={flipDigest} />
-            ))}
+          <SwitchRow
+            label="Push on this device"
+            help={denied ? 'Notifications are blocked for GolfHelm in this browser. Allow them in its site settings, then come back.' : undefined}
+            checked={push.status === 'subscribed'}
+            disabled={denied || push.status === 'checking'}
+            busy={push.pending}
+            onChange={(v) => void togglePush(v)}
+          />
+          {/* P008-C3: a test push to this person's own devices (D1-6), once push is on here. */}
+          {push.status === 'subscribed' && push.test && <ActionRow label={test.busy ? 'Sending a test…' : 'Send a test'} disabled={test.busy} onClick={() => void test.run()} />}
         </Group>
       )}
 
-      <Group title="Email and push" note="Quiet mode pauses everything except messages from your team.">
+      <Group title="Email and push" note={push.status !== 'unsupported' && push.status !== 'subscribed' ? 'Push is off on this device; push choices still apply to your other devices.' : undefined}>
         {DELIVERY_GROUPS.map((g) => (
           <NavRow key={g.id} label={g.label} value={summary(g)} onClick={() => setKind(g.id)} />
         ))}
-        <SwitchRow label="Quiet mode" checked={quiet} busy={pending.has('quiet_mode')} onChange={flip('quiet_mode', 'quiet mode')} />
       </Group>
+
+      {/* P008 #1: the weekly email is email, not this device. */}
+      {digest && (
+        <Group title="Email">
+          {digest.error ? (
+            <SwitchRow
+              label="Weekly team email"
+              help={<span role="alert" data-ch-code="CH-8204">This setting didn’t load. Reload to change it.</span>}
+              checked={false}
+              disabled
+              onChange={() => {}}
+            />
+          ) : (
+            <SwitchRow label="Weekly team email" checked={dg} busy={pending.has('digest')} onChange={flipDigest} />
+          )}
+        </Group>
+      )}
 
       <ListSheet
         open={!!open}
@@ -201,7 +219,7 @@ function RoutingPhone({ initial, writes }: { initial: { prefs: PrefsByCategory; 
                   checked={state === 'all'}
                   disabled={silenced(open.categories) || r.bulkBusy || (r.groupBusy && !r.pending.has(key))}
                   busy={r.pending.has(key)}
-                  onChange={(v) => void r.setGroup(open.label, open.categories, c.key, v, `Couldn't change ${open.label.toLowerCase()} ${c.label.toLowerCase()}`)}
+                  onChange={(v) => void r.setGroup(open.label, open.categories, c.key, v, `Couldn’t change ${open.label.toLowerCase()} ${c.label.toLowerCase()}`)}
                 />
               );
             })}

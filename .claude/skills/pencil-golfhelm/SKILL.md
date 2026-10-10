@@ -5,6 +5,12 @@ description: Supercharged Pencil design system for GolfHelm — UI mockups, mark
 
 # Pencil × GolfHelm — Supercharged Design System
 
+> **Scope:** the tokens and "never break" rules below apply to Pencil mockups
+> and marketing creatives only. Product UI follows
+> `.claude/rules/design-system.md` and `src/styles/design-tokens.css` (Fairway;
+> the glass/cream language is retired in the product); Clubhouse follows
+> `.claude/rules/clubhouse.md`. Where they disagree, the product rules win.
+>
 > The complete bridge between GolfHelm's product and Pencil's design canvas.
 
 **Design-tool tokens only.** The `warm-*` token names in this skill are for
@@ -35,7 +41,7 @@ bans `warm-*` on dashboard surfaces.
 | System | Location | Purpose |
 |--------|----------|---------|
 | **Product tokens** | `src/styles/design-tokens.css` + `.claude/rules/design-system.md` | Fairway tokens and rules (authoritative) |
-| **Design folder** | `docs/design/DESIGN-SYSTEM.md` | Extracted Tailwind tokens for Pencil |
+| **Design folder** | `docs/design/assets/` | Reference shots only. `docs/design/DESIGN-SYSTEM.md` is RETIRED; read the tokens file above |
 | **Screenshots** | `docs/design/assets/reference-shots/` | Captured UI for import into Pencil |
 
 ---

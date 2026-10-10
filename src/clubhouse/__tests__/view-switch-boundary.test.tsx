@@ -1,4 +1,4 @@
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { Suspense, startTransition, use, useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';

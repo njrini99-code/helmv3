@@ -110,7 +110,7 @@ async function prepareScheduleImages(file: File): Promise<ScheduleImage[]> {
   } catch {
     // The browser can't decode this format (HEIC outside Safari): send the original when the reader takes it.
     if (IMAGE_TYPES.has(file.type)) return [{ base64: await blobToBase64(file), mediaType: file.type }];
-    throw new Error("This browser can't open that image format. Use a PNG or JPG; a screenshot works well.");
+    throw new Error("This browser can’t open that image format. Use a PNG or JPG; a screenshot works well.");
   }
   try {
     const { width, height } = bitmap;
@@ -228,7 +228,7 @@ function fromText(text: string): ChReadResult {
   const parsed = parseScheduleText(text);
   return parsed.length
     ? { ok: true, rows: parsed.map(toImportRow), warnings: [] }
-    : { ok: false, kind: 'none', message: "We read the text but couldn't find course codes or times. Check that each class has a code such as STAT 201, then try again." };
+    : { ok: false, kind: 'none', message: "We read the text but couldn’t find course codes or times. Check that each class has a code such as STAT 201, then try again." };
 }
 
 export async function readScheduleLive(source: ChReadSource): Promise<ChReadResult> {
@@ -241,10 +241,10 @@ export async function readScheduleLive(source: ChReadSource): Promise<ChReadResu
     const result = await extractClassesFromScheduleImage(await prepareScheduleImages(source.file));
     if (!result.success || !result.classes?.length) {
       const kind = classifyReadError(result.error);
-      return { ok: false, kind, message: result.error ?? "We read the image but couldn't find course codes or times. Try a clearer screenshot, or paste the text." };
+      return { ok: false, kind, message: result.error ?? "We read the image but couldn’t find course codes or times. Try a clearer screenshot, or paste the text." };
     }
     return { ok: true, rows: result.classes.map(toImportRow), warnings: result.warnings ?? [] };
   } catch (err) {
-    return { ok: false, kind: 'fault', message: err instanceof Error && err.message ? err.message : "Reading the schedule didn't finish. Paste the text instead." };
+    return { ok: false, kind: 'fault', message: err instanceof Error && err.message ? err.message : "Reading the schedule didn’t finish. Paste the text instead." };
   }
 }

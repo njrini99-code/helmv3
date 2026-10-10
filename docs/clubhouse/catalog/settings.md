@@ -58,6 +58,8 @@ rail to switch). The tests for the phone are the "Settings · phone" group in `s
 | CH-8026 | Approving an assistant coach request fails (head coach) | "Couldn't approve Avery Lee" + the reason (for example "Only a head coach of this team can do that."), Retry; the request stays. On success: "Avery Lee is now an assistant coach", the request leaves and the staff list reads again | `useAction('settings.approveAssistant')` (`useCoachingStaff`) → `approvePendingAssistantCoach`; Approve on desktop, the Approve pill on the phone | settings-staff.test › CH-8026 |
 | CH-8027 | Declining an assistant coach request fails (head coach) | "Couldn't decline Avery Lee" + the reason, Retry; the request stays. On success: "Declined Avery Lee" and the request leaves. The person is detached from the program, not deleted | `useAction('settings.declineAssistant')` (`useCoachingStaff`) → `declinePendingAssistantCoach` | settings-staff.test › CH-8027 |
 | CH-8028 | Making a staff invite fails (head coach) | "Couldn't make the assistant coach invite" / "Couldn't make the program admin invite" + the server's reason (for example "Only a head coach of this team can invite staff."), Retry; a code shown before is cleared first. On success there is no toast: the code, its role and how long it works show, with Copy staff code, Copy staff invite link and Share (Copy code, Copy link and Share on the phone) | `useAction('settings.createStaffInvite')` (`useStaffInvite`) → `createStaffInvite` | settings-staff.test › CH-8028 |
+| CH-8029 | Send a test push fails (P008-C3, D1-6) | "Couldn't send a test" + the server's reason ("No device has push on yet.", "Too many tests. Try again in a minute.") or "Try again in a moment." / "Check your connection and try again." Done: "Test sent" + where it went, with a success haptic | `useTestPush` → `POST /api/push-subscriptions/test` (the caller's own Web Push subscriptions only); Send a test beside Push on this device (desktop), a row under it (phone) | settings.test › CH-8029 |
+| CH-8320 | The team's course location (Team; held migration 20261008150000) | Card (desktop) / group (phone): "Course location", Set: `<name>` or Not set, Use my location (rounded to two decimals) with a name, Clear; a denied or missing location says why inline. Draws nothing until the columns exist or when the read fails | `useCourseLocation` → `golf_team_settings` course_latitude/longitude/label (coach RLS); the shell's light reads it for the sun | course-location.test |
 
 ## 81xx Validation (shown before anything is sent; Save stays disabled)
 
@@ -83,25 +85,25 @@ rail to switch). The tests for the phone are the "Settings · phone" group in `s
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-8201 | The profile read fails | "Your profile didn't load." + "Nothing was changed. Reload to try again; the error has been reported." | `ReadFailed`, `data.profile.error` | settings.test › CH-8201 |
-| CH-8202 | Email and push settings don't load | "Your email and push settings didn't load." | `ReadFailed` | settings.test › CH-8202 |
-| CH-8203 | CoachHelm update settings don't load (player) | "Your CoachHelm update settings didn't load." | `ReadFailed` | settings.test › CH-8203 |
-| CH-8204 | The weekly team email setting doesn't load (coach) | The row says "This setting didn't load. Reload to change it."; switch disabled | `DeliveryCard` | settings.test › CH-8204 |
-| CH-8205 | Team details don't load | "Team details didn't load." | `ReadFailed` | settings.test › CH-8205 |
-| CH-8206 | The invite code doesn't load | "Your invite code didn't load." | `ReadFailed` | settings.test › CH-8206 |
-| CH-8207 | Scoring settings don't load | "Scoring settings didn't load." | `ReadFailed` | settings.test › CH-8207 |
-| CH-8208 | Event reminders don't load | "Event reminders didn't load." | `ReadFailed` | settings.test › CH-8208 |
-| CH-8209 | Golf details don't load (player) | "Your golf details didn't load." | `ReadFailed` | settings.test › CH-8209 |
-| CH-8210 | Team membership doesn't load (player) | "Your team membership didn't load." | `ReadFailed` | settings.test › CH-8210 |
-| CH-8211 | CoachHelm settings don't load (coach) | "Your CoachHelm settings didn't load." | `ReadFailed` | settings.test › CH-8211 |
+| CH-8201 | The profile read fails | "Your profile didn’t load" + "Nothing was changed. Reload to try again; the error has been reported.", under the section's own heading and caption (Profile on desktop, the Profile group on the phone), so the page keeps its shape. Every 82xx read below keeps its heading the same way | `ReadFailed` (`title`, `description`; `bare` in a phone group), `data.profile.error` | settings.test › CH-8201 |
+| CH-8202 | Email and push settings don't load | "Your email and push settings didn’t load". With another of the section's reads failed too, the title alone stays and the section's CH-1209 carries Try again | `ReadFailed` | settings.test › CH-8202 |
+| CH-8203 | CoachHelm update settings don't load (player) | "Your CoachHelm update settings didn’t load". With another of the section's reads failed too, the title alone stays and the section's CH-1209 carries Try again | `ReadFailed` | settings.test › CH-8203 |
+| CH-8204 | The weekly team email setting doesn't load (coach) | The row says "This setting didn’t load. Reload to change it."; switch disabled | `DeliveryCard` | settings.test › CH-8204 |
+| CH-8205 | Team details don't load | "Team details didn’t load". With another of the section's reads failed too, the title alone stays and the section's CH-1209 carries Try again | `ReadFailed` | settings.test › CH-8205 |
+| CH-8206 | The invite code doesn't load | "Your invite code didn’t load". With another of the section's reads failed too, the title alone stays and the section's CH-1209 carries Try again | `ReadFailed` | settings.test › CH-8206 |
+| CH-8207 | Scoring settings don't load | "Scoring settings didn’t load". With another of the section's reads failed too, the title alone stays and the section's CH-1209 carries Try again | `ReadFailed` | settings.test › CH-8207 |
+| CH-8208 | Event reminders don't load | "Event reminders didn’t load". With another of the section's reads failed too, the title alone stays and the section's CH-1209 carries Try again | `ReadFailed` | settings.test › CH-8208 |
+| CH-8209 | Golf details don't load (player) | "Your golf details didn’t load". With another of the section's reads failed too, the title alone stays and the section's CH-1209 carries Try again | `ReadFailed` | settings.test › CH-8209 |
+| CH-8210 | Team membership doesn't load (player) | "Your team membership didn’t load". With another of the section's reads failed too, the title alone stays and the section's CH-1209 carries Try again | `ReadFailed` | settings.test › CH-8210 |
+| CH-8211 | CoachHelm settings don't load (coach) | "Your CoachHelm settings didn’t load" | `ReadFailed` | settings.test › CH-8211 |
 | CH-8212 | A section crashes while drawing | "Account couldn't be shown." (the section named) + "The rest of the page is fine. This has been reported automatically.", Try again | `SectionBoundary` | settings.test › CH-8212 |
-| CH-8213 | The assistant coach requests don't load (head coach) | "Requests didn't load." + "Nothing was changed. Try again; the error has been reported." with Try again (a card on desktop, a group on the phone). An assistant's refused read is not this: it is the answer, so an assistant sees the staff but no requests and no invite card. A staff list that doesn't load leaves its card out and is reported at low severity, never "no staff" | `StaffCards`, `StaffPhone` (`useCoachingStaff`) → `listPendingAssistantCoaches` | settings-staff.test › CH-8213 |
+| CH-8213 | The assistant coach requests don't load (head coach) | "Requests didn’t load" + "Nothing was changed. Try again; the error has been reported." with Try again (a card on desktop, a group on the phone). An assistant's refused read is not this: it is the answer, so an assistant sees the staff but no requests and no invite card. A staff list that doesn't load leaves its card out and is reported at low severity, never "no staff" | `StaffCards`, `StaffPhone` (`useCoachingStaff`) → `listPendingAssistantCoaches` | settings-staff.test › CH-8213 |
 
 ## 83xx Empty
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-8301 | A coach with no team opens Team | "You aren't on a team yet." + "Team settings appear once your program is set up and you're on its staff." | `EmptyState` | settings.test › CH-8301 |
+| CH-8301 | A coach with no team opens Team | "You aren’t on a team yet" + "Team settings appear once your program is set up and you’re on its staff." On the phone it sits on the parchment with no card around it | `EmptyState` | settings.test › CH-8301 |
 | CH-8302 | A player with no team opens Golf profile | A "Join a team" card: invite code, optional note, "Ask to join" | `MembershipCard` | settings.test › CH-8302 |
 | CH-8303 | A player has asked to join and is waiting | "Waiting on Wake Forest Golf · Sent Oct 12" with Cancel | `MembershipCard` | settings.test › CH-8303 |
 | CH-8304 | No profile photo | The monogram coin (initials) in place of a photo, with "Add photo" | `Avatar` | settings.test › CH-8304 |
@@ -110,7 +112,7 @@ rail to switch). The tests for the phone are the "Settings · phone" group in `s
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-8401 | The page is loading | A skeleton of the title, the section list and two cards, in the page's own layout | `SettingsSkeleton`, route `loading.tsx` (and the two old links' `loading.tsx`) | settings.test › CH-8401, settings-server.test › CH-8401 |
+| CH-8401 | The page is loading | A skeleton of the title, the section list and two sections, in the page's own layout; on the phone the title under its double rule, who you are and the sections on their seams, drawn in the live list's classes so nothing moves when it arrives | `SettingsSkeleton`, route `loading.tsx` (and the two old links' `loading.tsx`) | settings.test › CH-8401, settings-server.test › CH-8401 |
 | CH-8402 | A form is saving | The button reads "Saving…" (or "Sending…", "Updating…", "Deleting…", "Leaving…") and can't be pressed twice | `useAction.pending` | settings.test › CH-8402 |
 | CH-8403 | A switch is saving | The switch holds its new position and can't be flipped again until it lands | `Switch busy` | settings.test › CH-8403 |
 | CH-8404 | A photo is uploading | The photo dims and the button reads "Uploading…" | `ProfileCard` | preview |
@@ -135,14 +137,15 @@ rail to switch). The tests for the phone are the "Settings · phone" group in `s
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-8601 | Switching section | The old section fades out, the new one fades in with a 6px settle (260ms) | `AnimatePresence` + `CH_ROUTE` | preview |
+| CH-8601 | Switching section (desktop) | The old section fades out, the new one fades in with a 6px settle (260ms). On the phone a section is pushed instead (CH-8609) | `AnimatePresence` + `CH_ROUTE` in `SettingsView` | preview |
 | CH-8602 | Save status changes | "Unsaved changes" → "Saved" with a check fades in and settles after 1.8s (180ms) | `SaveBar` | preview |
 | CH-8603 | Flipping a switch | The thumb slides with a small spring (260ms) | `.ch-switch` CSS | preview |
 | CH-8604 | A confirm opens | The dialog rises and fades in (260ms) | `Modal` | preview |
 | CH-8605 | A toast appears or leaves | Slides up 10px and fades in; stacks reflow (260ms) | `ToastProvider` | preview |
-| CH-8606 | Moving a CoachHelm priority | The moved row glows green briefly (260ms). On the phone the row lifts (green tint, shadow) while it is held and follows the finger | `ch-set-moved` keyframes; `.is-held` in `phone/Reorder.tsx` | preview |
-| CH-8607 | Pressing a section or button | It shrinks about 6px (110ms) and springs back (280ms) (the shell's CH-1606) | `useChPress` | preview |
+| CH-8606 | Moving a CoachHelm priority | The moved row glows green briefly (260ms). On the phone the row lifts (green tint, overlay depth) while it is held and follows the finger; the other rows slide out of its way and the place it left is a recess. Instant with reduced motion | `ch-set-moved` keyframes; the drag overlay `.is-lifted` and the recess `.is-held` in `phone/Reorder.tsx` (dnd-kit) | preview |
+| CH-8607 | Pressing a section or button | A button shrinks about 6px (110ms) and springs back (280ms) (the shell's CH-1606); a section in the rail, a link row and, on the phone, a list row, the identity row and Sign out deepen their tint instead (110ms), never a scale | `useChPress`; `.ch-set-rail__i:active`, `--ch-ledger-row-press` (`.ch-setm-page` rows, `.ch-setm-id`, `.ch-setm-signout`) | preview |
 | CH-8608 | Animations turned off in Preferences | Every Clubhouse transition becomes instant | `data-motion="off"` + `useChReducedMotion` | settings.test › CH-8608 |
+| CH-8609 | Phone: opening a section from the list, and Back | The section slides in from the right edge over the list, which fades out under it (260ms); Back and "‹ Settings" slide it off to the right as the list fades back in. A pop the iOS back-swipe has already animated (Safari's `hasUAVisualTransition`) swaps at once, so the section never leaves twice. Instant with reduced motion or Animations off | `PUSH` variants by direction in `phone/SettingsPhone.tsx` | preview (frame-sampled, WebKit 390: the section from x 370 to 20, the list from opacity 1 to 0) |
 
 ## 87xx Haptics (iOS app only; off when Haptics is off)
 

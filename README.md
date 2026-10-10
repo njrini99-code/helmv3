@@ -27,16 +27,14 @@ Humans setting this up locally (macOS):
 brew bundle               # every CLI tool the repo calls (see Brewfile)
 fnm install && fnm use    # Node version from .nvmrc
 npm ci                    # app deps, plus repo-pinned Supabase/Vercel CLIs
-npm run doctor            # confirms Node, CLIs, Docker (OrbStack) and tools
+npm run doctor            # confirms Node, CLIs, Docker and tools
 ```
 
 Running database audits from your machine:
 [`docs/setup/RUN_ON_YOUR_MACHINE.md`](docs/setup/RUN_ON_YOUR_MACHINE.md).
 
 AI agents working in this repo: [`AGENTS.md`](AGENTS.md) is the operating
-policy; [`CLAUDE.md`](CLAUDE.md) adds Claude Code specifics (launch with `h`).
-The `h` launcher and per-task worktrees:
-[`docs/operations/WORKSPACES.md`](docs/operations/WORKSPACES.md).
+guide; [`CLAUDE.md`](CLAUDE.md) adds Claude Code specifics (launch with `h`).
 
 For the full documentation map, see [`docs/README.md`](docs/README.md).
 

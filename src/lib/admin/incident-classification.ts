@@ -371,6 +371,21 @@ export function classifyIncident(input: ClassifiableIncident): IncidentClassific
     );
   }
 
+  // 3c'. The designed stale-shot reconciliation. golf.ts returns
+  //       `code: 'shot_not_found'` when a client still holds a locally
+  //       persisted ID for a shot another tab or an earlier retry already
+  //       deleted; the round-entry hook drops the stale reference. Keyed on
+  //       the stable error code, not the prose, so a "Shot not found" from any
+  //       other path still falls through and stays visible. 20ae8f27 was
+  //       reopened 4× (2026-09-19 → 2026-10-07) for this designed path.
+  if (errorCode === 'shot_not_found') {
+    return done(
+      'degradation',
+      false,
+      'Stale local shot reference (shot_not_found) — the client reconciles it by design',
+    );
+  }
+
   // 3d. Client disconnected mid-response. Unlike 3c these arrive with a
   //     SERVER `source` (Next's onRequestError hook tags the RSC render /
   //     route handler / server action that was streaming when the socket

@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import { LinkPending } from './LinkPending';
-import { AnimatePresence, m } from 'framer-motion';
+import { AnimatePresence, m } from 'motion/react';
 import { ChevronRight, LayoutGrid, LifeBuoy, LogOut, Settings, X } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { Avatar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
@@ -12,12 +12,13 @@ import { useToast } from '../ui/Toast';
 import { chSignOut } from '../lib/sign-out';
 import { chReport } from '../lib/track';
 import { haptic } from '../lib/haptics';
-import { chTween } from '../lib/motion';
-import { useSheetDrag } from '../lib/sheet-drag';
+import { chSpring, chTween } from '../lib/motion';
+import { chThrownExit, takeSheetFling, useSheetDrag } from '../lib/sheet-drag';
 import { OverlayScrollLock } from '../lib/overlay-scroll';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import type { ChShellData } from '../data/shell';
-import { activeNavItem, phoneTabsFor, type ChRole } from './nav';
+import { activeNavItem, isRebuilt, phoneTabsFor, type ChRole } from './nav';
+import { usePrefetchTabs } from './use-prefetch-tabs';
 import { usePhoneChromeState } from './phone-chrome';
 import { badgeCount } from './Sidebar';
 import { MoreTeamSwitch } from './TeamSwitch';
@@ -69,13 +70,60 @@ export function TabBar({
   const current = activeNavItem(pathname, role);
   const { tabs, more: rest } = phoneTabsFor(role);
   const moreActive = !!current && !tabs.some((t) => t.id === current.id);
+  // The tab routes are fetched ahead of the first tap (P0-2, use-prefetch-tabs.ts); a screen not rebuilt is skipped.
+  usePrefetchTabs(
+    tabs.map((t) => t.href).filter((href) => isRebuilt(href, role)),
+    pathname,
+  );
   const messagesUnderMore = rest.find((i) => i.badge === 'messages');
   const moreCount = messagesUnderMore ? badgeCount(messagesUnderMore, badges, shell) : null;
 
   const moreBtn = useRef<HTMLButtonElement>(null);
   const sheet = useRef<HTMLDivElement>(null);
+  const scrim = useRef<HTMLDivElement>(null);
   const closeMore = useCallback(() => setMoreOpen(false), []);
+  // A row that navigates (native-feel audit 2026-10-08, P0-3): the sheet and its scrim leave at once, in the tap, before
+  // the router starts. Left to slide out, they sat in the page transition's snapshot over the old page and the new one.
+  const jumped = useRef(false);
+  const leaveForPage = useCallback(() => {
+    haptic('select');
+    jumped.current = true;
+    for (const el of [sheet.current, scrim.current]) el?.style.setProperty('visibility', 'hidden');
+    setMoreOpen(false);
+  }, []);
   const drag = useSheetDrag(sheet, closeMore, { enabled: !reduced });
+  // CH-1602: More rises on the smooth spring and leaves on it too, at the speed it was thrown when swiped shut (CH-1611),
+  // ending as it leaves sight. Read as the exit begins, since the sheet's props are fixed once it is removed.
+  const sheetMotion = {
+    shown: { y: 0, opacity: 1, transition: chSpring('smooth', reduced) },
+    gone: (_custom: unknown, current: { y?: unknown }) => {
+      if (jumped.current) return { opacity: 0, transition: { duration: 0 } };
+      if (reduced) return { y: 0, opacity: 0, transition: { duration: 0 } };
+      const travel = sheet.current?.offsetHeight ?? 0;
+      if (!travel) return { y: '100%', transition: chTween('base') };
+      // From where it is now (mid rise, when closed early), plus the frame a throw has already carried it.
+      const from = typeof current?.y === 'number' ? current.y : 0;
+      const out = chThrownExit(takeSheetFling(sheet.current, { peek: true }), travel - from);
+      return { y: [from + out.lead, travel], transition: { duration: out.ms / 1000, ease: out.ease } };
+    },
+  };
+
+  /**
+   * CH-1907: tapping the tab already open does what a UIKit tab bar does, silently (CH-1701). It pops a pushed phone
+   * screen or section back to the tab's root (each level is a history entry, CH-1906), a page below the tab's root
+   * goes back up to it (the link itself), and at the root the page scrolls to the top.
+   */
+  const retap = (e: MouseEvent<HTMLAnchorElement>, href: string) => {
+    const level = (window.history.state as { chPhone?: unknown } | null)?.chPhone;
+    if (typeof level === 'number' && level > 0) {
+      e.preventDefault();
+      window.history.go(-level);
+      return;
+    }
+    if (pathname !== href) return;
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: reduced ? 'instant' : 'smooth' });
+  };
 
   useEffect(() => setMoreOpen(false), [pathname]);
   // The sheet is modal: focus moves into it, Tab stays inside, Esc closes it,
@@ -83,6 +131,13 @@ export function TabBar({
   useEffect(() => {
     if (!moreOpen) return;
     const trigger = moreBtn.current;
+    // P001-D3: the page, its bars and the dock go inert under the sheet, so VoiceOver's swipe can't reach them (aria-modal
+    // alone is not enough in Safari). Put back before focus returns to More.
+    const behind = Array.from(document.querySelectorAll<HTMLElement>('.ch-root > .ch-app, .ch-root > .ch-tabbar, .ch-root > .ch-dock, .ch-root > .ch-skip'));
+    const was = behind.map((el) => el.inert);
+    behind.forEach((el) => {
+      el.inert = true;
+    });
     // The sheet mounts in the same commit, so it can take focus right away.
     sheet.current?.querySelector<HTMLElement>('a, button')?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
@@ -102,6 +157,9 @@ export function TabBar({
     window.addEventListener('keydown', onKey);
     return () => {
       window.removeEventListener('keydown', onKey);
+      behind.forEach((el, i) => {
+        el.inert = was[i] ?? false;
+      });
       // Back on More without a ring after a tap (F-46); a keyboard user still lands on it.
       trigger?.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
     };
@@ -120,7 +178,7 @@ export function TabBar({
               className="ch-tab"
               // CH-1803: the current tab is marked; CH-1701: changing tabs ticks, tapping the current one does not.
               aria-current={active ? 'page' : undefined}
-              onClick={() => !active && haptic('select')}
+              onClick={(e) => (active ? retap(e, t.href) : haptic('select'))}
             >
               <span className="ch-tab__icon">
                 <Icon icon={t.icon} size={21} />
@@ -147,6 +205,7 @@ export function TabBar({
           onClick={() => {
             // CH-1704: the tick as More opens (the swipe-shut tap is useSheetDrag's); CH-1602: the sheet rises over its scrim.
             haptic('select');
+            jumped.current = false;
             setMoreOpen((o) => !o);
           }}
         >
@@ -166,6 +225,7 @@ export function TabBar({
         {moreOpen && (
           <>
             <m.div
+              ref={scrim}
               key="scrim"
               className="ch-scrim"
               initial={{ opacity: 0 }}
@@ -186,9 +246,9 @@ export function TabBar({
               aria-label="More"
               className="ch-more"
               initial={reduced ? { opacity: 0 } : { y: '100%' }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={reduced ? { y: 0, opacity: 0 } : { y: '100%' }}
-              transition={reduced ? { duration: 0 } : chTween('base')}
+              variants={sheetMotion}
+              animate="shown"
+              exit="gone"
             >
               <OverlayScrollLock />
               <div className="ch-more__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
@@ -199,7 +259,7 @@ export function TabBar({
                 </button>
               </div>
               {user && (
-                <Link href="/golf/dashboard/settings" className="ch-more__me" onClick={() => haptic('select')}>
+                <Link href="/golf/dashboard/settings" className="ch-more__me" onClick={leaveForPage}>
                   <Avatar name={user.name} size={44} />
                   <span className="ch-more__me-t">
                     <b>{user.name}</b>{' '}
@@ -218,7 +278,7 @@ export function TabBar({
                       href={i.href}
                       className="ch-more__row"
                       aria-current={current?.id === i.id ? 'page' : undefined}
-                      onClick={() => haptic('select')}
+                      onClick={leaveForPage}
                     >
                       <span className="ch-more__ic">
                         <Icon icon={i.icon} size={17} />
@@ -248,13 +308,13 @@ export function TabBar({
                 })}
               </div>
               <div className="ch-more__list">
-                <Link href="/golf/dashboard/settings" className="ch-more__row" aria-current={current?.id === 'settings' ? 'page' : undefined} onClick={() => haptic('select')}>
+                <Link href="/golf/dashboard/settings" className="ch-more__row" aria-current={current?.id === 'settings' ? 'page' : undefined} onClick={leaveForPage}>
                   <span className="ch-more__ic">
                     <Icon icon={Settings} size={17} />
                   </span>
                   <span className="ch-more__label">Settings</span>
                 </Link>
-                <Link href="/golf/dashboard/settings#set-help" className="ch-more__row" onClick={() => haptic('select')}>
+                <Link href="/golf/dashboard/settings#set-help" className="ch-more__row" onClick={leaveForPage}>
                   <span className="ch-more__ic">
                     <Icon icon={LifeBuoy} size={17} />
                   </span>

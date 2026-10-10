@@ -43,6 +43,20 @@ describe('DecisionInboxSummary', () => {
     expect(screen.queryByText('No decisions waiting on you')).not.toBeInTheDocument();
   });
 
+  it('quiet: the calm empty state shrinks to one inline row', () => {
+    const summary: DecisionInboxSummaryModel = { items: [], total: 0, readable: true, computedAt: CHECKED_AT };
+    const { container } = render(<DecisionInboxSummary summary={summary} checkedAt={CHECKED_AT} quiet />);
+    expect(screen.getByText('No decisions waiting on you')).toBeInTheDocument();
+    expect(container.querySelector('[data-slot="panel-all-clear"]')).toHaveAttribute('data-variant', 'inline');
+  });
+
+  it('quiet never turns an unreadable, empty inbox into a calm one', () => {
+    const summary: DecisionInboxSummaryModel = { items: [], total: 0, readable: false, computedAt: CHECKED_AT };
+    const { container } = render(<DecisionInboxSummary summary={summary} checkedAt={CHECKED_AT} quiet />);
+    expect(screen.queryByText('No decisions waiting on you')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-slot="panel-all-clear"]')).toBeNull();
+  });
+
   it('renders each item with its kind label and detail', () => {
     const summary: DecisionInboxSummaryModel = {
       items: [

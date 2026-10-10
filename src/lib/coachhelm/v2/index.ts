@@ -3,6 +3,11 @@
  *
  * Main entry point for the V2 intelligence system.
  * Exports all types, modules, and the main orchestrator.
+ *
+ * STATUS: v3 (`../v3`) is canonical; do not add new imports of v2 from new
+ * code. v2 stays on the live path (post-round trigger, orchestrator, insight
+ * types and upsert) until the retirement plan in `../README.md` is done, which
+ * also lists every remaining v2 importer.
  */
 
 // Types

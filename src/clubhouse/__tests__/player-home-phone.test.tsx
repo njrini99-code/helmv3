@@ -1,4 +1,4 @@
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
@@ -133,7 +133,7 @@ describe('Scoring and the parts of the game, on the phone', () => {
     expect(card.querySelector('h2')).toBeNull();
     expect(within(scoring).getByText(/Gross · par 72 · countable rounds/).closest('.ch-ph-game')).toBeNull();
     expect(card.firstElementChild!.getAttribute('role')).toBe('radiogroup');
-    const legs = screen.getByRole('heading', { level: 2, name: 'By part of the game' }).closest('section')!;
+    const legs = screen.getByRole('heading', { level: 2, name: 'Your game' }).closest('section')!;
     expect(legs.querySelector('.ch-ph-legs')!.querySelector('h2')).toBeNull();
     expect(within(legs).getByText('Strokes gained vs Tour')).toBeTruthy();
   });
@@ -216,7 +216,7 @@ describe('spacing the base reset can’t take away', () => {
     expect(css).toMatch(/\.ch-hm > \.ch-hm-hero > h1\s*{\s*margin: 8px 0 10px;/);
     expect(css).toMatch(/\.ch-hm-hero \.ch-hm-next h2\s*{\s*margin-top: 6px;/);
     expect(css).toMatch(/\.ch-ph-leg > \.ch-ph-leg__n\s*{\s*margin: 4px 0 0;/);
-    expect(css).toMatch(/\.ch-ph-game__h > div > h2\s*{\s*margin: 0 0 5px;/);
+    expect(css).toMatch(/\.ch-ph-game__h > div > h2\s*{\s*margin: 0 0 6px;/);
     expect(css).not.toMatch(/\n\s*\.ch-hm-hero h1\s*{/);
     expect(css).not.toMatch(/\n\s*\.ch-hm-hero__brief\s*{/);
   });

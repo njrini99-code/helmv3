@@ -63,6 +63,15 @@ import {
   toReviewInsertPayload,
   writeReviewIfAbsent,
 } from '@/lib/golf/round-review/deterministic-review';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/coachhelm-backfill-round-reviews.ts',
+  summary:
+    "CoachHelm deep audit row 39: create the round reviews that were never generated because nobody opened the round (reviews are built lazily on page open).",
+  guard: "its own --apply flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 /** Script-local admin client — see the pre-warm script for why this is not
  *  `createAdminClient()` (its Sentry instrumentation throws under tsx). */

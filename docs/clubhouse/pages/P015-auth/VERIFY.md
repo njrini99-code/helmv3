@@ -51,12 +51,45 @@ authentication test.
 | --- | --- |
 | `auth.test.tsx`, `auth-logic.test.ts`, `auth-server.test.tsx`, `auth-scene.test.tsx` (sign in and the welcome) | pass |
 | `auth-credentials.test.ts` (Q-98: the server's wrong-password text reads as the design's, attempts kept) | pass |
-| `onboard.test.tsx` (20 cases: codes, the staff path, the account, after the account, request access, arriving) and `onboard-logic.test.ts` (15) | pass |
+| `auth-forgot.test.tsx` (2026-10-07: the reset form and check your email in the panel, CH-15020 to CH-15922, and a guard that today's reset page and the panel keep the same rules and words) | pass (8) |
+| `auth.test.tsx` › the sign-in micro-motion (2026-10-07: CH-15607 to CH-15611, including the glide's WebKit offsetParent case) | pass (6) |
+| `src/app/golf/(auth)/forgot-password/page.test.tsx` (today's reset page, unchanged) | pass |
+| `src/app/golf/(auth)/forgot-password/layout.test.tsx` (2026-10-08: flag on or off, signed in or out, and the auth server down with and without a cookie session; only flag on and signed out goes to `?view=forgot`, a degraded session counts as signed in) | pass (6) |
+| `onboard.test.tsx` (32 cases: codes, the staff path, the account, after the account, request access, arriving, and since 2026-10-07 the motion and feedback, CH-15620 to CH-15624) and `onboard-logic.test.ts` (17, with moving on, CH-15620) | pass |
 | `handoff.test.tsx` (the curtain over the route change) | pass |
 | `src/components/auth/golf-sign-in-form.test.tsx` and `src/test/auth` (today's form unchanged) | pass |
 
 ## Looked at
 
+- 2026-10-07, WebKit at 1440x900 and 390x844 (touch), preview: every sign-in state
+  and welcome state before and after the polish pass.
+  - The reset form walked end to end: sign in → reset → a refusal → sending →
+    check your email → browser Back → Forward → "Remember it? Sign in".
+  - URL, focus and the live heading were right at each step, with no page errors.
+    A flip back within 60ms re-enters the same view.
+  - rAF frame samples for the key, the refusal glide and shake, the eye and the
+    view slide, with reduced motion and Animations off landing in one frame.
+  - The flag across the route change (3 bare frames before, none after).
+  - The Return hint's contrast measured on the fairway.
+  - Chromium Tab order and focus rings through the panel.
+  - The real `/golf/login` (the flag is on in development), history only, with
+    every POST blocked so no reset email could go.
+    - Forgot → Back → Forward → "Remember it? Sign in" stayed in one document
+      with no network request: no reload and no server refetch.
+    - A load straight onto `?view=forgot` opens the form.
+  - Not done: a real account round trip (no reset email was sent) and a physical
+    iPhone.
+
+- 2026-10-07, sign up's finishing pass, WebKit at 1440x900 and 390x844 (touch),
+  `/clubhouse-preview/onboard`:
+  - Every step and its field and error states, before and after (Screenshots,
+    below); the tray also at 1280, 1100 and 1024 wide.
+  - The handovers forward and Back, the rail's thumb, the card's ink and the
+    issue, as 30fps video and rAF samples, desktop and phone.
+  - Each step change has one long frame (about 80 to 110ms) with or without the
+    pass, and none with the course hidden. Its cause is open (CHANGELOG,
+    2026-10-07).
+  - Not done: a physical iPhone, Safari, VoiceOver.
 - Every sign-up step at 1440 and 390 wide in `/clubhouse-preview/onboard`,
   against the design's screenshots.
 - The course at 6.4, 12.5, 18.6 and 22 o'clock (sunrise, midday, golden hour,
@@ -70,6 +103,20 @@ authentication test.
   would appear; and the pause between the fold and the dashboard showed an empty
   page, now held by the curtain and
   lifted when the dashboard is drawn.
+
+- 2026-10-08, WebKit with isMobile and touch at 375, 390 and 430x844,
+  `/clubhouse-preview/auth?screen=welcome`: every greeting the welcome can
+  show (morning, afternoon and evening; coach, player, caught up, first visit,
+  failed and no name) holds one line inside its box with no horizontal scroll,
+  54 of 54. Not done: a physical iPhone, Safari.
+  - A long surname is a separate, earlier case. "Coach Christopherson."
+    wraps cleanly. A single word wider than the line, such as
+    "Vanderwesthuizen.", is clipped at every width, as it was before this
+    change.
+- 2026-10-08, WebKit, signed out, dev server with the flag on:
+  `/golf/forgot-password` ends on `/golf/login?view=forgot` with the reset form
+  showing. The layout's redirect streams behind `golf/loading.tsx`, so it
+  answers 200 with a client redirect and a meta refresh, not a 307.
 
 ## Screenshots
 
@@ -90,6 +137,58 @@ before, after, baseline or evidence.
 | `P015__premium-audit__none__1280__case-165-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (none), 1280px, case-165-chromium-normal; /clubhouse-preview/auth; synthetic preview |
 | `P015__premium-audit__none__390__case-025-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (none), 390px, case-025-webkit-reduce; /clubhouse-preview/auth; synthetic preview |
 | `P015__premium-audit__none__390__case-165-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (none), 390px, case-165-chromium-normal; /clubhouse-preview/auth; synthetic preview |
+| `P015__signin__none__1440x900__key-off__before__e549642.png` | before | `e549642` | Before: Sign in off (password empty) is the shared 42% fade, a washed-out grey-green; the subtitle breaks "sign-" / "in." |
+| `P015__signin__none__1440x900__key-off__after__5a34505.png` | after | `5a34505` | After: the unlit key pressed into the paper, its word engraved (CH-15607); one subtitle sentence a line, 10px under the heading again |
+| `P015__signin__none__1440x900__key-in-flight__before__e549642.png` | before | `e549642` | Before: "Signing in…" drawn with the disabled fade, so the working key looked unavailable |
+| `P015__signin__none__1440x900__key-in-flight__after__5a34505.png` | after | `5a34505` | After: in flight the key stays the lit green with its spinner (CH-15402, CH-15607) |
+| `P015__signin__none__1440x900__retry-in-flight__before__e549642.png` | before | `e549642` | Before: a retry cleared the refusal; the button jumped 38px up under the pointer |
+| `P015__signin__none__1440x900__retry-in-flight__after__5a34505.png` | after | `5a34505` | After: the last refusal stays at half strength while the retry is in flight; the button holds its place (CH-15608) |
+| `P015__signin__none__1440x900__refused-credentials__before__e549642.png` | before | `e549642` | Before: a credentials refusal, both fields marked, the key faded |
+| `P015__signin__none__1440x900__refused-credentials__after__5a34505.png` | after | `5a34505` | After: the same refusal with the unlit key; the glide and shake are motion (frame samples in CHANGELOG) |
+| `P015__signin__none__1440x900__url-notice__before__e549642.png` | before | `e549642` | Before: the password-reset notice hugs the subtitle with a 48px gap under it |
+| `P015__signin__none__1440x900__url-notice__after__5a34505.png` | after | `5a34505` | After: the notice sits with 24px above and below |
+| `P015__welcome__coach__1440x900__return-hint__before__e549642.png` | before | `e549642` | Before: "or press Return" in secondary grey on the fairway (3.65 to 4.03:1 measured) |
+| `P015__welcome__coach__1440x900__return-hint__after__5a34505.png` | after | `5a34505` | After: the hint in ink (6.38 to 7.05:1 measured) |
+| `P015__signin__none__390x844__key-off__before__e549642.png` | before | `e549642` | Before: the phone sheet's faded Sign in key |
+| `P015__signin__none__390x844__key-off__after__5a34505.png` | after | `5a34505` | After: the phone sheet's unlit key (CH-15607) |
+| `P015__signin__none__390x844__retry-in-flight__before__e549642.png` | before | `e549642` | Before: a phone retry cleared the refusal; the button jumped 75px up |
+| `P015__signin__none__390x844__retry-in-flight__after__5a34505.png` | after | `5a34505` | After: the refusal steps back and the button holds its place (CH-15608) |
+| `P015__signin__none__390x844__refused-empty__before__e549642.png` | before | `e549642` | Before: the preview drew the empty-email refusal with the email filled in |
+| `P015__signin__none__390x844__refused-empty__after__5a34505.png` | after | `5a34505` | After: the empty-email refusal over an empty Email row |
+| `P015__welcome__coach__390x844__afternoon-greeting__before__e549642.png` | before | `e549642` | Before: "Good afternoon," broke over two lines at 50px, a three-line greeting |
+| `P015__welcome__coach__390x844__afternoon-greeting__after__5a34505.png` | after | `5a34505` | After (superseded 2026-10-08): 46.8px on a 390px phone, the largest size one line allowed at width 96; now 50px at width 94 (rows below) |
+| `P015__welcome__coach__375x844__afternoon-greeting__before__51c58e8.png` | before | `51c58e8` | Before: the 375px greeting at 45px (width 96) |
+| `P015__welcome__coach__390x844__afternoon-greeting__before__51c58e8.png` | before | `51c58e8` | Before: the 390px greeting at 46.8px against the board's 50px |
+| `P015__welcome__coach__430x844__afternoon-greeting__before__51c58e8.png` | before | `51c58e8` | Before: the 430px greeting at 50px (width 96) |
+| `P015__welcome__coach__375x844__afternoon-greeting__after__51c58e8.png` | after | `51c58e8` | After: 48.1px at width 94, one line (328px of 331px) |
+| `P015__welcome__coach__390x844__afternoon-greeting__after__51c58e8.png` | after | `51c58e8` | After: the board's 50px at width 94, one line (341px of 346px) |
+| `P015__welcome__coach__430x844__afternoon-greeting__after__51c58e8.png` | after | `51c58e8` | After: 50px at width 94, one line |
+| `P015__reset__none__390x844__forgot-password-redirect__after__51c58e8.png` | after | `51c58e8` | After: a signed-out visit to `/golf/forgot-password` lands on the panel's reset form (`/golf/login?view=forgot`, CH-15920) |
+| `P015__reset__none__1440x900__ready__before__5a34505.png` | before | `5a34505` | Before: "Forgot password?" left the Clubhouse sign-in for today's reset page, another design (the seam) |
+| `P015__reset__none__390x844__ready__before__5a34505.png` | before | `5a34505` | Before: the same seam on a phone |
+| `P015__reset__none__1440x900__ready__after__5a34505.png` | after | `5a34505` | After: the reset form in the panel, the email carried and focused, course and lockup still (CH-15920; up for owner review) |
+| `P015__reset__none__1440x900__refused-invalid__after__5a34505.png` | after | `5a34505` | After: a malformed address refused before sending, the field marked (CH-15121) |
+| `P015__reset__none__1440x900__sending__after__5a34505.png` | after | `5a34505` | After: Send in flight, the lit key with "Sending reset link…" (CH-15420) |
+| `P015__reset__none__1440x900__check-email__after__5a34505.png` | after | `5a34505` | After: check your email with the address sent to, Back to sign in as the one action (CH-15921) |
+| `P015__reset__none__390x844__ready__after__5a34505.png` | after | `5a34505` | After: the reset form on the phone sheet (CH-15920) |
+| `P015__reset__none__390x844__refused-invalid__after__5a34505.png` | after | `5a34505` | After: the phone's refused address (CH-15121) |
+| `P015__reset__none__390x844__check-email__after__5a34505.png` | after | `5a34505` | After: check your email on the phone (CH-15921) |
+| `P015__signup__none__1440x900__intro__before__e549642.png` | before | `e549642` | Before: the member card floats in a full-height green tray, most of it empty |
+| `P015__signup__none__1440x900__intro__after__e107280.png` | after | `e107280` | After: the tray hugs the card; the two choices sit on the raised green's depth |
+| `P015__signup__none__1440__choice-hover__after__e107280.png` | after | `e107280` | After: the team-code choice hovered, lifted 2px onto the primary hover's depth (CH-15624) |
+| `P015__signup__none__1440x900__name-typed__before__83d5721.png` | before | `83d5721` | Before: the card's answers at 11.5px in light ink beside a grey coin |
+| `P015__signup__none__1440x900__name-typed__after__e107280.png` | after | `e107280` | After: the answers at the board's 15px in green ink, the monogram in green ink on the card's stock (CH-15621) |
+| `P015__signup__none__1440x900__account-exists__before__83d5721.png` | before | `83d5721` | Before: the refused email marked red while the cursor stays in the password under its green ring |
+| `P015__signup__none__1440x900__account-exists__after__e107280.png` | after | `e107280` | After: the refused email keeps its red edge with a red halo and takes the cursor (CH-15624) |
+| `P015__signup__none__1440x900__done__before__e549642.png` | before | `e549642` | Before: the issued card and its seal high in a full-height green tray |
+| `P015__signup__none__1440x900__done__after__e107280.png` | after | `e107280` | After: the tray hugs the issued card and its seal; the issue itself is motion (CH-15623) |
+| `P015__signup__none__1100x760__done__after__e107280.png` | after | `e107280` | After: at 1100 wide the card scales down so the seal stays inside the tray |
+| `P015__signup__none__1440x900__sent__before__fbdd6ee.png` | before | `fbdd6ee` | Before: a request's card reads "Issued today" and cuts "Oakmont Universi" mid-word |
+| `P015__signup__none__1440x900__sent__after__e107280.png` | after | `e107280` | After: "Received today", and a long value ends in an ellipsis (CH-15621, CH-15623) |
+| `P015__signup__none__390x844__account__before__fbdd6ee.png` | before | `fbdd6ee` | Before: the phone's "3 of 5" alone in its pill |
+| `P015__signup__none__390x844__account__after__e107280.png` | after | `e107280` | After: "3 of 5" over a hairline filled to the same point (CH-15622) |
+| `P015__signup__none__390x844__done-joinfail__before__fbdd6ee.png` | before | `fbdd6ee` | Before: "Enter a team code" in the link's green on the green key, unreadable |
+| `P015__signup__none__390x844__done-joinfail__after__e107280.png` | after | `e107280` | After: the key's word in its own ivory |
 
 ## Historical verification gaps
 

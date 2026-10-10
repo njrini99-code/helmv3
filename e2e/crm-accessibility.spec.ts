@@ -55,7 +55,6 @@ test(`a11y — admin CRM (${CRM_PATH}, resilient to auth redirect)`, async ({ pa
       nodes: v.nodes.length,
       firstNode: v.nodes[0]?.target,
     }));
-    // eslint-disable-next-line no-console
     console.error(
       `Critical a11y violations on ${page.url()}:`,
       JSON.stringify(summary, null, 2),

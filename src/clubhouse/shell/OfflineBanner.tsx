@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatePresence, m } from 'framer-motion';
+import { AnimatePresence, m } from 'motion/react';
 import { WifiOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Icon } from '../ui/Icon';

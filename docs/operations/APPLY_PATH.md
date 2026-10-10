@@ -1,9 +1,10 @@
 # Apply path
 
-The reviewed, task-authorized paths for a migration to reach production are
-`npm run db:apply` and a connected write-capable Supabase MCP. Everything
-before the selected path is preparation; each path prints PASS/FAIL and
-refuses to proceed on the first FAIL.
+A migration reaches production through `npm run db:apply` or a connected
+write-capable Supabase MCP. Everything before the selected path is preparation;
+each path prints PASS/FAIL and refuses to proceed on the first FAIL. You can run
+the whole flow yourself: rehearse risky kinds (RLS, grants, `DROP`, type
+changes, backfills) on the local Docker stack, apply, then verify.
 
 ## Flow
 
@@ -23,8 +24,8 @@ refuses to proceed on the first FAIL.
    and lacks them. Pre-existing files are grandfathered in
    `.migration-headers-baseline.json` — a ratchet, it only shrinks.
 4. **PR + review** — review the SQL and target. Use
-   `db-migration-reviewer` when the task's risk warrants an independent look;
-   an agent review is optional and does not require repeating task authorization.
+   `db-migration-reviewer` when the risk warrants an independent look; an agent
+   review is optional.
 5. **Replay in CI** — the Supabase lint + RLS tests job in `ci.yml` replays
    every migration against a fresh database.
 6. **Merge to `main`.**
@@ -38,11 +39,11 @@ refuses to proceed on the first FAIL.
      contains no `CONCURRENTLY` (see below).
    - Prints a PITR marker timestamp — record it before taking a backup.
    - Prints the plan: the exact SQL body `--apply` would send.
-8. **Apply after authorization** — `npm run db:apply -- <migration-file>
-   --apply` sends that one file, re-reads the ledger, runs the file's own
-   `-- VERIFY:` queries, and prints recorded-vs-applied. Already-given task
-   authorization does not need to be requested again. A connected write-capable Supabase MCP is
-   also valid after the same SQL and target review.
+8. **Apply** — `npm run db:apply -- <migration-file> --apply` sends that one
+   file, re-reads the ledger, runs the file's own `-- VERIFY:` queries, and
+   prints recorded-vs-applied. A connected write-capable Supabase MCP is also
+   valid after the same SQL and target review (stamp the filename's version in
+   `schema_migrations` afterwards, since the MCP records its own).
 9. **Verify** — inspect the executed `-- VERIFY:` results and run any
    additional schema/RLS checks needed by the change. Repeat a query only
    when its outcome is uncertain or the database changed afterward.
@@ -61,8 +62,7 @@ stops unless `allow_out_of_order` is ticked deliberately — newer pending
 migrations are simply left untouched, since this path sends only the one
 named file (see "One file means one file" below). The step summary carries
 the pending list, the dry-run plan, and — with `mode: apply` — the
-`-- VERIFY:` results. Dispatching it is production authorization like any
-other path in this document, not a separate one.
+`-- VERIFY:` results.
 
 ## One file means one file
 
@@ -117,5 +117,6 @@ OLDER migrations are still pending lands it out of order, which needs
 `supabase/migrations/HELD.md` is the register for anything that can't take
 this path cleanly: a migration held back on purpose, one applied through a
 different route and later reconciled, or one superseded before it shipped.
-`db:apply` reads it and refuses past a `HOLD`/`OBSOLETE` row without an
-explicit override.
+`db:apply` reads it and refuses past a `HOLD`/`OBSOLETE` row without
+`--held-override`. A HOLD row is guidance: read its reason and any ordering
+prerequisite, then override and update the row when you apply it.

@@ -70,7 +70,7 @@ export async function gotoAndAssessRouteHealth(
 ): Promise<RouteHealthResult> {
   const { expectedSportPrefix, loginPaths = ['/login'], navigationTimeoutMs = 30000 } = opts;
 
-  let response: Response | null = null;
+  let response: Response | null;
   try {
     response = await page.goto(route, {
       waitUntil: 'domcontentloaded',

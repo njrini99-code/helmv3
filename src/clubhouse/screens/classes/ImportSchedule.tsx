@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, CircleAlert, CloudOff, FileQuestion, FileWarning, FileX, Lightbulb, SearchX, Sparkles, Trash2, Upload, WifiOff, TriangleAlert } from 'lucide-react';
-import { useRef, useState, type DragEvent } from 'react';
+import { useEffect, useRef, useState, type DragEvent } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
   CH_TONES,
@@ -22,6 +22,7 @@ import {
   type ChWeek,
 } from '../../data/classes-shape';
 import { haptic } from '../../lib/haptics';
+import { useChReducedMotion } from '../../lib/reduced-motion';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
@@ -31,16 +32,23 @@ import { EmptyState } from '../../ui/States';
 import { screenFile, type ChReadFail, type ChReadResult, type ChReadSource } from './import-read';
 
 type Step = 'pick' | 'reading' | 'review' | 'error';
+
+/** Delay then minimum (motion research #8): no reading state for a read under this… */
+const READ_DELAY_MS = 150;
+/** …and once shown, it holds at least this long. */
+const READ_MIN_MS = 450;
+/** One found row a beat as the read's result arrives. */
+const ROW_BEAT_MS = 90;
 type Tab = 'file' | 'paste';
 
 /** The board's error views (`ERR` in classes.jsx), one per way a read can fail. */
 const FAIL: Record<ChReadFail, { icon: LucideIcon; title: string; code: string; body: string }> = {
-  notSchedule: { icon: FileX, title: "This doesn't look like a class schedule", code: 'CH-12113', body: 'Upload a screenshot of your class schedule from your student portal.' },
+  notSchedule: { icon: FileX, title: "This doesn’t look like a class schedule", code: 'CH-12113', body: 'Upload a screenshot of your class schedule from your student portal.' },
   tooLarge: { icon: FileWarning, title: 'That file is too large', code: 'CH-12111', body: 'Use a file under 12 MB. A screenshot of the schedule page is usually under 2 MB.' },
-  unsupported: { icon: FileQuestion, title: "We can't read that file type", code: 'CH-12112', body: 'Use a PNG, JPG or WebP screenshot, a PDF or a TXT file, or paste the text.' },
-  fault: { icon: CloudOff, title: "Reading the schedule didn't finish", code: 'CH-12204', body: 'Your schedule can still be added with Paste text.' },
-  none: { icon: SearchX, title: 'No classes found', code: 'CH-12114', body: "We read it but couldn't find course codes or times. Try pasting your schedule text." },
-  offline: { icon: WifiOff, title: "You're offline", code: 'CH-12901', body: 'Reading a screenshot needs a connection. Reconnect and try again, or paste the text, which works offline.' },
+  unsupported: { icon: FileQuestion, title: "We can’t read that file type", code: 'CH-12112', body: 'Use a PNG, JPG or WebP screenshot, a PDF or a TXT file, or paste the text.' },
+  fault: { icon: CloudOff, title: "Reading the schedule didn’t finish", code: 'CH-12204', body: 'Your schedule can still be added with Paste text.' },
+  none: { icon: SearchX, title: 'No classes found', code: 'CH-12114', body: "We read it but couldn’t find course codes or times. Try pasting your schedule text." },
+  offline: { icon: WifiOff, title: 'You’re offline', code: 'CH-12901', body: 'Reading a screenshot needs a connection. Reconnect and try again, or paste the text, which works offline.' },
   empty: { icon: SearchX, title: 'Nothing to read', code: 'CH-12110', body: 'Paste your schedule text first.' },
 };
 
@@ -87,6 +95,13 @@ export function ImportSchedule({
   const [slow, setSlow] = useState(false);
   const [pasteEmpty, setPasteEmpty] = useState(false);
   const [over, setOver] = useState(false);
+  // P012-B1: the read shows its work. Nothing for the first beat, then the reading state holds for a minimum, then the
+  // rows the read found arrive one by one, each tagged Read clearly or with what to check. Reduced motion and Animations
+  // off show them all at once.
+  const reduced = useChReducedMotion();
+  const [readingShown, setReadingShown] = useState(false);
+  const [shown, setShown] = useState(0);
+  const shownAt = useRef(0);
   const token = useRef(0);
   const last = useRef<ChReadSource | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -126,6 +141,13 @@ export function ImportSchedule({
     const mine = ++token.current;
     setStep('reading');
     setSlow(false);
+    setReadingShown(false);
+    shownAt.current = 0;
+    const appear = window.setTimeout(() => {
+      if (token.current !== mine) return;
+      shownAt.current = Date.now();
+      setReadingShown(true);
+    }, READ_DELAY_MS);
     // CH-12902: a read that hasn't answered says so once.
     const timer = window.setTimeout(() => token.current === mine && setSlow(true), CH_SLOW_SAVE_AFTER);
     let result: ChReadResult;
@@ -135,10 +157,16 @@ export function ImportSchedule({
       result = { ok: false, kind: 'fault', message: FAIL.fault.body };
     }
     window.clearTimeout(timer);
+    window.clearTimeout(appear);
+    if (token.current !== mine) return;
+    // Once the reading state has shown, it stays up for its minimum, so it never flashes.
+    const held = shownAt.current ? READ_MIN_MS - (Date.now() - shownAt.current) : 0;
+    if (held > 0) await new Promise((r) => window.setTimeout(r, held));
     if (token.current !== mine) return;
     if (result.ok) {
       setRows(result.rows);
       setWarnings(result.warnings);
+      setShown(reduced ? result.rows.length : 0);
       setStep('review');
     } else failWith(result.kind, result.message);
   };
@@ -151,6 +179,22 @@ export function ImportSchedule({
     setOver(false);
     choose(e.dataTransfer.files);
   };
+
+  // The rows arrive one by one, a row a beat (rows removed while they arrive just shorten the list).
+  useEffect(() => {
+    if (step !== 'review' || shown >= rows.length) return undefined;
+    if (reduced) {
+      setShown(rows.length);
+      return undefined;
+    }
+    const t = window.setTimeout(() => setShown((n) => n + 1), ROW_BEAT_MS);
+    return () => window.clearTimeout(t);
+  }, [step, shown, rows.length, reduced]);
+  // One success tick when the imported classes are on the calendar.
+  const synced = imported != null && imported.classes.length > 0 && syncState === 'ok';
+  useEffect(() => {
+    if (synced) haptic('success');
+  }, [synced]);
 
   const done = imported != null;
   const title = done ? (imported.classes.length ? 'Schedule imported' : 'Nothing new to import') : step === 'review' ? 'Review your schedule' : 'Import schedule';
@@ -192,6 +236,9 @@ export function ImportSchedule({
       <div className="ch-cl-imp">
         {done ? (
           <ImportedView imported={imported} syncState={syncState} term={term} week={week} />
+        ) : step === 'reading' && !readingShown ? (
+          // The first beat of a read: nothing yet (delay then minimum), so a quick read never flashes a state.
+          <div className="ch-cl-read is-wait" role="status" aria-label="Reading your schedule" />
         ) : step === 'reading' ? (
           // CH-12402: a scan over a page while the schedule is read.
           <div className="ch-cl-read" role="status" data-ch-code="CH-12402">
@@ -269,11 +316,15 @@ export function ImportSchedule({
                 </span>
               </div>
             )}
+            <p className="ch-cl-rv__line ch-num" role="status">
+              {shown < rows.length ? 'Reading' : 'Read'} {Math.min(shown, rows.length)} {Math.min(shown, rows.length) === 1 ? 'class' : 'classes'}
+              {rows.slice(0, shown).filter((r) => r.look).length > 0 ? ` · ${rows.slice(0, shown).filter((r) => r.look).length} to check` : ''}
+            </p>
             {rows.length === 0 ? (
               <EmptyState compact title="Every class was removed" body="Start over to read the schedule again." />
             ) : (
               <ul className="ch-cl-rv" aria-label="Classes found">
-                {rows.map((r, i) => {
+                {rows.slice(0, shown).map((r, i) => {
                   const tab = tabParts({ code: r.code, name: r.name });
                   const meta = [daysLabel(r.days) || 'No days', timeRange(r.start, r.end) ?? 'No time', [r.building, r.room].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
                   return (
@@ -285,6 +336,7 @@ export function ImportSchedule({
                       <span className="ch-cl-rv__b">
                         <b>{r.name}</b>
                         <span>{meta}</span>
+                        <span className={'ch-cl-rv__tag' + (r.look ? ' is-check' : '')}>{r.look ? (/time/i.test(r.look) ? 'Check the time' : 'Check the days') : 'Read clearly'}</span>
                         {r.look && (
                           <em>
                             <Icon icon={CircleAlert} size={12} />
@@ -430,7 +482,7 @@ function ImportedView({ imported, syncState, term, week }: { imported: { classes
   // Each class repeats until the end of its own term; the classes of one import can be in more than one.
   const ends = [...new Set(onCalendar.map((c) => termEnd(c.semester, term)))].sort();
   const until = ends.length === 1 ? `until ${shortDay(ends[0]!)}` : `until the end of their terms, ${joinList(ends.map(shortDay))}`;
-  const lead = on === n ? (n === 1 ? "It's" : "They're") : on === 1 ? `1 of ${n} is` : `${on} of ${n} are`;
+  const lead = on === n ? (n === 1 ? "It’s" : "They’re") : on === 1 ? `1 of ${n} is` : `${on} of ${n} are`;
   return (
     <div className="ch-cl-ok" role="status">
       <span className="ch-cl-ok__ic">
@@ -443,12 +495,12 @@ function ImportedView({ imported, syncState, term, week }: { imported: { classes
         {syncState === 'syncing'
           ? 'Adding them to your calendar…'
           : syncState === 'failed'
-            ? "Some didn't reach your calendar. Use Retry sync on the Classes page."
+            ? "Some didn’t reach your calendar. Use Retry sync on the Classes page."
             : on > 0
               ? `${lead} on your calendar and ${on === 1 ? 'repeats' : 'repeat'} weekly ${until}.`
               : ''}
         {syncState !== 'syncing' && off.length > 0
-          ? ` Not on your calendar: ${joinList(off.map((c) => `${c.code || c.name} (${gapReason(calendarGap(c)!)})`))}. Open the class to add what's missing.`
+          ? ` Not on your calendar: ${joinList(off.map((c) => `${c.code || c.name} (${gapReason(calendarGap(c)!)})`))}. Open the class to add what’s missing.`
           : ''}
         {skipped > 0 ? ` ${skipped} already on your schedule and skipped.` : ''}
       </p>

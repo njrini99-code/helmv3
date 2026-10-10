@@ -12,8 +12,11 @@ export function dayLabel(count: number, competition: boolean): string {
   return competition ? `competition, ${events}` : events;
 }
 
-/** `between`: what sits between the days and the agenda (the player's Up next, Player - Home.html). */
-export function Week({ week, between }: { week: ChCoachHome['week']; between?: ReactNode }) {
+/**
+ * `between`: what sits between the days and the agenda (the player's Up next, Player - Home.html). `covered`: the
+ * page's notice (CH-1209) carries the one Try again, so the failed week keeps only its notice's title.
+ */
+export function Week({ week, between, covered = false }: { week: ChCoachHome['week']; between?: ReactNode; covered?: boolean }) {
   const todayRows = week.agenda.filter((r) => r.when === 'today');
   const laterRows = week.agenda.filter((r) => r.when === 'later');
   return (
@@ -25,8 +28,9 @@ export function Week({ week, between }: { week: ChCoachHome['week']; between?: R
       {week.error ? (
         <RefreshNotice
           code="CH-2201"
-          title="This week's schedule didn't load."
+          title="This week’s schedule didn’t load"
           body="Your events are safe. This is a display problem, and trying again usually clears it."
+          covered={covered}
         />
       ) : (
         <>

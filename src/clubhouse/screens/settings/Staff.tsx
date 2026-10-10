@@ -35,7 +35,7 @@ export function StaffCards({ coachId, writes }: { coachId: string | null; writes
       )}
       {requestsFailed ? (
         <Card id="set-requests" title="Assistant coach requests">
-          <InlineNotice code="CH-8213" title="Requests didn't load." body="Nothing was changed. Try again; the error has been reported." onRetry={staff.retry} />
+          <InlineNotice code="CH-8213" title="Requests didn’t load." body="Nothing was changed. Try again; the error has been reported." onRetry={staff.retry} />
         </Card>
       ) : (
         requests.length > 0 && (

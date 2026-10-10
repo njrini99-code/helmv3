@@ -13,9 +13,9 @@ an unwritten release marker, even though the deploy itself had succeeded.
 
 ## Fix / where it lives now
 
-`scripts/deploy-prod.sh` now captures the CLI's whole output into a
+`scripts/deploy-prod.sh` (was removed 2026-10-07; the lesson stands) now captures the CLI's whole output into a
 variable first, then parses it — never piping directly into something that
 can close the pipe early.
-`scripts/__tests__/deploy-prod-verify.test.ts` pins the behavior.
+`scripts/__tests__/deploy-prod-verify.test.ts` (was removed with it) pinned the behavior.
 `.claude/rules/shipping.md` states the rule generally: capture Vercel CLI
 output before parsing it.

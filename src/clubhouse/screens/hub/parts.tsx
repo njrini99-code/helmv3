@@ -12,6 +12,9 @@ import { Menu } from '../../ui/Menu';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { haptic } from '../../lib/haptics';
 import { useAction, type ActionCopy, type ActionResult, type ServerResult } from '../../lib/use-action';
+import { SerifText } from '../../ui/SerifText';
+import { useChPhone } from '../../lib/use-phone';
+import { radioKeys, rovingRadios } from './radio';
 
 /*
  * Team Hub's sections (design/handoff/hub.jsx). Each takes what it shows and
@@ -49,6 +52,7 @@ export function Rsvps({
   isPending,
   onReply,
   compact = false,
+  covered = false,
 }: {
   role: ChTeamHub['role'];
   data: ChTeamHub['rsvps'];
@@ -57,6 +61,8 @@ export function Rsvps({
   onReply: (r: ChHubRsvp, status: Exclude<ChRsvp, 'pending'>) => Promise<ServerResult>;
   /** The phone build: a reply line that leaves out the counts that are zero. */
   compact?: boolean;
+  /** The page's notice carries the one Try again (CH-1209): this section keeps only its title under the heading. */
+  covered?: boolean;
 }) {
   const coach = role === 'coach';
   const mine = (r: ChHubRsvp) => replies.get(r.eventId) ?? r.mine ?? 'pending';
@@ -68,7 +74,7 @@ export function Rsvps({
         {!data.error && data.rows.length > 0 && <span className="ch-hb-muted">{coach ? 'This week' : open === 0 ? 'All answered' : `${open} need${open === 1 ? 's' : ''} a reply`}</span>}
       </div>
       {data.error ? (
-        <RefreshNotice code="CH-10201" title={coach ? "This week's replies didn't load." : "Your events didn't load."} body="Nothing was lost. Try again; the error has been reported." />
+        <RefreshNotice code="CH-10201" title={coach ? "This week’s replies didn’t load." : "Your events didn’t load."} body="Nothing was lost. Try again; the error has been reported." covered={covered} />
       ) : !data.rows.length ? (
         <EmptyState
           compact
@@ -97,8 +103,12 @@ export function Rsvps({
                   {r.title}
                   {r.mandatory && <span className="ch-hb-req">Required</span>}
                 </b>
+                {/* P010 D9: the date tile says the day; the line keeps time and place, the date only for a screen reader. */}
                 <span className="ch-num">
-                  {r.weekday} {r.day} · {r.meta}
+                  <span className="ch-sr-only">
+                    {r.weekday} {r.day} ·{' '}
+                  </span>
+                  {r.meta}
                 </span>
               </Link>
               {coach ? (
@@ -132,13 +142,13 @@ function ReplyChoices({ r, mine, pending, onReply }: {
   onReply: (r: ChHubRsvp, status: Exclude<ChRsvp, 'pending'>) => Promise<ServerResult>;
 }) {
   const save = useAction('hub.reply', onReply, (event, answer) => ({
-    done: answer === 'accepted' ? `You're going to ${event.title}` : answer === 'tentative' ? `Marked maybe for ${event.title}` : `Your coach knows you can't make ${event.title}`,
-    failed: `Couldn't send your reply for ${event.title}`,
+    done: answer === 'accepted' ? `You’re going to ${event.title}` : answer === 'tentative' ? `Marked maybe for ${event.title}` : `Your coach knows you can’t make ${event.title}`,
+    failed: `Couldn’t send your reply for ${event.title}`,
     code: 'CH-10001',
   }), quietBusy);
   return (
     <div className="ch-hb-rsvp__choice">
-      <span className="ch-hb-rsvp__a" role="radiogroup" aria-label={`Your reply for ${r.title}`} aria-busy={pending}>
+      <span className="ch-hb-rsvp__a" role="radiogroup" tabIndex={-1} ref={rovingRadios} onKeyDown={radioKeys(false)} aria-label={`Your reply for ${r.title}`} aria-busy={pending}>
         {REPLIES.map(([answer, label]) => (
           <button key={answer} type="button" role="radio" aria-checked={mine === answer} disabled={pending} onClick={() => {
             if (mine === answer) return;
@@ -158,7 +168,7 @@ function Acknowledgement({ a, acked, pending, onAck }: {
   pending: boolean;
   onAck: (a: ChHubAnnouncement) => Promise<ServerResult>;
 }) {
-  const save = useAction('hub.acknowledge', onAck, (post) => ({ done: '', failed: `Couldn't acknowledge "${post.title}"`, code: 'CH-10002' }), quietBusy);
+  const save = useAction('hub.acknowledge', onAck, (post) => ({ done: '', failed: `Couldn’t acknowledge “${post.title}”`, code: 'CH-10002' }), quietBusy);
   if (pending) return <span className="ch-hb-saving" role="status" data-ch-code="CH-10409">Acknowledging {a.title}…</span>;
   if (acked) return <span className="ch-hb-acked"><Icon icon={Check} size={13} />Acknowledged</span>;
   return <Button size="sm" variant="primary" onClick={() => void save.run(a)}>Got it</Button>;
@@ -168,6 +178,7 @@ export function Announcement({
   a,
   role,
   featured = false,
+  rank,
   acked,
   pending,
   onAck,
@@ -177,6 +188,11 @@ export function Announcement({
   a: ChHubAnnouncement;
   role: ChTeamHub['role'];
   featured?: boolean;
+  /**
+   * P010-A3, the Announcements tab as an edited page: the newest is the lead (the 36px headline); the older ones step
+   * down to 22px with their date in the margin, and on the phone fold to the title and a first line until opened.
+   */
+  rank?: 'lead' | 'older';
   acked: boolean;
   pending: boolean;
   onAck: (a: ChHubAnnouncement) => Promise<ServerResult>;
@@ -185,11 +201,28 @@ export function Announcement({
 }) {
   const coach = role === 'coach';
   const pct = a.recipients ? Math.round((a.ackCount / a.recipients) * 100) : 0;
+  const phone = useChPhone();
+  const [open, setOpen] = useState(false);
+  const fold = rank === 'older' && phone && !open && !!a.body;
   return (
-    <article className={'ch-hb-ann' + (featured ? ' is-featured' : '')} aria-labelledby={`ch-hb-ann-${a.id}`}>
-      {featured && <span className="ch-hb-eyebrow">{coach ? 'Latest' : a.needAck && !acked ? 'Needs your reply' : 'Latest from your coaches'}</span>}
-      <h3 id={`ch-hb-ann-${a.id}`}>{a.title}</h3>
-      {a.body && <p>{a.body}</p>}
+    <article className={'ch-hb-ann' + (featured ? ' is-featured' : '') + (rank ? ` is-${rank}` : '')} aria-labelledby={`ch-hb-ann-${a.id}`} data-ann={a.id}>
+      {rank === 'older' && (
+        <span className="ch-hb-ann__margin ch-num" aria-hidden="true">
+          {a.when}
+        </span>
+      )}
+      {featured && <span className="ch-hb-eyebrow">{coach ? 'Latest' : a.needAck && !acked ? 'Needs your acknowledgement' : 'Latest from your coaches'}</span>}
+      <h3 id={`ch-hb-ann-${a.id}`}>
+        <SerifText text={a.title} />
+      </h3>
+      {fold ? (
+        <button type="button" className="ch-hb-ann__fold" aria-expanded={false} onClick={() => (haptic('select'), setOpen(true))}>
+          <span>{a.body}</span>
+          <span className="ch-sr-only">, show all</span>
+        </button>
+      ) : (
+        a.body && <p>{a.body}</p>
+      )}
       <div className="ch-hb-ann__h">
         <Avatar name={a.by} size={32} />
         <div>
@@ -256,7 +289,8 @@ export function TripPass({
     t.back && ([t.back, 'Home'] as const),
   ].filter((x): x is readonly [string, string] => !!x);
   return (
-    <article className={'ch-hb-pass' + (big ? ' is-big' : '')} aria-labelledby={`ch-hb-trip-${t.id}`}>
+    // P010-A1: the next trip is the page's one paper object (hub.css `.is-next`); the trips after it stay flat rows.
+    <article className={'ch-hb-pass' + (big ? ' is-big' : '') + (t.upcoming && !later ? ' is-next' : '')} aria-labelledby={`ch-hb-trip-${t.id}`}>
       <div className="ch-hb-pass__main">
         <div className="ch-hb-pass__top">
           <span className="ch-hb-eyebrow ch-num">
@@ -279,17 +313,24 @@ export function TripPass({
             />
           )}
         </div>
-        <b id={`ch-hb-trip-${t.id}`}>{t.name}</b>
+        <b id={`ch-hb-trip-${t.id}`}>
+          <SerifText text={t.name} />
+        </b>
         {t.destination && <span className="ch-hb-muted">{t.destination}</span>}
+        {/* P010 D4: on the big pass the plan beside it already says when it leaves and where it stays. */}
         <dl className="ch-hb-pass__f">
-          <div>
-            <dt>Departs</dt>
-            <dd className="ch-num">{t.depart ?? 'To be set'}</dd>
-          </div>
-          <div>
-            <dt>Stay</dt>
-            <dd>{t.hotel ?? 'Same day'}</dd>
-          </div>
+          {!(big && t.depart) && (
+            <div>
+              <dt>Departs</dt>
+              <dd className="ch-num">{t.depart ?? 'To be set'}</dd>
+            </div>
+          )}
+          {!(big && t.hotel) && (
+            <div>
+              <dt>Stay</dt>
+              <dd>{t.hotel ?? 'Same day'}</dd>
+            </div>
+          )}
           <div>
             <dt>{role === 'coach' ? 'Travelers' : 'You'}</dt>
             <dd className="ch-num">{role === 'coach' ? (t.travelerCount ?? '—') : t.mine == null ? '—' : t.mine ? 'Traveling' : 'Not traveling'}</dd>
@@ -334,7 +375,7 @@ export function TripPass({
   );
 }
 
-export function Updates({ data }: { data: ChTeamHub['updates'] }) {
+export function Updates({ data, covered = false }: { data: ChTeamHub['updates']; covered?: boolean }) {
   const unread = data.rows.filter((n) => n.unread).length;
   return (
     <section className="ch-hb-card ch-hb-feed" aria-labelledby="ch-hb-updates">
@@ -343,9 +384,9 @@ export function Updates({ data }: { data: ChTeamHub['updates'] }) {
         {unread > 0 && <span className="ch-hb-muted ch-num">{unread} new</span>}
       </div>
       {data.error ? (
-        <RefreshNotice code="CH-10202" title="Updates didn't load." body="Your notifications are safe; the bell may still have them. Try again." />
+        <RefreshNotice code="CH-10202" title="Updates didn’t load." body="Your notifications are safe; the bell may still have them. Try again." covered={covered} />
       ) : !data.rows.length ? (
-        <EmptyState compact code="CH-10302" title="Nothing new." body="Posts, trips, tasks and qualifier moves show here as they happen." />
+        <EmptyState compact code="CH-10302" title="Nothing new" body="Posts, trips, tasks and qualifier moves show here as they happen." />
       ) : (
         <ol>
           {data.rows.map((n: ChHubUpdate) => (
@@ -390,6 +431,7 @@ export function Tasks({
   onToggle,
   onAssign,
   onDelete,
+  covered = false,
 }: {
   role: ChTeamHub['role'];
   data: ChTeamHub['tasks'];
@@ -398,6 +440,8 @@ export function Tasks({
   onToggle: (t: ChHubTask, nextDone: boolean) => Promise<ServerResult>;
   onAssign?: () => void;
   onDelete?: (t: ChHubTask) => void;
+  /** The page's notice carries the one Try again (CH-1209): this section keeps only its title under the heading. */
+  covered?: boolean;
 }) {
   const coach = role === 'coach';
   const open = data.rows.filter((t) => !isDone(t)).length;
@@ -414,9 +458,9 @@ export function Tasks({
         )}
       </div>
       {data.error ? (
-        <RefreshNotice code="CH-10203" title={coach ? "Tasks didn't load." : "Your tasks didn't load."} body="Nothing was lost. Try again; the error has been reported." />
+        <RefreshNotice code="CH-10203" title={coach ? "Tasks didn’t load." : "Your tasks didn’t load."} body="Nothing was lost. Try again; the error has been reported." covered={covered} />
       ) : !data.rows.length ? (
-        <EmptyState compact code="CH-10303" title={coach ? 'No tasks assigned.' : 'No tasks right now.'} body={coach ? 'Assign a task and see who has done it.' : 'Tasks your coaches assign show here with their due date.'} />
+        <EmptyState compact code="CH-10303" title={coach ? 'No tasks assigned' : 'No tasks right now'} body={coach ? 'Assign a task and see who has done it.' : 'Tasks your coaches assign show here with their due date.'} />
       ) : (
         <div className="ch-hb-tasks">
           {data.rows.map((t) => <TaskRow key={t.id} t={t} coach={coach} d={isDone(t)} pending={isPending(t)} onToggle={onToggle} onDelete={onDelete} />)}
@@ -446,7 +490,7 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete }: {
     onToggle,
     (task, nextDone) => ({
       done: nextDone ? `${task.title} done` : `${task.title} is open again`,
-      failed: nextDone ? `Couldn't mark ${task.title} done` : `Couldn't reopen ${task.title}`,
+      failed: nextDone ? `Couldn’t mark ${task.title} done` : `Couldn’t reopen ${task.title}`,
       code: nextDone ? 'CH-10003' : 'CH-10011',
     }),
     quietBusy,
@@ -493,6 +537,7 @@ export function Documents({
   onOpen,
   onUpload,
   onDelete,
+  covered = false,
 }: {
   role: ChTeamHub['role'];
   data: ChTeamHub['documents'];
@@ -501,6 +546,8 @@ export function Documents({
   onOpen: (f: ChHubFile) => void;
   onUpload: (files: File[]) => void;
   onDelete: (f: ChHubFile) => void;
+  /** The page's notice carries the one Try again (CH-1209): this section keeps only its title. */
+  covered?: boolean;
 }) {
   const coach = role === 'coach';
   const input = useRef<HTMLInputElement>(null);
@@ -550,11 +597,9 @@ export function Documents({
         </>
       )}
       {data.error ? (
-        <RefreshNotice code="CH-10204" title="Documents didn't load." body="Your files are safe. Try again; the error has been reported." />
+        <RefreshNotice code="CH-10204" title="Documents didn’t load." body="Your files are safe. Try again; the error has been reported." covered={covered} />
       ) : !data.folders.length ? (
-        <div className="ch-hb-card">
-          <EmptyState compact code="CH-10304" icon={Folder} title="No documents yet." body={coach ? 'Files you share show here in folders.' : 'Files your coaches share show here.'} />
-        </div>
+        <EmptyState compact code="CH-10304" icon={Folder} title="No documents yet" body={coach ? 'Files you share show here in folders.' : 'Files your coaches share show here.'} />
       ) : (
         data.folders.map((f) => (
           <section key={f.name} className="ch-hb-card ch-hb-folder" aria-labelledby={`ch-hb-f-${f.name}`}>

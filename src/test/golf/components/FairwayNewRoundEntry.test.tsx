@@ -9,10 +9,10 @@
  */
 import { beforeAll, describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import type { FairwaySetupForm, FairwayNewRoundEntryProps } from '@/components/fairway/pages/rounds-new/FairwayNewRoundEntry';
 import { FairwayNewRoundEntry } from '@/components/fairway/pages/rounds-new/FairwayNewRoundEntry';
-import type { SavedCourse } from '@/app/golf/actions/golf';
+import type { SavedCourse } from '@/app/golf/actions/saved-courses';
 
 const shoutyCourse: SavedCourse = {
   id: 'saved-1',

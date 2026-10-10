@@ -3,18 +3,21 @@
 import { Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { RecruitInput } from '@/app/golf/actions/recruiting';
+import { calendarLine, isDivision, remoteContactHint, type ChDivision } from '../../data/recruiting-calendar';
 import {
   countByStage,
   fullName,
   isSort,
   isStage,
   newRequestId,
+  nextStepSummary,
   prospectFrom,
   sharesOf,
+  sortsFor,
   stageMeta,
   visibleProspects,
   type ChDraftField,
+  type ChRecruitInput,
   type ChProspect,
   type ChRecruiting,
   type ChSort,
@@ -22,7 +25,7 @@ import {
 } from '../../data/recruiting-shape';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
-import { normalise, useAction } from '../../lib/use-action';
+import { friendlyReason, normalise, useAction } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
 import { Button } from '../../ui/Button';
 import { Modal } from '../../ui/Modal';
@@ -36,6 +39,8 @@ import type { ChRecruitingWrites } from './writes';
 
 const SORT_KEY = 'ch-recruiting-sort';
 const STAGE_KEY = 'ch-recruiting-stage';
+/** The coach's own pick of division for the recruiting calendar, on this device, when the team's organization doesn't say. */
+const DIVISION_KEY = 'ch-recruiting-division';
 
 /** Where the page starts, for the preview and the tests. A live page starts from the browser's last sort and stage. */
 export interface RecInitial {
@@ -49,6 +54,8 @@ export interface RecInitial {
   asking?: boolean;
   /** The upload dialog is open on this file when the open prospect's documents draw (the preview's upload and refusal states). */
   upload?: RecInitialUpload;
+  /** The division picked on this device, for the preview of the calendar line when the team has none. */
+  division?: ChDivision | null;
 }
 
 /**
@@ -89,7 +96,14 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
 
   const [query, setQuery] = useState(initial?.query ?? '');
   const [stage, setStageState] = useState<ChStage | null>(initial?.stage ?? null);
-  const [sort, setSortState] = useState<ChSort>(initial?.sort ?? 'updated');
+  const [stageTurn, setStageTurn] = useState(0);
+  const [sortPicked, setSortState] = useState<ChSort>(initial?.sort ?? 'updated');
+  // C1: the next-step columns exist only once their migration is applied. Until then every next-step surface is hidden,
+  // and a kept "Next step due" sort falls back to the default.
+  const nextStep = !!data.nextStep;
+  const sort: ChSort = sortPicked === 'next' && !nextStep ? 'updated' : sortPicked;
+  // C2: the program's division from its organization, else the coach's pick on this device.
+  const [divisionPicked, setDivisionPicked] = useState<ChDivision | null>(initial?.division ?? null);
   // The last sort and stage are a per-browser convenience, not account state (the current page keeps them the same way).
   useEffect(() => {
     if (initial) return;
@@ -98,6 +112,8 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
       if (isSort(s)) setSortState(s);
       const f = localStorage.getItem(STAGE_KEY);
       if (isStage(f)) setStageState(f);
+      const d = localStorage.getItem(DIVISION_KEY);
+      if (isDivision(d)) setDivisionPicked(d);
     } catch {
       /* private mode: the defaults are fine */
     }
@@ -111,6 +127,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
     }
   };
   const setStage = (s: ChStage | null) => {
+    if (s !== stage) setStageTurn((n) => n + 1);
     setStageState(s);
     try {
       if (s) localStorage.setItem(STAGE_KEY, s);
@@ -119,6 +136,18 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
       /* not persisted; still filters */
     }
   };
+
+  const setDivision = (d: ChDivision) => {
+    setDivisionPicked(d);
+    try {
+      localStorage.setItem(DIVISION_KEY, d);
+    } catch {
+      /* not persisted; still shows */
+    }
+  };
+  const teamDivision = data.program?.division ?? null;
+  const division = teamDivision ?? divisionPicked;
+  const gender = data.program?.gender ?? null;
 
   const counts = useMemo(() => countByStage(prospects), [prospects]);
   const shares = useMemo(() => sharesOf(counts), [counts]);
@@ -138,6 +167,16 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
   const formCount = useRef(1);
   const [asking, setAsking] = useState<ChProspect | null>(() => (initial?.asking && initial.openId ? (data.prospects.find((x) => x.id === initial.openId) ?? null) : null));
   const [announce, setAnnounce] = useState<{ code: string; text: string } | null>(null);
+  // B1: a successful move to Committed plays its moment once. The beat names the prospect and is consumed when it ends,
+  // so reopening a committed prospect never replays it.
+  const [commitBeat, setCommitBeat] = useState<{ id: string; n: number } | null>(null);
+  const beatCount = useRef(0);
+  // B1: the moment belongs to the prospect it was for. Leaving them before it plays (another row, a closed detail) drops it,
+  // so coming back never replays it.
+  const openId = open?.id ?? null;
+  useEffect(() => {
+    if (commitBeat && commitBeat.id !== openId) setCommitBeat(null);
+  }, [commitBeat, openId]);
 
   /** A prospect the search or the stage would hide is never left out of sight after a save. */
   const reveal = (p: ChProspect) => {
@@ -152,7 +191,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
   // reply that was lost after the server stored the prospect cannot add them a second time (CH-14915). Changing the contents is a
   // different prospect and gets a new id.
   const attempt = useRef<{ nonce: number; sig: string; id: string } | null>(null);
-  const requestIdFor = (f: RecFormState, input: RecruitInput) => {
+  const requestIdFor = (f: RecFormState, input: ChRecruitInput) => {
     const sig = JSON.stringify(input);
     const last = attempt.current;
     if (last && last.nonce === f.nonce && last.sig === sig) return last.id;
@@ -160,7 +199,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
     attempt.current = { nonce: f.nonce, sig, id };
     return id;
   };
-  const addAction = async (input: RecruitInput, requestId: string) => {
+  const addAction = async (input: ChRecruitInput, requestId: string) => {
     const res = await writes.create(input, requestId);
     const r = normalise(res);
     if (r.success && r.data?.id) {
@@ -175,19 +214,25 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
     }
     return res;
   };
-  const add = useAction('recruiting.add', addAction, (input: RecruitInput) => ({
+  const add = useAction('recruiting.add', addAction, (input: ChRecruitInput) => ({
     done: '',
-    failed: `Couldn't add ${fullName(input.first_name, input.last_name)}`,
+    failed: `Couldn’t add ${fullName(input.first_name, input.last_name)}`,
     hint: 'Nothing was added. Check your connection and try again.',
     code: 'CH-14001',
   }));
 
   // ── Save changes to a prospect (CH-14002) ──────────────────────────────────
-  const saveAction = async (p: ChProspect, input: RecruitInput) => {
+  const saveAction = async (p: ChProspect, input: ChRecruitInput) => {
     const res = await writes.update(p.id, input);
     if (normalise(res).success) {
       const at = new Date().toISOString();
-      const next = prospectFrom(p.id, input, { createdAt: p.createdAt, updatedAt: at });
+      // A next step the form didn't send (read-only, or the columns absent) is kept as it was, not dropped.
+      const sent = 'next_step_label' in input || 'next_step_date' in input;
+      const next = { ...(sent ? {} : { nextStepLabel: p.nextStepLabel, nextStepDate: p.nextStepDate }), ...prospectFrom(p.id, input, { createdAt: p.createdAt, updatedAt: at }) };
+      if (!('nextStepLabel' in p) && !sent) {
+        delete next.nextStepLabel;
+        delete next.nextStepDate;
+      }
       setProspects((prev) => prev.map((x) => (x.id === p.id ? next : x)));
       reveal(next);
       setForm(null);
@@ -197,7 +242,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
   };
   const save = useAction('recruiting.save', saveAction, (p: ChProspect) => ({
     done: '',
-    failed: `Couldn't save ${p.name}'s changes`,
+    failed: `Couldn’t save ${p.name}’s changes`,
     hint: 'Nothing was changed. Check your connection and try again.',
     code: 'CH-14002',
   }));
@@ -206,7 +251,10 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
   // The prospect moves before the save, and the move is undone inside this action if the save does not land, so the toast's Retry
   // (which runs it again with the same prospect) applies it again and undoes it again. Offline, `useAction` refuses before this runs
   // (CH-14901, with the shell's CH-1903 toast), so nothing has moved and there is nothing to undo.
+  // B1: a move to Committed keeps its success haptic for the end of the gilt rule (CommitRule), not the save's landing.
+  const movedTo = useRef<ChStage | null>(null);
   const moveAction = async (p: ChProspect, to: ChStage) => {
+    movedTo.current = to;
     const put = (stageNow: ChStage, updatedAt: string) => setProspects((prev) => prev.map((x) => (x.id === p.id ? { ...x, stage: stageNow, updatedAt } : x)));
     put(to, new Date().toISOString());
     let res: Awaited<ReturnType<ChRecruitingWrites['update']>>;
@@ -216,16 +264,25 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
       put(p.stage, p.updatedAt);
       throw err;
     }
-    if (normalise(res).success) setAnnounce({ code: 'CH-14803', text: `${p.name} is now ${stageMeta(to).label}` });
-    else put(p.stage, p.updatedAt);
+    if (normalise(res).success) {
+      setAnnounce({ code: 'CH-14803', text: `${p.name} is now ${stageMeta(to).label}` });
+      if (to === 'committed') setCommitBeat({ id: p.id, n: ++beatCount.current });
+    } else put(p.stage, p.updatedAt);
     return res;
   };
-  const move = useAction('recruiting.stage', moveAction, (p: ChProspect, to: ChStage) => ({
-    done: '',
-    failed: `Couldn't move ${p.name} to ${stageMeta(to).label}`,
-    hint: `${p.name} is still ${stageMeta(p.stage).label}. Try again.`,
-    code: 'CH-14003',
-  }));
+  const move = useAction(
+    'recruiting.stage',
+    moveAction,
+    (p: ChProspect, to: ChStage) => ({
+      done: '',
+      failed: `Couldn’t move ${p.name} to ${stageMeta(to).label}`,
+      hint: `${p.name} is still ${stageMeta(p.stage).label}. Try again.`,
+      code: 'CH-14003',
+    }),
+    // A landed commit is quiet here: its moment owns the success haptic. A failure reads exactly as before (the server's
+    // own sentence first, then the hint), since a refined hint is shown as written.
+    (r, c) => (r.success ? (movedTo.current === 'committed' ? { ...c, quiet: true } : c) : { ...c, hint: friendlyReason(r.error) ?? c.hint }),
+  );
 
   // ── Delete a prospect (CH-14004) ───────────────────────────────────────────
   const deleteAction = async (p: ChProspect) => {
@@ -242,13 +299,23 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
   };
   const del = useAction('recruiting.delete', deleteAction, (p: ChProspect) => ({
     done: '',
-    failed: `Couldn't delete ${p.name}`,
+    failed: `Couldn’t delete ${p.name}`,
     hint: 'Nothing was deleted. Check your connection and try again.',
     code: 'CH-14004',
   }));
 
+  const calendar = division ? calendarLine(division, gender, now, tz) : null;
+
   const ctx: RecCtx = {
     writes,
+    nextStep,
+    nextStepEditable: nextStep && !!writes.nextStepWrites,
+    sorts: sortsFor(nextStep),
+    nextSummary: nextStep ? nextStepSummary(prospects, now, tz) : null,
+    calendar: { line: calendar, division, fromTeam: !!teamDivision, setDivision },
+    contactHint: (p) => remoteContactHint(division, p.classYear, now, tz),
+    commitBeat,
+    endCommitBeat: (n) => setCommitBeat((b) => (b?.n === n ? null : b)),
     prospects,
     rows,
     counts,
@@ -258,6 +325,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
     setQuery,
     stage,
     setStage,
+    stageTurn,
     sort,
     setSort,
     open,
@@ -300,6 +368,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
       <ProspectForm
         form={form}
         phone={phone}
+        nextStep={nextStep && !!writes.nextStepWrites}
         saving={add.pending || save.pending}
         onClose={() => setForm(null)}
         onDelete={ctx.askDelete}
@@ -311,7 +380,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
           onClose={() => setAsking(null)}
           code="CH-14501"
           title={asking ? `Delete ${asking.name}?` : 'Delete prospect?'}
-          message="This removes them from your list, with their notes and documents. This can't be undone."
+          message="This removes them from your list, with their notes and documents. This can’t be undone."
           actionLabel={del.pending ? 'Deleting' : 'Delete prospect'}
           busy={del.pending}
           onAction={() => asking && void del.run(asking)}
@@ -324,7 +393,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
           icon={Trash2}
           code="CH-14501"
           title={asking ? `Delete ${asking.name}?` : 'Delete prospect?'}
-          description="This removes them from your list, with their notes and documents. This can't be undone."
+          description="This removes them from your list, with their notes and documents. This can’t be undone."
           footer={
             <>
               <Button variant="ghost" disabled={del.pending} onClick={() => setAsking(null)}>

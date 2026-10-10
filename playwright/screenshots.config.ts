@@ -33,7 +33,8 @@ export default defineConfig({
     ignoreHTTPSErrors: true,
   },
   webServer: {
-    command: 'npm run dev',
+    // Pin the port BASE names; `npm run dev` otherwise derives one per worktree.
+    command: `PORT=${new URL(BASE).port || 3000} npm run dev`,
     url: BASE,
     reuseExistingServer: true,
     timeout: 180000,

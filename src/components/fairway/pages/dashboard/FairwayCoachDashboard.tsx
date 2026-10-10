@@ -37,7 +37,7 @@ import { useLargeTitle } from '@/components/fairway/app-shell/LargeTitleContext'
 import Link from 'next/link';
 import nextDynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import type { Row } from '@tanstack/react-table';
+import type { Row } from '@/components/fairway/data-table';
 import {
   ViewHeader,
   Surface,

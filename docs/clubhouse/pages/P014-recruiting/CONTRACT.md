@@ -35,7 +35,7 @@ it changes no schema.
 
 Status: DEFINED
 
-Recruiting opens final on first paint, read on the server in one pass: the header with Add prospect, the pipeline with every stage's count and share, the list by recently updated, and the first prospect's panel (140101, CH-14904). On a phone at 820px and below it is the phone build (141901, CH-14914). The route draws the Clubhouse page only for a coach with the Clubhouse on; everyone else keeps the existing page. From the shell, the frame opens on its own (10102).
+Recruiting opens final on first paint, read on the server in one pass: the header with Add prospect and the recruiting calendar line (CH-14808), the pipeline with every stage's count (the share of the list is no longer drawn, P014 finding #4), the list by recently updated, and the first prospect's panel (140101, CH-14904). While the next-step columns exist on golf_recruits (migration 20261008120000, written and not applied on 2026-10-08), the table adds a Next step column, the panel a Next step part (CH-14307), the phone rows a dated plate for a due step, the sort "Next step due", and the pipeline head "n visits this month · n decisions due"; until then all of it is hidden and nothing names the columns in a read or a write. On a phone at 820px and below it is the phone build (141901, CH-14914). The route draws the Clubhouse page only for a coach with the Clubhouse on; everyone else keeps the existing page. From the shell, the frame opens on its own (10102).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -55,7 +55,7 @@ The route skeleton (140201, CH-14401) draws the header, the pipeline, the table 
 | 140202 | CH-14402 | `A_PROSPECTS_DOCUMENTS_ARE_LOADING` | A prospect's documents are loading |
 | 140203 | CH-14407 | `A_FILE_IS_BEING_SENT_TO_STORAGE` | A file is being sent to Storage and the browser reports progress |
 
-From the shell (P001): 10201 CH-1401.
+From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 ## 03 — Background loading / refresh
 
@@ -76,7 +76,16 @@ From the shell (P001): 10301 BELL_REFRESHES_ON_OPEN.
 
 Status: DEFINED
 
-First run and filtered are distinct, and a failed read is never drawn as empty. No prospects at all is the page empty state with Add your first prospect, and the pipeline shows zeros and dashes (140401, CH-14301). A search or a stage that matches nothing says which, and offers Clear search and Search all stages, or Show all stages when it is only a stage (140402, CH-14302). A prospect with no contact details, no notes or no documents has three different rows, each with its own action (140403 to 140405, CH-14303 to CH-14305). A coach on no team gets the page that says so and opens Team Settings (140406, CH-14306). A failed list is category 06 and never "your list starts here" (141501).
+First run and filtered are distinct, and a failed read is never drawn as empty.
+No prospects at all is the page empty state with Add your first prospect, alone
+under the head: the pipeline is not drawn, since four empty stages said nothing
+it doesn't (140401, CH-14301; states audit, 2026-10-08). A search or a stage
+that matches nothing says which, and offers Clear search and Search all stages,
+or Show all stages when it is only a stage (140402, CH-14302). A prospect with
+no contact details, no notes or no documents has three different rows, each with
+its own action (140403 to 140405, CH-14303 to CH-14305). A coach on no team gets
+the page that says so and opens Team Settings (140406, CH-14306). A failed list
+is category 06 and never "your list starts here" (141501).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -86,6 +95,7 @@ First run and filtered are distinct, and a failed read is never drawn as empty. 
 | 140404 | CH-14304 | `A_PROSPECT_WITH_NO_NOTES` | A prospect with no notes |
 | 140405 | CH-14305 | `A_PROSPECT_WITH_NO_DOCUMENTS` | A prospect with no documents |
 | 140406 | CH-14306 | `A_COACH_ON_NO_TEAM_THE_PAGE` | A coach on no team the page can resolve |
+| 140407 | CH-14307 | `A_PROSPECT_WITH_NO_NEXT_STEP` | A prospect with no next step (only while the next-step columns exist) |
 
 From the shell (P001): 10401 CH-1301, 10402 CH-1302, 10403 CH-1303, 10404 CH-1304, 10405 CH-1305.
 
@@ -107,6 +117,7 @@ The form checks before it sends, with the message beside the field, focus on the
 | 140508 | CH-14108 | `STORAGE_TURNS_DOWN_A_FILES_SIZE_AFTER` | Storage turns down a file's size after the page let it through (the bucket's cap not yet raised, or a project-wide upload limit below it) |
 | 140509 | CH-14109 | `SEVERAL_FILES_ARE_DROPPED_AT_ONCE` | Several files are dropped at once |
 | 140510 | CH-14110 | `A_FOLDER_OR_A_FILE_WITH_NOTHING` | A folder, or a file with nothing in it, is dropped |
+| 140511 | CH-14111 | `THE_NEXT_STEPS_DAY_IS_NOT_A` | The next step's day is not a real date |
 
 ## 06 — Server / system error
 
@@ -127,7 +138,7 @@ Every write goes through `useAction`, which reports it (Sentry, under `recruitin
 | 140609 | CH-14202 | `A_PROSPECTS_DOCUMENTS_DONT_LOAD` | A prospect's documents don't load |
 | 140610 | CH-14203 | `A_SECTION_CRASHES_WHILE_DRAWING` | A section crashes while drawing |
 
-From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002, 10611 CH-1003.
+From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002, 10611 CH-1003, 10612 CH-1209, 10613 CH-1210, 10614 CH-1211.
 
 ## 07 — Network / offline
 
@@ -142,7 +153,7 @@ Offline, no write is sent: the shell's toast names what did not happen ("Couldn'
 | 140703 | CH-14916 | `AN_UPLOAD_IS_REPEATED` | An upload is repeated |
 | 140704 | CH-14917 | `A_FILE_IS_DRAGGED_OVER_A_PROSPECTS` | A file is dragged over a prospect's documents (desktop) |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
 
 ## 08 — Permission / authorization
 
@@ -180,7 +191,7 @@ Status: N/A — Recruiting warns about nothing before it happens. The one thing 
 
 Status: DEFINED
 
-Deleting a prospect asks first, and says what goes with them: "Delete Mason Reilly?" with "This removes them from your list, with their notes and documents. This can't be undone." On desktop it is a dialog with Keep them and Delete prospect; on the phone it is an action sheet with Delete prospect in red and Cancel apart below it (141101, CH-14501). A warning haptic precedes it (141702, CH-14702). Typing the name is not asked. Removing a document asks too (141102, CH-14502). Nothing is deleted optimistically: the question stays open, and the prospect stays, until the server has answered.
+Deleting a prospect asks first, and says what goes with them: "Delete Mason Reilly?" with "This removes them from your list, with their notes and documents. This can't be undone." On desktop Delete prospect is in the panel's overflow menu beside Edit (P014 finding #3, 2026-10-08) and asks in a dialog with Keep them and Delete prospect; on the phone it is an action sheet with Delete prospect in red and Cancel apart below it (141101, CH-14501). A warning haptic precedes it (141702, CH-14702). Typing the name is not asked. Removing a document asks too (141102, CH-14502). Nothing is deleted optimistically: the question stays open, and the prospect stays, until the server has answered.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -233,20 +244,34 @@ The server's list is the page's source: after a write, or Try again, the server 
 
 Status: DEFINED
 
-A stage in the pipeline lifts its ring 1px on hover and takes a second ring while it is the filter, in the quick duration (141601, CH-14601). A prospect opens on the phone by sliding in over the list and back out on pop, in the base duration, and fades with reduced motion (141602, CH-14602). Every tappable presses in about 6px and springs back through the shell's press (11606); the first paint rises once (11607); animations off remove all of it (11608). This page's own CSS uses only the v2 tokens (D-64).
+A stage in the pipeline lifts its ring 1px on hover and takes a second ring
+while it is the filter, in the quick duration (141601, CH-14601), and picking or
+letting go of a stage settles the list in, never when the kept stage returns or
+as a search is typed (141603, CH-14603). A prospect opens on the phone by
+sliding in over the list and back out on pop, in the base duration, and settles
+at once with reduced motion (141602, CH-14602). On the phone a press lays the
+row press tint over a stage's coin (141601, CH-14601), and a prospect row, the
+sort, the Stage, Email and Call keys, the Stage row, a document, its remove key
+and an empty part's action take the row press tint for the press beat, never a
+scale (141604, CH-14604). A key presses in about 6px and springs back through
+the shell's press (11606), while a prospect row deepens its tint instead; there
+is no first-paint rise; reduced motion and Animations off remove all of it
+(11608). A landed move to Committed draws a 1px gilt rule under the stage, left to right over the reveal duration, once per commit (CH-14806); it is at rest on every committed prospect and at once with reduced motion. This page's own CSS uses only the v2 tokens (D-64).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 141601 | CH-14601 | `HOVERING_OR_PRESSING_A_STAGE_IN_THE` | Hovering or pressing a stage in the pipeline |
 | 141602 | CH-14602 | `A_PROSPECT_OPENS_ON_THE_PHONE` | A prospect opens on the phone |
+| 141603 | CH-14603 | `PICKING_A_STAGE_IN_THE_PIPELINE_OR` | Picking a stage in the pipeline, or letting it go |
+| 141604 | CH-14604 | `PRESSING_A_ROW_OR_A_KEY_ON` | Pressing a row or a key on the phone |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
 Status: DEFINED
 
-v2 grammar (D-70): selection when a stage is picked as the filter or as a prospect's stage, when a row is opened and when a sort is chosen (141701, CH-14701); warning when Delete prospect is tapped, before the question (141702, CH-14702); success for a landed save or send (11702); error when a write fails (11703). Every other tap is silent.
+v2 grammar (D-70): selection when a stage is picked as the filter or as a prospect's stage, when a row is opened and when a sort is chosen (141701, CH-14701); warning when Delete prospect is tapped, before the question (141702, CH-14702); success for a landed save or send (11702), except a move to Committed, whose success lands as its gilt rule finishes drawing (CH-14806; at once with reduced motion or Animations off); error when a write fails (11703). Every other tap is silent.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -254,13 +279,24 @@ v2 grammar (D-70): selection when a stage is picked as the filter or as a prospe
 | 141702 | CH-14702 | `DELETE_PROSPECT_IS_TAPPED` | Delete prospect is tapped |
 | 141703 | CH-14703 | `STORAGE_TURNS_A_FILE_DOWN` | Storage turns a file down (CH-14107, CH-14108) |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
 
 ## 18 — Accessibility
 
 Status: DEFINED
 
-The pipeline is one group named "Filter by stage", each stage a toggle named "Offered, 1 prospect" with its pressed state, and off while the list is empty (141801, CH-14801). The prospects are a real table with a caption and column headers, each name one button, the open one `aria-current`; on the phone a list of buttons named with the prospect, class and stage (141802, CH-14802). The stage control is a radio group that arrow keys move, and the new stage is announced politely once it has saved (141803, CH-14803). A refused save puts each message beside its field with `role="alert"`, marks it `aria-invalid` and moves focus to the first (141804, CH-14804). Email and Call are real links, `mailto:` and `tel:`, named by what they do (141805, CH-14805). Dialogs and sheets are native `<dialog>`s that hold focus and return it on close, and the pushed phone screen is named by its title (the shell's 11809).
+The pipeline is one group named "Filter by stage", each stage a toggle named
+"Offered, 1 prospect" with its pressed state; with no prospects at all the
+pipeline is not drawn (141801, CH-14801). The prospects are a real table with a
+caption and column headers, each name one button, the open one `aria-current`;
+on the phone a list of buttons named with the prospect, class and stage (141802,
+CH-14802). The stage control is a radio group that arrow keys move, and the new
+stage is announced politely once it has saved (141803, CH-14803). A refused save
+puts each message beside its field with `role="alert"`, marks it `aria-invalid`
+and moves focus to the first (141804, CH-14804). Email and Call are real links,
+`mailto:` and `tel:`, named by what they do (141805, CH-14805). Dialogs and
+sheets are native `<dialog>`s that hold focus and return it on close, and the
+pushed phone screen is named by its title (the shell's 11809).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -269,8 +305,11 @@ The pipeline is one group named "Filter by stage", each stage a toggle named "Of
 | 141803 | CH-14803 | `A_STAGE_IS_CHANGED` | A stage is changed |
 | 141804 | CH-14804 | `A_SAVE_IS_REFUSED` | A save is refused |
 | 141805 | CH-14805 | `EMAIL_AND_CALL` | Email and Call |
+| 141806 | CH-14806 | `A_PROSPECT_IS_MOVED_TO_COMMITTED_AND` | A prospect is moved to Committed and the save lands |
+| 141807 | CH-14807 | `EMAIL_AND_CALL_FOR_A_DIVISION_I` | Email and Call for a Division I prospect before June 15 of their sophomore year |
+| 141808 | CH-14808 | `THE_RECRUITING_CALENDAR_LINE` | The recruiting calendar line |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842.
 
 ## 19 — Responsive layout
 
@@ -294,7 +333,7 @@ Enter in a field of the form saves it through the same checks as the button, Esc
 | --- | --- | --- | --- |
 | 142001 | CH-14913 | `KEYBOARD` | Keyboard |
 
-From the shell (P001): 12001 CH-1906.
+From the shell (P001): 12001 CH-1906, 12002 CH-1907, 12003 CH-1908.
 
 ## 21 — Performance
 

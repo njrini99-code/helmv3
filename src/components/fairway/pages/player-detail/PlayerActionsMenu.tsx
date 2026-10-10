@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { PopoverPanel } from '@/components/fairway/overlays/PopoverPanel';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
-import { updatePlayerStatus } from '@/app/golf/actions/golf';
+import { updatePlayerStatus } from '@/app/golf/actions/team-management';
 import { IconMoreHorizontal } from '@/components/icons';
 import type { PlayerIdentity } from './types';
 

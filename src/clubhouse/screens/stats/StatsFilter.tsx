@@ -175,8 +175,27 @@ export function EarlyRead({ code, count, whole = count }: { code: string; count:
   );
 }
 
-/** The empty state when the filter matches nothing: says so, and Clear filters is the way back. */
-export function FilterEmpty({ code, onClear }: { code: string; onClear: () => void }) {
+/**
+ * The empty state when the filter matches nothing: says so, and Clear filters is the way back. `page` when it is the
+ * whole page body (the team page, CH-4313), so it has the page empty's anatomy as CH-4301 does; the player's stands in
+ * for a tab's content beside Development, so it stays a section's (CH-5320).
+ */
+export function FilterEmpty({ code, onClear, page = false }: { code: string; onClear: () => void; page?: boolean }) {
+  if (page)
+    return (
+      <EmptyState
+        size="page"
+        code={code}
+        icon={SlidersHorizontal}
+        title="No rounds match these filters."
+        body="Try a wider time, fewer round types, or clear the filters to see every round again."
+        action={
+          <Button variant="primary" leftIcon={X} onClick={onClear}>
+            Clear filters
+          </Button>
+        }
+      />
+    );
   return (
     <div className="ch-st-card">
       <EmptyState

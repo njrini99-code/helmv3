@@ -44,7 +44,7 @@ export function useConversationFiles(api: ChMessagesApi, conv: ChConv) {
     const hit = list?.find((x) => x.id === f.id) ?? null;
     if (!hit?.url) {
       haptic("error");
-      toast({ tone: "error", title: `Couldn't open ${f.name}`, body: "Try again in a moment.", code: "CH-7021" });
+      toast({ tone: "error", title: `Couldn’t open ${f.name}`, body: "Try again in a moment.", code: "CH-7021" });
       return;
     }
     window.open(hit.url, "_blank", "noopener,noreferrer");

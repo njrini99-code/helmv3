@@ -272,6 +272,8 @@ export function followUpsFor(envelopes: ToolEnvelope[]): string[] {
   return [...new Set(out)].slice(0, 3);
 }
 
+/** The server's own sentence for a rejected turn (`STREAM_INCOMPLETE_NOTE`, src/lib/coachhelm/v3/chat/verdict.ts), for a
+ * verdict that arrives without it: word for word, straight apostrophes included, as what the server sends is shown as sent. */
 export const REJECTED_TURN_NOTE = "This answer didn't finish coming through, so it isn't being shown. Please ask again.";
 
 /** Bold markers and list markers out, for Copy. */
@@ -658,10 +660,13 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
     if (isRanking) {
       const ranked = ms.filter((m) => m.value !== null);
       const missing = ms.length - ranked.length;
+      // The footer counts what the rows list: each player's sample is their own, so the rows add up (P013 D7). Mixed units keep the first's.
+      const oneUnit = ranked.every((m) => m.sample_unit === first.sample_unit);
       blocks.push({
         kind: 'ranking',
         title: first.metric_label,
         ...base,
+        source: oneUnit ? sourceLine({ ...first, sample_size: ranked.reduce((sum, m) => sum + m.sample_size, 0) }) : base.source,
         note: missing > 0 ? `${missing} player${missing === 1 ? ' has' : 's have'} no recorded data for this.` : base.note,
         rows: ranked.map((m, i) => ({ rank: i + 1, id: m.entity.id, label: m.entity.label, display: formatValue(m.value, m.unit), of: ofSample(m) })),
         table: { caption: first.metric_label, columns: ['Rank', 'Player', first.metric_label, 'Sample'], rows: ranked.map((m, i) => [String(i + 1), m.entity.label, formatValue(m.value, m.unit), m.sample_size > 0 ? sampleWords(m.sample_size, m.sample_unit) : NO_DATA]) },

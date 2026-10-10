@@ -179,14 +179,9 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'golfhelm',
     actions: {
       'src/app/golf/actions/round-drafts.ts': 'ALL',
-      'src/app/golf/actions/golf.ts': [
-        'submitGolfRoundComprehensive',
-        'savePartialRound',
-        'deleteInProgressRound',
-        'deleteShot',
-        'updateShot',
-        'getRoundShotDetails',
-      ],
+      'src/app/golf/actions/round-submit.ts': ['submitGolfRoundComprehensive'],
+      'src/app/golf/actions/round-partial.ts': ['savePartialRound', 'deleteInProgressRound'],
+      'src/app/golf/actions/shot-actions.ts': ['deleteShot', 'updateShot', 'getRoundShotDetails'],
     },
     primaryTable: 'golf_rounds',
     heartbeatTable: 'golf_rounds',
@@ -220,7 +215,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'golfhelm',
     actions: {
       'src/app/golf/actions/v3/qualifying.ts': 'ALL',
-      'src/app/golf/actions/golf.ts': [
+      'src/app/golf/actions/qualifier-actions.ts': [
         'createGolfQualifier',
         'getQualifierRoundCourses',
         'setQualifierRoundCourses',
@@ -243,7 +238,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     label: 'My Qualifiers (player)',
     app: 'golfhelm',
     actions: {
-      'src/app/golf/actions/golf.ts': ['getPlayerQualifiers'],
+      'src/app/golf/actions/qualifier-actions.ts': ['getPlayerQualifiers'],
     },
     primaryTable: 'golf_qualifier_entries',
     heartbeatTable: 'golf_qualifier_entries',
@@ -256,7 +251,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     label: 'Calendar & Events',
     app: 'golfhelm',
     actions: {
-      'src/app/golf/actions/golf.ts': [
+      'src/app/golf/actions/calendar-events.ts': [
         'createGolfEvent',
         'updateGolfEvent',
         'deleteGolfEvent',
@@ -268,6 +263,8 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
         'getCurrentUserBusyPeriods',
         'getPlayerEventRSVP',
         'getEventRSVP',
+      ],
+      'src/app/golf/actions/calendar-blocked-time.ts': [
         'addCoachBlockedTime',
         'deleteCoachBlockedTime',
         'updateCoachBlockedTime',
@@ -317,11 +314,8 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'golfhelm',
     actions: {
       'src/app/golf/actions/roster.ts': 'ALL',
-      'src/app/golf/actions/golf.ts': [
-        'invitePlayerToTeam',
-        'updatePlayerStatus',
-        'getPendingInvitations',
-      ],
+      'src/app/golf/actions/team-management.ts': ['invitePlayerToTeam', 'updatePlayerStatus'],
+      'src/app/golf/actions/calendar-events.ts': ['getPendingInvitations'],
     },
     primaryTable: 'golf_team_members',
     heartbeatTable: 'golf_team_members',
@@ -385,7 +379,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     actions: {
       'src/app/golf/actions/announcements.ts': 'ALL',
       'src/app/golf/actions/communication.ts': 'ALL',
-      'src/app/golf/actions/golf.ts': ['createAnnouncement'],
+      'src/app/golf/actions/team-management.ts': ['createAnnouncement'],
     },
     primaryTable: 'golf_announcements',
     heartbeatTable: 'golf_announcements',
@@ -490,7 +484,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'golfhelm',
     actions: {
       'src/app/golf/actions/course-library.ts': 'ALL',
-      'src/app/golf/actions/golf.ts': [
+      'src/app/golf/actions/saved-courses.ts': [
         'getPlayerSavedCourses',
         'savePlayerCourse',
         'touchSavedCourse',
@@ -565,7 +559,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
       'src/app/golf/actions/coach-notifications.ts': 'ALL',
       'src/app/golf/actions/player-notifications.ts': 'ALL',
       'src/app/golf/actions/push-notifications.ts': 'ALL',
-      'src/app/golf/actions/golf.ts': [
+      'src/app/golf/actions/calendar-notifications.ts': [
         'getNotifications',
         'markNotificationRead',
         'markAllNotificationsRead',
@@ -630,7 +624,8 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'golfhelm',
     actions: {
       'src/app/golf/actions/admin-bi-data.ts': 'ALL',
-      'src/app/golf/actions/admin-data.ts': 'ALL',
+      'src/app/golf/actions/admin-dashboard-data.ts': 'ALL',
+      'src/app/golf/actions/admin-incidents-data.ts': 'ALL',
       'src/app/golf/actions/admin-people-data.ts': 'ALL',
       'src/app/golf/actions/admin-system-data.ts': 'ALL',
       'src/app/golf/actions/admin-tracer-data.ts': 'ALL',
@@ -652,16 +647,20 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     actions: {
       'src/app/golf/actions/insight-delivery.ts': 'ALL',
       'src/app/golf/actions/player-fingerprint.ts': 'ALL',
-      'src/app/golf/actions/insights.ts': [
+      'src/app/golf/actions/insights-feed.ts': [
         'getTopInsightsByStrokeImpact',
         'generateTeamInsights',
         'getActiveInsights',
+      ],
+      'src/app/golf/actions/insights-player-analysis.ts': [
         'analyzePlayer',
         'generatePlayerInsight',
         'generatePracticeRecommendations',
         'getPlayerTrajectory',
         'getPlayerPatterns',
         'recordInteraction',
+      ],
+      'src/app/golf/actions/insights-coachhelm.ts': [
         'getCoachHelmStatus',
         'triggerPlayerInsightsAfterRound',
         'refreshPlayerAnalysisAsCoach',
@@ -715,7 +714,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'coachhelm',
     actions: {
       'src/app/golf/actions/insight-management.ts': 'ALL',
-      'src/app/golf/actions/insights.ts': [
+      'src/app/golf/actions/insights-feed.ts': [
         'acknowledgeInsight',
         'dismissInsight',
         'reactivateInsight',
@@ -789,7 +788,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     actions: {
       'src/app/golf/actions/player-feedback.ts': 'ALL',
       'src/app/golf/actions/insight-celebration.ts': 'ALL',
-      'src/app/golf/actions/insights.ts': ['getPlayerCoachHelmDashboard'],
+      'src/app/golf/actions/insights-coachhelm.ts': ['getPlayerCoachHelmDashboard'],
     },
     primaryTable: 'golf_predictions',
     heartbeatTable: 'golf_predictions',
@@ -808,7 +807,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
       'src/app/golf/actions/round-review-narrative.ts': 'ALL',
       'src/app/golf/actions/round-recap.ts': 'ALL',
       'src/app/golf/actions/v3/llm.ts': 'ALL',
-      'src/app/golf/actions/insights.ts': ['generateRoundReview'],
+      'src/app/golf/actions/insights-player-analysis.ts': ['generateRoundReview'],
     },
     primaryTable: 'golf_round_reviews',
     heartbeatTable: 'golf_round_reviews',
@@ -854,7 +853,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
         'declineFocusArea',
         'updateFocusAreaProgress',
       ],
-      'src/app/golf/actions/insights.ts': ['getPlayerFocusAreas'],
+      'src/app/golf/actions/insights-player-analysis.ts': ['getPlayerFocusAreas'],
     },
     primaryTable: 'golf_player_focus_areas',
     heartbeatTable: 'golf_player_focus_areas',
@@ -902,20 +901,22 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
   },
   {
     key: 'integrations',
-    label: 'Integrations (Inngest)',
+    label: 'Integrations',
     app: 'coachhelm',
-    // Deliberately EMPTY. The Inngest surface is an API route
-    // (src/app/api/inngest/route.ts) and a function registry
-    // (src/lib/inngest/functions.ts), not server actions — the manifest
-    // invariants in feature-registry.test.ts are defined over action-boundary
-    // exports, so listing non-action files here would corrupt the count rather
-    // than document anything.
+    // Deliberately EMPTY. This key is the catch-all feature area for
+    // third-party provider faults (`featureArea: 'integrations'`), not a set of
+    // server actions — the manifest invariants in feature-registry.test.ts are
+    // defined over action-boundary exports, so listing non-action files here
+    // would corrupt the count rather than document anything.
+    //
+    // (Inngest, the original occupant of this entry, was removed 2026-10-06;
+    // the key stays because provider-fault logging and the registry/alias
+    // tests address it.)
     actions: {},
     primaryTable: null,
-    // No heartbeat table ON PURPOSE, and this is the whole point of the entry.
-    // Inngest calls us on exactly two triggers: a Mon 14:00 UTC cron and a
-    // round-submitted event. Between them, silence is the NORMAL state — so a
-    // staleness heartbeat here would measure the calendar, not the integration.
+    // No heartbeat table ON PURPOSE: provider faults are event-driven, so a
+    // staleness heartbeat here would measure the calendar, not the
+    // integrations.
     heartbeatTable: null,
     tier: 'med',
     // Silence must never render as GREEN, and `neverNeutral` would do exactly
@@ -925,41 +926,16 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     // is wrong here, so this entry deliberately does NOT set it: quiet must
     // land on NEUTRAL, the honest "we do not know" state.
     //
-    // Verified in production 2026-08-27: 454 signature-validation errors ran
-    // 2026-08-07 -> 2026-08-24 14:05 (the last minutes after that Monday's
-    // 14:00 UTC cron), then NOTHING — through a production deploy on 08-27,
-    // while admin_events took 104 other events that same day. The Bridge is
-    // demonstrably alive and this feature is simply quiet, which has TWO
-    // readings the database cannot separate: the signing key was fixed, or
-    // Inngest Cloud stopped calling this app at all. The second is worse than
-    // the errors were — durable jobs dead silently, round analysis running
-    // inline with no retry or crash recovery.
-    //
     // seasonalEmpty picks the neutral REASON text. True, because quiet between
-    // a Monday cron and a round submission genuinely is expected. The false
-    // branch reads "instrumentation not yet reporting", which would be a plain
-    // falsehood — it reported 454 times.
+    // provider faults genuinely is expected. The false branch reads
+    // "instrumentation not yet reporting", which would be a plain falsehood.
     seasonalEmpty: true,
     healthSignal:
-      'Inngest reaches /api/inngest with a VALID signature. Silence is not ' +
-      'health: the only triggers are a Mon 14:00 UTC cron and round-submitted, ' +
-      'so confirm liveness in the Inngest dashboard (app synced, recent runs) ' +
-      'rather than inferring it from an empty error list.',
+      'No third-party provider fault is open. Silence is not proof of health: ' +
+      'this area only reports faults, so a quiet card is neutral, never green.',
     knownGaps: [
       'No PASSIVE success signal is recorded, so a working integration and a ' +
-        'disconnected one look identical from admin_events alone. The active ' +
-        'probe `node scripts/inngest-health-check.mjs` (#1726) proves accepted ' +
-        'AND executed on demand; nothing schedules it.',
-      'UNSIGNED requests (scanners, uptime checks, curl) are robot noise and ' +
-        'are already handled in route.ts — do not read them as this feature ' +
-        'failing.',
-      'A MISSING or malformed INNGEST_SIGNING_KEY / INNGEST_EVENT_KEY in ' +
-        'production is reported here as provider_inngest_missing_credential ' +
-        '(src/lib/inngest/credentials.ts) at process start, on every skipped ' +
-        'send and on every signed inbound request — one incident, throttled. ' +
-        'Silence is still not health: with only that one fingerprint the ' +
-        'med tier lands on AMBER, which is the honest reading of "one known ' +
-        'fault"; RED needs the fault to persist across two 24h windows.',
+        'disconnected one look identical from admin_events alone.',
     ],
   },
   // ── BaseballHelm (48) ───────────────────────────────────────────────────
@@ -1680,12 +1656,12 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
  * DELIBERATELY NOT EXHAUSTIVE. An unrecognised `featureArea` still passes
  * through unchanged, so the Health board keeps flagging it as an unregistered
  * tag. That warning is the intended way a genuinely-new feature surfaces
- * (`integrations`, which owns the Inngest handler, is exactly that and needs a
+ * (`integrations`, the provider-fault catch-all, was exactly that and needed a
  * real registry entry — not an alias to something it is not). Silencing it here
  * would trade a visible gap for an invisible one.
  */
 export const FEATURE_AREA_ALIASES: Readonly<Record<string, FeatureKey>> = {
-  // src/app/golf/actions/golf.ts — savePartialRound/deleteShot/updateShot are
+  // src/app/golf/actions/round-partial.ts + shot-actions.ts — savePartialRound/deleteShot/updateShot are
   // already listed under round_tracking's own `actions` manifest above.
   shot_tracking: 'round_tracking',
   // src/app/golf/actions/stats.ts — cache invalidation for the stats surface.
@@ -1727,7 +1703,7 @@ export const FEATURE_AREA_ALIASES: Readonly<Record<string, FeatureKey>> = {
   // page.tsx, teams.validateGolfPlayerCanJoinTeam — all the join flow, and
   // validateGolfPlayerCanJoinTeam is in join_team_flow's manifest.
   teams: 'join_team_flow',
-  // src/app/golf/actions/insights.ts (verifyRoundAccess) and golf.ts
+  // src/app/golf/actions/insights-shared.ts (verifyPlayerAccess) and golf-action-shared.ts
   // (getPlayerTeamId) — round-scoped reads.
   rounds: 'round_tracking',
   //

@@ -118,7 +118,7 @@ export function createLiveClassesWrites(ctx: { playerId: string; teamId: string;
         const { data, error } = await sb.from('golf_player_classes').update(set).eq('id', id).eq('player_id', ctx.playerId).select(COLUMNS);
         if (error) return res<{ row: ChClassRow }>(error);
         // An UPDATE a policy hides comes back with no error and no row: say so rather than "saved".
-        return data?.length ? { success: true, data: { row: data[0] as ChClassRow } } : { success: false, error: "Nothing was saved. This class was not found, or you can't change it." };
+        return data?.length ? { success: true, data: { row: data[0] as ChClassRow } } : { success: false, error: "Nothing was saved. This class was not found, or you can’t change it." };
       };
       if (editing) return update(editing.id, { ...values, color: editing.color });
       const { data, error } = await sb
@@ -143,7 +143,7 @@ export function createLiveClassesWrites(ctx: { playerId: string; teamId: string;
         chReport(err, { surface: 'classes.remove', action: 'removeClassFromCalendar', severity: 'low' });
         return { success: false, error: 'The calendar removal did not finish. The class was kept, so you can try again.' };
       }
-      if (!removal?.success) return { success: false, error: `Couldn't take this class off your calendar: ${removal?.error ?? 'unknown error'}. The class was kept so you can try again.` };
+      if (!removal?.success) return { success: false, error: `Couldn’t take this class off your calendar: ${removal?.error ?? 'unknown error'}. The class was kept so you can try again.` };
       const { error } = await sb.from('golf_player_classes').delete().eq('id', id).eq('player_id', ctx.playerId);
       if (!error) return { success: true };
       // The calendar part landed; only the row is left. Say so (the toast shows this reason), and mark it, so the page flags the class.
@@ -199,7 +199,7 @@ export function createLiveClassesWrites(ctx: { playerId: string; teamId: string;
       if (!kept.length && !offCalendar.length) return { success: true, data };
       return {
         success: false,
-        error: kept.length ? `Couldn't take ${kept.length === 1 ? 'a class' : `${kept.length} classes`} off your calendar. ${kept.length === 1 ? 'It was' : 'They were'} kept so you can try again.` : 'Some classes are off your calendar but still on your schedule. Try again to finish removing them.',
+        error: kept.length ? `Couldn’t take ${kept.length === 1 ? 'a class' : `${kept.length} classes`} off your calendar. ${kept.length === 1 ? 'It was' : 'They were'} kept so you can try again.` : 'Some classes are off your calendar but still on your schedule. Try again to finish removing them.',
         data,
       };
     },
@@ -234,7 +234,7 @@ export function createLiveClassesWrites(ctx: { playerId: string; teamId: string;
       // `golf_player_classes` has no uniqueness beyond its id, and calendar-sync reconciles per class id, so importing the same
       // schedule twice doubled the calendar. Skip what is already there. A failed read is not evidence that nothing is, so it stops.
       const existing = await sb.from('golf_player_classes').select(COLUMNS).eq('player_id', ctx.playerId);
-      if (existing.error) return { success: false, error: `Couldn't check for classes you already have: ${existing.error.message}` };
+      if (existing.error) return { success: false, error: `Couldn’t check for classes you already have: ${existing.error.message}` };
       // A row saved before the term column was filled is in the current term (the page reads it so); every new row carries a term.
       const stored = (existing.data ?? []) as ChClassRow[];
       const taken = new Set(stored.map((r) => importKey(r.class_name, r.semester?.trim() || ctx.term)));

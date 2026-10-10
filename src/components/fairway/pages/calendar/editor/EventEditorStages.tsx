@@ -20,7 +20,7 @@
  */
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/fairway/controls/button';
 import { useReducedMotionGuard, DURATION } from '@/lib/coachhelm/v3/motion';

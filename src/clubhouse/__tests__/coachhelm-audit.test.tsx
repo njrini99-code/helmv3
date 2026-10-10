@@ -1,4 +1,4 @@
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { Suspense } from 'react';
@@ -16,7 +16,7 @@ vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
 vi.mock('@/app/golf/actions/development', () => ({ createFocusAreaFromInsightV2: vi.fn(), acceptFocusArea: vi.fn(), declineFocusArea: vi.fn() }));
-vi.mock('@/app/golf/actions/insights', () => ({ dismissInsight: vi.fn(), reactivateInsight: vi.fn() }));
+vi.mock('@/app/golf/actions/insights-feed', () => ({ dismissInsight: vi.fn(), reactivateInsight: vi.fn() }));
 vi.mock('@/app/golf/actions/insight-delivery', () => ({ getInsightsForPlayer: vi.fn(), getTopInsightsForPlayers: vi.fn() }));
 vi.mock('@/lib/coachhelm/v2/gate', () => ({ isCoachHelmEnabledForPlayer: vi.fn(), isCoachHelmEnabledForCoach: vi.fn() }));
 vi.mock('@/lib/coachhelm/v3/chat/request-cache', () => ({ getCoachProgramPulse: vi.fn(), getCoachChatContext: async () => ({ roster: [] }) }));
@@ -431,8 +431,8 @@ describe('the cards, on screen', () => {
     expect(document.querySelector('.ch-hl-focus .ch-hl-g')).toBeNull();
     expect(document.querySelector('.ch-hl-focus .ch-hl-ev')).toBeNull();
     expect(focus().getByText(/Par 3: 3\.27.*Par 5: 4\.91/)).toBeTruthy();
-    // The player's row says nothing is open, never a count of one.
-    expect(screen.getByRole('button', { name: /Jonah Okafor/ }).textContent).toMatch(/0$/);
+    // The player's row says nothing is open, never a count of one: it draws no count at all (P013 D12).
+    expect(screen.getByRole('button', { name: /Jonah Okafor/ }).textContent).not.toMatch(/\d$/);
   });
 
   it('CH-13903 CH-13906 CH13-3 an out-of-date read says so beside the claim, keeps Dismiss, and offers no Assign', () => {

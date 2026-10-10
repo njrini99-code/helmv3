@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * Recruiting documents, the direct-upload path the Clubhouse page uses (prepare, then complete): what a coach may send,
+ * Recruiting documents, the direct-upload path both recruiting pages use (prepare, then complete): what a coach may send,
  * what the server builds itself, and that a repeat with the same upload id never sends or records a file twice.
  */
 
@@ -30,7 +30,7 @@ interface World {
   removeError?: { message: string } | null;
   existingDoc?: { id: string } | null;
   insertError?: { code: string; message: string } | null;
-  sign?: { signedUrl: string } | null;
+  sign?: { signedUrl: string; token?: string; path?: string } | null;
 }
 
 function world(w: World = {}) {
@@ -63,7 +63,7 @@ function world(w: World = {}) {
           },
           createSignedUploadUrl: async (path: string) => {
             calls.sign.push(path);
-            const signed = w.sign === undefined ? { signedUrl: `https://storage.example/upload/sign/recruit-documents/${path}?token=t` } : w.sign;
+            const signed = w.sign === undefined ? { signedUrl: `https://storage.example/upload/sign/recruit-documents/${path}?token=t`, token: 't', path } : w.sign;
             return signed ? { data: signed, error: null } : { data: null, error: { message: 'cannot sign' } };
           },
           remove: async (paths: string[]) => {
@@ -91,6 +91,9 @@ describe('prepareRecruitDocumentUpload', () => {
     expect(calls.sign).toEqual([`${TEAM}/${RECRUIT}/${UPLOAD}.mov`]);
     expect(r.data?.contentType).toBe('video/quicktime');
     expect(r.data?.signedUrl).toContain(`${TEAM}/${RECRUIT}/${UPLOAD}.mov`);
+    // The Fairway panel's uploadToSignedUrl takes the path and token: the path is the one the server built, never the browser's.
+    expect(r.data?.path).toBe(`${TEAM}/${RECRUIT}/${UPLOAD}.mov`);
+    expect(r.data?.token).toBe('t');
   });
 
   it('takes film (mp4, mov, m4v) up to 100 MB and refuses more, and keeps every other file at 25 MB', async () => {
@@ -128,7 +131,7 @@ describe('prepareRecruitDocumentUpload', () => {
   it('a repeat finds the object already stored and sends no second transfer', async () => {
     const calls = world({ stored: [{ name: `${UPLOAD}.mov` }] });
     const r = await prepareRecruitDocumentUpload(RECRUIT, meta());
-    expect(r).toMatchObject({ success: true, data: { contentType: 'video/quicktime', signedUrl: null } });
+    expect(r).toMatchObject({ success: true, data: { contentType: 'video/quicktime', signedUrl: null, token: null } });
     expect(calls.sign).toEqual([]);
   });
 

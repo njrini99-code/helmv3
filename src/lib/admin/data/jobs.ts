@@ -1,6 +1,5 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { isInngestConfigured } from '@/lib/inngest/client';
 import { assertQueryOk } from '@/lib/admin/data/assert-query-ok';
 import {
   CRON_REGISTRY,
@@ -48,39 +47,12 @@ export interface LogHealth {
   jobLogs: number;
 }
 
-/**
- * Inngest is a THREE-state readout, never a boolean. `isInngestConfigured()`
- * can only prove both env vars are SET — provider-fault.ts:96-99 documents the
- * exact trap: Inngest answers "404 Event key not found" for a rotated or
- * wrong-environment key, which is an INVALID credential, not a missing one. So
- * a dead key looked identical to a healthy one and sat behind the literal word
- * "activated" on this board for 10 days while every durable job went nowhere
- * (measured in production 2026-08-06, see auto-resolve.ts's own note).
- */
-export type InngestStatus =
-  /** Keys are set AND an unresolved provider_inngest_* fault is on file. */
-  | 'rejecting'
-  /** Keys are set and nothing has rejected them. */
-  | 'activated'
-  /** No keys in this deployment's env — a config state, not a fault. */
-  | 'not-configured';
-
-export interface InngestHealth {
-  status: InngestStatus;
-  /** `metadata.errorCode` of the open fault (e.g.
-   *  `provider_inngest_invalid_credential`). null unless `rejecting`. */
-  faultCode: string | null;
-  /** When that fault was last recorded. null unless `rejecting`. */
-  faultLastSeenAt: string | null;
-}
-
 export interface JobsTab {
   board: CronBoardRow[];
   /** Job types whose run history could not be read. UNKNOWN, not "never ran". */
   unreadableJobs: string[];
   integrity: IntegrityRow[];
   logHealth: LogHealth;
-  inngest: InngestHealth;
   /** The error→diagnosis→repair→closure circuit, one row per stage. Two of
    *  its three runners live outside this deployment, so their only evidence of
    *  life is the heartbeat row they write — see `selfheal-registry.ts`. */
@@ -179,7 +151,6 @@ export async function fetchJobsTab(): Promise<JobsTab> {
     adminEventsCount,
     errorLogsCount,
     jobLogsCount,
-    inngestFaults,
     selfHealRuns,
   ] = await Promise.all([
     Promise.all(
@@ -201,20 +172,6 @@ export async function fetchJobsTab(): Promise<JobsTab> {
     admin.from('admin_events').select('id', { count: 'exact', head: true }),
     admin.from('error_logs').select('id', { count: 'exact', head: true }),
     admin.from('background_job_logs').select('id', { count: 'exact', head: true }),
-    // The evidence half of the Inngest tri-state (see InngestHealth above).
-    // UNRESOLVED-only is the entire bound: auto-resolve.ts deliberately never
-    // closes an operator-gated provider fault (a deploy has never rotated a
-    // key), so an open row means the credential is STILL dead rather than
-    // "fired once last month". `metadata->>errorCode` is where
-    // server-error-logger persists the code — admin_events has no column for
-    // it — and is the same field auto-resolve.ts reads back.
-    admin
-      .from('admin_events')
-      .select('created_at, metadata')
-      .eq('resolved', false)
-      .like('metadata->>errorCode', 'provider_inngest_%')
-      .order('created_at', { ascending: false })
-      .limit(1),
     // One read per stage, same bounded shape as the cron board above. A stage
     // running daily would be crowded out of any globally-ordered window by the
     // 30-minute crons, and would then read "never-ran" — the neutral status —
@@ -231,7 +188,7 @@ export async function fetchJobsTab(): Promise<JobsTab> {
     ),
   ]);
 
-  // FAIL LOUDLY. None of these 21 results had its `.error` inspected, so a
+  // FAIL LOUDLY. None of these 20 results had its `.error` inspected, so a
   // statement timeout on the two exact-count scans over the 92-94k-row
   // admin_events/error_logs tables turned the whole board into 17 benign grey
   // "awaiting first run" chips plus a "0 admin_events" tile — a positive claim
@@ -243,11 +200,6 @@ export async function fetchJobsTab(): Promise<JobsTab> {
   assertQueryOk(adminEventsCount, 'jobs.adminEventsCount');
   assertQueryOk(errorLogsCount, 'jobs.errorLogsCount');
   assertQueryOk(jobLogsCount, 'jobs.jobLogsCount');
-  // Same rule for the Inngest read. Treating a failed query as "no fault on
-  // file" would print "activated" out of a broken query — precisely the
-  // failure mode the four asserts above exist to stop.
-  assertQueryOk(inngestFaults, 'jobs.inngestFaults');
-
   // Per-job reads degrade individually rather than taking the board down: one
   // unreadable job must not hide the other sixteen. But it is NAMED, not
   // silently rendered as "never ran".
@@ -279,26 +231,6 @@ export async function fetchJobsTab(): Promise<JobsTab> {
   });
 
   const latestIntegrity = parseIntegrityRows((integrityRows.data ?? []) as IntegrityEventRow[]);
-
-  // Order matters: absent keys is a more fundamental truth than a stale fault
-  // row, so 'not-configured' wins outright. 2026-07-25: isInngestConfigured()
-  // (src/lib/inngest/client.ts) remains the single source for the "are the vars
-  // set" half, shared with the golf round-submit routing branch so the two
-  // can't drift — it is just no longer the WHOLE answer.
-  const openFault = inngestFaults.data?.[0] ?? null;
-  const faultMeta = openFault?.metadata;
-  const faultCode =
-    faultMeta &&
-    typeof faultMeta === 'object' &&
-    !Array.isArray(faultMeta) &&
-    typeof faultMeta.errorCode === 'string'
-      ? faultMeta.errorCode
-      : null;
-  const inngest: InngestHealth = !isInngestConfigured()
-    ? { status: 'not-configured', faultCode: null, faultLastSeenAt: null }
-    : openFault
-      ? { status: 'rejecting', faultCode, faultLastSeenAt: openFault.created_at ?? null }
-      : { status: 'activated', faultCode: null, faultLastSeenAt: null };
 
   // Self-healing stages. A stage whose read FAILED is marked unreadable and
   // never classified — `summarizeLoop` turns any unreadable stage into
@@ -346,6 +278,5 @@ export async function fetchJobsTab(): Promise<JobsTab> {
       errorLogs: errorLogsCount.count ?? 0,
       jobLogs: jobLogsCount.count ?? 0,
     },
-    inngest,
   };
 }

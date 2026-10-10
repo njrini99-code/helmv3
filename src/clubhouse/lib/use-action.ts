@@ -77,7 +77,7 @@ export function useAction<A extends unknown[], T>(
       if ((c.offline ?? isOffline)()) {
         // CH-1903: nothing is sent while offline; say so instead of spinning.
         haptic('error');
-        toast({ tone: 'error', title: `${c.failed}: you're offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903', action: { label: 'Retry', run: () => void run(...args) } });
+        toast({ tone: 'error', title: `${c.failed}: you’re offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903', action: { label: 'Retry', run: () => void run(...args) } });
         return { success: false, error: 'offline' };
       }
       inFlight.current = true;

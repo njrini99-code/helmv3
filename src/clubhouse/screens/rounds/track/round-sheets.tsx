@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ArrowRight, Bookmark, Check, CirclePlay, Send, Table2, Trash2, TriangleAlert } from 'lucide-react';
 import { formatToPar, NO_DATA } from '../../../lib/format';
 import { haptic } from '../../../lib/haptics';
@@ -314,13 +314,29 @@ export function SubmitOverlay({
   slowHref?: string | null;
 }) {
   const reduced = useChReducedMotion();
+  // D6/D7: a real modal dialog on the top layer, so the round behind it is inert and can't be reached or read through;
+  // it can't be dismissed (Esc does nothing): each state names its own way on. Focus moves to the state's title.
+  const ref = useRef<HTMLDialogElement>(null);
+  const title = useRef<HTMLHeadingElement>(null);
+  useLayoutEffect(() => {
+    const d = ref.current;
+    if (d && !d.open) d.showModal();
+    return () => {
+      if (d?.open) d.close();
+    };
+  }, []);
+  useEffect(() => {
+    title.current?.focus({ preventScroll: true });
+  }, [state]);
   return (
-    <div className="ch-rt-scrim" data-ui="clubhouse">
+    <dialog ref={ref} className="ch-rt-scrim" data-ui="clubhouse" aria-labelledby="ch-rt-subm-t" onCancel={(e) => e.preventDefault()}>
       <div className="ch-rt-subm" role={state === 'failed' ? 'alert' : 'status'} aria-live="polite">
         {state === 'saving' && (
           <>
             <span className={'ch-rt-spin ch-rt-spin--lg' + (reduced ? ' is-still' : '')} aria-hidden="true" />
-            <b>Submitting round</b>
+            <h2 id="ch-rt-subm-t" ref={title} tabIndex={-1}>
+              Submitting round
+            </h2>
             <span className="ch-rt-subm__m">Saving {shots} shots, updating your stats and writing the round recap. Keep this screen open.</span>
             {slowHref && (
               <span className="ch-rt-subm__m" data-ch-code="CH-11909">
@@ -335,7 +351,9 @@ export function SubmitOverlay({
             <span className="ch-rt-subm__ok" aria-hidden="true">
               <Icon icon={Check} size={26} />
             </span>
-            <b>Round posted</b>
+            <h2 id="ch-rt-subm-t" ref={title} tabIndex={-1}>
+              Round posted
+            </h2>
             <span className="ch-rt-subm__m">
               Your round at {course} is posted.{coach ? ` ${coach} can see it now.` : ''}
             </span>
@@ -352,7 +370,9 @@ export function SubmitOverlay({
             <span className="ch-rt-subm__bad" aria-hidden="true">
               <Icon icon={TriangleAlert} size={24} />
             </span>
-            <b data-ch-code="CH-11005">The round didn&rsquo;t submit</b>
+            <h2 id="ch-rt-subm-t" ref={title} tabIndex={-1} data-ch-code="CH-11005">
+              The round didn&rsquo;t submit
+            </h2>
             <span className="ch-rt-subm__m">{error ?? 'It’s saved on this device. Check your connection, then try again.'}</span>
             <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" onClick={onRetry}>
               <span>Try again</span>
@@ -365,6 +385,6 @@ export function SubmitOverlay({
           </>
         )}
       </div>
-    </div>
+    </dialog>
   );
 }

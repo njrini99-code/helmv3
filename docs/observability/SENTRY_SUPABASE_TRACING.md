@@ -43,7 +43,7 @@ runtimes. This single fact drives the whole design:
 
 Verified against a real preview deploy (dpl_CDDDPVjnxECMEQrLnHPaeQv2rYTX,
 2026-08-25), not inferred. Vercel's runtime logs for actual requests through
-`src/proxy.ts` (`GET /golf/login`, the `/api/inngest` preflight) both show
+`src/proxy.ts` (`GET /golf/login` and an API preflight) both show
 source `serverless-middleware` — Vercel's own log source enum distinguishes
 this from `edge-middleware`. Cross-checked twice with different `source`
 filters on the query, same result both times.

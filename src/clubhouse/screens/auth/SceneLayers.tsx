@@ -29,6 +29,13 @@ export type SceneCrop = 'wide' | 'tall';
  */
 const VIEWBOX: Record<SceneCrop, string> = { wide: '0 0 1600 1000', tall: '650 0 760 1000' };
 
+/**
+ * A waving cloth's resting shape: its first keyframe. SMIL draws nothing until its timeline has started, so a path that
+ * only had the animation blinked out for a few frames whenever a scene mounted (the welcome's course taking over from
+ * sign in's showed a bare pole); with this the cloth is there on the first frame and the wave starts from it.
+ */
+const restOf = (values: string) => values.slice(0, values.indexOf(';'));
+
 interface LayerProps {
   /** The local decimal hour, already quantized by the scene. */
   hour: number;
@@ -507,15 +514,15 @@ export const FxLayer = memo(function FxLayer({ hour, crop, uid, ball, shadow }: 
         })}
       </g>
       <g transform="translate(560 604) scale(1.36)">
-        <path fill={T('#1F6B45')}>
+        <path fill={T('#1F6B45')} d={restOf(CLUBHOUSE_FLAG)}>
           <animate attributeName="d" dur="2.6s" repeatCount="indefinite" values={CLUBHOUSE_FLAG} />
         </path>
       </g>
       <g transform={`translate(${PIN.x + 1} ${PIN.y - 104})`}>
-        <path fill={u('flag')}>
+        <path fill={u('flag')} d={restOf(FLAG_WAVE)}>
           <animate attributeName="d" dur="1.9s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1;.45 0 .55 1" values={FLAG_WAVE} />
         </path>
-        <path fill="#FFFFFF" opacity=".16">
+        <path fill="#FFFFFF" opacity=".16" d={restOf(FLAG_FOLD)}>
           <animate attributeName="d" dur="1.9s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1;.45 0 .55 1" values={FLAG_FOLD} />
         </path>
       </g>

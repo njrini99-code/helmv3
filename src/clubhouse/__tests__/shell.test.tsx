@@ -1,4 +1,4 @@
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
@@ -9,7 +9,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const hapticSpy = vi.hoisted(() => vi.fn());
 vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }), usePathname: () => '/golf/dashboard' }));
+const routerSpy = vi.hoisted(() => ({ push: vi.fn(), back: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => routerSpy, usePathname: () => '/golf/dashboard' }));
 vi.mock('../lib/fonts', () => ({ clubhouseFontVariables: '' }));
 vi.mock('@/hooks/golf/use-appearance-preferences', () => ({ useAppearancePreferences: () => ({ showAnimations: true, updatePreferences: vi.fn() }) }));
 const logServer = vi.hoisted(() => vi.fn());
@@ -43,7 +44,7 @@ import { CH_SLOW_SAVE_AFTER, useAction } from '../lib/use-action';
 import { loadClubhouseShell, type ChShellData } from '../data/shell';
 import { ClubhouseFrame } from '../shell/ClubhouseFrame';
 import { badgeCount, Sidebar } from '../shell/Sidebar';
-import { CH_NAV_PLAYER } from '../shell/nav';
+import { CH_NAV_PLAYER, phoneFullScreen, phonePushedTop } from '../shell/nav';
 import { TabBar } from '../shell/TabBar';
 import { TopBar } from '../shell/TopBar';
 import { ClubhouseMarker } from '../shell/context';
@@ -165,9 +166,15 @@ describe('Shell · bell', () => {
 
   it('CH-1201 the list does not load', async () => {
     const user = userEvent.setup();
-    bell({ load: vi.fn(() => Promise.resolve({ success: false, error: 'nope' })) });
+    bell({ unread: 3, load: vi.fn(() => Promise.resolve({ success: false, error: 'nope' })) });
     await user.click(screen.getByRole('button', { name: /Notifications/ }));
-    await expectCode('CH-1201', /Notifications didn't load/);
+    await expectCode('CH-1201', /Notifications didn’t load/);
+    // The panel can't show what the badge counts, so its head says nothing of it and offers no Mark all read; the
+    // bell keeps its count.
+    const panel = screen.getByRole('dialog', { name: 'Notifications' });
+    expect(panel.querySelector('.ch-bellp__head')!.textContent).toBe('Notifications');
+    expect(within(panel).queryByRole('button', { name: 'Mark all read' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Notifications, 3 unread' })).toBeTruthy();
   });
 
   it('CH-1302 nothing to show', async () => {
@@ -175,6 +182,9 @@ describe('Shell · bell', () => {
     bell({ unread: 0, load: vi.fn(() => Promise.resolve({ success: true, data: { items: [] } })) });
     await user.click(screen.getByRole('button', { name: 'Notifications' }));
     await expectCode('CH-1302', /all caught up/);
+    // The shared section empty, not a centred block of its own.
+    expect(code('CH-1302')!.className).toBe('ch-empty ch-empty--icon ch-empty--compact');
+    expect(code('CH-1302')!.querySelector('.ch-empty__title')!.textContent).toBe('You’re all caught up');
   });
 
   it('CH-1811 on the phone the bell is a modal sheet: focus moves in, Tab stays inside, Close gives focus back', async () => {
@@ -246,6 +256,31 @@ describe('Shell · page states', () => {
   it('CH-1301 a page that is not rebuilt', async () => {
     wrap(<NotRebuilt label="Rounds" />);
     await expectCode('CH-1301', /Rounds hasn.t been rebuilt yet/);
+    // The page empty's anatomy, as the route error draws it: a medallion, no card, and the way back to Home.
+    const page = code('CH-1301')!;
+    expect(page.querySelector('.ch-sheet')).toBeNull();
+    expect(page.querySelector('.ch-empty-page:not(.ch-empty-page--danger) .ch-empty-page__ic svg')).not.toBeNull();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Rounds hasn’t been rebuilt yet');
+    const home = screen.getByRole('link', { name: 'Back to Home' });
+    expect(home.getAttribute('href')).toBe('/golf/dashboard');
+    expect(home.className).toContain('ch-btn--primary');
+    expect(home.querySelector('svg')).not.toBeNull();
+  });
+
+  it("CH-1206 the route error's way back goes where the route's boundary says, named for it", () => {
+    for (const [homePath, name] of [
+      ['/golf/dashboard', 'Back to Home'],
+      ['/golf', 'Back to Home'],
+      ['/golf/dashboard/rounds', 'Back to Rounds'],
+      ['/golf/dashboard/coachhelm', 'Back to CoachHelm'],
+      ['/golf/dashboard/settings', 'Back to Settings'],
+    ] as const) {
+      const { unmount } = wrap(<RouteErrorView kind="unknown" isRetrying={false} retryCount={0} onRetry={vi.fn()} homePath={homePath} />);
+      expect(screen.getByRole('link', { name }).getAttribute('href')).toBe(homePath);
+      unmount();
+    }
+    wrap(<RouteErrorView kind="unknown" isRetrying={false} retryCount={0} onRetry={vi.fn()} />);
+    expect(screen.queryByRole('link')).toBeNull();
   });
 });
 
@@ -296,7 +331,7 @@ describe('Shell · network', () => {
     wrap(<InlineNotice code="CH-2201" title="This week's schedule didn't load." onRetry={retry} />);
     setOnline(false);
     await user.click(screen.getByRole('button', { name: 'Try again' }));
-    await expectCode('CH-1905', /You're offline/);
+    await expectCode('CH-1905', /You’re offline\. Reconnect, then try again\./);
     expect(retry).not.toHaveBeenCalled();
     expect(hapticSpy).toHaveBeenCalledWith('warning');
     setOnline(true);
@@ -311,7 +346,7 @@ describe('Shell · network', () => {
     const fn = vi.fn(() => Promise.resolve({ success: true }));
     wrap(<Saver fn={fn} />);
     act(() => screen.getByRole('button', { name: 'Save' }).click());
-    await expectCode('CH-1903', /you're offline/);
+    await expectCode('CH-1903', /you’re offline/);
     expect(fn).not.toHaveBeenCalled();
   });
 });
@@ -730,23 +765,26 @@ describe('Shell · phone chrome', () => {
     await waitFor(() => expect(document.querySelector('.ch-tabbar')!.hasAttribute('inert')).toBe(false));
   });
 
-  it('CH-1810 the phone top bar names the page, and a page top swaps the bell for a named back link', async () => {
+  it('CH-1810 the phone top bar names a tab root, and a page top swaps the bell for a named back link', async () => {
     const back = vi.fn();
+    // Stats is one of the coach's tabs: its bar is the tab root's title and the bell.
     const { rerender } = render(
-      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
-        <p>Roster</p>
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/stats" forceRebuilt>
+        <p>Team stats</p>
       </ClubhouseFrame>,
     );
     const bar = document.querySelector('.ch-topbar')!;
     expect(bar.getAttribute('data-phone')).toBe('root');
-    expect(bar.querySelector('.ch-topbar__ptitle')!.textContent).toBe('Roster');
+    expect(bar.querySelector('.ch-topbar__ptitle')!.textContent).toBe('Stats');
+    expect(code('CH-1402')).toBeNull();
+    // A player's stats open on the same address with their own top: back to the team.
     rerender(
-      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
-        <PhoneTop title="Roster" back={{ label: 'More', onBack: back }} />
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/stats" forceRebuilt>
+        <PhoneTop title="Player stats" back={{ label: 'Team', onBack: back }} />
       </ClubhouseFrame>,
     );
     await waitFor(() => expect(bar.getAttribute('data-phone')).toBe('page'));
-    const link = screen.getByRole('button', { name: 'Back to More' });
+    const link = screen.getByRole('button', { name: 'Back to Team' });
     expect(bar.contains(link)).toBe(true);
     await userEvent.setup().click(link);
     expect(back).toHaveBeenCalled();
@@ -754,7 +792,7 @@ describe('Shell · phone chrome', () => {
 
   it('CH-1810 a tab root that draws its own title (PhoneTop start) keeps the bell; one with an action is a page top', async () => {
     const { rerender } = render(
-      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/coachhelm" forceRebuilt>
         <PhoneTop start title="CoachHelm" />
       </ClubhouseFrame>,
     );
@@ -762,17 +800,214 @@ describe('Shell · phone chrome', () => {
     await waitFor(() => expect(bar.getAttribute('data-phone')).toBe('start'));
     expect(bar.querySelector('.ch-topbar__actions .ch-bell, .ch-topbar__actions [aria-label^="Notifications"]')).not.toBeNull();
     rerender(
-      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
-        <PhoneTop start title="Roster" action={<button type="button">Invite</button>} />
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/coachhelm" forceRebuilt>
+        <PhoneTop start title="CoachHelm" action={<button type="button">New chat</button>} />
       </ClubhouseFrame>,
     );
     await waitFor(() => expect(bar.getAttribute('data-phone')).toBe('page'));
     rerender(
-      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
-        <p>Roster</p>
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/coachhelm" forceRebuilt>
+        <p>CoachHelm</p>
       </ClubhouseFrame>,
     );
     await waitFor(() => expect(bar.getAttribute('data-phone')).toBe('root'));
+  });
+
+  it('CH-1402 a pushed address draws its bar before its page does, and the page\'s own top replaces it in place', async () => {
+    const back = vi.fn();
+    // The route's loading skeleton: no PhoneTop yet. The bar is already the pushed one, never the tab root's title and bell.
+    const { rerender } = render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
+        <p aria-busy="true">Loading the roster</p>
+      </ClubhouseFrame>,
+    );
+    const bar = document.querySelector('.ch-topbar')!;
+    expect(bar.getAttribute('data-phone')).toBe('page');
+    const standIn = code('CH-1402')!;
+    expect(bar.contains(standIn)).toBe(true);
+    expect(within(standIn as HTMLElement).getByRole('button', { name: 'Back to More' })).toBeTruthy();
+    expect(standIn.querySelector('.ch-pbar__title')!.textContent).toBe('Roster');
+    // The heading is the page's to bring: the stand-in's title is plain text.
+    expect(within(bar as HTMLElement).queryByRole('heading')).toBeNull();
+    rerender(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/roster" forceRebuilt>
+        <PhoneTop title="Roster" back={{ label: 'More', onBack: back }} action={<button type="button">Invite players</button>} />
+      </ClubhouseFrame>,
+    );
+    // The page's top replaces it where it stood: one back link, the page's, and the page's h1.
+    expect(code('CH-1402')).toBeNull();
+    expect(bar.getAttribute('data-phone')).toBe('page');
+    expect(within(bar as HTMLElement).getAllByRole('button', { name: 'Back to More' })).toHaveLength(1);
+    expect(within(bar as HTMLElement).getByRole('heading', { level: 1, name: 'Roster' })).toBeTruthy();
+    await userEvent.setup().click(within(bar as HTMLElement).getByRole('button', { name: 'Back to More' }));
+    expect(back).toHaveBeenCalled();
+  });
+
+  it('CH-1402 the stand-in\'s Back goes where the page\'s would: back from More, up from a page below another', async () => {
+    const user = userEvent.setup();
+    routerSpy.back.mockClear();
+    routerSpy.push.mockClear();
+    window.history.pushState({}, '');
+    const { unmount } = render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/recruiting" forceRebuilt>
+        <p aria-busy="true">Loading</p>
+      </ClubhouseFrame>,
+    );
+    await user.click(within(code('CH-1402') as HTMLElement).getByRole('button', { name: 'Back to More' }));
+    expect(routerSpy.back).toHaveBeenCalledTimes(1);
+    unmount();
+    const id = '0b6f2c1e-8d1a-4c47-9a53-2f1e7b0c9d10';
+    render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname={`/golf/dashboard/qualifiers/${id}/selection`} forceRebuilt>
+        <p aria-busy="true">Loading</p>
+      </ClubhouseFrame>,
+    );
+    expect(code('CH-1402')!.querySelector('.ch-pbar__title')!.textContent).toBe('Selections');
+    await user.click(within(code('CH-1402') as HTMLElement).getByRole('button', { name: 'Back to Qualifier' }));
+    expect(routerSpy.push).toHaveBeenCalledWith(`/golf/dashboard/qualifiers/${id}`);
+  });
+
+  it('CH-1402 Settings keeps its bar title for VoiceOver only; a route not rebuilt for the role keeps the plain bar', () => {
+    const { unmount } = render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/settings" forceRebuilt>
+        <p aria-busy="true">Loading</p>
+      </ClubhouseFrame>,
+    );
+    const title = code('CH-1402')!.querySelector('.ch-pbar__title')!;
+    expect(title.textContent).toBe('Settings');
+    expect(title.firstElementChild!.className).toBe('ch-sr-only');
+    unmount();
+    // My qualifiers is the player's: a coach there gets the not-rebuilt notice under the plain bar.
+    render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/my-qualifiers">
+        <p>My qualifiers body</p>
+      </ClubhouseFrame>,
+    );
+    expect(code('CH-1301')).not.toBeNull();
+    expect(code('CH-1402')).toBeNull();
+    expect(document.querySelector('.ch-topbar')!.getAttribute('data-phone')).toBe('root');
+  });
+
+  it('CH-1402 each phone address draws the bar its page draws (kept in step with the pages\' PhoneTops)', () => {
+    const uuid = '0b6f2c1e-8d1a-4c47-9a53-2f1e7b0c9d10';
+    const bar = (path: string, role: 'coach' | 'player', query?: string) => {
+      const t = phonePushedTop(path, role, query == null ? null : new URLSearchParams(query));
+      return t && `${t.back} | ${t.title}${t.quiet ? ' (quiet)' : ''}${t.parent ? ` -> ${t.parent}` : ''}${t.form ? ' (form)' : ''}`;
+    };
+    // Pages opened from the More sheet go back to More (D-41, D-66).
+    expect(bar('/golf/dashboard/roster', 'coach')).toBe('More | Roster');
+    expect(bar('/golf/dashboard/recruiting', 'coach')).toBe('More | Recruiting');
+    expect(bar('/golf/dashboard/qualifiers', 'coach')).toBe('More | Qualifiers');
+    expect(bar('/golf/dashboard/team-hub', 'coach')).toBe('More | Team Hub');
+    expect(bar('/golf/dashboard/messages', 'coach')).toBe('More | Messages');
+    expect(bar('/golf/dashboard/settings', 'coach')).toBe('More | Settings (quiet)');
+    expect(bar('/golf/dashboard/calendar', 'player')).toBe('More | Calendar');
+    expect(bar('/golf/dashboard/roster', 'player')).toBe('More | Roster');
+    expect(bar('/golf/dashboard/stats', 'player')).toBe('More | My stats');
+    expect(bar('/golf/dashboard/qualifiers', 'player')).toBe('More | Qualifiers');
+    expect(bar('/golf/dashboard/my-qualifiers', 'player')).toBe('More | My qualifiers');
+    expect(bar('/golf/dashboard/classes', 'player')).toBe('More | Classes');
+    expect(bar('/golf/dashboard/settings/', 'player')).toBe('More | Settings (quiet)');
+    // Pages below another go up to it.
+    expect(bar(`/golf/dashboard/qualifiers/${uuid}`, 'coach')).toBe('Qualifiers | Qualifier -> /golf/dashboard/qualifiers');
+    expect(bar(`/golf/dashboard/qualifiers/${uuid}/selection`, 'coach')).toBe(`Qualifier | Selections -> /golf/dashboard/qualifiers/${uuid}`);
+    expect(bar(`/golf/dashboard/rounds/${uuid}`, 'coach')).toBe('Stats | Round -> /golf/dashboard/stats');
+    expect(bar(`/golf/dashboard/rounds/${uuid}`, 'player')).toBe('Rounds | Round -> /golf/dashboard/rounds');
+    expect(bar('/golf/dashboard/rounds/recover', 'player')).toBe('Rounds | Recover -> /golf/dashboard/rounds');
+    // The coach's full-page forms: a plain Cancel back to where they came from (QualifierForm).
+    expect(bar('/golf/dashboard/qualifiers/new', 'coach')).toBe('Cancel | New qualifier -> /golf/dashboard/qualifiers (form)');
+    expect(bar(`/golf/dashboard/qualifiers/${uuid}/edit`, 'coach')).toBe(`Cancel | Edit qualifier -> /golf/dashboard/qualifiers/${uuid} (form)`);
+    // The query decides two bars. A Settings section named in the address opens pushed and goes back to the list (SettingsPhone),
+    // as an old Settings address does; an unknown section is the list. A coach's player on Stats goes back to the team.
+    expect(bar('/golf/dashboard/settings', 'coach', 'section=team')).toBe('Settings | Team (quiet) -> /golf/dashboard/settings');
+    expect(bar('/golf/dashboard/settings', 'player', 'section=golf')).toBe('Settings | Golf profile (quiet) -> /golf/dashboard/settings');
+    expect(bar('/golf/dashboard/settings', 'coach', 'section=golf')).toBe('More | Settings (quiet)');
+    expect(bar('/golf/dashboard/settings/notifications', 'coach')).toBe('Settings | Notifications (quiet) -> /golf/dashboard/settings');
+    expect(bar('/golf/dashboard/settings/coaching-intelligence', 'coach')).toBe('Settings | CoachHelm (quiet) -> /golf/dashboard/settings');
+    expect(bar('/golf/dashboard/settings/coaching-intelligence', 'player')).toBe('Settings | Account (quiet) -> /golf/dashboard/settings');
+    expect(bar('/golf/dashboard/settings/notifications', 'player', 'section=account')).toBe('Settings | Account (quiet) -> /golf/dashboard/settings');
+    expect(bar('/golf/dashboard/stats', 'coach', 'player=0b6f2c1e&window=season')).toBe('Team | Player stats -> /golf/dashboard/stats');
+    expect(bar('/golf/dashboard/stats', 'player', 'player=0b6f2c1e')).toBe('More | My stats');
+    // Tab roots, the player's Messages (a tab root's title under More), a new round, the round itself, and the coach's
+    // pages a player only meets as the coach-only notice draw their own.
+    for (const [path, role, query] of [
+      ['/golf/dashboard', 'coach', ''],
+      ['/golf/dashboard/coachhelm', 'coach', ''],
+      ['/golf/dashboard/calendar', 'coach', ''],
+      ['/golf/dashboard/stats', 'coach', 'window=season'],
+      ['/golf/dashboard/rounds', 'player', ''],
+      ['/golf/dashboard/team-hub', 'player', ''],
+      ['/golf/dashboard/messages', 'player', ''],
+      ['/golf/dashboard/rounds/new', 'player', ''],
+      [`/golf/dashboard/rounds/continue/${uuid}`, 'player', ''],
+      ['/golf/dashboard/qualifiers/new', 'player', ''],
+      [`/golf/dashboard/qualifiers/${uuid}/edit`, 'player', ''],
+      [`/golf/dashboard/qualifiers/${uuid}/selection`, 'player', ''],
+    ] as const)
+      expect(bar(path, role, query)).toBeNull();
+  });
+
+  it('CH-1402 a full-screen flow hides the tab bar from its address, as its page will', () => {
+    const uuid = '0b6f2c1e-8d1a-4c47-9a53-2f1e7b0c9d10';
+    expect(phoneFullScreen('/golf/dashboard/qualifiers/new', 'coach')).toBe(true);
+    expect(phoneFullScreen(`/golf/dashboard/qualifiers/${uuid}/edit`, 'coach')).toBe(true);
+    expect(phoneFullScreen('/golf/dashboard/rounds/new', 'player')).toBe(true);
+    expect(phoneFullScreen(`/golf/dashboard/rounds/continue/${uuid}`, 'player')).toBe(true);
+    expect(phoneFullScreen(`/golf/dashboard/qualifiers/${uuid}`, 'coach')).toBe(false);
+    expect(phoneFullScreen('/golf/dashboard/qualifiers/new', 'player')).toBe(false);
+    expect(phoneFullScreen('/golf/dashboard/rounds', 'player')).toBe(false);
+    expect(phoneFullScreen('/golf/dashboard/rounds/new', 'coach')).toBe(false);
+  });
+
+  it('CH-1402 a form loads under its Cancel with the tab bar already hidden; a Settings section and a coach\'s player under their own back link', () => {
+    const { unmount, rerender } = render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/qualifiers/new" forceRebuilt>
+        <p aria-busy="true">Loading the form</p>
+      </ClubhouseFrame>,
+    );
+    const cancel = within(code('CH-1402') as HTMLElement).getByRole('button', { name: 'Cancel' });
+    expect(cancel.classList.contains('is-text')).toBe(true);
+    expect(cancel.querySelector('svg')).toBeNull();
+    expect(code('CH-1402')!.querySelector('.ch-pbar__title')!.textContent).toBe('New qualifier');
+    expect(document.querySelector('.ch-root')!.hasAttribute('data-phone-notabs')).toBe(true);
+    // The form arrives: its own Cancel and Create replace the stand-in; the tab bar stays hidden.
+    rerender(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/qualifiers/new" forceRebuilt>
+        <PhoneTop title="New qualifier" back={{ label: 'Cancel', chevron: false, onBack: () => {} }} action={<button type="button">Create</button>} />
+      </ClubhouseFrame>,
+    );
+    expect(code('CH-1402')).toBeNull();
+    expect(within(document.querySelector('.ch-topbar') as HTMLElement).getAllByRole('button', { name: 'Cancel' })).toHaveLength(1);
+    expect(document.querySelector('.ch-root')!.hasAttribute('data-phone-notabs')).toBe(true);
+    unmount();
+    const { unmount: off } = render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/settings" search="section=team" forceRebuilt>
+        <p aria-busy="true">Loading</p>
+      </ClubhouseFrame>,
+    );
+    expect(within(code('CH-1402') as HTMLElement).getByRole('button', { name: 'Back to Settings' })).toBeTruthy();
+    expect(code('CH-1402')!.querySelector('.ch-pbar__title')!.textContent).toBe('Team');
+    off();
+    render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/stats" search="player=0b6f2c1e" forceRebuilt>
+        <p aria-busy="true">Loading</p>
+      </ClubhouseFrame>,
+    );
+    expect(within(code('CH-1402') as HTMLElement).getByRole('button', { name: 'Back to Team' })).toBeTruthy();
+    expect(code('CH-1402')!.querySelector('.ch-pbar__title')!.textContent).toBe('Player stats');
+    expect(document.querySelector('.ch-root')!.hasAttribute('data-phone-notabs')).toBe(false);
+  });
+
+  it('CH-1402 a new round keeps its own band and the plain bar, with the tab bar hidden from its first frame', () => {
+    const player = { role: 'player', name: 'Jonah Okafor', teamName: 'Varsity' } as unknown as GolfUserData;
+    render(
+      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/rounds/new">
+        <p aria-busy="true">Loading the round</p>
+      </ClubhouseFrame>,
+    );
+    expect(code('CH-1402')).toBeNull();
+    expect(document.querySelector('.ch-topbar')!.getAttribute('data-phone')).toBe('root');
+    expect(document.querySelector('.ch-root')!.hasAttribute('data-phone-notabs')).toBe(true);
   });
 });
 

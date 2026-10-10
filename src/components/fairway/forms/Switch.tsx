@@ -14,7 +14,7 @@
  * ========================================================================== */
 
 import * as React from "react";
-import { Switch as BaseSwitch } from "@base-ui-components/react/switch";
+import { Switch as BaseSwitch } from "@base-ui/react/switch";
 import { cn } from "@/lib/utils";
 import { fwHaptic } from "@/lib/fairway/haptics";
 
@@ -79,6 +79,16 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
   ) {
     const generatedId = React.useId();
     const fieldId = id ?? generatedId;
+    const labelId = `${fieldId}-label`;
+    const descriptionId = `${fieldId}-description`;
+    // Base UI 1.8 links the switch to its wrapping <label> with aria-labelledby,
+    // which outranks aria-label and reads the whole label block (and the
+    // switch's own aria-label again). Name it from the label text only and keep
+    // the description a description. A caller's own aria-labelledby /
+    // aria-describedby still wins. See Checkbox for the same contract.
+    const ariaLabelledBy = props["aria-labelledby"] ?? (label ? labelId : undefined);
+    const ariaDescribedBy =
+      props["aria-describedby"] ?? (description ? descriptionId : undefined);
 
     // Selection tick on toggle (fire-and-forget, no-op on web).
     const handleCheckedChange: NonNullable<SwitchProps["onCheckedChange"]> = (
@@ -96,6 +106,8 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         className={cn(trackBase, trackClassName)}
         onCheckedChange={handleCheckedChange}
         {...props}
+        aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
       >
         <BaseSwitch.Thumb data-slot="switch-thumb" className={thumbBase} />
       </BaseSwitch.Root>
@@ -106,12 +118,18 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
     const labelBlock = (
       <span className="flex flex-col gap-0.5">
         {label ? (
-          <span className="font-fw-sans text-body-sm font-medium text-text-primary select-none">
+          <span
+            id={labelId}
+            className="font-fw-sans text-body-sm font-medium text-text-primary select-none"
+          >
             {label}
           </span>
         ) : null}
         {description ? (
-          <span className="font-fw-sans text-caption text-text-secondary select-none">
+          <span
+            id={descriptionId}
+            className="font-fw-sans text-caption text-text-secondary select-none"
+          >
             {description}
           </span>
         ) : null}

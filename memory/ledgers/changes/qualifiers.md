@@ -46,7 +46,7 @@
 
 - SHA: pending commit on PR #1617.
 - Change: the closed-qualifier, duplicate-round-number, and round-limit
-  rejection envelopes in `src/app/golf/actions/golf.ts` now carry the stable
+  rejection envelopes in `actions/golf.ts (pre-split)` now carry the stable
   codes (`qualifier_closed`, `qualifier_round_already_exists`,
   `qualifier_round_limit_reached`) that `observe-action-result.ts` already
   registered in EXPECTED_SOFT_FAILURE_CODES — the registry knew the codes but

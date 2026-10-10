@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import NumberFlow from '@number-flow/react';
-import { useReducedMotion } from 'framer-motion';
+import { useReducedMotion } from 'motion/react';
 
 interface AnimatedNumberProps {
   value: number;

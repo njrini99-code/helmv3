@@ -22,7 +22,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
 import { CalendarClock, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
 import { Surface } from '@/components/fairway/surfaces/surface';
 import { StatusPill } from '@/components/fairway/controls/status-pill';

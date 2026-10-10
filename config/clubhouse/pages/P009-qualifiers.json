@@ -63,7 +63,7 @@
       "label": "Create a qualifier",
       "component": "src/clubhouse/screens/qualifiers/QualifierForm.tsx#QualifierForm",
       "handler": "create.run",
-      "service": "src/app/golf/actions/golf.ts#createGolfQualifier",
+      "service": "src/app/golf/actions/qualifier-actions.ts#createGolfQualifier",
       "data": [
         "golf_qualifiers",
         "golf_qualifier_entries",
@@ -117,7 +117,7 @@
       "label": "Close a qualifier",
       "component": "src/clubhouse/screens/qualifiers/QualifierDetail.tsx#QualifierDetail",
       "handler": "close.run",
-      "service": "src/app/golf/actions/golf.ts#updateQualifierStatus",
+      "service": "src/app/golf/actions/qualifier-actions.ts#updateQualifierStatus",
       "data": [
         "golf_qualifiers"
       ],
@@ -142,7 +142,7 @@
       "label": "Reopen a qualifier",
       "component": "src/clubhouse/screens/qualifiers/QualifierDetail.tsx#QualifierDetail",
       "handler": "reopen.run",
-      "service": "src/app/golf/actions/golf.ts#updateQualifierStatus",
+      "service": "src/app/golf/actions/qualifier-actions.ts#updateQualifierStatus",
       "data": [
         "golf_qualifiers"
       ],

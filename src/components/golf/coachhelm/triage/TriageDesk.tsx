@@ -48,7 +48,7 @@ import { RotateCw, ScanSearch } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button, EmptyState, fairwayToast, InlineNotice, PlayersGridView } from '@/components/fairway';
 import type { PlayersGridViewProps, PlayersGridStats } from '@/components/fairway';
-import { refreshTeamAnalysisAsCoach } from '@/app/golf/actions/insights';
+import { refreshTeamAnalysisAsCoach } from '@/app/golf/actions/insights-coachhelm';
 import { reviewSignal, dismissSignal } from '@/app/golf/actions/signal-groups';
 import type { TeamCategoryInsightsResult } from '@/app/golf/actions/team-category-insights';
 import type { TeamIntelligenceResult } from '@/lib/golf/team-intelligence/types';

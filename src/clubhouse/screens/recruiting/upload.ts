@@ -65,10 +65,10 @@ const TYPE_REFUSED = /"statusCode"\s*:\s*"?415"?|invalid_?mime_?type|mime type .
 function refusalOf(put: ChPutOutcome, fileName: string): ChUploadResult {
   if (put.status === 413 || SIZE_REFUSED.test(put.body)) return { success: false, refused: 'size', error: `Storage refused ${fileName}: it is over the size it takes.` };
   if (put.status === 415 || TYPE_REFUSED.test(put.body)) {
-    return { success: false, refused: 'type', error: `Storage refused ${fileName}: it doesn't take that type of file.` };
+    return { success: false, refused: 'type', error: `Storage refused ${fileName}: it doesn’t take that type of file.` };
   }
-  if (put.status === 401 || put.status === 403) return { success: false, error: "Only this team's coaches can add recruit documents" };
-  return { success: false, error: "The file didn't finish sending. Check your connection and try again." };
+  if (put.status === 401 || put.status === 403) return { success: false, error: 'Only this team’s coaches can add recruit documents' };
+  return { success: false, error: 'The file didn’t finish sending. Check your connection and try again.' };
 }
 
 export async function uploadRecruitFile(

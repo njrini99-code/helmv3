@@ -1,7 +1,7 @@
 import './dialog-polyfill';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -49,6 +49,24 @@ describe('Team stats hold their geometry across windows', () => {
     for (const g of profile.container.querySelectorAll('.ch-fg')) expect(g.classList.contains('ch-fg--hold')).toBe(false);
   });
 
+  it('strokes gained leads the team figures on its own card, the five supporting figures share one surface, and the skeleton draws the same', () => {
+    const { container, unmount } = render(shell(<StatsTeam data={team()} />));
+    const fg = container.querySelector('.ch-fg')!;
+    expect(fg.classList.contains('ch-fg--lead')).toBe(true);
+    expect(fg.querySelector(':scope > .ch-fg__c--lead .ch-fg__l')!.textContent).toBe('Team SG per round');
+    expect(fg.querySelectorAll(':scope > .ch-fg__group > .ch-fg__c')).toHaveLength(5);
+    unmount();
+    const skel = render(shell(<StatsSkeleton />));
+    const sfg = skel.container.querySelector('.ch-fg')!;
+    expect(sfg.classList.contains('ch-fg--lead')).toBe(true);
+    expect(sfg.querySelectorAll(':scope > .ch-fg__c--lead.ch-fg__c--skel')).toHaveLength(1);
+    expect(sfg.querySelectorAll(':scope > .ch-fg__group > .ch-fg__c--skel')).toHaveLength(5);
+    skel.unmount();
+    // The profile keeps its five equal cards.
+    const profile = render(shell(<StatsPlayer data={player()} coachId="c1" />));
+    expect(profile.container.querySelector('.ch-fg--lead')).toBeNull();
+  });
+
   it('the hole-coverage line is in every window: the note when there is one, an empty line when there is none', () => {
     const noted = render(shell(<StatsTeam data={team({ figures: PREVIEW_TEAM_STATS.figures.map((f) => ({ ...f, note: 'Hole stats from 8 of 10 rounds' })) })} />));
     const lines = noted.container.querySelectorAll('.ch-st-cover');
@@ -83,12 +101,16 @@ describe('Team stats hold their geometry across windows', () => {
     // The trend's list keeps its top when it shortens, and a tab's count is two digits wide at least.
     expect(css).toMatch(/\.ch-sgt__ends\s*{[^}]*align-self: start/);
     expect(css).toMatch(/\.ch-tab-t__n\s*{[^}]*min-width: 2ch/);
-    // 196 six across with one-line labels, 213 where they wrap (a canvas of 901 to 1116px), 155 two across; the skeleton's card and the held card share it.
-    expect(css).toMatch(/\.ch-fg\s*{\s*--ch-fg-h: 196px/);
-    expect(css).toMatch(/min-width: 901px\) and \(max-width: 1116px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 213px/);
-    expect(css).toMatch(/min-width: 901px\) and \(max-width: 940px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 229px/);
-    expect(css).toMatch(/\(max-width: 900px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 155px/);
+    // 200 six across with one-line labels, 217 where they wrap (a canvas of 901 to 1116px), 159 two across (re-measured 2026-10-07); the skeleton's card and the held card share it.
+    expect(css).toMatch(/\.ch-fg\s*{\s*--ch-fg-h: 200px/);
+    expect(css).toMatch(/min-width: 901px\) and \(max-width: 1116px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 217px/);
+    expect(css).toMatch(/min-width: 901px\) and \(max-width: 940px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 233px/);
+    expect(css).toMatch(/\(max-width: 900px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 159px/);
     expect(css).toMatch(/\.ch-fg__c--skel,\s*\.ch-fg--hold \.ch-fg__c\s*{\s*min-height: var\(--ch-fg-h\)/);
+    // With strokes gained leading: 248 at every canvas over 900px (its 48px value, two-line note and gauge), 208 full width, and 76 a supporting row.
+    expect(css).toMatch(/\.ch-fg\.ch-fg--lead\s*{\s*--ch-fg-h: 248px/);
+    expect(css).toMatch(/\.ch-fg\.ch-fg--lead\s*{\s*--ch-fg-h: 208px;/);
+    expect(css).toMatch(/\.ch-fg__group \.ch-fg__c\s*{[^}]*min-height: 76px/);
   });
 });
 
@@ -112,7 +134,7 @@ describe('The phone holds its panels across windows', () => {
       expect(container.querySelector('section[aria-labelledby="ch-stm-legs"]')!.classList.contains('ch-stm-panel--bars')).toBe(true);
     });
     expect(css).toMatch(/\.ch-stm-chart-hold\s*{[^}]*aspect-ratio: 340 \/ 120/);
-    expect(css).toMatch(/\.ch-stm-panel--bars\s*{\s*min-height: 250px/);
+    expect(css).toMatch(/\.ch-stm-panel--bars\s*{\s*min-height: 258px/);
   });
 
   it('a profile: one round keeps the trend\'s frame, and no strokes gained keeps the bars\' height', () => {
@@ -162,6 +184,21 @@ describe('Skeletons draw the loaded page\'s lines', () => {
     expect(coach.container.querySelector('.ch-pf-hero__act')!.children).toHaveLength(3);
   });
 
+  it('a profile holds its overview figures (measured in WebKit 2026-10-07: 169px, 194px in the middle band), the serif name and the switch\'s width', () => {
+    const { container } = render(<StatsProfileSkeleton coach />);
+    // The five figures sit between the filter bar and the chart, as loaded, at the row height the loaded cards also hold.
+    const order = [...container.querySelector('main')!.children].map((c) => c.className.split(' ')[0]);
+    expect(order.slice(order.indexOf('ch-sf'), order.indexOf('ch-sf') + 3)).toEqual(['ch-sf', 'ch-fg', 'ch-sgt']);
+    expect(container.querySelectorAll('.ch-fg.ch-fg--profile > .ch-fg__c--skel')).toHaveLength(5);
+    expect(css).toMatch(/\.ch-fg\.ch-fg--profile\s*{\s*--ch-fg-h: 169px/);
+    expect(css).toMatch(/\(min-width: 901px\) and \(max-width: 1116px\) {\s*\.ch-fg\.ch-fg--profile\s*{\s*--ch-fg-h: 194px/);
+    expect(css).toMatch(/\.ch-fg--profile \.ch-fg__c\s*{\s*min-height: var\(--ch-fg-h\)/);
+    // The change line under strokes gained never wraps (it grew the hero 24px on a 680–770px canvas).
+    expect(css).toMatch(/\.ch-pf-hero__figs \.ch-sgchg\s*{\s*flex-wrap: nowrap/);
+    // The window switch keeps the loaded one's foot.
+    expect(css).toMatch(/\.ch-pf-tabs \.ch-seg,\s*\.ch-pf-tabs > \.ch-skel:last-child\s*{\s*margin-bottom: 8px/);
+  });
+
   it('the phone skeletons keep the loaded order (a profile: head, the window and filter row, then the figures) and give each figure its second line', () => {
     const profile = render(<StatsPlayerPhoneSkeleton />);
     const order = [...profile.container.querySelector('main')!.children].map((c) => c.className.split(' ')[0]);
@@ -175,7 +212,26 @@ describe('Skeletons draw the loaded page\'s lines', () => {
     expect(profile.container.querySelector('main')?.getAttribute('aria-label')).toBe('Loading player stats');
     profile.unmount();
     const teamPhone = render(<StatsTeamPhoneSkeleton />);
-    for (const fig of teamPhone.container.querySelectorAll('.ch-stm-figs > div')) expect(fig.querySelectorAll('dd')).toHaveLength(2);
+    // Team stats (direction A): the large title, the window row, the hero, its trend, then the round and strokes gained groups.
+    const teamOrder = [...teamPhone.container.querySelector('main')!.children].map((c) => c.className.split(' ')[0]);
+    expect(teamOrder).toEqual(['ch-stm-head', 'ch-stm-controls', 'ch-stm-hero', 'ch-stm-trend', 'ch-stm-panel', 'ch-stm-panel', 'ch-sr-only']);
+    expect(teamPhone.container.querySelector('main')!.className).toBe('ch-stm is-team');
+    // The hero holds the value's line and the comparison's; the groups hold the loaded rows at their fixed heights.
+    expect(teamPhone.container.querySelectorAll('.ch-stm-hero > dd')).toHaveLength(2);
+    expect(teamPhone.container.querySelectorAll('.ch-stm-figrow')).toHaveLength(3);
+    expect(teamPhone.container.querySelectorAll('.ch-stm-sgfig + .ch-stm-legs > .ch-stm-leg')).toHaveLength(5);
+    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-figrow\s*{[^}]*height: 60px/);
+    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-sgfig\s*{[^}]*height: 64px/);
+    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-leg\s*{[^}]*height: 44px/);
+    // The trend's hold is the plot's own box (the same bleed), and its reading holds the two lines it wraps to beside the mean's key.
+    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-plot\s*{[^}]*aspect-ratio: 340 \/ 120;\s*margin-inline: -4px/);
+    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-trend \.ch-stm-chart-hold\s*{\s*margin-inline: -4px/);
+    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-trend \.ch-stm-note\s*{[^}]*min-height: calc\(2 \* 1\.4 \* 14px\)/);
+    // A profile's three figures take the stat line and gauge row.
+    const profilePhone = render(<StatsPlayerPhoneSkeleton />);
+    expect(profilePhone.container.querySelector('.ch-stm-overview > .ch-stm-figs.is-three.is-line + .ch-stm-gauges')).not.toBeNull();
+    profilePhone.unmount();
+    expect(css).toMatch(/\.ch-stm-gauges\s*{[^}]*min-height: 39px/);
     expect(teamPhone.container.querySelector('.ch-stm-cover')?.getAttribute('aria-hidden')).toBe('true');
     expect(teamPhone.container.querySelector('.ch-stm-chart-hold')).not.toBeNull();
     expect(teamPhone.container.querySelector('main')?.getAttribute('aria-label')).toBe('Loading stats');

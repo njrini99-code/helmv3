@@ -96,6 +96,7 @@ function Q({
   children,
   onSubmit,
   back,
+  hold = false,
   dir,
 }: {
   eyebrow?: ReactNode;
@@ -104,6 +105,8 @@ function Q({
   children?: ReactNode;
   onSubmit?: () => void;
   back?: (() => void) | null;
+  /** A write is in flight: Back waits for its answer, so the account, the profile or the request it makes lands where it belongs. */
+  hold?: boolean;
   dir: 'fwd' | 'back';
 }) {
   const id = useId();
@@ -119,7 +122,7 @@ function Q({
       }}
     >
       {back && (
-        <button type="button" className="ch-ox-back" onClick={back}>
+        <button type="button" className="ch-ox-back" onClick={back} disabled={hold}>
           <Icon icon={ChevronLeft} size={16} />
           Back
         </button>
@@ -149,6 +152,9 @@ function Act({ label = 'Continue', disabled, busy, busyLabel, icon = ArrowRight,
     </div>
   );
 }
+
+/** A refused answer puts the cursor in the field it names (CH-15624), as sign in does (CH-15802): after the render that marks it, so the field is read out with its error. */
+const focusField = (id: string) => setTimeout(() => document.getElementById(id)?.focus(), 0);
 
 const Tick = () => (
   <span className="ch-ox-tick" aria-hidden="true">
@@ -480,7 +486,7 @@ export function Name({ d, up, next, path, back, dir, phone }: StepProps) {
 
 // ── Graduation year ──────────────────────────────────────────────────────────
 
-export function Grad({ d, next, path, back, dir, now }: StepProps) {
+export function Grad({ d, up, next, path, back, dir, now }: StepProps) {
   const years = gradYears(now);
   return (
     <Q dir={dir} back={back} eyebrow={<Who d={d} path={path} />} title={`When do you graduate, ${d.first.trim() || 'there'}?`} sub="Sets your class on the roster. Coaches use it for eligibility.">
@@ -495,7 +501,9 @@ export function Grad({ d, next, path, back, dir, now }: StepProps) {
               className="ch-ox-tile"
               onClick={() => {
                 haptic('select');
-                setTimeout(() => next({ grad: y }), CHOICE_MS);
+                // The tick, and the class on the card, show at once; the question moves on once they have been seen.
+                up({ grad: y });
+                setTimeout(() => next(), CHOICE_MS);
               }}
             >
               <b>{y}</b>
@@ -526,12 +534,14 @@ export function Account({ d, hist, up, next, path, back, dir, phone, now, signIn
     if (!EMAIL_RE.test(email)) {
       setErr({ field: 'email', message: email ? 'Please enter a valid email address.' : 'Enter your email.' });
       haptic('warning');
+      focusField('ch-ox-email');
       return;
     }
     const p = passwordProblem(pw);
     if (p) {
       setErr({ field: 'pw', message: p });
       haptic('warning');
+      focusField('ch-ox-pw');
       return;
     }
     setErr(null);
@@ -540,8 +550,10 @@ export function Account({ d, hist, up, next, path, back, dir, phone, now, signIn
     const r = await createAccount({ kind: d.kind, email, password: pw, first: d.first, last: d.last });
     if (!r.ok) {
       setBusy(false);
-      setErr(accountErrorFor(r.error));
+      const e = accountErrorFor(r.error);
+      setErr(e);
       haptic('error');
+      if (e.field) focusField(e.field === 'email' ? 'ch-ox-email' : 'ch-ox-pw');
       return;
     }
     haptic('success');
@@ -562,7 +574,7 @@ export function Account({ d, hist, up, next, path, back, dir, phone, now, signIn
   const emailErr = err?.field === 'email' ? err.message : null;
   const pwErr = err?.field === 'pw' ? err.message : null;
   return (
-    <Q dir={dir} back={back} eyebrow={<Who d={d} path={path} />} title={`Create your account, ${d.first.trim() || 'there'}.`} sub="You’ll use this email and password to sign in." onSubmit={() => void submit()}>
+    <Q dir={dir} back={back} hold={busy} eyebrow={<Who d={d} path={path} />} title={`Create your account, ${d.first.trim() || 'there'}.`} sub="You’ll use this email and password to sign in." onSubmit={() => void submit()}>
       <div className="ch-ox-body">
         <div className="ch-ox-fields">
           <div className="ch-ox-field">
@@ -691,6 +703,7 @@ export function Game({ d, up, next, path, back, dir, phone }: StepProps) {
     if (p) {
       setStErr(p);
       haptic('warning');
+      focusField('ch-ox-state');
       return;
     }
     next();
@@ -841,7 +854,7 @@ export function Photo({ d, up, next, path, back, dir, phone, now }: StepProps) {
   const name = `${d.first} ${d.last}`.trim() || 'You';
   const meta = [d.grad ? classOf(d.grad, now) : null, d.hcp != null ? `${fmtHcp(d.hcp)} index` : null, [d.city.trim(), d.state].filter(Boolean).join(', ') || null].filter(Boolean).join(' · ') || 'Player';
   return (
-    <Q dir={dir} back={back} eyebrow={<Who d={d} path={path} />} title="Put a face to the name." sub="Teammates see this on the roster and in messages." onSubmit={() => void finish()}>
+    <Q dir={dir} back={back} hold={busy} eyebrow={<Who d={d} path={path} />} title="Put a face to the name." sub="Teammates see this on the roster and in messages." onSubmit={() => void finish()}>
       <div className="ch-ox-body">
         <div className="ch-ox-photo">
           <button
@@ -986,12 +999,14 @@ export function Done({ d, finish, dir }: StepProps) {
       <ul className="ch-ox-list" aria-label="Next steps">
         {NEXT_STEPS.map(([ic, t, m, href]) => (
           <li key={t}>
-            <span className="ch-ox-list__ic">
-              <Icon icon={ic} size={15} />
-            </span>
             <button type="button" className="ch-ox-nextstep" onClick={() => finish(href)}>
-              <b>{t}</b>
-              <em>{m}</em>
+              <span className="ch-ox-list__ic">
+                <Icon icon={ic} size={15} />
+              </span>
+              <span className="ch-ox-nextstep__t">
+                <b>{t}</b>
+                <em>{m}</em>
+              </span>
               <Icon icon={ChevronRight} size={15} />
             </button>
           </li>
@@ -1106,6 +1121,7 @@ export function RDetails({ d, up, next, back, dir, phone }: StepProps) {
     if (p) {
       setErr(p);
       haptic('warning');
+      focusField(`ch-ox-r${p.field}`);
       return;
     }
     setErr(null);
@@ -1129,6 +1145,7 @@ export function RDetails({ d, up, next, back, dir, phone }: StepProps) {
     <Q
       dir={dir}
       back={back}
+      hold={busy}
       eyebrow={
         <>
           <Icon icon={P ? Flag : A ? Landmark : ClipboardList} size={14} />

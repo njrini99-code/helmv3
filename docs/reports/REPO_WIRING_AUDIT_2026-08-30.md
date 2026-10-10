@@ -245,6 +245,6 @@ Until then, retire the worktree BEFORE merging, or merge without
 `verify-emails-*`, `backfill-*`, `reseed-*`) is not a gate and should not be
 wired. Deliberately out of scope rather than swept.
 
-One explicit exception worth stating: **`scripts/deploy-prod.sh` is not dead.**
-It is the production deploy path, and PR #1678 is open about the claim that
-deploying through it is UNENFORCED. Its absence from CI is deliberate.
+One explicit exception stated at the time: the deploy script was not dead; it
+was the production deploy path, deliberately absent from CI. (Removed
+2026-10-07: the deploy command now lives in AGENTS.md "Production".)

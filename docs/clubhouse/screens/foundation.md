@@ -82,7 +82,10 @@ Route: (shell, tokens, primitives)   Surface tag: `shell`
 
 ## motion
 <!-- Rewritten for v2 motion (D-64) and v2 haptics (D-70) on 2026-09-29; earlier evidence was against the old timings, so every box starts again. -->
-- [ ] Transitions use only the v2 tokens (press 110, quick 180, base 260, release 280, reveal 520ms) and the v2 curves (D-64)
+- [ ] Transitions use only the v2 tokens (press 110, quick 180, base 260,
+  release 280, reveal 520ms) and the v2 curves (D-64), or the D-64 springs on
+  those durations (`CH_SPRINGS`, bounce 0 to 0.1; extension 2026-10-08, owner to
+  confirm)
 - [ ] Press: every tappable shrinks about 6px and springs back (`useChPress`), and nothing scales twice
 - [ ] First paint: sections rise in once (`.ch-reveal`); no count-ups and no other stagger; a refresh never replays it
 - [ ] Skeletons wait 150ms, fade in, and share one shimmer sweep

@@ -391,7 +391,7 @@ the hole index the checkpoint started on.
 
 ### Actions And Services
 
-- `src/app/golf/actions/golf.ts`
+- `src/app/golf/actions/shot-actions.ts`, `round-partial.ts`, `round-submit.ts`, `golf-action-shared.ts` (the former `golf.ts`, split by domain; older prose here that says `golf.ts` means these)
 - `src/app/golf/actions/round-drafts.ts`
 - `src/app/golf/actions/shot-analytics.ts`
 - src/hooks/golf/use-auto-save-round.ts no longer exists; round persistence is `src/hooks/golf/use-offline-sync.ts`

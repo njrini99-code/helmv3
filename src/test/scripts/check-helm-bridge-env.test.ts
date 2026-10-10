@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 /**
- * The script printed PASS over eight 11-character placeholders. Run it for
+ * The script printed PASS over six 11-character placeholders. Run it for
  * real, in a directory with no env files so only the env we hand it counts.
  */
 const SCRIPT = resolve(__dirname, '../../../scripts/check-helm-bridge-env.mjs');
@@ -17,8 +17,6 @@ const WELL_FORMED: Record<string, string> = {
   VERCEL_API_TOKEN: 'A1b2C3d4E5f6G7h8I9j0K1l2',
   VERCEL_PROJECT_ID: 'prj_abc123DEF456',
   INTERNAL_LOG_KEY: 'k'.repeat(32),
-  INNGEST_SIGNING_KEY: `signkey-prod-${'0f'.repeat(32)}`,
-  INNGEST_EVENT_KEY: 'E'.repeat(86),
 };
 
 function run(env: Record<string, string>, ...args: string[]) {
@@ -35,13 +33,12 @@ function run(env: Record<string, string>, ...args: string[]) {
 }
 
 describe('scripts/check-helm-bridge-env.mjs', () => {
-  it('FAILS on eight 11-character placeholders — the exact wall the old floor waved through', () => {
+  it('FAILS on six 11-character placeholders — the exact wall the old floor waved through', () => {
     const eleven = Object.fromEntries(Object.keys(WELL_FORMED).map((k) => [k, 'abcdefghijk']));
     const { status, out } = run(eleven);
     expect(status).toBe(1);
     expect(out).toMatch(/malformed Sentry read token/);
-    expect(out).toMatch(/malformed Inngest signing key/);
-    expect(out).toMatch(/expected signkey-<env>-<hex>/);
+    expect(out).toMatch(/malformed Vercel API token/);
     expect(out).not.toMatch(/passed/);
     // Never the value.
     expect(out).not.toContain('abcdefghijk');

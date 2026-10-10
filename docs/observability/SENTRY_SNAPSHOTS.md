@@ -6,10 +6,11 @@ captured from THIS PR's own build and uploaded to Sentry's Snapshots product
 (Beta), which diffs it against a base build and posts a GitHub status check.
 **2026-09-06: the standalone `sentry-snapshots.yml` workflow this doc
 describes is gone** — its job (`Capture + upload Sentry snapshots`) now
-lives as the `sentry-snapshot-capture` job inside `.github/workflows/ci.yml`,
-run on push to `main`, dispatch, or a `ci:e2e`-labelled PR (2026-09-23;
-before that, gated by the shared detector's `code`/`e2e` outputs), and it
-downloads `ci.yml`'s own `next-build` artifact instead of running its own
+lives as the `sentry-snapshot-capture` job inside
+`.github/workflows/nightly.yml` (2026-10-07; it was in `ci.yml`, on push to
+`main`, dispatch or a `ci:e2e`-labelled PR from 2026-09-23). It runs nightly
+and on `gh workflow run nightly.yml --ref <branch>`, and it downloads the
+nightly workflow's own `next-build` artifact instead of running its own
 `npm run build`. The design below (screen list, determinism rules,
 advisory-then-required plan) is otherwise unchanged. Spec files:
 `e2e/sentry-snapshots.spec.ts` (public pages + GolfHelm player) and
@@ -198,12 +199,12 @@ inside the single `sentry-snapshot-capture` job in `ci.yml`, not a separate
    cost with no product. As of this writing the secret does NOT exist (see
    §6), so every PR pays only that step's few seconds until an owner adds
    it.
-2. **The event must be push to `main`, `workflow_dispatch`, or a PR
-   labelled `ci:e2e`** (2026-09-23; until then it ran on most PRs, gated on
-   `detect-changes`'s `code`/`e2e` outputs). It also needs `next-build` to
-   have built (`needs.next-build.outputs.built`). `push` to `main` always
-   runs (§1, base build refresh), so the base build Sentry diffs against
-   stays current; add the label to a PR whose visuals you want diffed
+2. **The event must be the nightly schedule or `workflow_dispatch`**
+   (2026-10-07; before that, push to `main`, dispatch or a PR labelled
+   `ci:e2e`, and before that most PRs). The nightly run refreshes the base
+   build Sentry diffs against (§1); to diff a branch's visuals, dispatch the
+   workflow on it. The paragraph that follows describes the label, which no
+   longer exists; add the label to a PR whose visuals you want diffed
    before merge.
 
 This job is **advisory, not required** — it is not added to branch

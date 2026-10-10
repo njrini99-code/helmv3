@@ -73,7 +73,7 @@
 
 'use client';
 
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
 import { useId, type ReactNode } from 'react';
 import { VB, GREEN_INSET_VB, type YardageTick, type PlottedGreenInset } from './geometry';
 import type { HoleShotPathProps } from './types';

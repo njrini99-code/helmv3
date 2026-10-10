@@ -263,6 +263,9 @@ export async function loadCalendar(input: {
     const invitees = invited.get(r.id) ?? [];
     const replies = rsvp.get(r.id) ?? {};
     const me = input.role === 'player' ? input.viewerPlayerId : null;
+    // D2-8 (owner, 2026-10-08): a meeting with no invitees is the coach's own (a parent call, a staff meeting); players
+    // never see it. Only once the invite list has loaded: a failed read must not hide the team's meetings.
+    if (input.role === 'player' && !rsvpError && r.event_type === 'meeting' && !invitees.length) continue;
     const base = {
       id: r.id,
       type,

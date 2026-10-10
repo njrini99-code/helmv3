@@ -1,6 +1,7 @@
 import { useCallback, useRef } from 'react';
 import type { ShotRecord, HoleStats, RoundHole } from '@/lib/types/golf';
-import { updateShot, deleteShot, type ActionResult, type ShotUpdateData } from '@/app/golf/actions/golf';
+import { updateShot, deleteShot, type ShotUpdateData } from '@/app/golf/actions/shot-actions';
+import { type ActionResult } from '@/app/golf/actions/golf-action-shared';
 import { deriveLieAfter, calculateShotDistanceWithDirection } from '@/lib/utils/shot-helpers';
 import { recordHelmBreadcrumb } from '@/lib/observability/client-breadcrumbs';
 import type { ShotTrackingState, ShotAction, EditFormData } from './use-shot-state-machine';

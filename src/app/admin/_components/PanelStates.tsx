@@ -4,9 +4,41 @@ import { LocalTime } from './LocalTime';
 /** All-clear ≠ no-data ≠ fetch-failed. Three distinct states so a silent
  *  dashboard is never mistaken for a healthy system. */
 
-export function PanelAllClear({ label, checkedAt }: { label: string; checkedAt: string }) {
+export function PanelAllClear({
+  label,
+  checkedAt,
+  variant = 'block',
+}: {
+  label: string;
+  checkedAt: string;
+  /** `block` (default) is the full, centred confirmation a standalone panel
+   *  leads with. `inline` is one quiet row, for a panel whose all-clear is
+   *  already stated by a page-level `AllClearBanner` above it: two or three
+   *  stacked green blocks saying the same thing is a celebration wall, not
+   *  information. Opt-in, so every existing call site renders unchanged. */
+  variant?: 'block' | 'inline';
+}) {
+  if (variant === 'inline') {
+    return (
+      <div
+        data-slot="panel-all-clear"
+        data-variant="inline"
+        className="flex min-h-11 flex-wrap items-center gap-x-2.5 gap-y-0.5 rounded-fw-md bg-surface-sunken px-3 py-2"
+      >
+        <CheckCircle2 size={16} className="shrink-0 text-fw-success-ink" aria-hidden />
+        <p className="min-w-0 flex-1 text-body-sm font-medium text-text-primary">{label}</p>
+        <p className="font-fw-mono text-caption tabular-nums text-text-tertiary">
+          checked <LocalTime iso={checkedAt} />
+        </p>
+      </div>
+    );
+  }
   return (
-    <div className="flex flex-col items-center gap-2 rounded-xl bg-fw-success-bg px-6 py-8 text-center">
+    <div
+      data-slot="panel-all-clear"
+      data-variant="block"
+      className="flex flex-col items-center gap-2 rounded-xl bg-fw-success-bg px-6 py-8 text-center"
+    >
       <CheckCircle2 size={20} className="text-fw-success-ink" aria-hidden />
       <p className="text-sm font-medium text-accent-700">{label}</p>
       <p className="font-fw-mono text-xs tabular-nums text-warm-500">

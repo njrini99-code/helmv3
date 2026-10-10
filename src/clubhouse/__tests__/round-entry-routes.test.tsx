@@ -1,4 +1,4 @@
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { act, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement, ReactNode } from 'react';
@@ -42,7 +42,7 @@ vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: () => mocks.flag.on })
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: () => Promise.resolve(mocks.session.current) }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(mocks.tables));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(async () => {}) }));
-vi.mock('@/app/golf/actions/golf', () => ({
+vi.mock('@/app/golf/actions/qualifier-actions', () => ({
   getPlayerQualifiers: (...args: unknown[]) => mocks.getPlayerQualifiers(...args),
   getNextQualifierRoundNumber: (...args: unknown[]) => mocks.getNextQualifierRoundNumber(...args),
 }));

@@ -90,7 +90,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
   };
   const discard = useAction('rounds.discard', discardRound, (r: ChUnfinishedRound) => ({
     done: 'Round discarded',
-    failed: `Couldn't discard the round at ${r.course}`,
+    failed: `Couldn’t discard the round at ${r.course}`,
     hint: 'It is still saved. Try again, or continue it instead.',
     code: 'CH-11001',
   }));
@@ -111,15 +111,16 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
   const [current, ...more] = unfinished;
 
   return (
-    <main className={'ch-rd' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rd-title" aria-busy={refreshing || undefined}>
-      {phone && <PhoneTop start title="Rounds" />}
-      <header className="ch-rd-h">
+    <main className={'ch-rd' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rd-title" aria-busy={refreshing || undefined} data-canopy={phone ? undefined : ''}>
+      {phone && <PhoneTop start heading={false} title="Rounds" />}
+      <header className="ch-rd-h" data-canopy-head={phone ? undefined : ''}>
         <div>
           <span className="ch-rd-k">{counted ? `Since August 1 · ${counted} counted ${counted === 1 ? 'round' : 'rounds'}` : 'Since August 1'}</span>
           {/* CH-11410: a refresh with the page on screen keeps it and says it is updating (a Try again is the usual cause). */}
           <span className="ch-rd-upd" role="status" data-ch-code={refreshing ? 'CH-11410' : undefined}>
             {refreshing ? 'Updating…' : ''}
           </span>
+          {/* D11: one h1 per screen; the phone bar's "Rounds" is plain text (heading={false}). */}
           <h1 id="ch-rd-title">Your rounds</h1>
         </div>
         {newHref && !nothing && (
@@ -130,7 +131,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
       </header>
 
       {stale && (
-        <InlineNotice code="CH-11213" title="Your rounds may be out of date" body="We couldn't refresh them just now. This is what loaded last time." onRetry={refresh} retrying={refreshing} />
+        <InlineNotice code="CH-11213" title="Your rounds may be out of date" body="We couldn’t refresh them just now. This is what loaded last time." onRetry={refresh} retrying={refreshing} />
       )}
 
       {nothing ? (
@@ -166,7 +167,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
               />
             </SectionBoundary>
             {data.rounds.error ? (
-              <InlineNotice code="CH-11201" title="Your rounds didn't load" body="Nothing is lost. Your posted rounds are still saved; try again in a moment." onRetry={refresh} retrying={refreshing} />
+              <InlineNotice code="CH-11201" title="Your rounds didn’t load" body="Nothing is lost. Your posted rounds are still saved; try again in a moment." onRetry={refresh} retrying={refreshing} />
             ) : (
               <SectionBoundary surface="rounds.season" label="Season scoring" code="CH-11203">
                 <SeasonCard season={data.season} phone={phone} />
@@ -225,7 +226,6 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                 <EmptyState code="CH-11303" compact title={`No rounds at “${q.trim()}”`} body="Check the spelling, or search part of the course name." />
               ) : (
                 groups.map((g) => {
-                  const scores = g.rounds.map((r) => r.score);
                   const full = g.rounds.filter((r) => r.holes === 18);
                   return (
                     <section key={g.key} className="ch-rd-grp" aria-label={g.key}>
@@ -240,9 +240,12 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                             avg <b>{formatFixed(full.reduce((a, r) => a + r.score, 0) / full.length, 1)}</b>
                           </span>
                         )}
-                        <span className="ch-num">
-                          low <b>{Math.min(...scores)}</b>
-                        </span>
+                        {/* D2: like the average, the low is an 18-hole figure; a nine-hole 38 is not a month's low. */}
+                        {full.length > 0 && (
+                          <span className="ch-num">
+                            low <b>{Math.min(...full.map((r) => r.score))}</b>
+                          </span>
+                        )}
                       </div>
                       <div className="ch-rd-book">
                         {g.rounds.map((r) => (
@@ -271,7 +274,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
         icon={TriangleAlert}
         code="CH-11501"
         title="Discard this round?"
-        description={asking ? `Every shot from ${asking.course} on ${shortDay(asking.date)} is deleted. This can't be undone.` : undefined}
+        description={asking ? `Every shot from ${asking.course} on ${shortDay(asking.date)} is deleted. This can’t be undone.` : undefined}
         footer={
           <>
             <Button variant="ghost" onClick={() => setAsking(null)}>

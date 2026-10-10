@@ -215,7 +215,7 @@ psql -h localhost -U postgres -f backup.sql
    ```
 2. Or redeploy from known-good commit:
    ```bash
-   vercel --prod
+   ./node_modules/.bin/vercel deploy --prod   # from the linked checkout
    ```
 3. Investigate and fix issue
 4. Redeploy
@@ -526,8 +526,8 @@ Deploy, rollback and promote need explicit owner authorization
 # Restore database
 psql -h HOST -U postgres -f backup.sql
 
-# Deploy previous version
-vercel --prod
+# Deploy previous version (from the linked checkout)
+./node_modules/.bin/vercel deploy --prod
 
 # Roll back database migration
 supabase migration repair --status reverted [migration-id]

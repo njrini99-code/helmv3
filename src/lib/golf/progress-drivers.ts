@@ -31,7 +31,7 @@ import 'server-only';
  * GOAL PROGRESS
  * ----------------------------------------------------------------------------
  * The pure `evaluateGoal` core has always existed but was NEVER RUN in a live
- * system: no Inngest function, no cron, no post-round hook called it. So every
+ * system: no cron, no post-round hook called it. So every
  * goal sat frozen at `current_value === baseline_value` with an empty
  * `snapshots[]` — the progress bar could never move and outcomes never resolved.
  *

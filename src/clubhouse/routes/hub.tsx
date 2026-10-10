@@ -25,11 +25,11 @@ export async function ClubhouseHubRoute({ tab }: { tab?: string }) {
           size="page"
           code="CH-10309"
           icon={Users}
-          title="You aren't on a team yet"
+          title="You aren’t on a team yet"
           body={
             session.coach
               ? 'Once your team is set up, Team Hub holds its announcements, trips, tasks and files.'
-              : "Ask your coach for your team's code or an invite. Once you join, Team Hub shows your team's posts, trips and tasks."
+              : "Ask your coach for your team’s code or an invite. Once you join, Team Hub shows your team’s posts, trips and tasks."
           }
         />
       </main>

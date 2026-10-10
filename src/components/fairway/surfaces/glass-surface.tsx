@@ -40,7 +40,7 @@ import type { ReactNode } from 'react';
 import {
   motion,
   type HTMLMotionProps,
-} from 'framer-motion';
+} from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import styles from './glass-surface.module.css';

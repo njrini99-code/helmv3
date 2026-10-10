@@ -14,12 +14,13 @@ import { haptic } from '../../lib/haptics';
 import { useChSessionState } from '../../lib/session-state';
 import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
-import { formatToPar } from '../../lib/format';
+import { formatToPar, NO_DATA } from '../../lib/format';
 import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
-import { ctaLabel } from './model';
-import { Meta, StatusPill, ToPar } from './parts';
+import { ctaLabel, endedLive, listLede } from './model';
+import { Meta, Pos, StatusPill, ToParPlate } from './parts';
 import { isPlainClick, noteOpenedFromList } from './return-state';
 import '../../styles/qualifiers.css';
+import { SerifText } from '../../ui/SerifText';
 
 type Filter = 'all' | 'active' | 'concluded';
 const isActive = (i: ChQListItem) => i.status !== 'completed';
@@ -65,25 +66,19 @@ export function QualifiersList({ data }: { data: ChQList }) {
   };
 
   const title = coach ? 'Lineup decisions' : data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers';
-  const lede = coach
-    ? 'Run head-to-head qualifiers to decide who plays this week.'
-    : data.mode === 'mine'
-      ? 'The qualifiers you’re entered in, and where you stand.'
-      : 'Your team’s qualifiers, and where you stand in the ones you’re entered in.';
+  const lede = listLede(coach, data.mode);
 
   return (
-    <main className="ch-qf ch-qf--list">
+    <main className="ch-qf ch-qf--list" data-canopy="">
       {/* Phone (board 01): Qualifiers opens from More (D-66), so the top bar goes back there. */}
-      <PhoneTop title={data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} back={{ label: 'More', onBack: backFromMore }} />
-      <header className="ch-qf-head">
+      <PhoneTop heading={false} title={data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} back={{ label: 'More', onBack: backFromMore }} />
+      <header className="ch-qf-head" data-canopy-head="">
         <div>
           <span className="ch-qf-eyebrow ch-num">
-            {/* The phone's top bar already names the page, so the eyebrow there is the counts alone (board 01). */}
-            <span className="ch-qf-eyebrow__k">
-              {data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'}
-              {!unread && ' · '}
-            </span>
-            {!unread && `${act.length} active · ${con.length} concluded`}
+            {/* The phone's top bar already names the page, so the eyebrow there is the counts alone (board 01). Counts that
+                didn't load are a dash, never 0 and never a blank line (states audit c14). */}
+            <span className="ch-qf-eyebrow__k">{data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} · </span>
+            {unread ? `${NO_DATA} active · ${NO_DATA} concluded` : `${act.length} active · ${con.length} concluded`}
           </span>
           <h1>{title}</h1>
           <p>{lede}</p>
@@ -101,7 +96,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
       {data.listError ? (
         <InlineNotice
           code="CH-09201"
-          title="The qualifiers didn’t load."
+          title="The qualifiers didn’t load"
           body="Nothing has changed. Try again, and if it keeps happening the error has already been reported."
           onRetry={refresh}
           retrying={refreshing}
@@ -109,7 +104,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
       ) : mineUnknown ? (
         <InlineNotice
           code="CH-09222"
-          title="Your qualifiers didn’t load."
+          title="Your qualifiers didn’t load"
           body="Which qualifiers you’re entered in didn’t load, so none are shown rather than a wrong list. Nothing has changed. Try again."
           onRetry={refresh}
           retrying={refreshing}
@@ -143,6 +138,9 @@ export function QualifiersList({ data }: { data: ChQList }) {
       ) : (
         <>
           <div className="ch-qf-tools">
+            {/* CH-09601: a status pill, a card or the hero answers a press with a deeper tint over the press beat, never a
+                scale (the shell's CH-1606): pills and the phone's live card darken, the Ledger's rows take the row press
+                tint, and the desktop hero's title deepens. */}
             <div className="ch-qf-pills" role="group" aria-label="Filter qualifiers by status">
               {(
                 [
@@ -163,7 +161,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
           {data.standingsError && (
             <InlineNotice
               code="CH-09202"
-              title="Standings didn’t load."
+              title="Standings didn’t load"
               body="The qualifiers are listed, but entrants, rounds in and leaders are missing until they load."
               onRetry={refresh}
               retrying={refreshing}
@@ -177,7 +175,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
                   compact
                   code="CH-09302"
                   icon={Search}
-                  title="No qualifiers match your filters."
+                  title="No qualifiers match your filters"
                   body="Try a different search, or clear the status filter."
                   action={
                     <Button
@@ -194,13 +192,14 @@ export function QualifiersList({ data }: { data: ChQList }) {
               </div>
             ) : (
               <>
-                {hero && <Hero item={hero} standingsError={data.standingsError} />}
+                {hero && <Hero item={hero} standingsError={data.standingsError} today={data.today} />}
                 {rest.length > 0 && (
                   <section className="ch-qf-sec" aria-labelledby="ch-qf-active">
-                    <h2 id="ch-qf-active">Active</h2>
-                    <div className="ch-qf-grid">
+                    {/* P009-D14: the section holds upcoming qualifiers as well as live ones. */}
+                    <h2 id="ch-qf-active">Upcoming and live</h2>
+                    <div className="ch-qf-grid is-ledger">
                       {rest.map((i) => (
-                        <Card key={i.id} item={i} standingsError={data.standingsError} />
+                        <Card key={i.id} item={i} standingsError={data.standingsError} today={data.today} />
                       ))}
                     </div>
                   </section>
@@ -209,14 +208,14 @@ export function QualifiersList({ data }: { data: ChQList }) {
                   <section className="ch-qf-sec" aria-labelledby="ch-qf-concluded">
                     <h2 id="ch-qf-concluded">Concluded</h2>
                     {concluded.length ? (
-                      <div className="ch-qf-grid">
+                      <div className="ch-qf-grid is-ledger">
                         {concluded.map((i) => (
-                          <Card key={i.id} item={i} standingsError={data.standingsError} />
+                          <Card key={i.id} item={i} standingsError={data.standingsError} today={data.today} />
                         ))}
                       </div>
                     ) : (
                       <div className="ch-qf-empty ch-sheet">
-                        <EmptyState compact code="CH-09303" icon={Flag} title="No concluded qualifiers yet." body="Qualifiers move here once they’re completed." />
+                        <EmptyState compact code="CH-09303" icon={Flag} title="No concluded qualifiers yet" body="Qualifiers move here once they’re completed." />
                       </div>
                     )}
                   </section>
@@ -241,15 +240,22 @@ function Mine({ item }: { item: ChQListItem }) {
   );
 }
 
-function Hero({ item, standingsError }: { item: ChQListItem; standingsError: boolean }) {
+/** P009-D3: a live qualifier past its last day; its outstanding rounds are unknown when the standings didn't load. */
+const endedOf = (item: ChQListItem, standingsError: boolean, today: string | undefined) =>
+  endedLive({ status: item.status, endDate: item.endDate, today, entrants: item.entrants, numRounds: item.numRounds, submitted: standingsError ? null : item.submitted });
+
+function Hero({ item, standingsError, today }: { item: ChQListItem; standingsError: boolean; today?: string }) {
   const live = item.status === 'in_progress' && !standingsError && item.leaders.length > 0;
+  const ended = endedOf(item, standingsError, today);
   return (
     <Link href={detailHref(item.id)} className="ch-qf-hero" onClick={opened(item.id, 'hero')}>
       <div className="ch-qf-hero__main">
-        <StatusPill status={item.status} />
-        <h2>{item.name}</h2>
+        <StatusPill status={item.status} ended={ended} />
+        <h2>
+          <SerifText text={item.name} />
+        </h2>
         {item.description && <p>{item.description}</p>}
-        <Meta startDate={item.startDate} endDate={item.endDate} squad={item.squad} course={item.course} />
+        <Meta startDate={item.startDate} endDate={item.endDate} squad={item.squad} course={item.course} today={today} />
         {!standingsError && <Mine item={item} />}
         <span className="ch-qf-cta">
           {ctaLabel(item.status)}
@@ -257,7 +263,7 @@ function Hero({ item, standingsError }: { item: ChQListItem; standingsError: boo
         </span>
       </div>
       {live && (
-        <div className="ch-qf-lead ch-well-soft">
+        <div className="ch-qf-lead ch-scoreboard">
           <div className="ch-qf-lead__h ch-num">
             <span>Leaders</span>
             <span>
@@ -271,13 +277,14 @@ function Hero({ item, standingsError }: { item: ChQListItem; standingsError: boo
                   <span>Top-score line</span>
                 </div>
               )}
+              {/* P009-A1: the leaders hang on plates, as on the board, with their movement since the previous round. */}
               <div className="ch-qf-lead__r">
-                <span className="ch-qf-pos">{r.position}</span>
+                <Pos position={r.position} tied={r.position.startsWith('T')} move={r.move} />
                 <span className="ch-qf-lead__n">{r.name}</span>
                 <span className="ch-qf-lead__th">
                   {r.played}/{item.numRounds}
                 </span>
-                <ToPar value={r.toPar} />
+                <ToParPlate value={r.toPar} size="card" />
               </div>
             </div>
           ))}
@@ -287,7 +294,7 @@ function Hero({ item, standingsError }: { item: ChQListItem; standingsError: boo
   );
 }
 
-function Card({ item, standingsError }: { item: ChQListItem; standingsError: boolean }) {
+function Card({ item, standingsError, today }: { item: ChQListItem; standingsError: boolean; today?: string }) {
   return (
     <Link href={detailHref(item.id)} className="ch-qf-card" onClick={opened(item.id, 'card')}>
       <div className="ch-qf-card__h">
@@ -295,9 +302,9 @@ function Card({ item, standingsError }: { item: ChQListItem; standingsError: boo
           <h3>{item.name}</h3>
           {item.description && <p>{item.description}</p>}
         </div>
-        <StatusPill status={item.status} />
+        <StatusPill status={item.status} ended={endedOf(item, standingsError, today)} />
       </div>
-      <Meta startDate={item.startDate} endDate={item.endDate} squad={item.squad} course={item.course} />
+      <Meta startDate={item.startDate} endDate={item.endDate} squad={item.squad} course={item.course} today={today} />
       {!standingsError && <Mine item={item} />}
       <span className="ch-qf-cta is-quiet">
         {ctaLabel(item.status)}

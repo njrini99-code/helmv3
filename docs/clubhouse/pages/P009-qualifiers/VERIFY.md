@@ -202,6 +202,8 @@ before, after, baseline or evidence.
 | `P009__premium-audit__coach__1280__case-081-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-081-chromium-normal; /clubhouse-preview/qualifiers; synthetic preview |
 | `P009__premium-audit__coach__390__case-010-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-010-webkit-reduce; /clubhouse-preview/qualifiers; synthetic preview |
 | `P009__premium-audit__coach__390__case-081-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-081-chromium-normal; /clubhouse-preview/qualifiers; synthetic preview |
+| `P009__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
+| `P009__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
 
 ## Historical verification gaps
 

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -676,10 +676,10 @@ describe('Game detail · states', () => {
     const user = userEvent.setup();
     showPlayer(withExtra({ holesError: true, toughest: null, opening: null, approachError: true, approach: null, sprayError: true, spray: null, puttsError: true }));
     await openTab(/Game detail/);
-    expect(code('CH-5209')!.textContent).toContain("Toughest holes didn't load.");
-    expect(code('CH-5210')!.textContent).toContain("Proximity against the Tour didn't load.");
+    expect(code('CH-5209')!.textContent).toContain('Toughest holes didn’t load');
+    expect(code('CH-5210')!.textContent).toContain('Proximity against the Tour didn’t load');
     expect(codes('CH-5212')).toHaveLength(2);
-    expect(code('CH-5211')!.textContent).toContain("Putts past 20 feet didn't load.");
+    expect(code('CH-5211')!.textContent).toContain('Putts past 20 feet didn’t load');
     // None of them is shown as "none logged".
     expect(code('CH-5311')).toBeNull();
     expect(code('CH-5316')).toBeNull();
@@ -755,7 +755,9 @@ describe('Rounds on the phone', () => {
   it('the bests and the comparison are panels above the round list, and a round row names its type', () => {
     showPhone(player());
     const titles = [...document.querySelectorAll('.ch-stm-panel__h h2')].map((h) => h.textContent);
-    expect(titles).toEqual(expect.arrayContaining(['Score by round', 'Personal bests', 'This window against the one before', 'Rounds']));
+    expect(titles).toEqual(expect.arrayContaining(['Scoring trend', 'Personal bests', 'This window against the one before', 'Rounds']));
+    // P005-D1: one scoring chart on the phone. Score by round drew the same rounds one panel below Scoring trend.
+    expect(titles).not.toContain('Score by round');
     expect(titles.indexOf('Personal bests')).toBeLessThan(titles.indexOf('Rounds'));
     expect(document.querySelector('.ch-spm-round .ch-num')!.textContent).toContain('Practice');
   });

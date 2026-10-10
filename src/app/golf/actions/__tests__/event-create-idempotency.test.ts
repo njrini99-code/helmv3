@@ -37,7 +37,7 @@ vi.mock('@/lib/notifications', () => ({ notifyQualifierCreated: vi.fn(async () =
 vi.mock('@/lib/notifications/email', () => ({ sendEmailNotification: vi.fn(async () => ({ success: true })) }));
 vi.mock('@/lib/notifications/push', () => ({ sendBulkPushNotification: vi.fn(async () => {}) }));
 
-import { createGolfEvent, updateGolfEvent } from '../golf';
+import { createGolfEvent, updateGolfEvent } from '../calendar-events';
 import { createRecurringEvent } from '../recurring-events';
 
 type Row = Record<string, unknown>;

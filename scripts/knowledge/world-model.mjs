@@ -49,11 +49,6 @@
  * parsed — schema mismatch: ..."), never a silent empty list read as "no
  * journeys exist".
  *
- * `src/lib/inngest/functions.ts` maps to NO registry feature today (verified
- * with `npm run knowledge:map -- --files src/lib/inngest/functions.ts` ->
- * `impactedFeatures: []`) — a real, pre-existing gap this generator surfaces
- * rather than papers over by guessing a feature from an Inngest event name.
- *
  * DETERMINISM: sorted throughout (`sortWorldModel`), nothing reads the clock,
  * no timestamp in the committed artifact — the same reason
  * `gen-feature-map.ts` and `document-inventory.mjs` avoid one: a `--check`
@@ -377,7 +372,7 @@ async function buildModel({ includeLines = false } = {}) {
     rawEdges.push({ source: primary, target: rpcName, kind: 'feature_rpc', evidence });
   }
 
-  // --- Jobs: Vercel crons, Inngest functions, launchd -----------------------
+  // --- Jobs: Vercel crons, launchd -----------------------
   const vercelJson = JSON.parse(readTracked('vercel.json'));
   for (const cron of vercelJson.crons ?? []) {
     const jobId = `vercel_cron:${cron.path}`;
@@ -391,35 +386,6 @@ async function buildModel({ includeLines = false } = {}) {
         kind: 'job_feature',
         evidence: { kind: 'registry_glob', path: routeFile },
       });
-    }
-  }
-  if (scannableFiles.includes('src/lib/inngest/functions.ts')) {
-    const text = readTracked('src/lib/inngest/functions.ts');
-    const { primary } = resolvePrimaryFeature(
-      registry,
-      'src/lib/inngest/functions.ts',
-      matchGlob,
-      flattenCodePatterns,
-    );
-    for (const m of text.matchAll(
-      /id:\s*'([a-z0-9-]+)'[\s\S]*?triggers:\s*\[\s*\{\s*(cron|event):\s*'([^']+)'/g,
-    )) {
-      const [, fnId, triggerKind, triggerValue] = m;
-      const jobId = `inngest:${fnId}`;
-      nodes.jobs.push({
-        id: jobId,
-        kind: 'inngest',
-        trigger: { type: triggerKind, value: triggerValue },
-        definedIn: 'src/lib/inngest/functions.ts',
-      });
-      if (primary) {
-        rawEdges.push({
-          source: jobId,
-          target: primary,
-          kind: 'job_feature',
-          evidence: { kind: 'registry_glob', path: 'src/lib/inngest/functions.ts' },
-        });
-      }
     }
   }
   for (const plist of scannableFiles.filter((f) => f.startsWith('config/launchd/') && f.endsWith('.plist'))) {
@@ -593,7 +559,9 @@ function resolveImportedFile(importPath, scannableFiles) {
 }
 
 function buildUnmappedNote(registry, _featureIds) {
-  const probes = ['src/lib/inngest/functions.ts'];
+  // Files probed for a registry owner. Empty today: the one probe (the Inngest
+  // function registry) was removed with Inngest.
+  const probes = [];
   const unmapped = probes.filter((p) => {
     const { primary } = resolvePrimaryFeature(registry, p, matchGlob, flattenCodePatterns);
     return !primary;

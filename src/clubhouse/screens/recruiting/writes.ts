@@ -32,6 +32,12 @@ export interface ChRecruitingWrites {
   create(input: RecruitInput, requestId?: string): Promise<ServerResult<{ id: string }>>;
   update(id: string, patch: Partial<RecruitInput>): Promise<ServerResult>;
   remove(id: string): Promise<ServerResult>;
+  /**
+   * P014 C1: whether create and update store `next_step_label` and `next_step_date`. The live actions do
+   * (src/app/golf/actions/recruiting.ts, only when passed). The page still sends them only once its column probe found
+   * the columns, so before the migration is applied no write names them; a set without this shows a next step read-only.
+   */
+  nextStepWrites?: boolean;
   documents: {
     list(recruitId: string): Promise<ServerResult<ChDocument[]>>;
     /** The file goes straight to Storage (./upload.ts), so a film is not held to a server action's body limit. A refusal of the file itself comes back as `refused`. */
@@ -47,6 +53,7 @@ export function createLiveRecruitingWrites(): ChRecruitingWrites {
     create: (input, requestId) => createRecruit(input, requestId ? { requestId } : undefined),
     update: (id, patch) => updateRecruit(id, patch),
     remove: (id) => deleteRecruit(id),
+    nextStepWrites: true,
     documents: {
       async list(recruitId) {
         const r = await getRecruitDocuments(recruitId);

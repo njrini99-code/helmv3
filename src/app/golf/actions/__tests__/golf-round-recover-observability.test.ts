@@ -53,7 +53,7 @@ vi.mock('@/lib/auth/resilient-get-user', () => ({
   getUserResilient: vi.fn(async () => ({ user: resilientUser, degraded: resilientUser != null })),
 }));
 
-import { deleteInProgressRound } from '../golf';
+import { deleteInProgressRound } from '../round-partial';
 
 const ROUND = '22222222-2222-4222-8222-222222222222';
 const OTHER_ROUND = '99999999-9999-4999-8999-999999999999';

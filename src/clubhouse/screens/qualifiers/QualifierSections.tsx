@@ -1,6 +1,7 @@
 'use client';
 
-import { UserPlus } from 'lucide-react';
+import { RotateCw, UserPlus } from 'lucide-react';
+import { useEffect, useState, useTransition } from 'react';
 import type { ChQDetailCore, ChQDetailSecondary } from '../../data/qualifiers';
 import { Avatar } from '../../ui/Avatar';
 import { Badge } from '../../ui/Badge';
@@ -8,6 +9,7 @@ import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { useRefresh } from '../../lib/use-refresh';
 import { plural, type ChQStatus } from './model';
+import type { LiveFeedView } from './live';
 import { ToPar } from './parts';
 import { CoursesSkeleton, Streamed } from './streamed';
 
@@ -19,11 +21,63 @@ export function StaleStandings() {
   return (
     <InlineNotice
       code="CH-09220"
-      title="These standings may be out of date."
+      title="These standings may be out of date"
       body="The latest scores didn’t load, so this is the last list that did. Try again to bring it up to date."
       onRetry={refresh}
       retrying={refreshing}
     />
+  );
+}
+
+const CLOCK = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
+/** "4:12 PM": when the standings on screen were read, in the reader's own time. */
+export function clockLabel(at: number): string {
+  return CLOCK.format(new Date(at));
+}
+
+/**
+ * The board's honest Live chip (P009-B2, D1). "Live · updated 4:12 PM" only while the realtime feed is subscribed;
+ * "Paused · standings from 4:12 PM" with Refresh when it dropped or the tab slept long (StaleStandings' Try again,
+ * without its "didn't load", since nothing failed to load); nothing after the last day, where the status pill says Ended (D3).
+ * The dot is static (D-33). The time is set after hydration only, so the server's paint never disagrees with the reader's clock.
+ */
+export function LiveChip({ view }: { view: LiveFeedView }) {
+  const { feed, version, updatedAt: fixed, refresh: onRefresh, ended } = view;
+  const [refreshing, start] = useTransition();
+  // When the standings on screen were read: stamped after hydration when a read lands (only this chip draws again).
+  const [stamped, setStamped] = useState<number | null>(null);
+  useEffect(() => setStamped(Date.now()), [version]);
+  const updatedAt = fixed ?? stamped;
+  // Past its last day the status pill above already says "Ended · n rounds outstanding" (D3): the board claims no feed.
+  if (ended || feed === 'off') return null;
+  const at = updatedAt != null ? clockLabel(updatedAt) : null;
+  if (feed === 'paused') {
+    return (
+      <span className="ch-qf-feed" data-feed="paused" role="status">
+        <Badge tone="warning">{at ? `Paused · standings from ${at}` : 'Paused'}</Badge>
+        <button
+          type="button"
+          className="ch-qf-feed__refresh"
+          disabled={refreshing}
+          aria-busy={refreshing || undefined}
+          onClick={() => start(() => onRefresh())}
+        >
+          <Icon icon={RotateCw} size={13} />
+          {refreshing ? 'Refreshing' : 'Refresh'}
+        </button>
+      </span>
+    );
+  }
+  return (
+    <span className="ch-qf-feed" data-feed={feed}>
+      {feed === 'live' ? (
+        <Badge tone="accent" dot>
+          {at ? `Live · updated ${at}` : 'Live'}
+        </Badge>
+      ) : (
+        <Badge tone="neutral">{at ? `Connecting · standings from ${at}` : 'Connecting'}</Badge>
+      )}
+    </span>
   );
 }
 
@@ -53,7 +107,7 @@ export function Selections({ data, status, topScore }: { data: ChQDetailCore; st
       return (
         <section className="ch-qf-side" aria-labelledby="ch-qf-sel">
           {head}
-          <InlineNotice code="CH-09207" title="The confirmed squad didn’t load." body={squadMissing} onRetry={refresh} retrying={refreshing} />
+          <InlineNotice code="CH-09207" title="The confirmed squad didn’t load" body={squadMissing} onRetry={refresh} retrying={refreshing} />
         </section>
       );
     }
@@ -83,7 +137,7 @@ export function Selections({ data, status, topScore }: { data: ChQDetailCore; st
           ))}
         {/* A failed read of the notes is not "no notes": the picks above stay, the missing notes are named. */}
         {coach && data.reasonsError && (
-          <InlineNotice code="CH-09221" title="Pick notes didn’t load." body="The squad is right; the coach’s notes on the picks are missing until they load." onRetry={refresh} retrying={refreshing} />
+          <InlineNotice code="CH-09221" title="Pick notes didn’t load" body="The squad is right; the coach’s notes on the picks are missing until they load." onRetry={refresh} retrying={refreshing} />
         )}
       </section>
     );
@@ -150,7 +204,7 @@ export function Courses({ data }: { data: ChQDetailCore }) {
 function CourseRows({ s }: { s: ChQDetailSecondary }) {
   const { refresh, refreshing } = useRefresh();
   if (s.coursesError) {
-    return <InlineNotice code="CH-09206" title="The round courses didn’t load." body="The standings are right; which course each round is on is missing until it loads." onRetry={refresh} retrying={refreshing} />;
+    return <InlineNotice code="CH-09206" title="The round courses didn’t load" body="The standings are right; which course each round is on is missing until it loads." onRetry={refresh} retrying={refreshing} />;
   }
   return (
     <ol className="ch-qf-list">

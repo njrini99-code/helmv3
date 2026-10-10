@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowRight, CalendarDays, CircleAlert, CircleCheck, ClipboardCheck, Eye, Megaphone, MessageSquare, Sparkles, Users, type LucideIcon } from 'lucide-react';
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NotificationCategoryId } from '@/app/golf/actions/unified-notifications-model';
@@ -14,7 +14,7 @@ import { Icon } from '../../ui/Icon';
 import { dropHandoffCurtain } from '../../lib/handoff';
 import { HANDOFF_MS, WELCOME_PHONE_AUTO_MS, welcomeBody, welcomeCard, welcomeDate, welcomeHint, welcomeItem, welcomeLine1, welcomeMark, welcomeName, welcomeScrim, type AuthCustom } from './auth-motion';
 import { greetingWord, isDarkSky } from './scene-sky';
-import { useLastHereLabel, useLocalDateLabel, useLocalHour } from './use-hour';
+import { useLastHereLabel, useLocalDateLabel, useLocalHour, useSkyHour } from './use-hour';
 import { useQueryParam } from './use-query-param';
 import { useWelcomeStage } from './WelcomeStage';
 
@@ -78,6 +78,7 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
   const reduced = useChReducedMotion();
   const phone = useChPhone();
   const hour = useLocalHour();
+  const sky = useSkyHour();
   const dateLabel = useLocalDateLabel();
   const lastHere = useLastHereLabel(data.lastSeenAt);
   const [armed, setArmed] = useState(false);
@@ -145,7 +146,8 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
   // Before the viewer's clock is known (the server render and the hydration pass) line 1 holds a non-breaking space, which keeps its height.
   const line1 = word === null ? ' ' : named ? `${word},` : `${word}.`;
   const spoken = word === null ? '' : named ? `${word}, ${data.name.status === 'named' ? data.name.display : ''}.` : `${word}.`;
-  const dark = hour !== null && isDarkSky(hour);
+  // P015-A1: the type flips with the real sky; the greeting above stays on the clock.
+  const dark = sky !== null && isDarkSky(sky);
   const custom: AuthCustom = { reduced };
   const { news } = data;
 
@@ -204,6 +206,11 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
             <Button variant="primary" size="lg" rightIcon={ArrowRight} feel={null} onClick={proceed}>
               Continue
             </Button>
+            {/* P015-B3: on the phone the welcome goes on by itself; a gilt hairline draws across Continue over the time
+                left, so the page says it will continue, and a tap simply goes now. Still under reduced motion. */}
+            {phone && armed && !leaving && (
+              <span className="ch-au-wl-auto" style={{ ['--ch-au-auto' as string]: `${WELCOME_PHONE_AUTO_MS}ms` }} aria-hidden="true" data-reduced={reduced ? '' : undefined} />
+            )}
           </div>
         </m.div>
         {!phone && (

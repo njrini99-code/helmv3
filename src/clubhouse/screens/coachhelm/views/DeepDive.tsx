@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { ChevronRight, Compass, Flag, Play, Target } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useRef, useState } from 'react';
@@ -15,7 +15,7 @@ import { PhoneScreen } from '../../../shell/PhoneScreen';
 import { usePhoneStackHistory } from '../../../shell/phone-chrome';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
-import { RefreshNotice } from '../../../ui/RefreshNotice';
+import { PageRefreshNotice, RefreshNotice } from '../../../ui/RefreshNotice';
 import { PhoneBar } from '../../../ui/PhoneBar';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { EmptyState } from '../../../ui/States';
@@ -23,6 +23,22 @@ import { BoardPartial, Evidence } from '../parts';
 import { coachHelmLinks } from '../PlayerBoard';
 import { useHydrated } from '../use-hydrated';
 import { HelmOff, PlayerHelmFrame } from './Frame';
+import { SerifText } from '../../../ui/SerifText';
+
+/** A sentence ends in its stop: a generator's line without one gets a full stop (P013 D6). */
+export const sentence = (t: string): string => (/[.!?…”"’)]$/.test(t.trim()) ? t.trim() : `${t.trim()}.`);
+
+/**
+ * The write-up without the drill, when "This week" draws it (P013 D6): a sentence that opens with the drill's first three words is
+ * the drill again. Nothing else is touched; with no drill, or no such sentence, the write-up is as written.
+ */
+export function withoutDrill(why: string, drill: string | null | undefined): string | null {
+  const head = (t: string) => t.toLowerCase().replace(/[^a-z0-9\s-]/g, '').split(/\s+/).filter(Boolean).slice(0, 3).join(' ');
+  const key = drill ? head(drill) : '';
+  if (!key) return why;
+  const kept = why.split(/(?<=[.!?])\s+/).filter((s) => head(s) !== key);
+  return kept.join(' ').trim() || null;
+}
 
 const LINE = 'Every read CoachHelm has made on your game: what it measured, the rounds behind it, how it has moved, and where it goes in your plan.';
 
@@ -65,7 +81,7 @@ function Section({ id, title, aside, children, code }: { id: string; title: stri
   );
 }
 
-function Trend({ i, theme, themesFailed }: { i: ChDeepInsight; theme: ChDiveTheme | undefined; themesFailed: boolean }) {
+function Trend({ i, theme, themesFailed, covered = false }: { i: ChDeepInsight; theme: ChDiveTheme | undefined; themesFailed: boolean; covered?: boolean }) {
   const strip = i.rounds.strip;
   const first = strip[0];
   const last = strip[strip.length - 1];
@@ -75,7 +91,7 @@ function Trend({ i, theme, themesFailed }: { i: ChDeepInsight; theme: ChDiveThem
   const any = !!(i.movement || i.outcome || trend || strip.length > 0);
   return (
     <Section id={`${i.base.id}-trend`} title="How it has moved">
-      {themesFailed && <RefreshNotice code="CH-13283" title="Your category trends didn’t load" body="The rest of this read is below. The trend for the category is missing for now. Try again in a moment." />}
+      {themesFailed && <RefreshNotice code="CH-13283" title="Your category trends didn’t load" body="The rest of this read is below. The trend for the category is missing for now. Try again in a moment." covered={covered} />}
       {any ? (
         <ul className="ch-hd-tr">
           {i.movement && (
@@ -121,13 +137,13 @@ function Trend({ i, theme, themesFailed }: { i: ChDeepInsight; theme: ChDiveThem
   );
 }
 
-function Rounds({ i, failed }: { i: ChDeepInsight; failed: boolean }) {
+function Rounds({ i, failed, covered = false }: { i: ChDeepInsight; failed: boolean; covered?: boolean }) {
   const { total, list } = i.rounds;
   const aside = total > 0 ? (list.length > 0 && total > list.length ? `Newest ${list.length} of ${total}` : `${total} ${total === 1 ? 'round' : 'rounds'}`) : undefined;
   return (
     <Section id={`${i.base.id}-rounds`} title="The rounds behind it" aside={aside}>
       {failed && total > 0 ? (
-        <RefreshNotice code="CH-13281" title="The rounds behind this read didn’t load" body="The read itself is above and is not affected. Try again in a moment." />
+        <RefreshNotice code="CH-13281" title="The rounds behind this read didn’t load" body="The read itself is above and is not affected. Try again in a moment." covered={covered} />
       ) : list.length > 0 ? (
         <ol className="ch-hd-rounds">
           {list.map((r) => (
@@ -174,7 +190,8 @@ function RoundRow({ r }: { r: ChDiveRound }) {
 
 function Why({ i }: { i: ChDeepInsight }) {
   const d = i.diagnosis;
-  if (!d && !i.base.why) return null;
+  const why = i.base.why ? withoutDrill(i.base.why, i.base.week?.text) : null;
+  if (!d && !why) return null;
   return (
     <Section id={`${i.base.id}-why`} title="Why CoachHelm thinks so">
       {d && (
@@ -183,7 +200,7 @@ function Why({ i }: { i: ChDeepInsight }) {
           <span className={'ch-hd-dx__lvl is-' + d.level} data-ch-code="CH-13982">
             {d.level === 'observed' ? 'Measured in your shots' : 'Likely, not measured'}
           </span>
-          <p className="ch-hd-dx__c">{d.cause}</p>
+          <p className="ch-hd-dx__c">{sentence(d.cause)}</p>
           {d.drivers.length > 0 && (
             <dl className="ch-hd-dx__d">
               {d.drivers.map((x) => (
@@ -197,20 +214,20 @@ function Why({ i }: { i: ChDeepInsight }) {
               ))}
             </dl>
           )}
-          {d.reason && <p className="ch-hd-dx__r">{d.reason}</p>}
+          {d.reason && <p className="ch-hd-dx__r">{sentence(d.reason)}</p>}
         </div>
       )}
-      {i.base.why && (
+      {why && (
         <div className="ch-hd-full">
           {d && <span className="ch-hd-full__k">The full write-up</span>}
-          <p className="ch-hd-why">{i.base.why}</p>
+          <p className="ch-hd-why">{why}</p>
         </div>
       )}
     </Section>
   );
 }
 
-function Plan({ i, failed }: { i: ChDeepInsight; failed: boolean }) {
+function Plan({ i, failed, covered = false }: { i: ChDeepInsight; failed: boolean; covered?: boolean }) {
   const href = developmentHref();
   const { focus, goal } = i.plan;
   const row = (kind: 'focus' | 'goal', icon: typeof Target, label: string, title: string, word: string, line: string | null, live: boolean) => {
@@ -233,7 +250,7 @@ function Plan({ i, failed }: { i: ChDeepInsight; failed: boolean }) {
   return (
     <Section id={`${i.base.id}-plan`} title="Where this goes">
       {failed ? (
-        <RefreshNotice code="CH-13282" title="Your focus areas and goals didn’t load" body="Whether this read is part of one is missing for now. The read is not affected. Try again in a moment." />
+        <RefreshNotice code="CH-13282" title="Your focus areas and goals didn’t load" body="Whether this read is part of one is missing for now. The read is not affected. Try again in a moment." covered={covered} />
       ) : focus || goal ? (
         <ul className="ch-hd-plan">
           {focus && row('focus', Target, focus.fromThis ? 'Focus area made from this' : 'Focus area on the same stat', focus.title, focus.word, null, focus.live)}
@@ -257,6 +274,14 @@ function Plan({ i, failed }: { i: ChDeepInsight; failed: boolean }) {
 function Dossier({ i, d }: { i: ChDeepInsight; d: ChDeepDive }) {
   const b = i.base;
   const tone: ChDiveTone = b.kind === 'strength' ? 'good' : 'warn';
+  // The read's parts that did not load, as its notices draw them: two or more are said once, under the read's head, with one
+  // Try again (CH-1209), and each part keeps only its title where it would be (states audit, 2026-10-08).
+  const failed = [
+    d.themesFailed && 'your category trends',
+    d.roundsFailed && i.rounds.total > 0 && 'the rounds behind this read',
+    d.plansFailed && 'your focus areas and goals',
+  ].filter((x): x is string => !!x);
+  const covered = failed.length > 1;
   return (
     <article className="ch-hd-dos" aria-labelledby={`${b.id}-t`}>
       <header className="ch-hd-dos__h">
@@ -264,7 +289,9 @@ function Dossier({ i, d }: { i: ChDeepInsight; d: ChDeepDive }) {
           <span>{b.category}</span>
           <span className={'ch-hl-pri is-' + i.stance.cls}>{i.stance.word}</span>
         </div>
-        <h2 id={`${b.id}-t`}>{b.title}</h2>
+        <h2 id={`${b.id}-t`}>
+          <SerifText text={b.title} />
+        </h2>
         {b.lede && <p className="ch-hl-lede">{b.lede}</p>}
         {/* A read from before the newest round is never drawn as current (CH-13903). */}
         {b.stale && (
@@ -273,6 +300,7 @@ function Dossier({ i, d }: { i: ChDeepInsight; d: ChDeepDive }) {
           </p>
         )}
       </header>
+      <PageRefreshNotice parts={failed} />
 
       <Section id={`${b.id}-meas`} title="What was measured">
         <div className={'ch-hd-meas ' + paint(tone)}>
@@ -290,8 +318,8 @@ function Dossier({ i, d }: { i: ChDeepInsight; d: ChDeepDive }) {
         <Evidence ev={{ ...b.evidence, label: '' }} />
       </Section>
 
-      <Trend i={i} theme={d.themes[i.cat]} themesFailed={d.themesFailed} />
-      <Rounds i={i} failed={d.roundsFailed} />
+      <Trend i={i} theme={d.themes[i.cat]} themesFailed={d.themesFailed} covered={covered} />
+      <Rounds i={i} failed={d.roundsFailed} covered={covered} />
       <Why i={i} />
 
       {b.week && (
@@ -310,7 +338,7 @@ function Dossier({ i, d }: { i: ChDeepInsight; d: ChDeepDive }) {
         </div>
       )}
 
-      <Plan i={i} failed={d.plansFailed} />
+      <Plan i={i} failed={d.plansFailed} covered={covered} />
     </article>
   );
 }
@@ -370,7 +398,7 @@ function Hero({ d }: { d: ChDeepDive }) {
         <h2 id="ch-hd-hero-t">
           CoachHelm has <span className="ch-hd-hero__n ch-num">{insights}</span> {insights === 1 ? 'read' : 'reads'} on your game.
         </h2>
-        <p className="ch-hd-hero__sub">Open one to see what was measured, the rounds it was made from, how it has moved and where it goes in your plan. A read from before your newest round says so.</p>
+        <p className="ch-hd-hero__sub">Open one to see what was measured, the rounds it was made from, how it has moved and where it goes in your plan. In your plan counts reads from both lists, so it overlaps them. A read from before your newest round says so.</p>
       </div>
       <dl className="ch-hd-hero__f">
         <div className="is-needs">
@@ -460,8 +488,11 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
     const none = d.rounds === 0;
     return (
       <PlayerHelmFrame view="deep-dive" line={LINE}>
+        {/* The whole view is empty: on the phone it is the page's empty state, centred on the parchment like the Board's first run
+            (the Mobile clubhouse pass, 2026-10-08); desktop keeps the line on the Ledger. */}
         <EmptyState
           code={none ? 'CH-13380' : 'CH-13381'}
+          size={phone ? 'page' : 'section'}
           icon={Compass}
           title={none ? 'Your Deep dive starts with a round' : 'No insight to open yet'}
           body={

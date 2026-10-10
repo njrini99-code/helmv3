@@ -301,7 +301,7 @@ describe('home model', () => {
     ];
     const comp = { title: 'Qualifier · Pinehurst No. 2', when: 'Thursday' };
     expect(H.homeSubline(rows, { roundsError: false, nextCompetition: comp })).toBe(
-      "Jonah is slipping and Eli hasn't posted a round in 9 days. Qualifier · Pinehurst No. 2 is Thursday. The others with enough rounds are on track.",
+      'Jonah is slipping and Eli hasn’t posted a round in 9 days. Qualifier · Pinehurst No. 2 is Thursday. The others with enough rounds are on track.',
     );
     expect(H.homeSubline(rows, { roundsError: true, nextCompetition: comp })).toBeNull();
     expect(H.homeSubline([rows[0]!], { roundsError: false, nextCompetition: null })).toBe('The team is on track.');

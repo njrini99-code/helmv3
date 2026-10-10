@@ -10,8 +10,8 @@
     },
     {
       "name": "supabase-local",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["/Users/ricknini/Downloads/helmv3/.claude/start-supabase.py"],
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["supabase", "start"],
       "port": 54321
     },
     {

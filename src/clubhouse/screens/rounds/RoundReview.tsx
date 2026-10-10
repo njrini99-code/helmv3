@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Flag, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
 import { distribution, type ChReviewHole, type ChRoundReview } from '../../data/round-review-shape';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
@@ -14,9 +14,11 @@ import { PhoneTop } from '../../shell/phone-chrome';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { ScoreMark } from '../../ui/ScoreMark';
+import { Swap } from '../../ui/Swap';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { dateOf, TeeSwatch, TYPE_LABEL } from './parts';
+import { checkedRecap } from './recap-check';
 import { openedFromLibrary } from './return-state';
 
 const LIE_LABEL: Record<string, string> = { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', penalty: 'Penalty', other: 'Other', tee: 'Tee' };
@@ -79,8 +81,8 @@ function StrokesGained({ review: r, onRetry, retrying }: { review: ChRoundReview
       {r.tourError && (
         <InlineNotice
           code="CH-11217"
-          title="Which Tour this is measured against didn't load"
-          body="The strokes gained numbers are the round's own; only the baseline's name is missing. Try again in a moment."
+          title="Which Tour this is measured against didn’t load"
+          body="The strokes gained numbers are the round’s own; only the baseline’s name is missing. Try again in a moment."
           onRetry={onRetry}
           retrying={retrying}
         />
@@ -107,7 +109,13 @@ function StrokesGained({ review: r, onRetry, retrying }: { review: ChRoundReview
 }
 
 function Mark({ v }: { v: boolean | null }) {
-  if (v == null) return <i className="ch-rv-yn is-na" role="img" aria-label="Not applicable" />;
+  // D12: Not applicable is the doctrine's dash, not a rule that reads as "_".
+  if (v == null)
+    return (
+      <i className="ch-rv-yn is-na" role="img" aria-label="Not applicable">
+        —
+      </i>
+    );
   return <i className={'ch-rv-yn' + (v ? ' is-y' : ' is-n')} role="img" aria-label={v ? 'Hit' : 'Missed'} />;
 }
 
@@ -198,8 +206,10 @@ function HoleCard({
   onStep,
   onRetry,
   retrying,
+  dir,
 }: {
   hole: ChReviewHole;
+  dir: 1 | -1;
   count: number;
   shotsError: boolean;
   onStep: (d: -1 | 1) => void;
@@ -224,39 +234,42 @@ function HoleCard({
           </span>
         </div>
         <div className="ch-rv-step">
-          <button type="button" onClick={() => onStep(-1)} disabled={hole.n <= 1} aria-label="Previous hole">
+          <button type="button" data-ch-press="" onClick={() => onStep(-1)} disabled={hole.n <= 1} aria-label="Previous hole">
             <Icon icon={ChevronLeft} size={16} />
           </button>
           <ScoreMark score={hole.score} par={hole.par} />
-          <button type="button" onClick={() => onStep(1)} disabled={hole.n >= count} aria-label="Next hole">
+          <button type="button" data-ch-press="" onClick={() => onStep(1)} disabled={hole.n >= count} aria-label="Next hole">
             <Icon icon={ChevronRight} size={16} />
           </button>
         </div>
       </div>
-      {shotsError ? (
-        <InlineNotice code="CH-11205" title="The shots for this round didn't load" body="The scorecard is right; only the shot-by-shot detail is missing. Try again in a moment." onRetry={onRetry} retrying={retrying} />
-      ) : hole.shots.length === 0 ? (
-        <p className="ch-rv-none" data-ch-code="CH-11306">
-          No shots were tracked on this hole. It was scored as a total.
-        </p>
-      ) : (
-        <ol className="ch-rv-shots">
-          {hole.shots.map((s) => (
-            <li key={s.n} className={s.penalty ? 'is-pen' : undefined}>
-              <span className={`ch-rv-shots__n is-${s.lie}`}>{s.penalty ? '+1' : s.n}</span>
-              <div>
-                <b>{[s.kind, s.club].filter(Boolean).join(' · ')}</b>
-                <span>
-                  {s.penalty ? 'Penalty stroke' : [s.from, s.lie === 'hole' ? 'holed' : [LIE_LABEL[s.lie]?.toLowerCase(), s.to].filter(Boolean).join(', ')].filter(Boolean).join(' → ')}
-                  {s.miss ? ` · ${s.miss}` : ''}
-                </span>
-                {s.read && <em>{s.read}</em>}
-              </div>
-              <span className={`ch-rv-lie is-${s.lie}`}>{LIE_LABEL[s.lie]}</span>
-            </li>
-          ))}
-        </ol>
-      )}
+      {/* The shots slide in the direction of travel (CH-11604). */}
+      <Swap swapKey={hole.n} kind="slide" dir={dir}>
+        {shotsError ? (
+          <InlineNotice code="CH-11205" title="The shots for this round didn’t load" body="The scorecard is right; only the shot-by-shot detail is missing. Try again in a moment." onRetry={onRetry} retrying={retrying} />
+        ) : hole.shots.length === 0 ? (
+          <p className="ch-rv-none" data-ch-code="CH-11306">
+            No shots were tracked on this hole. It was scored as a total.
+          </p>
+        ) : (
+          <ol className="ch-rv-shots">
+            {hole.shots.map((s) => (
+              <li key={s.n} className={s.penalty ? 'is-pen' : undefined}>
+                <span className={`ch-rv-shots__n is-${s.lie}`}>{s.penalty ? '+1' : s.n}</span>
+                <div>
+                  <b>{[s.kind, s.club].filter(Boolean).join(' · ')}</b>
+                  <span>
+                    {s.penalty ? 'Penalty stroke' : [s.from, s.lie === 'hole' ? 'holed' : [LIE_LABEL[s.lie]?.toLowerCase(), s.to].filter(Boolean).join(', ')].filter(Boolean).join(' → ')}
+                    {s.miss ? ` · ${s.miss}` : ''}
+                  </span>
+                  {s.read && <em>{s.read}</em>}
+                </div>
+                <span className={`ch-rv-lie is-${s.lie}`}>{LIE_LABEL[s.lie]}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </Swap>
     </section>
   );
 }
@@ -275,10 +288,19 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
   // Only a hole the player picked is kept; until then the review opens on the first hole over par of what it has. A card that
   // arrives after a retry therefore opens there, not on the hole 1 an empty card defaulted to.
   const [picked, setPicked] = useState<number | null>(null);
+  // Which way the last move went, so the hole's shots slide in from that side.
+  const [holeDir, setHoleDir] = useState<1 | -1>(1);
   const sel = picked ?? firstHole(r.holes);
+  const pick = (n: number) => {
+    setHoleDir(n >= sel ? 1 : -1);
+    setPicked(n);
+  };
   const coach = isCoachView(r);
   const hole = r.holes.find((h) => h.n === sel) ?? r.holes[0] ?? null;
   const dist = useMemo(() => distribution(r.holes), [r.holes]);
+  // D13: the stored recap, less any sentence its own figures contradict (recap-check.ts).
+  const recap = useMemo(() => checkedRecap(r), [r]);
+  const holesScored = r.holes.filter((h) => h.score != null).length || r.holesPlayed;
   const maxD = Math.max(1, ...dist.map((d) => d.count));
   const back = reviewBack(r);
   // Rule 8: a player's review opened from the library goes back in history, so the library returns with its search and its place
@@ -301,6 +323,7 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
     const next = r.holes[i + d];
     if (next) {
       haptic('select');
+      setHoleDir(d);
       setPicked(next.n);
     }
   };
@@ -313,8 +336,8 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
   ];
 
   return (
-    <main className={'ch-rv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rv-title">
-      {phone && <PhoneTop title="Round" back={{ label: coach ? 'Stats' : 'Rounds', onBack: () => goBack() }} />}
+    <main className={'ch-rv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rv-title" data-canopy={phone ? undefined : ''}>
+      {phone && <PhoneTop heading={false} title="Round" back={{ label: coach ? 'Stats' : 'Rounds', onBack: () => goBack() }} />}
       {!phone && (
         <Link
           href={back.href}
@@ -329,9 +352,10 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
           {back.label}
         </Link>
       )}
-      <header className="ch-rv-hero">
+      <header className="ch-rv-hero" data-canopy-head={phone ? undefined : ''}>
         <div className="ch-rv-hero__l">
           <span className="ch-rv-hero__k">{kicker}</span>
+          {/* D11: one h1 per screen, the course; the phone bar's "Round" is plain text (heading={false}). */}
           <h1 id="ch-rv-title">{r.course}</h1>
           {(r.tee || r.teeFacts) && (
             <span className="ch-rv-hero__m">
@@ -360,7 +384,7 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
       {(r.teeError || r.playerError) && (
         <InlineNotice
           code="CH-11216"
-          title="Some details of this round didn't load"
+          title="Some details of this round didn’t load"
           body={missingDetails(r)}
           onRetry={refresh}
           retrying={refreshing}
@@ -372,9 +396,9 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
       </SectionBoundary>
 
       {r.holesError ? (
-        <InlineNotice code="CH-11204" title="The scorecard didn't load" body="The round's totals are right; the hole-by-hole card is missing. Try again in a moment." onRetry={refresh} retrying={refreshing} />
+        <InlineNotice code="CH-11204" title="The scorecard didn’t load" body="The round’s totals are right; the hole-by-hole card is missing. Try again in a moment." onRetry={refresh} retrying={refreshing} />
       ) : r.holes.length === 0 ? (
-        <EmptyState code="CH-11305" compact icon={Flag} title="Posted as a total" body="This round was posted with its score only, so there's no hole-by-hole card or shots to show." />
+        <EmptyState code="CH-11305" compact icon={Flag} title="Posted as a total" body="This round was posted with its score only, so there’s no hole-by-hole card or shots to show." />
       ) : (
         <>
           <SectionBoundary surface="rounds.review.card" label="The scorecard" code="CH-11203">
@@ -382,18 +406,18 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
               <div className="ch-rv-card__h">
                 <div>
                   <h2 id="ch-rv-card-h">Scorecard</h2>
-                  <span>Tap a hole to see every shot</span>
+                  <span>{phone ? 'Tap a hole to see every shot' : 'Select a hole to see every shot'}</span>
                 </div>
               </div>
               <div className="ch-rv-cardw">
-                <ReviewNine label="Out" holes={r.holes.filter((h) => h.n <= 9)} sel={sel} onPick={setPicked} />
-                <ReviewNine label="In" holes={r.holes.filter((h) => h.n > 9)} sel={sel} onPick={setPicked} />
+                <ReviewNine label="Out" holes={r.holes.filter((h) => h.n <= 9)} sel={sel} onPick={pick} />
+                <ReviewNine label="In" holes={r.holes.filter((h) => h.n > 9)} sel={sel} onPick={pick} />
               </div>
             </section>
           </SectionBoundary>
           <div className="ch-rv-cols">
             <SectionBoundary surface="rounds.review.hole" label="This hole" code="CH-11203">
-              {hole && <HoleCard hole={hole} count={r.holes[r.holes.length - 1]?.n ?? 18} shotsError={r.shotsError} onStep={step} onRetry={refresh} retrying={refreshing} />}
+              {hole && <HoleCard hole={hole} dir={holeDir} count={r.holes[r.holes.length - 1]?.n ?? 18} shotsError={r.shotsError} onStep={step} onRetry={refresh} retrying={refreshing} />}
             </SectionBoundary>
             <div className="ch-rv-side">
               <section className="ch-rv-card" aria-labelledby="ch-rv-dist-h">
@@ -408,27 +432,30 @@ export function RoundReview({ review }: { review: ChRoundReview }) {
                     <div key={d.label} className={`ch-rv-dist__r is-${d.label.replace('+', '').toLowerCase()}`}>
                       <span>{d.label}</span>
                       <span className="ch-rv-dist__t">
-                        <i style={{ width: `${(d.count / maxD) * 100}%` }} />
+                        <i style={{ '--ch-rv-p': d.count / maxD } as CSSProperties} />
                       </span>
                       <b className="ch-num">{d.count}</b>
                     </div>
                   ))}
                 </div>
               </section>
-              {r.recap && (
+              {recap && (
+                // C2: a passage under a rule, labelled in words for who wrote it (no sparkle, D14).
                 <section className="ch-rv-recap" aria-labelledby="ch-rv-recap-k">
-                  <span className="ch-rv-recap__k" id="ch-rv-recap-k">
-                    <Icon icon={Sparkles} size={14} />
+                  <h3 className="ch-rv-recap__k" id="ch-rv-recap-k">
                     Round recap
+                  </h3>
+                  <p>{recap}</p>
+                  <span className="ch-rv-recap__by">
+                    Written by CoachHelm from {holesScored} hole{holesScored === 1 ? '' : 's'}
                   </span>
-                  <p>{r.recap}</p>
                 </section>
               )}
               {r.notes && (
                 <section className="ch-rv-card ch-rv-notes" aria-labelledby="ch-rv-notes-h">
                   <div className="ch-rv-card__h">
                     <div>
-                      <h3 id="ch-rv-notes-h">{r.playerName ? `${r.playerName.split(' ')[0]}'s notes` : coach ? 'The player’s notes' : 'Your notes'}</h3>
+                      <h3 id="ch-rv-notes-h">{r.playerName ? `${r.playerName.split(' ')[0]}’s notes` : coach ? 'The player’s notes' : 'Your notes'}</h3>
                       <span>Written when the round was posted</span>
                     </div>
                   </div>

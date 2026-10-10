@@ -38,7 +38,7 @@
  * HONEST EMPTY STATES are unchanged and still the rule: one round is a tiny
  * sample, a player who never found a bunker has no sand-save rate, and that is
  * not zero. Every metric renders through `Readout state="awaiting"` when its
- * value is null (see .claude/rules/golf-review.md: "honest empty/error states
+ * value is null (see .claude/rules/golf.md: "honest empty/error states
  * (no fabricated zeros)").
  * ========================================================================== */
 

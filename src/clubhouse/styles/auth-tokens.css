@@ -24,6 +24,8 @@
   --ch-au-t-panel: 420ms;
   --ch-au-t-panel-move: 620ms;
   --ch-au-t-err: 220ms;
+  /* A refusal about the fields shakes them once (the sign-up code's shake, --ch-ox-t-shake). */
+  --ch-au-t-shake: 380ms;
   --ch-au-t-sheet: 760ms;
   --ch-au-t-sheet-fade: 500ms;
   /* The camera: a slow push to the pin, and the pine and bough moving out of frame. */
@@ -67,6 +69,7 @@
     --ch-au-t-panel: 1ms;
     --ch-au-t-panel-move: 1ms;
     --ch-au-t-err: 1ms;
+    --ch-au-t-shake: 1ms;
     --ch-au-t-sheet: 1ms;
     --ch-au-t-sheet-fade: 1ms;
     --ch-au-t-cam: 1ms;
@@ -93,6 +96,7 @@
   --ch-au-t-panel: 1ms;
   --ch-au-t-panel-move: 1ms;
   --ch-au-t-err: 1ms;
+  --ch-au-t-shake: 1ms;
   --ch-au-t-sheet: 1ms;
   --ch-au-t-sheet-fade: 1ms;
   --ch-au-t-cam: 1ms;

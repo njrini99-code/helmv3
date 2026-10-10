@@ -3,7 +3,7 @@ import { isClubhouseFor } from '@/clubhouse/gate';
 import { ClubhouseQualifiersRoute } from '@/clubhouse/routes/qualifiers';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import type { PlayerQualifierInfo } from '@/app/golf/actions/golf';
+import type { PlayerQualifierInfo } from '@/app/golf/actions/qualifier-actions';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayMyQualifiers } from '@/components/fairway/pages/my-qualifiers';
 

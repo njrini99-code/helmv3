@@ -1,5 +1,100 @@
 # P007 — Messages: changelog
 
+## 2026-10-08 — the player peek (P003-C1)
+
+The shared PlayerPeek: for the coach, a player's avatar and name in a thread peek at the player, from the team directory Messages already holds. The bubble keeps its own hold for message actions; coaches and people off the roster don't peek. No new reads.
+
+## 2026-10-08 — premium pass: a stale chunk reloads once, in Clubhouse's voice (D3)
+
+`ClubhouseRouteError` (`shell/ClubhouseRouteError.tsx`) is a route `error.tsx` body for Clubhouse screens, inside the shell or above it. On a ChunkLoadError ("Loading chunk …", stale assets after a deploy), the shared RouteErrorBoundary asks the one recovery coordinator (`lib/recovery/client`) for a reload. The coordinator reloads once, under the session's attempt budget and latch, and never over unsaved work; there is no second sessionStorage flag, because the coordinator's own doc forbids any other `location.reload()`. Any other error shows Clubhouse's route error (CH-1206). Above the shell it brings its own `.ch-root`, fonts and tokens. `/clubhouse-preview` now uses it, where the audit's crash fell through to the app's generic Helm page. The live Messages route already reached the same view through the shell.
+
+## 2026-10-08 — premium pass: findings D1, D2, D4
+
+- D1: a thread is held at its newest message while it settles (`useThreadAnchor`, 700 ms). A push during hydration that resets the scroll under it no longer leaves it at the oldest message. The hold stops the moment the reader scrolls, touches or types.
+- D2: a message that didn't send keeps full-ink text, on a muted fill inside a dashed edge, beside "Not sent · Retry". It is no longer faded to about 2.8:1, so it can be read before you retry it.
+- D4: the preview opens the team thread only on desktop, after hydration, as the live screen does. The phone preview stays on the inbox. The live loader already auto-opens only at 821px and wider.
+
+## 2026-10-08 — premium pass: announcements as letterhead (P007-A1)
+
+An announcement reads as a signed team letter. The letterhead is one engraved line, the team and the full date ("Varsity · Wednesday 14 October"), with the asks in words at its end ("Urgent · please acknowledge") instead of two chips; then the 28px title, the body in full ink at a reading measure, and the posting coach's name and title over a 1px gilt rule. Tasks, files and receipts follow as before. On desktop the sheet takes the room's light as paper (`--ch-light-paper`, never on the words); on the phone it stays flush. No monogram or crest (owner: crests are declined, D3-2). The loader adds `signers` (the program's coaches by golf_coaches.id) and the announcement carries `authorId` (`created_by`); an unknown author shows no signature.
+
+## 2026-10-08 — premium pass: prefilled messages (D2-7)
+
+Actions that reach players open Messages prefilled and never send: `messagesPrefillHref({ players, draft, title })` (`screens/messages/prefill.ts`) links to `?prefill=<key>`: the key is an opaque hash, and the people, the draft and the group name stay in this tab's sessionStorage under it, never in the URL (query strings land in logs and history, and a draft can name a minor's health or schoolwork). Messages takes the entry once and deletes it (`takePrefill`); a cold link, a new tab or a used key opens Messages with nothing prefilled. Players not on the team are left out and reported (CH-7001); the rest stay chosen. One player with a thread opens it with the draft in its composer (an unsent draft of the coach's own wins); otherwise New message opens with the people chosen (a coach's two or more as a group named `title`) and the draft quoted. Nothing is created until the coach presses on, and the draft lands in the new thread's composer, where the coach presses Send. A player's prefill keeps one person (D-15). When nobody in it is on the team, CH-7001 says so.
+
+## 2026-10-08 — dark: Clubhouse at night
+
+Messages follows GolfHelm's dark theme ("Clubhouse at night"). Sent bubbles keep the green gradient with ivory type (not white); row hover and press, tool hovers and the reaction hover become ivory washes; the selected thread's rail, the To chips and the announcement acknowledgement take the light text green; announcement marks, the phone's group marks and Jump to latest keep their filled green with ivory type; the phone's idle Send glyph reads on its grey plate. Light mode is unchanged.
+
+## 2026-10-08 — phone: Mobile clubhouse pass
+
+Phone Messages now follows the owner's "Coach - Home - Mobile v2" board (round
+3: fewer containers), carried from Home to every phone screen:
+
+- the inbox sits on the parchment at the board's margins: Search, then the
+  filters as engraved rings, the chosen one in the green tint (the tint and ink
+  cross over on the quick beat and the list settles in under it, CH-7606), then
+  Announcements under an engraved double rule in the bold 19px sans;
+- conversations are rows on seams inset to the text, with the Ledger's press
+  tint (never a scale); their dates (Today, This week, Earlier) are the ledger's
+  engraved date line, not section titles, so they read as entries in one list;
+- a pushed thread's name reads in the bar's ivory on the green chassis, and its
+  keyboard focus ring is gilt instead of a dark green box;
+- Details, New message and New announcement lose their white panels: sections
+  open under the double rule, rows sit on seams, and the profile name is the
+  large heavy sans in forest ink;
+- a pushed announcement is the page itself: its title in the 31px heavy sans,
+  with Tasks, Files and who has read it as sections; the acknowledgement keeps
+  its green well;
+- the route skeleton and the inbox's loading draw the inbox's own shape
+  (Search, the filters, a section and its rows), so nothing moves when it lands.
+
+## 2026-10-08 — Heads, notices and copy (states audit)
+
+- The first-run and no-team pages open under the page's framed head (Messages
+  and one line) on desktop instead of a bare canvas; the empty keeps the one
+  action (CH-7309, CH-7308).
+- The rail's title is the heavy sans in forest ink; it had kept the old display
+  serif's loose tracking.
+- A rail that didn't load gives its notice the rail's full width (CH-7201).
+- With no conversation open, the desktop's thread pane holds its empty (CH-7305)
+  in the middle of the pane, as it already stood top to bottom, instead of
+  against the rail's rule.
+- The typing dots no longer show under a conversation that didn't load or is
+  still loading (CH-7602).
+- Notice and empty titles lose their trailing period and take curly apostrophes
+  ("Conversations didn’t load", "You aren’t on a team yet"), and so does every
+  other line the page writes, its toasts included; words a server sends are
+  shown as sent (b8, held by `copy-apostrophes.test.ts`).
+
+## 2026-10-07 — Another conversation settles in
+
+On desktop, opening another conversation or announcement settles it in with a
+6px rise (base) while the last fades out (quick), hidden from assistive tech;
+each keeps its own scroll and a thread still opens at its end (CH-7605). The
+first one a visit opens appears at once. Instant with reduced motion. New test:
+messages.test › CH-7605.
+
+## 2026-10-07 — One continuous conversation rail
+
+The inbox rail is no longer three boxed cards (Announcements, Today, This week).
+The rows sit directly on the rail as rounded targets, the way a mail sidebar
+works:
+
+- a soft tint on hover and on press;
+- the open conversation is a raised ivory key ruled in the field green at its
+  left;
+- fine seams separate conversations, inset to the text, and hide next to a
+  hovered or selected row.
+
+The Messages title is set in the display serif.
+
+## 2026-10-06 — Display type relaxed
+
+The owner found the display type too compact. Display headings on this page
+widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on
+every Clubhouse page. Layout and content are unchanged.
+
 ## 2026-10-06 — Premium interaction corrections
 
 ```text
@@ -28,6 +123,22 @@ IDs are preserved; runtime gaps stay explicit.
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification
 log and decisions).
+
+## 2026-10-06 — Motion import path moves to `motion/react`
+
+```text
+PR/commit:      #2153 (agent/deps-ui-upgrade)
+Design package: none; no visual or behavior change
+Contract IDs:   none
+Data impact:    none
+Held items:     none
+```
+
+Dependency upgrade only. `framer-motion` 13 is replaced by the `motion` 14
+package, so this page's animation imports change from `framer-motion` to
+`motion/react`. The animation API, durations, curves and reduced-motion gating
+are unchanged; Motion 14 only removed internal compatibility APIs this tree
+never used.
 
 ## 2026-10-02 — End obsolete slow-save feedback
 

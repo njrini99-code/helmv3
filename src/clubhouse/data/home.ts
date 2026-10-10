@@ -60,6 +60,8 @@ export interface ChLatestRound {
   playerId: string;
   playerName: string;
   meta: string;
+  /** The day it was played, YYYY-MM-DD. */
+  date?: string;
   score: number;
   toPar: number | null;
   /** Null when the round was posted as a total, without hole-by-hole detail. */
@@ -106,6 +108,10 @@ export interface ChHomeEvent {
   invitees: string[] | null;
   /** Accepted replies; null when replies or the identities needed for the paired count didn't load. */
   going: number | null;
+  /** Invitees who haven't replied (golf_players id and name), for the coach's Nudge; null when replies didn't load. */
+  awaiting?: Array<{ id: string; name: string }> | null;
+  /** Every invitee's golf_players id, for the coach's Message (prefilled, never sent); null when replies didn't load. */
+  inviteeIds?: string[] | null;
   /** Overlaps another of today's timed events. */
   conflict: boolean;
 }
@@ -354,6 +360,7 @@ export async function latestWithHoles(
       playerId: r.player_id,
       playerName: nameFor(r.player_id),
       meta: [r.course_name, dateFmt.format(new Date(`${r.round_date.slice(0, 10)}T12:00:00Z`)), r.tees_played ? `${r.tees_played} tees` : null].filter(Boolean).join(' · '),
+      date: r.round_date.slice(0, 10),
       score: r.total_score ?? 0,
       toPar: r.score_to_par,
       holes: holes && holes.length === 18 ? holes : null,
@@ -456,6 +463,7 @@ export async function loadHomeWeek(
   // drops the counts and names, never shows "0 players".
   const invited = new Map<string, string[]>();
   const accepted = new Map<string, number>();
+  const unanswered = new Map<string, string[]>();
   let attendanceError = false;
   // The chunks are independent, so they are read together.
   const attendance = await Promise.all(
@@ -475,6 +483,7 @@ export async function loadHomeWeek(
     for (const a of data ?? []) {
       invited.set(a.event_id, [...(invited.get(a.event_id) ?? []), a.player_id]);
       if (rsvpOf(a.status) === 'accepted') accepted.set(a.event_id, (accepted.get(a.event_id) ?? 0) + 1);
+      if (rsvpOf(a.status) === 'pending') unanswered.set(a.event_id, [...(unanswered.get(a.event_id) ?? []), a.player_id]);
     }
   }
   const inviteesOf = (id: string) => (attendanceError ? null : (invited.get(id) ?? []));
@@ -531,6 +540,8 @@ export async function loadHomeWeek(
       // The card pairs this number with the rendered names' count. Partial
       // identities cannot turn "3 of 4" actual replies into "3 of 2 going".
       going: ids && invitees?.length === ids.length ? (accepted.get(e.id) ?? 0) : null,
+      awaiting: ids ? (unanswered.get(e.id) ?? []).flatMap((id) => (names.has(id) ? [{ id, name: names.get(id)! }] : [])) : null,
+      inviteeIds: ids,
       conflict: runsOn(e, today) && overlaps(e),
     };
   };

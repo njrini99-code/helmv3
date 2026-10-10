@@ -34,6 +34,15 @@ The default `parkPolicy` is `PARK_IF_REPRODUCIBLE`; `--keep` selects `KEEP`.
 filesystem root rejects the shared `node_modules` symlink, so the default dev
 command must support that shared dependency layout.
 
+`npm run dev` (scripts/dev.mjs) picks the port from the worktree directory name,
+in 3001..3099, so several worktrees can run a dev server at once; the canonical
+checkout keeps 3000. The port is the first line it logs. An explicit `PORT=` or
+`-p` wins, and a busy port falls through to the next free one in range.
+`npm run ios:dev` and the Playwright configs read or pin the same value.
+Dev servers left running pile up: `npm run dev:stop-idle` lists any `next dev`
+idle for more than 2 hours and `npm run dev:stop-idle -- --apply` stops them.
+There is no cron; run it when the machine feels slow.
+
 ## Dependencies and local environment
 
 By default, `node_modules` links to the canonical checkout and `.node-version`

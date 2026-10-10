@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Skeleton } from '../../ui/States';
 import { SkeletonHeroBar } from './SkeletonHeroBar';
+import { SkeletonPhoneHero } from './SkeletonPhoneHero';
 import '../../styles/home.css';
 
 /** A bar centred in a box the height of its real line, so the text lands where the bar was. */
@@ -11,31 +12,36 @@ function Line({ height, children }: { height: number; children: ReactNode }) {
 /** Route loading for Home: the same frame as the page, so nothing shifts when data lands. */
 export function HomeSkeleton() {
   return (
-    <main className="ch-h-main" aria-busy="true" aria-label="Loading Home" data-ch-code="CH-2401">
+    // Desktop draws the loading page with the framed head, as the loaded page is, so nothing moves when the data lands.
+    <main className="ch-h-main" aria-busy="true" aria-label="Loading Home" data-ch-code="CH-2401" data-canopy="">
       <SkeletonHeroBar />
-      {/* Phone: the page's own shape (green hero, then the Today and form cards), so the hand-off changes nothing but the words (F-37). */}
+      {/* Phone: the page's own shape in the Mobile clubhouse pass (the date under its double rule, the greeting, the
+          coach's brief or the player's keys around the green Up next card, then the first section under its rule and
+          its rows), so the hand-off changes nothing but the words (F-37). */}
       <div className="ch-hm-skel" aria-hidden="true">
-        <div className="ch-hm-skel__hero">
-          <span className="ch-hm-skel__bar" style={{ width: 150, height: 13 }} />
-          <span className="ch-hm-skel__bar" style={{ width: 240, height: 32 }} />
-          <span className="ch-hm-skel__bar" style={{ width: '85%', height: 14 }} />
-          <span className="ch-hm-skel__card" />
-        </div>
+        <SkeletonPhoneHero />
         <div className="ch-hm-skel__body">
-          <Skeleton width={80} height={17} />
-          <Skeleton width="100%" height={118} radius={16} />
-          <Skeleton width="100%" height={150} radius={16} />
+          <span className="ch-hm-skel__sec">
+            <Skeleton width={96} height={17} />
+          </span>
+          {[0, 1, 2].map((k) => (
+            <span key={k} className="ch-hm-skel__row">
+              <Skeleton width={34} height={13} />
+              <Skeleton width={k === 1 ? '46%' : '58%'} height={14} />
+            </span>
+          ))}
         </div>
       </div>
       {/* Desktop head, line for line as loaded (perf 2026-10-01, measured with `npm run clubhouse:perf`): the date, the greeting, a two-line sentence and the two actions. */}
-      <header className="ch-h-head">
+      <header className="ch-h-head" data-canopy-head="">
         <Line height={14}>
           <Skeleton width={140} height={13} />
         </Line>
-        <Line height={48}>
-          <Skeleton width={360} height={44} radius={10} />
+        {/* The sans greeting's line in the framed head (44px type, 47.5px line; WebKit 1440, 2026-10-07). */}
+        <Line height={47.5}>
+          <Skeleton width={400} height={38} radius={10} />
         </Line>
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, height: 48 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, height: 49.6 }}>
           <Skeleton width="90%" height={14} />
           <Skeleton width="60%" height={14} />
         </div>
@@ -46,7 +52,7 @@ export function HomeSkeleton() {
       </header>
       <div className="ch-h-sheet ch-sheet">
         {[0, 1].map((k) => (
-          <div key={k} className="ch-h-pane" style={{ minHeight: 423 }}>
+          <div key={k} className="ch-h-pane" style={{ minHeight: 623 }}>
             <Skeleton width={110} height={15} />
             <Skeleton width="100%" height={72} radius={12} />
             <Skeleton width="80%" height={13} />

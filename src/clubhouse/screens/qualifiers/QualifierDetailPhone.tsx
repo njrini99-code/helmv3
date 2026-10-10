@@ -1,10 +1,8 @@
 'use client';
 
 import { BarChart3, Ellipsis, Flag, Lock, LockOpen, MessageSquare, Pencil, Users } from 'lucide-react';
-import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, ViewTransition, type MouseEvent, type ReactNode } from 'react';
 import type { ChQDetailCore, ChQDetailSecondary } from '../../data/qualifiers';
-import { Avatar } from '../../ui/Avatar';
-import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
@@ -19,10 +17,14 @@ import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneTop } from '../../shell/phone-chrome';
-import { dayLabel, plural, positionLabel, shortRange, type ChQRound, type ChQRow, type ChQStatus } from './model';
-import { StateBadge, StatusPill, ToPar } from './parts';
-import { Courses, Selections, StaleStandings } from './QualifierSections';
+import { bubbleNote, dayLabel, plural, positionLabel, sampleNote, shortRange, type ChQRound, type ChQRow, type ChQStatus } from './model';
+import { Pos, qualifierPeek, StateBadge, StatusPill, ToParPlate } from './parts';
+import { PlayerPeek } from '../../ui/PlayerPeek';
+import type { LiveFeedView } from './live';
+import { useRankSlide } from './rank-slide';
+import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSections';
 import { NinesSkeleton, Streamed } from './streamed';
+import { SerifText } from '../../ui/SerifText';
 
 const LIST = '/golf/dashboard/qualifiers';
 
@@ -40,6 +42,7 @@ export function QualifierDetailPhone({
   onBack,
   onSelectionClick,
   status,
+  feed,
   onAskClose,
   onReopen,
   reopenPending,
@@ -52,6 +55,8 @@ export function QualifierDetailPhone({
   /** A click inside the actions: Manage selections leaves the note its Back steps back by (return-state.ts). */
   onSelectionClick: (e: MouseEvent<HTMLElement>) => void;
   status: ChQStatus;
+  /** The board's Live chip (P009-B2, D3): the desktop's feed, passed in. */
+  feed: LiveFeedView;
   onAskClose: () => void;
   /** Runs the reopen and answers once the server has: the sheet that asked stays up until then. */
   onReopen: () => Promise<{ success: boolean }>;
@@ -64,15 +69,37 @@ export function QualifierDetailPhone({
   const topScore = Math.max(0, data.squad - data.picks);
   const peeked = peek && b ? (b.rows.find((r) => r.playerId === peek) ?? null) : null;
 
-  const facts: Array<[string, string]> = [
-    ['Rounds in', b ? `${b.submitted}/${data.entrants * data.numRounds}` : '—'],
-    ['Spots', data.picks ? `${topScore}+${data.picks}` : String(data.squad)],
+  // Each figure drawn (owner, 2026-10-07: no bare numbers; decorative, the figure says it): the rounds posted along the
+  // rounds due, and the squad's seats, the ones won on score filled and the coach's picks open.
+  const due = data.entrants * data.numRounds;
+  const facts: Array<[string, string, ReactNode?]> = [
+    [
+      'Rounds in',
+      b ? `${b.submitted}/${due}` : '—',
+      b && due > 0 ? (
+        <span className="ch-qf-bar">
+          <i style={{ width: `${Math.min(100, (b.submitted / due) * 100)}%` }} />
+        </span>
+      ) : null,
+    ],
+    [
+      'Spots',
+      data.picks ? `${topScore}+${data.picks}` : String(data.squad),
+      data.squad > 0 && data.squad <= 12 ? (
+        <span className="ch-qf-seats">
+          {Array.from({ length: data.squad }, (_, i) => (
+            <i key={i} className={i < topScore || !data.picks ? 'is-score' : 'is-pick'} />
+          ))}
+        </span>
+      ) : null,
+    ],
     ['Deadline', data.deadline ? dayLabel(data.deadline) : '—'],
   ];
 
   return (
     <main className="ch-qfm" aria-label={data.name}>
       <PhoneTop
+        heading={false}
         title="Qualifier"
         back={{
           label: 'Qualifiers',
@@ -82,10 +109,12 @@ export function QualifierDetailPhone({
       />
       <header className="ch-qfm-head">
         <span className="ch-qfm-head__k">
-          <StatusPill status={status} />
+          <StatusPill status={status} ended={feed.ended} />
           <span className="ch-num">{shortRange(data.startDate, data.endDate)}</span>
         </span>
-        <h1>{data.name}</h1>
+        <h1>
+          <SerifText text={data.name} />
+        </h1>
         <p>{[data.entriesError ? null : plural(data.entrants, 'entrant'), data.course].filter(Boolean).join(' · ')}</p>
       </header>
 
@@ -113,10 +142,13 @@ export function QualifierDetailPhone({
       )}
 
       <dl className="ch-qfm-facts">
-        {facts.map(([k, v]) => (
+        {facts.map(([k, v, viz]) => (
           <div key={k}>
             <dt>{k}</dt>
             <dd className="ch-num">{v}</dd>
+            <dd className="ch-qfm-facts__viz" aria-hidden="true">
+              {viz}
+            </dd>
           </div>
         ))}
       </dl>
@@ -128,7 +160,7 @@ export function QualifierDetailPhone({
       )}
 
       <SectionBoundary surface="qualifiers.leaderboard" label="The leaderboard" code="CH-09212">
-        <Board data={data} status={status} stale={stale} onPeek={setPeek} />
+        <Board data={data} status={status} stale={stale} feed={feed} onPeek={setPeek} sheetOpen={!!peeked || actions} />
       </SectionBoundary>
 
       <SectionBoundary surface="qualifiers.courses" label="Course per round" code="CH-09215">
@@ -191,8 +223,27 @@ export function QualifierDetailPhone({
   );
 }
 
-/** The leaderboard as cards (board 02): position, avatar, name and state, to par; rounds, average and total under it. */
-function Board({ data, status, stale, onPeek }: { data: ChQDetailCore; status: ChQStatus; stale: boolean; onPeek: (id: string) => void }) {
+/**
+ * The leaderboard (board 02, as changed by P009-A1, owner 2026-10-08): one 56pt row a player, Pos, Player, the to-par
+ * plate and Thru, under a column header drawn once. The state badge or the sample-size note (C2) is the name's second
+ * line; the average is in the player's sheet. Each row is a button whose label reads the row, so the header is drawn
+ * for the eye only.
+ */
+function Board({
+  data,
+  status,
+  stale,
+  feed,
+  onPeek,
+  sheetOpen,
+}: {
+  data: ChQDetailCore;
+  status: ChQStatus;
+  stale: boolean;
+  feed: LiveFeedView;
+  onPeek: (id: string) => void;
+  sheetOpen: boolean;
+}) {
   const { refresh, refreshing } = useRefresh();
   const coach = data.role === 'coach';
   const b = data.board;
@@ -206,17 +257,16 @@ function Board({ data, status, stale, onPeek }: { data: ChQDetailCore; status: C
     }
     if (submitted != null) setAnnounce(`Standings updated. ${plural(submitted, 'round')} submitted.`);
   }, [submitted]);
+  const order = useMemo(() => (b?.rows ?? []).map((r) => r.playerId), [b]);
+  // P009-B1: rows slide to new ranks only when a refresh changed them, and never under an open sheet.
+  const slide = useRankSlide(order, sheetOpen);
 
   const head = (
     <div className="ch-qf-panel__head">
       <div>
         <h2 id="ch-qfm-lb">Leaderboard</h2>
       </div>
-      {status === 'in_progress' && b && (
-        <Badge tone="accent" dot>
-          Live
-        </Badge>
-      )}
+      {status === 'in_progress' && b && <LiveChip view={feed} />}
     </div>
   );
   if (data.entriesError || data.roundsError || !b) {
@@ -224,9 +274,9 @@ function Board({ data, status, stale, onPeek }: { data: ChQDetailCore; status: C
       <section className="ch-qf-panel" aria-labelledby="ch-qfm-lb">
         {head}
         {data.entriesError ? (
-          <InlineNotice code="CH-09203" title="The field didn’t load." body="Standings wait until the entrants load, so nobody reads a wrong order." onRetry={refresh} retrying={refreshing} />
+          <InlineNotice code="CH-09203" title="The field didn’t load" body="Standings wait until the entrants load, so nobody reads a wrong order." onRetry={refresh} retrying={refreshing} />
         ) : (
-          <InlineNotice code="CH-09204" title="Scores didn’t load." body="The field isn’t shown without its scores, so nobody reads a wrong order. The error has been reported." onRetry={refresh} retrying={refreshing} />
+          <InlineNotice code="CH-09204" title="Scores didn’t load" body="The field isn’t shown without its scores, so nobody reads a wrong order. The error has been reported." onRetry={refresh} retrying={refreshing} />
         )}
       </section>
     );
@@ -236,7 +286,7 @@ function Board({ data, status, stale, onPeek }: { data: ChQDetailCore; status: C
       <section className="ch-qf-panel" aria-labelledby="ch-qfm-lb">
         {head}
         {stale && <StaleStandings />}
-        <EmptyState code="CH-09304" icon={Flag} title="Awaiting first round." body={`${plural(data.entrants, 'player')} entered. Standings appear once a player submits a round.`} />
+        <EmptyState code="CH-09304" icon={Flag} title="Awaiting first round" body={`${plural(data.entrants, 'player')} entered. Standings appear once a player submits a round.`} />
       </section>
     );
   }
@@ -248,50 +298,45 @@ function Board({ data, status, stale, onPeek }: { data: ChQDetailCore; status: C
       <p className="ch-sr-only" aria-live="polite" data-ch-code="CH-09803">
         {announce}
       </p>
+      <div className="ch-qfm-lbhead" aria-hidden="true">
+        <span>Pos</span>
+        <span>Player</span>
+        <span>To par</span>
+        <span>Thru</span>
+      </div>
       <ol className="ch-qfm-lb">
         {b.rows.map((r, i) => {
           const me = r.playerId === data.viewerPlayerId;
+          const note = sampleNote(r, b, data.numRounds);
           const body = (
             <>
-              <span className="ch-qfm-lb__top">
-                <span className="ch-qf-pos">{positionLabel(r)}</span>
-                <Avatar name={r.name} size={32} />
-                <span className="ch-qfm-lb__n">
-                  <b>
-                    {r.name}
-                    {me && <span className="ch-qf-you">You</span>}
-                  </b>
-                  <StateBadge state={r.state} />
-                </span>
-                <ToPar value={r.toPar} big />
+              <Pos position={r.position} tied={r.tied} move={r.move} />
+              <span className="ch-qfm-lb__n">
+                <b>
+                  {r.name}
+                  {me && <span className="ch-qf-you">You</span>}
+                </b>
+                {(r.state || note) && (
+                  <span className="ch-qfm-lb__sub">
+                    <StateBadge state={r.state} />
+                    {note && <span className="ch-qf-thin">{note}</span>}
+                  </span>
+                )}
               </span>
-              <span className="ch-qfm-lb__g ch-well-soft ch-num">
-                <span>
-                  <em>Rounds</em>
-                  <b>
-                    {r.played}/{data.numRounds}
-                  </b>
-                </span>
-                <span>
-                  <em>Avg</em>
-                  <b>{r.avg != null ? formatFixed(r.avg) : '—'}</b>
-                </span>
-                <span>
-                  <em>Total</em>
-                  <b>{r.total ?? '—'}</b>
-                </span>
+              <ToParPlate value={r.toPar} />
+              <span className="ch-qfm-lb__thru ch-num">
+                {r.played}/{data.numRounds}
               </span>
             </>
           );
-          return (
-            <li key={r.playerId}>
-              {i === b.topScore && b.topScore > 0 && <div className="ch-qf-line ch-qfm-line"><span>Top-score line · {b.topScore} qualify on score</span></div>}
-              {i === b.squad && b.squad !== b.topScore && <div className="ch-qf-line ch-qf-line--muted ch-qfm-line"><span>Travel cut · top {b.squad}</span></div>}
+          const label = `${r.name}, ${positionLabel(r)}, ${formatToPar(r.toPar)}, ${r.played} of ${plural(data.numRounds, 'round')}`;
+          const slideRow = (
+            <ViewTransition name={`ch-rank-${r.playerId}`} update={slide ? 'ch-rank' : 'none'} enter="none" exit="none" share="none" default="none">
               {canOpen(r) ? (
                 <button
                   type="button"
                   className={'ch-qfm-lb__row' + (me ? ' is-me' : '')}
-                  aria-label={`${r.name}, ${positionLabel(r)}, ${formatToPar(r.toPar)}. Show ${me ? 'your' : 'their'} rounds`}
+                  aria-label={`${label}. Show ${me ? 'your' : 'their'} rounds`}
                   onClick={() => {
                     haptic('select');
                     chTrail('qualifiers open rounds sheet');
@@ -301,29 +346,38 @@ function Board({ data, status, stale, onPeek }: { data: ChQDetailCore; status: C
                   {body}
                 </button>
               ) : (
-                <div className={'ch-qfm-lb__row is-static' + (me ? ' is-me' : '')}>{body}</div>
+                <div className={'ch-qfm-lb__row is-static' + (me ? ' is-me' : '')} role="group" aria-label={label}>
+                  {body}
+                </div>
               )}
+            </ViewTransition>
+          );
+          return (
+            <li key={r.playerId}>
+              {i === b.topScore && b.topScore > 0 && <div className="ch-qf-line ch-qfm-line"><span>Top-score line · {b.topScore} qualify on score</span></div>}
+              {i === b.squad && b.squad !== b.topScore && <div className="ch-qf-line ch-qf-line--muted ch-qfm-line"><span>Travel cut · top {b.squad}</span></div>}
+              {/* P003-C1: a coach's hold peeks at the player; a tap still opens their rounds. Outside the transition,
+                  so the slide still names the row itself. */}
+              {coach ? <PlayerPeek player={qualifierPeek(r, data.numRounds)}>{slideRow}</PlayerPeek> : slideRow}
             </li>
           );
         })}
         {b.unscored.map((r) => (
           <li key={r.playerId}>
             <div className={'ch-qfm-lb__row is-static is-none' + (r.playerId === data.viewerPlayerId ? ' is-me' : '')}>
-              <span className="ch-qfm-lb__top">
-                <span className="ch-qf-pos">—</span>
-                <Avatar name={r.name} size={32} />
-                <span className="ch-qfm-lb__n">
-                  <b>{r.name}</b>
-                  <small>No rounds submitted</small>
-                </span>
-                <span className="ch-qf-dash">—</span>
+              <Pos position={null} tied={false} move={null} />
+              <span className="ch-qfm-lb__n">
+                <b>{r.name}</b>
+                <span className="ch-qfm-lb__sub">No rounds submitted</span>
               </span>
+              <span className="ch-qf-dash">—</span>
+              <span className="ch-qfm-lb__thru ch-num">0/{data.numRounds}</span>
             </div>
           </li>
         ))}
       </ol>
       <p className="ch-qf-cap">
-        Ranked by total to par. Top {b.topScore} qualify on score{data.picks ? `; ${plural(data.picks, 'coach’s pick', 'coach’s picks')}` : ''}.
+        Ranked by total to par. Top {b.topScore} qualify on score{data.picks ? `; ${plural(data.picks, 'coach’s pick', 'coach’s picks')}` : ''}.{bubbleNote(data.numRounds, status)}
       </p>
     </section>
   );
@@ -434,7 +488,7 @@ function PlayerRoundCard({ round, n, s }: { round: ChQRound; n: number; s: ChQDe
   return (
     <PlayerRoundHead round={round} course={course}>
       {s.holesError ? (
-        <InlineNotice code="CH-09205" title="Scorecards didn’t load." body="The totals are right; the hole-by-hole card is missing until it loads." onRetry={refresh} retrying={refreshing} />
+        <InlineNotice code="CH-09205" title="Scorecards didn’t load" body="The totals are right; the hole-by-hole card is missing until it loads." onRetry={refresh} retrying={refreshing} />
       ) : holes && holes.length ? (
         <>
           <Nine holes={holes.filter((h) => h.n <= 9)} label="Out" caption={`Round ${n}, front nine`} />

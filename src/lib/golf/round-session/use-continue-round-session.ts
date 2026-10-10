@@ -3,7 +3,8 @@
 import { startTransition, useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
-import { submitGolfRoundComprehensive, savePartialRound, deleteInProgressRound, type PartialRoundData } from '@/app/golf/actions/golf';
+import { submitGolfRoundComprehensive } from '@/app/golf/actions/round-submit';
+import { savePartialRound, deleteInProgressRound, type PartialRoundData } from '@/app/golf/actions/round-partial';
 import { checkRoundStaleness, type TerminalRoundSubmissionData } from '@/app/golf/actions/round-drafts';
 import { deleteOfflineRound, saveOfflineRound } from '@/lib/offline/indexed-db';
 import { beaconPartialSave } from '@/lib/offline/partial-save-beacon';

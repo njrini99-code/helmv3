@@ -32,7 +32,7 @@ vi.mock('@/lib/notifications', () => ({ notifyQualifierCreated: vi.fn(async () =
 vi.mock('@/lib/notifications/email', () => ({ sendEmailNotification: vi.fn(async () => ({ success: true })) }));
 vi.mock('@/lib/notifications/push', () => ({ sendBulkPushNotification: vi.fn(async () => {}) }));
 
-import { createGolfQualifier } from '../golf';
+import { createGolfQualifier } from '../qualifier-actions';
 
 type Row = Record<string, unknown>;
 

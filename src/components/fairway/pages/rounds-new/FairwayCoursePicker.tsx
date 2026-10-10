@@ -37,7 +37,7 @@ import {
   useCallback, useEffect, useMemo, useRef, useState, type ReactNode,
 } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { m, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/fairway/controls/button';

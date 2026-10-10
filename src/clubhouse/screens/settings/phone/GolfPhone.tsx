@@ -3,16 +3,32 @@
 import { useState } from 'react';
 import { golfDetailsProblem, type ChGolfDetails, type ChMembership, type ChSettingsData, type ChSettingsWrites } from '../model';
 import { SAVE_COPY, useMembership } from '../hooks';
-import { ReadFailed, useSaveAction } from '../parts';
+import { ReadFailed, ReadsFailed, useSaveAction } from '../parts';
+import { golfReadsFailed } from '../Golf';
 import { ActionSheet, FormSheet, useSheetDraft } from './sheets';
 import { FieldRow, Group, NavRow, Problem } from './ui';
 
 /** Golf profile on the phone (player): golf details in an edit sheet, and the team: leave it, or ask to join one. */
 export function GolfPhone({ data, writes }: { data: ChSettingsData; writes: ChSettingsWrites }) {
+  const failed = golfReadsFailed(data);
+  const covered = failed.length > 1;
   return (
     <>
-      {data.golf?.error ? <ReadFailed what="Your golf details" code="CH-8209" onRetry={writes.refresh} /> : data.golf && <DetailsPhone details={data.golf.value} writes={writes} />}
-      {data.membership?.error ? <ReadFailed what="Your team membership" code="CH-8210" onRetry={writes.refresh} /> : data.membership && <MembershipPhone m={data.membership.value} writes={writes} />}
+      <ReadsFailed parts={failed} onRetry={writes.refresh} />
+      {data.golf?.error ? (
+        <Group title="Golf details">
+          <ReadFailed bare what="Your golf details" code="CH-8209" onRetry={writes.refresh} covered={covered} />
+        </Group>
+      ) : (
+        data.golf && <DetailsPhone details={data.golf.value} writes={writes} />
+      )}
+      {data.membership?.error ? (
+        <Group title="Team">
+          <ReadFailed bare what="Your team membership" code="CH-8210" onRetry={writes.refresh} covered={covered} />
+        </Group>
+      ) : (
+        data.membership && <MembershipPhone m={data.membership.value} writes={writes} />
+      )}
     </>
   );
 }
@@ -99,7 +115,7 @@ function MembershipPhone({ m, writes }: { m: ChMembership; writes: ChSettingsWri
           onClose={() => setLeaving(false)}
           code="CH-8502"
           title={`Leave ${m.team.name}?`}
-          message="You come off the roster right away. To come back, you'll need the invite code and your coach's approval."
+          message="You come off the roster right away. To come back, you’ll need the invite code and your coach’s approval."
           actions={[
             {
               label: 'Leave team',
@@ -116,7 +132,7 @@ function MembershipPhone({ m, writes }: { m: ChMembership; writes: ChSettingsWri
 
   return (
     <>
-      <Group title="Join a team" code="CH-8302" note="Ask your coach for the team's invite code. They approve your request from their roster.">
+      <Group title="Join a team" code="CH-8302" note="Ask your coach for the team’s invite code. They approve your request from their roster.">
         {requests.map((r) => (
           <div key={r.id} className="ch-setm-row is-info has-help" data-ch-code="CH-8303">
             <span className="ch-setm-row__l">Waiting on {r.teamName}</span>

@@ -155,7 +155,7 @@ function normalizeConflictData(raw: WireConflictData): ConflictData {
 }
 
 async function loadGolfCalendarActions() {
-  return import('@/app/golf/actions/golf');
+  return import('@/app/golf/actions/calendar-events');
 }
 
 // Transform conflicts from API format to ConflictWarning format

@@ -1,4 +1,4 @@
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -183,7 +183,7 @@ describe('Messages · swap audit §12', () => {
     await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
     await user.click(screen.getByRole('button', { name: 'React' }));
     await user.click(screen.getAllByRole('menuitem', { name: /^React / })[0]!);
-    await expectCode('CH-7009', /Couldn't save the reaction/);
+    await expectCode('CH-7009', /Couldn’t save the reaction/);
   });
 
   it('MSG-12.3 a tap while another reaction is still saving is ignored, with no false failure', async () => {
@@ -228,7 +228,7 @@ describe('Messages · swap audit §12', () => {
     await waitFor(() => expect(live.files.sendMessageWithAttachments).toHaveBeenCalled());
     await user.upload(input, new File(['y'], 'map.pdf', { type: 'application/pdf' }));
     await act(async () => settle({ success: false, error: 'nope' }));
-    await expectCode('CH-7006', /Couldn't send the attachment/);
+    await expectCode('CH-7006', /Couldn’t send the attachment/);
     expect(box.value).toBe('Here is the plan');
     expect(screen.getByRole('button', { name: 'Remove plan.pdf' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Remove map.pdf' })).toBeTruthy();
@@ -271,7 +271,7 @@ describe('Messages · swap audit §12', () => {
     params.current = new URLSearchParams('conversation=gone');
     router.replace.mockClear();
     show();
-    await expectCode('CH-7015', /That conversation isn't available/);
+    await expectCode('CH-7015', /That conversation isn’t available/);
     expect(router.replace).toHaveBeenCalledWith('/golf/dashboard/messages', { scroll: false });
     expect(screen.queryByRole('textbox', { name: /^Message / })).toBeNull();
   });

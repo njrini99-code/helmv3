@@ -241,7 +241,7 @@ export function checkRegistry(ctx) {
     for (const [k, list] of Object.entries(enums)) if (!enumIs(s[k], list)) v.push(`${at}: status.${k} "${s[k]}" is not one of ${list.join(', ')}`);
     const impl = m.implementation ?? {};
     if (s.implementation !== 'not_started') {
-      for (const p of [impl.root, impl.loader, impl.styles, ...(impl.tests ?? [])].filter(Boolean)) if (!exists(p)) v.push(`${at}: implementation path ${p} does not exist`);
+      for (const p of [impl.root, impl.loader, impl.styles, ...(impl.also ?? []), ...(impl.tests ?? [])].filter(Boolean)) if (!exists(p)) v.push(`${at}: implementation path ${p} does not exist`);
       if (!impl.root) v.push(`${at}: implementation.root is missing`);
     }
     for (const p of [...(m.design?.desktop ?? []), ...(m.design?.phone ?? [])]) if (!exists(p)) v.push(`${at}: design file ${p} does not exist`);

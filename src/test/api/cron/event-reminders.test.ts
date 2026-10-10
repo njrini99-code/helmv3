@@ -38,6 +38,8 @@ interface EventRow {
   team_id: string;
   /** `'class'` marks a synced personal class meeting — see class-events.ts. */
   event_type?: string | null;
+  /** The event asks for replies; reminders go only to these. */
+  requires_rsvp?: boolean | null;
 }
 
 /** Per-team reminder lead times (migration 20260725150000). */
@@ -97,12 +99,16 @@ function makeClient(cfg: MockConfig) {
         const neqs = calls
           .filter((c) => c.name === 'neq')
           .map((c) => [c.args[0] as string, c.args[1] as unknown] as const);
+        const eqs = calls
+          .filter((c) => c.name === 'eq')
+          .map((c) => [c.args[0] as string, c.args[1] as unknown] as const);
         return (cfg.events ?? []).filter(
           (e) =>
             e.start_time > gt &&
             e.start_time <= lte &&
             e.cancelled_at === null &&
-            neqs.every(([col, val]) => (e as unknown as Record<string, unknown>)[col] !== val),
+            neqs.every(([col, val]) => (e as unknown as Record<string, unknown>)[col] !== val) &&
+            eqs.every(([col, val]) => (e as unknown as Record<string, unknown>)[col] === val),
         ) as unknown as Array<Record<string, unknown>>;
       }
       case 'golf_event_attendance': {
@@ -206,6 +212,7 @@ function eventAt(id: string, offsetMs: number, overrides: Partial<EventRow> = {}
     cancelled_at: null,
     status: 'confirmed',
     team_id: 'T1',
+    requires_rsvp: true,
     ...overrides,
   };
 }
@@ -633,6 +640,25 @@ describe('event-reminders cron route', () => {
    * attendee about one student's Organic Chemistry lecture". The filter belongs
    * in the query, not in the luck.
    */
+  describe('event reminders — events that do not ask for replies (owner, 2026-10-08)', () => {
+    it('sends no reminder for an event with RSVPs off', async () => {
+      currentClient = makeClient({
+        events: [eventAt('E1', 2 * HOUR), eventAt('E2', 2 * HOUR, { requires_rsvp: false })],
+        attendance: [
+          { event_id: 'E1', player_id: 'P1', status: 'pending' },
+          { event_id: 'E2', player_id: 'P1', status: 'pending' },
+        ],
+        players: [{ id: 'P1', user_id: 'U1' }],
+        users: [{ id: 'U1', email: 'u1@x.test' }],
+      });
+
+      const res = await GET(authed());
+      const body = await res.json();
+      expect(res.status).toBe(200);
+      expect(body.inserted24h).toBe(1);
+    });
+  });
+
   describe('event reminders — synced class meetings', () => {
     it('sends no reminder for a class event, even with an eligible attendee', async () => {
       currentClient = makeClient({

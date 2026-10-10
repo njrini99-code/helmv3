@@ -20,7 +20,7 @@ Route: `/golf/dashboard/recruiting` (coach)   Surface tag: `recruiting` (Sentry 
 
 - [x] Desktop reference files and screenshots are named above
 - [x] Every figure on the screen is mapped to a table and column, or logged as a gap (`pages/P014-recruiting/DESIGN.md` "Data assumptions": every figure is `golf_recruits` or `golf_recruit_documents`; the pipeline's counts and shares are computed from the list, not stored)
-- [x] Every control is mapped to an existing server action: Add, Edit, stage and Delete are `createRecruit`, `updateRecruit` and `deleteRecruit`; documents are `getRecruitDocuments`, `deleteRecruitDocument` and `getRecruitDocumentUrl`, and an upload is `prepareRecruitDocumentUpload`, a PUT to Storage, then `completeRecruitDocumentUpload` (the current page keeps `uploadRecruitDocument`); Email and Call are `mailto:` and `tel:` links. `createRecruit` takes an optional request id. One migration (film), written and not applied
+- [x] Every control is mapped to an existing server action: Add, Edit, stage and Delete are `createRecruit`, `updateRecruit` and `deleteRecruit`; documents are `getRecruitDocuments`, `deleteRecruitDocument` and `getRecruitDocumentUrl`, and an upload is `prepareRecruitDocumentUpload`, a PUT to Storage, then `completeRecruitDocumentUpload` (the Fairway page now uses the same two steps); Email and Call are `mailto:` and `tel:` links. `createRecruit` takes an optional request id. One migration (film), written and not applied
 - [x] N/A: the Recruiting boards have no README to disagree with; what the boards do not show (the upload dialog, removing a document, the no-team page, an empty stage, the phone's Add form) is listed as questions in `pages/P014-recruiting/DESIGN.md`, and the tracker entry is the lead's
 
 ## desktop

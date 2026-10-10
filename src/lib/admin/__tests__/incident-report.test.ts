@@ -103,7 +103,7 @@ describe('buildIncidentReport', () => {
     });
     expect(report).toContain('- Feature: Round Tracking (`round_tracking`)');
     expect(report).toContain('- Action: submitGolfRoundComprehensive');
-    expect(report).toContain('- Source file: `src/app/golf/actions/golf.ts`');
+    expect(report).toContain('- Source file: `src/app/golf/actions/round-submit.ts`');
   });
 
   it('renders collapsed-count suffix only when present and positive', () => {
@@ -292,7 +292,7 @@ describe('hasUnknownAffectedUsers', () => {
 describe('resolveActionFilePath', () => {
   it('returns the unique file when the action is explicitly listed', () => {
     expect(resolveActionFilePath('round_tracking', 'submitGolfRoundComprehensive')).toBe(
-      'src/app/golf/actions/golf.ts',
+      'src/app/golf/actions/round-submit.ts',
     );
   });
 
@@ -304,7 +304,7 @@ describe('resolveActionFilePath', () => {
 
   it('resolves an explicit match on a multi-export feature file', () => {
     expect(resolveActionFilePath('round_review_ai', 'generateRoundReview')).toBe(
-      'src/app/golf/actions/insights.ts',
+      'src/app/golf/actions/insights-player-analysis.ts',
     );
   });
 

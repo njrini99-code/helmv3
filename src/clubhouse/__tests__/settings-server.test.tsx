@@ -56,7 +56,7 @@ const actions = vi.hoisted(() => ({
   clearAllCachedResources: vi.fn(),
 }));
 vi.mock('@/app/actions/notification-preferences', () => ({ getNotificationPreferences: actions.getNotificationPreferences, updateNotificationPreferences: actions.updateNotificationPreferences }));
-vi.mock('@/app/golf/actions/insights', () => ({
+vi.mock('@/app/golf/actions/insights-coachhelm', () => ({
   getTeamCoachHelmAccess: actions.getTeamCoachHelmAccess,
   getOrCreateTeamCoachHelmSettings: actions.getOrCreateTeamCoachHelmSettings,
   updateTeamCoachHelmSettings: actions.updateTeamCoachHelmSettings,

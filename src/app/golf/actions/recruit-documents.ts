@@ -29,30 +29,6 @@ import {
 } from './recruit-documents-limits';
 
 const BUCKET = 'recruit-documents';
-const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 MB — matches the bucket file_size_limit
-
-// Extension → canonical MIME, covering the bucket's allowed_mime_types. Used to
-// (a) derive an effective type when a browser sends an empty file.type, and
-// (b) supply a correct contentType on upload.
-const EXT_TO_MIME: Record<string, string> = {
-  pdf: 'application/pdf',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  png: 'image/png',
-  webp: 'image/webp',
-  heic: 'image/heic',
-  gif: 'image/gif',
-  txt: 'text/plain',
-  csv: 'text/csv',
-  doc: 'application/msword',
-  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  xls: 'application/vnd.ms-excel',
-  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  ppt: 'application/vnd.ms-powerpoint',
-  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-};
-
-const ALLOWED_MIME = new Set<string>(Object.values(EXT_TO_MIME));
 
 export interface RecruitDocument {
   id: string;
@@ -82,10 +58,6 @@ function normalizeCategory(category?: string | null): RecruitDocCategory {
   return (RECRUIT_DOC_CATEGORIES as readonly string[]).includes(c)
     ? (c as RecruitDocCategory)
     : 'other';
-}
-
-function fileExtension(name: string): string {
-  return name.includes('.') ? (name.split('.').pop() ?? '').toLowerCase() : '';
 }
 
 /**
@@ -140,149 +112,11 @@ export async function getRecruitDocuments(
   return observedGetRecruitDocuments(recruitId);
 }
 
-/**
- * Upload a file and attach it to a recruit. team_id is taken from the recruit's
- * own row (RLS on golf_recruits already limits what the coach can see), so a
- * coach can only file documents under a recruit they own.
- */
-async function uploadRecruitDocumentImpl(
-  recruitId: string,
-  file: File,
-  opts: { title?: string; category?: string } = {},
-): Promise<ActionResult<{ id: string }>> {
-  if (!recruitId) return { success: false, error: 'Recruit id required' };
-  if (!file || file.size === 0) return { success: false, error: 'Choose a file to upload' };
-  if (file.size > MAX_FILE_BYTES) {
-    return { success: false, error: 'File is too large (max 25 MB)' };
-  }
-
-  // Resolve the effective MIME from the declared type or the extension. A file
-  // with an empty file.type must NOT bypass the allowlist — reject if neither
-  // the declared type nor the extension maps to an allowed type.
-  const ext = fileExtension(file.name);
-  const effectiveType = file.type || EXT_TO_MIME[ext] || '';
-  if (!effectiveType || !ALLOWED_MIME.has(effectiveType)) {
-    return { success: false, error: 'Unsupported file type' };
-  }
-
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
-
-    // Resolve the recruit's team. RLS ensures the coach only sees their own
-    // team's recruits, so a miss here means no permission / not found.
-    const { data: recruit, error: recruitError } = await supabase
-      .from('golf_recruits')
-      .select('id, team_id')
-      .eq('id', recruitId)
-      .maybeSingle();
-
-    if (recruitError) throw recruitError;
-    if (!recruit) return { success: false, error: 'Recruit not found' };
-
-    const teamId: string = recruit.team_id;
-    const objectName = `${teamId}/${recruitId}/${crypto.randomUUID()}${ext ? `.${ext}` : ''}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from(BUCKET)
-      .upload(objectName, file, { contentType: effectiveType, upsert: false });
-
-    if (uploadError) {
-      await logServerError(`uploadRecruitDocument storage failed: ${uploadError.message}`, {
-        action: 'recruit_documents.uploadRecruitDocument',
-        featureArea: 'recruiting',
-        extra: { recruitId },
-      });
-      return { success: false, error: 'Upload failed. Try again.' };
-    }
-
-    const title = (opts.title ?? '').trim() || file.name;
-
-    const { data: row, error: insertError } = await supabase
-      .from('golf_recruit_documents')
-      .insert({
-        recruit_id: recruitId,
-        team_id: teamId,
-        title: title.slice(0, 200),
-        category: normalizeCategory(opts.category),
-        file_name: file.name,
-        storage_path: objectName,
-        file_type: effectiveType,
-        file_size: file.size,
-        uploaded_by: user.id,
-      })
-      .select('id')
-      .single();
-
-    if (insertError) {
-      // Roll back the orphaned storage object so a failed insert doesn't leak a file.
-      const { error: rollbackError } = await supabase.storage.from(BUCKET).remove([objectName]);
-      observeStorageResult({
-        error: rollbackError,
-        operation: 'delete',
-        feature: 'recruiting_prospect_tracking',
-        action: 'upload_recruit_document_rollback',
-        bucketClass: 'recruit-documents/recruit_document',
-        accessDeniedOnOwnPath: true,
-      });
-      if (rollbackError) {
-        await logServerError(
-          `uploadRecruitDocument rollback failed (orphaned object ${objectName}): ${rollbackError.message}`,
-          { action: 'recruit_documents.uploadRecruitDocument', featureArea: 'recruiting', extra: { recruitId } },
-        );
-      }
-      await logServerError(`uploadRecruitDocument insert failed: ${insertError.message}`, {
-        action: 'recruit_documents.uploadRecruitDocument',
-        featureArea: 'recruiting',
-        extra: { recruitId, code: insertError.code },
-      });
-      maybeCaptureRlsDenial(insertError, {
-        table: 'golf_recruit_documents',
-        verb: 'insert',
-        action: 'uploadRecruitDocument',
-        feature: 'recruiting_prospect_tracking',
-        sport: 'golf',
-      });
-      return {
-        success: false,
-        error: insertError.code === '42501'
-          ? "Only this team's coaches can add recruit documents"
-          : 'Failed to save document',
-      };
-    }
-
-    // No revalidatePath: the only consumer is a client panel
-    // (FairwayRecruitDocuments) that re-fetches via getRecruitDocuments after
-    // each mutation, so there is no server-rendered route to invalidate.
-    return { success: true, data: { id: row.id } };
-  } catch (err) {
-    await logServerError(
-      `uploadRecruitDocument error: ${describeError(err)}`,
-      { action: 'recruit_documents.uploadRecruitDocument', featureArea: 'recruiting', extra: { recruitId } },
-    );
-    return { success: false, error: 'Failed to upload document' };
-  }
-}
-
-const observedUploadRecruitDocument = withAdminObserved(
-  'uploadRecruitDocument',
-  { sport: 'golf', feature: 'recruiting_prospect_tracking' },
-  uploadRecruitDocumentImpl,
-);
-
-export async function uploadRecruitDocument(
-  recruitId: string,
-  file: File,
-  opts: { title?: string; category?: string } = {},
-): Promise<ActionResult<{ id: string }>> {
-  return observedUploadRecruitDocument(recruitId, file, opts);
-}
-
-// ── Direct upload (Clubhouse): the file never passes through a server action ──────────────────────────────────────
-// A server action carries a file in its request body, which is capped well below a film (next.config
-// serverActions.bodySizeLimit, and the platform's own request limit). So the Clubhouse page asks here for a signed
-// upload URL, sends the bytes to Storage itself, and then asks for the row to be recorded. Nothing here trusts the
+// ── Direct upload (Fairway and Clubhouse): the file never passes through a server action ─────────────────────────
+// A server action carries a file in its request body, and Vercel Functions refuse a request body over about 4.5 MB
+// with a 413 before the action runs, far below a 25 MB document or a film. So both recruiting pages ask here for a
+// signed upload URL, send the bytes to Storage themselves, and then ask for the row to be recorded. (The old
+// uploadRecruitDocument, which took the File as an argument, was removed for that reason.) Nothing here trusts the
 // browser: the object path is built on the server from the recruit's own team, the type comes from the extension,
 // and the row's size is read back from what Storage actually holds. Both steps are safe to repeat with the same
 // uploadId, so a Retry after a lost answer finds what its first attempt did and never uploads or records twice.
@@ -336,6 +170,20 @@ export interface RecruitUploadMeta {
 }
 
 /**
+ * Where to send the bytes. `signedUrl` and `token` are one signature for one object: `path`, which the server built from
+ * the recruit's own team and the uploadId (Storage binds the token to that path, so it cannot be used for any other).
+ * The Clubhouse page PUTs to `signedUrl`; the Fairway panel hands `path` and `token` to the browser client's
+ * `uploadToSignedUrl`. When the object is already stored, signedUrl and token are null and there is nothing to send.
+ */
+export interface RecruitUploadTicket {
+  contentType: string;
+  signedUrl: string | null;
+  /** The object's path inside the bucket, built on the server. */
+  path?: string;
+  token?: string | null;
+}
+
+/**
  * Step one: check the file against the bucket's rules and hand back a signed URL to send it to (valid for two hours).
  * `signedUrl` is null when the object is already in Storage, which happens when an earlier attempt sent it and its
  * answer was lost: the page skips the transfer and goes straight to recording it.
@@ -343,7 +191,7 @@ export interface RecruitUploadMeta {
 async function prepareRecruitDocumentUploadImpl(
   recruitId: string,
   meta: RecruitUploadMeta,
-): Promise<ActionResult<{ contentType: string; signedUrl: string | null }>> {
+): Promise<ActionResult<RecruitUploadTicket>> {
   if (!recruitId) return { success: false, error: 'Recruit id required' };
   if (!meta || !UUID_RE.test(meta.uploadId ?? '')) return { success: false, error: 'Upload id required' };
   const ext = recruitDocExtension(meta.fileName ?? '');
@@ -366,11 +214,12 @@ async function prepareRecruitDocumentUploadImpl(
     // A repeat: the bytes are already there. (A failed read is not proof either way, so it falls through to signing; a
     // second transfer to an existing path is refused by Storage as a duplicate, which the page also treats as "already there".)
     const stored = await findStoredObject(supabase, folder, objectName);
-    if (stored.found) return { success: true, data: { contentType, signedUrl: null } };
+    const storagePath = `${folder}/${objectName}`;
+    if (stored.found) return { success: true, data: { contentType, signedUrl: null, path: storagePath, token: null } };
 
     const { data: signed, error: signError } = await supabase.storage
       .from(BUCKET)
-      .createSignedUploadUrl(`${folder}/${objectName}`);
+      .createSignedUploadUrl(storagePath);
     observeStorageResult({
       error: signError,
       operation: 'upload',
@@ -387,7 +236,7 @@ async function prepareRecruitDocumentUploadImpl(
       });
       return { success: false, error: "Couldn't start the upload. Try again." };
     }
-    return { success: true, data: { contentType, signedUrl: signed.signedUrl } };
+    return { success: true, data: { contentType, signedUrl: signed.signedUrl, path: storagePath, token: signed.token ?? null } };
   } catch (err) {
     await logServerError(
       `prepareRecruitDocumentUpload error: ${describeError(err)}`,
@@ -406,7 +255,7 @@ const observedPrepareRecruitDocumentUpload = withAdminObserved(
 export async function prepareRecruitDocumentUpload(
   recruitId: string,
   meta: RecruitUploadMeta,
-): Promise<ActionResult<{ contentType: string; signedUrl: string | null }>> {
+): Promise<ActionResult<RecruitUploadTicket>> {
   return observedPrepareRecruitDocumentUpload(recruitId, meta);
 }
 
@@ -594,7 +443,7 @@ async function deleteRecruitDocumentImpl(documentId: string): Promise<ActionResu
       }
     }
 
-    // No revalidatePath: see uploadRecruitDocument — the client panel re-fetches.
+    // No revalidatePath: the only consumers are client panels that re-fetch via getRecruitDocuments after each mutation.
     return { success: true };
   } catch (err) {
     await logServerError(

@@ -7,7 +7,7 @@
 // Tapping a row re-opens the bottom sheet. Remove button clears the region.
 // =============================================================================
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { SORENESS_REGIONS } from '@/lib/lifting/soreness-regions';
 import type { SorenessRegionId } from '@/lib/lifting/soreness-regions';

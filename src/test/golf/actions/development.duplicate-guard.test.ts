@@ -28,6 +28,10 @@ vi.mock('@/lib/auth/verify-player-access', () => ({
   verifyPlayerAccess: (...args: unknown[]) => verifyPlayerAccessMock(...args),
 }));
 
+vi.mock('@/lib/golf/resolve-team-server', () => ({
+  resolveCoachTeamIdWithCookie: vi.fn().mockResolvedValue('team-1'),
+}));
+
 const createClientMock = vi.fn();
 vi.mock('@/lib/supabase/server', () => ({ createClient: () => createClientMock() }));
 
@@ -113,6 +117,11 @@ describe('createFocusArea — coach path', () => {
       from: (table: string) => {
         if (table === 'golf_coaches') {
           return { select: () => ({ eq: () => ({ single: async () => ({ data: { id: 'coach-1', organization_id: null, full_name: 'Coach' }, error: null }) }) }) };
+        }
+        if (table === 'golf_team_members') {
+          // The roster check: the player is active on the coach's team.
+          const roster = { eq: () => roster, maybeSingle: async () => ({ data: { id: 'member-1' }, error: null }) };
+          return { select: () => roster };
         }
         if (table === 'golf_player_focus_areas') return fa.handler;
         if (table === 'golf_players') return { select: () => ({ eq: () => ({ single: async () => ({ data: null, error: { message: 'no row' } }) }) }) };

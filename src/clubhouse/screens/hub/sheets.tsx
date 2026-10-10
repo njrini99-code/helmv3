@@ -15,6 +15,7 @@ import { haptic } from '../../lib/haptics';
 import { normalise, useAction } from '../../lib/use-action';
 import { ClassClashes, useClassCheck } from './TravelerClasses';
 import type { ChHubWrites, ChTripInput } from './writes';
+import { radioKeys, rovingRadios } from './radio';
 
 /*
  * Team Hub's forms, each a Modal (a bottom sheet on the phone). A form keeps
@@ -114,7 +115,7 @@ function DocumentPicks({ documents, picked, onChange }: { documents: ChTeamHub['
     haptic('select');
     onChange(picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id]);
   };
-  if (documents.error) return <RefreshNotice code="CH-10209" title="Documents didn't load." body="Nothing was lost. Try again to attach files." />;
+  if (documents.error) return <RefreshNotice code="CH-10209" title="Documents didn’t load." body="Nothing was lost. Try again to attach files." />;
   if (all.length === 0)
     return (
       <span className="ch-field__help" data-ch-code="CH-10311">
@@ -254,7 +255,7 @@ export function ComposeSheet({
           haptic('error');
           toast({
             tone: 'error',
-            title: `Posted "${i.title.trim()}" without its files`,
+            title: `Posted “${i.title.trim()}” without its files`,
             body: 'The files didn’t attach, so players see the post with no files. They can still open them in Documents.',
             code: 'CH-10012',
           });
@@ -262,7 +263,7 @@ export function ComposeSheet({
       }
       return res;
     },
-    (i) => ({ done: `Posted "${i.title.trim()}"`, failed: 'Couldn’t post the announcement', hint: 'Your text is still here. Try again in a moment.', code: 'CH-10005' }),
+    (i) => ({ done: `Posted “${i.title.trim()}”`, failed: 'Couldn’t post the announcement', hint: 'Your text is still here. Try again in a moment.', code: 'CH-10005' }),
     // The toast above is this outcome's: the usual "Posted" would say the files went too.
     (result, c) => (result.success && result.data?.attachmentsError ? { ...c, quiet: true } : c),
   );
@@ -278,7 +279,7 @@ export function ComposeSheet({
       }
       return res;
     },
-    (_announcementId, i) => ({ done: `Saved "${i.title.trim()}"`, failed: 'Couldn’t save the announcement', hint: 'Your changes are still here. Try again in a moment.', code: 'CH-10010' }),
+    (_announcementId, i) => ({ done: `Saved “${i.title.trim()}”`, failed: 'Couldn’t save the announcement', hint: 'Your changes are still here. Try again in a moment.', code: 'CH-10010' }),
   );
   const pending = edit ? save.pending : create.pending;
   const submit = (e?: FormEvent) => {
@@ -339,7 +340,7 @@ export function ComposeSheet({
         {!edit && (
           <div className="ch-field">
             <span className="ch-field__label">Send to</span>
-            <div className="ch-hb-aud" role="radiogroup" aria-label="Send to">
+            <div className="ch-hb-aud" role="radiogroup" tabIndex={-1} ref={rovingRadios} onKeyDown={radioKeys()} aria-label="Send to">
               {(
                 [
                   ['all', playersError ? 'Whole team' : `Whole team · ${players.length}`],
@@ -575,7 +576,7 @@ export function TripSheet({
                 Upcoming events didn’t load. You can still plan the trip without one, or close and try again.
               </span>
             ) : null}
-            <div className="ch-hb-evpick" role="radiogroup" aria-label="Event">
+            <div className="ch-hb-evpick" role="radiogroup" tabIndex={-1} ref={rovingRadios} onKeyDown={radioKeys()} aria-label="Event">
               {events.rows.map((e) => (
                 <button key={e.id} type="button" role="radio" aria-checked={v.eventId === e.id} onClick={() => pickEvent(e.id)}>
                   <b>{e.title}</b>
@@ -627,7 +628,7 @@ export function TripSheet({
             {input('destination', 'Where', 'text', errs.destination, 'CH-10104')}
             <div className="ch-field">
               <span className="ch-field__label">Getting there</span>
-              <div className="ch-hb-aud" role="radiogroup" aria-label="Getting there">
+              <div className="ch-hb-aud" role="radiogroup" tabIndex={-1} ref={rovingRadios} onKeyDown={radioKeys()} aria-label="Getting there">
                 {TRANSPORTS.map(([k, l]) => (
                   <button
                     key={k}
@@ -770,7 +771,7 @@ export function AssignSheet({
         <Field label="Task" id={`${id}-t`} error={titleErr} errorCode="CH-10107">
           <input id={`${id}-t`} className="ch-input" value={title} maxLength={140} aria-invalid={!!titleErr} aria-describedby={titleErr ? `${id}-t-err` : undefined} onChange={(e) => setTitle(e.target.value)} />
         </Field>
-        <Field label="What it's for (optional)" id={`${id}-d`}>
+        <Field label="What it’s for (optional)" id={`${id}-d`}>
           <input id={`${id}-d`} className="ch-input" value={detail} maxLength={200} onChange={(e) => setDetail(e.target.value)} />
         </Field>
         <Field label="Due (optional)" id={`${id}-due`}>

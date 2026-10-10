@@ -16,10 +16,12 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('next/navigation', () => ({ useRouter: () => mocks.router }));
-vi.mock('@/app/golf/actions/golf', () => ({
+vi.mock('@/app/golf/actions/round-partial', () => ({
   savePartialRound: (...args: unknown[]) => mocks.savePartialRound(...args),
-  submitGolfRoundComprehensive: (...args: unknown[]) => mocks.submitGolfRoundComprehensive(...args),
   deleteInProgressRound: (...args: unknown[]) => mocks.deleteInProgressRound(...args),
+}));
+vi.mock('@/app/golf/actions/round-submit', () => ({
+  submitGolfRoundComprehensive: (...args: unknown[]) => mocks.submitGolfRoundComprehensive(...args),
 }));
 vi.mock('@/app/golf/actions/round-drafts', () => ({ checkRoundStaleness: vi.fn() }));
 vi.mock('@/app/golf/actions/round-type', () => ({ updateRoundType: vi.fn() }));

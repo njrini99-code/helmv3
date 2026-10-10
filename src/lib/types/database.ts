@@ -13921,6 +13921,7 @@ export type Database = {
           id: string
           insight_id: string
           player_id: string
+          rank_factors: Json | null
           rank_position: number | null
           rank_score: number | null
           shown_at: string
@@ -13932,6 +13933,7 @@ export type Database = {
           id?: string
           insight_id: string
           player_id: string
+          rank_factors?: Json | null
           rank_position?: number | null
           rank_score?: number | null
           shown_at?: string
@@ -13943,6 +13945,7 @@ export type Database = {
           id?: string
           insight_id?: string
           player_id?: string
+          rank_factors?: Json | null
           rank_position?: number | null
           rank_score?: number | null
           shown_at?: string
@@ -14077,12 +14080,17 @@ export type Database = {
         Row: {
           attributed_at: string
           baseline_value: number
+          control_value: number | null
           delta: number
           insight_id: string
           lift: number | null
+          lift_ci_high: number | null
+          lift_ci_low: number | null
+          lift_z: number | null
           method_version: string | null
           n_rounds_after: number
           n_rounds_before: number
+          n_rounds_control: number | null
           post_value: number
           surfaced_at: string
           target_metric_id: string
@@ -14090,12 +14098,17 @@ export type Database = {
         Insert: {
           attributed_at?: string
           baseline_value: number
+          control_value?: number | null
           delta: number
           insight_id: string
           lift?: number | null
+          lift_ci_high?: number | null
+          lift_ci_low?: number | null
+          lift_z?: number | null
           method_version?: string | null
           n_rounds_after: number
           n_rounds_before: number
+          n_rounds_control?: number | null
           post_value: number
           surfaced_at: string
           target_metric_id: string
@@ -14103,12 +14116,17 @@ export type Database = {
         Update: {
           attributed_at?: string
           baseline_value?: number
+          control_value?: number | null
           delta?: number
           insight_id?: string
           lift?: number | null
+          lift_ci_high?: number | null
+          lift_ci_low?: number | null
+          lift_z?: number | null
           method_version?: string | null
           n_rounds_after?: number
           n_rounds_before?: number
+          n_rounds_control?: number | null
           post_value?: number
           surfaced_at?: string
           target_metric_id?: string
@@ -22268,6 +22286,16 @@ export type Database = {
         | "dev_plan_assigned"
         | "team_join"
         | "team_join_rejected"
+        | "coachhelm_round_review_ready"
+        | "coachhelm_coach_assigned_goal"
+        | "coachhelm_goal_achieved"
+        | "coachhelm_goal_missed"
+        | "coachhelm_new_insight"
+        | "coachhelm_composite_insight"
+        | "coachhelm_weekly_digest"
+        | "coachhelm_coach_commented"
+        | "coachhelm_engine_suggested_goal"
+        | "coachhelm_standing_percentile_changed"
       organization_type: "college" | "juco" | "high_school" | "showcase"
       program_type: "mens" | "womens" | "both"
       reminder_type: "in_app" | "email" | "push" | "all"
@@ -22483,6 +22511,16 @@ export const Constants = {
         "dev_plan_assigned",
         "team_join",
         "team_join_rejected",
+        "coachhelm_round_review_ready",
+        "coachhelm_coach_assigned_goal",
+        "coachhelm_goal_achieved",
+        "coachhelm_goal_missed",
+        "coachhelm_new_insight",
+        "coachhelm_composite_insight",
+        "coachhelm_weekly_digest",
+        "coachhelm_coach_commented",
+        "coachhelm_engine_suggested_goal",
+        "coachhelm_standing_percentile_changed",
       ],
       organization_type: ["college", "juco", "high_school", "showcase"],
       program_type: ["mens", "womens", "both"],

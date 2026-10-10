@@ -5,7 +5,7 @@ import { AuthHomeLink } from '../AuthHomeLink';
 import Image from 'next/image';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { LazyMotion, m } from 'framer-motion';
+import { LazyMotion, m } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { GolfSignUpForm } from '@/components/auth/golf-sign-up-form';

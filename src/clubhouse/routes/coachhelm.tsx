@@ -95,7 +95,7 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight }: { vi
             size="page"
             code="CH-13308"
             icon={Users}
-            title="You aren't on a team yet"
+            title="You aren’t on a team yet"
             body="Once your team is set up, CoachHelm reads the rounds your players post and shows their signals here."
           />
         </main>

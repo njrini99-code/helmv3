@@ -57,7 +57,7 @@
       "label": "Reply to an event (player)",
       "component": "src/clubhouse/screens/hub/parts.tsx#Rsvps",
       "handler": "onReply",
-      "service": "src/app/golf/actions/golf.ts#respondToEvent",
+      "service": "src/app/golf/actions/calendar-events.ts#respondToEvent",
       "data": [
         "golf_event_attendance"
       ],

@@ -62,7 +62,7 @@ describe('Round setup: rules', () => {
 
   it('110510 names the one thing that stops Start, in the order a player fixes it (CH-11107, CH-11109)', () => {
     expect(setupBlocker({ ...form, pick: null }, PREVIEW_SETUP_TODAY)).toBe('Choose a course to start');
-    expect(setupBlocker({ ...form, date: '2026-10-15' }, PREVIEW_SETUP_TODAY)).toBe("The round's date can't be after today");
+    expect(setupBlocker({ ...form, date: '2026-10-15' }, PREVIEW_SETUP_TODAY)).toBe("The round’s date can’t be after today");
     expect(setupBlocker({ ...form, type: 'qualifier' }, PREVIEW_SETUP_TODAY)).toBe('Choose the qualifier round');
     expect(setupBlocker({ ...form, holes: holes.slice(0, 9) }, PREVIEW_SETUP_TODAY)).toBe('This card has 9 holes; play 9');
     expect(setupBlocker({ ...form, holes: holes.map((h) => (h.n === 4 ? { ...h, yards: '' } : h)) }, PREVIEW_SETUP_TODAY)).toBe('Hole 4 needs a yardage');
@@ -178,7 +178,7 @@ describe('112401 Round setup: picking a course', () => {
     const listCourses = vi.fn().mockReturnValueOnce(fail()).mockReturnValue(ok(PREVIEW_SETUP_COURSES));
     const { user } = setup({ listCourses });
     await user.click(screen.getByRole('button', { name: /Browse courses/ }));
-    await waitFor(() => expect(code('CH-11209')).toHaveTextContent("The course library didn't load"));
+    await waitFor(() => expect(code('CH-11209')).toHaveTextContent("The course library didn’t load"));
     await user.click(within(code('CH-11209')!).getByRole('button', { name: /Try again/ }));
     expect(await screen.findByRole('region', { name: 'Recently played' })).toBeInTheDocument();
   });
@@ -187,7 +187,7 @@ describe('112401 Round setup: picking a course', () => {
     const { user } = setup({ listTees: vi.fn((id: string) => (id === 'finley' ? fail() : ok(PREVIEW_SETUP_TEES[id] ?? []))) });
     await user.click(screen.getByRole('button', { name: /Browse courses/ }));
     await user.click(await within(code('CH-11510')!).findByRole('button', { name: /^Finley GC/ }));
-    await waitFor(() => expect(code('CH-11208')).toHaveTextContent("The tees at Finley GC didn't load"));
+    await waitFor(() => expect(code('CH-11208')).toHaveTextContent("The tees at Finley GC didn’t load"));
     await user.click(screen.getByRole('button', { name: 'Courses' }));
     await user.click(await screen.findByRole('button', { name: /Chapel Ridge GC/ }));
     await waitFor(() => expect(code('CH-11311')).toHaveTextContent('Chapel Ridge GC has no tees ready to play yet'));
@@ -220,7 +220,7 @@ describe('Round setup: details and starting', () => {
     const { user, onStarted } = setup({ start });
     await pickFinleyBlue(user);
     await user.click(startBtn());
-    await waitFor(() => expect(code('CH-11007')).toHaveTextContent("Couldn't start your round at Finley GC"));
+    await waitFor(() => expect(code('CH-11007')).toHaveTextContent("Couldn’t start your round at Finley GC"));
     expect(onStarted).not.toHaveBeenCalled();
     expect(start.mock.calls[0]![0]).toMatchObject({ pick: { teeId: 'finley-blue' }, count: 18, type: 'practice', date: PREVIEW_SETUP_TODAY });
     await user.click(within(code('CH-11007')!).getByRole('button', { name: 'Retry' }));
@@ -234,7 +234,7 @@ describe('Round setup: details and starting', () => {
     await user.clear(date);
     await user.type(date, '2026-10-20');
     expect(code('CH-11109')).not.toBeNull();
-    expect(dock()).toHaveTextContent("The round's date can't be after today");
+    expect(dock()).toHaveTextContent("The round’s date can’t be after today");
     expect(startBtn()).toBeDisabled();
   });
 
@@ -255,7 +255,7 @@ describe('Round setup: details and starting', () => {
     document.body.innerHTML = '';
     const second = setup({}, null);
     await second.user.click(screen.getByRole('radio', { name: 'Qualifier' }));
-    expect(code('CH-11211')).toHaveTextContent("Your qualifiers didn't load");
+    expect(code('CH-11211')).toHaveTextContent("Your qualifiers didn’t load");
   });
 
   it('closing Add a course goes back to the course picker it was opened from, as on the board', async () => {

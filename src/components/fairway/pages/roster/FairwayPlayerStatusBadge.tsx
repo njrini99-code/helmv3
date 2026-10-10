@@ -36,7 +36,7 @@ import { haptic } from '@/lib/haptics';
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { updatePlayerStatus } from '@/app/golf/actions/golf';
+import { updatePlayerStatus } from '@/app/golf/actions/team-management';
 
 import { StatusPill } from '@/components/fairway/controls/status-pill';
 import { Button } from '@/components/fairway/controls/button';

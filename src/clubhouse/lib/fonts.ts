@@ -1,4 +1,4 @@
-import { Instrument_Sans, JetBrains_Mono } from 'next/font/google';
+import { Instrument_Sans, Instrument_Serif, JetBrains_Mono } from 'next/font/google';
 
 /**
  * Clubhouse type: Instrument Sans (variable weight and width) for everything,
@@ -13,6 +13,16 @@ export const instrumentSans = Instrument_Sans({
   variable: '--ch-font-instrument',
 });
 
+/** Display serif for page titles and greetings (owner, 2026-10-06: "expensive, Masters, old money"); Instrument Sans's
+ *  own serif companion, so the two share proportions. Headlines only, never body or data. */
+export const instrumentSerif = Instrument_Serif({
+  subsets: ['latin'],
+  weight: '400',
+  style: ['normal', 'italic'],
+  display: 'swap',
+  variable: '--ch-font-instrument-serif',
+});
+
 export const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   weight: ['500'],
@@ -20,4 +30,4 @@ export const jetbrainsMono = JetBrains_Mono({
   variable: '--ch-font-jetbrains',
 });
 
-export const clubhouseFontVariables = `${instrumentSans.variable} ${jetbrainsMono.variable}`;
+export const clubhouseFontVariables = `${instrumentSans.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable}`;

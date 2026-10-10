@@ -172,9 +172,9 @@ None.
 
 - `charts.tsx`, `WindowSwitch.tsx`, `ScoreLine` (in `StatsTeamPhone.tsx`) and `StatsSkeleton` are shared with
   Team stats (P004): a change there changes both pages.
-- `createFocusArea` is shared with the Fairway development screens. Found and not fixed: it stores the coach
-  id the browser sends (`coach_id`) instead of the caller's own, and skips its roster check when the coach has
-  no organisation or no active team (row-level security remains). Fix it in the action, not here.
+- `createFocusArea` is shared with the Fairway development screens. It writes the signed-in coach's
+  id (the `coach_id` the page sends is ignored) and always runs its roster check: no team, or a player
+  not active on the coach's team, refuses. Fixed 2026-10-08.
 - The Message link and the "All N" link from Roster (`window=season&tab=rounds`) are addresses other pages
   build; a change to `?player=`, `?tab=` or `?window=` breaks them (D-53, Messages' 70102).
 - `loadPlayerProfile` throws on a failed player or membership read: the stats route has no catch, so the

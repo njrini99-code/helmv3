@@ -40,7 +40,7 @@ vi.mock('next/link', () => ({
 // discarding any descendant's local state (e.g. FilmstripReview's
 // `breakdownOpen` toggle). The cache makes `m.div`/`motion.div` behave like
 // the real framer-motion export: a stable reference across renders.
-vi.mock('framer-motion', async () => {
+vi.mock('motion/react', async () => {
   const React = await import('react');
   function makeTagProxy(stripKeys: string[]) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

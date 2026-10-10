@@ -37,7 +37,7 @@ import { useStage } from '@/components/fairway/modules';
 import { FROSTED_CARD_CLASS } from '@/components/fairway/modules/frosted';
 import { cn } from '@/lib/utils';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
-import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights';
+import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights-shared';
 import type { ThemeNode } from '@/lib/coachhelm/v3/themes/types';
 
 import {

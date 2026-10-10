@@ -47,14 +47,17 @@ function Strip({ holes, played, next }: { holes: number; played: ChUnfinishedRou
         if (h) {
           const cls = h.par == null ? 'is-par' : h.score < h.par ? 'is-under' : h.score > h.par ? 'is-over' : 'is-par';
           return (
-            <span key={n} className={cls}>
+            // D15: the hole's number over its score, so "4" on hole 1 never reads as hole 4.
+            <span key={n} className={cls + ' is-played'}>
+              <em>{n}</em>
               {h.score}
             </span>
           );
         }
         return (
+          // Unplayed holes show their number, faint, so the strip reads as the round's 18 holes.
           <span key={n} className={n === next ? 'is-next' : undefined}>
-            {n === next ? n : ''}
+            {n}
           </span>
         );
       })}
@@ -91,7 +94,7 @@ export function UnfinishedCard({
   if (error) {
     return (
       <div className="ch-rd-unf is-idle">
-        <InlineNotice code="CH-11202" title="Couldn't check for a round in progress" body="Any round you started is still saved. Try again in a moment." onRetry={onRetry} retrying={retrying} />
+        <InlineNotice code="CH-11202" title="Couldn’t check for a round in progress" body="Any round you started is still saved. Try again in a moment." onRetry={onRetry} retrying={retrying} />
       </div>
     );
   }
@@ -104,7 +107,7 @@ export function UnfinishedCard({
             No round in progress
           </span>
         </div>
-        <b className="ch-rd-unf__c">Ready when you are.</b>
+        <b className="ch-rd-unf__c">Ready when you are</b>
         <span className="ch-rd-unf__m">Start a round and track every shot. It saves as you go, so you can pick it back up here.</span>
         <GhostStrip holes={18} />
         <div className="ch-rd-unf__f">
@@ -143,12 +146,12 @@ export function UnfinishedCard({
       <b className="ch-rd-unf__c">{round.course}</b>
       <span className="ch-rd-unf__m">{[round.tee, round.type ? TYPE_LABEL[round.type] : null, `${round.holes} holes`].filter(Boolean).join(' · ')}</span>
       {round.holesError ? <GhostStrip holes={round.holes} /> : <Strip holes={round.holes} played={round.played} next={round.nextHole} />}
-      {round.holesError && <InlineNotice code="CH-11214" title="This round's scores didn't load" body="The round is saved. Try again to see how far you are." onRetry={onRetry} retrying={retrying} />}
+      {round.holesError && <InlineNotice code="CH-11214" title="This round’s scores didn’t load" body="The round is saved. Try again to see how far you are." onRetry={onRetry} retrying={retrying} />}
       {round.submitUnchecked && (
         <InlineNotice
           code="CH-11215"
-          title="Couldn't check whether this round was already posted"
-          body="Every hole is scored, but your posted rounds didn't load, so Submit isn't offered here yet. Try again."
+          title="Couldn’t check whether this round was already posted"
+          body="Every hole is scored, but your posted rounds didn’t load, so Submit isn’t offered here yet. Try again."
           onRetry={onRetry}
           retrying={retrying}
         />
@@ -164,7 +167,7 @@ export function UnfinishedCard({
           )}
         </span>
         <span className="ch-rd-unf__acts">
-          <button type="button" className="ch-rd-unf__discard" onClick={() => onDiscard(round)} aria-label={`Discard the round at ${round.course}`}>
+          <button type="button" className="ch-rd-unf__discard" data-ch-press="" onClick={() => onDiscard(round)} aria-label={`Discard the round at ${round.course}`}>
             <Icon icon={Trash2} size={14} />
           </button>
           {continueHref && (
@@ -218,7 +221,8 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
         const cx = L + bw * i + bw / 2;
         const h = Math.max(3, Math.abs(d) * u);
         const y0 = d >= 0 ? base - h : base;
-        const cls = d < 0 ? 'is-under' : d === 0 ? 'is-even' : x.type === 'qualifier' ? 'is-q' : 'is-over';
+        // D3: one scoring language, red under par as everywhere else; a qualifier is a gilt outline on any bar.
+        const cls = (d < 0 ? 'is-under' : d === 0 ? 'is-even' : 'is-over') + (x.type === 'qualifier' ? ' is-q' : '');
         return (
           <g key={x.id}>
             <title>{`${shortDay(x.date)} · ${x.score} (${formatToPar(d)})${x.type ? ` · ${TYPE_LABEL[x.type]}` : ''}`}</title>
@@ -248,6 +252,83 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
 /** Rounds on the phone's ribbon: the last ten, so each bar and label stays readable. */
 export const PHONE_RIBBON = 10;
 
+/**
+ * The season's three figures, each drawn, not just stated (owner, 2026-10-06: "random numbers with not great labeling
+ * mean little without visuals"). Each has a visual and a reference that needs no invented benchmark:
+ *   Best: every season round as a dot on its scoring range, the best lit green, the average ticked.
+ *   Putts: a bar against 36, two putts on every green (golf's own baseline), with how far under or over it is.
+ *   GIR: the 18 greens of a round, as many lit as the season's greens per 18.
+ * dt then the value dd stays first in each pair (the season test reads label, then value).
+ */
+function SeasonFigures({ season }: { season: ChRoundsSeason }) {
+  const scores = season.ribbon.map((x) => x.score);
+  const lo = scores.length ? Math.min(...scores) : null;
+  const hi = scores.length ? Math.max(...scores) : null;
+  const pos = (v: number) => (lo == null || hi == null || hi === lo ? 50 : ((v - lo) / (hi - lo)) * 100);
+  const putts = season.putts;
+  const twoPutt = 36;
+  const lit = season.girPer18 == null ? 0 : Math.round(season.girPer18);
+  return (
+    <dl className="ch-rd-season__f">
+      <div className="ch-rd-fig">
+        <dt>Best</dt>
+        <dd className="ch-num ch-rd-fig__v">{season.best ? String(season.best.score) : NO_DATA}</dd>
+        {lo != null && hi != null && hi > lo && (
+          <dd className="ch-rd-fig__viz" aria-hidden="true">
+            <span className="ch-rd-range">
+              {season.ribbon.map((x) => (
+                <i key={x.id} className={x.score === lo ? 'is-best' : undefined} style={{ left: `${pos(x.score)}%` }} />
+              ))}
+              {season.avg != null && <b style={{ left: `${pos(season.avg)}%` }} />}
+            </span>
+            <span className="ch-rd-range__ends">
+              <span className="ch-num">{lo}</span>
+              <span className="ch-num">{hi}</span>
+            </span>
+          </dd>
+        )}
+        <dd className="ch-rd-fig__m">{season.best ? (
+            // D16: the whole course name, cut by the column's ellipsis rather than at its first word.
+            <>
+              <span className="ch-rd-fig__course">{season.best.course}</span> · {shortDay(season.best.date)}
+            </>
+          ) : (
+            ''
+          )}</dd>
+      </div>
+      <div className="ch-rd-fig">
+        <dt>Putts</dt>
+        <dd className="ch-num ch-rd-fig__v">{formatFixed(putts, 1)}</dd>
+        {putts != null && (
+          <dd className="ch-rd-fig__viz" aria-hidden="true">
+            <span className="ch-rd-putts">
+              <i style={{ width: `${Math.min(100, (putts / 40) * 100)}%` }} />
+              <b style={{ left: `${(twoPutt / 40) * 100}%` }} />
+            </span>
+          </dd>
+        )}
+        <dd className="ch-rd-fig__m">
+          {putts == null ? 'a round' : `a round · ${formatFixed(Math.abs(twoPutt - putts), 1)} ${putts <= twoPutt ? 'under' : 'over'} two-putting`}
+        </dd>
+      </div>
+      <div className="ch-rd-fig">
+        <dt>GIR</dt>
+        <dd className="ch-num ch-rd-fig__v">{season.girPct == null ? NO_DATA : `${Math.round(season.girPct)}%`}</dd>
+        {season.girPer18 != null && (
+          <dd className="ch-rd-fig__viz" aria-hidden="true">
+            <span className="ch-rd-greens">
+              {Array.from({ length: 18 }, (_, i) => (
+                <i key={i} className={i < lit ? 'is-hit' : undefined} />
+              ))}
+            </span>
+          </dd>
+        )}
+        <dd className="ch-rd-fig__m">{season.girPer18 == null ? '' : `${formatFixed(season.girPer18, 1)} of 18 a round`}</dd>
+      </div>
+    </dl>
+  );
+}
+
 export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; phone?: boolean }) {
   if (!season.rounds) {
     return (
@@ -255,16 +336,11 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
         <span className="ch-rd-k" id="ch-rd-season-k">
           Season scoring
         </span>
-        <b className="ch-rd-season__none">Your season starts with your first 18-hole round.</b>
+        <b className="ch-rd-season__none">Your season starts with your first 18-hole round</b>
         <span className="ch-rd-season__nonebody">Scoring average, best round, putts and greens fill in here from 18-hole rounds posted since August 1.</span>
       </section>
     );
   }
-  const figs: Array<[string, string, string]> = [
-    ['Best', season.best ? String(season.best.score) : NO_DATA, season.best ? `${season.best.course.split(' ')[0]} · ${shortDay(season.best.date)}` : ''],
-    ['Putts', formatFixed(season.putts, 1), 'per round'],
-    ['GIR', season.girPct == null ? NO_DATA : `${Math.round(season.girPct)}%`, season.girPer18 == null ? '' : `${formatFixed(season.girPer18, 1)} of 18`],
-  ];
   const under = season.ribbon.some((x) => x.toPar < 0);
   const q = season.ribbon.some((x) => x.type === 'qualifier');
   return (
@@ -279,21 +355,13 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
             <em>avg · {formatToPar(season.toPar, 1)} to par</em>
           </div>
         </div>
-        <dl className="ch-rd-season__f">
-          {figs.map(([k, v, m]) => (
-            <div key={k}>
-              <dt>{k}</dt>
-              <dd className="ch-num">{v}</dd>
-              <dd>{m}</dd>
-            </div>
-          ))}
-        </dl>
+        <SeasonFigures season={season} />
       </div>
       {season.ribbon.length >= 2 && season.toPar != null && (
         <>
           <div className="ch-rd-season__ch">
             <b>Every round vs par</b>
-            <span>Bar height is strokes over par · the number on top is your score · shorter is better</span>
+            <span>Above the line is over par, below it under · lower is better · the number on top is your score</span>
           </div>
           <Ribbon rounds={phone ? season.ribbon.slice(-PHONE_RIBBON) : season.ribbon} avg={season.toPar} compact={phone} />
           <div className="ch-rd-season__lg">
@@ -307,6 +375,12 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
               <i className="is-over" />
               Over par
             </span>
+            {season.ribbon.some((x) => x.toPar === 0) && (
+              <span>
+                <i className="is-even" />
+                Even
+              </span>
+            )}
             {q && (
               <span>
                 <i className="is-q" />
@@ -332,7 +406,8 @@ function Meter({ label, value, pct, muted }: { label: string; value: string; pct
 
 /**
  * One round in the book (rounds-flow.jsx `rf-sc`): date, course and tee, Out · In · Tot, the three meters, to par.
- * CH-11801: one link (or one group) named for the round. CH-11702: opening it is a selection tap.
+ * CH-11801: one link (or one group) named for the round. CH-11702: opening it is a selection tap. CH-11601: on the
+ * desktop Ledger a round that opens its review takes the row tint on hover (quick) and a deeper one on press, no lift.
  */
 export function RoundRow({ r, href, onOpen }: { r: ChLibraryRound; href: string | null; /** Called as the review opens (the library notes it, so the review's Back is a step back). */ onOpen?: () => void }) {
   const under = r.toPar != null && r.toPar < 0;
@@ -347,6 +422,7 @@ export function RoundRow({ r, href, onOpen }: { r: ChLibraryRound; href: string 
         <span>
           <TeeSwatch color={r.teeColor} />
           {r.tee ?? `${r.holes} holes`}
+          {r.tee && r.holes === 9 && <span className="ch-rd-pill is-nine">9 holes</span>}
           <TypePill type={r.type} />
           {!r.countable && <span className="ch-rd-pill is-nc">Not counted</span>}
         </span>

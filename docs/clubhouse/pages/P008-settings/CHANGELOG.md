@@ -1,5 +1,136 @@
 # P008 — Settings: changelog
 
+## 2026-10-08 — phone: the priority ranker on dnd-kit
+
+The phone's priority ranker (`phone/Reorder.tsx`) runs on `@dnd-kit/sortable`
+instead of a hand-rolled drag. What a coach feels is the same: touch and hold a
+row 250ms (a finger that drifts 8px first is scrolling), drag it, a selection
+tick for each place it passes, and one save when it is let go; a failed save
+still puts it back (CH-8022). The rows now slide out of the lifted row's way
+(base, the ease-out) instead of jumping, and each shows the rank it would take.
+The lifted row is the drag overlay, the one elevated object (the overlay depth
+token, rising over quick and falling away over release as it settles); the place
+it left is a soft recess. With reduced motion or Animations off nothing lifts or
+slides: the rows swap at once.
+
+Keyboard and VoiceOver: the handle's up and down arrows still move a row one
+place and save each move. New: space (or Enter) picks the row up, the arrows
+carry it a place at a time with a tick and the place spoken in the ranker's own
+live region, space puts it down (saved once) and Escape puts it back. A mouse or
+pen holds the same way as a finger. Not verified on a device: the hold against
+the page's scroll in WebKit, and the drop's settle.
+
+## 2026-10-08 — premium pass: send a test push, feel it, text size (P008-C3, C1; findings #1, #2, #4)
+
+- C3: once push is on for this device, "Send a test" sits beside Push on this device (desktop) or as a row under it (phone). It calls `POST /api/push-subscriptions/test` (D1-6), which sends a fixed "Test from Clubhouse" to the caller's own subscriptions only and removes dead ones, limited to 3 a minute. Done: "Test sent"; failures say why (CH-8029).
+- C1, type: every Settings type size is in `--ch-type-k` steps, so Settings follows Dynamic Type and a larger root size (a 130% root measured 31px → 40.3px on the title). It is pixel-identical at the default size.
+- C1: Preferences gains "Feel it", which plays the haptic you chose, and a Text size row ("Automatic", native app only) saying that the phone's text size setting applies.
+- #1: on the phone, the weekly team email is in an Email group, not under This device.
+- #2: Quiet mode comes first on the phone, as on desktop.
+- #4: the desktop matrix's Push column carries "Off on this device" while push is off here; the phone notes it under Email and push.
+
+## 2026-10-08 — dark: Clubhouse at night
+
+Settings follows GolfHelm's dark theme ("Clubhouse at night"), including the new Appearance control. The rail's selection is a light-green wash with the light text green; the team code and rank numbers lift off the ground; the phone's portrait coin and pills keep a filled green with ivory type; the phone switch uses the switch tokens (ivory thumb, never the dark ivory ramp); the action sheet's card and scrim are dark. Light mode is unchanged.
+
+## 2026-10-08 — phone: Mobile clubhouse pass
+
+Phone Settings now follows the owner's "Mobile clubhouse pass" board, as phone
+Coach Home does (no stacked white cards):
+
+- the large title under the engraved double rule, in the 31px bold sans in
+  forest ink; a section's brief (Notifications, CoachHelm's save status) sits
+  10px under it;
+- who you are is a flush row with the portrait set in the Ledger's ring;
+- every group is a flush section under the double rule with a 19px heading,
+  its rows on soft seams (58px, bold labels, engraved icon tiles) and its
+  footnote flush to the edge; rows, the identity row and Sign out press with
+  the Ledger's tint;
+- Help and legal has a heading; Sign out, Delete account and Leave team are
+  red rows at the section's edge, not white cards;
+- Team's invite code is the screen's one green feature card, with Share in the
+  chip's place and New code in its foot;
+- a section that didn't load keeps its group heading, with the notice under it;
+  the no-team empty sits on the parchment without a card;
+- the loading list draws the title, who you are and the sections in the live
+  list's classes, so nothing moves when it arrives.
+
+A section now pushes (CH-8609): it slides in from the right over the list,
+which fades under it, and Back slides it off the same way (260ms; instant with
+reduced motion, and after an iOS back-swipe that already drew the pop). The
+sheets and action sheets are unchanged.
+
+## 2026-10-08 — One notice when a section's reads fail together; action rows read as actions
+
+In Team, Notifications and Golf, with more than one read failed the section says
+so once at its top, naming the parts, with one Try again that reads the page
+again (the shell's CH-1209); each part keeps only its title under its heading.
+One failed read keeps its own notice and Try again (states audit b6). On the
+phone, action and link rows with no value or chevron (Create invite, Report a
+problem, Privacy policy, Terms of service, Try again) take the green of a value
+that opens something, so they no longer read as labels missing their control;
+Sign out and Leave team stay red. Every line the page writes, its toasts
+included, takes the curly apostrophe (b8, held by `copy-apostrophes.test.ts`).
+
+## 2026-10-08 — A failed read keeps its heading; copy
+
+On desktop a section whose read fails keeps its heading and caption with the
+notice under it, instead of the notice replacing the whole section (Profile,
+Email and push, CoachHelm updates, Team details, Invite players, Scoring and
+format, Event reminders, Golf details, Team, CoachHelm). Notice and empty
+titles drop their trailing period and take the curly apostrophe ("Your profile
+didn’t load", "You aren’t on a team yet"); "Check maya@…" loses its period.
+
+## 2026-10-08 — Server-action imports follow the golf.ts split
+
+```text
+PR/commit:      #2176, agent/phase-7
+Design package: none
+Contract IDs:   none changed
+Data impact:    none
+Held items:     none
+```
+
+The screen's imports and test mocks now point at the files that own the server
+actions (team-management.ts) after `golf.ts`, `insights.ts` and `admin-data.ts` were split
+by domain. No behavior change.
+
+## 2026-10-07 — Sections press with a tint
+
+A section in the rail and a link row now deepen their tint over the press beat
+(`--ch-ledger-row-press`); buttons keep the shell's 6px press. CH-8607 says so
+instead of claiming every control shrinks.
+
+## 2026-10-07 — The Ledger: sections on the canvas
+
+On desktop each settings card is now a section on the framed canvas, in the
+shared Section's geometry: the title in the 19px heavy sans in forest ink over
+an engraved rule, its caption under it, and the rows flush to the section's
+edge on soft seams. The save bar is a flush row under a soft rule (status on
+the left, Save on the right) instead of a darker footer. Sections sit 44px
+apart and run to the page head's right edge. The notification table's labels
+and switches align to the section edge: its header has no filled band, a row's
+hover tint reaches 12px past the edge, and the seams are drawn inset to it.
+Fields, switches, segments, sliders, notices and the section rail keep their
+own material. The loading shape uses the same classes and flattens with the
+page; the head holds its place on load (WebKit 1440 and 1000). Phone is
+unchanged.
+
+## 2026-10-07 — Phone large title in the serif
+
+On the phone, the Settings large title and the section titles (Account,
+Notifications and the rest) were a heavy 34px sans, while every other phone page
+title is set in the display serif. They are now 38px Instrument Serif.
+
+## 2026-10-07 — Serif title
+
+The Settings title is set in the display serif, as on every Clubhouse page.
+
+## 2026-10-06 — Smooth scroll and materials
+
+Returning to the top on a section change lands instantly through the canvas
+scroller, so the shared wheel easing never animates a page switch.
+
 ## 2026-10-06 — Premium interaction corrections
 
 ```text
@@ -54,6 +185,22 @@ IDs are preserved; runtime gaps stay explicit.
 <!-- clubhouse:release-audit:end -->
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
+
+## 2026-10-06 — Motion import path moves to `motion/react`
+
+```text
+PR/commit:      #2153 (agent/deps-ui-upgrade)
+Design package: none; no visual or behavior change
+Contract IDs:   none
+Data impact:    none
+Held items:     none
+```
+
+Dependency upgrade only. `framer-motion` 13 is replaced by the `motion` 14
+package, so this page's animation imports change from `framer-motion` to
+`motion/react`. The animation API, durations, curves and reduced-motion gating
+are unchanged; Motion 14 only removed internal compatibility APIs this tree
+never used.
 
 ## 2026-10-02 — End obsolete autosave feedback
 

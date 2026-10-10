@@ -149,7 +149,7 @@ fan-out putting `user_id` straight into an `in` list:
 
 ```text
 src/app/golf/actions/announcements.ts:473
-src/app/golf/actions/golf.ts:3723
+actions/golf.ts (pre-split):3723
 src/app/golf/actions/tasks.ts:398
 src/lib/coachhelm/v3/qualifying/player-notify.ts:52
 ```

@@ -25,6 +25,14 @@ import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { measure, report } from './perf-measure-run.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/clubhouse/perf-measure.mjs',
+  summary:
+    "Clubhouse performance harness: serves a production build against the local Supabase stack with a seeded team and measures it with Playwright. Local stack only.",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_ACCESS_TOKEN, RESEND_API_KEY, SENTRY_AUTH_TOKEN, ANTHROPIC_API_KEY',
+});
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const STATE_DIR = join(ROOT, '.helm', 'runtime', 'clubhouse-perf');
@@ -45,7 +53,7 @@ const PRODUCTION_REF = 'qmnssrrolpinvwjjnufo';
 const BLANKED = [
   'SENTRY_AUTH_TOKEN', 'SENTRY_ORG', 'SENTRY_PROJECT', 'SENTRY_DSN', 'NEXT_PUBLIC_SENTRY_DSN', 'SENTRY_READ_TOKEN',
   'KV_REST_API_URL', 'KV_REST_API_TOKEN', 'KV_REST_API_READ_ONLY_TOKEN', 'KV_URL', 'REDIS_URL',
-  'RESEND_API_KEY', 'RESEND_WEBHOOK_SECRET', 'OPS_DIGEST_RESEND_API_KEY', 'INNGEST_EVENT_KEY', 'INNGEST_SIGNING_KEY',
+  'RESEND_API_KEY', 'RESEND_WEBHOOK_SECRET', 'OPS_DIGEST_RESEND_API_KEY',
   'ANTHROPIC_API_KEY', 'GMAIL_SA_PRIVATE_KEY', 'GMAIL_SA_CLIENT_EMAIL', 'GITHUB_ISSUES_TOKEN', 'VERCEL_OIDC_TOKEN', 'VERCEL_API_TOKEN',
   'VAPID_PRIVATE_KEY', 'GOOGLE_CLIENT_SECRET', 'SUPABASE_ACCESS_TOKEN',
 ];

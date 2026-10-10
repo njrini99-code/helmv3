@@ -150,12 +150,12 @@ owner's machine, for anyone who needs to see exactly what ran before.
   because a Vercel function has no git checkout — never resolves a
   SHA-bearing "ALREADY FIXED" claim itself; that case is left analysed-but-open
   for `auto-resolve.ts`'s nightly Rule A or a human/`npm run triage` run. A
-  fingerprint carrying a provider-fault (an Inngest/AI-account credential
+  fingerprint carrying a provider-fault (an AI-account credential
   fault, say) is never auto-resolved even when a model mis-categorises it,
   because the guard re-classifies the member's own message text
   (`classifyProviderFault`) in addition to reading a stored `errorCode` —
-  three of the four production "Inngest signature" fingerprints carry no
-  persisted `errorCode` at all, so the stored-code check alone would miss
+  three of the four production credential-fault fingerprints (a since-removed
+  provider) carry no persisted `errorCode` at all, so the stored-code check alone would miss
   them.
 - **Runtime health and capability proof are separate facts for every
   self-healing stage.** A stage can heartbeat healthily for a week while never

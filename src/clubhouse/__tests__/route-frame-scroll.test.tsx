@@ -35,14 +35,14 @@ describe('RouteFrame scroll', () => {
     scrollCanvas(640);
 
     view.rerender(frame('/roster/p1\u0000t1'));
-    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0 });
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' });
 
     // Back: the browser's popstate comes first, then the route change.
     act(() => {
       window.dispatchEvent(new PopStateEvent('popstate'));
     });
     view.rerender(frame('/roster\u0000t1'));
-    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 640 });
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 640, behavior: 'instant' });
   });
 
   it('a tap through to a page seen before (not Back) still opens it at the top', () => {
@@ -53,6 +53,6 @@ describe('RouteFrame scroll', () => {
     vi.setSystemTime(Date.now() + 5000);
     view.rerender(frame('/stats\u0000t1'));
     vi.useRealTimers();
-    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0 });
+    expect(canvas.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' });
   });
 });

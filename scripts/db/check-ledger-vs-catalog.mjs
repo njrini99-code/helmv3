@@ -45,6 +45,14 @@
  * Exit 1: at least one missing-in-catalog object.
  * Exit 2: could not connect.
  */
+import { helpOnly } from '../lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/db/check-ledger-vs-catalog.mjs',
+  summary:
+    "Reports object-level drift between the migration ledger and the live catalog. Read-only.",
+  secrets: 'SUPABASE_ACCESS_TOKEN, SUPABASE_DB_PASSWORD, DATABASE_URL',
+});
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';

@@ -20,7 +20,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { LazyMotion, m } from 'framer-motion';
+import { LazyMotion, m } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { cn } from '@/lib/utils';
 import { InsufficientData } from '@/components/fairway';

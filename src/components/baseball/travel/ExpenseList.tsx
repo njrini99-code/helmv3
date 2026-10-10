@@ -15,7 +15,7 @@
 // =============================================================================
 
 import { useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { IconTrash, IconChevronDown, IconChevronUp, IconFileText } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/sonner';

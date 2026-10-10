@@ -32,7 +32,7 @@ import type { StageView } from '@/components/fairway/modules';
 import { isThemesEnabled } from '@/lib/redesign/flag';
 
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
-import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights';
+import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights-shared';
 import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint-types';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import type { CauseNode, ThemeNode } from '@/lib/coachhelm/v3/themes/types';

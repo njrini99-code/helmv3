@@ -1,3 +1,5 @@
+import type { ChCoachHome } from '../../data/home';
+import type { ChPlayerHome } from '../../data/player-home';
 import type { ChForm } from '../../data/season';
 
 /**
@@ -56,9 +58,9 @@ export interface ChSublineRow {
 function reason(r: ChSublineRow): string {
   const quiet = r.quietDays != null && r.quietDays >= QUIET_DAYS;
   const who = firstName(r.name);
-  if (r.status === 'slipping' && quiet) return `${who} is slipping and hasn't posted a round in ${r.quietDays} days`;
+  if (r.status === 'slipping' && quiet) return `${who} is slipping and hasn’t posted a round in ${r.quietDays} days`;
   if (r.status === 'slipping') return `${who} is slipping`;
-  return `${who} hasn't posted a round in ${r.quietDays} days`;
+  return `${who} hasn’t posted a round in ${r.quietDays} days`;
 }
 
 function list(parts: string[]): string {
@@ -88,4 +90,33 @@ export function homeSubline(rows: ChSublineRow[], opts: { roundsError: boolean; 
   if (opts.nextCompetition) out.push(`${opts.nextCompetition.title} is ${opts.nextCompetition.when}.`);
   if (flagged.length > 0 && onTrack.length > 0) out.push(early.length ? 'The others with enough rounds are on track.' : 'The rest of the team is on track.');
   return out.length ? out.join(' ') : null;
+}
+
+/**
+ * The parts of Home whose reads failed, named as they read inside the page notice's sentence (CH-1209: "This week’s
+ * schedule, recent rounds and the leaderboard didn’t load"). Two or more get the one page notice with the one Try
+ * again, and each part's own notice keeps only its title (`covered`). Each entry tests the flag that draws that part's
+ * notice, so the sentence never names a part with no gap under it. The phone draws team scoring where the desktop
+ * draws the leaderboard.
+ */
+export function coachFailedParts(data: Pick<ChCoachHome, 'week' | 'latestRounds' | 'leaderboard' | 'phone'>, phone: boolean): string[] {
+  const parts: string[] = [];
+  if (data.week.error) parts.push('this week’s schedule');
+  if (phone && data.latestRounds.error && !data.phone.form) parts.push('team scoring');
+  if (data.latestRounds.error) parts.push('recent rounds');
+  if (!phone && data.leaderboard.error) parts.push('the leaderboard');
+  return parts;
+}
+
+/**
+ * The player's (the phone and the desktop draw the same parts). The latest round and the scoring line read the same
+ * rounds, so they fail together and are named by their sections, not twice as "rounds".
+ */
+export function playerFailedParts(data: Pick<ChPlayerHome, 'week' | 'latest' | 'scoring' | 'legs'>): string[] {
+  const parts: string[] = [];
+  if (data.week.error) parts.push('this week’s schedule');
+  if (data.latest.error) parts.push('your latest round');
+  if (data.scoring.error) parts.push('your scoring');
+  if (data.legs?.cacheError) parts.push('some of your figures');
+  return parts;
 }

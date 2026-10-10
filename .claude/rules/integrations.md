@@ -2,19 +2,15 @@
 paths:
   - "src/app/api/**"
   - "src/lib/stripe/**"
-  - "src/lib/inngest/**"
   - "src/lib/email/**"
   - "src/lib/notifications/**"
 ---
 
 ## Product integrations
 
-- **Inngest** (durable workflows) — client at `src/lib/inngest/client.ts`,
-  functions at `src/lib/inngest/functions.ts`, handler at
-  `src/app/api/inngest/route.ts`. Free tier covers our weekly backfills
-  (W12/W20/W27/W33/W35) with room to spare. Local dev runs on
-  `npx inngest-cli@latest dev`; production needs `INNGEST_EVENT_KEY` +
-  `INNGEST_SIGNING_KEY` env vars. See `.env.example`.
+- **No Inngest** — it is not used here. Durable background work is the pgmq queue (`src/lib/jobs/enqueue.ts`,
+  `/api/jobs/consume`, `docs/operations/JOBS_QUEUE.md`) plus Vercel crons
+  (`vercel.json`). Don't reintroduce `INNGEST_*` env vars or `/api/inngest`.
 - **No Mapbox / no map provider** — there is no src/lib/mapbox/ and no
   `CourseMap` component in the repo. Round Review (#23) hole visuals are a
   synthetic SVG shot-path reconstruction built from `golf_shots` data

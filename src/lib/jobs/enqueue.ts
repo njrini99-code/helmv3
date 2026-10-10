@@ -5,7 +5,7 @@
  * email send, push send) is meant to route through. It is fail-open by
  * design in three independent ways, and a caller must never treat a
  * `{ queued: false }` result as an error — it means "run your existing
- * inline/Inngest path instead," which every current caller already has:
+ * inline path instead," which every current caller already has:
  *
  *   1. `HELM_QUEUE_ENABLED` unset/false — the queue is off by default until
  *      the owner applies `20260906140000_helm_jobs_pgmq_queues.sql` AND
@@ -124,7 +124,7 @@ export async function enqueueJob(
 }
 
 /** True only when HELM_QUEUE_ENABLED=true — callers use this to decide
- * whether to attempt enqueueJob at all before falling to Inngest/direct. */
+ * whether to attempt enqueueJob at all before falling to the direct path. */
 export function isHelmQueueEnabled(): boolean {
   return isQueueEnabled();
 }

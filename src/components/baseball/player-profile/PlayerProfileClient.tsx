@@ -14,7 +14,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import {
   IconArrowLeft,
   IconTrendingUp,

@@ -1,0 +1,86 @@
+'use client';
+
+import { AnimatePresence, m, useIsPresent } from 'motion/react';
+import type { ReactNode } from 'react';
+import { CH_DUR, CH_EASE, chSpring } from '../lib/motion';
+import { useChReducedMotion } from '../lib/reduced-motion';
+
+/**
+ * A content swap inside a fixed frame (owner, 2026-10-07: "super duper premium" motion). When `swapKey` changes the
+ * old content leaves and the new arrives in the same place: `settle` crossfades with a 6px rise (a tab's panel, a
+ * chart's mode, a window's figures); `slide` moves 12px in the direction of travel (a pager, the next hole). The
+ * incoming copy fades in over base and travels on the settle spring (base, bounce 0.1; CH-1616), the outgoing fades
+ * over the quick one, so the new content is always the one being read. First paint never animates
+ * (`initial={false}`), reduced motion and Animations off swap instantly, and the leaving copy is hidden from assistive
+ * tech and focus while it fades.
+ */
+export function Swap({
+  swapKey,
+  kind = 'settle',
+  dir = 1,
+  className,
+  inline = false,
+  children,
+}: {
+  swapKey: string | number;
+  kind?: 'settle' | 'slide';
+  /** `slide` only: 1 when moving forward (the next round, the next hole), -1 when moving back. */
+  dir?: 1 | -1;
+  className?: string;
+  /** A figure inside a line of text (a stat's value): spans, laid out inline. */
+  inline?: boolean;
+  children: ReactNode;
+}) {
+  const reduced = useChReducedMotion();
+  const Frame = inline ? 'span' : 'div';
+  const Item = inline ? m.span : m.div;
+  return (
+    <Frame className={'ch-swap' + (inline ? ' ch-swap--inline' : '') + (className ? ` ${className}` : '')}>
+      <AnimatePresence mode="popLayout" initial={false} custom={dir}>
+        <Item
+          key={swapKey}
+          className="ch-swap__item"
+          custom={dir}
+          variants={reduced ? INSTANT : kind === 'slide' ? SLIDE : SETTLE}
+          initial="enter"
+          animate="shown"
+          exit="leave"
+        >
+          <Leaving inline={inline}>{children}</Leaving>
+        </Item>
+      </AnimatePresence>
+    </Frame>
+  );
+}
+
+/** The leaving copy keeps its pixels for the fade but drops out of the accessibility tree and focus order at once. */
+function Leaving({ inline, children }: { inline: boolean; children: ReactNode }) {
+  const present = useIsPresent();
+  const Body = inline ? 'span' : 'div';
+  return (
+    <Body className="ch-swap__body" aria-hidden={present ? undefined : true} inert={!present}>
+      {children}
+    </Body>
+  );
+}
+
+const IN = { ...chSpring('settle'), opacity: { duration: CH_DUR.base, ease: CH_EASE } };
+const OUT = { duration: CH_DUR.quick, ease: CH_EASE };
+
+const SETTLE = {
+  enter: { opacity: 0, y: 6 },
+  shown: { opacity: 1, y: 0, transition: IN },
+  leave: { opacity: 0, y: -3, transition: OUT },
+};
+
+const SLIDE = {
+  enter: (d: 1 | -1) => ({ opacity: 0, x: 12 * d }),
+  shown: { opacity: 1, x: 0, transition: IN },
+  leave: (d: 1 | -1) => ({ opacity: 0, x: -12 * d, transition: OUT }),
+};
+
+const INSTANT = {
+  enter: { opacity: 1 },
+  shown: { opacity: 1, transition: { duration: 0 } },
+  leave: { opacity: 0, transition: { duration: 0 } },
+};

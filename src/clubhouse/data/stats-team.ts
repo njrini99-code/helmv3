@@ -53,7 +53,20 @@ export interface ChFigure {
   note?: string;
   /** `empty`: no value (strokes gained needs rounds with shots). `no-comparison`: a value, with no earlier rounds to set it against. Drives the catalog states. */
   state?: 'empty' | 'no-comparison';
+  /**
+   * How the figure is drawn under its value, against a reference the data gives (owner, 2026-10-07: no bare numbers):
+   * strokes gained from the Tour's zero, the scoring average from par, a rate on its 0 to 100 track (with the Tour's
+   * mark when there is one), putts against two on every green (36), birdies as holes out of 18.
+   */
+  gauge?: ChGauge;
 }
+
+export type ChGauge =
+  | { kind: 'sg' }
+  | { kind: 'par'; toPar: number | null }
+  | { kind: 'rate'; ref?: number | null; refLabel?: string }
+  | { kind: 'putts' }
+  | { kind: 'holes' };
 
 export interface ChTeamStats {
   teamName: string;
@@ -178,6 +191,8 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   };
   // Scoring counts every round (a total-only one included); greens, putts, scrambling, birdies and strokes gained the rounds with their holes.
   const scoring = weightedMean(windowRounds, (r) => r.total_score);
+  // Per 18 holes, as the scoring average is: what the gauge draws from par.
+  const toPar = weightedMean(windowRounds, (r) => r.score_to_par);
   const prevScoring = hasPrev ? weightedMean(prevRounds, (r) => r.total_score) : null;
   const gir = rate(cur, 'greens_hit', 'greens_total');
   const puttsPer = weightedMean(holeWindow, (r) => cacheNum(r, 'total_putts'));
@@ -214,12 +229,13 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
       state: sgTotal == null ? 'empty' : sgDelta.delta == null && sgDelta.context ? 'no-comparison' : undefined,
       // Always drawn, so the card is as tall as its loading skeleton (CH-4401).
       note: `${baseline.vs}${sgNow.length && sgDelta.context ? ` · ${sgNow.length} ${sgNow.length === 1 ? 'round' : 'rounds'} with shots` : ''}`,
+      gauge: { kind: 'sg' },
     },
-    { label: 'Scoring average', value: scoring, unit: '', digits: 1, delta: d(weightedMean(windowPaired, (r) => r.total_score), prevScoring), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : sample },
+    { label: 'Scoring average', value: scoring, unit: '', digits: 1, delta: d(weightedMean(windowPaired, (r) => r.total_score), prevScoring), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : sample, gauge: { kind: 'par', toPar } },
     // CH-4209: without Tour benchmarks, greens read against the sample instead of "Tour averages".
-    { label: 'Greens in regulation', value: gir, unit: '%', digits: 0, delta: d(rate(curPaired, 'greens_hit', 'greens_total'), rate(prev, 'greens_hit', 'greens_total')), lowerIsBetter: false, context: benchGir != null ? `Tour averages ${Math.round(benchGir)}%` : holeSample, note: coverage },
-    { label: 'Putts per round', value: puttsPer, unit: '', digits: 1, delta: d(weightedMean(holePaired, (r) => cacheNum(r, 'total_putts')), weightedMean(holePrev, (r) => cacheNum(r, 'total_putts'))), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : holeSample, note: coverage },
-    { label: 'Scrambling', value: scramble, unit: '%', digits: 0, delta: d(rate(curPaired, 'scrambles_converted', 'scramble_attempts'), rate(prev, 'scrambles_converted', 'scramble_attempts')), lowerIsBetter: false, context: hasPrev ? 'vs. previous 10' : holeSample, note: coverage },
+    { label: 'Greens in regulation', value: gir, unit: '%', digits: 0, delta: d(rate(curPaired, 'greens_hit', 'greens_total'), rate(prev, 'greens_hit', 'greens_total')), lowerIsBetter: false, context: benchGir != null ? `Tour averages ${Math.round(benchGir)}%` : holeSample, note: coverage, gauge: { kind: 'rate', ref: benchGir ?? null } },
+    { label: 'Putts per round', value: puttsPer, unit: '', digits: 1, delta: d(weightedMean(holePaired, (r) => cacheNum(r, 'total_putts')), weightedMean(holePrev, (r) => cacheNum(r, 'total_putts'))), lowerIsBetter: true, context: hasPrev ? 'vs. previous 10' : holeSample, note: coverage, gauge: { kind: 'putts' } },
+    { label: 'Scrambling', value: scramble, unit: '%', digits: 0, delta: d(rate(curPaired, 'scrambles_converted', 'scramble_attempts'), rate(prev, 'scrambles_converted', 'scramble_attempts')), lowerIsBetter: false, context: hasPrev ? 'vs. previous 10' : holeSample, note: coverage, gauge: { kind: 'rate' } },
     {
       label: 'Birdies per round',
       value: birdies,
@@ -229,6 +245,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
       lowerIsBetter: false,
       context: 'Birdies and eagles',
       note: coverage,
+      gauge: { kind: 'holes' },
     },
   ];
 

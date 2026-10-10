@@ -6,6 +6,7 @@ import { stanceOf, type ChBoardMissing, type ChHelmAssigned, type ChHelmEvidence
 import { haptic } from '../../lib/haptics';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
+import { SerifText } from '../../ui/SerifText';
 
 /**
  * The stance pill: amber for a Priority, and a word, so priority never rests on colour alone (CH-13806). A strength reads Working,
@@ -49,7 +50,10 @@ function Gauge({ g, who }: { g: ChHelmGauge; who?: string }) {
       <div className="ch-hl-g__lg">
         <span>
           <i className="is-you" aria-hidden="true" />
-          {who ?? 'You'} · <b className="ch-num">{g.you}</b>
+          {/* One inline run: as loose flex items the spaces round the dot collapsed ("Eli· 1.1", P013 D12). */}
+          <span>
+            {who ?? 'You'} · <b className="ch-num">{g.you}</b>
+          </span>
         </span>
         <span>
           <i className="is-cmp" aria-hidden="true" />
@@ -111,12 +115,18 @@ export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: Ch
   const id = useId();
   return (
     <article className="ch-hl-focus" aria-labelledby={`${id}-t`}>
-      <div className="ch-hl-focus__k">
-        <span>{who ? `${who} · ${ins.category}` : ins.category}</span>
-        <PriPill ins={ins} assigned={assigned} />
+      {/* The claim. On the phone it is the screen's one green feature card (the Mobile clubhouse pass, 2026-10-08), and
+          the evidence, the drill and the reasoning sit flush under it; on desktop the wrapper draws nothing. */}
+      <div className="ch-hl-focus__head">
+        <div className="ch-hl-focus__k">
+          <span>{who ? `${who} · ${ins.category}` : ins.category}</span>
+          <PriPill ins={ins} assigned={assigned} />
+        </div>
+        <h2 id={`${id}-t`}>
+          <SerifText text={ins.title} />
+        </h2>
+        {ins.lede && <p className="ch-hl-lede">{ins.lede}</p>}
       </div>
-      <h2 id={`${id}-t`}>{ins.title}</h2>
-      {ins.lede && <p className="ch-hl-lede">{ins.lede}</p>}
       {/* CH-13903: a read from before the newest round is never drawn as current. */}
       {ins.stale && (
         <p className="ch-hl-stale" role="note" data-ch-code="CH-13903">
@@ -157,7 +167,8 @@ export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: Ch
 /**
  * One row of "Also worth knowing" or "Working" (helm3.jsx `Row`). Choosing it
  * puts it in the focus card (CH-13701: a selection tap). CH-13803: one button
- * named for its category, title, value and priority.
+ * named for its category, title, value and priority. CH-13602: on desktop it
+ * takes the Ledger row tint on hover (quick) and a deeper tint on press.
  */
 export function InsightRow({ ins, onPick }: { ins: ChInsight; onPick: () => void }) {
   const stance = stanceOf(ins);
@@ -227,12 +238,22 @@ export function BoardPartial({ missing, what, focus = true }: { missing: ChBoard
 }
 
 /** The page's title block: the role chip, CoachHelm, one line. CH-13801: the h1 labels the page's main landmark (aria-labelledby), and each section below is a labelled region. */
-export function Head({ who, children }: { who: 'Player' | 'Coach'; children: ReactNode }) {
+/** `aside`: the view switch on desktop, set level with the title (the large-title pattern), so the header is one line of
+ *  structure instead of a title block over a separate strip. */
+/** `phone`: the shell's top bar already carries the page's h1 ("CoachHelm"), so the large title here is the same words set as
+ *  text, still labelling the main landmark: one h1 per screen (P013 D8). */
+export function Head({ who, children, aside, phone = false }: { who: 'Player' | 'Coach'; children: ReactNode; aside?: ReactNode; phone?: boolean }) {
+  const Title = phone ? 'p' : 'h1';
   return (
-    <header className="ch-hl-h">
+    <header className={'ch-hl-h' + (aside ? ' has-aside' : '')} data-canopy-head="">
       <span className="ch-hl-role">{who}</span>
-      <h1 id="ch-hl-title">CoachHelm</h1>
-      <p>{children}</p>
+      <Title id="ch-hl-title" className="ch-hl-h__t">
+        CoachHelm
+      </Title>
+      <p>
+        {children}
+      </p>
+      {aside && <div className="ch-hl-h__aside">{aside}</div>}
     </header>
   );
 }

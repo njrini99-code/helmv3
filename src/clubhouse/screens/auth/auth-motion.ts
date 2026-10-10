@@ -1,4 +1,4 @@
-import type { Transition, Variants } from 'framer-motion';
+import type { Transition, Variants } from 'motion/react';
 import { CH_DUR } from '../../lib/motion';
 
 /**

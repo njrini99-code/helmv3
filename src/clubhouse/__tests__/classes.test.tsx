@@ -1,4 +1,4 @@
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -536,7 +536,7 @@ describe('Classes route and page', () => {
     session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'p1' } };
     teamOf.current = null;
     inProviders((await ClubhouseClassesRoute())!);
-    await expectCode('CH-12305', /You aren't on a team yet/);
+    await expectCode('CH-12305', /You aren’t on a team yet/);
     expect(screen.getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');
     expect(screen.queryByRole('button', { name: /Add|Import/ })).toBeNull();
   });
@@ -959,13 +959,26 @@ describe('Classes, on screen', () => {
     expect(parseFloat((tb.querySelector('.ch-cl-tb__fill') as HTMLElement).style.width)).toBeCloseTo((55 / 117) * 100, 3);
   });
 
+  it('P012-A1/A2/D1/D4 one timetable header, the team day named in it, keys in the overlap list, no "E" on the term bar', () => {
+    show();
+    const heads = document.querySelectorAll('.ch-cl-tthead');
+    expect(heads).toHaveLength(1);
+    expect(heads[0]!.getAttribute('aria-hidden')).toBe('true');
+    expect([...heads[0]!.querySelectorAll('.ch-cl-tthead__days em')].map((e) => e.textContent)).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
+    expect(heads[0]!.querySelector('.is-team i')!.textContent).toBe('Pinehurst qualifier');
+    expect([...document.querySelectorAll('.ch-cl-over .ch-cl-key')].map((k) => k.textContent)).toEqual(['STAT', 'BUSI']);
+    expect([...document.querySelectorAll('.ch-cl-tb__bar b')].map((b) => b.textContent)).not.toContain('E');
+  });
+
   it('CH-12802 each card’s week strip is hidden from screen readers and shows the start under each day the class meets', () => {
     show();
     const strip = card(/^STAT 201/).querySelector('.ch-cl-card__week')!;
     expect(strip.getAttribute('aria-hidden')).toBe('true');
     expect([...strip.children].map((d) => d.textContent)).toEqual(['M', 'T9:00', 'W', 'T9:00', 'F']);
     // Today is Wednesday the 14th: its box is marked, and Tuesday and Thursday are the days the class meets.
-    expect([...strip.children].map((d) => d.className.trim())).toEqual(['', 'is-on', 'is-today', 'is-on', '']);
+    // P012-A2: Thursday is the Pinehurst qualifier's day (a team band down the list), and this class's Thursday meeting
+    // carries the overlap notch.
+    expect([...strip.children].map((d) => d.className.trim())).toEqual(['', 'is-on', 'is-today', 'is-on is-clash is-team', '']);
   });
 });
 
@@ -982,7 +995,7 @@ describe('Classes, states', () => {
     show(PREVIEW_CLASSES_EMPTY);
     await expectCode(
       'CH-12301',
-      /Add your class schedule.*Import a screenshot of your schedule and we'll add every class\. Your coach can see when you're busy, so practice and travel get planned around class\./,
+      /Add your class schedule.*Import a screenshot of your schedule and we’ll read it so you can check each class\. Your coach can see when you’re busy, so practice and travel get planned around class\./,
     );
     expect(document.querySelector('.ch-cl-h__a')).toBeNull();
     expect(document.querySelector('.ch-cl-tb')).toBeNull();
@@ -994,28 +1007,33 @@ describe('Classes, states', () => {
     expect(await screen.findByRole('dialog', { name: 'Import schedule' })).toBeTruthy();
   });
 
-  it('120407 121403 CH-12201 the classes do not load: it says so with a way to ask again, never "no classes", and offers no add or import', async () => {
+  it('120407 121403 CH-12201 the classes do not load: it says so with a way to ask again, never "no classes", and the head keeps Import schedule and Add class', async () => {
     const user = userEvent.setup();
     show(PREVIEW_CLASSES_FAILED);
-    await expectCode('CH-12201', /Your classes didn't load.*Nothing is lost\. Your classes are still saved; try again in a moment\./);
+    await expectCode('CH-12201', /Your classes didn’t load.*Nothing is lost\. Your classes are still saved; try again in a moment\./);
     expect(code('CH-12301')).toBeNull();
-    expect(document.querySelector('.ch-cl-h__a')).toBeNull();
+    const head = document.querySelector('.ch-cl-h__a') as HTMLElement;
+    expect(within(head).getByRole('button', { name: 'Import schedule' })).toBeTruthy();
+    expect(within(head).getByRole('button', { name: 'Add class' })).toBeTruthy();
     expect(document.querySelector('.ch-cl-tb')).toBeNull();
     await user.click(within(code('CH-12201') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalledTimes(1);
   });
 
-  it('CH-12201 a failed read is never drawn beside classes: with the error set the notice replaces the deck, and Add and Import are not offered', () => {
+  it('CH-12201 a failed read is never drawn beside classes: with the error set the notice replaces the deck, and the head keeps its actions with no sync status', () => {
     show({ ...PREVIEW_CLASSES, classes: { list: PREVIEW_CLASSES.classes.list, error: true } });
     expect(code('CH-12201')).not.toBeNull();
     expect(document.querySelector('.ch-cl-deck')).toBeNull();
-    expect(document.querySelector('.ch-cl-h__a')).toBeNull();
+    const head = document.querySelector('.ch-cl-h__a') as HTMLElement;
+    expect(within(head).getByRole('button', { name: 'Add class' })).toBeTruthy();
+    expect(within(head).getByRole('button', { name: 'Import schedule' })).toBeTruthy();
+    expect(head.textContent).not.toMatch(/calendar/i);
   });
 
   it('CH-12202 the team’s events do not load: the classes show, the overlap card says it cannot tell, and no overlap is claimed anywhere', async () => {
     const user = userEvent.setup();
     show(PREVIEW_CLASSES_PARTIAL);
-    await expectCode('CH-12202', /The team's events didn't load.*Overlaps with practice and travel can't be checked right now/);
+    await expectCode('CH-12202', /The team’s events didn’t load.*Overlaps with practice and travel can’t be checked right now/);
     expect(names()).toHaveLength(5);
     expect(document.querySelector('.ch-cl-tb__over')).toBeNull();
     expect(document.querySelectorAll('.ch-cl-card .ch-cl-flag')).toHaveLength(0);
@@ -1032,7 +1050,7 @@ describe('Classes, states', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     // A term with no end to its weeks can't be drawn as a line: only the overview throws.
     show({ ...PREVIEW_CLASSES, term: { ...PREVIEW_CLASSES.term, weeks: Infinity } });
-    await expectCode('CH-12203', /The term overview couldn.t be shown\./);
+    await expectCode('CH-12203', /The term overview couldn.t be shown/);
     expect(names()).toHaveLength(5);
     expect(screen.getByText('A team event overlaps your classes')).toBeTruthy();
     quiet.mockRestore();
@@ -1085,7 +1103,8 @@ describe('Classes, states', () => {
     // STAT, ECON, BUSI, CSCI, ART and the one with no term: 3 + 3 + 3 + 3 + 2 + 1 credits.
     expect(screen.getByRole('region', { name: /^Fall 2026, week 8 of 17, 15 credits · 6 classes, ends Dec 15$/ })).toBeTruthy();
     expect(card(/^MUSC 140/).querySelectorAll('.ch-cl-card__week > span')).toHaveLength(7);
-    expect(card(/^STAT 201/).querySelectorAll('.ch-cl-card__week > span')).toHaveLength(5);
+    // P012-A1: one timetable, so every class lines up under the same seven days once one meets on a weekend.
+    expect(card(/^STAT 201/).querySelectorAll('.ch-cl-card__week > span')).toHaveLength(7);
   });
 
   it('a class from another term is never counted as overlapping this week’s practice, even when its days and times would', () => {
@@ -1372,7 +1391,7 @@ describe('Classes, add and edit', () => {
     await user.click(headerButton('Add class'));
     setField('Course code', 'MATH 232');
     await user.click(within(sheet()).getByRole('button', { name: 'Cancel' }));
-    await expectCode('CH-12502', /Discard your changes\?.*What you typed here isn't saved\./);
+    await expectCode('CH-12502', /Discard your changes\?.*What you typed here isn’t saved\./);
     expect(screen.queryByRole('dialog', { name: 'Add a class' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Keep editing' }));
     expect(await screen.findByRole('dialog', { name: 'Add a class' })).toBeTruthy();
@@ -1418,7 +1437,7 @@ describe('Classes, writes that fail', () => {
     const w = show(PREVIEW_CLASSES, { save });
     await fillGeog(user);
     await submitForm(user);
-    await expectCode('CH-12001', /Couldn't add GEOG 110.*Nothing was changed\. Check your connection and try again\./);
+    await expectCode('CH-12001', /Couldn’t add GEOG 110.*Nothing was changed\. Check your connection and try again\./);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     // The toast is in the open sheet, so Retry is where the person is looking.
     expect(sheet().contains(code('CH-12001'))).toBe(true);
@@ -1474,7 +1493,7 @@ describe('Classes, writes that fail', () => {
     await user.click(card(/^GEOG 110/));
     const detail = await screen.findByRole('dialog', { name: 'Global Environmental Change' });
     expect(within(detail).getByText('Not on your calendar')).toBeTruthy();
-    expect(within(detail).getByText(/The last sync failed, so your coach won't see this class on the team calendar yet\./)).toBeTruthy();
+    expect(within(detail).getByText(/The last sync failed, so your coach won’t see this class on the team calendar yet\./)).toBeTruthy();
     await user.click(within(detail).getByRole('button', { name: 'Retry sync' }));
     await waitFor(() => expect(sync).toHaveBeenCalledTimes(3));
     await waitFor(() => expect(within(detail).queryByText('Not on your calendar')).toBeNull());
@@ -1502,7 +1521,7 @@ describe('Classes, writes that fail', () => {
     const w = show(PREVIEW_CLASSES, { sync, read: vi.fn(async () => ({ ok: true as const, rows: PREVIEW_PARSED.slice(0, 4).map(toImportRow), warnings: [] })) });
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 4 classes' }));
     await screen.findByRole('dialog', { name: 'Schedule imported' });
     await user.click(inSheet().getByRole('button', { name: 'View classes' }));
@@ -1533,7 +1552,7 @@ describe('Classes, writes that fail', () => {
     hapticSpy.mockClear();
     await user.click(within(await screen.findByRole('dialog', { name: 'Probability and Statistics' })).getByRole('button', { name: 'Remove class' }));
     expect(hapticSpy.mock.calls.map((c) => c[0])[0]).toBe('warning');
-    await expectCode('CH-12501', /Remove this class\?.*STAT 201 comes off your schedule and your calendar\. This can't be undone\./);
+    await expectCode('CH-12501', /Remove this class\?.*STAT 201 comes off your schedule and your calendar\. This can’t be undone\./);
     expect(screen.queryByRole('dialog', { name: 'Probability and Statistics' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Keep it' }));
     expect(w.remove).not.toHaveBeenCalled();
@@ -1551,12 +1570,12 @@ describe('Classes, writes that fail', () => {
 
   it('121401 CH-12003 a remove that fails keeps the class and the question, says so, and Retry removes it', async () => {
     const user = userEvent.setup();
-    const remove = failing({ success: false, error: "Couldn't take this class off your calendar: events locked. The class was kept so you can try again." }, () => Promise.resolve({ success: true }));
+    const remove = failing({ success: false, error: "Couldn’t take this class off your calendar: events locked. The class was kept so you can try again." }, () => Promise.resolve({ success: true }));
     show(PREVIEW_CLASSES, { remove });
     await user.click(card(/^STAT 201/));
     await user.click(within(await screen.findByRole('dialog', { name: 'Probability and Statistics' })).getByRole('button', { name: 'Remove class' }));
     await user.click(await screen.findByRole('button', { name: 'Remove class' }));
-    await expectCode('CH-12003', /Couldn't remove STAT 201.*The class was kept so you can try again\./);
+    await expectCode('CH-12003', /Couldn’t remove STAT 201.*The class was kept so you can try again\./);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(names()).toContain('Probability and Statistics');
     expect(screen.getByRole('dialog', { name: 'Remove this class?' })).toBeTruthy();
@@ -1611,7 +1630,7 @@ describe('Classes, delete all', () => {
     hapticSpy.mockClear();
     await user.click(deleteAll());
     expect(hapticSpy.mock.calls.map((c) => c[0])[0]).toBe('warning');
-    await expectCode('CH-12503', /Delete all classes\?.*All 5 classes come off your schedule and your calendar\. This can't be undone\./);
+    await expectCode('CH-12503', /Delete all classes\?.*All 5 classes come off your schedule and your calendar\. This can’t be undone\./);
     await user.click(screen.getByRole('button', { name: 'Keep them' }));
     expect(w.removeAll).not.toHaveBeenCalled();
     expect(names()).toHaveLength(5);
@@ -1637,14 +1656,14 @@ describe('Classes, delete all', () => {
     const user = userEvent.setup();
     show(PREVIEW_CLASSES_MIXED);
     await user.click(deleteAll());
-    await expectCode('CH-12503', /All 7 classes come off your schedule and your calendar, including 1 from another term\. This can't be undone\./);
+    await expectCode('CH-12503', /All 7 classes come off your schedule and your calendar, including 1 from another term\. This can’t be undone\./);
   });
 
   it('CH-12503 with one class the question names it, and the done line says class', async () => {
     const user = userEvent.setup();
     const w = show(page1());
     await user.click(deleteAll());
-    await expectCode('CH-12503', /STAT 201 comes off your schedule and your calendar\. This can't be undone\./);
+    await expectCode('CH-12503', /STAT 201 comes off your schedule and your calendar\. This can’t be undone\./);
     await confirm(user);
     await waitFor(() => expect(w.removeAll).toHaveBeenCalledWith([STAT_ID]));
     expect(await screen.findByText('Class deleted')).toBeTruthy();
@@ -1700,7 +1719,7 @@ describe('Classes, delete all', () => {
     show(PREVIEW_CLASSES, { removeAll });
     await user.click(deleteAll());
     await confirm(user);
-    await expectCode('CH-12005', /Couldn't delete your classes.*None of them could be taken off your calendar, so all 5 were kept: Failed to remove class from calendar: events locked\. Try again\./);
+    await expectCode('CH-12005', /Couldn’t delete your classes.*None of them could be taken off your calendar, so all 5 were kept: Failed to remove class from calendar: events locked\. Try again\./);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(names()).toHaveLength(5);
     expect(question()).toBeTruthy();
@@ -1717,7 +1736,7 @@ describe('Classes, delete all', () => {
     show(page1(), { removeAll: vi.fn(async () => answer({ kept: [{ id: STAT_ID, reason: 'events locked' }] })) });
     await user.click(deleteAll());
     await confirm(user);
-    await expectCode('CH-12005', /Couldn't delete your classes.*It couldn't be taken off your calendar, so the class was kept: events locked\. Try again\./);
+    await expectCode('CH-12005', /Couldn’t delete your classes.*It couldn’t be taken off your calendar, so the class was kept: events locked\. Try again\./);
     expect(names()).toEqual(['Probability and Statistics']);
   });
 
@@ -1730,7 +1749,7 @@ describe('Classes, delete all', () => {
     show(PREVIEW_CLASSES, { removeAll });
     await user.click(deleteAll());
     await confirm(user);
-    await expectCode('CH-12005', /Couldn't delete your classes.*Nothing was deleted\. Check your connection and try again\./);
+    await expectCode('CH-12005', /Couldn’t delete your classes.*Nothing was deleted\. Check your connection and try again\./);
     expect(report).toHaveBeenCalled();
     expect(names()).toHaveLength(5);
     await user.click(within(code('CH-12005') as HTMLElement).getByRole('button', { name: 'Retry' }));
@@ -1747,7 +1766,7 @@ describe('Classes, delete all', () => {
     await confirm(user);
     await expectCode(
       'CH-12006',
-      /3 of 5 classes deleted.*ENGL 105 couldn't be taken off your calendar, so it was kept\. EXSS 188 is off your calendar but still on your schedule\. Retry to finish\./,
+      /3 of 5 classes deleted.*ENGL 105 couldn’t be taken off your calendar, so it was kept\. EXSS 188 is off your calendar but still on your schedule\. Retry to finish\./,
     );
     expect(code('CH-12005')).toBeNull();
     expect(hapticSpy).toHaveBeenCalledWith('error');
@@ -1772,7 +1791,7 @@ describe('Classes, delete all', () => {
     show(PREVIEW_CLASSES, { removeAll });
     await user.click(deleteAll());
     await confirm(user);
-    await expectCode('CH-12006', /Couldn't finish deleting your classes.*STAT 201, ECON 310, BUSI 401 and more are off your calendar but still on your schedule\. Retry to finish\./);
+    await expectCode('CH-12006', /Couldn’t finish deleting your classes.*STAT 201, ECON 310, BUSI 401 and more are off your calendar but still on your schedule\. Retry to finish\./);
     expect(names()).toHaveLength(5);
     expect(document.querySelector('.ch-cl-sync.is-failed')!.textContent).toContain('5 classes are not on your calendar');
   });
@@ -1796,6 +1815,13 @@ const chooseFile = (name: string, type: string, size = 1000) => {
   fireEvent.change(fileInput(), { target: { files: [file] } });
   return file;
 };
+/** P012-B1: the review opens, then its rows arrive one a beat; this waits for the last of them ("Read 5 classes"). */
+async function reviewArrived() {
+  const dialog = await screen.findByRole('dialog', { name: 'Review your schedule' });
+  await waitFor(() => expect(dialog.querySelector('.ch-cl-rv__line')?.textContent ?? '').toMatch(/^Read /));
+  return dialog;
+}
+
 async function openImport(user: ReturnType<typeof userEvent.setup>) {
   await user.click(headerButton('Import schedule'));
   await screen.findByRole('dialog', { name: 'Import schedule' });
@@ -1809,6 +1835,23 @@ async function pasteAndRead(user: ReturnType<typeof userEvent.setup>, text = PRE
 const reviewSummary = () => Object.fromEntries([...importSheet().querySelectorAll('.ch-cl-rv__sum > div')].map((d) => [d.querySelector('dt')!.textContent, d.querySelector('dd')!.textContent]));
 
 describe('Classes, import', () => {
+  it('P012-B1 the read shows its work: nothing for a quick read, then each row arrives tagged, with a status line', async () => {
+    const user = userEvent.setup();
+    const answer = later<Awaited<ReturnType<ChClassesWrites['read']>>>();
+    show(PREVIEW_CLASSES, { read: vi.fn(() => answer.promise) });
+    await openImport(user);
+    await pasteAndRead(user);
+    // The first beat shows no reading state.
+    expect(code('CH-12402')).toBeNull();
+    await expectCode('CH-12402', /Reading your schedule/);
+    await act(async () => answer.resolve({ ok: true, rows: PREVIEW_PARSED.map(toImportRow), warnings: [] }));
+    const dialog = await reviewArrived();
+    expect(dialog.querySelector('.ch-cl-rv__line')!.textContent).toBe('Read 5 classes · 1 to check');
+    const tags = [...dialog.querySelectorAll('.ch-cl-rv__tag')].map((t) => t.textContent);
+    expect(tags.filter((t) => t === 'Read clearly')).toHaveLength(4);
+    expect(tags).toContain('Check the time');
+  });
+
   it('CH-12110 CH-12402 CH-12705 pasted text: nothing to read is refused; then it says it is reading, and the rows come back for review', async () => {
     const user = userEvent.setup();
     const answer = later<Awaited<ReturnType<ChClassesWrites['read']>>>();
@@ -1829,7 +1872,7 @@ describe('Classes, import', () => {
     expect(code('CH-12402')!.getAttribute('role')).toBe('status');
     expect(w.read).toHaveBeenCalledWith({ kind: 'text', text: PREVIEW_SCHEDULE_TEXT });
     await act(async () => answer.resolve({ ok: true, rows: PREVIEW_PARSED.map(toImportRow), warnings: ['One class had no room.'] }));
-    expect(await screen.findByRole('dialog', { name: 'Review your schedule' })).toBeTruthy();
+    expect(await reviewArrived()).toBeTruthy();
     expect(reviewSummary()).toEqual({ Classes: '5', Credits: '15', 'Days a week': '5', 'Need a look': '1' });
     expect(within(importSheet().querySelector('.ch-cl-clash') as HTMLElement).getByText('Worth a look')).toBeTruthy();
     const rows = [...importSheet().querySelectorAll('.ch-cl-rv__r')];
@@ -1847,7 +1890,7 @@ describe('Classes, import', () => {
     show();
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     expect(inSheet().getByRole('button', { name: 'Import 5 classes' })).toBeTruthy();
     await user.click(inSheet().getByRole('button', { name: 'Remove STAT 201' }));
     expect(inSheet().getByRole('button', { name: 'Import 4 classes' })).toBeTruthy();
@@ -1865,7 +1908,7 @@ describe('Classes, import', () => {
     const w = show();
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Remove STAT 201' }));
     await user.click(inSheet().getByRole('button', { name: 'Import 4 classes' }));
     expect(await screen.findByRole('dialog', { name: 'Schedule imported' })).toBeTruthy();
@@ -1877,7 +1920,7 @@ describe('Classes, import', () => {
     expect(w.sync.mock.calls.map((c) => c[0].code).sort()).toEqual(['ART 101', 'GEOG 110', 'MATH 232', 'PHIL 150']);
     expect(inSheet().getByText('4 classes imported')).toBeTruthy();
     // PHIL 150 has no days: it is saved, and the result says it isn't on the calendar and why, rather than "they're on your calendar".
-    expect(inSheet().getByText("3 of 4 are on your calendar and repeat weekly until Dec 15. Not on your calendar: PHIL 150 (no meeting days). Open the class to add what's missing.")).toBeTruthy();
+    expect(inSheet().getByText("3 of 4 are on your calendar and repeat weekly until Dec 15. Not on your calendar: PHIL 150 (no meeting days). Open the class to add what’s missing.")).toBeTruthy();
     expect([...importSheet().querySelectorAll('.ch-cl-ok__chips span')].map((s) => s.textContent)).toEqual(['GEOG 110', 'MATH 232', 'ART 101', 'PHIL 150']);
     await expectCode('CH-12109', /3 overlaps with the team this week\.GEOG 110 meets over Practice; GEOG 110 meets over Practice/);
     expect(hapticSpy).toHaveBeenCalledWith('success');
@@ -1896,9 +1939,9 @@ describe('Classes, import', () => {
     const w = show(PREVIEW_CLASSES, { importRows });
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 5 classes' }));
-    await expectCode('CH-12004', /Couldn't import your schedule.*Nothing was saved\. Check your connection and try again\./);
+    await expectCode('CH-12004', /Couldn’t import your schedule.*Nothing was saved\. Check your connection and try again\./);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(screen.getByRole('dialog', { name: 'Review your schedule' })).toBeTruthy();
     expect(names()).toHaveLength(5);
@@ -1913,7 +1956,7 @@ describe('Classes, import', () => {
     const w = show(PREVIEW_CLASSES, { importRows: vi.fn(async () => ({ success: true as const, data: { rows: [], skipped: ['STAT 201 - Probability and Statistics'] } })) });
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 5 classes' }));
     expect(await screen.findByRole('dialog', { name: 'Nothing new to import' })).toBeTruthy();
     await expectCode('CH-12307', /Already on your schedule.*That class is already on your schedule, so nothing was imported\. Remove the existing entry first to import again\./);
@@ -1935,7 +1978,7 @@ describe('Classes, import', () => {
     const w = show(PREVIEW_CLASSES, { importRows });
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 5 classes' }));
     await waitFor(() => expect(names()).toContain('Global Environmental Change'));
     await waitFor(() => expect(w.sync).toHaveBeenCalledTimes(1));
@@ -1950,19 +1993,19 @@ describe('Classes, import', () => {
     show(PREVIEW_CLASSES, { sync });
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Remove STAT 201' }));
     await user.click(inSheet().getByRole('button', { name: 'Import 4 classes' }));
     await expectCode('CH-12002', /1 of 4 classes are saved, but not on your calendar.*MATH 232: Could not determine semester dates\. Retry to try again\./);
     expect(
-      await inSheet().findByText("Some didn't reach your calendar. Use Retry sync on the Classes page. Not on your calendar: PHIL 150 (no meeting days). Open the class to add what's missing."),
+      await inSheet().findByText("Some didn’t reach your calendar. Use Retry sync on the Classes page. Not on your calendar: PHIL 150 (no meeting days). Open the class to add what’s missing."),
     ).toBeTruthy();
     expect(document.querySelector('.ch-cl-sync.is-failed')!.textContent).toContain('1 class is not on your calendar');
     broken = false;
     await user.click(within(code('CH-12002') as HTMLElement).getByRole('button', { name: 'Retry' }));
     await waitFor(() => expect(document.querySelector('.ch-cl-sync')).toBeNull());
     expect(
-      await inSheet().findByText("3 of 4 are on your calendar and repeat weekly until Dec 15. Not on your calendar: PHIL 150 (no meeting days). Open the class to add what's missing."),
+      await inSheet().findByText("3 of 4 are on your calendar and repeat weekly until Dec 15. Not on your calendar: PHIL 150 (no meeting days). Open the class to add what’s missing."),
     ).toBeTruthy();
   });
 
@@ -1976,7 +2019,7 @@ describe('Classes, import', () => {
     expect(hapticSpy).toHaveBeenCalledWith('error');
     await user.click(inSheet().getByRole('button', { name: 'Choose another file' }));
     chooseFile('schedule.docx', 'application/msword');
-    await expectCode('CH-12112', /We can't read that file type.*Use a PNG, JPG or WebP screenshot, a PDF or a TXT file, or paste the text\./);
+    await expectCode('CH-12112', /We can’t read that file type.*Use a PNG, JPG or WebP screenshot, a PDF or a TXT file, or paste the text\./);
     expect(w.read).not.toHaveBeenCalled();
     await user.click(inSheet().getByRole('button', { name: 'Paste text instead' }));
     expect(inSheet().getByLabelText('Paste your schedule')).toBeTruthy();
@@ -2005,7 +2048,7 @@ describe('Classes, import', () => {
     show(PREVIEW_CLASSES, { read: vi.fn().mockRejectedValue(new Error('boom')) });
     await openImport(user);
     chooseFile('schedule.png', 'image/png');
-    await expectCode('CH-12204', /Reading the schedule didn't finish.*Your schedule can still be added with Paste text\./);
+    await expectCode('CH-12204', /Reading the schedule didn’t finish.*Your schedule can still be added with Paste text\./);
     await user.click(inSheet().getByRole('button', { name: 'Paste text instead' }));
     expect(inSheet().getByLabelText('Paste your schedule')).toBeTruthy();
   });
@@ -2023,7 +2066,7 @@ describe('Classes, import', () => {
     expect(zone.className).toContain('is-over');
     fireEvent.drop(zone, { dataTransfer: { files: [file] } });
     await waitFor(() => expect(w.read).toHaveBeenCalledWith({ kind: 'file', file }));
-    expect(await screen.findByRole('dialog', { name: 'Review your schedule' })).toBeTruthy();
+    expect(await reviewArrived()).toBeTruthy();
   });
 });
 
@@ -2049,7 +2092,7 @@ describe('Classes, offline and slow', () => {
     setField('Room', '121');
     goOffline();
     await submitForm(user);
-    await expectCode('CH-1903', /Couldn't update STAT 201: you're offline/);
+    await expectCode('CH-1903', /Couldn’t update STAT 201: you’re offline/);
     expect(w.save).not.toHaveBeenCalled();
     expect(within(sheet()).getByRole('button', { name: 'Save changes' })).toBeTruthy();
     expect(field('Room').value).toBe('121');
@@ -2065,7 +2108,7 @@ describe('Classes, offline and slow', () => {
     await user.click(within(await screen.findByRole('dialog', { name: 'Probability and Statistics' })).getByRole('button', { name: 'Remove class' }));
     goOffline();
     await user.click(await screen.findByRole('button', { name: 'Remove class' }));
-    await expectCode('CH-1903', /Couldn't remove STAT 201: you're offline/);
+    await expectCode('CH-1903', /Couldn’t remove STAT 201: you’re offline/);
     expect(w.remove).not.toHaveBeenCalled();
     expect(names()).toContain('Probability and Statistics');
   });
@@ -2083,7 +2126,7 @@ describe('Classes, offline and slow', () => {
     });
     await fillGeog(user);
     await submitForm(user);
-    await expectCode('CH-1903', /GEOG 110 is saved, but not on your calendar: you're offline/);
+    await expectCode('CH-1903', /GEOG 110 is saved, but not on your calendar: you’re offline/);
     await waitFor(() => expect(within(card(/^GEOG 110/)).getByText('Not on your calendar')).toBeTruthy());
     expect(w.sync).not.toHaveBeenCalled();
     expect(document.querySelector('.ch-cl-sync.is-failed')!.textContent).toContain('1 class is not on your calendar');
@@ -2113,19 +2156,19 @@ describe('Classes, offline and slow', () => {
     await openImport(user);
     goOffline();
     const file = chooseFile('week.png', 'image/png');
-    await expectCode('CH-12901', /You're offline.*Reading a screenshot needs a connection\. Reconnect and try again, or paste the text, which works offline\./);
+    await expectCode('CH-12901', /You’re offline.*Reading a screenshot needs a connection\. Reconnect and try again, or paste the text, which works offline\./);
     expect(w.read).not.toHaveBeenCalled();
     line!.mockReturnValue(true);
     await user.click(inSheet().getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(w.read).toHaveBeenCalledWith({ kind: 'file', file }));
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Start over' }));
     await screen.findByRole('dialog', { name: 'Import schedule' });
     line!.mockReturnValue(false);
     w.read.mockClear();
     chooseFile('week.txt', 'text/plain');
     await waitFor(() => expect(w.read).toHaveBeenCalledTimes(1));
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Start over' }));
     await pasteAndRead(user);
     await waitFor(() => expect(w.read).toHaveBeenCalledTimes(2));
@@ -2222,7 +2265,7 @@ describe('Classes, calendar sync in the background', () => {
     show(PREVIEW_CLASSES, { sync: vi.fn(() => held.promise), read: vi.fn(async () => ({ ok: true as const, rows: PREVIEW_PARSED.slice(0, 4).map(toImportRow), warnings: [] })) });
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 4 classes' }));
     expect(await screen.findByRole('dialog', { name: 'Schedule imported' })).toBeTruthy();
     expect(inSheet().getByText('Adding them to your calendar…')).toBeTruthy();
@@ -2230,7 +2273,7 @@ describe('Classes, calendar sync in the background', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     expect((inSheet().getByRole('button', { name: 'Import 4 classes' }) as HTMLButtonElement).disabled).toBe(false);
     await act(async () => held.resolve({ success: true }));
   });
@@ -2243,7 +2286,7 @@ describe('Classes, calendar sync in the background', () => {
     const w = show(PREVIEW_CLASSES, { sync, read });
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 2 classes' }));
     await expectCode('CH-12002');
     const starts = () => Object.fromEntries(w.sync.mock.calls.map((c) => [c[0].code, c[1]]));
@@ -2254,7 +2297,7 @@ describe('Classes, calendar sync in the background', () => {
     await waitFor(() => expect(w.sync).toHaveBeenCalledTimes(2));
     expect(starts()).toEqual({ 'GEOG 110': { semesterStartDate: '2026-10-19' }, 'MATH 232': undefined });
     // Each class repeats until the end of its own term, not one date for both.
-    expect(await inSheet().findByText("They're on your calendar and repeat weekly until the end of their terms, Dec 15 and May 15.")).toBeTruthy();
+    expect(await inSheet().findByText("They’re on your calendar and repeat weekly until the end of their terms, Dec 15 and May 15.")).toBeTruthy();
   });
 
   it('CH-12002 a schedule read in early summer for the fall goes on the calendar for the whole fall, never from a summer start', async () => {
@@ -2263,7 +2306,7 @@ describe('Classes, calendar sync in the background', () => {
     await user.click(screen.getByRole('button', { name: 'Import schedule' }));
     await screen.findByRole('dialog', { name: 'Import schedule' });
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 5 classes' }));
     await waitFor(() => expect(w.sync).toHaveBeenCalledTimes(5));
     for (const call of w.sync.mock.calls) expect(call[1]).toBeUndefined();
@@ -2319,11 +2362,11 @@ describe('Classes, review fixes on screen', () => {
     const w = show(PREVIEW_CLASSES, { read: vi.fn(async () => ({ ok: true as const, rows: [toImportRow(PREVIEW_PARSED[0]!), hist, toImportRow(PREVIEW_PARSED[3]!)], warnings: [] })) });
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 3 classes' }));
     expect(
       await inSheet().findByText(
-        "1 of 3 is on your calendar and repeats weekly until Dec 15. Not on your calendar: HIST 210 (no time set) and PHIL 150 (no meeting days). Open the class to add what's missing.",
+        "1 of 3 is on your calendar and repeats weekly until Dec 15. Not on your calendar: HIST 210 (no time set) and PHIL 150 (no meeting days). Open the class to add what’s missing.",
       ),
     ).toBeTruthy();
     expect(w.sync).toHaveBeenCalledTimes(3);
@@ -2334,7 +2377,7 @@ describe('Classes, review fixes on screen', () => {
     show(PREVIEW_CLASSES, { read: vi.fn(async () => ({ ok: true as const, rows: [toImportRow(PREVIEW_PARSED[3]!)], warnings: [] })) });
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 1 class' }));
     const result = await inSheet().findByText(/^Not on your calendar: PHIL 150 \(no meeting days\)\./);
     expect(result.textContent).not.toMatch(/on your calendar and repeat/);
@@ -2346,7 +2389,7 @@ describe('Classes, review fixes on screen', () => {
     show(PREVIEW_CLASSES, { read: vi.fn(async () => ({ ok: true as const, rows: [{ ...toImportRow(PREVIEW_PARSED[0]!), semester: 'Spring 2027' }], warnings: [] })) });
     await openImport(user);
     await pasteAndRead(user);
-    await screen.findByRole('dialog', { name: 'Review your schedule' });
+    await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 1 class' }));
     expect(await inSheet().findByText('1 class imported')).toBeTruthy();
     expect(code('CH-12109')).toBeNull();

@@ -7,9 +7,9 @@ import '../../styles/settings.css';
  */
 export function SettingsSkeleton() {
   return (
-    <main className="ch-set" aria-busy="true" aria-label="Loading settings" data-ch-code="CH-8401">
+    <main className="ch-set" data-canopy="" aria-busy="true" aria-label="Loading settings" data-ch-code="CH-8401">
       <div className="ch-set-skel-desk">
-        <header className="ch-set-head">
+        <header className="ch-set-head" data-canopy-head="">
           <Skeleton width={170} height={40} radius={10} />
           <Skeleton width={260} height={13} />
         </header>
@@ -50,25 +50,33 @@ export function SettingsSkeleton() {
           </div>
         </div>
       </div>
+      {/* The phone's list in the live page's own classes (SettingsPhone): the title under its double rule, who you are,
+          and the sections on their seams, so nothing moves when the list arrives. */}
       <div className="ch-setm-skel" aria-hidden>
-        <Skeleton width={150} height={34} radius={10} />
-        <div className="ch-setm-id" style={{ cursor: 'default' }}>
-          <Skeleton width={56} height={56} radius={28} />
-          <span className="ch-setm-id__b">
-            <Skeleton width={140} height={16} />
-            <Skeleton width={190} height={12} />
-          </span>
-        </div>
-        <div className="ch-setm-card">
-          {Array.from({ length: 5 }, (_, i) => (
-            <div key={i} className="ch-setm-row has-tile" style={{ cursor: 'default' }}>
-              <Skeleton width={30} height={30} radius={8} />
-              <span className="ch-setm-row__l">
-                <Skeleton width={110} height={14} />
-              </span>
-              <Skeleton width={70} height={12} />
+        <div className="ch-setm-page">
+          <div className="ch-setm-title">
+            <Skeleton width={150} height={28} radius={8} />
+          </div>
+          <div className="ch-setm-id" style={{ cursor: 'default' }}>
+            <Skeleton width={56} height={56} radius={28} />
+            <span className="ch-setm-id__b">
+              <Skeleton width={140} height={16} />
+              <Skeleton width={190} height={12} />
+            </span>
+          </div>
+          <div className="ch-setm-group">
+            <div className="ch-setm-card">
+              {Array.from({ length: 5 }, (_, i) => (
+                <div key={i} className="ch-setm-row has-tile" style={{ cursor: 'default' }}>
+                  <Skeleton width={30} height={30} radius={8} />
+                  <span className="ch-setm-row__l">
+                    <Skeleton width={110} height={14} />
+                  </span>
+                  <Skeleton width={70} height={12} />
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </div>
     </main>

@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 import { readFile, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { loadRegistry, mapFilesToFeatures, fileExists } from './lib/registry.mjs';
+import { loadRegistry, mapFilesToFeatures, fileExists, selectContextDocs } from './lib/registry.mjs';
 
 const args = parseArgs(process.argv.slice(2));
 const repoRoot = process.cwd();
 const registry = await loadRegistry(repoRoot);
 const impactedFeatures = mapFilesToFeatures(registry, args.files);
-const docPaths = [
-  'AGENTS.md',
-  'CLAUDE.md',
-  'memory/registry.yml',
-  ...impactedFeatures.flatMap((feature) => feature.docs),
-];
+// The fixed preamble is always included. Feature docs are capped (three,
+// primary first) and docs whose STATUS banner says STALE / HISTORICAL /
+// SUPERSEDED / RETIRED are left out and listed below instead.
+const contextDocs = selectContextDocs(impactedFeatures, repoRoot);
+const docPaths = ['AGENTS.md', 'CLAUDE.md', 'memory/registry.yml', ...contextDocs.docs];
 const uniqueDocPaths = [...new Set(docPaths)];
 
 const sections = [];
@@ -20,6 +20,11 @@ sections.push(`# Helmv3 Context Pack`);
 sections.push(`## Task\n\n${args.task || 'No task provided.'}`);
 sections.push(`## Changed Files\n\n${renderList(args.files)}`);
 sections.push(`## Impacted Features\n\n${renderFeatures(impactedFeatures)}`);
+if (contextDocs.skipped.length > 0) {
+  sections.push(
+    `## Skipped Docs\n\n${contextDocs.skipped.map((d) => `- \`${d.path}\` (${d.status})`).join('\n')}`,
+  );
+}
 
 for (const docPath of uniqueDocPaths) {
   if (!fileExists(repoRoot, docPath)) {
@@ -39,7 +44,10 @@ console.log(`Wrote ${args.output}`);
 function parseArgs(argv) {
   const parsed = {
     files: [],
-    output: '/tmp/helmv3-context-pack.md',
+    // Per-run file (2026-10-07): a fixed path was shared by every session on the
+    // machine, so two concurrent runs overwrote each other's pack. The path is
+    // printed on the last line; pass --output to choose one.
+    output: join(tmpdir(), `helmv3-context-${process.pid}.md`),
     task: '',
     maxDocChars: 5000,
   };

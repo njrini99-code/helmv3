@@ -39,7 +39,7 @@
  * the source of truth.
  */
 
-import { LazyMotion, MotionConfig, m } from 'framer-motion';
+import { LazyMotion, MotionConfig, m } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { useRouteRevealMotion } from '@/lib/motion/route-motion';
 import { isBaseballLateralDestination } from '@/lib/baseball/nav-registry';

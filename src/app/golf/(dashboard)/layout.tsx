@@ -297,7 +297,7 @@ export default async function GolfDashboardLayout({
   // Clubhouse (golf_clubhouse_ui): the from-scratch coach UI. A separate tree,
   // never layered on Fairway; see docs/clubhouse/PROGRESS.md.
   if ((await isClubhouseFor(userData.role))) {
-    const [shell, phone] = await Promise.all([loadClubhouseShell(userData.teamId), phoneHint()]);
+    const [shell, phone] = await Promise.all([loadClubhouseShell(userData.teamId, userData.role === 'player' ? userData.playerId : null, userData.role === 'coach' ? userData.coachId : null), phoneHint()]);
     return (
       <ClubhouseShell userData={userData} shell={shell} phone={phone}>
         {children}

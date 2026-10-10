@@ -5,17 +5,18 @@
   display: inline-flex;
   gap: 3px;
   padding: 4px;
+  border-radius: var(--ch-radius-lg);
 }
 .ch-seg--sm {
   padding: 3px;
-  border-radius: 11px;
 }
 .ch-seg__b {
   position: relative;
   height: 30px;
   padding: 0 14px;
   border: 0;
-  border-radius: 8px;
+  /* Concentric with the track: its radius less its padding. */
+  border-radius: calc(var(--ch-radius-lg) - 4px);
   background: transparent;
   /* The unselected label sits on the well's gradient: #6f6a5f measured 4.1:1 there, on every segmented control in
      Clubhouse (aesthetic audit X-1); secondary ink holds 5.4:1 and still reads lighter than the selected green. */
@@ -25,20 +26,31 @@
   text-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
   cursor: pointer;
   touch-action: manipulation;
-  transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+  transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease),
+    background var(--ch-dur-press) var(--ch-ease);
 }
 .ch-seg--sm .ch-seg__b {
+  border-radius: calc(var(--ch-radius-lg) - 3px);
   height: 26px;
   padding: 0 11px;
   font-size: 12.5px;
 }
-.ch-seg__b:hover {
-  color: var(--ch-text-primary);
+@media (hover: hover) {
+  .ch-seg__b:hover {
+    color: var(--ch-text-primary);
+  }
 }
 .ch-seg__b.is-on {
   color: var(--ch-green-700);
   font-weight: 600;
   text-shadow: none;
+}
+/* CH-1617: pressed, an option that isn't chosen takes the Ledger's press tint over the press beat, after the beat UIKit
+   waits so a scroll that starts on it never flashes it; letting go clears it at once. It never scales (lib/press.ts):
+   the chip arriving is the answer. The chosen option has nothing to change, so it doesn't answer. */
+.ch-seg__b:not(.is-on):active {
+  background: var(--ch-ledger-row-press);
+  transition-delay: var(--ch-dur-press-delay);
 }
 .ch-seg__b:focus-visible {
   outline: 2px solid rgb(21 90 57 / 0.45);
@@ -47,7 +59,7 @@
 .ch-seg__pill {
   position: absolute;
   inset: 0;
-  border-radius: 8px;
+  border-radius: inherit;
   background: var(--ch-control-bg);
   box-shadow: var(--ch-elevation-control);
 }
@@ -78,9 +90,16 @@
   transition: color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease),
     background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-pill:hover {
-  color: var(--ch-text-primary);
-  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+@media (hover: hover) {
+  .ch-pill:hover {
+    color: var(--ch-text-primary);
+    box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+  }
+}
+/* CH-1617: a pill that isn't on answers a press the way a segment does. */
+.ch-pill:not([aria-pressed='true']):active {
+  background: var(--ch-ledger-row-press);
+  transition-delay: var(--ch-dur-press-delay);
 }
 .ch-pill[aria-pressed='true'] {
   background: #edf4ef;
@@ -139,8 +158,10 @@
   color: var(--ch-text-tertiary);
   cursor: pointer;
 }
-.ch-search__x:hover {
-  background: rgb(28 25 18 / 0.06);
+@media (hover: hover) {
+  .ch-search__x:hover {
+    background: rgb(28 25 18 / 0.06);
+  }
 }
 
 /* Fields */
@@ -183,9 +204,11 @@
   line-height: 1.5;
   resize: vertical;
 }
-.ch-input:hover,
-.ch-textarea:hover {
-  box-shadow: 0 0 0 1px var(--ch-border-strong), inset 0 1px 2px rgb(28 25 18 / 0.06);
+@media (hover: hover) {
+  .ch-input:hover,
+  .ch-textarea:hover {
+    box-shadow: 0 0 0 1px var(--ch-border-strong), inset 0 1px 2px rgb(28 25 18 / 0.06);
+  }
 }
 .ch-input:focus,
 .ch-textarea:focus {
@@ -239,11 +262,17 @@
   flex: none;
   color: var(--ch-green-600);
 }
-.ch-menu__item:hover,
 .ch-menu__item:focus-visible {
   outline: none;
   background: #ece8de;
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
+}
+@media (hover: hover) {
+  .ch-menu__item:hover {
+    outline: none;
+    background: #ece8de;
+    box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.06);
+  }
 }
 .ch-menu__item.is-danger,
 .ch-menu__item.is-danger svg {
@@ -379,7 +408,9 @@
     max-height: var(--ch-modal-max-h);
     padding-bottom: env(safe-area-inset-bottom);
     border-radius: 20px 20px 0 0;
-    animation: ch-rise var(--ch-dur-base) var(--ch-ease);
+    /* It rises on the smooth spring, as More and the bell do (CH-1602, CH-1612): a soft start and a settle with no
+       overshoot; the ease-out over base where linear() is missing. */
+    animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
   }
   .ch-modal__grab {
     display: block;
@@ -426,6 +457,26 @@
     position: absolute;
     inset: min(0px, calc(50% - 22px));
   }
+  /* The search field carries its own reach (CH-1815): 36px drawn, 44px to the finger. The label's reach focuses the
+     input; the input and its clear key sit above it and take their own taps. Its text is 16px, so iOS doesn't zoom the
+     page when it takes focus. */
+  .ch-search {
+    position: relative;
+  }
+  .ch-search::after {
+    position: absolute;
+    inset: min(0px, calc(50% - 22px)) 0;
+    content: '';
+  }
+  .ch-search input {
+    position: relative;
+    z-index: 1;
+    font-size: 16px;
+  }
+  .ch-search .ch-search__x {
+    position: relative;
+    z-index: 1;
+  }
   /* A menu's rows are 44px tall on the phone (the rows touch, so a hit area around them would overlap). */
   .ch-menu__item {
     height: 44px;
@@ -445,11 +496,12 @@
     flex: 1;
     height: 44px;
   }
-  /* A 44px target around the 30px close. */
+  /* A 44px target around the 30px close (CH-1815). The header scrolls, so it clips: with a title alone the close is
+     its tallest part and only 6px of header lie under it, so the target leans up into the 12px above instead. */
   .ch-modal__head .ch-iconbtn::before {
     content: '';
     position: absolute;
-    inset: -7px;
+    inset: -8px -7px -6px;
   }
 }
 
@@ -468,8 +520,10 @@
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-pp__row:hover {
-  background: rgb(28 25 18 / 0.045);
+@media (hover: hover) {
+  .ch-pp__row:hover {
+    background: rgb(28 25 18 / 0.045);
+  }
 }
 .ch-pp__row:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -488,7 +542,7 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   color: var(--ch-text-on-accent);
 }
 .ch-pp__name {
@@ -521,7 +575,7 @@
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-pp__box.is-on {
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   box-shadow: none;
 }
 .ch-pp__empty {
@@ -556,6 +610,8 @@
   background: var(--ch-switch-track-bg);
   box-shadow: var(--ch-switch-track-shadow);
   transition: background var(--ch-dur-base) var(--ch-ease);
+  /* The thumb reads the track's width (100cqw) to find the edge it rests on, whatever size a page draws the switch. */
+  container-type: inline-size;
 }
 .ch-switch__thumb {
   position: absolute;
@@ -566,7 +622,9 @@
   border-radius: 50%;
   background: var(--ch-switch-thumb-bg);
   box-shadow: var(--ch-switch-thumb-shadow);
-  transition: transform var(--ch-dur-base) var(--ch-ease-spring);
+  transform-origin: left center;
+  transition: transform var(--ch-dur-base) var(--ch-ease-spring), scale var(--ch-dur-press) var(--ch-ease),
+    transform-origin var(--ch-dur-press) var(--ch-ease);
 }
 .ch-switch input:checked + .ch-switch__track {
   background: var(--ch-switch-on-bg);
@@ -574,6 +632,20 @@
 }
 .ch-switch input:checked + .ch-switch__track .ch-switch__thumb {
   transform: translateX(17px);
+  /* The track's inner right edge, where an on thumb rests (the track less its 2px insets each side, before the
+     travel): the stretch grows from there, so the thumb leans back toward off. */
+  transform-origin: calc(100cqw - 4px) center;
+}
+/* Held, the thumb stretches about a fifth of its width toward where it would travel, as UISwitch's does (CH-1620), and
+   settles round as the finger lifts. The scale property composes with the travel's transform, so nothing reflows.
+   Like the press (CH-1606), it is off with reduced motion and with Animations off. */
+@media (prefers-reduced-motion: no-preference) {
+  .ch-switch:not(.is-disabled):not(.is-busy):active .ch-switch__thumb {
+    scale: 1.2 1;
+  }
+  [data-motion='off'] .ch-switch:not(.is-disabled):not(.is-busy):active .ch-switch__thumb {
+    scale: none;
+  }
 }
 .ch-switch input:focus-visible + .ch-switch__track {
   outline: 2px solid rgb(21 90 57 / 0.45);
@@ -609,8 +681,10 @@
   cursor: pointer;
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-select select:hover {
-  box-shadow: 0 0 0 1px var(--ch-border-strong), inset 0 1px 2px rgb(28 25 18 / 0.06);
+@media (hover: hover) {
+  .ch-select select:hover {
+    box-shadow: 0 0 0 1px var(--ch-border-strong), inset 0 1px 2px rgb(28 25 18 / 0.06);
+  }
 }
 .ch-select select:focus-visible {
   box-shadow: 0 0 0 1px var(--ch-green-600), 0 0 0 4px rgb(21 90 57 / 0.12);
@@ -733,7 +807,7 @@
   transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-check__box.is-on {
-  background: var(--ch-green-600);
+  background: var(--ch-green-fill-600);
   box-shadow: none;
 }
 .ch-check.is-disabled .ch-check__box {
@@ -771,4 +845,79 @@
   .ch-slider__ends {
     font-size: 12px;
   }
+}
+
+/* ── Dark: "Clubhouse at night" (owner, 2026-10-08) ──────────────────────────────────────────────────────────────────
+   Wells, fields and switches ride the tokens. The paper literals turn to night ones: the menu and modal are a raised
+   surface over the page with a lit hover, the modal's backdrop takes more weight, the segmented labels' white
+   letterpress edge becomes a shadow, the green focus rings and halos take the light green, and the slider's track the
+   ground's own rule. */
+:where(html[data-fw-theme='dark']) .ch-seg__b {
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.35);
+}
+html[data-fw-theme='dark'] .ch-seg__b:focus-visible,
+html[data-fw-theme='dark'] .ch-switch input:focus-visible + .ch-switch__track,
+html[data-fw-theme='dark'] .ch-slider input:focus-visible {
+  outline-color: var(--ch-green-rule);
+}
+html[data-fw-theme='dark'] .ch-pill[aria-pressed='true'] {
+  background: var(--ch-green-100);
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.3);
+}
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-search__x:hover {
+    background: rgb(237 231 216 / 0.08);
+  }
+  html[data-fw-theme='dark'] .ch-menu__item:hover {
+    background: var(--ch-ivory-200);
+    box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.25);
+  }
+  html[data-fw-theme='dark'] .ch-pp__row:hover {
+    background: rgb(237 231 216 / 0.05);
+  }
+}
+html[data-fw-theme='dark'] .ch-menu__item:focus-visible {
+  background: var(--ch-ivory-200);
+  box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.25);
+}
+html[data-fw-theme='dark'] .ch-input:focus,
+html[data-fw-theme='dark'] .ch-textarea:focus,
+html[data-fw-theme='dark'] .ch-select select:focus-visible {
+  box-shadow: 0 0 0 1px var(--ch-green-600), 0 0 0 4px var(--ch-focus-halo);
+}
+html[data-fw-theme='dark'] .ch-input[aria-invalid='true'],
+html[data-fw-theme='dark'] .ch-textarea[aria-invalid='true'] {
+  box-shadow: 0 0 0 1px var(--ch-danger-600), 0 0 0 4px rgb(239 133 118 / 0.16);
+}
+html[data-fw-theme='dark'] .ch-menu__sep {
+  background: var(--ch-border-hairline);
+}
+html[data-fw-theme='dark'] .ch-modal::backdrop {
+  background: rgb(0 0 0 / 0.55);
+}
+:where(html[data-fw-theme='dark']) .ch-modal__panel {
+  background: var(--ch-sheet-bg);
+}
+html[data-fw-theme='dark'] .ch-modal__foot {
+  border-top-color: var(--ch-border-hairline);
+  background: var(--ch-ivory-50);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+}
+html[data-fw-theme='dark'] .ch-pp__row[aria-pressed='true'] .ch-pp__name b,
+html[data-fw-theme='dark'] .ch-pp__row[aria-selected='true'] .ch-pp__name b {
+  color: var(--ch-ledger-ink);
+}
+html[data-fw-theme='dark'] .ch-slider input::-webkit-slider-runnable-track {
+  background: linear-gradient(90deg, var(--ch-green-600) var(--ch-fill), var(--ch-ivory-300) var(--ch-fill));
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.4);
+}
+html[data-fw-theme='dark'] .ch-slider input::-moz-range-track {
+  background: linear-gradient(90deg, var(--ch-green-600) var(--ch-fill), var(--ch-ivory-300) var(--ch-fill));
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.4);
+}
+html[data-fw-theme='dark'] .ch-slider input::-webkit-slider-thumb {
+  background: linear-gradient(180deg, #f4eedd 0%, #e6dfcd 70%, #d8d1bf 100%);
+}
+html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
+  background: linear-gradient(180deg, #f4eedd 0%, #e6dfcd 70%, #d8d1bf 100%);
 }

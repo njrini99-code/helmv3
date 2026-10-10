@@ -4,6 +4,14 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { cliGuard, dryRunClient } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/create-test-user.ts',
+  summary:
+    "Creates a confirmed test auth user plus its public.users and profile rows on the project in .env.local.",
+  secrets: "NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (.env.local)",
+});
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -14,12 +22,12 @@ if (!supabaseUrl || !supabaseServiceKey) {
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+const supabase = dryRunClient(createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
     autoRefreshToken: false,
     persistSession: false,
   },
-});
+}), cli);
 
 async function createTestUser() {
   console.log('🏌️  Creating test user for Golf Dev Mode...\n');

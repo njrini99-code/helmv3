@@ -16,7 +16,7 @@ const state = vi.hoisted(() => ({
   lastProps: null as Record<string, unknown> | null,
 }));
 
-vi.mock('framer-motion', () => ({
+vi.mock('motion/react', () => ({
   useReducedMotion: () => state.reduced,
   m: new Proxy(
     {},

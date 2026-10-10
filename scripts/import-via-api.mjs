@@ -1,5 +1,13 @@
 import { readFileSync } from 'fs';
 import { config as loadEnv } from 'dotenv';
+import { cliGuard } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/import-via-api.mjs',
+  summary:
+    'Inserts the D2/D3 golf coach CSVs from ~/.openclaw/workspace into crm_coaches on the project in .env.local, 100 rows per request, with the service-role key.',
+  secrets: 'NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (.env.local)',
+});
 
 loadEnv({ path: '.env.local' });
 
@@ -98,6 +106,12 @@ for (const c of d2Coaches) {
   });
 }
 
+if (!cli.apply) {
+  console.log(`[dry-run] would insert ${records.length} coaches (${d3Coaches.length} D3 rows + ${d2Coaches.length} D2 rows read) into crm_coaches at ${supabaseUrl}.`);
+  for (const r of records.slice(0, 3)) console.log(`  [dry-run] ${r.name} <${r.email ?? 'no email'}> — ${r.school} (${r.division})`);
+  console.log('Re-run with --apply to insert them.');
+  process.exit(0);
+}
 console.log(`Inserting ${records.length} coaches...`);
 
 // Batch insert (100 at a time)

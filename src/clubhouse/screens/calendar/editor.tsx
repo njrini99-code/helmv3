@@ -2,7 +2,7 @@
 
 import { CalendarPlus, Check, Copy, Pencil, RefreshCw, Rss, Trash2, TriangleAlert, CircleX } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
-import { createGolfEvent, deleteGolfEvent, updateGolfEvent } from '@/app/golf/actions/golf';
+import { createGolfEvent, deleteGolfEvent, updateGolfEvent } from '@/app/golf/actions/calendar-events';
 import { createRecurringEvent, deleteRecurringEvent, editRecurringEvent } from '@/app/golf/actions/recurring-events';
 import { createCalendarFeed, deleteCalendarFeed, getCalendarFeeds, regenerateCalendarFeed } from '@/app/golf/actions/calendar-feeds';
 import { serializeRecurrenceRule } from '@/lib/golf/recurrence';
@@ -19,7 +19,7 @@ import { friendlyReason, normalise, useAction } from '../../lib/use-action';
 import { newRequestId } from '../../data/recruiting-shape';
 import { chReport, chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
-import { TYPE_LABEL, addDays, busyFor, dayNum, dowOf, fmtHour, monthName, overlaps, type ChCalEvent, type ChCalPerson, type ChCalType } from './model';
+import { TYPE_LABEL, addDays, busyFor, dayNum, dowOf, fmtHour, monthName, overlaps, seedWindow, type ChCalEvent, type ChCalPerson, type ChCalType } from './model';
 import { TYPE_ICON } from './views';
 
 const EDIT_TYPES: ChCalType[] = ['practice', 'qualifier', 'tournament', 'meeting', 'travel', 'other'];
@@ -183,6 +183,7 @@ export function EventEditor({
   peopleError = false,
   timezone,
   today,
+  nowHour,
 }: {
   seed: EditorSeed | null;
   onClose: () => void;
@@ -193,6 +194,8 @@ export function EventEditor({
   peopleError?: boolean;
   timezone: string;
   today: string;
+  /** The hour now on the team's clock, so a new event today opens after it (P006 D3). */
+  nowHour?: number;
 }) {
   const base = seed?.event ?? null;
   const open = seed != null;
@@ -218,13 +221,13 @@ export function EventEditor({
 
   // The editor seeds once per opening. A page re-read that lands while it is open (a slower refresh, a Retry
   // elsewhere) brings the same team in new arrays, and seeding again would wipe what the coach has typed.
-  const latest = useRef({ people, today });
+  const latest = useRef({ people, today, events, nowHour });
   useEffect(() => {
-    latest.current = { people, today };
-  }, [people, today]);
+    latest.current = { people, today, events, nowHour };
+  }, [people, today, events, nowHour]);
   useEffect(() => {
     if (!seed) return;
-    const { people, today } = latest.current;
+    const { people, today, events, nowHour } = latest.current;
     const e = seed.event;
     const c = seed.copyOf;
     const init = e
@@ -251,16 +254,20 @@ export function EventEditor({
             // Invitees the Calendar no longer lists (a player who left) are dropped, never widened to the team.
             invited: c.people.filter((id) => people.some((p) => p.id === id)),
           }
-        : {
-            title: '',
-            type: seed.type ?? ('practice' as ChCalType),
-            date: seed.date ?? today,
-            win: [15.5, 17.5] as [number, number],
-            allDay: false,
-            loc: '',
-            notes: '',
-            invited: seed.invite ? seed.invite.filter((id) => people.some((p) => p.id === id)) : people.map((p) => p.id),
-          };
+        : (() => {
+            const date = seed.date ?? today;
+            const invited = seed.invite ? seed.invite.filter((id) => people.some((p) => p.id === id)) : people.map((p) => p.id);
+            return {
+              title: '',
+              type: seed.type ?? ('practice' as ChCalType),
+              date,
+              win: seedWindow(events, invited, date, { date: today, hour: nowHour ?? 0 }),
+              allDay: false,
+              loc: '',
+              notes: '',
+              invited,
+            };
+          })();
     setTitle(init.title);
     setType(init.type);
     setDate(init.date);
@@ -404,7 +411,7 @@ export function EventEditor({
           haptic('warning');
           toast({
             tone: 'error',
-            title: `${!base ? 'Published' : 'Saved'} · ${title.trim()} · invitations didn't go out`,
+            title: `${!base ? 'Published' : 'Saved'} · ${title.trim()} · invitations didn’t go out`,
             body: `${note} Open the event and invite them again.`,
           });
         }
@@ -413,7 +420,7 @@ export function EventEditor({
     },
     () => ({
       done: !base ? `Published · ${title.trim()}${invited.length ? ' · players notified' : ''}` : moved ? `Moved · ${title.trim()}` : `Saved · ${title.trim()}`,
-      failed: !base ? `Couldn't publish ${title.trim() || 'the event'}` : `Couldn't save ${title.trim() || 'the event'}`,
+      failed: !base ? `Couldn’t publish ${title.trim() || 'the event'}` : `Couldn’t save ${title.trim() || 'the event'}`,
       hint: 'Your changes are still in the editor. Try again in a moment.',
       code: 'CH-6001',
     }),
@@ -576,7 +583,7 @@ export function EventEditor({
           </label>
           <label className="ch-field">
             <span className="ch-field__label">Notes · optional</span>
-            <textarea className="ch-textarea" rows={3} placeholder="What to bring, what you'll work on" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={5000} />
+            <textarea className="ch-textarea" rows={3} placeholder="What to bring, what you’ll work on" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={5000} />
           </label>
         </div>
 
@@ -612,7 +619,7 @@ export function EventEditor({
               </div>
             ) : peopleError ? (
               <p className="ch-in__quiet" data-ch-code="CH-6213">
-                The roster didn&apos;t load, so no one can be invited yet. Close this, try again, then invite players.
+                The roster didn’t load, so no one can be invited yet. Close this, try again, then invite players.
               </p>
             ) : (
               <p className="ch-in__quiet">No active players on the roster yet.</p>
@@ -705,7 +712,7 @@ export function CancelEvent({ event, onClose, onDone }: { event: ChCalEvent | nu
       if (normalise(res).success) onDone();
       return res;
     },
-    () => ({ done: `Cancelled · ${event?.title ?? 'event'} · attendees notified`, failed: `Couldn't cancel ${event?.title ?? 'the event'}`, code: 'CH-6002' }),
+    () => ({ done: `Cancelled · ${event?.title ?? 'event'} · attendees notified`, failed: `Couldn’t cancel ${event?.title ?? 'the event'}`, code: 'CH-6002' }),
   );
   return (
     <Modal
@@ -825,7 +832,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
     },
     (type) => ({
       done: type === 'team' ? 'Team schedule link ready' : 'Your schedule link ready',
-      failed: "Couldn't create the calendar link",
+      failed: "Couldn’t create the calendar link",
       code: 'CH-6003',
     }),
   );
@@ -851,7 +858,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
       }
       return res;
     },
-    (type) => ({ done: `New ${FEED_NAME[type]} link ready`, failed: `Couldn't make a new ${FEED_NAME[type]} link`, hint: 'The links below show which one works now.', retry: false, code: 'CH-6013' }),
+    (type) => ({ done: `New ${FEED_NAME[type]} link ready`, failed: `Couldn’t make a new ${FEED_NAME[type]} link`, hint: 'The links below show which one works now.', retry: false, code: 'CH-6013' }),
   );
 
   const remove = useAction(
@@ -861,7 +868,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
       if (normalise(res).success) setFeeds((cur) => cur && cur.filter((f) => f.type !== type));
       return res;
     },
-    (type) => ({ done: `${FEED_NAME[type]} link removed`, failed: `Couldn't remove the ${FEED_NAME[type]} link`, hint: 'The link is unchanged. Try again.', code: 'CH-6014' }),
+    (type) => ({ done: `${FEED_NAME[type]} link removed`, failed: `Couldn’t remove the ${FEED_NAME[type]} link`, hint: 'The link is unchanged. Try again.', code: 'CH-6014' }),
   );
   const busy = create.pending || regenerate.pending || remove.pending;
 
@@ -878,7 +885,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
     } catch (err) {
       chReport(err, { surface: 'calendar.subscribe', severity: 'low' });
       haptic('error');
-      toast({ tone: 'error', title: "Couldn't copy the link", body: 'Your browser blocked the clipboard. Select the link and copy it.', code: 'CH-6004' });
+      toast({ tone: 'error', title: "Couldn’t copy the link", body: 'Your browser blocked the clipboard. Select the link and copy it.', code: 'CH-6004' });
     }
   };
 
@@ -888,9 +895,9 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
     { type: 'personal', name: 'My schedule', desc: role === 'coach' ? 'Events you run and your busy time' : 'Events you’re invited to and your classes' },
   ];
   return (
-    <Modal open={open} onClose={onClose} width={560} icon={Rss} title="Add to your calendar app" description="One-way: changes in Helm appear in Apple, Google or Outlook within an hour. Edits made there don't come back." footer={<Button onClick={onClose}>Done</Button>}>
+    <Modal open={open} onClose={onClose} width={560} icon={Rss} title="Add to your calendar app" description="One-way: changes in Helm appear in Apple, Google or Outlook within an hour. Edits made there don’t come back." footer={<Button onClick={onClose}>Done</Button>}>
       {failed ? (
-        <InlineNotice code="CH-6206" title="Your calendar links didn't load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+        <InlineNotice code="CH-6206" title="Your calendar links didn’t load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
       ) : !feeds ? (
         <div style={{ display: 'grid', gap: 12 }} aria-busy="true" data-ch-code="CH-6402">
           <Skeleton height={44} />

@@ -14,8 +14,8 @@
  * ========================================================================== */
 
 import * as React from "react";
-import { Checkbox as BaseCheckbox } from "@base-ui-components/react/checkbox";
-import { CheckboxGroup as BaseCheckboxGroup } from "@base-ui-components/react/checkbox-group";
+import { Checkbox as BaseCheckbox } from "@base-ui/react/checkbox";
+import { CheckboxGroup as BaseCheckboxGroup } from "@base-ui/react/checkbox-group";
 import { cn } from "@/lib/utils";
 import { fwHaptic } from "@/lib/fairway/haptics";
 
@@ -53,6 +53,24 @@ export const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
   ) {
     const generatedId = React.useId();
     const fieldId = id ?? generatedId;
+    const labelId = `${fieldId}-label`;
+    const descriptionId = `${fieldId}-description`;
+    // Base UI 1.8 links the box to its wrapping <label> with aria-labelledby,
+    // which outranks aria-label and reads the whole row (label + description).
+    // Name the box from the label text only and keep the description as a
+    // description. A caller's own aria-labelledby/aria-describedby still wins.
+    // A caller's aria-label would also lose to that auto-link when the box sits
+    // inside someone else's <label> (roster rows), so it is mirrored into a
+    // hidden node and referenced explicitly — hidden nodes still name via
+    // aria-labelledby.
+    const ariaLabel = props["aria-label"];
+    const ariaLabelId = `${fieldId}-aria-label`;
+    const mirrorAriaLabel = !props["aria-labelledby"] && !label && Boolean(ariaLabel);
+    const ariaLabelledBy =
+      props["aria-labelledby"] ??
+      (label ? labelId : mirrorAriaLabel ? ariaLabelId : undefined);
+    const ariaDescribedBy =
+      props["aria-describedby"] ?? (description ? descriptionId : undefined);
 
     // Selection tick on check/uncheck (fire-and-forget, no-op on web).
     const handleCheckedChange: NonNullable<CheckboxProps["onCheckedChange"]> = (
@@ -70,6 +88,8 @@ export const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
         className={cn(boxBase, boxClassName)}
         onCheckedChange={handleCheckedChange}
         {...props}
+        aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
       >
         <BaseCheckbox.Indicator
           className="flex items-center justify-center"
@@ -91,7 +111,18 @@ export const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
       </BaseCheckbox.Root>
     );
 
-    if (!label && !description) return box;
+    if (!label && !description) {
+      return mirrorAriaLabel ? (
+        <>
+          {box}
+          <span id={ariaLabelId} hidden>
+            {ariaLabel}
+          </span>
+        </>
+      ) : (
+        box
+      );
+    }
 
     return (
       <label
@@ -106,12 +137,18 @@ export const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
         <span className="mt-px">{box}</span>
         <span className="flex flex-col gap-0.5">
           {label ? (
-            <span className="font-fw-sans text-body-sm font-medium text-text-primary select-none">
+            <span
+              id={labelId}
+              className="font-fw-sans text-body-sm font-medium text-text-primary select-none"
+            >
               {label}
             </span>
           ) : null}
           {description ? (
-            <span className="font-fw-sans text-caption text-text-secondary select-none">
+            <span
+              id={descriptionId}
+              className="font-fw-sans text-caption text-text-secondary select-none"
+            >
               {description}
             </span>
           ) : null}

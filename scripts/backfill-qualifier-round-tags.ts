@@ -43,6 +43,15 @@
  */
 import { config as loadEnv } from 'dotenv';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/backfill-qualifier-round-tags.ts',
+  summary:
+    "One-time backfill for `golf_rounds.round_type` on rounds that ARE linked to a qualifier (`qualifier_id IS NOT NULL`) but were never tagged `round_type = 'qualifier'`.",
+  guard: "its own --confirm flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 loadEnv({ path: '.env.local' });
 

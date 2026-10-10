@@ -48,6 +48,14 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
 
 import { isRecruitingEnabled } from '../src/lib/baseball/product-modules';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/verify-baseball-demo-coverage.ts',
+  summary:
+    "Standalone BaseballHelm demo-coverage report. Read-only.",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 // Must match scripts/seed-baseball-demo.ts and scripts/seed-rini-baseball-demo.ts
 // exactly. (Lift Lab rows are reached through helm_lifting_athletes' team_id

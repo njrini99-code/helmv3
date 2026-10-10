@@ -12,7 +12,7 @@ const push = vi.fn();
 const refresh = vi.fn();
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push, refresh }) }));
-vi.mock('@/app/golf/actions/golf', () => ({
+vi.mock('@/app/golf/actions/qualifier-actions', () => ({
   updateGolfQualifierDetails: (...a: unknown[]) => updateGolfQualifierDetails(...a),
   setQualifierRoundCourses: (...a: unknown[]) => setQualifierRoundCourses(...a),
 }));

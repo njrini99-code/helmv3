@@ -25,8 +25,8 @@
  *
  * 2026-07-25 addition (Fix 3 companion change, §1/§3 of the same plan):
  * this route also gained a MIN_AGE_MS floor (`.lte('created_at', ...)`) so
- * the cron doesn't race a round still inside its first Inngest attempt's
- * own retry backoff window. Every `created_at` fixture below that predates
+ * the cron doesn't race a round whose own post-submit trigger may still be
+ * in flight. Every `created_at` fixture below that predates
  * this change was seeded at or near "now" (irrelevant before the floor
  * existed) — those are shifted to `OLD_ENOUGH_MS` ago so they stay
  * eligible under the new filter without changing what each test is
@@ -515,7 +515,7 @@ describe('GET /api/cron/coachhelm-safety-net', () => {
     });
   });
 
-  it('excludes a completed, unanalyzed round created within the MIN_AGE_MS floor (still inside its first Inngest retry window)', async () => {
+  it('excludes a completed, unanalyzed round created within the MIN_AGE_MS floor (its own post-submit trigger may still be in flight)', async () => {
     seed([pendingRound({ id: 'r-fresh', player_id: 'p-fresh', created_at: new Date().toISOString() })]);
 
     const res = await callGet();

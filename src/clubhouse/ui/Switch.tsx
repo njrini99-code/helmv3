@@ -7,6 +7,7 @@ import { haptic } from '../lib/haptics';
  * An immediate on/off setting (takes effect without Save): the handoff's
  * recessed track with a raised thumb, green when on. A detent haptic on
  * change. `label` is always the accessible name, even when it isn't shown.
+ * Held, the thumb stretches toward where it would travel (controls.css, CH-1620).
  */
 export function Switch({
   checked,

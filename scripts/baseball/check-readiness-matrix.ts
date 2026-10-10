@@ -1,4 +1,12 @@
 #!/usr/bin/env tsx
+import { helpOnly } from '../lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/baseball/check-readiness-matrix.ts',
+  summary:
+    "Checks the BaseballHelm readiness matrix against the app routes and, when credentials are present, the Supabase project. Read-only.",
+  secrets: 'GITHUB_TOKEN',
+});
 // =============================================================================
 // scripts/baseball/check-readiness-matrix.ts
 //

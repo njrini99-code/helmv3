@@ -7,7 +7,7 @@
  * not lose a half-filled event.
  *
  * ModalShell already guards this, but the guard is written for BASE UI popups:
- * it looks for `[data-popup-open]`, which `@base-ui-components/react` stamps on
+ * it looks for `[data-popup-open]`, which `@base-ui/react` stamps on
  * a Select trigger / Combobox input. `DatePicker` is RADIX, and Radix does not
  * stamp that attribute — it registers in Radix's own DismissableLayer stack
  * instead, which is supposed to make the topmost layer win.

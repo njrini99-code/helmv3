@@ -1,5 +1,13 @@
 import { config as loadEnv } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/list-orphan-players.ts',
+  summary:
+    "Lists golf_players rows that have no matching auth user on the project in .env.local. Read-only.",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 loadEnv({ path: '.env.local' });
 

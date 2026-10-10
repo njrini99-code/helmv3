@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion } from 'motion/react';
 import { createClient } from '@/lib/supabase/client';
 import { AlertCircle, CheckCircle2, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';

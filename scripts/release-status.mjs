@@ -5,9 +5,8 @@
  * WHY THIS EXISTS
  * ---------------
  * On 2026-09-01, seven fixes sat merged on `main` and none were in production.
- * Nobody ignored it; nothing said it. deploy-prod.sh guards the MOMENT of
- * deploying — clean tree, on main, matching origin — but between deploys
- * nothing answered the question that actually matters:
+ * Nobody ignored it; nothing said it. Between deploys nothing answered the
+ * question that actually matters:
  *
  *     is the thing users are running the thing we merged?
  *
@@ -15,19 +14,24 @@
  *
  * HOW IT DETERMINES THE DEPLOYED COMMIT
  * -------------------------------------
- * Not from metadata. deploy-prod.sh stamps NEXT_PUBLIC_SENTRY_RELEASE, which
- * Next inlines into the JS chunks, so the commit is IN THE BYTES THE BROWSER
- * RUNS. We fetch the live page, pull its chunk URLs, and walk main's history
+ * Not from metadata. A deploy that sets NEXT_PUBLIC_SENTRY_RELEASE to the
+ * commit (`vercel deploy --prod --build-env NEXT_PUBLIC_SENTRY_RELEASE=<sha> --env NEXT_PUBLIC_SENTRY_RELEASE=<sha>`)
+ * gets that value inlined by Next into the JS chunks, so the commit is IN THE
+ * BYTES THE BROWSER RUNS. We fetch the live page, pull its chunk URLs, and walk main's history
  * backwards looking for the first SHA that appears in one.
  *
  * That is deliberately stronger than reading a deployment record: a READY
  * deployment whose alias never moved serves nobody, and metadata cannot tell
- * you that. The bytes can. It is the same check deploy-prod.sh prints for a
- * human to run by hand — this just runs it.
+ * you that. The bytes can.
  *
- * It never deploys. Promotes are the owner's call (AGENTS.md).
+ * It never deploys; it reports. Use it after a deploy to confirm the served
+ * SHA (AGENTS.md "Production").
  *
- * Exit: 0 in sync (or within --allow), 1 drift, 2 undetermined.
+ * Exit: 0 for any determined status (in sync or behind), 2 undetermined.
+ * With --strict, drift beyond --allow commits exits 1, which makes it a
+ * post-deploy check: `npm run release:status -- --strict`. `--check` is an
+ * alias for `--strict`, so the flag every other `*:check` script in this repo
+ * uses does what a reader expects here instead of being silently ignored.
  * UNKNOWN is never reported as fine — that is the failure mode this replaces.
  *
  * FLAGS FOR THE SESSION-START HOOK (2026-09-01). .claude/hooks/session-context.sh
@@ -49,6 +53,7 @@ const num = (flag, dflt) => {
   return i === -1 ? dflt : Number(argv[i + 1] ?? dflt);
 };
 const allow = num('--allow', 0);
+const strict = argv.includes('--strict') || argv.includes('--check');
 const depth = num('--depth', 60);
 const timeoutMs = num('--timeout-ms', 0);
 const json = argv.includes('--json');
@@ -108,7 +113,7 @@ if (!deployed) {
   die(2, [
     `release-status: no commit from the last ${depth} on main appears in the served bundle.`,
     '  Either production is older than that window, or it was deployed without',
-    '  scripts/deploy-prod.sh (which stamps NEXT_PUBLIC_SENTRY_RELEASE with the commit).',
+    '  without the commit stamp (NEXT_PUBLIC_SENTRY_RELEASE=<sha> as a --build-env).',
     '  This is UNKNOWN, not "in sync" — do not read it as healthy.',
   ].join('\n'));
 }
@@ -118,7 +123,7 @@ const short = (s) => s.slice(0, 9);
 
 if (json) {
   console.log(JSON.stringify({ deployed, mainSha, behind, verified_at: new Date().toISOString(), site }));
-  process.exit(behind > allow ? 1 : 0);
+  process.exit(strict && behind > allow ? 1 : 0);
 }
 
 console.log(`production : ${short(deployed)}  (verified in the served bundle)`);
@@ -134,5 +139,5 @@ for (const line of (sh('git', ['log', '--oneline', `${deployed}..${mainSha}`]) ?
   console.log(`   ${line}`);
 }
 console.log('\nThese are fixes users do not have yet.');
-console.log('Merging does not deploy. Production changes only when the owner runs scripts/deploy-prod.sh; this script never deploys.');
-process.exit(behind > allow ? 1 : 0);
+console.log('Merging does not deploy (vercel.json disables Git deployments). Deploy from the linked checkout with the stamped command in docs/setup/DEPLOY.md (AGENTS.md "Production"); this script never deploys.');
+process.exit(strict && behind > allow ? 1 : 0);

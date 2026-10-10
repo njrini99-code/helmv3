@@ -7,19 +7,16 @@ name: Feature Awareness
 #
 # Gated on code-relevant paths (added 2026-09-05): the report only makes
 # sense for a diff that touches feature code — a docs-only or CI-config PR
-# has nothing for memory/registry.yml to map. `detect-changes` below calls
-# the same shared .github/workflows/detect-changes.yml every other
-# path-gated workflow in this repo calls (2026-09-06) and reads its
-# `mapped_feature_code` output (this job's own `code` concept, renamed to
-# avoid colliding with the shared workflow's differently-scoped `code`
-# output) — same fail-closed rule as before: any inability to classify, or
-# any non-pull_request event such as workflow_dispatch, resolves to
-# mapped_feature_code=true.
+# has nothing for memory/registry.yml to map. The classification is the first
+# step of the job itself (2026-10-07, plan 5.10; it was a call into the shared
+# detect-changes.yml, one extra runner job per PR for a git diff this job can
+# do with the checkout it already needs). Same fail-closed rule as before: any
+# inability to classify, or any non-pull_request event such as
+# workflow_dispatch, runs the report.
 
 on:
   # ready_for_review added so a draft->ready transition re-triggers a real
-  # run — `report` skips while draft via detect-changes.yml's
-  # mapped_feature_code=false (owner decision, PR throughput).
+  # run — `report` skips while draft (owner decision, PR throughput).
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch: {}
@@ -32,21 +29,11 @@ permissions:
   contents: read
 
 jobs:
-  # Reusable workflow (2026-09-06) — see .github/workflows/detect-changes.yml.
-  # This job used to run its own hand-rolled git-diff classifier (not
-  # dorny/paths-filter, since "every changed file is docs/markdown" isn't an
-  # include-list shape); that logic moved into the shared workflow verbatim
-  # as its `docs_only`/`mapped_feature_code` outputs — renamed from this
-  # job's own `code` output to avoid colliding with ci.yml's differently-
-  # scoped `code` output, since both are now produced by the same call.
-  detect-changes:
-    name: Detect changes
-    uses: ./.github/workflows/detect-changes.yml
-
   report:
     name: Build context pack
-    needs: detect-changes
-    if: needs.detect-changes.outputs.mapped_feature_code == 'true'
+    # A draft PR has nothing required of it (owner decision, PR throughput);
+    # marking it ready re-runs this via the pull_request type above.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -56,12 +43,41 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      # "Docs-only" = EVERY changed file is under docs/ or ends in .md. The
+      # include-list shape of dorny/paths-filter cannot say that, so it is a
+      # git diff. FAIL CLOSED: a missing SHA, a failed diff or an empty diff
+      # all run the report.
+      - name: Classify diff (docs-only?)
+        id: classify
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -uo pipefail
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if [ -z "${BASE_SHA:-}" ] || [ -z "${HEAD_SHA:-}" ] || ! changed="$(git diff --name-only --diff-filter=ACMRT "$BASE_SHA" "$HEAD_SHA")" || [ -z "$changed" ]; then
+            echo "::notice::could not classify the diff; running the report"
+            echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          nondoc="$(echo "$changed" | grep -cvE '^docs/|\.md$' || true)"
+          if [ "${nondoc:-1}" -gt 0 ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::docs-only diff; nothing for the feature map to report"
+          fi
+
       - name: Setup Node
+        if: steps.classify.outputs.run == 'true'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: 24
 
       - name: Collect changed files
+        if: steps.classify.outputs.run == 'true'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -74,15 +90,18 @@ jobs:
           cat changed-files.txt
 
       - name: Build feature-awareness report
+        if: steps.classify.outputs.run == 'true'
         run: |
           node scripts/knowledge/workflow-report.mjs \
             --changed-files changed-files.txt \
             --output-dir feature-awareness-report
 
       - name: Show summary
+        if: steps.classify.outputs.run == 'true'
         run: cat feature-awareness-report/summary.md
 
       - name: Upload feature-awareness artifacts
+        if: steps.classify.outputs.run == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: feature-awareness-report

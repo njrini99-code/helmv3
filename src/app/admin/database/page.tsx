@@ -1513,7 +1513,7 @@ export default async function DatabasePage({
                 <>
                   pg_cron job history and pg_net queue/response health. Counts only — never raw job SQL or response
                   payloads. This is Postgres-level scheduling only (1 job today: purge-admin-event-telemetry) —
-                  application job queues (pgmq, Inngest) live on{' '}
+                  application job queues (pgmq) live on{' '}
                   <Link href="/admin/jobs" className="text-accent-700 underline">
                     Jobs &amp; Integrity →
                   </Link>

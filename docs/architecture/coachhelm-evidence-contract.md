@@ -226,7 +226,7 @@ that function for ownership rules.
   `playerId`, and `extra: { generator, reason }`.
 - `analyzePlayer` returns `generatorSummary: { successes, failures }` on the
   `PlayerAnalysis` payload so callers can react to partial failure.
-  `src/app/golf/actions/insights.ts` reads `generatorSummary.failures` off
+  `src/app/golf/actions/insights-coachhelm.ts` reads `generatorSummary.failures` off
   this in-process return value directly.
 - `/api/coachhelm/analyze-player` was deleted (`d282423ed`, "close
   runtime-broken refs" — it was orphaned, calling nothing that still

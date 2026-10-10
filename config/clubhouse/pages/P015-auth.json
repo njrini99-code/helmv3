@@ -39,11 +39,20 @@
     "loader": "src/clubhouse/data/welcome.ts",
     "route": "src/clubhouse/routes/auth.tsx",
     "styles": "src/clubhouse/styles/auth.css",
+    "also": [
+      "src/clubhouse/screens/onboard",
+      "src/clubhouse/data/onboard.ts",
+      "src/clubhouse/routes/onboard.tsx",
+      "src/clubhouse/styles/onboard.css",
+      "src/clubhouse/styles/onboard-tokens.css"
+    ],
     "tests": [
       "src/clubhouse/__tests__/auth.test.tsx",
       "src/clubhouse/__tests__/auth-logic.test.ts",
       "src/clubhouse/__tests__/auth-server.test.tsx",
-      "src/clubhouse/__tests__/auth-scene.test.tsx"
+      "src/clubhouse/__tests__/auth-scene.test.tsx",
+      "src/clubhouse/__tests__/onboard.test.tsx",
+      "src/clubhouse/__tests__/onboard-logic.test.ts"
     ]
   },
   "catalog": "docs/clubhouse/catalog/auth.md",

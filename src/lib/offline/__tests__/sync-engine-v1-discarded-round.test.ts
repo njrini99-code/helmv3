@@ -32,7 +32,7 @@ vi.mock('../indexed-db', () => ({
 vi.mock('@/app/golf/actions/round-drafts', () => ({
   saveRoundDraft: vi.fn(async () => ({ success: true, data: { roundId: 'unused' } })),
 }));
-vi.mock('@/app/golf/actions/golf', () => ({
+vi.mock('@/app/golf/actions/round-submit', () => ({
   submitGolfRoundComprehensive: vi.fn(async (_data: unknown, existingRoundId?: string) => {
     submitCalls.push(existingRoundId);
     return existingRoundId

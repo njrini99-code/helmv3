@@ -22,7 +22,8 @@ golf coaches managing their team and players following their schedule and game.
 Its reference is the owner's course-inspired Clubhouse design handoff and
 mobile boards in `design/handoff/`, with the current Safari feedback recorded
 in `docs/clubhouse/CHANGELOG.md`. The golf-hole arrival is the signature moment;
-daily screens prioritize readable facts and actions.
+daily screens prioritize readable facts and actions. Clubhouse is off in
+production today (its feature flag is off); Fairway is the live UI.
 
 ## Colors
 

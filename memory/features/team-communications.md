@@ -781,7 +781,7 @@ including its capsule margins and the home indicator; the inbox uses the same
 measurement. More defers destination prefetch until its entrance finishes and
 closes on a normal navigation tap. Shared app-shell and overlay paths remain
 unmapped in `memory/registry.yml`; their visual contract is also recorded in
-`docs/v3-design-language.md` rather than implying that the messaging feature
+`.claude/rules/design-system.md` rather than implying that the messaging feature
 owns every consumer.
 
 Historical DM identities are resolved by user ID through the authenticated

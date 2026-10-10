@@ -7,7 +7,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({ deleteInProgressRound: vi.fn(), deleteOfflineRound: vi.fn(async () => {}) }));
-vi.mock('@/app/golf/actions/golf', () => ({ deleteInProgressRound: (...a: unknown[]) => mocks.deleteInProgressRound(...a) }));
+vi.mock('@/app/golf/actions/round-partial', () => ({ deleteInProgressRound: (...a: unknown[]) => mocks.deleteInProgressRound(...a) }));
 vi.mock('@/lib/offline/indexed-db', () => ({ deleteOfflineRound: (...a: unknown[]) => mocks.deleteOfflineRound(...(a as [])) }));
 
 import { wasRoundDiscarded } from '@/lib/utils/emergency-save';

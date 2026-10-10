@@ -35,7 +35,7 @@
  * ========================================================================== */
 
 import { useEffect, useRef, useState } from 'react';
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { ChevronLeft, Flag } from 'lucide-react';
 

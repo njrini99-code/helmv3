@@ -92,7 +92,7 @@ step taught the exact inference that removed a live checkout.
 
 The crosswalk is DECLARED, not derived. Deriving it from action-file overlap
 returned three-or-more owners for 28 of 39 golf/coachhelm keys, because shared
-modules like `src/app/golf/actions/golf.ts` legitimately belong to many
+modules like golf.ts (since split 2026-10-08 into round-submit.ts, calendar-events.ts and others under src/app/golf/actions) legitimately belong to many
 features. Ownership is a judgement about which doc describes a surface.
 
 ## Ledgers and durable records

@@ -1,12 +1,14 @@
 'use client';
 
-import { useId, type CSSProperties } from 'react';
-import { haptic } from '../lib/haptics';
+import { useId, useRef, type CSSProperties } from 'react';
+import { haptic, hapticScrub } from '../lib/haptics';
 
 /**
  * A stepped range: label and current value above a recessed rail with a
  * green fill. Native <input type=range> underneath, so arrow keys, Page
- * Up/Down and Home/End all work. A detent haptic on every step.
+ * Up/Down and Home/End all work. A detent haptic on every step: a key press
+ * ticks once; a finger scrubbing the thumb warms the Taptic Engine as it lands
+ * and ticks each step it crosses (CH-1708).
  */
 export function Slider({
   label,
@@ -30,6 +32,12 @@ export function Slider({
   disabled?: boolean;
 }) {
   const id = useId();
+  const scrubbing = useRef(false);
+  const endScrub = () => {
+    if (!scrubbing.current) return;
+    scrubbing.current = false;
+    hapticScrub('end');
+  };
   const pct = max > min ? ((value - min) / (max - min)) * 100 : 0;
   return (
     <div className={'ch-slider' + (disabled ? ' is-disabled' : '')}>
@@ -52,9 +60,20 @@ export function Slider({
         disabled={disabled}
         aria-valuetext={format(value)}
         style={{ '--ch-fill': `${pct}%` } as CSSProperties}
+        onPointerDown={() => {
+          if (disabled || scrubbing.current) return;
+          scrubbing.current = true;
+          hapticScrub('start');
+        }}
+        onPointerUp={endScrub}
+        onPointerCancel={endScrub}
+        onBlur={endScrub}
         onChange={(e) => {
           const v = Number(e.target.value);
-          if (v !== value) haptic('select');
+          if (v !== value) {
+            if (scrubbing.current) hapticScrub('step');
+            else haptic('select');
+          }
           onChange(v);
         }}
       />

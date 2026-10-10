@@ -40,14 +40,14 @@ export function AccountPhone({
   });
   return (
     <>
-      {data.profile.error ? (
-        <ReadFailed what="Your profile" code="CH-8201" onRetry={writes.refresh} />
-      ) : (
-        <Group title="Profile">
+      <Group title="Profile">
+        {data.profile.error ? (
+          <ReadFailed bare what="Your profile" code="CH-8201" onRetry={writes.refresh} />
+        ) : (
           <NavRow label="Profile" value={data.profile.value.fullName} onClick={onProfile} />
-        </Group>
-      )}
-      <Group title="Sign in" note={sentTo ? `Check ${sentTo}. Open the link in that inbox to finish the change. Your current email works until then.` : "Where GolfHelm sends sign-in links and email notifications. You'll confirm your current password before changing it."}>
+        )}
+      </Group>
+      <Group title="Sign in" note={sentTo ? `Check ${sentTo}. Open the link in that inbox to finish the change. Your current email works until then.` : "Where GolfHelm sends sign-in links and email notifications. You’ll confirm your current password before changing it."}>
         <NavRow label="Email" value={data.email ?? 'No email on file'} onClick={onEmail} />
         <NavRow label="Password" disabled={!data.email} onClick={onPassword} />
       </Group>
@@ -67,7 +67,7 @@ export function AccountPhone({
         onClose={() => setAsking(false)}
         code="CH-8501"
         title="Delete your account?"
-        message="This permanently deletes your account and the data tied to it. This can't be undone."
+        message="This permanently deletes your account and the data tied to it. This can’t be undone."
         actions={[
           {
             label: 'Delete account',
@@ -279,7 +279,7 @@ export function PasswordSheet({ open, onClose, hasEmail, writes }: { open: boole
         }
         void change.run(cur, next);
       }}
-      note="You'll confirm your current password first."
+      note="You’ll confirm your current password first."
     >
       <div className="ch-setm-card">
         <FieldRow id="set-pw-cur" label="Current password" type="password" autoComplete="current-password" value={cur} onChange={(e) => setCur(e.target.value)} />

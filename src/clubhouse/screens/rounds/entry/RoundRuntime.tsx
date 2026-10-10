@@ -283,6 +283,7 @@ export function RoundRuntime({
         onExit={() => setSheet('exit')}
         onNavigateToHole={session.setCurrentHoleIndex}
         onOpenScorecard={() => setSheet('card')}
+        holeShots={(i) => session.completedHoleStats[i]?.shots ?? null}
         onAutoSave={session.onAutoSave}
         autoSaveInterval={15000}
         autoSaveDisabled={session.autoSaveDisabled}

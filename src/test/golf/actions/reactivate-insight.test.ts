@@ -21,7 +21,7 @@ vi.mock('@/lib/auth/verify-player-access', async (importOriginal) => ({
 let sb: ReturnType<typeof createFakeSupabase>;
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => sb }));
 
-import { reactivateInsight } from '@/app/golf/actions/insights';
+import { reactivateInsight } from '@/app/golf/actions/insights-feed';
 
 const STAMP = '2026-09-30T10:00:00.000Z';
 

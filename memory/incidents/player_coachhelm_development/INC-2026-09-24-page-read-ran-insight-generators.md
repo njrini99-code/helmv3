@@ -27,7 +27,7 @@ sessions were enough, which is the defect.
 
 ## Root cause
 
-`getPlayerCoachHelmDashboardImpl` (`src/app/golf/actions/insights.ts`) calls
+`getPlayerCoachHelmDashboardImpl` (`actions/insights.ts (pre-split; now insights-*.ts)`) calls
 `coachHelmIntelligence.analyzePlayer` on every page load. It already passed
 `persistPatterns: false` so the read would not upsert `golf_patterns_v2`
 (the 40P01 deadlock fix), but `analyzePlayer` also runs 20 Tier-1 generators

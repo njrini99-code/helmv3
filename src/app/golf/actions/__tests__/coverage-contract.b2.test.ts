@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { assertAreaFullyWrapped } from '@/lib/admin/__tests__/coverage-contract.shared';
+import {
+  assertAreaFullyWrapped,
+  excludeAcrossGolfSplit,
+  GOLF_SPLIT_ACTION_FILES,
+} from '@/lib/admin/__tests__/coverage-contract.shared';
 
 /**
  * W15 Batch 2 (calendar + academics + notifications) — coverage-contract gate.
@@ -48,9 +52,9 @@ describe('coverage-contract — B2 calendar + academics + notifications (calenda
           'src/app/golf/actions/coach-notifications.ts',
           'src/app/golf/actions/player-notifications.ts',
           'src/app/golf/actions/push-notifications.ts',
-          'src/app/golf/actions/golf.ts',
+          ...GOLF_SPLIT_ACTION_FILES,
         ],
-        { exclude: { 'src/app/golf/actions/golf.ts': GOLF_TS_NOT_YET_WRAPPED_EXPORTS } },
+        { exclude: excludeAcrossGolfSplit(GOLF_TS_NOT_YET_WRAPPED_EXPORTS) },
       ),
     ).not.toThrow();
   });

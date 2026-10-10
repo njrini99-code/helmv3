@@ -1,4 +1,4 @@
-import { getNextQualifierRoundNumber, getPlayerQualifiers } from '@/app/golf/actions/golf';
+import { getNextQualifierRoundNumber, getPlayerQualifiers } from '@/app/golf/actions/qualifier-actions';
 import { getCourseDetail, getRecentlyPlayedCourses, getTeamSavedCourses, getTeeWithHoles, listCoursesStrict } from '@/app/golf/actions/course-library';
 import type { GolfCourse, GolfCourseTee } from '@/lib/types/golf-course';
 import type { NewRoundStartForm, NewRoundStartResult } from '@/lib/golf/round-session/start-form';

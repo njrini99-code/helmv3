@@ -91,7 +91,7 @@ import {
   completeFocusArea,
   recordFocusAreaOutcome,
 } from '@/app/golf/actions/development';
-import { getPlayerFocusAreas } from '@/app/golf/actions/insights';
+import { getPlayerFocusAreas } from '@/app/golf/actions/insights-player-analysis';
 import {
   logFocusAreaPracticeSession,
   addFocusAreaCriterion,

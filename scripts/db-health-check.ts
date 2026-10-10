@@ -1,5 +1,13 @@
 import { config as loadEnv } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/db-health-check.ts',
+  summary:
+    "Runs a set of read-only health queries against the project in .env.local.",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 loadEnv({ path: '.env.local' });
 

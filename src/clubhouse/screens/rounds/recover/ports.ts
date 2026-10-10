@@ -1,10 +1,7 @@
 'use client';
 
-import {
-  savePartialRound,
-  submitGolfRoundComprehensive,
-  type PartialRoundData,
-} from '@/app/golf/actions/golf';
+import { savePartialRound, type PartialRoundData } from '@/app/golf/actions/round-partial';
+import { submitGolfRoundComprehensive } from '@/app/golf/actions/round-submit';
 import { deleteOfflineRound, deleteOfflineRoundThrough } from '@/lib/offline/indexed-db';
 import { clearRoundRecoverySnapshotThrough, deleteRoundRecoverySnapshot } from '@/lib/offline/shot-storage';
 import { getSyncEngine } from '@/lib/offline/sync-engine';

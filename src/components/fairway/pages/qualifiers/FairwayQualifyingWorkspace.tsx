@@ -53,7 +53,7 @@ import {
 // revalidate) but had ZERO callers anywhere in the app — a qualifier could
 // never reach status='completed' through any reachable flow. This is the
 // first real caller.
-import { updateQualifierStatus } from '@/app/golf/actions/golf';
+import { updateQualifierStatus } from '@/app/golf/actions/qualifier-actions';
 import { nextState } from '@/lib/coachhelm/v3/qualifying/state-machine';
 import type {
   QualifierSelectionState,

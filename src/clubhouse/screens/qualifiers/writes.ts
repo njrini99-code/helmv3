@@ -1,6 +1,6 @@
 'use client';
 
-import { createGolfQualifier, setQualifierRoundCourses, updateGolfQualifierDetails, updateQualifierStatus } from '@/app/golf/actions/golf';
+import { createGolfQualifier, setQualifierRoundCourses, updateGolfQualifierDetails, updateQualifierStatus } from '@/app/golf/actions/qualifier-actions';
 import { setQualifierEntrants, setQualifierSquadSize } from '@/app/golf/actions/qualifier-setup';
 import { getCourseDetail, getTeamSavedCourses, listCoursesStrict } from '@/app/golf/actions/course-library';
 import { advanceSelectionState, chooseQualifierTiePlace, confirmQualifierSelection, removeQualifierCoachPick, setQualifierCoachPick } from '@/app/golf/actions/v3/qualifying';

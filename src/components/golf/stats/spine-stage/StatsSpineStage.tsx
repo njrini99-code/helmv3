@@ -58,7 +58,7 @@ import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
 // the player's mined patterns (cause = description, effect = strokeImpact,
 // fix = recommendation), gated by verifyPlayerAccess + isCoachHelmEnabledForPlayer
 // inside the action.
-import { getPlayerPatterns } from '@/app/golf/actions/insights';
+import { getPlayerPatterns } from '@/app/golf/actions/insights-player-analysis';
 export type CoachHelmPattern = NonNullable<
   Awaited<ReturnType<typeof getPlayerPatterns>>['patterns']
 >[number];

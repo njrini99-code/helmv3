@@ -2,7 +2,11 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const source = readFileSync(join(process.cwd(), 'src/app/golf/actions/insights.ts'), 'utf8');
+// insights.ts was split by domain (plan phase 7a); the implementations this spec
+// inspects live across these files, so read them as one source text.
+const source = ['feed', 'player-analysis', 'coachhelm', 'shared']
+  .map((part) => readFileSync(join(process.cwd(), `src/app/golf/actions/insights-${part}.ts`), 'utf8'))
+  .join('\n');
 const playerRouteSource = readFileSync(
   join(process.cwd(), 'src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx'),
   'utf8',

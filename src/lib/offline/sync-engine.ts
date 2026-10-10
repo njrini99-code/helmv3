@@ -643,7 +643,7 @@ class SyncEngine {
     if (!sessionPlayer) return { synced, failed, errors };
 
     const { saveRoundDraft } = await import('@/app/golf/actions/round-drafts');
-    const { submitGolfRoundComprehensive } = await import('@/app/golf/actions/golf');
+    const { submitGolfRoundComprehensive } = await import('@/app/golf/actions/round-submit');
     const { writeRoundRecreatingIfMissing } = await import('@/lib/golf/round-missing-recovery');
 
     for (const round of pendingRounds) {

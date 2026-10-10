@@ -103,7 +103,7 @@ export function ClassDetail({
               <Icon icon={TriangleAlert} size={15} />
               <span>
                 <b>Not on your calendar</b>
-                The last sync failed, so your coach won&apos;t see this class on the team calendar yet.
+                The last sync failed, so your coach won’t see this class on the team calendar yet.
               </span>
               <Button size="sm" leftIcon={RotateCw} disabled={syncing} onClick={() => onRetrySync(c)}>
                 {syncing ? 'Syncing' : 'Retry sync'}

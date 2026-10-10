@@ -29,7 +29,7 @@
  * mounted at the `/golf/dashboard` shell layer — see FairwayDashboardShell).
  * ========================================================================== */
 
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
 import { TrendingDown, TrendingUp } from 'lucide-react';
 
 import { cn } from '@/lib/utils';

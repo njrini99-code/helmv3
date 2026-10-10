@@ -1,10 +1,18 @@
 name: CI retry failed jobs
 
-# One automatic "Re-run failed jobs" for a pull request's failed CI run.
+# One automatic "Re-run failed jobs" for a pull request's failed CI run, but
+# ONLY when the failure was infrastructure.
 #
-# A flaky shard used to cost a manual click (or a fresh push that re-ran all
-# ~11 jobs). This re-runs ONLY the jobs that failed, plus the ones that depend
-# on them (`CI aggregate`), once. The jobs that passed keep their result.
+# OWNER DECISION 2026-09-27 was "auto-retry once, for all PRs". That retried a
+# red build or a failing test shard once before a human saw it, which costs a
+# full second run and teaches nobody anything. Narrowed 2026-10-07 (plan 5.3):
+# the jobs of the run are read through the API and the re-run happens only when
+# EVERY failed job (other than `CI aggregate`, which is derived) either has no
+# failed step at all (the runner shut down or lost contact) or failed in a
+# setup or install step (a registry 429, a cache or download outage). A build,
+# a test, a lint or type step, a ratchet or the Supabase stack is never retried,
+# and a draft PR, where only the aggregate fails on purpose, never retries.
+# The rule and its tests are scripts/github/ci-retry-classify.mjs.
 #
 # Guards, in order:
 #   - pull_request runs only: a red `main` push or merge-group run is left for
@@ -13,8 +21,8 @@ name: CI retry failed jobs
 #     the retry and stays red — there is never a second automatic retry.
 #   - the run's commit is still the PR head. A retry of a superseded commit
 #     joins ci.yml's per-PR concurrency group and would CANCEL the newer run.
+#   - the classifier runs from the default branch, never from the PR's code.
 #
-# Owner decision 2026-09-27: auto-retry once, for all PRs.
 # Lives on the default branch: `workflow_run` only fires for workflows there.
 
 # zizmor: workflow_run re-runs failed CI jobs by run id via the API; it never checks out or executes the triggering ref.
@@ -34,7 +42,7 @@ concurrency:
 
 jobs:
   retry:
-    name: Re-run failed CI jobs once
+    name: Re-run failed CI jobs once (infrastructure only)
     if: >-
       github.event.workflow_run.conclusion == 'failure' &&
       github.event.workflow_run.event == 'pull_request' &&
@@ -42,7 +50,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Re-run failed jobs if the commit is still the PR head
+      # The classifier is code, so it comes from the DEFAULT branch, pinned by
+      # name below: this workflow must never execute the triggering PR's files.
+      - name: Checkout the classifier (default branch only)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: scripts/github
+          persist-credentials: false
+
+      - name: Re-run failed jobs if the commit is still the PR head and the failure was infrastructure
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -58,6 +75,19 @@ jobs:
           current="$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq '.head.sha')"
           if [ "${current}" != "${HEAD_SHA}" ]; then
             echo "PR #${PR_NUMBER} moved on (${HEAD_SHA} -> ${current}); not retrying a superseded run."
+            exit 0
+          fi
+          gh api "repos/${REPO}/actions/runs/${RUN_ID}/jobs" --paginate --jq '.jobs[]' | jq -s '.' > jobs.json
+          verdict="$(node scripts/github/ci-retry-classify.mjs < jobs.json)"
+          echo "${verdict}" | jq .
+          {
+            echo "### CI retry decision for run ${RUN_ID}"
+            echo
+            echo "- retry: \`$(jq -r .retry <<< "${verdict}")\`"
+            echo "- reason: $(jq -r .reason <<< "${verdict}")"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$(jq -r .retry <<< "${verdict}")" != "true" ]; then
+            echo "Not retrying: the failure is not infrastructure."
             exit 0
           fi
           echo "Re-running failed jobs of CI run ${RUN_ID} for PR #${PR_NUMBER} (${HEAD_SHA})."

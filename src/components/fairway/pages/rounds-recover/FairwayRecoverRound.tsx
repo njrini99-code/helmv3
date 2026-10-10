@@ -31,11 +31,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import {
-  savePartialRound,
-  submitGolfRoundComprehensive,
-  type PartialRoundData,
-} from '@/app/golf/actions/golf';
+import { savePartialRound, type PartialRoundData } from '@/app/golf/actions/round-partial';
+import { submitGolfRoundComprehensive } from '@/app/golf/actions/round-submit';
 import { fairwayToast } from '@/components/fairway';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
 import {

@@ -77,7 +77,7 @@ function revalidateAll(): void {
 //
 // materializeWeightCheckInRequests only ever inserts 'pending' rows and never
 // revisits existing ones (its upsert uses ignoreDuplicates). Nothing else in
-// the codebase — no trigger, no pg_cron job, no Inngest function — flips a
+// the codebase — no trigger, no pg_cron job, no background function — flips a
 // request to 'missed' once its due_date passes, so the coach dashboard's
 // Missed tile and the Rule 6 overuse flag (missedCheckins, 2+ missed in 7
 // days) can never fire without this. Run at the top of every coach-dashboard

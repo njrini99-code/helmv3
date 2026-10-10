@@ -12,7 +12,7 @@
  *
  * …with only two links on the page, Home and Sign in.
  *
- * A coach — the buyer, per `.claude/rules/golf-review.md` — has no coach and no
+ * A coach — the buyer, per `.claude/rules/golf.md` — has no coach and no
  * team code, and the failure message ("Check it with your coach") points them
  * back at someone who does not exist. Production logs confirm this is the only
  * live path, deliberately:

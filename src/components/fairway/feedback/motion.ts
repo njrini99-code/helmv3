@@ -13,7 +13,7 @@
  * stays a pure, testable helper with no React dependency.
  * ========================================================================== */
 
-import type { Variants, Transition } from 'framer-motion';
+import type { Variants, Transition } from 'motion/react';
 
 /** Spec easing curves (mirrors the --fw-ease-* tokens). */
 const EASE_SOFT = [0.22, 0.61, 0.36, 1] as const;

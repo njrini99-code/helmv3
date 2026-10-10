@@ -43,6 +43,14 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { summarizeFlightRecorderAudit } from './lib/flight-recorder-audit-lib.mjs';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/flight-recorder-audit.mjs',
+  summary:
+    "Read-only health check of the Flight Recorder tables.",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 const WINDOW_HOURS = 24;
 const LIST_LIMIT = 200; // helm_debug_list_traces's own hard cap (least(p_limit, 200))

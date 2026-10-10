@@ -1,5 +1,178 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-08 — Next step writes, the held migration, calendar fact-check
+
+- **Next step writes (C1).** `createRecruit` and `updateRecruit` accept
+  `next_step_label` (trimmed, at most 120 characters) and `next_step_date` (a real
+  YYYY-MM-DD day) and write them only when passed, with the coach and team checks
+  unchanged. The live writes now store a next step; the page still sends one only
+  after its column probe finds the columns, so before the owner applies
+  `20261008120000_golf_recruits_next_step.sql` (held in `supabase/migrations/HELD.md`,
+  `lock_timeout` 3s) no write names them.
+- **Calendar (C2), after a fact-check of all 15 dates against the 2026-27 books.**
+  Division I's contact line carries its age rule ("in-person contact allowed from
+  Aug 1 before junior year", 13.1.1.1); Division II's line says in-person contact
+  starts June 15 before junior year (13.1.1.1); the Division I men's quiet period
+  notes evaluations at the GCAA showcase and combine (13.17.7-(c)-(1)); the NJCAA
+  line reads "The NJCAA sets no recruiting periods; staff may visit prospects
+  anywhere" (Art. VI §4 C.1).
+
+## 2026-10-08 — Premium pass: Committed moment, next step, recruiting calendar, findings
+
+```text
+Design package: docs/clubhouse/PREMIUM_PASS_AUDIT.md (P014 B1, C1, C2; findings #1–#4, #6–#9)
+PR/commit: agent/clubhouse-premium-backlog (uncommitted at writing)
+Contract IDs: CH-14111, CH-14307, CH-14806, CH-14807, CH-14808 (new); CH-14904, CH-14501, CH-14302 (changed copy or place)
+Actions: ACT-P014-MOVE-STAGE (a commit's success haptic moves to the rule's end); save and add send the next step only while its columns exist
+Data impact: supabase/migrations/20261008120000_golf_recruits_next_step.sql, written, NOT applied (two nullable columns, no RLS change)
+Held items: the next-step write needs createRecruit/updateRecruit to pass next_step_label/next_step_date (src/app/golf/actions/recruiting.ts, outside this page); calendar event and Undo for a next step not built
+```
+
+### Changed in the premium pass
+
+- **B1, Committed is a moment, once (CH-14806).** A landed move to Committed
+  draws a 1px gilt rule under the stage (desktop panel; the phone's Stage row),
+  left to right over the reveal duration, and the success haptic lands as it
+  ends instead of when the save lands. The coin takes a gilt rim. On the phone
+  it waits for the stage sheet to close. Reduced motion and Animations off: the
+  rule is there and the haptic fires at once. No repeat on reopening.
+- **C1, Next step (CH-14307, CH-14111).** A label and a day per prospect: a
+  table column, a panel and detail part, a dated plate on a due phone row, a
+  "Next step due" sort and "n visits this month · n decisions due" in the
+  pipeline head. Feature-off until the migration is applied: the loader probes
+  the column with a zero-row head request and the list keeps `select('*')`.
+  Editing it also needs the writes to store it (`nextStepWrites`): the live
+  server actions whitelist columns today, so until they pass the two fields
+  through, a next step is shown read-only and never sent.
+- **C2, Recruiting calendar (CH-14808, CH-14807).** A quiet line from the
+  2026-27 NCAA D-I, D-II, D-III, NAIA and NJCAA rule books, each entry sourced.
+  Division from the team's organization, else the coach's pick on this device.
+  Email and Call carry Division I's June 15 start note from the class year; no
+  period restricts phone or email, so no period hint is shown.
+- **Findings.** #1 State has no placeholder and Class of reads "e.g. 2028"; #2
+  the Add form's stage options fill their track; #3 desktop Delete moved into
+  an overflow menu beside Edit; #4 "% of list" removed; #6 "Only coaches see
+  this page" moved to the first-run empty state; #7 the search placeholder is
+  "Search" and the no-match line names states; #8 phone Stage is a full-width
+  row with Email and Call as two smaller keys; #9 phone connectors run coin
+  edge to coin edge. #5 (the shared canopy band) is the shell's; the page-local
+  part is the shorter subtitle.
+
+### Why the premium pass changed it
+
+- Owner-approved premium backlog items for P014 (B1, C1, C2) and the page's
+  P2 and P3 findings.
+
+### Verification
+
+- `npx vitest run src/clubhouse/__tests__/recruiting.test.tsx
+  src/clubhouse/__tests__/recruiting-calendar.test.ts
+  src/clubhouse/__tests__/recruiting-loader.test.ts
+  src/clubhouse/__tests__/recruiting-upload.test.tsx`; WebKit captures at
+  1440 and 390, light and dark, of the default, next-step, edit, division and
+  Committed states (scratch, not in git).
+
+## 2026-10-08 — Copy: typographic apostrophes and quotes
+
+Recruiting writes its apostrophes as ’, as Home, Stats and Calendar do: the
+no-team page (CH-14306), the failed reads (CH-14201, CH-14202), the first run,
+the delete confirmations (CH-14501, CH-14502), the failed writes (CH-14001 to
+CH-14007) and the upload's own reasons, so an offline write reads "Couldn’t
+move Mason Reilly to Committed: you’re offline" (CH-14901). A search that
+matches nothing quotes the words in curly quotes: No prospects match “Tampa”
+(CH-14302). What the server sends is shown as it sent it ("Only this team's
+coaches can add recruit documents."). The catalog quotes them as shown, and
+copy-apostrophes.test now covers the page.
+
+## 2026-10-08 — States: first run stands alone
+
+From the states audit (2026-10-08, finding c2): with no prospects yet, the
+desktop page no longer draws the pipeline's four empty stages above the page
+empty. "Your prospect list starts here" stands alone under the head, so Add
+your first prospect sits well above the fold, as on the phone (CH-14301).
+
+## 2026-10-08 — Phone: the Mobile clubhouse pass
+
+The phone Recruiting follows the Coach Home board (round 3, "fewer containers,
+one feature card"), carried to every phone screen (owner: "phone too cardy"):
+
+- **Head:** the page opens on the engraved double rule with Recruiting in the
+  bold condensed sans (no serif). No green feature card: nothing on this list
+  outranks the rest.
+- **Timeline:** the compact pipeline sits between two hairlines instead of in a
+  box; a stage's coin takes the row press tint under the finger (CH-14601).
+- **Prospects:** rows on seams under a hairline, with no card; a press tints the
+  row 12px past its text (CH-14604). The sort's trigger tints the same way.
+- **No match** is centred on the parchment, with no box around it.
+- **Search** keeps the kit's field, 36px drawn with a 44px reach; the input
+  and its clear key still take their own taps. A stale override that lost the
+  cascade to the kit's field (a 40px grey well) is gone, so the field no
+  longer depends on stylesheet order.
+- **A prospect (pushed):** the name in the bold condensed sans; Stage, Email and
+  Call are keys drawn on the parchment (a hairline ring; the stage key keeps
+  its stage's fill); with no contact yet, Stage is a row between seams. Notes
+  and Documents open under the double rule with their headings; a part with
+  nothing in it yet is one row on a seam, and such rows run on as one ledger.
+  Documents are rows on seams. Every key, row and action tints under the
+  finger (CH-14604). Upload keeps its full 44px reach over the first
+  document under it.
+- **Loading** draws the phone page on its own classes (the double rule, the
+  title, the search, the timeline between its hairlines, the count and the
+  rows), so nothing moves when it lands.
+- The add and edit sheets, the stage picker and the delete sheet keep their
+  material: they are sheets and forms.
+- The upload bar's fill now slides by transform instead of growing its width
+  (doctrine: never animate layout). It looks the same.
+
+Desktop is otherwise unchanged: every other new rule sits in the phone
+block, and the skeleton's phone parts are hidden there. 1440 captures before
+and after match, apart from the loading page, where the shared skeleton's tone
+and ruled blocks changed in the same pass.
+
+## 2026-10-07 — A stage settles the list in
+
+Picking a stage in the pipeline, or letting it go, settles the prospect list in
+with a 6px rise (base) while the old one fades out (quick), hidden from
+assistive tech (CH-14603, desktop and phone). Typing a search and the kept stage
+coming back as the page opens stay in place. A prospect row presses with the row
+press tint. CH-14602 is corrected: with reduced motion the prospect settles at
+once. New test: recruiting.test › CH-14603.
+
+## 2026-10-07 — Recruiting on the Ledger
+
+On desktop, Recruiting now sits on the canvas instead of in cards (owner:
+"flush, not so card heavy"):
+
+- **Pipeline:** "Pipeline" and its count are the section heading, set over an
+  engraved rule. The four stages are now columns divided by hairlines rather
+  than a timeline. Each coin has its stage, blurb and share beside it, or under
+  it on a narrower canvas. A stage is still a filter, and the stage being shown
+  takes a green tint.
+- **Prospect list:** the search and sort head the list over an engraved rule.
+  The table's rows have seams and sit on the canvas. A row's hover and selected
+  tints are drawn as one box, so Safari leaves no hairline gaps between columns.
+- **Prospect panel:** a column beside the list behind a hairline, or under it
+  behind a rule once they stack. Contact rows and documents have seams, the
+  notes are plain text, and an empty part is a row with an engraved icon instead
+  of a card.
+- **Delete prospect** is red, as in the handoff (D-42). It had no style and
+  drew as black text.
+
+The loading screen draws the same pipeline line for line. The list used to drop
+27px at 1440 when the data landed; it now moves 0px (WebKit, 1440 and 1100).
+The lede no longer leaves "page." alone on its last line. Coins, stage chips, the
+search field, segmented controls and dialogs keep their material. The phone is
+unchanged.
+
+## 2026-10-07 — Phone title in the serif
+
+The phone Recruiting large title was a 34px semibold sans. It now uses the
+display serif at 38px, matching every other phone page title.
+
+## 2026-10-07 — Serif title
+
+The Recruiting title is set in the display serif, as on every Clubhouse page.
+
 ## 2026-10-06 — Popup text and height corrections
 
 ```text
@@ -26,6 +199,22 @@ contract IDs are preserved; runtime gaps stay explicit.
 <!-- clubhouse:release-audit:end -->
 
 Newest first. Earlier history is in `docs/clubhouse/PROGRESS.md` (verification log and decisions).
+
+## 2026-10-06 — Motion import path moves to `motion/react`
+
+```text
+PR/commit:      #2153 (agent/deps-ui-upgrade)
+Design package: none; no visual or behavior change
+Contract IDs:   none
+Data impact:    none
+Held items:     none
+```
+
+Dependency upgrade only. `framer-motion` 13 is replaced by the `motion` 14
+package, so this page's animation imports change from `framer-motion` to
+`motion/react`. The animation API, durations, curves and reduced-motion gating
+are unchanged; Motion 14 only removed internal compatibility APIs this tree
+never used.
 
 ## 2026-10-02 — Phone prospect sheets keep their fields through dismissal
 

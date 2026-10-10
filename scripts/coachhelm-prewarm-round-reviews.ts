@@ -113,6 +113,15 @@ import {
   toReviewInsertPayload,
   writeReviewIfAbsent,
 } from '@/lib/golf/round-review/deterministic-review';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/coachhelm-prewarm-round-reviews.ts',
+  summary:
+    "CoachHelm repair plan \u00a75.5/\u00a714.8/\u00a716 (Package 6): create MISSING round reviews for completed rounds in a fixed recent window (default 30 days, per plan \u00a716.4's owner-selected first pass), without touching any round that already has one.",
+  guard: "its own --confirm flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 /**
  * A script-local admin client — deliberately NOT

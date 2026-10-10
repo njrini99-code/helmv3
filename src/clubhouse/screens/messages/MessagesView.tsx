@@ -33,6 +33,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -41,6 +42,7 @@ import {
   type KeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
+  type ReactNode,
 } from "react";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useChReducedMotion } from "../../lib/reduced-motion";
@@ -54,6 +56,8 @@ import { InlineNotice } from "../../ui/Notices";
 import { SearchField } from "../../ui/SearchField";
 import { SectionBoundary } from "../../ui/SectionBoundary";
 import { Segmented } from "../../ui/Segmented";
+import { Swap } from "../../ui/Swap";
+import { PlayerPeek } from "../../ui/PlayerPeek";
 import { EmptyState, Skeleton } from "../../ui/States";
 import { haptic } from "../../lib/haptics";
 import { chReport, chTrail } from "../../lib/track";
@@ -85,6 +89,7 @@ import { fileMeta, fileSize, useConversationFiles } from "./files";
 // Re-exported: MessagesPhone and older callers read it from here.
 export { fileSize } from "./files";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
+import { MessagesHead } from "./MessagesNoTeam";
 
 export const REACTIONS: Array<{ key: ChReactionKey; icon: LucideIcon }> = [
   { key: "Like", icon: ThumbsUp },
@@ -116,6 +121,8 @@ export interface ChAttachmentRecovery {
 
 export interface ChMessagesApi {
   viewer: { userId: string; role: "coach" | "player"; name: string };
+  /** Coaches by golf_coaches.id, for an announcement's signature (P007-A1). */
+  signers?: Record<string, { name: string; title: string }>;
   timeZone: string;
   now: string;
   teamName: string | null;
@@ -172,6 +179,9 @@ export interface ChMessagesApi {
   retryDirectory: () => void;
   startDirect: (userId: string) => Promise<boolean>;
   createGroup: (userIds: string[], title: string) => Promise<boolean>;
+  /** A prefilled message (prefill.ts) waiting for New message: who it's to (user ids), the draft and the group's name. */
+  prefill?: { to: string[]; draft: string; title: string } | null;
+  clearPrefill?: () => void;
 
   searchMessages: (q: string) => Promise<ChSearchHit[] | null>;
   openHit: (hit: ChSearchHit) => void;
@@ -201,6 +211,15 @@ export interface ChMessagesApi {
 
 export const personOf = (api: ChMessagesApi, userId: string) =>
   api.directory.find((p) => p.userId === userId);
+
+/**
+ * P003-C1: for the coach, a player's avatar and name in a thread peek at the player, from the team directory Messages
+ * already holds. The bubble keeps its own hold (message actions); coaches and people off the roster don't peek.
+ */
+function SenderPeek({ api, who, children }: { api: ChMessagesApi; who: ChPerson | undefined; children: ReactNode }) {
+  if (api.viewer.role !== "coach" || who?.role !== "player" || !who.playerId) return <>{children}</>;
+  return <PlayerPeek player={{ id: who.playerId, name: who.name, sub: who.subtitle || null }}>{children}</PlayerPeek>;
+}
 
 /* Rail */
 
@@ -239,7 +258,7 @@ export function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
       {failed ? (
         <InlineNotice
           code="CH-7203"
-          title="Message search didn't load."
+          title="Message search didn’t load"
           body="Conversations above still match by name."
           onRetry={() => setAttempt((a) => a + 1)}
         />
@@ -408,12 +427,15 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
       </div>
       <div className="ch-ms-rail__body">
         {api.convsError ? (
-          <InlineNotice
-            code="CH-7201"
-            title="Conversations didn't load."
-            body="Your messages are safe. Try again; the error has been reported."
-            onRetry={api.refetchConvs}
-          />
+          // The rail's full width (states audit c9): at the body's inset its body wrapped to a narrow column.
+          <div className="ch-ms-rail__notice">
+            <InlineNotice
+              code="CH-7201"
+              title="Conversations didn’t load"
+              body="Your messages are safe. Try again; the error has been reported."
+              onRetry={api.refetchConvs}
+            />
+          </div>
         ) : (api.convsLoading && !api.convs.length) || api.annLoading ? (
           <div className="ch-ms-sec__card" aria-busy="true" data-ch-code="CH-7402">
             {Array.from({ length: 5 }, (_, i) => (
@@ -431,7 +453,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
             code="CH-7301"
             compact
             icon={MessageSquare}
-            title="No conversations yet."
+            title="No conversations yet"
             body={
               api.viewer.role === "coach"
                 ? "Start one with a player, or create a team group."
@@ -516,7 +538,7 @@ export function Attachments({
           <Icon icon={RotateCw} size={15} />
         </span>
         <span>
-          <b>Attachment didn&apos;t load</b>
+          <b>Attachment didn’t load</b>
           <span>Tap to try again</span>
         </span>
       </button>
@@ -685,14 +707,20 @@ export function Bubble({
     >
       {!m.mine && (
         <span className="ch-ms-msg__av">
-          {last && <Avatar name={who?.name ?? "Member"} size={30} />}
+          {last && (
+            <SenderPeek api={api} who={who}>
+              <Avatar name={who?.name ?? "Member"} size={30} />
+            </SenderPeek>
+          )}
         </span>
       )}
       <div className="ch-ms-msg__col">
         {!m.mine && first && group && (
-          <span className="ch-ms-msg__who">
-            {firstName(who?.name ?? "Member")}
-          </span>
+          <SenderPeek api={api} who={who}>
+            <span className="ch-ms-msg__who">
+              {firstName(who?.name ?? "Member")}
+            </span>
+          </SenderPeek>
         )}
         <div className="ch-ms-msg__line">
           <div className="ch-ms-msg__stack" {...press} {...rightClick}>
@@ -1108,7 +1136,7 @@ export function Composer({
   return (
     <footer className="ch-ms-comp" aria-busy={checking || sending || undefined}>
       {checkFailed && <InlineNotice code="CH-7217" title="Couldn’t check a pending send" body="Try again before sending another message." onRetry={() => setCheckAttempt((n) => n + 1)} />}
-      {unconfirmed && <InlineNotice code="CH-7023" title="Couldn't confirm this send" body="This send is unconfirmed. Retry send checks the original request; editing stays locked until its outcome is known." />}
+      {unconfirmed && <InlineNotice code="CH-7023" title="Couldn’t confirm this send" body="This send is unconfirmed. Retry send checks the original request; editing stays locked until its outcome is known." />}
       {effectiveParent && (
         <div className="ch-ms-comp__reply">
           <ReplyQuote api={api} replyToId={effectiveParent} />
@@ -1293,15 +1321,15 @@ function Thread({
           {api.msgsStale && (
             <InlineNotice
               code="CH-7216"
-              title="This conversation may be out of date."
-              body="It didn't refresh. What's here is what was last loaded. Try again; the error has been reported."
+              title="This conversation may be out of date"
+              body="It didn’t refresh. What’s here is what was last loaded. Try again; the error has been reported."
               onRetry={api.refetchMsgs}
             />
           )}
           {api.msgsError ? (
             <InlineNotice
               code="CH-7202"
-              title="This conversation didn't load."
+              title="This conversation didn’t load"
               body="Nothing was lost. Try again; the error has been reported."
               onRetry={api.refetchMsgs}
             />
@@ -1344,7 +1372,8 @@ function Thread({
               ),
             )
           )}
-          {api.typing && (
+          {/* No dots under a thread that didn't load or is still loading (states audit c9): nothing to type into yet. */}
+          {api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (
             <div className="ch-ms-msg is-first" /* CH-7602: the typing dots */>
               {/* The realtime hook says someone is typing, not who: a direct thread knows, a group doesn't. */}
               <span className="ch-ms-msg__av">{!conv.group && <Avatar name={conv.title} size={30} />}</span>
@@ -1432,7 +1461,7 @@ export function DeleteMessageModal({ api, message, onClose }: { api: ChMessagesA
       onClose={onClose}
       icon={Trash2}
       title="Delete this message?"
-      description="It's removed for everyone in the conversation. This can't be undone."
+      description="It’s removed for everyone in the conversation. This can’t be undone."
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
@@ -1528,7 +1557,7 @@ export function AddMembersModal({ api, conv, open, onClose }: { api: ChMessagesA
       onClose={onClose}
       icon={UserPlus}
       title={`Add to ${conv.title}`}
-      description="Players and coaches on the team who aren't in this group."
+      description="Players and coaches on the team who aren’t in this group."
       footer={
         <Button variant="primary" onClick={onClose}>
           Done
@@ -1538,7 +1567,7 @@ export function AddMembersModal({ api, conv, open, onClose }: { api: ChMessagesA
       {failed ? (
         <InlineNotice
           code="CH-7215"
-          title="The team list didn't load."
+          title="The team list didn’t load"
           body="Try again; the error has been reported."
           onRetry={() => setAttempt((n) => n + 1)}
         />
@@ -1659,7 +1688,7 @@ function Details({
           {api.membersError ? (
             <InlineNotice
               code="CH-7204"
-              title="Members didn't load."
+              title="Members didn’t load"
               body="Try again; the error has been reported."
               onRetry={api.retryMembers}
             />
@@ -1728,7 +1757,7 @@ function FilesSection({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
       {failed ? (
         <InlineNotice
           code="CH-7214"
-          title="Files didn't load."
+          title="Files didn’t load"
           body="Your messages are fine. Try again; the error has been reported."
           onRetry={retry}
         />
@@ -1778,7 +1807,7 @@ function MuteControl({ api }: { api: ChMessagesApi }) {
       {api.muteError ? (
         <InlineNotice
           code="CH-7208"
-          title="The mute setting didn't load."
+          title="The mute setting didn’t load"
           body="Try again; the error has been reported."
           onRetry={api.retryMute}
         />
@@ -1854,17 +1883,21 @@ function NewMessage({
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState(false);
+  const prefill = api.prefill ?? null;
   useEffect(() => {
     if (!open) return;
-    setMode("direct");
-    setTo([]);
+    // A prefilled message (prefill.ts) opens with its people chosen and, for a group, its name.
+    // Players start direct threads only (D-15): theirs keeps the first person.
+    const group = !!prefill && prefill.to.length > 1 && api.viewer.role === "coach";
+    setMode(group ? "group" : "direct");
+    setTo(prefill ? (group ? prefill.to : prefill.to.slice(0, 1)) : []);
     setQ("");
-    setTitle("");
+    setTitle(prefill?.title ?? "");
     setBody("");
     setUrgent(false);
     setAck(true);
     setTouched(false);
-  }, [open]);
+  }, [open, prefill, api.viewer.role]);
   const coachGroup = mode === "group" && api.viewer.role === "coach";
   // A coach's group can include other coaches (D-45): they're added right after it's created.
   const people = api.directory.filter((p) =>
@@ -2030,10 +2063,16 @@ function NewMessage({
                 />
                 {touched && needsTitle && (
                   <span className="ch-field__help is-error" data-ch-code="CH-7104">
-                    Name the group so players know what it&apos;s for.
+                    Name the group so players know what it’s for.
                   </span>
                 )}
               </label>
+            )}
+            {prefill?.draft && (
+              <p className="ch-ms-new__draft">
+                <span>Your draft, ready in the conversation to edit and send</span>
+                <q>{prefill.draft}</q>
+              </p>
             )}
             <SearchField
               value={q}
@@ -2064,7 +2103,7 @@ function NewMessage({
             {api.directoryError ? (
               <InlineNotice
                 code="CH-7205"
-                title="Your team list didn't load."
+                title="Your team list didn’t load"
                 body="Try again; the error has been reported."
                 onRetry={api.retryDirectory}
               />
@@ -2132,12 +2171,33 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
   const conv = api.convs.find((c) => c.id === api.selectedId) ?? null;
   const ann = api.announcements.find((a) => a.id === api.selectedAnnId) ?? null;
   useEffect(() => setDetails(false), [api.selectedId]);
+  useEffect(() => {
+    if (api.prefill) setCompose(true);
+  }, [api.prefill]);
+  const { clearPrefill } = api;
+  const closeCompose = useCallback(() => {
+    setCompose(false);
+    clearPrefill?.();
+  }, [clearPrefill]);
+  // CH-7605: going from one open thread or announcement to another settles the new one in (base in, quick out). The
+  // first one a visit opens (the newest thread, or a link's) appears at once.
+  const paneKey = ann ? `a:${ann.id}` : conv ? `c:${conv.id}` : null;
+  const [pane, setPane] = useState({ key: paneKey, turn: 0 });
+  if (pane.key !== paneKey) setPane({ key: paneKey, turn: pane.key === null ? pane.turn : pane.turn + 1 });
 
   if (isMessagesFirstRun(api) && !conv && !ann) {
     return (
-      <main data-view="desktop" className="ch-ms ch-ms--first">
+      // Under the page's framed head, as every page's first-run empty (states audit c4, c9); its one action is the empty's.
+      <main data-view="desktop" className="ch-ms ch-ms--first" data-canopy="">
+        <MessagesHead
+          brief={
+            api.viewer.role === "coach"
+              ? "Conversations with your players and staff, and the team’s announcements."
+              : "Conversations with your coaches and teammates, and the team’s announcements."
+          }
+        />
         <MessagesFirstRun coach={api.viewer.role === "coach"} onNew={() => setCompose(true)} />
-        <NewMessage api={api} open={compose} onClose={() => setCompose(false)} />
+        <NewMessage api={api} open={compose} onClose={closeCompose} />
       </main>
     );
   }
@@ -2158,59 +2218,61 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
       >
         <Rail api={api} onNew={() => setCompose(true)} />
       </SectionBoundary>
-      {ann ? (
-        <SectionBoundary
-          surface="messages.announcement"
-          label="This announcement"
-          code="CH-7211"
-        >
-          <AnnouncementPane
-            api={api}
-            a={ann}
-            onBack={() => api.selectAnn(null)}
-          />
-        </SectionBoundary>
-      ) : conv ? (
-        <SectionBoundary
-          surface="messages.thread"
-          label="This conversation"
-          code="CH-7212"
-        >
-          <Thread
-            api={api}
-            conv={conv}
-            detailsOpen={details}
-            setDetails={setDetails}
-            onBack={() => api.select(null)}
-          />
-        </SectionBoundary>
-      ) : (
-        <section className="ch-ms-thread is-empty">
-          <EmptyState
-            code="CH-7305"
-            icon={MessageSquare}
-            title={
-              api.convs.length
-                ? "Pick a conversation."
-                : "Start your first conversation."
-            }
-            body={
-              api.convs.length
-                ? "Threads open here, with replies as they arrive."
-                : "Message a player, a coach or the whole team."
-            }
-            action={
-              <Button
-                variant="primary"
-                leftIcon={SquarePen}
-                onClick={() => setCompose(true)}
-              >
-                New message
-              </Button>
-            }
-          />
-        </section>
-      )}
+      <Swap swapKey={pane.turn} className="ch-ms-pane">
+        {ann ? (
+          <SectionBoundary
+            surface="messages.announcement"
+            label="This announcement"
+            code="CH-7211"
+          >
+            <AnnouncementPane
+              api={api}
+              a={ann}
+              onBack={() => api.selectAnn(null)}
+            />
+          </SectionBoundary>
+        ) : conv ? (
+          <SectionBoundary
+            surface="messages.thread"
+            label="This conversation"
+            code="CH-7212"
+          >
+            <Thread
+              api={api}
+              conv={conv}
+              detailsOpen={details}
+              setDetails={setDetails}
+              onBack={() => api.select(null)}
+            />
+          </SectionBoundary>
+        ) : (
+          <section className="ch-ms-thread is-empty">
+            <EmptyState
+              code="CH-7305"
+              icon={MessageSquare}
+              title={
+                api.convs.length
+                  ? "Pick a conversation"
+                  : "Start your first conversation"
+              }
+              body={
+                api.convs.length
+                  ? "Threads open here, with replies as they arrive."
+                  : "Message a player, a coach or the whole team."
+              }
+              action={
+                <Button
+                  variant="primary"
+                  leftIcon={SquarePen}
+                  onClick={() => setCompose(true)}
+                >
+                  New message
+                </Button>
+              }
+            />
+          </section>
+        )}
+      </Swap>
       {conv && details && (
         <SectionBoundary
           surface="messages.details"
@@ -2220,7 +2282,7 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
           <Details api={api} conv={conv} onClose={() => setDetails(false)} />
         </SectionBoundary>
       )}
-      <NewMessage api={api} open={compose} onClose={() => setCompose(false)} />
+      <NewMessage api={api} open={compose} onClose={closeCompose} />
     </main>
   );
 }

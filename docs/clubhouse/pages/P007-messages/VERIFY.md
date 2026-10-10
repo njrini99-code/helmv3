@@ -187,6 +187,8 @@ before, after, baseline or evidence.
 | `P007__premium-audit__coach__1280__case-058-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-058-chromium-normal; /clubhouse-preview/messages; synthetic preview |
 | `P007__premium-audit__coach__390__case-007-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-007-webkit-reduce; /clubhouse-preview/messages; synthetic preview |
 | `P007__premium-audit__coach__390__case-058-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-058-chromium-normal; /clubhouse-preview/messages; synthetic preview |
+| `P007__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
+| `P007__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
 
 ## 2026-10-02 — Apple Messages phone interaction pass
 

@@ -24,7 +24,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { InstrumentPanel } from '../instrument/InstrumentPanel';
 import { Readout } from '../instrument/Readout';
 import { InstrumentTable, InstrumentTableToggle } from './InstrumentTable';

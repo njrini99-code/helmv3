@@ -45,7 +45,7 @@ screens in place (see "Clubhouse surfaces" below).
 
 ### Actions And Engine Code
 
-- `src/app/golf/actions/golf.ts`
+- `src/app/golf/actions/qualifier-actions.ts` (split out of the former `golf.ts`)
 - `src/app/golf/actions/v3/qualifying.ts`
 - `src/app/golf/actions/qualifier-setup.ts` (squad size and entrants, D-32)
 - `src/lib/coachhelm/v3/qualifying/**`

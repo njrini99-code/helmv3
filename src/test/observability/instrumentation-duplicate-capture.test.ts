@@ -36,9 +36,6 @@ vi.mock('@/lib/observability/register-process-error-handlers', () => ({
   registerProcessErrorHandlers: vi.fn(),
 }));
 vi.mock('@/lib/admin/deploy-marker', () => ({ recordDeployMarker: vi.fn(async () => {}) }));
-vi.mock('@/lib/inngest/credentials', () => ({
-  reportInngestCredentialFault: vi.fn(async () => true),
-}));
 vi.mock('@/lib/server-error-logger', () => ({
   logServerException: mocks.logServerException,
 }));

@@ -8,13 +8,15 @@ import '../../styles/roster.css';
  */
 export function RosterNoTeam({ viewer = 'coach' }: { viewer?: 'coach' | 'player' }) {
   return (
-    <main className="ch-rs-none">
+    // The canopy's material, as on Roster itself (P003 #1); the title is the page's h1.
+    <main className="ch-rs-none" data-canopy="">
+      <h1 className="ch-sr-only">Roster</h1>
       {viewer === 'player' ? (
         <EmptyState
           size="page"
           code="CH-3308"
           icon={Users}
-          title="You aren't on a team yet"
+          title="You aren’t on a team yet"
           body="Your teammates appear here once your coach approves your request to join."
         />
       ) : (
@@ -22,7 +24,7 @@ export function RosterNoTeam({ viewer = 'coach' }: { viewer?: 'coach' | 'player'
           size="page"
           code="CH-3306"
           icon={Users}
-          title="You aren't on a team yet"
+          title="You aren’t on a team yet"
           body="Your players appear here once your team is set up."
         />
       )}
