@@ -74,6 +74,8 @@ const partialRoundSchema = z.object({
     z.number().int().min(1).max(18).optional().nullable(),
   ),
   holesToPlay: z.union([z.literal(9), z.literal(18)]).optional().nullable(),
+  // Shotgun start: the hole position the round started on (play-order.ts). Kept in draft_data, no column.
+  startHole: z.number().int().min(1).max(18).optional().nullable(),
   qualifierId: z.string().uuid().optional().nullable(),
   qualifierRoundNumber: z.number().int().min(1).optional().nullable(),
   holes: z.array(partialHoleSchema.nullable()).max(18),
@@ -209,6 +211,11 @@ export interface PartialRoundData {
   qualifierRoundNumber?: number;
   // Progress tracking
   currentHole: number;
+  /**
+   * Shotgun start: the hole the round started on, a position 1..holesToPlay (play-order.ts). Omitted, hole 1.
+   * `currentHole` is still the hole NUMBER the player is on, so a resume lands on the right hole either way.
+   */
+  startHole?: number | null;
   holesToPlay: number; // 9 or 18
   // Completed holes data
   // Sparse browser arrays cross the Server Action boundary as `undefined`
@@ -558,6 +565,10 @@ async function savePartialRoundImpl(
     if (data.currentHole && data.holesToPlay) {
       data.currentHole = Math.min(data.currentHole, data.holesToPlay);
     }
+    // A start hole past the round's last hole is no start hole: the round plays from hole 1.
+    if (data.startHole && data.holesToPlay && data.startHole > data.holesToPlay) {
+      data.startHole = null;
+    }
 
     const supabase = await createClient();
 
@@ -798,6 +809,8 @@ async function savePartialRoundImpl(
           yardage: h.yardage || 0,
         })),
         currentHoleIndex: (data.currentHole || 1) - 1,
+        // Every save replaces draft_data, so the start hole rides along on each one (continue reads it back).
+        ...(data.startHole && data.startHole > 1 ? { startHole: data.startHole } : {}),
       },
     };
 

@@ -14,6 +14,12 @@ export interface RoundSetupForm {
   teesPlayed: string;
   roundType: 'practice' | 'tournament' | 'qualifier';
   roundDate: string;
+  /**
+   * Shotgun start: the hole the round starts on, as a position 1..N in the holes it plays (a 9-hole round's nine is
+   * numbered 1..9 by the engine). Omitted or out of range, the first hole. Only the play order changes (play-order.ts):
+   * holes keep their numbers, and the round is finished after all N.
+   */
+  startHole?: number;
 }
 
 /**
