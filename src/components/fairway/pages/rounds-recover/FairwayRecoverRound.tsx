@@ -32,6 +32,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { savePartialRound, type PartialRoundData } from '@/app/golf/actions/round-partial';
+import { normalizeStartHole } from '@/lib/golf/round-session/play-order';
 import { submitGolfRoundComprehensive } from '@/app/golf/actions/round-submit';
 import { fairwayToast } from '@/components/fairway';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
@@ -84,6 +85,8 @@ interface OfflineRoundData {
       roundDate: string;
       qualifierId?: string;
       qualifierRoundNumber?: number;
+      /** Shotgun start: the hole position the round started on (play-order.ts). Omitted, hole 1. */
+      startHole?: number;
     };
     holes: Array<{ number: number; par: number; yardage: number; score: number | null }>;
     completedHoleStats: HoleStats[];
@@ -500,6 +503,7 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
           qualifierId: draft.setupData.qualifierId || undefined,
           qualifierRoundNumber: draft.setupData.qualifierRoundNumber || undefined,
           currentHole: Math.max(1, Math.min(draft.currentHoleIndex + 1, holesToPlay)),
+          startHole: normalizeStartHole(draft.setupData.startHole, holesToPlay),
           holesToPlay,
           holes: stats,
           inProgressShots,
