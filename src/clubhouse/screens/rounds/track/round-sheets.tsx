@@ -220,6 +220,7 @@ export function RoundCompleteSheet({
   open,
   heading,
   holes,
+  backHole,
   onBack,
   onSubmit,
 }: {
@@ -227,6 +228,8 @@ export function RoundCompleteSheet({
   /** "Finley GC · Blue · Oct 14". */
   heading: string;
   holes: ChSummaryHole[];
+  /** The hole Back returns to (the one the player is on: with a shotgun start, not the card's last). Omitted, the card's last. */
+  backHole?: number;
   onBack: () => void;
   onSubmit: () => void;
 }) {
@@ -251,7 +254,7 @@ export function RoundCompleteSheet({
       footer={
         <>
           <button type="button" className="ch-btn ch-btn--ghost" onClick={onBack}>
-            <span>Back to hole {holes[holes.length - 1]?.number ?? ''}</span>
+            <span>Back to hole {backHole ?? holes[holes.length - 1]?.number ?? ''}</span>
           </button>
           <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" onClick={onSubmit}>
             <span>Submit round</span>

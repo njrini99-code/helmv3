@@ -3,6 +3,7 @@
 import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { ChevronDown, Flag } from 'lucide-react';
 import type { DistancePreference } from '@/lib/golf/distance-units';
+import { frontierIndex, playedBefore } from '@/lib/golf/round-session/play-order';
 import type { RoundHole, ShotRecord } from '@/lib/types/golf';
 import { formatToPar } from '../../../lib/format';
 import { haptic } from '../../../lib/haptics';
@@ -78,8 +79,10 @@ function toParWords(score: number, par: number): string {
  * hole number until then) centred in a 44px hit area, and the strip keeps the
  * current hole in view.
  */
-export function TrackStrip({ holes, current, onJump }: { holes: RoundHole[]; current: number; onJump?: (index: number) => void }) {
-  const frontier = holes.findIndex((h) => h.score === null);
+export function TrackStrip({ holes, current, onJump, startHole = 1 }: { holes: RoundHole[]; current: number; onJump?: (index: number) => void; startHole?: number }) {
+  // The strip reads by hole number; where you can go follows play order (a shotgun start's holes before its start are
+  // played last, so they are not "earlier" holes until the round wraps to them).
+  const frontier = frontierIndex(holes.length, startHole, (i) => holes[i]!.score !== null);
   const soFar = roundSoFar(holes);
   const reduced = useChReducedMotion();
   const stripRef = useRef<HTMLDivElement>(null);
@@ -109,7 +112,7 @@ export function TrackStrip({ holes, current, onJump }: { holes: RoundHole[]; cur
             {score != null ? <ScoreMark score={score} par={h.par} size="sm" /> : <b aria-hidden="true">{i === current ? '•' : ''}</b>}
           </>
         );
-        const canGo = !!onJump && i !== current && (i < current || score != null || i === frontier);
+        const canGo = !!onJump && i !== current && (playedBefore(i, current, holes.length, startHole) || score != null || i === frontier);
         return canGo ? (
           <button key={h.number} type="button" className={cls} aria-label={name} onClick={() => onJump!(i)}>
             {inner}

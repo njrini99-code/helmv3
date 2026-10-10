@@ -5,6 +5,7 @@ import { Check, CloudOff, Smartphone, Table2, X } from 'lucide-react';
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
 import { useShotTracking, type ShotTrackingPorts, type ShotTrackingProps } from '@/hooks/golf/use-shot-tracking';
 import type { ShotRecord } from '@/lib/types/golf';
+import { frontierIndex } from '@/lib/golf/round-session/play-order';
 import { calculateHoleStats } from '@/lib/utils/shot-helpers';
 import type { ChRoundType, ChTeeColor } from '../../../data/rounds-shape';
 import { haptic } from '../../../lib/haptics';
@@ -34,6 +35,8 @@ export type RoundTrackingProps = ShotTrackingProps & {
   onOpenScorecard?: () => void;
   /** A finished hole's shots, for the course view's ‹ › (the round screen already holds them). Without it other holes show no shots. */
   holeShots?: (index: number) => ShotRecord[] | null;
+  /** Shotgun start: the hole position the round started on (play-order.ts). Omitted, hole 1. */
+  startHole?: number;
 };
 
 // CH-11706: going to another hole is a selection tick. Module-level, so the
@@ -61,7 +64,7 @@ const SAVE_WORDS = {
  * scorecard and submitting (see `round-sheets.tsx`).
  */
 export function RoundTracking(props: RoundTrackingProps) {
-  const { round, holes, currentHoleIndex, onExit, onNavigateToHole, onOpenScorecard, onAutoSave, statusSlot, holeShots } = props;
+  const { round, holes, currentHoleIndex, onExit, onNavigateToHole, onOpenScorecard, onAutoSave, statusSlot, holeShots, startHole = 1 } = props;
   const t = useShotTracking(props, PORTS);
   // A round is a full-screen flow on the phone (P011-D1): Exit and Scorecard are in its own top bar, so the shell's top
   // bar and bell go (rounds-track.css hides them while this is up) and the tab bar goes.
@@ -87,7 +90,8 @@ export function RoundTracking(props: RoundTrackingProps) {
   }
 
   const holedOut = t.shotHistory.length > 0 && t.shotHistory[t.shotHistory.length - 1]?.result === 'hole';
-  const frontier = holes.findIndex((h) => h.score === null);
+  // The next hole to play, in play order (a shotgun start's wraps past the card's last hole).
+  const frontier = frontierIndex(holes.length, startHole, (i) => holes[i]!.score !== null);
   const backTo = holedOut && !!onNavigateToHole && frontier >= 0 && frontier !== currentHoleIndex ? { index: frontier, number: holes[frontier]!.number } : null;
   const stats = holedOut ? calculateHoleStats(t.shotHistory, hole) : null;
   const far = heroDistance(t.distanceToHole, t.distanceUnit, distancePref);
@@ -135,7 +139,7 @@ export function RoundTracking(props: RoundTrackingProps) {
           )}
         </header>
         {statusSlot}
-        <TrackStrip holes={holes} current={currentHoleIndex} onJump={onNavigateToHole ? t.handleNavigateToHole : undefined} />
+        <TrackStrip holes={holes} current={currentHoleIndex} startHole={startHole} onJump={onNavigateToHole ? t.handleNavigateToHole : undefined} />
 
         <div className="ch-rt-body">
           <section className="ch-rt-hero" aria-label={`Hole ${hole.number}`}>

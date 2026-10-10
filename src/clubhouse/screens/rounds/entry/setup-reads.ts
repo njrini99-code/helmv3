@@ -4,7 +4,7 @@ import type { GolfCourse, GolfCourseTee } from '@/lib/types/golf-course';
 import type { NewRoundStartForm, NewRoundStartResult } from '@/lib/golf/round-session/start-form';
 import { teeColorFor } from '../../../data/rounds-shape';
 import { chReport } from '../../../lib/track';
-import { holesForRound, type ChResult, type ChSetupCourse, type ChSetupForm, type ChSetupHole, type ChSetupPorts, type ChSetupQualifier, type ChSetupTee, type ChStartFailure } from '../setup/shape';
+import { holesForRound, startPosition, type ChResult, type ChSetupCourse, type ChSetupForm, type ChSetupHole, type ChSetupPorts, type ChSetupQualifier, type ChSetupTee, type ChStartFailure } from '../setup/shape';
 
 /*
  * The reads and the start form behind round setup's ports (docs/clubhouse/ROUNDS_PLAN.md step 3 to 5): the course
@@ -171,6 +171,7 @@ export function toStartForm(f: ChSetupForm): NewRoundStartForm {
       teesPlayed: pick?.teeName ?? '',
       roundType: f.type,
       roundDate: f.date,
+      startHole: startPosition(f),
     },
     qualifierId: f.type === 'qualifier' ? f.qualifierId : null,
     qualifierRoundNumber: f.type === 'qualifier' ? f.qualifierRound : null,
