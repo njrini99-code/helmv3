@@ -93,9 +93,19 @@ describe('hook wiring is real', () => {
 });
 
 describe('database access and destructive-operation permissions', () => {
-  it('Supabase and Vercel mutations are not gated by permission rules (owner grant)', () => {
-    const gated = [...ask, ...deny].filter((r) => /supabase|vercel|e139bbde|fba2ada3/i.test(r));
+  it('Supabase mutations are not gated by permission rules (owner grant)', () => {
+    const gated = [...ask, ...deny].filter((r) => /supabase|e139bbde/i.test(r));
     expect(gated).toEqual([]);
+  });
+
+  it('Vercel is never denied; only MCP deploy, promote, rollback and domain buys ask (owner, 2026-10-07)', () => {
+    const isVercel = (r: string) => /vercel|fba2ada3/i.test(r);
+    expect(deny.filter(isVercel)).toEqual([]);
+    const allowed =
+      /__(?:request_promote|request_rollback|create_deployment|deploy_to_vercel|buy_domain|buy_domains|buy_single_domain)$/;
+    const asks = ask.filter(isVercel);
+    expect(asks.length).toBeGreaterThan(0);
+    expect(asks.filter((r) => !allowed.test(r))).toEqual([]);
   });
 
   it('provides project-scoped database access without disabling migrations', () => {

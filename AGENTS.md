@@ -153,4 +153,6 @@ GitHub branch protection requires the checks on `main` (`CI aggregate`,
 `Review Gate aggregate`, CodeQL, `block-historical-edits`; see
 `.claude/rules/code-review-tooling.md`), and the git hooks run `gitleaks` when it
 is installed. No permission rule or hook denies, asks for, or blocks Bash, Git, Supabase, or
-Vercel. `docs/CONTROL_PLANE_ENFORCEMENT.md` lists what is wired.
+Vercel, except one owner-set `ask`: Vercel MCP deploy, promote, rollback and
+domain-purchase tools prompt first (the Vercel CLI is not gated).
+`docs/CONTROL_PLANE_ENFORCEMENT.md` lists what is wired.

@@ -406,7 +406,7 @@ features:
         # no-op rather than a wrong answer. It belongs here: stages.ts reads
         # the `baseball_pipeline_stage` enum and its only importers are 3
         # baseball files + src/lib/validation. The entry NAMED `recruiting`
-        # is golf's (golf routes, *golf_recruits*.sql) and is correct as-is.
+        # is golf's (golf routes, *recruit_documents*.sql) and is correct as-is.
         - src/lib/recruiting/**
       db:
         - supabase/migrations/*baseball*.sql

@@ -1,8 +1,8 @@
 ---
-description: Land a PR through the sole landing script and report the result
+description: Land a PR through the preferred landing script and report the result
 ---
 
-`/land <pr>` — merge and clean up PR `<pr>` through the one door:
+`/land <pr>` — merge and clean up PR `<pr>` through the preferred landing script:
 
 ```bash
 npm run pr:land -- <pr>
