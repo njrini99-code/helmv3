@@ -18,6 +18,7 @@ import { haptic } from '@/lib/haptics';
 import { useCallback } from 'react';
 import { calculateHoleStats } from '@/lib/utils/shot-helpers';
 import { fwHaptic } from '@/lib/fairway/haptics';
+import { frontierIndex, isLastPlayIndex, nextPlayIndex, previousPlayIndex } from '@/lib/golf/round-session/play-order';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { useHoleSwipe } from './useHoleSwipe';
 import { type EditFormData } from '@/hooks/golf/use-shot-state-machine';
@@ -42,6 +43,7 @@ export default function FairwayShotTracking(props: ShotTrackingProps) {
     onExit,
     onNavigateToHole,
     onAutoSave,
+    startHole = 1,
   } = props;
   const {
     currentHole,
@@ -107,11 +109,13 @@ export default function FairwayShotTracking(props: ShotTrackingProps) {
   // where a player reviewing an earlier hole is headed anyway. Unsaved input
   // still routes through the discard prompt. One haptic: the selection tick.
   const reduceMotion = useReducedMotionGuard();
-  const frontierIdx = holes.findIndex((h) => h.score === null);
-  const swipePrevIdx = currentHoleIndex - 1;
-  const swipeNextIdx = currentHoleIndex + 1;
+  // Earlier and later follow the play order: a shotgun start wraps from hole 18 to hole 1 (plain order from hole 1).
+  const frontierIdx = frontierIndex(holes.length, startHole, (i) => holes[i]!.score !== null);
+  const swipePrevIdx = previousPlayIndex(currentHoleIndex, holes.length, startHole) ?? -1;
+  const swipeHasNext = !isLastPlayIndex(currentHoleIndex, holes.length, startHole);
+  const swipeNextIdx = swipeHasNext ? nextPlayIndex(currentHoleIndex, holes.length, startHole) : holes.length;
   const canSwipePrev = !!onNavigateToHole && swipePrevIdx >= 0;
-  const canSwipeNext = !!onNavigateToHole && swipeNextIdx < holes.length
+  const canSwipeNext = !!onNavigateToHole && swipeHasNext
     && (holes[swipeNextIdx]?.score != null || swipeNextIdx === frontierIdx);
   const swipeToHole = useCallback((targetIndex: number) => {
     if (hasUnsavedInput()) {
@@ -151,7 +155,7 @@ export default function FairwayShotTracking(props: ShotTrackingProps) {
   // ============================================================================
 
   const isHoleComplete = shotHistory.length > 0 && shotHistory[shotHistory.length - 1]?.result === 'hole';
-  const nextUnplayedIdx = holes.findIndex(h => h.score === null);
+  const nextUnplayedIdx = frontierIdx;
   const showBackToCurrentHole = isHoleComplete && !!onNavigateToHole && nextUnplayedIdx >= 0 && nextUnplayedIdx !== currentHoleIndex;
 
   // For sidebar visualization
@@ -199,6 +203,7 @@ export default function FairwayShotTracking(props: ShotTrackingProps) {
         holes={holes}
         currentHoleIndex={currentHoleIndex}
         currentHoleNumber={currentHole.number}
+        startHole={startHole}
         autoSaveStatus={autoSaveStatus}
         onExit={onExit}
         onNavigateToHole={onNavigateToHole ? handleNavigateToHole : undefined}

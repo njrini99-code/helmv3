@@ -7,6 +7,7 @@ import { IconWarning } from '@/components/icons';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayNewRoundEntry } from '@/components/fairway/pages/rounds-new/FairwayNewRoundEntry';
 import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking';
+import { normalizeStartHole } from '@/lib/golf/round-session/play-order';
 import { Skeleton } from '@/components/fairway';
 import { Button as FwButton } from '@/components/fairway/controls/button';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
@@ -454,6 +455,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         <FairwayShotTracking
           holes={holes}
           currentHoleIndex={currentHoleIndex}
+          startHole={normalizeStartHole(setupData.startHole, holes.length)}
           onHoleComplete={handleHoleComplete}
           onHoleStatsUpdate={handleHoleStatsUpdate}
           onSaveShot={handleSaveShot}
