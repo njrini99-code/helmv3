@@ -332,7 +332,7 @@
   display: flex;
   gap: 2px;
   padding: 3px;
-  border-radius: 11px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-well-bg);
   box-shadow: var(--ch-well-shadow);
 }
@@ -526,7 +526,7 @@
   display: flex;
   gap: 2px;
   padding: 2px;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-well-bg);
   box-shadow: var(--ch-well-shadow);
 }

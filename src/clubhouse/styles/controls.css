@@ -250,7 +250,7 @@
   height: 34px;
   padding: 0 10px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
   background: none;
   color: var(--ch-text-primary);
   font: 500 13.5px/1 var(--ch-font-sans);
@@ -514,7 +514,7 @@
   min-height: 44px;
   padding: 6px 10px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
   background: transparent;
   text-align: left;
   cursor: pointer;

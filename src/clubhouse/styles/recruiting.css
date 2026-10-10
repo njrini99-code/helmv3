@@ -466,7 +466,7 @@
   height: 36px;
   padding: 0 10px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
   background: none;
   font: 500 13.5px/1 var(--ch-font-sans);
   color: var(--ch-danger-600);

@@ -603,7 +603,7 @@
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-bg-subtle);
   box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
   color: var(--ch-green-700);
@@ -790,7 +790,7 @@
   width: 28px;
   height: 28px;
   place-items: center;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
   background: rgb(255 255 255 / 0.16);
 }
 .ch-rx__n {
