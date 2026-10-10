@@ -1,5 +1,18 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-10 — The leaderboard is the page's scoreboard
+
+Owner direction (2026-10-10): the qualifier page is a leaderboard, and it should read like one, dark on the ivory page. Presentation only,
+coach, player and phone; the rows, their order, the scorecard trays and every state are unchanged.
+
+- **A deep-green board:** the leaderboard sits on the shared stage green with a gold cap, ivory names and numerals, and the field's
+  spread across its top. The page's other sections stay on the ivory.
+- **A rail where a row stands:** mint for qualifying, gold for the bubble, a pick or a tie. The leader's place, rail and a soft wash are gold.
+  Your own row is a mint tint; hover and press are a lift of the same white.
+- **To par on ivory plates**, larger, with the cut lines in mint (top score) and muted (travel cut). The opened row's scorecards keep their
+  light cards inside a darker tray.
+- The phone's leaderboard is the same board in its column, on the rows' existing 56pt grid.
+
 ## 2026-10-10 — The field on one number line
 
 Presentation only. Above the leaderboard (coach and player, once three players have a round in): each player is a coin at their total

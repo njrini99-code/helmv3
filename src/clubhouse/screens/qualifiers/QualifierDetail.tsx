@@ -408,7 +408,7 @@ function Leaderboard({ data, status, stale, feed }: { data: ChQDetailCore; statu
   const canOpen = (row: ChQRow) => coach || row.playerId === data.viewerPlayerId;
 
   return (
-    <section className="ch-qf-panel" aria-labelledby="ch-qf-lb">
+    <section className="ch-qf-panel ch-qf-board ch-scoreboard" aria-labelledby="ch-qf-lb">
       {head}
       {stale && <StaleStandings />}
       <p className="ch-sr-only" aria-live="polite" data-ch-code="CH-09803">
@@ -455,7 +455,8 @@ function Leaderboard({ data, status, stale, feed }: { data: ChQDetailCore; statu
                   {/* The row is a mouse target too; the keyboard path is the scorecards button in its last cell (44pt on touch). */}
                   {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus */}
                   <div
-                    className={'ch-qf-row' + (openable ? ' ch-qf-rowbtn' : '') + (isOpen ? ' is-open' : '') + (me ? ' is-me' : '')}
+                    className={'ch-qf-row' + (openable ? ' ch-qf-rowbtn' : '') + (isOpen ? ' is-open' : '') + (me ? ' is-me' : '') + (r.position === 1 && r.played > 0 ? ' is-lead' : '')}
+                    data-state={r.state ?? undefined}
                     role="row"
                     style={{ gridTemplateColumns: LB_COLS }}
                     onClick={openable ? () => toggle(r) : undefined}
@@ -464,7 +465,7 @@ function Leaderboard({ data, status, stale, feed }: { data: ChQDetailCore; statu
                       <Pos position={r.position} tied={r.tied} move={r.move} />
                     </span>
                     <span role="rowheader" className="ch-qf-who">
-                      <Avatar name={r.name} size={32} />
+                      <Avatar name={r.name} size={38} />
                       <span>
                         {coach ? (
                           // P003-C1: resting on a name shows the player's card; the row still opens the scorecards.
