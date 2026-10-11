@@ -1,5 +1,97 @@
 # P006 — Calendar: changelog
 
+## 2026-10-10 — RSVP only when the coach requires it
+
+Owner: do not always require RSVPs unless the coach explicitly toggles it.
+
+- The editor has a Require RSVP switch under the invite list, off for a new
+  event and seeded from the event on edit or Duplicate. It is sent as
+  `requiresRsvp` on create, series create and edit; a series edit sends it only
+  when the coach changed it (`editRecurringEvent` now accepts it). The receipt
+  gains an RSVP row (Required / Not asked).
+- Copy follows the switch: the header, footer and Published toast promise a
+  notification only when RSVP is on, and the cancel question says no one is
+  notified for an event without it (the 2026-10-08 notification gates).
+- An event without RSVP shows no reply counts, badges, player reply control,
+  Needs attention row, peek count or Nudge; the coach's panel lists it as
+  Invited with the player count, and attendance shows Not marked instead of a
+  reply. `ChCalEvent.rsvpRequired` carries the flag (null reads as off).
+- The first-run line says players reply when you require an RSVP.
+
+## 2026-10-08 — the details panel: a plate for every event type, darker grey text, smooth scroll
+
+Owner review of the column beside the week ("black on ivory", "rough to
+scroll"):
+
+- Every panel opens on a lit plate in the colour its block has on the grid, in
+  ivory ink: green for practice, forest for competition, slate for a class or
+  travel, ink for a meeting or other, champagne for busy time, amber for an
+  overlap (`ch-in__plate`, `data-tone`; `inspector.tsx`, `extras.tsx`). A class
+  names the course on the plate with its code and the player.
+- The secondary and tertiary text tokens are one step darker everywhere in the
+  light theme (`--ch-text-secondary` ink-700, `--ch-text-tertiary` ink-600;
+  tokens.css); the dark theme gets a step more contrast the same way.
+- The panel scrolls with Lenis like the canvas (`usePanelSmoothScroll` in
+  `lib/smooth-scroll.ts`): same duration and curve, a trackpad left native, and
+  `overscroll-behavior: contain` so its ends don't drag the page behind it.
+
+## 2026-10-08 — the day panel gets colour
+
+Owner review: the panel beside the week (nothing selected) was black text on
+ivory. Today is now a lit green plate (the day, the count, the next event on a
+translucent chip), what needs attention sits on raised tiles, and each source
+carries the colour it has on the grid: green for team events, slate for
+classes, champagne for your own busy time. `inspector.tsx` (`Summary`, `Fact`)
+and `calendar.css`; the plate's title outranks the canopy's `h2` ink.
+
+## 2026-10-08 — the class block and card; the week in the day's light
+
+Owner review, same session:
+
+- A class block's title is "Class", set apart from the words under it: the
+  first player, then "N more" (or "Holden +3" on one line). Nothing is cut
+  mid-word.
+- The slate deepens with how many are in class (2–3, 4–6, 7 and up; the
+  deepest is filled slate with light text), so the full hours read at a glance.
+- A press opens the class card (`class-group.tsx`) instead of the generic menu,
+  whose rows overlapped on long registrar titles: a slate band with the day,
+  the slot and the count, then a row a player (avatar, name, course code in
+  slate and the course name). A row opens that class in the inspector.
+- The week sits in the global light: a new derived token, `--ch-light-surface`
+  (tokens.css, both themes), washes the grid and the pinned days from the sun's
+  side.
+
+## 2026-10-08 — players' classes fold into one block per slot
+
+Owner review on a coach whose whole roster's class schedules are in: the Week
+and
+Day grids drew every class as its own block, cascading up to eight deep into
+one-letter slivers that also painted over the pinned day header. Now:
+
+- Classes that start in the same half hour are one block (`groupClasses` in
+  `model.ts`); a class alone in its slot joins the group it overlaps most, and
+  groups that only brush (half an hour or less) stack at full width.
+- The block reads the first player and "N more" (whole words, nothing cut off);
+  a press opens the list of every class in it (`ui/Menu`), and picking one opens
+  it in the inspector as before. A one-player filter still shows that player's
+  classes one by one.
+- Classes take the info slate (fill, text, edge and legend dot) instead of ivory
+  on ivory; no side stripe. The legend reads "Classes", not "Class · busy".
+- The grid isolates its stacking, so no block paints over the pinned days.
+
+Covered in `calendar-premium.test.ts`. Seen in Safari at 1440 on a live coach
+account (read only).
+
+## 2026-10-08 — the page opens at its top (P006-B1)
+
+Owner call: the Calendar opens at the top of the page, like every other page.
+The Week and Day grids no longer scroll to now on first paint (at 10 PM that
+parked the canvas on the empty bottom of the grid). T and Today still bring now,
+or the next event, about 30% down; outside 6 AM to 9 PM they bring the next
+timed event in view instead of the grid's empty end. `useOpenOnNow` in
+`Calendar.tsx`, `focusHour` in `model.ts`; covered in
+`calendar-premium.test.ts`.
+
 ## 2026-10-08 — phone: Month on react-day-picker
 
 The phone's Month grid (`screens/calendar/month.tsx`, out of

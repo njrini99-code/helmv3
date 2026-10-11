@@ -657,7 +657,7 @@
 .ch-hl-pl__c {
   min-width: 22px;
   height: 22px;
-  border-radius: 11px;
+  border-radius: var(--ch-radius-md);
   display: grid;
   place-items: center;
   font: 600 11.5px/1 var(--ch-font-sans);
@@ -1145,6 +1145,65 @@
   display: contents;
 }
 
+/* The focus's claim as the page's one lit green card (P013-A3): the phone's card, and on the desktop the same card at the top
+   of the focus column, with the evidence, the drill and the reasoning flush beneath it on the canvas. One block, so the two
+   cannot drift. */
+:is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  border-radius: 14px;
+  background: var(--ch-feature-bg);
+  /* P013-A3: the green card is where the light lands, and nothing else on the page gains depth. A 1px rim of the
+     shell's light on its sun-facing top and side, a darker hairline opposite. The rim token is transparent in dark,
+     under Increase Contrast and at noon's side, so only the top edge stays lit then. */
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--ch-light-rim) 55%, transparent),
+    inset var(--ch-light-rim-x) 0 0 color-mix(in oklab, var(--ch-light-rim) 40%, transparent),
+    inset 0 -1px 0 rgb(0 0 0 / 0.18),
+    var(--ch-elevation-feature);
+  color: var(--ch-on-green-ink);
+}
+:is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__k {
+  margin-bottom: 4px;
+  font: 500 12.5px/1.2 var(--ch-font-sans);
+  color: var(--ch-on-green-ink-muted);
+}
+:is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus h2 {
+  font: 600 23px/1.15 var(--ch-font-sans);
+  letter-spacing: -0.03em;
+  color: var(--ch-on-green-ink);
+}
+:is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__head .ch-hl-lede {
+  font: 400 14px/1.5 var(--ch-font-sans);
+  color: var(--ch-on-green-ink-soft);
+}
+/* The stance on the green: a quiet chip, gilt for what is worth closing; Priority keeps its amber, Working its green. */
+:is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__head .ch-hl-pri {
+  background: rgb(255 255 255 / 0.09);
+  color: var(--ch-on-green-ink);
+  box-shadow: none;
+}
+:is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__head .ch-hl-pri.is-high {
+  background: var(--ch-warning-100);
+  color: var(--ch-warning-600);
+}
+/* P013-A3: the stance in gilt that catches the light on its sun side (static: nothing moves). */
+:is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__head .ch-hl-pri.is-medium {
+  background: linear-gradient(
+    calc(90deg - var(--ch-sun-dir, 0) * 90deg),
+    color-mix(in oklab, var(--ch-champagne-300) 70%, var(--ch-light-key)),
+    var(--ch-champagne-300) 70%
+  );
+  color: var(--ch-green-800);
+  box-shadow: inset 0 1px 0 color-mix(in oklab, var(--ch-light-rim) 60%, transparent);
+}
+:is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__head .ch-hl-pri.is-ok {
+  background: var(--ch-positive-100);
+  color: var(--ch-positive-600);
+}
+
 /* The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy, too vibe coded"; the Coach Home board, round 3:
    "fewer containers, one feature card"). On the phone the page opens on the Ledger's intro under the engraved double
    rule (the role as the brown eyebrow, CoachHelm in the 600 sans, the live line); the program pulse, the proposals
@@ -1259,61 +1318,6 @@
     border-radius: 0;
     background: none;
     box-shadow: none;
-  }
-  .ch-hl.is-phone .ch-hl-focus__head {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 18px;
-    border-radius: 14px;
-    background: var(--ch-feature-bg);
-    /* P013-A3: the green card is where the light lands, and nothing else on the page gains depth. A 1px rim of the
-       shell's light on its sun-facing top and side, a darker hairline opposite. The rim token is transparent in dark,
-       under Increase Contrast and at noon's side, so only the top edge stays lit then. */
-    box-shadow:
-      inset 0 1px 0 color-mix(in oklab, var(--ch-light-rim) 55%, transparent),
-      inset var(--ch-light-rim-x) 0 0 color-mix(in oklab, var(--ch-light-rim) 40%, transparent),
-      inset 0 -1px 0 rgb(0 0 0 / 0.18),
-      var(--ch-elevation-feature);
-    color: var(--ch-on-green-ink);
-  }
-  .ch-hl.is-phone .ch-hl-focus__k {
-    margin-bottom: 4px;
-    font: 500 12.5px/1.2 var(--ch-font-sans);
-    color: var(--ch-on-green-ink-muted);
-  }
-  .ch-hl.is-phone .ch-hl-focus h2 {
-    font: 600 23px/1.15 var(--ch-font-sans);
-    letter-spacing: -0.03em;
-    color: var(--ch-on-green-ink);
-  }
-  .ch-hl.is-phone .ch-hl-focus__head .ch-hl-lede {
-    font: 400 14px/1.5 var(--ch-font-sans);
-    color: var(--ch-on-green-ink-soft);
-  }
-  /* The stance on the green: a quiet chip, gilt for what is worth closing; Priority keeps its amber, Working its green. */
-  .ch-hl.is-phone .ch-hl-focus__head .ch-hl-pri {
-    background: rgb(255 255 255 / 0.09);
-    color: var(--ch-on-green-ink);
-    box-shadow: none;
-  }
-  .ch-hl.is-phone .ch-hl-focus__head .ch-hl-pri.is-high {
-    background: var(--ch-warning-100);
-    color: var(--ch-warning-600);
-  }
-  /* P013-A3: the stance in gilt that catches the light on its sun side (static: nothing moves). */
-  .ch-hl.is-phone .ch-hl-focus__head .ch-hl-pri.is-medium {
-    background: linear-gradient(
-      calc(90deg - var(--ch-sun-dir, 0) * 90deg),
-      color-mix(in oklab, var(--ch-champagne-300) 70%, var(--ch-light-key)),
-      var(--ch-champagne-300) 70%
-    );
-    color: var(--ch-green-800);
-    box-shadow: inset 0 1px 0 color-mix(in oklab, var(--ch-light-rim) 60%, transparent);
-  }
-  .ch-hl.is-phone .ch-hl-focus__head .ch-hl-pri.is-ok {
-    background: var(--ch-positive-100);
-    color: var(--ch-positive-600);
   }
   .ch-hl.is-phone .ch-hl-stale {
     padding: 0;
@@ -1459,6 +1463,248 @@
   }
   .ch-hl.is-phone .ch-hl-sk__row + .ch-hl-sk__row {
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+}
+
+/* ── Premium pass, desktop board (P013; owner, 2026-10-09: "premium polish across the whole app") ─────────────────────
+   The claim is the page's one lit green card at the head of the focus column (the phone's card, shared above); its
+   evidence is one reading, a large figure over its track, on the canvas under it. Players and rows answer the cursor
+   and the press; section heads take a short gold lead on the engraved rule. Flat grounds; gradients only on the small
+   things: the bars, the figure, the badge. Phone keeps its approved boards. */
+@media (min-width: 821px) {
+  .ch-hl[data-canopy] .ch-hl-focus {
+    gap: 22px;
+  }
+  .ch-hl[data-canopy] .ch-hl-focus__head {
+    gap: 10px;
+    padding: 24px 30px 30px;
+    border-radius: 18px;
+  }
+  /* The category and stance are the plate's own first line: no column rule under them, which sat on the canvas. */
+  .ch-hl[data-canopy] .ch-hl-focus__head .ch-hl-focus__k {
+    justify-content: space-between;
+    min-height: 0;
+    margin: 0 0 6px;
+    padding: 0;
+    box-shadow: none;
+    font: 500 13px/1.2 var(--ch-font-sans);
+  }
+  .ch-hl[data-canopy] .ch-hl-focus__head h2 {
+    font: 600 36px/1.1 var(--ch-font-sans);
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+  /* A short gold rule under the claim, as under a zone's title. */
+  .ch-hl[data-canopy] .ch-hl-focus__head h2::after {
+    display: block;
+    width: 36px;
+    height: 3px;
+    margin-top: 14px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--ch-stage-gold), rgb(231 184 102 / 0));
+    content: '';
+  }
+  .ch-hl[data-canopy] .ch-hl-focus__head .ch-hl-lede {
+    max-width: 60ch;
+    font: 400 16.5px/1.55 var(--ch-font-sans);
+  }
+  .ch-hl[data-canopy] .ch-hl-focus__head .ch-hl-pri {
+    padding: 6px 11px;
+    font-size: 12px;
+  }
+  /* The evidence sits straight under the plate: no soft rule between them, the plate is the divider. */
+  .ch-hl[data-canopy] .ch-hl-ev {
+    gap: 16px;
+    padding-top: 0;
+    box-shadow: none;
+  }
+  .ch-hl[data-canopy] .ch-hl-ev__l {
+    font: 600 14px/1.3 var(--ch-font-sans);
+    color: var(--ch-text-primary);
+  }
+
+  /* The reading: the player's number large over a thicker track, the comparison at the far end. The legend is the
+     reading's caption and stays in the DOM after the track, so a screen reader hears the track then the words. */
+  .ch-hl[data-canopy] .ch-hl-g {
+    gap: 18px;
+    padding-top: 0;
+  }
+  .ch-hl[data-canopy] .ch-hl-g__lg {
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    order: -1;
+    font: 500 13.5px/1.1 var(--ch-font-sans);
+  }
+  .ch-hl[data-canopy] .ch-hl-g__lg > span:first-child {
+    align-items: flex-end;
+  }
+  .ch-hl[data-canopy] .ch-hl-g__lg > span:first-child > i {
+    margin-bottom: 9px;
+  }
+  .ch-hl[data-canopy] .ch-hl-g__lg > span:first-child b {
+    font-size: 38px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.035em;
+    background: linear-gradient(180deg, color-mix(in oklab, var(--ch-chart-loss) 78%, white), var(--ch-chart-loss-on-tint));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .ch-hl[data-canopy] .ch-hl-g.is-good .ch-hl-g__lg > span:first-child b {
+    background-image: linear-gradient(180deg, var(--ch-green-500), var(--ch-green-800));
+  }
+  .ch-hl[data-canopy] .ch-hl-g__t,
+  .ch-hl[data-canopy] .ch-hl-bars__t {
+    height: 12px;
+    border-radius: 6px;
+    box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.14);
+  }
+  .ch-hl[data-canopy] .ch-hl-g__f {
+    border-radius: 6px;
+    background: linear-gradient(90deg, color-mix(in oklab, var(--ch-chart-loss) 30%, transparent), var(--ch-chart-loss));
+  }
+  .ch-hl[data-canopy] .ch-hl-g.is-good .ch-hl-g__f {
+    background: linear-gradient(90deg, color-mix(in oklab, var(--ch-green-500) 30%, transparent), var(--ch-green-600));
+  }
+  .ch-hl[data-canopy] .ch-hl-g__cmp,
+  .ch-hl[data-canopy] .ch-hl-g__sec {
+    top: -7px;
+    bottom: -7px;
+  }
+  .ch-hl[data-canopy] .ch-hl-g__you {
+    width: 18px;
+    height: 18px;
+    margin: -9px 0 0 -9px;
+    box-shadow: 0 0 0 3.5px var(--ch-chart-loss), var(--ch-elevation-mark-ink);
+  }
+  .ch-hl[data-canopy] .ch-hl-g.is-good .ch-hl-g__you {
+    box-shadow: 0 0 0 3.5px var(--ch-green-600), var(--ch-elevation-mark-ink);
+  }
+  .ch-hl[data-canopy] .ch-hl-bars {
+    gap: 12px;
+  }
+  .ch-hl[data-canopy] .ch-hl-bars li {
+    grid-template-columns: 88px minmax(0, 1fr) 52px;
+    font-size: 14px;
+  }
+  .ch-hl[data-canopy] .ch-hl-bars b {
+    font-size: 18px;
+    letter-spacing: -0.02em;
+  }
+  .ch-hl[data-canopy] .ch-hl-bars__t i {
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--ch-green-500), var(--ch-green-700));
+  }
+  .ch-hl[data-canopy] .ch-hl-bars__t i.is-weak {
+    background: linear-gradient(90deg, color-mix(in oklab, var(--ch-chart-loss) 70%, white), var(--ch-chart-loss));
+  }
+  .ch-hl[data-canopy] .ch-hl-conf__d i {
+    width: 6px;
+    height: 13px;
+  }
+  .ch-hl[data-canopy] .ch-hl-conf__d i.is-on {
+    background: linear-gradient(180deg, var(--ch-green-500), var(--ch-green-700));
+  }
+
+  /* The drill: a gilt rule at its left, in place of a second green; the one action on the page reads as set apart. */
+  .ch-hl[data-canopy] .ch-hl-drill {
+    box-shadow: var(--ch-well-soft-shadow), inset 3px 0 0 var(--ch-champagne-500);
+  }
+  .ch-hl[data-canopy] .ch-hl-drill__k {
+    color: var(--ch-green-700);
+    font-size: 12.5px;
+  }
+
+  /* A section's head: its heading over the engraved rule, with a short gold lead on the rule. */
+  .ch-hl[data-canopy] :is(.ch-hl-pulse > h2, .ch-hl-plist > h2, .ch-hl-sec > h2) {
+    background: linear-gradient(var(--ch-champagne-500), var(--ch-champagne-500)) 0 100% / 40px 3px no-repeat;
+  }
+  .ch-hl[data-canopy] .ch-hl-plist > h2,
+  .ch-hl[data-canopy] .ch-hl-sec > h2 {
+    font: 600 13px/1 var(--ch-font-sans);
+    letter-spacing: 0;
+    color: var(--ch-green-700);
+  }
+
+  /* The pulse's rows: the glyph is a small plate that takes its tone (amber for what needs a look, green for what is
+     going well), and a row answers the cursor. */
+  .ch-hl[data-canopy] .ch-hl-pulse li {
+    grid-template-columns: 34px minmax(0, 1fr);
+    column-gap: 14px;
+  }
+  .ch-hl[data-canopy] .ch-hl-pulse__ic {
+    width: 34px;
+    height: 34px;
+    background: linear-gradient(160deg, var(--ch-ivory-0), var(--ch-ivory-150));
+    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule), var(--ch-elevation-mark-ink);
+  }
+  .ch-hl[data-canopy] .ch-hl-pulse li.is-warn .ch-hl-pulse__ic {
+    background: linear-gradient(160deg, var(--ch-warning-100), color-mix(in oklab, var(--ch-warning-100) 70%, var(--ch-warning-600)));
+    box-shadow: inset 0 0 0 1px rgb(148 96 14 / 0.32), var(--ch-elevation-mark-warn);
+  }
+  .ch-hl[data-canopy] .ch-hl-pulse li.is-good .ch-hl-pulse__ic {
+    background: linear-gradient(160deg, var(--ch-positive-100), color-mix(in oklab, var(--ch-positive-100) 70%, var(--ch-green-600)));
+    box-shadow: inset 0 0 0 1px var(--ch-green-ring), var(--ch-elevation-mark);
+  }
+  .ch-hl[data-canopy] .ch-hl-pulse li b {
+    font-size: 14.5px;
+  }
+
+  /* Players: the chosen one carries a green rail and a green count; the rest answer the cursor. */
+  .ch-hl[data-canopy] .ch-hl-pl {
+    position: relative;
+  }
+  .ch-hl[data-canopy] .ch-hl-pl::before {
+    position: absolute;
+    top: 10px;
+    bottom: 10px;
+    left: 0;
+    width: 3px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, var(--ch-green-500), var(--ch-green-800));
+    opacity: 0;
+    transition: opacity var(--ch-dur-quick) var(--ch-ease);
+    content: '';
+  }
+  .ch-hl[data-canopy] .ch-hl-pl.is-on::before {
+    opacity: 1;
+  }
+  .ch-hl[data-canopy] .ch-hl-pl.is-on .ch-hl-pl__c {
+    background: linear-gradient(160deg, color-mix(in oklab, var(--ch-green-800) 80%, white), var(--ch-green-800));
+    box-shadow: var(--ch-elevation-mark);
+  }
+  /* Also worth knowing: the chevron leans toward the row on hover. */
+  .ch-hl[data-canopy] .ch-hl-row svg {
+    transition: transform var(--ch-dur-quick) var(--ch-ease);
+  }
+  @media (hover: hover) {
+    .ch-hl[data-canopy] .ch-hl-row:hover svg {
+      transform: translateX(2px);
+    }
+  }
+  .ch-hl[data-canopy] .ch-hl-row__v {
+    font-size: 16px;
+    letter-spacing: -0.01em;
+  }
+
+  /* Loading holds the claim's plate where the loaded page draws it (the skeleton's own first block). */
+  .ch-hl[data-canopy] .ch-hl-sk__card {
+    gap: 22px;
+  }
+  .ch-hl[data-canopy] .ch-hl-sk__card > .ch-hl-sk__claim {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+    min-height: 0;
+    padding: 24px 30px 30px;
+    border-radius: 18px;
+    background: var(--ch-bg-inset);
+    box-shadow: none;
+  }
+  .ch-hl[data-canopy] .ch-hl-sk__claim > :first-child {
+    margin-bottom: 6px;
   }
 }
 

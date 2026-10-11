@@ -57,7 +57,7 @@ export function HoverReveal({
         aria-hidden={false}
         className={cn(
           position === 'overlay' && 'absolute inset-0',
-          'opacity-0 transition-opacity duration-[120ms] ease-[cubic-bezier(0.4,0,0.2,1)]', // EASE_PRESS
+          'opacity-0 transition-opacity [transition-duration:120ms] [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]', // EASE_PRESS
           'group-hover/reveal:opacity-100 group-focus-within/reveal:opacity-100',
           '[@media(pointer:coarse)]:opacity-100',
           revealClassName,

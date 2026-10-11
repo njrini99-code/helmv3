@@ -96,9 +96,9 @@ const load = () => loadCoachHome({ teamId: 't1', coachName: 'Maya Reyes' });
 const logged = (read: string) => expect(logServer).toHaveBeenCalledWith('home', read, expect.anything());
 
 /** An event today at 3pm Eastern, inside the loader's week window. */
-function todayEvent() {
+function todayEvent(over: Record<string, unknown> = {}) {
   const d = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
-  return { id: 'e1', title: 'Short-game block', event_type: 'practice', start_time: `${d}T19:00:00Z`, end_time: `${d}T21:00:00Z`, all_day: false, location: 'Practice green' };
+  return { id: 'e1', title: 'Short-game block', event_type: 'practice', start_time: `${d}T19:00:00Z`, end_time: `${d}T21:00:00Z`, all_day: false, location: 'Practice green', ...over };
 }
 
 beforeEach(() => {
@@ -208,17 +208,38 @@ describe('Home · reads that fail', () => {
           { player: { id: 'p2', first_name: 'Eli', last_name: 'Brandt', graduation_year: 2027 } },
         ],
       },
-      golf_events: { data: [todayEvent()] },
+      // The nudge is for an event that asks for replies.
+      golf_events: { data: [todayEvent({ requires_rsvp: true })] },
       golf_event_attendance: { data: [{ id: 'a1', event_id: 'e1', player_id: 'p1', status: 'accepted' }, { id: 'a2', event_id: 'e1', player_id: 'p2', status: null }] },
     };
     const data = await load();
     const e = data.phone.today.find((x) => x.id === 'e1')!;
     expect(e.awaiting).toEqual([{ id: 'p2', name: 'Eli Brandt' }]);
     expect(e.inviteeIds).toEqual(['p1', 'p2']);
-    tables.current = { golf_events: { data: [todayEvent()] }, golf_event_attendance: { error: { message: 'boom' } } };
+    tables.current = { golf_events: { data: [todayEvent({ requires_rsvp: true })] }, golf_event_attendance: { error: { message: 'boom' } } };
     const failed = (await load()).phone.today.find((x) => x.id === 'e1')!;
     expect(failed.awaiting).toBeNull();
     expect(failed.inviteeIds).toBeNull();
+  });
+
+  it('an event that doesn’t require an RSVP (off or null) has no going count and no one to nudge, but still its invitees (owner, 2026-10-08)', async () => {
+    for (const requires_rsvp of [false, null]) {
+      tables.current = {
+        golf_team_members: {
+          data: [
+            { player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti', graduation_year: 2027 } },
+            { player: { id: 'p2', first_name: 'Eli', last_name: 'Brandt', graduation_year: 2027 } },
+          ],
+        },
+        golf_events: { data: [todayEvent({ requires_rsvp })] },
+        golf_event_attendance: { data: [{ id: 'a1', event_id: 'e1', player_id: 'p1', status: 'accepted' }, { id: 'a2', event_id: 'e1', player_id: 'p2', status: null }] },
+      };
+      const e = (await load()).phone.today.find((x) => x.id === 'e1')!;
+      expect(e.going).toBeNull();
+      expect(e.awaiting).toBeNull();
+      expect(e.inviteeIds).toEqual(['p1', 'p2']);
+      expect(e.invitees).toHaveLength(2);
+    }
   });
 
   it('CH-2210 the timezone does not load: Home reads the week in Eastern time', async () => {

@@ -3674,7 +3674,7 @@
       },
       {
         "id": "get_golf_conversations_with_details",
-        "definedIn": "supabase/migrations/20260621041824_harden_get_golf_conversations_rpc.sql"
+        "definedIn": "supabase/migrations/20261008160000_golf_conversation_hidden_at.sql"
       },
       {
         "id": "get_my_baseball_player_id",

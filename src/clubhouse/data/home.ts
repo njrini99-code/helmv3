@@ -106,7 +106,10 @@ export interface ChHomeEvent {
   location: string | null;
   /** Invitees' names, in roster order; null when replies didn't load (CH-2209). */
   invitees: string[] | null;
-  /** Accepted replies; null when replies or the identities needed for the paired count didn't load. */
+  /**
+   * Accepted replies; null when replies or the identities needed for the paired count didn't load, or when the event
+   * doesn't ask for replies (`requires_rsvp` off, the default).
+   */
   going: number | null;
   /** Invitees who haven't replied (golf_players id and name), for the coach's Nudge; null when replies didn't load. */
   awaiting?: Array<{ id: string; name: string }> | null;
@@ -404,7 +407,7 @@ export async function loadHomeWeek(
   const eventsRead = fetchAllRowsResult((from, to) =>
     supabase
       .from('golf_events')
-      .select('id, title, event_type, start_time, end_time, all_day, location')
+      .select('id, title, event_type, start_time, end_time, all_day, location, requires_rsvp')
       .eq('team_id', input.teamId)
       .neq('event_type', CLASS_EVENT_TYPE)
       .is('cancelled_at', null)
@@ -504,7 +507,8 @@ export async function loadHomeWeek(
       timeLabel: WEEKDAYS[weekdayIndexMonFirst(e.localDate)] ?? '',
       title: e.title,
       detail:
-        [e.all_day ? null : `First tee ${clock(e.start_time)}`, confirmedLine(inviteesOf(e.id), accepted.get(e.id) ?? 0) ?? e.location].filter(Boolean).join(' · ') ||
+        // "5 of 6 confirmed" only for an event that asks for replies (owner, 2026-10-08); otherwise where it is.
+        [e.all_day ? null : `First tee ${clock(e.start_time)}`, (e.requires_rsvp === true ? confirmedLine(inviteesOf(e.id), accepted.get(e.id) ?? 0) : null) ?? e.location].filter(Boolean).join(' · ') ||
         null,
       isNext: false,
       isCompetition: true,
@@ -524,6 +528,9 @@ export async function loadHomeWeek(
   const toPhone = (e: (typeof events)[number]): ChHomeEvent => {
     const ids = inviteesOf(e.id);
     const invitees = ids ? ids.map((id) => names.get(id)).filter((n): n is string => !!n) : null;
+    // Replies count, and the unanswered get a nudge, only on an event that asks for them (owner, 2026-10-08). Without
+    // it the card says who is invited, and its action is Message, not Nudge. Null (older rows) reads as off.
+    const asks = e.requires_rsvp === true;
     return {
       id: e.id,
       title: e.title,
@@ -539,8 +546,8 @@ export async function loadHomeWeek(
       invitees,
       // The card pairs this number with the rendered names' count. Partial
       // identities cannot turn "3 of 4" actual replies into "3 of 2 going".
-      going: ids && invitees?.length === ids.length ? (accepted.get(e.id) ?? 0) : null,
-      awaiting: ids ? (unanswered.get(e.id) ?? []).flatMap((id) => (names.has(id) ? [{ id, name: names.get(id)! }] : [])) : null,
+      going: asks && ids && invitees?.length === ids.length ? (accepted.get(e.id) ?? 0) : null,
+      awaiting: asks && ids ? (unanswered.get(e.id) ?? []).flatMap((id) => (names.has(id) ? [{ id, name: names.get(id)! }] : [])) : null,
       inviteeIds: ids,
       conflict: runsOn(e, today) && overlaps(e),
     };

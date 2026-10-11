@@ -197,7 +197,7 @@
   background: var(--ch-ink-300);
 }
 .ch-dot-class {
-  background: var(--ch-ivory-400);
+  background: var(--ch-info-600);
 }
 
 /* People picker */
@@ -388,7 +388,7 @@
   gap: 5px;
   padding: 8px 0 7px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
   background: transparent;
   cursor: pointer;
   transition: transform var(--ch-dur-quick) var(--ch-ease);
@@ -444,6 +444,8 @@
 .ch-wk__grid {
   position: relative;
   height: calc(var(--ch-hours) * var(--ch-hh));
+  /* The cascade's lane z-indexes stay inside the grid, so a stack of blocks never paints over the pinned days. */
+  isolation: isolate;
 }
 .ch-wk__rail {
   position: relative;
@@ -587,6 +589,139 @@
 .ch-ev--busy .ch-ev__m {
   opacity: 1;
 }
+/* A block of players' classes: the title is the kind, set apart from the words under it (who, in the body's ink). */
+.ch-ev--group .ch-ev__t {
+  font-weight: 650;
+}
+.ch-ev__who {
+  overflow: hidden;
+  font: 400 11.5px/15px var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* The slate deepens with how many are in class (2–3, 4–6, 7 and up), so the full hours read at a glance. */
+.ch-ev--class.ch-ev--fill-2 {
+  background: color-mix(in oklab, var(--ch-info-600) 22%, var(--ch-info-100));
+}
+.ch-ev--class.ch-ev--fill-3 {
+  background: var(--ch-info-600);
+  color: var(--ch-ivory-50);
+}
+.ch-ev--class.ch-ev--fill-3 .ch-ev__who {
+  color: color-mix(in oklab, var(--ch-ivory-50) 82%, transparent);
+}
+/* The class card (P006): a slate band naming the slot, then a row a player. Colour from the class slate, not ivory. */
+.ch-cg {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--ch-bg-surface);
+  box-shadow: 0 0 0 1px rgb(45 92 119 / 0.14), var(--ch-elevation-overlay);
+}
+.ch-cg__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--ch-info-600);
+  color: var(--ch-ivory-50);
+}
+.ch-cg__glyph {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.14);
+}
+.ch-cg__title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ch-cg__title b {
+  font: 650 15px/1.2 var(--ch-font-sans);
+}
+.ch-cg__title span {
+  font: 400 12.5px/1.3 var(--ch-font-sans);
+  opacity: 0.8;
+}
+.ch-cg__count {
+  min-width: 28px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.16);
+  font: 600 13px/1 var(--ch-font-sans);
+  text-align: center;
+}
+.ch-cg__list {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 6px;
+  background: color-mix(in oklab, var(--ch-info-100) 45%, var(--ch-bg-surface));
+}
+.ch-cg__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: none;
+  color: var(--ch-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.ch-cg__row > svg {
+  color: var(--ch-text-tertiary);
+}
+.ch-cg__row:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: -2px;
+}
+.ch-cg__row.is-sel,
+.ch-cg__row:active {
+  background: var(--ch-info-100);
+}
+@media (hover: hover) {
+  .ch-cg__row:hover {
+    background: var(--ch-info-100);
+  }
+}
+.ch-cg__who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ch-cg__who b {
+  font: 600 13.5px/1.25 var(--ch-font-sans);
+}
+.ch-cg__who > span {
+  overflow: hidden;
+  font: 400 12.5px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ch-cg__code {
+  margin-right: 6px;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ch-info-600);
+}
+.ch-cg__time {
+  font: 400 12px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
 /* Events that share a column (aesthetic audit C-1): at 1440px a three-way overlap leaves 29px of text, and the one-line
    title showed "Sh..." and "Te..." (15 labels under half visible in the week). A shared block takes smaller padding,
    wraps its title (three lines) and keeps only the start time; a short one keeps its row and drops the time. The
@@ -665,18 +800,17 @@
   outline: 1px dashed rgb(28 25 18 / 0.28);
   outline-offset: -1px;
 }
+/* Players' classes (owner, 2026-10-08: never ivory on ivory, and never a coloured side stripe): the info slate, a cool
+   tint of their own beside the team's greens. */
 .ch-ev--class {
-  background: var(--ch-bg-subtle);
-  color: var(--ch-text-tertiary);
-  box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
+  background: var(--ch-info-100);
+  color: var(--ch-info-600);
+  box-shadow: inset 0 0 0 1px rgb(45 92 119 / 0.16);
 }
-.ch-ev--class::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: repeating-linear-gradient(135deg, transparent 0 5px, rgb(28 25 18 / 0.035) 5px 6px);
-  pointer-events: none;
+@media (hover: hover) {
+  .ch-ev--class:hover {
+    box-shadow: inset 0 0 0 1px rgb(45 92 119 / 0.28), var(--ch-elevation-chip-hover);
+  }
 }
 .ch-ev.is-sel {
   z-index: 5;
@@ -988,6 +1122,15 @@
   top: 16px;
   max-height: calc(100vh - 110px);
   overflow: auto;
+  /* The panel scrolls itself (usePanelSmoothScroll): its ends don't hand the wheel on to the canvas behind it, and
+     Lenis eases it with no native smooth scrolling underneath. */
+  overscroll-behavior: contain;
+}
+.ch-in-wrap.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.ch-in-wrap.lenis.lenis-stopped {
+  overflow: clip;
 }
 .ch-in {
   display: flex;
@@ -1201,6 +1344,151 @@
 }
 .ch-in__next > svg {
   color: #9fe0b6;
+}
+/* The panel with nothing selected (owner, 2026-10-08: "black text on ivory"). The day is a lit green plate; what
+   needs attention sits on raised tiles; each source keeps the colour it has on the grid. */
+.ch-in__today {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 16px 14px;
+  border-radius: 16px;
+  background: var(--ch-light-sky), var(--ch-green-fill-700);
+  color: var(--ch-ivory-50);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), var(--ch-elevation-reading);
+}
+.ch-in__today .ch-in__kick {
+  color: #bfd5c6;
+}
+/* [data-ui] main[data-canopy] h2 (shell.css) sets the forest ink on every h2; the plate's title is ivory. */
+[data-ui='clubhouse'] main[data-canopy] .ch-in__today h2.ch-in__title {
+  color: var(--ch-ivory-50);
+}
+.ch-in__today .ch-in__next {
+  background: rgb(255 255 255 / 0.1);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
+}
+.ch-in__sec .ch-in__need {
+  padding: 10px 12px;
+  border-top: 0;
+  border-radius: 12px;
+  background: var(--ch-bg-surface);
+  box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-elevation-control);
+}
+.ch-in__sec .ch-in__need + .ch-in__need {
+  margin-top: 6px;
+}
+.ch-in__need .ch-in__ic.is-ok {
+  background: var(--ch-green-50);
+  color: var(--ch-green-700);
+  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.14);
+}
+.ch-in__fact {
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+}
+.ch-in__fact > svg {
+  box-sizing: content-box;
+  margin: 0;
+  padding: 6px;
+  border-radius: 8px;
+  background: var(--ch-bg-subtle);
+}
+.ch-in__fact.is-team > svg {
+  background: var(--ch-green-50);
+  color: var(--ch-green-700);
+}
+.ch-in__fact.is-class > svg {
+  background: var(--ch-info-100);
+  color: var(--ch-info-600);
+}
+.ch-in__fact.is-own > svg {
+  background: color-mix(in oklab, var(--ch-champagne-500) 18%, var(--ch-bg-surface));
+  color: color-mix(in oklab, var(--ch-champagne-500) 70%, var(--ch-ink-900));
+}
+/* The panel's head plate (owner, 2026-10-08: "black on ivory"): every event type opens on a lit plate in the colour its
+   block has on the grid, in ivory ink. data-tone: green practice, forest competition, slate class and travel, ink
+   meeting and other, champagne busy time, amber overlap. */
+.ch-in__plate {
+  --ch-plate: var(--ch-ink-700);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 16px 14px;
+  border-radius: 16px;
+  background: var(--ch-light-sky), var(--ch-plate);
+  color: var(--ch-ivory-50);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14), var(--ch-elevation-reading);
+}
+.ch-in__plate[data-tone='green'] {
+  --ch-plate: var(--ch-green-fill-600);
+}
+.ch-in__plate[data-tone='forest'] {
+  --ch-plate: var(--ch-green-800);
+}
+.ch-in__plate[data-tone='slate'] {
+  --ch-plate: var(--ch-info-600);
+}
+.ch-in__plate[data-tone='champagne'] {
+  --ch-plate: color-mix(in oklab, var(--ch-champagne-500) 55%, var(--ch-ink-900));
+}
+.ch-in__plate[data-tone='amber'] {
+  --ch-plate: color-mix(in oklab, var(--ch-warning-600) 80%, var(--ch-ink-900));
+}
+.ch-in__plate .ch-in__kick {
+  justify-content: flex-start;
+  gap: 8px;
+  color: rgb(255 255 255 / 0.8);
+}
+.ch-in__plate .ch-in__kick .ch-badge {
+  background: rgb(255 255 255 / 0.18);
+  color: var(--ch-ivory-50);
+  box-shadow: none;
+}
+.ch-in__plate .ch-in__kick .ch-btn {
+  margin-left: auto;
+  color: var(--ch-ivory-50);
+}
+.ch-in__plate .ch-cal-sub {
+  color: rgb(255 255 255 / 0.84);
+}
+[data-ui='clubhouse'] main[data-canopy] .ch-in__plate h2.ch-in__title {
+  color: var(--ch-ivory-50);
+}
+.ch-in__chip {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.18);
+  font: 600 12px/1.2 var(--ch-font-sans);
+  color: var(--ch-ivory-50);
+}
+.ch-in__by {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font: 500 13px/1.3 var(--ch-font-sans);
+  color: rgb(255 255 255 / 0.84);
+}
+.ch-in__by b {
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.16);
+  font-weight: 600;
+  color: var(--ch-ivory-50);
+}
+.ch-in__note {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--ch-info-100);
+  font: var(--ch-type-caption);
+  color: var(--ch-info-600);
+}
+.ch-in__note > svg {
+  margin-top: 1px;
 }
 .ch-in__att {
   display: grid;
@@ -2408,6 +2696,16 @@
     background: none;
     box-shadow: none;
   }
+  /* Owner, 2026-10-08: the week sits in the day's light. The sun's wash falls across the grid from its side, and the
+     pinned days carry the same light so they don't read as a white card laid over it. */
+  .ch-cal[data-canopy] .ch-wk.ch-cal-surface {
+    border-radius: 16px;
+    background: var(--ch-light-surface);
+  }
+  .ch-cal[data-canopy] .ch-wk__top {
+    background: var(--ch-light-surface), var(--ch-workspace);
+    background-size: 100% calc(var(--ch-hours, 15) * var(--ch-hh, 52px)), auto;
+  }
   .ch-cal[data-canopy] .ch-cal-body {
     position: relative;
     grid-template-columns: minmax(0, 1fr) 332px;
@@ -2619,8 +2917,8 @@ html[data-fw-theme='dark'] .ch-ev--travel {
   background: rgb(255 255 255 / 0.03);
   outline-color: rgb(237 231 216 / 0.3);
 }
-html[data-fw-theme='dark'] .ch-ev--class::after {
-  background: repeating-linear-gradient(135deg, transparent 0 5px, rgb(237 231 216 / 0.04) 5px 6px);
+html[data-fw-theme='dark'] .ch-ev--class {
+  box-shadow: inset 0 0 0 1px rgb(134 182 212 / 0.2);
 }
 html[data-fw-theme='dark'] .ch-ev.is-sel {
   box-shadow: 0 0 0 2px var(--ch-green-600), var(--ch-elevation-floating);

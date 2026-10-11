@@ -1,5 +1,48 @@
 # P007 — Messages: changelog
 
+## 2026-10-08 — a flatter conversation list, a green filter, and Delete conversation
+
+Owner review:
+
+- The conversation list stays a flat list (owner: "too card heavy"): thin
+  dividers inset to the text, the open conversation the one filled green row in
+  ivory ink (the old left stripe is gone), groups a solid green disc, avatars
+  44px, and a long name wraps to a second line rather than being cut mid-word.
+  `messages.css`.
+- All, Unread and Groups: the chosen chip is green with ivory ink, not ivory on
+  ivory.
+- **Delete conversation** (CH-7503): a danger button in the conversation's
+  details (desktop panel and phone sheet) opens a confirm, then hides the
+  conversation from your own inbox (`hideGolfConversation`,
+  `app/golf/actions/conversation-hide.ts`). The other people keep their copy,
+  the
+  messages are untouched, a team channel can't be deleted, and a message that
+  arrives after the hide brings the conversation back. It needs the held
+  migration `20261008160000_golf_conversation_hidden_at.sql` (a nullable
+  `golf_conversation_participants.hidden_at` and the inbox function skipping a
+  hidden conversation); until that is applied the button is not offered
+  (`canHideGolfConversations` probes the column) and the action answers "not
+  available yet". Fairway's inbox ignores `hidden_at` for now.
+- A photo in a thread shows inline (a fixed 4:3 frame, cropped, so a late image
+  never moves the messages around it; a click opens the full file, and one that
+  won't load falls back to the file chip). Videos and documents stay chips.
+- A reaction chip is the opposite colour of its message (ivory under a green
+  bubble, green under an ivory one; yours is ringed in champagne), and a click
+  opens who reacted: a green head naming the reaction and the count, a row per
+  person, and one action to add or take back your own (`ReactionChip`;
+  `ChReaction.userIds`). The glyphs are outline only, heavier (2.3), in pure
+  ivory
+  on green and deep green on ivory; the picker's chosen reaction is a green
+  disc.
+- The composer is a taller, rounder bar (56px, 28px radius) that takes a green
+  focus glow; Attach is a green-wash disc, and Send a green disc that is a pale
+  tint when empty and full green when there is something to send
+  (`.ch-ms-comp__field`, `.ch-ms-send.is-ready`). Not yet signed off by the
+  owner.
+- The thread and the conversation list ease like the page does
+  (`usePanelSmoothScroll`; the thread glides 1.2s). Desktop wheel only: a
+  trackpad and the phone scroll natively.
+
 ## 2026-10-08 — the player peek (P003-C1)
 
 The shared PlayerPeek: for the coach, a player's avatar and name in a thread peek at the player, from the team directory Messages already holds. The bubble keeps its own hold for message actions; coaches and people off the roster don't peek. No new reads.

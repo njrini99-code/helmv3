@@ -168,7 +168,7 @@
   align-items: center;
   gap: 6px;
   padding: 9px 0 8px;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
 }
 /* On the week strip's well tertiary measured 4.1:1 (UX360 sampled 3.7:1); secondary holds 5.4:1. Aesthetic audit X-2. */
 .ch-h-day__d {
@@ -3670,5 +3670,165 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
 @media (max-width: 820px) {
   .ch-hm-hero .ch-hm-sec.is-failed {
     margin-top: 18px;
+  }
+}
+
+/* P002: the team's scoring form on the coach's desktop Home (TeamForm). The average and its change, the last round days as a line on the
+   deep-green stage (drawn once, left to right, when first seen), and the week's rounds, greens and putts. */
+.ch-h-form {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) 210px;
+  align-items: center;
+  gap: 32px;
+  margin: 4px 0 20px;
+  padding: 22px 28px;
+  border-radius: 20px;
+  background:
+    radial-gradient(90% 140% at 0% 0%, rgb(159 224 182 / 0.16), transparent 58%),
+    var(--ch-stage-bg);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1), var(--ch-elevation-feature);
+  color: var(--ch-stage-ink);
+}
+.ch-h-form__lead {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.ch-h-form .ch-h-form__lead h2 {
+  margin: 0;
+  font: 600 14px/1.2 var(--ch-font-sans);
+  color: var(--ch-stage-ink-soft);
+}
+.ch-h-form .ch-h-form__big {
+  color: var(--ch-stage-ink);
+  font: 600 64px/1 var(--ch-font-sans);
+  letter-spacing: -0.045em;
+}
+.ch-h-form__delta {
+  font: 700 15px/1.2 var(--ch-font-sans);
+}
+.ch-h-form__delta em {
+  font: 400 13px/1.2 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-stage-ink-soft);
+}
+.ch-h-form__delta.is-gain {
+  color: var(--ch-stage-line);
+}
+.ch-h-form__delta.is-loss {
+  color: var(--ch-stage-gold);
+}
+.ch-h-form__basis {
+  font: 400 12.5px/1.35 var(--ch-font-sans);
+  color: var(--ch-stage-ink-soft);
+}
+.ch-h-form__plot {
+  position: relative;
+  height: 124px;
+  margin-right: 34px;
+}
+.ch-h-form__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transition: clip-path var(--ch-dur-reveal) var(--ch-ease-io);
+}
+.ch-h-form__plot:not(.is-in) .ch-h-form__svg {
+  clip-path: inset(-8px 100% -8px 0);
+}
+.ch-h-form__plot.is-in .ch-h-form__svg {
+  clip-path: inset(-8px -8px -8px 0);
+}
+.ch-h-form__s0 {
+  stop-color: var(--ch-stage-line);
+  stop-opacity: 0.34;
+}
+.ch-h-form__s1 {
+  stop-color: var(--ch-stage-line);
+  stop-opacity: 0;
+}
+.ch-h-form__grid {
+  stroke: var(--ch-stage-rule);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  vector-effect: non-scaling-stroke;
+}
+.ch-h-form__line {
+  fill: none;
+  stroke: var(--ch-stage-line);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.ch-h-form__tick {
+  position: absolute;
+  left: 100%;
+  margin: -7px 0 0 8px;
+  font: 600 12px/1 var(--ch-font-sans);
+  color: var(--ch-stage-ink-soft);
+}
+.ch-h-form__dot {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: var(--ch-stage-line);
+  box-shadow:
+    0 0 0 3px var(--ch-green-900),
+    0 0 0 5px var(--ch-stage-line);
+  opacity: 0;
+  transition: opacity var(--ch-dur-base) var(--ch-ease) var(--ch-dur-reveal);
+}
+.ch-h-form__plot.is-in .ch-h-form__dot {
+  opacity: 1;
+}
+.ch-h-form__figs {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+.ch-h-form__figs > div {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: baseline;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ch-stage-rule);
+}
+.ch-h-form__figs > div:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.ch-h-form__figs dt {
+  font: 500 13px/1.2 var(--ch-font-sans);
+  color: var(--ch-stage-ink-soft);
+}
+.ch-h-form__figs dd {
+  margin: 0;
+  font: 400 12px/1.2 var(--ch-font-sans);
+  color: var(--ch-stage-ink-soft);
+}
+.ch-h-form__figs dd.ch-num:first-of-type {
+  font: 600 20px/1 var(--ch-font-sans);
+  color: var(--ch-stage-ink);
+}
+.ch-h-form__figs dd.is-gain {
+  color: var(--ch-stage-line);
+}
+.ch-h-form__figs dd.is-loss {
+  color: var(--ch-stage-gold);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-h-form__dot {
+    transition-delay: 0s;
+  }
+}
+@media (max-width: 1100px) {
+  .ch-h-form {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
   }
 }

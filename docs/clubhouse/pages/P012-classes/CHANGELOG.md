@@ -1,5 +1,21 @@
 # P012 — Classes: changelog
 
+## 2026-10-11 — The timetable bar's depth is a token; it no longer glides
+
+Presentation only. The meeting bar's small green glow is `--ch-elevation-mark`
+(shared entry in `docs/clubhouse/CHANGELOG.md`). Its
+width transition is removed (the CSS gate allows no new layout motion and the
+bar carries a clash flag a scale would squash), so a
+change of times now redraws the bar at its new length at once instead of gliding
+there. The drawn bar is unchanged.
+
+## 2026-10-10 — Readable timetable marks
+
+Presentation only. A team event's chip in the timetable header wraps to two
+lines instead of clipping to "Pine…"; a meeting's bar is an
+8px green capsule (still as long as the meeting) instead of a 6px black mark,
+and it glides when the times change.
+
 ## 2026-10-08 — Premium pass (backlog)
 
 - **One timetable (A1):** "Your classes" takes one row of days (Mon to Fri; the

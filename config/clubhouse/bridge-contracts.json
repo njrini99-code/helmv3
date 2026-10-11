@@ -2445,7 +2445,7 @@
     "item": 1,
     "name": "OPENING_OR_SWITCHING_A_PLAYER",
     "chCode": "CH-3601",
-    "meaning": "Opening or switching a player",
+    "meaning": "Opening or switching a player (desktop: from a Needs a look chip)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -5084,11 +5084,12 @@
     "category": 8,
     "item": 7,
     "name": "REPLY_IS_FOR_INVITED_PLAYERS",
-    "meaning": "A player is offered the reply (Going, Maybe, Can't make it) only on an event whose invite list they are on that has not started and is not cancelled; once it starts the panel says replies are closed.",
+    "meaning": "A player is offered the reply (Going, Maybe, Can't make it) only on an event that requires an RSVP, whose invite list they are on, that has not started and is not cancelled; once it starts the panel says replies are closed. An event without RSVP (requires_rsvp off or null, the default) shows no reply control, reply counts or badges, Needs attention row or Nudge; the coach panel lists it as Invited. The editor Require RSVP switch is off for a new event and is sent on create, edit and series edit (series only when changed).",
     "status": "implemented",
     "where": "src/clubhouse/screens/calendar/inspector.tsx#EventDetail, PlayerReply",
     "tests": [
-      "src/clubhouse/__tests__/calendar.test.tsx"
+      "src/clubhouse/__tests__/calendar.test.tsx",
+      "src/clubhouse/__tests__/calendar-audit.test.tsx"
     ]
   },
   {
@@ -6274,6 +6275,17 @@
     "name": "LEAVE_A_GROUP",
     "chCode": "CH-7502",
     "meaning": "Leave a group",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 71103,
+    "page": "P007",
+    "category": 11,
+    "item": 3,
+    "name": "DELETE_A_CONVERSATION",
+    "chCode": "CH-7503",
+    "meaning": "Delete a conversation",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -10836,6 +10848,19 @@
     ]
   },
   {
+    "id": 110115,
+    "page": "P011",
+    "category": 1,
+    "item": 15,
+    "name": "A_SHOTGUN_START_CHANGES_ONLY_THE_ORDER",
+    "meaning": "Once the scorecard is in, Round details offers \"Starting hole\": the holes the round plays, by the card's numbers, the first played by default; the dock adds \"· Starts on hole N\" when it is not the first. Start hands the engine the start as a position in the holes played (setup-reads#toStartForm `setup.startHole`); every autosave keeps it in draft_data, so Continue resumes in the same order. Holes keep their numbers and places everywhere (strip, scorecard, Out/In, Front · Back, the review); only the walk changes: from 6 the round plays 6 to 18, then 1 to 5, and finishes after the 18th hole played. A 9-hole round wraps inside its nine. The strip lets the player go back to holes played earlier in that order, never ahead past the next one; Round complete's Back names the hole the round ended on; the unfinished card's next hole follows the order (lib/golf/round-session/play-order.ts).",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup; src/clubhouse/screens/rounds/entry/setup-reads.ts#toStartForm; src/clubhouse/screens/rounds/track/parts.tsx#TrackStrip; src/clubhouse/data/rounds.ts; src/lib/golf/round-session/play-order.ts",
+    "tests": [
+      "src/clubhouse/__tests__/rounds-shotgun-start.test.tsx"
+    ]
+  },
+  {
     "id": 110201,
     "page": "P011",
     "category": 2,
@@ -11798,6 +11823,17 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110714,
+    "page": "P011",
+    "category": 7,
+    "item": 14,
+    "name": "THE_BALL_IS_ON_THE_GREEN_AND",
+    "chCode": "CH-11913",
+    "meaning": "The ball is on the green and the putt result is not picked yet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110801,
     "page": "P011",
     "category": 8,
@@ -12373,6 +12409,17 @@
     "name": "A_FAILURE_APPEARS_IN_ROUND_ENTRY_AN",
     "chCode": "CH-11709",
     "meaning": "A failure appears in round entry: an inline line, a toast or a banner (CH-11008 to CH-11013, CH-11902)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111710,
+    "page": "P011",
+    "category": 17,
+    "item": 10,
+    "name": "TAP_IN_IS_TAPPED",
+    "chCode": "CH-11710",
+    "meaning": "Tap in is tapped (CH-11913)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },

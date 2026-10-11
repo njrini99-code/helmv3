@@ -44,6 +44,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useChReducedMotion } from "../../lib/reduced-motion";
 import { Avatar } from "../../ui/Avatar";
@@ -60,6 +61,7 @@ import { Swap } from "../../ui/Swap";
 import { PlayerPeek } from "../../ui/PlayerPeek";
 import { EmptyState, Skeleton } from "../../ui/States";
 import { haptic } from "../../lib/haptics";
+import { usePanelSmoothScroll } from "../../lib/smooth-scroll";
 import { chReport, chTrail } from "../../lib/track";
 import { rebuiltHref } from "../../shell/nav";
 import {
@@ -90,6 +92,9 @@ import { fileMeta, fileSize, useConversationFiles } from "./files";
 export { fileSize } from "./files";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
 import { MessagesHead } from "./MessagesNoTeam";
+
+/** The thread's glide, longer than the page's (a conversation is read down a long column). */
+const THREAD_SCROLL_DUR = 1.2;
 
 export const REACTIONS: Array<{ key: ChReactionKey; icon: LucideIcon }> = [
   { key: "Like", icon: ThumbsUp },
@@ -168,6 +173,8 @@ export interface ChMessagesApi {
   membersError: boolean;
   retryMembers: () => void;
   leave: () => Promise<boolean>;
+  /** Hides the open conversation from the viewer's own inbox (CH-7011); null until the database supports it. */
+  deleteConversation: (() => Promise<boolean>) | null;
   /** The open group's creator only: who on the team isn't in it yet, and adding one (D-47). */
   addCandidates: () => Promise<ChMember[] | null>;
   addMember: (userId: string, name: string) => Promise<boolean>;
@@ -383,6 +390,8 @@ export function ConvRow({ api, c, avatarSize = 36 }: { api: ChMessagesApi; c: Ch
 }
 
 function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
+  const body = useRef<HTMLDivElement | null>(null);
+  usePanelSmoothScroll(body);
   const [filter, setFilter] = useState<ChConvFilter>("all");
   const [q, setQ] = useState("");
   const unread = api.convs.filter((c) => c.unread > 0).length;
@@ -425,7 +434,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
           ]}
         />
       </div>
-      <div className="ch-ms-rail__body">
+      <div className="ch-ms-rail__body" ref={body}>
         {api.convsError ? (
           // The rail's full width (states audit c9): at the body's inset its body wrapped to a narrow column.
           <div className="ch-ms-rail__notice">
@@ -501,6 +510,150 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
 
 /* Thread */
 
+/**
+ * A reaction on a message (owner, 2026-10-08): the chip is the opposite colour of the bubble it sits under (ivory under
+ * a green one, green under an ivory one), and a click opens who reacted, with a row to add or take back your own.
+ */
+function ReactionChip({ api, messageId, r }: { api: ChMessagesApi; messageId: string; r: ChReaction }) {
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  const [open, setOpen] = useState(false);
+  const btn = useRef<HTMLButtonElement | null>(null);
+  const card = useRef<HTMLDivElement | null>(null);
+  const label = REACTIONS.find((x) => x.key === r.key)?.key ?? r.key;
+  const people = (r.userIds ?? []).map((id) => ({ id, name: id === api.viewer.userId ? "You" : personOf(api, id)?.name ?? "Member" }));
+  people.sort((a, b) => (a.id === api.viewer.userId ? -1 : b.id === api.viewer.userId ? 1 : a.name.localeCompare(b.name)));
+
+  useLayoutEffect(() => {
+    if (!open || !btn.current) return;
+    const place = () => {
+      const b = btn.current!.getBoundingClientRect();
+      const h = card.current?.offsetHeight ?? 160;
+      const w = 248;
+      const left = Math.max(8, Math.min(b.left, window.innerWidth - w - 8));
+      const above = b.top - h - 8;
+      setPos({ left, top: above >= 8 ? above : Math.min(b.bottom + 8, window.innerHeight - h - 8) });
+    };
+    place();
+    const close = (e: Event) => {
+      if (card.current && e.target instanceof Node && card.current.contains(e.target)) return;
+      setOpen(false);
+    };
+    window.addEventListener("resize", place);
+    document.addEventListener("scroll", close, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      document.removeEventListener("scroll", close, true);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const down = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (!card.current?.contains(t) && !btn.current?.contains(t)) setOpen(false);
+    };
+    const key = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        btn.current?.focus();
+      }
+    };
+    document.addEventListener("mousedown", down);
+    document.addEventListener("keydown", key);
+    return () => {
+      document.removeEventListener("mousedown", down);
+      document.removeEventListener("keydown", key);
+    };
+  }, [open]);
+
+  return (
+    <>
+      <button
+        ref={btn}
+        type="button"
+        className={"ch-ms-react ch-num" + (r.mine ? " is-mine" : "")}
+        aria-label={`${label}, ${r.count}${r.mine ? ", including you" : ""}. Show who reacted`}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => {
+          haptic("select");
+          setOpen((o) => !o);
+        }}
+      >
+        <Icon icon={REACTION_ICON[r.key]} size={12} />
+        {r.count}
+      </button>
+      {typeof document !== "undefined" &&
+        createPortal(
+          open ? (
+            <div
+              ref={card}
+              role="dialog"
+              aria-label={`${label}, ${r.count} ${r.count === 1 ? "person" : "people"}`}
+              className="ch-rx"
+              data-ui="clubhouse"
+              style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0 }}
+            >
+              <header className="ch-rx__head">
+                <span className="ch-rx__glyph" aria-hidden="true">
+                  <Icon icon={REACTION_ICON[r.key]} size={15} />
+                </span>
+                <b>{label}</b>
+                <span className="ch-rx__n ch-num">{r.count}</span>
+              </header>
+              <div className="ch-rx__list">
+                {people.map((p) => (
+                  <div key={p.id} className="ch-rx__row">
+                    <Avatar name={p.name === "You" ? api.viewer.name : p.name} size={28} />
+                    <span>{p.name}</span>
+                  </div>
+                ))}
+                {people.length === 0 && <p className="ch-rx__none">{r.count} {r.count === 1 ? "person" : "people"}</p>}
+              </div>
+              <button
+                type="button"
+                className="ch-rx__act"
+                onClick={() => {
+                  haptic("select");
+                  api.react(messageId, r.key, !r.mine);
+                  setOpen(false);
+                }}
+              >
+                {r.mine ? "Take back your reaction" : `React with ${label}`}
+              </button>
+            </div>
+          ) : null,
+          document.querySelector(".ch-root") ?? document.body,
+        )}
+    </>
+  );
+}
+
+/** A photo in a message: shown in the thread, a click opens the full file. One that won't load falls back to the file chip. */
+function ImageAttachment({ f }: { f: ChAttachment }) {
+  const [broken, setBroken] = useState(false);
+  if (broken) {
+    return (
+      <a className="ch-ms-bub ch-ms-bub--file" href={f.url ?? undefined} target="_blank" rel="noreferrer">
+        <span className="ch-ms-file__ic">
+          <Icon icon={FileText} size={16} />
+        </span>
+        <span style={{ minWidth: 0 }}>
+          <b>{f.name}</b>
+          <span>{fileSize(f.size)}</span>
+        </span>
+        <Icon icon={Download} size={15} />
+      </a>
+    );
+  }
+  return (
+    <a className="ch-ms-img" href={f.url ?? undefined} target="_blank" rel="noreferrer" aria-label={`Open ${f.name}`}>
+      {/* A plain img on purpose: a signed storage URL, sized by the thread, not an optimised asset. */}
+      <img src={f.url ?? undefined} alt={f.name} loading="lazy" decoding="async" onError={() => setBroken(true)} />
+    </a>
+  );
+}
+
 export function Attachments({
   load,
   id,
@@ -552,7 +705,10 @@ export function Attachments({
     );
   return (
     <>
-      {files.map((f) => (
+      {files.map((f) =>
+        f.mime.startsWith("image/") && f.url ? (
+          <ImageAttachment key={f.id} f={f} />
+        ) : (
         <a
           key={f.id}
           className="ch-ms-bub ch-ms-bub--file"
@@ -571,7 +727,8 @@ export function Attachments({
           <Icon icon={Download} size={15} />
           {mine && <span className="ch-sr-only">Sent by you</span>}
         </a>
-      ))}
+        ),
+      )}
     </>
   );
 }
@@ -803,22 +960,9 @@ export function Bubble({
           )}
         </div>
         {reacts.length > 0 && (
-          <div className="ch-ms-reacts">
+          <div className={"ch-ms-reacts" + (m.mine ? " on-mine" : " on-theirs")}>
             {reacts.map((r) => (
-              <button
-                key={r.key}
-                type="button"
-                className={"ch-ms-react ch-num" + (r.mine ? " is-mine" : "")}
-                aria-label={`${r.key}, ${r.count}${r.mine ? ", including you" : ""}`}
-                aria-pressed={r.mine}
-                onClick={() => {
-                  haptic("select");
-                  api.react(m.id, r.key, !r.mine);
-                }}
-              >
-                <Icon icon={REACTION_ICON[r.key]} size={12} />
-                {r.count}
-              </button>
+              <ReactionChip key={r.key} api={api} messageId={m.id} r={r} />
             ))}
           </div>
         )}
@@ -1227,6 +1371,9 @@ function Thread({
 
   // The thread follows its end only while the reader is there (audit T25); see useThreadAnchor.
   const anchor = useThreadAnchor(scroller, { convId: conv.id, count: api.msgs.length, lastMine: !!api.msgs.at(-1)?.mine, typing: api.typing });
+  // The thread eases like the page does, with a longer glide (a conversation is read down a long column); desktop,
+  // wheel only: a trackpad stays native.
+  usePanelSmoothScroll(scroller, { duration: THREAD_SCROLL_DUR });
   useEffect(() => setPicking(null), [conv.id]);
   useEffect(() => {
     if (!picking) return;
@@ -1525,6 +1672,44 @@ export function LeaveGroupModal({ api, conv, open, onClose, onLeft }: { api: ChM
   );
 }
 
+/** Delete a conversation from your own inbox, after a confirm (CH-7503). Everyone else keeps theirs. */
+export function DeleteConversationModal({ api, conv, open, onClose, onDeleted }: { api: ChMessagesApi; conv: ChConv; open: boolean; onClose: () => void; onDeleted: () => void }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <Modal
+      code="CH-7503"
+      open={open}
+      onClose={onClose}
+      icon={Trash2}
+      title={`Delete ${conv.title}?`}
+      description="It leaves your inbox. The other people keep their copy, and it comes back if someone sends a new message."
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Keep
+          </Button>
+          <Button
+            variant="danger"
+            feel="warning"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              const ok = (await api.deleteConversation?.()) ?? false;
+              setBusy(false);
+              if (ok) {
+                onClose();
+                onDeleted();
+              }
+            }}
+          >
+            {busy ? "Deleting…" : "Delete conversation"}
+          </Button>
+        </>
+      }
+    />
+  );
+}
+
 /**
  * The group's creator adds teammates or coaches who aren't in it yet (D-47),
  * on desktop and phone: the candidates load when it opens (CH-7410), a failed
@@ -1627,6 +1812,7 @@ function Details({
   onClose: () => void;
 }) {
   const [leaving, setLeaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [adding, setAdding] = useState(false);
   const mayAdd = conv.group && conv.creatorId === api.viewer.userId;
   const other = !conv.group
@@ -1735,7 +1921,15 @@ function Details({
           </Button>
         </div>
       )}
+      {api.deleteConversation && (
+        <div className="ch-ms-det__sec">
+          <Button variant="danger" leftIcon={Trash2} onClick={() => setDeleting(true)}>
+            Delete conversation
+          </Button>
+        </div>
+      )}
       <LeaveGroupModal api={api} conv={conv} open={leaving} onClose={() => setLeaving(false)} onLeft={onClose} />
+      <DeleteConversationModal api={api} conv={conv} open={deleting} onClose={() => setDeleting(false)} onDeleted={onClose} />
       {mayAdd && <AddMembersModal api={api} conv={conv} open={adding} onClose={() => setAdding(false)} />}
     </aside>
   );

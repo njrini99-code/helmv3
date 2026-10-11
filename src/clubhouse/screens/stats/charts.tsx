@@ -351,6 +351,7 @@ export function FieldTable({
   const fmt = (v: number | null, r: (typeof rows)[number]) => (v == null ? NO_DATA : r.sg || r.signed ? `${formatSigned(v, r.digits)}${r.unit}` : `${v.toFixed(r.digits)}${r.unit}`);
   const signTone = (v: number | null, r: (typeof rows)[number]) => (r.sg && v != null ? (v >= 0 ? 'ch-gain' : 'ch-loss') : '');
   const hasBench = rows.some((r) => r.bench != null);
+  // A row's axis needs something to set the player against: the team's figure (a coach) or the Tour's.
   const cols = 2 + (showTeam ? 1 : 0) + (hasBench ? 1 : 0);
   return (
     <table className="ch-ft">

@@ -9,11 +9,12 @@ import { useAction } from '../../../lib/use-action';
 import { usePhoneImmersive, usePhoneTabsHidden } from '../../../shell/phone-chrome';
 import { Icon } from '../../../ui/Icon';
 import { InlineNotice } from '../../../ui/Notices';
+import { Select } from '../../../ui/Select';
 import { TeeSwatch, TYPE_LABEL } from '../parts';
 import { AddCourseSheet } from './AddCourseSheet';
 import { CoursePicker } from './CoursePicker';
 import { HoleConfig } from './HoleConfig';
-import { holesForRound, parOf, setupBlocker, type ChSetupCourse, type ChSetupForm, type ChSetupHole, type ChSetupPick, type ChSetupPorts, type ChSetupQualifier, type ChStartFailure, type ChStartResult } from './shape';
+import { holesForRound, parOf, setupBlocker, startPosition, type ChSetupCourse, type ChSetupForm, type ChSetupHole, type ChSetupPick, type ChSetupPorts, type ChSetupQualifier, type ChStartFailure, type ChStartResult } from './shape';
 import '../../../styles/rounds-setup.css';
 
 const STEPS = ['Course', 'Scorecard', 'Track'] as const;
@@ -161,6 +162,10 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
   const offer = form.type !== 'qualifier' ? open[0] : undefined;
   const chosenQ = qualifiers?.find((q) => q.id === form.qualifierId) ?? null;
   const played = holesForRound(form.holes, form.count, form.nine);
+  // Shotgun start (CONTRACT 01, "Starting hole"): the hole the round starts on, by the card's number. Every hole is still
+  // played once, in order from there and wrapping past the last one (lib/golf/round-session/play-order.ts).
+  const startAt = startPosition(form);
+  const startHole = played[startAt - 1]?.n ?? null;
   const step = form.pick ? 1 : 0;
   const p = form.pick;
 
@@ -309,6 +314,17 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
                   </div>
                 </div>
               </div>
+              {played.length > 0 && (
+                <div className="ch-rsu-field">
+                  <label htmlFor="ch-rsu-start">Starting hole</label>
+                  <Select
+                    id="ch-rsu-start"
+                    value={String(startHole ?? played[0]!.n)}
+                    options={played.map((h) => ({ value: String(h.n), label: `Hole ${h.n}` }))}
+                    onChange={(v) => set({ start: Number(v) })}
+                  />
+                </div>
+              )}
               {form.type === 'qualifier' &&
                 (qualifiers === null ? (
                   <InlineNotice code="CH-11211" title="Your qualifiers didn’t load" body="Play it as a practice round, or come back in a moment." />
@@ -406,6 +422,7 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
           {p && !blocker ? (
             <>
               <b>{p.courseName}</b> · {p.teeName} · {played.length} holes · Par {parOf(played)}
+              {startAt > 1 && startHole != null ? ` · Starts on hole ${startHole}` : ''}
             </>
           ) : (
             blocker

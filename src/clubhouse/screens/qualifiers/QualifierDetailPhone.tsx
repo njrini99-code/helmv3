@@ -292,7 +292,7 @@ function Board({
   }
   const canOpen = (r: ChQRow) => coach || r.playerId === data.viewerPlayerId;
   return (
-    <section className="ch-qf-panel" aria-labelledby="ch-qfm-lb">
+    <section className="ch-qf-panel ch-qf-board" aria-labelledby="ch-qfm-lb">
       {head}
       {stale && <StaleStandings />}
       <p className="ch-sr-only" aria-live="polite" data-ch-code="CH-09803">
@@ -335,7 +335,8 @@ function Board({
               {canOpen(r) ? (
                 <button
                   type="button"
-                  className={'ch-qfm-lb__row' + (me ? ' is-me' : '')}
+                  className={'ch-qfm-lb__row' + (me ? ' is-me' : '') + (r.position === 1 && r.played > 0 ? ' is-lead' : '')}
+                  data-state={r.state ?? undefined}
                   aria-label={`${label}. Show ${me ? 'your' : 'their'} rounds`}
                   onClick={() => {
                     haptic('select');
@@ -346,7 +347,7 @@ function Board({
                   {body}
                 </button>
               ) : (
-                <div className={'ch-qfm-lb__row is-static' + (me ? ' is-me' : '')} role="group" aria-label={label}>
+                <div className={'ch-qfm-lb__row is-static' + (me ? ' is-me' : '') + (r.position === 1 && r.played > 0 ? ' is-lead' : '')} data-state={r.state ?? undefined} role="group" aria-label={label}>
                   {body}
                 </div>
               )}

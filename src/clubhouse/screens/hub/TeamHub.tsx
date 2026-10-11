@@ -3,7 +3,7 @@
 import { ClipboardList, Megaphone, Plane, Plus, User, UsersRound } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { m } from 'motion/react';
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChRsvp, ChTeamHub } from '../../data/hub';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -93,7 +93,7 @@ function ReadMargin({ anns }: { anns: ChHubAnnouncement[] }) {
       <b className="ch-hb-margin__t">{a.title}</b>
       <span className="ch-hb-reads ch-num">
         <span className="ch-hb-reads__t" aria-hidden="true">
-          <i style={{ width: `${pct}%` }} />
+          <i style={{ '--ch-hb-p': pct / 100 } as CSSProperties} />
         </span>
         {a.ackCount} of {a.recipients}
       </span>

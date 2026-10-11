@@ -166,12 +166,12 @@ function FindTime({
   );
 }
 
-type EditorValues = { title: string; type: ChCalType; date: string; win: [number, number]; allDay: boolean; repeat: Repeat; loc: string; notes: string; invited: string[] };
+type EditorValues = { title: string; type: ChCalType; date: string; win: [number, number]; allDay: boolean; repeat: Repeat; loc: string; notes: string; invited: string[]; rsvp: boolean };
 
 /** The editor's values as one comparable string, so edits can be told from a look. */
 function snapshot(v: EditorValues): string {
   // A fixed field order, so the same values always make the same string.
-  return JSON.stringify([v.title.trim(), v.type, v.date, v.win, v.allDay, v.repeat, v.loc.trim(), v.notes.trim(), [...v.invited].sort()]);
+  return JSON.stringify([v.title.trim(), v.type, v.date, v.win, v.allDay, v.repeat, v.loc.trim(), v.notes.trim(), [...v.invited].sort(), v.rsvp]);
 }
 
 export function EventEditor({
@@ -210,6 +210,9 @@ export function EventEditor({
   const [loc, setLoc] = useState('');
   const [notes, setNotes] = useState('');
   const [invited, setInvited] = useState<string[]>([]);
+  // Require RSVP: off unless the coach turns it on (owner, 2026-10-08). Off, players get no notification and no reply
+  // controls; the event is still on every invitee's calendar.
+  const [rsvp, setRsvp] = useState(false);
   const [scope, setScope] = useState<Scope>('this');
   // A multi-day all-day event keeps its length through an edit, a move or a Duplicate (CAL-06).
   const [extraDays, setExtraDays] = useState(0);
@@ -241,6 +244,7 @@ export function EventEditor({
           loc: e.location ?? '',
           notes: e.notes ?? '',
           invited: e.people,
+          rsvp: e.rsvpRequired,
         }
       : c
         ? {
@@ -253,6 +257,7 @@ export function EventEditor({
             notes: c.notes ?? '',
             // Invitees the Calendar no longer lists (a player who left) are dropped, never widened to the team.
             invited: c.people.filter((id) => people.some((p) => p.id === id)),
+            rsvp: c.rsvpRequired,
           }
         : (() => {
             const date = seed.date ?? today;
@@ -266,6 +271,7 @@ export function EventEditor({
               loc: '',
               notes: '',
               invited,
+              rsvp: false,
             };
           })();
     setTitle(init.title);
@@ -276,6 +282,7 @@ export function EventEditor({
     setLoc(init.loc);
     setNotes(init.notes);
     setInvited(init.invited);
+    setRsvp(init.rsvp);
     // A drag-to-move proposal is already a change worth keeping.
     setBaseline(seed.proposal ? '' : snapshot({ ...init, repeat: 'none' }));
     setDiscarding(false);
@@ -334,6 +341,7 @@ export function EventEditor({
           description: notes.trim() || undefined,
           recurrenceRule: serializeRecurrenceRule({ frequency: 'weekly', weekdays: repeat === 'weekdays' ? [1, 2, 3, 4, 5] : [weekday], until }),
           attendeeIds: invited.length ? invited : undefined,
+          requiresRsvp: rsvp,
           timezoneOffset: tz,
           // Each occurrence takes the zone's offset on its own date, so a series across a clock change keeps its time (CAL-05).
           timeZone: timezone,
@@ -351,6 +359,7 @@ export function EventEditor({
         location: loc.trim() || undefined,
         description: notes.trim() || undefined,
         attendeeIds: invited.length ? invited : undefined,
+        requiresRsvp: rsvp,
         timezoneOffset: tz,
       };
       return createGolfEvent({ ...single, requestId: requestIdFor(single) });
@@ -369,6 +378,8 @@ export function EventEditor({
           title: title.trim(),
           ...(notes.trim() !== (base.notes ?? '').trim() ? { description: notes.trim() } : {}),
           ...(loc.trim() !== (base.location ?? '').trim() ? { location: loc.trim() } : {}),
+          // Like notes and place, sent only when the coach changed it, so each event keeps its own otherwise.
+          ...(rsvp !== base.rsvpRequired ? { requiresRsvp: rsvp } : {}),
           startDate: date,
           ...(keepEnd ? {} : { endDate, endTime }),
           startTime,
@@ -388,6 +399,7 @@ export function EventEditor({
       description: notes.trim(),
       addAttendeeIds: add.length ? add : undefined,
       removeAttendeeIds: remove.length ? remove : undefined,
+      requiresRsvp: rsvp,
       timezoneOffset: tz,
     } as never);
   };
@@ -419,7 +431,8 @@ export function EventEditor({
       return res;
     },
     () => ({
-      done: !base ? `Published · ${title.trim()}${invited.length ? ' · players notified' : ''}` : moved ? `Moved · ${title.trim()}` : `Saved · ${title.trim()}`,
+      // Only an event that asks for replies notifies anyone (owner, 2026-10-08).
+      done: !base ? `Published · ${title.trim()}${invited.length && rsvp ? ' · players notified' : ''}` : moved ? `Moved · ${title.trim()}` : `Saved · ${title.trim()}`,
       failed: !base ? `Couldn’t publish ${title.trim() || 'the event'}` : `Couldn’t save ${title.trim() || 'the event'}`,
       hint: 'Your changes are still in the editor. Try again in a moment.',
       code: 'CH-6001',
@@ -443,7 +456,7 @@ export function EventEditor({
   };
 
   const allOn = invited.length === people.length;
-  const dirty = open && snapshot({ title, type, date, win, allDay, repeat, loc, notes, invited }) !== baseline;
+  const dirty = open && snapshot({ title, type, date, win, allDay, repeat, loc, notes, invited, rsvp }) !== baseline;
   // Closing with edits asks first; closing untouched just closes.
   const requestClose = () => {
     if (dirty && !save.pending) {
@@ -459,11 +472,14 @@ export function EventEditor({
         width={1040}
         icon={base ? Pencil : CalendarPlus}
         title={base ? 'Edit event' : 'New event'}
-        description={base ? 'Changes notify everyone invited.' : 'Invited players get a notification and can reply.'}
+        description={
+          // Only an event that asks for replies notifies anyone (owner, 2026-10-08).
+          rsvp ? (base ? 'Changes notify everyone invited.' : 'Invited players get a notification and can reply.') : 'Invited players see it on their calendar.'
+        }
         footer={
           <>
             <span className="ch-in__quiet" style={{ marginRight: 'auto' }}>
-              {invited.length ? 'Attendees will be notified' : 'No one invited yet'}
+              {invited.length ? (rsvp ? 'Attendees will be notified' : 'No notification sent') : 'No one invited yet'}
             </span>
             <Button variant="ghost" onClick={requestClose}>
               Cancel
@@ -625,6 +641,16 @@ export function EventEditor({
               <p className="ch-in__quiet">No active players on the roster yet.</p>
             )}
           </div>
+          <div>
+            <label className="ch-switch">
+              <input type="checkbox" checked={rsvp} onChange={(e) => (haptic('select'), setRsvp(e.target.checked))} aria-describedby="ch-ed-rsvp-help" />
+              <span className="ch-switch__t" aria-hidden="true" />
+              Require RSVP
+            </label>
+            <p id="ch-ed-rsvp-help" className="ch-field__help">
+              {rsvp ? 'Invited players are notified and reply Going, Maybe or Can’t.' : 'Off: no replies asked and no notification. It still shows on their calendars.'}
+            </p>
+          </div>
           {!allDay && invited.length > 0 && (
             <div>
               <div className="ch-in__sechead" style={{ marginBottom: 10 }}>
@@ -664,6 +690,8 @@ export function EventEditor({
             <dd>{loc.trim() || '—'}</dd>
             <dt>Who</dt>
             <dd>{allOn && people.length ? `Whole team · ${people.length} players` : invited.length ? invited.map((p) => byId.get(p)?.name.split(' ')[0]).join(', ') : '—'}</dd>
+            <dt>RSVP</dt>
+            <dd>{rsvp ? 'Required' : 'Not asked'}</dd>
             <dt>Repeats</dt>
             <dd>{base ? (base.recurring ?? 'Does not repeat') : repeat === 'none' ? 'Does not repeat' : repeat === 'weekly' ? `Weekly on ${dowOf(date)} until ${dayNum(until)} ${monthName(until).slice(0, 3)}` : `Every weekday until ${dayNum(until)} ${monthName(until).slice(0, 3)}`}</dd>
           </dl>
@@ -712,7 +740,7 @@ export function CancelEvent({ event, onClose, onDone }: { event: ChCalEvent | nu
       if (normalise(res).success) onDone();
       return res;
     },
-    () => ({ done: `Cancelled · ${event?.title ?? 'event'} · attendees notified`, failed: `Couldn’t cancel ${event?.title ?? 'the event'}`, code: 'CH-6002' }),
+    () => ({ done: `Cancelled · ${event?.title ?? 'event'}${event?.rsvpRequired ? ' · attendees notified' : ''}`, failed: `Couldn’t cancel ${event?.title ?? 'the event'}`, code: 'CH-6002' }),
   );
   return (
     <Modal
@@ -724,9 +752,14 @@ export function CancelEvent({ event, onClose, onDone }: { event: ChCalEvent | nu
       description={
         // One event is a soft cancel. The series scopes go through deleteRecurringEvent, which deletes the rows, so
         // the copy must not promise what only the soft cancel does (61101).
-        event?.seriesId && scope !== 'this'
-          ? 'Everyone invited is notified. These events are removed from the calendar, and their replies and attendance with them.'
-          : 'Everyone invited is notified. Replies and attendance are kept, and the event stays on the calendar marked cancelled.'
+        // Only an event that asks for replies notifies anyone of its cancellation (owner, 2026-10-08).
+        event?.rsvpRequired
+          ? event.seriesId && scope !== 'this'
+            ? 'Everyone invited is notified. These events are removed from the calendar, and their replies and attendance with them.'
+            : 'Everyone invited is notified. Replies and attendance are kept, and the event stays on the calendar marked cancelled.'
+          : event?.seriesId && scope !== 'this'
+            ? 'No one is notified, since these events don’t ask for replies. They are removed from the calendar, and their attendance with them.'
+            : 'No one is notified, since this event doesn’t ask for replies. Attendance is kept, and the event stays on the calendar marked cancelled.'
       }
       footer={
         <>

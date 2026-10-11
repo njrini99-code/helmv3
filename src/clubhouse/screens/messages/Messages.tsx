@@ -16,6 +16,7 @@ import {
   searchGolfMessages,
 } from '@/app/golf/actions/messages';
 import { getGolfConversationFiles } from '@/app/golf/actions/message-attachments';
+import { canHideGolfConversations, hideGolfConversation } from '@/app/golf/actions/conversation-hide';
 import { getGolfConversationMute, setGolfConversationMute } from '@/app/golf/actions/message-mute';
 import { completeAnnouncementTask, createEnrichedAnnouncement, getAnnouncementDetail, getAnnouncementsWithMeta } from '@/app/golf/actions/announcements';
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
@@ -94,6 +95,19 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const liveIds = useMemo(() => msgs.messages.filter((m) => m.conversation_id === selectedId && !m.sendFailed).map((m) => m.id), [msgs.messages, selectedId]);
   const reactions = useMessageReactions(selectedId ?? '', liveIds, data.viewerUserId);
   const { sendMessageWithAttachments, getPendingAttachmentSend, retryPendingAttachmentSend } = useMessageAttachments();
+
+  // "Delete conversation" is offered only once the database has the per-person hide (a held migration, HELD.md).
+  const [canHide, setCanHide] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void canHideGolfConversations().then(
+      (ok) => live && setCanHide(ok),
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, []);
 
   // Desktop opens the newest thread beside the rail without marking it read (the coach hasn't read it yet).
   useEffect(() => {
@@ -332,8 +346,13 @@ export function Messages({ data }: { data: ChMessagesData }) {
     const out = new Map<string, ChReaction[]>();
     for (const id of liveIds) {
       const groups = summarizeReactions(reactions.rows, id, data.viewerUserId)
-        .map((g) => ({ key: KEY_BY_EMOJI[g.emoji], count: g.count, mine: g.active }))
-        .filter((g): g is ChReaction => !!g.key);
+        .map((g) => ({
+          key: KEY_BY_EMOJI[g.emoji],
+          count: g.count,
+          mine: g.active,
+          userIds: [...new Set(reactions.rows.filter((r) => r.message_id === id && r.emoji === g.emoji).map((r) => r.user_id))],
+        }))
+        .filter((g): g is { key: ChReactionKey; count: number; mine: boolean; userIds: string[] } => !!g.key);
       if (groups.length) out.set(id, groups);
     }
     return out;
@@ -635,6 +654,19 @@ export function Messages({ data }: { data: ChMessagesData }) {
         await refetch();
       });
     },
+    deleteConversation: canHide
+      ? async () => {
+          if (!selectedId) return false;
+          return attempt('deleteConversation', { failed: "Couldn’t delete the conversation", hint: 'Try again in a moment.', code: 'CH-7011' }, async () => {
+            const res = await hideGolfConversation(selectedId);
+            if (!res.success) throw new Error(res.error);
+            haptic('success');
+            toast({ title: 'Conversation deleted' });
+            setSelectedId(null);
+            await refetch();
+          });
+        }
+      : null,
     addCandidates,
     addMember: (userId, name) =>
       attempt('addMember', { failed: `Couldn’t add ${firstName(name)}`, hint: 'Try again in a moment.', code: 'CH-7018' }, async () => {

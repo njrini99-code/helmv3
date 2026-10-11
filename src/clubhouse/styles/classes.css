@@ -183,7 +183,7 @@
   display: flex;
   gap: 3px;
   height: 36px;
-  border-radius: 11px;
+  border-radius: var(--ch-radius-md);
   overflow: hidden;
 }
 .ch-cl-tb__bar i {
@@ -556,7 +556,7 @@
   flex: none;
   width: 36px;
   height: 36px;
-  border-radius: 11px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-warning-100);
   color: var(--ch-warning-600);
 }
@@ -690,7 +690,7 @@
 .ch-cl-daypick button {
   height: 40px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
   background: none;
   color: var(--ch-ink-600);
   font: 500 13.5px/1 var(--ch-font-sans);
@@ -1130,7 +1130,7 @@
   width: 36px;
   height: 36px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
   background: none;
   color: var(--ch-text-tertiary);
   cursor: pointer;
@@ -2530,4 +2530,24 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   .ch-cl[data-ch-code='CH-12401'][data-canopy] .ch-cl-deck > .ch-skel {
     height: 76px !important;
   }
+}
+
+/* Premium polish (2026-10-10): a team event's chip wraps rather than clipping to "Pine…", and a meeting's bar is a readable green
+   capsule (still as long as the meeting is) instead of a 6px black mark. The clash flag keeps its place on the bar's end. */
+.ch-cl-tthead__days i {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  line-height: 1.15;
+  word-break: break-word;
+}
+.ch-cl-tt__bar {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--ch-green-500), var(--ch-green-700));
+  box-shadow: var(--ch-elevation-mark);
+}
+.ch-cl-tb__wk b {
+  font-weight: 600;
 }

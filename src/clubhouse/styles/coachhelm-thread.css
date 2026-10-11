@@ -599,7 +599,7 @@ a.ch-th-rank__name::after {
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
   background: none;
   cursor: pointer;
   color: var(--ch-text-tertiary);

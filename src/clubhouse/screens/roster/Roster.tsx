@@ -32,6 +32,7 @@ import { useCopyText } from './useCopyText';
 import { RosterPeek } from './RosterPeek';
 import { RosterPhone } from './RosterPhone';
 import { PlayerPeek } from '../../ui/PlayerPeek';
+import { RosterSpread } from './RosterSpread';
 import { earlyNeed, formatHcp, rosterFailedParts, rosterPeek, rosterStandings, teamInSentence, type RosterStanding } from './format';
 import '../../styles/roster.css';
 
@@ -110,7 +111,7 @@ export function Roster({ data }: { data: ChRoster }) {
     }
   };
 
-  const active = players.filter((p) => p.status === 'active');
+  const active = useMemo(() => players.filter((p) => p.status === 'active'), [players]);
   const inactiveCount = players.length - active.length;
   const teamAvg = useMemo(() => {
     const avgs = active.map((p) => p.avg).filter((v): v is number => v != null);
@@ -119,6 +120,7 @@ export function Roster({ data }: { data: ChRoster }) {
 
   // Places and the team strip rank the active roster, never the rows a search or filter left (P003 #2).
   const standings = useMemo(() => rosterStandings(players), [players]);
+  const spreadPlayers = useMemo(() => active.filter((p) => standings.byId.has(p.id)), [active, standings]);
   // Avg sorts nothing while season stats are missing: the order falls back to Name (P003 #7).
   const sortBy: Sort = data.statsError && sort === 'avg' ? 'name' : sort;
 
@@ -143,6 +145,17 @@ export function Roster({ data }: { data: ChRoster }) {
     haptic('select');
     setSel((s) => (s === id ? null : id));
   }, []);
+  /** A player's face or name goes to their profile (owner, 2026-10-08); where that page isn't rebuilt it opens the peek. */
+  const openProfile = useCallback(
+    (id: string) => {
+      const href = rebuiltHref(`/golf/dashboard/stats?player=${id}`);
+      if (!href) return select(id);
+      chTrail('roster open profile');
+      haptic('select');
+      router.push(href);
+    },
+    [router, select],
+  );
   /** A Needs-a-look chip only opens its player; closing stays on X or Esc (P003 #11). */
   const openSel = useCallback((id: string) => {
     chTrail('roster open player');
@@ -375,6 +388,7 @@ export function Roster({ data }: { data: ChRoster }) {
         />
       ) : (
         <>
+          {!phone && !data.statsError && <RosterSpread players={spreadPlayers} teamAvg={teamAvg} onOpen={openSel} />}
           <div className="ch-rs-bar">
             <SearchField className="ch-rs-search" value={q} onChange={setQ} placeholder="Search players by name" label="Search players" />
             <div className="ch-rs-bar__r">
@@ -438,7 +452,7 @@ export function Roster({ data }: { data: ChRoster }) {
                   sel={sel}
                   q={q}
                   show={show}
-                  select={select}
+                  openProfile={openProfile}
                   menuFor={menuFor}
                   onShowEveryone={() => {
                     setQ('');
@@ -470,7 +484,7 @@ function RosterList({
   sel,
   q,
   show,
-  select,
+  openProfile,
   menuFor,
   onShowEveryone,
 }: {
@@ -480,7 +494,7 @@ function RosterList({
   sel: string | null;
   q: string;
   show: Show;
-  select: (id: string | null) => void;
+  openProfile: (id: string) => void;
   menuFor: (p: ChRosterPlayer) => MenuItem[];
   onShowEveryone: () => void;
 }) {
@@ -509,10 +523,8 @@ function RosterList({
               key={p.id}
               type="button"
               className={'ch-rs-face' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
-              aria-expanded={sel === p.id}
-              aria-controls={sel === p.id ? 'ch-rs-peek' : undefined}
-              aria-label={faceLabel(p, standings.byId.get(p.id))}
-              onClick={() => select(p.id)}
+              aria-label={`${faceLabel(p, standings.byId.get(p.id))}. Open profile`}
+              onClick={() => openProfile(p.id)}
             >
               <span className="ch-rs-face__top">
                 <span />
@@ -559,9 +571,8 @@ function RosterList({
                 <button
                   type="button"
                   className="ch-rs-who"
-                  onClick={() => select(p.id)}
-                  aria-expanded={sel === p.id}
-                  aria-controls={sel === p.id ? 'ch-rs-peek' : undefined}
+                  onClick={() => openProfile(p.id)}
+                  aria-label={`${p.name}. Open profile`}
                 >
                   <Avatar name={p.name} size={40} />
                   <span>

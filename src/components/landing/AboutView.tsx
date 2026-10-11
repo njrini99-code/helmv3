@@ -280,7 +280,7 @@ export function AboutView() {
           <div className="mt-[clamp(34px,4.5vw,60px)] grid gap-[clamp(12px,1.5vw,18px)] sm:grid-cols-2">
             {PILLARS.map((pillar, i) => (
               <Reveal key={pillar.title} delay={i * 70}>
-                <article className="group relative h-full overflow-clip rounded-2xl border border-[oklch(0.4_0.02_60/0.11)] bg-surface p-[clamp(22px,2.4vw,32px)] transition-[transform,border-color,box-shadow] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-[oklch(0.55_0.12_150/0.34)] hover:shadow-[0_1px_2px_oklch(0.18_0.01_60/0.05),0_16px_38px_oklch(0.18_0.01_60/0.11)]">
+                <article className="group relative h-full overflow-clip rounded-2xl border border-[oklch(0.4_0.02_60/0.11)] bg-surface p-[clamp(22px,2.4vw,32px)] transition-[transform,border-color,box-shadow] duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-[oklch(0.55_0.12_150/0.34)] hover:shadow-[0_1px_2px_oklch(0.18_0.01_60/0.05),0_16px_38px_oklch(0.18_0.01_60/0.11)]">
                   {/* The figure is scale, not a chip: it reads as composition
                       rather than as a badge, and it is the one thing that makes
                       four tiles feel like a numbered sequence. */}

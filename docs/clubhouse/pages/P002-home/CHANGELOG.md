@@ -1,5 +1,22 @@
 # P002 — Home: changelog
 
+## 2026-10-10 — RSVP only when the coach requires it
+
+- The day card and phone Up next show a going count, "haven't replied" and
+  Nudge only for an event that requires an RSVP; otherwise "N invited" and
+  Message. A later competition's line reads "N of M confirmed" only with RSVP
+  on, else its place (`data/home.ts`, `HomePhone.tsx`).
+
+## 2026-10-10 — The team's form on the coach's desktop Home
+
+Presentation only. A deep-green band between the head and the week: the team's
+scoring average with its change against the previous ten,
+the team's average on each of its last round days as a line (drawn once, left to
+right, the first time it is seen), and the week's
+rounds, greens and putts. It reads `data.phone.form` as it is (the figures the
+phone strip and Team stats already use) and is absent
+when that read failed.
+
 ## 2026-10-08 — the cardless pass: Since you last looked
 
 On the phone, "Since you last looked" is a list, not a sideways rail of filled

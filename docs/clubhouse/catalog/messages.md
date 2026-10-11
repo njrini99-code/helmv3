@@ -127,6 +127,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | --- | --- | --- | --- | --- |
 | CH-7501 | Delete a message | "Delete this message?" + "It's removed for everyone in the conversation. This can't be undone." | `Modal` | messages.test › CH-7501 |
 | CH-7502 | Leave a group | "Leave Varsity team?" + "You stop getting its messages. Someone in the group can add you back." | `Modal` | messages.test › CH-7502 |
+| CH-7503 | Delete a conversation | "Delete 26-27 Group Chat?" + "It leaves your inbox. The other people keep their copy, and it comes back if someone sends a new message." | `Modal` | messages.test › CH-7503; hide-golf-conversation.test |
 
 ## 76xx Motion
 

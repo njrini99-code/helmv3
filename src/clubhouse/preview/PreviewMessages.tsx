@@ -201,6 +201,7 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
     membersError: false,
     retryMembers: () => {},
     leave: async () => true,
+    deleteConversation: async () => true,
     addCandidates,
     addMember: async (_userId, name) => {
       toast({ title: `Added ${name.split(' ')[0]} to ${convs.find((c) => c.id === selectedId)?.title ?? 'the group'}` });

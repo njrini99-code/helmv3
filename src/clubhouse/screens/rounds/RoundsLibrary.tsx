@@ -21,7 +21,7 @@ import { SearchField } from '../../ui/SearchField';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
 import { EmptyState } from '../../ui/States';
-import { monthLabel, RoundRow, SeasonCard, shortDay, UnfinishedCard } from './parts';
+import { monthLabel, MonthSpark, RoundRow, SeasonCard, shortDay, UnfinishedCard } from './parts';
 import { noteOpenedFromLibrary } from './return-state';
 import { LIVE_ROUNDS_WRITES, type ChRoundsWrites } from './writes';
 
@@ -232,6 +232,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                       <div className="ch-rd-grp__h">
                         <h3>{g.key}</h3>
                         <span className="ch-rd-grp__rule" />
+                        <MonthSpark rounds={g.rounds} />
                         <span className="ch-num">
                           {g.rounds.length} {g.rounds.length === 1 ? 'round' : 'rounds'}
                         </span>

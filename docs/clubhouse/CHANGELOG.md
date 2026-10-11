@@ -1,5 +1,124 @@
 # Clubhouse changelog
 
+## 2026-10-11 — Depth from tokens and transform-only motion across the premium pass
+
+The `clubhouse:css` gate found 57 raw outer blur shadows and layout transitions
+in the premium-pass CSS. Fixed at the source, light and
+dark:
+
+- **New elevation tokens** (`styles/tokens.css`, both themes), each drop-only so
+  the caller keeps its own ring or inset edge:
+  `--ch-elevation-mark-warn` (amber glow under a loss bar),
+  `--ch-elevation-mark-ink` (a small neutral drop under a mark, number or
+  dot), `--ch-elevation-plate` (a long faint drop under a gold-ringed reading
+  plate), `--ch-elevation-pill-on` (the selected green
+  segment pill), `--ch-elevation-face` and `--ch-elevation-face-hover` (the
+  roster's portrait cards, the drift follows the light).
+- **Shadows by role:** deep-green stages (Home's team form, the round review's
+  stage and hero, the team stats strokes-gained table) use
+  `--ch-elevation-feature`; tip cards `--ch-elevation-overlay`; green marks
+  `--ch-elevation-mark`; the Messages composer
+  `--ch-elevation-floating`, the ready Send `--ch-green-raised-shadow`; the
+  roster's selected portrait `--ch-elevation-choice-hover`.
+  Affects calendar, classes, CoachHelm, home, hub, messages, qualifiers,
+  recruiting, roster, rounds, stats and `ui/Zone` (the
+  zone number and reading plate). Small differences in blur and opacity against
+  the old literals; rings and inset material unchanged.
+- **Motion without relayout:** fills scale or slide on transform; dots, ticks,
+  tips and coins move by `translate` in container units on
+  a still, full-width track (the track is the size container, so it never
+  overflows its chart). Applies to the Hub read bar, the
+  qualifiers and roster spreads, the round review and library tips, and the
+  player stats zones. The Hub RSVP split and the stats mix
+  and fairway strip glide on flex-grow. Not gliding any more: the classes
+  timetable bar, and the strokes-gained bars on the round review
+  and player stats (sized inline; tests read that width).
+
+## 2026-10-10 — Three depth tokens for the rounds pass
+
+Shared pieces for the rounds library and new-round pass (P011's log has the
+screens). Not yet reviewed by the owner.
+
+- **`--ch-elevation-board`**, **`--ch-elevation-board-hover`** and
+  **`--ch-elevation-mark`** (`styles/tokens.css`, light and dark): drop-only
+  depth for a field-green board hung on the page (a scorecard nine, the round
+  strip, a row's Out/In/Tot, a step deeper on hover) and a small glow under a
+  lit
+  data mark (the best round's dot, the putts bar, a hit green). The caller keeps
+  its own ring or inset edge.
+- The rounds season chart also uses `useInViewOnce` (`lib/use-in-view.ts`) to
+  raise its bars from the par line, and the season chart and the new-round nine
+  boards draw with the existing `--ch-stage-*` tokens.
+
+## 2026-10-10 — Premium polish across the app: baseline control feel, line breaks, radius tokens, one contrast fix
+
+Found by scanning every main preview screen in WebKit (contrast, controls with
+no transition, tap sizes, radii, heading sizes), then fixed
+where the cause was shared:
+
+- **Controls ease between states everywhere.** 24 buttons, inputs and links
+  across Messages, Recruiting, Hub, Home, Stats and the round
+  review had no transition at all. `styles/base.css` now gives every control a
+  zero-specificity baseline (background, colour, border,
+  shadow and opacity over `--ch-dur-quick`); a component's own transition still
+  wins. Transform is left out because drags and scrubs set
+  it every frame. After the change the scan finds none on 14 of 16 screens.
+- **Lines break well.** Headings use `text-wrap: balance` and running text
+  `pretty`, app-wide.
+- **Radius tokens.** 37 `9px` and `11px` corner literals (not on the
+  5/7/10/14/20 scale) are `--ch-radius-md`.
+- **Contrast.** White on the grey bogey segment of the scoring mix was 3.4:1; it
+  is a darker grey (5.3:1).
+- Scan result otherwise: no text under 4.5:1 outside dark-gradient panels the
+  scanner cannot read, headings on a consistent 44/30/19/15 scale.
+
+## 2026-10-10 — one Zone for player stats and the round review, stage tokens, and micro motion
+
+Audit of the stats and round-review work, then fixes (owner: "create cool micro
+animations, look for inefficiencies and non cohesion"):
+
+- **One zone, not two.** `ui/Zone.tsx` (`Zones`, `Zone`, `ZoneBlock`, `ZoneBig`,
+  `ZoneNote`) and its `.ch-zn*` rules in `styles/ui.css`
+  replace the two copies that had grown in `stats.css` (`.ch-z*`) and
+  `rounds.css` (`.ch-rz*`), which had already drifted apart (the
+  round review had the plate, the gold-ringed number and the depth; the stats
+  page did not). Both pages now read as one family. About
+  560 lines of duplicated CSS are gone.
+- **Flat grounds.** The review's soft ivory gradients on its bands are gone:
+  `tokens.css` records that large soft gradients band on
+  8-bit screens (owner, 2026-10-06). Gradients stay only where they are drawn on
+  purpose (the deep-green stage, bars, figures).
+- **Stage tokens.** `--ch-stage-bg`, `-line`, `-gold`, `-red`, `-ink`,
+  `-ink-soft`, `-rule` in `tokens.css` replace the hex values
+  repeated through the review's SVGs.
+- **Micro motion**, all from the `--ch-dur-*` tokens so Animations off and
+  reduced motion make every one instant (a delay is zeroed
+  for reduced motion): lengths glide to a new value when a window, filter or
+  hole changes (bars, tracks, mix, fairway strip, focus
+  rails); a stage's line draws once the first time it scrolls into view
+  (`lib/use-in-view.ts`); a picked hole's shots draw in the
+  order they were hit; a hole's reading settles in; rows warm and the marks lift
+  under the pointer; the scrub card fades rather than
+  vanishing. No count-ups, no first-paint staggers.
+- **Efficiency.** The player Overview is memoised, so a focus sheet or a
+  transition no longer recomputes its seven zones.
+
+## 2026-10-08 — the selected sidebar row is an ivory plate; secondary text one step darker
+
+Owner review (not yet signed off):
+
+- **Sidebar:** the open row's plate (`--ch-nav-well-bg`, `--ch-nav-well-shadow`
+  in
+  `styles/tokens.css`) is ivory with green text and icon, where it had been a
+  dark
+  well. `NavPlate` still glides it between rows.
+- **Text:** in the light theme `--ch-text-secondary` is ink-700 and
+  `--ch-text-tertiary` ink-600 (they were ink-600 and ink-500), one step darker
+  everywhere the shared tokens are used. This landed with the Calendar details
+  panel commit (`3ae8479b7`, P006's log) and is recorded here because the tokens
+  are
+  shared.
+
 ## 2026-10-08 — Two scoring tokens for numerals on the feature green
 
 A shared token change for the shot screen's hole strip (P011's log has the

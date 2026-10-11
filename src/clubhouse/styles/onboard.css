@@ -255,7 +255,7 @@
 }
 .ch-ox-stage::after {
   inset: 16px;
-  border-radius: 11px;
+  border-radius: var(--ch-radius-md);
   box-shadow: none;
 }
 /* The column holds still while questions come and go: it fills the pane's height and centres the question inside
@@ -342,7 +342,7 @@
   min-height: 44px;
   padding: 0 10px 0 6px;
   margin: -6px 0 12px -6px;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
   font: 500 13.5px/1 var(--ch-font-sans);
   color: #55524b;
 }
@@ -1839,7 +1839,7 @@
   .ch-ox-slot {
     height: 52px;
     font-size: 22px;
-    border-radius: 9px;
+    border-radius: var(--ch-radius-md);
   }
   .ch-ox-names {
     grid-template-columns: minmax(0, 1fr);

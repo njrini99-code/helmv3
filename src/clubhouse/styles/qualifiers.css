@@ -1050,7 +1050,7 @@
   min-height: 48px;
   padding: 6px 10px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-md);
   background: transparent;
   color: inherit;
   text-align: left;
@@ -2810,4 +2810,261 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   :where(html[data-fw-theme='dark']) .ch-qf--list[data-canopy] .ch-qf-hero:active h2 {
     color: var(--ch-green-700);
   }
+}
+
+/* P009: the field on one number line (StandingsSpread): a coin at each player's total to par, the even-par line, and a dashed
+   cut where the top-score places end. Ink on the ivory page; the leaderboard under it is the data. */
+.ch-qf-sp {
+  margin: 0 0 10px;
+  padding: 26px 0 4px;
+}
+.ch-qf-sp__plot {
+  position: relative;
+  margin: 18px 14px 0;
+}
+.ch-qf-sp__plot ul {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* Each player has a still, full-width row that is the coin's size container; the coin moves along it by `translate` in
+   container units (--ch-qf-x, 0 to 100), so the spread from the even line glides on the compositor and nothing overflows the
+   plot. The coin centres itself on that point and takes the pointer. */
+.ch-qf-sp__plot li {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 30px;
+  container-type: inline-size;
+  pointer-events: none;
+}
+.ch-qf-sp__plot li > span {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-left: -15px;
+  border-radius: 50%;
+  font: 600 11px/1 var(--ch-font-sans);
+  letter-spacing: 0.01em;
+  background: var(--ch-bg-surface);
+  box-shadow: inset 0 0 0 1.5px var(--ch-ink-400);
+  color: var(--ch-ink-600);
+  pointer-events: auto;
+  translate: calc(var(--ch-qf-x, 0) * 1cqw) 0;
+  transition:
+    translate var(--ch-dur-reveal) var(--ch-ease),
+    transform var(--ch-dur-quick) var(--ch-ease-spring);
+}
+.ch-qf-sp__plot li.is-score > span {
+  background: var(--ch-green-900);
+  box-shadow: none;
+  color: var(--ch-stage-ink);
+}
+.ch-qf-sp__plot li.is-pick > span {
+  background: var(--ch-champagne-500);
+  box-shadow: none;
+  color: var(--ch-ink-950);
+}
+.ch-qf-sp__plot li.is-bubble > span {
+  box-shadow: inset 0 0 0 2px var(--ch-champagne-500);
+  color: var(--ch-ledger-eyebrow);
+}
+.ch-qf-sp__plot li.is-hot > span {
+  transform: scale(1.14);
+}
+.ch-qf-sp__even,
+.ch-qf-sp__cut {
+  position: absolute;
+  top: 0;
+  width: 0;
+}
+.ch-qf-sp__even {
+  border-left: 1px solid var(--ch-ink-300);
+}
+.ch-qf-sp__cut {
+  border-left: 1px dashed var(--ch-ink-500);
+}
+.ch-qf-sp__cut span {
+  position: absolute;
+  top: -6px;
+  left: 0;
+  transform: translate(-50%, -100%);
+  font: 600 12px/1.2 var(--ch-font-sans);
+  color: var(--ch-ink-700);
+  white-space: nowrap;
+}
+.ch-qf-sp__axis {
+  position: absolute;
+  inset: auto 0 0;
+  height: 22px;
+  border-top: 1px solid var(--ch-ledger-rule);
+}
+.ch-qf-sp__axis span {
+  position: absolute;
+  top: 6px;
+  transform: translateX(-50%);
+  font: 500 12px/1 var(--ch-font-sans);
+  color: var(--ch-ink-500);
+}
+.ch-qf-sp__tip {
+  position: absolute;
+  z-index: 2;
+  top: 22px;
+  display: grid;
+  gap: 2px;
+  padding: 7px 11px;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-ink-900);
+  color: var(--ch-stage-ink);
+  box-shadow: var(--ch-elevation-overlay);
+  pointer-events: none;
+  transform: translate(-50%, 0);
+  white-space: nowrap;
+}
+.ch-qf-sp__tip b {
+  font: 600 13px/1.2 var(--ch-font-sans);
+}
+.ch-qf-sp__tip span {
+  font: 500 12px/1.2 var(--ch-font-sans);
+  color: var(--ch-stage-ink-soft);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-qf-sp__plot li > span {
+    transition-delay: 0s;
+  }
+}
+
+
+/* The leaderboard (P009), set as a printed tournament sheet: a heavy rule over the title, no avatars, no plates, one hairline a row.
+   To par is the loudest figure on the row (red under par), the position quiet beside the name, the leader and the cut carried by
+   weight and a rule rather than colour. Rows past the travel cut set in the quiet ink. Presentation only; same rows, same trays. */
+.ch-qf[data-canopy] .ch-qf-board {
+  border-top: 2px solid var(--ch-ink-900);
+  padding-top: 18px;
+}
+.ch-qf[data-canopy] .ch-qf-board .ch-qf-panel__head h2,
+.ch-qfm .ch-qf-board .ch-qf-panel__head h2 {
+  font: 600 24px/1.1 var(--ch-font-sans);
+  letter-spacing: -0.02em;
+}
+.ch-qf[data-canopy] .ch-qf-board .ch-qf-panel__head {
+  box-shadow: none;
+}
+.ch-qf-board .ch-avatar {
+  display: none;
+}
+.ch-qf[data-canopy] .ch-qf-board .ch-qf-row--head {
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  border-bottom: 1px solid var(--ch-ink-rule);
+  font: 500 12.5px/1 var(--ch-font-sans);
+  color: var(--ch-ink-500);
+}
+.ch-qf[data-canopy] .ch-qf-board .ch-qf-row {
+  min-height: 66px;
+}
+.ch-qf-board .ch-qf-pos__n {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ch-ink-400);
+}
+.ch-qf-board .is-lead .ch-qf-pos__n {
+  font-weight: 700;
+  color: var(--ch-ink-950);
+}
+.ch-qf-board .ch-qf-who b {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.014em;
+}
+.ch-qf-board .ch-qf-row:not([data-state]):not(.is-none) .ch-qf-who b {
+  font-weight: 500;
+  color: var(--ch-ink-600);
+}
+.ch-qf-board .is-lead .ch-qf-who b {
+  font-weight: 700;
+}
+.ch-qf-board .ch-qf-who small {
+  color: var(--ch-ink-500);
+}
+.ch-qf-board .ch-qf-num {
+  font-size: 15px;
+  color: var(--ch-ink-500);
+}
+.ch-qf-board .ch-qf-plate {
+  width: auto;
+  height: auto;
+  justify-content: end;
+  background: none;
+  box-shadow: none;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.ch-qf-board .ch-qf-plate.is-none {
+  box-shadow: none;
+  font-size: 18px;
+  color: var(--ch-ink-300);
+}
+/* the status: a word in its own ink, no box */
+.ch-qf-board .ch-badge {
+  height: auto;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  font-weight: 600;
+  color: var(--ch-ink-600);
+}
+.ch-qf-board .ch-badge--positive,
+.ch-qf-board .ch-badge--accent {
+  color: var(--ch-green-700);
+}
+.ch-qf-board .ch-badge--warning {
+  color: var(--ch-ledger-eyebrow);
+}
+.ch-qf-board .ch-qf-line {
+  color: var(--ch-green-700);
+  font-weight: 600;
+}
+.ch-qf-board .ch-qf-line--muted {
+  color: var(--ch-ink-500);
+  font-weight: 500;
+}
+.ch-qf-board .ch-qf-line::before,
+.ch-qf-board .ch-qf-line::after {
+  border-top-color: var(--ch-ink-400);
+}
+.ch-qf-board .ch-qf-you {
+  color: var(--ch-green-700);
+}
+.ch-qf-board .ch-qf-row.is-me {
+  background: var(--ch-ledger-row-hover);
+}
+.ch-qf-board .ch-qf-cap {
+  color: var(--ch-ink-500);
+}
+
+/* the phone's rows: the same sheet on the 56pt grid */
+.ch-qfm .ch-qf-board .ch-qfm-lb__row[data-state] .ch-qf-pos__n {
+  color: var(--ch-ink-700);
+}
+.ch-qfm .ch-qf-board .ch-qfm-lb__row.is-lead .ch-qf-pos__n {
+  color: var(--ch-ink-950);
+}
+.ch-qfm .ch-qf-board .ch-qfm-lb__row:not([data-state]):not(.is-none) .ch-qfm-lb__n b {
+  font-weight: 500;
+  color: var(--ch-ink-600);
+}
+.ch-qfm .ch-qf-board .ch-qf-plate {
+  font-size: 22px;
+}
+.ch-qfm .ch-qf-board .ch-qfm-lb__sub .ch-badge {
+  font-size: 12.5px;
 }

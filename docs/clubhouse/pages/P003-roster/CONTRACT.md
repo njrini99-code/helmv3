@@ -33,7 +33,14 @@ namespace 1) apply here too and are named where they carry a category.
 
 Status: DEFINED
 
-Roster opens on the active players as cards, best scoring average first, with the join requests and Needs a look above them, all from the server's first render (30101). On the phone it is the list screen. A ?player= link opens that profile on the phone only, and does nothing on desktop (30102).
+Roster opens on the active players as cards, best scoring average first, with
+the join requests and Needs a look above them, all from the server's first
+render (30101). On the phone it is the list screen. A ?player= link opens that
+profile on the phone only, and does nothing on desktop (30102). On desktop a
+click on a player's face (cards) or name (list) goes to that player's profile
+(`/golf/dashboard/stats?player=<id>`, owner 2026-10-08); where that page isn't
+rebuilt it opens the peek instead. The peek opens from a Needs a look chip. The
+phone is unchanged: a row pushes its own profile.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -227,8 +234,9 @@ What a coach changes here revalidates the page and comes back (category 03). A c
 Status: DEFINED
 
 Roster's own motion: the panel slides in and players cross-fade (CH-3601), a
-face or row takes the Ledger tint on hover and a deeper one on press, never a
-scale, and on the phone a player row tints and the join requests card (the
+face or row takes a tint on press, never a scale (on desktop a face tile also
+lifts 8px on hover), and on the phone a player row tints and the join requests
+card (the
 screen's one feature card) darkens under a shade for the press beat (CH-3602),
 and Team view and List view settle in as the toggle moves, never when the kept
 layout returns (CH-3603). All three are checked in the preview, and roster.test
@@ -237,7 +245,7 @@ press on keys, sheets and pushes (D-64); there is no first-paint rise.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 31601 | CH-3601 | `OPENING_OR_SWITCHING_A_PLAYER` | Opening or switching a player |
+| 31601 | CH-3601 | `OPENING_OR_SWITCHING_A_PLAYER` | Opening or switching a player (desktop: from a Needs a look chip) |
 | 31602 | CH-3602 | `HOVERING_OR_PRESSING_A_FACE_CARD_OR` | Hovering or pressing a face card or row |
 | 31603 | CH-3603 | `SWITCHING_BETWEEN_TEAM_VIEW_AND_LIST_VIEW` | Switching between Team view and List view |
 | 31604 | CH-3604 | `PHONE_CHOOSING_AVG_SG_OR_NAME` | Phone: choosing Avg, SG or Name |
@@ -293,7 +301,12 @@ From the shell (P001): 11901 PHONE_CHROME.
 
 Status: DEFINED
 
-The coach's note saves when the field loses focus, only if it changed (32001). Esc closes the panel, except while typing a note or while a dialog is open, where it closes only the dialog (31803). Cards, rows and the pills are buttons, so Enter and Space open them. Roster has no keyboard shortcuts of its own. The shell's edge swipe and browser back pop the pushed profile (12001).
+The coach's note saves when the field loses focus, only if it changed (32001).
+Esc closes the panel, except while typing a note or while a dialog is open,
+where it closes only the dialog (31803). Cards, rows and the pills are buttons,
+so Enter and Space press them (a card or a name opens the player's profile).
+Roster has no keyboard shortcuts of its own. The shell's edge swipe and browser
+back pop the pushed profile (12001).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

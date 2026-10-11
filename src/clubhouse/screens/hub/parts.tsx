@@ -2,7 +2,7 @@
 
 import { Bus, CalendarCheck, Check, Download, FileSpreadsheet, FileText, FileType, Folder, Image as ImageIcon, Megaphone, MoreHorizontal, Pencil, Plane, Trash2, Upload } from 'lucide-react';
 import Link from 'next/link';
-import { useRef, useState, type DragEvent } from 'react';
+import { useRef, useState, type CSSProperties, type DragEvent } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChHubUpdate, ChRsvp, ChTeamHub } from '../../data/hub';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -249,7 +249,7 @@ export function Announcement({
         {coach ? (
           <span className="ch-hb-reads ch-num">
             <span className="ch-hb-reads__t" aria-hidden="true">
-              <i style={{ width: `${pct}%` }} />
+              <i style={{ '--ch-hb-p': pct / 100 } as CSSProperties} />
             </span>
             {a.ackCount} of {a.recipients} {a.needAck ? 'acknowledged' : 'read'}
           </span>

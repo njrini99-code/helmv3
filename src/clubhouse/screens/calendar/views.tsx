@@ -6,6 +6,7 @@ import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
 import { haptic } from '../../lib/haptics';
+import { ClassGroupBlock } from './class-group';
 import { EventPeek } from './peek';
 import {
   CAL_END,
@@ -16,6 +17,8 @@ import {
   dowOf,
   fmtHour,
   isMajor,
+  groupClasses,
+  isClassGroup,
   layoutLanes,
   monthCells,
   monthName,
@@ -311,27 +314,31 @@ export function TimeGrid({
           )}
         </div>
         {dates.map((d) => {
-          const laid = layoutLanes(events.filter((e) => !e.allDay && e.date === d && e.start != null && e.end != null));
+          const laid = layoutLanes(groupClasses(events.filter((e) => !e.allDay && e.date === d && e.start != null && e.end != null)));
           return (
             <div key={d} className={'ch-wk__col' + (d === now.date ? ' is-today' : '')}>
               {daylight && <Daylight dl={daylight(d)} from={from} to={to} label={d === dates[dates.length - 1]} />}
-              {laid.map((l) => (
-                <EventPeek key={l.e.id} e={l.e} coach={coach} people={people} onOpen={() => onSelect(l.e.id)} disabled={!!drag}>
+              {laid.map((l) => {
+                const g = l.e;
+                if (isClassGroup(g)) return <ClassGroupBlock key={g.id} g={g} lane={l.lane} lanes={l.lanes} selId={selId} people={people} onSelect={onSelect} from={from} to={to} />;
+                return (
+                <EventPeek key={g.id} e={g} coach={coach} people={people} onOpen={() => onSelect(g.id)} disabled={!!drag}>
                   <EventBlock
-                    e={l.e}
+                    e={g}
                     lane={l.lane}
                     lanes={l.lanes}
-                    sel={selId === l.e.id}
-                    flagged={flagged.has(l.e.id)}
+                    sel={selId === g.id}
+                    flagged={flagged.has(g.id)}
                     people={people}
                     onSelect={onSelect}
                     from={from}
                     to={to}
-                    drag={dragFor(l.e)}
-                    state={drag?.e.id === l.e.id ? 'held' : clashes?.has(l.e.id) ? 'clash' : undefined}
+                    drag={dragFor(g)}
+                    state={drag?.e.id === g.id ? 'held' : clashes?.has(g.id) ? 'clash' : undefined}
                   />
                 </EventPeek>
-              ))}
+                );
+              })}
               {drag && drag.to.date === d && (
                 <EventBlock e={{ ...drag.e, date: d, start: drag.to.start, end: drag.to.end }} lane={0} lanes={1} sel={false} flagged={false} people={people} onSelect={() => {}} from={from} to={to} state="ghost" />
               )}

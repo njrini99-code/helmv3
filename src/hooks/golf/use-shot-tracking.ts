@@ -17,6 +17,7 @@ import { useUndoManager } from '@/hooks/golf/use-undo-manager';
 import { useEditShotModal } from '@/hooks/golf/use-edit-shot-modal';
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
 import { displayToFeet, displayToYards } from '@/lib/golf/distance-units';
+import { planTapIn } from '@/lib/golf/shot-entry-rules';
 
 // Local alias for the Hole interface used by this component's props
 type Hole = RoundHole;
@@ -29,6 +30,11 @@ export interface ShotTrackingProps {
   statusSlot?: ReactNode;
   holes: Hole[];
   currentHoleIndex: number;
+  /**
+   * Shotgun start: the hole position the round started on (lib/golf/round-session/play-order.ts). Omitted, hole 1.
+   * The screens use it for which holes count as earlier and which one is next; the hook's own rules don't need it.
+   */
+  startHole?: number;
   /**
    * A hole is only considered complete once its parent has durably checkpointed
    * the score and every shot. The caller resolves after that write succeeds.
@@ -425,19 +431,36 @@ export function useShotTracking(
       approachMissLieType: (isApproachOrAroundGreen && approachMissLieType) ? approachMissLieType : undefined,
     };
 
-    // Record the shot in the reducer
-    const isHoleComplete = resultOfShot === 'hole';
-    dispatch({ type: 'RECORD_SHOT', payload: { shot: shotRecord, isHoleComplete } });
+    await recordRows([shotRecord]);
+  };
+
+  /**
+   * Writes recorded rows the one way a shot is written, then (when the last
+   * one holes out) checkpoints the hole. The caller holds
+   * `isProcessingShotRef`; it is released here. Resolves true only when the
+   * rows holed the hole out and its checkpoint landed.
+   */
+  const recordRows = async (rows: ShotRecord[]): Promise<boolean> => {
+    let updatedHistory = shotHistory;
+    let isHoleComplete = false;
+    for (const row of rows) {
+      isHoleComplete = row.result === 'hole';
+      // Record the shot in the reducer
+      dispatch({ type: 'RECORD_SHOT', payload: { shot: row, isHoleComplete } });
+      // Build updated history for callbacks that need it immediately
+      updatedHistory = [...updatedHistory, row];
+      saveShot(row);
+      if (!isHoleComplete) {
+        // Update state for next shot
+        const newLie = row.result as 'fairway' | 'rough' | 'sand' | 'green' | 'other';
+        dispatch({ type: 'UPDATE_AFTER_SHOT', payload: { distanceAfter: row.distanceToHoleAfter, unitAfter: row.distanceUnitAfter, newLie } });
+      }
+    }
 
     // RE-F14: no haptic here. The "Next shot" / "Complete hole" tap already
     // answers the hand (FairwayShotEntry + the Fairway Button's own tick);
     // firing a second one from the state machine buzzed twice per shot, and
     // `success` is reserved for the round-submitted moment.
-
-    // Build updated history for callbacks that need it immediately
-    const updatedHistory = [...shotHistory, shotRecord];
-
-    saveShot(shotRecord);
 
     // B8: this checkpoint belongs to whichever hole was current at tap time.
     // The hole-nav pills allow navigating away while it's still in flight;
@@ -451,22 +474,18 @@ export function useShotTracking(
       // until the parent confirms its durable checkpoint. If that save cannot
       // complete, keep the hole review visible with one explicit retry affordance
       // rather than pretending it was saved or showing a persistent banner.
-      if (isHoleComplete) {
-        setHoleCheckpointStatus('saving');
-        const checkpointed = await completeHole(updatedHistory);
-        if (currentHoleIndexRef.current === holeIndexAtCheckpointStart) {
-          setHoleCheckpointStatus(checkpointed ? 'idle' : 'failed');
-        }
-        if (!checkpointed) return;
-      } else {
-        // Update state for next shot
-        const newLie = resultOfShot as 'fairway' | 'rough' | 'sand' | 'green' | 'other';
-        dispatch({ type: 'UPDATE_AFTER_SHOT', payload: { distanceAfter, unitAfter, newLie } });
+      if (!isHoleComplete) return false;
+      setHoleCheckpointStatus('saving');
+      const checkpointed = await completeHole(updatedHistory);
+      if (currentHoleIndexRef.current === holeIndexAtCheckpointStart) {
+        setHoleCheckpointStatus(checkpointed ? 'idle' : 'failed');
       }
+      return checkpointed;
     } catch {
       if (isHoleComplete && currentHoleIndexRef.current === holeIndexAtCheckpointStart) {
         setHoleCheckpointStatus('failed');
       }
+      return false;
     } finally {
       // Release the double-tap guard even when a checkpoint rejects. The local
       // snapshot remains intact and the player can use the explicit retry.
@@ -474,6 +493,34 @@ export function useShotTracking(
         isProcessingShotRef.current = false;
       });
     }
+  };
+
+  // A tap in (shot-entry-rules planTapIn): one tap writes the holed putt, or the
+  // putt on screen left at 1 ft and the holed 1 ft putt, through the same path
+  // as Next shot / Hole out. Not offered while an undo or the hole's save runs.
+  const tapIn = currentHole && !undoSaving && holeCheckpointStatus !== 'saving'
+    ? planTapIn({
+        hole: currentHole,
+        currentShot,
+        shotHistory,
+        currentLie,
+        isPutting,
+        distanceToHole,
+        distanceUnit,
+        resultOfShot,
+        distanceAfterShot,
+        puttBreak,
+        puttSlope,
+        puttMissTags,
+      })
+    : null;
+
+  /** Resolves true once the tap in holed the hole out and the hole's checkpoint landed. */
+  const handleTapIn = async (): Promise<boolean> => {
+    if (!tapIn) return false;
+    if (isProcessingShotRef.current || shotMutationInFlightRef.current) return false;
+    isProcessingShotRef.current = true;
+    return recordRows(tapIn.rows);
   };
 
   const handleRetryHoleCheckpoint = useCallback(async () => {
@@ -572,6 +619,9 @@ export function useShotTracking(
     isReadyForNextShot,
     handleResultSelect,
     handleNextShot,
+    /** What a tap in would write here, or null when it is not offered (shot-entry-rules planTapIn). */
+    tapIn,
+    handleTapIn,
     handleRetryHoleCheckpoint,
     handleSelectShot,
   };

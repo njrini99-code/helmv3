@@ -88,31 +88,35 @@ function Sec({
   if (hide) return null;
   return (
     <section className="ch-gm" id={`gm-${id}`} aria-labelledby={`gm-${id}-t`}>
-      <header className="ch-gm__head">
-        <span className="ch-gm__ic">
-          <Icon icon={icon} size={16} />
-        </span>
-        <div className="ch-gm__t">
-          <h2 id={`gm-${id}-t`}>{title}</h2>
-          <p>{lead}</p>
-        </div>
-        <span className="ch-gm__sub">{sub}</span>
-      </header>
-      <dl className="ch-gm__figs">
-        {figs.map(([l, v, n, t]) => {
-          const reason = v === NO_DATA ? NONE_REASON[`${id}:${l}`] : undefined;
-          return (
-            <div key={l}>
-              <dt>{l}</dt>
-              <dd className={reason ? 'ch-gm__none' : `ch-num${t ? ` ch-${t}` : ''}`}>{reason ?? v}</dd>
-              {n && <dd className="ch-gm__sub">{n}</dd>}
-            </div>
-          );
-        })}
-      </dl>
-      <Rule how={how}>{rule}</Rule>
-      <div className="ch-gm__body">{children}</div>
-      {more}
+      <div className="ch-gm__id">
+        <header className="ch-gm__head">
+          <span className="ch-gm__ic">
+            <Icon icon={icon} size={16} />
+          </span>
+          <div className="ch-gm__t">
+            <h2 id={`gm-${id}-t`}>{title}</h2>
+            <p>{lead}</p>
+          </div>
+          <span className="ch-gm__sub">{sub}</span>
+        </header>
+        <dl className="ch-gm__figs">
+          {figs.map(([l, v, n, t]) => {
+            const reason = v === NO_DATA ? NONE_REASON[`${id}:${l}`] : undefined;
+            return (
+              <div key={l}>
+                <dt>{l}</dt>
+                <dd className={reason ? 'ch-gm__none' : `ch-num${t ? ` ch-${t}` : ''}`}>{reason ?? v}</dd>
+                {n && <dd className="ch-gm__sub">{n}</dd>}
+              </div>
+            );
+          })}
+        </dl>
+        <Rule how={how}>{rule}</Rule>
+      </div>
+      <div className="ch-gm__vis">
+        <div className="ch-gm__body">{children}</div>
+        {more}
+      </div>
     </section>
   );
 }
@@ -198,6 +202,9 @@ export function GameDetail({
     double: s.doublePlusPerRound ?? 0,
   };
   const totals = { eagle: s.totalEagles, birdie: s.totalBirdies, par: s.totalPars, bogey: s.totalBogeys, double: s.totalDoublePlus };
+  // Doubles or worse are said as a share of the holes scored, the unit the Tour's figure is in (a per-round count set beside a share of holes is not a comparison).
+  const holesScored = totals.eagle + totals.birdie + totals.par + totals.bogey + totals.double;
+  const doublePct = holesScored > 0 ? (totals.double / holesScored) * 100 : null;
   const par = (p: 3 | 4 | 5) => {
     const d = s.scoringByPar[`par${p}` as const];
     return { par: p, avg: d.avgToPar == null ? null : p + d.avgToPar, bench: bench[`scoring_par_${p}`] ?? null };
@@ -327,7 +334,12 @@ export function GameDetail({
           ['Scoring average', num(s.scoringAverage18 ?? s.scoringAverage), 'Per 18 holes', undefined],
           ['Birdies / round', num(s.birdiesPerRound), null, undefined],
           ['Bogeys / round', num(s.bogeysPerRound), null, undefined],
-          ['Doubles or worse', num(s.doublePlusPerRound), bench.big_number_rate != null ? `Tour ${bench.big_number_rate}% of holes` : null, undefined],
+          [
+            'Doubles or worse',
+            num(s.doublePlusPerRound),
+            doublePct == null ? null : `${doublePct.toFixed(1)}% of holes${bench.big_number_rate != null ? ` · Tour ${bench.big_number_rate}%` : ''}`,
+            doublePct != null && bench.big_number_rate != null ? (doublePct <= bench.big_number_rate ? 'gain' : 'loss') : undefined,
+          ],
         ]}
         more={
           <More open={open}>
