@@ -4,13 +4,19 @@
 
 Presentation only (no contract change):
 
-- The review's running-score card and the library's season-chart card sit on a still, full-width track and move along it by
-  `translate` in container units, so they glide without relayout and the track never overflows the chart.
-- Putts a hole: each column scales up from its foot (`--ch-rz-p`); first putts by length: each bar slides in from the left. Both
-  glide on transform. The strokes-gained bars stay sized inline and no longer glide (their width is what the review's tests read);
+- The review's running-score card and the library's season-chart card sit on a
+  still, full-width track and move along it by
+  `translate` in container units, so they glide without relayout and the track
+  never overflows the chart.
+- Putts a hole: each column scales up from its foot (`--ch-rz-p`); first putts
+  by length: each bar slides in from the left. Both
+  glide on transform. The strokes-gained bars stay sized inline and no longer
+  glide (their width is what the review's tests read);
   the scoring distribution keeps its own slide.
-- Depth: the stage and hero use `--ch-elevation-feature`, the scrub card `--ch-elevation-overlay`, marks `--ch-elevation-mark`,
-  `-mark-warn` and `-mark-ink`, and the figures row `--ch-elevation-plate` (shared entry in `docs/clubhouse/CHANGELOG.md`).
+- Depth: the stage and hero use `--ch-elevation-feature`, the scrub card
+  `--ch-elevation-overlay`, marks `--ch-elevation-mark`,
+  `-mark-warn` and `-mark-ink`, and the figures row `--ch-elevation-plate`
+  (shared entry in `docs/clubhouse/CHANGELOG.md`).
 
 ## 2026-10-10 — Rounds library and new round, more premium
 
@@ -25,33 +31,50 @@ Held items: none
 
 ### Changed (the library, desktop and phone)
 
-- Season scoring: "Every round vs par" sits on the same deep-green stage as the review's pictures (desktop; flat on the page on the
-  phone, which keeps its one green card). Bars are gradient fills (red under par, ivory over), the average is a gold dashed line with
-  its chip, a qualifier a gold outline. The bars rise from the par line the first time the chart is scrolled into view; move across it
-  (or touch it) for a card with the round's date, kind, score and score against par. The title and the colour key share one line.
-- The average is the page's largest figure with a short gold rule; the Best, Putts and GIR figures keep their drawings with deeper
-  fills (a gold ring on the best round, a gold tick at two putts a green), and a caption wraps to a second line before it is cut.
-- Heads (in progress, season scoring, more unfinished, each month) carry the short gold rule. A month shows its trend as one small bar
+- Season scoring: "Every round vs par" sits on the same deep-green stage as the
+  review's pictures (desktop; flat on the page on the
+  phone, which keeps its one green card). Bars are gradient fills (red under
+  par, ivory over), the average is a gold dashed line with
+  its chip, a qualifier a gold outline. The bars rise from the par line the
+  first time the chart is scrolled into view; move across it
+  (or touch it) for a card with the round's date, kind, score and score against
+  par. The title and the colour key share one line.
+- The average is the page's largest figure with a short gold rule; the Best,
+  Putts and GIR figures keep their drawings with deeper
+  fills (a gold ring on the best round, a gold tick at two putts a green), and a
+  caption wraps to a second line before it is cut.
+- Heads (in progress, season scoring, more unfinished, each month) carry the
+  short gold rule. A month shows its trend as one small bar
   a round beside its count, average and low.
-- Round rows are a ledger: a flush date with a gold hairline, Out, In and Tot as a small hung board (the review's scorecard in
-  miniature, the total on a gold plate), gradient meters (putts in gold), and a flush to-par with its red ring kept under par.
-- The round in progress: the to-par through the holes is a figure; the hole board has a gold hairline.
+- Round rows are a ledger: a flush date with a gold hairline, Out, In and Tot as
+  a small hung board (the review's scorecard in
+  miniature, the total on a gold plate), gradient meters (putts in gold), and a
+  flush to-par with its red ring kept under par.
+- The round in progress: the to-par through the holes is a figure; the hole
+  board has a gold hairline.
 
 ### Changed (new round)
 
-- The green band is lighter on the desktop (title left, steps right) and the steps are a numbered stepper with a gold-ringed current
+- The green band is lighter on the desktop (title left, steps right) and the
+  steps are a numbered stepper with a gold-ringed current
   step; a gold hairline closes the band.
-- The scorecard is two hung boards, Out and In, each with its par and yardage total; hole numbers are debossed, par keys and the
-  yardage sit on ivory plates, an edited hole's number turns gold. The whole new-round page now fits one desktop screen. On the phone
+- The scorecard is two hung boards, Out and In, each with its par and yardage
+  total; hole numbers are debossed, par keys and the
+  yardage sit on ivory plates, an edited hole's number turns gold. The whole
+  new-round page now fits one desktop screen. On the phone
   the nines stack under their own heads.
-- The course band has the gold hairline; the open qualifier has a gold-ringed medal and a raised Play; the course picker's tiles are
-  ivory with a gold hairline and turn green under the pointer, with the chevron nudging.
+- The course band has the gold hairline; the open qualifier has a gold-ringed
+  medal and a raised Play; the course picker's tiles are
+  ivory with a gold hairline and turn green under the pointer, with the chevron
+  nudging.
 
 ### Notes
 
-- Every duration is a motion token, so Animations off and reduced motion make each of these instant; the chart's per-bar delay is zeroed
+- Every duration is a motion token, so Animations off and reduced motion make
+  each of these instant; the chart's per-bar delay is zeroed
   for reduced motion. No behaviour, data, copy or accessible name changed.
-- Added `MonthSpark` and the chart stage to `screens/rounds/parts.tsx`; `HoleConfig` wraps each nine in a labelled group (`Out`, `In`).
+- Added `MonthSpark` and the chart stage to `screens/rounds/parts.tsx`;
+  `HoleConfig` wraps each nine in a labelled group (`Out`, `In`).
 
 ## 2026-10-10 — Tap in on the putting screen
 
@@ -64,11 +87,15 @@ Data impact: none (no migration). A tap in is a holed putt: result hole, putt_ma
 Held items: none
 ```
 
-- On a putt, before a result is picked, a quiet "Tap in" sits under the putt result with a caption naming what it
-  writes and the score: one holed putt from where the ball lies within 2 ft, or the putt on screen left at 1 ft and
-  the holed 1 ft putt. One tap records it through the same path as Hole out (`useShotTracking.handleTapIn`, shared
+- On a putt, before a result is picked, a quiet "Tap in" sits under the putt
+  result with a caption naming what it
+  writes and the score: one holed putt from where the ball lies within 2 ft, or
+  the putt on screen left at 1 ft and
+  the holed 1 ft putt. One tap records it through the same path as Hole out
+  (`useShotTracking.handleTapIn`, shared
   with the Fairway screen), and the hole saves and moves on as usual.
-- A tap in is a real stroke and putt (Rules of Golf 3.3c; concessions are match play only, 3.2b), so score, putts and
+- A tap in is a real stroke and putt (Rules of Golf 3.3c; concessions are match
+  play only, 3.2b), so score, putts and
   strokes gained count it like any holed putt. Undo lifts one stroke at a time.
 - Medium on the tap, success once the hole's save lands (D-70).
 ## 2026-10-10 — Shotgun start: choose the starting hole
@@ -82,22 +109,32 @@ Data impact: golf_rounds.draft_data.startHole on every autosave; no column, no m
 Held items: none
 ```
 
-- Round details gains a quiet "Starting hole" select (the shared `ui/Select`), once the scorecard is in. It lists the
-  holes the round plays by the card's numbers (10 to 18 on a back nine) and defaults to the first. The dock adds
+- Round details gains a quiet "Starting hole" select (the shared `ui/Select`),
+  once the scorecard is in. It lists the
+  holes the round plays by the card's numbers (10 to 18 on a back nine) and
+  defaults to the first. The dock adds
   "· Starts on hole N" only when the start is not the first hole.
-- Only the play order changes. Holes keep their numbers, pars and order on the strip, the scorecard and Round complete
-  (Out/In and Front · Back stay by hole number). A round started on 6 plays 6 to 18, then 1 to 5, and finishes after
+- Only the play order changes. Holes keep their numbers, pars and order on the
+  strip, the scorecard and Round complete
+  (Out/In and Front · Back stay by hole number). A round started on 6 plays 6 to
+  18, then 1 to 5, and finishes after
   the 18th hole played. A 9-hole round wraps inside its nine.
-- The strip lets the player go back to holes already played in this round's order, and not ahead to holes 1 to 5
-  before the round wraps to them. "Back to hole" on Round complete names the hole the round ended on.
-- The unfinished card's "Continue at hole N" follows the play order (a round started on 6 with 6 to 18 in continues at
+- The strip lets the player go back to holes already played in this round's
+  order, and not ahead to holes 1 to 5
+  before the round wraps to them. "Back to hole" on Round complete names the
+  hole the round ended on.
+- The unfinished card's "Continue at hole N" follows the play order (a round
+  started on 6 with 6 to 18 in continues at
   hole 1).
 
 ## 2026-10-10 — Micro motion on the review
 
-The running-score line draws once the first time its stage is seen; the scrub card fades and the hovered dot lifts; a picked hole's shots
-draw in the order they were hit and its reading settles in; strokes gained, putt columns and the first-putt bars glide to a new
-length; the costliest-hole rows press and warm. All from motion tokens (instant with Animations off or reduced motion). The zones come
+The running-score line draws once the first time its stage is seen; the scrub
+card fades and the hovered dot lifts; a picked hole's shots
+draw in the order they were hit and its reading settles in; strokes gained, putt
+columns and the first-putt bars glide to a new
+length; the costliest-hole rows press and warm. All from motion tokens (instant
+with Animations off or reduced motion). The zones come
 from the shared `ui/Zone.tsx`.
 
 ## 2026-10-09 — The round review, more premium
@@ -111,14 +148,21 @@ Data impact: none
 Held items: none
 ```
 
-- The running score to par sits on a deep-green stage with a glowing line, mint and gold washes against par, and a
-  scrubber: move across it for a card with the hole, its score and the running total; click a hole to open its shots.
-- The picked hole's shots are drawn on a matching stage (arcs in mint for the fairway and green, gold for rough and
+- The running score to par sits on a deep-green stage with a glowing line, mint
+  and gold washes against par, and a
+  scrubber: move across it for a card with the hole, its score and the running
+  total; click a hole to open its shots.
+- The picked hole's shots are drawn on a matching stage (arcs in mint for the
+  fairway and green, gold for rough and
   sand, a red pin flag).
-- The bands carry depth: a gradient and a gold rule on top, a gold-ringed number, a short gold rule under each title,
-  and the reading in a soft plate with a gradient figure. The scorecard zone's reading follows the picked hole.
-- Strokes gained bars, fairway and green marks, putt columns and the first-putt bars are gradient fills with soft
-  shadows; marks grow slightly under the pointer. The figures row has a gold hairline and green numerals.
+- The bands carry depth: a gradient and a gold rule on top, a gold-ringed
+  number, a short gold rule under each title,
+  and the reading in a soft plate with a gradient figure. The scorecard zone's
+  reading follows the picked hole.
+- Strokes gained bars, fairway and green marks, putt columns and the first-putt
+  bars are gradient fills with soft
+  shadows; marks grow slightly under the pointer. The figures row has a gold
+  hairline and green numerals.
 - The left column holds in view while a band's pictures scroll.
 
 ## 2026-10-09 — The round review as zones, with insights drawn from the round
@@ -134,23 +178,35 @@ Held items: none
 
 ### Changed (the review, desktop and phone)
 
-- The review is six zones under gold rules with an alternating tint, in the same style as the player stats page: what the
-  area is and one reading on the left, the picture that fits it on the right. The hero and the five figures stay.
-- The hero gains one line on what the round was, from the figures: the leg that carried it and the one that gave strokes
-  back ("Approach gained +1.3, putting gave back 0.9"), else its birdies and doubles.
-- The round: the running score to par as a line (rising when strokes are gained on par, falling when given back, the
-  front and back nine labelled, the costliest hole marked) with each hole's strokes against par as a column under it, and
+- The review is six zones under gold rules with an alternating tint, in the same
+  style as the player stats page: what the
+  area is and one reading on the left, the picture that fits it on the right.
+  The hero and the five figures stay.
+- The hero gains one line on what the round was, from the figures: the leg that
+  carried it and the one that gave strokes
+  back ("Approach gained +1.3, putting gave back 0.9"), else its birdies and
+  doubles.
+- The round: the running score to par as a line (rising when strokes are gained
+  on par, falling when given back, the
+  front and back nine labelled, the costliest hole marked) with each hole's
+  strokes against par as a column under it, and
   the scoring distribution.
-- Where the strokes went: the four strokes-gained legs on one scale, and the holes that cost the most, each opening on
+- Where the strokes went: the four strokes-gained legs on one scale, and the
+  holes that cost the most, each opening on
   the scorecard with its shots.
-- Tee to green: a mark a hole for fairways and greens in regulation, which side fairways were missed, and how close
+- Tee to green: a mark a hole for fairways and greens in regulation, which side
+  fairways were missed, and how close
   approaches finished (average and closest, in feet).
-- Putting: the putts on every hole as columns (one putt green, three or more gold), the one, two and three-putt split,
+- Putting: the putts on every hole as columns (one putt green, three or more
+  gold), the one, two and three-putt split,
   and the first putts by length with how many dropped.
-- Scorecard and shots: the scorecard as before; the picked hole now draws its shots as arcs along the hole from tee to
-  pin, each coloured by where it finished, the penalty and the putts marked, above the shot list.
+- Scorecard and shots: the scorecard as before; the picked hole now draws its
+  shots as arcs along the hole from tee to
+  pin, each coloured by where it finished, the penalty and the putts marked,
+  above the shot list.
 - In words: the recap and the player's notes.
-- On the phone the zones stack and the pictures' words are set larger; the scorecard keeps its sideways scroll.
+- On the phone the zones stack and the pictures' words are set larger; the
+  scorecard keeps its sideways scroll.
 
 ## 2026-10-08 — the shot screen's field is centred
 

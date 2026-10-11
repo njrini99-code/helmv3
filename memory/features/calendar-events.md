@@ -205,7 +205,8 @@ legacy `is_recurring` flag in sync for older consumers.
   defaults to false; the column default is already `false` in production and the
   baseline). Reads treat null as off (`=== true`). Off hides: Clubhouse detail
   responses, reply badges, player reply, Needs attention, peek count and Nudge,
-  home going/awaiting/confirmed, hub RSVP rows (coach query `.eq('requires_rsvp',
+  home going/awaiting/confirmed, hub RSVP rows (coach query
+  `.eq('requires_rsvp',
   true)`, player `replyIsClosed`), sidebar confirmed count; Fairway drawer coach
   summary and people pills, the player's Respond pick, the coach dashboard's
   "N/M confirmed" (`dashboard-data.ts` reads the flag beside the

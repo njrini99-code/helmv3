@@ -2,9 +2,12 @@
 
 ## 2026-10-10 — The desktop board in the phone's lit-card language
 
-Presentation only. The focus's claim is the page's one lit green card at the head of the focus column (the phone's card, now one shared
-block so the two cannot drift), with its evidence as one reading, a large figure over a gradient track, under it; bars and the
-confidence meter take gradient fills; section heads take a short gold lead; the chosen player gets a green rail. "Decision first,
+Presentation only. The focus's claim is the page's one lit green card at the
+head of the focus column (the phone's card, now one shared
+block so the two cannot drift), with its evidence as one reading, a large figure
+over a gradient track, under it; bars and the
+confidence meter take gradient fills; section heads take a short gold lead; the
+chosen player gets a green rail. "Decision first,
 pulse second" stays not built (the owner declined it).
 
 ## 2026-10-08 — Ask: the @ picker is cmdk, and offers the stats

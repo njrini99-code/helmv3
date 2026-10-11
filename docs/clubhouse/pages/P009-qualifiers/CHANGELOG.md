@@ -2,20 +2,30 @@
 
 ## 2026-10-10 — The leaderboard set as a tournament sheet
 
-Owner direction (2026-10-10): the qualifier page is a leaderboard and should read like one, in dark ink on the ivory page. A green panel
-was tried and rejected as decoration. Presentation only, coach, player and phone; rows, order, trays and states are unchanged.
+Owner direction (2026-10-10): the qualifier page is a leaderboard and should
+read like one, in dark ink on the ivory page. A green panel
+was tried and rejected as decoration. Presentation only, coach, player and
+phone; rows, order, trays and states are unchanged.
 
-- **Typography carries it:** a heavy rule over the title, no avatars, no plates, one hairline a row. To par is the loudest figure on the
-  row (red under par); the position sits quiet beside the name; the leader is set bold; rows past the travel cut are set in the quiet ink.
-- **Status is a word in its own ink**, not a pill: green for qualifying, gold-brown for the bubble.
-- **The field's spread** is ink on the ivory (green coins qualify, a ring for the bubble, a dashed cut), no stage panel.
+- **Typography carries it:** a heavy rule over the title, no avatars, no plates,
+  one hairline a row. To par is the loudest figure on the
+  row (red under par); the position sits quiet beside the name; the leader is
+  set bold; rows past the travel cut are set in the quiet ink.
+- **Status is a word in its own ink**, not a pill: green for qualifying,
+  gold-brown for the bubble.
+- **The field's spread** is ink on the ivory (green coins qualify, a ring for
+  the bubble, a dashed cut), no stage panel.
 
 ## 2026-10-10 — The field on one number line
 
-Presentation only. Above the leaderboard (coach and player, once three players have a round in): each player is a coin at their total
-to par on a deep-green line (lower, better, on the left), the even-par line, and a gold cut between the last player who qualifies on
-score and the next. A coin's colour is its leaderboard state; a pointer reads the name, place and score. It is drawn from the board's
-own rows and top-score count, and the leaderboard under it stays the keyboard and screen-reader route.
+Presentation only. Above the leaderboard (coach and player, once three players
+have a round in): each player is a coin at their total
+to par on a deep-green line (lower, better, on the left), the even-par line, and
+a gold cut between the last player who qualifies on
+score and the next. A coin's colour is its leaderboard state; a pointer reads
+the name, place and score. It is drawn from the board's
+own rows and top-score count, and the leaderboard under it stays the keyboard
+and screen-reader route.
 
 ## 2026-10-08 — the rank slide runs on the smooth spring
 

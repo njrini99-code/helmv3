@@ -14,7 +14,8 @@ Owner review:
 - **Delete conversation** (CH-7503): a danger button in the conversation's
   details (desktop panel and phone sheet) opens a confirm, then hides the
   conversation from your own inbox (`hideGolfConversation`,
-  `app/golf/actions/conversation-hide.ts`). The other people keep their copy, the
+  `app/golf/actions/conversation-hide.ts`). The other people keep their copy,
+  the
   messages are untouched, a team channel can't be deleted, and a message that
   arrives after the hide brings the conversation back. It needs the held
   migration `20261008160000_golf_conversation_hidden_at.sql` (a nullable
@@ -29,12 +30,15 @@ Owner review:
   bubble, green under an ivory one; yours is ringed in champagne), and a click
   opens who reacted: a green head naming the reaction and the count, a row per
   person, and one action to add or take back your own (`ReactionChip`;
-  `ChReaction.userIds`). The glyphs are outline only, heavier (2.3), in pure ivory
-  on green and deep green on ivory; the picker's chosen reaction is a green disc.
+  `ChReaction.userIds`). The glyphs are outline only, heavier (2.3), in pure
+  ivory
+  on green and deep green on ivory; the picker's chosen reaction is a green
+  disc.
 - The composer is a taller, rounder bar (56px, 28px radius) that takes a green
   focus glow; Attach is a green-wash disc, and Send a green disc that is a pale
   tint when empty and full green when there is something to send
-  (`.ch-ms-comp__field`, `.ch-ms-send.is-ready`). Not yet signed off by the owner.
+  (`.ch-ms-comp__field`, `.ch-ms-send.is-ready`). Not yet signed off by the
+  owner.
 - The thread and the conversation list ease like the page does
   (`usePanelSmoothScroll`; the thread glides 1.2s). Desktop wheel only: a
   trackpad and the phone scroll natively.

@@ -50,24 +50,29 @@ ALTER TABLE public.golf_conversation_participants
 ADD COLUMN IF NOT EXISTS hidden_at timestamptz;
 
 COMMENT ON COLUMN public.golf_conversation_participants.hidden_at IS
-'When this participant hid the conversation from their own inbox (Clubhouse Delete conversation). Null: shown. A message newer than this brings the conversation back. Per person; the conversation and its messages are untouched.';
+'When this participant hid the conversation from their own inbox '
+'(Clubhouse Delete conversation). Null: shown. A message newer than '
+'this brings the conversation back. Per person; the conversation and '
+'its messages are untouched.';
 
-CREATE OR REPLACE FUNCTION public.get_golf_conversations_with_details(p_user_id uuid)
+CREATE OR REPLACE FUNCTION public.get_golf_conversations_with_details(
+    p_user_id uuid
+)
 RETURNS TABLE (
-  id uuid,
-  created_at timestamptz,
-  updated_at timestamptz,
-  creator_id uuid,
-  last_message_content text,
-  last_message_at timestamptz,
-  last_message_sender_id uuid,
-  unread_count bigint,
-  participant_ids uuid [],
-  participant_names text [],
-  is_group boolean,
-  title text,
-  participant_count bigint,
-  is_team_channel boolean
+    id uuid,
+    created_at timestamptz,
+    updated_at timestamptz,
+    creator_id uuid,
+    last_message_content text,
+    last_message_at timestamptz,
+    last_message_sender_id uuid,
+    unread_count bigint,
+    participant_ids uuid[],
+    participant_names text[],
+    is_group boolean,
+    title text,
+    participant_count bigint,
+    is_team_channel boolean
 )
 LANGUAGE plpgsql
 SECURITY DEFINER

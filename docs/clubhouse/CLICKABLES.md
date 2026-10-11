@@ -165,7 +165,8 @@ owner, so none is a GAP above. Grouped by record.
 - **Top-bar search field and the ⌘K hint** (every desktop board): hidden until it has a spec
   (`PROGRESS.md:387`); the board's own `onSearch` is a no-op, so there is no behaviour to copy.
 - **Messages Details** (D-48, Q-53 to Q-63): Call (minors' numbers), in-thread Search, Only coaches
-  can post, Edit group, Delete chat (built 2026-10-08 as a per-person hide, 71103), and the thread event card; Pinned and the travel squad quick
+  can post, Edit group, Delete chat (built 2026-10-08 as a per-person hide,
+  71103), and the thread event card; Pinned and the travel squad quick
   group also. Several need a column, a policy or an action change first.
 - **Team Hub compose and trips** (Q-70): Pin to the top (no column), Schedule (the action has no
   publish time), the Rooms editor.

@@ -20,7 +20,8 @@ Owner: do not always require RSVPs unless the coach explicitly toggles it.
 
 ## 2026-10-08 — the details panel: a plate for every event type, darker grey text, smooth scroll
 
-Owner review of the column beside the week ("black on ivory", "rough to scroll"):
+Owner review of the column beside the week ("black on ivory", "rough to
+scroll"):
 
 - Every panel opens on a lit plate in the colour its block has on the grid, in
   ivory ink: green for practice, forest for competition, slate for a class or
@@ -62,7 +63,8 @@ Owner review, same session:
 
 ## 2026-10-08 — players' classes fold into one block per slot
 
-Owner review on a coach whose whole roster's class schedules are in: the Week and
+Owner review on a coach whose whole roster's class schedules are in: the Week
+and
 Day grids drew every class as its own block, cascading up to eight deep into
 one-letter slivers that also painted over the pinned day header. Now:
 
@@ -87,7 +89,8 @@ The Week and Day grids no longer scroll to now on first paint (at 10 PM that
 parked the canvas on the empty bottom of the grid). T and Today still bring now,
 or the next event, about 30% down; outside 6 AM to 9 PM they bring the next
 timed event in view instead of the grid's empty end. `useOpenOnNow` in
-`Calendar.tsx`, `focusHour` in `model.ts`; covered in `calendar-premium.test.ts`.
+`Calendar.tsx`, `focusHour` in `model.ts`; covered in
+`calendar-premium.test.ts`.
 
 ## 2026-10-08 — phone: Month on react-day-picker
 

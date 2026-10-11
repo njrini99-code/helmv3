@@ -138,7 +138,8 @@ long press, dialogs that trap focus and close on Esc.
 ## Data assumptions
 
 Only data the app has. Not shown because no source exists: the event card in a thread, pinned
-messages, "only coaches can post", per-thread search, calls (D-48, D-49). Delete conversation was in
+messages, "only coaches can post", per-thread search, calls (D-48, D-49). Delete
+conversation was in
 this list until the owner asked for it on 2026-10-08 (71103).
 
 ## Existing backend capabilities used

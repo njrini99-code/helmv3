@@ -9,9 +9,12 @@
 
 ## 2026-10-10 — The team's form on the coach's desktop Home
 
-Presentation only. A deep-green band between the head and the week: the team's scoring average with its change against the previous ten,
-the team's average on each of its last round days as a line (drawn once, left to right, the first time it is seen), and the week's
-rounds, greens and putts. It reads `data.phone.form` as it is (the figures the phone strip and Team stats already use) and is absent
+Presentation only. A deep-green band between the head and the week: the team's
+scoring average with its change against the previous ten,
+the team's average on each of its last round days as a line (drawn once, left to
+right, the first time it is seen), and the week's
+rounds, greens and putts. It reads `data.phone.form` as it is (the figures the
+phone strip and Team stats already use) and is absent
 when that read failed.
 
 ## 2026-10-08 — the cardless pass: Since you last looked

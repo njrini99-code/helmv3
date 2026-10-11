@@ -207,7 +207,8 @@ the coach is told how to finish.
 
 Status: DEFINED
 
-Delete a message, Leave a group and Delete a conversation ask first (71101, 71102,
+Delete a message, Leave a group and Delete a conversation ask first (71101,
+71102,
 71103) and fire the warning haptic. Delete a conversation (owner request,
 2026-10-08, superseding D-48's "hidden") hides the thread from the person's own
 inbox only: the others keep theirs, a new message brings it back, and a team
@@ -240,7 +241,8 @@ it used to be lost).
 Status: DEFINED
 
 Sends are optimistic and reconciled in place by id; a refused one stays marked
-Not sent (71301). Reactions are not optimistic: picking one waits for the write. A click on a
+Not sent (71301). Reactions are not optimistic: picking one waits for the write.
+A click on a
 reaction chip opens who reacted, and adding or taking back your own from that
 card waits for the write too; a failure toasts (70607).
 

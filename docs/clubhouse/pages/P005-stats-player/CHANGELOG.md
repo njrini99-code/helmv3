@@ -2,17 +2,25 @@
 
 ## 2026-10-11 — The micro motion moves on transform
 
-Presentation only. The track fills, the missed-green funnel bars and the development rail now draw by transform (scale or slide)
-and their ticks and the rail's dot move by `translate` in container units, so a window or filter change glides without relayout; the
-scoring mix gives each result its share by flex-grow (it was a width). The strokes-gained leg bars stay sized inline and no longer
-glide (their width is what the strokes-gained tests read). Depth on the gain and loss bars and the stage is from the shared elevation
-tokens (`docs/clubhouse/CHANGELOG.md`). No data, copy or accessible name changed.
+Presentation only. The track fills, the missed-green funnel bars and the
+development rail now draw by transform (scale or slide)
+and their ticks and the rail's dot move by `translate` in container units, so a
+window or filter change glides without relayout; the
+scoring mix gives each result its share by flex-grow (it was a width). The
+strokes-gained leg bars stay sized inline and no longer
+glide (their width is what the strokes-gained tests read). Depth on the gain and
+loss bars and the stage is from the shared elevation
+tokens (`docs/clubhouse/CHANGELOG.md`). No data, copy or accessible name
+changed.
 
 ## 2026-10-10 — Zones on the shared Zone, and micro motion
 
-Presentation only; see the shared entry in `docs/clubhouse/CHANGELOG.md`. The zones now come from `ui/Zone.tsx` (the reading sits in a
-plate with a gradient figure and a gold-ringed number, as on the round review). Bars, tracks and focus rails glide to a new value when
-the window or filter changes; rows warm under the pointer; the Overview is memoised.
+Presentation only; see the shared entry in `docs/clubhouse/CHANGELOG.md`. The
+zones now come from `ui/Zone.tsx` (the reading sits in a
+plate with a gradient figure and a gold-ringed number, as on the round review).
+Bars, tracks and focus rails glide to a new value when
+the window or filter changes; rows warm under the pointer; the Overview is
+memoised.
 
 ## 2026-10-09 — Seven zones: Overview, Game detail, Rounds and Development
 
@@ -27,32 +35,52 @@ Held items: none
 
 ### Changed (desktop Overview)
 
-- The Overview is seven zones, each a band set off by a gold rule with an alternating tint: strokes gained, scoring,
-  off the tee, approach, short game, putting, and the last rounds. On the left, what the stat is in a sentence and one
-  large reading with the team's (coach) or the Tour's (player) figure beside it; on the right, the picture that fits it.
-  The comparison table, its axis column and the figure tape are no longer on the player Overview.
-- Strokes gained: the four legs as bars from one zero (each with the shots it counts and, for a coach, the team's
+- The Overview is seven zones, each a band set off by a gold rule with an
+  alternating tint: strokes gained, scoring,
+  off the tee, approach, short game, putting, and the last rounds. On the left,
+  what the stat is in a sentence and one
+  large reading with the team's (coach) or the Tour's (player) figure beside it;
+  on the right, the picture that fits it.
+  The comparison table, its axis column and the figure tape are no longer on the
+  player Overview.
+- Strokes gained: the four legs as bars from one zero (each with the shots it
+  counts and, for a coach, the team's
   mark), and the total against the team and the Tour on one rail.
-- Scoring: every hole by result as one stacked bar with the per-round counts, and each par's average to par against
+- Scoring: every hole by result as one stacked bar with the per-round counts,
+  and each par's average to par against
   the Tour's on a dot plot.
-- Off the tee: where tee shots finish (left, fairway, right, and the misses whose side was not logged) as a strip,
+- Off the tee: where tee shots finish (left, fairway, right, and the misses
+  whose side was not logged) as a strip,
   penalty strokes against the Tour's, and fairways by par 4 and par 5.
-- Approach: a green with its four edges thickened by where missed approaches finish, and how close approaches finish
-  by range on one scale with the Tour's tick. A range under its sample floor says what it needs (CH-5318).
-- Short game: greens missed to saves and bunker shots to sand saves, as a funnel with counts.
-- Putting: the make rate by distance as a curve against the Tour's, the gap between shaded, with putt counts and the
+- Approach: a green with its four edges thickened by where missed approaches
+  finish, and how close approaches finish
+  by range on one scale with the Tour's tick. A range under its sample floor
+  says what it needs (CH-5318).
+- Short game: greens missed to saves and bunker shots to sand saves, as a funnel
+  with counts.
+- Putting: the make rate by distance as a curve against the Tour's, the gap
+  between shaded, with putt counts and the
   Tour's rate under each distance.
 - The last rounds: the scoring-form ribbon, unchanged, as the seventh zone.
-- Game detail, Rounds and Development take the same zone style on desktop. Game detail: each of the five areas is a band
-  with what it is and its four figures on the left (held in view while the right scrolls) and every panel and the More
-  detail disclosure on the right, flush with hairlines instead of cards; nothing was dropped (scrambling, greens by
-  distance and lie, proximity, misses, putting by break and the rest are where they were). Rounds: score by round with the
-  personal bests, this window against the one before with the scoring change as the reading, and the rounds table in a
-  full-width zone that fits without sideways scrolling. Development: each focus area and goal is a track from where it
-  started to its target with the current value on it and the share of the way. The phone keeps its stacked layouts.
-- The comparison table's axis column (a mark per row against the team and Tour) is removed; the table itself is no
+- Game detail, Rounds and Development take the same zone style on desktop. Game
+  detail: each of the five areas is a band
+  with what it is and its four figures on the left (held in view while the right
+  scrolls) and every panel and the More
+  detail disclosure on the right, flush with hairlines instead of cards; nothing
+  was dropped (scrambling, greens by
+  distance and lie, proximity, misses, putting by break and the rest are where
+  they were). Rounds: score by round with the
+  personal bests, this window against the one before with the scoring change as
+  the reading, and the rounds table in a
+  full-width zone that fits without sideways scrolling. Development: each focus
+  area and goal is a track from where it
+  started to its target with the current value on it and the share of the way.
+  The phone keeps its stacked layouts.
+- The comparison table's axis column (a mark per row against the team and Tour)
+  is removed; the table itself is no
   longer on the player pages.
-- When some rounds were posted as a total only, one line above the zones says how many rounds the hole stats read
+- When some rounds were posted as a total only, one line above the zones says
+  how many rounds the hole stats read
   and that the scoring average counts all of them.
 
 ## 2026-10-09 — Overview: the scoring form ribbon and the figure tape
@@ -66,27 +94,44 @@ Data impact: none to the schema (no migration). Each round in the profile now ca
 Held items: none
 ```
 
-### Changed (desktop Overview)
+### Changed (desktop Overview, ribbon and tape)
 
-- No big panel. The scoring trend is a flush ribbon under a gold rule: one column a recent round, a bar from the
-  player's own average (green rising when the round beat it, gold hanging when it did not, all on one scale), the
-  score at its tip, the date and to-par under it, the newest column marked. The head says the form change in a
-  sentence (the newer half of the rounds against the older) with the average, the team's (coach), and the best round.
-- The five figures (fairways, greens, putts, scrambling, best round) follow as the same tape Team stats uses: value,
-  change against the team (coach) or the Tour (player), a weekly line from the rounds, and a ring with the reference's
-  mark (or the best round's distance from par). The player page's own figure cards are no longer used.
-- Wide canvases (1280px and up) set the four hero figures beside the name instead of under it, so the Overview opens
+- No big panel. The scoring trend is a flush ribbon under a gold rule: one
+  column a recent round, a bar from the
+  player's own average (green rising when the round beat it, gold hanging when
+  it did not, all on one scale), the
+  score at its tip, the date and to-par under it, the newest column marked. The
+  head says the form change in a
+  sentence (the newer half of the rounds against the older) with the average,
+  the team's (coach), and the best round.
+- The five figures (fairways, greens, putts, scrambling, best round) follow as
+  the same tape Team stats uses: value,
+  change against the team (coach) or the Tour (player), a weekly line from the
+  rounds, and a ring with the reference's
+  mark (or the best round's distance from par). The player page's own figure
+  cards are no longer used.
+- Wide canvases (1280px and up) set the four hero figures beside the name
+  instead of under it, so the Overview opens
   in view. The figures still show on every tab.
-- Strokes gained by leg is four aligned bars from one zero line (green right for a gain, gold left for a loss, all on one
-  scale), each leg with a line on which shots it counts (off the tee: tee shots on par 4s and 5s; approach: full shots
-  from over 30 yards and par-3 tee shots; around the green: within 30 yards; putting: every shot on the green) and, for
-  a coach, the team's mark on the same rail. It replaces the small stepping-stone graphic.
-- The comparison table ("vs. team" for a coach, "vs. the Tour" for a player) gains an axis on every row that has a
-  reference: the player's mark, the team's tick and the Tour's tick, with a bar from the reference to the player that is
-  green when they are better and gold when not, in the stat's own direction (fewer putts, a lower score). The axis is
-  the data's own range with room either side and never narrower than a fixed minimum, so two close values sit close;
+- Strokes gained by leg is four aligned bars from one zero line (green right for
+  a gain, gold left for a loss, all on one
+  scale), each leg with a line on which shots it counts (off the tee: tee shots
+  on par 4s and 5s; approach: full shots
+  from over 30 yards and par-3 tee shots; around the green: within 30 yards;
+  putting: every shot on the green) and, for
+  a coach, the team's mark on the same rail. It replaces the small
+  stepping-stone graphic.
+- The comparison table ("vs. team" for a coach, "vs. the Tour" for a player)
+  gains an axis on every row that has a
+  reference: the player's mark, the team's tick and the Tour's tick, with a bar
+  from the reference to the player that is
+  green when they are better and gold when not, in the stat's own direction
+  (fewer putts, a lower score). The axis is
+  the data's own range with room either side and never narrower than a fixed
+  minimum, so two close values sit close;
   a rate stays inside 0 to 100 and strokes gained is centred on zero.
-- Game detail's "Doubles or worse" now says its share of holes beside the Tour's share of holes (it set a per-round
+- Game detail's "Doubles or worse" now says its share of holes beside the Tour's
+  share of holes (it set a per-round
   count against a share of holes before).
 - The loading skeleton draws the ribbon and the tape.
 

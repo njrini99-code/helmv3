@@ -2,9 +2,12 @@
 
 ## 2026-10-10 — corner radii on the token scale
 
-- Part of the app-wide premium polish (`docs/clubhouse/CHANGELOG.md`, 2026-10-10): the `9px` and `11px` corner literals in
-  `styles/auth.css` (the welcome's row icon well) and `styles/onboard.css` (the stage's inner frame, the back link, the
-  phone code slots) are `--ch-radius-md` (10px). A one-pixel change in corner rounding; no layout, copy or behaviour changed.
+- Part of the app-wide premium polish (`docs/clubhouse/CHANGELOG.md`,
+  2026-10-10): the `9px` and `11px` corner literals in
+  `styles/auth.css` (the welcome's row icon well) and `styles/onboard.css` (the
+  stage's inner frame, the back link, the
+  phone code slots) are `--ch-radius-md` (10px). A one-pixel change in corner
+  rounding; no layout, copy or behaviour changed.
 
 ## 2026-10-08 — the phone hand-off follows the design reference
 

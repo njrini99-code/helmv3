@@ -358,20 +358,33 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 
 ### Shotgun start (2026-10-10)
 
-- Setup offers "Starting hole" (Clubhouse `RoundSetup`, Fairway `FairwayNewRoundEntry`), default hole 1. It is
-  stored as a POSITION 1..N in the holes the round plays (`setupData.startHole`), because the engine numbers a
-  9-hole round's nine 1..9 (a back nine included). A 9-hole round wraps inside its nine.
-- Only the play order changes. `holes[]`, `completedHoleStats[]` and in-progress shots stay indexed by
-  `hole.number - 1`; scores and shots land on `hole_number` as always. `current_hole` stays the hole NUMBER the
-  player is on, so a resume lands on the right hole with or without the start hole.
-- Rules live in `src/lib/golf/round-session/play-order.ts` (next/previous/last/frontier/position and
-  `decidePostHoleCompleteAction`, shared by both engines). From 6: 6..18, then 1..5; finish after the 18th hole
-  played. The finish gate walks every hole (`allHolesScored`), never `.every` over a sparse array.
-- Persistence: `savePartialRound` writes `draft_data.startHole` on every save (draft_data is replaced wholesale, so
-  every writer sends it); `saveRoundDraft` keeps it inside `setupData`. No column, no migration. A completed round
-  loses it when submit rewrites `draft_data`, so the review and stats read holes by number (Out/In, front/back,
+- Setup offers "Starting hole" (Clubhouse `RoundSetup`, Fairway
+  `FairwayNewRoundEntry`), default hole 1. It is
+  stored as a POSITION 1..N in the holes the round plays
+  (`setupData.startHole`), because the engine numbers a
+  9-hole round's nine 1..9 (a back nine included). A 9-hole round wraps inside
+  its nine.
+- Only the play order changes. `holes[]`, `completedHoleStats[]` and in-progress
+  shots stay indexed by
+  `hole.number - 1`; scores and shots land on `hole_number` as always.
+  `current_hole` stays the hole NUMBER the
+  player is on, so a resume lands on the right hole with or without the start
+  hole.
+- Rules live in `src/lib/golf/round-session/play-order.ts`
+  (next/previous/last/frontier/position and
+  `decidePostHoleCompleteAction`, shared by both engines). From 6: 6..18, then
+  1..5; finish after the 18th hole
+  played. The finish gate walks every hole (`allHolesScored`), never `.every`
+  over a sparse array.
+- Persistence: `savePartialRound` writes `draft_data.startHole` on every save
+  (draft_data is replaced wholesale, so
+  every writer sends it); `saveRoundDraft` keeps it inside `setupData`. No
+  column, no migration. A completed round
+  loses it when submit rewrites `draft_data`, so the review and stats read holes
+  by number (Out/In, front/back,
   ScoreFlow, sequence analysis), which is correct for scoring.
-- Navigation (strip, header Prev/Next, swipe, "back to current hole", the unfinished card's next hole) follows play
+- Navigation (strip, header Prev/Next, swipe, "back to current hole", the
+  unfinished card's next hole) follows play
   order; the strip and scorecard still read by hole number.
 
 ### Penalty strokes (2026-09-09)

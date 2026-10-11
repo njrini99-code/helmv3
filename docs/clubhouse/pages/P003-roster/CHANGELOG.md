@@ -2,18 +2,24 @@
 
 ## 2026-10-10 — Where the team sits
 
-Presentation only. A new block between "Needs a look" and the toolbar (desktop): every ranked player is a coin on one scoring axis
-(lower is better) under a gold team-average line, with their average and first name; coins that would touch take another lane, and
-the first time it is seen they glide from the team line to their place. It is drawn from the roster's own standings (a player under
-the early floor is not on it) and is a pointer shortcut to the faces below, which stay the keyboard and screen-reader route. The
+Presentation only. A new block between "Needs a look" and the toolbar (desktop):
+every ranked player is a coin on one scoring axis
+(lower is better) under a gold team-average line, with their average and first
+name; coins that would touch take another lane, and
+the first time it is seen they glide from the team line to their place. It is
+drawn from the roster's own standings (a player under
+the early floor is not on it) and is a pointer shortcut to the faces below,
+which stay the keyboard and screen-reader route. The
 team average is now memoised on the active players.
 
 ## 2026-10-08 — a player opens their profile; raised player tiles; green chosen chips
 
 Owner review (not yet signed off):
 
-- **Click goes to the profile:** on desktop a click on a player's face (cards) or
-  name (list) goes to that player's profile, `/golf/dashboard/stats?player=<id>`,
+- **Click goes to the profile:** on desktop a click on a player's face (cards)
+  or
+  name (list) goes to that player's profile,
+  `/golf/dashboard/stats?player=<id>`,
   through `openProfile` in `Roster.tsx` (`router.push`, with the select haptic).
   Where that page isn't rebuilt it opens the peek, as before. The peek
   (`RosterPeek`) now opens only from a Needs a look chip. The face and name
@@ -30,7 +36,8 @@ Owner review (not yet signed off):
   ivory ink (`.ch-rs .ch-seg__pill`, `.ch-pill[aria-pressed]`,
   `.ch-rs-vt__b[aria-pressed]`).
 - **Tests:** `roster.test.tsx` treats the stats profile as not rebuilt except in
-  the phone block, so the peek tests keep driving the panel; a new case forces the
+  the phone block, so the peek tests keep driving the panel; a new case forces
+  the
   face and name clicks to `router.push` and the chip to open the peek.
 
 ## 2026-10-08 — The phone sort runs on TanStack Table; rows slide and figures roll on a new sort

@@ -390,7 +390,8 @@ Status: DEFINED
 Rounds' own haptics are on the v2 grammar (D-70): a warning before Discard (CH-11701), a selection tick for opening a round, a
 hole picked in the review and going to another hole (CH-11702, CH-11704, CH-11706), light for Continue, Submit and Start a round
 (CH-11703), a medium tap once per recorded shot (CH-11705), and a warning for Undo, Delete shot, Discard round and Leave
-without it (CH-11707); success and error come from the shell for every write. Tap in (CH-11913) is a medium tap and then
+without it (CH-11707); success and error come from the shell for every write.
+Tap in (CH-11913) is a medium tap and then
 success once the hole it holed is saved (CH-11710).
 
 | Bridge ID | Code | Name | Meaning |

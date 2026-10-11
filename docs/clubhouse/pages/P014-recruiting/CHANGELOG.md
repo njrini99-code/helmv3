@@ -2,7 +2,8 @@
 
 ## 2026-10-10 — Tokens for the pipeline, gentler coins
 
-Presentation only. The pipeline's coins, connectors and stage chips use palette tokens instead of nine hex literals; the offered and
+Presentation only. The pipeline's coins, connectors and stage chips use palette
+tokens instead of nine hex literals; the offered and
 recruiting coins carry a soft shadow and lift under the pointer, and press in.
 
 ## 2026-10-08 — Next step writes, the held migration, calendar fact-check

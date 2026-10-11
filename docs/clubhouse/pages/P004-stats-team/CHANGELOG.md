@@ -13,25 +13,39 @@ Held items: none
 
 ### Changed (desktop)
 
-- The trend is the page. The window's strokes gained (or scoring average) is set large over a wide weekly line on a
-  deep-green stage: ivory line, a wash that glows green above the baseline and gold below it, the baseline dashed in gold
-  and labelled, and the players faint behind. A pointer on the plot reads the week under it (the nearest week with a
+- The trend is the page. The window's strokes gained (or scoring average) is set
+  large over a wide weekly line on a
+  deep-green stage: ivory line, a wash that glows green above the baseline and
+  gold below it, the baseline dashed in gold
+  and labelled, and the players faint behind. A pointer on the plot reads the
+  week under it (the nearest week with a
   value, so the newest always reads).
-- Under the figure: the best week, the latest week and how many weeks beat the baseline (par in the scoring lens), each
-  worked out from the weekly line and the loader's reference, never typed in. Par is the average score less the average
+- Under the figure: the best week, the latest week and how many weeks beat the
+  baseline (par in the scoring lens), each
+  worked out from the weekly line and the loader's reference, never typed in.
+  Par is the average score less the average
   to par.
-- The five other figures are one tape on a faint green band between gold rules: value, change, context and a weekly line
-  at one height and scale rule (a line always reads up as better), with a dial at the corner for the figure's own
-  reference: a ring with the Tour's mark for greens and scrambling, birdies as holes of 18, putts against two on every
+- The five other figures are one tape on a faint green band between gold rules:
+  value, change, context and a weekly line
+  at one height and scale rule (a line always reads up as better), with a dial
+  at the corner for the figure's own
+  reference: a ring with the Tour's mark for greens and scrambling, birdies as
+  holes of 18, putts against two on every
   green, and the scoring average as its distance from par.
-- The figure cards (`FigureCards`) are no longer used on Team stats; the player page keeps them. Figures are found by
+- The figure cards (`FigureCards`) are no longer used on Team stats; the player
+  page keeps them. Figures are found by
   `key`, not by place in the list.
-- Polish pass: the wash is a gradient that is strongest at the line and fades into the baseline (mint ahead, gold
-  behind); the latest value is called out on the line and the best week is marked; each player in the list carries a
-  bar from the reference on one scale; the tape's weekly lines fade out under the line; a faint contour texture and a
-  gold hairline finish the stage. Text on the stage is at least 7:1 and on the tape band at least 8.9:1 (measured).
+- Polish pass: the wash is a gradient that is strongest at the line and fades
+  into the baseline (mint ahead, gold
+  behind); the latest value is called out on the line and the best week is
+  marked; each player in the list carries a
+  bar from the reference on one scale; the tape's weekly lines fade out under
+  the line; a faint contour texture and a
+  gold hairline finish the stage. Text on the stage is at least 7:1 and on the
+  tape band at least 8.9:1 (measured).
 - The skeleton draws the same: the stage, then five tape cells.
-- The strokes gained headline keeps CH-4311 (no rounds with shots) and CH-4312 (no earlier rounds: the headline says so
+- The strokes gained headline keeps CH-4311 (no rounds with shots) and CH-4312
+  (no earlier rounds: the headline says so
   instead of a change).
 
 ## 2026-10-08 — Phone: direction A, native analysis, with the kit interactions
