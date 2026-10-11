@@ -1551,3 +1551,368 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
     0 0 0 1px var(--ch-green-900),
     var(--ch-elevation-cast);
 }
+/* ==========================================================================================================================
+   P011 New round setup, premium pass (2026-10-09). Presentation only: a lighter band with a numbered stepper, the scorecard as two
+   hung boards (Out and In), a gilt-edged course band, the qualifier offer, the picker's tiles and the micro motion that goes with them.
+   Prefix .ch-rsu. Tokens only; every duration is a --ch-dur-* token.
+   ========================================================================================================================== */
+
+/* ---- The band: the title on the left, the steps on the right (desktop); a numbered stepper everywhere ---- */
+.ch-rsu-band .ch-rsu-spine {
+  counter-reset: ch-rsu-step;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 18px 0 0;
+}
+.ch-rsu-band .ch-rsu-spine li {
+  counter-increment: ch-rsu-step;
+  flex: 1 1 auto;
+  flex-direction: row;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.ch-rsu-band .ch-rsu-spine li:last-child {
+  flex: 0 0 auto;
+}
+.ch-rsu-band .ch-rsu-spine li::after {
+  flex: 1;
+  height: 2px;
+  min-width: 14px;
+  margin: 0 12px;
+  border-radius: 1px;
+  background: rgb(255 255 255 / 0.16);
+  content: '';
+}
+.ch-rsu-band .ch-rsu-spine li:last-child::after {
+  display: none;
+}
+.ch-rsu-band .ch-rsu-spine li.is-done::after {
+  background: linear-gradient(90deg, #7bc79a, #7bc79a);
+}
+.ch-rsu-band .ch-rsu-spine li.is-on::after {
+  background: linear-gradient(90deg, #7bc79a 0%, rgb(255 255 255 / 0.16) 100%);
+}
+.ch-rsu-band .ch-rsu-spine i {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.08);
+  box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.24);
+  color: var(--ch-on-green-ink-muted);
+  font: 600 12.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  transition:
+    background var(--ch-dur-base) var(--ch-ease),
+    box-shadow var(--ch-dur-base) var(--ch-ease);
+}
+.ch-rsu-band .ch-rsu-spine i::before {
+  content: counter(ch-rsu-step);
+}
+.ch-rsu-band .ch-rsu-spine .is-on i {
+  background: var(--ch-on-green-ink);
+  box-shadow:
+    0 0 0 2px var(--ch-green-800),
+    0 0 0 3.5px var(--ch-champagne-500);
+  color: var(--ch-green-900);
+}
+.ch-rsu-band .ch-rsu-spine .is-done i {
+  background: #7bc79a;
+  box-shadow: none;
+  color: var(--ch-green-900);
+}
+.ch-rsu-band .ch-rsu-spine .is-done i::before {
+  content: '✓';
+}
+.ch-rsu-band .ch-rsu-spine em {
+  font: 500 13px/1 var(--ch-font-sans);
+  white-space: nowrap;
+}
+@container chrs (min-width: 861px) {
+  .ch-rsu-band {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 440px);
+    column-gap: 48px;
+    align-items: end;
+    padding: 18px 28px 20px;
+  }
+  .ch-rsu-band > * {
+    grid-column: 1;
+  }
+  .ch-rsu-band > .ch-rsu-spine {
+    grid-column: 2;
+    grid-row: 1 / span 4;
+    align-self: end;
+    margin: 0 0 6px;
+  }
+  .ch-rsu-band > .ch-rsu-band__back {
+    justify-self: start;
+    margin-bottom: 10px;
+  }
+}
+/* The band has the gilt hairline of the review's green hero along its foot. */
+.ch-rsu-band {
+  box-shadow:
+    inset var(--ch-light-rim-x) 1px 0 color-mix(in oklab, var(--ch-light-rim) 30%, transparent),
+    inset 0 -3px 0 var(--ch-champagne-500),
+    0 0 0 1px var(--ch-green-900),
+    var(--ch-elevation-cast);
+}
+.ch-rsu-band__back {
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+@media (hover: hover) {
+  .ch-rsu-band__back:hover {
+    background: rgb(255 255 255 / 0.14);
+  }
+}
+
+/* ---- The columns: the scorecard gets the wider one ---- */
+@container chrs (min-width: 861px) {
+  .ch-rsu-cols {
+    grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+  }
+}
+
+/* ---- The course ---- */
+@media (min-width: 821px) {
+  .ch-rsu-course__band {
+    box-shadow: inset 0 -3px 0 var(--ch-champagne-500);
+  }
+  .ch-rsu-course__band b {
+    font-size: 26px;
+    font-variation-settings: 'wdth' 94;
+  }
+}
+.ch-rsu-course__ic {
+  border-color: rgb(176 149 96 / 0.6);
+  background: linear-gradient(180deg, var(--ch-ivory-0), var(--ch-ivory-100));
+  box-shadow: 0 6px 12px -8px rgb(28 25 18 / 0.4);
+}
+/* The open qualifier: a gilt ring on its medal, a raised green Play. */
+.ch-rsu-qual {
+  box-shadow: inset 0 0 0 1px rgb(176 149 96 / 0.5);
+  transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-rsu-qual__ic {
+  box-shadow:
+    0 0 0 1px rgb(176 149 96 / 0.7),
+    0 6px 10px -6px rgb(28 25 18 / 0.35);
+}
+.ch-rsu-qual__cta {
+  background: var(--ch-green-raised-bg);
+  box-shadow: var(--ch-green-raised-shadow);
+  transition: transform var(--ch-dur-press) var(--ch-ease);
+}
+@media (hover: hover) {
+  .ch-rsu-qual:hover {
+    box-shadow:
+      inset 0 0 0 1px rgb(176 149 96 / 0.8),
+      0 10px 18px -14px rgb(11 58 37 / 0.5);
+  }
+}
+.ch-rsu-qual:active .ch-rsu-qual__cta {
+  transform: translateY(1px);
+}
+
+/* ---- The scorecard ---- */
+.ch-rsu-hc__sum {
+  background: linear-gradient(180deg, var(--ch-ivory-0), var(--ch-ivory-50));
+  box-shadow:
+    inset 0 0 0 1px rgb(176 149 96 / 0.4),
+    0 14px 22px -20px rgb(28 25 18 / 0.5);
+}
+.ch-rsu-hc__sum > div + div {
+  border-left-color: rgb(176 149 96 / 0.35);
+}
+.ch-rsu-hc__sum dt {
+  font-size: 12px;
+}
+.ch-rsu-hc__sum dd {
+  font: 600 22px/1 var(--ch-font-sans);
+  letter-spacing: -0.035em;
+  font-variation-settings: 'wdth' 92;
+  color: var(--ch-ledger-ink);
+}
+.ch-rsu-nine__h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 0 8px;
+}
+.ch-rsu-nine__h b {
+  font: 600 15px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-rsu-nine__h span {
+  font: 500 12.5px/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+@media (min-width: 821px) {
+  .ch-rsu-hc__grid {
+    align-items: start;
+    column-gap: 12px;
+    padding: 0 20px 20px;
+  }
+  /* Each nine is a field-green board: the hole numbers debossed into it, the par keys and the yardage on ivory plates. */
+  .ch-rsu-nine {
+    padding: 12px 10px 6px;
+    border-radius: 16px;
+    /* The board is field green in either theme (the ramp's green flips at night), so its inks are written out. */
+    background: linear-gradient(180deg, #0f4a2f, #082b1c);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.1),
+      0 0 0 1px #082b1c,
+      0 18px 28px -22px rgb(8 43 28 / 0.85);
+  }
+  .ch-rsu-nine__h {
+    padding: 0 4px 10px;
+  }
+  .ch-rsu-nine__h b {
+    font-size: 16px;
+    color: #dccda6;
+  }
+  .ch-rsu-nine__h span {
+    color: rgb(222 214 190 / 0.78);
+  }
+  .ch-rsu .ch-rsu-nine .ch-rsu-hole {
+    grid-template-columns: 26px auto minmax(0, 1fr);
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 2px;
+    border-bottom: 1px solid var(--ch-board-rule);
+    transition: background var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-rsu .ch-rsu-nine .ch-rsu-hole:last-child {
+    border-bottom: 0;
+  }
+  .ch-rsu .ch-rsu-nine .ch-rsu-hole__n {
+    width: 26px;
+    height: 26px;
+    background: rgb(0 0 0 / 0.24);
+    box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.4);
+    color: rgb(240 233 214 / 0.86);
+  }
+  .ch-rsu .ch-rsu-nine .ch-rsu-hole.is-edited .ch-rsu-hole__n {
+    background: #dccda6;
+    box-shadow: none;
+    color: #1c1b18;
+  }
+  .ch-rsu .ch-rsu-nine .ch-rsu-par {
+    padding: 2px;
+    gap: 1px;
+    border-radius: 9px;
+    background: rgb(0 0 0 / 0.24);
+    box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.4);
+  }
+  .ch-rsu .ch-rsu-nine .ch-rsu-par button {
+    width: 26px;
+    height: 28px;
+    line-height: 28px;
+    color: rgb(222 214 190 / 0.78);
+    transition:
+      background var(--ch-dur-quick) var(--ch-ease),
+      color var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-rsu .ch-rsu-nine .ch-rsu-par button.is-rare:not([aria-checked='true']) {
+    color: rgb(222 214 190 / 0.5);
+  }
+  .ch-rsu .ch-rsu-nine .ch-rsu-par button[aria-checked='true'] {
+    background: #f4f1e8;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+    color: #082b1c;
+  }
+  @media (hover: hover) {
+    .ch-rsu .ch-rsu-nine .ch-rsu-par button[aria-checked='false']:hover {
+      background: rgb(255 255 255 / 0.1);
+      color: #f4eedd;
+    }
+  }
+  .ch-rsu .ch-rsu-nine .ch-rsu-par button:focus-visible {
+    outline: 2px solid #dccda6;
+    outline-offset: 1px;
+  }
+  .ch-rsu .ch-rsu-nine .ch-rsu-yds {
+    gap: 0;
+  }
+  .ch-rsu .ch-rsu-nine .ch-rsu-yds input {
+    width: 54px;
+    height: 30px;
+    padding: 0 8px;
+    border-radius: 7px;
+    background: #f4f1e8;
+    box-shadow: inset 0 -1px 0 rgb(28 25 18 / 0.12);
+    color: #1c1b18;
+    font: 600 14px/30px var(--ch-font-sans);
+    transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-rsu .ch-rsu-nine .ch-rsu-yds input:focus-visible {
+    box-shadow:
+      0 0 0 2px #dccda6,
+      0 0 0 5px rgb(220 205 166 / 0.2);
+  }
+  .ch-rsu .ch-rsu-nine .ch-rsu-yds input[aria-invalid='true'] {
+    box-shadow: 0 0 0 2px var(--ch-stage-red);
+  }
+  /* The unit is said once, in the board's head. */
+  .ch-rsu .ch-rsu-nine .ch-rsu-yds em {
+    display: none;
+  }
+}
+/* On the phone the nines stack, each under its own head (Out, then In), so a long card keeps its place. */
+@media (max-width: 820px) {
+  .ch-rsu-nine + .ch-rsu-nine {
+    margin-top: 22px;
+  }
+  .ch-rsu-nine__h {
+    padding: 14px 0 6px;
+  }
+  .ch-rsu-nine__h b {
+    color: var(--ch-ledger-ink);
+  }
+}
+
+/* ---- The dock ---- */
+@media (min-width: 821px) {
+  .ch-rsu-dock {
+    box-shadow:
+      0 0 0 1px rgb(176 149 96 / 0.35),
+      0 16px 36px -18px rgb(28 25 18 / 0.45);
+  }
+}
+.ch-rsu-dock__s b {
+  font-weight: 600;
+}
+
+/* ---- The picker ---- */
+.ch-rsu-crs__ic {
+  background: linear-gradient(180deg, var(--ch-ivory-0), var(--ch-ivory-100));
+  box-shadow:
+    inset 0 0 0 1px rgb(176 149 96 / 0.5),
+    0 6px 10px -8px rgb(28 25 18 / 0.4);
+  color: var(--ch-green-700);
+  transition:
+    background var(--ch-dur-quick) var(--ch-ease),
+    color var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-rsu-chev {
+  transition: transform var(--ch-dur-quick) var(--ch-ease);
+}
+@media (hover: hover) {
+  .ch-rsu-crs:hover .ch-rsu-crs__ic {
+    background: linear-gradient(160deg, var(--ch-green-600), var(--ch-green-800));
+    color: var(--ch-ivory-100);
+  }
+  .ch-rsu-crs:hover .ch-rsu-chev {
+    transform: translateX(3px);
+  }
+}
+.ch-rsu-tee__bar i {
+  background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-700));
+}

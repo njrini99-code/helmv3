@@ -1,10 +1,12 @@
 'use client';
 
+import { useId, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Trash2 } from 'lucide-react';
 import type { ChLibraryRound, ChRoundsSeason, ChRoundType, ChTeeColor, ChUnfinishedRound } from '../../data/rounds-shape';
 import { formatFixed, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
+import { useInViewOnce } from '../../lib/use-in-view';
 import { InlineNotice } from '../../ui/Notices';
 import { Icon } from '../../ui/Icon';
 
@@ -182,8 +184,16 @@ export function UnfinishedCard({
   );
 }
 
-/** Strokes over par for each round, oldest to newest, against the dashed average (rounds-flow.jsx `Ribbon`). CH-11803: one labelled image; each bar has a title. */
+/**
+ * Strokes over par for each round, oldest to newest, against the dashed average (rounds-flow.jsx `Ribbon`). CH-11803: one labelled
+ * image; each bar has a title. Move across it (or touch it) and the round reads out on a card; the bars rise from the par line once,
+ * the first time the chart is scrolled into view (`.is-in` on the stage that holds it, rounds.css).
+ */
 export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeason['ribbon']; avg: number; compact?: boolean }) {
+  const id = useId();
+  const [hover, setHover] = useState<string | null>(null);
+  // The card keeps the last round it read while it fades out, so it never empties before it is gone.
+  const [last, setLast] = useState<string | null>(null);
   const maxOver = Math.max(1, ...rounds.map((x) => x.toPar));
   const maxUnder = Math.max(0, ...rounds.map((x) => -x.toPar));
   // The phone draws a narrower canvas, so its labels render at a readable size.
@@ -191,7 +201,7 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
     L = 40,
     R = compact ? 76 : 100,
     u = Math.min(20, 160 / (maxOver + maxUnder)),
-    top = 16;
+    top = 20;
   const base = top + maxOver * u;
   const H = base + maxUnder * u + 40;
   const bw = (W - L - R) / Math.max(rounds.length, 1);
@@ -199,52 +209,95 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
   const step = maxOver + maxUnder > 12 ? 2 : 1;
   const ticks: number[] = [];
   for (let v = -maxUnder; v <= maxOver; v++) if (v % step === 0) ticks.push(v);
+  const cxOf = (i: number) => L + bw * i + bw / 2;
+  const shown = rounds.find((x) => x.id === (hover ?? last)) ?? null;
+  const shownAt = shown ? rounds.indexOf(shown) : 0;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="ch-rd-rib" role="img" aria-label={`Strokes over par for your last ${rounds.length} rounds, oldest to newest; average ${formatToPar(avg, 1)}`}>
-      {ticks.map((v) => (
-        <g key={v}>
-          <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} className={v === 0 ? 'is-par' : undefined} />
-          <text x={L - 8} y={y(v) + 4} textAnchor="end" className={'ch-rd-rib__t' + (v === 0 ? ' is-par' : '')}>
-            {v === 0 ? 'Par' : formatToPar(v)}
+    <div className="ch-rd-rib-w">
+      <svg viewBox={`0 0 ${W} ${H}`} className="ch-rd-rib" role="img" aria-label={`Strokes over par for your last ${rounds.length} rounds, oldest to newest; average ${formatToPar(avg, 1)}`} onPointerLeave={() => setHover(null)}>
+        <defs>
+          <linearGradient id={`${id}-u`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="var(--ch-rd-under-a)" />
+            <stop offset="1" stopColor="var(--ch-rd-under-b)" />
+          </linearGradient>
+          <linearGradient id={`${id}-o`} x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stopColor="var(--ch-rd-over-a)" />
+            <stop offset="1" stopColor="var(--ch-rd-over-b)" />
+          </linearGradient>
+        </defs>
+        {ticks.map((v) => (
+          <g key={v}>
+            <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} className={v === 0 ? 'is-par' : undefined} />
+            <text x={L - 8} y={y(v) + 4} textAnchor="end" className={'ch-rd-rib__t' + (v === 0 ? ' is-par' : '')}>
+              {v === 0 ? 'Par' : formatToPar(v)}
+            </text>
+          </g>
+        ))}
+        <line x1={L} x2={W - R} y1={y(avg)} y2={y(avg)} className="ch-rd-rib__avg" />
+        <g transform={`translate(${W - R + 8},${y(avg)})`}>
+          <rect x="0" y="-11" width={compact ? 64 : 90} height="22" rx="11" className="ch-rd-rib__chip" />
+          <text x={compact ? 32 : 45} y="4.5" textAnchor="middle" className="ch-rd-rib__t is-avg">
+            {compact ? 'Avg' : 'Your avg'} {formatToPar(avg, 1)}
           </text>
         </g>
-      ))}
-      <line x1={L} x2={W - R} y1={y(avg)} y2={y(avg)} className="ch-rd-rib__avg" />
-      <g transform={`translate(${W - R + 8},${y(avg)})`}>
-        <rect x="0" y="-10" width={compact ? 64 : 86} height="20" rx="10" className="ch-rd-rib__chip" />
-        <text x={compact ? 32 : 43} y="4" textAnchor="middle" className="ch-rd-rib__t is-avg">
-          {compact ? 'Avg' : 'Your avg'} {formatToPar(avg, 1)}
-        </text>
-      </g>
-      {rounds.map((x, i) => {
-        const d = x.toPar;
-        const cx = L + bw * i + bw / 2;
-        const h = Math.max(3, Math.abs(d) * u);
-        const y0 = d >= 0 ? base - h : base;
-        // D3: one scoring language, red under par as everywhere else; a qualifier is a gilt outline on any bar.
-        const cls = (d < 0 ? 'is-under' : d === 0 ? 'is-even' : 'is-over') + (x.type === 'qualifier' ? ' is-q' : '');
-        return (
-          <g key={x.id}>
-            <title>{`${shortDay(x.date)} · ${x.score} (${formatToPar(d)})${x.type ? ` · ${TYPE_LABEL[x.type]}` : ''}`}</title>
-            <rect x={cx - bw * 0.26} y={d === 0 ? base - 1.5 : y0} width={bw * 0.52} height={d === 0 ? 3 : h} rx="4" className={cls} />
-            <text x={cx} y={base - (d >= 0 ? h : 0) - 6} textAnchor="middle" className={'ch-rd-rib__v' + (d < 0 ? ' is-under' : '')}>
-              {x.score}
-            </text>
-            {/* A day is labelled once, under the first of its rounds: "2 Aug 2 Aug 2 Aug" said nothing (F-57). */}
-            {(i === 0 || rounds[i - 1]!.date.slice(0, 10) !== x.date.slice(0, 10)) && (
-              <>
-                <text x={cx} y={H - 18} textAnchor="middle" className="ch-rd-rib__d">
-                  {dateOf(x.date).getUTCDate()}
-                </text>
-                <text x={cx} y={H - 5} textAnchor="middle" className="ch-rd-rib__t">
-                  {fmt({ month: 'short' }).format(dateOf(x.date))}
-                </text>
-              </>
-            )}
-          </g>
-        );
-      })}
-    </svg>
+        {rounds.map((x, i) => {
+          const d = x.toPar;
+          const cx = cxOf(i);
+          const h = Math.max(3, Math.abs(d) * u);
+          const y0 = d >= 0 ? base - h : base;
+          // D3: one scoring language, red under par as everywhere else; a qualifier is a gilt outline on any bar.
+          const cls = (d < 0 ? 'is-under' : d === 0 ? 'is-even' : 'is-over') + (x.type === 'qualifier' ? ' is-q' : '');
+          return (
+            <g
+              key={x.id}
+              className={'ch-rd-rib__g' + (hover === x.id ? ' is-hot' : hover ? ' is-dim' : '')}
+              style={{ '--ch-i': i } as CSSProperties}
+              onPointerEnter={() => {
+                setHover(x.id);
+                setLast(x.id);
+              }}
+            >
+              <title>{`${shortDay(x.date)} · ${x.score} (${formatToPar(d)})${x.type ? ` · ${TYPE_LABEL[x.type]}` : ''}`}</title>
+              <rect x={cx - bw / 2} y={0} width={bw} height={H} className="ch-rd-rib__hit" />
+              <rect
+                x={cx - bw * 0.26}
+                y={d === 0 ? base - 1.5 : y0}
+                width={bw * 0.52}
+                height={d === 0 ? 3 : h}
+                rx="4"
+                className={cls + ' ch-rd-rib__bar' + (d < 0 ? ' is-down' : '')}
+                style={d < 0 ? { fill: `url(#${id}-u)` } : d > 0 ? { fill: `url(#${id}-o)` } : undefined}
+              />
+              <text x={cx} y={base - (d >= 0 ? h : 0) - 7} textAnchor="middle" className={'ch-rd-rib__v' + (d < 0 ? ' is-under' : '')}>
+                {x.score}
+              </text>
+              {/* A day is labelled once, under the first of its rounds: "2 Aug 2 Aug 2 Aug" said nothing (F-57). */}
+              {(i === 0 || rounds[i - 1]!.date.slice(0, 10) !== x.date.slice(0, 10)) && (
+                <>
+                  <text x={cx} y={H - 18} textAnchor="middle" className="ch-rd-rib__d">
+                    {dateOf(x.date).getUTCDate()}
+                  </text>
+                  <text x={cx} y={H - 5} textAnchor="middle" className="ch-rd-rib__t">
+                    {fmt({ month: 'short' }).format(dateOf(x.date))}
+                  </text>
+                </>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+      {shown && (
+        <div className={'ch-rd-rib__tip' + (hover ? ' is-on' : '')} style={{ left: `${(cxOf(shownAt) / W) * 100}%` }} role="presentation" aria-hidden={hover ? undefined : true}>
+          <b>
+            {shortDay(shown.date)}
+            {shown.type ? ` · ${TYPE_LABEL[shown.type]}` : ''}
+          </b>
+          <span className="ch-num">
+            {shown.score} · {formatToPar(shown.toPar)}
+          </span>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -341,8 +394,6 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
       </section>
     );
   }
-  const under = season.ribbon.some((x) => x.toPar < 0);
-  const q = season.ribbon.some((x) => x.type === 'qualifier');
   return (
     <section className="ch-rd-season" aria-labelledby="ch-rd-season-k">
       <div className="ch-rd-season__h">
@@ -357,40 +408,72 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
         </div>
         <SeasonFigures season={season} />
       </div>
-      {season.ribbon.length >= 2 && season.toPar != null && (
-        <>
-          <div className="ch-rd-season__ch">
-            <b>Every round vs par</b>
-            <span>Above the line is over par, below it under · lower is better · the number on top is your score</span>
-          </div>
-          <Ribbon rounds={phone ? season.ribbon.slice(-PHONE_RIBBON) : season.ribbon} avg={season.toPar} compact={phone} />
-          <div className="ch-rd-season__lg">
-            {under && (
-              <span>
-                <i className="is-under" />
-                Under par
-              </span>
-            )}
-            <span>
-              <i className="is-over" />
-              Over par
-            </span>
-            {season.ribbon.some((x) => x.toPar === 0) && (
-              <span>
-                <i className="is-even" />
-                Even
-              </span>
-            )}
-            {q && (
-              <span>
-                <i className="is-q" />
-                Qualifier
-              </span>
-            )}
-          </div>
-        </>
-      )}
+      {season.ribbon.length >= 2 && season.toPar != null && <SeasonStage ribbon={season.ribbon} avg={season.toPar} phone={phone} />}
     </section>
+  );
+}
+
+/**
+ * The season's every-round chart on its stage: the title and what the colours mean on one line above the bars. On the desktop the
+ * stage is the deep green the round review's pictures sit on; on the phone it stays flat on the page (one green card there).
+ * The bars rise from the par line the first time the stage is scrolled into view, and not again.
+ */
+function SeasonStage({ ribbon, avg, phone }: { ribbon: ChRoundsSeason['ribbon']; avg: number; phone: boolean }) {
+  const [ref, seen] = useInViewOnce<HTMLDivElement>();
+  const under = ribbon.some((x) => x.toPar < 0);
+  const q = ribbon.some((x) => x.type === 'qualifier');
+  return (
+    <div ref={ref} className={'ch-rd-stage' + (seen ? ' is-in' : '')}>
+      <div className="ch-rd-stage__h">
+        <div className="ch-rd-season__ch">
+          <b>Every round vs par</b>
+          <span>Above the line is over par, below it under · lower is better · the number on top is your score</span>
+        </div>
+        <div className="ch-rd-season__lg">
+          {under && (
+            <span>
+              <i className="is-under" />
+              Under par
+            </span>
+          )}
+          <span>
+            <i className="is-over" />
+            Over par
+          </span>
+          {ribbon.some((x) => x.toPar === 0) && (
+            <span>
+              <i className="is-even" />
+              Even
+            </span>
+          )}
+          {q && (
+            <span>
+              <i className="is-q" />
+              Qualifier
+            </span>
+          )}
+        </div>
+      </div>
+      <Ribbon rounds={phone ? ribbon.slice(-PHONE_RIBBON) : ribbon} avg={avg} compact={phone} />
+    </div>
+  );
+}
+
+/**
+ * A month's rounds as a row of small bars, oldest to newest: taller is further over par, red is under it. It reads at a glance
+ * whether the month trended down; the figures beside it say the rest. Skipped for fewer than two rounds with a par to read against.
+ */
+export function MonthSpark({ rounds }: { rounds: ChLibraryRound[] }) {
+  const pts = rounds.filter((r): r is ChLibraryRound & { toPar: number } => r.toPar != null).reverse();
+  if (pts.length < 2) return null;
+  const lo = Math.min(...pts.map((r) => r.toPar));
+  const hi = Math.max(...pts.map((r) => r.toPar));
+  return (
+    <span className="ch-rd-grp__spark" aria-hidden="true">
+      {pts.map((r) => (
+        <i key={r.id} className={r.toPar < 0 ? 'is-under' : undefined} style={{ height: `${hi === lo ? 55 : 24 + ((r.toPar - lo) / (hi - lo)) * 76}%` }} />
+      ))}
+    </span>
   );
 }
 

@@ -1,5 +1,46 @@
 # P011 — Rounds: changelog
 
+## 2026-10-10 — Rounds library and new round, more premium
+
+```text
+Design package: owner direction "premium polish across the whole app"
+PR/commit: agent/clubhouse-premium-backlog
+Contract IDs: none (presentation only; no new codes, no changed copy)
+Actions: none changed
+Data impact: none
+Held items: none
+```
+
+### Changed (the library, desktop and phone)
+
+- Season scoring: "Every round vs par" sits on the same deep-green stage as the review's pictures (desktop; flat on the page on the
+  phone, which keeps its one green card). Bars are gradient fills (red under par, ivory over), the average is a gold dashed line with
+  its chip, a qualifier a gold outline. The bars rise from the par line the first time the chart is scrolled into view; move across it
+  (or touch it) for a card with the round's date, kind, score and score against par. The title and the colour key share one line.
+- The average is the page's largest figure with a short gold rule; the Best, Putts and GIR figures keep their drawings with deeper
+  fills (a gold ring on the best round, a gold tick at two putts a green), and a caption wraps to a second line before it is cut.
+- Heads (in progress, season scoring, more unfinished, each month) carry the short gold rule. A month shows its trend as one small bar
+  a round beside its count, average and low.
+- Round rows are a ledger: a flush date with a gold hairline, Out, In and Tot as a small hung board (the review's scorecard in
+  miniature, the total on a gold plate), gradient meters (putts in gold), and a flush to-par with its red ring kept under par.
+- The round in progress: the to-par through the holes is a figure; the hole board has a gold hairline.
+
+### Changed (new round)
+
+- The green band is lighter on the desktop (title left, steps right) and the steps are a numbered stepper with a gold-ringed current
+  step; a gold hairline closes the band.
+- The scorecard is two hung boards, Out and In, each with its par and yardage total; hole numbers are debossed, par keys and the
+  yardage sit on ivory plates, an edited hole's number turns gold. The whole new-round page now fits one desktop screen. On the phone
+  the nines stack under their own heads.
+- The course band has the gold hairline; the open qualifier has a gold-ringed medal and a raised Play; the course picker's tiles are
+  ivory with a gold hairline and turn green under the pointer, with the chevron nudging.
+
+### Notes
+
+- Every duration is a motion token, so Animations off and reduced motion make each of these instant; the chart's per-bar delay is zeroed
+  for reduced motion. No behaviour, data, copy or accessible name changed.
+- Added `MonthSpark` and the chart stage to `screens/rounds/parts.tsx`; `HoleConfig` wraps each nine in a labelled group (`Out`, `In`).
+
 ## 2026-10-10 — Tap in on the putting screen
 
 ```text
