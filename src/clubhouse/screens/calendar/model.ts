@@ -33,6 +33,11 @@ export interface ChCalEvent {
   people: string[];
   /** Per-player reply, keyed by player id. */
   rsvp: Record<string, ChRsvp>;
+  /**
+   * The coach asked for replies (golf_events.requires_rsvp; owner, 2026-10-08: off unless the coach turns it on). Off,
+   * the event shows who is on it but never a reply count, a pending reply, a Nudge or the player's Going / Maybe / Can't.
+   */
+  requiresRsvp: boolean;
   /** Class blocks: the player whose schedule this is. */
   owner: string | null;
   /** Classes a viewer may only see as Busy carry no title or room. */
@@ -222,10 +227,70 @@ export function layoutLanes<E extends { start: number | null; end: number | null
   return out;
 }
 
+/** A coach's overlapping class meetings on one day, folded into one block (owner, 2026-10-08). */
+export interface ChClassCluster<E> {
+  /** Stable for the day: the date and the first meeting's id. */
+  id: string;
+  date: string;
+  start: number;
+  end: number;
+  /** The meetings, by start time. */
+  classes: E[];
+  /** Players in class across the span; a meeting whose owner didn't resolve counts on its own. */
+  players: number;
+}
+
+type Clusterable = { id: string; type: ChCalType; date: string; owner: string | null; allDay: boolean; start: number | null; end: number | null };
+
+/**
+ * The coach's grid (owner, 2026-10-08): nine players' synced classes cascaded into slivers about 8px wide that nobody
+ * could read. Timed class meetings that overlap, directly or through one another, fold into one cluster per day; a class
+ * that overlaps no other class stays its own block, so a coach looking at one player still sees that player's classes.
+ * Team events, busy time and all-day rows pass through in `rest`, untouched and in their order.
+ */
+export function clusterClasses<E extends Clusterable>(events: E[]): { rest: E[]; clusters: Array<ChClassCluster<E>> } {
+  const timedClass = (e: E) => e.type === 'class' && !e.allDay && e.start != null && e.end != null;
+  const byDay = new Map<string, E[]>();
+  for (const e of events) if (timedClass(e)) byDay.set(e.date, [...(byDay.get(e.date) ?? []), e]);
+  const single = new Set<E>();
+  const clusters: Array<ChClassCluster<E>> = [];
+  for (const [date, list] of byDay) {
+    const sorted = [...list].sort((a, b) => a.start! - b.start! || a.end! - b.end! || a.id.localeCompare(b.id));
+    let group: E[] = [];
+    let end = -Infinity;
+    const flush = () => {
+      if (group.length === 1) single.add(group[0]!);
+      else if (group.length > 1) {
+        clusters.push({ id: `classes:${date}:${group[0]!.id}`, date, start: group[0]!.start!, end, classes: group, players: new Set(group.map((g) => g.owner ?? `?${g.id}`)).size });
+      }
+      group = [];
+    };
+    for (const e of sorted) {
+      // Back to back is not an overlap: a class that starts as another ends begins a new cluster.
+      if (group.length && e.start! >= end) flush();
+      end = group.length ? Math.max(end, e.end!) : e.end!;
+      group.push(e);
+    }
+    flush();
+  }
+  return { rest: events.filter((e) => !timedClass(e) || single.has(e)), clusters };
+}
+
+/** "5 in class", the cluster's name on the grid and on the phone's day. */
+export const clusterLabel = (c: Pick<ChClassCluster<unknown>, 'players'>) => `${c.players} in class`;
+
 export function rsvpCounts(e: Pick<ChCalEvent, 'people' | 'rsvp'>): Record<ChRsvp, number> {
   const c: Record<ChRsvp, number> = { accepted: 0, maybe: 0, declined: 0, pending: 0 };
   for (const p of e.people) c[e.rsvp[p] ?? 'pending']++;
   return c;
+}
+
+/**
+ * Invitees who haven't replied to an event that asked for replies. An event that didn't ask (requires_rsvp off, the
+ * default) has no one pending, whatever its attendance rows say: it never reads "12 replies pending" (owner, 2026-10-08).
+ */
+export function awaitingReply(e: Pick<ChCalEvent, 'people' | 'rsvp' | 'requiresRsvp'>): string[] {
+  return e.requiresRsvp ? e.people.filter((p) => (e.rsvp[p] ?? 'pending') === 'pending') : [];
 }
 
 /** A player's timed commitments on a date: their classes and the events they haven't declined. A cancelled event holds no time. */

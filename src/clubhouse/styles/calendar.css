@@ -1411,6 +1411,16 @@
   background: var(--ch-bg-subtle);
   box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
 }
+.ch-ed__ask {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 14px;
+}
+.ch-ed__ask .ch-field__help {
+  margin: 0;
+}
 .ch-ed__inv label {
   display: grid;
   grid-template-columns: 18px 22px minmax(0, 1fr);

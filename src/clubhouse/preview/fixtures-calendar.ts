@@ -38,12 +38,20 @@ type Raw = {
   owner?: string;
   instructor?: string;
   pattern?: string;
+  /** Asks for replies; defaults to whether the sample carries replies. */
+  ask?: boolean;
 };
 
 const RAW: Raw[] = [
   { id: 'e1', date: 12, start: 8, end: 12.5, type: 'tournament', title: 'Team round', location: 'Oakmont Country Club', people: all, rsvp: [6, 0, 0, 0] },
   { id: 'e2', date: 13, start: 6.5, end: 7.5, type: 'practice', title: 'Strength', location: 'Weight room', people: all, rsvp: [5, 1, 0, 0], recurring: 'Weekly on Mon, Wed' },
   { id: 'e3', date: 13, start: 15.5, end: 17.5, type: 'practice', title: 'Range and wedges', location: 'Practice range', people: all, rsvp: [6, 0, 0, 0], recurring: 'Every weekday' },
+  // Monday morning: five players' synced classes overlap, the coach's grid's crowded case (one cluster, "5 in class").
+  { id: 'c5', date: 13, start: 8.5, end: 9.75, type: 'class', title: 'HIST 237', owner: 'theo', location: 'Hamilton Hall 237', instructor: 'Dr. R. Vance', pattern: 'Mon, Wed · Fall 2026' },
+  { id: 'c6', date: 13, start: 8.5, end: 9.33, type: 'class', title: 'SPAN 102', owner: 'sofia', location: 'Dey Hall 102', instructor: 'Prof. I. Mora', pattern: 'Mon, Wed, Fri · Fall 2026' },
+  { id: 'c7', date: 13, start: 9, end: 10.25, type: 'class', title: 'MATH 231', owner: 'ava', location: 'Phillips Hall 332', instructor: 'Dr. K. Lund', pattern: 'Mon, Wed · Fall 2026' },
+  { id: 'c8', date: 13, start: 9.5, end: 10.75, type: 'class', title: 'PSYC 101', owner: 'priya', location: 'Davie Hall 112', instructor: 'Dr. H. Kim', pattern: 'Mon, Wed · Fall 2026' },
+  { id: 'c9', date: 13, start: 10.5, end: 11.75, type: 'class', title: 'ENGL 105', owner: 'eli', location: 'Greenlaw Hall 101', instructor: 'Prof. D. Webb', pattern: 'Mon, Wed · Fall 2026' },
   { id: 'c1', date: 14, start: 9, end: 10.25, type: 'class', title: 'STAT 201', owner: 'priya', location: 'Hanes Hall 120', instructor: 'Dr. L. Osei', pattern: 'Tue, Thu · Fall 2026' },
   { id: 'c2', date: 14, start: 13, end: 14.25, type: 'class', title: 'ECON 101', owner: 'jonah', location: 'Gardner Hall 008', instructor: 'Prof. M. Hart', pattern: 'Tue, Thu · Fall 2026' },
   { id: 'e4', date: 14, start: 15.5, end: 17, type: 'practice', title: 'Short-game block', location: 'Practice green', people: all, rsvp: [6, 0, 0, 0], recurring: 'Every weekday', notes: 'Bunker ladder, then up-and-down pairs. Bring 20 balls.' },
@@ -66,6 +74,8 @@ const RAW: Raw[] = [
   { id: 'e19', date: 7, start: 15.5, end: 17.5, type: 'practice', title: 'Range and wedges', location: 'Practice range', people: all, rsvp: [6, 0, 0, 0] },
   { id: 'e20', date: 9, start: 13, end: 14, type: 'meeting', title: 'Lineup meeting', location: 'Team room', people: all, rsvp: [6, 0, 0, 0] },
   { id: 'e21', date: 3, start: 7, end: 17, type: 'tournament', title: 'Wolfpack Classic', location: 'Lonnie Poole GC', people: all, rsvp: [6, 0, 0, 0] },
+  // The week after: the whole team invited, no replies asked for (owner, 2026-10-08: RSVPs are off unless the coach turns them on).
+  { id: 'e23', date: 21, start: 6.5, end: 7.5, type: 'practice', title: 'Team lift', location: 'Weight room', people: all, ask: false },
   { id: 'e22', date: 29, start: 13, end: 14, type: 'meeting', title: 'Fall review', location: 'Team room', people: all, rsvp: [0, 0, 0, 6] },
 ];
 
@@ -88,6 +98,7 @@ const events: ChCalEvent[] = RAW.map((r) => {
     recurring: r.recurring ?? null,
     people: invitees,
     rsvp: r.rsvp ? replies(invitees, r.rsvp) : {},
+    requiresRsvp: r.ask ?? !!r.rsvp,
     owner: r.owner ?? null,
     busyOnly: false,
     instructor: r.instructor ?? null,
@@ -101,8 +112,8 @@ const events: ChCalEvent[] = RAW.map((r) => {
 });
 
 const busy: ChCalEvent[] = [
-  { id: 'b1', type: 'busy', title: 'Recruiting call', date: '2026-10-15', start: 9, end: 10, allDay: false, location: null, notes: 'Two juniors from Charlotte', recurring: null, people: [], rsvp: {}, owner: null, busyOnly: false, instructor: null, pattern: null, canEdit: true, cancelled: false, seriesId: null, startIso: '2026-10-15T12:00:00Z', span: null },
-  ...['2026-10-12', '2026-10-19', '2026-10-26'].map((d) => ({ id: 'b2', type: 'busy' as const, title: 'Staff meeting', date: d, start: 12, end: 13, allDay: false, location: null, notes: null, recurring: 'Weekly on Mon', people: [], rsvp: {}, owner: null, busyOnly: false, instructor: null, pattern: null, canEdit: true, cancelled: false, seriesId: null, startIso: '2026-10-12T12:00:00Z', span: null })),
+  { id: 'b1', type: 'busy', title: 'Recruiting call', date: '2026-10-15', start: 9, end: 10, allDay: false, location: null, notes: 'Two juniors from Charlotte', recurring: null, people: [], rsvp: {}, requiresRsvp: false, owner: null, busyOnly: false, instructor: null, pattern: null, canEdit: true, cancelled: false, seriesId: null, startIso: '2026-10-15T12:00:00Z', span: null },
+  ...['2026-10-12', '2026-10-19', '2026-10-26'].map((d) => ({ id: 'b2', type: 'busy' as const, title: 'Staff meeting', date: d, start: 12, end: 13, allDay: false, location: null, notes: null, recurring: 'Weekly on Mon', people: [], rsvp: {}, requiresRsvp: false, owner: null, busyOnly: false, instructor: null, pattern: null, canEdit: true, cancelled: false, seriesId: null, startIso: '2026-10-12T12:00:00Z', span: null })),
 ];
 
 export const PREVIEW_CALENDAR: ChCalendarData = {

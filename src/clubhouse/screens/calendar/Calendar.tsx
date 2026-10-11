@@ -24,7 +24,7 @@ import { updateGolfEvent } from '@/app/golf/actions/calendar-events';
 import { offsetMinutesFor } from '@/lib/golf/timezone';
 import { useToast } from '../../ui/Toast';
 import { friendlyReason, isOffline } from '../../lib/use-action';
-import { Attendance, EventDetail, Overlap, Summary, type ChInsp, type InspCtx } from './inspector';
+import { Attendance, ClassesDetail, EventDetail, Overlap, Summary, type ChInsp, type InspCtx } from './inspector';
 import { CancelEvent, EventEditor, SubscribeSheet, type EditorSeed } from './editor';
 import { BusySheet } from './extras';
 import { CalendarPhone } from './CalendarPhone';
@@ -477,6 +477,9 @@ export function Calendar({
   const inView = (d: string) => (view === 'day' || view === 'week' ? dates.includes(d) : monthKey(d) === monthKey(anchor));
   const count = new Set(events.filter((e) => e.type !== 'class' && e.type !== 'busy' && !e.cancelled && inView(e.date)).map((e) => e.id)).size;
   const selId = insp && (insp.kind === 'event' || insp.kind === 'attendance') ? insp.id : insp?.kind === 'overlap' ? (overlaps.find((o) => o.id === insp.id)?.eventId ?? null) : null;
+  const selKey = insp?.kind === 'classes' ? insp.key : null;
+  // A coach's class cluster opens its list in the panel (the phone's sheet).
+  const openClasses = (c: { id: string; date: string; classes: Array<{ id: string }> }) => setInsp({ kind: 'classes', key: c.id, date: c.date, ids: c.classes.map((x) => x.id) });
   const open = (id: string, date?: string) => {
     const e = data.events.find((x) => x.id === id && (!date || x.date === date)) ?? data.events.find((x) => x.id === id);
     if (e) setInsp({ kind: 'event', id: e.id, date: e.date });
@@ -640,18 +643,21 @@ export function Calendar({
           onOpen={open}
           onNew={(d) => setEditor({ event: null, date: d })}
           onSubscribe={() => setSubs(true)}
+          onClasses={coach ? openClasses : undefined}
+          selKey={selKey}
         />
         {/* The desktop's detail panel, as a sheet (board: event detail). */}
         <Modal
           open={!!insp}
           onClose={() => setInsp(null)}
-          title={insp?.kind === 'overlap' ? 'Schedule overlap' : insp?.kind === 'attendance' ? 'Attendance' : (sel?.title ?? 'Event')}
+          title={insp?.kind === 'overlap' ? 'Schedule overlap' : insp?.kind === 'attendance' ? 'Attendance' : insp?.kind === 'classes' ? 'In class' : (sel?.title ?? 'Event')}
         >
           <div className="ch-calm-sheet" data-kind={insp?.kind}>
             <SectionBoundary surface="calendar.panel" label="The detail panel" code="CH-6211">
               {insp?.kind === 'event' && <EventDetail key={`${insp.id}${insp.date}`} ctx={ctx} id={insp.id} date={insp.date} />}
               {insp?.kind === 'attendance' && <Attendance key={insp.id} ctx={ctx} id={insp.id} date={insp.date} />}
               {insp?.kind === 'overlap' && <Overlap key={insp.id} ctx={ctx} id={insp.id} />}
+              {insp?.kind === 'classes' && <ClassesDetail key={insp.key} ctx={ctx} date={insp.date} ids={insp.ids} />}
             </SectionBoundary>
           </div>
         </Modal>
@@ -764,7 +770,7 @@ export function Calendar({
               <Swap swapKey={view}>
                 <Swap swapKey={period.key} kind="slide" dir={period.dir}>
                   {(view === 'week' || view === 'day') && (
-                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} onMove={coach ? move : undefined} daylight={daylight} coach={coach} />
+                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} onMove={coach ? move : undefined} daylight={daylight} coach={coach} onClasses={coach ? openClasses : undefined} selKey={selKey} />
                   )}
                   {view === 'month' && (
                     <MonthView
@@ -804,6 +810,7 @@ export function Calendar({
               {insp?.kind === 'event' && <EventDetail key={`${insp.id}${insp.date}`} ctx={ctx} id={insp.id} date={insp.date} />}
               {insp?.kind === 'attendance' && <Attendance key={insp.id} ctx={ctx} id={insp.id} date={insp.date} />}
               {insp?.kind === 'overlap' && <Overlap key={insp.id} ctx={ctx} id={insp.id} />}
+              {insp?.kind === 'classes' && <ClassesDetail key={insp.key} ctx={ctx} date={insp.date} ids={insp.ids} />}
             </SectionBoundary>
           </aside>
         </div>

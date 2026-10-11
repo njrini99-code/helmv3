@@ -49,6 +49,7 @@ import {
   isMajor,
   openTimes,
   rangeLabel,
+  awaitingReply,
   rsvpCounts,
   type ChCalEvent,
   type ChCalOverlap,
@@ -62,6 +63,8 @@ export type ChInsp =
   | { kind: 'event'; id: string; date: string }
   | { kind: 'attendance'; id: string; date: string }
   | { kind: 'overlap'; id: string }
+  /** A coach's folded class cluster (the grid's "5 in class"): its meetings, listed. `key` marks the block selected. */
+  | { kind: 'classes'; key: string; date: string; ids: string[] }
   | null;
 
 export interface InspCtx {
@@ -136,7 +139,8 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
   const seen = new Set<string>();
   const pendingRows = upcoming
     .filter((e) => (seen.has(e.id) ? false : (seen.add(e.id), true)))
-    .map((e) => ({ e, pending: e.people.filter((p) => (e.rsvp[p] ?? 'pending') === 'pending') }))
+    // Only events that asked for replies (requires_rsvp): one that didn't has nothing pending (owner, 2026-10-08).
+    .map((e) => ({ e, pending: awaitingReply(e) }))
     .filter((r) => (role === 'coach' ? r.pending.length > 0 : ctx.viewerPlayerId != null && r.pending.includes(ctx.viewerPlayerId)))
     .sort((a, b) => (a.e.date + String(a.e.start ?? 0).padStart(5, '0')).localeCompare(b.e.date + String(b.e.start ?? 0).padStart(5, '0')));
   const weekOverlaps = overlaps.filter((o) => {
@@ -439,8 +443,42 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
           {first(ctx.people.get(overlap.who)?.name)} is busy {fmtHour(overlap.from, false)}–{fmtHour(overlap.to)}.
         </Warn>
       )}
-      {!coach && ctx.viewerPlayerId && e.people.includes(ctx.viewerPlayerId) && <PlayerReply e={e} playerId={ctx.viewerPlayerId} now={ctx.now} onDone={ctx.refresh} />}
-      {coach && e.people.length > 0 && (
+      {!coach && ctx.viewerPlayerId && e.requiresRsvp && e.people.includes(ctx.viewerPlayerId) && <PlayerReply e={e} playerId={ctx.viewerPlayerId} now={ctx.now} onDone={ctx.refresh} />}
+      {/* No replies asked for: who is on the event, without counts or reply badges. */}
+      {coach && !e.requiresRsvp && e.people.length > 0 && (
+        <div className="ch-in__sec">
+          <div className="ch-in__sechead">
+            <b>Invited</b>
+            <span>{e.people.length} {e.people.length === 1 ? 'player' : 'players'} · no replies asked</span>
+          </div>
+          {ctx.rsvpError ? (
+            <InlineNotice code="CH-6205" title="The invite list didn’t load." body="Try again to see who’s invited." onRetry={ctx.refresh} covered={ctx.covered} />
+          ) : (
+            <div>
+              {[...e.people]
+                .sort((a, b) => (ctx.people.get(a)?.name ?? '').localeCompare(ctx.people.get(b)?.name ?? ''))
+                .map((pid) => {
+                  const person = ctx.people.get(pid);
+                  const name = person?.name ?? 'Former player';
+                  const row = (
+                    <div key={pid} className="ch-in__person">
+                      <Avatar name={name} size={26} />
+                      <span>{name}</span>
+                    </div>
+                  );
+                  return person ? (
+                    <PlayerPeek key={pid} player={{ id: pid, name, sub: person.year }}>
+                      {row}
+                    </PlayerPeek>
+                  ) : (
+                    row
+                  );
+                })}
+            </div>
+          )}
+        </div>
+      )}
+      {coach && e.requiresRsvp && e.people.length > 0 && (
         <div className="ch-in__sec">
           <div className="ch-in__sechead">
             <b>Responses</b>
@@ -504,6 +542,62 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * A coach's class cluster opened from the grid or the phone's day (owner, 2026-10-08): who is in class, in which course
+ * and room, and when. Each row opens that class's own detail. A class shown only as Busy keeps its title and room hidden.
+ */
+export function ClassesDetail({ ctx, date, ids }: { ctx: InspCtx; date: string; ids: string[] }) {
+  const classes = ids
+    .map((id) => find(ctx.events, id, date))
+    .filter((e): e is ChCalEvent => !!e && e.type === 'class')
+    .sort((a, b) => (a.start ?? 0) - (b.start ?? 0) || (ctx.people.get(a.owner ?? '')?.name ?? '').localeCompare(ctx.people.get(b.owner ?? '')?.name ?? ''));
+  const players = new Set(classes.map((c) => c.owner ?? `?${c.id}`)).size;
+  const from = Math.min(...classes.map((c) => c.start ?? 24));
+  const to = Math.max(...classes.map((c) => c.end ?? 0));
+  return (
+    <div className="ch-in">
+      <Back label="Today" onClick={() => ctx.go(null)} />
+      <div className="ch-in__kick">
+        <Badge tone="neutral">Classes</Badge>
+        <span>From players’ class lists</span>
+      </div>
+      <div>
+        <h2 className="ch-in__title">{players} in class</h2>
+        <div className="ch-cal-sub ch-num">
+          {dayLabel(date, ctx.now.date)}
+          {classes.length ? ` · ${rangeLabel({ allDay: false, start: from, end: to })}` : ''}
+        </div>
+      </div>
+      {classes.length === 0 ? (
+        <p className="ch-in__quiet">These classes aren’t in the loaded range anymore.</p>
+      ) : (
+        <div className="ch-in__sec">
+          {classes.map((c) => {
+            const owner = c.owner ? ctx.people.get(c.owner) : undefined;
+            return (
+              <button key={c.id} type="button" className="ch-in__need" onClick={() => ctx.go({ kind: 'event', id: c.id, date: c.date })}>
+                <span className="ch-in__ic">
+                  <Icon icon={BookOpen} size={14} />
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <b>{owner?.name ?? 'Owner unknown'}</b>
+                  <span className="ch-num">
+                    {c.busyOnly ? 'Busy' : [c.title, c.location].filter(Boolean).join(' · ')} · {rangeLabel(c)}
+                  </span>
+                </span>
+                <Icon icon={ChevronRight} size={14} />
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <div className="ch-in__sec">
+        <p className="ch-in__quiet">Only coaches see class details. Teammates never see another player’s classes.</p>
+      </div>
     </div>
   );
 }
@@ -669,7 +763,7 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
                     <Avatar name={name} size={26} />
                     <span>
                       {first(name)}
-                      <small>{dirty ? 'Unsaved' : saved[pid] ? 'Saved' : RSVP_LABEL[e.rsvp[pid] ?? 'pending'][0]}</small>
+                      <small>{dirty ? 'Unsaved' : saved[pid] ? 'Saved' : e.requiresRsvp ? RSVP_LABEL[e.rsvp[pid] ?? 'pending'][0] : 'Not marked'}</small>
                     </span>
                   </span>
                   <AttendanceSeg name={name} value={v} onChange={(m) => setMarks((s) => ({ ...s, [pid]: m }))} />

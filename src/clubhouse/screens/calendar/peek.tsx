@@ -6,18 +6,19 @@ import { Icon } from '../../ui/Icon';
 import { PeekTarget, type PeekAction } from '../../ui/Peek';
 import { rebuiltHref } from '../../shell/nav';
 import { messagesPrefillHref } from '../messages/prefill';
-import { dayNum, dowOf, fmtHour, monthName, rangeLabel, TYPE_LABEL, type ChCalEvent, type ChCalPerson } from './model';
+import { awaitingReply, dayNum, dowOf, fmtHour, monthName, rangeLabel, TYPE_LABEL, type ChCalEvent, type ChCalPerson } from './model';
 import { TYPE_ICON } from './type-icon';
 
 /**
  * P006-C3: an event peeks where it is listed: a hold on the phone's agenda row, a rest of the pointer on a week block.
  * The card says what, when, where and who has answered; the actions open it, and for the coach, Nudge the people who
- * haven't replied (Messages, prefilled; the coach presses Send) and, off site, Directions (a plain maps link).
+ * haven't replied (Messages, prefilled; the coach presses Send) and, off site, Directions (a plain maps link). An event
+ * that asked for no replies shows who is invited and offers no Nudge.
  */
 const OFF_SITE = new Set(['qualifier', 'tournament', 'travel']);
 
 export function eventPeekActions(e: ChCalEvent, coach: boolean, people: Map<string, ChCalPerson>, onOpen: () => void): PeekAction[] {
-  const waiting = coach ? e.people.filter((p) => (e.rsvp[p] ?? 'pending') === 'pending') : [];
+  const waiting = coach ? awaitingReply(e) : [];
   const when = e.allDay ? `${dowOf(e.date)} ${dayNum(e.date)} ${monthName(e.date)}` : `${dowOf(e.date)} ${dayNum(e.date)} ${monthName(e.date)} at ${fmtHour(e.start!)}`;
   const href = waiting.length ? messagesPrefillHref({ players: waiting, draft: `Can you let me know if you’re coming to ${e.title} (${when})? You can reply on the event in Calendar.`, title: e.title }) : null;
   const nudge = href ? rebuiltHref(href) : null;
@@ -32,7 +33,7 @@ export function eventPeekActions(e: ChCalEvent, coach: boolean, people: Map<stri
 export function EventPeekCard({ e, coach, people }: { e: ChCalEvent; coach: boolean; people: Map<string, ChCalPerson> }) {
   const counts = { accepted: 0, maybe: 0, declined: 0, pending: 0 };
   for (const p of e.people) counts[(e.rsvp[p] ?? 'pending') as keyof typeof counts] += 1;
-  const waiting = e.people.filter((p) => (e.rsvp[p] ?? 'pending') === 'pending').map((p) => people.get(p)?.name.split(' ')[0]).filter(Boolean);
+  const waiting = awaitingReply(e).map((p) => people.get(p)?.name.split(' ')[0]).filter(Boolean);
   return (
     <div className="ch-evpeek">
       <span className="ch-evpeek__k">
@@ -44,7 +45,12 @@ export function EventPeekCard({ e, coach, people }: { e: ChCalEvent; coach: bool
         {dowOf(e.date)} {dayNum(e.date)} {monthName(e.date)} · {rangeLabel(e)}
       </span>
       {e.location && <span className="ch-evpeek__m">{e.location}</span>}
-      {coach && e.people.length > 0 && (
+      {coach && e.people.length > 0 && !e.requiresRsvp && (
+        <span className="ch-evpeek__r ch-num">
+          {e.people.length} invited
+        </span>
+      )}
+      {coach && e.people.length > 0 && e.requiresRsvp && (
         <span className="ch-evpeek__r ch-num">
           <b>{counts.accepted}</b> of {e.people.length} going
           {counts.declined ? ` · ${counts.declined} can’t` : ''}

@@ -13,6 +13,7 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { InlineNotice } from '../../ui/Notices';
 import { Segmented } from '../../ui/Segmented';
+import { Switch } from '../../ui/Switch';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
 import { friendlyReason, normalise, useAction } from '../../lib/use-action';
@@ -166,12 +167,12 @@ function FindTime({
   );
 }
 
-type EditorValues = { title: string; type: ChCalType; date: string; win: [number, number]; allDay: boolean; repeat: Repeat; loc: string; notes: string; invited: string[] };
+type EditorValues = { title: string; type: ChCalType; date: string; win: [number, number]; allDay: boolean; repeat: Repeat; loc: string; notes: string; invited: string[]; askReplies: boolean };
 
 /** The editor's values as one comparable string, so edits can be told from a look. */
 function snapshot(v: EditorValues): string {
   // A fixed field order, so the same values always make the same string.
-  return JSON.stringify([v.title.trim(), v.type, v.date, v.win, v.allDay, v.repeat, v.loc.trim(), v.notes.trim(), [...v.invited].sort()]);
+  return JSON.stringify([v.title.trim(), v.type, v.date, v.win, v.allDay, v.repeat, v.loc.trim(), v.notes.trim(), [...v.invited].sort(), v.askReplies]);
 }
 
 export function EventEditor({
@@ -210,6 +211,9 @@ export function EventEditor({
   const [loc, setLoc] = useState('');
   const [notes, setNotes] = useState('');
   const [invited, setInvited] = useState<string[]>([]);
+  // Ask for replies (golf_events.requires_rsvp). Off for a new event (owner, 2026-10-08): off, players aren't notified or
+  // asked to reply, and no reply counts show anywhere.
+  const [askReplies, setAskReplies] = useState(false);
   const [scope, setScope] = useState<Scope>('this');
   // A multi-day all-day event keeps its length through an edit, a move or a Duplicate (CAL-06).
   const [extraDays, setExtraDays] = useState(0);
@@ -241,6 +245,7 @@ export function EventEditor({
           loc: e.location ?? '',
           notes: e.notes ?? '',
           invited: e.people,
+          askReplies: e.requiresRsvp,
         }
       : c
         ? {
@@ -253,6 +258,8 @@ export function EventEditor({
             notes: c.notes ?? '',
             // Invitees the Calendar no longer lists (a player who left) are dropped, never widened to the team.
             invited: c.people.filter((id) => people.some((p) => p.id === id)),
+            // A copy keeps the coach's choice on the event it copies.
+            askReplies: c.requiresRsvp,
           }
         : (() => {
             const date = seed.date ?? today;
@@ -266,6 +273,7 @@ export function EventEditor({
               loc: '',
               notes: '',
               invited,
+              askReplies: false,
             };
           })();
     setTitle(init.title);
@@ -276,6 +284,7 @@ export function EventEditor({
     setLoc(init.loc);
     setNotes(init.notes);
     setInvited(init.invited);
+    setAskReplies(init.askReplies);
     // A drag-to-move proposal is already a change worth keeping.
     setBaseline(seed.proposal ? '' : snapshot({ ...init, repeat: 'none' }));
     setDiscarding(false);
@@ -334,6 +343,7 @@ export function EventEditor({
           description: notes.trim() || undefined,
           recurrenceRule: serializeRecurrenceRule({ frequency: 'weekly', weekdays: repeat === 'weekdays' ? [1, 2, 3, 4, 5] : [weekday], until }),
           attendeeIds: invited.length ? invited : undefined,
+          requiresRsvp: askReplies,
           timezoneOffset: tz,
           // Each occurrence takes the zone's offset on its own date, so a series across a clock change keeps its time (CAL-05).
           timeZone: timezone,
@@ -351,6 +361,7 @@ export function EventEditor({
         location: loc.trim() || undefined,
         description: notes.trim() || undefined,
         attendeeIds: invited.length ? invited : undefined,
+        requiresRsvp: askReplies,
         timezoneOffset: tz,
       };
       return createGolfEvent({ ...single, requestId: requestIdFor(single) });
@@ -388,6 +399,7 @@ export function EventEditor({
       description: notes.trim(),
       addAttendeeIds: add.length ? add : undefined,
       removeAttendeeIds: remove.length ? remove : undefined,
+      requiresRsvp: askReplies,
       timezoneOffset: tz,
     } as never);
   };
@@ -419,7 +431,7 @@ export function EventEditor({
       return res;
     },
     () => ({
-      done: !base ? `Published · ${title.trim()}${invited.length ? ' · players notified' : ''}` : moved ? `Moved · ${title.trim()}` : `Saved · ${title.trim()}`,
+      done: !base ? `Published · ${title.trim()}${invited.length && askReplies ? ' · players notified' : ''}` : moved ? `Moved · ${title.trim()}` : `Saved · ${title.trim()}`,
       failed: !base ? `Couldn’t publish ${title.trim() || 'the event'}` : `Couldn’t save ${title.trim() || 'the event'}`,
       hint: 'Your changes are still in the editor. Try again in a moment.',
       code: 'CH-6001',
@@ -443,7 +455,7 @@ export function EventEditor({
   };
 
   const allOn = invited.length === people.length;
-  const dirty = open && snapshot({ title, type, date, win, allDay, repeat, loc, notes, invited }) !== baseline;
+  const dirty = open && snapshot({ title, type, date, win, allDay, repeat, loc, notes, invited, askReplies }) !== baseline;
   // Closing with edits asks first; closing untouched just closes.
   const requestClose = () => {
     if (dirty && !save.pending) {
@@ -459,11 +471,17 @@ export function EventEditor({
         width={1040}
         icon={base ? Pencil : CalendarPlus}
         title={base ? 'Edit event' : 'New event'}
-        description={base ? 'Changes notify everyone invited.' : 'Invited players get a notification and can reply.'}
+        description={
+          askReplies
+            ? base
+              ? 'Changes notify everyone invited.'
+              : 'Invited players get a notification and can reply.'
+            : 'It shows on invited players’ calendars. No notification, no replies asked for.'
+        }
         footer={
           <>
             <span className="ch-in__quiet" style={{ marginRight: 'auto' }}>
-              {invited.length ? 'Attendees will be notified' : 'No one invited yet'}
+              {!invited.length ? 'No one invited yet' : askReplies ? 'Attendees will be notified' : 'On their calendars · no replies asked'}
             </span>
             <Button variant="ghost" onClick={requestClose}>
               Cancel
@@ -565,7 +583,10 @@ export function EventEditor({
                   value={scope}
                   onChange={(s) => {
                     setScope(s);
-                    if (s !== 'this' && base) setAllDay(base.allDay);
+                    if (s !== 'this' && base) {
+                      setAllDay(base.allDay);
+                      setAskReplies(base.requiresRsvp);
+                    }
                   }}
                   options={[
                     { value: 'this', label: 'This event' },
@@ -573,7 +594,7 @@ export function EventEditor({
                     { value: 'all', label: 'All in series' },
                   ]}
                 />
-                {scope !== 'this' && <p className="ch-field__help">Series changes cover title, time, place and notes. Type, All day and invitees change one event at a time.</p>}
+                {scope !== 'this' && <p className="ch-field__help">Series changes cover title, time, place and notes. Type, All day, replies and invitees change one event at a time.</p>}
               </div>
             )}
           </div>
@@ -624,6 +645,13 @@ export function EventEditor({
             ) : (
               <p className="ch-in__quiet">No active players on the roster yet.</p>
             )}
+            <div className="ch-ed__ask">
+              {/* A series edit carries no replies setting (editRecurringEvent has none): it changes one event at a time. */}
+              <Switch label="Ask for replies" checked={askReplies} disabled={series && scope !== 'this'} onChange={setAskReplies} />
+              <p className="ch-field__help">
+                {askReplies ? 'Invited players are notified and reply Going, Maybe or Can’t.' : 'Off: it goes on their calendars without a notification or a reply to send.'}
+              </p>
+            </div>
           </div>
           {!allDay && invited.length > 0 && (
             <div>
@@ -664,6 +692,8 @@ export function EventEditor({
             <dd>{loc.trim() || '—'}</dd>
             <dt>Who</dt>
             <dd>{allOn && people.length ? `Whole team · ${people.length} players` : invited.length ? invited.map((p) => byId.get(p)?.name.split(' ')[0]).join(', ') : '—'}</dd>
+            <dt>Replies</dt>
+            <dd>{askReplies ? 'Asked for' : 'Not asked'}</dd>
             <dt>Repeats</dt>
             <dd>{base ? (base.recurring ?? 'Does not repeat') : repeat === 'none' ? 'Does not repeat' : repeat === 'weekly' ? `Weekly on ${dowOf(date)} until ${dayNum(until)} ${monthName(until).slice(0, 3)}` : `Every weekday until ${dayNum(until)} ${monthName(until).slice(0, 3)}`}</dd>
           </dl>

@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, ChevronUp, TriangleAlert } from 'lucide-react';
+import { BookOpen, ChevronDown, ChevronUp, TriangleAlert } from 'lucide-react';
 import { useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
@@ -21,7 +21,11 @@ import {
   monthName,
   rangeLabel,
   addDays,
+  clusterClasses,
+  clusterLabel,
+  overlaps,
   type ChCalEvent,
+  type ChClassCluster,
   type ChCalPerson,
   type ChDaylight,
 } from './model';
@@ -69,6 +73,9 @@ export function clashesAt(e: ChCalEvent, to: ChMoveTarget, events: ChCalEvent[])
   );
 }
 
+/** The width of a class cluster's lane beside the team events it overlaps (px). */
+export const CLUSTER_LANE = 30;
+
 const byStart = (a: ChCalEvent, b: ChCalEvent) => (a.allDay ? -1 : (a.start ?? 0)) - (b.allDay ? -1 : (b.start ?? 0));
 
 function EventBlock({
@@ -83,6 +90,7 @@ function EventBlock({
   to,
   drag,
   state,
+  inset = 0,
 }: {
   e: ChCalEvent;
   lane: number;
@@ -98,6 +106,8 @@ function EventBlock({
   drag?: { onPointerDown: (ev: PointerEvent<HTMLButtonElement>) => void; onNudge: (dir: 1 | -1) => void; moved: () => boolean };
   /** While a block is dragged: it is the one held (`held`), the ghost where it would land (`ghost`), or a clash (`clash`). */
   state?: 'held' | 'ghost' | 'clash';
+  /** Pixels kept free on the right for a class cluster's lane beside this event. */
+  inset?: number;
 }) {
   const start = Math.max(e.start!, from);
   const end = Math.min(e.end!, to);
@@ -123,7 +133,7 @@ function EventBlock({
       data-print-visible
       // CH-6801: a button named with its title, time and any overlap. CH-6601: it lifts on hover and marks its selection.
       className={`ch-ev ch-ev--${e.type}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${lines ? ' ch-ev--wrap' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}`}
-      style={{ top, height: h, left: `calc(${left}% + 3px)`, width: `calc(${100 - left}% - 6px)`, zIndex: state === 'ghost' ? 6 : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}) } as CSSProperties}
+      style={{ top, height: h, left: `calc(${left}% + 3px)`, width: `calc(${100 - left}% - ${6 + inset}px)`, zIndex: state === 'ghost' ? 6 : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}) } as CSSProperties}
       aria-label={`${title}, ${rangeLabel(e)}${flagged ? ', schedule overlap' : ''}${drag ? '. Alt and the arrow keys move it 15 minutes' : ''}`}
       aria-pressed={sel}
       aria-hidden={state === 'ghost' || undefined}
@@ -155,6 +165,63 @@ function EventBlock({
   );
 }
 
+/**
+ * A coach's overlapping class meetings as one muted block (owner, 2026-10-08): "5 in class" and the span, which opens the
+ * list of who, which course and when. Alone in its hours it takes the column; where a team event overlaps it, it keeps a
+ * narrow lane at the column's right edge (the count only) and the team event keeps the rest, so a practice is never
+ * crowded by classes and the classes are never hidden under it.
+ */
+function ClassCluster({
+  c,
+  beside,
+  from,
+  to,
+  sel,
+  clash,
+  onOpen,
+}: {
+  c: ChClassCluster<ChCalEvent>;
+  beside: boolean;
+  from: number;
+  to: number;
+  sel: boolean;
+  clash: boolean;
+  onOpen: (c: ChClassCluster<ChCalEvent>) => void;
+}) {
+  const start = Math.max(c.start, from);
+  const end = Math.min(c.end, to);
+  const top = (start - from) * CAL_HH;
+  const h = Math.max((end - start) * CAL_HH - 2, 20);
+  const short = h < 40;
+  const span = rangeLabel({ allDay: false, start: c.start, end: c.end });
+  return (
+    <button
+      type="button"
+      data-print-visible
+      className={`ch-ev ch-ev--class ch-ev--cluster${beside ? ' is-beside' : ''}${short && !beside ? ' ch-ev--short' : ''}${sel ? ' is-sel' : ''}${clash ? ' is-clash' : ''}`}
+      style={beside ? { top, height: h, right: 3, width: CLUSTER_LANE } : { top, height: h, left: 3, width: 'calc(100% - 6px)' }}
+      aria-label={`${c.players} ${c.players === 1 ? 'player' : 'players'} in class, ${span}. Show who`}
+      aria-pressed={sel}
+      onClick={() => {
+        haptic('select');
+        onOpen(c);
+      }}
+    >
+      {beside ? (
+        <>
+          <Icon icon={BookOpen} size={12} />
+          <span className="ch-ev__n ch-num">{c.players}</span>
+        </>
+      ) : (
+        <>
+          <span className="ch-ev__t">{clusterLabel(c)}</span>
+          <span className="ch-ev__m ch-num">{short ? fmtHour(c.start, false) : span}</span>
+        </>
+      )}
+    </button>
+  );
+}
+
 export function TimeGrid({
   dates,
   events,
@@ -167,6 +234,8 @@ export function TimeGrid({
   onMove,
   daylight,
   coach = false,
+  onClasses,
+  selKey = null,
 }: {
   dates: string[];
   events: ChCalEvent[];
@@ -182,6 +251,10 @@ export function TimeGrid({
   daylight?: (date: string) => ChDaylight;
   /** P006-C3: the hover card's Nudge is the coach's. */
   coach?: boolean;
+  /** The coach's grid folds overlapping classes into clusters; a cluster opens here. Absent, every class is its own block. */
+  onClasses?: (c: ChClassCluster<ChCalEvent>) => void;
+  /** The cluster open in the panel. */
+  selKey?: string | null;
 }) {
   // 6 AM to 9 PM, widened to the hour around anything earlier or later on the days shown, so a 5 AM bus or a 9:30 PM
   // meeting is on the grid instead of dropped from it (CAL-07).
@@ -311,7 +384,12 @@ export function TimeGrid({
           )}
         </div>
         {dates.map((d) => {
-          const laid = layoutLanes(events.filter((e) => !e.allDay && e.date === d && e.start != null && e.end != null));
+          const timedHere = events.filter((e) => !e.allDay && e.date === d && e.start != null && e.end != null);
+          // The coach's grid: overlapping classes fold into clusters, and team events lay out among themselves at full width.
+          const { rest, clusters } = coach && onClasses ? clusterClasses(timedHere) : { rest: timedHere, clusters: [] };
+          const beside = new Set(clusters.filter((c) => rest.some((e) => overlaps([e.start!, e.end!], [c.start, c.end]))).map((c) => c.id));
+          const insetFor = (e: ChCalEvent) => (clusters.some((c) => beside.has(c.id) && overlaps([e.start!, e.end!], [c.start, c.end])) ? CLUSTER_LANE + 3 : 0);
+          const laid = layoutLanes(rest);
           return (
             <div key={d} className={'ch-wk__col' + (d === now.date ? ' is-today' : '')}>
               {daylight && <Daylight dl={daylight(d)} from={from} to={to} label={d === dates[dates.length - 1]} />}
@@ -329,8 +407,21 @@ export function TimeGrid({
                     to={to}
                     drag={dragFor(l.e)}
                     state={drag?.e.id === l.e.id ? 'held' : clashes?.has(l.e.id) ? 'clash' : undefined}
+                    inset={insetFor(l.e)}
                   />
                 </EventPeek>
+              ))}
+              {clusters.map((c) => (
+                <ClassCluster
+                  key={c.id}
+                  c={c}
+                  beside={beside.has(c.id)}
+                  from={from}
+                  to={to}
+                  sel={selKey === c.id}
+                  clash={!!clashes && c.classes.some((x) => clashes.has(x.id))}
+                  onOpen={onClasses!}
+                />
               ))}
               {drag && drag.to.date === d && (
                 <EventBlock e={{ ...drag.e, date: d, start: drag.to.start, end: drag.to.end }} lane={0} lanes={1} sel={false} flagged={false} people={people} onSelect={() => {}} from={from} to={to} state="ghost" />
