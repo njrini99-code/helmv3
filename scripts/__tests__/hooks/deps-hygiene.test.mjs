@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, symlinkSync, writeFileSync, rmSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { nodeModulesState, ON_DEMAND_TOOLS } from '../../../.claude/hooks/deps-hygiene.mjs';
+import { commandRoot, nodeModulesState, ON_DEMAND_TOOLS } from '../../../.claude/hooks/deps-hygiene.mjs';
 
 const HOOK = resolve(process.cwd(), '.claude/hooks/deps-hygiene.mjs');
 let base;
@@ -72,5 +72,21 @@ describe('PostToolUse(Bash)', () => {
   });
   it('never fails on malformed stdin', () => {
     expect(() => execFileSync('node', [HOOK], { input: 'not json', encoding: 'utf-8' })).not.toThrow();
+  });
+});
+
+describe('commandRoot', () => {
+  it('uses a leading cd over the session cwd', () => {
+    expect(commandRoot('cd /tmp/a && npm ci', '/work/b', '/proj')).toBe('/tmp/a');
+  });
+  it('expands ~ and strips quotes', () => {
+    expect(commandRoot('cd "~/x y" && npm i', '/w', '/p')).toBe(`${process.env.HOME}/x y`);
+  });
+  it('resolves a relative cd against the cwd', () => {
+    expect(commandRoot('cd sub; npm i', '/w', '/p')).toBe('/w/sub');
+  });
+  it('falls back to cwd, then the project dir', () => {
+    expect(commandRoot('npm ci', '/w', '/p')).toBe('/w');
+    expect(commandRoot('npm ci', undefined, '/p')).toBe('/p');
   });
 });

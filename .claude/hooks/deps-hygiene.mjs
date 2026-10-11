@@ -170,12 +170,27 @@ function postBash(root, command) {
   if (notes.length) emit('PostToolUse', `deps-hygiene: ${notes.join(' | ')}`);
 }
 
+/**
+ * The checkout a Bash command actually ran in: a leading `cd <dir> &&` wins, then the
+ * tool call's cwd, then the session's project dir. Judging CLAUDE_PROJECT_DIR alone
+ * warned about the session's own symlinked checkout when the command had cd'd into
+ * the canonical one (2026-10-11).
+ */
+export function commandRoot(command, cwd, projectDir) {
+  const base = cwd || projectDir || process.cwd();
+  const m = /^\s*cd\s+("[^"]+"|'[^']+'|[^\s;&|]+)\s*(?:&&|;)/.exec(command || '');
+  if (!m) return base;
+  const dir = m[1].replace(/^["']|["']$/g, '').replace(/^~(?=\/|$)/, process.env.HOME || '~');
+  return resolve(base, dir);
+}
+
 function main() {
   const input = readStdinJson();
   const root = process.env.CLAUDE_PROJECT_DIR || input.cwd || process.cwd();
   if (input.hook_event_name === 'SessionStart') return sessionStart(root);
   if (input.hook_event_name === 'PostToolUse' && input.tool_name === 'Bash') {
-    return postBash(root, String(input.tool_input?.command ?? ''));
+    const command = String(input.tool_input?.command ?? '');
+    return postBash(commandRoot(command, input.cwd, process.env.CLAUDE_PROJECT_DIR), command);
   }
 }
 
