@@ -648,7 +648,7 @@ function ImageAttachment({ f }: { f: ChAttachment }) {
   }
   return (
     <a className="ch-ms-img" href={f.url ?? undefined} target="_blank" rel="noreferrer" aria-label={`Open ${f.name}`}>
-      {/* eslint-disable-next-line @next/next/no-img-element -- a signed storage URL, sized by the thread, not an asset */}
+      {/* A plain img on purpose: a signed storage URL, sized by the thread, not an optimised asset. */}
       <img src={f.url ?? undefined} alt={f.name} loading="lazy" decoding="async" onError={() => setBroken(true)} />
     </a>
   );
