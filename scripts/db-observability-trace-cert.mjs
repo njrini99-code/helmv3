@@ -129,6 +129,8 @@ function addItem(id, title, ok, detail, evidence) {
     'personalize-email', // no call site found anywhere in src/ — server/webhook-triggered
     'send-apns-push', // called only from src/lib/notifications/push.ts ('server-only')
     'send-fcm-push', // called only from src/lib/notifications/push.ts ('server-only')
+    'create-admin-user', // retired stub (#1271): answers 410 to every request, no call site
+    'verify-emails', // no call site found anywhere in src/ — script/server-triggered
   ]);
   const fnDir = join(REPO_ROOT, 'supabase/functions');
   const evidence = {};
@@ -159,7 +161,7 @@ function addItem(id, title, ok, detail, evidence) {
     !anyBrowserInvokedMissingHeaders,
     anyBrowserInvokedMissingHeaders
       ? 'a browser-invoked function is missing one or more trace headers from Access-Control-Allow-Headers'
-      : 'no currently browser-invoked Edge Function is missing trace headers (none of the 3 inventoried functions is browser-invoked today — see evidence for the per-function header gap, tracked but not blocking)',
+      : `no currently browser-invoked Edge Function is missing trace headers (none of the ${NOT_BROWSER_INVOKED.size} inventoried functions is browser-invoked today — see evidence for the per-function header gap, tracked but not blocking)`,
     evidence,
   );
 }
