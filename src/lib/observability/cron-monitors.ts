@@ -3,8 +3,9 @@
  * Vercel crons via `recordJobRun` (job-log.ts). (The Self-Heal Repair job used to check in here too, via a
  * separate launchd agent and its own standalone helper
  * (scripts/lib/sentry-cron-checkin.mjs); both were retired 2026-09-05 —
- * Repair now runs as .github/workflows/selfheal-repair.yml and reports
- * through a background_job_logs heartbeat instead. See
+ * Repair now runs as the `helm-app-health-selfheal` Claude scheduled task
+ * (config/routines.yml) and reports through a background_job_logs heartbeat
+ * instead. See
  * memory/features/admin-selfheal.md.)
  *
  * WHY THIS EXISTS. Phase A found `automaticVercelMonitors: true` configured

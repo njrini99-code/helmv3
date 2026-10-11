@@ -75,7 +75,14 @@ const ALLOWLIST = [
   {
     table: 'golf_players',
     orderBy: 'created_at',
-    redact: { email: ['email'], phone: ['phone'], name: ['first_name', 'last_name'] },
+    // Players are often minors: hometown + high school + grad year + GPA
+    // identify a real kid even with the name replaced, so those go too.
+    redact: {
+      email: ['email'],
+      phone: ['phone'],
+      name: ['first_name', 'last_name'],
+      text: ['avatar_url', 'high_school_name', 'hometown', 'gpa'],
+    },
   },
   { table: 'golf_team_coach_staff', orderBy: 'created_at', redact: {} },
   { table: 'golf_team_members', orderBy: 'created_at', redact: {} },
@@ -217,7 +224,7 @@ async function main() {
     '-- Regenerate with: npm run db:seed:refresh (scripts/db/seed-from-prod.mjs)',
     `-- Generated: ${new Date().toISOString()}`,
     `-- Row cap per table: ${args.limit}`,
-    '-- Redacted: email -> <table>-<row#>@seed.example, phone -> fixed placeholder,',
+    '-- Redacted: email -> <table>-<row#> at the seed.example domain, phone -> fixed placeholder,',
     '-- name columns -> synthetic "<Table> Sample <row#>" labels, free-text notes/bio -> NULL.',
     '-- auth.users is NEVER sampled — see supabase/seed/v3-seed.sql for the local user path.',
     '--',
