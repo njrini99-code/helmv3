@@ -27,6 +27,7 @@ import { dirname, join, resolve } from 'node:path';
 export const ON_DEMAND_TOOLS = {
   promptfoo: 'npm run evals (or: npx --yes promptfoo@0.124.0 <cmd>)',
   momentic: 'npx --yes momentic@3.63.1 <cmd>',
+  'react-devtools': 'npm run clubhouse:profile (npx --yes react-devtools@8.0.0)',
 };
 
 const INSTALLISH = /\bnpm\s+(?:ci|install|i|add|uninstall|remove|rm|prune|dedupe|ddp|update|up)\b/;

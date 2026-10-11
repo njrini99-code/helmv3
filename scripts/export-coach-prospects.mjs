@@ -1,12 +1,14 @@
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 /**
  * Export the clean cold-outreach prospect list: every coach NOT at a current
  * customer school (Denison/Guilford/Hampden-Sydney/Shenandoah/Lynchburg) and
  * NOT Piedmont, with a deliverable email + a last name, excluding bounced and
- * suppressed addresses. Batched into 10s. Writes /tmp/coach-prospects.csv and
+ * suppressed addresses. Batched into 10s. Writes a private temp CSV (path printed) and
  * prints batch 1. Read-only. Run: node scripts/export-coach-prospects.mjs
  */
 import { createClient } from '@supabase/supabase-js';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
 import { helpOnly } from './lib/cli-guard.mjs';
 
 helpOnly({
@@ -60,9 +62,12 @@ sendable.forEach((c, i) => {
   rows.push([String(Math.floor(i / 10) + 1), c.name, c.email, c.school, c.status]);
 });
 const csv = rows.map(r => r.map(f => `"${String(f ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
-writeFileSync('/tmp/coach-prospects.csv', csv);
+// Coach names and emails: a private temp dir (0700) and an owner-only file, not a fixed /tmp path.
+const outDir = mkdtempSync(join(tmpdir(), 'coach-prospects-'));
+const outFile = join(outDir, 'coach-prospects.csv');
+writeFileSync(outFile, csv, { mode: 0o600 });
 
 console.log(`Sendable prospects: ${sendable.length}  (${Math.ceil(sendable.length / 10)} batches of 10)`);
-console.log('CSV -> /tmp/coach-prospects.csv\n');
+console.log(`CSV -> ${outFile}\n`);
 console.log('=== BATCH 1 ===');
 sendable.slice(0, 10).forEach((c, i) => console.log(`${String(i + 1).padStart(2)}. ${c.name}  <${c.email}>  — ${c.school}`));
