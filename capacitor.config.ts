@@ -40,7 +40,7 @@ const config: CapacitorConfig = {
     errorPath: 'offline.html',
     // Apex first (the app's origin); `*.helmsportslabs.com` keeps old www links
     // and any subdomain inside the app.
-    allowNavigation: ['helmsportslabs.com', '*.helmsportslabs.com', 'www.helmsportslabs.com', ...(devServer ? [new URL(devServer).host] : [])],
+    allowNavigation: ['helmsportslabs.com', '*.helmsportslabs.com', 'www.helmsportslabs.com', ...(devServer ? [new URL(devServer).hostname] : [])],
   },
   ios: {
     allowsLinkPreview: false,

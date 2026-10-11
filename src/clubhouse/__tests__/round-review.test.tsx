@@ -172,6 +172,9 @@ describe('112401 Round review, on screen', () => {
   it('the recap and the player’s notes, when there are any; a coach sees whose notes they are and whose round', () => {
     show(PREVIEW_REVIEW);
     expect(screen.getByRole('region', { name: 'Round recap' }).textContent).toContain('four bogeys undid two birdies');
+    // D13/D14: the clause the figures contradict (putting −0.9) is gone, and the author is named in words.
+    expect(screen.getByRole('region', { name: 'Round recap' }).textContent).not.toContain('putter held steady');
+    expect(screen.getByText('Written by CoachHelm from 18 holes')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Your notes' })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Rounds/ }).getAttribute('href')).toBe('/golf/dashboard/rounds');
   });

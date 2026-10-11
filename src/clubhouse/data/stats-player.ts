@@ -59,6 +59,11 @@ export const DETAIL_MAX_ROUNDS = 100;
 
 export type ChViewer = 'coach' | 'player';
 
+/** A made-over-attempted count as a percentage; null with no attempts (never a zero for a round that had none). */
+function pct(made: number | null | undefined, total: number | null | undefined): number | null {
+  return typeof made === 'number' && typeof total === 'number' && total > 0 ? (made / total) * 100 : null;
+}
+
 export interface ChProfileRound {
   id: string;
   course: string;
@@ -70,6 +75,10 @@ export interface ChProfileRound {
   score: number;
   toPar: number | null;
   gir: string | null;
+  /** The round's own fairways, greens and scrambling as percentages, from the round cache; null for a round with none to count (a total only, or no attempts). */
+  fairwaysPct: number | null;
+  girPct: number | null;
+  scramblePct: number | null;
   putts: number | null;
   sg: number | null;
   /** Off the tee, approach, around the green, putting; null where the round has none. */
@@ -168,6 +177,8 @@ export interface ChPlayerProfile {
   devError: boolean;
   nav: { index: number; total: number; prev: string; next: string } | null;
   roundsError: boolean;
+  /** The team's primary coach by name, for the personal-best card's attesting line (P005-C2); null when unknown or unread. */
+  attestingCoach?: string | null;
 }
 
 /**
@@ -211,6 +222,8 @@ export async function loadPlayerProfile(input: {
   // Coaches compare against the active team and page through it; players see only themselves.
   const teamMembersRead = coach ? Promise.resolve(supabase.from('golf_team_members').select('player_id').eq('team_id', input.teamId).eq('status', 'active')) : null;
   const ownRoundsRead = loadSeasonRounds(supabase, [input.playerId], { surface: 'stats', since: loadSince(f) });
+  // The personal-best card's attesting coach (P005-C2): the team's primary coach on staff. A failed read only drops the line.
+  const coachRead = attestingCoachName(supabase, input.teamId);
   const focusRead = Promise.resolve(
     supabase
       .from('golf_player_focus_areas')
@@ -462,7 +475,9 @@ export async function loadPlayerProfile(input: {
     }
   }
 
+  const attestingCoach = await coachRead;
   return {
+    attestingCoach,
     viewer: input.viewer,
     window: f.window,
     filter: f,
@@ -514,6 +529,9 @@ export async function loadPlayerProfile(input: {
         score: r.total_score as number,
         toPar: r.score_to_par,
         gir: total ? null : c?.greens_total ? `${c.greens_hit ?? 0}/${c.greens_total}` : r.total_gir != null && r.total_gir_possible ? `${r.total_gir}/${r.total_gir_possible}` : null,
+        fairwaysPct: total ? null : pct(c?.fairways_hit, c?.fairways_total),
+        girPct: total ? null : c?.greens_total ? pct(c.greens_hit, c.greens_total) : pct(r.total_gir, r.total_gir_possible),
+        scramblePct: total ? null : pct(c?.scrambles_converted, c?.scramble_attempts),
         putts: total ? null : (c?.total_putts ?? r.total_putts),
         sg: r.strokes_gained_total,
         sgLegs: [r.strokes_gained_tee, r.strokes_gained_approach, r.strokes_gained_around_green, r.strokes_gained_putting],
@@ -545,4 +563,17 @@ export async function loadPlayerProfile(input: {
     nav,
     roundsError: seasonRes.error,
   };
+}
+
+/** The team's primary coach's name (else any coach on its staff), or null; never throws. */
+async function attestingCoachName(supabase: Awaited<ReturnType<typeof createClient>>, teamId: string): Promise<string | null> {
+  try {
+    const staff = await supabase.from('golf_team_coach_staff').select('coach_id, is_primary').eq('team_id', teamId).limit(10);
+    if (staff.error || !staff.data?.length) return null;
+    const lead = [...staff.data].sort((a, b) => Number(!!b.is_primary) - Number(!!a.is_primary))[0]!;
+    const coach = await supabase.from('golf_coaches').select('full_name').eq('id', lead.coach_id).maybeSingle();
+    return coach.error ? null : coach.data?.full_name?.trim() || null;
+  } catch {
+    return null;
+  }
 }

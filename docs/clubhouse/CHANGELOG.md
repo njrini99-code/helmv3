@@ -1,5 +1,214 @@
 # Clubhouse changelog
 
+## 2026-10-11 — Depth from tokens and transform-only motion across the premium pass
+
+The `clubhouse:css` gate found 57 raw outer blur shadows and layout transitions
+in the premium-pass CSS. Fixed at the source, light and
+dark:
+
+- **New elevation tokens** (`styles/tokens.css`, both themes), each drop-only so
+  the caller keeps its own ring or inset edge:
+  `--ch-elevation-mark-warn` (amber glow under a loss bar),
+  `--ch-elevation-mark-ink` (a small neutral drop under a mark, number or
+  dot), `--ch-elevation-plate` (a long faint drop under a gold-ringed reading
+  plate), `--ch-elevation-pill-on` (the selected green
+  segment pill), `--ch-elevation-face` and `--ch-elevation-face-hover` (the
+  roster's portrait cards, the drift follows the light).
+- **Shadows by role:** deep-green stages (Home's team form, the round review's
+  stage and hero, the team stats strokes-gained table) use
+  `--ch-elevation-feature`; tip cards `--ch-elevation-overlay`; green marks
+  `--ch-elevation-mark`; the Messages composer
+  `--ch-elevation-floating`, the ready Send `--ch-green-raised-shadow`; the
+  roster's selected portrait `--ch-elevation-choice-hover`.
+  Affects calendar, classes, CoachHelm, home, hub, messages, qualifiers,
+  recruiting, roster, rounds, stats and `ui/Zone` (the
+  zone number and reading plate). Small differences in blur and opacity against
+  the old literals; rings and inset material unchanged.
+- **Motion without relayout:** fills scale or slide on transform; dots, ticks,
+  tips and coins move by `translate` in container units on
+  a still, full-width track (the track is the size container, so it never
+  overflows its chart). Applies to the Hub read bar, the
+  qualifiers and roster spreads, the round review and library tips, and the
+  player stats zones. The Hub RSVP split and the stats mix
+  and fairway strip glide on flex-grow. Not gliding any more: the classes
+  timetable bar, and the strokes-gained bars on the round review
+  and player stats (sized inline; tests read that width).
+
+## 2026-10-10 — Three depth tokens for the rounds pass
+
+Shared pieces for the rounds library and new-round pass (P011's log has the
+screens). Not yet reviewed by the owner.
+
+- **`--ch-elevation-board`**, **`--ch-elevation-board-hover`** and
+  **`--ch-elevation-mark`** (`styles/tokens.css`, light and dark): drop-only
+  depth for a field-green board hung on the page (a scorecard nine, the round
+  strip, a row's Out/In/Tot, a step deeper on hover) and a small glow under a
+  lit
+  data mark (the best round's dot, the putts bar, a hit green). The caller keeps
+  its own ring or inset edge.
+- The rounds season chart also uses `useInViewOnce` (`lib/use-in-view.ts`) to
+  raise its bars from the par line, and the season chart and the new-round nine
+  boards draw with the existing `--ch-stage-*` tokens.
+
+## 2026-10-10 — Premium polish across the app: baseline control feel, line breaks, radius tokens, one contrast fix
+
+Found by scanning every main preview screen in WebKit (contrast, controls with
+no transition, tap sizes, radii, heading sizes), then fixed
+where the cause was shared:
+
+- **Controls ease between states everywhere.** 24 buttons, inputs and links
+  across Messages, Recruiting, Hub, Home, Stats and the round
+  review had no transition at all. `styles/base.css` now gives every control a
+  zero-specificity baseline (background, colour, border,
+  shadow and opacity over `--ch-dur-quick`); a component's own transition still
+  wins. Transform is left out because drags and scrubs set
+  it every frame. After the change the scan finds none on 14 of 16 screens.
+- **Lines break well.** Headings use `text-wrap: balance` and running text
+  `pretty`, app-wide.
+- **Radius tokens.** 37 `9px` and `11px` corner literals (not on the
+  5/7/10/14/20 scale) are `--ch-radius-md`.
+- **Contrast.** White on the grey bogey segment of the scoring mix was 3.4:1; it
+  is a darker grey (5.3:1).
+- Scan result otherwise: no text under 4.5:1 outside dark-gradient panels the
+  scanner cannot read, headings on a consistent 44/30/19/15 scale.
+
+## 2026-10-10 — one Zone for player stats and the round review, stage tokens, and micro motion
+
+Audit of the stats and round-review work, then fixes (owner: "create cool micro
+animations, look for inefficiencies and non cohesion"):
+
+- **One zone, not two.** `ui/Zone.tsx` (`Zones`, `Zone`, `ZoneBlock`, `ZoneBig`,
+  `ZoneNote`) and its `.ch-zn*` rules in `styles/ui.css`
+  replace the two copies that had grown in `stats.css` (`.ch-z*`) and
+  `rounds.css` (`.ch-rz*`), which had already drifted apart (the
+  round review had the plate, the gold-ringed number and the depth; the stats
+  page did not). Both pages now read as one family. About
+  560 lines of duplicated CSS are gone.
+- **Flat grounds.** The review's soft ivory gradients on its bands are gone:
+  `tokens.css` records that large soft gradients band on
+  8-bit screens (owner, 2026-10-06). Gradients stay only where they are drawn on
+  purpose (the deep-green stage, bars, figures).
+- **Stage tokens.** `--ch-stage-bg`, `-line`, `-gold`, `-red`, `-ink`,
+  `-ink-soft`, `-rule` in `tokens.css` replace the hex values
+  repeated through the review's SVGs.
+- **Micro motion**, all from the `--ch-dur-*` tokens so Animations off and
+  reduced motion make every one instant (a delay is zeroed
+  for reduced motion): lengths glide to a new value when a window, filter or
+  hole changes (bars, tracks, mix, fairway strip, focus
+  rails); a stage's line draws once the first time it scrolls into view
+  (`lib/use-in-view.ts`); a picked hole's shots draw in the
+  order they were hit; a hole's reading settles in; rows warm and the marks lift
+  under the pointer; the scrub card fades rather than
+  vanishing. No count-ups, no first-paint staggers.
+- **Efficiency.** The player Overview is memoised, so a focus sheet or a
+  transition no longer recomputes its seven zones.
+
+## 2026-10-08 — the selected sidebar row is an ivory plate; secondary text one step darker
+
+Owner review (not yet signed off):
+
+- **Sidebar:** the open row's plate (`--ch-nav-well-bg`, `--ch-nav-well-shadow`
+  in
+  `styles/tokens.css`) is ivory with green text and icon, where it had been a
+  dark
+  well. `NavPlate` still glides it between rows.
+- **Text:** in the light theme `--ch-text-secondary` is ink-700 and
+  `--ch-text-tertiary` ink-600 (they were ink-600 and ink-500), one step darker
+  everywhere the shared tokens are used. This landed with the Calendar details
+  panel commit (`3ae8479b7`, P006's log) and is recorded here because the tokens
+  are
+  shared.
+
+## 2026-10-08 — Two scoring tokens for numerals on the feature green
+
+A shared token change for the shot screen's hole strip (P011's log has the
+screen). Not yet reviewed by the owner.
+
+- **`--ch-score-under-on-green`** (`styles/tokens.css`): a bare under-par
+  numeral on the feature green, lifted so it
+  holds 4.5:1 on green-900 and on a played chip's faint ivory wash (the same red
+  the qualifiers board uses for its
+  to-par text). **`--ch-score-under-on-ivory`**: the same numeral on an ivory
+  chip that sits on the green. Both
+  surfaces stay the same at night, so neither is redefined in the dark block.
+  Red still means under par only (D-42).
+
+## 2026-10-08 — The Ask sheet's @ picker offers the stats alone
+
+- `styles/shell.css`. The composer's mention key is now named "Mention a player
+  or stat" (P013 changelog, the cmdk
+  picker), so the Ask sheet's rule that hides it (the sheet has no roster to
+  mention from) follows the new name.
+- `shell/AskSheetBody.tsx`. The sheet passes `roster={false}`: typing `@` in it
+  opens the picker with the stats
+  CoachHelm can read and no Players group, rather than "No active players" for a
+  team that has players (desktop showed
+  that line before; the phone opened no picker). The list is capped to the room
+  inside the sheet's panel, which clips
+  its overflow, so a short sheet never cuts it off.
+
+## 2026-10-08 — Phone: large titles collapse into the bar; flat More sheet
+
+From the owner's cardless, native-feeling phone pass. A shared shell change; no
+page's own files change. Not yet reviewed by the owner.
+
+- **Large titles** (`shell/large-title.tsx`, `shell/TopBar.tsx`,
+  `styles/shell.css`). A phone page that opens with its own large title no
+  longer names itself twice. While the large title is in view the bar's title is
+  hidden; once it scrolls up under the bar, the bar's title fades in over 180ms
+  (`--ch-dur-quick`, opacity and a 3px rise). It fades out again on the way back
+  down. Reduced motion and Animations off swap it at once. The large titles are
+  listed once, in `CH_LARGE_TITLES`: Roster, Recruiting, Qualifiers and My
+  qualifiers, CoachHelm, Team stats and Rounds, plus Settings, whose bar title
+  is now visible (`screens/settings/phone/SettingsPhone.tsx`) so it appears once
+  the large title tucks. A page can opt in with `data-ch-large-title`. A CSS
+  `:has()` on the same list hides the bar's title from the first paint of a
+  loaded page. Settings', Recruiting's, Roster's and Rounds' skeletons mark
+  their title block (`RosterSkeleton.tsx`, `RoundsSkeleton.tsx`); on the others
+  the bar shows its title while the skeleton is up and fades it out as the page
+  lands. One IntersectionObserver on the title marks the bar
+  `data-large-title="tucked"`. Pages without a large title keep their bar title:
+  Messages, Calendar (its month is content), Round, Qualifier, Player stats and
+  Classes. The green hero's bar is unchanged. The bar's title stays in the
+  accessibility tree and remains the focus target.
+- **Scroll edge** (`styles/shell.css`). The bar casts a soft frame-green shade
+  onto the sheet below it only once content has scrolled under it
+  (`data-scrolled`). It is drawn on `::before`, because `::after` is the sheet's
+  lip. There is none on the hero's green.
+- **More sheet** (`styles/shell.css`). The sheet's lists and the "who you are"
+  row are native inset grouped rows: a rounded tint of the sheet with no shadow,
+  hairlines inset to the label, and plain icons instead of tiles. The current
+  page and the current team keep their green icon. The sheet itself is
+  unchanged.
+- Phone only (`max-width: 820px`); desktop markup and styles are untouched.
+  WebKit at 390px, 2026-10-08, with this CSS and the watcher injected into the
+  running preview: the collapse was checked on 8 screens and the no-title case
+  on 6, plus the More sheet open (coach, two-team coach and player), reduced
+  motion, and desktop at 1280.
+
+## 2026-10-08 — Native phone navigation: cached tabs, steady bars, push and pop
+
+From the native-feel audit (docs/clubhouse/NATIVE_FEEL_PERF_AUDIT_2026-10-08.md, P0-2, P0-3, P1-1, P1-2). Not yet reviewed by the owner.
+
+- **Router cache and prefetch** (`next.config.mjs`, `shell/use-prefetch-tabs.ts`). `experimental.staleTimes` keeps a visited dynamic page for 30s and a prefetched loading shell for 180s, so a revisited tab renders from memory. This is app-wide, Fairway included: a revisit can show data up to 30s old until a mutation refreshes it. The phone tab bar prefetches its tab routes once the shell is idle, but not with Data Saver on or offline.
+- **Steady bars** (`styles/shell.css`). The top bar and tab bar have their own view-transition names, with no animation. They no longer fade with the page, and the page's snapshots no longer draw over them.
+- **No skeleton flash** (`shell/RouteFrame.tsx`, `styles/base.css`, `styles/tokens.css`). A tab change onto a route skeleton keeps the old page up for 300ms (`--ch-dur-vt-hold`) and keeps the skeleton hidden for the same time. A page that arrives sooner replaces the old page directly. CH-1619's fade over the skeleton now runs only after the skeleton has shown and the crossfade has ended, so there is only ever one fade at a time. A hard load, reduced motion and Animations off still show the skeleton at once. This reverses F-37's 0ms delay, but only for in-app navigations.
+- **Push and pop** (`lib/nav-motion.ts`, `styles/shell.css`). On a phone, a drill-in (a More row, or a link into a detail) pushes: the new page slides in from the right edge on the smooth spring (462ms) while the old one draws back by 30%. A link up a level pops the same way in reverse. React commits a Back synchronously, without a view transition, so Back from a pushed page draws its own pop: a copy of the leaving page slides off to the right edge over the page beneath, which comes in from −30%. The pop is skipped after an iOS edge swipe, with reduced motion or Animations off, and on desktop. A tab change still crossfades.
+- **More leaves first** (`shell/TabBar.tsx`). A row that navigates hides the sheet and its scrim in the same tap, so neither appears in the page transition.
+- **Pushed screens pop on the spring** (`shell/PhoneScreen.tsx`, `shell/phone-chrome.tsx`; CH-1610, CH-1618). A pushed screen and the page beneath it now return on the smooth spring, not the 260ms ease-out. The pop had read as a 183ms jump; it now clears in about 350ms. The underlay shift stays at the owner-approved 24%.
+- **Hover card honors reduced motion** (`ui/Peek.tsx`, CH-1831). The desktop hover card's 4px rise now swaps in instantly under reduced motion or Animations off, like the phone peek already did.
+
+## 2026-10-08 — Premium pass backlog: one light, peeks, the Ask sheet, a dock
+
+Approved by the owner on 2026-10-08 (owner review; docs/clubhouse/PREMIUM_PASS_AUDIT.md). Each page's part is in its own log.
+
+- **The global light** (`lib/light.ts`, `lib/sun.ts`, `shell/light.tsx`). One sun for the whole app, from the time of day and the team's course location (CH-8320, held migration) or its time zone. It lights the frame and the materials, never data.
+- **Peeks** (`ui/Peek.tsx`, `ui/PlayerPeek.tsx`). Hover on desktop, hold on the phone, a player's card from data the page already has.
+- **The Ask sheet and the thumb dock** (`shell/AskSheet.tsx`, `shell/AskSheetBody.tsx`, `shell/Dock.tsx`), plus deep links (`lib/deep-link.ts`, `shell/DeepLinks.tsx`).
+- **Dynamic Type** (`lib/dynamic-type.ts`). Type scales with the text size setting.
+- **Dialogs and bars** (`lib/dialog-lifetime.ts`, `ui/Modal.tsx`, `ui/PhoneBar.tsx`). A bar can leave the heading to its page (one h1 per screen). The frame, sidebar, tab bar and top bar take the light, and pad for the tab bar only while it shows.
+- **Route errors** (`shell/ClubhouseRouteError.tsx`). The preview routes get the shell's error view; a stale chunk recovers through the existing recovery coordinator.
+
 ## 2026-10-08 — A switch that stretches, trackpads left alone, a steady bar
 
 Approved by the owner on 2026-10-08 (the shell's part is in P001's log).

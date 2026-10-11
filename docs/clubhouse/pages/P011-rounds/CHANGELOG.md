@@ -1,5 +1,393 @@
 # P011 — Rounds: changelog
 
+## 2026-10-11 — Review motion on transform; the depth from tokens
+
+Presentation only (no contract change):
+
+- The review's running-score card and the library's season-chart card sit on a
+  still, full-width track and move along it by
+  `translate` in container units, so they glide without relayout and the track
+  never overflows the chart.
+- Putts a hole: each column scales up from its foot (`--ch-rz-p`); first putts
+  by length: each bar slides in from the left. Both
+  glide on transform. The strokes-gained bars stay sized inline and no longer
+  glide (their width is what the review's tests read);
+  the scoring distribution keeps its own slide.
+- Depth: the stage and hero use `--ch-elevation-feature`, the scrub card
+  `--ch-elevation-overlay`, marks `--ch-elevation-mark`,
+  `-mark-warn` and `-mark-ink`, and the figures row `--ch-elevation-plate`
+  (shared entry in `docs/clubhouse/CHANGELOG.md`).
+
+## 2026-10-10 — Rounds library and new round, more premium
+
+```text
+Design package: owner direction "premium polish across the whole app"
+PR/commit: agent/clubhouse-premium-backlog
+Contract IDs: none (presentation only; no new codes, no changed copy)
+Actions: none changed
+Data impact: none
+Held items: none
+```
+
+### Changed (the library, desktop and phone)
+
+- Season scoring: "Every round vs par" sits on the same deep-green stage as the
+  review's pictures (desktop; flat on the page on the
+  phone, which keeps its one green card). Bars are gradient fills (red under
+  par, ivory over), the average is a gold dashed line with
+  its chip, a qualifier a gold outline. The bars rise from the par line the
+  first time the chart is scrolled into view; move across it
+  (or touch it) for a card with the round's date, kind, score and score against
+  par. The title and the colour key share one line.
+- The average is the page's largest figure with a short gold rule; the Best,
+  Putts and GIR figures keep their drawings with deeper
+  fills (a gold ring on the best round, a gold tick at two putts a green), and a
+  caption wraps to a second line before it is cut.
+- Heads (in progress, season scoring, more unfinished, each month) carry the
+  short gold rule. A month shows its trend as one small bar
+  a round beside its count, average and low.
+- Round rows are a ledger: a flush date with a gold hairline, Out, In and Tot as
+  a small hung board (the review's scorecard in
+  miniature, the total on a gold plate), gradient meters (putts in gold), and a
+  flush to-par with its red ring kept under par.
+- The round in progress: the to-par through the holes is a figure; the hole
+  board has a gold hairline.
+
+### Changed (new round)
+
+- The green band is lighter on the desktop (title left, steps right) and the
+  steps are a numbered stepper with a gold-ringed current
+  step; a gold hairline closes the band.
+- The scorecard is two hung boards, Out and In, each with its par and yardage
+  total; hole numbers are debossed, par keys and the
+  yardage sit on ivory plates, an edited hole's number turns gold. The whole
+  new-round page now fits one desktop screen. On the phone
+  the nines stack under their own heads.
+- The course band has the gold hairline; the open qualifier has a gold-ringed
+  medal and a raised Play; the course picker's tiles are
+  ivory with a gold hairline and turn green under the pointer, with the chevron
+  nudging.
+
+### Notes
+
+- Every duration is a motion token, so Animations off and reduced motion make
+  each of these instant; the chart's per-bar delay is zeroed
+  for reduced motion. No behaviour, data, copy or accessible name changed.
+- Added `MonthSpark` and the chart stage to `screens/rounds/parts.tsx`;
+  `HoleConfig` wraps each nine in a labelled group (`Out`, `In`).
+
+## 2026-10-10 — Tap in on the putting screen
+
+```text
+Design package: owner direction "tap in in the shot tracking, on the green, hidden somewhere"; no owner board, draft in docs/clubhouse/phone/rounds.md ("Tap in on the phone")
+PR/commit: agent/golf-tap-in
+Contract IDs: CH-11913, CH-11710 (new)
+Actions: none changed (the shot and hole-out writes are the engine's own)
+Data impact: none (no migration). A tap in is a holed putt: result hole, putt_made true, its putt length in feet
+Held items: none
+```
+
+- On a putt, before a result is picked, a quiet "Tap in" sits under the putt
+  result with a caption naming what it
+  writes and the score: one holed putt from where the ball lies within 2 ft, or
+  the putt on screen left at 1 ft and
+  the holed 1 ft putt. One tap records it through the same path as Hole out
+  (`useShotTracking.handleTapIn`, shared
+  with the Fairway screen), and the hole saves and moves on as usual.
+- A tap in is a real stroke and putt (Rules of Golf 3.3c; concessions are match
+  play only, 3.2b), so score, putts and
+  strokes gained count it like any holed putt. Undo lifts one stroke at a time.
+- Medium on the tap, success once the hole's save lands (D-70).
+## 2026-10-10 — Shotgun start: choose the starting hole
+
+```text
+Design package: owner request "Shotgun start - select which hole they start on"
+PR/commit: agent/agent-a2f230fc2a2574d84 (based on agent/clubhouse-premium-backlog)
+Contract IDs: 110115 (new)
+Actions: none new (start(form) and savePartialRound carry `startHole`)
+Data impact: golf_rounds.draft_data.startHole on every autosave; no column, no migration
+Held items: none
+```
+
+- Round details gains a quiet "Starting hole" select (the shared `ui/Select`),
+  once the scorecard is in. It lists the
+  holes the round plays by the card's numbers (10 to 18 on a back nine) and
+  defaults to the first. The dock adds
+  "· Starts on hole N" only when the start is not the first hole.
+- Only the play order changes. Holes keep their numbers, pars and order on the
+  strip, the scorecard and Round complete
+  (Out/In and Front · Back stay by hole number). A round started on 6 plays 6 to
+  18, then 1 to 5, and finishes after
+  the 18th hole played. A 9-hole round wraps inside its nine.
+- The strip lets the player go back to holes already played in this round's
+  order, and not ahead to holes 1 to 5
+  before the round wraps to them. "Back to hole" on Round complete names the
+  hole the round ended on.
+- The unfinished card's "Continue at hole N" follows the play order (a round
+  started on 6 with 6 to 18 in continues at
+  hole 1).
+
+## 2026-10-10 — Micro motion on the review
+
+The running-score line draws once the first time its stage is seen; the scrub
+card fades and the hovered dot lifts; a picked hole's shots
+draw in the order they were hit and its reading settles in; strokes gained, putt
+columns and the first-putt bars glide to a new
+length; the costliest-hole rows press and warm. All from motion tokens (instant
+with Animations off or reduced motion). The zones come
+from the shared `ui/Zone.tsx`.
+
+## 2026-10-09 — The round review, more premium
+
+```text
+Design package: owner direction "make it more premium"
+PR/commit: agent/clubhouse-premium-backlog
+Contract IDs: none (presentation only)
+Actions: none changed
+Data impact: none
+Held items: none
+```
+
+- The running score to par sits on a deep-green stage with a glowing line, mint
+  and gold washes against par, and a
+  scrubber: move across it for a card with the hole, its score and the running
+  total; click a hole to open its shots.
+- The picked hole's shots are drawn on a matching stage (arcs in mint for the
+  fairway and green, gold for rough and
+  sand, a red pin flag).
+- The bands carry depth: a gradient and a gold rule on top, a gold-ringed
+  number, a short gold rule under each title,
+  and the reading in a soft plate with a gradient figure. The scorecard zone's
+  reading follows the picked hole.
+- Strokes gained bars, fairway and green marks, putt columns and the first-putt
+  bars are gradient fills with soft
+  shadows; marks grow slightly under the pointer. The figures row has a gold
+  hairline and green numerals.
+- The left column holds in view while a band's pictures scroll.
+
+## 2026-10-09 — The round review as zones, with insights drawn from the round
+
+```text
+Design package: owner direction "redesign round review to be really nice and good looking like stats, cool insights and visuals"
+PR/commit: agent/clubhouse-premium-backlog
+Contract IDs: CH-11203, CH-11204, CH-11205, CH-11217, CH-11305, CH-11306, CH-11313 (no new codes)
+Actions: none changed
+Data impact: none (no migration). Every figure is derived from the holes and shots the review already loads.
+Held items: none
+```
+
+### Changed (the review, desktop and phone)
+
+- The review is six zones under gold rules with an alternating tint, in the same
+  style as the player stats page: what the
+  area is and one reading on the left, the picture that fits it on the right.
+  The hero and the five figures stay.
+- The hero gains one line on what the round was, from the figures: the leg that
+  carried it and the one that gave strokes
+  back ("Approach gained +1.3, putting gave back 0.9"), else its birdies and
+  doubles.
+- The round: the running score to par as a line (rising when strokes are gained
+  on par, falling when given back, the
+  front and back nine labelled, the costliest hole marked) with each hole's
+  strokes against par as a column under it, and
+  the scoring distribution.
+- Where the strokes went: the four strokes-gained legs on one scale, and the
+  holes that cost the most, each opening on
+  the scorecard with its shots.
+- Tee to green: a mark a hole for fairways and greens in regulation, which side
+  fairways were missed, and how close
+  approaches finished (average and closest, in feet).
+- Putting: the putts on every hole as columns (one putt green, three or more
+  gold), the one, two and three-putt split,
+  and the first putts by length with how many dropped.
+- Scorecard and shots: the scorecard as before; the picked hole now draws its
+  shots as arcs along the hole from tee to
+  pin, each coloured by where it finished, the penalty and the putts marked,
+  above the shot list.
+- In words: the recap and the player's notes.
+- On the phone the zones stack and the pictures' words are set larger; the
+  scorecard keeps its sideways scroll.
+
+## 2026-10-08 — the shot screen's field is centred
+
+- Owner: "center this, way too much white space". The drawn hole, its readout
+  and the shot log now sit centred in the green field between the hole strip and
+  the entry sheet, which stays on the dock. The tree band drawn under the log is
+  gone, and the drawing's top and bottom dissolve into the field green, so the
+  hole has no visible edge. WebKit 390 × 844: approach, putt and holed states.
+
+## 2026-10-08 — The shot screen toward board 3: chip strip, a save line by the readout, the sheet on the dock
+
+Toward the owner's phone concept "3 · On the course, glove on" (called "native,
+premium, modern"). Presentation only:
+the shot engine (`useShotTracking`, its save, resume, undo and checkpoint logic)
+is untouched. Phone (640px container
+and under) unless noted. Not yet reviewed by the owner; no screenshots were
+taken in this change (no dev server).
+
+```text
+Design package: owner concept board 3 (On the course, glove on)
+PR/commit: agent/track-polish
+Contract IDs: CH-11805, CH-11901
+Actions: none added or removed
+Data impact: none
+Held items: none
+```
+
+### Changed (shot screen, board 3)
+
+- **Hole strip (CH-11805, `track/parts.tsx` `TrackStrip`,
+  `styles/rounds-track.css`):** one row of compact chips
+  instead of two-line tiles. A played hole shows its score as a bare numeral
+  (red only under par, D-42, on the new
+  `--ch-score-under-on-green` / `--ch-score-under-on-ivory` tokens); the current
+  hole is lit ivory with its number (or
+  its score when looking back at a finished hole); an unplayed hole is a
+  hairline outline with a muted number. Each
+  chip (36 x 30) is drawn inside a 44 x 44 hit area; 18 holes scroll sideways
+  and the strip brings the current hole to
+  the middle (at once on first paint, eased after, instant with reduced motion).
+  Thru and to par stay at the end, on
+  one line. Desktop keeps its tiles.
+- **Names (CH-11805, all widths):** every chip is named by hole, score, to par
+  and whether it is current: "Hole 2, 6,
+  2 over", "Hole 3, 2, 1 under", "Hole 1, 4, even", "Hole 4, current", "Hole 6"
+  (was "Go to hole 1, 4 strokes" and
+  "Hole 2, current hole"). Buttons and marks keep their roles.
+- **Save line (CH-11901, `track/RoundTracking.tsx`):** moved from a pill under
+  the top bar to a quiet line beside the
+  distance readout (and beside the holed score), as on the board's "Saved on
+  this phone". The words and the states are
+  the engine's, unchanged. New: "Round saved" now holds after the engine's
+  two-second flash for as long as the shots
+  on screen are exactly the ones the server acknowledged (same hole, same shot
+  list); a new shot, an edit, an undo or
+  a hole change drops it until the next acknowledgement. While a holed hole is
+  being saved (CH-11402) or after that
+  save failed (CH-11003, "kept on this device") the line never says "Round
+  saved". Nothing is ever said before it is
+  true, and nothing at all when the device copy of a shot failed. On the desktop
+  the line sits under the readout.
+- **The sheet on the dock (`styles/rounds-track.css`):** the entry card no
+  longer floats over an empty band. The
+  hero takes the slack instead, so the card sits directly on the Undo / Penalty
+  / Next shot dock in every state
+  (before and after a result, putting, the holed review). The drawn hole keeps
+  its size at the top, so picking a
+  result grows the card upward and nothing above it moves; below the shot log
+  the hole's dark rough carries on with a
+  few trees at the edges and settles into the field green where the card begins.
+- **Preview:**
+  `/clubhouse-preview/track?state=saved | phone | saving | retrying` fake the
+  round's save for the line's
+  states.
+
+### Why (shot screen, board 3)
+
+- The owner's board puts the round's progress in one quiet row, the persistence
+  signal by the number the golfer is
+  reading, and the entry in one ivory sheet sitting on the dock; the old screen
+  had bulky tiles, a pill at the top and
+  a sheet that floated until a result was chosen.
+
+### Verification (shot screen, board 3)
+
+- `round-tracking.test` (CH-11805: chip names, under-par marking, current and
+  unplayed chips) and
+  `round-save-status.test` (CH-11901: saving, retrying, held on the phone,
+  placement in the hero, "Round saved" held
+  past the engine's two seconds and dropped by an undo, never carried over to a
+  new unanswered shot); and
+  `round-tracking.test` CH-11901 (no "Round saved" while the holed hole saves or
+  after it failed).
+- Docs: the phone tracking notes (`docs/clubhouse/phone/rounds.md`), DESIGN and
+  CONTRACT prose and the catalog rows
+  for CH-11805 and CH-11901.
+- Not verified: rendering on a phone or in a browser (no dev server in this
+  change); screenshots pending.
+
+## 2026-10-08 — Setup on the phone without cards
+
+Owner direction (2026-10-08): the card is no longer the default unit of layout
+on the phone. Phone only (820px and
+under); the desktop setup is unchanged.
+
+- **Sections, not cards:** Course, Round details and Scorecard are sections on
+  the canvas, each under the Ledger's
+  double rule with a 19px heading, its fields and rows flush below, and air
+  between them. Everything sits on one 20px
+  gutter, the green band's text included.
+- **The course:** before a pick, "Choose a course" is the section's heading over
+  its line and Browse courses (the
+  dashed icon tile is gone). Once picked, the course name is the heading on the
+  canvas (no second green band under the
+  setup band), the place and the tee's facts under it, and Change course as the
+  section's action on the heading's line.
+- **Open qualifier:** one row between hairlines with its Play, tinting under the
+  finger like a Ledger row.
+- **Rows on seams:** the qualifier choices (radio, name, rounds), the course
+  list and the tees in the picker sheet,
+  and Add a course. The figure strip over the scorecard sits between two
+  hairlines instead of in a well. Segmented
+  controls, the date field, the par keys and the yardage fields keep their
+  material.
+- **Waiting matches loaded:** before a course (CH-11309), while the holes load
+  (CH-11405) and when they didn't
+  (CH-11210) the scorecard shows its heading; while loading also its figure
+  strip and ghost rows at the loaded rows'
+  52px (`ScorecardHead`, `.ch-rsu-ph`, phone only).
+- **The start dock** is the screen's one action bar: a solid toolbar across the
+  foot with a hairline edge, no blur, its
+  padding carrying the home-indicator inset (the tab bar is away on this
+  screen).
+
+## 2026-10-08 — Premium pass (backlog)
+
+- **Full screen on the phone (D1):** the shot screen and setup call
+  `usePhoneImmersive` (the shell's bar goes inert) and hide the shell's top bar and
+  bell while they are up (`.ch-root:has(.ch-rt-q|.ch-rsu)`, so the server's first
+  paint is already full screen). The live `/golf/dashboard/rounds/new` route renders
+  the same `RoundSetup` and `RoundTracking`. One h1 per screen (D11): the shot
+  screen's is the course and hole, setup's names the screen, the phone library and
+  review leave it to the bar.
+- **On the course (owner board 3):** the shot screen in track mode on the phone:
+  deep green full bleed; Exit, the round and Card in glass pills; the hole strip
+  as plates; the drawn hole as the hero (solid line for each played shot, dashed to
+  the pin, numbered stops) with "Hole N / Par · yds" and "Shot N · kind / distance /
+  yards to the pin" set on it; the one-line shot log; one ivory entry card with the
+  real fields; Undo, Penalty and a big Next shot on the green. Every rule is
+  `useShotTracking`'s and `shot-entry-rules`' (undo asks first, D-70; plausibility;
+  the 15-stroke note; putting details; the miss grids). Desktop keeps its layout
+  with the same drawn hole.
+- **Course view (board 3b):** tapping the hole opens it full screen (a panel on
+  the desktop): the hole top to bottom with 50/100/150 rings from the pin scaled
+  from the hole's yardage, each shot numbered with its club and distance, and a
+  sheet of this hole's shots. ‹ › look at other holes (the round screen's finished
+  holes' shots; view only, never the scored hole). No GPS, satellite or course
+  geometry; "Your last 3" and "Team average" are left out (not loaded). The drawn
+  hole's geometry is `track/hole-geometry.ts`.
+- **The scorecard as a hung board (A2):** each nine a field-green board, hole
+  numbers debossed, figures on ivory plates, the Score row the largest numerals
+  (D8), Tot past a gutter, the whole cell the target (D9); on the phone a sticky
+  label column and an edge fade (D10). Missed at 3:1, N/A as "—" (D12).
+- **Round review:** the recap is a passage under a rule labelled "Written by
+  CoachHelm from N holes" (no Sparkles, D14) on both widths; any clause its own
+  strokes-gained or putts figures contradict is cut before it shows
+  (`recap-check.ts`, D13; no new AI call). "Select a hole" on the desktop (D17).
+- **One sun (A1):** the green feature cards (in progress, the review's phone hero,
+  the setup band) and the shot screen's field take the shell's global light
+  (`--ch-light-*`): sky from the sun's side, a sun-side rim, a leaning cast shadow.
+  Never on figures.
+- **Library and posting:** a month's low is an 18-hole figure and nine-hole rows
+  say so (D2); the ribbon draws under par red, over par at 3:1, Even in the legend,
+  a qualifier as a gilt outline, with an honest caption and ink-500 labels
+  (D3–D5); played holes on the round card show the number over the score (D15); the
+  best round keeps its whole course name (D16); the desktop score box keeps one
+  width (D18). Submitting, posted and didn't-submit are a modal dialog over a 0.96
+  green with an opaque card and focus on the title (D6, D7). The spinner stops
+  under Animations off (D20); the bar's blur has its prefix (D21).
+- Not here: B3 (D-70 stands); 44pt shared buttons and red failure titles (shell).
+
 ## 2026-10-08 — States and native feel
 
 The states audit's Rounds findings and the owner's native-feel pass, verified in
@@ -184,6 +572,7 @@ accessible labels valid while the popup is waiting. Catalog IDs and course
 selection behavior are unchanged. See [popup evidence](../../POPUP_AUDIT.md).
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Whole-app release audit
 
 Reconciled page purpose, design acceptance, contract status, wiring and

@@ -12,7 +12,7 @@ import { isNativeApp } from '@/lib/utils/capacitor';
 import { AuthFrame } from '../auth/AuthFrame';
 import { SceneMount } from '../auth/SceneMount';
 import { isDarkSky } from '../auth/scene-sky';
-import { useLocalHour } from '../auth/use-hour';
+import { useLocalHour, useSkyHour } from '../auth/use-hour';
 import { dropHandoffCurtain } from '../../lib/handoff';
 import { useFlow, type Draft } from './flow';
 import { FULL_STEPS, codeFromSearch, railOf, zoomOf, type OnboardStep } from './logic';
@@ -101,8 +101,11 @@ export function Onboard({ start = 'intro', seed = {}, preview = false, fixedHour
   const router = useRouter();
   const phone = useChPhone();
   const reduced = useChReducedMotion();
+  // The greeting reads the clock; the sky (and the type over it) reads the sun where the viewer is (P015-A1).
   const localHour = useLocalHour();
   const hour = fixedHour ?? localHour;
+  const sky = useSkyHour();
+  const skyHour = fixedHour ?? sky;
   const [now] = useState(() => new Date());
   const f = useFlow(start, seed, !preview);
   const [phase, setPhase] = useState<Phase>(null);
@@ -182,7 +185,7 @@ export function Onboard({ start = 'intro', seed = {}, preview = false, fixedHour
   const { next: flowNext } = f;
   const next = useCallback((patch?: Partial<Draft>, to?: OnboardStep) => flowNext(patch, to, step), [flowNext, step]);
   const full = FULL_STEPS.has(step);
-  const dark = full && hour !== null && isDarkSky(hour);
+  const dark = full && skyHour !== null && isDarkSky(skyHour);
   const issued = (step === 'done' || step === 'staffdone' || step === 'sent') && f.d.joinedTeam !== false;
   const request = f.path === 'request';
   const rail = railOf(f.path, step);

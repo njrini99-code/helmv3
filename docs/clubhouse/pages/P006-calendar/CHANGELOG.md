@@ -1,5 +1,154 @@
 # P006 — Calendar: changelog
 
+## 2026-10-10 — RSVP only when the coach requires it
+
+Owner: do not always require RSVPs unless the coach explicitly toggles it.
+
+- The editor has a Require RSVP switch under the invite list, off for a new
+  event and seeded from the event on edit or Duplicate. It is sent as
+  `requiresRsvp` on create, series create and edit; a series edit sends it only
+  when the coach changed it (`editRecurringEvent` now accepts it). The receipt
+  gains an RSVP row (Required / Not asked).
+- Copy follows the switch: the header, footer and Published toast promise a
+  notification only when RSVP is on, and the cancel question says no one is
+  notified for an event without it (the 2026-10-08 notification gates).
+- An event without RSVP shows no reply counts, badges, player reply control,
+  Needs attention row, peek count or Nudge; the coach's panel lists it as
+  Invited with the player count, and attendance shows Not marked instead of a
+  reply. `ChCalEvent.rsvpRequired` carries the flag (null reads as off).
+- The first-run line says players reply when you require an RSVP.
+
+## 2026-10-08 — the details panel: a plate for every event type, darker grey text, smooth scroll
+
+Owner review of the column beside the week ("black on ivory", "rough to
+scroll"):
+
+- Every panel opens on a lit plate in the colour its block has on the grid, in
+  ivory ink: green for practice, forest for competition, slate for a class or
+  travel, ink for a meeting or other, champagne for busy time, amber for an
+  overlap (`ch-in__plate`, `data-tone`; `inspector.tsx`, `extras.tsx`). A class
+  names the course on the plate with its code and the player.
+- The secondary and tertiary text tokens are one step darker everywhere in the
+  light theme (`--ch-text-secondary` ink-700, `--ch-text-tertiary` ink-600;
+  tokens.css); the dark theme gets a step more contrast the same way.
+- The panel scrolls with Lenis like the canvas (`usePanelSmoothScroll` in
+  `lib/smooth-scroll.ts`): same duration and curve, a trackpad left native, and
+  `overscroll-behavior: contain` so its ends don't drag the page behind it.
+
+## 2026-10-08 — the day panel gets colour
+
+Owner review: the panel beside the week (nothing selected) was black text on
+ivory. Today is now a lit green plate (the day, the count, the next event on a
+translucent chip), what needs attention sits on raised tiles, and each source
+carries the colour it has on the grid: green for team events, slate for
+classes, champagne for your own busy time. `inspector.tsx` (`Summary`, `Fact`)
+and `calendar.css`; the plate's title outranks the canopy's `h2` ink.
+
+## 2026-10-08 — the class block and card; the week in the day's light
+
+Owner review, same session:
+
+- A class block's title is "Class", set apart from the words under it: the
+  first player, then "N more" (or "Holden +3" on one line). Nothing is cut
+  mid-word.
+- The slate deepens with how many are in class (2–3, 4–6, 7 and up; the
+  deepest is filled slate with light text), so the full hours read at a glance.
+- A press opens the class card (`class-group.tsx`) instead of the generic menu,
+  whose rows overlapped on long registrar titles: a slate band with the day,
+  the slot and the count, then a row a player (avatar, name, course code in
+  slate and the course name). A row opens that class in the inspector.
+- The week sits in the global light: a new derived token, `--ch-light-surface`
+  (tokens.css, both themes), washes the grid and the pinned days from the sun's
+  side.
+
+## 2026-10-08 — players' classes fold into one block per slot
+
+Owner review on a coach whose whole roster's class schedules are in: the Week
+and
+Day grids drew every class as its own block, cascading up to eight deep into
+one-letter slivers that also painted over the pinned day header. Now:
+
+- Classes that start in the same half hour are one block (`groupClasses` in
+  `model.ts`); a class alone in its slot joins the group it overlaps most, and
+  groups that only brush (half an hour or less) stack at full width.
+- The block reads the first player and "N more" (whole words, nothing cut off);
+  a press opens the list of every class in it (`ui/Menu`), and picking one opens
+  it in the inspector as before. A one-player filter still shows that player's
+  classes one by one.
+- Classes take the info slate (fill, text, edge and legend dot) instead of ivory
+  on ivory; no side stripe. The legend reads "Classes", not "Class · busy".
+- The grid isolates its stacking, so no block paints over the pinned days.
+
+Covered in `calendar-premium.test.ts`. Seen in Safari at 1440 on a live coach
+account (read only).
+
+## 2026-10-08 — the page opens at its top (P006-B1)
+
+Owner call: the Calendar opens at the top of the page, like every other page.
+The Week and Day grids no longer scroll to now on first paint (at 10 PM that
+parked the canvas on the empty bottom of the grid). T and Today still bring now,
+or the next event, about 30% down; outside 6 AM to 9 PM they bring the next
+timed event in view instead of the grid's empty end. `useOpenOnNow` in
+`Calendar.tsx`, `focusHour` in `model.ts`; covered in
+`calendar-premium.test.ts`.
+
+## 2026-10-08 — phone: Month on react-day-picker
+
+The phone's Month grid (`screens/calendar/month.tsx`, out of
+`CalendarPhone.tsx`) is drawn by `react-day-picker` in Clubhouse markup and
+classes: the same weeks (Sunday first, whole weeks, four to six rows, the other
+months' days lighter), the same dots (a dark one for a competition), today the
+green disc and the chosen day the green ring, and a day still opens its Day view
+with a selection tick. Dates stay the team-timezone calendar dates: each crosses
+into the grid at local noon and comes back by its local fields, so the browser's
+zone never moves a day; data loading is unchanged.
+
+New: the grid is an ARIA grid with one day in the tab order, so the arrows walk
+the days (and cross into the next or previous month), Page Up and Page Down turn
+the month, and Home and End reach the week's ends; inside the grid the arrows no
+longer also step the Calendar's month. A sideways swipe across the grid turns
+the month, and so does the keyboard inside it, through the Calendar's own step
+(`step`, one tick), as its arrow keys still do from outside the grid: a second
+turn while the next window loads steps on from the month it is headed to
+(60302). A longer jump (Shift with Page Up or Down, a year) goes straight to
+that month. Day and List are unchanged. Not verified on a device: the swipe
+against WebKit's edge gestures.
+
+## 2026-10-08 — the player peek (P003-C1)
+
+The shared PlayerPeek: for the coach, each attendee row in the event panel peeks at the player (a hold on the phone, a rest of the pointer on desktop), from the roster the Calendar already loaded. No new reads.
+
+## 2026-10-08 — premium pass: findings D2, D3, D4, D6
+
+- D2: a week or day block on its own wraps its title to the lines its height leaves above the time, up to three (`--ch-ev-lines`, `.ch-ev--wrap`), so "Bus to Pine…" reads in full. A block with room for only one line keeps the plain cut-off.
+- D3: a new event opens on the first two free hours for everyone invited (`seedWindow`): after now today, from 9 AM on another day, and on the first free window when the day's free time is past. It no longer opens on daily practice with the whole team Busy.
+- D4: Find a time's proposed band is an outline over a faint wash, and a clashing block sits above it in amber, so you can see the clash in the lanes, not only in the list.
+- D6: Agenda keeps the arrows' place in the toolbar, hidden and inert, so the toolbar doesn't shift by about 80px when you switch views.
+
+## 2026-10-08 — premium pass: peek an event (P006-C3)
+
+An event peeks where it is listed, through the shared peek (`ui/Peek.tsx`): a hold on a phone agenda row, a rest of the pointer (or keyboard focus) on a desktop week block. The card (`screens/calendar/peek.tsx`) shows kind, title, day and time, and place; for the coach, how many are going, how many can't, and who hasn't replied. Its actions are Open; for the coach, Nudge the people who haven't replied, which opens Messages prefilled with them and a short draft that the coach sends; and, for a qualifier, tournament or trip with a place, Directions as a plain Apple Maps link. Classes and busy time don't peek; a block that is being dragged doesn't either. Not built: answering the invite from the peek.
+
+## 2026-10-08 — premium pass: daylight on the grid (P006-A1)
+
+The Week and Day grids carry the day's light from the global light's sun at the team's place (`daylightOn` over `sunTimes`, `useLightPlace`): a night wash before sunrise and after sunset, a warm band through golden hour, and "Sunset 6:31" on the last column shown. Washes sit on the frame under the events and never tint an event; dark mode has its own night; print drops them.
+
+## 2026-10-08 — premium pass: drag to reschedule, with Undo (P006-B3)
+
+On desktop a coach picks up one of their events and drops it on another day and time, in 15-minute detents (a selection tick per detent). The block held steps back, a dashed ghost shows where it lands, and an invitee's event or class there lights amber while it is held (`clashesAt`). Alt+↑/↓ on a focused block moves it 15 minutes. A drop shows "Moved to 4:00 PM" with Undo for the done toast's life (4 s); the move is optimistic and nothing is written until the window closes, so invitees are notified only once it stands, and an undone move never reaches anyone. Leaving the page writes a waiting move at once. A failed write puts the block back (CH-6015); offline nothing is held (CH-1903). Series, multi-day, all-day, class and busy blocks don't drag (a series still asks "this event or all" in the editor). Not built: changing length by dragging the bottom edge. The notification timing needed no server change.
+
+## 2026-10-08 — premium pass: swipe through days and weeks on the phone (P006-B2, D5)
+
+The phone Day view's agenda pages left and right with the phone's own momentum (scroll-snap, one day a page; `DayPager` in `CalendarPhone.tsx`), with one selection tick when a page settles (`scrollend`, or the scroll going quiet where WebKit lacks it). Past Saturday the strip turns to the next week. The neighbouring days are rendered for the swipe, clipped to the day's height, inert and hidden from assistive tech; a day outside the loaded window shows only its heading until its week arrives. A swipe doesn't also slide the agenda (CH-6606 still slides for a tap). ‹ › Previous week and Next week sit at the day heading's end, the same reach for VoiceOver and the keyboard (D5). They sit there rather than at the strip's ends so the seven day keys keep their width.
+
+## 2026-10-08 — premium pass: coach-only meetings (D2-8, D7)
+
+A meeting with no invitees is the coach's own (a parent call, a staff meeting): the Calendar loader leaves it out of a player's payload, and the player's Home leaves it out of Up next and Today. Only once the invite list has loaded; when replies fail to load, nothing is hidden. No schema change.
+
+## 2026-10-08 — premium pass: open on now (P006-B1, D1)
+
+The Week and Day grids open with the now line, or the next event when today is not on show, about 30% down the canvas, on first paint and on T or Today (`focusHour` in `model.ts`, `useOpenOnNow` in `Calendar.tsx`). Opening is instant; Today eases unless motion is reduced. Back and Forward keep the place RouteFrame restored, and stepping a week keeps the canvas where it is.
+
 ## 2026-10-08 — dark: Clubhouse at night
 
 Calendar follows GolfHelm's dark theme ("Clubhouse at night"). A tournament or qualifier block, the month's competition chip and the detail panel's next-up card keep their filled green with ivory type; practice blocks, agenda times and lane events take the light text green; the competition dot, the phone's now line and its competition dots lift to the light green so they hold on the dark ground; selection, today, travel, the class hatch and the coach's busy hatch are redrawn as ivory or champagne washes. Light mode is unchanged (every rule is scoped to `html[data-fw-theme='dark']`).

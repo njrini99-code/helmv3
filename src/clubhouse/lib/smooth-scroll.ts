@@ -135,3 +135,61 @@ export function useCanvasSmoothScroll(): void {
     };
   }, [reduced]);
 }
+
+/**
+ * A panel that scrolls on its own (the Calendar's details column) eases like the canvas does: the same duration and
+ * curve, a trackpad left native, and a nested scroller or open menu left alone. Pass the panel's ref.
+ */
+export function usePanelSmoothScroll(ref: { current: HTMLElement | null }, { duration = CH_SCROLL_DUR }: { duration?: number } = {}): void {
+  const reduced = useChReducedMotion();
+  useEffect(() => {
+    const wrapper = ref.current;
+    if (reduced || !wrapper) return;
+    const desk = window.matchMedia(DESK);
+    let lenis: Lenis | null = null;
+    let raf = 0;
+    let height = 0;
+    const start = () => {
+      if (lenis) return;
+      const fromTrackpad = chTrackpadGesture();
+      lenis = new Lenis({
+        wrapper,
+        content: wrapper,
+        duration,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        smoothWheel: true,
+        syncTouch: false,
+        wheelMultiplier: 1,
+        virtualScroll: ({ event }) => {
+          if (!(event instanceof WheelEvent) || !fromTrackpad(event)) return true;
+          if (lenis?.isScrolling === 'smooth') lenis.scrollTo(lenis.actualScroll, { immediate: true, force: true });
+          return false;
+        },
+        prevent: (node) => node !== wrapper && !!node.closest('[data-lenis-prevent], dialog, [role="dialog"], [role="menu"], [role="listbox"]'),
+      });
+      const loop = (time: number) => {
+        // Another panel (a class, an event) swaps in under the same wrapper: the limit follows its height.
+        if (wrapper.scrollHeight !== height) {
+          height = wrapper.scrollHeight;
+          lenis?.resize();
+        }
+        lenis?.raf(time);
+        raf = requestAnimationFrame(loop);
+      };
+      raf = requestAnimationFrame(loop);
+    };
+    const stop = () => {
+      cancelAnimationFrame(raf);
+      lenis?.destroy();
+      lenis = null;
+      height = 0;
+    };
+    const sync = () => (desk.matches ? start() : stop());
+    sync();
+    desk.addEventListener('change', sync);
+    return () => {
+      desk.removeEventListener('change', sync);
+      stop();
+    };
+  }, [ref, reduced, duration]);
+}

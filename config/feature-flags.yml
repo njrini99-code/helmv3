@@ -656,7 +656,7 @@ flags:
     expires_at: null
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: true
     kill_switch_behavior: null

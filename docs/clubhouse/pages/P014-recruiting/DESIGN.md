@@ -119,15 +119,45 @@ fails. Every other tap is silent.
 ## Desktop
 
 The header holds the title, one line ("Prospects you're following, from first
-look to commitment. Only coaches see this page.") and Add prospect. Under it the
-pipeline: four stages joined by a line, each a dot with its name, count and
-share of the list (largest remainder, so the shares always sum to 100). Below,
-two columns: the list (a search box and a sort above a table of Prospect with
-its monogram, Class, Hometown, Stage and Updated) and the open prospect's panel
-(name, class and hometown, the stage control, Edit, contact rows with Email and
-Call, notes, documents with Upload, and the added and updated dates). A narrow
-canvas (container under 860px) drops the panel beneath the list and narrows the
-columns. Add and Edit open a dialog; Delete asks in another.
+look to commitment."; "Only coaches see this page" moved to the first-run empty
+state, finding #6), the recruiting calendar line (CH-14808, below) and Add
+prospect. Under it the pipeline: four stages joined by a line, each a dot with
+its name and count (the "% of list" line is gone, finding #4); with next steps
+the head adds "1 visit this month · 1 decision due". Below, two columns: the list
+(a search box, placeholder "Search", and a sort above a table of Prospect with
+its monogram, Class, Hometown, Stage, Next step when the columns exist, and
+Updated) and the open prospect's panel (name, class and hometown, Edit and an
+overflow menu holding Delete prospect (finding #3), the stage control with the
+gilt Committed rule, contact rows with Email and Call, the next step, notes,
+documents with Upload, and the added and updated dates). A narrow canvas
+(container under 860px) drops the panel beneath the list and narrows the
+columns; with a Next step column, Class and Hometown move under the name below
+820px of list. Add and Edit open a dialog; Delete asks in another.
+
+### Premium pass (2026-10-08)
+
+- **Committed is a moment, once (B1, CH-14806).** Only a landed move to
+  Committed: a 1px gilt rule (`--ch-champagne-500`) under the stage draws left
+  to right over `--ch-dur-reveal` with `clip-path`, and the success haptic lands
+  at its `animationend` (the save's own success haptic is withheld for this one
+  move). The coin takes a gilt rim. Phone: the rule sits on the Stage row's
+  bottom seam and waits for the stage sheet to close. Reduced motion and
+  Animations off: final state and haptic at once. The rule stays, at rest, on
+  every committed prospect.
+- **Next step (C1, CH-14307).** A label and a day per prospect, behind the
+  columns of `supabase/migrations/20261008120000_golf_recruits_next_step.sql`.
+  Before that file is applied every next-step surface is hidden and never
+  written. "Due" is today, past, or within 14 days (the row plate); the head
+  counts visits dated this month and decisions dated by the end of this month.
+  Rules only: a label with "visit" is a visit; "decision", "commit" or
+  "deadline" a decision.
+- **Recruiting calendar (C2, CH-14808, CH-14807).** A quiet line from
+  `src/clubhouse/data/recruiting-calendar.ts` (NCAA D-I, D-II, D-III, NAIA and
+  NJCAA 2026-27, each entry with its source URL and bylaw, as of 2026-10-08).
+  Division from the team's organization (`organizations.division`, parsed
+  conservatively), else the coach's pick on this device; gender from
+  `golf_teams.gender`. No sourced period restricts phone or email, so the only
+  Email and Call note is Division I's June 15 start, from the class year.
 
 ## Phone
 
@@ -140,8 +170,12 @@ Its look is the Coach Home "Mobile clubhouse pass" board (owner, 2026-10-08:
 round 3, "fewer containers, one feature card"): the page opens on the engraved
 double rule with Recruiting in the bold condensed sans; the compact timeline
 sits between two hairlines; the prospects are rows on seams on the parchment.
-A prospect's Stage, Email and Call are keys drawn on the parchment, its parts
-open under the double rule, and a part with nothing yet is one row on a seam.
+A prospect's Stage is a full-width row (the most-changed control) with Email
+and Call as two smaller keys under it (finding #8, 2026-10-08); its parts open
+under the double rule, and a part with nothing yet is one row on a seam. The
+calendar line sits under the large title; a due next step is a small ruled plate
+under a row's class and town. The compact timeline's connectors run coin edge to
+coin edge (finding #9).
 No green feature card (nothing on the list outranks the rest), no white cards,
 no serif; the sheets keep their grouped forms.
 

@@ -16,6 +16,7 @@ import {
   searchGolfMessages,
 } from '@/app/golf/actions/messages';
 import { getGolfConversationFiles } from '@/app/golf/actions/message-attachments';
+import { canHideGolfConversations, hideGolfConversation } from '@/app/golf/actions/conversation-hide';
 import { getGolfConversationMute, setGolfConversationMute } from '@/app/golf/actions/message-mute';
 import { completeAnnouncementTask, createEnrichedAnnouncement, getAnnouncementDetail, getAnnouncementsWithMeta } from '@/app/golf/actions/announcements';
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
@@ -30,6 +31,7 @@ import { haptic } from '../../lib/haptics';
 import type { ChAttachmentRecovery, ChMessagesApi } from './MessagesView';
 import { MessagesView } from './MessagesScreen';
 import { DraftStore } from './drafts';
+import { onRoster, takePrefill } from './prefill';
 import { firstName, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
 const isGroup = (c: GolfConversationWithMeta) => {
@@ -59,6 +61,10 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const [drafts] = useState<Map<string, string>>(() => new DraftStore(data.viewerUserId));
   const [attachmentRecovery] = useState(() => new Map<string, ChAttachmentRecovery>());
   const [paramsDone, setParamsDone] = useState(false);
+  /** A prefilled message waiting in New message (prefill.ts): the recipients and the group's name. */
+  const [prefill, setPrefill] = useState<{ to: string[]; draft: string; title: string } | null>(null);
+  /** The prefilled draft lands in the composer of the conversation New message creates; the coach still presses Send. */
+  const pendingDraft = useRef<string | null>(null);
 
   const people = useMemo(() => new Map(data.directory.map((p) => [p.userId, p])), [data.directory]);
 
@@ -90,6 +96,19 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const reactions = useMessageReactions(selectedId ?? '', liveIds, data.viewerUserId);
   const { sendMessageWithAttachments, getPendingAttachmentSend, retryPendingAttachmentSend } = useMessageAttachments();
 
+  // "Delete conversation" is offered only once the database has the per-person hide (a held migration, HELD.md).
+  const [canHide, setCanHide] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void canHideGolfConversations().then(
+      (ok) => live && setCanHide(ok),
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, []);
+
   // Desktop opens the newest thread beside the rail without marking it read (the coach hasn't read it yet).
   useEffect(() => {
     if (loading || selectedId || !convs.length || !paramsDone) return;
@@ -106,9 +125,39 @@ export function Messages({ data }: { data: ChMessagesData }) {
     const conv = params.get('conversation');
     const player = params.get('player');
     const user = params.get('user');
+    // Read once: the entry is deleted as it is taken, so Back or a reload never brings the draft back.
+    const pre = takePrefill(params);
     handledParams.current = true;
-    setParamsDone(!conv && !player && !user);
-    if (conv) {
+    setParamsDone(!conv && !player && !user && !pre);
+    if (params.get('prefill')) router.replace('/golf/dashboard/messages', { scroll: false });
+    if (pre) {
+      // Only people on this team, with an account, are written to; anyone else is left out and the coach is told.
+      const userOf = (id: string) => data.directory.find((p) => p.playerId === id)?.userId;
+      const { kept, dropped } = onRoster(pre.players, (id) => !!userOf(id));
+      const to = kept.map((id) => userOf(id)!);
+      if (!to.length) {
+        toast({ tone: 'error', title: "Couldn’t open that conversation", body: 'Those players aren’t on your team, or haven’t set up their accounts yet.', code: 'CH-7001' });
+        return;
+      }
+      if (dropped.length) {
+        toast({
+          tone: 'error',
+          title: dropped.length === 1 ? 'One player was left out' : `${dropped.length} players were left out`,
+          body: 'They aren’t on your team, or haven’t set up their accounts yet. Everyone else is chosen.',
+          code: 'CH-7001',
+        });
+      }
+      chTrail('messages prefill');
+      const existing = to.length === 1 ? convs.find((c) => !c.group && c.memberIds[0] === to[0]) : undefined;
+      if (existing) {
+        // An unsent draft of the coach's own wins over the prefill.
+        if (pre.draft && !drafts.get(existing.id)) drafts.set(existing.id, pre.draft);
+        setSelectedId(existing.id);
+        return;
+      }
+      pendingDraft.current = pre.draft || null;
+      setPrefill({ to, draft: pre.draft, title: pre.title ?? '' });
+    } else if (conv) {
       setSelectedId(conv);
       router.replace('/golf/dashboard/messages', { scroll: false });
     } else if (player || user) {
@@ -176,6 +225,15 @@ export function Messages({ data }: { data: ChMessagesData }) {
     [delayedToast, toast, fail],
   );
 
+  const landDraft = useCallback(
+    (conversationId: string) => {
+      if (pendingDraft.current && !drafts.get(conversationId)) drafts.set(conversationId, pendingDraft.current);
+      pendingDraft.current = null;
+      setPrefill(null);
+    },
+    [drafts],
+  );
+
   const startDirect = useCallback(
     async (userId: string): Promise<boolean> => {
       const existing = convs.find((c) => !c.group && c.memberIds[0] === userId);
@@ -187,12 +245,13 @@ export function Messages({ data }: { data: ChMessagesData }) {
         chTrail('messages start direct');
         const res = await createGolfConversation([userId], data.teamId);
         if (!('conversationId' in res) || !res.conversationId) throw new Error('error' in res ? String(res.error) : 'Could not start the conversation');
+        landDraft(res.conversationId);
         await refetch();
         setSelectedId(res.conversationId);
         haptic('success');
       });
     },
-    [convs, data.teamId, refetch, attempt],
+    [convs, data.teamId, refetch, attempt, landDraft],
   );
 
   const createGroup = useCallback(
@@ -215,6 +274,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
             missed.push(coachId);
           }
         }
+        landDraft(res.conversationId);
         await refetch();
         setSelectedId(res.conversationId);
         haptic('success');
@@ -227,7 +287,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         }
       });
     },
-    [data.role, data.teamId, people, refetch, toast, attempt],
+    [data.role, data.teamId, people, refetch, toast, attempt, landDraft],
   );
 
   const [members, setMembers] = useState<ChMember[] | null>(null);
@@ -286,8 +346,13 @@ export function Messages({ data }: { data: ChMessagesData }) {
     const out = new Map<string, ChReaction[]>();
     for (const id of liveIds) {
       const groups = summarizeReactions(reactions.rows, id, data.viewerUserId)
-        .map((g) => ({ key: KEY_BY_EMOJI[g.emoji], count: g.count, mine: g.active }))
-        .filter((g): g is ChReaction => !!g.key);
+        .map((g) => ({
+          key: KEY_BY_EMOJI[g.emoji],
+          count: g.count,
+          mine: g.active,
+          userIds: [...new Set(reactions.rows.filter((r) => r.message_id === id && r.emoji === g.emoji).map((r) => r.user_id))],
+        }))
+        .filter((g): g is { key: ChReactionKey; count: number; mine: boolean; userIds: string[] } => !!g.key);
       if (groups.length) out.set(id, groups);
     }
     return out;
@@ -318,6 +383,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
           taskCount: a.task_count ?? 0,
           completedTaskCount: a.completed_task_count ?? 0,
           docCount: a.document_count ?? 0,
+          authorId: (a as { created_by?: string | null }).created_by ?? null,
         })),
       );
     } catch (err) {
@@ -449,6 +515,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
 
   const api: ChMessagesApi = {
     viewer: { userId: data.viewerUserId, role: data.role, name: data.viewerName },
+    signers: data.signers,
     timeZone: data.timeZone,
     now,
     teamName: data.teamName,
@@ -587,6 +654,19 @@ export function Messages({ data }: { data: ChMessagesData }) {
         await refetch();
       });
     },
+    deleteConversation: canHide
+      ? async () => {
+          if (!selectedId) return false;
+          return attempt('deleteConversation', { failed: "Couldn’t delete the conversation", hint: 'Try again in a moment.', code: 'CH-7011' }, async () => {
+            const res = await hideGolfConversation(selectedId);
+            if (!res.success) throw new Error(res.error);
+            haptic('success');
+            toast({ title: 'Conversation deleted' });
+            setSelectedId(null);
+            await refetch();
+          });
+        }
+      : null,
     addCandidates,
     addMember: (userId, name) =>
       attempt('addMember', { failed: `Couldn’t add ${firstName(name)}`, hint: 'Try again in a moment.', code: 'CH-7018' }, async () => {
@@ -602,8 +682,17 @@ export function Messages({ data }: { data: ChMessagesData }) {
     directory: data.directory,
     directoryError: data.directoryError,
     retryDirectory: () => router.refresh(),
-    startDirect,
+    startDirect: async (userId) => {
+      const existing = convs.find((c) => !c.group && c.memberIds[0] === userId);
+      if (existing) landDraft(existing.id);
+      return startDirect(userId);
+    },
     createGroup,
+    prefill,
+    clearPrefill: () => {
+      pendingDraft.current = null;
+      setPrefill(null);
+    },
 
     searchMessages,
     openHit: (h) => select(h.conversationId),

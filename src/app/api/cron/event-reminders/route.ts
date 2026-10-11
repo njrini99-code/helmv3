@@ -285,6 +285,9 @@ async function loadWindow(
       // privacy boundary, not a guarantee. Any future RSVP, backfill or
       // mark-present path turns "no recipients" into a leaked timetable.
       .neq('event_type', CLASS_EVENT_TYPE)
+      // Owner, 2026-10-08: RSVPs are off unless the coach turns them on, and players get no notification for an event
+      // that doesn't ask for replies, so an event without RSVPs gets no reminders either.
+      .eq('requires_rsvp', true)
       .order('id', { ascending: true })
       .range(from, to),
     undefined,

@@ -1,3 +1,4 @@
+import type { ChCalendarLine, ChDivision } from '../../data/recruiting-calendar';
 import type { ChDraftField, ChProspect, ChSort, ChStage } from '../../data/recruiting-shape';
 import type { ChRecruitingWrites } from './writes';
 
@@ -8,6 +9,21 @@ import type { ChRecruitingWrites } from './writes';
  */
 export interface RecCtx {
   writes: ChRecruitingWrites;
+  /** C1: the next-step columns exist. False hides the column, the panel field, the row plate, the sort and the head count. */
+  nextStep: boolean;
+  /** The next step can be edited: the columns exist and the writes store them (`ChRecruitingWrites.nextStepWrites`). */
+  nextStepEditable: boolean;
+  /** The sorts on offer (Next step due only with `nextStep`). */
+  sorts: ReadonlyArray<{ value: ChSort; label: string }>;
+  /** "2 visits this month · 1 decision due", or null. */
+  nextSummary: string | null;
+  /** C2: the recruiting-calendar line for today, the division it reads, and whether the team set it or the coach picks it here. */
+  calendar: { line: ChCalendarLine | null; division: ChDivision | null; fromTeam: boolean; setDivision: (d: ChDivision) => void };
+  /** A non-blocking hint for Email and Call (Division I's June 15 start), or null. */
+  contactHint: (p: ChProspect) => string | null;
+  /** B1: the one Committed moment waiting to play, for this prospect, until `endCommitBeat` consumes it. */
+  commitBeat: { id: string; n: number } | null;
+  endCommitBeat: (n: number) => void;
   prospects: ChProspect[];
   /** The rows after the stage filter, the search and the sort. */
   rows: ChProspect[];

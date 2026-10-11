@@ -196,8 +196,8 @@ describe('evidenceBlocks: the shape decides the drawing, and nothing is dropped'
     expect(b?.kind).toBe('bars');
     if (b?.kind !== 'bars') return;
     expect(b.rows.map((r) => [r.label, r.display, r.of, r.tone])).toEqual([
-      ['Uphill', '81%', 'of 44', 'good'],
-      ['Flat', '76%', 'of 51', 'good'],
+      ['Uphill', '76%', 'of 51', 'good'],
+      ['Level', '81%', 'of 44', 'good'],
       ['Downhill', '58%', 'of 31', 'loss'],
     ]);
     expect(b.table.columns).toEqual(['Range', 'Make rate from 4 to 6 feet, by slope', 'Sample']);
@@ -207,6 +207,12 @@ describe('evidenceBlocks: the shape decides the drawing, and nothing is dropped'
     const [r] = evidenceBlocks(ASK_EV_RANKING);
     expect(r?.kind).toBe('ranking');
     if (r?.kind === 'ranking') expect(r.rows.map((x) => [x.rank, x.label, x.display, x.of])).toEqual([[1, 'Jonah Okafor', '6', 'of 9'], [2, 'Eli Brandt', '4', 'of 8'], [3, 'Sofia Alvarez', '2', 'of 7']]);
+    // P013 D7: the footer's sample is the total the rows list (9 + 8 + 7), not the first row's.
+    if (r?.kind === 'ranking') {
+      const listed = r.rows.reduce((sum, x) => sum + Number(x.of?.replace(/^of /, '')), 0);
+      expect(listed).toBe(24);
+      expect(r.source).toBe(`${listed} attempts · Sep 1 to Sep 29 · computed Sep 29`);
+    }
     const two = { ...ASK_EV_RANKING, measurements: ASK_EV_RANKING.measurements.slice(0, 2) };
     expect(evidenceBlocks(two)[0]?.kind).toBe('compare');
   });
@@ -274,7 +280,7 @@ describe('buildEvidencePanel: the figures behind an action card', () => {
     expect(m.tiles.map((t) => [t.label, t.value, t.sub])).toEqual([
       ['Downhill, 4 to 6 feet', '33%', '3 of 9'],
       ['Team, Downhill, 4 to 6 feet', '58%', '18 of 31'],
-      ['Uphill, 4 to 6 feet', '78%', '7 of 9'],
+      ['Level, 4 to 6 feet', '78%', '7 of 9'],
     ]);
     expect(m.trend?.reference).toEqual({ label: 'Team 58%', value: 58 });
     expect(m.table?.rows[0]).toEqual(['Sep 5', '50%', '2']);

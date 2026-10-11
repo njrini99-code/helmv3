@@ -1,5 +1,6 @@
 'use client';
 
+import { CourseLocationCard } from './course-location';
 import { Copy, Link2, RefreshCw, Share2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../../ui/Button';
@@ -53,6 +54,8 @@ export function TeamSection({ data, writes }: { data: ChSettingsData; writes: Ch
       <StaffCards coachId={data.coachId} writes={writes} />
       {data.scoring?.error ? <ReadFailed what="Scoring settings" code="CH-8207" onRetry={writes.refresh} title="Scoring and format" description="Defaults for new rounds and events. The timezone sets when every event and reminder happens." covered={covered} /> : data.scoring && <ScoringCard scoring={data.scoring.value} writes={writes} />}
       {data.reminders?.error ? <ReadFailed what="Event reminders" code="CH-8208" onRetry={writes.refresh} title="Event reminders" description="Players who haven’t replied get a nudge before each event." covered={covered} /> : data.reminders && <RemindersCard reminders={data.reminders.value} writes={writes} />}
+      {/* The global light's place (P001-A1): drawn only once its columns exist (migration 20261008150000). */}
+      <CourseLocationCard teamId={data.teamId} />
     </>
   );
 }

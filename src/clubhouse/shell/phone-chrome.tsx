@@ -4,7 +4,7 @@ import { m, useMotionValue, useMotionValueEvent } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { chSpring, chTween } from '../lib/motion';
+import { chSpring } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { poppedByUA } from '../lib/ua-pop';
 import { PhoneBarParts, type ChPhoneBarParts } from '../ui/PhoneBar';
@@ -166,7 +166,7 @@ export function placeUnderlay(parts: HTMLElement[], progress: number): void {
 /**
  * The page beneath the phone's pushed screens (CH-1618, owner-approved 2026-10-08). As a screen slides in, the page it
  * covers (the shell's bars and the page itself) draws back about a quarter of the width and dims, on the screen's own
- * smooth spring; as the screen pops, the page comes back with it over the base ease-out. The two edges move as one, so
+ * smooth spring; as the screen pops, the page comes back with it on the same spring (P1-2, 2026-10-08). The two edges move as one, so
  * no gap opens between them. The scrim's animation drives the page frame by frame (`onUpdate`), so a pop that cuts a
  * push short reverses both from where they are. A Back that iOS animated itself, or a screen gone with its page, puts
  * the page back at once. With reduced motion or Animations off the page holds still under a screen that swaps in at
@@ -200,7 +200,7 @@ export function PhoneUnderlay() {
       aria-hidden="true"
       style={{ opacity: progress }}
       animate={{ opacity: on ? 1 : 0 }}
-      transition={on ? chSpring('smooth') : atOnce ? { duration: 0 } : chTween('base')}
+      transition={on || !atOnce ? chSpring('smooth') : { duration: 0 }}
       onAnimationStart={() => {
         const next = underlayParts();
         placeUnderlay(parts.current.filter((el) => !next.includes(el)), 0);

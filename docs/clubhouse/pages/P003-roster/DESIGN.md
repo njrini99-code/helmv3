@@ -93,9 +93,15 @@ All 25 (CONTRACT.md).
 ## Motion intent
 
 The player panel slides in 16px and fades in 260ms, and switching players
-cross-fades (CH-3601). On desktop the faces sit in a ruled grid on the canvas
-(the Ledger, 2026-10-07): a cell takes a tint on hover and press rather than
-lifting (CH-3602). Nothing counts up and nothing staggers except
+cross-fades (CH-3601). On desktop the faces are raised tiles (owner, 2026-10-08:
+"players
+need depth and contrast"): 16px apart, a 22px radius, a lit white-to-ivory
+gradient, a gold hairline ring and a
+gold inset frame 7px inside the edge, layered shadows, a hover lift of 8px with
+a stronger gold ring, and the open
+player a green-50 tile with a 2px green ring (CH-3602). The chosen sort, status
+pill and layout toggle are green
+with ivory ink. Nothing counts up and nothing staggers except
 the shell's first-paint reveal. On the phone the profile is pushed with the
 shell's slide (CH-1610). All from the v2 tokens (D-64).
 

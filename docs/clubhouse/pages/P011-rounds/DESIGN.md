@@ -58,16 +58,19 @@ thought, and check a round afterwards. Coach: read a player's round, hole by hol
   head: kicker as the eyebrow, the course in the heavy sans, tee facts, the
   score with its to par in forest ink; on the phone the screen's one green
   feature card, the course in the 600 sans), the five figures (flush on desktop;
-  between hairlines on the phone), the scorecard as two captioned nines, then
+  between hairlines on the phone), the scorecard as two captioned nines hung as
+  green boards of ivory plates (A2; on the phone a sticky label column and an edge
+  fade), then
   two columns (the picked hole's shots; the scoring distribution, the recap and
   the notes). One column below 900px; the figures wrap to three below 640px.
 - **Setup** (`.ch-rsu`, `chrs`): the green band with its steps (Course, Scorecard, Track) and Back, then two columns
   (course card, open qualifier, Round details, the note; the scorecard) and the dock with the one thing stopping
   Start and Start round. One column below 860px.
 - **Shot screen** (`.ch-rt`, `chrt`): the top bar (Exit, the course and tee, Scorecard), the hole strip, the hole
-  hero (hole number, par, yards, shot number and the distance to the pin, the schematic map, the shot log), then
-  the entry panel with the action bar (Undo, Penalty, Next shot) at its foot. A holed-out hole swaps the entry for
-  the shot review.
+  hero (hole number, par, yards, shot number and the distance to the pin with the round's save line beside it, the
+  schematic map, the shot log), then the entry panel with the action bar (Undo, Penalty, Next shot) at its foot. A
+  holed-out hole swaps the entry for the shot review. On the phone (board 3) the strip is one row of compact chips,
+  and the hero takes the slack so the entry card always sits on the action bar.
 
 ## Components
 
@@ -150,8 +153,8 @@ under the double rule, and every round is a row between soft seams that deepens
 to the row press tint. A round's review opens on its green hero; the figures sit
 between hairlines; strokes gained, the scorecard, the hole, the distribution and
 the notes are sections under the double rule; the recap is a passage under a
-rule with its kicker in green, not a second green card. Kept as material: the
-hole strip, the scorecard's grid, the search, the grouping control, the hole
+rule labelled "Written by CoachHelm from N holes", not a second green card, on
+both widths. Kept as material: the hole strip, the scorecard's hung board (A2), the search, the grouping control, the hole
 steps and the notices. The route skeletons draw the same shapes at the phone's
 width.
 

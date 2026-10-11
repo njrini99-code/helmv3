@@ -142,8 +142,8 @@ Mobile/UI authority for Fairway surfaces: `src/styles/design-tokens.css`, then
 (`src/clubhouse/**`, including its route integration) uses its own scoped
 tokens, shell and owner handoffs: see `src/clubhouse/AGENTS.md` and
 `.claude/rules/clubhouse.md`, and do not apply Fairway primitives or motion
-rules there. Clubhouse is off in production today (its feature flag is false in
-`config/feature-flags.yml`); Fairway is the live UI. Reuse the shared shell, safe areas, navigation,
+rules there. Clubhouse is the live golf UI for coaches and players (its feature flag is on in
+`config/feature-flags.yml`); Fairway still serves every other surface. Reuse the shared shell, safe areas, navigation,
 buttons, cards and empty states, and keep one primary action per screen. Golf
 reliability model: `memory/system/golfhelm-engineering-os.md`.
 
@@ -153,4 +153,6 @@ GitHub branch protection requires the checks on `main` (`CI aggregate`,
 `Review Gate aggregate`, CodeQL, `block-historical-edits`; see
 `.claude/rules/code-review-tooling.md`), and the git hooks run `gitleaks` when it
 is installed. No permission rule or hook denies, asks for, or blocks Bash, Git, Supabase, or
-Vercel. `docs/CONTROL_PLANE_ENFORCEMENT.md` lists what is wired.
+Vercel, except one owner-set `ask`: Vercel MCP deploy, promote, rollback and
+domain-purchase tools prompt first (the Vercel CLI is not gated).
+`docs/CONTROL_PLANE_ENFORCEMENT.md` lists what is wired.

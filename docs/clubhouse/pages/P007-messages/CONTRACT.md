@@ -207,13 +207,19 @@ the coach is told how to finish.
 
 Status: DEFINED
 
-Delete a message and Leave a group ask first (71101, 71102) and fire the warning
-haptic. Delete conversation is hidden: no policy defines it (D-48).
+Delete a message, Leave a group and Delete a conversation ask first (71101,
+71102,
+71103) and fire the warning haptic. Delete a conversation (owner request,
+2026-10-08, superseding D-48's "hidden") hides the thread from the person's own
+inbox only: the others keep theirs, a new message brings it back, and a team
+channel can't be deleted. It is offered only where the database has the
+per-person hide (held migration 20261008160000).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 71101 | CH-7501 | `DELETE_A_MESSAGE` | Delete a message |
 | 71102 | CH-7502 | `LEAVE_A_GROUP` | Leave a group |
+| 71103 | CH-7503 | `DELETE_A_CONVERSATION` | Delete a conversation |
 
 ## 12 — State preservation
 
@@ -235,8 +241,10 @@ it used to be lost).
 Status: DEFINED
 
 Sends are optimistic and reconciled in place by id; a refused one stays marked
-Not sent (71301). Reactions are not optimistic: a tap waits for the write, and a
-failure toasts (70607).
+Not sent (71301). Reactions are not optimistic: picking one waits for the write.
+A click on a
+reaction chip opens who reacted, and adding or taking back your own from that
+card waits for the write too; a failure toasts (70607).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -327,7 +335,7 @@ CH-1814.
 | 71803 | CH-7803 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, 1280px and 390px |
 | 71804 | CH-7804 | `PHONE_A_MESSAGES_ACTIONS_HAVE_A_PATH` | Phone: a message's actions have a path besides the long press (a "Message actions" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes ("Back to Messages", "Back to Chat") |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842.
 
 ## 19 — Responsive layout
 

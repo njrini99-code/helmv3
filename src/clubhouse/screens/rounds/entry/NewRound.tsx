@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { localDayIso } from '@/lib/golf/local-day';
 import { useNewRoundSession } from '@/lib/golf/round-session/use-new-round-session';
+import { normalizeStartHole } from '@/lib/golf/round-session/play-order';
 import { haptic } from '../../../lib/haptics';
 import { useToast } from '../../../ui/Toast';
 import { RoundEntrySkeleton } from '../RoundsSkeleton';
@@ -130,6 +131,7 @@ export function NewRound({ playerId }: { playerId: string }) {
     heading: roundHeading(engine.setupData),
     holes: engine.holes,
     currentHoleIndex: engine.currentHoleIndex,
+    startHole: normalizeStartHole(engine.setupData.startHole, engine.holes.length),
     setCurrentHoleIndex: engine.setCurrentHoleIndex,
     completedHoleStats: engine.completedHoleStats,
     activeHoleShots,

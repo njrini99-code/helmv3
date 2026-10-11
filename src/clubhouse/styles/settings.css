@@ -1,4 +1,6 @@
-/* Settings (Clubhouse): a section rail and one section of cards at a time. */
+/* Settings (Clubhouse): a section rail and one section of cards at a time.
+   P008-C1: every type size is in --ch-type-k steps (1px at the default size), so Settings follows Dynamic Type and a
+   larger root size as the shared --ch-type-* tokens do, and looks the same at the default. */
 
 .ch-set {
   max-width: 1080px;
@@ -12,12 +14,12 @@
   margin-bottom: 32px;
 }
 .ch-set-head h1 {
-  font: 400 52px/1.02 var(--ch-font-serif);
+  font: 400 calc(52 * var(--ch-type-k))/1.02 var(--ch-font-serif);
   letter-spacing: -0.01em;
   color: var(--ch-text-primary);
 }
 .ch-set-head p {
-  font: 400 14px/1.4 var(--ch-font-sans);
+  font: 400 calc(14 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
   overflow-wrap: anywhere;
 }
@@ -60,11 +62,11 @@
   min-width: 0;
 }
 .ch-set-rail__i b {
-  font: 500 14px/1.25 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-set-rail__i span span {
-  font: 400 12.5px/1.3 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 @media (hover: hover) {
@@ -111,7 +113,7 @@
 }
 .ch-set-autosave {
   margin: -4px 0 -8px;
-  font: 500 12.5px/1 var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-set-autosave.is-failed {
@@ -136,7 +138,7 @@
   display: inline-flex;
   flex: 1;
   min-width: 0;
-  font: 500 13px/1.3 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-set-status > span {
@@ -181,14 +183,14 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font: 500 14px/1.3 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-set-row__l > svg {
   color: var(--ch-green-600);
 }
 .ch-set-row__h {
-  font: 400 13px/1.45 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
   text-wrap: pretty;
 }
@@ -218,12 +220,12 @@
 }
 .ch-set-sub {
   padding-top: 4px;
-  font: 500 12.5px/1 var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-set-count {
   flex: none;
-  font: 600 13px/1 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-green-700);
 }
 
@@ -251,13 +253,13 @@
 .ch-set-value {
   max-width: 320px;
   overflow: hidden;
-  font: 400 14px/1.3 var(--ch-font-sans);
+  font: 400 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .ch-set-code {
-  font: 600 18px/1 var(--ch-font-mono);
+  font: 600 calc(18 * var(--ch-type-k))/1 var(--ch-font-mono);
   letter-spacing: 0.1em;
   color: var(--ch-green-800);
 }
@@ -298,10 +300,10 @@
   gap: 2px;
 }
 .ch-set-photo__txt b {
-  font: 500 14px/1.3 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
 }
 .ch-set-photo__txt > span {
-  font: 400 13px/1.4 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-set-photo__acts {
@@ -343,11 +345,11 @@
   gap: 2px;
 }
 .ch-set-link b {
-  font: 500 14px/1.3 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-set-link span span {
-  font: 400 13px/1.3 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 
@@ -383,7 +385,7 @@
   padding-bottom: 9px;
   border-top: 0;
   background: var(--ch-bg-subtle);
-  font: 500 12.5px/1 var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 @media (hover: hover) {
@@ -394,7 +396,7 @@
 .ch-set-matrix__group {
   padding: 14px 20px 4px;
   border-top: 1px solid var(--ch-border-hairline);
-  font: 500 12.5px/1 var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-set-matrix__group + .ch-set-matrix__row {
@@ -407,7 +409,7 @@
   min-width: 0;
 }
 .ch-set-matrix__what b {
-  font: 500 14px/1.3 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-set-matrix__what > span {
@@ -422,8 +424,27 @@
   border-bottom: 0;
 }
 .ch-set-na {
-  font: 400 12px/1 var(--ch-font-sans);
+  font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
+}
+/* P008-C3: a row's switch with its test beside it (Send a test, Feel it). */
+.ch-set-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+/* P008 #4: the Push column says when push is off on this device (it still saves for the others). */
+.ch-set-matrix__row.is-head > [role='columnheader'] .ch-set-matrix__note {
+  display: block;
+  margin-top: 3px;
+  font: 400 calc(11.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-set-matrix__row.is-head > [role='columnheader']:has(.ch-set-matrix__note) {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 .ch-set-bulk {
   display: flex;
@@ -482,7 +503,7 @@
   border-radius: 7px;
   background: #e3ede5;
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.14);
-  font: 600 13px/1 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-green-700);
 }
 .ch-set-rank__txt {
@@ -492,7 +513,7 @@
   min-width: 0;
 }
 .ch-set-rank__txt b {
-  font: 500 14px/1.3 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
 }
 .ch-set-rank__txt span {
   font: var(--ch-type-caption);
@@ -517,7 +538,7 @@
   min-width: 0;
 }
 .ch-set-request b {
-  font: 500 14px/1.3 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
 }
 .ch-set-request span span {
   font: var(--ch-type-caption);
@@ -548,7 +569,7 @@
     margin-bottom: 20px;
   }
   .ch-set-head h1 {
-    font-size: 32px;
+    font-size: calc(32 * var(--ch-type-k));
   }
   .ch-set-layout {
     grid-template-columns: minmax(0, 1fr);
@@ -678,7 +699,7 @@
     margin: 0;
     padding-top: 14px;
     border-top: var(--ch-ledger-rule-double);
-    font: 600 31px/1.08 var(--ch-font-sans);
+    font: 600 calc(31 * var(--ch-type-k))/1.08 var(--ch-font-sans);
     letter-spacing: -0.038em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -687,7 +708,7 @@
      root's paragraph reset. */
   .ch-setm-page > .ch-setm-lead {
     margin: -26px 0 0;
-    font: 400 14.5px/1.5 var(--ch-font-sans);
+    font: 400 calc(14.5 * var(--ch-type-k))/1.5 var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
   .ch-setm-lead.is-failed {
@@ -730,7 +751,7 @@
   }
   .ch-setm-id__b b {
     overflow: hidden;
-    font: 600 17px/1.25 var(--ch-font-sans);
+    font: 600 calc(17 * var(--ch-type-k))/1.25 var(--ch-font-sans);
     letter-spacing: -0.015em;
     color: var(--ch-text-primary);
     text-overflow: ellipsis;
@@ -738,7 +759,7 @@
   }
   .ch-setm-id__b span {
     overflow: hidden;
-    font: 400 13.5px/1.3 var(--ch-font-sans);
+    font: 400 calc(13.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-text-secondary);
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -753,7 +774,7 @@
     border-radius: 50%;
     background: var(--ch-green-800);
     color: var(--ch-ivory-100);
-    font: 600 19px/1 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1 var(--ch-font-sans);
     transition: opacity var(--ch-dur-base) var(--ch-ease);
   }
   .ch-setm-id > .ch-setm-coin {
@@ -766,7 +787,7 @@
   .ch-setm-coin.is-big {
     width: 84px;
     height: 84px;
-    font-size: 28px;
+    font-size: calc(28 * var(--ch-type-k));
   }
   .ch-setm-coin.is-busy {
     opacity: 0.5;
@@ -786,7 +807,7 @@
   .ch-setm-gh {
     margin: 0;
     padding: 0 16px 6px;
-    font: 500 13px/1.3 var(--ch-font-sans);
+    font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   .ch-setm-card {
@@ -799,7 +820,7 @@
   }
   .ch-setm-note {
     margin: 8px 16px 0;
-    font: 400 13px/1.4 var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
     text-wrap: pretty;
   }
@@ -817,7 +838,7 @@
     border: 0;
     background: none;
     color: inherit;
-    font: 400 16px/1.3 var(--ch-font-sans);
+    font: 400 calc(16 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     text-align: left;
     text-decoration: none;
     cursor: pointer;
@@ -861,7 +882,7 @@
   .ch-setm-row__v {
     max-width: 55%;
     overflow: hidden;
-    font: 400 14px/1.3 var(--ch-font-sans);
+    font: 400 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -938,7 +959,7 @@
     width: 100%;
     min-height: 52px;
     padding: 0 14px 0 16px;
-    font: 400 16px/1.3 var(--ch-font-sans);
+    font: 400 calc(16 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-text-primary);
   }
   .ch-setm-row.is-sw.is-dim .ch-switch__l {
@@ -969,7 +990,7 @@
     display: block;
     margin-top: -12px;
     padding: 0 16px 12px;
-    font: 400 12.5px/1.4 var(--ch-font-sans);
+    font: 400 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
     text-wrap: pretty;
   }
@@ -984,10 +1005,10 @@
     gap: 6px;
   }
   .ch-setm-row.is-slider .ch-slider__l {
-    font: 400 16px/1.3 var(--ch-font-sans);
+    font: 400 calc(16 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   }
   .ch-setm-row.is-slider .ch-slider__v {
-    font: 600 16px/1.3 var(--ch-font-sans);
+    font: 600 calc(16 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-text-primary);
   }
   .ch-setm-row.is-slider .ch-slider input {
@@ -997,7 +1018,7 @@
   }
   .ch-setm-row.is-slider .ch-slider__d {
     order: 3;
-    font: 400 13px/1.4 var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   .ch-setm-row.is-slider .ch-slider__ends {
@@ -1038,12 +1059,12 @@
   }
   .ch-setm-field__l {
     flex: none;
-    font: 500 13px/1.3 var(--ch-font-sans);
+    font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   .is-inline .ch-setm-field__l {
     width: 96px;
-    font: 400 16px/1.3 var(--ch-font-sans);
+    font: 400 calc(16 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
   .ch-setm-field__i {
@@ -1056,7 +1077,7 @@
     background: transparent;
     caret-color: var(--ch-green-600);
     /* 16px, so iOS doesn't zoom the page when a field takes focus */
-    font: 400 16px/1.3 var(--ch-font-sans);
+    font: 400 calc(16 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-text-primary);
   }
   .ch-setm-field__i::placeholder {
@@ -1065,7 +1086,7 @@
   .ch-setm-field__h {
     display: block;
     padding: 0 16px 10px;
-    font: 400 12.5px/1.4 var(--ch-font-sans);
+    font: 400 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   .ch-setm-field__h.is-error,
@@ -1074,7 +1095,7 @@
   }
   .ch-setm-problem {
     margin: -6px 16px 0;
-    font: 500 13px/1.4 var(--ch-font-sans);
+    font: 500 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   }
 
   /* Text actions and the invite card */
@@ -1083,7 +1104,7 @@
     padding: 0 4px;
     border: 0;
     background: none;
-    font: 500 14px/1 var(--ch-font-sans);
+    font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-green-600);
     cursor: pointer;
     touch-action: manipulation;
@@ -1116,11 +1137,11 @@
     min-width: 0;
   }
   .ch-setm-invite__c > span {
-    font: 400 13px/1.3 var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   .ch-setm-invite__c b {
-    font: 600 24px/1.2 var(--ch-font-sans);
+    font: 600 calc(24 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: 0.08em;
     overflow-wrap: anywhere;
   }
@@ -1141,7 +1162,7 @@
     border-radius: 999px;
     background: var(--ch-green-800);
     color: var(--ch-ivory-100);
-    font: 600 14px/1 var(--ch-font-sans);
+    font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
     cursor: pointer;
     touch-action: manipulation;
   }
@@ -1164,7 +1185,7 @@
     border: 0;
     border-radius: var(--ch-radius-md);
     background: none;
-    font: 600 15px/1.3 var(--ch-font-sans);
+    font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     letter-spacing: -0.012em;
     text-align: left;
     cursor: pointer;
@@ -1226,20 +1247,54 @@
     height: 1px;
     background: var(--ch-border-hairline);
   }
+  /* While a row is held (phone/Reorder.tsx, dnd-kit): the place it left is a soft recess that travels to where it will
+     land, and the row itself rides above the list as the drag overlay, the one elevated object. */
   .ch-setm-rank__i.is-held {
-    z-index: 2;
     margin: 0 4px;
     border-radius: 12px;
-    background: var(--ch-green-50);
-    box-shadow: 0 8px 20px -8px rgb(11 58 37 / 0.35);
+    background: var(--ch-bg-inset);
+    box-shadow: var(--ch-well-soft-shadow);
+  }
+  /* Transparent, not hidden: the handle a keyboard lifted keeps its focus and its place for VoiceOver. */
+  .ch-setm-rank__i.is-held > * {
+    opacity: 0;
   }
   .ch-setm-rank__i.is-held::before {
     display: none;
   }
+  /* The lifted row (the overlay, portaled into the Clubhouse root): its shadow rises over quick as it leaves the list
+     and falls away over release as it settles into its row (dnd-kit's drop, .is-settling). Instant with reduced motion and with
+     Animations off, where the duration tokens are zero and the drop does not animate. */
+  .ch-setm-rank__i.is-lifted {
+    margin: 0 4px;
+    border-radius: 12px;
+    background: var(--ch-green-50);
+    box-shadow: var(--ch-elevation-overlay);
+    cursor: grabbing;
+    animation: ch-setm-rank-rise var(--ch-dur-quick) var(--ch-ease) backwards;
+    transition:
+      box-shadow var(--ch-dur-release) var(--ch-ease),
+      background-color var(--ch-dur-release) var(--ch-ease);
+  }
+  .ch-setm-rank-lift .is-settling > .ch-setm-rank__i.is-lifted {
+    background-color: transparent;
+    box-shadow: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ch-setm-rank__i.is-lifted {
+      animation: none;
+      transition: none;
+    }
+  }
+  @keyframes ch-setm-rank-rise {
+    from {
+      box-shadow: none;
+    }
+  }
   .ch-setm-rank__n {
     flex: none;
     width: 18px;
-    font: 600 14px/1 var(--ch-font-sans);
+    font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-green-600);
   }
   .ch-setm-rank__txt {
@@ -1250,10 +1305,10 @@
     min-width: 0;
   }
   .ch-setm-rank__txt > span:first-child {
-    font: 400 16px/1.3 var(--ch-font-sans);
+    font: 400 calc(16 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   }
   .ch-setm-rank__txt > span:last-child {
-    font: 400 12.5px/1.3 var(--ch-font-sans);
+    font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   .ch-setm-rank__h {
@@ -1274,7 +1329,7 @@
     outline: 2px solid var(--ch-border-focus);
     outline-offset: -2px;
   }
-  .ch-setm-rank__i.is-held .ch-setm-rank__h {
+  .ch-setm-rank__i.is-lifted .ch-setm-rank__h {
     color: var(--ch-green-600);
     cursor: grabbing;
   }
@@ -1292,7 +1347,7 @@
     margin: 0 0 6px;
     padding: 12px 0 0;
     border-top: var(--ch-ledger-rule-double);
-    font: 600 19px/1.1 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1311,7 +1366,7 @@
   }
   .ch-setm-page > .ch-setm-group > .ch-setm-note {
     margin: 10px 0 0;
-    font: 400 13px/1.45 var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   }
   /* A section that didn't load: its notice stands where its first row would. */
   .ch-setm-page > .ch-setm-group > .ch-setm-card > [role='alert'] {
@@ -1323,7 +1378,7 @@
     margin-inline: -12px;
     padding: 0 12px;
     border-radius: var(--ch-radius-md);
-    font: 600 15px/1.3 var(--ch-font-sans);
+    font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     letter-spacing: -0.012em;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
@@ -1366,19 +1421,19 @@
   .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.is-sw .ch-switch {
     min-height: 58px;
     padding: 0 12px;
-    font: 600 15px/1.3 var(--ch-font-sans);
+    font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     letter-spacing: -0.012em;
   }
   .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row .ch-setm-help {
     margin-top: -10px;
     padding: 0 12px 14px;
-    font: 400 13px/1.45 var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   }
   .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.is-slider {
     padding: 14px 12px;
   }
   .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.is-slider .ch-slider__l {
-    font: 600 15px/1.3 var(--ch-font-sans);
+    font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     letter-spacing: -0.012em;
   }
   /* The priorities: ranked rows on the same seams; a held row lifts on a green plate a little wider than the row. */
@@ -1394,10 +1449,20 @@
   .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-rank > .ch-setm-rank__i.is-held {
     margin: 0 -10px;
     padding: 0 10px;
-    background: var(--ch-green-50);
+    background: var(--ch-bg-inset);
+  }
+  /* The lifted row is drawn outside the list (the drag overlay), so it carries the Ledger row's measure itself. */
+  .ch-setm-rank-lift .ch-setm-rank__i.is-lifted {
+    height: 58px;
+    margin: 0 -10px;
+    padding: 0 10px;
+  }
+  .ch-setm-rank-lift .ch-setm-rank__i.is-lifted .ch-setm-rank__txt > span:first-child {
+    font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    letter-spacing: -0.012em;
   }
   .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-rank .ch-setm-rank__txt > span:first-child {
-    font: 600 15px/1.3 var(--ch-font-sans);
+    font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     letter-spacing: -0.012em;
   }
   /* A staff invite's code, flush under its rows. */
@@ -1411,7 +1476,7 @@
     margin: -6px -6px 0 0;
   }
   .ch-setm-code .ch-setm-code__v {
-    font-size: 28px;
+    font-size: calc(28 * var(--ch-type-k));
     letter-spacing: 0.08em;
     overflow-wrap: anywhere;
   }
@@ -1505,7 +1570,7 @@
   .ch-setm-sheet__note {
     flex: none;
     margin: 0 4px;
-    font: 400 13px/1.4 var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   .ch-setm-dlg.is-full .ch-setm-sheet__note {
@@ -1539,7 +1604,7 @@
     min-width: 0;
     overflow-wrap: anywhere;
     text-align: center;
-    font: 600 17px/1.2 var(--ch-font-sans);
+    font: 600 calc(17 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   }
   .ch-setm-bar__b {
     justify-self: start;
@@ -1548,7 +1613,7 @@
     padding: 0;
     border: 0;
     background: none;
-    font: 400 16px/1 var(--ch-font-sans);
+    font: 400 calc(16 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-green-600);
     text-align: left;
     cursor: pointer;
@@ -1582,10 +1647,10 @@
   }
   .ch-setm-lbar__t h2 {
     margin: 0;
-    font: 600 20px/1.2 var(--ch-font-sans);
+    font: 600 calc(20 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   }
   .ch-setm-lbar__t span {
-    font: 400 13.5px/1.35 var(--ch-font-sans);
+    font: 400 calc(13.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
   .ch-setm-photo {
@@ -1631,11 +1696,11 @@
     text-align: center;
   }
   .ch-setm-act__msg b {
-    font: 600 14px/1.3 var(--ch-font-sans);
+    font: 600 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
   .ch-setm-act__msg span {
-    font: 400 13px/1.4 var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   .ch-setm-act__btn,
@@ -1649,7 +1714,7 @@
     padding: 0;
     border: 0;
     background: none;
-    font: 500 19px/1 var(--ch-font-sans);
+    font: 500 calc(19 * var(--ch-type-k))/1 var(--ch-font-sans);
     cursor: pointer;
     touch-action: manipulation;
   }
@@ -1720,7 +1785,7 @@
     box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
   }
   .ch-set[data-canopy] .ch-surface__title {
-    font: 600 19px/1.2 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-ledger-ink);
   }
   .ch-set[data-canopy] .ch-surface__sub {

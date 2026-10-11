@@ -13,7 +13,10 @@ const PROD_EXTRAS = {
   KV_REST_API_TOKEN: 'kv-token-value',
   NEXT_PUBLIC_SENTRY_DSN: 'https://key@o1.ingest.sentry.io/1',
   SENTRY_AUTH_TOKEN: 'sentry-auth-token-value',
+  // Clubhouse is on in production (config/feature-flags.yml), so a complete production env names its teams.
+  HELM_CLUBHOUSE_TEAMS: '*',
 };
+const { HELM_CLUBHOUSE_TEAMS: _teams, ...PROD_EXTRAS_NO_TEAMS } = PROD_EXTRAS;
 
 test('passes when all canonical Supabase vars set and URL is real', () => {
   assert.doesNotThrow(() =>
@@ -267,12 +270,12 @@ test('clubhouseFlagsOn reads only active clubhouse flags that are on for the env
 
 test('production fails when a clubhouse flag is on and HELM_CLUBHOUSE_TEAMS is unset', () => {
   assert.throws(
-    () => checkRequiredEnv({ ...PROD_SUPABASE, ...PROD_EXTRAS }, { flags: clubhouseOnInProduction }),
+    () => checkRequiredEnv({ ...PROD_SUPABASE, ...PROD_EXTRAS_NO_TEAMS }, { flags: clubhouseOnInProduction }),
     /HELM_CLUBHOUSE_TEAMS.*every team/
   );
   assert.throws(
     () =>
-      checkRequiredEnv({ ...PROD_SUPABASE, ...PROD_EXTRAS, HELM_CLUBHOUSE_TEAMS: '  ' }, { flags: clubhouseOnInProduction }),
+      checkRequiredEnv({ ...PROD_SUPABASE, ...PROD_EXTRAS_NO_TEAMS, HELM_CLUBHOUSE_TEAMS: '  ' }, { flags: clubhouseOnInProduction }),
     /HELM_CLUBHOUSE_TEAMS/
   );
 });
@@ -290,7 +293,7 @@ test('production passes with team ids or * once a clubhouse flag is on', () => {
 
 test('production does not need HELM_CLUBHOUSE_TEAMS while every clubhouse flag is off there', () => {
   assert.doesNotThrow(() =>
-    checkRequiredEnv({ ...PROD_SUPABASE, ...PROD_EXTRAS }, { flags: clubhouseOnlyInPreview })
+    checkRequiredEnv({ ...PROD_SUPABASE, ...PROD_EXTRAS_NO_TEAMS }, { flags: clubhouseOnlyInPreview })
   );
 });
 
@@ -314,7 +317,9 @@ test('preview only warns when a clubhouse flag is on and HELM_CLUBHOUSE_TEAMS is
 });
 
 test('the real flag registry loads and drives the default', () => {
-  // No injected flags: this reads config/feature-flags.yml. Clubhouse is off in
-  // production there, so a complete production env passes.
+  // No injected flags: this reads config/feature-flags.yml. Clubhouse is on in
+  // production there, so a complete production env passes and one without
+  // HELM_CLUBHOUSE_TEAMS fails.
   assert.doesNotThrow(() => checkRequiredEnv({ ...PROD_SUPABASE, ...PROD_EXTRAS }));
+  assert.throws(() => checkRequiredEnv({ ...PROD_SUPABASE, ...PROD_EXTRAS_NO_TEAMS }), /HELM_CLUBHOUSE_TEAMS/);
 });

@@ -1,6 +1,7 @@
 'use client';
 
-import { UserPlus } from 'lucide-react';
+import { RotateCw, UserPlus } from 'lucide-react';
+import { useEffect, useState, useTransition } from 'react';
 import type { ChQDetailCore, ChQDetailSecondary } from '../../data/qualifiers';
 import { Avatar } from '../../ui/Avatar';
 import { Badge } from '../../ui/Badge';
@@ -8,6 +9,7 @@ import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { useRefresh } from '../../lib/use-refresh';
 import { plural, type ChQStatus } from './model';
+import type { LiveFeedView } from './live';
 import { ToPar } from './parts';
 import { CoursesSkeleton, Streamed } from './streamed';
 
@@ -24,6 +26,58 @@ export function StaleStandings() {
       onRetry={refresh}
       retrying={refreshing}
     />
+  );
+}
+
+const CLOCK = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
+/** "4:12 PM": when the standings on screen were read, in the reader's own time. */
+export function clockLabel(at: number): string {
+  return CLOCK.format(new Date(at));
+}
+
+/**
+ * The board's honest Live chip (P009-B2, D1). "Live · updated 4:12 PM" only while the realtime feed is subscribed;
+ * "Paused · standings from 4:12 PM" with Refresh when it dropped or the tab slept long (StaleStandings' Try again,
+ * without its "didn't load", since nothing failed to load); nothing after the last day, where the status pill says Ended (D3).
+ * The dot is static (D-33). The time is set after hydration only, so the server's paint never disagrees with the reader's clock.
+ */
+export function LiveChip({ view }: { view: LiveFeedView }) {
+  const { feed, version, updatedAt: fixed, refresh: onRefresh, ended } = view;
+  const [refreshing, start] = useTransition();
+  // When the standings on screen were read: stamped after hydration when a read lands (only this chip draws again).
+  const [stamped, setStamped] = useState<number | null>(null);
+  useEffect(() => setStamped(Date.now()), [version]);
+  const updatedAt = fixed ?? stamped;
+  // Past its last day the status pill above already says "Ended · n rounds outstanding" (D3): the board claims no feed.
+  if (ended || feed === 'off') return null;
+  const at = updatedAt != null ? clockLabel(updatedAt) : null;
+  if (feed === 'paused') {
+    return (
+      <span className="ch-qf-feed" data-feed="paused" role="status">
+        <Badge tone="warning">{at ? `Paused · standings from ${at}` : 'Paused'}</Badge>
+        <button
+          type="button"
+          className="ch-qf-feed__refresh"
+          disabled={refreshing}
+          aria-busy={refreshing || undefined}
+          onClick={() => start(() => onRefresh())}
+        >
+          <Icon icon={RotateCw} size={13} />
+          {refreshing ? 'Refreshing' : 'Refresh'}
+        </button>
+      </span>
+    );
+  }
+  return (
+    <span className="ch-qf-feed" data-feed={feed}>
+      {feed === 'live' ? (
+        <Badge tone="accent" dot>
+          {at ? `Live · updated ${at}` : 'Live'}
+        </Badge>
+      ) : (
+        <Badge tone="neutral">{at ? `Connecting · standings from ${at}` : 'Connecting'}</Badge>
+      )}
+    </span>
   );
 }
 

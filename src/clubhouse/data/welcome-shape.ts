@@ -100,4 +100,5 @@ export function formatLastHere(iso: string, now: Date): string | null {
 }
 
 /** The date line above the greeting, in the viewer's locale ("Tuesday, October 14"). */
-export const formatWelcomeDate = (now: Date): string => now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+/** P015 D4: one Clubhouse date style, as Home's (en-GB, "Tuesday 14 October"), in the viewer's own zone. */
+export const formatWelcomeDate = (now: Date): string => new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(now);

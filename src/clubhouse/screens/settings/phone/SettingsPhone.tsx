@@ -154,7 +154,7 @@ export function SettingsPhone({
       <PhoneTop
         back={section ? { label: 'Settings', onBack: back } : { label: 'More', onBack: backFromMore }}
         // The design draws the large title in the page and nothing in the bar; the bar's is the screen's heading for VoiceOver.
-        title={<span className="ch-sr-only">{current?.label ?? 'Settings'}</span>}
+        title={current?.label ?? 'Settings'}
         titleId="ch-setm-title"
       />
       {/* CH-8609: a section pushes in from the right over the list, which fades under it, and Back slides it off the

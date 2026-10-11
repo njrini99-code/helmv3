@@ -119,8 +119,9 @@ export function MemberCard({ face, issued, season }: { face: CardFace; issued: b
     <div className="ch-ox-mcw" data-issued={issued ? '' : undefined}>
       {issued && (
         <div className="ch-ox-mc__stamp" aria-hidden="true">
+          {/* P015 D5: it reads "Member since 2026", in that order. */}
           <span>
-            Member<b>{season.slice(-4)}</b>since
+            Member since<b>{season.slice(-4)}</b>
           </span>
         </div>
       )}

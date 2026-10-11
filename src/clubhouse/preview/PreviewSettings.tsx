@@ -67,7 +67,7 @@ export function PreviewSettings({ state, section }: { state?: string; section?: 
 
   const device: ChDevice = {
     native: true,
-    push: { status: 'unsubscribed', pending: false, subscribe: () => wait({ ok: true }), unsubscribe: () => wait({ ok: true }) },
+    push: { status: 'subscribed', pending: false, subscribe: () => wait({ ok: true }), unsubscribe: () => wait({ ok: true }), test: () => wait(state === 'failwrites' ? { ok: false, error: 'No device has push on yet.' } : { ok: true, sent: 1 }) },
   };
   const valid = ['account', 'notifications', 'team', 'golf', 'coachhelm', 'preferences'];
   return <SettingsView data={data} writes={writes} device={device} initialSection={(valid.includes(section ?? '') ? section : 'account') as ChSettingsSection} onDeleted={() => {}} />;

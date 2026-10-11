@@ -1,7 +1,8 @@
 'use client';
 
-import { ArrowUp, AtSign, CalendarDays, Plus, Square } from 'lucide-react';
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { Command, useCommandState } from 'cmdk';
+import { ArrowUp, AtSign, CalendarDays, ChartColumn, Plus, Square } from 'lucide-react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
 import {
   ASK_RANGES,
   ASK_STARTERS,
@@ -12,16 +13,20 @@ import {
   type ChAskPlayer,
   type ChAskRange,
 } from '../../../data/coachhelm-chat-shape';
+import { ASK_STATS, matchStats } from '../../../data/coachhelm-mentions';
 import { haptic } from '../../../lib/haptics';
 import { isOffline } from '../../../lib/use-action';
+import { Avatar } from '../../../ui/Avatar';
 import { Icon } from '../../../ui/Icon';
 import { Menu } from '../../../ui/Menu';
-import { Modal } from '../../../ui/Modal';
 import { useToast } from '../../../ui/Toast';
 import { useAskDraft } from './drafts';
 
 /** The text box grows with its text and stops here; past it the box scrolls (a taller one hides the answer it is about). */
 const MAX_HEIGHT = 168;
+
+/** The keys the text box hands to the open picker; cmdk's own navigation, wrap-around, scrolling and pick then run. */
+const PICKER_KEYS = new Set(['ArrowDown', 'ArrowUp', 'Enter', 'Tab']);
 
 /** A real pointer implies a real keyboard, and only a real keyboard has the Shift+Enter this composer's Enter depends on. */
 function useFinePointer(): boolean {
@@ -34,6 +39,21 @@ function useFinePointer(): boolean {
     () => window.matchMedia('(pointer: fine)').matches,
     () => false,
   );
+}
+
+type PickerIds = { list?: string; active?: string };
+
+/**
+ * The picker's listbox and highlighted row, so the text box can point at them (cmdk sets both ids itself). The row is read
+ * from the list once a selection has rendered: cmdk's own `selectedItemId` misses the first row it highlights on mount.
+ */
+function PickerIdsProbe({ list, onIds }: { list: RefObject<HTMLDivElement | null>; onIds: (ids: PickerIds) => void }) {
+  const selected = useCommandState((s) => s.value);
+  useLayoutEffect(() => {
+    const row = list.current?.querySelector<HTMLElement>('[cmdk-item][aria-selected="true"]');
+    onIds({ list: list.current?.id, active: row?.id });
+  }, [selected, list, onIds]);
+  return null;
 }
 
 /**
@@ -69,6 +89,54 @@ export interface AskComposerProps {
   fresh?: boolean;
   /** Who and which chat the unsent text belongs to ("coach:chat"), so it comes back when the coach returns to this page; none, none kept. */
   draftKey?: string | null;
+  /**
+   * Whether `players` is the team's roster. The shell's Ask sheet loads none, so it passes false: its picker offers the
+   * stats alone, never a "No active players" that is not true of the team.
+   */
+  roster?: boolean;
+}
+
+/** Space kept between the picker and the edge that would cut it off. */
+const PICK_EDGE = 8;
+/** The gap between the box and the picker (`.ch-ask-pick`'s `calc(100% + 8px)`). */
+const PICK_GAP = 8;
+
+/**
+ * How tall the picker may be where it opens: from the box to the nearest edge that would clip it, on the side it opens
+ * to. That edge is the closest ancestor that clips its overflow (the Ask sheet's panel, a page's scroller) or the visible
+ * viewport (the phone's keyboard); the CSS caps take the smaller of this and their own height. Remeasured on a resize or
+ * the keyboard moving.
+ */
+function usePickerRoom(anchor: RefObject<HTMLElement | null>, open: boolean, below: boolean): number | null {
+  const [room, setRoom] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    if (!open) return;
+    const measure = () => {
+      const el = anchor.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const vv = window.visualViewport;
+      let top = vv ? vv.offsetTop : 0;
+      let bottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+      for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+        const s = getComputedStyle(p);
+        if (!/(hidden|clip|auto|scroll)/.test(`${s.overflow} ${s.overflowY}`)) continue;
+        const pr = p.getBoundingClientRect();
+        top = Math.max(top, pr.top);
+        bottom = Math.min(bottom, pr.bottom);
+      }
+      const space = below ? bottom - r.bottom : r.top - top;
+      setRoom(Math.max(0, Math.floor(space - PICK_GAP - PICK_EDGE)));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    window.visualViewport?.addEventListener('resize', measure);
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.visualViewport?.removeEventListener('resize', measure);
+    };
+  }, [anchor, open, below]);
+  return open ? room : null;
 }
 
 /**
@@ -76,24 +144,27 @@ export interface AskComposerProps {
  *
  *  - Enter sends on a fine pointer, Shift+Enter is a new line; Enter while an IME is composing is left alone.
  *  - `+` opens the seven starters. A starter seeds the text and never sends.
- *  - The Players button (or typing `@`) opens the roster: a popover on desktop with the arrow keys, Enter, Tab and Esc, a
- *    sheet of 44px rows on the phone. A pick puts `@Name` into the text, where the coach reads it; the model gets the name as
- *    text, never a hidden id (nothing is sent on the coach's behalf that they cannot see).
+ *  - Typing `@` (or the Players chip, the `@` key, the Add player starter) opens the mention picker (cmdk): the roster and
+ *    the stats CoachHelm can read, filtered as the coach types. The text box keeps the focus (and the phone its keyboard);
+ *    the arrow keys, Enter and Tab pick, Esc closes. It is a list docked above the box (below the desktop's new-chat box),
+ *    never a sheet. A pick puts `@Name` or `@Greens in regulation` into the text, where the coach reads it; the model gets
+ *    the words, never a hidden id (nothing is sent on the coach's behalf that they cannot see).
  *  - The date chip starts unset. Choosing a range adds its sentence to the sent text, visibly.
  *  - Offline, Send is refused before anything is sent: an error toast (CH-1903) and the text stays.
  *  - A send that failed puts its text back (once, into an empty box); a card awaiting a decision disables Send.
  */
-export function AskComposer({ variant, phone, players, busy, failed, blocked, onSend, onStop, autoFocus, fresh = false, draftKey = null }: AskComposerProps) {
+export function AskComposer({ variant, phone, players, busy, failed, blocked, onSend, onStop, autoFocus, fresh = false, draftKey = null, roster = true }: AskComposerProps) {
   const refuseOffline = useRefuseOffline();
   const finePointer = useFinePointer();
   const hero = variant === 'hero';
   const [value, setValue] = useAskDraft(draftKey);
   const [range, setRange] = useState<ChAskRange | null>(null);
-  const [active, setActive] = useState(0);
   const [dismissed, setDismissed] = useState(false);
-  const [sheet, setSheet] = useState(false);
-  const [sheetQuery, setSheetQuery] = useState('');
+  const [pickIds, setPickIds] = useState<PickerIds>({});
   const box = useRef<HTMLTextAreaElement>(null);
+  const frame = useRef<HTMLDivElement>(null);
+  const cmd = useRef<HTMLDivElement>(null);
+  const cmdList = useRef<HTMLDivElement>(null);
   const listId = useId();
   const last = useRef<{ text: string; range: ChAskRange | null } | null>(null);
 
@@ -122,12 +193,16 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
   }, [failed, setValue]);
 
   const query = mentionQuery(value);
-  const pickerOpen = !phone && query !== null && !dismissed;
-  const matches = useMemo(() => matchPlayers(players, query ?? '', value), [players, query, value]);
-  const sheetMatches = useMemo(() => matchPlayers(players, sheetQuery, value), [players, sheetQuery, value]);
-  useEffect(() => setActive(0), [query]);
+  const pickerOpen = query !== null && !dismissed;
+  const matches = useMemo(() => (roster ? matchPlayers(players, query ?? '', value) : []), [roster, players, query, value]);
+  const stats = useMemo(() => matchStats(ASK_STATS, query ?? '', value), [query, value]);
+  const pickable = matches.length + stats.length > 0;
+  const room = usePickerRoom(frame, pickerOpen, hero && !phone);
 
   const focusEnd = useCallback(() => {
+    // Focus inside the tap itself, so a phone raises its keyboard (or keeps it up); the caret goes to the end once the new
+    // text is in.
+    box.current?.focus();
     requestAnimationFrame(() => {
       const el = box.current;
       if (!el) return;
@@ -148,40 +223,29 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
     setDismissed(false);
   };
 
-  const pick = (p: ChAskPlayer) => {
-    setValue((v) => insertMention(v, p.name));
-    setSheet(false);
-    setSheetQuery('');
+  const pick = (name: string) => {
+    haptic('select');
+    setValue((v) => insertMention(v, name));
     setDismissed(false);
     focusEnd();
   };
 
-  /** The Players button: a sheet on the phone; on desktop an `@` at the end opens the popover. */
+  /** The Players chip, the `@` key and the Add player starter: an `@` at the end of the text opens the picker. */
   const openPlayers = () => {
-    if (phone) {
-      setSheetQuery('');
-      setSheet(true);
-      return;
-    }
     setDismissed(false);
     setValue((v) => (mentionQuery(v) !== null ? v : `${v}${v && !/\s$/.test(v) ? ' ' : ''}@`));
     focusEnd();
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.nativeEvent.isComposing) return;
-    if (pickerOpen && matches.length > 0) {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        setActive((a) => (a + (e.key === 'ArrowDown' ? 1 : -1) + matches.length) % matches.length);
-        return;
-      }
-      if (e.key === 'Enter' || e.key === 'Tab') {
-        e.preventDefault();
-        const p = matches[active];
-        if (p) pick(p);
-        return;
-      }
+    // 229: a soft keyboard (iOS autocorrect, an IME) still has the key; the event handed to cmdk would lose that mark.
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+    // The picker's keys go to cmdk's root. It sits beside the box, not around it, so a closed picker never takes Enter,
+    // the arrows or a Shift+Enter from the text. Tab picks as Enter does.
+    if (pickerOpen && pickable && PICKER_KEYS.has(e.key) && !e.shiftKey && !e.altKey && !e.metaKey && !e.ctrlKey) {
+      e.preventDefault();
+      cmd.current?.dispatchEvent(new KeyboardEvent('keydown', { key: e.key === 'Tab' ? 'Enter' : e.key, bubbles: true, cancelable: true }));
+      return;
     }
     if (pickerOpen && e.key === 'Escape') {
       e.preventDefault();
@@ -231,9 +295,15 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
     </button>
   );
 
+  // A fragment that matches nothing keeps one quiet line (in the Players group) rather than an empty panel. Without a
+  // roster (the shell's Ask sheet) there is no Players group at all, and the line stands alone.
+  const showPlayers = roster && (matches.length > 0 || !query || stats.length === 0);
+  const noPlayers = players.length === 0 ? 'No active players' : query && stats.length === 0 ? 'No player or stat by that name' : 'No match on your roster';
+  const pickLabel = roster ? 'Mention a player or stat' : 'Mention a stat';
+
   return (
     <div className={'ch-ask-cmp is-' + variant + (phone ? ' is-phone' : '')}>
-      <div className="ch-ask-cmp__box">
+      <div className="ch-ask-cmp__box" ref={frame}>
         <label className="ch-ask-cmp__label" htmlFor={`${listId}-ta`}>
           {first ? 'Ask CoachHelm' : 'Reply to CoachHelm'}
         </label>
@@ -247,8 +317,9 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
           enterKeyHint="send"
           autoComplete="off"
           aria-describedby={blocked ? `${listId}-blocked` : undefined}
-          aria-controls={pickerOpen ? `${listId}-list` : undefined}
-          aria-activedescendant={pickerOpen && matches.length > 0 ? `${listId}-option-${active}` : undefined}
+          aria-autocomplete="list"
+          aria-controls={pickerOpen ? pickIds.list : undefined}
+          aria-activedescendant={pickerOpen && pickable ? pickIds.active : undefined}
           onChange={(e) => {
             setValue(e.target.value);
             setDismissed(false);
@@ -281,38 +352,78 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
           )}
           <span className="ch-ask-cmp__grow" />
           {(!hero || phone) && (
-            <button type="button" className="ch-ask-cmp__round is-quiet" aria-label="Mention a player" data-ch-press="" onClick={openPlayers}>
+            <button
+              type="button"
+              className="ch-ask-cmp__round is-quiet"
+              aria-label="Mention a player or stat"
+              data-ch-press=""
+              // The text box keeps the focus, so a phone keyboard that is up stays up.
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={openPlayers}
+            >
               <Icon icon={AtSign} size={18} />
             </button>
           )}
           {send}
         </div>
         {pickerOpen && (
-          <ul className="ch-ask-pick" id={`${listId}-list`} role="listbox" aria-label="Players" data-ch-code="CH-13821">
-            {matches.length === 0 ? (
-              <li className="ch-ask-pick__none" role="presentation">
-                {players.length === 0 ? 'No active players' : 'No match on your roster'}
-              </li>
-            ) : (
-              matches.map((p, i) => (
-                <li key={p.id} role="presentation">
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={i === active}
-                    id={`${listId}-option-${i}`}
-                    tabIndex={-1}
-                    className={'ch-ask-pick__row' + (i === active ? ' is-on' : '')}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onMouseEnter={() => setActive(i)}
-                    onClick={() => pick(p)}
-                  >
-                    {p.name}
-                  </button>
-                </li>
-              ))
-            )}
-          </ul>
+          // A press on the picker never moves the focus: the text box keeps it, and the phone its keyboard.
+          // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- not a control; it only keeps the focus in the text box
+          <div
+            className="ch-ask-pick"
+            data-ch-code="CH-13821"
+            // The CSS caps the list by this, so a short sheet or a raised keyboard never cuts it off.
+            style={room === null ? undefined : { ['--ch-ask-pick-room' as string]: `${room}px` }}
+            onMouseDown={(e) => e.preventDefault()}
+          >
+            <Command
+              // A new fragment starts the list again, at its first row.
+              key={query}
+              ref={cmd}
+              shouldFilter={false}
+              loop
+              vimBindings={false}
+              // The keys the text box hands over stop here, so nothing further up hears them twice.
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              <Command.List ref={cmdList} className="ch-ask-pick__list" label={pickLabel}>
+                {!roster && stats.length === 0 && (
+                  <Command.Item value="stats:none" disabled className="ch-ask-pick__none">
+                    No stat by that name
+                  </Command.Item>
+                )}
+                {showPlayers && (
+                  <Command.Group heading="Players">
+                    {matches.length === 0 ? (
+                      <Command.Item value="players:none" disabled className="ch-ask-pick__none">
+                        {noPlayers}
+                      </Command.Item>
+                    ) : (
+                      matches.map((p) => (
+                        <Command.Item key={p.id} value={`player:${p.id}`} className="ch-ask-pick__row" onSelect={() => pick(p.name)}>
+                          <Avatar name={p.name} size={28} />
+                          <span className="ch-ask-pick__name">{p.name}</span>
+                        </Command.Item>
+                      ))
+                    )}
+                  </Command.Group>
+                )}
+                {stats.length > 0 && (
+                  <Command.Group heading="Stats">
+                    {stats.map((s) => (
+                      <Command.Item key={s.id} value={`stat:${s.id}`} className="ch-ask-pick__row" onSelect={() => pick(s.label)}>
+                        <span className="ch-ask-pick__mark" aria-hidden="true">
+                          <Icon icon={ChartColumn} size={15} />
+                        </span>
+                        <span className="ch-ask-pick__name">{s.label}</span>
+                      </Command.Item>
+                    ))}
+                  </Command.Group>
+                )}
+              </Command.List>
+              <PickerIdsProbe list={cmdList} onIds={setPickIds} />
+            </Command>
+          </div>
         )}
       </div>
       {blocked && (
@@ -320,25 +431,6 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
           Confirm or cancel the action above first
         </p>
       )}
-      <Modal open={sheet} onClose={() => setSheet(false)} title="Mention a player" code="CH-13821">
-        <label className="ch-ask-pick__find">
-          <span className="ch-sr-only">Filter players</span>
-          <input type="search" value={sheetQuery} placeholder="Filter players" autoComplete="off" onChange={(e) => setSheetQuery(e.target.value)} />
-        </label>
-        <ul className="ch-ask-sheetlist">
-          {sheetMatches.length === 0 ? (
-            <li className="ch-ask-pick__none">{players.length === 0 ? 'No active players' : 'No match on your roster'}</li>
-          ) : (
-            sheetMatches.map((p) => (
-              <li key={p.id}>
-                <button type="button" className="ch-ask-sheetlist__row" onClick={() => pick(p)}>
-                  {p.name}
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
-      </Modal>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useRef } from 'react';
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { useContinueRoundSession, type ContinueRoundSessionProps } from '@/lib/golf/round-session/use-continue-round-session';
+import { normalizeStartHole } from '@/lib/golf/round-session/play-order';
 import { useRoundPorts } from './ports';
 import { QualifierRoundSheet } from './QualifierRoundSheet';
 import { RecoveryHost, RoundRuntime, type RoundRuntimeRoutes } from './RoundRuntime';
@@ -42,6 +43,7 @@ export function ContinueRound({ qualifierRoundNumberOptions = [], qualifierRound
     heading: roundHeading(props.setupData),
     holes: engine.holes,
     currentHoleIndex: engine.currentHoleIndex,
+    startHole: normalizeStartHole(props.setupData.startHole, engine.holes.length),
     setCurrentHoleIndex: engine.setCurrentHoleIndex,
     completedHoleStats: engine.completedHoleStats,
     activeHoleShots: engine.activeHoleShots,

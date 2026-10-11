@@ -1,6 +1,8 @@
 'use client';
 
-import { Ruler, SunMoon, Sparkle, Vibrate } from 'lucide-react';
+import { Ruler, SunMoon, Sparkle, Type, Vibrate } from 'lucide-react';
+import { Button } from '../../ui/Button';
+import { haptic } from '../../lib/haptics';
 import { useGolfTheme } from '@/lib/golf/theme';
 import { Icon } from '../../ui/Icon';
 import { Segmented } from '../../ui/Segmented';
@@ -29,7 +31,19 @@ export function PreferencesSection({ device }: { device: ChDevice }) {
       </Row>
       {device.native && (
         <Row label={<><Icon icon={Vibrate} size={15} /> Haptics</>} help="Taps you feel on buttons, switches and saves.">
-          <SettingSwitch label="Haptics" hideLabel checked={haptics} onChange={setHaptics} />
+          <span className="ch-set-pair">
+            {/* P008-C3: feel what the switch controls, once. */}
+            <Button size="sm" disabled={!haptics} onClick={() => haptic('success')}>
+              Feel it
+            </Button>
+            <SettingSwitch label="Haptics" hideLabel checked={haptics} onChange={setHaptics} />
+          </span>
+        </Row>
+      )}
+      {device.native && (
+        // P008-C1: Clubhouse follows the iPhone's Text Size (lib/dynamic-type.ts); there is nothing to set here.
+        <Row label={<><Icon icon={Type} size={15} /> Text size</>} help="Follows your iPhone’s text size. Change it in Settings › Display & Brightness.">
+          <span className="ch-set-na">Automatic</span>
         </Row>
       )}
     </Card>

@@ -5,7 +5,7 @@ import { Component, type ReactNode } from 'react';
 import { chReport } from '../../lib/track';
 import { useChPhone } from '../../lib/use-phone';
 import type { SceneCamera } from './GolfScene';
-import { useLocalHour } from './use-hour';
+import { useSkyHour } from './use-hour';
 
 /**
  * The painted course is the heaviest thing on these screens and nothing on them
@@ -35,7 +35,8 @@ class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean
 }
 
 export function SceneMount({ camera = 'rest', play = false, hour: fixedHour }: { camera?: SceneCamera; play?: boolean; /** A fixed hour, for the dev preview; otherwise the viewer's clock. */ hour?: number }) {
-  const localHour = useLocalHour();
+  // P015-A1: the sky follows the sun where the viewer is, not the clock.
+  const localHour = useSkyHour();
   const hour = fixedHour ?? localHour;
   // CH-15909: 820px or less is the phone layout: the course on top, the form on a sheet.
   const phone = useChPhone();

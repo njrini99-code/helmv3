@@ -24,7 +24,6 @@ code:
   - 'eslint.config.mjs'
   - 'tailwind.config.*'
   - 'postcss.config.*'
-  - 'middleware.ts'
   - 'scripts/**/*.ts'
   - 'scripts/**/*.mjs'
   - '.github/workflows/ci.yml'

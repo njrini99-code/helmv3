@@ -1,3 +1,5 @@
+import { sunTimes, type LatLng } from '../../lib/sun';
+
 /**
  * Calendar view model. The loader resolves every time into the team's
  * timezone on the server, so the client only works with calendar dates
@@ -31,6 +33,11 @@ export interface ChCalEvent {
   people: string[];
   /** Per-player reply, keyed by player id. */
   rsvp: Record<string, ChRsvp>;
+  /**
+   * The coach asked for replies (`golf_events.requires_rsvp`, null read as off). Off is the default (owner, 2026-10-08):
+   * an event without it shows no reply controls, counts or "no reply" nudges. Invitees still make up who is on it.
+   */
+  rsvpRequired: boolean;
   /** Class blocks: the player whose schedule this is. */
   owner: string | null;
   /** Classes a viewer may only see as Busy carry no title or room. */
@@ -61,6 +68,37 @@ export interface ChCalOverlap {
 export const CAL_START = 6;
 export const CAL_END = 21;
 export const CAL_HH = 52;
+
+/** A day's light on the grid (P006-A1), as decimal hours on the team's clock; null where the sun doesn't rise or set. */
+export interface ChDaylight {
+  rise: number | null;
+  set: number | null;
+  golden: number | null;
+}
+
+/** Sunrise, sunset and the start of golden hour for a calendar day, from the global light's sun (lib/sun.ts sunTimes). */
+export function daylightOn(date: string, place: LatLng, timeZone: string): ChDaylight {
+  const t = sunTimes(date, place, timeZone);
+  const fmt = new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', hour: '2-digit', minute: '2-digit' });
+  const hour = (ms: number | null) => {
+    if (ms === null) return null;
+    const p = Object.fromEntries(fmt.formatToParts(ms).map((x) => [x.type, x.value]));
+    return (Number(p.hour) % 24) + Number(p.minute) / 60;
+  };
+  return { rise: hour(t.sunrise), set: hour(t.sunset), golden: hour(t.goldenStart) };
+}
+
+/**
+ * The hour the Week and Day grids open on (P006-B1): now, when today is on show; else the first event still ahead on
+ * the days shown; else the first timed event shown; else null (the grid stays at its top).
+ */
+export function focusHour(dates: string[], events: Array<{ date: string; allDay?: boolean; start: number | null }>, now: { date: string; hour: number }): number | null {
+  // Now only leads inside the day's working hours: at 10 PM or 5 AM it would park the grid on its empty bottom or top.
+  if (dates.includes(now.date) && now.hour >= CAL_START && now.hour < CAL_END) return now.hour;
+  const timed = events.filter((e) => !e.allDay && e.start != null && dates.includes(e.date)).sort((a, b) => a.date.localeCompare(b.date) || a.start! - b.start!);
+  const ahead = timed.find((e) => e.date > now.date || (e.date === now.date && e.start! >= now.hour));
+  return (ahead ?? timed[0])?.start ?? null;
+}
 
 export const TYPE_LABEL: Record<ChCalType, string> = {
   practice: 'Practice',
@@ -152,6 +190,76 @@ export function viewTitle(view: ChCalView, anchor: string): { main: string; year
     return { main: ma === mb ? `${ma} ${dayNum(a!)} – ${dayNum(b!)}` : `${ma} ${dayNum(a!)} – ${mb} ${dayNum(b!)}`, year: String(yearOf(b!)) };
   }
   return { main: monthName(anchor), year: String(yearOf(anchor)) };
+}
+
+/** Players' classes that start in the same half hour, drawn as one block on the Week and Day grids. */
+export interface ChClassGroup {
+  id: string;
+  date: string;
+  start: number;
+  /** Where the block is drawn to: the next group's start when the two only brush (half an hour or less). */
+  end: number;
+  /** The last class's end. */
+  until: number;
+  items: ChCalEvent[];
+}
+
+export const isClassGroup = (x: ChCalEvent | ChClassGroup): x is ChClassGroup => 'items' in x;
+
+/**
+ * P006 (owner, 2026-10-08: a full roster's class schedules crushed the week into slivers): a day's classes that start
+ * in the same half hour fold into one block, earliest start to latest end, listed by player. A class alone in its
+ * half hour, and every other event, stays itself, so a one-player filter shows that player's classes as before.
+ */
+export function groupClasses(events: ChCalEvent[]): Array<ChCalEvent | ChClassGroup> {
+  const out: Array<ChCalEvent | ChClassGroup> = [];
+  const slots = new Map<string, ChCalEvent[]>();
+  for (const e of events) {
+    if (e.type !== 'class' || e.allDay || e.start == null || e.end == null) {
+      out.push(e);
+      continue;
+    }
+    const key = `${e.date}:${Math.floor(e.start * 2) / 2}`;
+    const slot = slots.get(key);
+    if (slot) slot.push(e);
+    else slots.set(key, [e]);
+  }
+  // A class alone in its half hour (a player on another timetable) joins the group it overlaps most, so it doesn't
+  // lie across two groups as a third block.
+  const groups = [...slots.values()].filter((items) => items.length > 1);
+  const span = (items: ChCalEvent[]) => [Math.min(...items.map((e) => e.start!)), Math.max(...items.map((e) => e.end!))];
+  for (const [key, items] of [...slots]) {
+    if (items.length > 1) continue;
+    const e = items[0]!;
+    let best: ChCalEvent[] | null = null;
+    let most = 0;
+    for (const g of groups) {
+      const [s0, s1] = span(g);
+      const shared = Math.min(e.end!, s1!) - Math.max(e.start!, s0!);
+      if (shared > most) [best, most] = [g, shared];
+    }
+    if (best) {
+      best.push(e);
+      slots.delete(key);
+    }
+  }
+  const made: ChClassGroup[] = [];
+  for (const [key, items] of slots) {
+    if (items.length === 1) {
+      out.push(items[0]!);
+      continue;
+    }
+    items.sort((a, b) => a.start! - b.start! || a.end! - b.end! || a.id.localeCompare(b.id));
+    const until = Math.max(...items.map((e) => e.end!));
+    made.push({ id: `classes:${key}`, date: items[0]!.date, start: items[0]!.start!, end: until, until, items });
+  }
+  // Back-to-back groups that only brush (10:00–11:15, then 11:00) stack at full width instead of splitting the column.
+  made.sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start);
+  for (let i = 0; i + 1 < made.length; i += 1) {
+    const [a, b] = [made[i]!, made[i + 1]!];
+    if (a.date === b.date && b.start < a.end && a.end - b.start <= 0.5 && b.start > a.start) a.end = b.start;
+  }
+  return [...out, ...made];
 }
 
 export interface ChLaid<E> {
@@ -252,6 +360,24 @@ export function openTimes(events: ChCalEvent[], people: string[], date: string, 
     if (!out.some((o) => overlaps(o, w))) out.push(w);
   }
   return out.sort((a, b) => a[0] - b[0]);
+}
+
+/**
+ * Where a new event opens (P006 D3): the first two hours on the date, on the quarter hour, when none of `people` is
+ * busy, from now on today (from 9 AM on another day), within 7 AM to 8 PM. Practice every afternoon no longer makes
+ * every new event open with the whole team Busy. Late in the day, or on a full day, the first free window of the day;
+ * failing that the old 3:30.
+ */
+export function seedWindow(events: ChCalEvent[], people: string[], date: string, now: { date: string; hour: number }): [number, number] {
+  const len = 2;
+  const busy = people.flatMap((p) => busyFor(events, p, date)).map((b) => [b.start!, b.end!] as [number, number]);
+  const firstFree = (from: number): [number, number] | null => {
+    for (let s = Math.max(7, Math.ceil(from * 4) / 4); s + len <= 20; s += 0.25) {
+      if (!busy.some((b) => overlaps([s, s + len], b))) return [s, s + len];
+    }
+    return null;
+  };
+  return firstFree(date === now.date ? now.hour : 9) ?? firstFree(7) ?? [15.5, 17.5];
 }
 
 /**

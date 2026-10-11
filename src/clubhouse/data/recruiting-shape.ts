@@ -9,6 +9,7 @@ import {
   recruitDocExtension,
   recruitDocMaxBytes,
 } from '@/app/golf/actions/recruit-documents-limits';
+import type { ChDivision, ChProgramGender } from './recruiting-calendar';
 
 /**
  * Recruiting (P014): the coach's prospect list, in the shapes the screen draws. Client-safe (only types come from
@@ -45,7 +46,18 @@ export interface ChProspect {
   stage: ChStage;
   createdAt: string;
   updatedAt: string;
+  /**
+   * The structured next step (P014 C1): a short label and a day ("2026-10-12"). Present only once the columns exist on
+   * golf_recruits (migration 20261008120000); the page treats their absence as the feature being off.
+   */
+  nextStepLabel?: string | null;
+  nextStepDate?: string | null;
 }
+
+/** The two next-step columns as they come back from `select('*')` once the migration is applied. */
+type NextStepColumns = { next_step_label?: string | null; next_step_date?: string | null };
+/** What the write actions take, plus the next step. The fields are only sent while the columns exist. */
+export type ChRecruitInput = RecruitInput & NextStepColumns;
 
 export const fullName = (first: string, last: string | null | undefined) => [first, last].map((s) => (s ?? '').trim()).filter(Boolean).join(' ');
 
@@ -65,7 +77,14 @@ export function toProspect(r: Recruit): ChProspect {
     stage: isStage(r.status) ? r.status : 'recruiting',
     createdAt: r.created_at,
     updatedAt: r.updated_at,
+    ...nextStepOf(r as Recruit & NextStepColumns),
   };
+}
+
+/** The row's next step, only when the row carries the columns at all (absent before the migration is applied). */
+function nextStepOf(r: NextStepColumns): Pick<ChProspect, 'nextStepLabel' | 'nextStepDate'> {
+  if (!('next_step_label' in r) && !('next_step_date' in r)) return {};
+  return { nextStepLabel: r.next_step_label?.trim() || null, nextStepDate: r.next_step_date ? r.next_step_date.slice(0, 10) : null };
 }
 
 /** What the server sends the page: the list, whether it could be read, and the server's clock for "2 days ago". */
@@ -75,6 +94,13 @@ export interface ChRecruiting {
   error: boolean;
   /** The server's now (ISO), so the first paint and the browser agree on every relative date. */
   now: string;
+  /** The next-step columns exist on golf_recruits (C1). Absent or false: every next-step surface is hidden and never written. */
+  nextStep?: boolean;
+  /**
+   * The program the recruiting calendar reads (C2), from the team (golf_teams.gender) and its organization's division.
+   * Absent when the read failed; a null division is the coach's to choose on this device.
+   */
+  program?: { division: ChDivision | null; gender: ChProgramGender | null };
 }
 
 // ── Pipeline: counts, shares, search, sort ─────────────────────────────────
@@ -104,13 +130,16 @@ export function sharesOf(counts: Record<ChStage, number>): Record<ChStage, numbe
   return Object.fromEntries(CH_STAGES.map((s, i) => [s.value, floors[i]!])) as Record<ChStage, number>;
 }
 
-export type ChSort = 'updated' | 'name' | 'class';
+export type ChSort = 'updated' | 'name' | 'class' | 'next';
 export const CH_SORTS: ReadonlyArray<{ value: ChSort; label: string }> = [
   { value: 'updated', label: 'Recently updated' },
   { value: 'name', label: 'Name' },
   { value: 'class', label: 'Class year' },
 ];
-export const isSort = (v: unknown): v is ChSort => CH_SORTS.some((s) => s.value === v);
+const NEXT_SORT = { value: 'next', label: 'Next step due' } as const;
+/** The sorts on offer: "Next step due" only while the next-step columns exist. */
+export const sortsFor = (nextStep: boolean): ReadonlyArray<{ value: ChSort; label: string }> => (nextStep ? [...CH_SORTS, NEXT_SORT] : CH_SORTS);
+export const isSort = (v: unknown): v is ChSort => CH_SORTS.some((s) => s.value === v) || v === NEXT_SORT.value;
 
 /** Name, hometown, state, email and notes, as the current page searches them. */
 export function matchesQuery(p: ChProspect, query: string): boolean {
@@ -124,6 +153,12 @@ export function sortProspects(list: readonly ChProspect[], sort: ChSort): ChPros
     if (sort === 'name') return a.name.localeCompare(b.name);
     // A prospect with no class year goes last.
     if (sort === 'class') return (a.classYear ?? 9999) - (b.classYear ?? 9999);
+    // The soonest next step first; a prospect with none goes last, then most recently updated.
+    if (sort === 'next') {
+      const x = a.nextStepDate ?? '9999-12-31';
+      const y = b.nextStepDate ?? '9999-12-31';
+      if (x !== y) return x < y ? -1 : 1;
+    }
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 }
@@ -187,6 +222,9 @@ export interface ChDraft {
   classYear: string;
   stage: ChStage;
   notes: string;
+  /** The next step's label and day (yyyy-mm-dd), drawn and sent only while the columns exist. */
+  nextLabel: string;
+  nextDate: string;
 }
 
 /** A new prospect starts at Watched, as the Add prospect board does. */
@@ -201,27 +239,29 @@ export function draftOf(p?: ChProspect | null): ChDraft {
     classYear: p?.classYear != null ? String(p.classYear) : '',
     stage: p?.stage ?? 'watched',
     notes: p?.notes ?? '',
+    nextLabel: p?.nextStepLabel ?? '',
+    nextDate: p?.nextStepDate ?? '',
   };
 }
 
-export const FIELD_LIMITS = { first: 120, last: 120, email: 254, phone: 40, hometown: 120, notes: 5000 } as const;
+export const FIELD_LIMITS = { first: 120, last: 120, email: 254, phone: 40, hometown: 120, notes: 5000, nextLabel: 120 } as const;
 export const MIN_CLASS_YEAR = 2020;
 export const MAX_CLASS_YEAR = 2040;
 
-export type ChDraftField = 'first' | 'last' | 'email' | 'phone' | 'hometown' | 'state' | 'classYear' | 'notes';
+export type ChDraftField = 'first' | 'last' | 'email' | 'phone' | 'hometown' | 'state' | 'classYear' | 'nextLabel' | 'nextDate' | 'notes';
 export interface ChDraftProblem {
   field: ChDraftField;
-  code: 'CH-14101' | 'CH-14102' | 'CH-14103' | 'CH-14104';
+  code: 'CH-14101' | 'CH-14102' | 'CH-14103' | 'CH-14104' | 'CH-14111';
   message: string;
 }
 
-const LABELS: Record<keyof typeof FIELD_LIMITS, string> = { first: 'First name', last: 'Last name', email: 'Email', phone: 'Phone', hometown: 'Hometown', notes: 'Notes' };
+const LABELS: Record<keyof typeof FIELD_LIMITS, string> = { first: 'First name', last: 'Last name', email: 'Email', phone: 'Phone', hometown: 'Hometown', notes: 'Notes', nextLabel: 'Next step' };
 
 /** The same refusals the server makes, before anything is sent, in the order the fields are on the form. */
 export function checkDraft(d: ChDraft): ChDraftProblem[] {
   const out: ChDraftProblem[] = [];
   if (!d.first.trim()) out.push({ field: 'first', code: 'CH-14101', message: 'Add a first name.' });
-  for (const field of ['first', 'last', 'email', 'phone', 'hometown', 'notes'] as const) {
+  for (const field of ['first', 'last', 'email', 'phone', 'hometown', 'nextLabel', 'notes'] as const) {
     const value = field === 'notes' ? d.notes : d[field].trim();
     if (value.length > FIELD_LIMITS[field]) {
       out.push({ field, code: 'CH-14104', message: `${LABELS[field]} is too long (${FIELD_LIMITS[field].toLocaleString('en-US')} characters at most).` });
@@ -233,14 +273,24 @@ export function checkDraft(d: ChDraft): ChDraftProblem[] {
   if (year && !(/^\d{4}$/.test(year) && Number(year) >= MIN_CLASS_YEAR && Number(year) <= MAX_CLASS_YEAR)) {
     out.push({ field: 'classYear', code: 'CH-14102', message: `Class year is a four-digit year from ${MIN_CLASS_YEAR} to ${MAX_CLASS_YEAR}.` });
   }
-  const order: ChDraftField[] = ['first', 'last', 'email', 'phone', 'hometown', 'state', 'classYear', 'notes'];
+  const day = d.nextDate.trim();
+  if (day && !isDay(day)) out.push({ field: 'nextDate', code: 'CH-14111', message: 'Pick a date for the next step.' });
+  const order: ChDraftField[] = ['first', 'last', 'email', 'phone', 'hometown', 'state', 'classYear', 'nextLabel', 'nextDate', 'notes'];
   return out.sort((a, b) => order.indexOf(a.field) - order.indexOf(b.field));
 }
 
-/** What the server action takes. An emptied field is sent empty, and the server stores it as nothing. */
-export function inputFromDraft(d: ChDraft): RecruitInput {
+/** A real calendar day as yyyy-mm-dd. */
+export const isDay = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && new Date(`${s}T12:00:00Z`).toISOString().slice(0, 10) === s;
+
+/**
+ * What the server action takes. An emptied field is sent empty, and the server stores it as nothing. The next step is
+ * sent only when `nextStep` says its columns exist: before the migration, naming them would fail the whole write.
+ */
+export function inputFromDraft(d: ChDraft, opts: { nextStep?: boolean } = {}): ChRecruitInput {
   const year = d.classYear.trim();
+  const next = opts.nextStep ? { next_step_label: d.nextLabel.trim() || null, next_step_date: d.nextDate.trim() || null } : {};
   return {
+    ...next,
     first_name: d.first.trim(),
     last_name: d.last.trim(),
     hs_class: year ? Number(year) : null,
@@ -254,7 +304,7 @@ export function inputFromDraft(d: ChDraft): RecruitInput {
 }
 
 /** The prospect as the list holds it after a save, before the server's own copy arrives. */
-export function prospectFrom(id: string, input: RecruitInput, at: { createdAt: string; updatedAt: string }): ChProspect {
+export function prospectFrom(id: string, input: ChRecruitInput, at: { createdAt: string; updatedAt: string }): ChProspect {
   const clean = (s: string | null | undefined) => (s ?? '').trim() || null;
   const first = (input.first_name ?? '').trim();
   return {
@@ -271,7 +321,65 @@ export function prospectFrom(id: string, input: RecruitInput, at: { createdAt: s
     stage: input.status ?? 'watched',
     createdAt: at.createdAt,
     updatedAt: at.updatedAt,
+    ...('next_step_label' in input || 'next_step_date' in input ? { nextStepLabel: clean(input.next_step_label), nextStepDate: clean(input.next_step_date) } : {}),
   };
+}
+
+// ── The next step (C1) ─────────────────────────────────────────────────────
+
+/** Suggested labels for the next step. The pipeline head counts visits and decisions from the words in a label. */
+export const NEXT_STEP_SUGGESTIONS = ['Official visit', 'Unofficial visit', 'Call', 'Evaluation', 'Decision due'] as const;
+
+/** A label that names a visit, a decision, or anything else. Rules only: "visit" is a visit; "decision", "commit" or "deadline" is a decision. */
+export function nextStepKind(label: string | null | undefined): 'visit' | 'decision' | 'other' {
+  const s = (label ?? '').toLowerCase();
+  if (/\bvisit/.test(s)) return 'visit';
+  if (/\b(decision|decide|commit|deadline)/.test(s)) return 'decision';
+  return 'other';
+}
+
+const todayKey = (now: Date, tz?: string) => dayKey(now, tz);
+const addDays = (day: string, n: number) => new Date(Date.parse(`${day}T12:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+
+/** A step is due when its day is today or earlier, or within the next 14 days. */
+export const NEXT_STEP_DUE_DAYS = 14;
+export function isNextStepDue(p: Pick<ChProspect, 'nextStepDate'>, now: Date, tz?: string): boolean {
+  return !!p.nextStepDate && p.nextStepDate <= addDays(todayKey(now, tz), NEXT_STEP_DUE_DAYS);
+}
+
+/**
+ * The pipeline head's count: visits dated this calendar month, and decisions due (dated by the end of this month,
+ * including any already past). Null when there is nothing to count, so the head says nothing rather than "0 visits".
+ */
+export function nextStepSummary(list: readonly ChProspect[], now: Date, tz?: string): string | null {
+  const today = todayKey(now, tz);
+  const month = today.slice(0, 7);
+  let visits = 0;
+  let decisions = 0;
+  for (const p of list) {
+    if (!p.nextStepDate) continue;
+    const kind = nextStepKind(p.nextStepLabel);
+    if (kind === 'visit' && p.nextStepDate.slice(0, 7) === month) visits += 1;
+    if (kind === 'decision' && p.nextStepDate.slice(0, 7) <= month) decisions += 1;
+  }
+  const parts = [
+    visits ? `${visits} ${visits === 1 ? 'visit' : 'visits'} this month` : null,
+    decisions ? `${decisions} ${decisions === 1 ? 'decision' : 'decisions'} due` : null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(' · ') : null;
+}
+
+/** "Oct 12", or "Oct 12, 2027" in another year, for a yyyy-mm-dd day. */
+export function dayLabelOf(day: string, now: Date, tz?: string): string {
+  if (!isDay(day)) return '—';
+  const sameYear = day.slice(0, 4) === todayKey(now, tz).slice(0, 4);
+  return new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', ...(sameYear ? {} : { year: 'numeric' }) }).format(new Date(`${day}T12:00:00Z`));
+}
+
+/** "Official visit · Oct 12", "Official visit", "Oct 12", or null when there is no next step. */
+export function nextStepLine(p: Pick<ChProspect, 'nextStepLabel' | 'nextStepDate'>, now: Date, tz?: string): string | null {
+  const parts = [p.nextStepLabel?.trim() || null, p.nextStepDate ? dayLabelOf(p.nextStepDate, now, tz) : null].filter(Boolean);
+  return parts.length ? parts.join(' · ') : null;
 }
 
 /** Whether the form holds something different from what it opened with. */

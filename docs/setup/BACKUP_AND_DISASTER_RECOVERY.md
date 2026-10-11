@@ -203,6 +203,10 @@ psql -h localhost -U postgres -f backup.sql
 - Site returns 500 errors
 - Builds timing out
 
+> **Owner prompt on the Vercel MCP.** The Vercel MCP deploy, promote and
+> rollback tools ask the owner first; the release path is the Vercel CLI deploy
+> in AGENTS.md "Production".
+
 **Recovery Steps:**
 1. Roll back to previous deployment:
    ```bash
@@ -514,6 +518,10 @@ Vercel Support    N/A             support@vercel.com   Dashboard
 - **Sentry:** https://status.sentry.io
 
 ### Quick Recovery Commands
+
+The Vercel MCP deploy, promote and rollback tools prompt the owner first;
+the CLI release path is in AGENTS.md "Production".
+
 ```bash
 # Restore database
 psql -h HOST -U postgres -f backup.sql

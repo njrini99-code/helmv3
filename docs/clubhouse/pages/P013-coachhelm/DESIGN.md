@@ -124,8 +124,9 @@ reduced motion (CH-13980). Nothing counts up.
 
 v2 grammar (D-70): selection for choosing a player or an insight; the light
 press on Assign as focus, with success when it lands and error when it does not;
-the warning before Dismiss; Accept is a primary button (the light press) and
-Decline is silent, each with success or error from `useAction` (CH-13704);
+the warning before Dismiss; Accept carries the light press, and is the primary
+button for a lone proposal and secondary when there are more (one primary per
+screen, P013 D10), and Decline is silent, each with success or error from `useAction` (CH-13704);
 choosing a view in the sub-navigation, a read in the Deep dive's list and a
 round or a plan link under it are selections (CH-13780); other taps are silent.
 
@@ -240,7 +241,9 @@ stat's own scale: the player's mark, the Tour's tick and the team's tick, the
 three figures with their keys, the rank in words and what closing the gap is
 worth in strokes a round (the shared counterfactual from their scoring average).
 The Tour is the only benchmark (Q-88), the LPGA's for a women's team; strokes
-gained is against the field average, not a Tour player's score. A comparison
+gained is named against the Tour too, as Stats says "vs Tour". The hero leads
+with the most to gain ("Strokes gained: total is worth about 2.1 strokes a
+round") and gives one count, against the Tour's denominator (P013 D4). A comparison
 that cannot be made says why in the row and is drawn as a dash (a team under
 five measured teammates, a Tour value that is not comparable): never a zero.
 Ranks are never averages, and percent wording starts at 20 teammates. The top

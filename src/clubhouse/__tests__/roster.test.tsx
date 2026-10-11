@@ -13,6 +13,13 @@ vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), back: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
+/** A face or name goes to the player's profile where that page is rebuilt (owner, 2026-10-08); most of this file drives the
+ *  peek, which a face opens where it isn't, so the profile route reads as not rebuilt unless a test turns it on. */
+const profile = vi.hoisted(() => ({ rebuilt: false }));
+vi.mock('../shell/nav', async (orig) => {
+  const nav = await orig<typeof import('../shell/nav')>();
+  return { ...nav, rebuiltHref: (href: string, role?: Parameters<typeof nav.rebuiltHref>[1]) => (href.startsWith('/golf/dashboard/stats?player=') && !profile.rebuilt ? null : nav.rebuiltHref(href, role)) };
+});
 const logServer = vi.hoisted(() => vi.fn());
 vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
@@ -88,6 +95,8 @@ beforeEach(() => {
   vi.mocked(chReport).mockClear();
   vi.mocked(chTrail).mockClear();
   tables.current = {};
+  profile.rebuilt = false;
+  router.push.mockClear();
   localStorage.clear();
 });
 
@@ -356,6 +365,23 @@ describe('Roster · empty', () => {
 });
 
 describe('Roster · loading, haptics, accessibility', () => {
+  it('a face (grid) or a name (list) goes to the player’s profile; only a Needs a look chip opens the peek', async () => {
+    const user = userEvent.setup();
+    profile.rebuilt = true;
+    wrap(roster());
+    await user.click(screen.getByRole('button', { name: new RegExp(`^${theo.name}.*Open profile`) }));
+    expect(router.push).toHaveBeenLastCalledWith(`/golf/dashboard/stats?player=${theo.id}`);
+    expect(screen.queryByRole('complementary', { name: theo.name })).toBeNull();
+    await toList(user);
+    await user.click(screen.getByRole('button', { name: `${theo.name}. Open profile` }));
+    expect(router.push).toHaveBeenCalledTimes(2);
+    expect(router.push).toHaveBeenLastCalledWith(`/golf/dashboard/stats?player=${theo.id}`);
+    expect(screen.queryByRole('complementary')).toBeNull();
+    await user.click(within(screen.getByRole('region', { name: 'Needs a look' })).getByRole('button', { name: /Jonah/ }));
+    expect(await screen.findByRole('complementary', { name: 'Jonah Okafor' })).toBeTruthy();
+    expect(router.push).toHaveBeenCalledTimes(2);
+  });
+
   it('CH-3401 the route skeleton is busy', () => {
     render(<RosterSkeleton />);
     expect(code('CH-3401')!.getAttribute('aria-busy')).toBe('true');
@@ -394,11 +420,16 @@ describe('Roster · loading, haptics, accessibility', () => {
       for (const child of row.children) expect(['cell', 'columnheader']).toContain(child.getAttribute('role'));
   });
 
-  it('CH-3802 a player card reads its status as a word', () => {
+  it('CH-3802 a player card reads its status as a word; the dot is decoration, drawn only under All (P003-A3)', async () => {
+    const user = userEvent.setup();
     wrap(roster());
     const card = screen.getAllByRole('button', { name: new RegExp(theo.name) })[0]!;
     expect(card.textContent).toMatch(/Active/);
-    expect(card.querySelector('.ch-rs-face__dot')!.getAttribute('aria-hidden')).toBe('true');
+    // Under Active every dot is the same, so none is drawn.
+    expect(card.querySelector('.ch-rs-face__dot')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'All' }));
+    const all = screen.getAllByRole('button', { name: new RegExp(theo.name) })[0]!;
+    expect(all.querySelector('.ch-rs-face__dot')!.getAttribute('aria-hidden')).toBe('true');
   });
 
   it("View insights, the row menu's first item, opens CoachHelm on that player", async () => {
@@ -473,6 +504,8 @@ describe('Roster · loading, haptics, accessibility', () => {
 describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
   const realMatchMedia = window.matchMedia;
   beforeEach(() => {
+    // The phone's profile links are the production ones (the stats page is rebuilt).
+    profile.rebuilt = true;
     window.matchMedia = ((q: string) => ({
       matches: q === '(max-width: 820px)',
       media: q,

@@ -47,6 +47,7 @@ import {
   type RoundSessionRoutes,
 } from '@/lib/golf/round-session/routes';
 import { CONFLICT_CHECK_TIMEOUT_MS, settleWithin } from '@/lib/golf/round-session/settle-within';
+import { decidePostHoleCompleteAction, nextPlayIndex, normalizeStartHole } from '@/lib/golf/round-session/play-order';
 import {
   validateStartForm,
   validateStartHoles,
@@ -70,46 +71,8 @@ export {
 
 export type Hole = RoundHole;
 
-/** What handleHoleComplete should do immediately after recording/editing a hole's score. */
-export type PostHoleCompleteAction =
-  | { type: 'finish' }
-  | { type: 'return-to-frontier' }
-  | { type: 'advance'; nextHoleIndex: number };
-
-/**
- * Pure decision logic for handleHoleComplete's post-save navigation —
- * exported for unit testing. Mirrors continue-round-client.tsx's identical
- * `allHolesScored` gate inside the `isReEdit` branch (P1 fix, production-
- * readiness mission 2026-07-09): re-editing a completed hole that turns out
- * to be the LAST unscored hole in the round must surface the finish
- * confirmation with the freshly-updated stats, not silently return to the
- * active frontier with a stale scorecard and no path to submit.
- */
-export function decidePostHoleCompleteAction(params: {
-  allHolesScored: boolean;
-  isReEdit: boolean;
-  holeIndex: number;
-  totalHoles: number;
-}): PostHoleCompleteAction {
-  const { allHolesScored, isReEdit, holeIndex, totalHoles } = params;
-
-  // Last hole (re-)completed and all holes scored — always show finish confirmation.
-  if (allHolesScored && holeIndex === totalHoles - 1) {
-    return { type: 'finish' };
-  }
-  if (isReEdit) {
-    // All holes scored after re-edit — show finish confirmation.
-    if (allHolesScored) return { type: 'finish' };
-    // Re-editing a previously completed hole — return to the active frontier.
-    return { type: 'return-to-frontier' };
-  }
-  if (holeIndex < totalHoles - 1) {
-    // Normal progression — advance to next hole.
-    return { type: 'advance', nextHoleIndex: holeIndex + 1 };
-  }
-  // Last hole completed for the first time — show finish confirmation.
-  return { type: 'finish' };
-}
+// The post-hole decision lives with the play-order rules so both engines share it; the engine keeps exporting it.
+export { decidePostHoleCompleteAction, type PostHoleCompleteAction } from '@/lib/golf/round-session/play-order';
 
 export interface NewRoundClientProps {
   playerId: string;
@@ -739,6 +702,7 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
         roundType: setup.roundType,
         roundDate: setup.roundDate,
         currentHole: Math.min(currentHole + 1, holesSnapshot.length),
+        startHole: normalizeStartHole(setup.startHole, holesSnapshot.length),
         holesToPlay: holesSnapshot.length as 9 | 18,
         holes: Array.from(
           { length: holesSnapshot.length },
@@ -1426,6 +1390,7 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
   ): Promise<NewRoundStartResult> => {
     const { setup, qualifierId, qualifierRoundNumber } = startSetup
       ?? { setup: setupData, qualifierId: selectedQualifierId, qualifierRoundNumber: selectedRoundNumber };
+    const startIndex = normalizeStartHole(setup.startHole, configuredHoles.length) - 1;
     const initialData: PartialRoundData = {
       courseName: setup.courseName,
       courseId: resolvedCourseIdRef.current || undefined,
@@ -1439,7 +1404,9 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       roundDate: setup.roundDate,
       qualifierId: setup.roundType === 'qualifier' ? qualifierId ?? undefined : undefined,
       qualifierRoundNumber: setup.roundType === 'qualifier' ? qualifierRoundNumber ?? undefined : undefined,
-      currentHole: 1,
+      // Shotgun start: the round opens on its starting hole, and the server keeps it (draft_data.startHole).
+      currentHole: startIndex + 1,
+      startHole: startIndex + 1,
       holesToPlay: configuredHoles.length as 9 | 18,
       holes: [],
       inProgressShots: [],
@@ -1559,8 +1526,8 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       setHoles(initialHoles);
       setCompletedHoleStats([]);
       setInProgressShotsByHole({});
-      setCurrentHoleIndex(0);
-      activeProgressHoleRef.current = 0;
+      setCurrentHoleIndex(startIndex);
+      activeProgressHoleRef.current = startIndex;
       emergencySave({
         playerId,
         roundId: result.data.roundId,
@@ -1569,7 +1536,7 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
         holes: initialHoles,
         completedHoleStats: [],
         inProgressShotsByHole: {},
-        currentHoleIndex: 0,
+        currentHoleIndex: startIndex,
         holesPerRound: configuredHoles.length as 9 | 18,
       });
       return { ok: true, roundId: result.data.roundId };
@@ -2034,6 +2001,7 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       qualifierId: setupData.roundType === 'qualifier' ? selectedQualifierId ?? undefined : undefined,
       qualifierRoundNumber: setupData.roundType === 'qualifier' ? selectedRoundNumber ?? undefined : undefined,
       currentHole: Math.min(holeIndexToUse + 1, roundHoles.length),
+      startHole: normalizeStartHole(setupData.startHole, roundHoles.length),
       holesToPlay: roundHoles.length as 9 | 18,
       holes: Array.from(
         { length: roundHoles.length },
@@ -2215,6 +2183,11 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
     inProgressShotsByHoleRef.current = inProgressAfter;
     setInProgressShotsByHole(inProgressAfter);
 
+    // The hole after this one in play order (shotgun start: hole 18 is followed by hole 1). A round from hole 1 keeps
+    // its old "one past the last hole" marker after the 18th, which the saves clamp.
+    const startHole = normalizeStartHole(setupData.startHole, holes.length);
+    const followingHole = startHole === 1 ? holeIndex + 1 : nextPlayIndex(holeIndex, holes.length, startHole);
+
     // Immediate localStorage backup of completed hole (synchronous, guaranteed)
     const emergencyTimestamp = Date.now();
     emergencySave({
@@ -2225,11 +2198,11 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       holes: updatedHoles,
       completedHoleStats: updatedStats,
       inProgressShotsByHole: inProgressAfter,
-      currentHoleIndex: isReEdit ? activeProgressHoleIndex : holeIndex + 1,
+      currentHoleIndex: isReEdit ? activeProgressHoleIndex : followingHole,
       holesPerRound,
     });
 
-    const nextHole = isReEdit ? activeProgressHoleIndex : holeIndex + 1;
+    const nextHole = isReEdit ? activeProgressHoleIndex : followingHole;
     const checkpointed = await persistCompletedHole(
       buildPartialRoundData(updatedStats, nextHole, inProgressAfter),
       emergencyTimestamp,
@@ -2239,13 +2212,16 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
 
     // Navigate after completion
     // Check if every hole now has a score (all completed)
-    const allHolesScored = updatedStats.length === holes.length && updatedStats.every(s => s?.score != null);
+    // Every hole, not every slot: `updatedStats` is sparse, and with a shotgun start hole 18 is done (length 18) while
+    // holes 1..5 are still to play. `.every` skips empty slots, so it must walk the holes.
+    const allHolesScored = holes.every((_, index) => updatedStats[index]?.score != null);
 
     const decision = decidePostHoleCompleteAction({
       allHolesScored,
       isReEdit,
       holeIndex,
       totalHoles: holes.length,
+      startHole,
     });
     switch (decision.type) {
       case 'finish':
@@ -2956,6 +2932,7 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       qualifierId: rd.setupData.qualifierId || undefined,
       qualifierRoundNumber: rd.setupData.qualifierRoundNumber || undefined,
       currentHole: Math.max(1, Math.min(rd.currentHoleIndex + 1, holesToPlay)),
+      startHole: normalizeStartHole(rd.setupData.startHole, holesToPlay),
       holesToPlay,
       holes: rd.completedHoleStats.filter((hole): hole is HoleStats => hole != null),
       inProgressShots,

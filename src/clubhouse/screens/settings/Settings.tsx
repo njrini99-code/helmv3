@@ -8,6 +8,13 @@ import type { ChDevice, ChSettingsData, ChSettingsSection } from './model';
 import { SettingsView } from './SettingsView';
 import { createLiveWrites } from './writes';
 
+/** Push-to-self (D1-6): the server sends one fixed test to the signed-in person's own subscriptions. */
+async function sendTestPush(): Promise<{ ok: boolean; sent?: number; error?: string }> {
+  const res = await fetch('/api/push-subscriptions/test', { method: 'POST' });
+  const body = (await res.json().catch(() => ({}))) as { sent?: number; error?: string };
+  return res.ok ? { ok: true, sent: body.sent } : { ok: false, error: body.error };
+}
+
 /** The live Settings: server data from the route, the real writes, this device's push and haptics. */
 export function Settings({ data, section }: { data: ChSettingsData; section: ChSettingsSection }) {
   const router = useRouter();
@@ -27,6 +34,6 @@ export function Settings({ data, section }: { data: ChSettingsData; section: ChS
       }),
     [data.role, data.userId, data.email, data.coachId, data.playerId, data.teamId, router],
   );
-  const device: ChDevice = { native, push };
+  const device: ChDevice = { native, push: { ...push, test: sendTestPush } };
   return <SettingsView data={data} writes={writes} device={device} initialSection={section} onDeleted={() => void writes.cleanupAfterDelete()} />;
 }

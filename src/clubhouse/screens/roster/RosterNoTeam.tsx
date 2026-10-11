@@ -8,7 +8,9 @@ import '../../styles/roster.css';
  */
 export function RosterNoTeam({ viewer = 'coach' }: { viewer?: 'coach' | 'player' }) {
   return (
-    <main className="ch-rs-none">
+    // The canopy's material, as on Roster itself (P003 #1); the title is the page's h1.
+    <main className="ch-rs-none" data-canopy="">
+      <h1 className="ch-sr-only">Roster</h1>
       {viewer === 'player' ? (
         <EmptyState
           size="page"

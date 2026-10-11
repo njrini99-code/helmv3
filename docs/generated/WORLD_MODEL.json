@@ -608,6 +608,11 @@
         "category": "components"
       },
       {
+        "id": "components:src/clubhouse/data/recruiting-calendar.ts",
+        "pattern": "src/clubhouse/data/recruiting-calendar.ts",
+        "category": "components"
+      },
+      {
         "id": "components:src/clubhouse/data/recruiting-shape.ts",
         "pattern": "src/clubhouse/data/recruiting-shape.ts",
         "category": "components"
@@ -3669,7 +3674,7 @@
       },
       {
         "id": "get_golf_conversations_with_details",
-        "definedIn": "supabase/migrations/20260621041824_harden_get_golf_conversations_rpc.sql"
+        "definedIn": "supabase/migrations/20261008160000_golf_conversation_hidden_at.sql"
       },
       {
         "id": "get_my_baseball_player_id",
@@ -21025,6 +21030,18 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/recruiting.ts",
           "anchor": "src/lib/supabase/server"
+        }
+      ]
+    },
+    {
+      "source": "recruiting",
+      "target": "components:src/clubhouse/data/recruiting-calendar.ts",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/data/recruiting-calendar.ts"
         }
       ]
     },

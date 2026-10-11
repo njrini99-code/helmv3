@@ -28,6 +28,7 @@ its own boundary, so a crash stays inside the tab.
 | CH-5002 | Sharing a player's stats from the phone fails (the browser blocks the clipboard) | "Couldn’t share the link" + "Your browser blocked it. Try again, or copy the address from the browser." Error haptic. Closing the share sheet is not a failure. Done: "Link copied" | `StatsPlayerPhone` share | stats-player.test › CH-5002 |
 | CH-5003 | A player's Accept of a proposed focus area fails | "Couldn’t accept Lag putting" + Retry; it stays waiting. Done: "Started · Lag putting" and the page reads again | `useAction('stats.acceptFocusArea')` in `ProposalAnswer` → `acceptFocusArea` | stats-player.test › CH-5003 |
 | CH-5004 | A player's Decline of a proposed focus area fails | "Couldn’t decline Lag putting" + Retry; it stays waiting. Done: "Declined · Lag putting" | `useAction('stats.declineFocusArea')` in `ProposalAnswer` → `declineFocusArea` | stats-player.test › CH-5004 |
+| CH-5005 | Sharing a personal-best card fails (the share sheet or the download is blocked) | "Couldn’t share the card" + "Try again, or save the image from the preview." Error haptic. Closing the share sheet is not a failure; a share closes the sheet with the success haptic | `BestCardShare` in `BestCard.tsx` | stats-bestcard.test › CH-5005 |
 
 ## 51xx Validation
 
@@ -122,6 +123,7 @@ its own boundary, so a crash stays inside the tab.
 | CH-5807 | On the phone, "All N rounds" is a button that says whether the full list is open; Game detail's section chips say which one is showing | `aria-expanded`; `aria-pressed` | stats-player.test › phone rounds |
 | CH-5808 | In the Rounds table each course opens that round's review (for a coach and the player), named "Finley GC, Oct 14: open the round"; where the review isn't rebuilt, it stays text | `RoundsTable`, `rebuiltHref` | stats-player.test › CH-5808 |
 | CH-5809 | The round filter, as on Team stats (CH-4806): the Filter button opens a labelled dialog, each chip is "Remove filter: …", Clear is "Clear filters", the count line is a polite status region, choices (round type, holes, pick mode) are toggle buttons and courses and rounds are checkboxes, all in labelled groups, and the date fields carry their error as their description | `StatsFilter`, `Modal` | stats-filter-ui.test › CH-4806; a11y scan |
+| CH-5810 | Share best score (P005-C2) opens a labelled dialog with the card as an image whose alt names the score, the player, the course and the date; Share is the one primary. The card shows no school or team name and, unless the player shares it, their first name and last initial | `BestCardShare`, `bestCardFields`, `Modal` | stats-bestcard.test › CH-5810 |
 
 ## 59xx Network and UX
 

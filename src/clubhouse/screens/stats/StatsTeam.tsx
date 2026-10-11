@@ -11,7 +11,8 @@ import { EarlyRead, NineHint } from './StatsFilter';
 import { PageHero } from '../../ui/PageHero';
 import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/SectionBoundary';
 import { formatSigned, NO_DATA } from '../../lib/format';
-import { FigureCards, PuttingRings, YardagePage } from './charts';
+import { PuttingRings, YardagePage } from './charts';
+import { TeamTape } from './TeamTape';
 import { teamPlayerHref } from './links';
 import { puttingNote } from './notes';
 import { LinkPending } from '../../shell/LinkPending';
@@ -106,12 +107,14 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
         ) : (
           !data.roundsError && (
             <>
-              <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
-                <TeamFigures figures={data.figures} cacheError={data.cacheError} covered={covered} />
-              </SectionBoundary>
-
               <TeamCharts
+                tape={
+                  <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
+                    <TeamFigures figures={data.figures} cacheError={data.cacheError} covered={covered} />
+                  </SectionBoundary>
+                }
                 data={{
+                  figures: data.figures,
                   window: data.window,
                   filter: data.filter,
                   weeks: data.weeks,
@@ -161,10 +164,9 @@ function TeamFigures({ figures, cacheError, covered }: { figures: ChTeamStats['f
           covered={covered}
         />
       )}
-      <FigureCards
-        hold
-        lead
-        items={figures.map((x) => ({
+      {/* Strokes gained is the trend's headline above; the tape holds the other five, each with its own weekly line. */}
+      <TeamTape
+        items={figures.filter((x) => x.key !== 'sg').map((x) => ({
           label: x.label,
           value: x.value == null ? NO_DATA : x.signed ? formatSigned(x.value, x.digits) : x.value.toFixed(x.digits),
           unit: x.unit,
@@ -173,8 +175,8 @@ function TeamFigures({ figures, cacheError, covered }: { figures: ChTeamStats['f
           lowerIsBetter: x.lowerIsBetter,
           context: x.context,
           note: x.note && shared.includes(x.note) ? undefined : x.note,
-          tone: x.signed && x.value != null ? (x.value >= 0 ? ('gain' as const) : ('loss' as const)) : undefined,
           code: x.state === 'empty' ? 'CH-4311' : x.state === 'no-comparison' ? 'CH-4312' : undefined,
+          series: x.series,
           gauge: x.gauge,
           n: x.value,
         }))}

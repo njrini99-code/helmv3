@@ -53,9 +53,22 @@ export function dropHandoffCurtain(): void {
     zIndex: '2147483000',
     pointerEvents: 'none',
     // The sidebar's own gradient, so the sidebar text simply appears on the green it will sit on.
-    background: phone ? page : dark ? frame : `linear-gradient(180deg, #0e4029, ${frame})`,
+    background: phone || dark ? frame : `linear-gradient(180deg, #0e4029, ${frame})`,
   });
-  if (!phone) {
+  if (phone) {
+    // The phone's frame: the green bar under the status bar, then the parchment sheet with its 16px top corners.
+    const sheet = document.createElement('div');
+    Object.assign(sheet.style, {
+      position: 'absolute',
+      top: `calc(env(safe-area-inset-top, 0px) + ${token(from, '--ch-phone-topbar-h', '50px')})`,
+      right: '0',
+      bottom: '0',
+      left: '0',
+      borderRadius: '16px 16px 0 0',
+      background: page,
+    });
+    curtain.appendChild(sheet);
+  } else {
     const canvas = document.createElement('div');
     Object.assign(canvas.style, {
       position: 'absolute',
@@ -71,6 +84,32 @@ export function dropHandoffCurtain(): void {
   }
   document.body.appendChild(curtain);
   safety = window.setTimeout(() => liftHandoffCurtain(), SAFETY_MS);
+}
+
+/**
+ * The hand-off's content rise (design/handoff/auth/src/gh-core.js, GH.reveal): each block of the dashboard's page rises
+ * 10px and fades in once, 55ms apart, at most ten per column. Only after the welcome's hand-off, never on an ordinary
+ * load (routine first-paint staggers stay retired, D-64), and never under reduced motion (the caller returns first).
+ */
+function riseIn(): void {
+  const main = document.querySelector('[data-ui="clubhouse"] main');
+  if (!main) return;
+  let i = 0;
+  for (const top of Array.from(main.children)) {
+    let blk: Element = top;
+    while (blk.children.length === 1 && blk.firstElementChild && blk.firstElementChild.children.length) blk = blk.firstElementChild;
+    const kids = blk.children.length ? Array.from(blk.children).slice(0, 10) : [blk];
+    for (const k of kids) {
+      if (typeof (k as HTMLElement).animate !== 'function') continue;
+      (k as HTMLElement).animate([{ opacity: 0, translate: '0 10px' }, { opacity: 1, translate: '0 0' }], {
+        duration: CH_DUR.reveal * 1000,
+        delay: 40 + 55 * i++,
+        easing: ease,
+        fill: 'backwards',
+      });
+      if (i >= 14) return;
+    }
+  }
 }
 
 /** Called by the dashboard's frame when it has mounted. A no-op when there is no curtain (every ordinary page load). */
@@ -92,9 +131,13 @@ export function liftHandoffCurtain(): void {
           curtain.remove();
           return;
         }
-        const a = curtain.animate([{ opacity: 1 }, { opacity: 0 }], { duration: CH_DUR.reveal * 1000, easing: ease, fill: 'forwards' });
+        const phone = window.matchMedia(PHONE).matches;
+        // The reference's beats (design/handoff/auth): the phone's dashboard fades in over 380ms, the desktop's over the
+        // reveal beat; then, on this hand-off only, the dashboard's content rises into place (gh-core's GH.reveal).
+        const a = curtain.animate([{ opacity: 1 }, { opacity: 0 }], { duration: phone ? 380 : CH_DUR.reveal * 1000, easing: ease, fill: 'forwards' });
         a.onfinish = () => curtain.remove();
         a.oncancel = () => curtain.remove();
+        riseIn();
       }),
     );
   };

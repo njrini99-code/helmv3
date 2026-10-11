@@ -94,6 +94,34 @@ export function usePushToggle(push: ChDevice['push']) {
   };
 }
 
+/** P008-C3: Send a test (push to this person's own devices, D1-6). The result is a toast; a failure says why (CH-8029). */
+export function useTestPush(push: ChDevice['push']) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    if (!push.test || busy) return;
+    chTrail('settings test push');
+    setBusy(true);
+    try {
+      const r = await push.test();
+      if (r.ok) {
+        haptic('success');
+        toast({ title: 'Test sent', body: r.sent && r.sent > 1 ? `To your ${r.sent} devices with push on. It should arrive in a few seconds.` : 'It should arrive on this device in a few seconds.' });
+      } else {
+        haptic('error');
+        toast({ tone: 'error', title: 'Couldn’t send a test', body: r.error && r.error.length < 90 ? r.error : 'Try again in a moment.', code: 'CH-8029' });
+      }
+    } catch (err) {
+      haptic('error');
+      chReport(err, { surface: 'settings.notifications', action: 'testPush' });
+      toast({ tone: 'error', title: 'Couldn’t send a test', body: 'Check your connection and try again.', code: 'CH-8029' });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return { run, busy };
+}
+
 /** The player's CoachHelm updates: cell switches, whole-list changes and quiet mode (CH-8008 to CH-8010). */
 export function useRouting(initial: { prefs: PrefsByCategory; quiet: boolean }, writes: ChSettingsWrites) {
   const [prefs, setPrefs] = useState(initial.prefs);

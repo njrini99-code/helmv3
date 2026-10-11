@@ -383,5 +383,7 @@ export interface ChDevice {
     pending: boolean;
     subscribe: () => Promise<{ ok: boolean; error?: string }>;
     unsubscribe: () => Promise<{ ok: boolean; error?: string }>;
+    /** P008-C3: one test push to the viewer's own devices (D1-6); absent where it can't be sent. */
+    test?: () => Promise<{ ok: boolean; sent?: number; error?: string }>;
   };
 }

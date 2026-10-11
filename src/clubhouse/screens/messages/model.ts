@@ -58,6 +58,8 @@ export interface ChReaction {
   key: ChReactionKey;
   count: number;
   mine: boolean;
+  /** Who reacted (auth user ids), for the card a click on the chip opens; the preview omits it. */
+  userIds?: string[];
 }
 
 export interface ChMember {
@@ -157,6 +159,8 @@ export interface ChAnnouncement {
   taskCount: number;
   completedTaskCount: number;
   docCount: number;
+  /** golf_coaches.id of the coach who posted it, for the signature; null when unknown. */
+  authorId?: string | null;
 }
 
 export interface ChAnnouncementDetail {

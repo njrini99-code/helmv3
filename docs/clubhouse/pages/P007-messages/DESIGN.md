@@ -38,8 +38,8 @@ author text and a readable snippet. Attachment cards, file chips and reaction
 badges use material depth rather than decorative outline rings. Pending-send
 notices keep their truthful status color and recovery actions with the same
 softer edge; focus indicators remain visible.
-The selected conversation uses its tinted row and stronger title, without a
-green edge stripe.
+The selected conversation is the one filled green row in the list, in ivory ink,
+without a green edge stripe (owner, 2026-10-08).
 
 ## Package
 
@@ -138,7 +138,9 @@ long press, dialogs that trap focus and close on Esc.
 ## Data assumptions
 
 Only data the app has. Not shown because no source exists: the event card in a thread, pinned
-messages, "only coaches can post", delete conversation, per-thread search, calls (D-48, D-49).
+messages, "only coaches can post", per-thread search, calls (D-48, D-49). Delete
+conversation was in
+this list until the owner asked for it on 2026-10-08 (71103).
 
 ## Existing backend capabilities used
 
@@ -165,7 +167,7 @@ D-13 (realtime hooks kept), D-16 and D-44 (announcements inside Messages, on the
 
 ## Explicit non-goals
 
-Delete conversation, pinned messages, coach-only posting, calls, per-thread search, a rename action,
+Pinned messages, coach-only posting, calls, per-thread search, a rename action,
 timed mutes on the phone (desktop keeps them).
 
 ## Fresh-build confirmation

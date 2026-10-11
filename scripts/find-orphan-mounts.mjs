@@ -16,7 +16,7 @@
  * ------
  * Build a render graph over component-name mentions, then walk it from the
  * roots Next.js actually enters (page/layout/template/error/loading/not-found/
- * route/default/global-error under src/app, plus middleware). Anything no root
+ * route/default/global-error under src/app, plus src/proxy.ts). Anything no root
  * can reach is unreachable at runtime, however many imports point at it.
  *
  * Deliberately conservative — it must not cry wolf:
@@ -106,13 +106,16 @@ const mentions = new Map(all.map((p) => [p, namesMentionedIn(text.get(p))]));
 const ROUTE_FILES = new Set([
   'page.tsx', 'layout.tsx', 'template.tsx', 'error.tsx',
   'loading.tsx', 'not-found.tsx', 'route.ts', 'route.tsx',
-  'default.tsx', 'global-error.tsx', 'middleware.ts',
+  'default.tsx', 'global-error.tsx',
 ]);
+// Next 16 renamed the root middleware to `proxy.ts`; ours is src/proxy.ts.
+const PROXY_ROOT = 'src/proxy.ts';
 const DEV_ONLY = [/\/app\/vizlab\//, /\/app\/fairway-preview\//];
 
 const roots = all.filter((p) => {
   const r = rel(p);
-  if (!r.startsWith('src/app/') && r !== 'src/middleware.ts') return false;
+  if (r === PROXY_ROOT) return true;
+  if (!r.startsWith('src/app/')) return false;
   if (DEV_ONLY.some((re) => re.test('/' + r))) return false;
   return ROUTE_FILES.has(basename(p));
 });

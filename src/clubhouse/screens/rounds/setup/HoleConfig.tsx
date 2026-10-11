@@ -28,6 +28,8 @@ export function HoleConfig({
   const list = holesForRound(holes, count, nine);
   const set = (n: number, patch: Partial<ChSetupHole>) => onHoles(holes.map((h) => (h.n === n ? { ...h, ...patch } : h)));
   const edited = editedCount(holes, baseline);
+  // The holes in play, a nine at a time (a 9-hole round is one nine; an 18-hole one is Out then In).
+  const nines = [list.filter((h) => h.n <= 9), list.filter((h) => h.n > 9)].filter((n) => n.length > 0);
   const figs: Array<[string, string | number]> = [
     ['Holes', list.length],
     ['Par', parOf(list)],
@@ -85,45 +87,59 @@ export function HoleConfig({
         ))}
       </dl>
       <div className="ch-rsu-hc__grid">
-        {list.map((h) => {
-          const b = baseline?.[h.n - 1];
-          const changed = !!b && (b.par !== h.par || b.yards !== h.yards);
-          const y = parseInt(h.yards, 10);
-          const bad = !!h.yards.trim() && (!Number.isFinite(y) || y < 1 || y > MAX_HOLE_YARDS);
+        {/* Each nine is its own board: Out (1 to 9) and In (10 to 18), with the par and yards it adds up to. A 9-hole round shows the one nine. */}
+        {nines.map((nineHoles) => {
+          const out = nineHoles[0]!.n <= 9;
           return (
-            <div key={h.n} className={'ch-rsu-hole' + (changed ? ' is-edited' : '')}>
-              <span className="ch-rsu-hole__n" aria-hidden="true">
-                {h.n}
-              </span>
-              <div className="ch-rsu-par" role="radiogroup" aria-label={`Hole ${h.n} par`}>
-                {PARS.map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    role="radio"
-                    aria-checked={h.par === p}
-                    className={p === 6 ? 'is-rare' : undefined}
-                    onClick={() => {
-                      haptic('select');
-                      set(h.n, { par: p });
-                    }}
-                  >
-                    {p}
-                  </button>
-                ))}
+            <div key={out ? 'out' : 'in'} className="ch-rsu-nine" role="group" aria-label={out ? 'Out' : 'In'}>
+              <div className="ch-rsu-nine__h">
+                <b>{out ? 'Out' : 'In'}</b>
+                <span>
+                  Par {parOf(nineHoles)} · {yardsOf(nineHoles).toLocaleString('en-US')} yds
+                </span>
               </div>
-              <label className="ch-rsu-yds">
-                <input
-                  inputMode="numeric"
-                  autoComplete="off"
-                  value={h.yards}
-                  aria-label={`Hole ${h.n} yardage`}
-                  aria-invalid={bad || undefined}
-                  data-ch-code={bad ? 'CH-11107' : undefined}
-                  onChange={(e) => set(h.n, { yards: e.target.value.replace(/\D/g, '').slice(0, 3) })}
-                />
-                <em>yds</em>
-              </label>
+              {nineHoles.map((h) => {
+                const b = baseline?.[h.n - 1];
+                const changed = !!b && (b.par !== h.par || b.yards !== h.yards);
+                const y = parseInt(h.yards, 10);
+                const bad = !!h.yards.trim() && (!Number.isFinite(y) || y < 1 || y > MAX_HOLE_YARDS);
+                return (
+                  <div key={h.n} className={'ch-rsu-hole' + (changed ? ' is-edited' : '')}>
+                    <span className="ch-rsu-hole__n" aria-hidden="true">
+                      {h.n}
+                    </span>
+                    <div className="ch-rsu-par" role="radiogroup" aria-label={`Hole ${h.n} par`}>
+                      {PARS.map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          role="radio"
+                          aria-checked={h.par === p}
+                          className={p === 6 ? 'is-rare' : undefined}
+                          onClick={() => {
+                            haptic('select');
+                            set(h.n, { par: p });
+                          }}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                    <label className="ch-rsu-yds">
+                      <input
+                        inputMode="numeric"
+                        autoComplete="off"
+                        value={h.yards}
+                        aria-label={`Hole ${h.n} yardage`}
+                        aria-invalid={bad || undefined}
+                        data-ch-code={bad ? 'CH-11107' : undefined}
+                        onChange={(e) => set(h.n, { yards: e.target.value.replace(/\D/g, '').slice(0, 3) })}
+                      />
+                      <em>yds</em>
+                    </label>
+                  </div>
+                );
+              })}
             </div>
           );
         })}

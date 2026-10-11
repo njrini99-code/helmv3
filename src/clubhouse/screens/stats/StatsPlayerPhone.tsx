@@ -129,9 +129,9 @@ export function StatsPlayerPhone({
   return (
     <div className="ch-stm">
       {coach ? (
-        <PhoneTop title="Player stats" back={{ label: 'Team', onBack: onBackToTeam }} action={<PhoneIconAction icon={Share} label={`Share ${first}’s stats`} onClick={() => void share()} />} />
+        <PhoneTop title="Player stats" heading={false} back={{ label: 'Team', onBack: onBackToTeam }} action={<PhoneIconAction icon={Share} label={`Share ${first}’s stats`} onClick={() => void share()} />} />
       ) : (
-        <PhoneTop title="My stats" back={{ label: 'More', onBack: backFromMore }} />
+        <PhoneTop title="My stats" heading={false} back={{ label: 'More', onBack: backFromMore }} />
       )}
 
       <header className="ch-spm-head">
@@ -192,7 +192,7 @@ export function StatsPlayerPhone({
       </SectionBoundary>
 
       <SectionBoundary surface="stats.player.rounds" label="The rounds" code="CH-5206">
-        {data.rounds.length > 0 && <RoundsExtra x={data.extra} filter={data.filter} phone />}
+        {data.rounds.length > 0 && <RoundsExtra x={data.extra} filter={data.filter} phone share={{ viewer: data.viewer, name: data.name, coach: data.attestingCoach }} />}
         <Rounds rounds={data.rounds} open={initialTab === 'rounds'} />
       </SectionBoundary>
         </>
@@ -252,7 +252,10 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
         {readCaveat ?? (
           <>
             <span className="ch-num">{countWords(w.rounds, w.effRounds)} in this window.</span>
-            {w.sgPerRound != null && d != null && <SgChangeChip change={data.sgChange} code="CH-5310" />}
+            {/* P005-D6: the chip names what it measures, since it sits away from the SG figure. */}
+            {w.sgPerRound != null && d != null && (
+              <SgChangeChip change={{ ...data.sgChange, context: data.sgChange.context ? `SG a round ${data.sgChange.context}` : 'SG a round' }} code="CH-5310" />
+            )}
           </>
         )}
       </div>
@@ -301,8 +304,9 @@ function StrokesGained({ data }: { data: ChPlayerProfile }) {
 }
 
 function Trend({ data }: { data: ChPlayerProfile }) {
-  // Oldest first, the last ten rounds, a score per 18 holes (a 9-hole score doubled).
-  const rounds = [...data.rounds].reverse().slice(-10).map((r) => ({ ...r, score: per18(r.score, r.holes) }));
+  // Oldest first, every round in the window, a score per 18 holes (a 9-hole score doubled). The phone's one scoring
+  // chart (P005-D1): Score by round is desktop only.
+  const rounds = [...data.rounds].reverse().map((r) => ({ ...r, score: per18(r.score, r.holes) }));
   if (rounds.length === 0) return null;
   const change = rounds[rounds.length - 1]!.score - rounds[0]!.score;
   return (
@@ -310,7 +314,7 @@ function Trend({ data }: { data: ChPlayerProfile }) {
       <div className="ch-stm-panel__h">
         <h2 id="ch-spm-trend">Scoring trend</h2>
         <span className="ch-num">
-          Last {rounds.length}
+          {rounds.length} {rounds.length === 1 ? 'round' : 'rounds'}
           {rounds.some((r) => r.holes === 9) ? ' · 9-hole scores doubled' : ''}
         </span>
       </div>
