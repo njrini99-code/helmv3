@@ -66,11 +66,10 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   // drifted apart once at exactly this spot.
   { jobType: 'reliability-triage', path: '/api/cron/reliability-triage', cadenceMinutes: 3 * 60, schedule: '0 */3 * * *' },
   // vercel.json schedules this "17 3,9,15,21 * * *" — four evenly-spaced
-  // fires a day, 6 hours apart. Repair actually runs on a GitHub Actions
-  // schedule, not a Vercel cron (.github/workflows/selfheal-repair.yml:
-  // `cron: '40 6 * * *'`, 06:40 UTC) — the 03:17 UTC triage fire lands 203
-  // minutes before it. (This comment previously said "83 minutes before
-  // Repair's 10:40 UTC fire", which was never Repair's real schedule.) This
+  // fires a day, 6 hours apart. Repair is not a Vercel cron: it runs as the
+  // `helm-app-health-selfheal` Claude scheduled task (every 6 hours, on the
+  // owner's Mac; config/routines.yml), and the GitHub Actions workflow that
+  // ran it at 06:40 UTC is disabled. This
   // is the SAME job_type SELFHEAL_STAGES' 'triage' entry uses — the route
   // writes one row, and both the Jobs board and the Self-heal circuit read
   // it.

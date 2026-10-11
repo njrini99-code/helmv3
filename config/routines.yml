@@ -36,25 +36,31 @@ routines:
     trigger: github-actions-schedule
     source: .github/workflows/selfheal-repair.yml
     schedule: "40 6 * * *"
-    status: active
+    status: disabled
     description: >-
-      Daily Bridge self-heal/repair run. Migrated from a launchd agent to
-      GitHub Actions; the schedule (06:40 UTC) was kept identical on purpose
-      so the Bridge's "next expected" reading did not move with the runtime.
+      Daily Bridge self-heal/repair run, migrated from a launchd agent to
+      GitHub Actions with the 06:40 UTC schedule kept. The workflow is
+      disabled in GitHub (disabled_manually; last runs 2026-09-23, all
+      failed) and the work moved to the `helm-app-health-selfheal` Claude
+      scheduled task below.
     superseded:
       - launchd_label: com.helm.bridge-rca-repair
         note: >-
-          Found on this machine 2026-09-05, UNLOADED (not in `launchctl
-          list`) but the plist file still exists at
-          ~/Library/LaunchAgents/com.helm.bridge-rca-repair.plist and still
-          references a specific fnm Node install path. Dead weight, not a
-          live duplicate schedule — recorded here (rather than left
-          unlisted, which would make repo:doctor's routines check FAIL on a
-          fact everyone already knows) so the file's eventual removal is a
-          closing action against a NAMED item, not a mystery plist someone
-          has to reverse-engineer first. This repo cannot delete a file
-          under the owner's ~/Library — that is a machine-local, owner
-          action.
+          The launchd agent this replaced. Its plist was gone from
+          ~/Library/LaunchAgents when checked on 2026-10-10; the label stays
+          listed so an archived copy is still a known name.
+
+  - id: helm-app-health-selfheal
+    trigger: claude-scheduled-task
+    source: ~/.claude/scheduled-tasks/helm-app-health-selfheal
+    schedule: "every 6h"
+    status: active
+    description: >-
+      App-health overview from production tables, fixes in one PR, the
+      rolling GitHub report (issue #2061, last updated 2026-10-08) and a
+      Bridge heartbeat. Runs in the Claude desktop app on the owner's Mac
+      and replaces the disabled selfheal-repair workflow. Machine-local:
+      the prompt lives outside this repo.
 
   - id: db-drift-production
     trigger: github-actions-schedule
