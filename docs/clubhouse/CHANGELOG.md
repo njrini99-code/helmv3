@@ -1,5 +1,20 @@
 # Clubhouse changelog
 
+## 2026-10-10 — Three depth tokens for the rounds pass
+
+Shared pieces for the rounds library and new-round pass (P011's log has the
+screens). Not yet reviewed by the owner.
+
+- **`--ch-elevation-board`**, **`--ch-elevation-board-hover`** and
+  **`--ch-elevation-mark`** (`styles/tokens.css`, light and dark): drop-only
+  depth for a field-green board hung on the page (a scorecard nine, the round
+  strip, a row's Out/In/Tot, a step deeper on hover) and a small glow under a lit
+  data mark (the best round's dot, the putts bar, a hit green). The caller keeps
+  its own ring or inset edge.
+- The rounds season chart also uses `useInViewOnce` (`lib/use-in-view.ts`) to
+  raise its bars from the par line, and the season chart and the new-round nine
+  boards draw with the existing `--ch-stage-*` tokens.
+
 ## 2026-10-10 — Premium polish across the app: baseline control feel, line breaks, radius tokens, one contrast fix
 
 Found by scanning every main preview screen in WebKit (contrast, controls with no transition, tap sizes, radii, heading sizes), then fixed
@@ -32,6 +47,7 @@ Audit of the stats and round-review work, then fixes (owner: "create cool micro 
   order they were hit; a hole's reading settles in; rows warm and the marks lift under the pointer; the scrub card fades rather than
   vanishing. No count-ups, no first-paint staggers.
 - **Efficiency.** The player Overview is memoised, so a focus sheet or a transition no longer recomputes its seven zones.
+
 ## 2026-10-08 — the selected sidebar row is an ivory plate; secondary text one step darker
 
 Owner review (not yet signed off):

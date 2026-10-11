@@ -287,14 +287,16 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
         })}
       </svg>
       {shown && (
-        <div className={'ch-rd-rib__tip' + (hover ? ' is-on' : '')} style={{ left: `${(cxOf(shownAt) / W) * 100}%` }} role="presentation" aria-hidden={hover ? undefined : true}>
-          <b>
-            {shortDay(shown.date)}
-            {shown.type ? ` · ${TYPE_LABEL[shown.type]}` : ''}
-          </b>
-          <span className="ch-num">
-            {shown.score} · {formatToPar(shown.toPar)}
-          </span>
+        <div className="ch-rd-rib__tipx" style={{ transform: `translateX(${(cxOf(shownAt) / W) * 100}%)` }} role="presentation" aria-hidden={hover ? undefined : true}>
+          <div className={'ch-rd-rib__tip' + (hover ? ' is-on' : '')}>
+            <b>
+              {shortDay(shown.date)}
+              {shown.type ? ` · ${TYPE_LABEL[shown.type]}` : ''}
+            </b>
+            <span className="ch-num">
+              {shown.score} · {formatToPar(shown.toPar)}
+            </span>
+          </div>
         </div>
       )}
     </div>
@@ -355,7 +357,7 @@ function SeasonFigures({ season }: { season: ChRoundsSeason }) {
         {putts != null && (
           <dd className="ch-rd-fig__viz" aria-hidden="true">
             <span className="ch-rd-putts">
-              <i style={{ width: `${Math.min(100, (putts / 40) * 100)}%` }} />
+              <i style={{ '--ch-rd-fill': Math.min(1, putts / 40) } as CSSProperties} />
               <b style={{ left: `${(twoPutt / 40) * 100}%` }} />
             </span>
           </dd>
@@ -481,7 +483,7 @@ function Meter({ label, value, pct, muted }: { label: string; value: string; pct
   return (
     <span className="ch-rd-meter">
       <em>{label}</em>
-      <span className={'ch-rd-meter__t' + (muted ? ' is-p' : '')}>{pct != null && <i style={{ width: `${Math.max(0, Math.min(100, pct))}%` }} />}</span>
+      <span className={'ch-rd-meter__t' + (muted ? ' is-p' : '')}>{pct != null && <i style={{ '--ch-rd-fill': Math.max(0, Math.min(100, pct)) / 100 } as CSSProperties} />}</span>
       <b className="ch-num">{value}</b>
     </span>
   );

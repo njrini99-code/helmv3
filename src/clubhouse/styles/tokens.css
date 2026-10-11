@@ -355,6 +355,12 @@
   /* The one feature card: the frame's green, lit faintly from its top right corner. */
   --ch-feature-bg: radial-gradient(120% 90% at 100% 0%, rgb(123 199 154 / 0.14), transparent 60%), var(--ch-green-800);
   --ch-elevation-feature: 0 0 0 1px #082b1c, 0 14px 28px -18px rgb(11 58 37 / 0.7);
+  /* A field-green board hung on the page (a scorecard nine, the round strip, a row's Out/In/Tot): a short green drop,
+     a step deeper when its row is hovered. A lit data mark (the best round's dot, the putts bar, a hit green): a small
+     green glow under it. Drop only; the caller keeps its own ring or inset edge. */
+  --ch-elevation-board: 0 14px 22px -16px rgb(8 43 28 / 0.8);
+  --ch-elevation-board-hover: 0 14px 20px -12px rgb(8 43 28 / 0.85);
+  --ch-elevation-mark: 0 4px 8px -4px rgb(21 90 57 / 0.6);
   --ch-ledger-row-press: color-mix(in oklab, var(--ch-green-600) 11%, transparent);
   /* A portrait set into the page head: a canvas gap, a fine engraved ring, a soft green drop. */
   --ch-ledger-avatar-ring: 0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule), 0 10px 22px -12px rgb(11 58 37 / 0.4);
@@ -623,6 +629,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-ledger-row-hover: rgb(205 187 142 / 0.06);
   --ch-ledger-rule-double: 3px double rgb(205 187 142 / 0.22);
   --ch-elevation-feature: 0 0 0 1px rgb(107 187 140 / 0.14), 0 14px 28px -18px rgb(0 0 0 / 0.8);
+  --ch-elevation-board: 0 14px 22px -16px rgb(0 0 0 / 0.8);
+  --ch-elevation-board-hover: 0 14px 20px -12px rgb(0 0 0 / 0.85);
+  --ch-elevation-mark: 0 4px 8px -4px rgb(0 0 0 / 0.6);
   --ch-ledger-row-press: color-mix(in oklab, var(--ch-green-600) 12%, transparent);
   --ch-ledger-avatar-ring: 0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule), 0 10px 22px -12px rgb(0 0 0 / 0.6);
   --ch-elevation-field-hover: 0 0 0 1px var(--ch-border-strong), 0 1px 2px rgb(0 0 0 / 0.3);
