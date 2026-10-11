@@ -3018,8 +3018,12 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   color: var(--ch-text-primary);
 }
 .ch-rv .ch-rzpt__c i {
-  align-self: end;
+  /* The column fills its cell and is scaled up from the foot by its share (--ch-rz-p, 0 to 1), so a change glides on
+     transform. */
+  align-self: stretch;
   width: min(22px, 80%);
+  transform: scaleY(var(--ch-rz-p, 0));
+  transform-origin: center bottom;
   border-radius: 6px 6px 3px 3px;
   background: var(--ch-ivory-400);
 }
@@ -3071,8 +3075,12 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
 }
 .ch-rv .ch-rzrow__t i {
   position: absolute;
-  inset: 0 auto 0 0;
+  inset: 0;
+  border-radius: inherit;
   background: var(--ch-green-500);
+  /* Full width, slid in from the left by its share (--ch-rz-p, 0 to 1), as the scoring distribution's bars are: a change
+     moves on transform and the rounded end stays round; the track's clip draws the start. */
+  transform: translateX(calc((var(--ch-rz-p, 0) - 1) * 100%));
 }
 .ch-rv .ch-rzrow b {
   text-align: right;
@@ -3143,8 +3151,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
     var(--ch-stage-bg);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.1),
-    0 0 0 1px var(--ch-green-900),
-    0 28px 44px -30px rgb(8 43 28 / 0.75);
+    var(--ch-elevation-feature);
 }
 .ch-rv .ch-rzstage {
   padding: 22px 22px 14px;
@@ -3161,23 +3168,31 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
 .ch-rv .ch-rzplate .ch-rzsvg {
   cursor: default;
 }
-.ch-rv .ch-rzstage__tip {
+/* The card that reads a hole out sits on a still, full-width track that is its size container; the card moves along it by
+   `translate` in container units (--ch-rz-x, 0 to 100), so it glides on the compositor and the track never leaves the stage.
+   The card centres itself on that point. */
+.ch-rv .ch-rzstage__tipx {
   position: absolute;
   top: 16px;
+  right: 0;
+  left: 0;
   z-index: 2;
+  container-type: inline-size;
+  pointer-events: none;
+}
+.ch-rv .ch-rzstage__tip {
   display: grid;
   gap: 4px;
+  width: max-content;
   min-width: 150px;
   padding: 10px 14px;
   border-radius: 12px;
   background: rgb(244 238 221 / 0.96);
   box-shadow:
     0 0 0 1px rgb(8 43 28 / 0.12),
-    0 14px 28px -12px rgb(0 0 0 / 0.55);
+    var(--ch-elevation-overlay);
   color: var(--ch-ink-900);
-  pointer-events: none;
   transform: translateX(-50%);
-  transition: left var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-rv .ch-rzstage__tip b {
   font: 700 13px/1.2 var(--ch-font-sans);
@@ -3221,14 +3236,14 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
 }
 .ch-rv .ch-zn .ch-rv-sg__v.is-gain {
   background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-700));
-  box-shadow: 0 6px 14px -6px rgb(21 90 57 / 0.7);
+  box-shadow: var(--ch-elevation-mark);
 }
 .ch-rv .ch-zn .ch-rv-sg__v.is-loss {
   background: linear-gradient(270deg, #d9a54a, #94600e);
-  box-shadow: 0 6px 14px -6px rgb(148 96 14 / 0.6);
+  box-shadow: var(--ch-elevation-mark-warn);
 }
 .ch-rv .ch-zn .ch-rv-dist__t i {
-  box-shadow: 0 5px 10px -6px rgb(28 25 18 / 0.5);
+  box-shadow: var(--ch-elevation-mark-ink);
 }
 
 /* fairway and green marks */
@@ -3239,7 +3254,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
 }
 .ch-rv .ch-rzhit__c.is-hit i {
   background: radial-gradient(circle at 35% 30%, var(--ch-green-400), var(--ch-green-800));
-  box-shadow: 0 5px 10px -5px rgb(21 90 57 / 0.8);
+  box-shadow: var(--ch-elevation-mark);
 }
 .ch-rv .ch-rzhit__c.is-miss i {
   border: 2px solid var(--ch-champagne-500);
@@ -3254,7 +3269,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
 /* putts a hole and first putts */
 .ch-rv .ch-rzpt__c i {
   background: linear-gradient(180deg, var(--ch-ivory-300), var(--ch-ivory-400));
-  box-shadow: 0 6px 10px -7px rgb(28 25 18 / 0.5);
+  box-shadow: var(--ch-elevation-mark-ink);
 }
 .ch-rv .ch-rzpt__c i.is-one {
   background: linear-gradient(180deg, var(--ch-green-400), var(--ch-green-700));
@@ -3277,7 +3292,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   background: linear-gradient(160deg, var(--ch-ivory-0), var(--ch-ivory-200));
   box-shadow:
     inset 0 0 0 1px rgb(176 149 96 / 0.4),
-    0 5px 10px -6px rgb(28 25 18 / 0.4);
+    var(--ch-elevation-mark-ink);
 }
 .ch-rv .ch-rzcost button {
   transition: background var(--ch-dur-quick) var(--ch-ease);
@@ -3293,8 +3308,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.12),
     inset 0 -3px 0 var(--ch-champagne-500),
-    0 0 0 1px var(--ch-green-900),
-    0 28px 48px -30px rgb(8 43 28 / 0.85);
+    var(--ch-elevation-feature);
 }
 .ch-rv-hero__s b {
   background: linear-gradient(180deg, #ffffff, #cfc6a8);
@@ -3306,7 +3320,7 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   background: linear-gradient(180deg, var(--ch-ivory-0), var(--ch-ivory-50));
   box-shadow:
     inset 0 0 0 1px rgb(176 149 96 / 0.35),
-    0 18px 28px -24px rgb(28 25 18 / 0.5);
+    var(--ch-elevation-plate);
 }
 .ch-rv-figs > div + div {
   border-left-color: rgb(176 149 96 / 0.35);
@@ -3354,15 +3368,14 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
 }
 .ch-rv .ch-rzstage__tip {
   opacity: 0;
-  translate: 0 4px;
+  translate: calc(var(--ch-rz-x, 0) * 1cqw) 4px;
   transition:
-    left var(--ch-dur-quick) var(--ch-ease),
     opacity var(--ch-dur-quick) var(--ch-ease),
     translate var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-rv .ch-rzstage__tip.is-on {
   opacity: 1;
-  translate: 0 0;
+  translate: calc(var(--ch-rz-x, 0) * 1cqw) 0;
 }
 
 /* a hole's shots draw in the order they were hit */
@@ -3389,18 +3402,14 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-quick) + var(--ch-dur-reveal) * 0.7);
 }
 
-/* values that change under the pointer or the filter glide to their new length */
-.ch-rv .ch-rv-sg__v,
-.ch-rv .ch-rzrow__t i,
-.ch-rv .ch-rv-dist__t i {
-  transition:
-    width var(--ch-dur-base) var(--ch-ease),
-    left var(--ch-dur-base) var(--ch-ease),
-    right var(--ch-dur-base) var(--ch-ease);
+/* values that change under the pointer or the filter glide to their new length, on transform (the scoring distribution's
+   bars keep their own slide). The strokes-gained bars are sized inline and do not glide. */
+.ch-rv .ch-rzrow__t i {
+  transition: transform var(--ch-dur-base) var(--ch-ease);
 }
 .ch-rv .ch-rzpt__c i {
   transition:
-    height var(--ch-dur-base) var(--ch-ease),
+    transform var(--ch-dur-base) var(--ch-ease),
     opacity var(--ch-dur-quick) var(--ch-ease),
     filter var(--ch-dur-quick) var(--ch-ease);
 }
@@ -3761,16 +3770,17 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
 .ch-rd .ch-rd-rib__g.is-hot .ch-rd-rib__bar {
   filter: brightness(1.14) saturate(1.1);
 }
-/* The card that reads a round out: the date and kind, then the score against par. A full-width track carries it to the
-   round (translateX of the track's own width, so it glides on the compositor); the card centres itself on that point. */
+/* The card that reads a round out: the date and kind, then the score against par. It sits on a still, full-width track that
+   is its size container and moves along it by `translate` in container units (--ch-rd-x, 0 to 100), so it glides on the
+   compositor and the track never overflows the chart; the card centres itself on that point. */
 .ch-rd .ch-rd-rib__tipx {
   position: absolute;
   top: 6px;
   right: 0;
   left: 0;
   z-index: 2;
+  container-type: inline-size;
   pointer-events: none;
-  transition: transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-rd .ch-rd-rib__tip {
   display: grid;
@@ -3786,14 +3796,14 @@ html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
   color: #1c1b18;
   opacity: 0;
   transform: translateX(-50%);
-  translate: 0 4px;
+  translate: calc(var(--ch-rd-x, 0) * 1cqw) 4px;
   transition:
     opacity var(--ch-dur-quick) var(--ch-ease),
     translate var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-rd .ch-rd-rib__tip.is-on {
   opacity: 1;
-  translate: 0 0;
+  translate: calc(var(--ch-rd-x, 0) * 1cqw) 0;
 }
 .ch-rd .ch-rd-rib__tip b {
   font: 700 12.5px/1.2 var(--ch-font-sans);

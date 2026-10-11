@@ -55,7 +55,7 @@
 /* All, Unread, Groups (owner, 2026-10-08: never ivory on ivory): the chosen filter is a green chip with ivory ink. */
 .ch-ms-rail__head .ch-seg__pill {
   background: var(--ch-green-fill-700);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 2px rgb(21 90 57 / 0.3);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), var(--ch-elevation-pill-on);
 }
 .ch-ms-rail__head .ch-seg__b.is-on {
   color: var(--ch-ivory-50);
@@ -709,12 +709,12 @@
 .ch-ms-reacts.on-mine .ch-ms-react {
   background: var(--ch-ivory-50);
   color: var(--ch-green-800);
-  box-shadow: 0 0 0 1px rgb(21 90 57 / 0.2), 0 1px 2px rgb(28 25 18 / 0.12);
+  box-shadow: 0 0 0 1px rgb(21 90 57 / 0.2), var(--ch-elevation-bubble);
 }
 .ch-ms-reacts.on-theirs .ch-ms-react {
   background: var(--ch-green-fill-700);
   color: var(--ch-ivory-50);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 2px rgb(21 90 57 / 0.3);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), var(--ch-elevation-pill-on);
 }
 .ch-ms-reacts .ch-ms-react.is-mine {
   outline: 2px solid var(--ch-champagne-500);
@@ -992,16 +992,10 @@
   padding: 8px 8px 8px 10px;
   border-radius: 28px;
   background: var(--ch-ivory-0, #fff);
-  box-shadow:
-    0 0 0 1px rgb(21 90 57 / 0.14),
-    var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.06),
-    var(--ch-light-drift-mid) 10px 24px -14px rgb(28 25 18 / 0.2);
+  box-shadow: 0 0 0 1px rgb(21 90 57 / 0.14), var(--ch-elevation-floating);
 }
 .ch-ms-comp__field:focus-within {
-  box-shadow:
-    0 0 0 1.5px var(--ch-green-fill-600),
-    0 0 0 5px rgb(21 90 57 / 0.12),
-    var(--ch-light-drift-mid) 12px 28px -14px rgb(21 90 57 / 0.3);
+  box-shadow: 0 0 0 1.5px var(--ch-green-fill-600), 0 0 0 5px rgb(21 90 57 / 0.12), var(--ch-elevation-floating);
 }
 .ch-ms-comp__field textarea {
   padding: 9px 6px;
@@ -1028,7 +1022,7 @@
 }
 .ch-ms-send.is-ready {
   background: var(--ch-green-fill-700);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18), 0 4px 10px -3px rgb(11 58 37 / 0.5);
+  box-shadow: var(--ch-green-raised-shadow);
   color: var(--ch-ivory-50);
 }
 @media (hover: hover) {

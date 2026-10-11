@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, type CSSProperties } from 'react';
 import { useInViewOnce } from '../../lib/use-in-view';
 import { Avatar } from '../../ui/Avatar';
 import type { ChRosterPlayer } from '../../data/roster';
@@ -46,14 +46,15 @@ export function RosterSpread({ players, teamAvg, onOpen }: { players: ChRosterPl
       </div>
       <div ref={ref} className={'ch-rs-sp__plot' + (seen ? ' is-in' : '')} style={{ height: height + 34 }}>
         {team != null && (
-          <div className="ch-rs-sp__team" style={{ left: `${team}%`, height: height + 6 }}>
+          <div className="ch-rs-sp__team" style={{ '--ch-sp-x': team, height: height + 6 } as CSSProperties}>
+            <i />
             <span>Team {teamAvg!.toFixed(1)}</span>
           </div>
         )}
         {/* A pointer shortcut to the faces below, which carry every player for the keyboard and screen readers. */}
         <ul className="ch-rs-sp__coins" aria-hidden="true" style={{ height }}>
           {layout.placed.map(({ p, x, lane }) => (
-            <li key={p.id} style={{ left: `${seen ? x : (team ?? x)}%`, top: lane * LANE, ['--ch-sp-size' as string]: `${COIN}px` }}>
+            <li key={p.id} style={{ '--ch-sp-x': seen ? x : (team ?? x), top: lane * LANE, ['--ch-sp-size' as string]: `${COIN}px` } as CSSProperties}>
               <button type="button" tabIndex={-1} onClick={() => onOpen(p.id)}>
                 <Avatar name={p.name} size={COIN} />
                 <b className="ch-num">{p.avg!.toFixed(1)}</b>

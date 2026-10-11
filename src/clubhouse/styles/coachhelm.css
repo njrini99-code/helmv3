@@ -1576,14 +1576,10 @@
     width: 18px;
     height: 18px;
     margin: -9px 0 0 -9px;
-    box-shadow:
-      0 0 0 3.5px var(--ch-chart-loss),
-      0 3px 8px -2px rgb(28 25 18 / 0.35);
+    box-shadow: 0 0 0 3.5px var(--ch-chart-loss), var(--ch-elevation-mark-ink);
   }
   .ch-hl[data-canopy] .ch-hl-g.is-good .ch-hl-g__you {
-    box-shadow:
-      0 0 0 3.5px var(--ch-green-600),
-      0 3px 8px -2px rgb(28 25 18 / 0.35);
+    box-shadow: 0 0 0 3.5px var(--ch-green-600), var(--ch-elevation-mark-ink);
   }
   .ch-hl[data-canopy] .ch-hl-bars {
     gap: 12px;
@@ -1641,21 +1637,15 @@
     width: 34px;
     height: 34px;
     background: linear-gradient(160deg, var(--ch-ivory-0), var(--ch-ivory-150));
-    box-shadow:
-      inset 0 0 0 1px var(--ch-ledger-rule),
-      0 6px 10px -8px rgb(28 25 18 / 0.45);
+    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule), var(--ch-elevation-mark-ink);
   }
   .ch-hl[data-canopy] .ch-hl-pulse li.is-warn .ch-hl-pulse__ic {
     background: linear-gradient(160deg, var(--ch-warning-100), color-mix(in oklab, var(--ch-warning-100) 70%, var(--ch-warning-600)));
-    box-shadow:
-      inset 0 0 0 1px rgb(148 96 14 / 0.32),
-      0 6px 10px -8px rgb(148 96 14 / 0.55);
+    box-shadow: inset 0 0 0 1px rgb(148 96 14 / 0.32), var(--ch-elevation-mark-warn);
   }
   .ch-hl[data-canopy] .ch-hl-pulse li.is-good .ch-hl-pulse__ic {
     background: linear-gradient(160deg, var(--ch-positive-100), color-mix(in oklab, var(--ch-positive-100) 70%, var(--ch-green-600)));
-    box-shadow:
-      inset 0 0 0 1px var(--ch-green-ring),
-      0 6px 10px -8px rgb(21 90 57 / 0.55);
+    box-shadow: inset 0 0 0 1px var(--ch-green-ring), var(--ch-elevation-mark);
   }
   .ch-hl[data-canopy] .ch-hl-pulse li b {
     font-size: 14.5px;
@@ -1682,7 +1672,7 @@
   }
   .ch-hl[data-canopy] .ch-hl-pl.is-on .ch-hl-pl__c {
     background: linear-gradient(160deg, color-mix(in oklab, var(--ch-green-800) 80%, white), var(--ch-green-800));
-    box-shadow: 0 5px 8px -5px rgb(8 43 28 / 0.7);
+    box-shadow: var(--ch-elevation-mark);
   }
   /* Also worth knowing: the chevron leans toward the row on hover. */
   .ch-hl[data-canopy] .ch-hl-row svg {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { formatToPar, initials } from '../../lib/format';
 import { useInViewOnce } from '../../lib/use-in-view';
 import { positionLabel, type ChQRow, type ChQRowState } from './model';
@@ -62,7 +62,7 @@ export function StandingsSpread({ rows, topScore }: { rows: ChQRow[]; topScore: 
             <li
               key={r.playerId}
               className={'is-' + (KIND[r.state as NonNullable<ChQRowState>] ?? 'out') + (hot === r.playerId ? ' is-hot' : '')}
-              style={{ left: `${seen ? x : even}%`, top: lane * 40 }}
+              style={{ '--ch-qf-x': seen ? x : even, top: lane * 40 } as CSSProperties}
               onPointerEnter={() => setHot(r.playerId)}
             >
               <span>{initials(r.name)}</span>

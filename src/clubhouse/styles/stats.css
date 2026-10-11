@@ -4780,7 +4780,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   overflow: hidden;
   border-radius: 24px;
   background: radial-gradient(120% 90% at 85% -10%, rgb(79 138 100 / 0.38), transparent 60%), linear-gradient(165deg, var(--ch-green-700), var(--ch-green-900) 70%);
-  box-shadow: 0 0 0 1px var(--ch-green-900), inset 0 1px 0 rgb(255 255 255 / 0.12), inset 0 0 0 1px rgb(176 149 96 / 0.28), 0 28px 48px -28px rgb(8 43 28 / 0.65);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), inset 0 0 0 1px rgb(176 149 96 / 0.28), var(--ch-elevation-feature);
   color: var(--ch-ivory-100);
 }
 .ch-st[data-canopy] .ch-sgt::after {
@@ -5344,12 +5344,12 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-fm__c.is-up .ch-fm__bar {
   bottom: 50%;
   background: linear-gradient(0deg, var(--ch-green-600), var(--ch-green-400));
-  box-shadow: 0 6px 12px -8px rgb(21 90 57 / 0.7);
+  box-shadow: var(--ch-elevation-mark);
 }
 .ch-st[data-canopy] .ch-fm__c.is-down .ch-fm__bar {
   top: 50%;
   background: linear-gradient(180deg, var(--ch-champagne-500), var(--ch-champagne-300));
-  box-shadow: 0 6px 12px -8px rgb(148 96 14 / 0.6);
+  box-shadow: var(--ch-elevation-mark-warn);
 }
 .ch-st[data-canopy] .ch-fm__c:not(.is-up,
 .is-down) .ch-fm__bar {
@@ -5567,6 +5567,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 /* a bar against the team and Tour marks */
 .ch-st[data-canopy] .ch-ztrack {
   position: relative;
+  /* The size container for its ticks, which move along it by `translate` in container units. */
+  container-type: inline-size;
   height: 12px;
   border-radius: 99px;
   background: var(--ch-bg-inset);
@@ -5576,8 +5578,14 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   position: absolute;
   top: 0;
   bottom: 0;
+  left: 0;
+  width: 100%;
   border-radius: 99px;
   background: var(--ch-green-500);
+  /* The span from --ch-z-a to --ch-z-a + --ch-z-w (0 to 1 of the track), drawn by transform so a change glides without
+     relayout. */
+  transform: translateX(calc(var(--ch-z-a, 0) * 100%)) scaleX(var(--ch-z-w, 0));
+  transform-origin: left center;
 }
 .ch-st[data-canopy] .ch-ztrack__fill.is-bad {
   background: var(--ch-warning-600);
@@ -5586,6 +5594,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   position: absolute;
   top: -5px;
   bottom: -5px;
+  left: 0;
+  translate: calc(var(--ch-z-x, 0) * 1cqw) 0;
   width: 3px;
   margin-left: -1.5px;
   border-radius: 2px;
@@ -5640,6 +5650,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
 }
 .ch-st[data-canopy] .ch-zmix i {
+  flex: var(--ch-z-n, 0) 1 0;
   display: grid;
   place-items: center;
   min-width: 0;
@@ -5765,8 +5776,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 .ch-st[data-canopy] .ch-zfn .r > div i {
   position: absolute;
-  inset: 0 auto 0 0;
+  inset: 0;
   border-radius: var(--ch-radius-md);
+  /* Full width, slid in from the left by its share (--ch-z-p, 0 to 1); the row's clip draws the start. */
+  transform: translateX(calc((var(--ch-z-p, 0) - 1) * 100%));
   background: var(--ch-ivory-400);
 }
 .ch-st[data-canopy] .ch-zfn .r > div i.is-win {
@@ -6034,6 +6047,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 .ch-st[data-canopy] .ch-dv__rail {
   position: relative;
+  /* The size container for the dot, which moves along it by `translate` in container units. */
+  container-type: inline-size;
   height: 12px;
   margin: 30px 6px 40px;
   border-radius: 99px;
@@ -6042,13 +6057,17 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 .ch-st[data-canopy] .ch-dv__done {
   position: absolute;
-  inset: 0 auto 0 0;
+  inset: 0;
   border-radius: 99px;
   background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-600));
+  transform: scaleX(var(--ch-dv-p, 0));
+  transform-origin: left center;
 }
 .ch-st[data-canopy] .ch-dv__dot {
   position: absolute;
   top: -5px;
+  left: 0;
+  translate: calc(var(--ch-dv-p, 0) * 100cqw) 0;
   width: 22px;
   height: 22px;
   margin-left: -11px;
@@ -6094,26 +6113,22 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   border: 3px solid var(--ch-ivory-25);
 }
 
-/* Micro motion on the stats zones: lengths glide to their new value when the window, the filter or a focus area changes, and
-   a row lifts a little under the pointer. Tokens only, so Animations off and reduced motion make them instant. */
-.ch-st[data-canopy] .ch-lb__bar,
+/* Micro motion on the stats zones: lengths glide to their new value when the window, the filter or a focus area changes, on
+   transform or translate (the mix and the fairway strip on flex-grow), and a row lifts a little under the pointer. Tokens only,
+   so Animations off and reduced motion make them instant. The strokes-gained leg bars are sized inline and do not glide. */
 .ch-st[data-canopy] .ch-ztrack__fill,
-.ch-st[data-canopy] .ch-ztrack__tick,
 .ch-st[data-canopy] .ch-zfn .r > div i,
 .ch-st[data-canopy] .ch-dv__done {
-  transition:
-    width var(--ch-dur-base) var(--ch-ease),
-    left var(--ch-dur-base) var(--ch-ease),
-    right var(--ch-dur-base) var(--ch-ease);
+  transition: transform var(--ch-dur-base) var(--ch-ease);
 }
+.ch-st[data-canopy] .ch-ztrack__tick,
 .ch-st[data-canopy] .ch-dv__dot {
-  transition: left var(--ch-dur-base) var(--ch-ease);
+  transition: translate var(--ch-dur-base) var(--ch-ease);
 }
 .ch-st[data-canopy] .ch-zmix i,
 .ch-st[data-canopy] .ch-zfw > div {
   transition:
     flex-grow var(--ch-dur-base) var(--ch-ease),
-    width var(--ch-dur-base) var(--ch-ease),
     filter var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-st[data-canopy] .ch-lb__r,

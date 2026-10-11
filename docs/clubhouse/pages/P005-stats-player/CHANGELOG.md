@@ -1,5 +1,13 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-11 — The micro motion moves on transform
+
+Presentation only. The track fills, the missed-green funnel bars and the development rail now draw by transform (scale or slide)
+and their ticks and the rail's dot move by `translate` in container units, so a window or filter change glides without relayout; the
+scoring mix gives each result its share by flex-grow (it was a width). The strokes-gained leg bars stay sized inline and no longer
+glide (their width is what the strokes-gained tests read). Depth on the gain and loss bars and the stage is from the shared elevation
+tokens (`docs/clubhouse/CHANGELOG.md`). No data, copy or accessible name changed.
+
 ## 2026-10-10 — Zones on the shared Zone, and micro motion
 
 Presentation only; see the shared entry in `docs/clubhouse/CHANGELOG.md`. The zones now come from `ui/Zone.tsx` (the reading sits in a

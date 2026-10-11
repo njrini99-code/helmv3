@@ -2546,8 +2546,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   height: 8px;
   border-radius: 4px;
   background: linear-gradient(90deg, var(--ch-green-500), var(--ch-green-700));
-  box-shadow: 0 4px 8px -4px rgb(21 90 57 / 0.55);
-  transition: width var(--ch-dur-base) var(--ch-ease);
+  box-shadow: var(--ch-elevation-mark);
 }
 .ch-cl-tb__wk b {
   font-weight: 600;

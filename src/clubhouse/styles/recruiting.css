@@ -2172,9 +2172,7 @@
    prospect's row carries a green rail, so the page reads as one instrument. Tokens only; presentation only. */
 .ch-rec-pipe__stage.is-offered > .ch-rec-pipe__dot,
 .ch-rec-pipe__stage.is-recruiting > .ch-rec-pipe__dot {
-  box-shadow:
-    0 0 0 2px var(--ch-rec-ring),
-    0 10px 16px -10px rgb(21 90 57 / 0.55);
+  box-shadow: 0 0 0 2px var(--ch-rec-ring), var(--ch-elevation-mark);
 }
 @media (hover: hover) {
   .ch-rec-pipe__stage:not(:disabled):hover > .ch-rec-pipe__dot {

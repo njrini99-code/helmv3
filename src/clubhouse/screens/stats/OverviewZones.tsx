@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import { formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
@@ -26,9 +26,9 @@ function Track({ value, lo = 0, hi = 100, team, tour, bad = false, from }: { val
   const b = pos(value, lo, hi);
   return (
     <div className="ch-ztrack" aria-hidden="true">
-      <i className={'ch-ztrack__fill' + (bad ? ' is-bad' : '')} style={{ left: `${Math.min(a, b)}%`, width: `${Math.abs(b - a)}%` }} />
-      {team != null && <u className="ch-ztrack__tick is-team" style={{ left: `${pos(team, lo, hi)}%` }} />}
-      {tour != null && <u className="ch-ztrack__tick is-tour" style={{ left: `${pos(tour, lo, hi)}%` }} />}
+      <i className={'ch-ztrack__fill' + (bad ? ' is-bad' : '')} style={{ '--ch-z-a': Math.min(a, b) / 100, '--ch-z-w': Math.abs(b - a) / 100 } as CSSProperties} />
+      {team != null && <u className="ch-ztrack__tick is-team" style={{ '--ch-z-x': pos(team, lo, hi) } as CSSProperties} />}
+      {tour != null && <u className="ch-ztrack__tick is-tour" style={{ '--ch-z-x': pos(tour, lo, hi) } as CSSProperties} />}
     </div>
   );
 }
@@ -199,7 +199,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
             <Vis title="Every hole, by result" note={`${holesScored} holes over ${s.roundsPlayed} ${s.roundsPlayed === 1 ? 'round' : 'rounds'}.`}>
               <div className="ch-zmix" role="img" aria-label={mix.map(([l, c]) => `${l} ${c}`).join(', ')}>
                 {mix.map(([l, c, , k]) => (
-                  <i key={l} className={`is-${k}`} style={{ width: `${(c / holesScored) * 100}%` }} title={`${l} ${c}`}>
+                  <i key={l} className={`is-${k}`} style={{ '--ch-z-n': c } as CSSProperties} title={`${l} ${c}`}>
                     {c / holesScored > 0.08 ? c : null}
                   </i>
                 ))}
@@ -414,7 +414,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
                   Greens missed<small>Not in regulation</small>
                 </span>
                 <div>
-                  <i style={{ width: '100%' }} />
+                  <i style={{ '--ch-z-p': 1 } as CSSProperties} />
                 </div>
                 <b className="ch-num">{scrAtt}</b>
               </div>
@@ -423,7 +423,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
                   Saved par or better<small>The scramble</small>
                 </span>
                 <div>
-                  <i className="is-win" style={{ width: `${(scrMade / scrAtt) * 100}%` }} />
+                  <i className="is-win" style={{ '--ch-z-p': scrMade / scrAtt } as CSSProperties} />
                 </div>
                 <b className="ch-num is-win">{scrMade}</b>
               </div>
@@ -434,7 +434,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
                       Bunker shots<small>Greenside</small>
                     </span>
                     <div>
-                      <i style={{ width: '100%' }} />
+                      <i style={{ '--ch-z-p': 1 } as CSSProperties} />
                     </div>
                     <b className="ch-num">{sandAtt}</b>
                   </div>
@@ -443,7 +443,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
                       Saved<small>Sand saves</small>
                     </span>
                     <div>
-                      <i className="is-sand" style={{ width: `${(sandMade / sandAtt) * 100}%` }} />
+                      <i className="is-sand" style={{ '--ch-z-p': sandMade / sandAtt } as CSSProperties} />
                     </div>
                     <b className="ch-num">{sandMade}</b>
                   </div>

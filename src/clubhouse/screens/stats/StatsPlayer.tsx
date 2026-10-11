@@ -3,7 +3,7 @@
 import { CalendarPlus, ChevronLeft, ChevronRight, Info, MessageSquare, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
 import { m } from 'motion/react';
-import { memo, useDeferredValue, useEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from 'react';
+import { memo, useDeferredValue, useEffect, useRef, useState, useTransition, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';
 import type { ChPlayerProfile } from '../../data/stats-player';
@@ -467,8 +467,8 @@ function DevTrack({ title, state, line, baseline, current, target, metric, done 
       </div>
       {progress != null && (
         <div className="ch-dv__rail" role="img" aria-label={`${title}: ${devValue(baseline, metric)} to start, ${devValue(current, metric)} now, ${devValue(target, metric)} target, ${progress} percent of the way`}>
-          <i className="ch-dv__done" style={{ width: `${progress}%` }} />
-          <i className="ch-dv__dot" style={{ left: `${progress}%` }} />
+          <i className="ch-dv__done" style={{ '--ch-dv-p': progress / 100 } as CSSProperties} />
+          <i className="ch-dv__dot" style={{ '--ch-dv-p': progress / 100 } as CSSProperties} />
           <b className="ch-dv__now ch-num" style={{ left: `${Math.min(88, Math.max(12, progress))}%` }}>{devValue(current, metric)} now</b>
           <span className="ch-dv__end is-start">
             <b className="ch-num">{devValue(baseline, metric)}</b>Started

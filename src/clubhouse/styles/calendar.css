@@ -1373,7 +1373,7 @@
   border-top: 0;
   border-radius: 12px;
   background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.05);
+  box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-elevation-control);
 }
 .ch-in__sec .ch-in__need + .ch-in__need {
   margin-top: 6px;

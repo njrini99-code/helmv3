@@ -1,5 +1,25 @@
 # Clubhouse changelog
 
+## 2026-10-11 — Depth from tokens and transform-only motion across the premium pass
+
+The `clubhouse:css` gate found 57 raw outer blur shadows and layout transitions in the premium-pass CSS. Fixed at the source, light and
+dark:
+
+- **New elevation tokens** (`styles/tokens.css`, both themes), each drop-only so the caller keeps its own ring or inset edge:
+  `--ch-elevation-mark-warn` (amber glow under a loss bar), `--ch-elevation-mark-ink` (a small neutral drop under a mark, number or
+  dot), `--ch-elevation-plate` (a long faint drop under a gold-ringed reading plate), `--ch-elevation-pill-on` (the selected green
+  segment pill), `--ch-elevation-face` and `--ch-elevation-face-hover` (the roster's portrait cards, the drift follows the light).
+- **Shadows by role:** deep-green stages (Home's team form, the round review's stage and hero, the team stats strokes-gained table) use
+  `--ch-elevation-feature`; tip cards `--ch-elevation-overlay`; green marks `--ch-elevation-mark`; the Messages composer
+  `--ch-elevation-floating`, the ready Send `--ch-green-raised-shadow`; the roster's selected portrait `--ch-elevation-choice-hover`.
+  Affects calendar, classes, CoachHelm, home, hub, messages, qualifiers, recruiting, roster, rounds, stats and `ui/Zone` (the
+  zone number and reading plate). Small differences in blur and opacity against the old literals; rings and inset material unchanged.
+- **Motion without relayout:** fills scale or slide on transform; dots, ticks, tips and coins move by `translate` in container units on
+  a still, full-width track (the track is the size container, so it never overflows its chart). Applies to the Hub read bar, the
+  qualifiers and roster spreads, the round review and library tips, and the player stats zones. The Hub RSVP split and the stats mix
+  and fairway strip glide on flex-grow. Not gliding any more: the classes timetable bar, and the strokes-gained bars on the round review
+  and player stats (sized inline; tests read that width).
+
 ## 2026-10-10 — Three depth tokens for the rounds pass
 
 Shared pieces for the rounds library and new-round pass (P011's log has the

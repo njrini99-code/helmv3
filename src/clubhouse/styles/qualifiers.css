@@ -2829,8 +2829,21 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   padding: 0;
   list-style: none;
 }
+/* Each player has a still, full-width row that is the coin's size container; the coin moves along it by `translate` in
+   container units (--ch-qf-x, 0 to 100), so the spread from the even line glides on the compositor and nothing overflows the
+   plot. The coin centres itself on that point and takes the pointer. */
 .ch-qf-sp__plot li {
   position: absolute;
+  right: 0;
+  left: 0;
+  height: 30px;
+  container-type: inline-size;
+  pointer-events: none;
+}
+.ch-qf-sp__plot li > span {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: grid;
   place-items: center;
   width: 30px;
@@ -2842,25 +2855,27 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   background: var(--ch-bg-surface);
   box-shadow: inset 0 0 0 1.5px var(--ch-ink-400);
   color: var(--ch-ink-600);
+  pointer-events: auto;
+  translate: calc(var(--ch-qf-x, 0) * 1cqw) 0;
   transition:
-    left var(--ch-dur-reveal) var(--ch-ease),
+    translate var(--ch-dur-reveal) var(--ch-ease),
     transform var(--ch-dur-quick) var(--ch-ease-spring);
 }
-.ch-qf-sp__plot li.is-score {
+.ch-qf-sp__plot li.is-score > span {
   background: var(--ch-green-900);
   box-shadow: none;
   color: var(--ch-stage-ink);
 }
-.ch-qf-sp__plot li.is-pick {
+.ch-qf-sp__plot li.is-pick > span {
   background: var(--ch-champagne-500);
   box-shadow: none;
   color: var(--ch-ink-950);
 }
-.ch-qf-sp__plot li.is-bubble {
+.ch-qf-sp__plot li.is-bubble > span {
   box-shadow: inset 0 0 0 2px var(--ch-champagne-500);
   color: var(--ch-ledger-eyebrow);
 }
-.ch-qf-sp__plot li.is-hot {
+.ch-qf-sp__plot li.is-hot > span {
   transform: scale(1.14);
 }
 .ch-qf-sp__even,
@@ -2907,7 +2922,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   border-radius: var(--ch-radius-md);
   background: var(--ch-ink-900);
   color: var(--ch-stage-ink);
-  box-shadow: 0 12px 24px -12px rgb(0 0 0 / 0.5);
+  box-shadow: var(--ch-elevation-overlay);
   pointer-events: none;
   transform: translate(-50%, 0);
   white-space: nowrap;
@@ -2920,7 +2935,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   color: var(--ch-stage-ink-soft);
 }
 @media (prefers-reduced-motion: reduce) {
-  .ch-qf-sp__plot li {
+  .ch-qf-sp__plot li > span {
     transition-delay: 0s;
   }
 }

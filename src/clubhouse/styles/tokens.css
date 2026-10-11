@@ -361,6 +361,18 @@
   --ch-elevation-board: 0 14px 22px -16px rgb(8 43 28 / 0.8);
   --ch-elevation-board-hover: 0 14px 20px -12px rgb(8 43 28 / 0.85);
   --ch-elevation-mark: 0 4px 8px -4px rgb(21 90 57 / 0.6);
+  /* The same small drop for the other data marks: amber under a loss bar, ink under a neutral mark, number or dot. A
+     gold-ringed reading plate on the page (a zone's reading, the round's figures): a long, faint drop. The selected
+     segment pill on green: a tight green contact shadow. A portrait card on the roster: a three-step drift that follows
+     the light, deeper and with a green falloff when hovered. Drop only; the caller keeps its own ring or inset edge. */
+  --ch-elevation-mark-warn: 0 6px 12px -8px rgb(148 96 14 / 0.6);
+  --ch-elevation-mark-ink: 0 5px 10px -6px rgb(28 25 18 / 0.45);
+  --ch-elevation-plate: 0 18px 28px -24px rgb(28 25 18 / 0.5);
+  --ch-elevation-pill-on: 0 1px 2px rgb(21 90 57 / 0.32);
+  --ch-elevation-face: var(--ch-light-drift-near) 1px 3px rgb(28 25 18 / 0.12), var(--ch-light-drift-mid) 8px 16px -6px rgb(28 25 18 / 0.24),
+    var(--ch-light-drift) 20px 32px -16px rgb(28 25 18 / 0.28);
+  --ch-elevation-face-hover: var(--ch-light-drift-near) 3px 6px rgb(28 25 18 / 0.1), var(--ch-light-drift-mid) 22px 36px -12px rgb(28 25 18 / 0.34),
+    var(--ch-light-drift) 40px 56px -24px rgb(21 90 57 / 0.3);
   --ch-ledger-row-press: color-mix(in oklab, var(--ch-green-600) 11%, transparent);
   /* A portrait set into the page head: a canvas gap, a fine engraved ring, a soft green drop. */
   --ch-ledger-avatar-ring: 0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule), 0 10px 22px -12px rgb(11 58 37 / 0.4);
@@ -632,6 +644,14 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-elevation-board: 0 14px 22px -16px rgb(0 0 0 / 0.8);
   --ch-elevation-board-hover: 0 14px 20px -12px rgb(0 0 0 / 0.85);
   --ch-elevation-mark: 0 4px 8px -4px rgb(0 0 0 / 0.6);
+  --ch-elevation-mark-warn: 0 6px 12px -8px rgb(0 0 0 / 0.6);
+  --ch-elevation-mark-ink: 0 5px 10px -6px rgb(0 0 0 / 0.6);
+  --ch-elevation-plate: 0 18px 28px -24px rgb(0 0 0 / 0.7);
+  --ch-elevation-pill-on: 0 1px 2px rgb(0 0 0 / 0.4);
+  --ch-elevation-face: var(--ch-light-drift-near) 1px 3px rgb(0 0 0 / 0.35), var(--ch-light-drift-mid) 8px 16px -6px rgb(0 0 0 / 0.5),
+    var(--ch-light-drift) 20px 32px -16px rgb(0 0 0 / 0.5);
+  --ch-elevation-face-hover: var(--ch-light-drift-near) 3px 6px rgb(0 0 0 / 0.4), var(--ch-light-drift-mid) 22px 36px -12px rgb(0 0 0 / 0.6),
+    var(--ch-light-drift) 40px 56px -24px rgb(0 0 0 / 0.55);
   --ch-ledger-row-press: color-mix(in oklab, var(--ch-green-600) 12%, transparent);
   --ch-ledger-avatar-ring: 0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule), 0 10px 22px -12px rgb(0 0 0 / 0.6);
   --ch-elevation-field-hover: 0 0 0 1px var(--ch-border-strong), 0 1px 2px rgb(0 0 0 / 0.3);

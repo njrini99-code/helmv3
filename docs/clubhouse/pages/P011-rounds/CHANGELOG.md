@@ -1,5 +1,17 @@
 # P011 — Rounds: changelog
 
+## 2026-10-11 — Review motion on transform; the depth from tokens
+
+Presentation only (no contract change):
+
+- The review's running-score card and the library's season-chart card sit on a still, full-width track and move along it by
+  `translate` in container units, so they glide without relayout and the track never overflows the chart.
+- Putts a hole: each column scales up from its foot (`--ch-rz-p`); first putts by length: each bar slides in from the left. Both
+  glide on transform. The strokes-gained bars stay sized inline and no longer glide (their width is what the review's tests read);
+  the scoring distribution keeps its own slide.
+- Depth: the stage and hero use `--ch-elevation-feature`, the scrub card `--ch-elevation-overlay`, marks `--ch-elevation-mark`,
+  `-mark-warn` and `-mark-ink`, and the figures row `--ch-elevation-plate` (shared entry in `docs/clubhouse/CHANGELOG.md`).
+
 ## 2026-10-10 — Rounds library and new round, more premium
 
 ```text

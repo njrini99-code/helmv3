@@ -185,17 +185,19 @@ export function ScoreFlow({
         </g>
       </svg>
       {shown && (
-        <div className={'ch-rzstage__tip' + (cur ? ' is-on' : '')} style={{ left: `${(x(shown.n) / W) * 100}%` }} role="presentation" aria-hidden={cur ? undefined : true}>
-          <b>
-            Hole {shown.n} · par {shown.par}
-          </b>
-          <span>
-            <i style={{ background: COLOR[shown.result] }} />
-            {shown.score} · {WORD[shown.result]}
-          </span>
-          <em className="ch-num">
-            {formatToPar(shown.cum)} through {shown.n}
-          </em>
+        <div className="ch-rzstage__tipx" style={{ '--ch-rz-x': (x(shown.n) / W) * 100 } as CSSProperties} role="presentation" aria-hidden={cur ? undefined : true}>
+          <div className={'ch-rzstage__tip' + (cur ? ' is-on' : '')}>
+            <b>
+              Hole {shown.n} · par {shown.par}
+            </b>
+            <span>
+              <i style={{ background: COLOR[shown.result] }} />
+              {shown.score} · {WORD[shown.result]}
+            </span>
+            <em className="ch-num">
+              {formatToPar(shown.cum)} through {shown.n}
+            </em>
+          </div>
         </div>
       )}
     </div>
@@ -245,7 +247,7 @@ export function PuttingViz({ holes }: { holes: ChReviewHole[] }) {
           {holes.map((h) => (
             <span key={h.n} className="ch-rzpt__c">
               <b className="ch-num">{h.putts ?? NO_DATA}</b>
-              <i className={h.putts == null ? '' : h.putts <= 1 ? 'is-one' : h.putts === 2 ? 'is-two' : 'is-three'} style={{ height: `${h.putts == null ? 0 : (h.putts / max) * 100}%` }} />
+              <i className={h.putts == null ? '' : h.putts <= 1 ? 'is-one' : h.putts === 2 ? 'is-two' : 'is-three'} style={{ '--ch-rz-p': h.putts == null ? 0 : h.putts / max } as CSSProperties} />
               <em>{h.n}</em>
             </span>
           ))}
@@ -269,7 +271,7 @@ export function PuttingViz({ holes }: { holes: ChReviewHole[] }) {
               <div key={b.label} className="ch-rzrow">
                 <span>{b.label}</span>
                 <div className="ch-rzrow__t" aria-hidden="true">
-                  {b.attempts > 0 && <i style={{ width: `${(b.made / b.attempts) * 100}%` }} />}
+                  {b.attempts > 0 && <i style={{ '--ch-rz-p': b.made / b.attempts } as CSSProperties} />}
                 </div>
                 <b className="ch-num">{b.attempts > 0 ? `${b.made} of ${b.attempts}` : NO_DATA}</b>
               </div>

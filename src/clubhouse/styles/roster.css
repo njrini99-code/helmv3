@@ -217,7 +217,7 @@
    chip with ivory ink, on every width. Avg score, Handicap, Rounds, Name; Active, Inactive, All; the grid and list toggle. */
 .ch-rs .ch-seg__pill {
   background: var(--ch-green-fill-700);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 2px rgb(21 90 57 / 0.35);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), var(--ch-elevation-pill-on);
 }
 .ch-rs .ch-seg__b.is-on {
   color: var(--ch-ivory-50);
@@ -225,7 +225,7 @@
 .ch-rs .ch-pill[aria-pressed='true'],
 .ch-rs .ch-rs-vt__b[aria-pressed='true'] {
   background: var(--ch-green-fill-700);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 2px rgb(21 90 57 / 0.35);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), var(--ch-elevation-pill-on);
   color: var(--ch-ivory-50);
 }
 @media (hover: hover) {
@@ -1738,13 +1738,7 @@
     padding: 24px 20px 24px;
     border-radius: 22px;
     background: linear-gradient(180deg, #fff 0%, var(--ch-bg-surface) 42%, var(--ch-ivory-50) 100%);
-    box-shadow:
-      0 0 0 1px rgb(176 149 96 / 0.55),
-      inset 0 1px 0 #fff,
-      inset 0 -3px 0 rgb(28 25 18 / 0.05),
-      var(--ch-light-drift-near) 1px 3px rgb(28 25 18 / 0.12),
-      var(--ch-light-drift-mid) 8px 16px -6px rgb(28 25 18 / 0.24),
-      var(--ch-light-drift) 20px 32px -16px rgb(28 25 18 / 0.28);
+    box-shadow: 0 0 0 1px rgb(176 149 96 / 0.55), inset 0 1px 0 #fff, inset 0 -3px 0 rgb(28 25 18 / 0.05), var(--ch-elevation-face);
     transition:
       box-shadow var(--ch-dur-base) var(--ch-ease),
       transform var(--ch-dur-base) var(--ch-ease),
@@ -1753,12 +1747,7 @@
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
       transform: translateY(-8px);
-      box-shadow:
-        0 0 0 1px var(--ch-champagne-500),
-        inset 0 1px 0 var(--ch-light-rim),
-        var(--ch-light-drift-near) 3px 6px rgb(28 25 18 / 0.1),
-        var(--ch-light-drift-mid) 22px 36px -12px rgb(28 25 18 / 0.34),
-        var(--ch-light-drift) 40px 56px -24px rgb(21 90 57 / 0.3);
+      box-shadow: 0 0 0 1px var(--ch-champagne-500), inset 0 1px 0 var(--ch-light-rim), var(--ch-elevation-face-hover);
     }
   }
   .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):active {
@@ -1768,9 +1757,7 @@
   .ch-rs[data-canopy] .ch-rs-face.is-sel,
   .ch-rs[data-canopy] .ch-rs-face.is-sel:hover {
     background: var(--ch-green-50);
-    box-shadow:
-      0 0 0 2px var(--ch-green-600),
-      var(--ch-light-drift-mid) 12px 24px -10px rgb(21 90 57 / 0.35);
+    box-shadow: 0 0 0 2px var(--ch-green-600), var(--ch-elevation-choice-hover);
   }
   /* The indented border: a second hairline frame set 7px inside the tile's edge, so the portrait sits in a recess. */
   .ch-rs[data-canopy] .ch-rs-face::before {
@@ -2027,10 +2014,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   padding: 22px 24px 8px;
   border-radius: 18px;
   background: var(--ch-bg-surface);
-  box-shadow:
-    inset 0 3px 0 var(--ch-champagne-500),
-    0 0 0 1px rgb(176 149 96 / 0.3),
-    0 18px 28px -24px rgb(28 25 18 / 0.5);
+  box-shadow: inset 0 3px 0 var(--ch-champagne-500), 0 0 0 1px rgb(176 149 96 / 0.3), var(--ch-elevation-plate);
 }
 .ch-rs-sp__h h2 {
   margin: 0 0 4px;
@@ -2046,19 +2030,33 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   position: relative;
   margin: 0 22px;
 }
+/* The team line and the coins sit on still, full-width rows that are their size containers; each moves along its row by
+   `translate` in container units (--ch-sp-x, 0 to 100), so a change glides on the compositor and nothing overflows the plot. */
 .ch-rs-sp__team {
   position: absolute;
   top: 0;
+  right: 0;
+  left: 0;
   z-index: 0;
-  width: 0;
+  container-type: inline-size;
+  pointer-events: none;
+}
+.ch-rs-sp__team i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
   border-left: 2px solid var(--ch-champagne-500);
-  transition: left var(--ch-dur-base) var(--ch-ease);
+  translate: calc(var(--ch-sp-x, 0) * 1cqw) 0;
+  transition: translate var(--ch-dur-base) var(--ch-ease);
 }
 .ch-rs-sp__team span {
   position: absolute;
   bottom: -26px;
   left: 0;
   transform: translateX(-50%);
+  translate: calc(var(--ch-sp-x, 0) * 1cqw) 0;
+  transition: translate var(--ch-dur-base) var(--ch-ease);
   padding: 3px 9px;
   border-radius: 99px;
   background: var(--ch-champagne-500);
@@ -2075,10 +2073,15 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 }
 .ch-rs-sp__coins li {
   position: absolute;
-  width: 0;
-  transition: left var(--ch-dur-reveal) var(--ch-ease);
+  right: 0;
+  left: 0;
+  container-type: inline-size;
+  pointer-events: none;
 }
 .ch-rs-sp__coins button {
+  translate: calc(var(--ch-sp-x, 0) * 1cqw) 0;
+  transition: translate var(--ch-dur-reveal) var(--ch-ease);
+  pointer-events: auto;
   display: grid;
   justify-items: center;
   gap: 2px;
@@ -2092,7 +2095,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   cursor: pointer;
 }
 .ch-rs-sp__coins .ch-avatar {
-  box-shadow: 0 0 0 3px var(--ch-ivory-25), 0 8px 14px -6px rgb(28 25 18 / 0.5);
+  box-shadow: 0 0 0 3px var(--ch-ivory-25), var(--ch-elevation-mark-ink);
   transition: transform var(--ch-dur-quick) var(--ch-ease-spring);
 }
 @media (hover: hover) {
@@ -2127,7 +2130,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   color: var(--ch-text-tertiary);
 }
 @media (prefers-reduced-motion: reduce) {
-  .ch-rs-sp__coins li {
+  .ch-rs-sp__coins button {
     transition-delay: 0s;
   }
 }

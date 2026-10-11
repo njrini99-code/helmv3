@@ -287,7 +287,7 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
         })}
       </svg>
       {shown && (
-        <div className="ch-rd-rib__tipx" style={{ transform: `translateX(${(cxOf(shownAt) / W) * 100}%)` }} role="presentation" aria-hidden={hover ? undefined : true}>
+        <div className="ch-rd-rib__tipx" style={{ '--ch-rd-x': (cxOf(shownAt) / W) * 100 } as CSSProperties} role="presentation" aria-hidden={hover ? undefined : true}>
           <div className={'ch-rd-rib__tip' + (hover ? ' is-on' : '')}>
             <b>
               {shortDay(shown.date)}

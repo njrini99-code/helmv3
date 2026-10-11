@@ -362,9 +362,13 @@
 }
 .ch-hb-reads__t i {
   display: block;
+  width: 100%;
   height: 100%;
   border-radius: 3px;
   background: var(--ch-green-fill-600);
+  /* Full width, slid in from the left by its share (--ch-hb-p, 0 to 1): a change moves on transform and the rounded end
+     stays round; the track's clip draws the start. */
+  transform: translateX(calc((var(--ch-hb-p, 0) - 1) * 100%));
 }
 .ch-hb-list {
   display: flex;
@@ -2147,7 +2151,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.14);
 }
 .ch-hb-rsvp__bar > * {
-  transition: flex-grow var(--ch-dur-base) var(--ch-ease), width var(--ch-dur-base) var(--ch-ease);
+  transition: flex-grow var(--ch-dur-base) var(--ch-ease);
 }
 .ch-hb-rsvp__bar .is-going {
   background: linear-gradient(180deg, var(--ch-green-400), var(--ch-green-700));
@@ -2157,13 +2161,11 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 }
 .ch-hb-reads__t i {
   background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-700));
-  transition: width var(--ch-dur-base) var(--ch-ease);
+  transition: transform var(--ch-dur-base) var(--ch-ease);
 }
 .ch-hb-rsvp__d {
   background: linear-gradient(180deg, var(--ch-ivory-0), var(--ch-ivory-100));
-  box-shadow:
-    inset 0 0 0 1px rgb(176 149 96 / 0.4),
-    0 6px 10px -8px rgb(28 25 18 / 0.45);
+  box-shadow: inset 0 0 0 1px rgb(176 149 96 / 0.4), var(--ch-elevation-mark-ink);
 }
 .ch-hb-rsvp__list li {
   border-radius: 12px;
