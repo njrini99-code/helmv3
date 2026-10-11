@@ -16070,6 +16070,8 @@ export type Database = {
           hs_class: number | null
           id: string
           last_name: string | null
+          next_step_date: string | null
+          next_step_label: string | null
           notes: string | null
           phone: string | null
           state: string | null
@@ -16086,6 +16088,8 @@ export type Database = {
           hs_class?: number | null
           id?: string
           last_name?: string | null
+          next_step_date?: string | null
+          next_step_label?: string | null
           notes?: string | null
           phone?: string | null
           state?: string | null
@@ -16102,6 +16106,8 @@ export type Database = {
           hs_class?: number | null
           id?: string
           last_name?: string | null
+          next_step_date?: string | null
+          next_step_label?: string | null
           notes?: string | null
           phone?: string | null
           state?: string | null
@@ -17466,6 +17472,9 @@ export type Database = {
       }
       golf_team_settings: {
         Row: {
+          course_label: string | null
+          course_latitude: number | null
+          course_longitude: number | null
           created_at: string | null
           default_tees: string | null
           event_reminder_early_hours: number
@@ -17481,6 +17490,9 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          course_label?: string | null
+          course_latitude?: number | null
+          course_longitude?: number | null
           created_at?: string | null
           default_tees?: string | null
           event_reminder_early_hours?: number
@@ -17496,6 +17508,9 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          course_label?: string | null
+          course_latitude?: number | null
+          course_longitude?: number | null
           created_at?: string | null
           default_tees?: string | null
           event_reminder_early_hours?: number
