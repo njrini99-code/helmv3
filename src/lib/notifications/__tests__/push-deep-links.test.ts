@@ -23,6 +23,13 @@ describe('push payload deep links (NAV-IA3)', () => {
     expect(url('round_submitted', {})).toBe('/golf/dashboard/stats/team');
   });
 
+  it('opens the exact task for an assignment or reminder when the sender gives its id, else the task list', () => {
+    expect(url('task_assigned', { taskId: 't-1', taskTitle: 'Waiver' })).toBe('/golf/dashboard/tasks?task=t-1');
+    expect(url('task_reminder', { taskId: 't-1', taskTitle: 'Waiver' })).toBe('/golf/dashboard/tasks?task=t-1');
+    expect(url('task_assigned', { taskTitle: 'Waiver' })).toBe('/golf/dashboard/tasks');
+    expect(url('task_reminder', { taskId: '../x?y' })).toBe('/golf/dashboard/tasks');
+  });
+
   it('sends a plan assignment to the player plan tab, not the redirect shim', () => {
     expect(url('dev_plan_assigned', {})).toBe('/golf/dashboard/coachhelm?view=development');
   });

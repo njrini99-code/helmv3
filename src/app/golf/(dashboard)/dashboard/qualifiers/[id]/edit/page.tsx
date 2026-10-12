@@ -7,6 +7,7 @@ import type { Metadata } from 'next';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayEditQualifier } from '@/components/fairway/pages/qualifiers/FairwayEditQualifier';
 import { getQualifierRoundCourses } from '@/app/golf/actions/qualifier-actions';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 
 export const metadata: Metadata = {
   title: 'Edit Qualifier',
@@ -23,7 +24,7 @@ export default async function EditQualifierPage({ params }: PageProps) {
   if (!session) redirect('/golf/login');
 
   // Clubhouse Qualifiers (golf_clubhouse_ui): coaches and players, rendered in place (D-23, D-30).
-  if ((await isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null))) return <ClubhouseQualifiersRoute view="edit" id={id} />;
+  if ((await isClubhouseFor(await getGolfDashboardRole()))) return <ClubhouseQualifiersRoute view="edit" id={id} />;
 
   // Coach-only surface — a player landing here (direct link) is sent back to
   // the read-only detail page rather than an error.

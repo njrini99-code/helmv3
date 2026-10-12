@@ -3,6 +3,7 @@ import { Compass } from 'lucide-react';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { Button } from '@/components/fairway/controls/button';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { isClubhouseFor } from '@/clubhouse/gate';
 import { ClubhouseNotFound } from '@/clubhouse/shell/NotFound';
 
@@ -24,13 +25,13 @@ import { ClubhouseNotFound } from '@/clubhouse/shell/NotFound';
  * `[...missing]` catch-all (DASH-13). The secondary link is role-aware
  * (DASH-14): a coach goes back to the roster, a player to their rounds.
  *
- * On Clubhouse (the same gate the dashboard layout uses, by the session's
- * coach or player role) it is Clubhouse's own page empty instead (CH-1306):
+ * On Clubhouse (the same gate the dashboard layout uses, by its coach or
+ * player role, getGolfDashboardRole) it is Clubhouse's own page empty instead (CH-1306):
  * Clubhouse never draws Fairway components inside its shell.
  */
 export default async function GolfDashboardNotFound() {
   const session = await getGolfSessionProfile().catch(() => null);
-  if (await isClubhouseFor(session?.role).catch(() => false)) return <ClubhouseNotFound />;
+  if (await getGolfDashboardRole().then(isClubhouseFor).catch(() => false)) return <ClubhouseNotFound />;
   const secondary =
     session?.role === 'coach'
       ? { href: '/golf/dashboard/roster', label: 'Back to roster' }

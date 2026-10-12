@@ -129,13 +129,13 @@ export function generatePushPayload(
       return {
         title: 'New Task Assigned',
         body: String(data.taskTitle || ''),
-        data: { url: `${baseUrl}/golf/dashboard/tasks`, type },
+        data: { url: idOf('taskId') ? `${baseUrl}/golf/dashboard/tasks?task=${idOf('taskId')}` : `${baseUrl}/golf/dashboard/tasks`, type },
       };
     case 'task_reminder':
       return {
         title: 'Task Reminder',
         body: `"${data.taskTitle}" is due soon`,
-        data: { url: `${baseUrl}/golf/dashboard/tasks`, type },
+        data: { url: idOf('taskId') ? `${baseUrl}/golf/dashboard/tasks?task=${idOf('taskId')}` : `${baseUrl}/golf/dashboard/tasks`, type },
       };
     case 'event_rsvp_reminder':
       return {

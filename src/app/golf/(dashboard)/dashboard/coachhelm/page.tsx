@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { createClient } from '@/lib/supabase/server';
 import { getPlayerCoachHelmDashboard } from '@/app/golf/actions/insights-coachhelm';
 import { getPlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
@@ -202,7 +203,7 @@ export default async function PlayerCoachHelmPage({ searchParams }: { searchPara
   const { coach, player } = session;
 
   // Clubhouse CoachHelm (golf_clubhouse_ui): one page for coaches and players, drawn in place (no redirect: see golf-conditional-redirect.test.ts).
-  if ((coach && (await isClubhouseFor('coach'))) || (player && (await isClubhouseFor('player')))) return <ClubhouseCoachHelmRoute {...(await searchParams)} />;
+  if (await isClubhouseFor(await getGolfDashboardRole())) return <ClubhouseCoachHelmRoute {...(await searchParams)} />;
 
   if (!player) {
     if (coach) {

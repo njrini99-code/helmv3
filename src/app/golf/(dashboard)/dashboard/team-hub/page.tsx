@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
@@ -29,14 +30,14 @@ interface RawAssignment {
 export default async function TeamHubPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; task?: string }>;
 }) {
   // Clubhouse Team Hub (golf_clubhouse_ui): one page for coaches and players,
   // with its own tabs, so `?tab=` opens a tab there instead of redirecting.
-  const legacyTab = (await searchParams)?.tab;
+  const { tab: legacyTab, task } = (await searchParams) ?? {};
   const chSession = await getGolfSessionProfile();
-  if (chSession && ((chSession.coach && (await isClubhouseFor('coach'))) || (chSession.player && (await isClubhouseFor('player'))))) {
-    return <ClubhouseHubRoute tab={legacyTab} />;
+  if (chSession && (await isClubhouseFor(await getGolfDashboardRole()))) {
+    return <ClubhouseHubRoute tab={legacyTab} task={typeof task === 'string' ? task : undefined} />;
   }
 
   // Legacy deep links (Cmd+K / bookmarks): the tabbed hub's /team-hub?tab=X

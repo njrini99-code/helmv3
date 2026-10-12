@@ -113,7 +113,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P007 | 2 | 10 | 1 | 9 | 5 | 35 | 1 | 2 | 2 | 1 | 3 | 2 | 1 | 2 | 1 | 6 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 97 |
 | P008 | 2 | 1 | 3 | 6 | 15 | 41 | 2 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 131 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 33 | 4 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 133 |
-| P010 | 2 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 89 |
+| P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
 | P011 | 15 | 12 |  | 17 | 11 | 39 | 14 | 5 | 2 |  | 21 | 2 | 1 | 4 | 3 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 178 |
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 80 |
 | P013 | 7 | 12 |  | 29 | 1 | 36 | 22 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 156 |
@@ -1014,6 +1014,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | --- | --- | --- | --- | --- | --- |
 | 100101 |  | 01 Default / core UI | `HUB_READY` | implemented | Team Hub opens on Home for a coach and for a player in the same frame: the role pill, the title, the team and season, and the tabs (Home, Announcements, Travel, Documents, and Tasks for a coach). A player's Home shows their RSVPs, the post waiting on them, the next trip, Updates and their tasks; a coach's shows this week's replies as counts, the newest post with its read receipts, the next trip and Updates, and a coach also gets New announcement. |
 | 100102 |  | 01 Default / core UI | `TAB_LINK_OPENS_A_TAB` | implemented | ?tab=home\|ann\|travel\|docs\|tasks opens that tab; a tab the role does not have (tasks, for a player) or a value that is not a tab opens Home. |
+| 100103 |  | 01 Default / core UI | `TASK_LINK_OPENS_THE_TASK` | implemented | ?task=<id> (a task notification, carried through the old /tasks address) scrolls that task's row into view on the coach's Tasks tab or the player's Your tasks and lights it once (a fade; with reduced motion a still wash until the row is used). A task that is not in the shown rows, or a value that is not an id, is ignored; completing the task or a later render never scrolls back to it. |
 | 100201 | CH-10401 | 02 Initial loading / skeleton | `FILES_ARE_UPLOADING` | implemented | Files are uploading |
 | 100202 | CH-10402 | 02 Initial loading / skeleton | `A_POST_IS_BEING_SENT` | implemented | A post is being sent |
 | 100203 | CH-10403 | 02 Initial loading / skeleton | `A_TRIP_IS_BEING_SAVED` | implemented | A trip is being saved |

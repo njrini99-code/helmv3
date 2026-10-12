@@ -9727,6 +9727,20 @@
     ]
   },
   {
+    "id": 100103,
+    "page": "P010",
+    "category": 1,
+    "item": 3,
+    "name": "TASK_LINK_OPENS_THE_TASK",
+    "meaning": "?task=<id> (a task notification, carried through the old /tasks address) scrolls that task's row into view on the coach's Tasks tab or the player's Your tasks and lights it once (a fade; with reduced motion a still wash until the row is used). A task that is not in the shown rows, or a value that is not an id, is ignored; completing the task or a later render never scrolls back to it.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/hub/parts.tsx#TaskRow; src/clubhouse/screens/hub/TeamHub.tsx#TeamHub; src/clubhouse/routes/hub.tsx#ClubhouseHubRoute; src/app/golf/(dashboard)/dashboard/tasks/layout.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/hub-focus-task.test.tsx",
+      "src/clubhouse/__tests__/alias.test.ts"
+    ]
+  },
+  {
     "id": 100201,
     "page": "P010",
     "category": 2,

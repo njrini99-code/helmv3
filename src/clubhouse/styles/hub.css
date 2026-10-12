@@ -620,6 +620,27 @@
   color: var(--ch-text-tertiary);
   text-decoration: line-through;
 }
+/* A task a notification opened (`?task=`): a selected-row wash that fades once. Reduced motion keeps it still. */
+.ch-hb-task.is-focus {
+  border-radius: 8px;
+  animation: ch-hb-task-focus calc(var(--ch-dur-reveal) * 3) var(--ch-ease) both;
+}
+.ch-hb-task.is-focus-still {
+  border-radius: 8px;
+  background: var(--ch-bg-selected);
+  box-shadow: 0 0 0 6px var(--ch-bg-selected);
+}
+@keyframes ch-hb-task-focus {
+  0%,
+  60% {
+    background: var(--ch-bg-selected);
+    box-shadow: 0 0 0 6px var(--ch-bg-selected);
+  }
+  100% {
+    background: transparent;
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
 .ch-hb-check {
   display: grid;
   place-items: center;

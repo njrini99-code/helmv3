@@ -1,6 +1,7 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import type { GolfSessionProfile } from '@/lib/auth/session';
+import { pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
 import { getNotificationPreferences } from '@/app/actions/notification-preferences';
 import { getOrCreateTeamCoachHelmSettings, getTeamCoachHelmAccess } from '@/app/golf/actions/insights-coachhelm';
 import { getPlayerJoinRequests } from '@/app/golf/actions/teams';
@@ -34,8 +35,9 @@ const str = (v: unknown) => (v == null ? '' : String(v));
 
 export async function loadSettings(session: GolfSessionProfile, teamId: string | null): Promise<ChSettingsData> {
   const supabase = await createClient();
-  const role: 'coach' | 'player' = session.coach ? 'coach' : 'player';
-  const coachId = session.coach?.id ?? null;
+  // The dashboard layout's role (golf-dashboard-role.ts), so Settings never draws the coach form for a player-shell user.
+  const role: 'coach' | 'player' = pickGolfDashboardRole(session) ?? 'player';
+  const coachId = role === 'coach' ? (session.coach?.id ?? null) : null;
   const playerId = session.player?.id ?? null;
 
   const [userRes, deliveryRes, profileRes, teamNameRes] = await Promise.all([

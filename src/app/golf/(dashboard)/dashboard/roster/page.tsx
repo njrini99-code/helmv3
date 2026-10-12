@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { redirect } from 'next/navigation';
 import { isClubhouseFor } from '@/clubhouse/gate';
 import { ClubhouseRosterRoute } from '@/clubhouse/routes/roster';
@@ -87,8 +88,7 @@ export default async function GolfRosterPage() {
 
   // Clubhouse Roster (golf_clubhouse_ui): its own route, loaders and screens. A coach gets the coach's roster; a
   // player (no coach profile) gets their team's roster, read-only.
-  if (coach && (await isClubhouseFor('coach'))) return <ClubhouseRosterRoute />;
-  if (!coach && player && (await isClubhouseFor('player'))) return <ClubhouseRosterRoute />;
+  if (await isClubhouseFor(await getGolfDashboardRole())) return <ClubhouseRosterRoute />;
 
   const supabase = await createClient();
 
