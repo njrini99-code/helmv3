@@ -429,7 +429,7 @@ items:
       was RLS-checked before the player's rounds matched (2.0 s vs 0.14 s,
       measured 2026-10-05) and dashboard reads hit the 8 s statement_timeout.
     incident_id: memory/incidents/stats_analytics/INC-2026-10-05-worst-hole-read-statement-timeout.md
-    status: verified
+    status: verified_in_production
     risk: R1
     sha: 9b9e54770deb2148ff06e9554be126350bc048d3
     pr: 2124

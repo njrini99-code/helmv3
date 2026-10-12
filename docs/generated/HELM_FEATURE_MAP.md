@@ -127,7 +127,7 @@ is a second thing to keep true.
 - **Code:** `src/app/golf/(dashboard)/dashboard/stats/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/components/golf/stats/**`, `src/clubhouse/screens/stats/**`, `src/app/golf/actions/stats.ts`, `src/app/golf/actions/stats-data.ts` … and 27 more in the registry
 - **Telemetry:** `stats_analytics` (golfhelm, high), `my_game_profile` (golfhelm, low)
 - **Incidents:** `memory/incidents/stats_analytics/INC-2026-10-05-worst-hole-read-statement-timeout.md`
-- **Repair units:** `worst-hole-indexed-read-2026-10-05` (verified)
+- **Repair units:** `worst-hole-indexed-read-2026-10-05` (verified_in_production)
 - **History:** `memory/ledgers/changes/stats_analytics.md`, `memory/ledgers/tests/stats_analytics.md`
 
 ## `calendar_events`
