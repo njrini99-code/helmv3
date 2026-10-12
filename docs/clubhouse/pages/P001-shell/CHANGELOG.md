@@ -1,5 +1,12 @@
 # P001 — Shell: changelog
 
+## 2026-10-12 — tab revisits go back to the server
+
+The app-wide 30s router cache is removed (it also made Fairway, Baseball and
+Lift Lab serve stale pages), so a revisited phone tab shows the route skeleton
+again instead of rendering from memory. `use-prefetch-tabs.ts` still prefetches
+each tab's loading boundary. Comment only in this page's code.
+
 ## 2026-10-10 — RSVP only when the coach requires it
 
 - The sidebar's Next event card shows "N of M confirmed" only for an event
