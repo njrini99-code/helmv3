@@ -106,7 +106,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | P001 | 3 | 2 | 1 | 5 |  | 14 | 5 | 3 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 24 | 1 | 3 | 1 | 3 | 1 | 1 |  | 102 |
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
-| P003 | 2 | 1 | 3 | 8 | 2 | 18 | 1 | 6 | 1 |  | 1 | 3 | 1 | 3 |  | 4 | 4 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 70 |
+| P003 | 2 | 2 | 3 | 8 | 2 | 19 | 1 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 73 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 2 | 2 | 22 | 2 | 19 | 3 | 6 | 1 |  |  | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 87 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 28 | 1 | 8 | 1 | 2 | 4 | 3 | 2 | 2 | 1 | 6 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 95 |
@@ -114,7 +114,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P008 | 2 | 1 | 3 | 6 | 15 | 41 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 130 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 33 | 4 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 133 |
 | P010 | 2 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 89 |
-| P011 | 15 | 11 |  | 16 | 10 | 37 | 14 | 5 | 2 |  | 20 | 2 | 1 | 4 | 3 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 172 |
+| P011 | 15 | 12 |  | 17 | 11 | 39 | 14 | 5 | 2 |  | 21 | 2 | 1 | 4 | 3 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 178 |
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 80 |
 | P013 | 7 | 12 |  | 29 | 1 | 36 | 22 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 156 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
@@ -299,6 +299,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30101 |  | 01 Default / core UI | `ROSTER_READY` | implemented | Roster opens with the team line, the join requests, Needs a look and the active players as cards by scoring average, all from the server's first render; on the phone, the list screen with the same players as rows. |
 | 30102 |  | 01 Default / core UI | `DEEP_LINK_OPENS_PROFILE` | implemented | On the phone, a link with ?player=<golf_players.id> opens that player's profile once and the address is cleaned; an id that is not on this roster opens the list and nothing else. Desktop ignores ?player=. |
 | 30201 | CH-3401 | 02 Initial loading / skeleton | `ROSTER_IS_LOADING` | implemented | Roster is loading |
+| 30202 | CH-3404 | 02 Initial loading / skeleton | `A_STATUS_CHANGE_IS_IN_FLIGHT` | implemented | A status change is in flight |
 | 30301 | CH-3402 | 03 Background loading / refresh | `A_REMOVE_IS_IN_FLIGHT` | implemented | A remove is in flight |
 | 30302 | CH-3403 | 03 Background loading / refresh | `APPROVE_ALL_IS_IN_FLIGHT` | implemented | Approve all is in flight (phone join requests sheet, D-55) |
 | 30303 |  | 03 Background loading / refresh | `ROSTER_FOLLOWS_A_REFRESH` | implemented | When the server sends the page again (Try again, or the page a write revalidated), the players and join requests on screen become the new ones: an approved player appears, and a read that failed and now succeeds shows the players, never No players yet. |
@@ -330,6 +331,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30616 | CH-3209 | 06 Server / system error | `THIS_COACHS_NOTES_DONT_LOAD` | implemented | This coach's notes don't load |
 | 30617 | CH-3210 | 06 Server / system error | `THE_PLAYERS_ROSTER_DOESNT_LOAD` | implemented | The player's roster doesn't load (a player's own team's members) |
 | 30618 | CH-3211 | 06 Server / system error | `THE_PLAYERS_ROSTER_LIST_CRASHES` | implemented | The player's roster list crashes |
+| 30619 | CH-3008 | 06 Server / system error | `CHANGING_A_PLAYERS_STATUS_FAILS` | implemented | Changing a player's status (Active or Inactive) fails |
 | 30701 |  | 07 Network / offline | `WRITES_REFUSED_OFFLINE` | implemented | Offline, every Roster write (a removal, an approval, a decline, Approve all, a note) is refused before anything is sent, the toast names what did not happen, and nothing on screen changes; Export, Copy and the filters are local and keep working. |
 | 30801 |  | 08 Permission / authorization | `COACH_ONLY_ROSTER` | implemented | The coach's roster (the list with its figures, the coach's notes, the join requests, Invite, Export and the player panel) is a coach's: the page hands it over for a coach with the flag on, the route checks the session again before any read, and a player is handed their own read-only roster (30804), never this one, its loader, the notes or the join requests. |
 | 30802 |  | 08 Permission / authorization | `NOTES_PRIVATE_TO_THE_COACH` | implemented | The loader reads the members of the coach's active team (active and inactive only) and only the notes this coach wrote (coach_id), so another coach's note about the same player is never loaded. |
@@ -339,6 +341,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30806 |  | 08 Permission / authorization | `PLAYER_ON_A_ROSTER_ADDRESS_GOES_TO_THE_LIST` | implemented | With Clubhouse on, a player who opens /roster/[id] (an old link) goes to the roster, since a teammate has no page; a coach goes to that player's Stats. |
 | 30901 |  | 09 Success | `CHANGE_LANDED` | implemented | A change that lands names itself in a toast (added, declined, note saved, removed) with one success haptic; a removal also closes the dialog and the player's panel or profile. |
 | 31101 | CH-3501 | 11 Destructive | `REMOVE_FROM_TEAM` | implemented | Remove from team (row menu; on the phone, the profile's ⋯ sheet) |
+| 31102 | CH-3502 | 11 Destructive | `MARK_INACTIVE_MARK_ACTIVE` | implemented | Mark inactive / Mark active (coach only: row menu; on the phone, the profile's ⋯ sheet) |
 | 31201 |  | 12 State preservation | `NOTE_KEPT_ON_FAILURE` | implemented | A note that fails to save stays in the field, and the toast says so; leaving the field again or the toast's Retry saves it. |
 | 31202 |  | 12 State preservation | `LAYOUT_REMEMBERED` | implemented | The cards or list choice is stored on the device (ch-roster-view) and applied when Roster opens; a device that refuses storage still switches for the visit. Search, filter and sort are not kept. |
 | 31203 |  | 12 State preservation | `SAVED_NOTE_READS_BACK` | implemented | A saved note is written into the roster the screen holds, so closing a player and opening them again, on desktop or the phone, shows the new text; an emptied note reads back empty. |
@@ -1127,6 +1130,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110209 | CH-11408 | 02 Initial loading / skeleton | `ROUND_RECOVERY_ROUTE_LOADING` | implemented | Round recovery route loading |
 | 110210 | CH-11409 | 02 Initial loading / skeleton | `READING_THE_DEVICE_FOR_SAVED_ROUNDS` | implemented | Reading the device for saved rounds |
 | 110211 | CH-11410 | 02 Initial loading / skeleton | `THE_ROUNDS_LIBRARY_IS_REFRESHING_WITH_THE` | implemented | The Rounds library is refreshing (a Try again is running) with the page on screen |
+| 110212 | CH-11411 | 02 Initial loading / skeleton | `A_ROUND_TYPE_CHANGE_IS_IN_FLIGHT` | implemented | A round-type change is in flight |
 | 110401 | CH-11301 | 04 Empty | `NO_ROUND_POSTED_AND_NONE_IN_PROGRESS` | implemented | No round posted and none in progress |
 | 110402 | CH-11302 | 04 Empty | `ROUNDS_POSTED_BUT_NO_COUNTABLE_18_HOLE` | implemented | Rounds posted, but no countable 18-hole round since August 1 |
 | 110403 | CH-11303 | 04 Empty | `A_COURSE_SEARCH_MATCHES_NOTHING` | implemented | A course search matches nothing |
@@ -1143,6 +1147,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110414 | CH-11313 | 04 Empty | `A_ROUND_WITH_NO_STROKES_GAINED` | implemented | A round with no strokes gained (posted without shots) |
 | 110415 | CH-11314 | 04 Empty | `NOTHING_ON_THIS_DEVICE_TO_RECOVER` | implemented | Nothing on this device to recover |
 | 110416 | CH-11315 | 04 Empty | `COMPLETED_ROUNDS_WITH_NO_SCORE_AT_ALL` | implemented | Completed rounds with no score at all (no total and no nines) |
+| 110417 | CH-11316 | 04 Empty | `CHANGE_ROUND_TYPE_THE_PLAYER_IS_IN` | implemented | Change round type: the player is in no qualifier |
 | 110501 | CH-11101 | 05 Validation | `NEXT_SHOT_CANT_BE_RECORDED_YET` | implemented | Next shot can't be recorded yet |
 | 110502 | CH-11102 | 05 Validation | `A_SHOT_IS_POSSIBLE_BUT_UNUSUAL` | implemented | A shot is possible but unusual (a 420-yard drive onto the green; a shot that ends farther away) |
 | 110503 | CH-11103 | 05 Validation | `A_SHOT_THAT_CANT_HAPPEN` | implemented | A shot that can't happen (a 540-yard drive onto the green) |
@@ -1153,6 +1158,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110508 | CH-11108 | 05 Validation | `ADDING_A_COURSE_A_STEP_ISNT_COMPLETE` | implemented | Adding a course: a step isn't complete |
 | 110509 | CH-11109 | 05 Validation | `THE_ROUNDS_DATE_IS_AFTER_TODAY` | implemented | The round's date is after today |
 | 110510 |  | 05 Validation | `START_NAMES_THE_ONE_THING_STOPPING_IT` | implemented | Start round is off until the setup is complete, and the dock names the one thing stopping it, in the order a player fixes it: no course ("Choose a course to start"), no date, a date after today (CH-11109), the qualifier round when the type is Qualifier, a 9-hole card played as 9, then the first hole with no yardage or a yardage over 999 (CH-11107). While the scorecard loads or fails to load, the dock says so instead. |
+| 110511 | CH-11110 | 05 Validation | `CHANGE_ROUND_TYPE_EVERY_ROUND_OF_THE` | implemented | Change round type: every round of the chosen qualifier already holds one of the player's other rounds |
 | 110601 | CH-11001 | 06 Server / system error | `DISCARDING_AN_UNFINISHED_ROUND_FAILS` | implemented | Discarding an unfinished round fails |
 | 110602 | CH-11201 | 06 Server / system error | `THE_POSTED_ROUNDS_DONT_LOAD` | implemented | The posted rounds don't load |
 | 110603 | CH-11202 | 06 Server / system error | `THE_ROUND_IN_PROGRESS_CHECK_FAILS` | implemented | The round-in-progress check fails |
@@ -1190,6 +1196,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110635 | CH-11216 | 06 Server / system error | `A_REVIEWS_SUPPORTING_READS_FAIL_THE_TEE` | implemented | A review's supporting reads fail: the tee (its yardage) or, for a coach, the player's name |
 | 110636 | CH-11217 | 06 Server / system error | `A_REVIEWS_TEAM_READ_FAILS_SO_WHICH` | implemented | A review's team read fails, so which Tour the strokes gained is measured against is unknown |
 | 110637 | CH-11213 | 06 Server / system error | `A_REFRESH_OF_THE_ROUNDS_LIBRARY_FAILS` | implemented | A refresh of the Rounds library fails while the page already shows rounds (Try again, or any server render of the page, whose read of the posted rounds or of the round in progress failed) |
+| 110638 | CH-11020 | 06 Server / system error | `CHANGING_A_LIVE_ROUNDS_TYPE_FAILS` | implemented | Changing a live round's type fails (Continue round) |
+| 110639 | CH-11218 | 06 Server / system error | `CHANGE_ROUND_TYPE_THE_PLAYERS_QUALIFIER_ENTRIES` | implemented | Change round type: the player's qualifier entries (or the slots their rounds hold) didn't load |
 | 110701 | CH-11901 | 07 Network / offline | `THE_ROUND_SAVES_IN_THE_BACKGROUND` | implemented | The round saves in the background |
 | 110702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | reserved | Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says "Reconnect, then try again."). Round entry's Start and Save for later are forced offline in round-entry-wiring.test (CH-1903: nothing is sent, and a browser that says offline but reaches the server goes ahead); the library's Discard and the hole's Try again are not, so this stays reserved. The shell's tests cover useAction's refusal. |
 | 110703 | CH-11902 | 07 Network / offline | `THE_ROUND_CHANGED_ON_ANOTHER_DEVICE_AND` | implemented | The round changed on another device and this one stopped saving |
@@ -1231,6 +1239,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 111118 | CH-11518 | 11 Destructive | `A_SAVED_QUALIFIER_ROUND_WITH_NO_ROUND` | implemented | A saved qualifier round with no round number (it predates the durable number) is finished and submitted |
 | 111119 | CH-11519 | 11 Destructive | `THE_SAME_AND_NO_ROUND_IS_LEFT` | implemented | The same, and no round is left to choose |
 | 111120 | CH-11520 | 11 Destructive | `DISCARD_ON_A_SAVED_ROUND` | implemented | Discard on a saved round (Recover) |
+| 111121 | CH-11521 | 11 Destructive | `CHANGE_ROUND_TYPE` | implemented | Change round type (Continue round: the Exit sheet's "Change round type" row, "Practice now. Changes what it counts toward.") |
 | 111201 |  | 12 State preservation | `SETUP_KEPT_WHEN_START_FAILS` | reserved | A Start that fails leaves the setup as it was: the course and tees, the type, the date, the holes as edited and the qualifier all stay, and Start can be pressed again or retried from the toast (CH-11007); nothing is cleared until the round opens. Read in this pass: the CH-11007 test proves that Retry opens the round, not that every field is kept, so no test covers this. |
 | 111202 |  | 12 State preservation | `SHOTS_STAY_WHEN_A_HOLE_DOESNT_SAVE` | reserved | When a holed-out hole does not save, the shot review stays with every shot listed and Try again (CH-11003); the round does not move on until the save lands, and the card says the shots are kept on this device (the engine's own copy). The test forces the failure and the retry, not the kept shots, so no test covers this. |
 | 111301 |  | 13 Optimistic UI | `DISCARD_WAITS_FOR_THE_SERVER` | implemented | Nothing on the library is optimistic: Discard keeps the card until the server has deleted the round, and the card leaves only on success, from the question or from Retry. The device's emergency copy is cleared only when the delete worked. |

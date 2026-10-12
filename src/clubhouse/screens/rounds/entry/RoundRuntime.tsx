@@ -63,10 +63,16 @@ export function RoundRuntime({
   capture,
   routes,
   errorsHeld = false,
+  roundType,
 }: {
   session: ChRoundSession;
   capture: Capture;
   routes: RoundRuntimeRoutes;
+  /**
+   * A continued round's Change round type row on the Exit sheet: what the round counts as now, and what opens the
+   * sheet (the continue screen owns it, CH-11521). The Exit sheet closes first.
+   */
+  roundType?: { label: string; onChange: () => void };
   /** A dialog outside the runtime (the recovery dialog) holds the engine's error line, so no banner says it twice. */
   errorsHeld?: boolean;
 }) {
@@ -308,6 +314,15 @@ export function RoundRuntime({
         onSave={() => void save.run('exit')}
         onKeep={closeExit}
         onDiscard={() => void discard.run('exit')}
+        roundType={
+          roundType && {
+            label: roundType.label,
+            onChange: () => {
+              closeExit();
+              roundType.onChange();
+            },
+          }
+        }
       />
       <ScorecardSheet open={sheet === 'card'} onClose={() => setSheet(null)} course={course} tee={session.round.teeLabel} holes={card} current={current} />
       <RoundCompleteSheet

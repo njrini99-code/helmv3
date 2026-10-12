@@ -1,5 +1,36 @@
 # P003 — Roster: changelog
 
+## 2026-10-12 — Mark a player inactive or active
+
+```text
+Design package: none (the remove confirm's Modal and menu; no owner board)
+PR/commit: agent/clubhouse-release-features
+Contract IDs: 31102, 30202, 30619 (CH-3502, CH-3404, CH-3008)
+Actions: ACT-P003-CHANGE-STATUS
+Data impact: none (existing updatePlayerStatus on golf_team_members.status)
+Held items: none
+```
+
+### Changed
+
+- The coach's row menu and the phone profile's ⋯ sheet offer "Mark inactive"
+  (or "Mark active" for an inactive player) above Remove from team. It asks
+  first (`StatusConfirm`), not as a destructive action, and saves through
+  `useAction('roster.changeStatus')` → `updatePlayerStatus`; the player moves
+  to that filter, and the open phone profile reads the new status.
+- `updatePlayerStatus` resolves the coach's active team with the same
+  resolver and active-team cookie as the Clubhouse roster route.
+
+### Why
+
+- Owner decision: rebuild the dropped Fairway "Change status"
+  (`FairwayPlayerActionsMenu`).
+
+### Verification
+
+- roster.test (CH-3502, CH-3404, CH-3008, CH-1903, the phone ⋯ sheet). Not
+  observed in a browser or on a device; no screenshots.
+
 ## 2026-10-10 — Where the team sits
 
 Presentation only. A new block between "Needs a look" and the toolbar (desktop):

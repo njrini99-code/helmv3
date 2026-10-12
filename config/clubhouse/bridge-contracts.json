@@ -1888,6 +1888,17 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30202,
+    "page": "P003",
+    "category": 2,
+    "item": 2,
+    "name": "A_STATUS_CHANGE_IS_IN_FLIGHT",
+    "chCode": "CH-3404",
+    "meaning": "A status change is in flight",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30301,
     "page": "P003",
     "category": 3,
@@ -2233,6 +2244,17 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30619,
+    "page": "P003",
+    "category": 6,
+    "item": 19,
+    "name": "CHANGING_A_PLAYERS_STATUS_FAILS",
+    "chCode": "CH-3008",
+    "meaning": "Changing a player's status (Active or Inactive) fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30701,
     "page": "P003",
     "category": 7,
@@ -2344,6 +2366,17 @@
     "name": "REMOVE_FROM_TEAM",
     "chCode": "CH-3501",
     "meaning": "Remove from team (row menu; on the phone, the profile's ⋯ sheet)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 31102,
+    "page": "P003",
+    "category": 11,
+    "item": 2,
+    "name": "MARK_INACTIVE_MARK_ACTIVE",
+    "chCode": "CH-3502",
+    "meaning": "Mark inactive / Mark active (coach only: row menu; on the phone, the profile's ⋯ sheet)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -10981,6 +11014,17 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110212,
+    "page": "P011",
+    "category": 2,
+    "item": 12,
+    "name": "A_ROUND_TYPE_CHANGE_IS_IN_FLIGHT",
+    "chCode": "CH-11411",
+    "meaning": "A round-type change is in flight",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110401,
     "page": "P011",
     "category": 4,
@@ -11159,6 +11203,17 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110417,
+    "page": "P011",
+    "category": 4,
+    "item": 17,
+    "name": "CHANGE_ROUND_TYPE_THE_PLAYER_IS_IN",
+    "chCode": "CH-11316",
+    "meaning": "Change round type: the player is in no qualifier",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110501,
     "page": "P011",
     "category": 5,
@@ -11269,6 +11324,17 @@
     "tests": [
       "src/clubhouse/__tests__/round-setup.test.tsx"
     ]
+  },
+  {
+    "id": 110511,
+    "page": "P011",
+    "category": 5,
+    "item": 11,
+    "name": "CHANGE_ROUND_TYPE_EVERY_ROUND_OF_THE",
+    "chCode": "CH-11110",
+    "meaning": "Change round type: every round of the chosen qualifier already holds one of the player's other rounds",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
     "id": 110601,
@@ -11677,6 +11743,28 @@
     "name": "A_REFRESH_OF_THE_ROUNDS_LIBRARY_FAILS",
     "chCode": "CH-11213",
     "meaning": "A refresh of the Rounds library fails while the page already shows rounds (Try again, or any server render of the page, whose read of the posted rounds or of the round in progress failed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110638,
+    "page": "P011",
+    "category": 6,
+    "item": 38,
+    "name": "CHANGING_A_LIVE_ROUNDS_TYPE_FAILS",
+    "chCode": "CH-11020",
+    "meaning": "Changing a live round's type fails (Continue round)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110639,
+    "page": "P011",
+    "category": 6,
+    "item": 39,
+    "name": "CHANGE_ROUND_TYPE_THE_PLAYERS_QUALIFIER_ENTRIES",
+    "chCode": "CH-11218",
+    "meaning": "Change round type: the player's qualifier entries (or the slots their rounds hold) didn't load",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -12137,6 +12225,17 @@
     "name": "DISCARD_ON_A_SAVED_ROUND",
     "chCode": "CH-11520",
     "meaning": "Discard on a saved round (Recover)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111121,
+    "page": "P011",
+    "category": 11,
+    "item": 21,
+    "name": "CHANGE_ROUND_TYPE",
+    "chCode": "CH-11521",
+    "meaning": "Change round type (Continue round: the Exit sheet's \"Change round type\" row, \"Practice now. Changes what it counts toward.\")",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },

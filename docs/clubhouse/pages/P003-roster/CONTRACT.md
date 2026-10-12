@@ -58,6 +58,7 @@ Route skeleton (30201): the header, toolbar and six face cards in their final sl
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 30201 | CH-3401 | `ROSTER_IS_LOADING` | Roster is loading |
+| 30202 | CH-3404 | `A_STATUS_CHANGE_IS_IN_FLIGHT` | A status change is in flight |
 
 From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
@@ -127,6 +128,7 @@ Every change has its own toast (30601 to 30607) naming what failed and what to d
 | 30616 | CH-3209 | `THIS_COACHS_NOTES_DONT_LOAD` | This coach's notes don't load |
 | 30617 | CH-3210 | `THE_PLAYERS_ROSTER_DOESNT_LOAD` | The player's roster doesn't load (a player's own team's members) |
 | 30618 | CH-3211 | `THE_PLAYERS_ROSTER_LIST_CRASHES` | The player's roster list crashes |
+| 30619 | CH-3008 | `CHANGING_A_PLAYERS_STATUS_FAILS` | Changing a player's status (Active or Inactive) fails |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002, 10611 CH-1003, 10612 CH-1209, 10613 CH-1210, 10614 CH-1211.
 
@@ -183,9 +185,12 @@ Status: DEFINED
 
 Remove from team asks first (31101): the dialog says who, that they can rejoin with the team code, and that their account and stats are not deleted. Pressing Remove player fires the warning haptic (31704), and the button reads Removing while it runs. Decline is not destructive: the player can ask again. On the phone the same confirm follows ⋯, then Remove from team, in red (D-42).
 
+Mark inactive / Mark active (31102, coach only; the dropped Fairway "Change status", rebuilt) asks first too, from the row menu or the phone ⋯ sheet, but is not destructive: the confirm is the primary, with no red and no warning haptic. It says what Inactive does (the player stays on the team with their stats, leaves rankings and averages, and sees no team until marked active again). While it saves the button reads Saving (30202); a failure keeps the status and the dialog (30619); offline nothing is sent (30701). `updatePlayerStatus` writes to the coach's active team through the same resolver and cookie as the route.
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 31101 | CH-3501 | `REMOVE_FROM_TEAM` | Remove from team (row menu; on the phone, the profile's ⋯ sheet) |
+| 31102 | CH-3502 | `MARK_INACTIVE_MARK_ACTIVE` | Mark inactive / Mark active (coach only: row menu; on the phone, the profile's ⋯ sheet) |
 
 ## 12 — State preservation
 

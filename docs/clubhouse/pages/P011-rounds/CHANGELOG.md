@@ -1,5 +1,47 @@
 # P011 — Rounds: changelog
 
+## 2026-10-12 — Change round type mid-round (continue)
+
+```text
+Design package: none (the round's own sheet pieces: Modal, Segmented, Opt; no owner board)
+PR/commit: agent/clubhouse-release-features
+Contract IDs: 111121, 110212, 110638, 110639, 110417, 110511 (CH-11521, CH-11411, CH-11020, CH-11218, CH-11316, CH-11110)
+Actions: ACT-P011-CHANGE-ROUND-TYPE
+Data impact: none (existing updateRoundType; reads golf_qualifier_entries and golf_rounds)
+Held items: none
+```
+
+### Changed
+
+- A continued round's Exit sheet has a "Change round type" row ("Practice now.
+  Changes what it counts toward."). It opens `RoundTypeSheet`: Practice,
+  Tournament or Qualifier; for Qualifier, which one the player is entered in
+  and which of its rounds, with the slots their other rounds hold shown as
+  "Already recorded" and not offered. Save calls `updateRoundType`, toasts what
+  the round now counts toward, and refreshes the page so the engine submits
+  with the new setup.
+- `ClubhouseContinueRoundRoute` reads the options (`loadRoundTypeOptions`);
+  a failed read is "didn't load", never "none".
+- Auto-save is held while the sheet is open and until the refreshed round
+  arrives, so an auto-save never writes the old type back.
+- A permission refusal reads as needing to be entered in the qualifier and an
+  active member of the team; offline nothing is sent (CH-1903).
+- The Fairway continue page is unchanged (a comment only).
+
+### Why
+
+- Owner decision: rebuild the dropped Fairway round-type editor (2026-08-31:
+  players can edit a live round's type; Q-92b).
+
+### Verification
+
+- round-entry-continue.test (CH-11521, CH-11411, CH-11020, CH-11218, CH-11316,
+  CH-11110, CH-1903, the auto-save hold while the sheet is open, and the
+  submit after a change) and round-type-options.test (the loader and the
+  sheet's rules). The hold after Save relies on `router.refresh()` in a
+  transition staying pending until the new payload commits; no test exercises
+  that. Not observed in a browser or on a device; no screenshots.
+
 ## 2026-10-11 — Review motion on transform; the depth from tokens
 
 Presentation only (no contract change):

@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, Check, ChevronRight, Clock, Copy, Ellipsis, UserMinus, UserPlus, Users } from 'lucide-react';
+import { BarChart3, Check, ChevronRight, Clock, Copy, Ellipsis, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
 import NumberFlow from '@number-flow/react';
 import { AnimatePresence } from 'motion/react';
 import Link from 'next/link';
@@ -58,6 +58,7 @@ export function RosterPhone({
   onClose,
   onInvite,
   onRemove,
+  onStatus,
   onNoteSaved,
   onRetry,
   children,
@@ -70,6 +71,8 @@ export function RosterPhone({
   onClose: () => void;
   onInvite: () => void;
   onRemove: (p: ChRosterPlayer) => void;
+  /** Mark the player active or inactive; it asks first (CH-3502). */
+  onStatus: (p: ChRosterPlayer) => void;
   onNoteSaved: NoteSaved;
   onRetry: () => void;
   /** The dialogs (invite, remove confirm), shared with desktop. */
@@ -251,6 +254,10 @@ export function RosterPhone({
         onRemove={(p) => {
           setActing(false);
           onRemove(p);
+        }}
+        onStatus={(p) => {
+          setActing(false);
+          onStatus(p);
         }}
       />
       <RequestsSheet open={requestsOpen} onClose={() => setRequestsOpen(false)} data={data} jr={jr} />
@@ -511,8 +518,21 @@ function RequestsSheet({ open, onClose, data, jr }: { open: boolean; onClose: ()
   );
 }
 
-/** The profile's ⋯ (D-54): View stats, then Remove from team, which asks first (CH-3501). */
-function PlayerActions({ p, onClose, onRemove }: { p: ChRosterPlayer | undefined; onClose: () => void; onRemove: (p: ChRosterPlayer) => void }) {
+/**
+ * The profile's ⋯ (D-54): View stats, Mark inactive (or Mark active), then Remove from team. The status change asks
+ * first (CH-3502), as the removal does (CH-3501).
+ */
+function PlayerActions({
+  p,
+  onClose,
+  onRemove,
+  onStatus,
+}: {
+  p: ChRosterPlayer | undefined;
+  onClose: () => void;
+  onRemove: (p: ChRosterPlayer) => void;
+  onStatus: (p: ChRosterPlayer) => void;
+}) {
   const statsHref = p ? rebuiltHref(`/golf/dashboard/stats?player=${p.id}`) : null;
   return (
     <Modal open={!!p} onClose={onClose} title={p?.name ?? 'Player'}>
@@ -526,6 +546,12 @@ function PlayerActions({ p, onClose, onRemove }: { p: ChRosterPlayer | undefined
               <b>View stats</b>
             </Link>
           )}
+          <button type="button" className="ch-rsm-act" onClick={() => onStatus(p)}>
+            <span className="ch-rsm-act__ic" aria-hidden="true">
+              <Icon icon={p.status === 'active' ? UserX : UserCheck} size={16} />
+            </span>
+            <b>{p.status === 'active' ? 'Mark inactive' : 'Mark active'}</b>
+          </button>
           <button type="button" className="ch-rsm-act is-danger" onClick={() => onRemove(p)}>
             <span className="ch-rsm-act__ic" aria-hidden="true">
               <Icon icon={UserMinus} size={16} />

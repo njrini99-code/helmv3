@@ -184,6 +184,27 @@
       ]
     },
     {
+      "id": "ACT-P011-CHANGE-ROUND-TYPE",
+      "label": "Change a live round's type (practice, tournament, qualifier)",
+      "component": "src/clubhouse/screens/rounds/entry/ContinueRound.tsx#ContinueRound",
+      "handler": "changeType.run (useAction rounds.changeType), then router.refresh",
+      "service": "src/app/golf/actions/round-type.ts#updateRoundType",
+      "data": [
+        "golf_rounds (round_type, qualifier_id, qualifier_round_number)",
+        "golf_qualifier_entries (read)"
+      ],
+      "bridge": {
+        "confirm": 111121,
+        "loading": 110212,
+        "failure": 110638,
+        "recovery": 111404
+      },
+      "tests": [
+        "src/clubhouse/__tests__/round-entry-continue.test.tsx",
+        "src/clubhouse/__tests__/round-type-options.test.ts"
+      ]
+    },
+    {
       "id": "ACT-P011-SUBMIT-ROUND",
       "label": "Submit the finished round",
       "component": "src/clubhouse/screens/rounds/entry/RoundRuntime.tsx#RoundRuntime",

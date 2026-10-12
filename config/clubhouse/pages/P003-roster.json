@@ -75,6 +75,28 @@
       ]
     },
     {
+      "id": "ACT-P003-CHANGE-STATUS",
+      "label": "Mark a player inactive or active (coach)",
+      "component": "src/clubhouse/screens/roster/Roster.tsx#Roster",
+      "handler": "changeStatus.run",
+      "service": "src/app/golf/actions/team-management.ts#updatePlayerStatus",
+      "data": [
+        "golf_team_members (status)"
+      ],
+      "bridge": {
+        "confirm": 31102,
+        "loading": 30202,
+        "success": 30901,
+        "failure": 30619,
+        "permission": 30803,
+        "recovery": 31403,
+        "offline": 30701
+      },
+      "tests": [
+        "src/clubhouse/__tests__/roster.test.tsx"
+      ]
+    },
+    {
       "id": "ACT-P003-APPROVE-REQUEST",
       "label": "Approve a join request",
       "component": "src/clubhouse/screens/roster/RosterRequests.tsx#RosterRequests",

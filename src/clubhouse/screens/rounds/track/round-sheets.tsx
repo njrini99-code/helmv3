@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ArrowRight, Bookmark, Check, CirclePlay, Send, Table2, Trash2, TriangleAlert } from 'lucide-react';
+import { ArrowRight, Bookmark, Check, CirclePlay, Flag, Send, Table2, Trash2, TriangleAlert } from 'lucide-react';
 import { formatToPar, NO_DATA } from '../../../lib/format';
 import { haptic } from '../../../lib/haptics';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
@@ -99,6 +99,8 @@ export function ScorecardSheet({ open, onClose, course, tee, holes, current }: {
  * CH-11506: Exit. Save for later goes back to Rounds, where the round waits
  * to be continued; Keep playing closes; Discard asks again before it deletes
  * every shot (CH-11507). A failed discard keeps the sheet with the reason.
+ * A continued round also offers Change round type (`roundType`), which opens
+ * the round-type sheet (CH-11521); a new round's sheet has no such row.
  */
 export function ExitSheet({
   open,
@@ -111,12 +113,15 @@ export function ExitSheet({
   onSave,
   onKeep,
   onDiscard,
+  roundType,
 }: {
   open: boolean;
   course: string;
   holes: ChCardHole[];
   currentNumber: number;
   discarding: boolean;
+  /** What the round counts as now ("Practice"), and what opens the round-type sheet. Absent: no row. */
+  roundType?: { label: string; onChange: () => void };
   /** Save for later is writing the round (R-12: it shows, and the sheet can't be dismissed under it). */
   saving?: boolean;
   discardError: string | null;
@@ -193,6 +198,15 @@ export function ExitSheet({
               <em>Back to hole {currentNumber}</em>
             </span>
           </button>
+          {roundType && (
+            <button type="button" className="ch-rt-xopt" disabled={busy} onClick={roundType.onChange}>
+              <Icon icon={Flag} size={18} />
+              <span>
+                <b>Change round type</b>
+                <em>{roundType.label} now. Changes what it counts toward.</em>
+              </span>
+            </button>
+          )}
           <button type="button" className="ch-rt-xopt is-danger" onClick={() => setConfirm(true)}>
             <Icon icon={Trash2} size={18} />
             <span>

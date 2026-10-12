@@ -599,8 +599,9 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     allInProgressShots[i] = sorted.map(s => mapShotToRecord(s, puttDetailsByShot.get(s.id), approachDetailsByShot.get(s.id)));
   }
 
-  // Clubhouse (golf_clubhouse_ui) draws the same round over the same engine, from everything loaded above. It leaves
-  // the live-round type editor below to Fairway: that is a Fairway component, and its qualifier reads are skipped.
+  // Clubhouse (golf_clubhouse_ui) draws the same round over the same engine, from everything loaded above. Its own
+  // round-type sheet (CH-11521) reads the qualifier options in the Clubhouse route (`loadRoundTypeOptions`), so the
+  // Fairway editor's reads below are skipped here.
   if ((await isClubhouseFor('player'))) {
     return (
       <ClubhouseContinueRoundRoute

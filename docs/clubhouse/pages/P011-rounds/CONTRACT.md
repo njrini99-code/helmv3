@@ -77,6 +77,7 @@ course library (CH-11403), a course's tees (CH-11404), the scorecard (CH-11405),
 | 110209 | CH-11408 | `ROUND_RECOVERY_ROUTE_LOADING` | Round recovery route loading |
 | 110210 | CH-11409 | `READING_THE_DEVICE_FOR_SAVED_ROUNDS` | Reading the device for saved rounds |
 | 110211 | CH-11410 | `THE_ROUNDS_LIBRARY_IS_REFRESHING_WITH_THE` | The Rounds library is refreshing (a Try again is running) with the page on screen |
+| 110212 | CH-11411 | `A_ROUND_TYPE_CHANGE_IS_IN_FLIGHT` | A round-type change is in flight |
 
 ## 03 — Background loading / refresh
 
@@ -113,6 +114,7 @@ empty (110413). A test covers 110413.
 | 110414 | CH-11313 | `A_ROUND_WITH_NO_STROKES_GAINED` | A round with no strokes gained (posted without shots) |
 | 110415 | CH-11314 | `NOTHING_ON_THIS_DEVICE_TO_RECOVER` | Nothing on this device to recover |
 | 110416 | CH-11315 | `COMPLETED_ROUNDS_WITH_NO_SCORE_AT_ALL` | Completed rounds with no score at all (no total and no nines) |
+| 110417 | CH-11316 | `CHANGE_ROUND_TYPE_THE_PLAYER_IS_IN` | Change round type: the player is in no qualifier |
 
 ## 05 — Validation
 
@@ -139,6 +141,7 @@ limit (CH-11106). A test covers 110510.
 | 110508 | CH-11108 | `ADDING_A_COURSE_A_STEP_ISNT_COMPLETE` | Adding a course: a step isn't complete |
 | 110509 | CH-11109 | `THE_ROUNDS_DATE_IS_AFTER_TODAY` | The round's date is after today |
 | 110510 | — | `START_NAMES_THE_ONE_THING_STOPPING_IT` | Start round is off until the setup is complete, and the dock names the one thing stopping it, in the order a player fixes it: no course ("Choose a course to start"), no date, a date after today (CH-11109), the qualifier round when the type is Qualifier, a 9-hole card played as 9, then the first hole with no yardage or a yardage over 999 (CH-11107). While the scorecard loads or fails to load, the dock says so instead. |
+| 110511 | CH-11110 | `CHANGE_ROUND_TYPE_EVERY_ROUND_OF_THE` | Change round type: every round of the chosen qualifier already holds one of the player's other rounds |
 
 ## 06 — Server / system error
 
@@ -192,6 +195,8 @@ never "no team" (shared with every page, `routes/team.ts`; not tested here). Nei
 | 110635 | CH-11216 | `A_REVIEWS_SUPPORTING_READS_FAIL_THE_TEE` | A review's supporting reads fail: the tee (its yardage) or, for a coach, the player's name |
 | 110636 | CH-11217 | `A_REVIEWS_TEAM_READ_FAILS_SO_WHICH` | A review's team read fails, so which Tour the strokes gained is measured against is unknown |
 | 110637 | CH-11213 | `A_REFRESH_OF_THE_ROUNDS_LIBRARY_FAILS` | A refresh of the Rounds library fails while the page already shows rounds (Try again, or any server render of the page, whose read of the posted rounds or of the round in progress failed) |
+| 110638 | CH-11020 | `CHANGING_A_LIVE_ROUNDS_TYPE_FAILS` | Changing a live round's type fails (Continue round) |
+| 110639 | CH-11218 | `CHANGE_ROUND_TYPE_THE_PLAYERS_QUALIFIER_ENTRIES` | Change round type: the player's qualifier entries (or the slots their rounds hold) didn't load |
 
 ## 07 — Network / offline
 
@@ -280,6 +285,15 @@ Discard round asks again (CH-11507). Nothing is optimistic: the card leaves only
 (111301). There is no Undo after a discard. The catalog's kind map files every confirm-kind row here, so this category
 also holds sheets that are not destructive (Penalty, Exit, Scorecard, Round complete, Browse courses, Add a course).
 
+Change round type (111121, owner 2026-08-31, Q-92b; the dropped Fairway editor rebuilt) opens from a continued
+round's Exit sheet: Practice, Tournament or Qualifier, then for Qualifier only the qualifiers the player is entered in
+(entry creation is coach-only under RLS) and only the rounds their other rounds don't hold (110511). Nothing is
+saved until Save, which waits for a change; shots and scores never move. While it saves it reads "Saving…" (110212).
+A failure is a toast inside the sheet (110638); a permission refusal is said as "be entered in it and an active member
+of the team", the likely reasons for a player. The options didn't load (110639) is never "none" (110417). Offline it
+is refused before anything is sent (CH-1903). Auto-save is held while the sheet is open and until the refreshed round
+arrives, so the old type is not written back. The Fairway continue page is unchanged when the flag is off.
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 111101 | CH-11501 | `DISCARD_ON_AN_UNFINISHED_ROUND` | Discard on an unfinished round |
@@ -302,6 +316,7 @@ also holds sheets that are not destructive (Penalty, Exit, Scorecard, Round comp
 | 111118 | CH-11518 | `A_SAVED_QUALIFIER_ROUND_WITH_NO_ROUND` | A saved qualifier round with no round number (it predates the durable number) is finished and submitted |
 | 111119 | CH-11519 | `THE_SAME_AND_NO_ROUND_IS_LEFT` | The same, and no round is left to choose |
 | 111120 | CH-11520 | `DISCARD_ON_A_SAVED_ROUND` | Discard on a saved round (Recover) |
+| 111121 | CH-11521 | `CHANGE_ROUND_TYPE` | Change round type (Continue round: the Exit sheet's "Change round type" row, "Practice now. Changes what it counts toward.") |
 
 ## 12 — State preservation
 
