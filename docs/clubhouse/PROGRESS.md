@@ -14,8 +14,8 @@ plumbing (session, Supabase loaders, the Capacitor haptics bridge) is allowed.
 ## 2026-10-08 to 2026-10-12 — On by mistake, off again, ready-not-on
 
 - **2026-10-08 to 2026-10-11:** #2180 turned `golf_clubhouse_ui` on in
-  production by mistake, so coaches and players were served Clubhouse for
-  about three days. The owner turned it off with #2188 (2026-10-11). Per the
+  production by mistake; the flag was on in production for about three days
+  (which teams `HELM_CLUBHOUSE_TEAMS` admitted then is not recorded here). The owner turned it off with #2188 (2026-10-11). Per the
   2026-10-12 release check, production serves `main` with the flag off.
 - **Owner decisions (2026-10-11/12):**
   - End state is "ready, not on": agents make it ready, the owner flips it.

@@ -58,7 +58,8 @@ a new production deploy.
 1. Every box in "Turn-on criteria" below is ticked.
 2. Set `HELM_CLUBHOUSE_TEAMS` in the Vercel production environment to the
    canary team UUIDs (`golf_teams.id`, comma-separated). `*` or an empty value
-   means every team, so never leave it unset for a canary.
+   means every team, so never leave it unset or empty for a canary, and the
+   same holds when the list shrinks later.
    `scripts/check-required-env.mjs` refuses a production build with a
    Clubhouse flag on and the variable unset.
 3. In `config/feature-flags.yml`, set `golf_clubhouse_ui`
@@ -75,7 +76,11 @@ a new production deploy.
 
 ## Rollback
 
-- **One team:** remove its UUID from `HELM_CLUBHOUSE_TEAMS` and deploy.
+- **One team:** remove its UUID from `HELM_CLUBHOUSE_TEAMS` and deploy. If it
+  is the last team on the list, do the flag-off commit below instead: an empty
+  or unset value means every team (`clubhouseTeamAllowlist` in
+  `src/clubhouse/gate.ts`), so emptying the list would turn Clubhouse on for
+  everyone.
 - **Everyone:** a flag-off commit (`production: false`, `npm run
   flags:generate`) and a deploy.
 - **No schema to undo.** Both UIs share the round engine and the device's
@@ -124,11 +129,12 @@ a new production deploy.
 ## Open owner decisions
 
 - **Brand:** white `#ffffff` cards and Instrument Sans, against the brand doc.
-- **Motion spec:** two duration sets are in the docs. The D-64 set (press 110,
-  quick 180, base 260, release 280, reveal 520ms) is what the rules and tokens
-  use; a second set needs the owner to pick one. Related, inferred: the screen
-  checklist says skeletons wait 150ms while the shell holds them for 300ms
-  (`--ch-dur-vt-hold`, `CHANGELOG.md`).
+- **Motion spec:** a conflict between two duration sets was reported in
+  `README.md`. It was not found on this branch (2026-10-12): every duration in
+  the rules, `README.md` and the checklist matches D-64 (press 110, quick 180,
+  base 260, release 280, reveal 520ms). The owner confirms which set is
+  current. Related, inferred: the screen checklist says skeletons wait 150ms
+  while the shell holds them for 300ms (`--ch-dur-vt-hold`, `CHANGELOG.md`).
 - **Make `clubhouse-quality` a required check.**
 - **Held migration timing.** Release-relevant: qualifier privacy
   (`20260929200000`) and the Q-120 server check (`20261001000000`).
