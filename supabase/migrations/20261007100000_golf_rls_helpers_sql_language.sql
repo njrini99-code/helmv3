@@ -46,17 +46,11 @@
 --     which coerced to the team_member_status enum. This file spells the
 --     cast out.
 --
--- ROLLBACK: restore the plpgsql bodies. They are CREATE OR REPLACE with the
--- same signatures, so no dependent policy or function needs touching:
---   CREATE OR REPLACE FUNCTION public.is_golf_team_coach(team_uuid uuid)
---    RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER
---    SET search_path TO 'public', 'pg_temp' AS $f$ BEGIN RETURN EXISTS (
---    SELECT 1 FROM golf_team_coach_staff gtcs JOIN golf_coaches gc ON
---    gc.id = gtcs.coach_id WHERE gtcs.team_id = team_uuid AND gc.user_id =
---    auth.uid()); END; $f$;
---   (the other four follow the same shape; the originals are visible in
---   supabase/migrations/20260527000000_prod_public_baseline.sql and in
---   production via pg_get_functiondef.)
+-- ROLLBACK: supabase/rollbacks/20261007100000_golf_rls_helpers_sql_language.rollback.sql
+--   holds the five live plpgsql bodies captured verbatim from production
+--   (pg_get_functiondef, read-only, 2026-10-12) with their prosrc md5s. They
+--   are CREATE OR REPLACE with the same signatures, so no dependent policy or
+--   function needs touching.
 --
 -- VERIFY: select 1 where (select count(*) from pg_proc p join pg_language l on
 -- VERIFY: l.oid = p.prolang where p.pronamespace = 'public'::regnamespace and

@@ -107,6 +107,17 @@ BEGIN
   IF to_regprocedure('public.calculate_round_strokes_gained(uuid)') IS NULL THEN
     RAISE EXCEPTION 'Q-89: public.calculate_round_strokes_gained(uuid) is missing';
   END IF;
+  -- Same check for the second body this file replaces. a51718c1... is the
+  -- live body (re-checked read-only 2026-10-12) and also what a fresh
+  -- migration replay leaves (20260608120000's body; 20260928160000 does not
+  -- touch this function).
+  SELECT p.prosrc INTO v_src
+  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'calculate_round_strokes_gained'
+    AND pg_get_function_identity_arguments(p.oid) = 'p_round_id uuid';
+  IF md5(v_src) <> 'a51718c19d95b93fa5d1d7dce41bd8bf' THEN
+    RAISE EXCEPTION 'Q-89: live calculate_round_strokes_gained is not a known body (md5 %). Stop and rebase this file on the live body.', md5(v_src);
+  END IF;
 END
 $guard$;
 

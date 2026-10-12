@@ -133,6 +133,11 @@ COMMENT ON FUNCTION public.golf_qualifier_selection_reasons(uuid) IS
 
 -- 2. An entry's player is on the qualifier's team ------------------------
 
+-- ALTER POLICY takes ACCESS EXCLUSIVE on golf_qualifier_entries; fail fast
+-- rather than queue behind traffic. apply.mjs runs the file as one
+-- transaction, so SET LOCAL covers every statement below.
+SET LOCAL lock_timeout = '3s';
+
 ALTER POLICY golf_qualifier_entries_insert_coach
 ON public.golf_qualifier_entries
 WITH CHECK (EXISTS (

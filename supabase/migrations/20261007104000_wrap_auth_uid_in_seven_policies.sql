@@ -41,6 +41,11 @@
 -- VERIFY: 'golf_rounds_update'), ('golf_rounds', 'golf_rounds_update_team'))) =
 -- VERIFY: 7;
 
+-- ALTER POLICY takes ACCESS EXCLUSIVE on golf_rounds and baseball_players;
+-- fail fast rather than queue behind traffic. apply.mjs runs the file as one
+-- transaction, so SET LOCAL covers every statement below.
+SET LOCAL lock_timeout = '3s';
+
 ALTER POLICY baseball_players_select ON public.baseball_players
 USING (
     ((SELECT auth.uid()) = user_id)

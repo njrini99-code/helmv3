@@ -658,16 +658,20 @@ the new system. Nothing here is applied by an agent. Each file's status stays in
    1. `20260928130000_golf_insight_exposure_rank_factors.sql`
    2. `20260928140000_coachhelm_alert_type_enum_values.sql`
    3. `20260928230000_v3_attribution_control_interval.sql`
-   4. `20260928160000_golf_sg_shot_end_is_next_shot_start.sql`, then the strokes
-      gained recompute
+   4. `20260930150000_golf_sg_penalty_charged_to_earning_shot.sql`, then the
+      strokes gained recompute in its header. It supersedes
+      `20260928160000_golf_sg_shot_end_is_next_shot_start.sql`, which is
+      OBSOLETE in `HELD.md` and must never be applied.
 2. **Deploy.** Run the deploy command in AGENTS.md "Production" (agents deploy
    directly since 2026-10-07; the old deploy script is gone).
 3. **After the deploy:** the cleanup SQL, the insight regeneration, and the
    review backfill (169 rounds).
 4. **Flag:** turn on `coachhelm_chat_claim_gate`.
-5. **Blocked until the owner decides OD-01:**
-   - `20260928120000_golf_putt_make_pct_countable_non_test.sql`
-   - `20260928150000_golf_stats_cache_exclude_test_rounds.sql`
+5. **Blocked until the owner decides OD-01.** The whole chain, in this order
+   (each file's guard refuses to run out of order):
+   `20260924120000` → `20260924140000` → `20260925120000` →
+   `20260928120000` → `20260928150000`, then the player cache and Standing
+   refreshes in the file headers.
 6. **Written on Clubhouse branches, not applied, still to be reviewed:**
    - the Qualifiers database fixes (D-35, `agent/clubhouse-qualifiers`);
    - the message attachments fix, queued for after Clubhouse (Data gaps).
@@ -1662,6 +1666,8 @@ decision named.
 - Q-120 (open, 2026-09-30; held) Submit has no server-side version check, so a
   stale device can overwrite newer holes. Draft migration
   `20261001000000_submit_round_expected_updated_at.sql` is HELD for review.
+  The app sends `expected_updated_at` on `agent/clubhouse-release`, not in the
+  build production serves; the migration is not applied to production.
 - Q-121 (open, 2026-09-30; deferred) The Demo write journeys (Calendar
   create/edit/cancel, round submit) push to the whole Demo roster, and the one
   device token on it is the owner's test player phone. Emails can be stopped
@@ -1714,9 +1720,10 @@ decision named.
   totals gets a scoring average with `rounds_played` 0; production has none
   today.
 - Q-129 (answered 2026-10-01, owner: fix the files. Done: guard (97b49e304))
-  Held `20260928160000` (SG shot end) is superseded by `20260930150000` and has
-  no guard: applied after it, it silently reverts the penalty rule. Recommended:
-  mark it SUPERSEDED in `HELD.md` (your call). Kept: HOLD.
+  Held `20260928160000` (SG shot end) is superseded by `20260930150000`. It now
+  has a guard (97b49e304): it refuses to run once `20260930150000` is applied,
+  so it cannot revert the penalty rule. Marked OBSOLETE in `HELD.md`
+  (2026-10-12); it must never be applied.
 - Q-130 (answered 2026-10-01, owner: build the team switcher, the player roster
   (read-only) and the player CoachHelm views; alias the rest (6daf50afc))
   Aliases with Clubhouse on: `/intelligence` opens CoachHelm (coach) and the old
@@ -1894,10 +1901,11 @@ decision named.
 - Q-124 (open, 2026-10-01; nothing applied) The §13 CoachHelm audit found the
   lifetime stats cache still counts test rounds, so cache-backed cards are wrong
   (Cole's 15-25 ft putting reads 19.2% and draws as a strength; the truth
-  without his test round is 5.8%, below the Tour). The fix is the three HELD
-  migrations (`20260924120000`, `20260928120000`, `20260928150000`), then a
-  cache refresh. Recommended: apply them in the documented order and refresh,
-  after a db-migration-reviewer pass. Kept: held.
+  without his test round is 5.8%, below the Tour). The fix is the HELD OD-01
+  chain, in this order: `20260924120000` → `20260924140000` →
+  `20260925120000` → `20260928120000` → `20260928150000`, then the cache and
+  Standing refreshes. Recommended: apply them in that order and refresh, after
+  a db-migration-reviewer pass. Kept: held.
 - Q-125 (answered 2026-10-01, owner: regenerate. Done: 114 rows rewritten for
   the 7 Demo players; regenerate again after Q-124) All 81 visible CoachHelm
   rows for the Demo team were written before production started serving

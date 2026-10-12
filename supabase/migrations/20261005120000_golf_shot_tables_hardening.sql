@@ -140,6 +140,10 @@ REVOKE ALL ON TABLE public.approach_miss_details FROM anon;
 REVOKE ALL ON TABLE public.golf_player_stats_cache FROM anon;
 
 -- C. -------------------------------------------------------------------------
+-- Fail fast instead of queueing behind golf_shots traffic: DROP INDEX takes
+-- ACCESS EXCLUSIVE on the table. apply.mjs runs the file as one transaction.
+SET LOCAL lock_timeout = '3s';
+
 -- apply.mjs runs the file in one transaction, where CONCURRENTLY cannot run.
 -- squawk-ignore require-concurrent-index-deletion
 DROP INDEX IF EXISTS public.idx_golf_shots_round_id;
