@@ -925,4 +925,3 @@ The changelog gate now holds a shared piece (a file under `src/clubhouse/ui`, `l
 | CoachHelm | **Assign as focus on a strength (Clickables gap 12).** Assign was hidden on a strength, though the board draws it on Theo's card; contract 130806 had been written from the code, not the board. | CoachHelm offers Assign as focus on a strength (a keep-doing focus); 130806 is reworded (Q-80, kept by the owner). |
 
 Earlier changes (2026-09-28 to 2026-09-30: the page builds, the contract passes and their fixes) are listed in each page's changelog.
-

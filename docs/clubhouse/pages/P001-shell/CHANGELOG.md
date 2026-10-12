@@ -982,4 +982,3 @@ Data impact:    none
 
 - v2 motion (D-64), haptics (D-70), the page empty state (D-71) and navigation
   (D-66) for every page.
-

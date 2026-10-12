@@ -123,4 +123,3 @@ export function useAction<A extends unknown[], T>(
 
   return { run, pending };
 }
-
