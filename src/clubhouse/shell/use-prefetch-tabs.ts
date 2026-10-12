@@ -13,8 +13,8 @@ export function prefetchAllowed(nav: Navigator | undefined): boolean {
 /**
  * Fetches the phone tabs' routes ahead of the first tap, once the shell has mounted and the main thread is idle
  * (native-feel audit 2026-10-08, P0-2). A default prefetch fetches a dynamic route as far as its loading boundary, so
- * a cold tab switch commits at once; the router cache (`experimental.staleTimes`, next.config.mjs) keeps a visited
- * tab for 30s, so a revisit renders from memory. Skipped with Data Saver on or offline. iOS Safari has no
+ * a cold tab switch commits at once. The router cache keeps Next's default dynamic stale time (0s): the app-wide 30s
+ * setting was removed because it also made Fairway, Baseball and Lift Lab serve stale pages. Skipped with Data Saver on or offline. iOS Safari has no
  * requestIdleCallback, so it falls back to a short timeout. Next prefetches only in production builds.
  */
 export function usePrefetchTabs(hrefs: readonly string[], current: string): void {

@@ -1,5 +1,13 @@
 # P007 — Messages: changelog
 
+## 2026-10-12 — attachment retry stays Clubhouse-only
+
+No visible change. Messages now asks the shared attachment hook for the
+recoverable mode (`useMessageAttachments({ recoverable: true })`), which keeps
+an unconfirmed send in sessionStorage so this screen can offer "retry this same
+send". The hook's default no longer stores that marker, because Fairway has no
+retry and a stored marker blocked every later attachment send in the thread.
+
 ## 2026-10-08 — a flatter conversation list, a green filter, and Delete conversation
 
 Owner review:

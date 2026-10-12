@@ -186,18 +186,10 @@ const nextConfig = {
     // hook above and docs/operations/GATES.md).
     cpus: 3,
     webpackMemoryOptimizations: true,
-    // Client router cache (docs/clubhouse/NATIVE_FEEL_PERF_AUDIT_2026-10-08.md
-    // P0-2). With the default dynamic stale time of 0s, every tab switch went
-    // back to the server and showed the route skeleton, even for a tab left
-    // seconds earlier (measured at 700 ms of skeleton plus a blank frame on an
-    // iPhone). Keeping a visited dynamic page for 30s lets a revisit render
-    // from memory in one frame. Prefetched loading shells keep 180s. This
-    // applies app-wide, Fairway included: a revisited page may show data up to
-    // 30s old. A mutation's revalidatePath/refresh still clears it at once.
-    staleTimes: {
-      dynamic: 30,
-      static: 180,
-    },
+    // Client router cache: left at Next's defaults (dynamic 0s). A 30s
+    // dynamic stale time (Clubhouse native-feel audit P0-2) applied app-wide
+    // and let Fairway, Baseball and Lift Lab show data up to 30s old on a
+    // revisit, so it was removed until it can be scoped to Clubhouse.
     // Enable server actions.
     // bodySizeLimit must cover the largest Server Action payload. Recruit
     // documents no longer pass a File through an action (they upload straight

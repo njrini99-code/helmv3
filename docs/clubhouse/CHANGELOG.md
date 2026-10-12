@@ -1,5 +1,14 @@
 # Clubhouse changelog
 
+## 2026-10-12 — Router cache back to Next's default
+
+The app-wide 30s dynamic stale time (`experimental.staleTimes`, native-feel
+audit P0-2) is removed from `next.config.mjs`. It applied to every product, so
+Fairway, Baseball and Lift Lab could show a page up to 30s old on a revisit.
+Clubhouse tab revisits go back to the server again (the route skeleton shows)
+until a Clubhouse-scoped cache exists. `shell/use-prefetch-tabs.ts` comment
+updated.
+
 ## 2026-10-11 — Cold loading frame agrees with the gate
 
 With a team allowlist (`HELM_CLUBHOUSE_TEAMS`), the `/golf` loading boundary
