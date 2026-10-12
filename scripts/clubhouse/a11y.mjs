@@ -10,6 +10,9 @@
  *
  * CH_ENGINES=chromium,webkit CH_MOTION=no-preference,reduce CH_WIDTHS=390,430
  * CH_HEIGHTS=480,844 customizes the engine/motion/viewport cross product.
+ * CH_SCHEME=light,dark adds the night palette (default light). Dark pins
+ * html[data-fw-theme='dark'], the attribute the app's theme script sets on
+ * /golf routes, because the preview routes do not run that script.
  * These are development fixtures, not production/device evidence.
  *
  * Exits 1 when any page has a violation. The catalog's accessibility rows
@@ -229,11 +232,12 @@ export function scanOptions(env = process.env, only = []) {
   const motions = list('CH_MOTION', 'reduce', ['reduce', 'no-preference']);
   const widths = dimensions('CH_WIDTHS', '1280,390');
   const heights = env.CH_HEIGHTS === undefined ? null : dimensions('CH_HEIGHTS', '844');
-  return { pages, engines, motions, widths, heights };
+  const schemes = list('CH_SCHEME', 'light', ['light', 'dark']);
+  return { pages, engines, motions, widths, heights, schemes };
 }
 
 async function main() {
-  const { pages, engines, motions, widths, heights } = scanOptions(process.env, process.argv.slice(2));
+  const { pages, engines, motions, widths, heights, schemes } = scanOptions(process.env, process.argv.slice(2));
   const browsers = await import('playwright');
   const { default: AxeBuilder } = await import('@axe-core/playwright');
   let failed = 0;
@@ -241,8 +245,15 @@ async function main() {
   for (const engine of engines) {
     const browser = await browsers[engine].launch();
     try {
-    for (const motion of motions) for (const width of widths) for (const height of heights ?? [width < 600 ? 844 : 800]) {
-    const ctx = await browser.newContext({ viewport: { width, height }, reducedMotion: motion });
+    for (const scheme of schemes) for (const motion of motions) for (const width of widths) for (const height of heights ?? [width < 600 ? 844 : 800]) {
+    const ctx = await browser.newContext({ viewport: { width, height }, reducedMotion: motion, colorScheme: scheme });
+    if (scheme === 'dark') {
+      await ctx.addInitScript(() => {
+        const pin = () => { if (document.documentElement.dataset.fwTheme !== 'dark') document.documentElement.dataset.fwTheme = 'dark'; };
+        pin();
+        new MutationObserver(pin).observe(document.documentElement, { attributes: true, attributeFilter: ['data-fw-theme'] });
+      });
+    }
     try {
     for (const [page, path, open] of pages) {
       const tab = await ctx.newPage();
@@ -254,7 +265,7 @@ async function main() {
         continue;
       }
       // Only the Clubhouse tree: the dev overlay and Next's portal are not ours.
-      const label = `${engine} ${motion} ${page.padEnd(12)} ${width}x${height} ${path}${opener ? ` (opened ${[opener].flat().join(' > ')})` : ''}`;
+      const label = `${engine} ${scheme} ${motion} ${page.padEnd(12)} ${width}x${height} ${path}${opener ? ` (opened ${[opener].flat().join(' > ')})` : ''}`;
       let stuck = null;
       for (const step of [opener ?? []].flat()) {
         try {

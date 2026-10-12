@@ -8,7 +8,12 @@ test('keeps the existing default matrix', () => {
   assert.deepEqual(options.motions, ['reduce']);
   assert.deepEqual(options.widths, [1280, 390]);
   assert.equal(options.heights, null);
+  assert.deepEqual(options.schemes, ['light']);
   assert.ok(options.pages.length > 100);
+});
+test('adds the dark palette on request and rejects an unknown scheme', () => {
+  assert.deepEqual(scanOptions({ CH_SCHEME: 'light,dark' }).schemes, ['light', 'dark']);
+  assert.throws(() => scanOptions({ CH_SCHEME: 'sepia' }));
 });
 test('selects engines, motion and short viewports independently', () => {
   const options = scanOptions({ CH_ENGINES: 'chromium,webkit', CH_MOTION: 'reduce,no-preference', CH_WIDTHS: '390,430', CH_HEIGHTS: '480,844' }, ['home']);
