@@ -98,6 +98,7 @@ first-run and filtered empties are in its contract.
 | 10403 | CH-1303 | `THE_BELLS_FILTER_HAS_NOTHING` | The bell's filter has nothing |
 | 10404 | CH-1304 | `NOTHING_IS_SCHEDULED` | Nothing is scheduled |
 | 10405 | CH-1305 | `A_COACH_WITH_ONE_TEAM_A_COACH` | A coach with one team, a coach who cannot switch (an assistant on several teams), or a player |
+| 10406 | CH-1306 | `A_DASHBOARD_URL_THAT_MATCHES_NOTHING_OR` | A dashboard URL that matches nothing, or an id that no longer exists (a deleted round or player), inside the Clubhouse shell |
 
 ## 05 — Validation
 

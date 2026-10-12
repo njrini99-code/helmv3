@@ -1043,6 +1043,38 @@ describe('Settings · what the person is told about standing conditions', () => 
 });
 
 // The coaching staff's own checks (what is read, sent and shown, on desktop and phone) are in settings-staff.test.tsx.
+describe('Settings · email paused for everyone (CH-8901)', () => {
+  it('CH-8901 a coach: the email switches keep their choices but are disabled, with one line saying why; push still works', async () => {
+    setup({ data: { ...coachData(), emailPaused: true }, section: 'notifications' });
+    await expectCode('CH-8901', /^Email is paused for everyone right now\.$/);
+    expect(document.querySelectorAll('[data-ch-code="CH-8901"]')).toHaveLength(1);
+    expect(screen.getByRole('switch', { name: 'Weekly team email' })).toBeDisabled();
+    const email = screen.getAllByRole('switch', { name: / by email$/ });
+    expect(email.length).toBeGreaterThan(0);
+    for (const s of email) expect(s).toBeDisabled();
+    expect(screen.getByRole('switch', { name: 'Tasks by push' })).not.toBeDisabled();
+  });
+
+  it('CH-8901 with email on, nothing is said and the email switches work', async () => {
+    setup({ data: coachData(), section: 'notifications' });
+    await screen.findByRole('switch', { name: 'Weekly team email' });
+    expect(code('CH-8901')).toBeNull();
+    expect(screen.getByRole('switch', { name: 'Weekly team email' })).not.toBeDisabled();
+    for (const s of screen.getAllByRole('switch', { name: / by email$/ })) expect(s).not.toBeDisabled();
+  });
+
+  it('CH-8901 a player: the CoachHelm email column and Mute email are disabled too; in app and push are not', async () => {
+    setup({ data: { ...playerData(true), emailPaused: true }, section: 'notifications' });
+    await expectCode('CH-8901', /Email is paused for everyone right now/);
+    const updates = card('CoachHelm updates');
+    expect(within(updates).getByText(/Email is paused for everyone right now/)).toBeTruthy();
+    expect(within(updates).getByRole('button', { name: 'Mute email' })).toBeDisabled();
+    expect(within(updates).getByRole('button', { name: 'Mute push' })).not.toBeDisabled();
+    for (const s of within(updates).getAllByRole('switch', { name: /, email$/ })) expect(s).toBeDisabled();
+    for (const s of within(updates).getAllByRole('switch', { name: /, push$/ })) expect(s).not.toBeDisabled();
+  });
+});
+
 describe('Settings · Team · the coaching staff', () => {
   it('CH-8026 CH-8027 CH-8028 CH-8213 an approval, a decline and a staff invite that are refused are toasts; a requests read that fails is a notice', async () => {
     const user = userEvent.setup();
@@ -1470,6 +1502,18 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     expect(screen.getByRole('switch', { name: 'Weekly team email' })).toBeDisabled();
     expect(screen.getByRole('switch', { name: 'Push on this device' })).toBeDisabled();
     expect(screen.getByText(/blocked for GolfHelm/)).toBeTruthy();
+  });
+
+  it('81901 CH-8901 email paused: one line under the lead, the weekly email and each email switch disabled, push untouched', async () => {
+    const { user } = phone({ data: { ...coachData(), emailPaused: true } });
+    await openRow(user, /^Notifications/);
+    await expectCode('CH-8901', /Email is paused for everyone right now/);
+    expect(screen.getByRole('switch', { name: 'Weekly team email' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: /^Tasks/ }));
+    const sheet = dialog('Tasks');
+    expect(within(sheet).getByRole('switch', { name: 'Email' })).toBeDisabled();
+    expect(within(sheet).getByRole('switch', { name: 'Push' })).not.toBeDisabled();
+    expect(within(sheet).getByText(/Email is paused for everyone right now/)).toBeTruthy();
   });
 
   it('81901 CH-8010 quiet mode pauses the kinds it silences, and the sheet says so instead of offering switches', async () => {

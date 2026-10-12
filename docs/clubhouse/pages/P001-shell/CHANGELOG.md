@@ -1,5 +1,21 @@
 # P001 — Shell: changelog
 
+## 2026-10-11 — An honest offline banner and an in-shell 404
+
+- **Offline banner (CH-1901).** It said "changes will wait until you reconnect",
+  but every save except round scoring is refused offline (CH-1903). It now
+  reads "You're offline. You can keep reading and keep scoring a round; other
+  changes need a connection." When the offline queue holds anything, it adds
+  "N changes saved on this device will sync when you reconnect"
+  (`useOfflineSyncStatus().pendingCount.total`). Continue Round refreshes that
+  count after it queues a round on the device
+  (`use-continue-round-session.ts`), as the new-round hook already did.
+- **Dashboard 404 (CH-1306).** On Clubhouse, `dashboard/not-found.tsx` draws
+  Clubhouse's page empty (`shell/NotFound.tsx`: "We couldn’t find that", Back to
+  Home) instead of Fairway's EmptyState and Button. Off Clubhouse it is
+  unchanged.
+- No before/after screenshots were captured for this change (no browser run in
+  this session).
 ## 2026-10-12 — tab revisits go back to the server
 
 The app-wide 30s router cache is removed (it also made Fairway, Baseball and

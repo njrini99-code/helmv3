@@ -9,6 +9,7 @@ import { dbToTs, type PhilosophyDbRow } from '@/lib/coachhelm/philosophy-map';
 import { resolveEventReminderSettings } from '@/lib/golf/event-reminder-settings';
 import type { PrefsByCategory } from '@/lib/coachhelm/v3/notifications/router';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
+import { isCustomerEmailEnabled } from '@/lib/email/outbound-gate';
 import { chLogServer } from '../lib/track-server';
 import type { ChCoachHelmSettings, ChScoring, ChSettingsData } from '../screens/settings/model';
 
@@ -78,6 +79,8 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
     delivery: deliveryRes.error || !deliveryRes.data ? failed : ok(deliveryRes.data as Record<string, boolean>),
     playerRouting: null,
     digest: null,
+    // CH-8901: no customer email leaves while the outbound gate is off, so the email switches would control nothing.
+    emailPaused: !isCustomerEmailEnabled(),
     scoring: null,
     reminders: null,
     team: null,

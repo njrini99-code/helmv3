@@ -127,6 +127,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10406,
+    "page": "P001",
+    "category": 4,
+    "item": 6,
+    "name": "A_DASHBOARD_URL_THAT_MATCHES_NOTHING_OR",
+    "chCode": "CH-1306",
+    "meaning": "A dashboard URL that matches nothing, or an id that no longer exists (a deleted round or player), inside the Clubhouse shell",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10601,
     "page": "P001",
     "category": 6,
@@ -7398,6 +7409,17 @@
     "tests": [
       "src/clubhouse/__tests__/settings.test.tsx"
     ]
+  },
+  {
+    "id": 80702,
+    "page": "P008",
+    "category": 7,
+    "item": 2,
+    "name": "CUSTOMER_EMAIL_IS_SWITCHED_OFF_FOR_EVERYONE",
+    "chCode": "CH-8901",
+    "meaning": "Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED` is not `true`, `src/lib/email/outbound-gate.ts`), so no email setting can send anything",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
     "id": 80801,

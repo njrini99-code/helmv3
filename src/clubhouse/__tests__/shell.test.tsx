@@ -39,7 +39,9 @@ import { ToastProvider, useToast } from '../ui/Toast';
 import { InlineNotice, RouteErrorView, type RouteErrorKind } from '../ui/Notices';
 import { Bell, BellSourceProvider, type ChBellApi } from '../shell/Bell';
 import { NotRebuilt } from '../shell/NotRebuilt';
-import { OfflineBanner } from '../shell/OfflineBanner';
+import { ClubhouseNotFound } from '../shell/NotFound';
+import { OfflineBanner, pendingLine } from '../shell/OfflineBanner';
+import { useOfflineSyncStore } from '@/stores/offline-sync-store';
 import { CH_SLOW_SAVE_AFTER, useAction } from '../lib/use-action';
 import { loadClubhouseShell, type ChShellData } from '../data/shell';
 import { ClubhouseFrame } from '../shell/ClubhouseFrame';
@@ -253,6 +255,33 @@ describe('Shell · page states', () => {
     await expectCode(c, text);
   });
 
+  it.each([
+    ['load', 'CH-1205', '/golf/dashboard/rounds', 'Rounds didn’t load', /connection dropped/],
+    ['unknown', 'CH-1206', '/golf/dashboard/rounds/[id]/review', 'Rounds didn’t load', /reported automatically/],
+    ['unknown', 'CH-1206', '/golf/dashboard/team-hub', 'Team Hub didn’t load', /reported automatically/],
+    ['load', 'CH-1205', '/golf/dashboard/my-development', 'My development didn’t load', /connection dropped/],
+    ['unknown', 'CH-1206', '/golf/dashboard', 'Something went wrong on this page', /reported automatically/],
+    ['unknown', 'CH-1206', '/clubhouse-preview', 'Something went wrong on this page', /reported automatically/],
+    ['chunk', 'CH-1202', '/golf/dashboard/rounds', 'A newer version of GolfHelm is ready', /older version/],
+    ['transient', 'CH-1204', '/golf/dashboard/rounds', 'GolfHelm is slow to respond', /busy/],
+  ] as const)('%s → %s names the page from its route %s', async (kind, c, route, title, body) => {
+    wrap(<RouteErrorView kind={kind as RouteErrorKind} isRetrying={false} retryCount={0} onRetry={vi.fn()} homePath="/golf/dashboard" route={route} />);
+    await expectCode(c);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(title);
+    expect(code(c)!.textContent).toMatch(body);
+  });
+
+  it('CH-1306 the dashboard 404 inside the shell is the page empty with the way back to Home', async () => {
+    wrap(<ClubhouseNotFound />);
+    await expectCode('CH-1306', /We couldn’t find that/);
+    const page = code('CH-1306')!;
+    expect(page.className).toContain('ch-empty-page');
+    expect(page.querySelector('.ch-empty-page__ic svg')).not.toBeNull();
+    const home = screen.getByRole('link', { name: 'Back to Home' });
+    expect(home.getAttribute('href')).toBe('/golf/dashboard');
+    expect(home.className).toContain('ch-btn--primary');
+  });
+
   it('CH-1301 a page that is not rebuilt', async () => {
     wrap(<NotRebuilt label="Rounds" />);
     await expectCode('CH-1301', /Rounds hasn.t been rebuilt yet/);
@@ -301,6 +330,27 @@ describe('Shell · network', () => {
     setOnline(true);
     act(() => void window.dispatchEvent(new Event('online')));
     await waitFor(() => expect(code('CH-1901')).toBeNull());
+  });
+
+  it('CH-1901 the banner promises only what works offline (reading and round scoring), and counts what is held on the device', async () => {
+    useOfflineSyncStore.setState({ pendingCount: { rounds: 0, holes: 0, shots: 0, total: 0 } });
+    wrap(<OfflineBanner />);
+    setOnline(false);
+    act(() => void window.dispatchEvent(new Event('offline')));
+    await expectCode('CH-1901', /You can keep reading and keep scoring a round; other changes need a connection\./);
+    expect(code('CH-1901')!.textContent).not.toMatch(/changes will wait/);
+    expect(document.querySelector('[data-ch-offline-pending]')).toBeNull();
+    act(() => useOfflineSyncStore.setState({ pendingCount: { rounds: 1, holes: 0, shots: 2, total: 3 } }));
+    await waitFor(() => expect(code('CH-1901')!.textContent).toMatch(/3 changes saved on this device will sync when you reconnect\./));
+    act(() => useOfflineSyncStore.setState({ pendingCount: { rounds: 1, holes: 0, shots: 0, total: 1 } }));
+    await waitFor(() => expect(code('CH-1901')!.textContent).toMatch(/1 change saved on this device/));
+    act(() => useOfflineSyncStore.setState({ pendingCount: { rounds: 0, holes: 0, shots: 0, total: 0 } }));
+  });
+
+  it('CH-1901 pendingLine says nothing for an empty queue', () => {
+    expect(pendingLine(0)).toBeNull();
+    expect(pendingLine(Number.NaN)).toBeNull();
+    expect(pendingLine(2)).toBe('2 changes saved on this device will sync when you reconnect.');
   });
 
   function Saver({ fn }: { fn: () => Promise<{ success: boolean }> }) {

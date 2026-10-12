@@ -28,7 +28,8 @@ vi.mock('@/app/golf/actions/round-type', () => ({ updateRoundType: vi.fn() }));
 vi.mock('@/hooks/golf/use-round-status-sync', () => ({ useRoundStatusSync: vi.fn() }));
 vi.mock('@/stores/offline-sync-store', () => {
   const status = { isOnline: true, isSyncing: false, pendingCount: { total: 0 }, syncError: null };
-  return { useOfflineSyncStatus: () => status };
+  const state = { updatePendingCount: vi.fn(async () => {}) };
+  return { useOfflineSyncStatus: () => status, useOfflineSyncStore: { getState: () => state } };
 });
 vi.mock('@/lib/offline/indexed-db', () => ({
   saveOfflineRound: vi.fn(async () => {}),

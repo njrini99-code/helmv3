@@ -1,5 +1,14 @@
 # Clubhouse changelog
 
+## 2026-10-11 — Route errors name the page that failed
+
+`RouteErrorView` (`ui/Notices.tsx`) takes the boundary's `route`. For a load
+or unknown failure (CH-1205, CH-1206) the title names the page: its nav item,
+else its first dashboard segment as words (`routeErrorLabel`), for example
+"Rounds didn’t load" for `/golf/dashboard/rounds/[id]`. Home and routes
+outside the dashboard keep the fixed titles; the other kinds keep their copy,
+and the CH codes are unchanged. `RouteErrorBoundary` passes its `route` prop
+through; no `error.tsx` file changed.
 ## 2026-10-12 — Router cache back to Next's default
 
 The app-wide 30s dynamic stale time (`experimental.staleTimes`, native-feel

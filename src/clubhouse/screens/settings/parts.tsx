@@ -57,6 +57,11 @@ export function Card({
   );
 }
 
+/** CH-8901: the one line beside email switches while customer email is off for everyone. */
+export function EmailPaused() {
+  return <span data-ch-code="CH-8901">Email is paused for everyone right now.</span>;
+}
+
 /** One setting: label and help on the left, the control on the right (stacks when narrow). */
 export function Row({ label, help, htmlFor, children, dim }: { label: ReactNode; help?: ReactNode; htmlFor?: string; children: ReactNode; dim?: boolean }) {
   return (

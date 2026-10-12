@@ -38,7 +38,8 @@ vi.mock('@/hooks/golf/use-connection-status', () => ({ useConnectionStatus: () =
 vi.mock('@/hooks/golf/use-round-status-sync', () => ({ useRoundStatusSync: vi.fn() }));
 vi.mock('@/stores/offline-sync-store', () => {
   const status = { isOnline: true, isSyncing: false, pendingCount: { total: 0 }, syncError: null };
-  return { useOfflineSyncStatus: () => status };
+  const state = { updatePendingCount: vi.fn(async () => {}) };
+  return { useOfflineSyncStatus: () => status, useOfflineSyncStore: { getState: () => state } };
 });
 vi.mock('@/lib/offline/indexed-db', () => ({ saveOfflineRound: vi.fn(async () => {}), deleteOfflineRound: vi.fn(async () => {}) }));
 vi.mock('@/lib/offline/partial-save-beacon', () => ({ beaconPartialSave: vi.fn(() => false) }));

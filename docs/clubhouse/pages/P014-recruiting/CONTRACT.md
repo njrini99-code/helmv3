@@ -97,7 +97,7 @@ is category 06 and never "your list starts here" (141501).
 | 140406 | CH-14306 | `A_COACH_ON_NO_TEAM_THE_PAGE` | A coach on no team the page can resolve |
 | 140407 | CH-14307 | `A_PROSPECT_WITH_NO_NEXT_STEP` | A prospect with no next step (only while the next-step columns exist) |
 
-From the shell (P001): 10401 CH-1301, 10402 CH-1302, 10403 CH-1303, 10404 CH-1304, 10405 CH-1305.
+From the shell (P001): 10401 CH-1301, 10402 CH-1302, 10403 CH-1303, 10404 CH-1304, 10405 CH-1305, 10406 CH-1306.
 
 ## 05 — Validation
 

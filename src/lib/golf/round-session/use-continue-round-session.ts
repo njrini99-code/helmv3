@@ -10,7 +10,7 @@ import { deleteOfflineRound, saveOfflineRound } from '@/lib/offline/indexed-db';
 import { beaconPartialSave } from '@/lib/offline/partial-save-beacon';
 import { recordHelmBreadcrumb } from '@/lib/observability/client-breadcrumbs';
 import { getRoundRecoverySnapshot } from '@/lib/offline/shot-storage';
-import { useOfflineSyncStatus } from '@/stores/offline-sync-store';
+import { useOfflineSyncStatus, useOfflineSyncStore } from '@/stores/offline-sync-store';
 import {
   emergencySave,
   loadEmergencySave,
@@ -551,6 +551,8 @@ export function useContinueRoundSession({
           terminalSubmission,
         },
       });
+      // The queue grew: refresh the count the offline banner and sync badge read, as the new-round hook does.
+      await useOfflineSyncStore.getState().updatePendingCount();
     } catch {
       // localStorage emergency save above remains the hard fallback
     }

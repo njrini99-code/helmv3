@@ -1,5 +1,17 @@
 # P008 — Settings: changelog
 
+## 2026-10-11 — Email switches say email is paused (CH-8901)
+
+Customer email is off for everyone while `HELM_CUSTOMER_EMAIL_ENABLED` is not
+`true` (`src/lib/email/outbound-gate.ts`), so the weekly team email and every
+other email choice controlled nothing. `loadSettings` now returns `emailPaused`
+(`!isCustomerEmailEnabled()`). While it is true, each email switch (each kind's
+Email, Weekly team email, the player's CoachHelm Email column and Mute email)
+keeps its saved choice but is disabled, and one line says "Email is paused for
+everyone right now." (after the card caption on desktop, after the page lead
+and in each kind's sheet note on the phone). Push and in app are unchanged.
+No before/after screenshots were captured (no browser run in this session).
+
 ## 2026-10-08 — phone: the priority ranker on dnd-kit
 
 The phone's priority ranker (`phone/Reorder.tsx`) runs on `@dnd-kit/sortable`

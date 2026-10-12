@@ -93,6 +93,11 @@ export interface ChSettingsData {
   playerRouting: Section<{ prefs: PrefsByCategory; quiet: boolean }> | null;
   /** Coaches only: the weekly team email. */
   digest: Section<boolean> | null;
+  /**
+   * Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED`, src/lib/email/outbound-gate.ts):
+   * the email switches still show what was chosen but can't be changed, and say why (CH-8901).
+   */
+  emailPaused: boolean;
   scoring: Section<ChScoring> | null;
   reminders: Section<ChReminders> | null;
   team: Section<ChTeamInfo> | null;
