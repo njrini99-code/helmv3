@@ -1,5 +1,14 @@
 # P011 — Rounds: changelog
 
+## 2026-10-12 — the old review address loads in the review's shape
+
+- `rounds/[id]/review/loading.tsx` paints the Clubhouse review skeleton
+  (CH-11406) inside the shell, so a client navigation to the old address
+  never shows Fairway's skeleton before the redirect to `/rounds/[id]` lands.
+  Outside the shell it keeps Fairway's. Contract 110206 is implemented.
+- Round review and the Rounds library follow the dashboard layout's role
+  (`getGolfDashboardRole`).
+
 ## 2026-10-12 — Change round type mid-round (continue)
 
 ```text

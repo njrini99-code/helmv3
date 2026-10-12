@@ -60,8 +60,8 @@ Status: DEFINED
 
 The library's route skeleton (CH-11401) is the Clubhouse one inside the shell and Fairway's outside it
 (`rounds/loading.tsx` through `ClubhouseSwitch`); nothing shows for the first 150ms, then a fade (the shell's
-11609). The review has no Clubhouse skeleton: `rounds/[id]/loading.tsx` is Fairway's, so a Clubhouse review loads
-under the Fairway one (110206, reserved, no catalog row, no test). Setup and the shot screen load in place: the
+11609). The review loads under its Clubhouse skeleton (CH-11406) inside the shell, at `rounds/[id]` and at the old
+`rounds/[id]/review` address, and under Fairway's outside it (110206). Setup and the shot screen load in place: the
 course library (CH-11403), a course's tees (CH-11404), the scorecard (CH-11405), and a hole saving (CH-11402).
 
 | Bridge ID | Code | Name | Meaning |
@@ -71,7 +71,7 @@ course library (CH-11403), a course's tees (CH-11404), the scorecard (CH-11405),
 | 110203 | CH-11403 | `THE_COURSE_LIBRARY_IS_LOADING` | The course library is loading |
 | 110204 | CH-11404 | `A_COURSES_TEES_ARE_LOADING` | A course's tees are loading |
 | 110205 | CH-11405 | `THE_PICKED_TEES_SCORECARD_IS_LOADING` | The picked tees' scorecard is loading |
-| 110206 | — | `REVIEW_LOADS_UNDER_A_CLUBHOUSE_SKELETON` | A round's review loads under a Clubhouse skeleton inside the shell. Not built: rounds/[id]/loading.tsx is Fairway's (it has no ClubhouseSwitch, and there is no catalog row for it), so a Clubhouse review shows the Fairway skeleton first; the library's is CH-11401 through rounds/loading.tsx. No test covers it. The same class of gap Team Hub closed with CH-10405. |
+| 110206 | — | `REVIEW_LOADS_UNDER_A_CLUBHOUSE_SKELETON` | A round's review loads under the Clubhouse review skeleton (CH-11406) inside the shell, at /rounds/[id] and at the old /rounds/[id]/review address (which redirects there inside Clubhouse); outside the shell both keep Fairway's skeleton. |
 | 110207 | CH-11406 | `A_ROUNDS_REVIEW_IS_LOADING` | A round's review is loading |
 | 110208 | CH-11407 | `ROUND_ENTRY_IS_ON_ITS_WAY_THE` | Round entry is on its way: the address's own loading, and, on /rounds/new, the beat before the device's day and the player's qualifiers are read |
 | 110209 | CH-11408 | `ROUND_RECOVERY_ROUTE_LOADING` | Round recovery route loading |

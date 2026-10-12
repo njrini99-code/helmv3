@@ -1,5 +1,12 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-12 — /intelligence keeps the player and Ask
+
+- The old `/golf/dashboard/intelligence` address (coach insight pushes, CRM
+  demo invites) keeps `?player=<id>` when it moves to CoachHelm, and
+  `view=chat` opens Ask (`view=ask`); other views are dropped. The page's role
+  is the dashboard layout's (`getGolfDashboardRole`).
+
 ## 2026-10-10 — The desktop board in the phone's lit-card language
 
 Presentation only. The focus's claim is the page's one lit green card at the

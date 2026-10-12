@@ -1,5 +1,13 @@
 # P008 — Settings: changelog
 
+## 2026-10-12 — Settings follows the dashboard layout's role
+
+- The role (coach or player form, and the coach id the loader reads with) is
+  the dashboard layout's (`getGolfDashboardRole`): a user with an onboarded
+  player profile and a coach profile never finished gets the player form.
+  The Coaching Intelligence link opens the CoachHelm section only for that
+  role's coach.
+
 ## 2026-10-11 — Email switches say email is paused (CH-8901)
 
 Customer email is off for everyone while `HELM_CUSTOMER_EMAIL_ENABLED` is not

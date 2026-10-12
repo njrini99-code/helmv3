@@ -10990,9 +10990,12 @@
     "category": 2,
     "item": 6,
     "name": "REVIEW_LOADS_UNDER_A_CLUBHOUSE_SKELETON",
-    "meaning": "A round's review loads under a Clubhouse skeleton inside the shell. Not built: rounds/[id]/loading.tsx is Fairway's (it has no ClubhouseSwitch, and there is no catalog row for it), so a Clubhouse review shows the Fairway skeleton first; the library's is CH-11401 through rounds/loading.tsx. No test covers it. The same class of gap Team Hub closed with CH-10405.",
-    "status": "reserved",
-    "where": "src/app/golf/(dashboard)/dashboard/rounds/[id]/loading.tsx"
+    "meaning": "A round's review loads under the Clubhouse review skeleton (CH-11406) inside the shell, at /rounds/[id] and at the old /rounds/[id]/review address (which redirects there inside Clubhouse); outside the shell both keep Fairway's skeleton.",
+    "status": "implemented",
+    "where": "src/app/golf/(dashboard)/dashboard/rounds/[id]/loading.tsx; src/app/golf/(dashboard)/dashboard/rounds/[id]/review/loading.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/round-review.test.tsx"
+    ]
   },
   {
     "id": 110207,

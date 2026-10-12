@@ -143,9 +143,7 @@ export async function proxy(request: NextRequest) {
         }).catch(() => {});
       }
     }
-    // Forward the request (not a bare next()) so the x-helm-search header
-    // updateSession set first replaces any client-sent value on this path too.
-    return NextResponse.next({ request });
+    return NextResponse.next();
   }
 }
 
