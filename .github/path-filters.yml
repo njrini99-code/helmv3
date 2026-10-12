@@ -41,3 +41,7 @@ python:
   - 'pyproject.toml'
 actions:
   - '.github/**'
+# `db_types`: `Next build` builds without the restored .next/cache when a PR
+# regenerates the schema types (2026-10-12; see the step comment in ci.yml).
+db_types:
+  - 'src/lib/types/database.ts'

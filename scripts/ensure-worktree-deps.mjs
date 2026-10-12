@@ -37,6 +37,14 @@ const DIR = resolve(args.find((a) => !a.startsWith('--')) ?? process.cwd());
 export const RESERVE_GIB = Number(process.env.HELM_DISK_RESERVE_GIB ?? 12);
 export const BUDGET_GIB = Number(process.env.HELM_INSTALL_BUDGET_GIB ?? 5);
 
+/**
+ * `--include=dev` because a worktree install exists to run the gates (vitest,
+ * tsc, eslint, the supabase CLI), and with NODE_ENV=production npm defaults
+ * `omit` to `dev` and silently installs a third of the tree. Seen 2026-10-11:
+ * 277 of 977 packages, no vitest, from the desktop health routine's shell.
+ */
+export const NPM_CI_ARGS = Object.freeze(['ci', '--silent', '--include=dev']);
+
 export function freeGib(path) {
   try {
     const out = execFileSync('/bin/df', ['-Pk', path], { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -93,7 +101,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
 
   console.log(`installing dependencies in ${DIR} (${decision.reason})`);
-  const r = spawnSync('npm', ['ci', '--silent'], { cwd: DIR, stdio: 'inherit' });
+  const r = spawnSync('npm', [...NPM_CI_ARGS], { cwd: DIR, stdio: 'inherit' });
   if (r.status !== 0) {
     const after = freeGib(DIR);
     if (after !== null && after < RESERVE_GIB) {
