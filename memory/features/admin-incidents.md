@@ -334,6 +334,14 @@ always derived at read time.
   (client connectivity, expected access)". Before 2026-09-02 every group was
   listed, so the email led with three "Client error: Load failed" rows above
   "0 critical".
+- `classifyIncident` rule 5a: a non-error row whose `errorCode` is in the
+  expected-empty-state registry (`src/lib/view-state/expected-empty-states.ts`)
+  is a RECOGNISED `empty_state` (`matched: true`), keyed on the code, not the
+  prose. Before 2026-10-12 the withAdminObserved copy of the roster sweep's
+  `engine_below_round_floor` envelope (ecb08865) fell to the severity ladder,
+  so Diagnose reported it quiet-unrecognised and left it open every night
+  until the 07:30 Close sweep. Error/critical rows with such a code stay
+  actionable.
 - `classifyIncident` rule 3c: a CLIENT-sourced transport-layer TypeError
   (`isTransientNetworkErrorMessage` — "Load failed", "Failed to fetch", …)
   is `integration` / not actionable, the same verdict rule 4 gives the generic

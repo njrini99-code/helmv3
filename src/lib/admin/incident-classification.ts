@@ -42,6 +42,9 @@
  */
 
 import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
+// Dependency LEAF (no imports): the ONE registry of genuinely-empty outcome
+// codes, shared with the soft-failure observer and the UI empty states.
+import { isExpectedEmptyStateCode } from '@/lib/view-state/expected-empty-states';
 
 export type IncidentClass =
   /** A genuine unexpected failure. Belongs in triage. */
@@ -435,6 +438,23 @@ export function classifyIncident(input: ClassifiableIncident): IncidentClassific
   }
 
   // 5. Product empty states surfaced through the error path.
+  //
+  //    5a. By stable CODE first. The withAdminObserved wrapper files a
+  //        registered empty-state envelope at 'info' with only its
+  //        user-facing sentence ("0 completed rounds so far — CoachHelm speaks
+  //        after 3 …"), which no phrase below matches, so it fell to the
+  //        severity ladder (`matched: false`) and Diagnose left it open as
+  //        quiet-unrecognised every night (ecb08865, 2026-10-07 → 10-12).
+  //        Codes survive copy edits; prose does not. Never for an
+  //        error/critical row: the registry contract forbids reusing these
+  //        codes for failures, and if one ever is, it must stay visible.
+  if (
+    severity !== 'error' &&
+    severity !== 'critical' &&
+    isExpectedEmptyStateCode(input.errorCode)
+  ) {
+    return done('empty_state', false, `Empty state, not a failure (${input.errorCode})`);
+  }
   const emptyHit = matchesAny(haystack, EMPTY_STATE_PHRASES);
   if (emptyHit) {
     return done('empty_state', false, `Empty state, not a failure ("${emptyHit}")`);
