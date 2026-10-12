@@ -1,13 +1,16 @@
 # Clubhouse: adding a new design
 
-## October 6 current audit
+**Current state, rollout, rollback and what is left: [STATUS.md](STATUS.md).**
+Read it first; it is the single source of truth for where Clubhouse stands.
 
-[ALL_PAGE_AUDIT.md](ALL_PAGE_AUDIT.md) inventories the current flagged
-implementation across all 15 page families and links current test/browser
+## October 6 all-page audit (historical)
+
+[ALL_PAGE_AUDIT.md](ALL_PAGE_AUDIT.md) inventories the flagged implementation
+as of 2026-10-06 across all 15 page families and links its test and browser
 evidence. [SMOOTHNESS_AUDIT.md](SMOOTHNESS_AUDIT.md) records the reproduced
 appearance-store repair and remaining motion/profiling findings. Older
-measurements below retain their original source and device scope; release
-acceptance remains partial. No production flag or deployment changed.
+measurements below retain their original source and device scope. Production
+state and release acceptance are tracked in [STATUS.md](STATUS.md).
 
 How a page goes from a design in `design/handoff/` to a verified page behind
 the `golf_clubhouse_ui` flag. This is the Foundation V2 process (D-60 to
@@ -19,6 +22,7 @@ Where things live:
 
 | What | Where |
 | --- | --- |
+| Current state, how to turn on, rollback, remaining work, open owner decisions | [`STATUS.md`](STATUS.md) |
 | Which screens exist, and which are rebuilt | `SCREENS.md` |
 | Gates, decisions, questions, data gaps, verification log | `PROGRESS.md` (the overview) |
 | Which handoff files are current | `design/handoff/VERSIONS.md` |

@@ -21,8 +21,10 @@ export function clubhouseTeamAllowlist(): Set<string> | null {
 
 /**
  * The one switch between Fairway and Clubhouse, for coaches and players.
- * Players get the shared screens (Stats, Calendar, Messages) with their own
- * permissions; their other screens show "not rebuilt yet" until designed.
+ * Each role gets its rebuilt screens with its own permissions; a route without
+ * a Clubhouse version redirects to the closest rebuilt one (route layouts,
+ * `routes/alias.ts`), and only an unlisted route falls back to NotRebuilt.
+ * Rollout state and the canary steps: docs/clubhouse/STATUS.md.
  * With a team allowlist set, only the signed-in user's active team gets
  * Clubhouse; a user whose team cannot be read gets Fairway (fail closed to the
  * screens every team already uses). The session and team reads are

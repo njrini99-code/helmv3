@@ -19,12 +19,13 @@ Evidence labels: **Source-confirmed**, **Reproduced** (with test and SHA),
 | Clubhouse candidate (#2102) | `c221d1ca2` | `agent/clubhouse` |
 | Release train | PR #2110, `agent/release-train` at `c0f1b17fe` (#2102, #2104 round engine, #2108 security, #2109 stats engine, plus the audit fixes) | local `next build` exit 0 at `24a4bbca2` (later commits: docs, lint layout, the Hub read fix, one test timeout); CI rerunning at `c0f1b17fe` |
 
-**Production flag state:** `golf_clubhouse_ui` and `golf_clubhouse_front_door`
-are off in production and on in preview and development
-(`config/feature-flags.yml`). Per Q-4, production stays off until the owner has
-done a live preview pass. A train deploy therefore ships the flag-off (Fairway)
-experience plus the shared fixes. Every finding below that says "flag on"
-affects no customer until the flag is flipped.
+**Production flag state (updated 2026-10-12):** `golf_clubhouse_ui` and
+`golf_clubhouse_front_door` are off in production and on in preview and
+development (`config/feature-flags.yml`). `golf_clubhouse_ui` was on in
+production from 2026-10-08 to 2026-10-11 through #2180 by mistake; #2188 turned
+it off. The baselines above are the 2026-09-30 audit's; current state, turn-on
+and rollback are in [STATUS.md](STATUS.md). Every finding below that says "flag
+on" affects no customer until the owner turns the flag on.
 
 ## 2. Scorecard (audit §20)
 
@@ -84,21 +85,27 @@ when the flag is on. An alias is `redirectToClubhouse` in a route layout
   player see the team as a plain label. Catalog CH-1003, CH-1305, CH-1813,
   CH-1814; `team-switch.test.tsx`.
 
-### Not rebuilt with the flag on (owner decides after this audit)
+### Formerly not rebuilt: where each route goes now (updated 2026-10-12)
 
-| Route | Role | Today (flag on) | Suggested destination |
+Every row the audit left open is now an alias or built. Route files are under
+`src/app/golf/(dashboard)/dashboard/`. **RETIRED** means the owner decided on
+2026-10-12 not to build it; the redirect stays.
+
+| Route | Role | Today (flag on) | Evidence |
 | --- | --- | --- | --- |
-| `/intelligence` (and `/alerts`, `/insights`, `/patterns`, `/analytics/coachhelm`, `/development`, which redirect to it) | coach | NotRebuilt | Alias to `coachhelm` (`?player=` kept) |
-| `coachhelm?view=profile\|standing\|deep-dive`; `/my-game-profile`, `/my-standing` (and `/my-development`, which goes to `coachhelm?view=development`) | player | **Built** (F-04): Game profile `28f83d3a8`, Standing `a657a7d15`, Deep dive `438781162`; `?view=development` goes to Stats' Development | Nothing left on this row |
-| `/players/[id]`, `/players/[id]/game`, `/game/print`, `/genome`; `/coachhelm/genome/[id]` | coach | NotRebuilt | Alias to `stats?player=<id>` |
-| `/coachhelm/genome/compare` | coach | NotRebuilt | Owner: retire or build |
-| `/team` | both | NotRebuilt | Coach: `settings?section=team`; player: `settings?section=golf` |
-| `/rounds` | coach | NotRebuilt (v2 has no coach library, Q-79) | Alias to `stats/team` |
-| `/coachhelm/chat` | player | NotRebuilt | Alias to `coachhelm` |
-| `/courses` | coach | NotRebuilt | Owner: build or retire (course management) |
-| `/whats-new` | both | NotRebuilt | Retire, or alias to Home |
+| `/intelligence` (and `/alerts`, `/insights`, `/patterns`, `/analytics/coachhelm`, `/development`, which redirect to it) | coach | Alias to `coachhelm` (`?player=` kept, `view=chat` becomes `view=ask`) | `intelligence/layout.tsx` |
+| `coachhelm?view=profile\|standing\|deep-dive`; `/my-game-profile`, `/my-standing` (and `/my-development`, which goes to `coachhelm?view=development`) | player | **Built** (F-04): Game profile `28f83d3a8`, Standing `a657a7d15`, Deep dive `438781162`; `?view=development` goes to Stats' Development | — |
+| `/players/[id]`, `/players/[id]/game`, `/genome`; `/coachhelm/genome/[id]` | coach | Alias to `stats?player=<id>` | `players/[playerId]/layout.tsx`, `coachhelm/genome/[playerId]/layout.tsx` |
+| `/players/[id]/game/print` (printable scouting report) | coach | **RETIRED** (owner, 2026-10-12); covered by the `players/[id]` alias to `stats?player=<id>` | `players/[playerId]/layout.tsx` |
+| `/coachhelm/genome/compare` | coach | **RETIRED** (owner, 2026-10-12); alias to `stats/team` | `coachhelm/genome/compare/layout.tsx` |
+| `/team` | both | Alias: coach to `settings?section=team`, player to `settings?section=golf` | `team/layout.tsx` |
+| `/rounds` | coach | Redirect to `stats/team` (v2 has no coach library, Q-79) | `rounds/page.tsx` |
+| `/coachhelm/chat` | both | Alias: coach to `coachhelm?view=ask`, player to `coachhelm` | `coachhelm/chat/layout.tsx` |
+| `/courses` | coach | **RETIRED** (course management; owner, 2026-10-12); alias to Home | `courses/layout.tsx` |
+| `/whats-new` | both | Alias to Home | `whats-new/layout.tsx` |
+| Settings display density, date format, score display | both | **RETIRED** (owner, 2026-10-12); not shown in Clubhouse Settings | `src/clubhouse/screens/settings/Preferences.tsx` |
 | `/hub`, `/my-insights` | both | redirect to rebuilt routes | none needed |
-| `/dev/haptics`, `[...missing]` | — | dev and catch-all | none needed |
+| `/dev/haptics`, `[...missing]` | — | dev and catch-all; any route `isRebuilt` does not list still draws the NotRebuilt fallback (CH-1301) | `src/clubhouse/shell/nav.ts` |
 
 ### Live notification destinations (production, read-only, last 180 days)
 

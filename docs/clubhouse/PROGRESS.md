@@ -1,13 +1,44 @@
 # Clubhouse progress
 
 The from-scratch GolfHelm UI. Code: `src/clubhouse/`. Spec: `design/handoff/`
-(desktop, owner-approved). Flag: `golf_clubhouse_ui` (production off). Rules:
+(desktop, owner-approved). Flag: `golf_clubhouse_ui` (production off since
+#2188, 2026-10-11; preview and development on). Current state, turn-on,
+rollback and remaining work: [`STATUS.md`](STATUS.md). Rules:
 `.claude/rules/clubhouse.md`. Adding a new design: `README.md`. Enforcement:
 `npm run clubhouse:check`, which also validates this file. Audits and plans,
 with their status and the pages they touch: [`AUDITS.md`](AUDITS.md).
 
 Nothing in `src/clubhouse/` imports or styles through Fairway. Shared non-UI
 plumbing (session, Supabase loaders, the Capacitor haptics bridge) is allowed.
+
+## 2026-10-08 to 2026-10-12 — On by mistake, off again, ready-not-on
+
+- **2026-10-08 to 2026-10-11:** #2180 turned `golf_clubhouse_ui` on in
+  production by mistake, so coaches and players were served Clubhouse for
+  about three days. The owner turned it off with #2188 (2026-10-11). Per the
+  2026-10-12 release check, production serves `main` with the flag off.
+- **Owner decisions (2026-10-11/12):**
+  - End state is "ready, not on": agents make it ready, the owner flips it.
+  - Rebuild the player status change and the round-type editor (done in
+    #2189).
+  - Retire course management, the printable scouting report, genome compare,
+    and the Settings display density, date format and score display. Their
+    current redirects stay (SWAP_AUDIT.md §3).
+  - Fix Q-120 app-side (done in #2189); the server migration stays held.
+  - Every held migration stays HELD (verified correct, not applied).
+  - The owner does a real-iPhone pass before turn-on.
+- **Draft PR #2189 (`agent/clubhouse-release`) is the single merge train.**
+  Fairway fixes (the 30-second `staleTimes` removed; the attachment retry
+  marker is opt-in), Q-120 app side, the #2157 port (neutral loading frame
+  with an allowlist), player status and round-type editor, an honest offline
+  banner, paused email switches, named route errors, a Clubhouse 404, one
+  dashboard role resolver for the Clubhouse decision, alias redirects that
+  keep the query (`?task`, `?player`, `view=chat` to Ask), task focus
+  highlight, review skeleton, catalog regeneration, and the held-migration
+  hardening (lock timeouts, VERIFY blocks, rollback captures, `20260928160000`
+  OBSOLETE, apply order fixed in `HELD.md` and here).
+- Turn-on steps, rollback, criteria, the ordered remaining work and the open
+  owner decisions are in [STATUS.md](STATUS.md).
 
 ## 2026-10-06 — Popup and card-depth follow-up
 
@@ -677,6 +708,11 @@ the new system. Nothing here is applied by an agent. Each file's status stays in
    - the message attachments fix, queued for after Clubhouse (Data gaps).
 7. **`golf_clubhouse_ui`** stays off until the owner turns it on.
 
+Owner, 2026-10-12: every held migration stays HELD (checked, not applied);
+none is needed for Clubhouse to work. The release-relevant ones are
+`20260929200000` (qualifier privacy) and `20261001000000` (Q-120 server
+check). The turn-on steps and rollback are in [STATUS.md](STATUS.md).
+
 ## Decisions
 
 - D-1 (2026-09-29): Parallel and flag-gated. Coaches and players both get
@@ -684,7 +720,9 @@ the new system. Nothing here is applied by an agent. Each file's status stays in
   Messages have player versions with the permissions players already have);
   every other route shows the not-rebuilt notice with a link back.
 - D-2 (2026-09-29): Light theme only. The handoff's chart colours are tuned for
-  light paper, and dark mode is not designed.
+  light paper, and dark mode is not designed. Superseded (owner, 2026-10-08):
+  Clubhouse has a dark theme, "Clubhouse at night" (`src/clubhouse/styles/tokens.css`,
+  the dark block), driven by GolfHelm's own Appearance setting.
 - D-3 (2026-09-29): Phone navigation is a bottom tab bar in the ivory-pass
   style, with a selection haptic on tab change. Superseded by D-40 (2026-09-29):
   the tab bar is now the owner's ivory glass design, with role-specific tabs.
@@ -741,7 +779,9 @@ the new system. Nothing here is applied by an agent. Each file's status stays in
   notification stores stay, shown as "Email and push" and "CoachHelm updates"
   (owner). Only preferences Clubhouse honours are shown: animations (now wired
   to every Clubhouse transition) and haptics; theme waits for the dark theme
-  (owner). Coaching intelligence is the CoachHelm section (owner). Writes keep
+  (owner). Since 2026-10-08 Appearance (light, dark, system) and distance units
+  are shown too; display density, date format and score display are retired
+  (owner, 2026-10-12). Coaching intelligence is the CoachHelm section (owner). Writes keep
   the current tables and actions; new: a typed "delete" to delete an account, a
   confirm before a new invite code, and blank organization fields can now be
   cleared.
@@ -767,6 +807,7 @@ the new system. Nothing here is applied by an agent. Each file's status stays in
   the swipe-back guard in the Clubhouse shell, and push-token teardown on
   Clubhouse sign-out. The push soft ask and pull to refresh wait for the
   foundation design.
+  Light only is superseded by the dark theme (owner, 2026-10-08; see D-2).
 - D-23 (2026-09-29): The old Team stats address `/stats/team` renders the
   rebuilt Team stats in place, never a redirect (a `redirect()` from a
   conditional branch crashed `/stats` in production, #310), with the Clubhouse
@@ -2227,10 +2268,10 @@ shows the options as they were put.
 - Calendar: "Print week" and "Duplicate" are not built. "Checked" in Sources is
   the time the server read the data.
 
-- Settings: theme (light, dark, system), display density, date format, score
-  display and distance units aren't shown; Clubhouse doesn't honour them yet
-  (light only until the dark theme). The current app's controls keep working
-  with the flag off.
+- Settings: display density, date format and score display aren't shown in
+  Clubhouse; the owner retired them on 2026-10-12. Appearance (light, dark,
+  system) and distance units are shown and honoured (dark theme since
+  2026-10-08). The current app's controls keep working with the flag off.
 - Settings: the comparison weights stay hidden, as in the current app.
 - Messages: quoted replies use the existing message parent field, with
   same-conversation validation and truthful unavailable/deleted parent previews.

@@ -469,7 +469,7 @@ export function generateDocs({ manifests, bridge, map, tombstones, read, exists,
     const s = m.status;
     pm += `| ${m.id} | ${cell(m.name)} | ${(m.routes ?? []).map((r) => `\`${r}\``).join('<br>') || '(shell)'} | ${(m.roles ?? []).join(', ') || 'signed out'} | ${m.semanticFeatures.join(', ')} | ${s.design} | ${s.implementation} | ${s.contract} | ${s.bridge} | ${s.data} | ${s.verification} | ${s.docs} |\n`;
   }
-  pm += '\nPages not designed yet have no ID (D-60). The v2 design (`design/handoff/VERSIONS.md`) adds CoachHelm, Team Hub, player Home, Rounds and Classes; they are registered when their build starts (D-67).\n';
+  pm += '\nA page gets its ID when its build starts (D-60, D-67); a page not designed yet has none. Every v2 page (`design/handoff/VERSIONS.md`) is registered: Team Hub P010, Rounds P011, Classes P012, CoachHelm P013, with player Home under P002. Current state and what is left: `docs/clubhouse/STATUS.md`.\n';
   out['docs/clubhouse/generated/CLUBHOUSE_PAGE_MAP.md'] = pm;
 
   let bm = GEN_HEAD('Clubhouse Bridge map', 'Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catalog code and its meaning. IDs are permanent; retired ones move to `config/clubhouse/bridge-tombstones.json`.');

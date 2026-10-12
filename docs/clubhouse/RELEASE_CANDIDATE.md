@@ -98,12 +98,15 @@ Production was read on 2026-10-02 through `release:status`:
 `ef6e017a24d5417cf866e0651a4b7a7835930b5d` served at
 `https://helmsportslabs.com`; `origin/main` was
 `cbc1c0d1b7b4111fb9fc5ebbcd9e7263dd45a4c5`, three commits ahead.
-The routine weekly deployment allowance was **2 of 2 used**, including an
-attempted deployment. An additional release requires an owner budget decision.
+At the time the routine weekly deployment allowance was 2 of 2 used. That
+budget was removed on 2026-10-07; agents now deploy directly (AGENTS.md
+"Production").
 
-`golf_clubhouse_ui` and `golf_clubhouse_front_door` remain off in production.
-`HELM_CLUBHOUSE_TEAMS` provides the server-side team allowlist; rollout scope is
-pending the owner’s decision. A public front-door flag applies globally, so a
+Updated 2026-10-12: `golf_clubhouse_ui` and `golf_clubhouse_front_door` are off
+in production (`golf_clubhouse_ui` was on from 2026-10-08 to 2026-10-11 by
+mistake through #2180, and #2188 turned it off). `HELM_CLUBHOUSE_TEAMS`
+provides the server-side team allowlist. The canary steps, rollback and
+turn-on criteria are in [STATUS.md](STATUS.md). A public front-door flag applies globally, so a
 team canary must not be described as a per-team sign-in rollout.
 
 The existing complete-swap audit still names owner-held database work and phone
