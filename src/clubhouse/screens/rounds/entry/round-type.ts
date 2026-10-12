@@ -1,5 +1,5 @@
 import type { EditableRoundType } from '@/lib/golf/round-type-options';
-import { friendlyReason } from '../../../lib/use-action';
+import { friendlyReason } from '../../../lib/friendly-reason';
 
 /** A qualifier the player is entered in, as the continue route reads it (`loadRoundTypeOptions`). */
 export interface ChQualifierOption {
