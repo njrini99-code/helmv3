@@ -1,14 +1,5 @@
 # Clubhouse changelog
 
-## 2026-10-11 — Route errors name the page that failed
-
-`RouteErrorView` (`ui/Notices.tsx`) takes the boundary's `route`. For a load
-or unknown failure (CH-1205, CH-1206) the title names the page: its nav item,
-else its first dashboard segment as words (`routeErrorLabel`), for example
-"Rounds didn’t load" for `/golf/dashboard/rounds/[id]`. Home and routes
-outside the dashboard keep the fixed titles; the other kinds keep their copy,
-and the CH codes are unchanged. `RouteErrorBoundary` passes its `route` prop
-through; no `error.tsx` file changed.
 ## 2026-10-12 — Router cache back to Next's default
 
 The app-wide 30s dynamic stale time (`experimental.staleTimes`, native-feel
@@ -18,6 +9,15 @@ Clubhouse tab revisits go back to the server again (the route skeleton shows)
 until a Clubhouse-scoped cache exists. `shell/use-prefetch-tabs.ts` comment
 updated.
 
+## 2026-10-11 — Route errors name the page that failed
+
+`RouteErrorView` (`ui/Notices.tsx`) takes the boundary's `route`. For a load
+or unknown failure (CH-1205, CH-1206) the title names the page: its nav item,
+else its first dashboard segment as words (`routeErrorLabel`), for example
+"Rounds didn’t load" for `/golf/dashboard/rounds/[id]`. Home and routes
+outside the dashboard keep the fixed titles; the other kinds keep their copy,
+and the CH codes are unchanged. `RouteErrorBoundary` passes its `route` prop
+through; no `error.tsx` file changed.
 ## 2026-10-11 — Cold loading frame agrees with the gate
 
 With a team allowlist (`HELM_CLUBHOUSE_TEAMS`), the `/golf` loading boundary
@@ -745,6 +745,25 @@ import from `motion/react` instead of `framer-motion`. The API is the same, so
 durations, curves, the press and reduced-motion gating are unchanged, and
 nothing renders differently.
 
+## 2026-10-06 — Complete page documentation and fixture audit
+
+Updated all 15 page families and their catalogs, phone specs and checklists
+with source ownership, current evidence and explicit device/release gaps.
+ALL_PAGE_AUDIT.md records the 305 state cases, 60 WebKit base renders,
+24 onboarding renders and measured Settings reduced-motion mismatch.
+The screenshot log now ignores generated galleries; its regression first
+failed and then passed. Production settings and approved handoffs are intact.
+
+## 2026-10-06 — Premium audit, complete catalog and focus repair
+
+Added the complete component/style catalog, a repeatable material declaration
+inventory and the read-only clubhouse-design-reviewer. Recorded all 15 page
+families and 383 local synthetic renders in
+[PREMIUM_AUDIT.md](PREMIUM_AUDIT.md).
+Shared opt-in keyboard alternatives now reveal in document flow; ordinary
+screen-reader labels remain hidden. Message quotes and desktop Game detail
+observe live Animations off as well as OS reduced motion. No production flag,
+database or deployment changed.
 ## 2026-10-02 — Floating cards and stationary overlay backgrounds
 
 The owner rejected striped, outlined cards and unstable pull-up screens. Shared
@@ -907,22 +926,3 @@ The changelog gate now holds a shared piece (a file under `src/clubhouse/ui`, `l
 
 Earlier changes (2026-09-28 to 2026-09-30: the page builds, the contract passes and their fixes) are listed in each page's changelog.
 
-## 2026-10-06 — Complete page documentation and fixture audit
-
-Updated all 15 page families and their catalogs, phone specs and checklists
-with source ownership, current evidence and explicit device/release gaps.
-ALL_PAGE_AUDIT.md records the 305 state cases, 60 WebKit base renders,
-24 onboarding renders and measured Settings reduced-motion mismatch.
-The screenshot log now ignores generated galleries; its regression first
-failed and then passed. Production settings and approved handoffs are intact.
-
-## 2026-10-06 — Premium audit, complete catalog and focus repair
-
-Added the complete component/style catalog, a repeatable material declaration
-inventory and the read-only clubhouse-design-reviewer. Recorded all 15 page
-families and 383 local synthetic renders in
-[PREMIUM_AUDIT.md](PREMIUM_AUDIT.md).
-Shared opt-in keyboard alternatives now reveal in document flow; ordinary
-screen-reader labels remain hidden. Message quotes and desktop Game detail
-observe live Animations off as well as OS reduced motion. No production flag,
-database or deployment changed.

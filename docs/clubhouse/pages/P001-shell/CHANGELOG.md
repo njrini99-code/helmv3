@@ -1,5 +1,12 @@
 # P001 — Shell: changelog
 
+## 2026-10-12 — tab revisits go back to the server
+
+The app-wide 30s router cache is removed (it also made Fairway, Baseball and
+Lift Lab serve stale pages), so a revisited phone tab shows the route skeleton
+again instead of rendering from memory. `use-prefetch-tabs.ts` still prefetches
+each tab's loading boundary. Comment only in this page's code.
+
 ## 2026-10-11 — An honest offline banner and an in-shell 404
 
 - **Offline banner (CH-1901).** It said "changes will wait until you reconnect",
@@ -16,13 +23,6 @@
   unchanged.
 - No before/after screenshots were captured for this change (no browser run in
   this session).
-## 2026-10-12 — tab revisits go back to the server
-
-The app-wide 30s router cache is removed (it also made Fairway, Baseball and
-Lift Lab serve stale pages), so a revisited phone tab shows the route skeleton
-again instead of rendering from memory. `use-prefetch-tabs.ts` still prefetches
-each tab's loading boundary. Comment only in this page's code.
-
 ## 2026-10-10 — RSVP only when the coach requires it
 
 - The sidebar's Next event card shows "N of M confirmed" only for an event
@@ -969,11 +969,6 @@ Data impact:    none
   src/clubhouse/__tests__/gate.test.ts`: 42/42.
   11301 and 10102/10802 fail with their code broken (checked, restored).
 
-## 2026-09-29 — v2 foundation
-
-- v2 motion (D-64), haptics (D-70), the page empty state (D-71) and navigation
-  (D-66) for every page.
-
 ## 2026-09-30 — toasts inside an open dialog
 
 - CH-1812: a toast raised while a dialog or sheet is open renders inside it, so
@@ -983,3 +978,8 @@ Data impact:    none
   it is not a fix). Found by the Calendar contract pass; it had disabled every
   in-dialog Retry on every page.
 - The More sheet follows v2 `MoreM`; sign-out is shared with Settings (CH-1002).
+## 2026-09-29 — v2 foundation
+
+- v2 motion (D-64), haptics (D-70), the page empty state (D-71) and navigation
+  (D-66) for every page.
+
