@@ -1,0 +1,30 @@
+schema_version: 1
+replay_id: empty-state-code-classification-2026-10-12
+incident_id: /admin/errors/ecb08865
+feature_id: admin_incidents
+title: >-
+  The withAdminObserved copy of the roster sweep's engine_below_round_floor
+  envelope carried only its user-facing sentence, so classifyIncident fell to
+  the severity ladder (matched:false) and Diagnose left it open as
+  quiet-unrecognised; rule 5a now recognises registered empty-state codes.
+bad_version: 520724baaf9f256b569d172d4997f66edabfc600
+fixed_version: 61feb594e8d5c004e3680847b3c39e59b7bdd02c
+fixture:
+  - source: incident-classification.test.ts
+    target: src/lib/admin/__tests__/incident-classification.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/lib/admin/__tests__/incident-classification.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic titles copied from the product's own message template; no
+    player ids, PII, tokens or production rows.
+source_incident_status: fixed
+created_at: "2026-10-12"
+notes: >-
+  On bad_version 1 test fails: "classifies the below-round-floor envelope as a
+  recognised empty state" (klass telemetry, matched false).
