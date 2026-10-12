@@ -730,8 +730,19 @@ any make. No schema change.
   when no row with that id exists anywhere (an id-only service-role check),
   so `writeRoundRecreatingIfMissing` re-creates and completes it; a row that
   exists under another player keeps the permission refusal.
-- **Version check on submit** is a HELD draft
-  (`20261001000000_submit_round_expected_updated_at.sql`, R-6).
+- **Version check on submit** (Q-120, R-6). The SQL side is a HELD draft
+  (`20261001000000_submit_round_expected_updated_at.sql`); the app side is
+  wired and safe on either side of it. Both engines pass
+  `expectedUpdatedAt` (`lastServerUpdatedAtRef`) to
+  `submitGolfRoundComprehensive` once the round exists server-side, and the
+  action forwards it as `p_round_data.expected_updated_at` on the
+  existing-round RPC call only (never the new-round path, which
+  `writeRoundRecreatingIfMissing` re-sends with no id; an unparseable token
+  is dropped rather than cast). A submit `conflict` goes through
+  `handleRoundSyncConflict` like a save conflict: self-caused, re-sent once
+  under the adopted token; genuine, the round is blocked with
+  `ROUND_CONFLICT_MESSAGE` and the pre-submit device snapshot is kept. Until
+  the migration is applied the RPC ignores the key.
 
 ## Save and submit result contract (updated 2026-09-02)
 

@@ -48,6 +48,7 @@ vi.mock('@/lib/recovery/use-active-work', () => ({ useActiveWork: vi.fn() }));
 import { emergencySave, loadEmergencySave, markRoundDiscarded, wasRoundDiscarded, DISCARDED_ROUNDS_STORAGE_KEY } from '@/lib/utils/emergency-save';
 import { isAutoSaveHeld, type AutoSaveHeldError } from '@/hooks/golf/use-shot-state-machine';
 import { CONFLICT_CHECK_TIMEOUT_MS } from '@/lib/golf/round-session/settle-within';
+import { ROUND_CONFLICT_MESSAGE } from '@/lib/golf/round-missing-recovery';
 import {
   useContinueRoundSession,
   type ContinueRoundSessionOptions,
@@ -441,5 +442,71 @@ describe('journey: a shot entered, the connection cut, the screen left and reope
     expect(await autoSave(second, second.result.current.activeHoleShots)).toBeNull();
     expect(mocks.savePartialRound).toHaveBeenCalledTimes(2);
     expect(sentShots(1).map((s) => s.shotNumber)).toEqual([1, 2]);
+  });
+});
+
+describe('Q-120: a stale-device submit that the server refuses as a conflict', () => {
+  const T0 = '2026-09-30T12:00:00.000Z';
+  const finished = [statsFor(1, 4), statsFor(2, 3)];
+  const submitted = { success: true, data: { roundId: 'round-1' } };
+
+  async function submit(hook: ReturnType<typeof render>) {
+    let thrown: unknown = null;
+    await act(async () => {
+      try {
+        await hook.result.current.handleRoundSubmit(finished);
+      } catch (error) {
+        thrown = error;
+      }
+    });
+    return thrown;
+  }
+
+  it('sends the last acknowledged updated_at with the submit', async () => {
+    staleness.check.mockResolvedValue({ success: true, data: { isStale: false, currentUpdatedAt: T0, status: 'in_progress' } });
+    mocks.submitGolfRoundComprehensive.mockResolvedValue(submitted);
+    const hook = render({ serverDataTimestamp: T0 });
+
+    expect(await submit(hook)).toBeNull();
+    expect(mocks.submitGolfRoundComprehensive).toHaveBeenCalledTimes(1);
+    expect(mocks.submitGolfRoundComprehensive.mock.calls[0]![0]).toMatchObject({ expectedUpdatedAt: T0 });
+    expect(mocks.submitGolfRoundComprehensive.mock.calls[0]![1]).toBe('round-1');
+    expect(hook.result.current.completedRoundId).toBe('round-1');
+  });
+
+  it('a genuine collision blocks the round with the reload sentence, keeps the device snapshot, and never shows the raw key', async () => {
+    // The pre-submit check reads clean (the other device wrote between it and the submit); the conflict check after reads stale.
+    staleness.check
+      .mockResolvedValueOnce({ success: true, data: { isStale: false, currentUpdatedAt: T0, status: 'in_progress' } })
+      .mockResolvedValue({ success: true, data: { isStale: true, currentUpdatedAt: '2026-09-30T12:05:00.000Z', status: 'in_progress' } });
+    mocks.submitGolfRoundComprehensive.mockResolvedValue({ success: false, error: 'conflict' });
+    const hook = render({ serverDataTimestamp: T0 });
+
+    expect(await submit(hook)).toBeNull();
+    expect(mocks.submitGolfRoundComprehensive).toHaveBeenCalledTimes(1);
+    expect(hook.result.current.error).toBe(ROUND_CONFLICT_MESSAGE);
+    expect(hook.result.current.roundConflictBlocked).toBe(true);
+    expect(hook.result.current.submitting).toBe(false);
+    expect(hook.result.current.completedRoundId).toBeNull();
+    expect(loadEmergencySave('round-1', 'player-1')?.completedHoleStats).toHaveLength(2);
+    expect(mocks.router.push).not.toHaveBeenCalled();
+
+    // Blocked: a second tap writes nothing.
+    mocks.submitGolfRoundComprehensive.mockClear();
+    await submit(hook);
+    expect(mocks.submitGolfRoundComprehensive).not.toHaveBeenCalled();
+  });
+
+  it('a self-caused mismatch (the server agrees with the token now) is re-sent once and completes', async () => {
+    staleness.check.mockResolvedValue({ success: true, data: { isStale: false, currentUpdatedAt: T0, status: 'in_progress' } });
+    mocks.submitGolfRoundComprehensive
+      .mockResolvedValueOnce({ success: false, error: 'conflict' })
+      .mockResolvedValueOnce(submitted);
+    const hook = render({ serverDataTimestamp: T0 });
+
+    expect(await submit(hook)).toBeNull();
+    expect(mocks.submitGolfRoundComprehensive).toHaveBeenCalledTimes(2);
+    expect(hook.result.current.roundConflictBlocked).toBe(false);
+    expect(hook.result.current.completedRoundId).toBe('round-1');
   });
 });

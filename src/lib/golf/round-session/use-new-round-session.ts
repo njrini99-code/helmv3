@@ -2646,11 +2646,41 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       // is what rendered the literal string "round_missing" to players. If
       // the re-create fails too the result is a sentence, and the device
       // snapshot written above stays put for the recovery flow.
-      const { result, recreated } = await writeRoundRecreatingIfMissing(
-        submitGolfRoundComprehensive,
-        roundData,
-        savedRoundIdRef.current ?? undefined,
-      );
+      // Q-120: once the round exists server-side, the submit carries the last
+      // acknowledged `updated_at` and the RPC refuses ('conflict') to replace
+      // a row another device moved since. A round with no server row yet has
+      // no token to send. Read fresh per attempt so a self-healed token is
+      // the one re-sent.
+      const conflictMessage = 'This round was updated on another device. Please reload.';
+      const submitWithLock = () => {
+        const existingRoundId = savedRoundIdRef.current ?? undefined;
+        const expectedUpdatedAt = existingRoundId ? lastServerUpdatedAtRef.current : undefined;
+        return writeRoundRecreatingIfMissing(
+          submitGolfRoundComprehensive,
+          expectedUpdatedAt ? { ...roundData, expectedUpdatedAt } : roundData,
+          existingRoundId,
+        );
+      };
+      let { result, recreated } = await submitWithLock();
+      if (!result.success && result.error === 'conflict') {
+        // Same self-heal-or-block decision as every other write: a mismatch
+        // this device caused itself adopts the token and is re-sent once; a
+        // genuine collision blocks the round. Either way the pre-submit
+        // snapshot above stays on the device and the raw key never reaches
+        // the overlay.
+        const healed = await handleRoundSyncConflict(conflictMessage);
+        if (healed) ({ result, recreated } = await submitWithLock());
+        if (!result.success && result.error === 'conflict') {
+          // A second conflict straight after a self-heal is escalated; if it
+          // still reads as self-caused, say so instead of dropping back silently.
+          if (healed && await handleRoundSyncConflict(conflictMessage)) {
+            setError(conflictMessage);
+          }
+          isSubmittingRef.current = false;
+          setStep('tracking');
+          return;
+        }
+      }
       if (!result.success) {
         // C3: distinguish the qualifier-closed refusal from the round itself
         // being complete BEFORE the (now-narrowed) completed-round check —
