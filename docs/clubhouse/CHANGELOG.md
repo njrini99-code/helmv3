@@ -1,5 +1,14 @@
 # Clubhouse changelog
 
+## 2026-10-11 — Cold loading frame agrees with the gate
+
+With a team allowlist (`HELM_CLUBHOUSE_TEAMS`), the `/golf` loading boundary
+painted Clubhouse's frame before the team was known, so a team outside the
+allowlist saw Clubhouse flash and then swap to Fairway. `clubhouseLoadingFrame()`
+in `gate.ts` now answers for that boundary: Fairway with the flag off, Clubhouse
+with the flag on and no allowlist, and a neutral frame otherwise. No visible
+change with the flag off or with no allowlist.
+
 ## 2026-10-11 — Depth from tokens and transform-only motion across the premium pass
 
 The `clubhouse:css` gate found 57 raw outer blur shadows and layout transitions
