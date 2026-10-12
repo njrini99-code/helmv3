@@ -25,7 +25,7 @@
 -- ALTER TABLE takes ACCESS EXCLUSIVE on golf_team_members, which every team
 -- RLS check reads; fail fast rather than queue behind traffic. apply.mjs runs
 -- the file as one transaction, so SET LOCAL covers every statement below.
-SET LOCAL lock_timeout = '3s';
+set local lock_timeout = '3s';
 
 alter table public.golf_team_members
 add column if not exists availability text not null default 'available',
@@ -47,13 +47,15 @@ end $$;
 
 alter table public.golf_team_members
 drop constraint if exists golf_team_members_availability_note_length;
+-- A normal (validated) constraint: the column is new above, so every existing
+-- row has a null note and the short scan, under the lock this transaction
+-- already holds, finds nothing to reject.
 alter table public.golf_team_members
+-- squawk-ignore constraint-missing-not-valid
 add constraint golf_team_members_availability_note_length
 check (
     availability_note is null or char_length(availability_note) <= 280
 );
--- A normal (validated) constraint: the column is new above, so every existing
--- row has a null note and the validation scan finds nothing to reject.
 
 comment on column public.golf_team_members.availability is
 'Display-only availability (available, injured, away); not team access.';

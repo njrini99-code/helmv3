@@ -78,8 +78,9 @@
 -- NOT TOUCHED: authenticated and service_role grants, grants on sequences that
 -- already exist (anon holds none, checked live), function EXECUTE.
 --
--- ROLLBACK: supabase/rollbacks/20261007102000_revoke_anon_public_table_grants.rollback.sql
---   re-grants exactly the anon privileges production held (aclexplode snapshot
+-- ROLLBACK: supabase/rollbacks/
+--   20261007102000_revoke_anon_public_table_grants.rollback.sql re-grants
+--   exactly the anon privileges production held (aclexplode snapshot
 --   of 119 public relations plus the postgres default ACLs, read-only capture
 --   2026-10-12). Not `GRANT ALL ON ALL TABLES ... TO anon`, which would also
 --   grant privileges anon never had. Re-capture right before applying this

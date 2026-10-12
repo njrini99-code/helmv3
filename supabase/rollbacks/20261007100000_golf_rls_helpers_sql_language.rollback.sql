@@ -21,6 +21,14 @@
 -- prior paths come back exactly: 'public', 'pg_temp' on the three is_golf_*
 -- helpers, 'public' alone on is_team_coach / is_team_player.
 --
+-- APPLY ORDER CAVEAT: this capture is production BEFORE 20260929200000, which
+-- must be applied first (filename order) and pins is_team_coach /
+-- is_team_player to search_path 'public', 'pg_temp'. If 20260929200000 is
+-- live when this rollback runs, follow it with
+--   ALTER FUNCTION public.is_team_coach(uuid) SET search_path = public, pg_temp;
+--   ALTER FUNCTION public.is_team_player(uuid) SET search_path = public, pg_temp;
+-- or re-capture the five bodies right before applying the forward file.
+--
 -- WHAT THIS ROLLBACK COSTS: nothing functional (same predicates); it gives
 -- back the per-call plpgsql executor entry and the missing pg_temp entry on
 -- is_team_coach / is_team_player.

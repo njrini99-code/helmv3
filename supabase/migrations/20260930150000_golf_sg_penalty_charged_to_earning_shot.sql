@@ -115,7 +115,7 @@ BEGIN
   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public' AND p.proname = 'calculate_round_strokes_gained'
     AND pg_get_function_identity_arguments(p.oid) = 'p_round_id uuid';
-  IF md5(v_src) <> 'a51718c19d95b93fa5d1d7dce41bd8bf' THEN
+  IF v_src IS NULL OR md5(v_src) <> 'a51718c19d95b93fa5d1d7dce41bd8bf' THEN
     RAISE EXCEPTION 'Q-89: live calculate_round_strokes_gained is not a known body (md5 %). Stop and rebase this file on the live body.', md5(v_src);
   END IF;
 END

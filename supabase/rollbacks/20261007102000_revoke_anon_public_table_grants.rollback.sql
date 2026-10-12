@@ -47,6 +47,15 @@
 --     relname, case when is_grantable then ' WITH GRANT OPTION' else '' end) stmt
 --   from grp order by relname, is_grantable;
 --
+-- APPLY ORDER CAVEAT: files that sort before this one also revoke anon, and
+-- this snapshot predates them: 20260929200000 (golf_qualifiers,
+-- golf_qualifier_entries, golf_qualifier_selections) and 20261005120000
+-- (golf_rounds, golf_holes, golf_shots, putt_details, approach_miss_details,
+-- golf_player_stats_cache). Run as captured, this file would re-grant anon on
+-- those nine tables too and undo part of those files. Re-capture right before
+-- applying the forward file, after the earlier files are live; if that was
+-- skipped, delete those nine GRANT lines before running this.
+--
 -- WHAT THIS ROLLBACK COSTS: it re-opens full anon DML, including TRUNCATE (not
 -- governed by RLS), on 115 public tables, and the 125
 -- pg_graphql_anon_table_exposed advisor findings. RLS still returns no rows to

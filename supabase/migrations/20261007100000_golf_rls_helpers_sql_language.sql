@@ -46,8 +46,9 @@
 --     which coerced to the team_member_status enum. This file spells the
 --     cast out.
 --
--- ROLLBACK: supabase/rollbacks/20261007100000_golf_rls_helpers_sql_language.rollback.sql
---   holds the five live plpgsql bodies captured verbatim from production
+-- ROLLBACK: supabase/rollbacks/
+--   20261007100000_golf_rls_helpers_sql_language.rollback.sql holds the
+--   five live plpgsql bodies captured verbatim from production
 --   (pg_get_functiondef, read-only, 2026-10-12) with their prosrc md5s. They
 --   are CREATE OR REPLACE with the same signatures, so no dependent policy or
 --   function needs touching.

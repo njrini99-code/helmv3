@@ -114,11 +114,15 @@ $$;
 -- VERIFY:   (select count(*) from regexp_matches(pg_get_functiondef(p.oid),
 -- VERIFY:     'golf_round_is_(score_)?countable\(', 'g')) as calls,
 -- VERIFY:   (select count(*) from regexp_matches(pg_get_functiondef(p.oid),
--- VERIFY:     '\(NOT \w+\.is_test\) AND public\.golf_round_is_(score_)?countable\(',
+-- VERIFY:     '\(NOT \w+\.is_test\) AND '
+-- VERIFY:     || 'public\.golf_round_is_(score_)?countable\(',
 -- VERIFY:     'g')) as guarded
 -- VERIFY:   from pg_proc p join pg_namespace n on n.oid = p.pronamespace
 -- VERIFY:   where n.nspname = 'public' and p.proname in (
--- VERIFY:     'update_player_stats_complete', 'update_player_stats_strokes_gained',
--- VERIFY:     'refresh_player_stats_cache', 'refresh_player_standing_round_metrics')
+-- VERIFY:     'update_player_stats_complete',
+-- VERIFY:     'update_player_stats_strokes_gained',
+-- VERIFY:     'refresh_player_stats_cache',
+-- VERIFY:     'refresh_player_standing_round_metrics')
 -- VERIFY: ) f
--- VERIFY: having count(*) = 4 and bool_and(f.calls > 0 and f.calls = f.guarded);
+-- VERIFY: having count(*) = 4
+-- VERIFY:   and bool_and(f.calls > 0 and f.calls = f.guarded);

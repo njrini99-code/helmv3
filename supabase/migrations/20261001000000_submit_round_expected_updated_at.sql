@@ -27,16 +27,17 @@
 -- 20260823000000_preserve_started_round_identity.sql does; it refuses to run
 -- if the anchor is not found exactly once.
 --
--- ROLLBACK: supabase/rollbacks/20261001000000_submit_round_expected_updated_at.rollback.sql
---   (the live body captured verbatim, read-only, 2026-10-12); the key is then
---   ignored again.
+-- ROLLBACK: the live body captured verbatim (read-only, 2026-10-12) in
+--   supabase/rollbacks/
+--   20261001000000_submit_round_expected_updated_at.rollback.sql;
+--   the key is then ignored again.
 --
 -- VERIFY: select 1 from pg_proc where proname = 'submit_round_atomic'
 -- VERIFY:   and position('expected_updated_at' in prosrc) > 0;
 --
--- App side (done on agent/clubhouse-release, src/app/golf/actions/round-submit.ts,
--- not yet in production): send `expected_updated_at` in p_round_data, and
--- treat `error = 'conflict'` like the save path does.
+-- App side (done on agent/clubhouse-release in
+-- src/app/golf/actions/round-submit.ts, not yet in production): send
+-- `expected_updated_at` in p_round_data, and treat `error = 'conflict'` like the save path does.
 
 DO $$
 DECLARE
