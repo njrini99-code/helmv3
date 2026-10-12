@@ -317,9 +317,9 @@ test('preview only warns when a clubhouse flag is on and HELM_CLUBHOUSE_TEAMS is
 });
 
 test('the real flag registry loads and drives the default', () => {
-  // No injected flags: this reads config/feature-flags.yml. Clubhouse is on in
-  // production there, so a complete production env passes and one without
-  // HELM_CLUBHOUSE_TEAMS fails.
+  // No injected flags: this reads config/feature-flags.yml. Every clubhouse
+  // flag is off in production there, so a complete production env passes and
+  // so does one without HELM_CLUBHOUSE_TEAMS.
   assert.doesNotThrow(() => checkRequiredEnv({ ...PROD_SUPABASE, ...PROD_EXTRAS }));
-  assert.throws(() => checkRequiredEnv({ ...PROD_SUPABASE, ...PROD_EXTRAS_NO_TEAMS }), /HELM_CLUBHOUSE_TEAMS/);
+  assert.doesNotThrow(() => checkRequiredEnv({ ...PROD_SUPABASE, ...PROD_EXTRAS_NO_TEAMS }));
 });
