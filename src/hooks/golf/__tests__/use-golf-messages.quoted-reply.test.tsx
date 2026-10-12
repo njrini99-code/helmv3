@@ -125,7 +125,7 @@ describe('Golf replies across message loading and send lifecycle', () => {
   });
 
   it('forwards an attachment reply link and leaves omitted replies as the original action signature', async () => {
-    const { result } = renderHook(() => useMessageAttachments());
+    const { result } = renderHook(() => useMessageAttachments({ recoverable: true }));
     await act(async () => { await result.current.sendMessageWithAttachments({ conversationId: CONVERSATION, content: 'Reply text', replyToId: PARENT }); });
     expect(mock.attachmentSend).toHaveBeenLastCalledWith(CONVERSATION, 'Reply text', [], PARENT);
     await act(async () => { await result.current.sendMessageWithAttachments({ conversationId: CONVERSATION, content: 'Plain text' }); });
@@ -135,7 +135,7 @@ describe('Golf replies across message loading and send lifecycle', () => {
   it('keeps the reply target while uploading and sending a real attachment metadata payload', async () => {
     const metadata = { fileName: 'range.jpg', fileType: 'image' as const, mimeType: 'image/jpeg', fileSize: 1024 };
     mock.upload.mockResolvedValue({ success: true, storagePath: 'golf/range.jpg', metadata });
-    const { result } = renderHook(() => useMessageAttachments());
+    const { result } = renderHook(() => useMessageAttachments({ recoverable: true }));
     await act(async () => {
       await result.current.sendMessageWithAttachments({ conversationId: CONVERSATION, content: 'Reply text', replyToId: PARENT,
         attachments: [{ id: 'photo', file: new File(['photo'], 'range.jpg', { type: 'image/jpeg' }), previewUrl: '', metadata, uploadProgress: 0, status: 'pending' }] });
@@ -149,7 +149,7 @@ describe('Golf replies across message loading and send lifecycle', () => {
     mock.attachmentSend.mockResolvedValue(partial);
     const metadata = { fileName: 'range.jpg', fileType: 'image' as const, mimeType: 'image/jpeg', fileSize: 1024 };
     mock.upload.mockResolvedValue({ success: true, storagePath: 'golf/range.jpg', metadata });
-    const { result } = renderHook(() => useMessageAttachments());
+    const { result } = renderHook(() => useMessageAttachments({ recoverable: true }));
     let outcome!: Awaited<ReturnType<typeof result.current.sendMessageWithAttachments>>;
     await act(async () => {
       outcome = await result.current.sendMessageWithAttachments({ conversationId: CONVERSATION, content: 'Delivered text', replyToId: PARENT,
@@ -164,7 +164,7 @@ describe('Golf replies across message loading and send lifecycle', () => {
     const metadata = { fileName: 'range.jpg', fileType: 'image' as const, mimeType: 'image/jpeg', fileSize: 1024 };
     mock.upload.mockResolvedValue({ success: true, storagePath: 'golf/range.jpg', metadata });
     mock.attachmentSend.mockRejectedValueOnce(new TypeError('Load failed'));
-    const { result } = renderHook(() => useMessageAttachments());
+    const { result } = renderHook(() => useMessageAttachments({ recoverable: true }));
     await act(async () => {
       expect((await result.current.sendMessageWithAttachments({ conversationId: CONVERSATION, content: 'Reply text', replyToId: PARENT,
         attachments: [{ id: 'photo', file: new File(['photo'], 'range.jpg'), previewUrl: '', metadata, uploadProgress: 0, status: 'pending' }] })).success).toBe(true);
@@ -181,7 +181,7 @@ describe('Golf replies across message loading and send lifecycle', () => {
     mock.attachmentSend.mockResolvedValue({ success: false, sendOutcome: 'unknown', error: 'Unconfirmed' });
     const options = { conversationId: CONVERSATION, content: 'Reply text', replyToId: PARENT,
       attachments: [{ id: 'photo', file: new File(['photo'], 'range.jpg'), previewUrl: '', metadata, uploadProgress: 0, status: 'pending' as const }] };
-    const { result } = renderHook(() => useMessageAttachments());
+    const { result } = renderHook(() => useMessageAttachments({ recoverable: true }));
     await act(async () => { expect(await result.current.sendMessageWithAttachments(options)).toMatchObject({ sendOutcome: 'unknown' }); });
     const original = mock.attachmentSend.mock.calls[0];
     await act(async () => {
@@ -202,7 +202,7 @@ describe('Golf replies across message loading and send lifecycle', () => {
     let rejectSend!: (error: Error) => void;
     mock.attachmentSend.mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectSend = reject; }));
     const controller = new AbortController();
-    const { result } = renderHook(() => useMessageAttachments());
+    const { result } = renderHook(() => useMessageAttachments({ recoverable: true }));
     let sending!: ReturnType<typeof result.current.sendMessageWithAttachments>;
     act(() => { sending = result.current.sendMessageWithAttachments({ conversationId: CONVERSATION, content: 'Reply text', replyToId: PARENT, signal: controller.signal,
       attachments: [{ id: 'photo', file: new File(['photo'], 'range.jpg'), previewUrl: '', metadata, uploadProgress: 0, status: 'pending' }] }); });
@@ -220,12 +220,12 @@ describe('Golf replies across message loading and send lifecycle', () => {
       expect(marker).not.toContain('previewUrl');
       return { success: false, sendOutcome: 'unknown' };
     });
-    const original = renderHook(() => useMessageAttachments());
+    const original = renderHook(() => useMessageAttachments({ recoverable: true }));
     await act(async () => { await original.result.current.sendMessageWithAttachments({ conversationId: CONVERSATION, content: 'Reply text', replyToId: PARENT,
       attachments: [{ id: 'photo', file: new File(['photo'], 'range.jpg'), previewUrl: '', metadata, uploadProgress: 0, status: 'pending' }] }); });
     const sent = mock.attachmentSend.mock.calls[0];
     original.unmount();
-    const recovered = renderHook(() => useMessageAttachments());
+    const recovered = renderHook(() => useMessageAttachments({ recoverable: true }));
     await act(async () => {
       expect(await recovered.result.current.getPendingAttachmentSend(CONVERSATION)).toMatchObject({ clientMessageId: sent?.[4], content: 'Reply text', replyToId: PARENT,
         attachments: [expect.objectContaining({ id: (sent?.[2] as { id: string }[])[0]?.id, fileName: 'range.jpg', storagePath: 'golf/range.jpg' })] });
@@ -242,7 +242,7 @@ describe('Golf replies across message loading and send lifecycle', () => {
     mock.upload.mockResolvedValue({ success: true, storagePath: 'golf/range.jpg', metadata });
     const deny = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new DOMException('Storage denied', 'QuotaExceededError'); });
     try {
-      const { result } = renderHook(() => useMessageAttachments());
+      const { result } = renderHook(() => useMessageAttachments({ recoverable: true }));
       await act(async () => { expect(await result.current.sendMessageWithAttachments({ conversationId: CONVERSATION, content: 'Reply text', replyToId: PARENT,
         attachments: [{ id: 'photo', file: new File(['photo'], 'range.jpg'), previewUrl: '', metadata, uploadProgress: 0, status: 'pending' }] })).toMatchObject({ success: false, sendOutcome: 'refused' }); });
       expect(mock.attachmentSend).not.toHaveBeenCalled();
@@ -250,7 +250,7 @@ describe('Golf replies across message loading and send lifecycle', () => {
   });
 
   it('does not add a remote auth read to ordinary thread opening when no pending marker exists', async () => {
-    const { result } = renderHook(() => useMessageAttachments());
+    const { result } = renderHook(() => useMessageAttachments({ recoverable: true }));
     expect(await result.current.getPendingAttachmentSend(CONVERSATION)).toBeNull();
     expect(mock.getUser).not.toHaveBeenCalled();
   });
@@ -259,7 +259,7 @@ describe('Golf replies across message loading and send lifecycle', () => {
     const metadata = { fileName: 'range.jpg', fileType: 'image' as const, mimeType: 'image/jpeg', fileSize: 1024 };
     mock.upload.mockResolvedValue({ success: true, storagePath: 'golf/range.jpg', metadata });
     mock.attachmentSend.mockResolvedValue({ success: false, sendOutcome: 'unknown' });
-    const { result } = renderHook(() => useMessageAttachments());
+    const { result } = renderHook(() => useMessageAttachments({ recoverable: true }));
     await act(async () => { await result.current.sendMessageWithAttachments({ conversationId: CONVERSATION, content: 'Reply text', replyToId: PARENT,
       attachments: [{ id: 'photo', file: new File(['photo'], 'range.jpg'), previewUrl: '', metadata, uploadProgress: 0, status: 'pending' }] }); });
     mock.getUser.mockResolvedValue({ data: { user: { id: 'another-viewer' } }, error: null });
@@ -275,7 +275,7 @@ describe('Golf replies across message loading and send lifecycle', () => {
     mock.upload.mockResolvedValue({ success: true, storagePath: 'golf/range.jpg', metadata });
     mock.getUser.mockResolvedValueOnce({ data: { user: { id: 'viewer' } }, error: null });
     mock.getUser.mockImplementationOnce(async () => { clearAllCachedResources(); return { data: { user: { id: 'viewer' } }, error: null }; });
-    const { result } = renderHook(() => useMessageAttachments());
+    const { result } = renderHook(() => useMessageAttachments({ recoverable: true }));
     await act(async () => { expect(await result.current.sendMessageWithAttachments({ conversationId: CONVERSATION, content: 'Reply text', replyToId: PARENT,
       attachments: [{ id: 'photo', file: new File(['photo'], 'range.jpg'), previewUrl: '', metadata, uploadProgress: 0, status: 'pending' }] })).toMatchObject({ sendOutcome: 'unknown' }); });
     expect(mock.attachmentSend).not.toHaveBeenCalled();
@@ -287,7 +287,7 @@ describe('Golf replies across message loading and send lifecycle', () => {
     mock.upload.mockResolvedValue({ success: true, storagePath: 'golf/range.jpg', metadata });
     let resolveSend!: (value: { success: true }) => void;
     mock.attachmentSend.mockImplementationOnce(() => new Promise(resolve => { resolveSend = resolve; }));
-    const { result } = renderHook(() => useMessageAttachments());
+    const { result } = renderHook(() => useMessageAttachments({ recoverable: true }));
     let sending!: ReturnType<typeof result.current.sendMessageWithAttachments>;
     act(() => { sending = result.current.sendMessageWithAttachments({ conversationId: CONVERSATION, content: 'Original text', replyToId: PARENT,
       attachments: [{ id: 'photo', file: new File(['photo'], 'range.jpg'), previewUrl: '', metadata, uploadProgress: 0, status: 'pending' }] }); });
@@ -308,7 +308,7 @@ describe('Golf replies across message loading and send lifecycle', () => {
       mock.getUser.mockResolvedValue({ data: { user: { id: 'new-viewer' } }, error: null });
       throw new TypeError('Load failed');
     });
-    const { result } = renderHook(() => useMessageAttachments());
+    const { result } = renderHook(() => useMessageAttachments({ recoverable: true }));
     await act(async () => { expect(await result.current.sendMessageWithAttachments({ conversationId: CONVERSATION, content: 'Old viewer text', replyToId: PARENT,
       attachments: [{ id: 'photo', file: new File(['photo'], 'range.jpg'), previewUrl: '', metadata, uploadProgress: 0, status: 'pending' }] })).toMatchObject({ sendOutcome: 'unknown' }); });
     expect(mock.attachmentSend).toHaveBeenCalledOnce();
@@ -323,7 +323,7 @@ describe('Golf replies across message loading and send lifecycle', () => {
     mock.attachmentSend.mockResolvedValue({ success: false, sendOutcome: 'unknown' });
     const options = { conversationId: CONVERSATION, content: 'Old text', replyToId: PARENT,
       attachments: [{ id: 'photo', file: new File(['photo'], 'range.jpg'), previewUrl: '', metadata, uploadProgress: 0, status: 'pending' as const }] };
-    const { result } = renderHook(() => useMessageAttachments());
+    const { result } = renderHook(() => useMessageAttachments({ recoverable: true }));
     await act(async () => { await result.current.sendMessageWithAttachments(options); });
     const key = `helm.golf.cache.v1:pending-attachment-send:viewer:${CONVERSATION}`;
     const newer = { ...JSON.parse(window.sessionStorage.getItem(key)!), clientMessageId: '77777777-7777-4777-8777-777777777777', content: 'New pending text',
@@ -342,14 +342,14 @@ describe('Golf replies across message loading and send lifecycle', () => {
     const metadata = { fileName: 'range.jpg', fileType: 'image' as const, mimeType: 'image/jpeg', fileSize: 1024 };
     mock.upload.mockResolvedValue({ success: true, storagePath: 'golf/range.jpg', metadata });
     mock.attachmentSend.mockResolvedValue({ success: false, sendOutcome: 'unknown' });
-    const first = renderHook(() => useMessageAttachments());
+    const first = renderHook(() => useMessageAttachments({ recoverable: true }));
     await act(async () => { await first.result.current.sendMessageWithAttachments({ conversationId: CONVERSATION, content: 'Previously sent text', replyToId: PARENT,
       attachments: [{ id: 'photo', file: new File(['photo'], 'range.jpg'), previewUrl: '', metadata, uploadProgress: 0, status: 'pending' }] }); });
     first.unmount();
     const key = `helm.golf.cache.v1:pending-attachment-send:viewer:${CONVERSATION}`;
     const marker = window.sessionStorage.getItem(key);
     mock.attachmentSend.mockResolvedValue({ success: false, sendOutcome: 'refused', error: 'Not a participant' });
-    const recovered = renderHook(() => useMessageAttachments());
+    const recovered = renderHook(() => useMessageAttachments({ recoverable: true }));
     await act(async () => { expect(await recovered.result.current.retryPendingAttachmentSend(CONVERSATION)).toMatchObject({ sendOutcome: 'unknown' }); });
     expect(window.sessionStorage.getItem(key)).toBe(marker);
     expect(mock.remove).not.toHaveBeenCalled();
@@ -361,7 +361,7 @@ describe('Golf replies across message loading and send lifecycle', () => {
     mock.upload.mockResolvedValueOnce({ success: true, storagePath: 'golf/early.jpg', metadata })
       .mockResolvedValueOnce({ success: false, error: 'Upload refused' })
       .mockImplementationOnce(() => new Promise(resolve => { finishLate = resolve; }));
-    const { result } = renderHook(() => useMessageAttachments());
+    const { result } = renderHook(() => useMessageAttachments({ recoverable: true }));
     let sending!: ReturnType<typeof result.current.sendMessageWithAttachments>;
     act(() => { sending = result.current.sendMessageWithAttachments({ conversationId: CONVERSATION, content: 'Text',
       attachments: [1, 2, 3].map(n => ({ id: `photo-${n}`, file: new File(['photo'], `${n}.jpg`), previewUrl: '', metadata, uploadProgress: 0, status: 'pending' })) }); });
@@ -376,7 +376,7 @@ describe('Golf replies across message loading and send lifecycle', () => {
     const metadata = { fileName: 'range.jpg', fileType: 'image' as const, mimeType: 'image/jpeg', fileSize: 1024 };
     const controller = new AbortController();
     mock.upload.mockImplementation(async () => { controller.abort(); return { success: true, storagePath: 'golf/range.jpg', metadata }; });
-    const { result } = renderHook(() => useMessageAttachments());
+    const { result } = renderHook(() => useMessageAttachments({ recoverable: true }));
     await act(async () => { expect(await result.current.sendMessageWithAttachments({ conversationId: CONVERSATION, content: 'Text', signal: controller.signal,
       attachments: [{ id: 'photo', file: new File(['photo'], 'range.jpg'), previewUrl: '', metadata, uploadProgress: 0, status: 'pending' }] })).toMatchObject({ cancelled: true }); });
     expect(mock.remove).toHaveBeenCalledWith(['golf/range.jpg']);
@@ -388,7 +388,7 @@ describe('Golf replies across message loading and send lifecycle', () => {
     const metadata = { fileName: 'range.jpg', fileType: 'image' as const, mimeType: 'image/jpeg', fileSize: 1024 };
     mock.upload.mockResolvedValue({ success: true, storagePath: 'golf/range.jpg', metadata });
     mock.attachmentSend.mockResolvedValue({ success: false, sendOutcome: 'refused', error: 'Insert refused' });
-    const { result } = renderHook(() => useMessageAttachments());
+    const { result } = renderHook(() => useMessageAttachments({ recoverable: true }));
     await act(async () => { expect(await result.current.sendMessageWithAttachments({ conversationId: CONVERSATION, content: 'Text',
       attachments: [{ id: 'photo', file: new File(['photo'], 'range.jpg'), previewUrl: '', metadata, uploadProgress: 0, status: 'pending' }] })).toMatchObject({ sendOutcome: 'refused' }); });
     expect(mock.remove).toHaveBeenCalledWith(['golf/range.jpg']);
