@@ -15284,6 +15284,18 @@
     },
     {
       "source": "email_outbound",
+      "target": "lift_lab",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/lifting/actions/invites.ts",
+          "anchor": "src/lib/lifting/invite-email"
+        }
+      ]
+    },
+    {
+      "source": "email_outbound",
       "target": "routes:src/app/api/cron/v3/weekly-coach-email/**",
       "kind": "feature_route",
       "evidence": [
@@ -17732,6 +17744,23 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/components/lifting/**"
+        }
+      ]
+    },
+    {
+      "source": "lift_lab",
+      "target": "email_outbound",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/lifting/invite-email.ts",
+          "anchor": "src/lib/email/lifting-invite-template"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/lifting/invite-email.ts",
+          "anchor": "src/lib/email/outbound-gate"
         }
       ]
     },

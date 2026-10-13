@@ -50,7 +50,7 @@ is a second thing to keep true.
 - **Code:** `src/app/admin/database/**`, `src/app/api/cron/db-health-sampler/**`, `src/app/api/cron/db-stat-delta/**`, `src/app/api/cron/db-observability-prune/**`, `src/app/admin/database/log-evidence-actions.ts`, `src/lib/observability/supabase/**` … and 19 more in the registry
 - **Telemetry:** none. This module IS the observability layer for Postgres/Supabase (error envelope, health/statement/platform samplers, alert policy, advisor and log-evidence integrations) — instrumenting itself would be circular, the same reasoning observability_sentry above states for the Sentry-side layer.
 - **Incidents:** `memory/incidents/observability_supabase/INC-2026-10-13-lock-incidents-never-end.md`
-- **Repair units:** none in the queue
+- **Repair units:** `lock-incidents-active-window-2026-10-13` (verified)
 - **History:** `memory/ledgers/changes/observability_supabase.md`
 
 ## `coachhelm_ai`
@@ -71,8 +71,8 @@ is a second thing to keep true.
 - **Behaviour:** `memory/context/baseballhelm-features.md`
 - **Code:** `src/app/baseball/**`, `src/components/baseball/**`, `src/app/api/baseball/**`, `src/app/baseball/actions/**`, `src/lib/baseball/**`, `src/lib/recruiting/**` … and 4 more in the registry
 - **Telemetry:** `baseball_academics` (baseballhelm, low), `baseball_announcements` (baseballhelm, low), `baseball_auth` (baseballhelm, med), `baseball_calendar` (baseballhelm, med), `baseball_camps` (baseballhelm, low), `baseball_classes` (baseballhelm, low), `baseball_coach_command_center` (baseballhelm, low), `baseball_coachhelm` (baseballhelm, high), `baseball_command_center` (baseballhelm, high), `baseball_compare` (baseballhelm, low), `baseball_decision_room` (baseballhelm, low), `baseball_demo_access` (baseballhelm, med), `baseball_demo_tracking` (baseballhelm, low), `baseball_dev_plans` (baseballhelm, low), `baseball_discover` (baseballhelm, low), `baseball_documents` (baseballhelm, low), `baseball_games` (baseballhelm, high), `baseball_import` (baseballhelm, high), `baseball_insights` (baseballhelm, low), `baseball_interests` (baseballhelm, low), `baseball_lift_onboarding` (baseballhelm, low), `baseball_lifting` (baseballhelm, high), `baseball_lineups` (baseballhelm, low), `baseball_messages` (baseballhelm, high), `baseball_notes` (baseballhelm, low), `baseball_notifications` (baseballhelm, low), `baseball_onboarding` (baseballhelm, med), `baseball_philosophy` (baseballhelm, low), `baseball_player_actions` (baseballhelm, low), `baseball_player_peek` (baseballhelm, low), `baseball_player_today` (baseballhelm, high), `baseball_postgame` (baseballhelm, low), `baseball_practice` (baseballhelm, high), `baseball_profile` (baseballhelm, low), `baseball_recruiting` (baseballhelm, low), `baseball_recruiting_philosophy` (baseballhelm, low), `baseball_roster` (baseballhelm, low), `baseball_scout_packet` (baseballhelm, low), `baseball_settings` (baseballhelm, med), `baseball_signals` (baseballhelm, high), `baseball_staff` (baseballhelm, low), `baseball_stats` (baseballhelm, high), `baseball_tasks` (baseballhelm, low), `baseball_teams` (baseballhelm, low), `baseball_timeline` (baseballhelm, low), `baseball_travel` (baseballhelm, low), `baseball_video` (baseballhelm, low), `baseball_watchlist` (baseballhelm, low)
-- **Incidents:** none recorded
-- **Repair units:** none in the queue
+- **Incidents:** `memory/incidents/baseball_core/INC-2026-10-13-use-server-object-export-breaks-coach-onboarding.md`
+- **Repair units:** `use-server-object-export-2026-10-13` (verified)
 - **History:** no ledger yet
 
 ## `golf_round_lifecycle`
@@ -171,7 +171,7 @@ is a second thing to keep true.
 - **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/clubhouse/screens/messages/**`, `src/clubhouse/styles/messages.css`, `src/components/golf/announcements/**` … and 43 more in the registry
 - **Telemetry:** `messaging` (golfhelm, high), `announcements` (golfhelm, med), `notifications` (golfhelm, med)
 - **Incidents:** `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md`, `memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md`, `memory/incidents/team_communications/INC-2026-10-07-conversation-rail-deadline-abort.md`
-- **Repair units:** `reactions-anon-42501-after-session-drop-2026-09-27` (verified), `reactions-client-deadline-abort-2026-09-28` (verified), `reactions-save-deadline-abort-2026-10-05` (verified), `conversation-rail-deadline-abort-2026-10-07` (verified)
+- **Repair units:** `reactions-anon-42501-after-session-drop-2026-09-27` (verified), `reactions-client-deadline-abort-2026-09-28` (verified), `reactions-save-deadline-abort-2026-10-05` (verified), `conversation-rail-deadline-abort-2026-10-07` (verified), `last-read-deadline-abort-2026-10-13` (verified)
 - **History:** `memory/ledgers/changes/team_communications.md`, `memory/ledgers/tests/team_communications.md`
 
 ## `team_operations`
