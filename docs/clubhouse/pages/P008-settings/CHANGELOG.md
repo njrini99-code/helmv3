@@ -1,5 +1,11 @@
 # P008 — Settings: changelog
 
+## 2026-10-12 — A section's push runs on the compositor
+
+CH-8609's slide (a section in from the right over the list, and back) animates a transform string rather than
+framer's `x`, so it runs on the compositor and a section's first render can't stall it. Same spring, same look.
+Shared change: docs/clubhouse/CHANGELOG.md (motion audit).
+
 ## 2026-10-12 — A section root on the phone (no "‹ More")
 
 The phone shell's section strip replaced the tab bar and the More sheet

@@ -87,21 +87,36 @@ export function AccountSheet({
 
   // eslint-disable-next-line react-hooks/exhaustive-deps -- a new address closes the sheet; setMoreOpen is stable enough
   useEffect(() => setMoreOpen(false), [pathname]);
-  // The sheet is modal: focus moves into it, Tab stays inside, Esc closes it,
-  // and focus returns to the section title when it closes (CH-1802).
+  // P001-D3: the page, its bars and the dock go inert under the sheet, so VoiceOver's swipe can't reach them (aria-modal
+  // alone is not enough in Safari). Making the whole page inert is a full style pass (6 to 20ms a frame in WebKit, motion
+  // audit 2026-10-12), so it happens once the sheet has settled, and is undone once it has left, never mid-slide.
+  const shielded = useRef<{ el: HTMLElement; was: boolean }[] | null>(null);
+  const shield = useCallback(() => {
+    if (shielded.current) return;
+    shielded.current = Array.from(document.querySelectorAll<HTMLElement>('.ch-root > .ch-app, .ch-root > .ch-strip, .ch-root > .ch-dock, .ch-root > .ch-skip')).map((el) => {
+      const was = el.inert;
+      el.inert = true;
+      return { el, was };
+    });
+  }, []);
+  const unshield = useCallback(() => {
+    shielded.current?.forEach(({ el, was }) => {
+      el.inert = was;
+    });
+    shielded.current = null;
+  }, []);
+  // Gone with the shell (a sign-out, a route that drops it): the page is put back all the same.
+  useEffect(() => unshield, [unshield]);
+  // The sheet is modal: focus moves into it, Tab stays inside and Esc closes it. Focus returns to the section title once
+  // it has left (CH-1802).
   useEffect(() => {
     if (!moreOpen) return;
     // A fresh open leaves on the spring again, whatever the last one did.
     jumped.current = false;
-    // P001-D3: the page, its bars and the dock go inert under the sheet, so VoiceOver's swipe can't reach them (aria-modal
-    // alone is not enough in Safari). Put back before focus returns to the title.
-    const behind = Array.from(document.querySelectorAll<HTMLElement>('.ch-root > .ch-app, .ch-root > .ch-strip, .ch-root > .ch-dock, .ch-root > .ch-skip'));
-    const was = behind.map((el) => el.inert);
-    behind.forEach((el) => {
-      el.inert = true;
-    });
     // The sheet mounts in the same commit, so it can take focus right away.
     sheet.current?.querySelector<HTMLElement>('a, button')?.focus({ preventScroll: true });
+    // Reduced motion has no rise to wait for.
+    if (reduced) shield();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') return setMoreOpen(false);
       if (e.key !== 'Tab' || !sheet.current) return;
@@ -117,18 +132,16 @@ export function AccountSheet({
       }
     };
     window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      behind.forEach((el, i) => {
-        el.inert = was[i] ?? false;
-      });
-      // Back on the section title without a ring after a tap (F-46); a keyboard user still lands on it.
-      focusSectionTitle();
-    };
-  }, [moreOpen, setMoreOpen]);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [moreOpen, setMoreOpen, reduced, shield]);
+  const left = useCallback(() => {
+    unshield();
+    // Back on the section title without a ring after a tap (F-46); a keyboard user still lands on it.
+    focusSectionTitle();
+  }, [unshield]);
 
   return (
-    <AnimatePresence>
+    <AnimatePresence onExitComplete={left}>
         {moreOpen && (
           <>
             <m.div
@@ -156,6 +169,9 @@ export function AccountSheet({
               variants={sheetMotion}
               animate="shown"
               exit="gone"
+              onAnimationComplete={(done) => {
+                if (done === 'shown') shield();
+              }}
             >
               <OverlayScrollLock />
               <div className="ch-more__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />

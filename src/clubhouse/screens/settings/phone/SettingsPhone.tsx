@@ -36,10 +36,14 @@ const ICON: Record<ChSettingsSection, LucideIcon> = {
  * Back the section leaves the same way and the list fades back in. `0` swaps at once (reduced motion, Animations off, or
  * a pop the native back-swipe already animated).
  */
+// Transform strings rather than framer's x, so the slide runs on the compositor and a section's first render can't
+// stall it (motion audit 2026-10-12).
+const AT = 'translateX(0%)';
+const OFF = 'translateX(100%)';
 const PUSH = {
-  enter: (d: 1 | -1 | 0) => (d === 1 ? { x: '100%', opacity: 1 } : d === -1 ? { x: 0, opacity: 0 } : { x: 0, opacity: 1 }),
-  shown: { x: 0, opacity: 1 },
-  leave: (d: 1 | -1 | 0) => (d === 1 ? { x: 0, opacity: 0 } : d === -1 ? { x: '100%', opacity: 1 } : { x: 0, opacity: 0, transition: { duration: 0 } }),
+  enter: (d: 1 | -1 | 0) => (d === 1 ? { transform: OFF, opacity: 1 } : d === -1 ? { transform: AT, opacity: 0 } : { transform: AT, opacity: 1 }),
+  shown: { transform: AT, opacity: 1 },
+  leave: (d: 1 | -1 | 0) => (d === 1 ? { transform: AT, opacity: 0 } : d === -1 ? { transform: OFF, opacity: 1 } : { transform: AT, opacity: 0, transition: { duration: 0 } }),
 };
 
 /**

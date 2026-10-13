@@ -93,12 +93,36 @@ function motionOff(): boolean {
  * the slide ends. Not when iOS already played the Back with its edge swipe (data-ch-ua-pop), with reduced motion or
  * Animations off, or on desktop. Transform only.
  */
+/**
+ * A copy of `el` for the pop's slide without what lies below the window: a block wholly under it can't move anything in
+ * view, so it is left out, and the page is cloned and laid out only as far down as the screen reaches. Cloning a long
+ * page whole was most of the pop's late start (motion audit 2026-10-12). Blocks are split `depth` levels down; a block
+ * that reaches past the window's foot at the last level is copied whole, and everything above the window is kept,
+ * since it places what is in view.
+ */
+export function cloneInView(el: HTMLElement, viewH: number, depth: number): HTMLElement {
+  const copy = el.cloneNode(false) as HTMLElement;
+  for (const child of Array.from(el.childNodes)) {
+    if (!(child instanceof HTMLElement)) {
+      copy.appendChild(child.cloneNode(true));
+      continue;
+    }
+    const r = child.getBoundingClientRect();
+    const position = getComputedStyle(child).position;
+    const inFlow = position !== 'absolute' && position !== 'fixed' && position !== 'sticky';
+    if (inFlow && r.height > 0 && r.top > viewH) continue;
+    if (depth > 1 && inFlow && r.bottom > viewH) copy.appendChild(cloneInView(child, viewH, depth - 1));
+    else copy.appendChild(child.cloneNode(true));
+  }
+  return copy;
+}
+
 function playPop() {
   const frame = document.getElementById('ch-content');
   const root = frame?.closest<HTMLElement>('.ch-root');
   if (!frame || !root || document.documentElement.hasAttribute('data-ch-ua-pop') || motionOff()) return;
   const box = frame.getBoundingClientRect();
-  const page = frame.cloneNode(true) as HTMLElement;
+  const page = cloneInView(frame, window.innerHeight, 4);
   page.removeAttribute('id');
   for (const el of Array.from(page.querySelectorAll('[id]'))) el.removeAttribute('id');
   // The visible part only: a window-sized layer holding the page at its scrolled place, not the whole page's height.

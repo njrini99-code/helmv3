@@ -1,5 +1,28 @@
 # Clubhouse changelog
 
+## 2026-10-12 — Motion audit: every phone transition on the compositor or out of its frames
+
+Measured in headless WebKit at 402px on the dev build (the preview pages are 404 in production builds), frame by
+frame, against an inventory of every Clubhouse motion. The rule found:
+framer's `x`, `y` and `scale` run on the main thread, so any render work during the move stutters it, while
+`transform` and `opacity` (CSS, WAAPI, or framer given a transform string) keep moving on the compositor.
+
+- **Pushed screens and the page beneath** (`PhoneScreen`, `PhoneUnderlay`, CH-1610, CH-1618): the screen slides
+  by a transform string and the page draws back by WAAPI `translate`, on the same smooth spring, from wherever each
+  is when interrupted. A 50ms stall 96ms into a thread's pop was a visible hitch; it no longer holds the slide.
+- **Back pop** (`playPop`): the copy of the leaving page leaves out what lies below the window (`cloneInView`,
+  tested), so it is cloned and laid out only as far as the screen reaches: about half the time on long pages.
+- **Account sheet** (CH-1802): the page under it goes inert once the sheet has settled and comes back once it has
+  left, not mid-slide (a full style pass, 6 to 20ms a frame); focus returns to the title after the exit too.
+- **Peek** (phone): a solid tint behind the card instead of a full-screen blur fading in and out.
+- **Settings sections** (CH-8609) and the **peek card**: transform strings, so they run on the compositor.
+- **Skeletons** (phone): the sheen is its own layer slid by transform; the shared sweep repainted every block on
+  every frame while a page loaded.
+- **Bell** (fix): its portal waits for hydration; the always-rendered drop made the server and client HTML differ.
+- **Checked and left as they are** (measured): the overlay scroll lock (0 to 3ms a frame), the `:has()` rules (no
+  measurable style cost), the notification stacks' fan (no frame over 13ms), Modal's CSS rise and the dialog exit
+  (already on the compositor), the page crossfade and push/pop view transitions.
+
 ## 2026-10-12 — Phone navigation: the section strip; notifications as stacks
 
 Owner-approved from interactive prototypes (no owner board; spec in

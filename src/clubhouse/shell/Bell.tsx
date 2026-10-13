@@ -3,7 +3,7 @@
 import { AnimatePresence, animate, m, useMotionValue } from 'motion/react';
 import { Bell as BellIcon, BellOff, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
@@ -56,6 +56,8 @@ const W = 380;
 
 const BellSource = createContext<ChBellApi | null>(null);
 
+const noSubscribe = () => () => {};
+
 /** Preview only: a fixture feed in place of the live actions. */
 export function BellSourceProvider({ api, children }: { api: ChBellApi; children: ReactNode }) {
   return <BellSource.Provider value={api}>{children}</BellSource.Provider>;
@@ -88,6 +90,8 @@ export function Bell() {
   const id = useId();
   const reduced = useChReducedMotion();
   const phone = useChPhone();
+  // The portal waits for hydration: the server has no document, and the phone drop is always rendered once it exists.
+  const hydrated = useSyncExternalStore(noSubscribe, () => true, () => false);
   const btn = useRef<HTMLButtonElement | null>(null);
   const panel = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
@@ -400,7 +404,7 @@ export function Bell() {
           </span>
         )}
       </button>
-      {typeof document !== 'undefined' &&
+      {hydrated &&
         createPortal(
           <AnimatePresence>
             {/* The phone drop stays rendered, hidden and inert, so opening it only moves it: a first frame that has to

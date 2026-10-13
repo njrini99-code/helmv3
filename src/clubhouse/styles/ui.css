@@ -1229,6 +1229,18 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 :where(html[data-fw-theme='dark']) .ch-peek::backdrop {
   background: rgb(0 0 0 / 0.5);
 }
+/* On the phone the backdrop is a solid tint: a full-screen blur fading in re-blurs the page on every frame of the open
+   and the close, the stutter the bell's drop had (motion audit 2026-10-12). The deeper tint keeps the card lifted. */
+@media (max-width: 820px) {
+  .ch-peek::backdrop {
+    background: rgb(20 20 18 / 0.4);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  :where(html[data-fw-theme='dark']) .ch-peek::backdrop {
+    background: rgb(0 0 0 / 0.58);
+  }
+}
 @media (prefers-reduced-transparency: reduce) {
   .ch-peek::backdrop {
     -webkit-backdrop-filter: none;
