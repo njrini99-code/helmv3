@@ -25,7 +25,7 @@ const mocks = vi.hoisted(() => ({
   eqFilters: [] as unknown[][],
   logServerError: vi.fn(async () => undefined),
   clubhouse: true,
-  role: 'coach' as 'coach' | 'player' | null,
+  role: 'coach' as 'coach' | 'player' | 'dual-player' | null,
   isClubhouseFor: vi.fn((role: string | null | undefined) => (role === 'coach' || role === 'player') && mocks.clubhouse),
 }));
 
@@ -34,7 +34,17 @@ vi.mock('@/lib/server-error-logger', () => ({ logServerError: mocks.logServerErr
 vi.mock('@/lib/admin/observed-action', () => ({ withAdminObserved: (_n: string, _m: unknown, fn: unknown) => fn }));
 vi.mock('@/lib/notifications/golf-message-fanout', () => ({ notifyGolfMessageRecipients: vi.fn() }));
 vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: mocks.isClubhouseFor }));
-vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: vi.fn(async () => ({ userId: 'u-1', role: mocks.role })) }));
+// The session's real shape: the gate is given the dashboard layout's role (golf-dashboard-role.ts), which reads the
+// profiles, not session.role. 'dual-player' is a coach row never onboarded beside an onboarded player profile:
+// session.role says coach ("has a coach row"), the layout draws the player shell.
+vi.mock('@/lib/auth/session', () => ({
+  getGolfSessionProfile: vi.fn(async () => {
+    const r = mocks.role;
+    if (r === null) return { userId: 'u-1', role: null, coach: null, player: null };
+    if (r === 'dual-player') return { userId: 'u-1', role: 'coach', coach: { onboarding_completed: false }, player: { onboarding_completed: true } };
+    return { userId: 'u-1', role: r, coach: r === 'coach' ? { onboarding_completed: true } : null, player: r === 'player' ? { onboarding_completed: true } : null };
+  }),
+}));
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({
     auth: { getUser: mocks.getUser },
@@ -94,6 +104,19 @@ describe('getGolfConversationFiles', () => {
     expect(await getGolfConversationFiles('c-1')).toEqual({ error: 'Not available' });
     mocks.role = 'player';
     expect((await getGolfConversationFiles('c-1')).error).toBeUndefined();
+  });
+
+  it('asks the gate with the dashboard layout role, so a dual-profile user on the player shell gets files', async () => {
+    mocks.role = 'dual-player';
+    const res = await getGolfConversationFiles('c-1');
+    expect(mocks.isClubhouseFor).toHaveBeenCalledWith('player');
+    expect(mocks.isClubhouseFor).not.toHaveBeenCalledWith('coach');
+    expect(res.error).toBeUndefined();
+    // Fairway for that user (the gate says no) is still refused before any read.
+    mocks.clubhouse = false;
+    mocks.attachmentReads = 0;
+    expect(await getGolfConversationFiles('c-1')).toEqual({ error: 'Not available' });
+    expect(mocks.attachmentReads).toBe(0);
   });
 
   it('refuses someone who is not in the conversation, before reading any file', async () => {

@@ -14,6 +14,7 @@ import type { Metadata } from 'next';
 import { logServerError } from '@/lib/server-error-logger';
 import { RoundTypeEditor } from '@/components/fairway/pages/rounds/RoundTypeEditor';
 import { isClubhouseFor } from '@/clubhouse/gate';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { ClubhouseContinueRoundRoute } from '@/clubhouse/routes/round-continue';
 import { frontierIndex, lastPlayIndex, normalizeStartHole } from '@/lib/golf/round-session/play-order';
 
@@ -602,7 +603,8 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   // Clubhouse (golf_clubhouse_ui) draws the same round over the same engine, from everything loaded above. Its own
   // round-type sheet (CH-11521) reads the qualifier options in the Clubhouse route (`loadRoundTypeOptions`), so the
   // Fairway editor's reads below are skipped here.
-  if ((await isClubhouseFor('player'))) {
+  // The role is the dashboard layout's (getGolfDashboardRole); the Fairway branch below keeps the session's.
+  if ((await isClubhouseFor('player')) && (await getGolfDashboardRole()) === 'player') {
     return (
       <ClubhouseContinueRoundRoute
         roundId={id}

@@ -31,6 +31,7 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { updateQualifierEntryStats } from '@/lib/golf/qualifier-standings';
 import { isClubhouseFor } from '@/clubhouse/gate';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { expectRows } from '@/lib/supabase/expect-rows';
 import { deriveLieAfter } from '@/lib/utils/shot-helpers';
 import type { Json } from '@/lib/types/database';
@@ -309,7 +310,9 @@ async function submitGolfRoundComprehensiveImpl(
     existingRoundId: existingRoundId ?? null,
     qualifierId: data?.qualifierId ?? null,
     // Which UI wrote the round, so a failure rate can be compared between Clubhouse and Fairway (swap audit §18).
-    metadata: { ui: (await isClubhouseFor('player')) ? 'clubhouse' : 'fairway' },
+    // Clubhouse when the dashboard layout draws the player's Clubhouse shell (getGolfDashboardRole, the layout's rule).
+    // The flag is read first, so with it off this costs no read; a role read that fails says Fairway, never throws here.
+    metadata: { ui: (await isClubhouseFor('player')) && (await getGolfDashboardRole().catch(() => null)) === 'player' ? 'clubhouse' : 'fairway' },
   });
   // Idempotent trace terminator — see savePartialRoundImpl's identical
   // helper for why. Submit finalizes from many branches (RPC success,
