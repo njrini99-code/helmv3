@@ -2,7 +2,7 @@
 
 import { AnimatePresence, animate, m, useMotionValue, useTransform } from 'motion/react';
 import { BellOff, CalendarDays, ClipboardCheck, Eye, Megaphone, MessageSquare, Sparkles, Users, X, type LucideIcon } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
+import { memo, useMemo, useRef, useState } from 'react';
 import { isUnread, type NotificationCategoryId, type UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
 import { haptic } from '../lib/haptics';
 import { chSpring } from '../lib/motion';
@@ -38,7 +38,14 @@ const NARROW = 0.05;
  * Every motion is a D-64 spring (smooth for what is anchored, settle for a card arriving), interruptible, and instant
  * with reduced motion or Animations off. No staggers: a fanned stack's cards move as one.
  */
-export function BellStacks({
+/**
+ * Re-rendered only when the feed, its failure or the motion setting change: opening and closing the drop (the bell's
+ * own state) never re-renders the cards, so nothing but transforms happens while it moves. The handlers it is given only
+ * reach for state setters and the router, so an older one does the same as a newer one.
+ */
+export const BellStacks = memo(BellStacksView, (a, b) => a.items === b.items && a.failed === b.failed && a.reduced === b.reduced);
+
+function BellStacksView({
   items,
   failed,
   reduced,

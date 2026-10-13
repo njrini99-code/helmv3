@@ -26,7 +26,6 @@ import { EmptyState, Skeleton } from '../ui/States';
 import { haptic } from '../lib/haptics';
 import { CH_POP, chSpring, chSpringCurve } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
-import { OverlayScrollLock } from '../lib/overlay-scroll';
 import { useChPhone } from '../lib/use-phone';
 import { useSectionSwitch } from './section-switch';
 import { BellStacks, CH_NOTIFICATION_KIND } from './BellStacks';
@@ -115,17 +114,17 @@ export function Bell() {
   const fling = useRef(0);
   const sheetMotion = {
     // The stacks drop from under the bar and land with the settle spring's slight give, a touch smaller as they come.
-    hidden: { y: -64, scale: 0.965, opacity: 0 },
-    shown: { y: 0, scale: 1, opacity: 1, transition: { ...chSpring('reveal', reduced), opacity: chSpring('smooth', reduced) } },
+    // Transform and opacity only, nothing that re-rasterizes (no scale, no blur), so WebKit keeps it on the compositor.
+    shown: { y: 0, opacity: 1, visibility: 'visible', transition: { ...chSpring('reveal', reduced), opacity: chSpring('smooth', reduced) } },
     gone: () => {
-      if (reduced) return { opacity: 0, transition: { duration: 0 } };
+      if (reduced) return { opacity: 0, transition: { duration: 0 }, transitionEnd: { visibility: 'hidden' } };
       // Back up under the bar from where the finger left it, at the speed it was thrown, fading as it goes.
       const from = sheetY.get();
       const travel = 140;
       const left = travel + from;
       const out = chSpringCurve('smooth', { velocity: left > 0 ? fling.current / left : 0, rest: 0.5 / Math.max(left, 1) });
       fling.current = 0;
-      return { y: [from, -travel], scale: 0.965, opacity: 0, transition: { duration: out.ms / 1000, ease: out.ease } };
+      return { y: [from, -travel], opacity: 0, transition: { duration: out.ms / 1000, ease: out.ease }, transitionEnd: { visibility: 'hidden' } };
     },
   };
   /** The sheet follows the finger up from its header or grab (CH-1611): past a third of its height, or flicked, it closes. */
@@ -172,7 +171,11 @@ export function Bell() {
       .then((r) => {
         if (!live) return;
         if (r && (r.success || r.ok) && r.data) {
-          setItems(r.data.items);
+          const next = r.data.items;
+          // The same feed again keeps the same list, so a refresh that lands mid-drop re-renders nothing.
+          const same = (prev: UnifiedNotificationItem[] | null) =>
+            !!prev && prev.length === next.length && prev.every((i, k) => i.id === next[k]!.id && i.source === next[k]!.source && i.read_at === next[k]!.read_at && i.title === next[k]!.title);
+          setItems((prev) => (same(prev) ? prev : next));
           setFailed(false);
         } else {
           setFailed(true);
@@ -400,40 +403,52 @@ export function Bell() {
       {typeof document !== 'undefined' &&
         createPortal(
           <AnimatePresence>
-            {open && phone && (
+            {/* The phone drop stays rendered, hidden and inert, so opening it only moves it: a first frame that has to
+                render every card is the stutter it had (an 85ms frame at 4x CPU, 2026-10-12). */}
+            {phone && (
               <m.div
                 key="veil"
                 className="ch-bst-veil"
                 data-ui="clubhouse"
+                aria-hidden="true"
+                data-open={open || undefined}
                 // The veil pours down from under the bar, its feathered edge leading (a static mask on a layer taller than
                 // the screen, moved by transform alone, so the compositor carries it), and draws back up as the drop goes.
-                initial={reduced ? { opacity: 0 } : { y: '-100%' }}
-                animate={reduced ? { opacity: 1, transition: { duration: 0 } } : { y: '0%', transition: chSpring('reveal') }}
-                exit={reduced ? { opacity: 0, transition: { duration: 0 } } : { y: '-100%', transition: chSpring('smooth') }}
+                initial={false}
+                animate={
+                  reduced
+                    ? { opacity: open ? 1 : 0, y: '0%', visibility: open ? 'visible' : 'hidden', transition: { duration: 0 } }
+                    : open
+                      ? { y: '0%', opacity: 1, visibility: 'visible', transition: chSpring('reveal') }
+                      : { y: '-100%', opacity: 1, transition: chSpring('smooth'), transitionEnd: { visibility: 'hidden' } }
+                }
                 onClick={() => close()}
               />
             )}
-            {open && phone && (
+            {phone && (
               <m.div
                 key="sheet"
                 ref={panel}
                 id={id}
                 role="dialog"
-                aria-modal="true"
+                aria-modal={open || undefined}
+                aria-hidden={open ? undefined : true}
+                inert={!open || undefined}
                 aria-label="Notifications"
                 // Read by the iOS swipe-back guard (NativeSwipeBackBridge): no edge swipe while the sheet is up.
-                data-state="open"
+                data-state={open ? 'open' : undefined}
                 data-ch-code="CH-1811"
                 tabIndex={-1}
                 className="ch-bst"
                 data-ui="clubhouse"
                 style={{ y: sheetY }}
-                initial={reduced ? { opacity: 0 } : 'hidden'}
+                initial={false}
                 variants={sheetMotion}
-                animate="shown"
-                exit="gone"
+                animate={open ? 'shown' : 'gone'}
               >
-                <OverlayScrollLock />
+                {/* No OverlayScrollLock: freezing the body re-lays out the whole page in the drop's first frame (and again as
+                    it closes), the stutter. The drop covers the screen and takes the touches (touch-action in shell.css),
+                    and its list contains its own scroll, so the page under it cannot move anyway. */}
                 <div className="ch-bst__head" onPointerDown={onSheetDrag}>
                   <b>Notifications</b>
                   {shownUnread > 0 && (

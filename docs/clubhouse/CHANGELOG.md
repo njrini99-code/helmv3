@@ -32,6 +32,13 @@ Owner-approved from interactive prototypes (no owner board; spec in
   (tested). The veil pours down by transform only and the stacks land on the
   new `reveal` spring (D-64's reveal duration, no bounce); they leave on
   smooth at the speed they were thrown. The feed starts loading on touch-down.
+- **Smooth in WebKit** (measured in Safari at 402px, dev build): the drop stays
+  rendered, hidden and inert, so opening it only moves it; no body scroll lock
+  (it re-laid out the whole page in the first frame; touch-action holds the page
+  instead); no backdrop blur on the veil, cards or edges (the veil is solid green,
+  the cards solid ivory); no scale; an unchanged feed keeps its identity and the
+  stacks are memoized, so a refresh mid-drop re-renders nothing. First frame
+  about 40ms to about 20ms; every frame after it 11 to 15ms.
 - **The Ask CoachHelm key** is off the phone top bar (desktop keeps it).
 - Haptics: `select` when the section changes and when a stack fans; opening the
   strip is silent; the account pill ticks as the More button did.
