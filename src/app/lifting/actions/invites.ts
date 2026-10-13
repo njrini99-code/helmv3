@@ -34,8 +34,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerException } from '@/lib/server-error-logger';
-import { renderLiftingInviteEmail } from '@/lib/email/lifting-invite-template';
-import { gateCustomerEmail } from '@/lib/email/outbound-gate';
+import { sendLiftingInviteEmail as sendInviteEmail } from '@/lib/lifting/invite-email';
 import type {
   HelmLiftingCoachInviteRow,
   HelmLiftingInviteStatus,
@@ -68,18 +67,6 @@ function isValidEmail(email: string): boolean {
 
 function inviteExpiresAt(): string {
   return new Date(Date.now() + INVITE_TTL_MS).toISOString();
-}
-
-/** Build the full accept URL from the token. */
-function buildAcceptUrl(token: string): string {
-  const base =
-    process.env.NEXT_PUBLIC_APP_URL ??
-    process.env.VERCEL_URL?.startsWith('http')
-      ? process.env.VERCEL_URL
-      : process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : 'https://helmsportslabs.com';
-  return `${base}/lifting/join/${token}`;
 }
 
 /**
@@ -208,73 +195,6 @@ async function verifyHeadCoachForOrg(
     ok: false,
     error: 'Only a head coach of this organization can send Lifting Lab invitations.',
   };
-}
-
-/**
- * Send the invite email via Resend. No-op (with logged warning) if
- * RESEND_API_KEY is absent — keeps the action safe in dev/preview.
- */
-async function sendInviteEmail(params: {
-  toEmail: string;
-  inviterName: string;
-  orgName: string;
-  roleTitle: string | null;
-  token: string;
-  expiresAt: string;
-}): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    // Dev / preview without key: skip silently (logged as info).
-    return;
-  }
-
-  // Outbound customer-email kill switch (owner decision, 2026-09-06). The
-  // invite record itself is still written by the caller — only the email
-  // leg is suppressed. See memory/features/email_outbound.md.
-  const gate = gateCustomerEmail({
-    kind: 'lifting_invite',
-    recipientCount: 1,
-    source: 'lifting/actions/invites.sendInviteEmail',
-  });
-  if (!gate.allowed) {
-    return;
-  }
-
-  try {
-    const { Resend } = await import('resend');
-    const resend = new Resend(apiKey);
-
-    const acceptUrl = buildAcceptUrl(params.token);
-    const { subject, html, text } = renderLiftingInviteEmail({
-      inviterName: params.inviterName,
-      orgName: params.orgName,
-      roleTitle: params.roleTitle,
-      acceptUrl,
-      expiresAt: params.expiresAt,
-    });
-
-    await resend.emails.send({
-      from: 'Helm Sports Labs <noreply@helmsportslabs.com>',
-      to: params.toEmail,
-      subject,
-      html,
-      text,
-    });
-  } catch (err) {
-    // Email failure must never block the invite being written to the DB.
-    await logServerException(
-      err instanceof Error ? err : new Error(String(err)),
-      {
-        action: 'sendLiftingInviteEmail',
-        featureArea: FEATURE,
-        source: 'server_action',
-        handled: true,
-        skipSentry: false,
-        tags: { sport: 'lifting', feature: FEATURE },
-      },
-      'warning',
-    );
-  }
 }
 
 // =============================================================================
@@ -646,12 +566,3 @@ export async function acceptLiftingInvite(
   revalidatePath('/lifting/dashboard');
   return { success: true };
 }
-
-// ---------------------------------------------------------------------------
-// Test surface — exported for unit tests only (mirrors the pattern in
-// src/lib/notifications/email.ts's __testables). Production code should call
-// the exported actions above.
-// ---------------------------------------------------------------------------
-export const __testables = {
-  sendInviteEmail,
-};
