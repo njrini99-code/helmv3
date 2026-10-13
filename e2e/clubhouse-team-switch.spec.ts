@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import pg from 'pg';
+import { PgClient } from './helpers/pg-client';
 import { localSupabase, removeTeamSeed, seedClubhouseTeam, type SeededTeam } from './helpers/clubhouse-local-seed';
 
 /**
@@ -23,7 +23,7 @@ test.beforeAll(async () => {
   test.setTimeout(5 * 60_000);
   first = await seedClubhouseTeam({ players: 4, roundsPerPlayer: 1, seed: 1 });
   second = await seedClubhouseTeam({ players: 6, roundsPerPlayer: 1, seed: 2 });
-  const db = new pg.Client({ connectionString: process.env.SUPABASE_DB_URL ?? 'postgresql://postgres:postgres@127.0.0.1:54322/postgres' });
+  const db = new PgClient({ connectionString: process.env.SUPABASE_DB_URL ?? 'postgresql://postgres:postgres@127.0.0.1:54322/postgres' });
   await db.connect();
   try {
     await db.query(`insert into public.golf_team_coach_staff (team_id, coach_id, role, is_primary) values ($1, $2, 'head_coach', false)`, [second.teamId, first.coach.coachId]);
