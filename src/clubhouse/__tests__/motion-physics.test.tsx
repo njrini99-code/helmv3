@@ -19,7 +19,7 @@ vi.mock('@/contexts/notification-badge-context', () => ({ useNotificationBadges:
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({}) }));
 
 import { CH_DUR, CH_SPRINGS, chSpring, chSpringAt, chSpringCurve } from '../lib/motion';
-import { rubberBand, takeSheetFling, useSheetDrag } from '../lib/sheet-drag';
+import { chThrownExit, rubberBand, takeSheetFling, useSheetDrag } from '../lib/sheet-drag';
 import { poppedByUA } from '../lib/ua-pop';
 import { PhoneNav } from './phone-nav-harness';
 import { Modal } from '../ui/Modal';
@@ -244,7 +244,7 @@ describe('CH-1611 sheet physics', () => {
     expect(takeSheetFling(sheet)).toBe(0);
   });
 
-  it('a Modal thrown shut leaves on the spring at the throw speed; closed by its button it takes the base ease-out', () => {
+  it('a Modal thrown shut leaves on the spring at the throw speed; closed by its button it leaves on the same spring from rest', () => {
     const real = window.matchMedia;
     window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
     vi.stubGlobal('CSS', { supports: () => true });
@@ -279,7 +279,10 @@ describe('CH-1611 sheet physics', () => {
       render(<Harness />);
       fireEvent.click(screen.getByRole('button', { name: 'Close' }));
       expect(exits).toHaveLength(2);
-      expect(exits[1]).toMatchObject({ duration: CH_DUR.base * 1000, easing: 'cubic-bezier(.22,1,.36,1)' });
+      // The same smooth spring it rose on, from rest (popup audit 2026-10-13); the throw's exit is quicker than this.
+      const rest = chThrownExit(0, 400);
+      expect(exits[1]).toMatchObject({ duration: rest.ms, easing: rest.linear });
+      expect(exits[0]!.duration).toBeLessThan(rest.ms);
     } finally {
       window.matchMedia = real;
       vi.unstubAllGlobals();

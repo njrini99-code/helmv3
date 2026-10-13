@@ -75,11 +75,12 @@ export function useDialogLifetime(open: boolean, {
     if (reduced || !surface?.animate) { finish(); return; }
     const exitTransform = direction === 'left' ? 'translateX(-100%)' : direction === 'bottom' ? 'translateY(100%)' : 'translateY(6px) scale(.98)';
     const computed = getComputedStyle(surface);
-    // A sheet thrown shut leaves at the throw's speed on the smooth spring, ending as it leaves sight (CH-1611);
-    // closed any other way it takes the base ease-out.
+    // A sheet or drawer leaves on the smooth spring it rose on, ending as it leaves sight, as the bell and the account
+    // sheet do (popup audit 2026-10-13): thrown shut, at the throw's speed (CH-1611); closed any other way, from rest.
+    // A centred dialog, or a browser without linear(), takes the base ease-out.
     const fling = direction === 'center' ? 0 : takeSheetFling(dialog) || takeSheetFling(surface);
     const travel = direction === 'left' ? surface.offsetWidth : surface.offsetHeight;
-    const thrown = fling > 0 && travel > 0 && chSupportsLinear() ? chThrownExit(fling, travel) : null;
+    const thrown = direction !== 'center' && travel > 0 && chSupportsLinear() ? chThrownExit(fling, travel) : null;
     // From where the throw has it by the exit's first frame (when it was at rest, not mid rise).
     const lead = thrown && computed.transform === 'none' ? thrown.lead : 0;
     const from = lead ? (direction === 'left' ? `translateX(${-lead}px)` : `translateY(${lead}px)`) : computed.transform;

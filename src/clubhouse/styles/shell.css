@@ -2660,11 +2660,8 @@ html[data-fw-theme='dark'] .ch-offline {
   color: var(--ch-text-primary);
 }
 .ch-asks::backdrop {
-  background: rgb(20 20 18 / 0.32);
+  background: var(--ch-scrim, rgb(20 20 18 / 0.36));
   animation: ch-fade var(--ch-dur-base) var(--ch-ease);
-}
-:where(html[data-fw-theme='dark']) .ch-asks::backdrop {
-  background: rgb(0 0 0 / 0.55);
 }
 .ch-asks__panel {
   box-sizing: border-box;
@@ -2761,6 +2758,8 @@ html[data-fw-theme='dark'] .ch-offline {
     max-height: none;
     border-radius: 22px 22px 0 0;
     box-shadow: var(--ch-elevation-sheet);
+    /* A bottom sheet on the phone: it rises on the smooth spring as every sheet does, not the desktop dialog's pop. */
+    animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
   }
   .ch-asks__panel[data-detent='full'] {
     height: calc(100dvh - env(safe-area-inset-top) - 12px);

@@ -433,6 +433,10 @@
   /* Solid: a tall sheet's gentle gradient banded visibly; the lit top edge is the elevation's inset highlight. */
   --ch-sheet-bg: #fdfbf7;
   --ch-sheet-shadow: var(--ch-elevation-reading);
+  /* The one tint behind every sheet, dialog and drawer on the native top layer (popup audit 2026-10-13): a solid wash,
+     never a blur, which re-blurs the page on every frame of a WebKit open. Read by ::backdrop, which inherits it from
+     the dialog; each use keeps the light value as its fallback. */
+  --ch-scrim: rgb(20 20 18 / 0.36);
   /* Materials on the green hero (the content layer is dark there). Raised: a lighter tonal green with a mint-lit top
      edge and a deep green cast shadow (ink shadows vanish on green). Well: one recess darker than the hero. Control: a
      raised green face that compresses on press. */
@@ -699,6 +703,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     0 1px 0 rgb(255 255 255 / 0.04);
   --ch-raised-bg: linear-gradient(180deg, #262d27 0%, #212722 60%, #1d231e 100%);
   --ch-sheet-bg: #1b201c;
+  --ch-scrim: rgb(2 6 4 / 0.58);
   --ch-skel-base: #252c26;
   --ch-skel-sheen: #2e362f;
 }

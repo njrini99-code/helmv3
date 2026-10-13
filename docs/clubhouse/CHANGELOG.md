@@ -1,5 +1,27 @@
 # Clubhouse changelog
 
+## 2026-10-13 — Popups: one sheet rise, one backdrop, one exit
+
+Measured in the Popup Lab (headless WebKit, 402px, dev build). Sheets on the phone rose three ways and sat on five
+different tints; they now share one motion and one material.
+
+- **One backdrop** (`--ch-scrim`, tokens.css): every sheet, dialog and drawer on the native top layer (Modal, the
+  Settings and Recruiting sheets and action sheets, the Ask sheet, CoachHelm's History drawer) sits on the same
+  solid wash, rgb(20 20 18 / 0.36), and its night value in dark mode. Before: 0.32, 0.42 and 0.45, with three dark
+  values. No blur: a full-screen blur re-blurs the page on every frame of a WebKit open.
+- **One rise**: every phone sheet rises on the smooth spring (462ms, no overshoot), as Modal, the bell and the
+  account sheet already did. The Settings and Recruiting sheets and action sheets took the 260ms ease-out; the Ask
+  sheet popped like a desktop dialog (fade and scale) although it is a bottom sheet; the History drawer slid in
+  on the ease-out. All eight Popup Lab sheets now read `ch-rise 462ms` on the same `linear()` curve.
+- **One exit** (`useDialogLifetime`): a sheet or drawer closed by Close, Esc or its scrim leaves on the same smooth
+  spring it rose on, from rest (370 to 450ms by its height), as a thrown one already did at the throw's speed and as
+  the bell and the account sheet do. Before: a 260ms ease-out that started at full speed. A centred desktop dialog
+  keeps its 260ms fade and settle; the backdrop clears over 260ms either way.
+- **Left as they are, on purpose**: popovers and menus (`CH_POP`, 180ms: small, anchored, quick by design); the
+  bell's drop (the reveal spring's slight landing give); Peek's deeper tint (a focus preview, not a sheet); the
+  round's submit screen and course view, which cover the round on their own greens.
+
+
 ## 2026-10-12 — Motion audit: every phone transition on the compositor or out of its frames
 
 Measured in headless WebKit at 402px on the dev build (the preview pages are 404 in production builds), frame by

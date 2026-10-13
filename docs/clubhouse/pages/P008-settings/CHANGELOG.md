@@ -1,5 +1,12 @@
 # P008 — Settings: changelog
 
+## 2026-10-13 — Sheets rise and leave on the shared spring, over the shared backdrop
+
+The phone's bottom sheets and action sheets rise on the smooth spring (462ms) instead of the 260ms ease-out, leave
+on it too, and sit on the shared `--ch-scrim` (0.36) instead of their own 0.42 and dark 0.55. Shared change:
+docs/clubhouse/CHANGELOG.md (popups).
+
+
 ## 2026-10-12 — A section's push runs on the compositor
 
 CH-8609's slide (a section in from the right over the list, and back) animates a transform string rather than

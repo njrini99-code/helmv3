@@ -1,5 +1,12 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-13 — Sheets rise and leave on the shared spring, over the shared backdrop
+
+The phone's form, picker and action sheets rise on the smooth spring (462ms) instead of the 260ms ease-out, leave
+on it too, and sit on the shared `--ch-scrim` (0.36) instead of their own 0.42 and dark 0.6. Shared change:
+docs/clubhouse/CHANGELOG.md (popups).
+
+
 ## 2026-10-12 — A section root on the phone (no "‹ More")
 
 The phone shell's section strip replaced the tab bar and the More sheet
