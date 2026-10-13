@@ -547,3 +547,20 @@ items:
       - src/hooks/golf/__tests__/use-golf-messages.last-read-deadline-abort.test.ts
     queued_for_release: false
     first_seen: '2026-10-13T21:48:24Z'
+  - id: recap-style-fallback-call-log-2026-10-13
+    feature_id: coachhelm_ai
+    root_cause: >-
+      compose() logged a verified recap reply as an LLM success before
+      round-recap's style check replaced it with the template, so
+      golf_coachhelm_llm_calls.fallback_to_template stayed false for every
+      style rejection (1cd457e7).
+    incident_id: memory/incidents/coachhelm_ai/INC-2026-10-13-recap-style-fallback-logged-as-llm.md
+    status: verified
+    risk: R1
+    sha: null
+    pr: 2192
+    regression_tests:
+      - src/app/golf/actions/__tests__/round-recap-style-fallback-call-log.test.ts
+      - src/lib/coachhelm/v3/llm/__tests__/mark-call-fell-back.test.ts
+    queued_for_release: false
+    first_seen: '2026-10-13T22:40:04Z'
