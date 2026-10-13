@@ -54,8 +54,8 @@ export function OfflineBanner() {
           className="ch-offline"
           role="status"
           data-ch-code="CH-1901"
-          initial={reduced ? { opacity: 0 } : { opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={reduced ? { opacity: 0 } : { opacity: 0, transform: 'translateY(-6px)' }}
+          animate={{ opacity: 1, transform: 'translateY(0px)' }}
           exit={{ opacity: 0 }}
           transition={chTween('base', reduced)}
         >

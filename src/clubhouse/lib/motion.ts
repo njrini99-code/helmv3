@@ -116,27 +116,30 @@ export function chSpringCurve(
 }
 
 /** A panel's content swap inside a fixed frame (a Settings section): a base crossfade with a 6px settle. */
+// The presets below move by transform strings, not framer's x, y and scale: framer runs those on the main thread, and
+// a transform string goes to the compositor (WAAPI) with the opacity, so a busy frame doesn't hold the move back
+// (motion audit 2026-10-12). Same distances, same timing.
 export const CH_ROUTE = {
-  initial: { opacity: 0, y: 6 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -4 },
+  initial: { opacity: 0, transform: 'translateY(6px)' },
+  animate: { opacity: 1, transform: 'translateY(0px)' },
+  exit: { opacity: 0, transform: 'translateY(-4px)' },
   transition: chTween('base'),
 } as const;
 
 /** Popovers and menus: scale from the anchor edge (CH-1603). */
 export const CH_POP = {
-  initial: { opacity: 0, scale: 0.97, y: -4 },
-  animate: { opacity: 1, scale: 1, y: 0 },
-  exit: { opacity: 0, scale: 0.98, y: -2 },
+  initial: { opacity: 0, transform: 'translateY(-4px) scale(0.97)' },
+  animate: { opacity: 1, transform: 'translateY(0px) scale(1)' },
+  exit: { opacity: 0, transform: 'translateY(-2px) scale(0.98)' },
   transition: chTween('quick'),
 } as const;
 
 /** Content swap inside a fixed frame (for example, paging rounds). */
 export function chSwap(direction: 1 | -1, reduced = false) {
   return {
-    initial: { opacity: 0, x: 12 * direction },
-    animate: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: -12 * direction },
+    initial: { opacity: 0, transform: `translateX(${12 * direction}px)` },
+    animate: { opacity: 1, transform: 'translateX(0px)' },
+    exit: { opacity: 0, transform: `translateX(${-12 * direction}px)` },
     transition: chTween('base', reduced),
   } as const;
 }

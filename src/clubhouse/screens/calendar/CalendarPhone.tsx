@@ -86,7 +86,7 @@ export function CalendarPhone({
         <span className="ch-intro__row">
           <h2 className="ch-intro__title ch-calm-title">{monthName(anchor)}</h2>
           <span className="ch-intro__action">
-            <Segmented<ChCalPhoneView>
+            <Segmented<ChCalPhoneView> redraws
               size="sm"
               label="View"
               value={pv}

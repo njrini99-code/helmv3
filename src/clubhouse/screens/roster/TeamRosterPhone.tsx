@@ -50,7 +50,7 @@ export function TeamRosterPhone({ data, onRetry }: { data: ChPlayerRoster; onRet
           <>
             <div className="ch-rsm-sort">
               <span>Sort by</span>
-              <Segmented<TeamSort>
+              <Segmented<TeamSort> redraws
                 size="sm"
                 label="Sort players"
                 value={sort}

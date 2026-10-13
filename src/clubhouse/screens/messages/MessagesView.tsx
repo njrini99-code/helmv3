@@ -422,7 +422,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
           placeholder="Search people and messages"
           label="Search conversations and messages"
         />
-        <Segmented<ChConvFilter>
+        <Segmented<ChConvFilter> redraws
           size="sm"
           label="Filter conversations"
           value={filter}

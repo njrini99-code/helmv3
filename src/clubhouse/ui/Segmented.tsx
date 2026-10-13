@@ -1,7 +1,7 @@
 'use client';
 
 import { m } from 'motion/react';
-import { useId, useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { useId, useRef, useState, useTransition, type KeyboardEvent, type ReactNode } from 'react';
 import { haptic } from '../lib/haptics';
 import { chSpring } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
@@ -18,6 +18,12 @@ export interface SegOption<V extends string> {
  * toggles". The chip slides between options on the settle spring (base, bounce 0.1; CH-1615), so it arrives and
  * settles rather than stopping on a curve. Arrow keys move the selection like a native segmented control, with a
  * detent haptic on change. Reduced motion and Animations off move it at once.
+ *
+ * With `redraws` (a switch that swaps a whole view: a calendar's week for its day, a list's grouping), the chip moves in
+ * the tap's own frame and the view renders as a transition after it, so a heavy view can't hold the chip back (motion
+ * audit 2026-10-12: a Day/Week switch stalled the first frame 46 to 64ms in Safari). While that render runs the chip
+ * shows the choice; once it lands it follows `value` again, so a caller that refuses the change puts it back. A caller
+ * that runs its own loading for a change (Stats' window) leaves it off.
  */
 export function Segmented<V extends string>({
   label,
@@ -25,20 +31,28 @@ export function Segmented<V extends string>({
   options,
   onChange,
   size = 'md',
+  redraws = false,
 }: {
   label: string;
   value: V;
   options: ReadonlyArray<SegOption<V>>;
   onChange: (v: V) => void;
   size?: 'sm' | 'md';
+  /** The change swaps a whole view: it renders after the chip has moved (see above). */
+  redraws?: boolean;
 }) {
   const id = useId();
   const reduced = useChReducedMotion();
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
+  const [changing, startChange] = useTransition();
+  const [chosen, setChosen] = useState<V | null>(null);
+  const shown = changing && chosen !== null ? chosen : value;
   const pick = (v: V) => {
-    if (v === value) return;
+    if (v === shown) return;
     haptic('select');
-    onChange(v);
+    if (!redraws) return onChange(v);
+    setChosen(v);
+    startChange(() => onChange(v));
   };
   const onKey = (e: KeyboardEvent, i: number) => {
     const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
@@ -53,7 +67,7 @@ export function Segmented<V extends string>({
   return (
     <div className={`ch-seg ch-well ch-seg--${size}`} role="radiogroup" aria-label={label}>
       {options.map((o, i) => {
-        const on = o.value === value;
+        const on = o.value === shown;
         return (
           <button
             key={o.value}

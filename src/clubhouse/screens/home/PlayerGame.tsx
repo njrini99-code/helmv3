@@ -90,7 +90,7 @@ function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean;
   // The phone's card always offers all three windows, as the board's does; the desktop's only the ones with rounds to fill them.
   const options = (phone ? SPANS : SPANS.filter((k) => k === 5 || all.length > k / 2)).map((k) => ({ value: `${k}` as `${Span}`, label: `Last ${k}` }));
   const picker = (
-    <Segmented<`${Span}`> size={phone ? 'md' : 'sm'} label="Rounds shown" value={`${n}`} onChange={(v) => setN(Number(v) as Span)} options={options} />
+    <Segmented<`${Span}`> redraws size={phone ? 'md' : 'sm'} label="Rounds shown" value={`${n}`} onChange={(v) => setN(Number(v) as Span)} options={options} />
   );
   const body = data.scoring.error ? (
     <RefreshNotice code="CH-2215" title="Your rounds didn’t load" body="Posted rounds are safe. Try again; the error has been reported." covered={covered} />

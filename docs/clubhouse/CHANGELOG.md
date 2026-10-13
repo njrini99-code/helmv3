@@ -18,10 +18,19 @@ framer's `x`, `y` and `scale` run on the main thread, so any render work during 
 - **Settings sections** (CH-8609) and the **peek card**: transform strings, so they run on the compositor.
 - **Skeletons** (phone): the sheen is its own layer slid by transform; the shared sweep repainted every block on
   every frame while a page loaded.
+- **Popovers, menus, content swaps, Settings panels, the offline banner, the Saved tick and the roster peek**: the
+  shared presets (`CH_POP`, `chSwap`, `CH_ROUTE`) and these one-offs move by transform strings, on the compositor
+  with their fade. Same distances and timing.
+- **Segmented view switches** (`Segmented redraws`: Calendar's views, Rounds' grouping, the team roster's sort,
+  Messages' filter, a player's rounds shown): the chip moves in the tap's frame and the view renders after it as a
+  transition, so the chip starts about 40ms sooner (WebKit, dev). Stats' window switch keeps its own loading.
 - **Bell** (fix): its portal waits for hydration; the always-rendered drop made the server and client HTML differ.
 - **Checked and left as they are** (measured): the overlay scroll lock (0 to 3ms a frame), the `:has()` rules (no
   measurable style cost), the notification stacks' fan (no frame over 13ms), Modal's CSS rise and the dialog exit
-  (already on the compositor), the page crossfade and push/pop view transitions.
+  (already on the compositor), the page crossfade and push/pop view transitions, the strip's root attribute (no
+  measurable style cost), and the small colour and shadow fades on controls (small repaints). Tried and dropped:
+  rendering a sheet's or a pushed screen's body a frame after its frame; it started the motion 10 to 30ms sooner on
+  the dev build but loses the body being there when the sheet opens. Toasts keep framer's y (their swipe and reflow).
 
 ## 2026-10-12 — Phone navigation: the section strip; notifications as stacks
 
