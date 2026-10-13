@@ -26,7 +26,7 @@ import { shouldPersistAdminTables, getRuntimeEnv } from '@/lib/telemetry-gate';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { Json } from '@/lib/types/database';
 import { buildIncidentSignature, type IncidentSeverity } from '@/lib/admin/incident-grouping';
-import { classifyTraceSurface } from '@/lib/error-trace-classification';
+import { classifyTraceFeature, classifyTraceSurface } from '@/lib/error-trace-classification';
 import { markBridgeLogged } from '@/lib/bridge-logged-marker';
 import { getRequestId, getRequestUserId, isRequestUserIdUnverified } from '@/lib/admin/request-context';
 import { collapseEmbeddedHtml, collapseEmbeddedRawJsonDump, describeError } from '@/lib/utils/describe-error';
@@ -339,8 +339,10 @@ function enrichTraceContext(message: string, rawContext: RoundErrorContext): Rou
 
   const sport = inferSport(message, context);
   if (!sport) return context;
-  const probe = `${context.route ?? ''} ${context.url ?? ''} ${context.action ?? ''} ${message}`;
-  const classified = classifyTraceSurface(probe, context.action ?? null);
+  const classified = classifyTraceFeature(
+    { route: context.route ?? null, url: context.url ?? null, action: context.action ?? null },
+    message,
+  );
   return {
     ...context,
     sport,

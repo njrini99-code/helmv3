@@ -1587,6 +1587,10 @@ export async function loadGolfConversationRail(
 
       if (myRowsError) {
         lastReadFailed = true;
+        // The browser client's own request deadline (Bridge 44137d5f, same
+        // class as af4c2c9d above): the badge already falls back to the RPC
+        // count, so a deadline abort is not reported. Anything else is.
+        if (isClientDeadlineAbort(myRowsError)) continue;
         logError(
           toPostgrestError(myRowsError),
           {

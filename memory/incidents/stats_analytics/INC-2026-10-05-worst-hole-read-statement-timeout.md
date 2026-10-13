@@ -3,7 +3,7 @@
 - Feature: `stats_analytics`
 - Surface: `stats_data.getWorstHoleAnalysis` (GET /golf/dashboard/stats)
 - Fingerprint: `b99a5da6` (/admin/errors/b99a5da6); Sentry JAVASCRIPT-NEXTJS-Z0, JAVASCRIPT-NEXTJS-XP
-- Status: fixed in PR (awaiting merge and deploy)
+- Status: verified in production (PR #2124, 9b9e5477; live since 2026-10-11 05:00Z, dpl_Cs4dJ1qgkGhC7zATns2ysGLs7scw; 0 occurrences after 2026-10-08 20:17Z; resolved by the desktop health routine 2026-10-12)
 - First seen: 2026-09-18 (fingerprint); regressed 2026-10-01 after an auto-resolve
 - Last seen: 2026-10-05T15:48Z; 24 occurrences in the 24h before 2026-10-05T15:50Z, 11 users (Sentry XP)
 

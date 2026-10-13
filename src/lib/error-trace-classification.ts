@@ -100,3 +100,22 @@ export function classifyTraceSurface(routeOrUrl: string | null | undefined, comp
 
   return { sport, feature: null };
 }
+
+/**
+ * Classify a server trace by its WHERE (route, url, action) before its WHAT
+ * (the message). `classifyTraceSurface` is first-match over one string, so
+ * reading route + message together let message text override an unambiguous
+ * route: on 2026-10-13 (d9ed17ef) a /baseball/coach-onboarding failure was
+ * tagged `baseball_messages` because Next's error links
+ * "nextjs.org/docs/messages/…". The message is only consulted when the
+ * route says nothing.
+ */
+export function classifyTraceFeature(
+  where: { route?: string | null; url?: string | null; action?: string | null },
+  message: string,
+): TraceClassification {
+  const surface = `${where.route ?? ''} ${where.url ?? ''} ${where.action ?? ''}`.trim();
+  const byRoute = classifyTraceSurface(surface, where.action ?? null);
+  if (byRoute.feature) return byRoute;
+  return classifyTraceSurface(`${surface} ${message}`, where.action ?? null);
+}

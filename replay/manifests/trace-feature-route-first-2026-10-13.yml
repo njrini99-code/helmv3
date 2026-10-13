@@ -1,0 +1,28 @@
+schema_version: 1
+replay_id: trace-feature-route-first-2026-10-13
+incident_id: memory/incidents/baseball_core/INC-2026-10-13-use-server-object-export-breaks-coach-onboarding.md
+feature_id: observability_sentry
+title: >-
+  Server traces were classified on route + message as one first-match string,
+  so a Next docs link containing '/messages/' tagged a coach-onboarding failure
+  as baseball_messages; the route now decides before the message.
+bad_version: 666b2ebd355c39ab27924752fa992cd694efe0d6
+fixed_version: 717aca0e5fd33f36a75542abd02bb5e85f2c2e6b
+fixture:
+  - source: error-trace-classification.test.ts
+    target: src/lib/__tests__/error-trace-classification.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/lib/__tests__/error-trace-classification.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: missing-export
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic route and message strings (the public Next.js error text); no
+    production rows, PII, tokens or logs.
+source_incident_status: fixed
+created_at: "2026-10-13"
+notes: >-
+  On bad_version classifyTraceFeature is not exported (2 cases fail).
