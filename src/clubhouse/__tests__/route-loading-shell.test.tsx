@@ -42,7 +42,7 @@ describe('/golf loading boundary', () => {
     flag.on = true;
     const { container } = render(<GolfLoading />);
     expect(container.querySelector('[data-ui="clubhouse"]')).not.toBeNull();
-    expect(container.querySelector('.ch-tabbar')).not.toBeNull();
+    expect(container.querySelector('.ch-topbar')).not.toBeNull();
     expect(container.querySelector('[data-fairway-shell]')).toBeNull();
     expect(container.querySelector('[data-fairway-dashboard]')).toBeNull();
   });

@@ -9,6 +9,7 @@ import { useChReducedMotion } from '../lib/reduced-motion';
 import { poppedByUA } from '../lib/ua-pop';
 import { PhoneBarParts, type ChPhoneBarParts } from '../ui/PhoneBar';
 import type { ChPhonePushedTop } from './nav';
+import { SectionTrigger } from './section-switch';
 
 /**
  * What a page asks of the phone chrome (owner design, docs/clubhouse/phone/foundation.md).
@@ -132,16 +133,13 @@ export function usePhonePushed(present: boolean): void {
 export const CH_UNDERLAY_SHIFT = 0.24;
 
 /**
- * What draws back under the pushed screens: the tab bar, and inside the canvas everything that holds no screen (the
- * top bar, the offline banner, and each part of the page beside the screens). The screens are fixed descendants of
- * the page, and a transform on any of their ancestors would pin them to it, so those ancestors stay put and their
+ * What draws back under the pushed screens: inside the canvas, everything that holds no screen (the top bar, the
+ * offline banner, and each part of the page beside the screens). The screens are fixed descendants of the page, and a transform on any of their ancestors would pin them to it, so those ancestors stay put and their
  * other children move instead. A dialog and a popover sit in the top layer and keep their place.
  */
 export function underlayParts(): HTMLElement[] {
   const screens = Array.from(document.querySelectorAll<HTMLElement>('.ch-pscreen'));
   const parts: HTMLElement[] = [];
-  const tabs = document.querySelector<HTMLElement>('.ch-root .ch-tabbar');
-  if (tabs) parts.push(tabs);
   const walk = (el: Element) => {
     for (const child of Array.from(el.children)) {
       if (!(child instanceof HTMLElement) || screens.includes(child) || child.matches('dialog, [popover]')) continue;
@@ -235,12 +233,15 @@ export function PhoneTop(props: ChPhoneBarParts) {
       if (root) setRootTop((n) => n - 1);
     };
   }, [setPageTop, setRootTop, root]);
-  return slot ? createPortal(<PhoneBarParts {...props} />, slot) : null;
+  // A start title is its section's name, so it is the section switcher (section-strip.md).
+  const title = props.start ? <SectionTrigger>{props.title}</SectionTrigger> : props.title;
+  return slot ? createPortal(<PhoneBarParts {...props} title={title} />, slot) : null;
 }
 
 /**
- * The "‹ More" back link on a page opened from the More sheet: it returns to
- * wherever the user came from (D-41), or Home when the page was opened directly.
+ * Back to wherever the user came from, or Home when the page was opened directly (D-41). Once the "‹ More" link on
+ * pages opened from the More sheet; the strip made those pages roots (section-strip.md), and the shell's stand-in for
+ * a pushed page still uses it.
  */
 export function useBackFromMore(): () => void {
   const router = useRouter();

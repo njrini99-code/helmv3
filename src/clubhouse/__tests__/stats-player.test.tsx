@@ -447,11 +447,11 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(hapticSpy).toHaveBeenCalledWith('error');
   });
 
-  it('a player: My stats, back to More, no Share, no Message, no Add', () => {
+  it('a player: My stats as a section root (no back link), no Share, no Message, no Add', () => {
     phone(player({ viewer: 'player' }), undefined, null);
     expect(top().textContent).toContain('My stats');
     expect(within(top()).queryByRole('heading')).toBeNull();
-    expect(within(top()).getByRole('button', { name: 'Back to More' })).toBeTruthy();
+    expect(within(top()).queryByRole('button', { name: 'Back to More' })).toBeNull();
     expect(within(top()).queryByRole('button', { name: /Share/ })).toBeNull();
     expect(screen.queryByRole('link', { name: /Message/ })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Add focus area' })).toBeNull();

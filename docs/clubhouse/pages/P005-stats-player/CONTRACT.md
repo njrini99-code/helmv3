@@ -302,7 +302,7 @@ The profile's own (51801 to 51807): real tabs with their panels, "Stats › name
 | 51809 | CH-5809 | `THE_ROUND_FILTER_AS_ON_TEAM_STATS` | The round filter, as on Team stats (CH-4806): the Filter button opens a labelled dialog, each chip is "Remove filter: …", Clear is "Clear filters", the count line is a polite status region, choices (round type, holes, pick mode) are toggle buttons and courses and rounds are checkboxes, all in labelled groups, and the date fields carry their error as their description |
 | 51810 | CH-5810 | `SHARE_BEST_SCORE_OPENS_A_LABELLED_DIALOG` | Share best score (P005-C2) opens a labelled dialog with the card as an image whose alt names the score, the player, the course and the date; Share is the one primary. The card shows no school or team name and, unless the player shares it, their first name and last initial |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816.
 
 ## 19 — Responsive layout
 

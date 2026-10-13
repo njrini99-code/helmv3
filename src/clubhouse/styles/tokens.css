@@ -217,7 +217,7 @@
   --ch-topbar-h: 56px;
   /* Phone chrome (owner design, design/handoff/mobile/m-shell.jsx, m.css; D-40, D-43) */
   --ch-phone-topbar-h: 50px; /* a 44px row and 6px below it, under the status bar */
-  --ch-tabbar-h: 56px;
+  --ch-tabbar-h: 0px; /* no bottom bar on the phone since the section strip (section-strip.md); kept for its readers */
 
   /* The global light (P001-A1, D3-1; owner 2026-10-08). One sun for the whole Clubhouse, from the team's course location
      (Team settings; the team's time zone until it is set) and the time. shell/light.tsx writes these unitless numbers on
@@ -390,6 +390,11 @@
   --ch-elevation-bubble: 0 1px 2px rgb(28 25 18 / 0.04);
   --ch-bubble-mine-bg: linear-gradient(180deg, #1e6a45 0%, #155a39 60%, #0f4a2f 100%);
   --ch-elevation-bubble-mine: 0 1px 2px rgb(11 58 37 / 0.08);
+  /* The phone section strip and the notification drop's glass (section-strip.md): drop-only, the caller keeps its rim. */
+  --ch-elevation-strip: 0 18px 30px -18px rgb(6 20 12 / 0.45);
+  --ch-elevation-strip-plate: 0 4px 12px rgb(0 0 0 / 0.18);
+  --ch-elevation-glass-card: 0 12px 28px rgb(0 0 0 / 0.2);
+  --ch-elevation-glass-edge: 0 8px 18px rgb(0 0 0 / 0.16);
   --ch-control-bg: var(--ch-raised-bg);
   --ch-field-pill-edge: inset 0 0 0 1px rgb(28 25 18 / 0.14);
   --ch-field-pill-edge-focus: inset 0 0 0 1.5px var(--ch-border-focus);
@@ -667,6 +672,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     var(--ch-light-drift-mid) -12px 32px -12px rgb(0 0 0 / 0.5);
   --ch-elevation-bubble: 0 1px 2px rgb(0 0 0 / 0.3);
   --ch-elevation-bubble-mine: 0 1px 2px rgb(0 0 0 / 0.3);
+  --ch-elevation-strip: 0 18px 30px -16px rgb(0 0 0 / 0.6);
+  --ch-elevation-strip-plate: 0 4px 12px rgb(0 0 0 / 0.4);
+  --ch-elevation-glass-card: 0 12px 28px rgb(0 0 0 / 0.45);
+  --ch-elevation-glass-edge: 0 8px 18px rgb(0 0 0 / 0.38);
   --ch-field-pill-edge: inset 0 0 0 1px rgb(237 231 216 / 0.16);
   --ch-switch-track-bg: #3a423b;
   --ch-switch-track-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05), inset 0 1px 2px rgb(0 0 0 / 0.4);

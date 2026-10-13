@@ -1184,8 +1184,7 @@ describe('Classes, on the phone', () => {
     expect(document.querySelector('.ch-cl')!.className).toContain('is-phone');
     const top = screen.getByTestId('phone-top');
     expect(within(top).getByRole('heading', { level: 1, name: 'Classes' })).toBeTruthy();
-    await user.click(within(top).getByRole('button', { name: 'Back to More' }));
-    expect(router.back.mock.calls.length + router.push.mock.calls.length).toBeGreaterThan(0);
+    expect(within(top).queryByRole('button', { name: 'Back to More' })).toBeNull();
     expect(names()).toHaveLength(5);
     await user.click(headerButton('Add class'));
     expect(await screen.findByRole('dialog', { name: 'Add a class' })).toBeTruthy();

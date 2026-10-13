@@ -609,13 +609,12 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
       .map((b) => b.getAttribute('aria-label')!.split(',')[0]);
   const profileHeading = (name: string) => screen.queryByRole('heading', { level: 2, name });
 
-  it('the top bar reads "‹ More", Roster, and Invite players, which opens the invite sheet', async () => {
+  it('the top bar is the section title Roster (no "‹ More") and Invite players, which opens the invite sheet', async () => {
     const user = userEvent.setup();
     phone(roster());
     const top = screen.getByTestId('phone-top');
     expect(within(top).getByRole('heading', { level: 1, name: 'Roster' })).toBeTruthy();
-    await user.click(within(top).getByRole('button', { name: 'Back to More' }));
-    expect(router.back.mock.calls.length + router.push.mock.calls.length).toBeGreaterThan(0);
+    expect(within(top).queryByRole('button', { name: 'Back to More' })).toBeNull();
     await user.click(within(top).getByRole('button', { name: 'Invite players' }));
     expect(await screen.findByText('FINLEY-26')).toBeTruthy();
     // An icon action that isn't a primary button is silent (D-70).

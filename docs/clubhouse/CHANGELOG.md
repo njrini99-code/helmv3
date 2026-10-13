@@ -1,5 +1,41 @@
 # Clubhouse changelog
 
+## 2026-10-12 — Phone navigation: the section strip; notifications as stacks
+
+Owner-approved from interactive prototypes (no owner board; spec in
+`docs/clubhouse/phone/section-strip.md`).
+
+- **No tab bar.** The phone's floating tab bar and the More sheet's section
+  rows are gone; the page runs to the bottom edge (`--ch-tabbar-h` is 0).
+  The section's name in the green top bar is the switcher (`SectionTrigger`,
+  CH-1816): tap it, pull the bar down, or swipe the bar sideways on a
+  section's own page. A pull draws the strip out under the finger; a swipe
+  moves the title with resistance, commits past 56pt or a flick, and never
+  wraps. Large titles carry a chevron and open it too.
+- **The strip** (`SectionStrip`, CH-1808): every section the role has (the old
+  tabs first, the sidebar's order, then Settings), then an Account pill. It
+  slides out from under the bar on the smooth spring in the bar's green with
+  its own sheet lip; the current section is centred on an ivory plate that
+  glides (`layoutId`, settle spring); counts sit on their pills and the closed
+  title carries a dot. Tapping the current section pops pushed screens or
+  scrolls to the top (CH-1907).
+- **Account sheet** (`AccountSheet`, CH-1802, once the More sheet): who you
+  are, the coach's team switch, Help and Sign out.
+- **Back links.** Pages that said "‹ More" are section roots now: their bars
+  show the switcher (`PhoneTop start`), and `phonePushedTop` returns null for
+  them. Pages below a section still push.
+- **Notifications** (`BellStacks`, CH-1811): on the phone the bell drops a
+  green veil from under the bar and the feed as lock-screen stacks: unread by
+  kind (newest stack first), everything read folded into Earlier. Tap a stack
+  to fan it out (one at a time); swipe a card left, or a stack's ×, to mark it
+  read; Mark all read in the head. The rules are `notification-stacks.ts`
+  (tested). The veil pours down by transform only and the stacks land on the
+  new `reveal` spring (D-64's reveal duration, no bounce); they leave on
+  smooth at the speed they were thrown. The feed starts loading on touch-down.
+- **The Ask CoachHelm key** is off the phone top bar (desktop keeps it).
+- Haptics: `select` when the section changes and when a stack fans; opening the
+  strip is silent; the account pill ticks as the More button did.
+
 ## 2026-10-12 — Router cache back to Next's default
 
 The app-wide 30s dynamic stale time (`experimental.staleTimes`, native-feel

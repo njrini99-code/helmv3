@@ -243,7 +243,7 @@
     "item": 10,
     "name": "SIGNING_OUT_FROM_THE_PHONES_MORE_SHEET",
     "chCode": "CH-1002",
-    "meaning": "Signing out from the phone's More sheet fails",
+    "meaning": "Signing out from the phone's account sheet fails",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -455,7 +455,7 @@
     "item": 2,
     "name": "OPENING_MORE_ON_A_PHONE",
     "chCode": "CH-1602",
-    "meaning": "Opening More on a phone",
+    "meaning": "Opening the account sheet on a phone (the strip's Account pill; once More)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -686,8 +686,8 @@
     "item": 1,
     "name": "CHANGING_TABS",
     "chCode": "CH-1701",
-    "meaning": "Changing tabs (not tapping the tab they're on)",
-    "status": "implemented",
+    "meaning": "Changing section (a strip pill or a committed swipe on the bar; not the section they're on)",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -719,7 +719,7 @@
     "item": 4,
     "name": "OPENING_MORE_SWIPING_THE_SHEET_AWAY",
     "chCode": "CH-1704",
-    "meaning": "Opening More; swiping the sheet away",
+    "meaning": "Opening the account sheet; swiping it away",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -796,7 +796,7 @@
     "item": 2,
     "name": "THE_PHONE_MORE_SHEET_IS_MODAL_FOCUS",
     "chCode": "CH-1802",
-    "meaning": "The phone More sheet is modal: focus moves in without scrolling, Tab stays inside, Esc closes it and focus returns to More without scrolling. The underlying page stays stationary until the full exit completes",
+    "meaning": "The phone account sheet (the section strip's last pill; once the More sheet) is modal: focus moves in without scrolling, Tab stays inside, Esc closes it and focus returns to the section title without scrolling. It holds who you are, the coach's team switch, Help and Sign out. The underlying page stays stationary until the full exit completes",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -808,7 +808,7 @@
     "name": "THE_CURRENT_PAGE_IS_MARKED_IN_THE",
     "chCode": "CH-1803",
     "meaning": "The current page is marked in the sidebar and tab bar; the sidebar and its navigation are named landmarks; breadcrumbs mark the current page",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -862,7 +862,7 @@
     "item": 8,
     "name": "THE_PHONE_TAB_BAR_LISTS_THE_ROLES",
     "chCode": "CH-1808",
-    "meaning": "The phone tab bar lists the role's tabs (coach: Home, CoachHelm, Calendar, Stats, More; player: Home, CoachHelm, Rounds, Team Hub, More; D-66), and when Messages is under More, More is named with its unread count (\"More, 3 unread messages\")",
+    "meaning": "The phone section strip (section-strip.md) lists the role's sections, the old tabs first (coach: Home, CoachHelm, Calendar, Stats; player: Home, CoachHelm, Rounds, Team Hub; D-66), then the sidebar's order, then Settings and the Account pill; the current one is `aria-current`; a pill with a count is named with it (\"Messages 3 new\"). Shut, it is hidden and inert",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -895,7 +895,7 @@
     "item": 11,
     "name": "ON_THE_PHONE_THE_BELL_OPENS_AS",
     "chCode": "CH-1811",
-    "meaning": "On the phone the bell opens as a modal sheet instead of a popover: focus moves in, Tab stays inside, Esc, Close or the scrim close it and focus returns to the bell; the edge swipe is off while it is up",
+    "meaning": "On the phone the bell drops the feed as lock-screen stacks under a green veil (`BellStacks`, notification-stacks.ts) instead of a popover: a modal dialog; focus moves in, Tab stays inside, Esc, a tap on the open space, the bell or a drag up closes it and focus returns to the bell; the edge swipe is off while it is up",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -928,7 +928,7 @@
     "item": 14,
     "name": "ON_THE_PHONE_THE_SAME_COACH_SEES",
     "chCode": "CH-1814",
-    "meaning": "On the phone the same coach sees their teams in the More sheet, under who they are, the current one marked (`aria-current`); a switch closes the sheet on the new team, a refused one leaves it open with the reason",
+    "meaning": "On the phone the same coach sees their teams in the account sheet, under who they are, the current one marked (`aria-current`); a switch closes the sheet on the new team, a refused one leaves it open with the reason",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -1043,6 +1043,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 11825,
+    "page": "P001",
+    "category": 18,
+    "item": 25,
+    "name": "ON_THE_PHONE_THE_SECTIONS_NAME_IN",
+    "chCode": "CH-1816",
+    "meaning": "On the phone the section's name in the top bar is the section switcher: a button with a chevron (`aria-expanded`, `aria-controls=\"ch-strip\"`) that opens the section strip, with a dot and a spoken note while another section has something new; on a section's own page a pull down on the bar draws the strip and a sideways swipe steps to the next section",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 11901,
     "page": "P001",
     "category": 19,
@@ -1073,7 +1084,7 @@
     "item": 2,
     "name": "ON_THE_PHONE_TAPPING_THE_TAB_THAT",
     "chCode": "CH-1907",
-    "meaning": "On the phone, tapping the tab that is already open",
+    "meaning": "On the phone, tapping the strip's pill for the section already open",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },

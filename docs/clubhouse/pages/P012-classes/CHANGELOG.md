@@ -1,5 +1,13 @@
 # P012 — Classes: changelog
 
+## 2026-10-12 — A section root on the phone (no "‹ More")
+
+The phone shell's section strip replaced the tab bar and the More sheet
+(docs/clubhouse/phone/section-strip.md). Classes's phone top bar no longer
+draws a "‹ More" back link: its title is a start title (`PhoneTop start`),
+which the shell turns into the section switcher. The page's action, where it
+has one, is unchanged. Shared change: docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-11 — The timetable bar's depth is a token; it no longer glides
 
 Presentation only. The meeting bar's small green glow is `--ch-elevation-mark`

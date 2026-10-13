@@ -15,6 +15,11 @@ assistive-technology acceptance.
 
 Status: approved (owner design, design/handoff/mobile/m-shell.jsx, m.css)
 
+> **Superseded in part (2026-10-12):** the tab bar (`MTabs`, D-40) and the More sheet's section rows (D-41) are
+> replaced by the section strip: the section's name in the top bar opens a strip of every section, and the
+> notifications bell drops lock-screen stacks. See [section-strip.md](section-strip.md). The rest of this file
+> (top bar variants, pushed screens, sheets) still holds.
+
 The owner's phone shell: `m-shell.jsx` (`MApp`, `MTop`, `MTabs`, `MSheet`, `MSafari`) with `m.css` and
 the `qm-*` rules in `qual-mobile.css`, all from the design project (commit 1fd55a79c; `m.css` refreshed
 in ccbd33465). So far the shell is drawn only inside the Messages boards (`Messages Mobile.html`), so

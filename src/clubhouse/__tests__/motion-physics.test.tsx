@@ -21,7 +21,7 @@ vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({}) }));
 import { CH_DUR, CH_SPRINGS, chSpring, chSpringAt, chSpringCurve } from '../lib/motion';
 import { rubberBand, takeSheetFling, useSheetDrag } from '../lib/sheet-drag';
 import { poppedByUA } from '../lib/ua-pop';
-import { TabBar } from '../shell/TabBar';
+import { PhoneNav } from './phone-nav-harness';
 import { Modal } from '../ui/Modal';
 import { Slider } from '../ui/Slider';
 import { ToastProvider, useToast } from '../ui/Toast';
@@ -45,9 +45,9 @@ afterEach(() => {
 });
 
 describe('D-64 springs (extension, 2026-10-08)', () => {
-  it('keep the D-64 base duration with a bounce of 0 to 0.1, handed to framer as stiffness and damping so velocity carries', () => {
-    for (const { visualDuration, bounce } of Object.values(CH_SPRINGS)) {
-      expect(visualDuration).toBe(CH_DUR.base);
+  it('keep the D-64 base duration (the drop\'s reveal spring: D-64\'s reveal) with a bounce of 0 to 0.1, handed to framer as stiffness and damping so velocity carries', () => {
+    for (const [kind, { visualDuration, bounce }] of Object.entries(CH_SPRINGS)) {
+      expect(visualDuration).toBe(kind === 'reveal' ? CH_DUR.reveal : CH_DUR.base);
       expect(bounce).toBeGreaterThanOrEqual(0);
       expect(bounce).toBeLessThanOrEqual(0.1);
     }
@@ -357,7 +357,7 @@ describe('CH-1907 tapping the tab already open', () => {
   it('at its root, scrolls to the top without a tick', () => {
     const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
     // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
-    render(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
+    render(<PhoneNav pathname="/golf/dashboard" shell={shell} role="coach" />);
     const home = screen.getByRole('link', { name: /Home/ });
     const click = new MouseEvent('click', { bubbles: true, cancelable: true });
     act(() => {
@@ -373,7 +373,7 @@ describe('CH-1907 tapping the tab already open', () => {
     window.history.replaceState({ chPhone: 2 }, '');
     try {
       // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
-      render(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
+      render(<PhoneNav pathname="/golf/dashboard" shell={shell} role="coach" />);
       fireEvent.click(screen.getByRole('link', { name: /Home/ }));
       expect(go).toHaveBeenCalledWith(-2);
       expect(haptics.haptic).not.toHaveBeenCalled();

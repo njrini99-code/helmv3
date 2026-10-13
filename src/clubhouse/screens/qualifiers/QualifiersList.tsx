@@ -15,7 +15,7 @@ import { useChSessionState } from '../../lib/session-state';
 import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { formatToPar, NO_DATA } from '../../lib/format';
-import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
+import { PhoneTop } from '../../shell/phone-chrome';
 import { ctaLabel, endedLive, listLede } from './model';
 import { Meta, Pos, StatusPill, ToParPlate } from './parts';
 import { isPlainClick, noteOpenedFromList } from './return-state';
@@ -35,7 +35,6 @@ const opened = (id: string, from: 'hero' | 'card') => (e: MouseEvent) => {
 /** Qualifiers list, coach and player. `mine` is a player's own entries (/my-qualifiers). */
 export function QualifiersList({ data }: { data: ChQList }) {
   const { refresh, refreshing } = useRefresh();
-  const backFromMore = useBackFromMore();
   const coach = data.role === 'coach';
   // A player's own list is only as good as the entries read: without it nothing says who they are entered in.
   const mineUnknown = data.mode === 'mine' && !!data.entriesError;
@@ -71,7 +70,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
   return (
     <main className="ch-qf ch-qf--list" data-canopy="">
       {/* Phone (board 01): Qualifiers opens from More (D-66), so the top bar goes back there. */}
-      <PhoneTop heading={false} title={data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} back={{ label: 'More', onBack: backFromMore }} />
+      <PhoneTop heading={false} title={data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} start />
       <header className="ch-qf-head" data-canopy-head="">
         <div>
           <span className="ch-qf-eyebrow ch-num">

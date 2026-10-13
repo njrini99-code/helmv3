@@ -40,10 +40,13 @@ export function chTween(duration: keyof typeof CH_DUR = 'base', reduced = false)
  * plate carry their speed through the sampled curve (chSpringCurve, sheet-drag's chThrownExit).
  *   smooth  anchored parts, which never pass their mark from rest: sheets, pushed screens, the nav plate.
  *   settle  a free part arriving: the segmented pill, a swap's incoming copy.
+ *   reveal  a layer that comes over the whole screen and should glide, not snap: the phone notification drop
+ *           (owner 2026-10-12, "ultra smooth"). D-64's reveal duration, no bounce. It leaves on smooth.
  */
 export const CH_SPRINGS = {
   smooth: { visualDuration: CH_DUR.base, bounce: 0 },
   settle: { visualDuration: CH_DUR.base, bounce: 0.1 },
+  reveal: { visualDuration: CH_DUR.reveal, bounce: 0 },
 } as const;
 export type ChSpringKind = keyof typeof CH_SPRINGS;
 

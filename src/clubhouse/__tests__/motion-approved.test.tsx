@@ -71,16 +71,15 @@ describe('CH-1618 the page draws back under a pushed screen', () => {
             </div>
           </div>
         </div>
-        <nav class="ch-tabbar"></nav>
       </div>`;
     const q = (s: string) => document.querySelector<HTMLElement>(s)!;
     return { q };
   }
 
-  it('moves the bars and every part of the page that holds no screen, never a screen, its ancestors or a dialog', () => {
+  it('moves the bar and every part of the page that holds no screen, never a screen, its ancestors or a dialog', () => {
     const { q } = shellDom();
     const parts = underlayParts();
-    expect(parts).toEqual(expect.arrayContaining([q('.ch-tabbar'), q('.ch-topbar'), q('.ch-offline'), q('.list')]));
+    expect(parts).toEqual(expect.arrayContaining([q('.ch-topbar'), q('.ch-offline'), q('.list')]));
     for (const still of ['.ch-pscreen', '.ch-frame-route', 'main.page', '.sheet', '.ch-canvas']) expect(parts).not.toContain(q(still));
   });
 
@@ -92,7 +91,7 @@ describe('CH-1618 the page draws back under a pushed screen', () => {
     expect(q('.list').style.translate).toBe('-24.000vw 0');
     expect(q('.ch-topbar').style.willChange).toBe('transform');
     placeUnderlay(parts, 0.5);
-    expect(q('.ch-tabbar').style.translate).toBe('-12.000vw 0');
+    expect(q('.ch-offline').style.translate).toBe('-12.000vw 0');
     placeUnderlay(parts, 0);
     for (const el of parts) {
       expect(el.style.translate).toBe('');
@@ -318,16 +317,16 @@ describe('CH-1619 a page fades in over its route skeleton', () => {
 
 describe('the bars never fade or move during a page change (native-feel audit 2026-10-08, P0-3)', () => {
   const shell = readFileSync(join(process.cwd(), 'src/clubhouse/styles/shell.css'), 'utf8');
-  it('names the top bar and tab bar, shows their new state at once and hides the old', () => {
+  it('names the top bar and the section strip, shows their new state at once and hides the old', () => {
     expect(shell).toMatch(/\[data-ui='clubhouse'\] \.ch-topbar \{\s*view-transition-name: ch-topbar;/);
-    expect(shell).toMatch(/\[data-ui='clubhouse'\] \.ch-tabbar \{\s*view-transition-name: ch-tabbar;/);
-    for (const bar of ['ch-topbar', 'ch-tabbar']) {
+    expect(shell).toMatch(/\[data-ui='clubhouse'\] \.ch-strip \{\s*view-transition-name: ch-strip;/);
+    for (const bar of ['ch-topbar', 'ch-strip']) {
       expect(shell).toContain(`html:has([data-ui='clubhouse'])::view-transition-group(${bar})`);
       expect(shell).toContain(`html:has([data-ui='clubhouse'])::view-transition-new(${bar})`);
       expect(shell).toContain(`html:has([data-ui='clubhouse'])::view-transition-old(${bar})`);
     }
-    expect(shell).toMatch(/::view-transition-new\(ch-tabbar\) \{\s*animation: none;/);
-    expect(shell).toMatch(/::view-transition-old\(ch-tabbar\) \{\s*display: none;/);
+    expect(shell).toMatch(/::view-transition-new\(ch-strip\) \{\s*animation: none;/);
+    expect(shell).toMatch(/::view-transition-old\(ch-strip\) \{\s*display: none;/);
   });
 });
 

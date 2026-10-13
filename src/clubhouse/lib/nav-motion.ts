@@ -15,7 +15,7 @@ const strip = (p: string) => (p.split(/[?#]/)[0] ?? p).replace(/\/$/, '') || '/'
 const within = (child: string, parent: string) => parent !== '/' && child.startsWith(parent + '/');
 
 /**
- * `from` and `to` are paths; `tabRoots` the phone tab bar's destinations. A tap on the tab bar always crossfades. A
+ * `from` and `to` are paths; `tabRoots` the phone's section roots (the section strip's links). A tap on the strip always crossfades. A
  * Back (or a back link) from a page that is not a tab root pops; Forward onto one pushes. A tap onto a page that is not
  * a tab root pushes, unless it goes up to a page above this one, which pops.
  */
@@ -39,7 +39,7 @@ let shownPath = '';
 let lapse = 0;
 
 function tabRoots(): string[] {
-  return Array.from(document.querySelectorAll<HTMLAnchorElement>('.ch-tabbar a[href]')).map((a) => new URL(a.href, location.href).pathname);
+  return Array.from(document.querySelectorAll<HTMLAnchorElement>('.ch-strip a[href]')).map((a) => new URL(a.href, location.href).pathname);
 }
 
 function mark(kind: ChNavKind) {
@@ -77,7 +77,7 @@ function onClick(e: MouseEvent) {
   if (!a || (a.target && a.target !== '_self') || a.hasAttribute('download')) return;
   const url = new URL(a.href, location.href);
   if (url.origin !== location.origin) return;
-  mark(classifyNav({ from: shownPath || location.pathname, to: url.pathname, tabRoots: tabRoots(), tabBar: !!a.closest('.ch-tabbar') }));
+  mark(classifyNav({ from: shownPath || location.pathname, to: url.pathname, tabRoots: tabRoots(), tabBar: !!a.closest('.ch-strip') }));
 }
 
 /** Whether motion is off: the OS setting, or Settings › Animations off (data-motion on the Clubhouse root). */

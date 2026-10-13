@@ -2511,16 +2511,14 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
     expect(within(document.querySelector('.ch-qfs-foot') as HTMLElement).getByRole('button', { name: 'Start selecting' })).toBeTruthy();
   });
 
-  it('91904 the list is topped by "‹ More" and its title, and a player’s own list reads My qualifiers', async () => {
-    const user = userEvent.setup();
+  it('91904 the list is a section root topped by its title (no "‹ More"), and a player’s own list reads My qualifiers', async () => {
     const first = inPhone(<QualifiersList data={list()} />);
     let top = screen.getByTestId('phone-top');
     // One h1 per screen (P009-D6): the bar names the screen as text; the page draws its own h1.
     expect(top.textContent).toContain('Qualifiers');
     expect(within(top).queryByRole('heading')).toBeNull();
     expect(document.querySelectorAll('h1')).toHaveLength(1);
-    await user.click(within(top).getByRole('button', { name: 'Back to More' }));
-    expect(router.back.mock.calls.length + router.push.mock.calls.length).toBe(1);
+    expect(within(top).queryByRole('button', { name: 'Back to More' })).toBeNull();
     first.unmount();
     inPhone(<QualifiersList data={list('player', 'mine')} />);
     top = screen.getByTestId('phone-top');

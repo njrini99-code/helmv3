@@ -1,5 +1,13 @@
 # P008 — Settings: changelog
 
+## 2026-10-12 — A section root on the phone (no "‹ More")
+
+The phone shell's section strip replaced the tab bar and the More sheet
+(docs/clubhouse/phone/section-strip.md). Settings's phone top bar no longer
+draws a "‹ More" back link: its title is a start title (`PhoneTop start`),
+which the shell turns into the section switcher. The page's action, where it
+has one, is unchanged. Shared change: docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-12 — phone Settings opens a linked section without a hydration error
 
 `SettingsPhone` read `window.location` inside its first render to decide whether `?section=` (or an old

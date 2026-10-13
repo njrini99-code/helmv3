@@ -1366,7 +1366,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
   it('81901 the coach root: a large title, the identity row, the sections with their summaries, help, and Sign out', () => {
     phone();
     expect(top().getByRole('heading', { level: 1, name: 'Settings' })).toBeTruthy();
-    expect(top().getByRole('button', { name: 'Back to More' })).toBeTruthy();
+    expect(top().queryByRole('button', { name: 'Back to More' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Maya Reyes Head coach · Varsity' })).toBeTruthy();
     const rows = within(list()).getAllByRole('button');
     expect(rows.map((b) => b.querySelector('.ch-setm-row__l')?.textContent)).toEqual(['Account', 'Notifications', 'Team', 'CoachHelm', 'Preferences']);
@@ -1399,7 +1399,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     await openRow(user, /^Team/);
     // The browser's back (the iOS edge swipe) pops the same screen.
     act(() => window.history.back());
-    expect(await top().findByRole('button', { name: 'Back to More' })).toBeTruthy();
+    await waitFor(() => expect(top().queryByRole('button', { name: 'Back to Settings' })).toBeNull());
     await screen.findByRole('navigation', { name: 'Settings sections' });
   });
 
@@ -1416,7 +1416,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     window.history.replaceState(null, '', '/golf/dashboard/settings?section=notifications');
     phone({ initialSection: 'notifications' });
     expect(screen.getByRole('navigation', { name: 'Settings sections' })).toBeTruthy();
-    expect(top().getByRole('button', { name: 'Back to More' })).toBeTruthy();
+    expect(top().queryByRole('button', { name: 'Back to More' })).toBeNull();
     window.history.replaceState(null, '', '/');
   });
 
@@ -1430,7 +1430,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     window.history.replaceState(null, '', '/golf/dashboard/settings');
     phone({ initialSection: 'account' });
     expect(screen.getByRole('navigation', { name: 'Settings sections' })).toBeTruthy();
-    expect(top().getByRole('button', { name: 'Back to More' })).toBeTruthy();
+    expect(top().queryByRole('button', { name: 'Back to More' })).toBeNull();
   });
 
   it('81901 CH-8008 a kind of update says what is on, and its sheet changes every category in it with one write (player)', async () => {

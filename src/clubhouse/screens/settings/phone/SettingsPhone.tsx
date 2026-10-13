@@ -9,7 +9,7 @@ import { chTween } from '../../../lib/motion';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { initials } from '../../../lib/format';
 import { chTrail } from '../../../lib/track';
-import { PhoneTop, useBackFromMore, usePhoneStackHistory } from '../../../shell/phone-chrome';
+import { PhoneTop, usePhoneStackHistory } from '../../../shell/phone-chrome';
 import { SECTIONS, type ChDevice, type ChSettingsData, type ChSettingsSection, type ChSettingsWrites } from '../model';
 import { useReportProblem, useSignOut } from '../hooks';
 import { AccountPhone, EmailSheet, PasswordSheet, ProfileSheet } from './AccountPhone';
@@ -98,7 +98,6 @@ export function SettingsPhone({
   opened: boolean;
   onDeleted: () => void;
 }) {
-  const backFromMore = useBackFromMore();
   const reduced = useChReducedMotion();
   const sections = SECTIONS[data.role];
   const [section, setSection] = useState<ChSettingsSection | null>(() => (opened && sections.some((x) => x.id === initialSection) ? initialSection : null));
@@ -147,7 +146,8 @@ export function SettingsPhone({
   return (
     <main className="ch-setm" aria-label="Settings">
       <PhoneTop
-        back={section ? { label: 'Settings', onBack: back } : { label: 'More', onBack: backFromMore }}
+        back={section ? { label: 'Settings', onBack: back } : null}
+        start={!section}
         // The design draws the large title in the page and nothing in the bar; the bar's is the screen's heading for VoiceOver.
         title={current?.label ?? 'Settings'}
         titleId="ch-setm-title"

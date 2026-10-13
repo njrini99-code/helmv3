@@ -24,7 +24,7 @@ import { CH_DUR, CH_EASE } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneScreen } from '../../shell/PhoneScreen';
-import { PhoneTop, useBackFromMore, usePhoneStackHistory } from '../../shell/phone-chrome';
+import { PhoneTop, usePhoneStackHistory } from '../../shell/phone-chrome';
 import type { NoteSaved } from './RosterPeek';
 import { RosterProfile } from './RosterProfile';
 import { PlayerPeek } from '../../ui/PlayerPeek';
@@ -78,7 +78,6 @@ export function RosterPhone({
   /** The dialogs (invite, remove confirm), shared with desktop. */
   children?: ReactNode;
 }) {
-  const backFromMore = useBackFromMore();
   const copy = useCopyText();
   const [sort, setSort] = useChSessionState<PhoneSort>('phoneSort', 'avg');
   const [requestsOpen, setRequestsOpen] = useState(false);
@@ -118,7 +117,7 @@ export function RosterPhone({
     <main className="ch-rsm" aria-label="Roster">
       <PhoneTop
         title="Roster"
-        back={{ label: 'More', onBack: backFromMore }}
+        start
         action={
           <PhoneIconAction
             icon={UserPlus}

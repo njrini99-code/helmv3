@@ -19,7 +19,7 @@ import { normalise, useAction, type ServerResult } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
 import { tabListKeys } from '../../lib/tabs';
 import { HUB_TABS, type ChHubTab } from '../../lib/hub-tabs';
-import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
+import { PhoneTop } from '../../shell/phone-chrome';
 import { Announcement, Documents, NewAnnouncementLine, Rsvps, Tasks, TripPass, Updates } from './parts';
 import { AssignSheet, ComposeSheet, ConfirmDelete, TripSheet, type ChAnnouncementEdit } from './sheets';
 import { TripEditSheet } from './trip-edit';
@@ -118,7 +118,6 @@ export function TeamHub({
 }) {
   const router = useRouter();
   const phone = useChPhone();
-  const backFromMore = useBackFromMore();
   const coach = data.role === 'coach';
   const [tab, setTab] = useState<ChHubTab>(initialTab ?? 'home');
   // Consumed by the row on its first paint, so a later toggle, refresh or tab switch never scrolls back to it.
@@ -380,7 +379,7 @@ export function TeamHub({
   return (
     <main className={'ch-hb' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hb-title" data-canopy={phone ? undefined : ''}>
       {phone && !coach && <PhoneTop start title="Team Hub" heading={false} />}
-      {phone && coach && <PhoneTop title="Team Hub" back={{ label: 'More', onBack: backFromMore }} heading={false} />}
+      {phone && coach && <PhoneTop title="Team Hub" start heading={false} />}
       <header className="ch-hb-h" data-canopy-head="">
         <div>
           <span className="ch-hb-role">
