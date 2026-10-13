@@ -116,4 +116,3 @@ describe('the phone canvas runs to the bottom edge (section-strip.md: no tab bar
     expect(css).not.toMatch(/body:not\(\.capacitor\) \[data-ui='clubhouse'\]:not\(\[data-phone-notabs\]\)/);
   });
 });
-

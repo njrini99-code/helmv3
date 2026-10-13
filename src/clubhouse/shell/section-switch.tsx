@@ -368,4 +368,3 @@ export function useSectionGestures(bar: RefObject<HTMLElement | null>, enabled: 
     };
   }, [bar, enabled]);
 }
-
