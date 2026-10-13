@@ -525,7 +525,7 @@ items:
     status: verified
     risk: R1
     sha: null
-    pr: null
+    pr: 2192
     regression_tests:
       - src/lib/__tests__/use-server-exports.guard.test.ts
       - src/app/lifting/actions/__tests__/invites-outbound-gate.test.ts
@@ -542,7 +542,7 @@ items:
     status: verified
     risk: R1
     sha: null
-    pr: null
+    pr: 2192
     regression_tests:
       - src/hooks/golf/__tests__/use-golf-messages.last-read-deadline-abort.test.ts
     queued_for_release: false
