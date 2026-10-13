@@ -1,5 +1,12 @@
 # P011 — Rounds: changelog
 
+## 2026-10-12 — round entry, recovery and continue follow the dashboard role
+
+No visible change for a single-profile user. `/rounds/new`, `/rounds/recover` and
+`/rounds/continue/[id]` draw Clubhouse only when the gate is on for the player and the
+dashboard layout's role (`getGolfDashboardRole`) is the player's, and the autosave and submit
+traces tag `ui` the same way. Fairway, the page's own access checks and the gate-off path are unchanged.
+
 ## 2026-10-12 — the old review address loads in the review's shape
 
 - `rounds/[id]/review/loading.tsx` paints the Clubhouse review skeleton

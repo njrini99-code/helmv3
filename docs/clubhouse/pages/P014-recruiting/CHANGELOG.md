@@ -1,5 +1,11 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-12 — Recruiting follows the dashboard role
+
+Clubhouse Recruiting is drawn only when the gate is on for the coach and the dashboard layout's
+role (`getGolfDashboardRole`) is the coach's: a coach row beside an onboarded player profile (the
+player dashboard) no longer reaches the coach route. Fairway, the page's own access checks and the gate-off path are unchanged.
+
 ## 2026-10-10 — Tokens for the pipeline, gentler coins
 
 Presentation only. The pipeline's coins, connectors and stage chips use palette

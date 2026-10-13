@@ -1,12 +1,12 @@
 // =============================================================================
-// Single-role Clubhouse pages follow the dashboard layout's role.
+// Player round pages follow the dashboard layout's role for Clubhouse.
 //
-// Round entry and recovery are the player's Clubhouse screens; Recruiting is the
-// coach's. Each draws its Clubhouse route only when the gate is on for that role
+// Round entry and recovery are the player's Clubhouse screens. Each draws its Clubhouse route only when the gate is on for that role
 // AND the dashboard layout's role (getGolfDashboardRole, computed for real here
 // from the session's profiles) is that role. A user with both profiles whose
-// dashboard is the other role keeps the Fairway branch, as with the gate off.
-// The pages' own access checks (player profile, coach role) are unchanged.
+// dashboard is the coach's keeps the Fairway branch, as with the gate off.
+// The pages' own player-profile checks are unchanged. Recruiting (coach) has
+// its own case in ../../recruiting/__tests__.
 // =============================================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -33,9 +33,6 @@ function ClubhouseNewRoundRoute() {
 function ClubhouseRoundRecoverRoute() {
   return null;
 }
-function ClubhouseRecruitingRoute() {
-  return null;
-}
 function NewRoundClient() {
   return null;
 }
@@ -44,22 +41,17 @@ function FairwayRecoverRound() {
 }
 vi.mock('@/clubhouse/routes/round-new', () => ({ ClubhouseNewRoundRoute }));
 vi.mock('@/clubhouse/routes/round-recover', () => ({ ClubhouseRoundRecoverRoute }));
-vi.mock('@/clubhouse/routes/recruiting', () => ({ ClubhouseRecruitingRoute }));
 vi.mock('../new/new-round-client', () => ({ default: NewRoundClient }));
 vi.mock('@/components/golf/layout/AnimatedPage', () => ({
   AnimatedPage: ({ children }: { children: unknown }) => children,
   AnimatedItem: ({ children }: { children: unknown }) => children,
 }));
 vi.mock('@/components/fairway/pages/rounds-recover', () => ({ FairwayRecoverRound }));
-vi.mock('@/components/fairway/pages/recruiting', () => ({ FairwayRecruitingPage: () => null }));
-vi.mock('@/components/fairway', () => ({ FeatureUnavailable: () => null, Button: () => null, EmptyState: () => null }));
+vi.mock('@/components/fairway', () => ({ FeatureUnavailable: () => null }));
 vi.mock('@/lib/redesign/flag', () => ({ fairwayScope: (s: string) => s }));
-const getRecruits = vi.hoisted(() => vi.fn(async () => ({ success: true, data: [] })));
-vi.mock('@/app/golf/actions/recruiting', () => ({ getRecruits }));
 
 import NewRoundPage from '../new/page';
 import RecoverRoundPage from '../recover/page';
-import RecruitingPage from '../../recruiting/page';
 
 type El = { type: unknown; props: Record<string, unknown> };
 
@@ -75,7 +67,6 @@ function dualCoachDashboard() {
 beforeEach(() => {
   mocks.clubhouse = true;
   mocks.redirect.mockClear();
-  getRecruits.mockClear();
 });
 
 describe('player round pages', () => {
@@ -99,25 +90,5 @@ describe('player round pages', () => {
     mocks.clubhouse = false;
     expect(((((await NewRoundPage()) as El).props.children as El).props.children as El).type).toBe(NewRoundClient);
     expect((((await RecoverRoundPage()) as El).props.children as El).type).toBe(FairwayRecoverRound);
-  });
-});
-
-describe('Recruiting (coach only)', () => {
-  it('a dual-profile user on the coach dashboard gets Clubhouse Recruiting', async () => {
-    dualCoachDashboard();
-    expect(((await RecruitingPage()) as El).type).toBe(ClubhouseRecruitingRoute);
-    expect(getRecruits).not.toHaveBeenCalled();
-  });
-
-  it('a dual-profile user on the player dashboard never gets coach Clubhouse Recruiting; the Fairway branch is unchanged', async () => {
-    dualPlayerDashboard();
-    const page = (await RecruitingPage()) as El;
-    expect(page.type).not.toBe(ClubhouseRecruitingRoute);
-    expect(getRecruits).toHaveBeenCalledTimes(1);
-  });
-
-  it('a player-only session is still sent Home before any Clubhouse decision', async () => {
-    mocks.session = { userId: 'u-1', role: 'player', coach: null, player: { id: 'p-1', onboarding_completed: true } };
-    await expect(RecruitingPage()).rejects.toThrow('REDIRECT:/golf/dashboard');
   });
 });

@@ -39,7 +39,9 @@ Both actions:
 
 - refuse a malformed qualifier id ("That qualifier link isn't valid.");
 - **HELD gate:** refuse before any read unless `isClubhouseFor('coach')` is true, meaning
-  `golf_clubhouse_ui` is on ("Editing a qualifier's setup isn't available yet.");
+  `golf_clubhouse_ui` is on, and the dashboard layout's role (`getGolfDashboardRole`) is coach, so a
+  user whose dashboard is the player's is refused even with a coach row; the flag is checked first, and
+  a failed role read refuses ("Editing a qualifier's setup isn't available yet.");
 - refuse a signed-out caller, a qualifier the caller can't see, and a caller who doesn't coach the
   qualifier's team (`verifyTeamAccess`);
 - run on the caller's RLS-scoped client, never the service role;

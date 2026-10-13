@@ -1,5 +1,11 @@
 # P007 — Messages: changelog
 
+## 2026-10-12 — conversation files follow the dashboard role
+
+`getGolfConversationFiles` (HELD) asks the gate with the dashboard layout's role, not
+`session.role`, so a user with a coach row on the player dashboard gets the files Clubhouse
+Messages shows them under a team allowlist. Membership still decides who reads what.
+
 ## 2026-10-12 — attachment retry stays Clubhouse-only
 
 No visible change. Messages now asks the shared attachment hook for the

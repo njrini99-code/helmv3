@@ -1,5 +1,10 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-12 — `/stats/team` follows the dashboard role
+
+The old Team stats address opens Clubhouse Stats only when the gate is on for the coach and the
+dashboard layout's role (`getGolfDashboardRole`) is the coach's. Fairway, the page's own access checks and the gate-off path are unchanged.
+
 ## 2026-10-08 — Desktop: trend first, on a deep-green stage
 
 ```text
