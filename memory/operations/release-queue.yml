@@ -532,3 +532,18 @@ items:
       - src/lib/__tests__/error-trace-classification.test.ts
     queued_for_release: false
     first_seen: '2026-10-13T20:58:46Z'
+  - id: last-read-deadline-abort-2026-10-13
+    feature_id: team_communications
+    root_cause: >-
+      The per-viewer last_read_at lookup in loadGolfConversationRail logged the
+      browser Supabase client's own request-deadline abort; the af4c2c9d guard
+      covered only the participants read.
+    incident_id: memory/incidents/team_communications/INC-2026-10-07-conversation-rail-deadline-abort.md
+    status: verified
+    risk: R1
+    sha: null
+    pr: null
+    regression_tests:
+      - src/hooks/golf/__tests__/use-golf-messages.last-read-deadline-abort.test.ts
+    queued_for_release: false
+    first_seen: '2026-10-13T21:48:24Z'

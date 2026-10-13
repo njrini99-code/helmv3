@@ -1,0 +1,29 @@
+schema_version: 1
+replay_id: last-read-deadline-abort-2026-10-13
+incident_id: memory/incidents/team_communications/INC-2026-10-07-conversation-rail-deadline-abort.md
+feature_id: team_communications
+title: >-
+  loadGolfConversationRail's per-viewer last_read_at lookup reported the
+  browser Supabase client's own request-deadline abort ("AbortError: Fetch is
+  aborted") as a Bridge incident (44137d5f); it is now filtered like the
+  participants read (af4c2c9d).
+bad_version: 27c6aa25cebb71aab480584341d6ab1ece1284e8
+fixed_version: 05a3dd30f4ae9bc15f7c150004198ef722d0952b
+fixture:
+  - source: use-golf-messages.last-read-deadline-abort.test.ts
+    target: src/hooks/golf/__tests__/use-golf-messages.last-read-deadline-abort.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/hooks/golf/__tests__/use-golf-messages.last-read-deadline-abort.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic conversation id and the public WebKit abort wording; no
+    production rows, PII, tokens or logs.
+source_incident_status: fixed
+created_at: "2026-10-13"
+notes: >-
+  On bad_version the deadline-abort case reports once (expected 0, got 1).

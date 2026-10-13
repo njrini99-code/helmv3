@@ -34,3 +34,14 @@ next realtime change. Every other failure of the read is still logged.
 ## Verify in production
 
 After deploy: af4c2c9d stops receiving rows from `fetch-team-chat-conversations`.
+
+## 2026-10-13 — second call site (Bridge 44137d5f)
+
+The same deadline abort surfaced from `fetch-per-viewer-last-read` (the viewer's
+`last_read_at` lookup for group conversations, inside `loadGolfConversationRail`)
+on /golf/dashboard/calendar, 1 occurrence 2026-10-13T21:48Z. The 2026-10-07 fix
+filtered only the participants read. Fixed by the desktop health routine with
+the same `isClientDeadlineAbort` guard; other failures still report.
+Regression test: `src/hooks/golf/__tests__/use-golf-messages.last-read-deadline-abort.test.ts`;
+replay `replay/manifests/last-read-deadline-abort-2026-10-13.yml`.
+Status: fix in PR; verified_in_production pending deploy.
