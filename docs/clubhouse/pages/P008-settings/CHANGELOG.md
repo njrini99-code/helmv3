@@ -1,5 +1,14 @@
 # P008 — Settings: changelog
 
+## 2026-10-12 — phone Settings opens a linked section without a hydration error
+
+`SettingsPhone` read `window.location` inside its first render to decide whether `?section=` (or an old
+`/settings/notifications` address) opens a section pushed. The server rendered the list, the browser rendered
+the section, and React threw "Hydration failed" and rebuilt the tree, which also re-rendered the root layout's
+inline scripts ("Encountered a script tag"). The route now decides on the server (`opened`, passed through
+`Settings` and `SettingsView`), so the first client render matches the HTML. Verified in Safari at 402px on
+`?section=notifications` and the bare page: no overlay issues. No visible change otherwise.
+
 ## 2026-10-12 — Settings follows the dashboard layout's role
 
 - The role (coach or player form, and the coach id the loader reads with) is

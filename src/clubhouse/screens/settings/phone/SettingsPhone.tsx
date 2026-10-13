@@ -74,17 +74,6 @@ const SUMMARY: Record<'coach' | 'player', Partial<Record<ChSettingsSection, stri
 };
 
 /**
- * A section named in the URL (`?section=`) opens pushed, and so does the one an old address names
- * (`/settings/notifications`, `/settings/coaching-intelligence`: the route passes it as `initialSection`, with no query).
- * The bare page opens on the list.
- */
-function sectionFromUrl(sections: ReadonlyArray<{ id: ChSettingsSection }>, initialSection: ChSettingsSection): ChSettingsSection | null {
-  if (typeof window === 'undefined') return null;
-  const wanted = new URLSearchParams(window.location.search).get('section') ?? (/^\/golf\/dashboard\/settings\/[^/]+/.test(window.location.pathname) ? initialSection : null);
-  return sections.find((s) => s.id === wanted)?.id ?? null;
-}
-
-/**
  * The phone Settings (owner design, docs/clubhouse/phone/settings.md): a grouped list that pushes to each section, like
  * iOS Settings in Clubhouse styling. A section is a history entry (the edge swipe and Back pop it, CH-1906) and the tab
  * bar stays. Edit cards are sheets, choices are bottom sheets, and destructive choices are action sheets. It reads and
@@ -95,18 +84,24 @@ export function SettingsPhone({
   writes,
   device,
   initialSection,
+  opened,
   onDeleted,
 }: {
   data: ChSettingsData;
   writes: ChSettingsWrites;
   device: ChDevice;
   initialSection: ChSettingsSection;
+  /**
+   * The address named a section (`?section=`, or an old `/settings/notifications` style path), so it opens pushed;
+   * the bare page opens on the list. Decided on the server so the first client render matches the HTML.
+   */
+  opened: boolean;
   onDeleted: () => void;
 }) {
   const backFromMore = useBackFromMore();
   const reduced = useChReducedMotion();
   const sections = SECTIONS[data.role];
-  const [section, setSection] = useState<ChSettingsSection | null>(() => sectionFromUrl(sections, initialSection));
+  const [section, setSection] = useState<ChSettingsSection | null>(() => (opened && sections.some((x) => x.id === initialSection) ? initialSection : null));
   const [profileOpen, setProfileOpen] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);

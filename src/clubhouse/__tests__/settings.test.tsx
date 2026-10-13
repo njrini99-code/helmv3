@@ -1313,7 +1313,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     const { setSlot } = usePhoneChromeState();
     return <div ref={setSlot} data-testid="phone-top" />;
   }
-  function phone(opts: { data?: ChSettingsData; writes?: Partial<ChSettingsWrites>; device?: ChDevice; onDeleted?: () => void; initialSection?: ChSettingsSection } = {}) {
+  function phone(opts: { data?: ChSettingsData; writes?: Partial<ChSettingsWrites>; device?: ChDevice; onDeleted?: () => void; initialSection?: ChSettingsSection; opened?: boolean } = {}) {
     const writes = makeWrites(opts.writes);
     const onDeleted = opts.onDeleted ?? vi.fn();
     const user = userEvent.setup();
@@ -1323,7 +1323,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
           <PhoneChromeProvider>
             <div className="ch-root" data-ui="clubhouse">
               <SlotHost />
-              <SettingsView data={opts.data ?? coachData()} writes={writes} device={opts.device ?? makeDevice()} initialSection={opts.initialSection ?? 'account'} onDeleted={onDeleted} />
+              <SettingsView data={opts.data ?? coachData()} writes={writes} device={opts.device ?? makeDevice()} initialSection={opts.initialSection ?? 'account'} opened={opts.opened} onDeleted={onDeleted} />
             </div>
           </PhoneChromeProvider>
         </ToastProvider>
@@ -1404,16 +1404,25 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
   });
 
   it('81901 a section named in the URL opens pushed, and the list is what Back returns to', async () => {
+    // The route reads ?section=coachhelm on the server and passes it as opened (no window read, so hydration matches).
     window.history.replaceState(null, '', '/golf/dashboard/settings?section=coachhelm');
-    const { user } = phone();
+    const { user } = phone({ initialSection: 'coachhelm', opened: true });
     expect(await screen.findByRole('list', { name: 'Priorities, most important first' })).toBeTruthy();
     await user.click(top().getByRole('button', { name: 'Back to Settings' }));
     await screen.findByRole('navigation', { name: 'Settings sections' });
   });
 
+  it('81901 the phone never reads the address while it renders: only the route-decided opened flag pushes a section (hydration-safe)', async () => {
+    window.history.replaceState(null, '', '/golf/dashboard/settings?section=notifications');
+    phone({ initialSection: 'notifications' });
+    expect(screen.getByRole('navigation', { name: 'Settings sections' })).toBeTruthy();
+    expect(top().getByRole('button', { name: 'Back to More' })).toBeTruthy();
+    window.history.replaceState(null, '', '/');
+  });
+
   it('81901 80102 an old address opens its section pushed: /settings/notifications passes its section with no query, and the bare page still opens on the list', async () => {
     window.history.replaceState(null, '', '/golf/dashboard/settings/notifications');
-    const first = phone({ initialSection: 'notifications' });
+    const first = phone({ initialSection: 'notifications', opened: true });
     expect(await screen.findByText(/Which updates reach you/)).toBeTruthy();
     expect(top().getByRole('button', { name: 'Back to Settings' })).toBeTruthy();
     first.unmount();

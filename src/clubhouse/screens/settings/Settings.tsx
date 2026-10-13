@@ -16,7 +16,7 @@ async function sendTestPush(): Promise<{ ok: boolean; sent?: number; error?: str
 }
 
 /** The live Settings: server data from the route, the real writes, this device's push and haptics. */
-export function Settings({ data, section }: { data: ChSettingsData; section: ChSettingsSection }) {
+export function Settings({ data, section, opened = false }: { data: ChSettingsData; section: ChSettingsSection; opened?: boolean }) {
   const router = useRouter();
   const push = usePushSubscription();
   const [native, setNative] = useState(false);
@@ -35,5 +35,5 @@ export function Settings({ data, section }: { data: ChSettingsData; section: ChS
     [data.role, data.userId, data.email, data.coachId, data.playerId, data.teamId, router],
   );
   const device: ChDevice = { native, push: { ...push, test: sendTestPush } };
-  return <SettingsView data={data} writes={writes} device={device} initialSection={section} onDeleted={() => void writes.cleanupAfterDelete()} />;
+  return <SettingsView data={data} writes={writes} device={device} initialSection={section} opened={opened} onDeleted={() => void writes.cleanupAfterDelete()} />;
 }
