@@ -655,6 +655,53 @@ async function logCall(
   return data?.id ?? null;
 }
 
+/**
+ * A caller-side check discarded a reply compose() had already logged as a
+ * verified LLM success (round-recap's style limits, Bridge 1cd457e7), so the
+ * player got the template. Flip that call row to `fallback_to_template=true`
+ * and record why under `citations.reason`, the same key compose()'s own
+ * fallbacks use, so the call log and the Bridge's AI-availability read
+ * (`src/lib/admin/data/ai-availability.ts`) count it as a fallback.
+ * `verified` stays as compose() wrote it: the citations did verify.
+ * Best-effort: a failed write is logged, never thrown.
+ */
+export async function markCallFellBackToTemplate(
+  callLogId: string | null,
+  detail: { reason: string; violations?: readonly string[] },
+): Promise<void> {
+  if (!callLogId) return;
+  try {
+    const supabase = createAdminClient();
+    const { data: existing } = await supabase
+      .from('golf_coachhelm_llm_calls')
+      .select('citations')
+      .eq('id', callLogId)
+      .maybeSingle();
+    const prior =
+      existing?.citations && typeof existing.citations === 'object' && !Array.isArray(existing.citations)
+        ? existing.citations
+        : {};
+    const citations = {
+      ...prior,
+      reason: detail.reason,
+      ...(detail.violations ? { violations: [...detail.violations] } : {}),
+    } as unknown as Json;
+    const { error } = await supabase
+      .from('golf_coachhelm_llm_calls')
+      .update({ fallback_to_template: true, citations })
+      .eq('id', callLogId);
+    if (error) {
+      await logServerError(`markCallFellBackToTemplate failed: ${error.message}`, {
+        action: 'v3.llm.markCallFellBackToTemplate',
+      });
+    }
+  } catch (err) {
+    await logServerError(`markCallFellBackToTemplate failed: ${describeError(err)}`, {
+      action: 'v3.llm.markCallFellBackToTemplate',
+    });
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Test surface — exported for unit tests in compose.test.ts. Production
 // callers should use compose() above.
