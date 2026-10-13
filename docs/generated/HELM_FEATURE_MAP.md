@@ -49,7 +49,7 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/observability-supabase.md`
 - **Code:** `src/app/admin/database/**`, `src/app/api/cron/db-health-sampler/**`, `src/app/api/cron/db-stat-delta/**`, `src/app/api/cron/db-observability-prune/**`, `src/app/admin/database/log-evidence-actions.ts`, `src/lib/observability/supabase/**` … and 19 more in the registry
 - **Telemetry:** none. This module IS the observability layer for Postgres/Supabase (error envelope, health/statement/platform samplers, alert policy, advisor and log-evidence integrations) — instrumenting itself would be circular, the same reasoning observability_sentry above states for the Sentry-side layer.
-- **Incidents:** none recorded
+- **Incidents:** `memory/incidents/observability_supabase/INC-2026-10-13-lock-incidents-never-end.md`
 - **Repair units:** none in the queue
 - **History:** `memory/ledgers/changes/observability_supabase.md`
 
