@@ -28,6 +28,8 @@
   --ch-au-t-shake: 380ms;
   --ch-au-t-sheet: 760ms;
   --ch-au-t-sheet-fade: 500ms;
+  /* The phone's sheet rising over the keyboard and settling back, about the keyboard's own pace. */
+  --ch-au-t-kb: 420ms;
   /* The camera: a slow push to the pin, and the pine and bough moving out of frame. */
   --ch-au-t-cam: 5200ms;
   --ch-au-t-phone-cam: 2600ms;
@@ -72,6 +74,7 @@
     --ch-au-t-shake: 1ms;
     --ch-au-t-sheet: 1ms;
     --ch-au-t-sheet-fade: 1ms;
+    --ch-au-t-kb: 1ms;
     --ch-au-t-cam: 1ms;
     --ch-au-t-phone-cam: 1ms;
     --ch-au-t-pine: 1ms;
@@ -99,6 +102,7 @@
   --ch-au-t-shake: 1ms;
   --ch-au-t-sheet: 1ms;
   --ch-au-t-sheet-fade: 1ms;
+  --ch-au-t-kb: 1ms;
   --ch-au-t-cam: 1ms;
   --ch-au-t-phone-cam: 1ms;
   --ch-au-t-pine: 1ms;

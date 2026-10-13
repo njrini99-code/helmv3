@@ -23,7 +23,7 @@ import { haptic } from '../../lib/haptics';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { Icon } from '../../ui/Icon';
 import { AuthKeyLabel } from './AuthKey';
-import { AuthNotice } from './AuthNotice';
+import { AuthNotice, type AuthTone } from './AuthNotice';
 import { OPENING_MS } from './auth-motion';
 import { isPlainClick } from './ForgotPassword';
 import { failureFor, failureForServer, type SignInFailure } from './sign-in-state';
@@ -31,6 +31,8 @@ import { useGlide, type Glider } from './use-glide';
 import { useQueryParam } from './use-query-param';
 
 const ERROR_ID = 'golf-signin-error';
+/** A done thing (an account made, a password reset) is positive; being signed out, or out of time, is only information. */
+const NOTICE_TONE: Readonly<Record<string, AuthTone>> = { password_reset: 'positive', account_created: 'positive' };
 
 /**
  * The sign-in form. What it does is exactly what the current form does
@@ -276,7 +278,7 @@ export function SignInForm({
       </p>
       {notice && (
         <div className="ch-au-notice-top">
-          <AuthNotice tone="positive" code="CH-15904">
+          <AuthNotice tone={NOTICE_TONE[messageKey ?? ''] ?? 'info'} code="CH-15904">
             {notice}
           </AuthNotice>
         </div>
