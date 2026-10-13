@@ -672,11 +672,19 @@ export async function markCallFellBackToTemplate(
   if (!callLogId) return;
   try {
     const supabase = createAdminClient();
-    const { data: existing } = await supabase
+    const { data: existing, error: readError } = await supabase
       .from('golf_coachhelm_llm_calls')
       .select('citations')
       .eq('id', callLogId)
       .maybeSingle();
+    if (readError) {
+      // Without the row's citations the merge would erase compose()'s own
+      // evidence record, so leave the row as written and say so.
+      await logServerError(`markCallFellBackToTemplate read failed: ${readError.message}`, {
+        action: 'v3.llm.markCallFellBackToTemplate',
+      });
+      return;
+    }
     const prior =
       existing?.citations && typeof existing.citations === 'object' && !Array.isArray(existing.citations)
         ? existing.citations
