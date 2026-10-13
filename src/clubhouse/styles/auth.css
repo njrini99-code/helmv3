@@ -669,12 +669,8 @@
   display: flex;
   gap: 10px;
   align-items: flex-start;
-  padding: 11px 14px;
-  border-radius: 10px;
   font: var(--ch-type-body-s);
   color: var(--ch-text-primary);
-  background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 1px var(--ch-border-subtle);
 }
 .ch-au-notice svg {
   flex: none;
@@ -687,26 +683,13 @@
 .ch-au-notice--info svg {
   color: var(--ch-info-600);
 }
-.ch-au-notice--positive {
-  background: var(--ch-positive-100);
-  box-shadow: 0 0 0 1px rgb(28 107 67 / 0.14);
-}
 .ch-au-notice--positive svg {
   color: var(--ch-positive-600);
 }
-.ch-au-notice--warning {
-  /* P015-A3: a refusal is a flush notice (the shared states anatomy): its icon carries the tone, the words the ink. */
-  padding: 0;
-  background: none;
-  box-shadow: none;
-}
+/* P015-A3, extended 2026-10-13: every auth notice is flush (the shared states anatomy): its icon carries the tone, the
+   words the ink. A boxed, ringed notice over the boxed fields read as rings on rings. */
 .ch-au-notice--warning svg {
   color: var(--ch-warning-600);
-}
-.ch-au-notice--danger {
-  padding: 0;
-  background: none;
-  box-shadow: none;
 }
 .ch-au-notice--danger svg {
   color: var(--ch-danger-600);
@@ -1227,6 +1210,32 @@
     box-shadow: 0 -1px 0 rgb(255 255 255 / 0.6) inset, 0 -18px 40px -20px rgb(0 0 0 / 0.5);
     transition: transform var(--ch-au-t-sheet) var(--ch-au-ease), opacity var(--ch-au-t-sheet-fade) linear;
   }
+  /* The keyboard (SignIn's useKeyboardLift, a touch screen only): typing, the sheet rises to just under the status bar so
+     the fields and Sign in sit above the keyboard, and settles back as it goes. The sheet's top moves at once, so iOS
+     finds the field already in view and never pans the page; a transform plays the move from where it was. The course's
+     window closes with it and the line over the course fades. */
+  .ch-au[data-kb] {
+    --ch-au-kb-top: calc(env(safe-area-inset-top) + 64px);
+    --ch-au-kb-lift: calc(clamp(200px, 42svh, 352px) - var(--ch-au-kb-top));
+  }
+  .ch-au[data-kb='up'] {
+    --ch-au-phone-sheet-top: var(--ch-au-kb-top);
+  }
+  .ch-au[data-kb] .ch-au-photo,
+  .ch-au[data-kb] .ch-au-photo > .ch-au-poster,
+  .ch-au[data-kb] .ch-au-photo > .ch-au-scene {
+    transition-duration: var(--ch-au-t-kb);
+  }
+  .ch-au[data-kb='up'] .ch-au-panel {
+    animation: chAuKbUp var(--ch-au-t-kb) var(--ch-au-ease);
+  }
+  .ch-au[data-kb='down'] .ch-au-panel {
+    animation: chAuKbDown var(--ch-au-t-kb) var(--ch-au-ease);
+  }
+  .ch-au[data-kb='up'] .ch-au-say {
+    opacity: 0;
+    transition-duration: var(--ch-au-t-kb);
+  }
   .ch-au-top,
   .ch-au-lock {
     display: none;
@@ -1279,9 +1288,6 @@
     box-shadow: 0 0 0 1px rgb(28 25 18 / 0.12), 0 1px 2px rgb(28 25 18 / 0.05);
     overflow: hidden;
   }
-  .ch-au-fields[data-invalid] {
-    box-shadow: 0 0 0 1.5px var(--ch-danger-600);
-  }
   /* P015 D10: each field keeps a visible label, small and quiet at the top of its row, so the placeholder is never
      the only name a field shows (it vanishes as you type). */
   .ch-au-label {
@@ -1306,20 +1312,30 @@
       box-shadow: none;
     }
   }
-  /* The field's own focus cue on the grouped sheet: a green hairline, never the app's black keyboard outline. */
-  /* The ring is the whole row's, label and all. */
+  /* Focus and a refusal (2026-10-13): the group takes one ring that follows its own rounded corners, and the row's label
+     takes the colour, as an iOS grouped form does. A ring per row was a square box inside the rounded group, cut off at
+     its corners. Never the app's black keyboard outline. */
   .ch-au-input:focus-within,
   .ch-au-input[data-invalid='true'] {
     box-shadow: none;
   }
-  .ch-au-field:focus-within {
-    box-shadow: inset 0 0 0 1.5px var(--ch-green-ring);
+  .ch-au .ch-au-fields {
+    transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
   }
-  .ch-au-field:has(.ch-au-input[data-invalid='true']) {
-    box-shadow: inset 0 0 0 1.5px var(--ch-danger-600);
+  .ch-au .ch-au-fields:focus-within {
+    box-shadow: 0 0 0 1.5px var(--ch-green-600);
   }
-  .ch-au-fields[data-invalid] .ch-au-field {
-    box-shadow: none;
+  .ch-au .ch-au-fields:has(.ch-au-input[data-invalid='true']) {
+    box-shadow: 0 0 0 1.5px var(--ch-danger-600);
+  }
+  .ch-au-label {
+    transition: color var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-au-field:focus-within .ch-au-label {
+    color: var(--ch-green-600);
+  }
+  .ch-au-field:has(.ch-au-input[data-invalid='true']) .ch-au-label {
+    color: var(--ch-danger-600);
   }
   .ch-au-field + .ch-au-field::before {
     content: '';
@@ -1575,9 +1591,6 @@ html[data-fw-theme='dark'] .ch-au[data-phase='leaving'] {
   html[data-fw-theme='dark'] .ch-au-fields {
     box-shadow: 0 0 0 1px var(--ch-border-subtle);
   }
-  html[data-fw-theme='dark'] .ch-au-fields[data-invalid] {
-    box-shadow: 0 0 0 1.5px var(--ch-danger-600);
-  }
   html[data-fw-theme='dark'] .ch-au-field + .ch-au-field::before {
     background: var(--ch-border-subtle);
   }
@@ -1642,5 +1655,17 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
   }
   .ch-au-wl-news li + li {
     box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+  }
+}
+
+/* The phone sheet over the keyboard (above): its top has already moved, and these play the move from where it was. */
+@keyframes chAuKbUp {
+  from {
+    transform: translateY(var(--ch-au-kb-lift));
+  }
+}
+@keyframes chAuKbDown {
+  from {
+    transform: translateY(calc(var(--ch-au-kb-lift) * -1));
   }
 }
