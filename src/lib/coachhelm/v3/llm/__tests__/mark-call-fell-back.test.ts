@@ -11,13 +11,16 @@ const { updates, logServerErrorMock, state } = vi.hoisted(() => ({
   state: {
     existing: { citations: { unmatched_tokens: [] } } as { citations: unknown } | null,
     updateError: null as { message: string } | null,
+    readError: null as { message: string } | null,
   },
 }));
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: () => ({
-      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: state.existing, error: null }) }) }),
+      select: () => ({
+        eq: () => ({ maybeSingle: async () => ({ data: state.existing, error: state.readError }) }),
+      }),
       update: (patch: Record<string, unknown>) => ({
         eq: async (_col: string, id: unknown) => {
           updates.push({ id, patch });
@@ -41,6 +44,17 @@ describe('markCallFellBackToTemplate', () => {
     logServerErrorMock.mockClear();
     state.existing = { citations: { unmatched_tokens: [] } };
     state.updateError = null;
+    state.readError = null;
+  });
+
+  it('leaves the row alone when it cannot read the existing citations', async () => {
+    state.readError = { message: 'timeout' };
+    await markCallFellBackToTemplate('call-1', { reason: 'style_violation' });
+    expect(updates).toEqual([]);
+    expect(logServerErrorMock).toHaveBeenCalledWith(
+      expect.stringContaining('read failed'),
+      expect.objectContaining({ action: 'v3.llm.markCallFellBackToTemplate' }),
+    );
   });
 
   it('flips the row to a template fallback and merges the reason into citations', async () => {
