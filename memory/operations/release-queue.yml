@@ -499,3 +499,36 @@ items:
       - src/lib/admin/__tests__/selfheal-registry.test.ts
     queued_for_release: false
     first_seen: '2026-10-08T09:18:00Z'
+  - id: lock-incidents-active-window-2026-10-13
+    feature_id: observability_supabase
+    root_cause: >-
+      Nothing writes helm_debug.db_lock_incidents.resolved_at, so the Bridge
+      counted every lock incident ever recorded as open (129 rows, panel read
+      'at least 100' with 0 in 24h).
+    incident_id: memory/incidents/observability_supabase/INC-2026-10-13-lock-incidents-never-end.md
+    status: verified
+    risk: R1
+    sha: b7dbb350b343f9304241206b98c0da2047393b42
+    pr: 2191
+    regression_tests:
+      - src/lib/admin/database/__tests__/locks.test.ts
+    queued_for_release: false
+    first_seen: '2026-10-13T17:40:00Z'
+  - id: use-server-object-export-2026-10-13
+    feature_id: baseball_core
+    root_cause: >-
+      src/app/lifting/actions/invites.ts ('use server') exported an object
+      (__testables); Next throws at module load, so every server action on
+      /baseball/coach-onboarding (which imports lifting/actions/onboarding ->
+      invites) returned 500.
+    incident_id: memory/incidents/baseball_core/INC-2026-10-13-use-server-object-export-breaks-coach-onboarding.md
+    status: verified
+    risk: R1
+    sha: null
+    pr: null
+    regression_tests:
+      - src/lib/__tests__/use-server-exports.guard.test.ts
+      - src/app/lifting/actions/__tests__/invites-outbound-gate.test.ts
+      - src/lib/__tests__/error-trace-classification.test.ts
+    queued_for_release: false
+    first_seen: '2026-10-13T20:58:46Z'

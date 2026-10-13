@@ -32,7 +32,7 @@ function walk(dir: string, out: string[] = []): string[] {
 
 /** True when the file's first statement is the `'use server'` directive. */
 function isUseServerModule(source: string): boolean {
-  const stripped = source.replace(/^﻿/, '').replace(/^(\s*(\/\/[^\n]*\n|\/\*[\s\S]*?\*\/))*\s*/, '');
+  const stripped = source.replace(/^\uFEFF/, '').replace(/^(\s*(\/\/[^\n]*\n|\/\*[\s\S]*?\*\/))*\s*/, '');
   return /^['"]use server['"]/.test(stripped);
 }
 
@@ -44,9 +44,9 @@ function nonFunctionExports(source: string): string[] {
   const lines = source.split('\n');
   lines.forEach((line, i) => {
     const decl = line.match(/^export\s+(?:const|let|var)\s+(\w+)\s*(?::[^=]+)?=\s*(.*)$/);
-    if (decl && NON_FUNCTION_RHS.test(decl[2].trim())) found.push(`${decl[1]} (line ${i + 1})`);
+    if (decl && NON_FUNCTION_RHS.test((decl[2] ?? '').trim())) found.push(`${decl[1] ?? '?'} (line ${i + 1})`);
     const def = line.match(/^export\s+default\s+(.*)$/);
-    if (def && NON_FUNCTION_RHS.test(def[1].trim())) found.push(`default (line ${i + 1})`);
+    if (def && NON_FUNCTION_RHS.test((def[1] ?? '').trim())) found.push(`default (line ${i + 1})`);
   });
   return found;
 }
