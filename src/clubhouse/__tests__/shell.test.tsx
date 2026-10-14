@@ -179,6 +179,19 @@ describe('Shell · bell', () => {
     expect(screen.getByRole('button', { name: 'Notifications, 3 unread' })).toBeTruthy();
   });
 
+  it('A-30 the desktop panel closes when focus leaves it for the page', async () => {
+    const user = userEvent.setup();
+    bell({ unread: 0, load: vi.fn(() => Promise.resolve({ success: true, data: { items: [] } })) });
+    const outside = document.createElement('button');
+    outside.textContent = 'page control';
+    document.body.append(outside);
+    await user.click(screen.getByRole('button', { name: 'Notifications' }));
+    expect(screen.getByRole('dialog', { name: 'Notifications' })).toBeTruthy();
+    act(() => outside.focus());
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Notifications' })).toBeNull());
+    outside.remove();
+  });
+
   it('CH-1302 nothing to show', async () => {
     const user = userEvent.setup();
     bell({ unread: 0, load: vi.fn(() => Promise.resolve({ success: true, data: { items: [] } })) });

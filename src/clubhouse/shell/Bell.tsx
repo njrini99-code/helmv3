@@ -272,13 +272,22 @@ export function Bell() {
         }
       }
     };
+    // The desktop popover isn't modal: when focus leaves it for the page (Tab past its last item), it closes, rather than
+    // staying open over a page the keyboard is now walking (audit A-30).
+    const onFocusIn = (e: FocusEvent) => {
+      const t = e.target;
+      if (phone || !(t instanceof Element) || t.closest('.ch-menu')) return;
+      if (!panel.current?.contains(t) && !btn.current?.contains(t)) close(false);
+    };
     document.addEventListener('mousedown', onDown);
     document.addEventListener('keydown', onKey);
+    document.addEventListener('focusin', onFocusIn);
     const frame = requestAnimationFrame(() => panel.current?.focus({ preventScroll: true }));
     return () => {
       cancelAnimationFrame(frame);
       document.removeEventListener('mousedown', onDown);
       document.removeEventListener('keydown', onKey);
+      document.removeEventListener('focusin', onFocusIn);
     };
   }, [open, close, phone]);
 
