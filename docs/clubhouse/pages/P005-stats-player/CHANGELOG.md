@@ -1,5 +1,11 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-14 — Shared Stats islands: the phone window switch
+
+- The team page's phone window switch moved into `PhoneWindowSwitch`
+  (StatsTeamIslands, shared with this page's files); nothing on the player page
+  changes. See P004's entry.
+
 ## 2026-10-12 — A section root on the phone (no "‹ More")
 
 The phone shell's section strip replaced the tab bar and the More sheet
