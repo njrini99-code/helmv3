@@ -1,5 +1,13 @@
 # P001 — Shell: changelog
 
+## 2026-10-13 — Section switches fade through; the bar changes once
+
+A section switch fades the old page out before the new one fades in (no double
+image), a route skeleton waits for the old page to have gone, and the top bar's
+buttons step back with the title change on the tap instead of swapping a beat
+later. The shell also warms the inbox cache once idle. Shared change:
+docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-12 — tab revisits go back to the server
 
 The app-wide 30s router cache is removed (it also made Fairway, Baseball and

@@ -1,5 +1,29 @@
 # Clubhouse changelog
 
+## 2026-10-13 — Section switches: fade through, one bar change, warm inbox
+
+Measured on a real iPhone (WebDriverAgent driving the signed-in preview,
+Instruments' Animation Hitches recording): section switches dropped no frames,
+so the choppy feel was the switch's design, not jank.
+
+- **A fade through, not a crossfade** (tokens.css, base.css): screenshots 0.35s
+  after a tap showed the old page and the new skeleton faded through each other
+  into a washed-out double image on every switch. The old page now clears in
+  120ms, the new page fades in over 220ms after a 90ms gap, and a route skeleton
+  waits for the old page to have gone (the 300ms hold plus the 120ms fade)
+  instead of fading in through it.
+- **One change to the top bar** (section-switch `switching`, TopBar, shell.css):
+  the title changes on the tap, as before, and the old section's buttons and
+  mark now step back with it; the new page brings its own. Before, the title
+  changed first and the buttons (the bell, the page's +) swapped a beat later
+  when the page arrived. The address changes when the route's skeleton commits,
+  so the bar's buttons also wait while that skeleton is on screen (checked on
+  the phone: the shell's bell no longer shows before the page's own button).
+- **A warm inbox** (shell/use-warm-inbox.ts): the shell fills Messages' session
+  cache once it is idle, so the first visit paints the list at once instead of a
+  second skeleton for about three seconds while the browser loads it; the list
+  still refreshes silently. Skipped when warm, with Data Saver on or offline.
+
 ## 2026-10-13 — Popups: one sheet rise, one backdrop, one exit
 
 Measured in the Popup Lab (headless WebKit, 402px, dev build). Sheets on the

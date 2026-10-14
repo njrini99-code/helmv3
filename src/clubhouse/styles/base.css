@@ -300,9 +300,11 @@
 }
 /* Reached by an in-app navigation (RouteFrame sets data-ch-vt-hold while the page crossfade runs): the skeleton waits
    --ch-dur-vt-hold (300ms) with the old page still up, so a load that finishes sooner never flashes one (native-feel
-   audit 2026-10-08, P0-2). A hard load's streamed skeleton, a push, reduced motion and Animations off show it at once. */
+   audit 2026-10-08, P0-2), and then the old page's fade out (--ch-dur-vt-out), so it fades in after the old page has
+   gone, never through it (phone test 2026-10-13). A hard load's streamed skeleton, a push, reduced motion and
+   Animations off show it at once. */
 html[data-ch-vt-hold] [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='Loading'] {
-  animation-delay: var(--ch-dur-vt-hold);
+  animation-delay: calc(var(--ch-dur-vt-hold) + var(--ch-dur-vt-out));
 }
 
 /* Animations off (Settings) and reduced motion: no skeleton fade. */
