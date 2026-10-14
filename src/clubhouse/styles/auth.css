@@ -1240,9 +1240,19 @@
   .ch-au[data-kb='down'] .ch-au-panel {
     animation: chAuKbDown var(--ch-au-t-kb) var(--ch-au-ease);
   }
+  /* The line leaves in the first third of the rise: it rides up with the closing window, and at the full duration it
+     crossed the wordmark on the way (Playwright WebKit, 2026-10-14). */
   .ch-au[data-kb='up'] .ch-au-say {
     opacity: 0;
-    transition-duration: var(--ch-au-t-kb);
+    transition-duration: calc(var(--ch-au-t-kb) / 3);
+  }
+  /* With the sheet up, the strip left over the course is pine, not sky: the wordmark takes the dark-sky inks, as at
+     dusk, or the green "Helm" sat on green foliage. */
+  .ch-au[data-kb='up'] .ch-au-mark span {
+    color: var(--ch-au-ivory);
+  }
+  .ch-au[data-kb='up'] .ch-au-mark b {
+    color: var(--ch-hero-mint);
   }
   .ch-au-top,
   .ch-au-lock {

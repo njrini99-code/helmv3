@@ -1,5 +1,17 @@
 # P015 — Auth: changelog
 
+## 2026-10-14 — Sheet up: the wordmark reads over the pines
+
+Found in Playwright WebKit on the preview (phone, keyboard lift): with the sheet
+up, the strip of course left above it is pine, and the wordmark kept its
+daylight inks, near-black "Golf" and green "Helm" on dark green. The line over
+the course also rode up with the closing window and crossed the wordmark while
+it faded.
+
+- **The wordmark takes the dark-sky inks with the sheet up** (ivory and mint,
+  as at dusk), and **the line leaves in the first third of the rise**
+  (auth.css). Test: auth-kb-mark.test.ts.
+
 ## 2026-10-14 — Log in from the home page: no dashboard skeleton, no sunny course at night
 
 Owner: "Hitting login on home page hot loads the day scene then switches to
