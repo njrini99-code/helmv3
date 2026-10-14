@@ -11,6 +11,7 @@ const shell = read('shell.css');
 const controls = read('controls.css');
 const ui = read('ui.css');
 const tokens = read('tokens.css');
+const settings = read('settings.css');
 
 /** The bodies of every rule whose selector (or the last selector of its list) is this one, in order. */
 function rules(css: string, selector: string): string[] {
@@ -127,5 +128,8 @@ describe('the phone canvas runs to the bottom edge (section-strip.md: no tab bar
     expect(rules(shell, '  .ch-bst__scroll::before')[0]).toMatch(/height: calc\(100% \+ 1px\);/);
     // A page intro's title and its view switch wrap rather than push the switch off a phone under larger page text.
     expect(rules(ui, '.ch-intro__row')[0]).toMatch(/flex-wrap: wrap;/);
+    // A phone settings row keeps its label's words whole; its summary ellipsizes first.
+    expect(rules(settings, '  .ch-setm-row__l')[0]).toMatch(/min-width: min-content;/);
+    expect(rules(settings, '  .ch-setm-row__v')[0]).toMatch(/min-width: 0;/);
   });
 });
