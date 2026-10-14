@@ -776,33 +776,44 @@
   --ch-notice-body: var(--ch-notice-on-green-body);
 }
 
-/* One sweep shared by every block on the page (a viewport-fixed gradient,
-   v2 .gh-sk). iOS WebKit may ignore the fixed attachment, so on the phone
-   each block can sweep on its own (noted under D-64). A shade deeper than the
-   first pass (states audit, 2026-10-08: the bars all but vanished on the
-   parchment): about 1.2:1 on the workspace, with a soft sheen. */
+/* Skeleton sheen (audit A-13, 2026-10-14): one layer per block, slid by transform, on every width. The desktop used a
+   viewport-fixed 200vw gradient whose background-position animated, which repainted every block on every frame while a
+   page loaded (the phone moved off it 2026-10-12 for the same reason; iOS ignored the fixed attachment anyway). A shade
+   deeper than the first pass (states audit, 2026-10-08): about 1.2:1 on the workspace, with a soft sheen. */
 .ch-skel {
   display: block;
-  background: linear-gradient(100deg, var(--ch-skel-base) 42%, var(--ch-skel-sheen) 50%, var(--ch-skel-base) 58%) 0 0 / 200vw 100% fixed;
-  animation: ch-shimmer var(--ch-dur-shimmer) linear infinite;
+  position: relative;
+  overflow: hidden;
+  background: var(--ch-skel-base);
+}
+.ch-skel::before {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, var(--ch-skel-sheen) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: ch-shimmer-x var(--ch-dur-shimmer) linear infinite;
+  content: '';
 }
 @media (min-width: 821px) {
   /* A block in waiting (a fluid Skeleton from 56px tall, or shape="block") is drawn in the Ledger as the Ledger draws
      what it stands for: a rule along its top and two lines of type under it, not a filled card. It keeps its box, so
-     nothing moves when the page lands; a real object that loads filled asks for shape="solid". */
+     nothing moves when the page lands; a real object that loads filled asks for shape="solid". Its two lines breathe
+     (opacity, on the compositor) rather than sweep: their pseudo-elements are the lines, so there is no layer to slide. */
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block {
     position: relative;
+    overflow: visible;
     border-radius: 0 !important;
     background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 0 / 100% 1px no-repeat;
-    animation: none;
   }
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::before,
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::after {
     position: absolute;
+    inset: auto;
     left: 0;
     border-radius: 6px;
-    background: linear-gradient(100deg, var(--ch-skel-base) 42%, var(--ch-skel-sheen) 50%, var(--ch-skel-base) 58%) 0 0 / 200vw 100% fixed;
-    animation: ch-shimmer var(--ch-dur-shimmer) linear infinite;
+    background: var(--ch-skel-base);
+    transform: none;
+    animation: ch-skel-breathe var(--ch-dur-shimmer) ease-in-out infinite;
     content: '';
   }
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::before {
@@ -848,45 +859,23 @@
   min-width: 0;
 }
 /* Animations off in Settings: skeletons hold still (a Ledger block's lines too). */
-.ch-root[data-motion='off'] .ch-skel,
+.ch-root[data-motion='off'] .ch-skel::before {
+  animation: none;
+  display: none;
+}
 .ch-root[data-motion='off'] main[data-canopy] .ch-skel--block::before,
 .ch-root[data-motion='off'] main[data-canopy] .ch-skel--block::after {
+  display: block;
   animation: none;
-}
-@keyframes ch-shimmer {
-  from {
-    background-position: 100vw 0;
-  }
-  to {
-    background-position: -100vw 0;
-  }
-}
-/* On the phone the sheen is its own layer, slid by transform: the shared sweep animates background-position, which
-   repaints every block on every frame, and skeletons are up exactly while a page pushes or fades in (motion audit
-   2026-10-12). iOS ignored the fixed attachment there anyway, so each block already swept on its own. */
-@media (max-width: 820px) {
-  .ch-skel {
-    position: relative;
-    overflow: hidden;
-    background: var(--ch-skel-base);
-    animation: none;
-  }
-  .ch-skel::before {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(100deg, transparent 30%, var(--ch-skel-sheen) 50%, transparent 70%);
-    transform: translateX(-100%);
-    animation: ch-shimmer-x var(--ch-dur-shimmer) linear infinite;
-    content: '';
-  }
-  .ch-root[data-motion='off'] .ch-skel::before {
-    animation: none;
-    display: none;
-  }
 }
 @keyframes ch-shimmer-x {
   to {
     transform: translateX(100%);
+  }
+}
+@keyframes ch-skel-breathe {
+  50% {
+    opacity: 0.55;
   }
 }
 @media (prefers-reduced-motion: reduce) {

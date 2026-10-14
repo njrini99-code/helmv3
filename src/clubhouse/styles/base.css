@@ -324,6 +324,12 @@ html[data-ch-vt-hold] [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='
     /* A looping animation at 1ms would strobe: run it once and stop. */
     animation-iteration-count: 1 !important;
   }
+  /* A dialog's scrim is its own pseudo-element in the top layer and kept its fade (audit A-12). Its own rule, so a
+     browser that can't parse ::backdrop drops only this one, not the floor above. */
+  .ch-root *::backdrop {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+  }
 }
 
 /* Digits inside a display-serif heading (SerifText): the sans, a step smaller so its figures sit on the serif's x-height. */
@@ -350,4 +356,11 @@ html[data-ch-vt-hold] [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='
 :where(html[data-fw-theme='dark'] [data-ui='clubhouse']) h5,
 :where(html[data-fw-theme='dark'] [data-ui='clubhouse']) h6 {
   color: inherit;
+}
+
+/* The animation features never loaded (lib/motion-features.ts, audit A-01): whatever was waiting at its `initial` frame
+   is shown where it would have landed, rather than left invisible. */
+html[data-ch-motion-failed] .ch-root [style*='opacity'] {
+  opacity: 1 !important;
+  transform: none !important;
 }

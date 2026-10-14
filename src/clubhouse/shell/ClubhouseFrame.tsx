@@ -1,13 +1,13 @@
 'use client';
 
 import { LazyMotion } from 'motion/react';
-import { loadMaxFeatures } from '@/lib/motion/load-features';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useChPhone } from '../lib/use-phone';
 import { useChDynamicType } from '../lib/dynamic-type';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 import { clubhouseFontVariables } from '../lib/fonts';
 import { chTagSession } from '../lib/track';
+import { chLoadMotionFeatures } from '../lib/motion-features';
 import { liftHandoffCurtain } from '../lib/handoff';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { ToastProvider } from '../ui/Toast';
@@ -85,8 +85,9 @@ export function ClubhouseFrame({
 
   return (
     <ClubhouseMarker role={role}>
-      {/* The animation features (domMax, for layoutId slides) load in their own chunk, after first paint (D-25). */}
-      <LazyMotion features={loadMaxFeatures} strict>
+      {/* The animation features (domMax, for layoutId slides) load in their own chunk, after first paint (D-25), retried
+          when that load fails (A-01). */}
+      <LazyMotion features={chLoadMotionFeatures} strict>
         <LightProvider course={shell.course ?? null} timeZone={shell.timezone ?? null} at={lightAt}>
           <PhoneChromeProvider>
             <SectionSwitchProvider pathname={pathname} role={role} shell={shell}>

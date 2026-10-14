@@ -227,12 +227,23 @@ function ToastCard({
   onDismiss: (id: number) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  // A toast holds its clock while anything keeps it in use: a finger on it, a pointer over it, or keyboard focus inside
+  // it (audit A-17: an error toast's Retry expired after 8 s for keyboard and VoiceOver users, WCAG 2.2.1).
+  const holding = useRef(new Set<'press' | 'hover' | 'focus'>());
+  const holdFor = (why: 'press' | 'hover' | 'focus') => {
+    if (holding.current.size === 0) onHold(t.id);
+    holding.current.add(why);
+  };
+  const releaseFor = (why: 'press' | 'hover' | 'focus') => {
+    if (!holding.current.delete(why)) return;
+    if (holding.current.size === 0) onLetGo(t.id);
+  };
   /** Set as a swipe dismisses it: which way it was thrown and how fast (px per ms), read once its exit begins. */
   const thrown = useRef<{ edge: 1 | -1; speed: number } | null>(null);
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     const el = ref.current;
     if (!el || e.button !== 0 || e.isPrimary === false || (e.target as Element).closest('button')) return;
-    onHold(t.id);
+    holdFor('press');
     const pointerId = e.pointerId;
     const start = e.clientY;
     const rect = el.getBoundingClientRect();
@@ -272,7 +283,7 @@ function ToastCard({
         el.style.transition = curve ? `translate ${curve.ms}ms ${curve.linear}` : 'translate var(--ch-dur-release) var(--ch-ease)';
       }
       el.style.translate = '';
-      onLetGo(t.id);
+      releaseFor('press');
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', end);
@@ -302,6 +313,10 @@ function ToastCard({
       // CH-1604: a toast slides up 10px and fades in; the stack reflows (layout).
       transition={chTween('base', reduced)}
       onPointerDown={onPointerDown}
+      onPointerEnter={(e) => { if (e.pointerType === 'mouse') holdFor('hover'); }}
+      onPointerLeave={(e) => { if (e.pointerType === 'mouse') releaseFor('hover'); }}
+      onFocus={() => holdFor('focus')}
+      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) releaseFor('focus'); }}
     >
       <Icon icon={t.tone === 'error' ? CircleAlert : CircleCheck} size={16} className="ch-toast__icon" />
       <span className="ch-toast__txt">

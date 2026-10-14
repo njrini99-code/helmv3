@@ -1434,6 +1434,9 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h3 {
     position: relative;
     height: 36px;
     margin: 8px 0;
+    /* The sheen layer is clipped to the bar; the seam below it (::after) is let through (A-13 sheen, 2026-10-14). */
+    overflow: visible;
+    clip-path: inset(0 0 -9px 0);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc__ghost > .ch-skel::after {
     position: absolute;
