@@ -123,5 +123,7 @@ describe('the phone canvas runs to the bottom edge (section-strip.md: no tab bar
     expect(tokens).toMatch(/--ch-on-green-ink-muted: rgb\(222 214 190 \/ 0\.8\);/);
     // The hero bar's title stays on the on-green ink in both themes (ivory-100 turns dark in the dark theme).
     expect(rules(shell, '  .ch-root[data-phone-hero] .ch-topbar__ptitle')[0]).toMatch(/color: var\(--ch-on-green-ink\);/);
+    // The bell's drop stays a scroller when its list is short, so a pan on it never scrolls the page under it.
+    expect(rules(shell, '  .ch-bst__scroll::before')[0]).toMatch(/height: calc\(100% \+ 1px\);/);
   });
 });

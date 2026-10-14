@@ -3292,6 +3292,16 @@ html[data-fw-theme='dark'] .ch-offline {
   .ch-bst__scroll::-webkit-scrollbar {
     display: none;
   }
+  /* A list shorter than the screen left the list with nothing to scroll, and WebKit then hands a pan to the page
+     under the drop, which scrolled behind it (Simulator, 2026-10-14). A zero-width float a pixel taller than the list
+     keeps it a scroller at every length, so overscroll-behavior holds the pan here. */
+  .ch-bst__scroll::before {
+    float: left;
+    width: 1px;
+    height: calc(100% + 1px);
+    margin-left: -1px;
+    content: '';
+  }
   /* The handle at the foot of the screen: drag it up (or the heading) to put the drop away. */
   .ch-bst__grab {
     position: absolute;
