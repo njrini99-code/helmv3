@@ -1,3 +1,5 @@
+'use client';
+
 import { loadMaxFeatures } from '@/lib/motion/load-features';
 import { chReport } from './track';
 

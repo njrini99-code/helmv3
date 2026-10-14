@@ -804,6 +804,7 @@
     overflow: visible;
     border-radius: 0 !important;
     background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 0 / 100% 1px no-repeat;
+    animation: none;
   }
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::before,
   [data-ui='clubhouse'] main[data-canopy] .ch-skel--block::after {

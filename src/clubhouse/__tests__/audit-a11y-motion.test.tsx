@@ -60,7 +60,7 @@ describe('A-11/A-12: reduced motion reaches the review scroll and dialog scrims'
   it('the OS reduced-motion floor covers ::backdrop in a rule of its own', () => {
     const base = css('base.css');
     const block = base.slice(base.indexOf("@media (prefers-reduced-motion: reduce) {\n  [data-ui='clubhouse'] main[aria-busy='true']"));
-    expect(block).toMatch(/\n  \.ch-root \*::backdrop \{\n    transition-duration: 1ms !important;\n    animation-duration: 1ms !important;/);
+    expect(block).toMatch(/\n {2}\.ch-root \*::backdrop \{\n {4}transition-duration: 1ms !important;\n {4}animation-duration: 1ms !important;/);
   });
 });
 
