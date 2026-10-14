@@ -1,13 +1,14 @@
 'use client';
 
 import { LazyMotion } from 'motion/react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useChPhone } from '../lib/use-phone';
 import { useChDynamicType } from '../lib/dynamic-type';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 import { clubhouseFontVariables } from '../lib/fonts';
 import { chTagSession } from '../lib/track';
 import { chLoadMotionFeatures } from '../lib/motion-features';
+import { chKeepFocusThroughDisable } from '../lib/focus-keeper';
 import { liftHandoffCurtain } from '../lib/handoff';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { ToastProvider } from '../ui/Toast';
@@ -153,8 +154,11 @@ function FrameRoot({ motionOff, fullScreen, homeRoot, children }: { motionOff: b
   const hero = pageHero || (!hydrated && phone && homeRoot);
   usePhoneEdges(hero);
   useChDynamicType();
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => (rootRef.current ? chKeepFocusThroughDisable(rootRef.current) : undefined), []);
   return (
     <div
+      ref={rootRef}
       className={`ch-root ${clubhouseFontVariables}`}
       data-ui="clubhouse"
       data-motion={motionOff ? 'off' : undefined}
