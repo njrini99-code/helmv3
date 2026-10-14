@@ -438,7 +438,8 @@ export function Calendar({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null;
+      // A key sent to the document or window has no closest (TypeError on the Simulator, 2026-10-14).
+      const t = e.target instanceof Element ? e.target : null;
       if (t?.closest('input, textarea, select, [contenteditable="true"], dialog[open]') || e.metaKey || e.ctrlKey || e.altKey || editor || cancelling || subs || busyOpen) return;
       if (e.key === 'n' && coach) {
         e.preventDefault();

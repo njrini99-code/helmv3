@@ -325,6 +325,20 @@ describe('Calendar · saves that fail', () => {
     expect(band.getAttribute('aria-valuenow')).not.toBe(tapped);
   });
 
+  it('a key sent to the document itself does not throw in the shortcut handler (Simulator, 2026-10-14)', async () => {
+    wrap(cal());
+    await screen.findByRole('heading', { level: 2 });
+    const thrown: unknown[] = [];
+    const onError = (e: ErrorEvent) => thrown.push(e.error);
+    window.addEventListener('error', onError);
+    try {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    } finally {
+      window.removeEventListener('error', onError);
+    }
+    expect(thrown).toEqual([]);
+  });
+
   it('RSVP: a repeating series sends the toggle too, off unless turned on', async () => {
     const user = userEvent.setup();
     a.createRecurringEvent.mockResolvedValue({ success: true });
