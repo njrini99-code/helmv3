@@ -26,10 +26,15 @@ export function localSupabase(): { url: string; serviceKey: string } | null {
   return host === '127.0.0.1' || host === 'localhost' ? { url, serviceKey } : null;
 }
 
-/** The local database's connection string; refuses a host that is not 127.0.0.1 or localhost. `SUPABASE_DB_URL` overrides the stack's default. */
+/**
+ * The local database's connection string; refuses a host that is not 127.0.0.1 or localhost. `SUPABASE_DB_URL`
+ * overrides the stack's default. The default is the stack's superuser: the seed and its removal set
+ * `session_replication_role`, which the local `postgres` role is refused on current Supabase CLIs (the removal failed
+ * and left the test player behind, 2026-10-14).
+ */
 function localDbUrl(): string {
   if (!localSupabase()) throw new Error('clubhouse-local-seed: refusing a Supabase that is not local');
-  const dbUrl = process.env.SUPABASE_DB_URL ?? 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
+  const dbUrl = process.env.SUPABASE_DB_URL ?? 'postgresql://supabase_admin:postgres@127.0.0.1:54322/postgres';
   const dbHost = new URL(dbUrl).hostname;
   if (dbHost !== '127.0.0.1' && dbHost !== 'localhost') throw new Error('clubhouse-local-seed: refusing a database that is not local');
   return dbUrl;
