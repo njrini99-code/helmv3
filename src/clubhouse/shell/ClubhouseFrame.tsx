@@ -12,7 +12,7 @@ import { liftHandoffCurtain } from '../lib/handoff';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { ToastProvider } from '../ui/Toast';
 import type { ChShellData } from '../data/shell';
-import { activeNavItem, isRebuilt, phoneFullScreen, phonePushedTop, routeLabel } from './nav';
+import { activeNavItem, isAliased, isRebuilt, phoneFullScreen, phonePushedTop, routeLabel } from './nav';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { OfflineBanner } from './OfflineBanner';
@@ -102,7 +102,16 @@ export function ClubhouseFrame({
                             <OfflineBanner />
                             {/* A new team is a new page: the route remounts, so nothing the old team's screen held (a search, an open panel, a live feed) carries over. */}
                             <RouteFrame routeKey={`${pathname}\u0000${userData.teamId ?? ''}`}>
-                              {rebuilt ? children : <NotRebuilt label={item?.label ?? routeLabel(pathname) ?? 'This page'} />}
+                              {rebuilt ? (
+                                children
+                              ) : (
+                                <>
+                                  <NotRebuilt label={item?.label ?? routeLabel(pathname) ?? 'This page'} />
+                                  {/* An old address Clubhouse moved redirects from inside its segment, and that redirect fires
+                                      only once the segment renders: dropped, the page stood on "not rebuilt" (2026-10-14). */}
+                                  {isAliased(pathname) && <div hidden>{children}</div>}
+                                </>
+                              )}
                             </RouteFrame>
                             {/* The phone dock's height, so a page's last row clears it (P001-C1). */}
                             <div className="ch-dock-spacer" aria-hidden="true" />

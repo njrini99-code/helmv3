@@ -1,5 +1,21 @@
 # Clubhouse changelog
 
+## 2026-10-14 — Old addresses reach their Clubhouse screen
+
+Found on the Simulator: every old address Clubhouse moved (Tasks,
+Announcements, Team, Intelligence, Courses, What's new, Documents, Travel, a
+player's page, CoachHelm chat and genome, a round's review) stood on "hasn't
+been rebuilt yet". Their layouts redirect, but under the dashboard's loading
+boundary the redirect arrives in the stream and fires only when the segment
+renders, and the frame dropped the segment for a page that isn't rebuilt. The
+frame now renders an aliased segment hidden behind that page
+(`CH_ALIASED_ROUTES`, guarded against every route that calls
+redirectToClubhouse), so the redirect fires. Team Hub's "Assistant coach
+joined" update and task push links were the visible cases.
+
+The Calendar and Home key shortcuts no longer throw on a key sent to the
+document (TypeError on the Simulator).
+
 ## 2026-10-14 — The bell drop lands on its cards, without the creep
 
 Owner: "Notifications motion was trash". Measured on the Simulator: the first
