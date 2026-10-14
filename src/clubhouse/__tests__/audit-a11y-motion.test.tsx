@@ -121,3 +121,11 @@ describe('A-18: three sheets leave on their exit instead of unmounting', () => {
     expect(read('screens/rounds/track/round-sheets.tsx')).toMatch(/useDialogLifetime\(open, \{ direction: 'center', surfaceSelector: '\.ch-rt-subm' \}\)/);
   });
 });
+
+describe('A-29: the Ask sheet is ready before it is asked for', () => {
+  const src = readFileSync(join(__dirname, '../shell/AskSheet.tsx'), 'utf8');
+  it('loads its chunk when the page is idle and mounts closed when the key is approached', () => {
+    expect(src).toMatch(/requestIdleCallback\(\(\) => void loadAskSheetBody\(\)/);
+    expect(src).toMatch(/onPointerEnter=\{warm\}\s+onFocus=\{warm\}\s+onPointerDown=\{warm\}/);
+  });
+});

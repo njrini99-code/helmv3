@@ -17,7 +17,8 @@ import { activeNavItem, routeLabel } from './nav';
  *
  * The body (and the chat's code and styles) loads only when the sheet first opens.
  */
-const AskSheetBody = lazy(() => import('./AskSheetBody'));
+const loadAskSheetBody = () => import('./AskSheetBody');
+const AskSheetBody = lazy(loadAskSheetBody);
 
 /** The chat implementation: the production hook, or the preview's stand-in. */
 export type ChAskSheetChat = typeof useCoachHelmChat;
@@ -25,9 +26,11 @@ export type ChAskSheetChat = typeof useCoachHelmChat;
 interface AskSheetCtx {
   open: boolean;
   setOpen: (open: boolean) => void;
+  /** Mounts the sheet closed ahead of a likely open (pointer over or focus on the key), so opening rises. */
+  warm: () => void;
   available: boolean;
 }
-const Ctx = createContext<AskSheetCtx>({ open: false, setOpen: () => {}, available: false });
+const Ctx = createContext<AskSheetCtx>({ open: false, setOpen: () => {}, warm: () => {}, available: false });
 
 /** What the sheet says it is looking at, from the address and the page's own trail ("Stats · Jonah Okafor"). */
 export function lookingAt(
@@ -69,10 +72,21 @@ export function AskSheetProvider({
   useEffect(() => {
     if (open) setLoaded(true);
   }, [open]);
+  // Audit A-29: the first open waited ~350 ms on this chunk, then appeared in one frame (mounted already open, so the
+  // sheet had no closed state to rise from). The chunk loads when the page is idle, and the sheet mounts closed as soon
+  // as the key is approached, so the open itself is the rise.
+  useEffect(() => {
+    if (!available) return;
+    const idle = typeof window.requestIdleCallback === 'function'
+      ? window.requestIdleCallback(() => void loadAskSheetBody(), { timeout: 4000 })
+      : window.setTimeout(() => void loadAskSheetBody(), 2000);
+    return () => (typeof window.cancelIdleCallback === 'function' ? window.cancelIdleCallback(idle) : window.clearTimeout(idle));
+  }, [available]);
+  const warm = useCallback(() => setLoaded(true), []);
   // A new page (or another player on the same page) is a new context: the sheet closes, and the next one starts fresh.
   useEffect(() => setOpen(false), [pathname, search]);
 
-  const value = useMemo(() => ({ open, setOpen, available }), [open, available]);
+  const value = useMemo(() => ({ open, setOpen, warm, available }), [open, warm, available]);
   return (
     <Ctx.Provider value={value}>
       {children}
@@ -94,7 +108,7 @@ export function useAskSheet(): { open: () => void; available: boolean } {
 
 /** The top bar's Ask key (coach only, never on CoachHelm itself). */
 export function AskSheetButton() {
-  const { open, setOpen, available } = useContext(Ctx);
+  const { open, setOpen, warm, available } = useContext(Ctx);
   if (!available) return null;
   return (
     <button
@@ -105,6 +119,9 @@ export function AskSheetButton() {
       aria-expanded={open}
       title="Ask CoachHelm"
       data-ch-code="CH-1840"
+      onPointerEnter={warm}
+      onFocus={warm}
+      onPointerDown={warm}
       onClick={() => {
         haptic('select');
         setOpen(true);
