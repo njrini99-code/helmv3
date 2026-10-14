@@ -799,6 +799,47 @@ describe('Shell · phone chrome', () => {
     expect(code('CH-1816')!.getAttribute('aria-controls')).toBe('ch-strip');
   });
 
+  it('a keyboard-aware pushed screen fits Safari\'s visible area while the keyboard is up, so its bar stays on screen', () => {
+    // Safari 26: the keyboard shrinks innerHeight with the visible area and scrolls it down to the composer; only the
+    // layout viewport's clientHeight keeps the full height.
+    const vv = Object.assign(new EventTarget(), { height: 714, offsetTop: 0, scale: 1 });
+    const realVV = Object.getOwnPropertyDescriptor(window, 'visualViewport');
+    const realMM = window.matchMedia;
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: vv });
+    window.matchMedia = ((q: string) => ({ ...realMM(q), matches: q === '(pointer: coarse)' || q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    const ch = vi.spyOn(document.documentElement, 'clientHeight', 'get').mockReturnValue(714);
+    const ih = vi.spyOn(window, 'innerHeight', 'get').mockImplementation(() => vv.height);
+    try {
+      render(
+        <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/messages" forceRebuilt>
+          <PhoneScreen labelledBy="kb-title" keyboardAware>
+            <PhoneBar title="Cole Bennett" titleId="kb-title" back={{ onBack: () => {}, ariaLabel: 'Back to Messages' }} />
+          </PhoneScreen>
+        </ClubhouseFrame>,
+      );
+      const el = document.querySelector<HTMLElement>('.ch-pscreen')!;
+      expect(el.dataset.chVv).toBeUndefined();
+      act(() => {
+        Object.assign(vv, { height: 404, offsetTop: 310 });
+        vv.dispatchEvent(new Event('resize'));
+      });
+      expect(el.dataset.chVv).toBe('');
+      expect(el.style.getPropertyValue('--ch-vv-top')).toBe('310px');
+      expect(el.style.getPropertyValue('--ch-vv-h')).toBe('404px');
+      act(() => {
+        Object.assign(vv, { height: 714, offsetTop: 0 });
+        vv.dispatchEvent(new Event('resize'));
+      });
+      expect(el.dataset.chVv).toBeUndefined();
+    } finally {
+      ch.mockRestore();
+      ih.mockRestore();
+      window.matchMedia = realMM;
+      if (realVV) Object.defineProperty(window, 'visualViewport', realVV);
+      else delete (window as { visualViewport?: unknown }).visualViewport;
+    }
+  });
+
   it('CH-1809 a pushed screen takes focus on its title and makes the shell chrome inert until it closes', async () => {
     function Page({ open }: { open: boolean }) {
       return open ? (

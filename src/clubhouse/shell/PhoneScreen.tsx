@@ -105,8 +105,10 @@ function useSafariKeyboardFit(ref: RefObject<HTMLElement | null>, on: boolean): 
     const vv = window.visualViewport;
     if (!on || !el || !vv || document.body.classList.contains('capacitor') || !window.matchMedia?.('(pointer: coarse)').matches) return;
     const fit = () => {
-      // A pinch-zoom shrinks the visible area too; it is not a keyboard.
-      const up = vv.scale <= 1.01 && window.innerHeight - vv.height > 120;
+      // The layout viewport's height (clientHeight) is what the keyboard covers: Safari 26 shrinks innerHeight with the
+      // visible area, so innerHeight minus it reads 0 with the keyboard up. A pinch-zoom shrinks the visible area too;
+      // it is not a keyboard.
+      const up = vv.scale <= 1.01 && document.documentElement.clientHeight - vv.height > 120;
       if (!up) {
         delete el.dataset.chVv;
         return;
