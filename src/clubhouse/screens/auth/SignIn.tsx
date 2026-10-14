@@ -21,8 +21,8 @@ import { useQueryParam } from './use-query-param';
 /**
  * The phone sheet over the keyboard (auth.css, `data-kb` on the frame): while a field in the panel is typed in, the sheet
  * rises to just under the status bar, so the fields and Sign in sit above the keyboard, and it settles back when the
- * keyboard goes. It is set as the finger lands on a field, before the field takes focus, so iOS finds the field already
- * in view and never pans the page under the sheet. A touch screen at phone width only.
+ * keyboard goes. It rises when a field takes focus, not as the finger lands: iOS focuses the field under the finger as it
+ * lifts, so a sheet already moving carried Password out from under the tap (2026-10-14). A touch screen at phone width only.
  */
 function useKeyboardLift(panel: RefObject<HTMLElement | null>): void {
   useEffect(() => {

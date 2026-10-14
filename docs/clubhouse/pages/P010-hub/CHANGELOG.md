@@ -1,10 +1,5 @@
 # P010 — Team Hub: changelog
 
-## 2026-10-14 — 44px targets for the row menus
-
-- **Row "More" buttons** (hub.css): the 32px buttons on announcement and trip
-  rows get a 44px hit area on the phone; the button draws the same.
-
 ## 2026-10-12 — A section root on the phone (no "‹ More")
 
 The phone shell's section strip replaced the tab bar and the More sheet

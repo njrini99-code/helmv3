@@ -7,6 +7,7 @@ import { useChReducedMotion } from '../lib/reduced-motion';
 import { poppedByUA } from '../lib/ua-pop';
 import { CH_UNDERLAY_SHIFT, usePhoneImmersive, usePhonePushed } from './phone-chrome';
 import { useOverlayScrollLock } from '../lib/overlay-scroll';
+import { isNativeApp } from '@/lib/utils/capacitor';
 
 /**
  * A pushed phone screen (a thread, details, a new message): it slides in over the page on the smooth spring (base,
@@ -103,7 +104,7 @@ function useSafariKeyboardFit(ref: RefObject<HTMLElement | null>, on: boolean): 
   useEffect(() => {
     const el = ref.current;
     const vv = window.visualViewport;
-    if (!on || !el || !vv || document.body.classList.contains('capacitor') || !window.matchMedia?.('(pointer: coarse)').matches) return;
+    if (!on || !el || !vv || isNativeApp() || !window.matchMedia?.('(pointer: coarse)').matches) return;
     const fit = () => {
       // The layout viewport's height (clientHeight) is what the keyboard covers: Safari 26 shrinks innerHeight with the
       // visible area, so innerHeight minus it reads 0 with the keyboard up. A pinch-zoom shrinks the visible area too;

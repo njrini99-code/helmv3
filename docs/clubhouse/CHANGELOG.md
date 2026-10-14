@@ -3,7 +3,8 @@
 ## 2026-10-14 — Contrast and targets from the Simulator audit
 
 A rendered-pixel contrast sweep of every phone section in both themes (iPhone 17
-Pro Simulator, Safari 26.5), and a target-size scan.
+Pro Simulator, Safari 26.5). (A target-size scan flagged 30-32px icon buttons;
+their 44px touch areas already exist as `::after` under `pointer: coarse`.)
 
 - **The Ledger eyebrow** (tokens.css `--ch-ledger-eyebrow`, #7a6b3f to #6e6038):
   4.25:1 on the page and 4.4:1 as drawn on the canvas; now 5:1 or better on the
@@ -16,8 +17,6 @@ Pro Simulator, Safari 26.5), and a target-size scan.
   time value in its own part, which globals.css paints a fixed warm-900 for
   Fairway, so the New event sheet's date and times looked empty on the dark
   field. A Clubhouse field's value now takes the field's ink.
-- **Small icon buttons on the phone** (ui.css): a 30px `IconButton size="sm"`
-  (Calendar's week arrows and the like) gets a 44px hit area; it draws the same.
 
 ## 2026-10-13 — Section switches: fade through, one bar change, warm inbox
 

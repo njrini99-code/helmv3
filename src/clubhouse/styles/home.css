@@ -2429,6 +2429,17 @@
     margin-top: 36px;
   }
 }
+/* The loading head stacks with the loaded one on a narrow canvas, so it doesn't jump from two columns to one. */
+@container (max-width: 640px) {
+  .ch-h-main[aria-busy='true'][data-canopy] > .ch-h-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ch-h-main[aria-busy='true'][data-canopy] > .ch-h-head > .ch-h-head__actions {
+    grid-column: 1;
+    grid-row: auto;
+    flex-wrap: wrap;
+  }
+}
 
 /* The Ledger on desktop Home (owner, 2026-10-07): the week and the latest round sit on the canvas under one engraved
    rule, split by a hairline column; the leaderboard is rows on the canvas, aligned to the head's edge. */
