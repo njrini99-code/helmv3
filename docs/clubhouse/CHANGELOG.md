@@ -12,6 +12,10 @@ Pro Simulator, Safari 26.5), and a target-size scan.
   0.8): the Team Hub "Latest" card's meta and CoachHelm's focus head drew at
   4.1:1 at the light end of the green gradients; now 4.5:1 or better there,
   still a step under the soft ink.
+- **Dates and times in the dark theme** (controls.css): WebKit draws a date or
+  time value in its own part, which globals.css paints a fixed warm-900 for
+  Fairway, so the New event sheet's date and times looked empty on the dark
+  field. A Clubhouse field's value now takes the field's ink.
 - **Small icon buttons on the phone** (ui.css): a 30px `IconButton size="sm"`
   (Calendar's week arrows and the like) gets a 44px hit area; it draws the same.
 
