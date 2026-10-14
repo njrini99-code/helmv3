@@ -1,5 +1,33 @@
 # P007 — Messages: changelog
 
+## 2026-10-14 — A dropped send tells one story; the reaction bar and New message work from the keyboard
+
+Runtime audit (Playwright WebKit, local stack), both roles.
+
+- **A-06** A send that died on the wire in Safari showed a "Couldn’t confirm
+  this sent" bubble under a "Couldn’t send the message · Load failed." toast.
+  The toast now classifies with the same test as the bubble
+  (`isTransientNetworkErrorMessage`, which knows WebKit's "Load failed"), so it
+  reads "Couldn’t confirm this message sent" with the check-then-Retry hint
+  (CH-7005), and `friendlyReason` no longer passes a browser's own network,
+  abort or timeout text through as copy (shared: docs/clubhouse/CHANGELOG.md).
+  An attachment send that throws while its earlier attempt is unconfirmed now
+  toasts CH-7023, as the composer shows, not CH-7006 "Try again".
+- **A-07** The bubble reads "Couldn’t confirm this message sent. Check before
+  sending again." (CH-7017).
+- **A-26** Desktop React: the reaction bar rises from the bubble (quick; a fade
+  with reduced motion), takes focus on its first reaction, ← → Home End move
+  along it, and Esc or a pick returns focus to React (CH-7603, CH-7802). The
+  "More message actions" menu already returns focus to its trigger on Esc
+  (now tested); the audit's `<body>` came from its twelve Tabs, which close
+  the shared Menu by design before Esc was pressed.
+- **A-28** Phone New message: a hardware keyboard's Esc is Cancel, and focus
+  returns to New message (CH-7804; the PhoneScreen part is shared). The screen
+  already slid in and focused its title; the audit sampled the People list's
+  own vertical motion, which a horizontal push does not change.
+- Tests: messages-audit "runtime audit 2026-10-14", friendly-reason.test.
+  No screenshots: no dev server was run for this change.
+
 ## 2026-10-14 — The inbox no longer queues two server actions before its list
 
 Simulator audit (each request held 0.8s to expose the order): opening Messages
