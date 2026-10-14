@@ -67,7 +67,7 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
             Your busy time
           </Badge>
         </div>
-        <h2 className="ch-in__title">{e.title}</h2>
+        <h2 className="ch-in__title" tabIndex={-1}>{e.title}</h2>
       </div>
       <div className="ch-in__facts">
         <div className="ch-in__fact">

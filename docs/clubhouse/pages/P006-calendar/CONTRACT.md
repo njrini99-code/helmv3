@@ -392,7 +392,7 @@ From the shell (P001): 11901 PHONE_CHROME.
 
 Status: DEFINED
 
-On the desktop N opens New event (coach), T goes to today, the arrows step a day, week or month, and Esc closes the panel; none fires while typing or with a dialog open (62001). The Find a time band moves a quarter hour with the left and right arrows and an hour with Shift (read in the code, not tested). The shell's edge swipe and browser back pop a pushed screen (12001).
+On the desktop N opens New event (coach), T goes to today, the arrows step a day, week or month, and Esc closes the panel; none fires while typing or with a dialog open (62001). The arrows are not the page's while a control that uses them has focus (the View radios, a menu, the jump panel or the people picker), and a key a control already handled (a popover's Esc) is not also a shortcut. New event opens on its title field on the desktop; an edit and the phone open on the heading. The jump panel and the people picker take focus as they open and hand it back to their button on Esc, Close, Done or a pick. An event opened with Enter or Space takes focus to its panel's heading, and Esc or Back hands it back to the event (audit 2026-10-14, A-09 to A-25; calendar-keyboard-focus.test.tsx). The Find a time band moves a quarter hour with the left and right arrows and an hour with Shift (read in the code, not tested). The shell's edge swipe and browser back pop a pushed screen (12001).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
