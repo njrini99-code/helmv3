@@ -193,6 +193,20 @@ describe('Settings · the server loader', () => {
     expect(logServer).not.toHaveBeenCalled();
   });
 
+  it('82101 CH-8901 the loader says email is paused unless the outbound gate is exactly on', async () => {
+    tables.current = coachTables();
+    try {
+      vi.stubEnv('HELM_CUSTOMER_EMAIL_ENABLED', '');
+      expect((await loadSettings(coachSession, 't1')).emailPaused).toBe(true);
+      vi.stubEnv('HELM_CUSTOMER_EMAIL_ENABLED', 'TRUE');
+      expect((await loadSettings(coachSession, 't1')).emailPaused).toBe(true);
+      vi.stubEnv('HELM_CUSTOMER_EMAIL_ENABLED', 'true');
+      expect((await loadSettings(coachSession, 't1')).emailPaused).toBe(false);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('82101 a coach with no team still loads: the team sections are null, not failed', async () => {
     tables.current = coachTables();
     const data = await loadSettings(coachSession, null);

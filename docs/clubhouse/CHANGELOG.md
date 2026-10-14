@@ -1,5 +1,168 @@
 # Clubhouse changelog
 
+## 2026-10-13 — Popups: one sheet rise, one backdrop, one exit
+
+Measured in the Popup Lab (headless WebKit, 402px, dev build). Sheets on the
+phone rose three ways and sat on five
+different tints; they now share one motion and one material.
+
+- **One backdrop** (`--ch-scrim`, tokens.css): every sheet, dialog and drawer on
+  the native top layer (Modal, the
+  Settings and Recruiting sheets and action sheets, the Ask sheet, CoachHelm's
+  History drawer) sits on the same
+  solid wash, rgb(20 20 18 / 0.36), and its night value in dark mode. Before:
+  0.32, 0.42 and 0.45, with three dark
+  values. No blur: a full-screen blur re-blurs the page on every frame of a
+  WebKit open.
+- **One rise**: every phone sheet rises on the smooth spring (462ms, no
+  overshoot), as Modal, the bell and the
+  account sheet already did. The Settings and Recruiting sheets and action
+  sheets took the 260ms ease-out; the Ask
+  sheet popped like a desktop dialog (fade and scale) although it is a bottom
+  sheet; the History drawer slid in
+  on the ease-out. All eight Popup Lab sheets now read `ch-rise 462ms` on the
+  same `linear()` curve.
+- **One exit** (`useDialogLifetime`): a sheet or drawer closed by Close, Esc or
+  its scrim leaves on the same smooth
+  spring it rose on, from rest (370 to 450ms by its height), as a thrown one
+  already did at the throw's speed and as
+  the bell and the account sheet do. Before: a 260ms ease-out that started at
+  full speed. A centred desktop dialog
+  keeps its 260ms fade and settle; the backdrop clears over 260ms either way.
+- **Left as they are, on purpose**: popovers and menus (`CH_POP`, 180ms: small,
+  anchored, quick by design); the
+  bell's drop (the reveal spring's slight landing give); Peek's deeper tint (a
+  focus preview, not a sheet); the
+  round's submit screen and course view, which cover the round on their own greens.
+
+## 2026-10-12 — Motion audit: every phone transition on the compositor or out of its frames
+
+Measured in headless WebKit at 402px on the dev build (the preview pages are 404
+in production builds), frame by
+frame, against an inventory of every Clubhouse motion. The rule found:
+framer's `x`, `y` and `scale` run on the main thread, so any render work during
+the move stutters it, while
+`transform` and `opacity` (CSS, WAAPI, or framer given a transform string) keep
+moving on the compositor.
+
+- **Pushed screens and the page beneath** (`PhoneScreen`, `PhoneUnderlay`,
+  CH-1610, CH-1618): the screen slides
+  by a transform string and the page draws back by WAAPI `translate`, on the
+  same smooth spring, from wherever each
+  is when interrupted. A 50ms stall 96ms into a thread's pop was a visible
+  hitch; it no longer holds the slide.
+- **Back pop** (`playPop`): the copy of the leaving page leaves out what lies
+  below the window (`cloneInView`,
+  tested), so it is cloned and laid out only as far as the screen reaches: about
+  half the time on long pages.
+- **Account sheet** (CH-1802): the page under it goes inert once the sheet has
+  settled and comes back once it has
+  left, not mid-slide (a full style pass, 6 to 20ms a frame); focus returns to
+  the title after the exit too.
+- **Peek** (phone): a solid tint behind the card instead of a full-screen blur
+  fading in and out.
+- **Settings sections** (CH-8609) and the **peek card**: transform strings, so
+  they run on the compositor.
+- **Skeletons** (phone): the sheen is its own layer slid by transform; the
+  shared sweep repainted every block on
+  every frame while a page loaded.
+- **Popovers, menus, content swaps, Settings panels, the offline banner, the
+  Saved tick and the roster peek**: the
+  shared presets (`CH_POP`, `chSwap`, `CH_ROUTE`) and these one-offs move by
+  transform strings, on the compositor
+  with their fade. Same distances and timing.
+- **Segmented view switches** (`Segmented redraws`: Calendar's views, Rounds'
+  grouping, the team roster's sort,
+  Messages' filter, a player's rounds shown): the chip moves in the tap's frame
+  and the view renders after it as a
+  transition, so the chip starts about 40ms sooner (WebKit, dev). Stats' window
+  switch keeps its own loading.
+- **Bell** (fix): its portal waits for hydration; the always-rendered drop made
+  the server and client HTML differ.
+- **Checked and left as they are** (measured): the overlay scroll lock (0 to 3ms
+  a frame), the `:has()` rules (no
+  measurable style cost), the notification stacks' fan (no frame over 13ms),
+  Modal's CSS rise and the dialog exit
+  (already on the compositor), the page crossfade and push/pop view transitions,
+  the strip's root attribute (no
+  measurable style cost), and the small colour and shadow fades on controls
+  (small repaints). Tried and dropped:
+  rendering a sheet's or a pushed screen's body a frame after its frame; it
+  started the motion 10 to 30ms sooner on
+  the dev build but loses the body being there when the sheet opens. Toasts keep
+  framer's y (their swipe and reflow).
+
+## 2026-10-12 — Phone navigation: the section strip; notifications as stacks
+
+Owner-approved from interactive prototypes (no owner board; spec in
+`docs/clubhouse/phone/section-strip.md`).
+
+- **No tab bar.** The phone's floating tab bar and the More sheet's section
+  rows are gone; the page runs to the bottom edge (`--ch-tabbar-h` is 0).
+  The section's name in the green top bar is the switcher (`SectionTrigger`,
+  CH-1816): tap it, pull the bar down, or swipe the bar sideways on a
+  section's own page. A pull draws the strip out under the finger; a swipe
+  moves the title with resistance, commits past 56pt or a flick, and never
+  wraps. Large titles carry a chevron and open it too.
+- **The strip** (`SectionStrip`, CH-1808): every section the role has (the old
+  tabs first, the sidebar's order, then Settings), then an Account pill. It
+  slides out from under the bar on the smooth spring in the bar's green with
+  its own sheet lip; the current section is centred on an ivory plate that
+  glides (`layoutId`, settle spring); counts sit on their pills and the closed
+  title carries a dot. Tapping the current section pops pushed screens or
+  scrolls to the top (CH-1907).
+- **Account sheet** (`AccountSheet`, CH-1802, once the More sheet): who you
+  are, the coach's team switch, Help and Sign out.
+- **Back links.** Pages that said "‹ More" are section roots now: their bars
+  show the switcher (`PhoneTop start`), and `phonePushedTop` returns null for
+  them. Pages below a section still push.
+- **Notifications** (`BellStacks`, CH-1811): on the phone the bell drops a
+  green veil from under the bar and the feed as lock-screen stacks: unread by
+  kind (newest stack first), everything read folded into Earlier. Tap a stack
+  to fan it out (one at a time); swipe a card left, or a stack's ×, to mark it
+  read; Mark all read in the head. The rules are `notification-stacks.ts`
+  (tested). The veil pours down by transform only and the stacks land on the
+  new `reveal` spring (D-64's reveal duration, no bounce); they leave on
+  smooth at the speed they were thrown. The feed starts loading on touch-down.
+- **Smooth in WebKit** (measured in Safari at 402px, dev build): the drop stays
+  rendered, hidden and inert, so opening it only moves it; no body scroll lock
+  (it re-laid out the whole page in the first frame; touch-action holds the page
+  instead); no backdrop blur on the veil, cards or edges (the veil is solid green,
+  the cards solid ivory); no scale; an unchanged feed keeps its identity and the
+  stacks are memoized, so a refresh mid-drop re-renders nothing. First frame
+  about 40ms to about 20ms; every frame after it 11 to 15ms.
+- **The Ask CoachHelm key** is off the phone top bar (desktop keeps it).
+- Haptics: `select` when the section changes and when a stack fans; opening the
+  strip is silent; the account pill ticks as the More button did.
+
+## 2026-10-12 — Router cache back to Next's default
+
+The app-wide 30s dynamic stale time (`experimental.staleTimes`, native-feel
+audit P0-2) is removed from `next.config.mjs`. It applied to every product, so
+Fairway, Baseball and Lift Lab could show a page up to 30s old on a revisit.
+Clubhouse tab revisits go back to the server again (the route skeleton shows)
+until a Clubhouse-scoped cache exists. `shell/use-prefetch-tabs.ts` comment
+updated.
+
+## 2026-10-11 — Route errors name the page that failed
+
+`RouteErrorView` (`ui/Notices.tsx`) takes the boundary's `route`. For a load
+or unknown failure (CH-1205, CH-1206) the title names the page: its nav item,
+else its first dashboard segment as words (`routeErrorLabel`), for example
+"Rounds didn’t load" for `/golf/dashboard/rounds/[id]`. Home and routes
+outside the dashboard keep the fixed titles; the other kinds keep their copy,
+and the CH codes are unchanged. `RouteErrorBoundary` passes its `route` prop
+through; no `error.tsx` file changed.
+
+## 2026-10-11 — Cold loading frame agrees with the gate
+
+With a team allowlist (`HELM_CLUBHOUSE_TEAMS`), the `/golf` loading boundary
+painted Clubhouse's frame before the team was known, so a team outside the
+allowlist saw Clubhouse flash and then swap to Fairway. `clubhouseLoadingFrame()`
+in `gate.ts` now answers for that boundary: Fairway with the flag off, Clubhouse
+with the flag on and no allowlist, and a neutral frame otherwise. No visible
+change with the flag off or with no allowlist.
+
 ## 2026-10-11 — Depth from tokens and transform-only motion across the premium pass
 
 The `clubhouse:css` gate found 57 raw outer blur shadows and layout transitions
@@ -718,6 +881,26 @@ import from `motion/react` instead of `framer-motion`. The API is the same, so
 durations, curves, the press and reduced-motion gating are unchanged, and
 nothing renders differently.
 
+## 2026-10-06 — Complete page documentation and fixture audit
+
+Updated all 15 page families and their catalogs, phone specs and checklists
+with source ownership, current evidence and explicit device/release gaps.
+ALL_PAGE_AUDIT.md records the 305 state cases, 60 WebKit base renders,
+24 onboarding renders and measured Settings reduced-motion mismatch.
+The screenshot log now ignores generated galleries; its regression first
+failed and then passed. Production settings and approved handoffs are intact.
+
+## 2026-10-06 — Premium audit, complete catalog and focus repair
+
+Added the complete component/style catalog, a repeatable material declaration
+inventory and the read-only clubhouse-design-reviewer. Recorded all 15 page
+families and 383 local synthetic renders in
+[PREMIUM_AUDIT.md](PREMIUM_AUDIT.md).
+Shared opt-in keyboard alternatives now reveal in document flow; ordinary
+screen-reader labels remain hidden. Message quotes and desktop Game detail
+observe live Animations off as well as OS reduced motion. No production flag,
+database or deployment changed.
+
 ## 2026-10-02 — Floating cards and stationary overlay backgrounds
 
 The owner rejected striped, outlined cards and unstable pull-up screens. Shared
@@ -871,7 +1054,7 @@ The changelog gate now holds a shared piece (a file under `src/clubhouse/ui`, `l
 | Calendar | **Duplicate, Print and the jump panel's Close (Clickables gaps 9, 15, 21).** The board draws Duplicate, Print and a Close on the jump panel; none existed. | Event actions › Duplicate (coach) opens New event seeded from the event and publishes a new one; More › Print week (day, month or agenda by view) prints the view with the shell dropped; the jump panel has its own Close. |
 | Calendar | **Compare schedules on a class (Clickables gap 17).** A coach looking at a player's class had no way to set it against the team's schedule. | A class's detail ends with Compare schedules: New event on the class's day with only its player invited, so Find a time compares the two. |
 | Messages | **Right click opens reactions (Clickables gap 23).** On desktop a right click on a message did nothing. | It opens the message's reaction bar, as the React button does; the phone keeps its long press. |
-| Team Hub | **Plan a trip in four steps, and a travelers audience (Clickables gaps 8 and 22).** Plan a trip was one form, with no link to the calendar event or who travels; New announcement could not reach a trip's travelers. | Four steps (Event, Travelers, Logistics, Itinerary) with Back and Next; the event fills name, place and day, its invitees are the travelers (written with explicit adds and removes); Publish saves the trip once, so a Retry writes only the travelers. New announcement offers "<trip> travelers · N". New states CH-10210, CH-10211, CH-10312, CH-10313. The class-clash line is not built (Q-84). |
+| Team Hub | **Plan a trip in four steps, and a travelers audience (Clickables gaps 8 and 22).** Plan a trip was one form, with no link to the calendar event or who travels; New announcement could not reach a trip's travelers. | Four steps (Event, Travelers, Logistics, Itinerary) with Back and Next; the event fills name, place and day, its invitees are the travelers (written with explicit adds and removes); Publish saves the trip once, so a Retry writes only the travelers. New announcement offers "`<trip>` travelers · N". New states CH-10210, CH-10211, CH-10312, CH-10313. The class-clash line is not built (Q-84). |
 | Team Hub | **Untick a done task (Clickables gap 18).** A player who ticked a task by accident could not undo it. | A tick on a done task opens it again through the new `uncompleteTask` (their own assignment back to pending, as the live RLS policy allows). Optimistic; a refusal leaves it done with CH-10011 and Retry. |
 | Rounds | **Round entry states (Q-81).** The live round flow has four states the /rounds boards do not draw: a saved round to recover, a round already in progress on the same course and day, a reload, and a qualifier that closed during the round. | RecoveryDialog, InProgressConflictDialog, ReloadBanner and RoundErrorBanner, SaveAsPracticeSheet and the Save for later / Discard failure toasts, as Clubhouse components; Discard now asks first everywhere. Engine wiring waits on #2104 (stacked, Q-81). Preview /clubhouse-preview/entry. |
 | Rounds | **A tap on a score picks the hole (Clickables gap 7).** In the round review's card only the hole number picked a hole. | A tap on a score picks that hole too, with the select haptic (pointer only; the hole number stays the keyboard control; Tot picks nothing). |
@@ -879,23 +1062,3 @@ The changelog gate now holds a shared piece (a file under `src/clubhouse/ui`, `l
 | CoachHelm | **Assign as focus on a strength (Clickables gap 12).** Assign was hidden on a strength, though the board draws it on Theo's card; contract 130806 had been written from the code, not the board. | CoachHelm offers Assign as focus on a strength (a keep-doing focus); 130806 is reworded (Q-80, kept by the owner). |
 
 Earlier changes (2026-09-28 to 2026-09-30: the page builds, the contract passes and their fixes) are listed in each page's changelog.
-
-## 2026-10-06 — Complete page documentation and fixture audit
-
-Updated all 15 page families and their catalogs, phone specs and checklists
-with source ownership, current evidence and explicit device/release gaps.
-ALL_PAGE_AUDIT.md records the 305 state cases, 60 WebKit base renders,
-24 onboarding renders and measured Settings reduced-motion mismatch.
-The screenshot log now ignores generated galleries; its regression first
-failed and then passed. Production settings and approved handoffs are intact.
-
-## 2026-10-06 — Premium audit, complete catalog and focus repair
-
-Added the complete component/style catalog, a repeatable material declaration
-inventory and the read-only clubhouse-design-reviewer. Recorded all 15 page
-families and 383 local synthetic renders in
-[PREMIUM_AUDIT.md](PREMIUM_AUDIT.md).
-Shared opt-in keyboard alternatives now reveal in document flow; ordinary
-screen-reader labels remain hidden. Message quotes and desktop Game detail
-observe live Animations off as well as OS reduced motion. No production flag,
-database or deployment changed.

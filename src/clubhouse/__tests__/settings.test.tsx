@@ -1043,6 +1043,38 @@ describe('Settings · what the person is told about standing conditions', () => 
 });
 
 // The coaching staff's own checks (what is read, sent and shown, on desktop and phone) are in settings-staff.test.tsx.
+describe('Settings · email paused for everyone (CH-8901)', () => {
+  it('CH-8901 a coach: the email switches keep their choices but are disabled, with one line saying why; push still works', async () => {
+    setup({ data: { ...coachData(), emailPaused: true }, section: 'notifications' });
+    await expectCode('CH-8901', /^Email is paused for everyone right now\.$/);
+    expect(document.querySelectorAll('[data-ch-code="CH-8901"]')).toHaveLength(1);
+    expect(screen.getByRole('switch', { name: 'Weekly team email' })).toBeDisabled();
+    const email = screen.getAllByRole('switch', { name: / by email$/ });
+    expect(email.length).toBeGreaterThan(0);
+    for (const s of email) expect(s).toBeDisabled();
+    expect(screen.getByRole('switch', { name: 'Tasks by push' })).not.toBeDisabled();
+  });
+
+  it('CH-8901 with email on, nothing is said and the email switches work', async () => {
+    setup({ data: coachData(), section: 'notifications' });
+    await screen.findByRole('switch', { name: 'Weekly team email' });
+    expect(code('CH-8901')).toBeNull();
+    expect(screen.getByRole('switch', { name: 'Weekly team email' })).not.toBeDisabled();
+    for (const s of screen.getAllByRole('switch', { name: / by email$/ })) expect(s).not.toBeDisabled();
+  });
+
+  it('CH-8901 a player: the CoachHelm email column and Mute email are disabled too; in app and push are not', async () => {
+    setup({ data: { ...playerData(true), emailPaused: true }, section: 'notifications' });
+    await expectCode('CH-8901', /Email is paused for everyone right now/);
+    const updates = card('CoachHelm updates');
+    expect(within(updates).getByText(/Email is paused for everyone right now/)).toBeTruthy();
+    expect(within(updates).getByRole('button', { name: 'Mute email' })).toBeDisabled();
+    expect(within(updates).getByRole('button', { name: 'Mute push' })).not.toBeDisabled();
+    for (const s of within(updates).getAllByRole('switch', { name: /, email$/ })) expect(s).toBeDisabled();
+    for (const s of within(updates).getAllByRole('switch', { name: /, push$/ })) expect(s).not.toBeDisabled();
+  });
+});
+
 describe('Settings · Team · the coaching staff', () => {
   it('CH-8026 CH-8027 CH-8028 CH-8213 an approval, a decline and a staff invite that are refused are toasts; a requests read that fails is a notice', async () => {
     const user = userEvent.setup();
@@ -1281,7 +1313,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     const { setSlot } = usePhoneChromeState();
     return <div ref={setSlot} data-testid="phone-top" />;
   }
-  function phone(opts: { data?: ChSettingsData; writes?: Partial<ChSettingsWrites>; device?: ChDevice; onDeleted?: () => void; initialSection?: ChSettingsSection } = {}) {
+  function phone(opts: { data?: ChSettingsData; writes?: Partial<ChSettingsWrites>; device?: ChDevice; onDeleted?: () => void; initialSection?: ChSettingsSection; opened?: boolean } = {}) {
     const writes = makeWrites(opts.writes);
     const onDeleted = opts.onDeleted ?? vi.fn();
     const user = userEvent.setup();
@@ -1291,7 +1323,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
           <PhoneChromeProvider>
             <div className="ch-root" data-ui="clubhouse">
               <SlotHost />
-              <SettingsView data={opts.data ?? coachData()} writes={writes} device={opts.device ?? makeDevice()} initialSection={opts.initialSection ?? 'account'} onDeleted={onDeleted} />
+              <SettingsView data={opts.data ?? coachData()} writes={writes} device={opts.device ?? makeDevice()} initialSection={opts.initialSection ?? 'account'} opened={opts.opened} onDeleted={onDeleted} />
             </div>
           </PhoneChromeProvider>
         </ToastProvider>
@@ -1334,7 +1366,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
   it('81901 the coach root: a large title, the identity row, the sections with their summaries, help, and Sign out', () => {
     phone();
     expect(top().getByRole('heading', { level: 1, name: 'Settings' })).toBeTruthy();
-    expect(top().getByRole('button', { name: 'Back to More' })).toBeTruthy();
+    expect(top().queryByRole('button', { name: 'Back to More' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Maya Reyes Head coach · Varsity' })).toBeTruthy();
     const rows = within(list()).getAllByRole('button');
     expect(rows.map((b) => b.querySelector('.ch-setm-row__l')?.textContent)).toEqual(['Account', 'Notifications', 'Team', 'CoachHelm', 'Preferences']);
@@ -1367,21 +1399,30 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     await openRow(user, /^Team/);
     // The browser's back (the iOS edge swipe) pops the same screen.
     act(() => window.history.back());
-    expect(await top().findByRole('button', { name: 'Back to More' })).toBeTruthy();
+    await waitFor(() => expect(top().queryByRole('button', { name: 'Back to Settings' })).toBeNull());
     await screen.findByRole('navigation', { name: 'Settings sections' });
   });
 
   it('81901 a section named in the URL opens pushed, and the list is what Back returns to', async () => {
+    // The route reads ?section=coachhelm on the server and passes it as opened (no window read, so hydration matches).
     window.history.replaceState(null, '', '/golf/dashboard/settings?section=coachhelm');
-    const { user } = phone();
+    const { user } = phone({ initialSection: 'coachhelm', opened: true });
     expect(await screen.findByRole('list', { name: 'Priorities, most important first' })).toBeTruthy();
     await user.click(top().getByRole('button', { name: 'Back to Settings' }));
     await screen.findByRole('navigation', { name: 'Settings sections' });
   });
 
+  it('81901 the phone never reads the address while it renders: only the route-decided opened flag pushes a section (hydration-safe)', async () => {
+    window.history.replaceState(null, '', '/golf/dashboard/settings?section=notifications');
+    phone({ initialSection: 'notifications' });
+    expect(screen.getByRole('navigation', { name: 'Settings sections' })).toBeTruthy();
+    expect(top().queryByRole('button', { name: 'Back to More' })).toBeNull();
+    window.history.replaceState(null, '', '/');
+  });
+
   it('81901 80102 an old address opens its section pushed: /settings/notifications passes its section with no query, and the bare page still opens on the list', async () => {
     window.history.replaceState(null, '', '/golf/dashboard/settings/notifications');
-    const first = phone({ initialSection: 'notifications' });
+    const first = phone({ initialSection: 'notifications', opened: true });
     expect(await screen.findByText(/Which updates reach you/)).toBeTruthy();
     expect(top().getByRole('button', { name: 'Back to Settings' })).toBeTruthy();
     first.unmount();
@@ -1389,7 +1430,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     window.history.replaceState(null, '', '/golf/dashboard/settings');
     phone({ initialSection: 'account' });
     expect(screen.getByRole('navigation', { name: 'Settings sections' })).toBeTruthy();
-    expect(top().getByRole('button', { name: 'Back to More' })).toBeTruthy();
+    expect(top().queryByRole('button', { name: 'Back to More' })).toBeNull();
   });
 
   it('81901 CH-8008 a kind of update says what is on, and its sheet changes every category in it with one write (player)', async () => {
@@ -1470,6 +1511,18 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     expect(screen.getByRole('switch', { name: 'Weekly team email' })).toBeDisabled();
     expect(screen.getByRole('switch', { name: 'Push on this device' })).toBeDisabled();
     expect(screen.getByText(/blocked for GolfHelm/)).toBeTruthy();
+  });
+
+  it('81901 CH-8901 email paused: one line under the lead, the weekly email and each email switch disabled, push untouched', async () => {
+    const { user } = phone({ data: { ...coachData(), emailPaused: true } });
+    await openRow(user, /^Notifications/);
+    await expectCode('CH-8901', /Email is paused for everyone right now/);
+    expect(screen.getByRole('switch', { name: 'Weekly team email' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: /^Tasks/ }));
+    const sheet = dialog('Tasks');
+    expect(within(sheet).getByRole('switch', { name: 'Email' })).toBeDisabled();
+    expect(within(sheet).getByRole('switch', { name: 'Push' })).not.toBeDisabled();
+    expect(within(sheet).getByText(/Email is paused for everyone right now/)).toBeTruthy();
   });
 
   it('81901 CH-8010 quiet mode pauses the kinds it silences, and the sheet says so instead of offering switches', async () => {

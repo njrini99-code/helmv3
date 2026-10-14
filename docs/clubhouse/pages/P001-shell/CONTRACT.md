@@ -98,6 +98,7 @@ first-run and filtered empties are in its contract.
 | 10403 | CH-1303 | `THE_BELLS_FILTER_HAS_NOTHING` | The bell's filter has nothing |
 | 10404 | CH-1304 | `NOTHING_IS_SCHEDULED` | Nothing is scheduled |
 | 10405 | CH-1305 | `A_COACH_WITH_ONE_TEAM_A_COACH` | A coach with one team, a coach who cannot switch (an assistant on several teams), or a player |
+| 10406 | CH-1306 | `A_DASHBOARD_URL_THAT_MATCHES_NOTHING_OR` | A dashboard URL that matches nothing, or an id that no longer exists (a deleted round or player), inside the Clubhouse shell |
 
 ## 05 — Validation
 
@@ -127,7 +128,7 @@ one read fails (10614, `EmptyState size="page" tone="danger"`).
 | 10607 | CH-1206 | `ANYTHING_ELSE_CRASHED_THE_PAGE` | Anything else crashed the page |
 | 10608 | CH-1207 | `THE_SIDEBARS_NEXT_EVENT_DOESNT_LOAD` | The sidebar's next event doesn't load |
 | 10609 | CH-1208 | `THE_ROSTER_BADGES_JOIN_REQUESTS_DONT_LOAD` | The Roster badge's join requests don't load |
-| 10610 | CH-1002 | `SIGNING_OUT_FROM_THE_PHONES_MORE_SHEET` | Signing out from the phone's More sheet fails |
+| 10610 | CH-1002 | `SIGNING_OUT_FROM_THE_PHONES_MORE_SHEET` | Signing out from the phone's account sheet fails |
 | 10611 | CH-1003 | `SWITCHING_TEAM_FAILS` | Switching team fails (a head coach on more than one team) |
 | 10612 | CH-1209 | `TWO_OR_MORE_PARTS_OF_A_PAGE` | Two or more parts of a page don't load |
 | 10613 | CH-1210 | `TWO_OR_MORE_SECTIONS_OF_A_PAGE` | Two or more sections of a page crash in the browser |
@@ -264,7 +265,7 @@ motion and Animations off keep each still or instant.
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 11601 | CH-1601 | `MOVING_TO_ANOTHER_PAGE` | Moving to another page, or its first load |
-| 11602 | CH-1602 | `OPENING_MORE_ON_A_PHONE` | Opening More on a phone |
+| 11602 | CH-1602 | `OPENING_MORE_ON_A_PHONE` | Opening the account sheet on a phone (the strip's Account pill; once More) |
 | 11603 | CH-1603 | `OPENING_THE_BELL_OR_ANY_MENU` | Opening the bell or any menu |
 | 11604 | CH-1604 | `A_TOAST_ARRIVES_OR_LEAVES` | A toast arrives or leaves |
 | 11605 | CH-1605 | `GOING_OFFLINE_OR_BACK_ONLINE` | Going offline or back online |
@@ -298,10 +299,10 @@ passes its trigger (11709, owner-approved 2026-10-08).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 11701 | CH-1701 | `CHANGING_TABS` | Changing tabs (not tapping the tab they're on) |
+| 11701 | CH-1701 | `CHANGING_TABS` | Changing section (a strip pill or a committed swipe on the bar; not the section they're on) |
 | 11702 | CH-1702 | `ANY_SAVE_OR_SEND_LANDS` | Any save or send lands |
 | 11703 | CH-1703 | `ANY_SAVE_OR_SEND_FAILS` | Any save or send fails |
-| 11704 | CH-1704 | `OPENING_MORE_SWIPING_THE_SHEET_AWAY` | Opening More; swiping the sheet away |
+| 11704 | CH-1704 | `OPENING_MORE_SWIPING_THE_SHEET_AWAY` | Opening the account sheet; swiping it away |
 | 11705 | CH-1705 | `OPENING_THE_BELL_A_NOTIFICATION_OR_A` | Opening the bell, a notification, or a menu item |
 | 11706 | CH-1706 | `THE_CONNECTION_DROPS` | The connection drops |
 | 11707 | CH-1707 | `PICKING_ANOTHER_TEAM_IN_THE_SWITCHER` | Picking another team in the switcher |
@@ -321,19 +322,19 @@ reaching 44 by 44, the search field included (11801 to 11815).
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 11801 | CH-1801 | `THE_FIRST_TAB_ON_ANY_PAGE_OFFERS` | The first Tab on any page offers "Skip to content", which jumps past the navigation to the page |
-| 11802 | CH-1802 | `THE_PHONE_MORE_SHEET_IS_MODAL_FOCUS` | The phone More sheet is modal: focus moves in without scrolling, Tab stays inside, Esc closes it and focus returns to More without scrolling. The underlying page stays stationary until the full exit completes |
+| 11802 | CH-1802 | `THE_PHONE_MORE_SHEET_IS_MODAL_FOCUS` | The phone account sheet (the section strip's last pill; once the More sheet) is modal: focus moves in without scrolling, Tab stays inside, Esc closes it and focus returns to the section title without scrolling. It holds who you are, the coach's team switch, Help and Sign out. The underlying page stays stationary until the full exit completes |
 | 11803 | CH-1803 | `THE_CURRENT_PAGE_IS_MARKED_IN_THE` | The current page is marked in the sidebar and tab bar; the sidebar and its navigation are named landmarks; breadcrumbs mark the current page |
 | 11804 | CH-1804 | `TOASTS_ARE_ANNOUNCED_CONFIRMATIONS_POLITELY_ERRORS_RIGHT` | Toasts are announced: confirmations politely, errors right away |
 | 11805 | CH-1805 | `THE_BELL_PANEL_IS_A_DIALOG_IT` | The bell panel is a dialog: it takes focus on open, Esc closes it, and the filter menu works by keyboard |
 | 11806 | CH-1806 | `EVERY_CONTROL_SHOWS_A_FOCUS_RING_ON` | Every control shows a focus ring on keyboard focus; text fields show their own green or ink ring instead, never two |
 | 11807 | CH-1807 | `NO_AXE_VIOLATIONS_WITH_THE_BELL_OPEN` | No axe violations (WCAG 2.2 AA, contrast included) with the bell open (a sheet on the phone) and the More sheet open |
-| 11808 | CH-1808 | `THE_PHONE_TAB_BAR_LISTS_THE_ROLES` | The phone tab bar lists the role's tabs (coach: Home, CoachHelm, Calendar, Stats, More; player: Home, CoachHelm, Rounds, Team Hub, More; D-66), and when Messages is under More, More is named with its unread count ("More, 3 unread messages") |
+| 11808 | CH-1808 | `THE_PHONE_TAB_BAR_LISTS_THE_ROLES` | The phone section strip (section-strip.md) lists the role's sections, the old tabs first (coach: Home, CoachHelm, Calendar, Stats; player: Home, CoachHelm, Rounds, Team Hub; D-66), then the sidebar's order, then Settings and the Account pill; the current one is `aria-current`; a pill with a count is named with it ("Messages 3 new"). Shut, it is hidden and inert |
 | 11809 | CH-1809 | `A_PUSHED_PHONE_SCREEN_IS_NAMED_BY` | A pushed phone screen is named by its title, and focus moves to that title; while it is up, the shell's top bar and tab bar are inert, so VoiceOver can't wander behind it |
 | 11810 | CH-1810 | `ON_THE_PHONE_THE_TOP_BAR_NAMES` | On the phone the top bar names the page; a page with its own top (`PhoneTop`) gets a back link named for where it goes ("Back to More") in place of the bell |
-| 11811 | CH-1811 | `ON_THE_PHONE_THE_BELL_OPENS_AS` | On the phone the bell opens as a modal sheet instead of a popover: focus moves in, Tab stays inside, Esc, Close or the scrim close it and focus returns to the bell; the edge swipe is off while it is up |
+| 11811 | CH-1811 | `ON_THE_PHONE_THE_BELL_OPENS_AS` | On the phone the bell drops the feed as lock-screen stacks under a green veil (`BellStacks`, notification-stacks.ts) instead of a popover: a modal dialog; focus moves in, Tab stays inside, Esc, a tap on the open space, the bell or a drag up closes it and focus returns to the bell; the edge swipe is off while it is up |
 | 11812 | CH-1812 | `A_TOAST_RAISED_WHILE_A_DIALOG_OR` | A toast raised while a dialog or sheet is open shows inside it (on the phone, from the top), so it is seen, announced and its Retry can be tapped; a modal dialog makes everything outside it inert, which had hidden them. When the dialog closes, open toasts move back to the page |
 | 11813 | CH-1813 | `ON_A_DESKTOP_A_HEAD_COACH_ON` | On a desktop a head coach on more than one team sees the sidebar's team line as a menu button (the boards' up-down chevrons): it opens a listbox of the teams with the current one `aria-selected`; arrows, Home and End move, Enter or Space picks, Esc or Tab closes and focus returns to the button; a pick switches at once and every screen re-reads for the new team |
-| 11814 | CH-1814 | `ON_THE_PHONE_THE_SAME_COACH_SEES` | On the phone the same coach sees their teams in the More sheet, under who they are, the current one marked (`aria-current`); a switch closes the sheet on the new team, a refused one leaves it open with the reason |
+| 11814 | CH-1814 | `ON_THE_PHONE_THE_SAME_COACH_SEES` | On the phone the same coach sees their teams in the account sheet, under who they are, the current one marked (`aria-current`); a switch closes the sheet on the new team, a refused one leaves it open with the reason |
 | 11815 | CH-1815 | `ON_THE_PHONE_EVERY_KEY_A_FINGER` | On the phone every key a finger uses reaches at least 44 by 44: the bar's back link and text action (a pushed screen's bar has the shell bar's 44px row, with no hairline), the hero bell (its 40px disc drawn inside a 44px key, where it was), a sheet's Close (its reach leans up into the header's padding, so a title-only header no longer clips it to 43), and the search field (36px drawn, 44px to the finger; its input and clear key take their own taps, and its 16px text keeps iOS from zooming the page on focus). Measured in WebKit at 390 on 2026-10-08 |
 | 11816 | CH-1820 | `ON_THE_PHONE_THE_DOCK_THE_BAND` | On the phone the dock, the band just above the tab bar, carries a page's primary controls (`ThumbDock`) and the Resume round accessory; it hides with the tab bar (a pushed screen, a full-page form) and while a field has focus (the keyboard), and the canvas grows by its height so the last row clears it. Empty, it is not drawn |
 | 11817 | CH-1821 | `ON_THE_PHONE_WHILE_THE_PLAYER_HAS` | On the phone, while the player has a round in progress (touched in the last 12 hours), a parchment accessory above the tab bar reads “Round in progress, Oakmont CC · Hole 7”; one tap opens the shot screen. Not shown on the round's own screens or for a round whose screen isn't rebuilt |
@@ -344,6 +345,7 @@ reaching 44 by 44, the search field included (11801 to 11815).
 | 11822 | CH-1840 | `A_COACHS_TOP_BAR_CARRIES_AN_ASK` | A coach's top bar carries an Ask key (desktop and phone; only while CoachHelm is on for the coach, not on CoachHelm itself, and never for a player): it opens the Ask sheet over the page |
 | 11823 | CH-1841 | `THE_ASK_SHEET_IS_COACHHELMS_ASK_OVER` | The Ask sheet is CoachHelm's Ask over any screen: the same chat hook and route (no new model or spend), the thread and the message box, saved like any chat; Open in CoachHelm goes to it there. Phone: a bottom sheet that opens at half height with the page in view and grows to full when a thread starts (the grab or the chevron toggles); desktop: a centred sheet. Its heading takes focus, Esc, Close or the backdrop close it, and a new page (or another player) closes it and starts the next one fresh; in the app it sits above the keyboard |
 | 11824 | CH-1842 | `THE_SHEET_NAMES_WHAT_THE_COACH_IS` | The sheet names what the coach is looking at (“Looking at: Stats · Jonah Okafor”, from the page's trail or the navigation); a page about one player (`?player=`) also hands the chat that player as its context chip |
+| 11825 | CH-1816 | `ON_THE_PHONE_THE_SECTIONS_NAME_IN` | On the phone the section's name in the top bar is the section switcher: a button with a chevron (`aria-expanded`, `aria-controls="ch-strip"`) that opens the section strip, with a dot and a spoken note while another section has something new; on a section's own page a pull down on the bar draws the strip and a sideways swipe steps to the next section |
 
 ## 19 — Responsive layout
 
@@ -369,7 +371,7 @@ sheet and the bell (11802, 11805).
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 12001 | CH-1906 | `ON_THE_PHONE_THE_EDGE_SWIPE_OR` | On the phone, the edge swipe or the browser's back while a screen is pushed |
-| 12002 | CH-1907 | `ON_THE_PHONE_TAPPING_THE_TAB_THAT` | On the phone, tapping the tab that is already open |
+| 12002 | CH-1907 | `ON_THE_PHONE_TAPPING_THE_TAB_THAT` | On the phone, tapping the strip's pill for the section already open |
 | 12003 | CH-1908 | `ON_IOS_A_BACK_THAT_SAFARI_OR` | On iOS, a Back that Safari or the app's WebView animated itself (the edge swipe; `PopStateEvent.hasUAVisualTransition`, Safari 18 and later) |
 
 ## 21 — Performance

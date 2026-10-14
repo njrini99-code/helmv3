@@ -1,5 +1,25 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-12 — A section root on the phone (no "‹ More")
+
+The phone shell's section strip replaced the tab bar and the More sheet
+(docs/clubhouse/phone/section-strip.md). Team Hub's phone top bar no longer
+draws a "‹ More" back link: its title is a start title (`PhoneTop start`),
+which the shell turns into the section switcher. The page's action, where it
+has one, is unchanged. Shared change: docs/clubhouse/CHANGELOG.md.
+
+## 2026-10-12 — a task notification opens its task
+
+- A task notification (`?task=<id>`, kept through the old `/golf/dashboard/tasks`
+  address) opens Team Hub on that task: the coach's Tasks tab or the player's
+  Home, its row scrolled into view and lit once with the selected-row wash,
+  fading over the reveal duration; with reduced motion the wash stays still
+  until the row is used. An unknown or malformed id is ignored. New contract
+  100103.
+- The role (coach or player hub, and the no-team copy) is the dashboard
+  layout's (`getGolfDashboardRole`): a user whose player profile is the
+  onboarded one and whose coach profile is not gets the player hub.
+
 ## 2026-10-10 — RSVP only when the coach requires it
 
 - The coach's RSVPs section lists only this week's events that require an

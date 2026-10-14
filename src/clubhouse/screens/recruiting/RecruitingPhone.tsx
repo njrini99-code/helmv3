@@ -6,7 +6,7 @@ import { useCallback, useState, type KeyboardEvent } from 'react';
 import { CH_STAGES, mailHref, rowLineOf, subtitleOf, telHref, type ChProspect, type ChStage } from '../../data/recruiting-shape';
 import { haptic } from '../../lib/haptics';
 import { PhoneScreen } from '../../shell/PhoneScreen';
-import { PhoneTop, useBackFromMore, usePhoneStackHistory } from '../../shell/phone-chrome';
+import { PhoneTop, usePhoneStackHistory } from '../../shell/phone-chrome';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
@@ -32,7 +32,6 @@ import { RecPickSheet } from './RecSheet';
  * top bar goes back there (D-66).
  */
 export function RecruitingPhone({ c }: { c: RecCtx }) {
-  const backFromMore = useBackFromMore();
   const [picking, setPicking] = useState(false);
   const nothing = c.total === 0;
   // The detail is a history entry, so the iOS edge swipe and the browser's back pop it (CH-1906).
@@ -43,7 +42,7 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
     <main className="ch-recm" aria-label="Recruiting" data-ch-code="CH-14904">
       <PhoneTop
         title="Recruiting"
-        back={{ label: 'More', onBack: backFromMore }}
+        start
         // First run and a failed read have no add button on the boards: the page's own action is the way in.
         action={!nothing && !c.error ? <PhoneIconAction icon={Plus} label="Add prospect" onClick={c.startAdd} /> : undefined}
       />

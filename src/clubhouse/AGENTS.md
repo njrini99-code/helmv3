@@ -2,7 +2,10 @@
 
 Root `AGENTS.md` remains the operating guide. This file covers the Clubhouse
 exception for agents working in this tree (Clubhouse is off in production and on in
-preview and development; Fairway serves coaches and players live). Read `.claude/rules/clubhouse.md` for the scoped rules,
+preview and development; Fairway serves coaches and players live). Start with
+[`docs/clubhouse/STATUS.md`](../../docs/clubhouse/STATUS.md): current state, the
+release branch, how to turn it on and roll it back, remaining work and open
+owner decisions. Read `.claude/rules/clubhouse.md` for the scoped rules,
 `docs/clubhouse/README.md` for the workflow and `docs/clubhouse/MOBILE.md` for
 phone behavior. Fairway's primitives, tokens and motion rules do not apply here.
 

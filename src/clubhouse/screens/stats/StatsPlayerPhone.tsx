@@ -18,7 +18,7 @@ import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
-import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
+import { PhoneTop } from '../../shell/phone-chrome';
 import { formatHcp } from '../roster/format';
 import { FigureGauge, SgBars, SgChangeChip } from './charts';
 import { ROUND_TYPE } from './detail';
@@ -71,7 +71,6 @@ export function StatsPlayerPhone({
   onRetry: () => void;
 }) {
   const coach = data.viewer === 'coach';
-  const backFromMore = useBackFromMore();
   const toast = useToast();
   const w = data.win;
   const first = data.firstName;
@@ -131,7 +130,7 @@ export function StatsPlayerPhone({
       {coach ? (
         <PhoneTop title="Player stats" heading={false} back={{ label: 'Team', onBack: onBackToTeam }} action={<PhoneIconAction icon={Share} label={`Share ${first}’s stats`} onClick={() => void share()} />} />
       ) : (
-        <PhoneTop title="My stats" heading={false} back={{ label: 'More', onBack: backFromMore }} />
+        <PhoneTop title="My stats" heading={false} start />
       )}
 
       <header className="ch-spm-head">

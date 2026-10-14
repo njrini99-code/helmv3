@@ -12,7 +12,9 @@ Physical Safari/iPhone acceptance and production-build profiling remain open.
 How a mobile design in `design/handoff/mobile/` becomes the phone version of
 a Clubhouse page, running in the iOS app. Desktop steps are in `README.md`,
 and the rules that hold throughout are in `.claude/rules/clubhouse.md`. The
-phone is **iPhone only, portrait, light theme** (D-22).
+phone is **iPhone only, portrait** (D-22). It follows the GolfHelm Appearance
+setting, light or dark: the dark theme ("Clubhouse at night", owner
+2026-10-08) supersedes D-22's light-only rule.
 
 ## How the app works (read this first)
 
@@ -112,10 +114,11 @@ signed in.
   - keyboard never covers the field or the composer
   - edge swipe blocked while a sheet is open
   - haptics felt
-  - dark status-bar glyphs on the light theme
+  - dark status-bar glyphs on the light theme, light glyphs on the dark theme
 - [ ] Logged in `PROGRESS.md` with the device and iOS version
 
-Shipping follows the desktop rules. The flag stays off in production until
-turning it on is a flag change, and deploys follow AGENTS.md "Production". A native change (a
+Shipping follows the desktop rules. The flag is off in production until the
+owner turns it on; the canary steps and rollback are in [STATUS.md](STATUS.md),
+and deploys follow AGENTS.md "Production". A native change (a
 new plugin, anything in `ios/`) also needs a new App Store build, which is
 the owner's call too (`ios/appstore/`).

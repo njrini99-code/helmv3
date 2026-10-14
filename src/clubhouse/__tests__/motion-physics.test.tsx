@@ -19,9 +19,9 @@ vi.mock('@/contexts/notification-badge-context', () => ({ useNotificationBadges:
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({}) }));
 
 import { CH_DUR, CH_SPRINGS, chSpring, chSpringAt, chSpringCurve } from '../lib/motion';
-import { rubberBand, takeSheetFling, useSheetDrag } from '../lib/sheet-drag';
+import { chThrownExit, rubberBand, takeSheetFling, useSheetDrag } from '../lib/sheet-drag';
 import { poppedByUA } from '../lib/ua-pop';
-import { TabBar } from '../shell/TabBar';
+import { PhoneNav } from './phone-nav-harness';
 import { Modal } from '../ui/Modal';
 import { Slider } from '../ui/Slider';
 import { ToastProvider, useToast } from '../ui/Toast';
@@ -45,9 +45,9 @@ afterEach(() => {
 });
 
 describe('D-64 springs (extension, 2026-10-08)', () => {
-  it('keep the D-64 base duration with a bounce of 0 to 0.1, handed to framer as stiffness and damping so velocity carries', () => {
-    for (const { visualDuration, bounce } of Object.values(CH_SPRINGS)) {
-      expect(visualDuration).toBe(CH_DUR.base);
+  it('keep the D-64 base duration (the drop\'s reveal spring: D-64\'s reveal) with a bounce of 0 to 0.1, handed to framer as stiffness and damping so velocity carries', () => {
+    for (const [kind, { visualDuration, bounce }] of Object.entries(CH_SPRINGS)) {
+      expect(visualDuration).toBe(kind === 'reveal' ? CH_DUR.reveal : CH_DUR.base);
       expect(bounce).toBeGreaterThanOrEqual(0);
       expect(bounce).toBeLessThanOrEqual(0.1);
     }
@@ -244,7 +244,7 @@ describe('CH-1611 sheet physics', () => {
     expect(takeSheetFling(sheet)).toBe(0);
   });
 
-  it('a Modal thrown shut leaves on the spring at the throw speed; closed by its button it takes the base ease-out', () => {
+  it('a Modal thrown shut leaves on the spring at the throw speed; closed by its button it leaves on the same spring from rest', () => {
     const real = window.matchMedia;
     window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
     vi.stubGlobal('CSS', { supports: () => true });
@@ -279,7 +279,10 @@ describe('CH-1611 sheet physics', () => {
       render(<Harness />);
       fireEvent.click(screen.getByRole('button', { name: 'Close' }));
       expect(exits).toHaveLength(2);
-      expect(exits[1]).toMatchObject({ duration: CH_DUR.base * 1000, easing: 'cubic-bezier(.22,1,.36,1)' });
+      // The same smooth spring it rose on, from rest (popup audit 2026-10-13); the throw's exit is quicker than this.
+      const rest = chThrownExit(0, 400);
+      expect(exits[1]).toMatchObject({ duration: rest.ms, easing: rest.linear });
+      expect(exits[0]!.duration).toBeLessThan(rest.ms);
     } finally {
       window.matchMedia = real;
       vi.unstubAllGlobals();
@@ -357,7 +360,7 @@ describe('CH-1907 tapping the tab already open', () => {
   it('at its root, scrolls to the top without a tick', () => {
     const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
     // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
-    render(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
+    render(<PhoneNav pathname="/golf/dashboard" shell={shell} role="coach" />);
     const home = screen.getByRole('link', { name: /Home/ });
     const click = new MouseEvent('click', { bubbles: true, cancelable: true });
     act(() => {
@@ -373,7 +376,7 @@ describe('CH-1907 tapping the tab already open', () => {
     window.history.replaceState({ chPhone: 2 }, '');
     try {
       // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
-      render(<TabBar pathname="/golf/dashboard" shell={shell} role="coach" />);
+      render(<PhoneNav pathname="/golf/dashboard" shell={shell} role="coach" />);
       fireEvent.click(screen.getByRole('link', { name: /Home/ }));
       expect(go).toHaveBeenCalledWith(-2);
       expect(haptics.haptic).not.toHaveBeenCalled();

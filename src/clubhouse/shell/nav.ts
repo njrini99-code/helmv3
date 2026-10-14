@@ -7,6 +7,7 @@ import {
   House,
   Medal,
   MessageSquare,
+  Settings,
   Sparkles,
   Users,
   UsersRound,
@@ -69,9 +70,9 @@ export const CH_NAV_PLAYER: readonly ChNavItem[] = [
 export type ChRole = 'coach' | 'player';
 
 /**
- * Phone tabs, in order (D-66, v2 GH.tabs). Coach: Home, CoachHelm, Calendar,
- * Stats. Player: Home, CoachHelm, Rounds, Team Hub. Everything else opens
- * from the More sheet.
+ * The phone's first sections, in order (D-66, v2 GH.tabs; once the tab bar, now the head of the section strip, see
+ * docs/clubhouse/phone/section-strip.md). Coach: Home, CoachHelm, Calendar, Stats. Player: Home, CoachHelm, Rounds,
+ * Team Hub. They are fetched ahead of the first tap.
  */
 export const CH_PHONE_TABS: Record<ChRole, readonly string[]> = {
   coach: ['home', 'coachhelm', 'calendar', 'stats'],
@@ -86,6 +87,25 @@ export function phoneTabsFor(role: ChRole): { tabs: ChNavItem[]; more: ChNavItem
     tabs: ids.map((id) => nav.find((i) => i.id === id)).filter((i): i is ChNavItem => !!i),
     more: nav.filter((i) => !ids.includes(i.id)),
   };
+}
+
+/** Settings, the strip's last section (the sidebar keeps it in the top bar's gear). */
+export const CH_SETTINGS_ITEM: ChNavItem = { id: 'settings', label: 'Settings', href: '/golf/dashboard/settings', icon: Settings };
+
+/**
+ * The phone's section strip, in order: the first sections, then the rest in sidebar order, then Settings, each only
+ * once its screen is rebuilt for the role.
+ */
+export function phoneSectionsFor(role: ChRole): ChNavItem[] {
+  const { tabs, more } = phoneTabsFor(role);
+  return [...tabs, ...more, CH_SETTINGS_ITEM].filter((i) => isRebuilt(i.href, role));
+}
+
+/** The section a phone address belongs to, Settings included; undefined for a page outside every section. */
+export function phoneSectionFor(pathname: string, role: ChRole): ChNavItem | undefined {
+  const path = pathname.replace(/\/$/, '') || '/';
+  if (path === CH_SETTINGS_ITEM.href || path.startsWith(`${CH_SETTINGS_ITEM.href}/`)) return CH_SETTINGS_ITEM;
+  return activeNavItem(path, role);
 }
 
 export function navFor(role: ChRole): readonly ChNavItem[] {
@@ -223,16 +243,15 @@ function settingsTop(path: string, role: ChRole, search: URLSearchParams | null 
   if (path !== SETTINGS && !old) return null;
   const wanted = search?.get('section') ?? old?.[role] ?? null;
   const section = SETTINGS_SECTIONS[role].find((s) => s.id === wanted);
-  return section ? { back: 'Settings', title: section.label, quiet: true, parent: SETTINGS } : { back: 'More', title: 'Settings', quiet: true };
+  return section ? { back: 'Settings', title: section.label, quiet: true, parent: SETTINGS } : null;
 }
-/** More-sheet pages whose phone page draws a tab root's title instead of "‹ More" (the player's Messages, MessagesPhone). */
-const ROOT_TITLE_UNDER_MORE: Record<ChRole, readonly string[]> = { coach: [], player: ['messages'] };
 
 /**
- * The pushed bar a phone address draws, so the shell can draw it before the page arrives (CH-1402): a page opened from
- * the More sheet goes back to More, a page below another goes back to it, a full-page form has its Cancel. `search` is
- * the address's query, for the bars it decides: a Settings section, a coach's player on Stats. Null for a tab root and
- * for anything that draws its own chrome (a new round, the round itself). Keep in step with the pages' `PhoneTop`s.
+ * The pushed bar a phone address draws, so the shell can draw it before the page arrives (CH-1402): a page below
+ * another goes back to it, a full-page form has its Cancel. `search` is the address's query, for the bars it decides:
+ * a Settings section, a coach's player on Stats. Null for a section's own page (every section is a root on the strip,
+ * section-strip.md) and for anything that draws its own chrome (a new round, the round itself). Keep in step with the
+ * pages' `PhoneTop`s.
  */
 export function phonePushedTop(pathname: string, role: ChRole, search?: URLSearchParams | null): ChPhonePushedTop | null {
   const path = pathname.replace(/\/$/, '') || '/';
@@ -243,10 +262,7 @@ export function phonePushedTop(pathname: string, role: ChRole, search?: URLSearc
     const m = p.path.exec(path);
     if (m) return p.top(role, m);
   }
-  if (path === '/golf/dashboard/my-qualifiers') return role === 'player' ? { back: 'More', title: 'My qualifiers' } : null;
-  const item = navFor(role).find((i) => i.href === path);
-  if (!item || CH_PHONE_TABS[role].includes(item.id) || ROOT_TITLE_UNDER_MORE[role].includes(item.id)) return null;
-  return { back: 'More', title: item.label };
+  return null;
 }
 
 /**

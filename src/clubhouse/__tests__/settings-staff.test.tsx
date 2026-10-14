@@ -83,7 +83,7 @@ function show(staff: ChStaffWrites = staffWrites()) {
       <ToastProvider>
         <PhoneChromeProvider>
           <div className="ch-root" data-ui="clubhouse">
-            <SettingsView data={coachData()} writes={writes} device={device} initialSection="team" onDeleted={vi.fn()} />
+            <SettingsView data={coachData()} writes={writes} device={device} initialSection="team" opened onDeleted={vi.fn()} />
           </div>
         </PhoneChromeProvider>
       </ToastProvider>

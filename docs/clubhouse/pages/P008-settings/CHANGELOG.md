@@ -1,5 +1,64 @@
 # P008 — Settings: changelog
 
+## 2026-10-13 — Sheets rise and leave on the shared spring, over the shared backdrop
+
+The phone's bottom sheets and action sheets rise on the smooth spring (462ms)
+instead of the 260ms ease-out, leave
+on it too, and sit on the shared `--ch-scrim` (0.36) instead of their own 0.42
+and dark 0.55. Shared change:
+docs/clubhouse/CHANGELOG.md (popups).
+
+## 2026-10-12 — A section's push runs on the compositor
+
+CH-8609's slide (a section in from the right over the list, and back) animates a
+transform string rather than
+framer's `x`, so it runs on the compositor and a section's first render can't
+stall it. Same spring, same look.
+Shared change: docs/clubhouse/CHANGELOG.md (motion audit).
+
+## 2026-10-12 — A section root on the phone (no "‹ More")
+
+The phone shell's section strip replaced the tab bar and the More sheet
+(docs/clubhouse/phone/section-strip.md). Settings's phone top bar no longer
+draws a "‹ More" back link: its title is a start title (`PhoneTop start`),
+which the shell turns into the section switcher. The page's action, where it
+has one, is unchanged. Shared change: docs/clubhouse/CHANGELOG.md.
+
+## 2026-10-12 — phone Settings opens a linked section without a hydration error
+
+`SettingsPhone` read `window.location` inside its first render to decide whether
+`?section=` (or an old
+`/settings/notifications` address) opens a section pushed. The server rendered
+the list, the browser rendered
+the section, and React threw "Hydration failed" and rebuilt the tree, which also
+re-rendered the root layout's
+inline scripts ("Encountered a script tag"). The route now decides on the server
+(`opened`, passed through
+`Settings` and `SettingsView`), so the first client render matches the HTML.
+Verified in Safari at 402px on
+`?section=notifications` and the bare page: no overlay issues. No visible change
+otherwise.
+
+## 2026-10-12 — Settings follows the dashboard layout's role
+
+- The role (coach or player form, and the coach id the loader reads with) is
+  the dashboard layout's (`getGolfDashboardRole`): a user with an onboarded
+  player profile and a coach profile never finished gets the player form.
+  The Coaching Intelligence link opens the CoachHelm section only for that
+  role's coach.
+
+## 2026-10-11 — Email switches say email is paused (CH-8901)
+
+Customer email is off for everyone while `HELM_CUSTOMER_EMAIL_ENABLED` is not
+`true` (`src/lib/email/outbound-gate.ts`), so the weekly team email and every
+other email choice controlled nothing. `loadSettings` now returns `emailPaused`
+(`!isCustomerEmailEnabled()`). While it is true, each email switch (each kind's
+Email, Weekly team email, the player's CoachHelm Email column and Mute email)
+keeps its saved choice but is disabled, and one line says "Email is paused for
+everyone right now." (after the card caption on desktop, after the page lead
+and in each kind's sheet note on the phone). Push and in app are unchanged.
+No before/after screenshots were captured (no browser run in this session).
+
 ## 2026-10-08 — phone: the priority ranker on dnd-kit
 
 The phone's priority ranker (`phone/Reorder.tsx`) runs on `@dnd-kit/sortable`

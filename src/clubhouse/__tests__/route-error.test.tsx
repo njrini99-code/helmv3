@@ -51,4 +51,10 @@ describe('Clubhouse route error (P007 D3)', () => {
     expect(screen.getByRole('alert').getAttribute('data-ch-code')).toBe('CH-1206');
     expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
   });
+
+  it('CH-1206 the boundary hands the view its route, so the title names the page that failed', () => {
+    render(<ClubhouseRouteError error={new Error('Cannot read properties of undefined')} reset={vi.fn()} route="/golf/dashboard/rounds/[id]" homePath="/golf/dashboard/rounds" />);
+    expect(screen.getByRole('alert').getAttribute('data-ch-code')).toBe('CH-1206');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Rounds didn’t load');
+  });
 });

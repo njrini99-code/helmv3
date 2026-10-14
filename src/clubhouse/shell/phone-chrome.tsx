@@ -1,14 +1,16 @@
 'use client';
 
-import { m, useMotionValue, useMotionValueEvent } from 'motion/react';
+import { m } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { chSpring } from '../lib/motion';
+import { CH_DUR, CH_EASE, chSpring, chSpringCurve } from '../lib/motion';
+import { chSupportsLinear } from '../lib/sheet-drag';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { poppedByUA } from '../lib/ua-pop';
 import { PhoneBarParts, type ChPhoneBarParts } from '../ui/PhoneBar';
 import type { ChPhonePushedTop } from './nav';
+import { SectionTrigger } from './section-switch';
 
 /**
  * What a page asks of the phone chrome (owner design, docs/clubhouse/phone/foundation.md).
@@ -132,16 +134,13 @@ export function usePhonePushed(present: boolean): void {
 export const CH_UNDERLAY_SHIFT = 0.24;
 
 /**
- * What draws back under the pushed screens: the tab bar, and inside the canvas everything that holds no screen (the
- * top bar, the offline banner, and each part of the page beside the screens). The screens are fixed descendants of
- * the page, and a transform on any of their ancestors would pin them to it, so those ancestors stay put and their
+ * What draws back under the pushed screens: inside the canvas, everything that holds no screen (the top bar, the
+ * offline banner, and each part of the page beside the screens). The screens are fixed descendants of the page, and a transform on any of their ancestors would pin them to it, so those ancestors stay put and their
  * other children move instead. A dialog and a popover sit in the top layer and keep their place.
  */
 export function underlayParts(): HTMLElement[] {
   const screens = Array.from(document.querySelectorAll<HTMLElement>('.ch-pscreen'));
   const parts: HTMLElement[] = [];
-  const tabs = document.querySelector<HTMLElement>('.ch-root .ch-tabbar');
-  if (tabs) parts.push(tabs);
   const walk = (el: Element) => {
     for (const child of Array.from(el.children)) {
       if (!(child instanceof HTMLElement) || screens.includes(child) || child.matches('dialog, [popover]')) continue;
@@ -164,23 +163,60 @@ export function placeUnderlay(parts: HTMLElement[], progress: number): void {
 }
 
 /**
+ * Slides `parts` to drawn back (1) or rest (0) on the compositor, on the smooth spring the pushed screen rides, from
+ * wherever each one is now (mid slide included), so a pop that cuts a push short reverses from there. Returns the
+ * running animations; at the end each part is placed for good and its animation let go.
+ */
+export function slideUnderlay(parts: HTMLElement[], to: 0 | 1, running: Animation[] = []): Animation[] {
+  const curve = chSupportsLinear() ? chSpringCurve('smooth') : null;
+  const timing: KeyframeAnimationOptions = curve
+    ? { duration: curve.ms, easing: curve.linear, fill: 'forwards' }
+    : { duration: CH_DUR.base * 1000, easing: `cubic-bezier(${CH_EASE.join(',')})`, fill: 'forwards' };
+  const target = to ? `${(-CH_UNDERLAY_SHIFT * 100).toFixed(3)}vw 0` : '0px 0px';
+  // Read every start before any new animation begins: one style pass, not one per part.
+  const from = parts.map((el) => {
+    const now = getComputedStyle(el).translate;
+    return now && now !== 'none' ? now : '0px 0px';
+  });
+  // Without WAAPI (an old engine, a test DOM) the page is placed at once.
+  if (parts.some((el) => typeof el.animate !== 'function')) {
+    for (const old of running) old.cancel?.();
+    placeUnderlay(parts, to);
+    return [];
+  }
+  const next = parts.map((el, i) => {
+    el.style.willChange = 'transform';
+    const anim = el.animate([{ translate: from[i] }, { translate: target }], timing);
+    anim.onfinish = () => {
+      placeUnderlay([el], to);
+      anim.cancel();
+    };
+    return anim;
+  });
+  for (const old of running) {
+    old.onfinish = null;
+    old.cancel();
+  }
+  return next;
+}
+
+/**
  * The page beneath the phone's pushed screens (CH-1618, owner-approved 2026-10-08). As a screen slides in, the page it
  * covers (the shell's bars and the page itself) draws back about a quarter of the width and dims, on the screen's own
- * smooth spring; as the screen pops, the page comes back with it on the same spring (P1-2, 2026-10-08). The two edges move as one, so
- * no gap opens between them. The scrim's animation drives the page frame by frame (`onUpdate`), so a pop that cuts a
- * push short reverses both from where they are. A Back that iOS animated itself, or a screen gone with its page, puts
- * the page back at once. With reduced motion or Animations off the page holds still under a screen that swaps in at
- * once. Desktop never pushes a screen, so this stays at rest there.
+ * smooth spring; as the screen pops, the page comes back with it on the same spring (P1-2, 2026-10-08). The two edges
+ * move as one, so no gap opens between them. Both run on the compositor (the screen's transform through framer's
+ * WAAPI, the page's translate here, the scrim's opacity), so a busy frame while the screen mounts or leaves doesn't
+ * hold them back (motion audit 2026-10-12: a 50ms stall mid pop was a visible hitch when they ran frame by frame). A
+ * pop that cuts a push short reverses all three from where they are. A Back that iOS animated itself, or a screen gone
+ * with its page, puts the page back at once. With reduced motion or Animations off the page holds still under a
+ * screen that swaps in at once. Desktop never pushes a screen, so this stays at rest there.
  */
 export function PhoneUnderlay() {
   const { pushed } = usePhoneChromeState();
   const reduced = useChReducedMotion();
   const scrim = useRef<HTMLDivElement>(null);
   const parts = useRef<HTMLElement[]>([]);
-  // The scrim's opacity is the page's progress back: 0 at rest, 1 drawn back. Every value it takes moves the page,
-  // the one sampled where an interrupted animation stopped included, so the two never part for a frame.
-  const progress = useMotionValue(0);
-  useMotionValueEvent(progress, 'change', (p) => placeUnderlay(parts.current, p));
+  const running = useRef<Animation[]>([]);
   const on = pushed && !reduced;
   // Read as the change commits: the pushed screen is in the document until its exit ends, so a screen missing here
   // left with its page (a route change) and has nothing to slide out with.
@@ -189,29 +225,38 @@ export function PhoneUnderlay() {
   // beside it or dimmed without it.
   useLayoutEffect(() => {
     if (!atOnce) return;
-    progress.jump(0);
+    for (const anim of running.current) {
+      anim.onfinish = null;
+      anim.cancel();
+    }
+    running.current = [];
+    placeUnderlay(parts.current, 0);
     if (scrim.current) scrim.current.style.opacity = '0';
     parts.current = [];
-  }, [atOnce, progress]);
+  }, [atOnce]);
+  // Gone with the shell: nothing is left drawn back.
+  useEffect(
+    () => () => {
+      for (const anim of running.current) anim.cancel();
+      placeUnderlay(parts.current, 0);
+    },
+    [],
+  );
   return (
     <m.div
       ref={scrim}
       className="ch-pscrim"
       aria-hidden="true"
-      style={{ opacity: progress }}
+      initial={{ opacity: 0 }}
       animate={{ opacity: on ? 1 : 0 }}
       transition={on || !atOnce ? chSpring('smooth') : { duration: 0 }}
+      // The scrim's animation starts in the same frame as the screen's, so the page starts with them.
       onAnimationStart={() => {
+        if (atOnce) return;
         const next = underlayParts();
         placeUnderlay(parts.current.filter((el) => !next.includes(el)), 0);
         parts.current = next;
-      }}
-      // A listener keeps framer from handing the opacity to the compositor, where no frame of it could be read.
-      onUpdate={() => {}}
-      onAnimationComplete={() => {
-        if (on) return;
-        placeUnderlay(parts.current, 0);
-        parts.current = [];
+        running.current = slideUnderlay(next, on ? 1 : 0, running.current);
       }}
     />
   );
@@ -235,12 +280,15 @@ export function PhoneTop(props: ChPhoneBarParts) {
       if (root) setRootTop((n) => n - 1);
     };
   }, [setPageTop, setRootTop, root]);
-  return slot ? createPortal(<PhoneBarParts {...props} />, slot) : null;
+  // A start title is its section's name, so it is the section switcher (section-strip.md).
+  const title = props.start ? <SectionTrigger>{props.title}</SectionTrigger> : props.title;
+  return slot ? createPortal(<PhoneBarParts {...props} title={title} />, slot) : null;
 }
 
 /**
- * The "‹ More" back link on a page opened from the More sheet: it returns to
- * wherever the user came from (D-41), or Home when the page was opened directly.
+ * Back to wherever the user came from, or Home when the page was opened directly (D-41). Once the "‹ More" link on
+ * pages opened from the More sheet; the strip made those pages roots (section-strip.md), and the shell's stand-in for
+ * a pushed page still uses it.
  */
 export function useBackFromMore(): () => void {
   const router = useRouter();

@@ -1,5 +1,30 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-13 — Sheets rise and leave on the shared spring, over the shared backdrop
+
+The phone's form, picker and action sheets rise on the smooth spring (462ms)
+instead of the 260ms ease-out, leave
+on it too, and sit on the shared `--ch-scrim` (0.36) instead of their own 0.42
+and dark 0.6. Shared change:
+docs/clubhouse/CHANGELOG.md (popups).
+
+## 2026-10-12 — A section root on the phone (no "‹ More")
+
+The phone shell's section strip replaced the tab bar and the More sheet
+(docs/clubhouse/phone/section-strip.md). Recruiting's phone top bar no longer
+draws a "‹ More" back link: its title is a start title (`PhoneTop start`),
+which the shell turns into the section switcher. The page's action, where it
+has one, is unchanged. Shared change: docs/clubhouse/CHANGELOG.md.
+
+## 2026-10-12 — Recruiting follows the dashboard role
+
+Clubhouse Recruiting is drawn only when the gate is on for the coach and the
+dashboard layout's
+role (`getGolfDashboardRole`) is the coach's: a coach row beside an onboarded
+player profile (the
+player dashboard) no longer reaches the coach route. Fairway, the page's own
+access checks and the gate-off path are unchanged.
+
 ## 2026-10-10 — Tokens for the pipeline, gentler coins
 
 Presentation only. The pipeline's coins, connectors and stage chips use palette

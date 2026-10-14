@@ -300,7 +300,7 @@
   color: var(--ch-text-primary);
 }
 .ch-modal::backdrop {
-  background: rgb(20 20 18 / 0.32);
+  background: var(--ch-scrim, rgb(20 20 18 / 0.36));
   animation: ch-fade var(--ch-dur-base) var(--ch-ease);
 }
 .ch-root dialog[data-closing]::backdrop {
@@ -891,9 +891,6 @@ html[data-fw-theme='dark'] .ch-textarea[aria-invalid='true'] {
 }
 html[data-fw-theme='dark'] .ch-menu__sep {
   background: var(--ch-border-hairline);
-}
-html[data-fw-theme='dark'] .ch-modal::backdrop {
-  background: rgb(0 0 0 / 0.55);
 }
 :where(html[data-fw-theme='dark']) .ch-modal__panel {
   background: var(--ch-sheet-bg);

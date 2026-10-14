@@ -1,5 +1,44 @@
 # P003 — Roster: changelog
 
+## 2026-10-12 — A section root on the phone (no "‹ More")
+
+The phone shell's section strip replaced the tab bar and the More sheet
+(docs/clubhouse/phone/section-strip.md). Roster's phone top bar no longer
+draws a "‹ More" back link: its title is a start title (`PhoneTop start`),
+which the shell turns into the section switcher. The page's action, where it
+has one, is unchanged. Shared change: docs/clubhouse/CHANGELOG.md.
+
+## 2026-10-12 — Mark a player inactive or active
+
+```text
+Design package: none (the remove confirm's Modal and menu; no owner board)
+PR/commit: agent/clubhouse-release-features
+Contract IDs: 31102, 30202, 30619 (CH-3502, CH-3404, CH-3008)
+Actions: ACT-P003-CHANGE-STATUS
+Data impact: none (existing updatePlayerStatus on golf_team_members.status)
+Held items: none
+```
+
+### Changed
+
+- The coach's row menu and the phone profile's ⋯ sheet offer "Mark inactive"
+  (or "Mark active" for an inactive player) above Remove from team. It asks
+  first (`StatusConfirm`), not as a destructive action, and saves through
+  `useAction('roster.changeStatus')` → `updatePlayerStatus`; the player moves
+  to that filter, and the open phone profile reads the new status.
+- `updatePlayerStatus` resolves the coach's active team with the same
+  resolver and active-team cookie as the Clubhouse roster route.
+
+### Why
+
+- Owner decision: rebuild the dropped Fairway "Change status"
+  (`FairwayPlayerActionsMenu`).
+
+### Verification
+
+- roster.test (CH-3502, CH-3404, CH-3008, CH-1903, the phone ⋯ sheet). Not
+  observed in a browser or on a device; no screenshots.
+
 ## 2026-10-10 — Where the team sits
 
 Presentation only. A new block between "Needs a look" and the toolbar (desktop):
@@ -444,7 +483,7 @@ Data impact:    none
 Held items:     roster-availability (data)
 ```
 
-### Changed
+### Changed (2026-09-30 V2 page docs)
 
 - The six page docs, the manifest's actions, and the 22 behaviour contracts (core view, deep link, refresh, safe
   export, offline, the coach-only gate, private notes, refused changes, success, note kept, layout kept, note reads
@@ -473,12 +512,12 @@ Held items:     roster-availability (data)
   could be read by a spreadsheet as a formula; it is now written as text.
 - Esc inside the Remove or Invite dialog also closed the player panel behind it. It now closes only the dialog.
 
-### Why
+### Why (2026-09-30 V2 page docs)
 
 - D-62 and D-69: every page gets the Messages contract, and writing the contract against the code found these five
   places where the code did not keep it.
 
-### Verification
+### Verification (2026-09-30 V2 page docs)
 
 - `npx vitest run src/clubhouse` 536/536; each new test fails with the code it guards broken (VERIFY.md).
 - `npx eslint` and `npm run -s typecheck:fast` exit 0.

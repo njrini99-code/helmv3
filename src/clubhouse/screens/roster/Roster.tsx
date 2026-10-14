@@ -1,10 +1,11 @@
 'use client';
 
-import { BarChart3, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Share, Sparkles, UserMinus, UserPlus, Users } from 'lucide-react';
+import { BarChart3, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Share, Sparkles, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useChSessionState } from '../../lib/session-state';
 import { useRouter } from 'next/navigation';
 import { removePlayerFromTeam } from '@/app/golf/actions/roster';
+import { updatePlayerStatus } from '@/app/golf/actions/team-management';
 import type { ChRoster, ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -34,6 +35,7 @@ import { RosterPhone } from './RosterPhone';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { RosterSpread } from './RosterSpread';
 import { earlyNeed, formatHcp, rosterFailedParts, rosterPeek, rosterStandings, teamInSentence, type RosterStanding } from './format';
+import { StatusConfirm, statusCopy } from './RosterStatus';
 import '../../styles/roster.css';
 
 type Sort = 'avg' | 'hcp' | 'rounds' | 'name';
@@ -69,6 +71,8 @@ export function Roster({ data }: { data: ChRoster }) {
   const [sel, setSel] = useState<string | null>(null);
   const [invite, setInvite] = useState(false);
   const [removing, setRemoving] = useState<ChRosterPlayer | null>(null);
+  // The player whose Active/Inactive status the coach is changing (CH-3502).
+  const [restatus, setRestatus] = useState<ChRosterPlayer | null>(null);
   // Mid-sentence the team is its name, or "your team" when the team row didn't load (P003 #8).
   const teamRef = teamInSentence(data);
   const jr = useJoinRequests(teamRef, data.requests);
@@ -184,6 +188,21 @@ export function Roster({ data }: { data: ChRoster }) {
       code: 'CH-3001',
     }),
   );
+  // Active ⇄ Inactive (the dropped Fairway "Change status", rebuilt). Like a removal, the list changes inside the
+  // action, so the toast's Retry finishes the job as well (31403). `updatePlayerStatus` resolves the coach's active team
+  // with the same cookie-aware resolver this route used (resolveCoachActiveTeam), so it writes to the team on screen.
+  const changeStatus = useAction(
+    'roster.changeStatus',
+    async (p: ChRosterPlayer, to: ChRosterPlayer['status']) => {
+      const res = await updatePlayerStatus(p.id, to);
+      if (res.success) {
+        setPlayers((ps) => ps.map((x) => (x.id === p.id ? { ...x, status: to } : x)));
+        setRestatus(null);
+      }
+      return res;
+    },
+    (p, to) => statusCopy(p.name, to),
+  );
   /** A note that saved is the note the list holds, so the player reads back with it (31203). */
   const noteSaved = useCallback(
     (id: string, note: string | null) => setPlayers((ps) => ps.map((x) => (x.id === id ? { ...x, coachNote: note } : x))),
@@ -224,6 +243,11 @@ export function Roster({ data }: { data: ChRoster }) {
     const messagesHref = rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(p.id)}`);
     if (messagesHref) items.push({ label: 'Message', icon: MessageSquare, href: messagesHref });
     if (items.length) items.push({ kind: 'separator' });
+    items.push(
+      p.status === 'active'
+        ? { label: 'Mark inactive', icon: UserX, onSelect: () => setRestatus(p) }
+        : { label: 'Mark active', icon: UserCheck, onSelect: () => setRestatus(p) },
+    );
     items.push({ label: 'Remove from team', icon: UserMinus, danger: true, onSelect: () => setRemoving(p) });
     return items;
   };
@@ -266,6 +290,13 @@ export function Roster({ data }: { data: ChRoster }) {
       >
         <p className="ch-rs-remove">Their account and stats are not deleted. This only removes them from your active roster.</p>
       </Modal>
+      <StatusConfirm
+        player={restatus}
+        teamName={teamRef}
+        pending={changeStatus.pending}
+        onCancel={() => setRestatus(null)}
+        onConfirm={(p, to) => void changeStatus.run(p, to)}
+      />
     </>
   );
 
@@ -280,6 +311,7 @@ export function Roster({ data }: { data: ChRoster }) {
         onClose={() => setOpenId(null)}
         onInvite={() => setInvite(true)}
         onRemove={setRemoving}
+        onStatus={setRestatus}
         onNoteSaved={noteSaved}
         onRetry={() => router.refresh()}
       >

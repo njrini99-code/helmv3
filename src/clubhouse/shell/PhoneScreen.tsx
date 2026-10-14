@@ -75,17 +75,17 @@ export function PhoneScreen({
       data-ch-code={code}
       inert={covered || undefined}
       tabIndex={-1}
-      initial={reduced ? { opacity: 0 } : { x: '100%' }}
+      initial={reduced ? { opacity: 0 } : { transform: 'translateX(100%)' }}
       animate={
         drawnBack
-          ? { x: `${-CH_UNDERLAY_SHIFT * 100}%`, opacity: 1, transition: chSpring('smooth') }
-          : { x: 0, opacity: 1, transition: wasCovered ? (reduced || poppedByUA() ? { duration: 0 } : chSpring('smooth')) : chSpring('smooth', reduced) }
+          ? { transform: `translateX(${-CH_UNDERLAY_SHIFT * 100}%)`, opacity: 1, transition: chSpring('smooth') }
+          : { transform: 'translateX(0%)', opacity: 1, transition: wasCovered ? (reduced || poppedByUA() ? { duration: 0 } : chSpring('smooth')) : chSpring('smooth', reduced) }
       }
       // Read as the pop begins, so a Back that iOS already animated doesn't play again.
       exit="pop"
       // The pop rides the same smooth spring as the push (native-feel audit 2026-10-08, P1-2: the base ease-out read as a
       // 183ms jump); it is clear of the screen by about 350ms.
-      variants={{ pop: () => (reduced || poppedByUA() ? { opacity: 0, transition: { duration: 0 } } : { x: '100%', transition: chSpring('smooth') }) }}
+      variants={{ pop: () => (reduced || poppedByUA() ? { opacity: 0, transition: { duration: 0 } } : { transform: 'translateX(100%)', transition: chSpring('smooth') }) }}
     >
       {children}
     </m.section>

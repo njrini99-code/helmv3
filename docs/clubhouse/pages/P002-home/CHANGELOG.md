@@ -1,5 +1,12 @@
 # P002 — Home: changelog
 
+## 2026-10-12 — Home follows the dashboard layout's role
+
+- Clubhouse Home is drawn for the role the dashboard layout draws its shell
+  with (`getGolfDashboardRole`): a user with an onboarded player profile and a
+  coach profile never finished gets player Home, not coach Home. Fairway's
+  dashboard is unchanged (a coach row still draws the coach dashboard there).
+
 ## 2026-10-10 — RSVP only when the coach requires it
 
 - The day card and phone Up next show a going count, "haven't replied" and

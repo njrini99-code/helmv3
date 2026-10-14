@@ -13,7 +13,7 @@ import { Segmented } from '../../ui/Segmented';
 import { Swap } from '../../ui/Swap';
 import { haptic } from '../../lib/haptics';
 import { EventPeek } from './peek';
-import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
+import { PhoneTop } from '../../shell/phone-chrome';
 import { addDays, dayNum, dowOf, fmtHour, monthName, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
 import { AgendaView, eventTitle, type ChNow } from './views';
 import { MonthGrid } from './month';
@@ -67,7 +67,6 @@ export function CalendarPhone({
   onSubscribe: () => void;
 }) {
   const coach = data.role === 'coach';
-  const backFromMore = useBackFromMore();
   const pv = phoneViewOf(view);
   const setPv = (v: ChCalPhoneView) => onView(desktopViewOf(v), anchor);
 
@@ -76,7 +75,7 @@ export function CalendarPhone({
       {coach ? (
         <PhoneTop start title="Calendar" action={<PhoneIconAction icon={Plus} label="New event" onClick={() => onNew(anchor)} />} />
       ) : (
-        <PhoneTop title="Calendar" back={{ label: 'More', onBack: backFromMore }} action={<PhoneIconAction icon={Rss} label="Add to calendar app" onClick={onSubscribe} />} />
+        <PhoneTop title="Calendar" start action={<PhoneIconAction icon={Rss} label="Add to calendar app" onClick={onSubscribe} />} />
       )}
       {/* The page's opening (the Ledger kit's PageIntro, as an h2: the bar holds the page's h1): the year and the team's
           timezone engraved over the month, and the view switch beside it. */}
@@ -87,7 +86,7 @@ export function CalendarPhone({
         <span className="ch-intro__row">
           <h2 className="ch-intro__title ch-calm-title">{monthName(anchor)}</h2>
           <span className="ch-intro__action">
-            <Segmented<ChCalPhoneView>
+            <Segmented<ChCalPhoneView> redraws
               size="sm"
               label="View"
               value={pv}

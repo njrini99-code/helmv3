@@ -323,15 +323,15 @@ async function step(page, readsFile, { target, click, wait }) {
   return { snap, trace: readTrace(readsFile, off, since) };
 }
 
-/** `settle`: a wait (ms) after the More sheet opens, so its links are prefetched as they are for a user who looks before tapping. */
+/** `settle`: a wait (ms) after the section strip opens, as for a user who looks before tapping. */
 async function navTo(page, label, settle = 0) {
-  const link = page.locator(`#ch-sidebar a[href="${label}"], aside.ch-sidebar a[href="${label}"], nav.ch-tabbar a[href="${label}"]`).locator('visible=true').first();
+  const link = page.locator(`#ch-sidebar a[href="${label}"], aside.ch-sidebar a[href="${label}"]`).locator('visible=true').first();
   if (await link.count()) return () => link.click();
-  // Phone: not one of the four tabs, so it is in the More sheet.
+  // Phone: every section is on the strip, opened from the section title (section-strip.md).
   return async () => {
-    await page.getByRole('button', { name: /^More/ }).click();
+    await page.locator('.ch-topbar .ch-sw').locator('visible=true').first().click();
     if (settle) await sleep(settle);
-    await page.getByRole('dialog', { name: 'More' }).locator(`a[href="${label}"]`).click();
+    await page.locator(`#ch-strip a[href="${label}"]`).click();
   };
 }
 

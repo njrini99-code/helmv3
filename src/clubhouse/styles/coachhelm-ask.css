@@ -834,7 +834,8 @@
   color: var(--ch-text-primary);
 }
 .ch-ask-drawer::backdrop {
-  background: rgb(28 25 18 / 0.45);
+  background: var(--ch-scrim, rgb(20 20 18 / 0.36));
+  animation: ch-fade var(--ch-dur-base) var(--ch-ease);
 }
 .ch-ask-hist.is-drawer {
   width: min(330px, 86vw);
@@ -847,7 +848,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   height: calc(100dvh - var(--keyboard-height, 0px));
 }
 .ch-ask-drawer[open] .ch-ask-hist.is-drawer {
-  animation: ch-ask-drawer-in var(--ch-dur-base) var(--ch-ease);
+  animation: ch-ask-drawer-in var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
 }
 @keyframes ch-ask-drawer-in {
   from {
@@ -1122,7 +1123,4 @@ body.keyboard-open .ch-ask-hist.is-drawer {
 }
 :where(html[data-fw-theme='dark']) .ch-ask-cmp__send:disabled {
   color: var(--ch-ink-400);
-}
-:where(html[data-fw-theme='dark']) .ch-ask-drawer::backdrop {
-  background: rgb(5 8 6 / 0.6);
 }

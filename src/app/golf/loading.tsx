@@ -1,6 +1,6 @@
 import { FairwayShellSkeleton } from '@/components/fairway/app-shell/FairwayShellSkeleton';
 import { FairwayDashboardSkeleton } from '@/components/fairway/pages/dashboard/FairwayDashboardSkeleton';
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { clubhouseLoadingFrame } from '@/clubhouse/gate';
 import { ClubhouseShellSkeleton } from '@/clubhouse/shell/ShellSkeleton';
 import { HomeSkeleton } from '@/clubhouse/screens/home/HomeSkeleton';
 
@@ -29,12 +29,22 @@ import { HomeSkeleton } from '@/clubhouse/screens/home/HomeSkeleton';
  */
 export default function GolfLoading() {
   // With Clubhouse on, the cold entry paints Clubhouse's frame, never Fairway's (swap audit F-30). The role is not
-  // known above the dashboard layout; the flag is environment-wide and every dashboard role is coach or player.
-  if (isFlagEnabled('golf_clubhouse_ui')) {
+  // known above the dashboard layout; every dashboard role is coach or player. The frame comes from the gate so it
+  // never disagrees with the page: with a team allowlist (HELM_CLUBHOUSE_TEAMS) the team is not known yet either,
+  // and guessing would flash one UI and then swap to the other, so that case paints a neutral frame.
+  const frame = clubhouseLoadingFrame();
+  if (frame === 'clubhouse') {
     return (
       <ClubhouseShellSkeleton>
         <HomeSkeleton />
       </ClubhouseShellSkeleton>
+    );
+  }
+  if (frame === 'neutral') {
+    return (
+      <div className="min-h-dvh" role="status" aria-busy="true" aria-live="polite" data-loading-frame="neutral">
+        <span className="sr-only">Loading</span>
+      </div>
     );
   }
   return (

@@ -9,7 +9,7 @@ import { chTween } from '../../../lib/motion';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { initials } from '../../../lib/format';
 import { chTrail } from '../../../lib/track';
-import { PhoneTop, useBackFromMore, usePhoneStackHistory } from '../../../shell/phone-chrome';
+import { PhoneTop, usePhoneStackHistory } from '../../../shell/phone-chrome';
 import { SECTIONS, type ChDevice, type ChSettingsData, type ChSettingsSection, type ChSettingsWrites } from '../model';
 import { useReportProblem, useSignOut } from '../hooks';
 import { AccountPhone, EmailSheet, PasswordSheet, ProfileSheet } from './AccountPhone';
@@ -36,10 +36,14 @@ const ICON: Record<ChSettingsSection, LucideIcon> = {
  * Back the section leaves the same way and the list fades back in. `0` swaps at once (reduced motion, Animations off, or
  * a pop the native back-swipe already animated).
  */
+// Transform strings rather than framer's x, so the slide runs on the compositor and a section's first render can't
+// stall it (motion audit 2026-10-12).
+const AT = 'translateX(0%)';
+const OFF = 'translateX(100%)';
 const PUSH = {
-  enter: (d: 1 | -1 | 0) => (d === 1 ? { x: '100%', opacity: 1 } : d === -1 ? { x: 0, opacity: 0 } : { x: 0, opacity: 1 }),
-  shown: { x: 0, opacity: 1 },
-  leave: (d: 1 | -1 | 0) => (d === 1 ? { x: 0, opacity: 0 } : d === -1 ? { x: '100%', opacity: 1 } : { x: 0, opacity: 0, transition: { duration: 0 } }),
+  enter: (d: 1 | -1 | 0) => (d === 1 ? { transform: OFF, opacity: 1 } : d === -1 ? { transform: AT, opacity: 0 } : { transform: AT, opacity: 1 }),
+  shown: { transform: AT, opacity: 1 },
+  leave: (d: 1 | -1 | 0) => (d === 1 ? { transform: AT, opacity: 0 } : d === -1 ? { transform: OFF, opacity: 1 } : { transform: AT, opacity: 0, transition: { duration: 0 } }),
 };
 
 /**
@@ -74,17 +78,6 @@ const SUMMARY: Record<'coach' | 'player', Partial<Record<ChSettingsSection, stri
 };
 
 /**
- * A section named in the URL (`?section=`) opens pushed, and so does the one an old address names
- * (`/settings/notifications`, `/settings/coaching-intelligence`: the route passes it as `initialSection`, with no query).
- * The bare page opens on the list.
- */
-function sectionFromUrl(sections: ReadonlyArray<{ id: ChSettingsSection }>, initialSection: ChSettingsSection): ChSettingsSection | null {
-  if (typeof window === 'undefined') return null;
-  const wanted = new URLSearchParams(window.location.search).get('section') ?? (/^\/golf\/dashboard\/settings\/[^/]+/.test(window.location.pathname) ? initialSection : null);
-  return sections.find((s) => s.id === wanted)?.id ?? null;
-}
-
-/**
  * The phone Settings (owner design, docs/clubhouse/phone/settings.md): a grouped list that pushes to each section, like
  * iOS Settings in Clubhouse styling. A section is a history entry (the edge swipe and Back pop it, CH-1906) and the tab
  * bar stays. Edit cards are sheets, choices are bottom sheets, and destructive choices are action sheets. It reads and
@@ -95,18 +88,23 @@ export function SettingsPhone({
   writes,
   device,
   initialSection,
+  opened,
   onDeleted,
 }: {
   data: ChSettingsData;
   writes: ChSettingsWrites;
   device: ChDevice;
   initialSection: ChSettingsSection;
+  /**
+   * The address named a section (`?section=`, or an old `/settings/notifications` style path), so it opens pushed;
+   * the bare page opens on the list. Decided on the server so the first client render matches the HTML.
+   */
+  opened: boolean;
   onDeleted: () => void;
 }) {
-  const backFromMore = useBackFromMore();
   const reduced = useChReducedMotion();
   const sections = SECTIONS[data.role];
-  const [section, setSection] = useState<ChSettingsSection | null>(() => sectionFromUrl(sections, initialSection));
+  const [section, setSection] = useState<ChSettingsSection | null>(() => (opened && sections.some((x) => x.id === initialSection) ? initialSection : null));
   const [profileOpen, setProfileOpen] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
@@ -152,7 +150,8 @@ export function SettingsPhone({
   return (
     <main className="ch-setm" aria-label="Settings">
       <PhoneTop
-        back={section ? { label: 'Settings', onBack: back } : { label: 'More', onBack: backFromMore }}
+        back={section ? { label: 'Settings', onBack: back } : null}
+        start={!section}
         // The design draws the large title in the page and nothing in the bar; the bar's is the screen's heading for VoiceOver.
         title={current?.label ?? 'Settings'}
         titleId="ch-setm-title"

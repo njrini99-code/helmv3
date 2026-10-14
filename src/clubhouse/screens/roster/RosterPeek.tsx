@@ -59,9 +59,9 @@ export function RosterPeek({
           id="ch-rs-peek"
           className="ch-rs-peek"
           aria-label={p.name}
-          initial={reduced ? { opacity: 0 } : { opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={reduced ? { opacity: 0 } : { opacity: 0, x: 12 }}
+          initial={reduced ? { opacity: 0 } : { opacity: 0, transform: 'translateX(16px)' }}
+          animate={{ opacity: 1, transform: 'translateX(0px)' }}
+          exit={reduced ? { opacity: 0 } : { opacity: 0, transform: 'translateX(12px)' }}
           transition={chTween('base', reduced)}
         >
           <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} onNoteSaved={onNoteSaved} />

@@ -8,7 +8,7 @@ import { EmptyState } from '../../ui/States';
 import { InlineNotice } from '../../ui/Notices';
 import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
-import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
+import { PhoneTop } from '../../shell/phone-chrome';
 import { formatHcp } from './format';
 import { sortTeammates, teammateLine, type TeamSort } from './team';
 
@@ -18,13 +18,12 @@ import { sortTeammates, teammateLine, type TeamSort } from './team';
  * sort is the only control. Same page structure as RosterPhone, so the phone chrome behaves the same.
  */
 export function TeamRosterPhone({ data, onRetry }: { data: ChPlayerRoster; onRetry: () => void }) {
-  const backFromMore = useBackFromMore();
   const [sort, setSort] = useState<TeamSort>('name');
   const rows = useMemo(() => sortTeammates(data.players, sort), [data.players, sort]);
 
   return (
     <main className="ch-rsm" aria-label="Roster">
-      <PhoneTop title="Roster" back={{ label: 'More', onBack: backFromMore }} />
+      <PhoneTop title="Roster" start />
       <div className="ch-rsm-page">
         <header className="ch-rsm-head">
           {!data.playersError && (
@@ -51,7 +50,7 @@ export function TeamRosterPhone({ data, onRetry }: { data: ChPlayerRoster; onRet
           <>
             <div className="ch-rsm-sort">
               <span>Sort by</span>
-              <Segmented<TeamSort>
+              <Segmented<TeamSort> redraws
                 size="sm"
                 label="Sort players"
                 value={sort}

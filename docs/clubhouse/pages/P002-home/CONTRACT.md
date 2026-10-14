@@ -257,6 +257,12 @@ Status: DEFINED
 
 Home's own (21801 to 21806): N opens a new event but never while typing or in a dialog, each day of the week is read as words, the leaderboard and both nines are tables, the round pager announces its position, the phone's scorecard scrolls as a named, focusable region, and axe finds nothing in any preview state at 1280 and 390 (`clubhouse:a11y`, not run for this pass). The player's countdown is a timer named "Starts in 1 day, 18 hours and 2 minutes" whose digits are hidden from a screen reader, so it is heard once and not every second (21807). Known, not changed: a leaderboard row is a link with the role row, so the table reads correctly (21803), which hides that it is a link from a screen reader; not tried with one. The shell's skip link, landmarks and dialog behaviour are 11801 to 11811.
 
+CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
+CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
+CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819
+CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824
+CH-1842, 11825 CH-1816.
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 21801 | CH-2801 | `N_OPENS_A_NEW_EVENT_FROM_ANYWHERE` | N opens a new event from anywhere on Home, but never while typing or inside a dialog |
@@ -267,7 +273,7 @@ Home's own (21801 to 21806): N opens a new event but never while typing or in a 
 | 21806 | CH-2806 | `ON_A_PHONE_THE_SCORECARD_SCROLLS_SIDEWAYS` | On a phone the scorecard scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it |
 | 21807 | — | `COUNTDOWN_IS_A_NAMED_TIMER` | The player's countdown is a timer named for a screen reader as Starts in N days, N hours and N minutes (singular at one), and its digits, the ticking seconds included, are hidden from a screen reader, so it is heard once, not every second. |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816.
 
 ## 19 — Responsive layout
 

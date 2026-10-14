@@ -5,7 +5,7 @@ import type { ChannelPref, NotificationCategory, PrefsByCategory } from '@/lib/c
 import { channelsFor, ROUTING_GROUPS, ROUTING_QUIET_EXEMPT, type ChDevice, type ChSettingsData, type ChSettingsWrites } from '../model';
 import { useDelivery, usePushToggle, useRouting, useTestPush } from '../hooks';
 import { DELIVERY_GROUPS } from '../Notifications';
-import { ReadFailed, ReadsFailed } from '../parts';
+import { EmailPaused, ReadFailed, ReadsFailed } from '../parts';
 import { notificationReadsFailed } from '../Notifications';
 import { ListSheet } from './sheets';
 import { ActionRow, Group, NavRow, SwitchRow } from './ui';
@@ -19,14 +19,16 @@ export function NotificationsPhone({ data, writes, device }: { data: ChSettingsD
   const covered = failed.length > 1;
   return (
     <>
-      <p className="ch-setm-lead">Which updates reach you, and how. Changes save as you make them.</p>
+      <p className="ch-setm-lead">
+        Which updates reach you, and how. Changes save as you make them.{data.emailPaused && <> <EmailPaused /></>}
+      </p>
       <ReadsFailed parts={failed} onRetry={writes.refresh} />
       {data.delivery.error ? (
         <Group title="Email and push">
           <ReadFailed bare what="Your email and push settings" code="CH-8202" onRetry={writes.refresh} covered={covered} />
         </Group>
       ) : (
-        <DeliveryPhone prefs={data.delivery.value} digest={data.digest} writes={writes} device={device} />
+        <DeliveryPhone prefs={data.delivery.value} digest={data.digest} writes={writes} device={device} emailPaused={data.emailPaused} />
       )}
       {data.playerRouting &&
         (data.playerRouting.error ? (
@@ -34,13 +36,25 @@ export function NotificationsPhone({ data, writes, device }: { data: ChSettingsD
             <ReadFailed bare what="Your CoachHelm update settings" code="CH-8203" onRetry={writes.refresh} covered={covered} />
           </Group>
         ) : (
-          <RoutingPhone initial={data.playerRouting.value} writes={writes} />
+          <RoutingPhone initial={data.playerRouting.value} writes={writes} emailPaused={data.emailPaused} />
         ))}
     </>
   );
 }
 
-function DeliveryPhone({ prefs, digest, writes, device }: { prefs: Record<string, boolean>; digest: ChSettingsData['digest']; writes: ChSettingsWrites; device: ChDevice }) {
+function DeliveryPhone({
+  prefs,
+  digest,
+  writes,
+  device,
+  emailPaused,
+}: {
+  prefs: Record<string, boolean>;
+  digest: ChSettingsData['digest'];
+  writes: ChSettingsWrites;
+  device: ChDevice;
+  emailPaused: boolean;
+}) {
   const { p, dg, quiet, pending, flip, flipDigest } = useDelivery(prefs, digest, writes);
   const push = device.push;
   const togglePush = usePushToggle(push);
@@ -95,7 +109,7 @@ function DeliveryPhone({ prefs, digest, writes, device }: { prefs: Record<string
               onChange={() => {}}
             />
           ) : (
-            <SwitchRow label="Weekly team email" checked={dg} busy={pending.has('digest')} onChange={flipDigest} />
+            <SwitchRow label="Weekly team email" checked={dg} disabled={emailPaused} busy={pending.has('digest')} onChange={flipDigest} />
           )}
         </Group>
       )}
@@ -110,6 +124,7 @@ function DeliveryPhone({ prefs, digest, writes, device }: { prefs: Record<string
             ? [
                 silenced(open.quietExempt) ? 'Paused by quiet mode. Turn it off to change these.' : open.quietExempt ? `${open.label} always reach you, even in quiet mode.` : null,
                 open.pushKey ? null : 'This one is email only.',
+                emailPaused ? 'Email is paused for everyone right now.' : null,
                 'Each switch saves as you flip it.',
               ]
                 .filter(Boolean)
@@ -122,7 +137,7 @@ function DeliveryPhone({ prefs, digest, writes, device }: { prefs: Record<string
             <SwitchRow
               label="Email"
               checked={!!p[open.emailKey]}
-              disabled={silenced(open.quietExempt)}
+              disabled={silenced(open.quietExempt) || emailPaused}
               busy={pending.has(open.emailKey)}
               onChange={flip(open.emailKey, `${open.label.toLowerCase()} email`)}
             />
@@ -161,7 +176,7 @@ function channelState(prefs: PrefsByCategory, cats: NotificationCategory[], ch: 
   return { state: n === cats.length ? 'all' : n === 0 ? 'none' : 'some', n };
 }
 
-function RoutingPhone({ initial, writes }: { initial: { prefs: PrefsByCategory; quiet: boolean }; writes: ChSettingsWrites }) {
+function RoutingPhone({ initial, writes, emailPaused }: { initial: { prefs: PrefsByCategory; quiet: boolean }; writes: ChSettingsWrites; emailPaused: boolean }) {
   const r = useRouting(initial, writes);
   const [kind, setKind] = useState<string | null>(null);
   const open = ROUTING_GROUPS.find((g) => g.label === kind);
@@ -199,6 +214,7 @@ function RoutingPhone({ initial, writes }: { initial: { prefs: PrefsByCategory; 
                   : exempt(open.categories).length
                     ? `${open.label === 'Goals' ? 'Goals your coach assigns' : 'Round reviews'} always reach you, even in quiet mode.`
                     : null,
+                emailPaused ? 'Email is paused for everyone right now.' : null,
                 'Each switch saves as you flip it.',
               ]
                 .filter(Boolean)
@@ -217,7 +233,7 @@ function RoutingPhone({ initial, writes }: { initial: { prefs: PrefsByCategory; 
                   label={c.label}
                   help={state === 'some' ? `On for ${n} of ${open.categories.length} updates. Turning it on sets all of them.` : undefined}
                   checked={state === 'all'}
-                  disabled={silenced(open.categories) || r.bulkBusy || (r.groupBusy && !r.pending.has(key))}
+                  disabled={silenced(open.categories) || r.bulkBusy || (r.groupBusy && !r.pending.has(key)) || (emailPaused && c.key === 'email')}
                   busy={r.pending.has(key)}
                   onChange={(v) => void r.setGroup(open.label, open.categories, c.key, v, `Couldn’t change ${open.label.toLowerCase()} ${c.label.toLowerCase()}`)}
                 />

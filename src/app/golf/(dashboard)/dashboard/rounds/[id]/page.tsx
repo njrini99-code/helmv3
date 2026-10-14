@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { redirect, notFound } from 'next/navigation';
 import { isUuid } from '@/lib/utils/uuid';
 import { Metadata } from 'next';
@@ -96,7 +97,7 @@ export default async function RoundDetailPage({
 
   const { coach, player } = session;
   // Clubhouse round review (golf_clubhouse_ui), for the player and their coaches.
-  if ((coach && (await isClubhouseFor('coach'))) || (player && (await isClubhouseFor('player')))) return <ClubhouseRoundReviewRoute id={id} />;
+  if (await isClubhouseFor(await getGolfDashboardRole())) return <ClubhouseRoundReviewRoute id={id} />;
   const supabase = await createClient();
 
   // Fetch round with player avatar

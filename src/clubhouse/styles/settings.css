@@ -1519,7 +1519,7 @@
   }
   .ch-setm-dlg::backdrop,
   .ch-setm-act::backdrop {
-    background: rgb(20 20 18 / 0.42);
+    background: var(--ch-scrim, rgb(20 20 18 / 0.36));
     animation: ch-fade var(--ch-dur-base) var(--ch-ease);
   }
   body.keyboard-open .ch-setm-dlg,
@@ -1542,7 +1542,7 @@
     border-radius: 24px 24px 0 0;
     background: var(--ch-bg-page);
     box-shadow: var(--ch-elevation-sheet);
-    animation: ch-rise var(--ch-dur-base) var(--ch-ease);
+    animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
   }
   /* Grouped form rows are inset content, not floating cards. */
   .ch-setm-sheet .ch-setm-card {
@@ -1677,7 +1677,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    animation: ch-rise var(--ch-dur-base) var(--ch-ease);
+    animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
   }
   .ch-setm-act__card {
     flex: none;
@@ -1903,10 +1903,6 @@ html[data-fw-theme='dark'] .ch-set-rank__n {
   html[data-fw-theme='dark'] .ch-setm-row.is-sw .ch-switch__thumb {
     background: var(--ch-switch-thumb-bg);
     box-shadow: var(--ch-switch-thumb-shadow);
-  }
-  html[data-fw-theme='dark'] .ch-setm-act::backdrop,
-  html[data-fw-theme='dark'] .ch-setm-dlg::backdrop {
-    background: rgb(0 0 0 / 0.55);
   }
   html[data-fw-theme='dark'] .ch-setm-act__card {
     background: rgb(36 42 37 / 0.97);

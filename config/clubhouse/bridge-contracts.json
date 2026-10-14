@@ -127,6 +127,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10406,
+    "page": "P001",
+    "category": 4,
+    "item": 6,
+    "name": "A_DASHBOARD_URL_THAT_MATCHES_NOTHING_OR",
+    "chCode": "CH-1306",
+    "meaning": "A dashboard URL that matches nothing, or an id that no longer exists (a deleted round or player), inside the Clubhouse shell",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10601,
     "page": "P001",
     "category": 6,
@@ -232,7 +243,7 @@
     "item": 10,
     "name": "SIGNING_OUT_FROM_THE_PHONES_MORE_SHEET",
     "chCode": "CH-1002",
-    "meaning": "Signing out from the phone's More sheet fails",
+    "meaning": "Signing out from the phone's account sheet fails",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -444,7 +455,7 @@
     "item": 2,
     "name": "OPENING_MORE_ON_A_PHONE",
     "chCode": "CH-1602",
-    "meaning": "Opening More on a phone",
+    "meaning": "Opening the account sheet on a phone (the strip's Account pill; once More)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -675,8 +686,8 @@
     "item": 1,
     "name": "CHANGING_TABS",
     "chCode": "CH-1701",
-    "meaning": "Changing tabs (not tapping the tab they're on)",
-    "status": "implemented",
+    "meaning": "Changing section (a strip pill or a committed swipe on the bar; not the section they're on)",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -708,7 +719,7 @@
     "item": 4,
     "name": "OPENING_MORE_SWIPING_THE_SHEET_AWAY",
     "chCode": "CH-1704",
-    "meaning": "Opening More; swiping the sheet away",
+    "meaning": "Opening the account sheet; swiping it away",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -785,7 +796,7 @@
     "item": 2,
     "name": "THE_PHONE_MORE_SHEET_IS_MODAL_FOCUS",
     "chCode": "CH-1802",
-    "meaning": "The phone More sheet is modal: focus moves in without scrolling, Tab stays inside, Esc closes it and focus returns to More without scrolling. The underlying page stays stationary until the full exit completes",
+    "meaning": "The phone account sheet (the section strip's last pill; once the More sheet) is modal: focus moves in without scrolling, Tab stays inside, Esc closes it and focus returns to the section title without scrolling. It holds who you are, the coach's team switch, Help and Sign out. The underlying page stays stationary until the full exit completes",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -797,7 +808,7 @@
     "name": "THE_CURRENT_PAGE_IS_MARKED_IN_THE",
     "chCode": "CH-1803",
     "meaning": "The current page is marked in the sidebar and tab bar; the sidebar and its navigation are named landmarks; breadcrumbs mark the current page",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -851,7 +862,7 @@
     "item": 8,
     "name": "THE_PHONE_TAB_BAR_LISTS_THE_ROLES",
     "chCode": "CH-1808",
-    "meaning": "The phone tab bar lists the role's tabs (coach: Home, CoachHelm, Calendar, Stats, More; player: Home, CoachHelm, Rounds, Team Hub, More; D-66), and when Messages is under More, More is named with its unread count (\"More, 3 unread messages\")",
+    "meaning": "The phone section strip (section-strip.md) lists the role's sections, the old tabs first (coach: Home, CoachHelm, Calendar, Stats; player: Home, CoachHelm, Rounds, Team Hub; D-66), then the sidebar's order, then Settings and the Account pill; the current one is `aria-current`; a pill with a count is named with it (\"Messages 3 new\"). Shut, it is hidden and inert",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -884,7 +895,7 @@
     "item": 11,
     "name": "ON_THE_PHONE_THE_BELL_OPENS_AS",
     "chCode": "CH-1811",
-    "meaning": "On the phone the bell opens as a modal sheet instead of a popover: focus moves in, Tab stays inside, Esc, Close or the scrim close it and focus returns to the bell; the edge swipe is off while it is up",
+    "meaning": "On the phone the bell drops the feed as lock-screen stacks under a green veil (`BellStacks`, notification-stacks.ts) instead of a popover: a modal dialog; focus moves in, Tab stays inside, Esc, a tap on the open space, the bell or a drag up closes it and focus returns to the bell; the edge swipe is off while it is up",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -917,7 +928,7 @@
     "item": 14,
     "name": "ON_THE_PHONE_THE_SAME_COACH_SEES",
     "chCode": "CH-1814",
-    "meaning": "On the phone the same coach sees their teams in the More sheet, under who they are, the current one marked (`aria-current`); a switch closes the sheet on the new team, a refused one leaves it open with the reason",
+    "meaning": "On the phone the same coach sees their teams in the account sheet, under who they are, the current one marked (`aria-current`); a switch closes the sheet on the new team, a refused one leaves it open with the reason",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -1032,6 +1043,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 11825,
+    "page": "P001",
+    "category": 18,
+    "item": 25,
+    "name": "ON_THE_PHONE_THE_SECTIONS_NAME_IN",
+    "chCode": "CH-1816",
+    "meaning": "On the phone the section's name in the top bar is the section switcher: a button with a chevron (`aria-expanded`, `aria-controls=\"ch-strip\"`) that opens the section strip, with a dot and a spoken note while another section has something new; on a section's own page a pull down on the bar draws the strip and a sideways swipe steps to the next section",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 11901,
     "page": "P001",
     "category": 19,
@@ -1062,7 +1084,7 @@
     "item": 2,
     "name": "ON_THE_PHONE_TAPPING_THE_TAB_THAT",
     "chCode": "CH-1907",
-    "meaning": "On the phone, tapping the tab that is already open",
+    "meaning": "On the phone, tapping the strip's pill for the section already open",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -1888,6 +1910,17 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30202,
+    "page": "P003",
+    "category": 2,
+    "item": 2,
+    "name": "A_STATUS_CHANGE_IS_IN_FLIGHT",
+    "chCode": "CH-3404",
+    "meaning": "A status change is in flight",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30301,
     "page": "P003",
     "category": 3,
@@ -2233,6 +2266,17 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30619,
+    "page": "P003",
+    "category": 6,
+    "item": 19,
+    "name": "CHANGING_A_PLAYERS_STATUS_FAILS",
+    "chCode": "CH-3008",
+    "meaning": "Changing a player's status (Active or Inactive) fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30701,
     "page": "P003",
     "category": 7,
@@ -2344,6 +2388,17 @@
     "name": "REMOVE_FROM_TEAM",
     "chCode": "CH-3501",
     "meaning": "Remove from team (row menu; on the phone, the profile's ⋯ sheet)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 31102,
+    "page": "P003",
+    "category": 11,
+    "item": 2,
+    "name": "MARK_INACTIVE_MARK_ACTIVE",
+    "chCode": "CH-3502",
+    "meaning": "Mark inactive / Mark active (coach only: row menu; on the phone, the profile's ⋯ sheet)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -7367,6 +7422,17 @@
     ]
   },
   {
+    "id": 80702,
+    "page": "P008",
+    "category": 7,
+    "item": 2,
+    "name": "CUSTOMER_EMAIL_IS_SWITCHED_OFF_FOR_EVERYONE",
+    "chCode": "CH-8901",
+    "meaning": "Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED` is not `true`, `src/lib/email/outbound-gate.ts`), so no email setting can send anything",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
     "id": 80801,
     "page": "P008",
     "category": 8,
@@ -9672,6 +9738,20 @@
     ]
   },
   {
+    "id": 100103,
+    "page": "P010",
+    "category": 1,
+    "item": 3,
+    "name": "TASK_LINK_OPENS_THE_TASK",
+    "meaning": "?task=<id> (a task notification, carried through the old /tasks address) scrolls that task's row into view on the coach's Tasks tab or the player's Your tasks and lights it once (a fade; with reduced motion a still wash until the row is used). A task that is not in the shown rows, or a value that is not an id, is ignored; completing the task or a later render never scrolls back to it.",
+    "status": "implemented",
+    "where": "src/clubhouse/screens/hub/parts.tsx#TaskRow; src/clubhouse/screens/hub/TeamHub.tsx#TeamHub; src/clubhouse/routes/hub.tsx#ClubhouseHubRoute; src/app/golf/(dashboard)/dashboard/tasks/layout.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/hub-focus-task.test.tsx",
+      "src/clubhouse/__tests__/alias.test.ts"
+    ]
+  },
+  {
     "id": 100201,
     "page": "P010",
     "category": 2,
@@ -10921,9 +11001,12 @@
     "category": 2,
     "item": 6,
     "name": "REVIEW_LOADS_UNDER_A_CLUBHOUSE_SKELETON",
-    "meaning": "A round's review loads under a Clubhouse skeleton inside the shell. Not built: rounds/[id]/loading.tsx is Fairway's (it has no ClubhouseSwitch, and there is no catalog row for it), so a Clubhouse review shows the Fairway skeleton first; the library's is CH-11401 through rounds/loading.tsx. No test covers it. The same class of gap Team Hub closed with CH-10405.",
-    "status": "reserved",
-    "where": "src/app/golf/(dashboard)/dashboard/rounds/[id]/loading.tsx"
+    "meaning": "A round's review loads under the Clubhouse review skeleton (CH-11406) inside the shell, at /rounds/[id] and at the old /rounds/[id]/review address (which redirects there inside Clubhouse); outside the shell both keep Fairway's skeleton.",
+    "status": "implemented",
+    "where": "src/app/golf/(dashboard)/dashboard/rounds/[id]/loading.tsx; src/app/golf/(dashboard)/dashboard/rounds/[id]/review/loading.tsx",
+    "tests": [
+      "src/clubhouse/__tests__/round-review.test.tsx"
+    ]
   },
   {
     "id": 110207,
@@ -10977,6 +11060,17 @@
     "name": "THE_ROUNDS_LIBRARY_IS_REFRESHING_WITH_THE",
     "chCode": "CH-11410",
     "meaning": "The Rounds library is refreshing (a Try again is running) with the page on screen",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110212,
+    "page": "P011",
+    "category": 2,
+    "item": 12,
+    "name": "A_ROUND_TYPE_CHANGE_IS_IN_FLIGHT",
+    "chCode": "CH-11411",
+    "meaning": "A round-type change is in flight",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -11159,6 +11253,17 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110417,
+    "page": "P011",
+    "category": 4,
+    "item": 17,
+    "name": "CHANGE_ROUND_TYPE_THE_PLAYER_IS_IN",
+    "chCode": "CH-11316",
+    "meaning": "Change round type: the player is in no qualifier",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110501,
     "page": "P011",
     "category": 5,
@@ -11269,6 +11374,17 @@
     "tests": [
       "src/clubhouse/__tests__/round-setup.test.tsx"
     ]
+  },
+  {
+    "id": 110511,
+    "page": "P011",
+    "category": 5,
+    "item": 11,
+    "name": "CHANGE_ROUND_TYPE_EVERY_ROUND_OF_THE",
+    "chCode": "CH-11110",
+    "meaning": "Change round type: every round of the chosen qualifier already holds one of the player's other rounds",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
     "id": 110601,
@@ -11677,6 +11793,28 @@
     "name": "A_REFRESH_OF_THE_ROUNDS_LIBRARY_FAILS",
     "chCode": "CH-11213",
     "meaning": "A refresh of the Rounds library fails while the page already shows rounds (Try again, or any server render of the page, whose read of the posted rounds or of the round in progress failed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110638,
+    "page": "P011",
+    "category": 6,
+    "item": 38,
+    "name": "CHANGING_A_LIVE_ROUNDS_TYPE_FAILS",
+    "chCode": "CH-11020",
+    "meaning": "Changing a live round's type fails (Continue round)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110639,
+    "page": "P011",
+    "category": 6,
+    "item": 39,
+    "name": "CHANGE_ROUND_TYPE_THE_PLAYERS_QUALIFIER_ENTRIES",
+    "chCode": "CH-11218",
+    "meaning": "Change round type: the player's qualifier entries (or the slots their rounds hold) didn't load",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -12137,6 +12275,17 @@
     "name": "DISCARD_ON_A_SAVED_ROUND",
     "chCode": "CH-11520",
     "meaning": "Discard on a saved round (Recover)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111121,
+    "page": "P011",
+    "category": 11,
+    "item": 21,
+    "name": "CHANGE_ROUND_TYPE",
+    "chCode": "CH-11521",
+    "meaning": "Change round type (Continue round: the Exit sheet's \"Change round type\" row, \"Practice now. Changes what it counts toward.\")",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },

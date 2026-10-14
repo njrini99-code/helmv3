@@ -174,3 +174,7 @@ rail to switch). The tests for the phone are the "Settings · phone" group in `s
 ## 89xx Network and UX
 
 Settings uses the shared behaviour: CH-1901 offline banner, CH-1902 "Still saving…" after 5 seconds, CH-1903 a save refused while offline, and the CH-195x experience signals. See [shell](shell.md).
+
+| # | When | They see | How | Test |
+| --- | --- | --- | --- | --- |
+| CH-8901 | Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED` is not `true`, `src/lib/email/outbound-gate.ts`), so no email setting can send anything | Every email switch (each kind's Email, Weekly team email, the CoachHelm Email column and Mute email) keeps its saved choice but is disabled, with one line: "Email is paused for everyone right now." On desktop it follows the card's caption (Email and push; CoachHelm updates for a player); on the phone it follows the page's lead and each kind's sheet note. Push and in app are unchanged | `loadSettings` → `emailPaused` (`isCustomerEmailEnabled`), `EmailPaused` in `Notifications`, `NotificationsPhone` | settings.test › CH-8901, settings-server.test › CH-8901 |

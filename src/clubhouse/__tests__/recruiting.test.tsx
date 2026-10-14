@@ -1100,13 +1100,11 @@ describe('Recruiting · phone', () => {
   const detail = () => document.querySelector('section.ch-recm-screen') as HTMLElement | null;
   const names = () => within(screen.getByRole('list')).getAllByRole('button').map((b) => b.querySelector('b')!.textContent);
 
-  it('CH-14914 CH-14904 the phone opens as the board does: "‹ More", the title, Add, search, the compact timeline, the count with its sort, and rows', async () => {
-    const user = userEvent.setup();
+  it('CH-14914 CH-14904 the phone opens as the board does, a section root: the title, Add, search, the compact timeline, the count with its sort, and rows', async () => {
     wrap();
     expect(code('CH-14904')?.tagName).toBe('MAIN');
     expect(top().getByRole('heading', { level: 1, name: 'Recruiting' })).toBeTruthy();
-    await user.click(top().getByRole('button', { name: 'Back to More' }));
-    expect(router.back.mock.calls.length + router.push.mock.calls.length).toBeGreaterThan(0);
+    expect(top().queryByRole('button', { name: 'Back to More' })).toBeNull();
     expect(top().getByRole('button', { name: 'Add prospect' })).toBeTruthy();
     expect(screen.getByRole('searchbox', { name: 'Search prospects' })).toBeTruthy();
     const group = screen.getByRole('group', { name: 'Filter by stage' });

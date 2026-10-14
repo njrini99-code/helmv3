@@ -1,9 +1,9 @@
 'use client';
 
-import { AnimatePresence, m } from 'motion/react';
-import { Bell as BellIcon, BellOff, ChevronDown, CalendarDays, ClipboardCheck, Eye, Megaphone, MessageSquare, Sparkles, Users, X, type LucideIcon } from 'lucide-react';
+import { AnimatePresence, animate, m, useMotionValue } from 'motion/react';
+import { Bell as BellIcon, BellOff, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
@@ -15,7 +15,6 @@ import {
   groupByDayBucket,
   isUnread,
   itemMatchesFilter,
-  type NotificationCategoryId,
   type NotificationFilter,
   type UnifiedNotificationItem,
 } from '@/app/golf/actions/unified-notifications-model';
@@ -25,11 +24,12 @@ import { InlineNotice } from '../ui/Notices';
 import { Menu } from '../ui/Menu';
 import { EmptyState, Skeleton } from '../ui/States';
 import { haptic } from '../lib/haptics';
-import { CH_POP, chSpring, chTween } from '../lib/motion';
+import { CH_POP, chSpring, chSpringCurve } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
-import { chThrownExit, takeSheetFling, useSheetDrag } from '../lib/sheet-drag';
-import { OverlayScrollLock } from '../lib/overlay-scroll';
 import { useChPhone } from '../lib/use-phone';
+import { useSectionSwitch } from './section-switch';
+import { BellStacks, CH_NOTIFICATION_KIND } from './BellStacks';
+import { ago, markLocallyRead, notificationKey } from './notification-stacks';
 import { chReport, chTrail } from '../lib/track';
 import { useAction, type ServerResult } from '../lib/use-action';
 
@@ -56,6 +56,8 @@ const W = 380;
 
 const BellSource = createContext<ChBellApi | null>(null);
 
+const noSubscribe = () => () => {};
+
 /** Preview only: a fixture feed in place of the live actions. */
 export function BellSourceProvider({ api, children }: { api: ChBellApi; children: ReactNode }) {
   return <BellSource.Provider value={api}>{children}</BellSource.Provider>;
@@ -76,28 +78,9 @@ function useLiveBell(): ChBellApi {
   );
 }
 
-const CATEGORY: Record<NotificationCategoryId, { icon: LucideIcon; label: string }> = {
-  messages: { icon: MessageSquare, label: 'Messages' },
-  events: { icon: CalendarDays, label: 'Events' },
-  announcements: { icon: Megaphone, label: 'Announcements' },
-  tasks: { icon: ClipboardCheck, label: 'Tasks' },
-  coachhelm: { icon: Sparkles, label: 'CoachHelm' },
-  pipeline: { icon: Users, label: 'Team' },
-  profile_views: { icon: Eye, label: 'Profile' },
-};
+const CATEGORY = CH_NOTIFICATION_KIND;
 
-export function ago(iso: string, now = Date.now()): string {
-  const t = Date.parse(iso);
-  if (Number.isNaN(t)) return '';
-  const mins = Math.max(0, Math.round((now - t) / 60000));
-  if (mins < 1) return 'Now';
-  if (mins < 60) return `${mins}m`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h`;
-  const days = Math.round(hrs / 24);
-  if (days < 7) return `${days}d`;
-  return new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
+export { ago };
 
 export function Bell() {
   const preview = useContext(BellSource);
@@ -107,9 +90,15 @@ export function Bell() {
   const id = useId();
   const reduced = useChReducedMotion();
   const phone = useChPhone();
+  // The portal waits for hydration: the server has no document, and the phone drop is always rendered once it exists.
+  const hydrated = useSyncExternalStore(noSubscribe, () => true, () => false);
   const btn = useRef<HTMLButtonElement | null>(null);
   const panel = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
+  // The feed starts loading as the finger lands on the bell, so on a phone the cards are there before the drop lands
+  // and nothing swaps under it mid-motion. Cleared on close, so the next open fetches fresh.
+  const [primed, setPrimed] = useState(false);
+  const wanted = open || primed;
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const [items, setItems] = useState<UnifiedNotificationItem[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -119,33 +108,78 @@ export function Bell() {
 
   const close = useCallback((focus = true) => {
     setOpen(false);
+    setPrimed(false);
     if (focus) btn.current?.focus({ preventScroll: true });
   }, []);
-  const closeSheet = useCallback(() => close(), [close]);
-  const drag = useSheetDrag(panel, closeSheet, { enabled: phone && !reduced });
-  // CH-1612: on the phone the sheet rises on the smooth spring and leaves on it, as More does (CH-1602), at the speed
-  // it was thrown when swiped shut (CH-1611). Read as the exit begins, since the sheet's props are fixed once removed.
+  const sw = useSectionSwitch();
+  // CH-1612 (owner 2026-10-12, with the section strip): on the phone the sheet drops from under the top bar, as the strip
+  // does, on the smooth spring, and goes back up under it on the same spring, at the speed it was thrown when swiped up.
+  const sheetY = useMotionValue(0);
+  const fling = useRef(0);
   const sheetMotion = {
-    shown: { y: 0, opacity: 1, transition: chSpring('smooth', reduced) },
-    gone: (_custom: unknown, current: { y?: unknown }) => {
-      if (reduced) return { y: 0, opacity: 0, transition: { duration: 0 } };
-      const travel = panel.current?.offsetHeight ?? 0;
-      if (!travel) return { y: '100%', transition: chTween('base') };
-      // From where it is now (mid rise, when closed early), plus the frame a throw has already carried it.
-      const from = typeof current?.y === 'number' ? current.y : 0;
-      const out = chThrownExit(takeSheetFling(panel.current, { peek: true }), travel - from);
-      return { y: [from + out.lead, travel], transition: { duration: out.ms / 1000, ease: out.ease } };
+    // The stacks drop from under the bar and land with the settle spring's slight give, a touch smaller as they come.
+    // Transform and opacity only, nothing that re-rasterizes (no scale, no blur), so WebKit keeps it on the compositor.
+    shown: { y: 0, opacity: 1, visibility: 'visible', transition: { ...chSpring('reveal', reduced), opacity: chSpring('smooth', reduced) } },
+    gone: () => {
+      if (reduced) return { opacity: 0, transition: { duration: 0 }, transitionEnd: { visibility: 'hidden' } };
+      // Back up under the bar from where the finger left it, at the speed it was thrown, fading as it goes.
+      const from = sheetY.get();
+      const travel = 140;
+      const left = travel + from;
+      const out = chSpringCurve('smooth', { velocity: left > 0 ? fling.current / left : 0, rest: 0.5 / Math.max(left, 1) });
+      fling.current = 0;
+      return { y: [from, -travel], opacity: 0, transition: { duration: out.ms / 1000, ease: out.ease }, transitionEnd: { visibility: 'hidden' } };
     },
+  };
+  /** The sheet follows the finger up from its header or grab (CH-1611): past a third of its height, or flicked, it closes. */
+  const onSheetDrag = (e: ReactPointerEvent) => {
+    if (reduced || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    const start = e.clientY;
+    const el = e.currentTarget as HTMLElement;
+    let last = start;
+    let lastT = performance.now();
+    let v = 0;
+    try {
+      el.setPointerCapture(e.pointerId);
+    } catch {
+      // A pointer that already went away.
+    }
+    const move = (ev: PointerEvent) => {
+      const now = performance.now();
+      v = 0.8 * ((ev.clientY - last) / Math.max(1, now - lastT)) + 0.2 * v;
+      last = ev.clientY;
+      lastT = now;
+      const dy = ev.clientY - start;
+      sheetY.set(dy < 0 ? dy : dy * 0.15);
+    };
+    const up = () => {
+      el.removeEventListener('pointermove', move);
+      el.removeEventListener('pointerup', up);
+      el.removeEventListener('pointercancel', up);
+      const h = panel.current?.offsetHeight ?? 600;
+      if (sheetY.get() < -h / 3 || v < -0.5) {
+        fling.current = -v * 1000;
+        haptic('commit');
+        close();
+      } else animate(sheetY, 0, chSpring('smooth', false, v * 1000));
+    };
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
   };
 
   useEffect(() => {
-    if (!open) return;
+    if (!wanted) return;
     let live = true;
     load()
       .then((r) => {
         if (!live) return;
         if (r && (r.success || r.ok) && r.data) {
-          setItems(r.data.items);
+          const next = r.data.items;
+          // The same feed again keeps the same list, so a refresh that lands mid-drop re-renders nothing.
+          const same = (prev: UnifiedNotificationItem[] | null) =>
+            !!prev && prev.length === next.length && prev.every((i, k) => i.id === next[k]!.id && i.source === next[k]!.source && i.read_at === next[k]!.read_at && i.title === next[k]!.title);
+          setItems((prev) => (same(prev) ? prev : next));
           setFailed(false);
         } else {
           setFailed(true);
@@ -160,7 +194,7 @@ export function Bell() {
     return () => {
       live = false;
     };
-  }, [open, load, attempt]);
+  }, [wanted, load, attempt]);
 
   useLayoutEffect(() => {
     if (!open || !btn.current) return;
@@ -209,6 +243,24 @@ export function Bell() {
 
   const markAll = useAction('shell.markAllRead', api.markAll, { done: 'All notifications marked read', failed: "Couldn't mark your notifications read", code: 'CH-1001' });
 
+  /** Marks items read where the coach cleared them (a swipe, a stack's ×): the feed restacks at once, the server follows. */
+  const clearItems = (list: UnifiedNotificationItem[]) => {
+    const unreadOnes = list.filter(isUnread);
+    if (!unreadOnes.length) return;
+    chTrail('bell clear', { count: unreadOnes.length });
+    const keys = new Set(unreadOnes.map(notificationKey));
+    setItems((prev) => (prev ? markLocallyRead(prev, keys, new Date().toISOString()) : prev));
+    for (const item of unreadOnes) void api.markRead(item).catch((err: unknown) => chReport(err, { surface: 'shell.bell', action: 'markRead', severity: 'low' }));
+  };
+  const markAllNow = async () => {
+    const before = items;
+    const at = new Date().toISOString();
+    setItems((prev) => prev?.map((i) => ({ ...i, read_at: i.read_at ?? at })) ?? prev);
+    const r = await markAll.run();
+    if (r.success) api.refetchCount();
+    else setItems(before);
+  };
+
   const openItem = (item: UnifiedNotificationItem) => {
     haptic('select');
     chTrail('bell open notification', { category: item.category });
@@ -252,14 +304,7 @@ export function Bell() {
       size="sm"
       variant="ghost"
       disabled={unread === 0 || markAll.pending}
-      onClick={async () => {
-        const before = items;
-        const at = new Date().toISOString();
-        setItems((prev) => prev?.map((i) => ({ ...i, read_at: i.read_at ?? at })) ?? prev);
-        const r = await markAll.run();
-        if (r.success) api.refetchCount();
-        else setItems(before);
-      }}
+      onClick={() => void markAllNow()}
     >
       Mark all read
     </Button>
@@ -340,11 +385,16 @@ export function Bell() {
         title="Notifications"
         aria-expanded={open}
         aria-controls={id}
+        onPointerDown={() => {
+          if (!open) setPrimed(true);
+        }}
         onClick={() => {
           // CH-1705: a tick as the bell opens; CH-1612: on the phone its sheet rises over a scrim; CH-1805: it is a dialog.
           haptic('select');
-          if (!open) chTrail('bell open');
-          setOpen((o) => !o);
+          if (open) return close(false);
+          chTrail('bell open');
+          sw?.setOpen(false);
+          setOpen(true);
         }}
       >
         <Icon icon={BellIcon} size={16} />
@@ -354,58 +404,74 @@ export function Bell() {
           </span>
         )}
       </button>
-      {typeof document !== 'undefined' &&
+      {hydrated &&
         createPortal(
           <AnimatePresence>
-            {open && phone && (
+            {/* The phone drop stays rendered, hidden and inert, so opening it only moves it: a first frame that has to
+                render every card is the stutter it had (an 85ms frame at 4x CPU, 2026-10-12). */}
+            {phone && (
               <m.div
-                key="scrim"
-                className="ch-scrim"
+                key="veil"
+                className="ch-bst-veil"
                 data-ui="clubhouse"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={reduced ? { duration: 0 } : chTween('base')}
+                aria-hidden="true"
+                data-open={open || undefined}
+                // The veil pours down from under the bar, its feathered edge leading (a static mask on a layer taller than
+                // the screen, moved by transform alone, so the compositor carries it), and draws back up as the drop goes.
+                initial={false}
+                animate={
+                  reduced
+                    ? { opacity: open ? 1 : 0, y: '0%', visibility: open ? 'visible' : 'hidden', transition: { duration: 0 } }
+                    : open
+                      ? { y: '0%', opacity: 1, visibility: 'visible', transition: chSpring('reveal') }
+                      : { y: '-100%', opacity: 1, transition: chSpring('smooth'), transitionEnd: { visibility: 'hidden' } }
+                }
                 onClick={() => close()}
               />
             )}
-            {open && phone && (
+            {phone && (
               <m.div
                 key="sheet"
                 ref={panel}
                 id={id}
                 role="dialog"
-                aria-modal="true"
+                aria-modal={open || undefined}
+                aria-hidden={open ? undefined : true}
+                inert={!open || undefined}
                 aria-label="Notifications"
                 // Read by the iOS swipe-back guard (NativeSwipeBackBridge): no edge swipe while the sheet is up.
-                data-state="open"
+                data-state={open ? 'open' : undefined}
                 data-ch-code="CH-1811"
                 tabIndex={-1}
-                className="ch-bellp ch-bellp--sheet"
+                className="ch-bst"
                 data-ui="clubhouse"
-                initial={reduced ? { opacity: 0 } : { y: '100%' }}
+                style={{ y: sheetY }}
+                initial={false}
                 variants={sheetMotion}
-                animate="shown"
-                exit="gone"
+                animate={open ? 'shown' : 'gone'}
               >
-                <OverlayScrollLock />
-                <div className="ch-bellp__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
-                <div className="ch-bellp__shead" onPointerDown={drag.onPointerDown}>
-                  <span className="ch-bellp__stitle">
-                    <b>Notifications</b>
-                    {shownUnread > 0 && <span className="ch-num">{shownUnread} unread</span>}
-                  </span>
-                  <button type="button" className="ch-bellp__x" aria-label="Close" onClick={() => close()}>
-                    <Icon icon={X} size={16} />
-                  </button>
+                {/* No OverlayScrollLock: freezing the body re-lays out the whole page in the drop's first frame (and again as
+                    it closes), the stutter. The drop covers the screen and takes the touches (touch-action in shell.css),
+                    and its list contains its own scroll, so the page under it cannot move anyway. */}
+                <div className="ch-bst__head" onPointerDown={onSheetDrag}>
+                  <b>Notifications</b>
+                  {shownUnread > 0 && (
+                    <button type="button" className="ch-bst__all" disabled={markAll.pending} onClick={() => void markAllNow()}>
+                      Mark all read
+                    </button>
+                  )}
                 </div>
-                {(filterMenu || shownUnread > 0) && (
-                  <div className="ch-bellp__tools">
-                    {filterMenu || <span />}
-                    {markAllButton}
-                  </div>
-                )}
-                {body}
+                {/* A tap on the open space puts the drop away; the keyboard has Esc, so the space needs no key of its own. */}
+                {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- see above */}
+                <div
+                  className="ch-bst__scroll"
+                  onClick={(e) => {
+                    if (e.target === e.currentTarget || (e.target as Element).classList?.contains('ch-bst-feed')) close();
+                  }}
+                >
+                  <BellStacks items={items} failed={listFailed} onRetry={() => setAttempt((x) => x + 1)} onOpen={openItem} onClear={clearItems} />
+                </div>
+                <div className="ch-bst__grab" aria-hidden="true" onPointerDown={onSheetDrag} />
               </m.div>
             )}
             {open && !phone && (

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { redirect } from 'next/navigation';
 import type { GolfRound } from '@/lib/types/golf';
 import type { Metadata } from 'next';
@@ -42,9 +43,11 @@ export default async function RoundsPage() {
 
   // Clubhouse Rounds (golf_clubhouse_ui): the player's library. Coaches keep
   // this page; v2 has no coach Rounds library.
-  if (userRole === 'player' && player && (await isClubhouseFor('player'))) return <ClubhouseRoundsRoute />;
+  // The role is the dashboard layout's (getGolfDashboardRole); Fairway below keeps the session's.
+  const chRole = await getGolfDashboardRole();
+  if (chRole === 'player' && player && (await isClubhouseFor('player'))) return <ClubhouseRoundsRoute />;
   // A coach's rounds are read through Team stats in Clubhouse (v2 has no coach library; owner, 2026-10-01: alias).
-  if (userRole === 'coach' && coach && (await isClubhouseFor('coach'))) redirect('/golf/dashboard/stats/team');
+  if (chRole === 'coach' && coach && (await isClubhouseFor('coach'))) redirect('/golf/dashboard/stats/team');
 
   const supabase = await createClient();
 

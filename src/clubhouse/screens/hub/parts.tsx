@@ -2,7 +2,7 @@
 
 import { Bus, CalendarCheck, Check, Download, FileSpreadsheet, FileText, FileType, Folder, Image as ImageIcon, Megaphone, MoreHorizontal, Pencil, Plane, Trash2, Upload } from 'lucide-react';
 import Link from 'next/link';
-import { useRef, useState, type CSSProperties, type DragEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type DragEvent } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChHubUpdate, ChRsvp, ChTeamHub } from '../../data/hub';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -14,6 +14,7 @@ import { haptic } from '../../lib/haptics';
 import { useAction, type ActionCopy, type ActionResult, type ServerResult } from '../../lib/use-action';
 import { SerifText } from '../../ui/SerifText';
 import { useChPhone } from '../../lib/use-phone';
+import { useChReducedMotion } from '../../lib/reduced-motion';
 import { radioKeys, rovingRadios } from './radio';
 
 /*
@@ -431,6 +432,8 @@ export function Tasks({
   onToggle,
   onAssign,
   onDelete,
+  focusTask = null,
+  onFocused,
   covered = false,
 }: {
   role: ChTeamHub['role'];
@@ -440,6 +443,10 @@ export function Tasks({
   onToggle: (t: ChHubTask, nextDone: boolean) => Promise<ServerResult>;
   onAssign?: () => void;
   onDelete?: (t: ChHubTask) => void;
+  /** The task a notification opened (`?task=`); a task outside the shown rows is left alone. */
+  focusTask?: string | null;
+  /** Called once the focused row has been scrolled to, so the hub can forget it. */
+  onFocused?: () => void;
   /** The page's notice carries the one Try again (CH-1209): this section keeps only its title under the heading. */
   covered?: boolean;
 }) {
@@ -463,7 +470,7 @@ export function Tasks({
         <EmptyState compact code="CH-10303" title={coach ? 'No tasks assigned' : 'No tasks right now'} body={coach ? 'Assign a task and see who has done it.' : 'Tasks your coaches assign show here with their due date.'} />
       ) : (
         <div className="ch-hb-tasks">
-          {data.rows.map((t) => <TaskRow key={t.id} t={t} coach={coach} d={isDone(t)} pending={isPending(t)} onToggle={onToggle} onDelete={onDelete} />)}
+          {data.rows.map((t) => <TaskRow key={t.id} t={t} coach={coach} d={isDone(t)} pending={isPending(t)} onToggle={onToggle} onDelete={onDelete} focus={focusTask === t.id} onFocused={onFocused} />)}
           {data.total != null && data.total > data.rows.length && (
             // C-20: the list is capped; it says so rather than passing for every task.
             <p className="ch-hb-muted ch-num">
@@ -477,14 +484,36 @@ export function Tasks({
 }
 
 /** One gate per task, shared by completing and reopening it; other tasks remain usable. */
-function TaskRow({ t, coach, d, pending, onToggle, onDelete }: {
+function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFocused }: {
   t: ChHubTask;
   coach: boolean;
   d: boolean;
   pending: boolean;
   onToggle: (t: ChHubTask, nextDone: boolean) => Promise<ServerResult>;
   onDelete?: (t: ChHubTask) => void;
+  focus?: boolean;
+  onFocused?: () => void;
 }) {
+  const row = useRef<HTMLDivElement>(null);
+  const reduced = useChReducedMotion();
+  // Lit from the first paint when a notification named this task; the wash fades once (or, with reduced motion, stays
+  // still until the row is used).
+  const [lit, setLit] = useState(focus);
+  const scrolled = useRef(false);
+  useEffect(() => {
+    if (!focus || scrolled.current) return;
+    scrolled.current = true;
+    row.current?.scrollIntoView?.({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
+    onFocused?.();
+  }, [focus, reduced, onFocused]);
+  // The wash ends with its own fade (a native listener: the row's animationend, not a child's).
+  useEffect(() => {
+    const el = row.current;
+    if (!lit || reduced || !el) return;
+    const done = (e: AnimationEvent) => e.target === el && setLit(false);
+    el.addEventListener('animationend', done);
+    return () => el.removeEventListener('animationend', done);
+  }, [lit, reduced]);
   const save = useAction(
     d ? 'hub.uncompleteTask' : 'hub.completeTask',
     onToggle,
@@ -496,7 +525,11 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete }: {
     quietBusy,
   );
   return (
-    <div className={'ch-hb-task' + (d ? ' is-done' : '')}>
+    <div
+      ref={row}
+      className={'ch-hb-task' + (d ? ' is-done' : '') + (lit ? (reduced ? ' is-focus-still' : ' is-focus') : '')}
+      onPointerDown={lit && reduced ? () => setLit(false) : undefined}
+    >
       {coach ? (
         <span className="ch-hb-ring" style={{ ['--ch-hb-p' as string]: t.done && t.done[1] ? (t.done[0] / t.done[1]) * 100 : 0 }} aria-label={t.done ? `${t.done[0]} of ${t.done[1]} done` : 'Completion didn’t load'}>
           <b className="ch-num">{t.done ? `${t.done[0]}/${t.done[1]}` : '—'}</b>

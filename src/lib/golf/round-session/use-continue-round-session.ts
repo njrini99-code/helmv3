@@ -10,7 +10,7 @@ import { deleteOfflineRound, saveOfflineRound } from '@/lib/offline/indexed-db';
 import { beaconPartialSave } from '@/lib/offline/partial-save-beacon';
 import { recordHelmBreadcrumb } from '@/lib/observability/client-breadcrumbs';
 import { getRoundRecoverySnapshot } from '@/lib/offline/shot-storage';
-import { useOfflineSyncStatus } from '@/stores/offline-sync-store';
+import { useOfflineSyncStatus, useOfflineSyncStore } from '@/stores/offline-sync-store';
 import {
   emergencySave,
   loadEmergencySave,
@@ -551,6 +551,8 @@ export function useContinueRoundSession({
           terminalSubmission,
         },
       });
+      // The queue grew: refresh the count the offline banner and sync badge read, as the new-round hook does.
+      await useOfflineSyncStore.getState().updatePendingCount();
     } catch {
       // localStorage emergency save above remains the hard fallback
     }
@@ -1472,11 +1474,35 @@ export function useContinueRoundSession({
       // and completes it in one atomic call — instead of throwing the key at
       // the overlay, which rendered the literal string "round_missing". A
       // failed re-create comes back as a sentence; the snapshot above stays.
-      const { result } = await writeRoundRecreatingIfMissing(
+      // Q-120: the round exists server-side on this engine, so the submit
+      // carries the last acknowledged `updated_at` and the RPC refuses
+      // ('conflict') to replace a row another device moved since. Read fresh
+      // per attempt so a self-healed token is the one re-sent.
+      const submitWithLock = () => writeRoundRecreatingIfMissing(
         submitGolfRoundComprehensive,
-        roundData,
+        { ...roundData, expectedUpdatedAt: lastServerUpdatedAtRef.current },
         liveRoundId(),
       );
+      let { result } = await submitWithLock();
+      if (!result.success && result.error === 'conflict') {
+        // Same self-heal-or-block decision as every other write: a mismatch
+        // this device caused itself adopts the token and is re-sent once; a
+        // genuine collision blocks the round. Either way the pre-submit
+        // snapshot above stays on the device and the raw key never reaches
+        // the overlay.
+        const healed = await handleRoundSyncConflict(ROUND_CONFLICT_RELOAD_MESSAGE);
+        if (healed) ({ result } = await submitWithLock());
+        if (!result.success && result.error === 'conflict') {
+          // A second conflict straight after a self-heal is escalated; if it
+          // still reads as self-caused, say so instead of dropping back silently.
+          if (healed && await handleRoundSyncConflict(ROUND_CONFLICT_RELOAD_MESSAGE)) {
+            setError(ROUND_CONFLICT_RELOAD_MESSAGE);
+          }
+          isSubmittingRef.current = false;
+          setSubmitting(false);
+          return;
+        }
+      }
       if (!result.success) {
         // C3: distinguish the qualifier-closed refusal from the round itself
         // being complete BEFORE the (now-narrowed) completed-round check —

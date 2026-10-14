@@ -714,7 +714,7 @@ export function Calendar({
             <IconButton icon={ChevronLeft} label={`Previous ${view === 'agenda' ? 'month' : view}`} onClick={() => step(-1)} />
             <IconButton icon={ChevronRight} label={`Next ${view === 'agenda' ? 'month' : view}`} onClick={() => step(1)} />
           </span>
-          <Segmented<ChCalView>
+          <Segmented<ChCalView> redraws
             label="View"
             value={view}
             onChange={(v) => go(v, anchor)}

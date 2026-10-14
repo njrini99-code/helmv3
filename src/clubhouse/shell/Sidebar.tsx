@@ -7,29 +7,15 @@ import { useNotificationBadges } from "@/contexts/notification-badge-context";
 import { Avatar } from "../ui/Avatar";
 import { Icon } from "../ui/Icon";
 import type { ChShellData } from "../data/shell";
-import { activeNavItem, CH_NAV_SECTIONS, navFor, type ChNavItem } from "./nav";
+import { activeNavItem, CH_NAV_SECTIONS, navFor } from "./nav";
 import { NavPlate } from "./NavPlate";
 import { NextEventCard } from "./NextEventCard";
 import { ResumeRoundCard } from "./Dock";
+import { badgeCount } from "./badge-count";
 import { BrandTeamSwitch } from "./TeamSwitch";
 import type { ChTeamSwitch } from "./team-switch";
 
-export function badgeCount(
-  item: ChNavItem,
-  badges: { messages: number; announcements: number; tasks: number; travel: number },
-  shell: ChShellData,
-): number | null {
-  if (item.badge === "messages")
-    return badges.messages > 0 ? badges.messages : null;
-  if (item.badge === "hub") {
-    // The same sum as the current app's Team Hub badge (src/lib/golf/nav-registry.ts).
-    const n = badges.announcements + badges.tasks + badges.travel;
-    return n > 0 ? n : null;
-  }
-  if (item.badge === "joinRequests")
-    return shell.pendingJoinRequests ? shell.pendingJoinRequests : null;
-  return null;
-}
+export { badgeCount };
 
 export function Sidebar({
   userData,

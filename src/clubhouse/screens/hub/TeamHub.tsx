@@ -19,7 +19,7 @@ import { normalise, useAction, type ServerResult } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
 import { tabListKeys } from '../../lib/tabs';
 import { HUB_TABS, type ChHubTab } from '../../lib/hub-tabs';
-import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
+import { PhoneTop } from '../../shell/phone-chrome';
 import { Announcement, Documents, NewAnnouncementLine, Rsvps, Tasks, TripPass, Updates } from './parts';
 import { AssignSheet, ComposeSheet, ConfirmDelete, TripSheet, type ChAnnouncementEdit } from './sheets';
 import { TripEditSheet } from './trip-edit';
@@ -102,12 +102,27 @@ function ReadMargin({ anns }: { anns: ChHubAnnouncement[] }) {
   );
 }
 
-export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName }: { data: ChTeamHub; writes?: ChHubWrites; initialTab?: ChHubTab; viewerName: string }) {
+export function TeamHub({
+  data,
+  writes = LIVE_HUB_WRITES,
+  initialTab,
+  viewerName,
+  focusTask,
+}: {
+  data: ChTeamHub;
+  writes?: ChHubWrites;
+  initialTab?: ChHubTab;
+  viewerName: string;
+  /** A task a notification named (`?task=`): its row scrolls into view and is lit once. */
+  focusTask?: string | null;
+}) {
   const router = useRouter();
   const phone = useChPhone();
-  const backFromMore = useBackFromMore();
   const coach = data.role === 'coach';
   const [tab, setTab] = useState<ChHubTab>(initialTab ?? 'home');
+  // Consumed by the row on its first paint, so a later toggle, refresh or tab switch never scrolls back to it.
+  const [taskToFocus, setTaskToFocus] = useState<string | null>(focusTask ?? null);
+  const taskFocused = () => setTaskToFocus(null);
   // The underline moves on the press (CH-10602); the panel renders just behind it.
   const shownTab = useDeferredValue(tab);
   const reduced = useChReducedMotion();
@@ -364,7 +379,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
   return (
     <main className={'ch-hb' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hb-title" data-canopy={phone ? undefined : ''}>
       {phone && !coach && <PhoneTop start title="Team Hub" heading={false} />}
-      {phone && coach && <PhoneTop title="Team Hub" back={{ label: 'More', onBack: backFromMore }} heading={false} />}
+      {phone && coach && <PhoneTop title="Team Hub" start heading={false} />}
       <header className="ch-hb-h" data-canopy-head="">
         <div>
           <span className="ch-hb-role">
@@ -465,7 +480,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
                   </SectionBoundary>
                   {!coach && (
                     <SectionBoundary surface="hub.tasks" label="Your tasks" code="CH-10205">
-                      <Tasks role={data.role} data={tasks} isDone={taskDone} isPending={taskPending} onToggle={onToggle} covered={covered} />
+                      <Tasks role={data.role} data={tasks} isDone={taskDone} isPending={taskPending} onToggle={onToggle} focusTask={taskToFocus} onFocused={taskFocused} covered={covered} />
                     </SectionBoundary>
                   )}
                 </div>
@@ -518,7 +533,7 @@ export function TeamHub({ data, writes = LIVE_HUB_WRITES, initialTab, viewerName
           {shownTab === 'tasks' && coach && (
             <SectionBoundary surface="hub.tasks" label="Tasks" code="CH-10205">
               <div className="ch-hb-list">
-                <Tasks role={data.role} data={tasks} isDone={taskDone} isPending={taskPending} onToggle={onToggle} onDelete={(t) => askDelete({ kind: 'task', t })} covered={covered} />
+                <Tasks role={data.role} data={tasks} isDone={taskDone} isPending={taskPending} onToggle={onToggle} onDelete={(t) => askDelete({ kind: 'task', t })} focusTask={taskToFocus} onFocused={taskFocused} covered={covered} />
               </div>
             </SectionBoundary>
           )}

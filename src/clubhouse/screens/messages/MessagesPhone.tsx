@@ -46,7 +46,7 @@ import { haptic } from "../../lib/haptics";
 import { chTrail } from "../../lib/track";
 import { rebuiltHref } from "../../shell/nav";
 import { PhoneScreen } from "../../shell/PhoneScreen";
-import { PhoneTop, useBackFromMore, usePhoneStackHistory } from "../../shell/phone-chrome";
+import { PhoneTop, usePhoneStackHistory } from "../../shell/phone-chrome";
 import {
   clock,
   dayLabel,
@@ -91,8 +91,6 @@ type FirstMessage = { text: string; files: File[] };
  * history entry, so the iOS edge swipe pops it (CH-1906).
  */
 export function MessagesPhone({ api }: { api: ChMessagesApi }) {
-  const coach = api.viewer.role === "coach";
-  const backFromMore = useBackFromMore();
   const [composing, setComposing] = useState(false);
   useEffect(() => {
     if (api.prefill) setComposing(true);
@@ -130,8 +128,7 @@ export function MessagesPhone({ api }: { api: ChMessagesApi }) {
     <main className="ch-msp" aria-label="Messages">
       <PhoneTop
         title="Messages"
-        start={!coach}
-        back={coach ? { label: "More", onBack: backFromMore } : null}
+        start
         action={
           <PhoneIconAction
             icon={SquarePen}

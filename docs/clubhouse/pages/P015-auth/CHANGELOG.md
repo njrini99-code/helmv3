@@ -1,5 +1,27 @@
 # P015 — Auth: changelog
 
+## 2026-10-13 — Sign in on the phone: standard fields, a plain notice, the sheet over the keyboard
+
+Owner: the phone sign-in had "weird rings", and the focus, sheet and keyboard
+did not line up.
+
+- **The fields are the standard sign-in anatomy** (owner: the box and its text
+  "didn't seem even"): each field is its own rounded box under its label, as
+  wide as Sign in and on its 13px radius and 52px height, the label, the boxes,
+  the notice icon and the heading on the sheet's 20px edge, the text inset 14px
+  in both boxes and centred in them, the eye centred on its row. Focus and a
+  refusal ring that one box (green while typing, red on a refusal), on both
+  themes. Replaces the grouped iOS-style box, whose square per-row rings sat
+  inside its rounded corners.
+- **Notices are flush** (icon and words, no box, no ring), as refusals already
+  were; "Session expired" and "Signed out" are information (the info icon), not
+  a green success check. "Account created" and "Password reset" stay positive.
+- **The keyboard:** on a touch phone, the finger landing on a field raises the
+  sheet to just under the status bar (420ms, the auth ease), so the fields and
+  Sign in sit above the keyboard and iOS never pans the page under the sheet; it
+  settles back when the keyboard goes. The course's window closes with it and
+  its line fades. Reduced motion moves it at once.
+
 ## 2026-10-10 — corner radii on the token scale
 
 - Part of the app-wide premium polish (`docs/clubhouse/CHANGELOG.md`,

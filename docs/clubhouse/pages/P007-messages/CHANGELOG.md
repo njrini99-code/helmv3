@@ -1,5 +1,29 @@
 # P007 — Messages: changelog
 
+## 2026-10-12 — A section root on the phone (no "‹ More")
+
+The phone shell's section strip replaced the tab bar and the More sheet
+(docs/clubhouse/phone/section-strip.md). Messages's phone top bar no longer
+draws a "‹ More" back link: its title is a start title (`PhoneTop start`),
+which the shell turns into the section switcher. The page's action, where it
+has one, is unchanged. Shared change: docs/clubhouse/CHANGELOG.md.
+
+## 2026-10-12 — conversation files follow the dashboard role
+
+`getGolfConversationFiles` (HELD) asks the gate with the dashboard layout's
+role, not
+`session.role`, so a user with a coach row on the player dashboard gets the
+files Clubhouse
+Messages shows them under a team allowlist. Membership still decides who reads what.
+
+## 2026-10-12 — attachment retry stays Clubhouse-only
+
+No visible change. Messages now asks the shared attachment hook for the
+recoverable mode (`useMessageAttachments({ recoverable: true })`), which keeps
+an unconfirmed send in sessionStorage so this screen can offer "retry this same
+send". The hook's default no longer stores that marker, because Fairway has no
+retry and a stored marker blocked every later attachment send in the thread.
+
 ## 2026-10-08 — a flatter conversation list, a green filter, and Delete conversation
 
 Owner review:

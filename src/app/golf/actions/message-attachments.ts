@@ -8,6 +8,7 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { notifyGolfMessageRecipients } from '@/lib/notifications/golf-message-fanout';
 import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
 import { isClubhouseFor } from '@/clubhouse/gate';
 import { CommonSchemas } from '@/lib/validation/server-action-validator';
 
@@ -475,7 +476,9 @@ async function getGolfConversationFilesImpl(conversationId: string): Promise<{
     }
 
     const session = await getGolfSessionProfile();
-    if (!(await isClubhouseFor(session?.role))) {
+    // The dashboard layout's role (golf-dashboard-role.ts), not session.role ("has a coach row"): a user the layout
+    // draws Clubhouse for, as coach or player, gets the files; one it draws Fairway for is refused as before.
+    if (!(await isClubhouseFor(session ? pickGolfDashboardRole(session) : null))) {
       return { error: 'Not available' };
     }
 

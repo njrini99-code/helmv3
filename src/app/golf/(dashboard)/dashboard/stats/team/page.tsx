@@ -9,6 +9,7 @@ import { getTeamStatsIntelligence } from '@/app/golf/actions/stats-intelligence'
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { isClubhouseFor } from '@/clubhouse/gate';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { ClubhouseStatsRoute } from '@/clubhouse/routes/stats';
 import { TeamStatsBoard } from '@/components/golf/stats/team-board/TeamStatsBoard';
 import { earliestTimestamp } from '@/components/golf/stats/team-board/teamStatsFreshness';
@@ -112,7 +113,8 @@ export default async function TeamStatsPage() {
   // Clubhouse: the old Team stats address opens the rebuilt Team stats in place
   // (a redirect() from a conditional branch is what crashed /stats, see the
   // note in ../page.tsx). Players never reach this page.
-  if ((await isClubhouseFor('coach'))) return <ClubhouseStatsRoute />;
+  // The role is the dashboard layout's (getGolfDashboardRole), as on ../page.tsx; Fairway below keeps the session's.
+  if ((await isClubhouseFor('coach')) && (await getGolfDashboardRole()) === 'coach') return <ClubhouseStatsRoute />;
 
   const supabase = await createClient();
 

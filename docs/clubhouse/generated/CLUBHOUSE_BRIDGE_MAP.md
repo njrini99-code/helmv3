@@ -104,17 +104,17 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Page | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | Total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P001 | 3 | 2 | 1 | 5 |  | 14 | 5 | 3 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 24 | 1 | 3 | 1 | 3 | 1 | 1 |  | 102 |
+| P001 | 3 | 2 | 1 | 6 |  | 14 | 5 | 3 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 25 | 1 | 3 | 1 | 3 | 1 | 1 |  | 104 |
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
-| P003 | 2 | 1 | 3 | 8 | 2 | 18 | 1 | 6 | 1 |  | 1 | 3 | 1 | 3 |  | 4 | 4 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 70 |
+| P003 | 2 | 2 | 3 | 8 | 2 | 19 | 1 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 73 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 2 | 2 | 22 | 2 | 19 | 3 | 6 | 1 |  |  | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 87 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 28 | 1 | 8 | 1 | 2 | 4 | 3 | 2 | 2 | 1 | 6 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 95 |
 | P007 | 2 | 10 | 1 | 9 | 5 | 35 | 1 | 2 | 2 | 1 | 3 | 2 | 1 | 2 | 1 | 6 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 97 |
-| P008 | 2 | 1 | 3 | 6 | 15 | 41 | 1 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 130 |
+| P008 | 2 | 1 | 3 | 6 | 15 | 41 | 2 | 8 | 3 | 3 | 7 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 131 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 33 | 4 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 133 |
-| P010 | 2 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 89 |
-| P011 | 15 | 11 |  | 16 | 10 | 37 | 14 | 5 | 2 |  | 20 | 2 | 1 | 4 | 3 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 172 |
+| P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
+| P011 | 15 | 12 |  | 17 | 11 | 39 | 14 | 5 | 2 |  | 21 | 2 | 1 | 4 | 3 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 1 |  | 178 |
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 3 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 80 |
 | P013 | 7 | 12 |  | 29 | 1 | 36 | 22 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 156 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
@@ -135,6 +135,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10403 | CH-1303 | 04 Empty | `THE_BELLS_FILTER_HAS_NOTHING` | implemented | The bell's filter has nothing |
 | 10404 | CH-1304 | 04 Empty | `NOTHING_IS_SCHEDULED` | implemented | Nothing is scheduled |
 | 10405 | CH-1305 | 04 Empty | `A_COACH_WITH_ONE_TEAM_A_COACH` | implemented | A coach with one team, a coach who cannot switch (an assistant on several teams), or a player |
+| 10406 | CH-1306 | 04 Empty | `A_DASHBOARD_URL_THAT_MATCHES_NOTHING_OR` | implemented | A dashboard URL that matches nothing, or an id that no longer exists (a deleted round or player), inside the Clubhouse shell |
 | 10601 | CH-1001 | 06 Server / system error | `MARK_ALL_READ_IN_THE_BELL_FAILS` | implemented | "Mark all read" in the bell fails |
 | 10602 | CH-1201 | 06 Server / system error | `THE_BELLS_LIST_DOESNT_LOAD` | implemented | The bell's list doesn't load |
 | 10603 | CH-1202 | 06 Server / system error | `THE_PAGE_WAS_BUILT_FOR_AN_OLDER` | implemented | The page was built for an older version |
@@ -144,7 +145,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10607 | CH-1206 | 06 Server / system error | `ANYTHING_ELSE_CRASHED_THE_PAGE` | implemented | Anything else crashed the page |
 | 10608 | CH-1207 | 06 Server / system error | `THE_SIDEBARS_NEXT_EVENT_DOESNT_LOAD` | implemented | The sidebar's next event doesn't load |
 | 10609 | CH-1208 | 06 Server / system error | `THE_ROSTER_BADGES_JOIN_REQUESTS_DONT_LOAD` | implemented | The Roster badge's join requests don't load |
-| 10610 | CH-1002 | 06 Server / system error | `SIGNING_OUT_FROM_THE_PHONES_MORE_SHEET` | implemented | Signing out from the phone's More sheet fails |
+| 10610 | CH-1002 | 06 Server / system error | `SIGNING_OUT_FROM_THE_PHONES_MORE_SHEET` | implemented | Signing out from the phone's account sheet fails |
 | 10611 | CH-1003 | 06 Server / system error | `SWITCHING_TEAM_FAILS` | implemented | Switching team fails (a head coach on more than one team) |
 | 10612 | CH-1209 | 06 Server / system error | `TWO_OR_MORE_PARTS_OF_A_PAGE` | implemented | Two or more parts of a page don't load |
 | 10613 | CH-1210 | 06 Server / system error | `TWO_OR_MORE_SECTIONS_OF_A_PAGE` | implemented | Two or more sections of a page crash in the browser |
@@ -162,7 +163,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 11401 |  | 14 Retry / recovery | `ROUTE_TRY_AGAIN` | implemented | A page that crashes shows its error view with Try again (Reload after an update), locked while it retries, the number of tries, and Back to Home. |
 | 11402 |  | 14 Retry / recovery | `TOAST_RETRY` | implemented | Every error toast from useAction carries Retry, which runs the same action with the same arguments again. |
 | 11601 | CH-1601 | 16 Micro animation | `MOVING_TO_ANOTHER_PAGE` | implemented | Moving to another page, or its first load |
-| 11602 | CH-1602 | 16 Micro animation | `OPENING_MORE_ON_A_PHONE` | implemented | Opening More on a phone |
+| 11602 | CH-1602 | 16 Micro animation | `OPENING_MORE_ON_A_PHONE` | implemented | Opening the account sheet on a phone (the strip's Account pill; once More) |
 | 11603 | CH-1603 | 16 Micro animation | `OPENING_THE_BELL_OR_ANY_MENU` | implemented | Opening the bell or any menu |
 | 11604 | CH-1604 | 16 Micro animation | `A_TOAST_ARRIVES_OR_LEAVES` | implemented | A toast arrives or leaves |
 | 11605 | CH-1605 | 16 Micro animation | `GOING_OFFLINE_OR_BACK_ONLINE` | implemented | Going offline or back online |
@@ -183,29 +184,29 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 11620 | CH-1620 | 16 Micro animation | `A_FINGER_OR_THE_POINTER_HOLDS_A` | implemented | A finger or the pointer holds a switch |
 | 11621 | CH-1621 | 16 Micro animation | `SCROLLING_THE_DESKTOP_CANVAS_WITH_A_MAC` | implemented | Scrolling the desktop canvas with a Mac trackpad |
 | 11622 | CH-1622 | 16 Micro animation | `PULLING_A_PHONE_PAGE_DOWN_FROM_ITS` | implemented | Pulling a phone page down from its top, in the iPhone app (CH-1909) |
-| 11701 | CH-1701 | 17 Haptic | `CHANGING_TABS` | implemented | Changing tabs (not tapping the tab they're on) |
+| 11701 | CH-1701 | 17 Haptic | `CHANGING_TABS` | reserved | Changing section (a strip pill or a committed swipe on the bar; not the section they're on) |
 | 11702 | CH-1702 | 17 Haptic | `ANY_SAVE_OR_SEND_LANDS` | implemented | Any save or send lands |
 | 11703 | CH-1703 | 17 Haptic | `ANY_SAVE_OR_SEND_FAILS` | implemented | Any save or send fails |
-| 11704 | CH-1704 | 17 Haptic | `OPENING_MORE_SWIPING_THE_SHEET_AWAY` | implemented | Opening More; swiping the sheet away |
+| 11704 | CH-1704 | 17 Haptic | `OPENING_MORE_SWIPING_THE_SHEET_AWAY` | implemented | Opening the account sheet; swiping it away |
 | 11705 | CH-1705 | 17 Haptic | `OPENING_THE_BELL_A_NOTIFICATION_OR_A` | implemented | Opening the bell, a notification, or a menu item |
 | 11706 | CH-1706 | 17 Haptic | `THE_CONNECTION_DROPS` | implemented | The connection drops |
 | 11707 | CH-1707 | 17 Haptic | `PICKING_ANOTHER_TEAM_IN_THE_SWITCHER` | implemented | Picking another team in the switcher |
 | 11708 | CH-1708 | 17 Haptic | `A_FINGER_SCRUBS_A_SLIDER` | implemented | A finger scrubs a slider |
 | 11709 | CH-1709 | 17 Haptic | `A_PULL_TO_REFRESH_PASSES_ITS_TRIGGER` | implemented | A pull to refresh passes its trigger (the iPhone app, CH-1909) |
 | 11801 | CH-1801 | 18 Accessibility | `THE_FIRST_TAB_ON_ANY_PAGE_OFFERS` | implemented | The first Tab on any page offers "Skip to content", which jumps past the navigation to the page |
-| 11802 | CH-1802 | 18 Accessibility | `THE_PHONE_MORE_SHEET_IS_MODAL_FOCUS` | implemented | The phone More sheet is modal: focus moves in without scrolling, Tab stays inside, Esc closes it and focus returns to More without scrolling. The underlying page stays stationary until the full exit completes |
-| 11803 | CH-1803 | 18 Accessibility | `THE_CURRENT_PAGE_IS_MARKED_IN_THE` | implemented | The current page is marked in the sidebar and tab bar; the sidebar and its navigation are named landmarks; breadcrumbs mark the current page |
+| 11802 | CH-1802 | 18 Accessibility | `THE_PHONE_MORE_SHEET_IS_MODAL_FOCUS` | implemented | The phone account sheet (the section strip's last pill; once the More sheet) is modal: focus moves in without scrolling, Tab stays inside, Esc closes it and focus returns to the section title without scrolling. It holds who you are, the coach's team switch, Help and Sign out. The underlying page stays stationary until the full exit completes |
+| 11803 | CH-1803 | 18 Accessibility | `THE_CURRENT_PAGE_IS_MARKED_IN_THE` | reserved | The current page is marked in the sidebar and tab bar; the sidebar and its navigation are named landmarks; breadcrumbs mark the current page |
 | 11804 | CH-1804 | 18 Accessibility | `TOASTS_ARE_ANNOUNCED_CONFIRMATIONS_POLITELY_ERRORS_RIGHT` | implemented | Toasts are announced: confirmations politely, errors right away |
 | 11805 | CH-1805 | 18 Accessibility | `THE_BELL_PANEL_IS_A_DIALOG_IT` | implemented | The bell panel is a dialog: it takes focus on open, Esc closes it, and the filter menu works by keyboard |
 | 11806 | CH-1806 | 18 Accessibility | `EVERY_CONTROL_SHOWS_A_FOCUS_RING_ON` | reserved | Every control shows a focus ring on keyboard focus; text fields show their own green or ink ring instead, never two |
 | 11807 | CH-1807 | 18 Accessibility | `NO_AXE_VIOLATIONS_WITH_THE_BELL_OPEN` | reserved | No axe violations (WCAG 2.2 AA, contrast included) with the bell open (a sheet on the phone) and the More sheet open |
-| 11808 | CH-1808 | 18 Accessibility | `THE_PHONE_TAB_BAR_LISTS_THE_ROLES` | implemented | The phone tab bar lists the role's tabs (coach: Home, CoachHelm, Calendar, Stats, More; player: Home, CoachHelm, Rounds, Team Hub, More; D-66), and when Messages is under More, More is named with its unread count ("More, 3 unread messages") |
+| 11808 | CH-1808 | 18 Accessibility | `THE_PHONE_TAB_BAR_LISTS_THE_ROLES` | implemented | The phone section strip (section-strip.md) lists the role's sections, the old tabs first (coach: Home, CoachHelm, Calendar, Stats; player: Home, CoachHelm, Rounds, Team Hub; D-66), then the sidebar's order, then Settings and the Account pill; the current one is `aria-current`; a pill with a count is named with it ("Messages 3 new"). Shut, it is hidden and inert |
 | 11809 | CH-1809 | 18 Accessibility | `A_PUSHED_PHONE_SCREEN_IS_NAMED_BY` | implemented | A pushed phone screen is named by its title, and focus moves to that title; while it is up, the shell's top bar and tab bar are inert, so VoiceOver can't wander behind it |
 | 11810 | CH-1810 | 18 Accessibility | `ON_THE_PHONE_THE_TOP_BAR_NAMES` | implemented | On the phone the top bar names the page; a page with its own top (`PhoneTop`) gets a back link named for where it goes ("Back to More") in place of the bell |
-| 11811 | CH-1811 | 18 Accessibility | `ON_THE_PHONE_THE_BELL_OPENS_AS` | implemented | On the phone the bell opens as a modal sheet instead of a popover: focus moves in, Tab stays inside, Esc, Close or the scrim close it and focus returns to the bell; the edge swipe is off while it is up |
+| 11811 | CH-1811 | 18 Accessibility | `ON_THE_PHONE_THE_BELL_OPENS_AS` | implemented | On the phone the bell drops the feed as lock-screen stacks under a green veil (`BellStacks`, notification-stacks.ts) instead of a popover: a modal dialog; focus moves in, Tab stays inside, Esc, a tap on the open space, the bell or a drag up closes it and focus returns to the bell; the edge swipe is off while it is up |
 | 11812 | CH-1812 | 18 Accessibility | `A_TOAST_RAISED_WHILE_A_DIALOG_OR` | implemented | A toast raised while a dialog or sheet is open shows inside it (on the phone, from the top), so it is seen, announced and its Retry can be tapped; a modal dialog makes everything outside it inert, which had hidden them. When the dialog closes, open toasts move back to the page |
 | 11813 | CH-1813 | 18 Accessibility | `ON_A_DESKTOP_A_HEAD_COACH_ON` | implemented | On a desktop a head coach on more than one team sees the sidebar's team line as a menu button (the boards' up-down chevrons): it opens a listbox of the teams with the current one `aria-selected`; arrows, Home and End move, Enter or Space picks, Esc or Tab closes and focus returns to the button; a pick switches at once and every screen re-reads for the new team |
-| 11814 | CH-1814 | 18 Accessibility | `ON_THE_PHONE_THE_SAME_COACH_SEES` | implemented | On the phone the same coach sees their teams in the More sheet, under who they are, the current one marked (`aria-current`); a switch closes the sheet on the new team, a refused one leaves it open with the reason |
+| 11814 | CH-1814 | 18 Accessibility | `ON_THE_PHONE_THE_SAME_COACH_SEES` | implemented | On the phone the same coach sees their teams in the account sheet, under who they are, the current one marked (`aria-current`); a switch closes the sheet on the new team, a refused one leaves it open with the reason |
 | 11815 | CH-1815 | 18 Accessibility | `ON_THE_PHONE_EVERY_KEY_A_FINGER` | implemented | On the phone every key a finger uses reaches at least 44 by 44: the bar's back link and text action (a pushed screen's bar has the shell bar's 44px row, with no hairline), the hero bell (its 40px disc drawn inside a 44px key, where it was), a sheet's Close (its reach leans up into the header's padding, so a title-only header no longer clips it to 43), and the search field (36px drawn, 44px to the finger; its input and clear key take their own taps, and its 16px text keeps iOS from zooming the page on focus). Measured in WebKit at 390 on 2026-10-08 |
 | 11816 | CH-1820 | 18 Accessibility | `ON_THE_PHONE_THE_DOCK_THE_BAND` | implemented | On the phone the dock, the band just above the tab bar, carries a page's primary controls (`ThumbDock`) and the Resume round accessory; it hides with the tab bar (a pushed screen, a full-page form) and while a field has focus (the keyboard), and the canvas grows by its height so the last row clears it. Empty, it is not drawn |
 | 11817 | CH-1821 | 18 Accessibility | `ON_THE_PHONE_WHILE_THE_PLAYER_HAS` | implemented | On the phone, while the player has a round in progress (touched in the last 12 hours), a parchment accessory above the tab bar reads “Round in progress, Oakmont CC · Hole 7”; one tap opens the shot screen. Not shown on the round's own screens or for a round whose screen isn't rebuilt |
@@ -216,9 +217,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 11822 | CH-1840 | 18 Accessibility | `A_COACHS_TOP_BAR_CARRIES_AN_ASK` | implemented | A coach's top bar carries an Ask key (desktop and phone; only while CoachHelm is on for the coach, not on CoachHelm itself, and never for a player): it opens the Ask sheet over the page |
 | 11823 | CH-1841 | 18 Accessibility | `THE_ASK_SHEET_IS_COACHHELMS_ASK_OVER` | implemented | The Ask sheet is CoachHelm's Ask over any screen: the same chat hook and route (no new model or spend), the thread and the message box, saved like any chat; Open in CoachHelm goes to it there. Phone: a bottom sheet that opens at half height with the page in view and grows to full when a thread starts (the grab or the chevron toggles); desktop: a centred sheet. Its heading takes focus, Esc, Close or the backdrop close it, and a new page (or another player) closes it and starts the next one fresh; in the app it sits above the keyboard |
 | 11824 | CH-1842 | 18 Accessibility | `THE_SHEET_NAMES_WHAT_THE_COACH_IS` | implemented | The sheet names what the coach is looking at (“Looking at: Stats · Jonah Okafor”, from the page's trail or the navigation); a page about one player (`?player=`) also hands the chat that player as its context chip |
+| 11825 | CH-1816 | 18 Accessibility | `ON_THE_PHONE_THE_SECTIONS_NAME_IN` | implemented | On the phone the section's name in the top bar is the section switcher: a button with a chevron (`aria-expanded`, `aria-controls="ch-strip"`) that opens the section strip, with a dot and a spoken note while another section has something new; on a section's own page a pull down on the bar draws the strip and a sideways swipe steps to the next section |
 | 11901 |  | 19 Responsive layout | `PHONE_CHROME` | implemented | On a phone the sidebar gives way to the role's tab bar (coach Home, CoachHelm, Calendar, Stats; player Home, CoachHelm, Rounds, Team Hub) and a More sheet with the rest. |
 | 12001 | CH-1906 | 20 Keyboard / input | `ON_THE_PHONE_THE_EDGE_SWIPE_OR` | implemented | On the phone, the edge swipe or the browser's back while a screen is pushed |
-| 12002 | CH-1907 | 20 Keyboard / input | `ON_THE_PHONE_TAPPING_THE_TAB_THAT` | implemented | On the phone, tapping the tab that is already open |
+| 12002 | CH-1907 | 20 Keyboard / input | `ON_THE_PHONE_TAPPING_THE_TAB_THAT` | implemented | On the phone, tapping the strip's pill for the section already open |
 | 12003 | CH-1908 | 20 Keyboard / input | `ON_IOS_A_BACK_THAT_SAFARI_OR` | implemented | On iOS, a Back that Safari or the app's WebView animated itself (the edge swipe; `PopStateEvent.hasUAVisualTransition`, Safari 18 and later) |
 | 12101 | CH-1954 | 21 Performance | `THE_PAGE_IS_SLOW_TO_RESPOND_OR` | implemented | The page is slow to respond or shifts after loading (INP, CLS, LCP) |
 | 12201 | CH-1951 | 22 Analytics | `SOMEONE_CLICKS_THE_SAME_THING_OVER_AND` | implemented | Someone clicks the same thing over and over (rage click) |
@@ -299,6 +301,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30101 |  | 01 Default / core UI | `ROSTER_READY` | implemented | Roster opens with the team line, the join requests, Needs a look and the active players as cards by scoring average, all from the server's first render; on the phone, the list screen with the same players as rows. |
 | 30102 |  | 01 Default / core UI | `DEEP_LINK_OPENS_PROFILE` | implemented | On the phone, a link with ?player=<golf_players.id> opens that player's profile once and the address is cleaned; an id that is not on this roster opens the list and nothing else. Desktop ignores ?player=. |
 | 30201 | CH-3401 | 02 Initial loading / skeleton | `ROSTER_IS_LOADING` | implemented | Roster is loading |
+| 30202 | CH-3404 | 02 Initial loading / skeleton | `A_STATUS_CHANGE_IS_IN_FLIGHT` | implemented | A status change is in flight |
 | 30301 | CH-3402 | 03 Background loading / refresh | `A_REMOVE_IS_IN_FLIGHT` | implemented | A remove is in flight |
 | 30302 | CH-3403 | 03 Background loading / refresh | `APPROVE_ALL_IS_IN_FLIGHT` | implemented | Approve all is in flight (phone join requests sheet, D-55) |
 | 30303 |  | 03 Background loading / refresh | `ROSTER_FOLLOWS_A_REFRESH` | implemented | When the server sends the page again (Try again, or the page a write revalidated), the players and join requests on screen become the new ones: an approved player appears, and a read that failed and now succeeds shows the players, never No players yet. |
@@ -330,6 +333,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30616 | CH-3209 | 06 Server / system error | `THIS_COACHS_NOTES_DONT_LOAD` | implemented | This coach's notes don't load |
 | 30617 | CH-3210 | 06 Server / system error | `THE_PLAYERS_ROSTER_DOESNT_LOAD` | implemented | The player's roster doesn't load (a player's own team's members) |
 | 30618 | CH-3211 | 06 Server / system error | `THE_PLAYERS_ROSTER_LIST_CRASHES` | implemented | The player's roster list crashes |
+| 30619 | CH-3008 | 06 Server / system error | `CHANGING_A_PLAYERS_STATUS_FAILS` | implemented | Changing a player's status (Active or Inactive) fails |
 | 30701 |  | 07 Network / offline | `WRITES_REFUSED_OFFLINE` | implemented | Offline, every Roster write (a removal, an approval, a decline, Approve all, a note) is refused before anything is sent, the toast names what did not happen, and nothing on screen changes; Export, Copy and the filters are local and keep working. |
 | 30801 |  | 08 Permission / authorization | `COACH_ONLY_ROSTER` | implemented | The coach's roster (the list with its figures, the coach's notes, the join requests, Invite, Export and the player panel) is a coach's: the page hands it over for a coach with the flag on, the route checks the session again before any read, and a player is handed their own read-only roster (30804), never this one, its loader, the notes or the join requests. |
 | 30802 |  | 08 Permission / authorization | `NOTES_PRIVATE_TO_THE_COACH` | implemented | The loader reads the members of the coach's active team (active and inactive only) and only the notes this coach wrote (coach_id), so another coach's note about the same player is never loaded. |
@@ -339,6 +343,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30806 |  | 08 Permission / authorization | `PLAYER_ON_A_ROSTER_ADDRESS_GOES_TO_THE_LIST` | implemented | With Clubhouse on, a player who opens /roster/[id] (an old link) goes to the roster, since a teammate has no page; a coach goes to that player's Stats. |
 | 30901 |  | 09 Success | `CHANGE_LANDED` | implemented | A change that lands names itself in a toast (added, declined, note saved, removed) with one success haptic; a removal also closes the dialog and the player's panel or profile. |
 | 31101 | CH-3501 | 11 Destructive | `REMOVE_FROM_TEAM` | implemented | Remove from team (row menu; on the phone, the profile's ⋯ sheet) |
+| 31102 | CH-3502 | 11 Destructive | `MARK_INACTIVE_MARK_ACTIVE` | implemented | Mark inactive / Mark active (coach only: row menu; on the phone, the profile's ⋯ sheet) |
 | 31201 |  | 12 State preservation | `NOTE_KEPT_ON_FAILURE` | implemented | A note that fails to save stays in the field, and the toast says so; leaving the field again or the toast's Retry saves it. |
 | 31202 |  | 12 State preservation | `LAYOUT_REMEMBERED` | implemented | The cards or list choice is stored on the device (ch-roster-view) and applied when Roster opens; a device that refuses storage still switches for the visit. Search, filter and sort are not kept. |
 | 31203 |  | 12 State preservation | `SAVED_NOTE_READS_BACK` | implemented | A saved note is written into the roster the screen holds, so closing a player and opening them again, on desktop or the phone, shows the new text; an emptied note reads back empty. |
@@ -803,6 +808,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 80640 | CH-8213 | 06 Server / system error | `THE_ASSISTANT_COACH_REQUESTS_DONT_LOAD` | implemented | The assistant coach requests don't load (head coach) |
 | 80641 | CH-8029 | 06 Server / system error | `SEND_A_TEST_PUSH_FAILS` | implemented | Send a test push fails (P008-C3, D1-6) |
 | 80701 |  | 07 Network / offline | `INSTANT_SAVE_REFUSED_OFFLINE` | implemented | While the browser is offline a switch, or a CoachHelm autosave, is refused before it changes anything: it stays where it was, nothing is sent, the error haptic fires and an error toast (CH-1903) says nothing was changed. |
+| 80702 | CH-8901 | 07 Network / offline | `CUSTOMER_EMAIL_IS_SWITCHED_OFF_FOR_EVERYONE` | implemented | Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED` is not `true`, `src/lib/email/outbound-gate.ts`), so no email setting can send anything |
 | 80801 |  | 08 Permission / authorization | `SECTIONS_BY_ROLE` | implemented | The rail lists only the sections the role has (coach: Account, Notifications, Team, CoachHelm, Preferences; player: Account, Golf profile, Notifications, Preferences), and a link naming a section the role does not have opens Account. |
 | 80802 |  | 08 Permission / authorization | `COACHING_LINK_BY_ROLE` | implemented | The old /settings/coaching-intelligence link opens the CoachHelm section for a coach; a player lands on their own Settings (Account) instead of a coach-only page. |
 | 80803 |  | 08 Permission / authorization | `NO_PROFILE_NO_PAGE` | implemented | The Settings route renders nothing, and reads nothing, for a session that has neither a coach nor a player profile, and the old notifications and coaching links send a signed-out visitor to /golf/login. |
@@ -1009,6 +1015,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | --- | --- | --- | --- | --- | --- |
 | 100101 |  | 01 Default / core UI | `HUB_READY` | implemented | Team Hub opens on Home for a coach and for a player in the same frame: the role pill, the title, the team and season, and the tabs (Home, Announcements, Travel, Documents, and Tasks for a coach). A player's Home shows their RSVPs, the post waiting on them, the next trip, Updates and their tasks; a coach's shows this week's replies as counts, the newest post with its read receipts, the next trip and Updates, and a coach also gets New announcement. |
 | 100102 |  | 01 Default / core UI | `TAB_LINK_OPENS_A_TAB` | implemented | ?tab=home\|ann\|travel\|docs\|tasks opens that tab; a tab the role does not have (tasks, for a player) or a value that is not a tab opens Home. |
+| 100103 |  | 01 Default / core UI | `TASK_LINK_OPENS_THE_TASK` | implemented | ?task=<id> (a task notification, carried through the old /tasks address) scrolls that task's row into view on the coach's Tasks tab or the player's Your tasks and lights it once (a fade; with reduced motion a still wash until the row is used). A task that is not in the shown rows, or a value that is not an id, is ignored; completing the task or a later render never scrolls back to it. |
 | 100201 | CH-10401 | 02 Initial loading / skeleton | `FILES_ARE_UPLOADING` | implemented | Files are uploading |
 | 100202 | CH-10402 | 02 Initial loading / skeleton | `A_POST_IS_BEING_SENT` | implemented | A post is being sent |
 | 100203 | CH-10403 | 02 Initial loading / skeleton | `A_TRIP_IS_BEING_SAVED` | implemented | A trip is being saved |
@@ -1121,12 +1128,13 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110203 | CH-11403 | 02 Initial loading / skeleton | `THE_COURSE_LIBRARY_IS_LOADING` | implemented | The course library is loading |
 | 110204 | CH-11404 | 02 Initial loading / skeleton | `A_COURSES_TEES_ARE_LOADING` | implemented | A course's tees are loading |
 | 110205 | CH-11405 | 02 Initial loading / skeleton | `THE_PICKED_TEES_SCORECARD_IS_LOADING` | implemented | The picked tees' scorecard is loading |
-| 110206 |  | 02 Initial loading / skeleton | `REVIEW_LOADS_UNDER_A_CLUBHOUSE_SKELETON` | reserved | A round's review loads under a Clubhouse skeleton inside the shell. Not built: rounds/[id]/loading.tsx is Fairway's (it has no ClubhouseSwitch, and there is no catalog row for it), so a Clubhouse review shows the Fairway skeleton first; the library's is CH-11401 through rounds/loading.tsx. No test covers it. The same class of gap Team Hub closed with CH-10405. |
+| 110206 |  | 02 Initial loading / skeleton | `REVIEW_LOADS_UNDER_A_CLUBHOUSE_SKELETON` | implemented | A round's review loads under the Clubhouse review skeleton (CH-11406) inside the shell, at /rounds/[id] and at the old /rounds/[id]/review address (which redirects there inside Clubhouse); outside the shell both keep Fairway's skeleton. |
 | 110207 | CH-11406 | 02 Initial loading / skeleton | `A_ROUNDS_REVIEW_IS_LOADING` | implemented | A round's review is loading |
 | 110208 | CH-11407 | 02 Initial loading / skeleton | `ROUND_ENTRY_IS_ON_ITS_WAY_THE` | implemented | Round entry is on its way: the address's own loading, and, on /rounds/new, the beat before the device's day and the player's qualifiers are read |
 | 110209 | CH-11408 | 02 Initial loading / skeleton | `ROUND_RECOVERY_ROUTE_LOADING` | implemented | Round recovery route loading |
 | 110210 | CH-11409 | 02 Initial loading / skeleton | `READING_THE_DEVICE_FOR_SAVED_ROUNDS` | implemented | Reading the device for saved rounds |
 | 110211 | CH-11410 | 02 Initial loading / skeleton | `THE_ROUNDS_LIBRARY_IS_REFRESHING_WITH_THE` | implemented | The Rounds library is refreshing (a Try again is running) with the page on screen |
+| 110212 | CH-11411 | 02 Initial loading / skeleton | `A_ROUND_TYPE_CHANGE_IS_IN_FLIGHT` | implemented | A round-type change is in flight |
 | 110401 | CH-11301 | 04 Empty | `NO_ROUND_POSTED_AND_NONE_IN_PROGRESS` | implemented | No round posted and none in progress |
 | 110402 | CH-11302 | 04 Empty | `ROUNDS_POSTED_BUT_NO_COUNTABLE_18_HOLE` | implemented | Rounds posted, but no countable 18-hole round since August 1 |
 | 110403 | CH-11303 | 04 Empty | `A_COURSE_SEARCH_MATCHES_NOTHING` | implemented | A course search matches nothing |
@@ -1143,6 +1151,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110414 | CH-11313 | 04 Empty | `A_ROUND_WITH_NO_STROKES_GAINED` | implemented | A round with no strokes gained (posted without shots) |
 | 110415 | CH-11314 | 04 Empty | `NOTHING_ON_THIS_DEVICE_TO_RECOVER` | implemented | Nothing on this device to recover |
 | 110416 | CH-11315 | 04 Empty | `COMPLETED_ROUNDS_WITH_NO_SCORE_AT_ALL` | implemented | Completed rounds with no score at all (no total and no nines) |
+| 110417 | CH-11316 | 04 Empty | `CHANGE_ROUND_TYPE_THE_PLAYER_IS_IN` | implemented | Change round type: the player is in no qualifier |
 | 110501 | CH-11101 | 05 Validation | `NEXT_SHOT_CANT_BE_RECORDED_YET` | implemented | Next shot can't be recorded yet |
 | 110502 | CH-11102 | 05 Validation | `A_SHOT_IS_POSSIBLE_BUT_UNUSUAL` | implemented | A shot is possible but unusual (a 420-yard drive onto the green; a shot that ends farther away) |
 | 110503 | CH-11103 | 05 Validation | `A_SHOT_THAT_CANT_HAPPEN` | implemented | A shot that can't happen (a 540-yard drive onto the green) |
@@ -1153,6 +1162,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110508 | CH-11108 | 05 Validation | `ADDING_A_COURSE_A_STEP_ISNT_COMPLETE` | implemented | Adding a course: a step isn't complete |
 | 110509 | CH-11109 | 05 Validation | `THE_ROUNDS_DATE_IS_AFTER_TODAY` | implemented | The round's date is after today |
 | 110510 |  | 05 Validation | `START_NAMES_THE_ONE_THING_STOPPING_IT` | implemented | Start round is off until the setup is complete, and the dock names the one thing stopping it, in the order a player fixes it: no course ("Choose a course to start"), no date, a date after today (CH-11109), the qualifier round when the type is Qualifier, a 9-hole card played as 9, then the first hole with no yardage or a yardage over 999 (CH-11107). While the scorecard loads or fails to load, the dock says so instead. |
+| 110511 | CH-11110 | 05 Validation | `CHANGE_ROUND_TYPE_EVERY_ROUND_OF_THE` | implemented | Change round type: every round of the chosen qualifier already holds one of the player's other rounds |
 | 110601 | CH-11001 | 06 Server / system error | `DISCARDING_AN_UNFINISHED_ROUND_FAILS` | implemented | Discarding an unfinished round fails |
 | 110602 | CH-11201 | 06 Server / system error | `THE_POSTED_ROUNDS_DONT_LOAD` | implemented | The posted rounds don't load |
 | 110603 | CH-11202 | 06 Server / system error | `THE_ROUND_IN_PROGRESS_CHECK_FAILS` | implemented | The round-in-progress check fails |
@@ -1190,6 +1200,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110635 | CH-11216 | 06 Server / system error | `A_REVIEWS_SUPPORTING_READS_FAIL_THE_TEE` | implemented | A review's supporting reads fail: the tee (its yardage) or, for a coach, the player's name |
 | 110636 | CH-11217 | 06 Server / system error | `A_REVIEWS_TEAM_READ_FAILS_SO_WHICH` | implemented | A review's team read fails, so which Tour the strokes gained is measured against is unknown |
 | 110637 | CH-11213 | 06 Server / system error | `A_REFRESH_OF_THE_ROUNDS_LIBRARY_FAILS` | implemented | A refresh of the Rounds library fails while the page already shows rounds (Try again, or any server render of the page, whose read of the posted rounds or of the round in progress failed) |
+| 110638 | CH-11020 | 06 Server / system error | `CHANGING_A_LIVE_ROUNDS_TYPE_FAILS` | implemented | Changing a live round's type fails (Continue round) |
+| 110639 | CH-11218 | 06 Server / system error | `CHANGE_ROUND_TYPE_THE_PLAYERS_QUALIFIER_ENTRIES` | implemented | Change round type: the player's qualifier entries (or the slots their rounds hold) didn't load |
 | 110701 | CH-11901 | 07 Network / offline | `THE_ROUND_SAVES_IN_THE_BACKGROUND` | implemented | The round saves in the background |
 | 110702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | reserved | Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says "Reconnect, then try again."). Round entry's Start and Save for later are forced offline in round-entry-wiring.test (CH-1903: nothing is sent, and a browser that says offline but reaches the server goes ahead); the library's Discard and the hole's Try again are not, so this stays reserved. The shell's tests cover useAction's refusal. |
 | 110703 | CH-11902 | 07 Network / offline | `THE_ROUND_CHANGED_ON_ANOTHER_DEVICE_AND` | implemented | The round changed on another device and this one stopped saving |
@@ -1231,6 +1243,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 111118 | CH-11518 | 11 Destructive | `A_SAVED_QUALIFIER_ROUND_WITH_NO_ROUND` | implemented | A saved qualifier round with no round number (it predates the durable number) is finished and submitted |
 | 111119 | CH-11519 | 11 Destructive | `THE_SAME_AND_NO_ROUND_IS_LEFT` | implemented | The same, and no round is left to choose |
 | 111120 | CH-11520 | 11 Destructive | `DISCARD_ON_A_SAVED_ROUND` | implemented | Discard on a saved round (Recover) |
+| 111121 | CH-11521 | 11 Destructive | `CHANGE_ROUND_TYPE` | implemented | Change round type (Continue round: the Exit sheet's "Change round type" row, "Practice now. Changes what it counts toward.") |
 | 111201 |  | 12 State preservation | `SETUP_KEPT_WHEN_START_FAILS` | reserved | A Start that fails leaves the setup as it was: the course and tees, the type, the date, the holes as edited and the qualifier all stay, and Start can be pressed again or retried from the toast (CH-11007); nothing is cleared until the round opens. Read in this pass: the CH-11007 test proves that Retry opens the round, not that every field is kept, so no test covers this. |
 | 111202 |  | 12 State preservation | `SHOTS_STAY_WHEN_A_HOLE_DOESNT_SAVE` | reserved | When a holed-out hole does not save, the shot review stays with every shot listed and Try again (CH-11003); the round does not move on until the save lands, and the card says the shots are kept on this device (the engine's own copy). The test forces the failure and the retry, not the kept shots, so no test covers this. |
 | 111301 |  | 13 Optimistic UI | `DISCARD_WAITS_FOR_THE_SERVER` | implemented | Nothing on the library is optimistic: Discard keeps the card until the server has deleted the round, and the card leaves only on success, from the question or from Retry. The device's emergency copy is cleared only when the delete worked. |

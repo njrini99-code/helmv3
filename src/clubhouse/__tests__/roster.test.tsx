@@ -30,8 +30,10 @@ const actions = vi.hoisted(() => ({
   reject: vi.fn(),
   requests: vi.fn(),
   intent: vi.fn(),
+  status: vi.fn(),
 }));
 vi.mock('@/app/golf/actions/roster', () => ({ removePlayerFromTeam: actions.remove }));
+vi.mock('@/app/golf/actions/team-management', () => ({ updatePlayerStatus: actions.status }));
 vi.mock('@/app/golf/actions/teams', () => ({ acceptJoinRequest: actions.accept, rejectJoinRequest: actions.reject, getTeamJoinRequests: actions.requests }));
 vi.mock('@/app/golf/actions/v3/intent', () => ({ setIntent: actions.intent }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: vi.fn() }));
@@ -202,6 +204,66 @@ describe('Roster · saves that fail', () => {
     await user.click(screen.getAllByRole('button', { name: 'Invite players' })[0]!);
     await user.click((await screen.findAllByRole('button', { name: 'Copy' }))[0]!);
     await expectCode('CH-3006', /Couldn’t copy the join code/);
+  });
+});
+
+describe('Roster · player status (Active / Inactive)', () => {
+  async function openStatus(user: ReturnType<typeof userEvent.setup>, name = theo.name, item = 'Mark inactive') {
+    await toList(user);
+    await user.click(screen.getByRole('button', { name: `Actions for ${name}` }));
+    await user.click(await screen.findByRole('menuitem', { name: item }));
+  }
+  afterEach(() => {
+    delete (window.navigator as unknown as Record<string, unknown>).onLine;
+  });
+
+  it('CH-3502 CH-3404 CH-3008 marking a player inactive asks first, waits while it saves, and a failure keeps the player active and the dialog open', async () => {
+    const user = userEvent.setup();
+    let settle!: (v: { success: boolean; error?: string }) => void;
+    actions.status.mockImplementation(() => new Promise((r) => (settle = r)));
+    wrap(roster());
+    await openStatus(user);
+    await expectCode('CH-3502', /Move Theo Marchetti to Inactive on Varsity\?/);
+    expect(code('CH-3502')!.textContent).toMatch(/stay on the team with their account and stats/);
+    await user.click(within(code('CH-3502') as HTMLElement).getByRole('button', { name: 'Mark inactive' }));
+    expect(actions.status).toHaveBeenCalledWith(theo.id, 'inactive');
+    await expectCode('CH-3404', /Saving/);
+    expect((code('CH-3404')!.closest('button') as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => settle({ success: false, error: 'Failed to update player status' }));
+    await expectCode('CH-3008', /Couldn’t mark Theo Marchetti inactive/);
+    expect((code('CH-3502') as HTMLDialogElement).hasAttribute('open')).toBe(true);
+    // Not destructive: no warning haptic before the write (D-70), and the row still reads Active.
+    expect(hapticSpy).not.toHaveBeenCalledWith('warning');
+    const row = screen.getByRole('button', { name: `${theo.name}. Open profile` }).closest('[role="row"]') as HTMLElement;
+    expect(within(row).getByText('Active')).toBeTruthy();
+  });
+
+  it('CH-3502 a status change that lands says so, moves the player to Inactive, and the menu then offers Mark active', async () => {
+    const user = userEvent.setup();
+    actions.status.mockResolvedValue({ success: true });
+    wrap(roster());
+    await openStatus(user);
+    await user.click(within(code('CH-3502') as HTMLElement).getByRole('button', { name: 'Mark inactive' }));
+    await waitFor(() => expect(screen.getByText('Theo Marchetti marked inactive')).toBeTruthy());
+    expect(hapticSpy).toHaveBeenCalledWith('success');
+    // Under Active he is gone; under Inactive he is listed, and his menu turns him back.
+    expect(screen.queryByRole('button', { name: `${theo.name}. Open profile` })).toBeNull();
+    await user.click(screen.getByRole('button', { name: /^Inactive/ }));
+    await openStatus(user, theo.name, 'Mark active');
+    await expectCode('CH-3502', /Move Theo Marchetti back to the active roster of Varsity\?/);
+    await user.click(within(code('CH-3502') as HTMLElement).getByRole('button', { name: 'Mark active' }));
+    expect(actions.status).toHaveBeenLastCalledWith(theo.id, 'active');
+    await waitFor(() => expect(screen.getByText('Theo Marchetti marked active')).toBeTruthy());
+  });
+
+  it('CH-3502 CH-1903 offline, nothing is sent and the coach is told', async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => false });
+    wrap(roster());
+    await openStatus(user);
+    await user.click(within(code('CH-3502') as HTMLElement).getByRole('button', { name: 'Mark inactive' }));
+    await expectCode('CH-1903', /Couldn’t mark Theo Marchetti inactive: you’re offline/);
+    expect(actions.status).not.toHaveBeenCalled();
   });
 });
 
@@ -547,13 +609,12 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
       .map((b) => b.getAttribute('aria-label')!.split(',')[0]);
   const profileHeading = (name: string) => screen.queryByRole('heading', { level: 2, name });
 
-  it('the top bar reads "‹ More", Roster, and Invite players, which opens the invite sheet', async () => {
+  it('the top bar is the section title Roster (no "‹ More") and Invite players, which opens the invite sheet', async () => {
     const user = userEvent.setup();
     phone(roster());
     const top = screen.getByTestId('phone-top');
     expect(within(top).getByRole('heading', { level: 1, name: 'Roster' })).toBeTruthy();
-    await user.click(within(top).getByRole('button', { name: 'Back to More' }));
-    expect(router.back.mock.calls.length + router.push.mock.calls.length).toBeGreaterThan(0);
+    expect(within(top).queryByRole('button', { name: 'Back to More' })).toBeNull();
     await user.click(within(top).getByRole('button', { name: 'Invite players' }));
     expect(await screen.findByText('FINLEY-26')).toBeTruthy();
     // An icon action that isn't a primary button is silent (D-70).
@@ -634,6 +695,22 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     await user.click(screen.getByRole('button', { name: 'Remove player' }));
     await waitFor(() => expect(profileHeading('Theo Marchetti')).toBeNull());
     expect(screen.queryByRole('button', { name: /^Theo Marchetti/ })).toBeNull();
+  });
+
+  it("CH-3502 the profile's ⋯ sheet marks a player inactive, asking first", async () => {
+    const user = userEvent.setup();
+    actions.status.mockResolvedValue({ success: true });
+    window.history.replaceState(null, '', '/golf/dashboard/roster?player=theo');
+    phone(roster());
+    await user.click(screen.getByRole('button', { name: 'More actions' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Theo Marchetti' });
+    await user.click(within(sheet).getByRole('button', { name: 'Mark inactive' }));
+    await expectCode('CH-3502', /Move Theo Marchetti to Inactive on Varsity\?/);
+    await user.click(within(code('CH-3502') as HTMLElement).getByRole('button', { name: 'Mark inactive' }));
+    expect(actions.status).toHaveBeenCalledWith('theo', 'inactive');
+    // The open profile reads the new status in its identity line (D-58).
+    await waitFor(() => expect(screen.getByText(/· Inactive$/)).toBeTruthy());
+    expect(screen.getByRole('heading', { level: 2, name: 'Theo Marchetti' })).toBeTruthy();
   });
 
   it('the join requests banner opens the sheet; approving one leaves the banner counting the rest', async () => {

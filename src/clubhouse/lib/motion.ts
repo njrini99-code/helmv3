@@ -40,10 +40,13 @@ export function chTween(duration: keyof typeof CH_DUR = 'base', reduced = false)
  * plate carry their speed through the sampled curve (chSpringCurve, sheet-drag's chThrownExit).
  *   smooth  anchored parts, which never pass their mark from rest: sheets, pushed screens, the nav plate.
  *   settle  a free part arriving: the segmented pill, a swap's incoming copy.
+ *   reveal  a layer that comes over the whole screen and should glide, not snap: the phone notification drop
+ *           (owner 2026-10-12, "ultra smooth"). D-64's reveal duration, no bounce. It leaves on smooth.
  */
 export const CH_SPRINGS = {
   smooth: { visualDuration: CH_DUR.base, bounce: 0 },
   settle: { visualDuration: CH_DUR.base, bounce: 0.1 },
+  reveal: { visualDuration: CH_DUR.reveal, bounce: 0 },
 } as const;
 export type ChSpringKind = keyof typeof CH_SPRINGS;
 
@@ -113,27 +116,30 @@ export function chSpringCurve(
 }
 
 /** A panel's content swap inside a fixed frame (a Settings section): a base crossfade with a 6px settle. */
+// The presets below move by transform strings, not framer's x, y and scale: framer runs those on the main thread, and
+// a transform string goes to the compositor (WAAPI) with the opacity, so a busy frame doesn't hold the move back
+// (motion audit 2026-10-12). Same distances, same timing.
 export const CH_ROUTE = {
-  initial: { opacity: 0, y: 6 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -4 },
+  initial: { opacity: 0, transform: 'translateY(6px)' },
+  animate: { opacity: 1, transform: 'translateY(0px)' },
+  exit: { opacity: 0, transform: 'translateY(-4px)' },
   transition: chTween('base'),
 } as const;
 
 /** Popovers and menus: scale from the anchor edge (CH-1603). */
 export const CH_POP = {
-  initial: { opacity: 0, scale: 0.97, y: -4 },
-  animate: { opacity: 1, scale: 1, y: 0 },
-  exit: { opacity: 0, scale: 0.98, y: -2 },
+  initial: { opacity: 0, transform: 'translateY(-4px) scale(0.97)' },
+  animate: { opacity: 1, transform: 'translateY(0px) scale(1)' },
+  exit: { opacity: 0, transform: 'translateY(-2px) scale(0.98)' },
   transition: chTween('quick'),
 } as const;
 
 /** Content swap inside a fixed frame (for example, paging rounds). */
 export function chSwap(direction: 1 | -1, reduced = false) {
   return {
-    initial: { opacity: 0, x: 12 * direction },
-    animate: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: -12 * direction },
+    initial: { opacity: 0, transform: `translateX(${12 * direction}px)` },
+    animate: { opacity: 1, transform: 'translateX(0px)' },
+    exit: { opacity: 0, transform: `translateX(${-12 * direction}px)` },
     transition: chTween('base', reduced),
   } as const;
 }

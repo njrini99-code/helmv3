@@ -32,6 +32,7 @@ import { isRebuilt } from '../shell/nav';
 import { ToastProvider } from '../ui/Toast';
 import { ClubhouseMarker } from '../shell/context';
 import ReviewLoading from '@/app/golf/(dashboard)/dashboard/rounds/[id]/loading';
+import ReviewAddressLoading from '@/app/golf/(dashboard)/dashboard/rounds/[id]/review/loading';
 import {
   PREVIEW_REVIEW,
   PREVIEW_REVIEW_COACH,
@@ -545,5 +546,19 @@ describe('Round review · loading', () => {
     unmount();
     render(<ReviewLoading />);
     expect(document.querySelector('[data-ch-code="CH-11406"]')).toBeNull();
+  });
+
+  it('Bridge 110206 the old /review address loads in the Clubhouse review shape too, never a Fairway skeleton inside Clubhouse', () => {
+    const { unmount } = render(
+      // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
+      <ClubhouseMarker role="player">
+        <ReviewAddressLoading />
+      </ClubhouseMarker>,
+    );
+    expect(document.querySelector('[data-ch-code="CH-11406"]')!.getAttribute('aria-busy')).toBe('true');
+    unmount();
+    render(<ReviewAddressLoading />);
+    expect(document.querySelector('[data-ch-code="CH-11406"]')).toBeNull();
+    expect(screen.getByText('Loading review…')).toBeTruthy();
   });
 });

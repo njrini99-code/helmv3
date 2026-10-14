@@ -1,5 +1,20 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-13 — The History drawer slides on the shared spring, over the shared backdrop
+
+The phone's History drawer slides in and out on the smooth spring instead of the
+260ms ease-out, and its backdrop
+fades in on the shared `--ch-scrim` instead of appearing at 0.45 (dark 0.6).
+Shared change:
+docs/clubhouse/CHANGELOG.md (popups).
+
+## 2026-10-12 — /intelligence keeps the player and Ask
+
+- The old `/golf/dashboard/intelligence` address (coach insight pushes, CRM
+  demo invites) keeps `?player=<id>` when it moves to CoachHelm, and
+  `view=chat` opens Ask (`view=ask`); other views are dropped. The page's role
+  is the dashboard layout's (`getGolfDashboardRole`).
+
 ## 2026-10-10 — The desktop board in the phone's lit-card language
 
 Presentation only. The focus's claim is the page's one lit green card at the

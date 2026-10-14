@@ -25,7 +25,7 @@ import type { GolfUserData } from '@/contexts/golf-user-context';
 import { ToastProvider } from '../ui/Toast';
 import { ClubhouseFrame } from '../shell/ClubhouseFrame';
 import { Sidebar } from '../shell/Sidebar';
-import { TabBar } from '../shell/TabBar';
+import { PhoneNav } from './phone-nav-harness';
 import { teamSwitchFor } from '../shell/team-switch';
 import type { ChShellData } from '../data/shell';
 import './dialog-polyfill';
@@ -55,12 +55,12 @@ const head = (over: Partial<GolfUserData> = {}): GolfUserData =>
 
 const sidebar = (user: GolfUserData) => <Sidebar userData={user} shell={shell} pathname="/golf/dashboard" teamSwitch={teamSwitchFor(user)} />;
 const trigger = () => screen.getByRole('button', { name: /Switch team/ });
-// TabBar's `role` is the user's role, not an ARIA role; spread so jsx-a11y doesn't read it as one.
+// PhoneNav's `role` is the user's role, not an ARIA role; spread so jsx-a11y doesn't read it as one.
 const asCoach = { role: 'coach' as const };
-const phoneBar = (user: GolfUserData) => <TabBar pathname="/golf/dashboard" shell={shell} {...asCoach} user={{ name: user.name, teamName: user.teamName }} teamSwitch={teamSwitchFor(user)} />;
+const phoneBar = (user: GolfUserData) => <PhoneNav pathname="/golf/dashboard" shell={shell} {...asCoach} user={{ name: user.name, teamName: user.teamName }} teamSwitch={teamSwitchFor(user)} />;
 async function openMore(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: /^More/ }));
-  return (await screen.findByRole('dialog', { name: 'More' })) as HTMLElement;
+  await user.click(screen.getByRole('button', { name: 'Account' }));
+  return (await screen.findByRole('dialog', { name: 'Account' })) as HTMLElement;
 }
 
 beforeEach(() => {
@@ -102,7 +102,7 @@ describe('Team switcher · who gets one', () => {
     expect(model.choices.map((c) => c.label)).toEqual(["Men's · Varsity", "Women's · Varsity", 'JV']);
   });
 
-  it('10803 the phone More sheet lists no teams for a coach who cannot switch', async () => {
+  it('10803 the phone account sheet lists no teams for a coach who cannot switch', async () => {
     const user = userEvent.setup();
     wrap(phoneBar(head({ canSwitchTeams: false })));
     const sheet = await openMore(user);
@@ -259,7 +259,7 @@ describe('Team switcher · desktop', () => {
 });
 
 describe('Team switcher · phone', () => {
-  it('CH-1814 the More sheet lists the coach\'s teams under who they are, the current one marked', async () => {
+  it('CH-1814 the account sheet lists the coach\'s teams under who they are, the current one marked', async () => {
     const user = userEvent.setup();
     wrap(phoneBar(head()));
     const sheet = await openMore(user);
@@ -300,9 +300,9 @@ describe('Team switcher · phone', () => {
     // Longer than the sheet's exit, so a sheet that closed early would be gone by now.
     await new Promise((r) => setTimeout(r, 1200));
     expect(root.hasAttribute('data-ch-switching')).toBe(true);
-    expect(screen.queryByRole('dialog', { name: 'More' })).not.toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Account' })).not.toBeNull();
     await act(async () => landPayload());
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'More' })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Account' })).toBeNull());
     expect(root.hasAttribute('data-ch-switching')).toBe(false);
   });
 
@@ -313,7 +313,7 @@ describe('Team switcher · phone', () => {
     const sheet = await openMore(user);
     await user.click(within(sheet).getByRole('button', { name: WOMEN.name }));
     expect(setActiveTeam).toHaveBeenCalledWith(WOMEN.id);
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'More' })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Account' })).toBeNull());
     expect(router.refresh).toHaveBeenCalledTimes(1);
     expect(hapticSpy).toHaveBeenCalledWith('select');
     expect(hapticSpy).not.toHaveBeenCalledWith('success');
@@ -326,8 +326,8 @@ describe('Team switcher · phone', () => {
     const sheet = await openMore(user);
     await user.click(within(sheet).getByRole('button', { name: WOMEN.name }));
     await expectCode('CH-1003', /Only a head coach staffed on more than one team can switch\./);
-    expect(screen.getByRole('dialog', { name: 'More' })).toBeTruthy();
-    const group = within(screen.getByRole('dialog', { name: 'More' })).getByRole('group', { name: 'Team' });
+    expect(screen.getByRole('dialog', { name: 'Account' })).toBeTruthy();
+    const group = within(screen.getByRole('dialog', { name: 'Account' })).getByRole('group', { name: 'Team' });
     expect(within(group).getByRole('button', { name: MEN.name }).getAttribute('aria-current')).toBe('true');
     expect(router.refresh).not.toHaveBeenCalled();
   });

@@ -7,7 +7,7 @@ import { classNameOf, conflictsOf, dayToken, groupConflicts, inTerm, orderClasse
 import { chTrail } from '../../lib/track';
 import { friendlyReason, normalise, useAction, type ServerResult } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
-import { PhoneTop, useBackFromMore } from '../../shell/phone-chrome';
+import { PhoneTop } from '../../shell/phone-chrome';
 import { Button } from '../../ui/Button';
 import { InlineNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
@@ -45,7 +45,6 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
   const reduced = useChReducedMotion();
   const phone = useChPhone();
   const router = useRouter();
-  const backFromMore = useBackFromMore();
   const [classes, setClasses] = useState(data.classes.list);
   // The classes whose last calendar sync failed, this visit only: no column holds it, so a reload starts clean.
   const [failedSync, setFailedSync] = useState<Set<string>>(() => new Set());
@@ -337,7 +336,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
   return (
     <main className={'ch-cl' + (phone ? ' is-phone' : '')} aria-labelledby={phone ? undefined : 'ch-cl-title'} aria-label={phone ? 'Classes' : undefined} data-canopy={phone ? undefined : ''}>
       {/* Phone: Classes opens from More (D-66), so the top bar goes back there. */}
-      {phone && <PhoneTop title="Classes" back={{ label: 'More', onBack: backFromMore }} />}
+      {phone && <PhoneTop title="Classes" start />}
       <header className="ch-cl-h" data-canopy-head={phone ? undefined : ''}>
         <div>
           <span className="ch-cl-k">

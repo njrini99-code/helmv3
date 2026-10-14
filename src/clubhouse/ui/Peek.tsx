@@ -359,8 +359,9 @@ function PressPeek({
             className="ch-peek__panel"
             tabIndex={-1}
             style={{ top: top ?? undefined }}
-            initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.94 }}
-            animate={{ opacity: 1, scale: 1 }}
+            // A transform string, not framer's scale, so the pop runs on the compositor with its opacity (motion audit 2026-10-12).
+            initial={reduced ? { opacity: 0 } : { opacity: 0, transform: 'scale(0.94)' }}
+            animate={{ opacity: 1, transform: 'scale(1)' }}
             transition={chSpring('smooth', reduced)}
           >
             <div className="ch-peek__card">{children}</div>

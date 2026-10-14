@@ -1,5 +1,21 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-12 — A section root on the phone (no "‹ More")
+
+The phone shell's section strip replaced the tab bar and the More sheet
+(docs/clubhouse/phone/section-strip.md). Qualifiers's phone top bar no longer
+draws a "‹ More" back link: its title is a start title (`PhoneTop start`),
+which the shell turns into the section switcher. The page's action, where it
+has one, is unchanged. Shared change: docs/clubhouse/CHANGELOG.md.
+
+## 2026-10-12 — setup edits follow the dashboard role
+
+The HELD squad-size and entrants actions open only when the gate is on for the
+coach and the
+dashboard layout's role (`getGolfDashboardRole`) is the coach's; with the flag
+off they still
+refuse before any read, and `verifyTeamAccess` still decides who may edit.
+
 ## 2026-10-10 — The leaderboard set as a tournament sheet
 
 Owner direction (2026-10-10): the qualifier page is a leaderboard and should
