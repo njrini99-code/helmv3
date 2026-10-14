@@ -20,9 +20,11 @@ WebKit audit of the desktop calendar, coach and player:
   it opens, and Esc or Done hand focus back to its button.
 - A-25: Enter or Space on an event (week or day block, all-day bar, agenda
   row) moves focus to its panel's heading, and Esc or Back hands it back to
-  the event. The card that appeared about 600ms later was the event's focus
-  peek (`PEEK_FOCUS_MS`, ui/Peek.tsx), not the panel: the panel opened at
-  once. Focus moving into the panel now puts that peek away.
+  the event. Read in the code, not re-run in WebKit: the card that appeared
+  about 600ms later is the event's focus peek (`PEEK_FOCUS_MS`, ui/Peek.tsx),
+  not the panel, which renders in the same commit as the key. Focus moving into
+  the panel blurs the event, which puts that peek away; Esc returning focus to
+  the event starts its peek again, as a Tab onto it does.
 
 ## 2026-10-14 — A finger places the event time on a tap, not as it lands
 
