@@ -43,6 +43,11 @@ import { useCanvasSmoothScroll } from '../lib/smooth-scroll';
  * ClubhouseShell wraps it with the app's data providers; the dev preview
  * renders it with fixtures.
  */
+/** The query value that picks a screen on its route (Stats' and CoachHelm's `?player=`), for RouteFrame's scroll memory. */
+function screenParam(search: string): string {
+  return search ? (new URLSearchParams(search).get('player') ?? '') : '';
+}
+
 export function ClubhouseFrame({
   userData,
   shell,
@@ -101,7 +106,7 @@ export function ClubhouseFrame({
                             <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} pushed={pushed} />
                             <OfflineBanner />
                             {/* A new team is a new page: the route remounts, so nothing the old team's screen held (a search, an open panel, a live feed) carries over. */}
-                            <RouteFrame routeKey={`${pathname}\u0000${userData.teamId ?? ''}`}>
+                            <RouteFrame routeKey={`${pathname}\u0000${userData.teamId ?? ''}`} scrollKey={`${pathname}\u0000${userData.teamId ?? ''}\u0000${screenParam(search)}`}>
                               {rebuilt ? (
                                 children
                               ) : (

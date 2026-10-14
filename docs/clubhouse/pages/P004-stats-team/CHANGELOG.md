@@ -1,5 +1,13 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-14 — Back from a player returns the team list to where it was
+
+A player's stats are the same route with `?player=`, so the shell's scroll
+memory (RouteFrame, keyed by route) saw one page: Back from a player opened the
+team list at its top (Simulator). The frame now keys scroll memory by the
+`?player=` screen too (`scrollKey`), without remounting the route; it applies to
+both roles and to CoachHelm's `?player=`.
+
 ## 2026-10-14 — A window tap re-renders the switch, not the page
 
 - **The phone's window switch reads the frame itself** (StatsTeamIslands

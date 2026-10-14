@@ -110,7 +110,12 @@ function restoreScroll(to: { canvas: number; win: number }): () => void {
   return () => cancelAnimationFrame(frame);
 }
 
-export function RouteFrame({ routeKey, children }: { routeKey: string; children: ReactNode }) {
+/**
+ * `scrollKey` names the screen for scroll memory when the address's query picks the screen (Stats' `?player=`: the team
+ * page and a player's are one route). Back from a player returned the team page to its top (Simulator, 2026-10-14).
+ * Defaults to `routeKey`; it never remounts the route.
+ */
+export function RouteFrame({ routeKey, scrollKey = routeKey, children }: { routeKey: string; scrollKey?: string; children: ReactNode }) {
   const reduced = useChReducedMotion();
   useChPress(!reduced);
   const first = useRef(true);
@@ -138,13 +143,13 @@ export function RouteFrame({ routeKey, children }: { routeKey: string; children:
   // rule 1). Positions are recorded as the coach scrolls, so leaving never has to read a page already swapped out.
   useEffect(() => {
     const canvas = document.getElementById('ch-canvas');
-    const record = () => scrolled.set(routeKey, { canvas: canvas?.scrollTop ?? 0, win: window.scrollY });
+    const record = () => scrolled.set(scrollKey, { canvas: canvas?.scrollTop ?? 0, win: window.scrollY });
     canvas?.addEventListener('scroll', record, { passive: true });
     window.addEventListener('scroll', record, { passive: true });
     let cancel: (() => void) | undefined;
     if (first.current) first.current = false;
     else {
-      const saved = scrolled.get(routeKey);
+      const saved = scrolled.get(scrollKey);
       if (saved && Date.now() - poppedAt < RETURN_WINDOW_MS) cancel = restoreScroll(saved);
       else {
         canvasScrollNow(0);
@@ -156,7 +161,7 @@ export function RouteFrame({ routeKey, children }: { routeKey: string; children:
       canvas?.removeEventListener('scroll', record);
       window.removeEventListener('scroll', record);
     };
-  }, [routeKey]);
+  }, [scrollKey]);
 
   const page = (
     <div key={reduced ? routeKey : undefined} ref={frame} id="ch-content" tabIndex={-1} className="ch-frame-route">
