@@ -72,6 +72,7 @@ export function TopBar({
       className="ch-topbar"
       data-phone={rootTitle ? 'start' : pageTop || standIn ? 'page' : 'root'}
       data-sections={swipeable ? '' : undefined}
+      data-switching={sections?.switching ? '' : undefined}
       inert={immersive || undefined}
     >
       <nav className="ch-topbar__crumbs" aria-label="Breadcrumb">

@@ -1187,6 +1187,19 @@ button.ch-more__row[disabled] {
     height: 44px;
     color: var(--ch-text-secondary);
   }
+  /* A section chosen, its page not here yet (section-switch's `switching`): the title already names the new section,
+     so the old section's buttons and mark step back with it, and the new page's arrive with the page. One change to
+     the bar, not the title now and the buttons a beat later (phone test 2026-10-13). Opacity only. */
+  .ch-topbar__actions,
+  .ch-topbar__team,
+  .ch-topbar .ch-pbar__right {
+    transition: opacity var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-topbar[data-switching] :is(.ch-topbar__actions, .ch-topbar__team, .ch-pbar__right) {
+    opacity: 0;
+    pointer-events: none;
+    transition-duration: var(--ch-dur-press);
+  }
   .ch-toasts {
     right: 12px;
     left: 12px;

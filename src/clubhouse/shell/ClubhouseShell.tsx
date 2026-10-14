@@ -12,6 +12,7 @@ import { NativeSwipeBackBridge } from "@/components/golf/NativeSwipeBackBridge";
 import { ThemeApplier } from "@/components/golf/theme/ThemeApplier";
 import type { ChShellData } from "../data/shell";
 import { ClubhouseFrame } from "./ClubhouseFrame";
+import { useWarmInbox } from "./use-warm-inbox";
 import { OfflineSync } from "./OfflineSync";
 import { DeepLinks } from "./DeepLinks";
 import { ChPhoneHintProvider } from "../lib/use-phone";
@@ -39,6 +40,8 @@ export function ClubhouseShell({
   // The query decides a few phone bars (a Settings section, a coach's player on Stats; CH-1402). The dashboard is
   // rendered per request, so this reads the request's query on the server too.
   const search = useSearchParams()?.toString() ?? "";
+  // The inbox list, cached in the background, so Messages paints it on the first visit (use-warm-inbox.ts).
+  useWarmInbox(userData.userId, userData.teamId);
   return (
     <ChPhoneHintProvider phone={phone}>
       <SessionActivityProvider>

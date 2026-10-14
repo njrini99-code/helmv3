@@ -37,6 +37,9 @@ export interface ChSectionSwitch {
   current: ChNavItem | undefined;
   /** What the title and the strip show as current: a section just chosen, else the address's. */
   shown: ChNavItem | undefined;
+  /** A section was chosen and its page hasn't arrived: the title already names it, and the bar's buttons (the old
+   *  section's) step back until the new page brings its own (phone test 2026-10-13). */
+  switching: boolean;
   /** The address is its section's own page (a root), where the bar's gestures apply. */
   root: boolean;
   open: boolean;
@@ -93,6 +96,7 @@ export function SectionSwitchProvider({
   const root = !!current && path === current.href;
   const [pending, setPending] = useState<ChNavItem | null>(null);
   const shown = pending ?? current;
+  const switching = !!pending && pending.id !== current?.id;
   const [open, setOpenState] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [dir, setDir] = useState<1 | -1>(1);
@@ -181,8 +185,8 @@ export function SectionSwitchProvider({
   const attention = sections.some((s) => s.id !== shown?.id && (counts[s.id] ?? 0) > 0);
 
   const value = useMemo<ChSectionSwitch>(
-    () => ({ enabled: true, sections, current, shown, root, open, progress, dragX, dir, counts, attention, setOpen, grab, choose, step, accountOpen, setAccountOpen }),
-    [sections, current, shown, root, open, progress, dragX, dir, counts, attention, setOpen, grab, choose, step, accountOpen],
+    () => ({ enabled: true, sections, current, shown, switching, root, open, progress, dragX, dir, counts, attention, setOpen, grab, choose, step, accountOpen, setAccountOpen }),
+    [sections, current, shown, switching, root, open, progress, dragX, dir, counts, attention, setOpen, grab, choose, step, accountOpen],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

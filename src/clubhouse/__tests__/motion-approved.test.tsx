@@ -302,12 +302,15 @@ describe('CH-1619 a page fades in over its route skeleton', () => {
       restore();
     });
 
-    it('the skeleton and the old page wait the same 300ms, on a navigation only', () => {
+    it('the old page waits 300ms, and the skeleton waits for it to have faded out, on a navigation only', () => {
       const base = readFileSync(join(process.cwd(), 'src/clubhouse/styles/base.css'), 'utf8');
       const tokens = readFileSync(join(process.cwd(), 'src/clubhouse/styles/tokens.css'), 'utf8');
       const shell = readFileSync(join(process.cwd(), 'src/clubhouse/styles/shell.css'), 'utf8');
       expect(tokens).toContain('--ch-dur-vt-hold: 300ms;');
-      expect(base).toMatch(/html\[data-ch-vt-hold\] \[data-ui='clubhouse'\] main\[aria-busy='true'\]\[aria-label\^='Loading'\] \{\s*animation-delay: var\(--ch-dur-vt-hold\);/);
+      expect(base).toMatch(/html\[data-ch-vt-hold\] \[data-ui='clubhouse'\] main\[aria-busy='true'\]\[aria-label\^='Loading'\] \{\s*animation-delay: calc\(var\(--ch-dur-vt-hold\) \+ var\(--ch-dur-vt-out\)\);/);
+      // A fade through: the old page leaves before the new one arrives, never a double image.
+      expect(tokens).toContain('--ch-dur-vt-out: 120ms;');
+      expect(tokens).toContain('--ch-dur-vt-gap: 90ms;');
       expect(shell).toMatch(/html\[data-ch-vt-hold\]:has\(\[data-ui='clubhouse'\]\)::view-transition-old\(ch-page\) \{\s*animation-delay: var\(--ch-dur-vt-hold\);/);
       // A hard load's skeleton shows at once.
       expect(tokens).toContain('--ch-skel-delay: 0ms;');
