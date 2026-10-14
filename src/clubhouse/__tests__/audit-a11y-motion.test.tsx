@@ -73,3 +73,17 @@ describe('A-13: skeletons sweep on the compositor at every width', () => {
     expect(shell).toMatch(/@keyframes ch-skel-breathe \{\s*50% \{\s*opacity: 0\.55;/);
   });
 });
+
+describe('A-31: Back returns a page to where it was left', () => {
+  const src = readFileSync(join(__dirname, '../shell/RouteFrame.tsx'), 'utf8');
+  it('the leaving page stops recording in the commit that swaps it out (a layout effect)', () => {
+    const at = src.indexOf('const record = () => scrolled.set(scrollKey');
+    const effect = src.lastIndexOf('use', at);
+    expect(src.slice(effect, effect + 'useLayoutEffect'.length)).toBe('useLayoutEffect');
+  });
+  it('the restore holds the place while the page settles, until the person scrolls', () => {
+    expect(src).toMatch(/const until = Date\.now\(\) \+ 1500;/);
+    expect(src).toMatch(/\['wheel', 'touchstart', 'keydown', 'pointerdown'\]/);
+    expect(src).not.toMatch(/if \(!there && Date\.now\(\) < until\) frame = requestAnimationFrame\(step\);/);
+  });
+});
