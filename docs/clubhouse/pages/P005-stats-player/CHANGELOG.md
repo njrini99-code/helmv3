@@ -1,5 +1,11 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-14 — The phone header says its count is the season's
+
+The phone player header read "5 rounds" over a Last 10 window that counts "10
+countable rounds". It now reads "5 rounds this season", as the desktop's
+Rounds figure does.
+
 ## 2026-10-14 — Shared Stats islands: the phone window switch
 
 - The team page's phone window switch moved into `PhoneWindowSwitch`
