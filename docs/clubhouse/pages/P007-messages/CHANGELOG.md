@@ -1,5 +1,23 @@
 # P007 — Messages: changelog
 
+## 2026-10-14 — The inbox no longer queues two server actions before its list
+
+Simulator audit (each request held 0.8s to expose the order): opening Messages
+ran canHideGolfConversations, getAnnouncementsWithMeta and the rail's
+active-team read as server actions one after another (Next runs server actions
+one at a time), and the inbox kept its skeleton until the announcements
+answered, then the conversation chain ran.
+
+- **Read with the page** (routes/messages.tsx): whether a conversation can be
+  deleted and the announcements over the list are read on the server beside the
+  directory, in parallel, and passed in; the client reads them only when the
+  route couldn't (`announcements: null`) or in the preview. Two serialized round
+  trips gone before the list can show. Mapping shared as `toChAnnouncement`
+  (model.ts). Test: messages-audit "read with the page".
+- Still open (shared hook, Fairway uses it too): the conversation rail itself is
+  a chain of five dependent reads (RPC, team chats, members, last message and
+  unread, names); recorded in the audit for an owner decision.
+
 ## 2026-10-13 — The first visit paints the list at once
 
 The shell fills the inbox's session cache once idle (shell/use-warm-inbox.ts),

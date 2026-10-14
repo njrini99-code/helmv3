@@ -250,6 +250,15 @@ describe('Messages · swap audit §12', () => {
     expect(ann.compareDocumentPosition(conv) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('announcements read with the page: the inbox shows at once and the client does not read them again', async () => {
+    // Next runs server actions one at a time; this one queued ahead of the conversation list (Simulator audit 2026-10-14).
+    const pre = { id: 'a1', title: 'Bus times', body: 'Bus leaves at 6:15.', urgent: false, publishedAt: '2026-10-14T17:00:00Z', requiresAck: false, ackCount: 0, total: 2, acknowledgedByMe: false, taskCount: 0, completedTaskCount: 0, docCount: 0, authorId: null };
+    showPhone({ ...data, announcements: [pre], canHide: true });
+    expect(await screen.findByRole('region', { name: 'Announcements' })).toBeTruthy();
+    expect(screen.getByText('Varsity team')).toBeTruthy();
+    expect(a.getAnnouncementsWithMeta).not.toHaveBeenCalled();
+  });
+
   it('CLS a failed announcements read still lets the inbox show, with its notice', async () => {
     a.getAnnouncementsWithMeta.mockResolvedValue({ success: false, error: 'boom' });
     showPhone();

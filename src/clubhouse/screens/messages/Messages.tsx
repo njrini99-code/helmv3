@@ -32,7 +32,7 @@ import type { ChAttachmentRecovery, ChMessagesApi } from './MessagesView';
 import { MessagesView } from './MessagesScreen';
 import { DraftStore } from './drafts';
 import { onRoster, takePrefill } from './prefill';
-import { firstName, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
+import { firstName, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
 const isGroup = (c: GolfConversationWithMeta) => {
   const n = c.participant_count ?? c.participant_ids?.length ?? 0;
@@ -97,8 +97,9 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const { sendMessageWithAttachments, getPendingAttachmentSend, retryPendingAttachmentSend } = useMessageAttachments({ recoverable: true });
 
   // "Delete conversation" is offered only once the database has the per-person hide (a held migration, HELD.md).
-  const [canHide, setCanHide] = useState(false);
+  const [canHide, setCanHide] = useState(data.canHide ?? false);
   useEffect(() => {
+    if (data.canHide !== undefined) return;
     let live = true;
     void canHideGolfConversations().then(
       (ok) => live && setCanHide(ok),
@@ -107,7 +108,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     return () => {
       live = false;
     };
-  }, []);
+  }, [data.canHide]);
 
   // Desktop opens the newest thread beside the rail without marking it read (the coach hasn't read it yet).
   useEffect(() => {
@@ -359,33 +360,18 @@ export function Messages({ data }: { data: ChMessagesData }) {
   }, [liveIds, reactions.rows, data.viewerUserId]);
 
   // Announcements: the team feed, pinned above conversations.
-  const [anns, setAnns] = useState<ChAnnouncement[]>([]);
+  // The route reads them with the page; when it couldn't (or in the preview), the first read is here.
+  const [anns, setAnns] = useState<ChAnnouncement[]>(data.announcements ?? []);
   const [annError, setAnnError] = useState(false);
   // Announcements sit above the conversations: until their first read answers, the inbox keeps its skeleton.
-  const [annLoaded, setAnnLoaded] = useState(false);
+  const [annLoaded, setAnnLoaded] = useState(data.announcements != null);
   const [selectedAnnId, setSelectedAnnId] = useState<string | null>(null);
   const loadAnns = useCallback(async () => {
     try {
       const res = await getAnnouncementsWithMeta(data.teamId, data.viewerUserId, data.role === 'coach', data.viewerPlayerId);
       if (!res.success || !res.data) throw new Error(res.error || 'announcements read failed');
       setAnnError(false);
-      setAnns(
-        res.data.map((a) => ({
-          id: a.id,
-          title: a.title,
-          body: a.body ?? '',
-          urgent: a.urgency === 'urgent' || a.urgency === 'high',
-          publishedAt: a.published_at ?? a.publish_at ?? a.created_at,
-          requiresAck: !!a.requires_acknowledgement,
-          ackCount: a.acknowledged_count ?? 0,
-          total: a.total_recipients ?? a.recipient_count ?? 0,
-          acknowledgedByMe: !!a.has_player_acknowledged,
-          taskCount: a.task_count ?? 0,
-          completedTaskCount: a.completed_task_count ?? 0,
-          docCount: a.document_count ?? 0,
-          authorId: (a as { created_by?: string | null }).created_by ?? null,
-        })),
-      );
+      setAnns(res.data.map(toChAnnouncement));
     } catch (err) {
       chReport(err, { surface: 'messages.announcements', severity: 'low' });
       setAnnError(true);
@@ -393,7 +379,13 @@ export function Messages({ data }: { data: ChMessagesData }) {
       setAnnLoaded(true);
     }
   }, [data.teamId, data.viewerUserId, data.role, data.viewerPlayerId]);
+  const annsPreloaded = useRef(data.announcements != null);
   useEffect(() => {
+    // Read with the page: the first read is already on screen.
+    if (annsPreloaded.current) {
+      annsPreloaded.current = false;
+      return;
+    }
     void loadAnns();
   }, [loadAnns]);
 

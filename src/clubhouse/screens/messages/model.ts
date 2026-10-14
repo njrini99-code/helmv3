@@ -5,6 +5,8 @@
  * server and client render the same labels.
  */
 
+import type { GolfAnnouncementMeta } from '@/lib/types/golf';
+
 export interface ChPerson {
   userId: string;
   name: string;
@@ -161,6 +163,25 @@ export interface ChAnnouncement {
   docCount: number;
   /** golf_coaches.id of the coach who posted it, for the signature; null when unknown. */
   authorId?: string | null;
+}
+
+/** One announcement row from getAnnouncementsWithMeta, as the inbox shows it (the server route and the client share it). */
+export function toChAnnouncement(a: GolfAnnouncementMeta): ChAnnouncement {
+  return {
+    id: a.id,
+    title: a.title,
+    body: a.body ?? '',
+    urgent: a.urgency === 'urgent' || a.urgency === 'high',
+    publishedAt: a.published_at ?? a.publish_at ?? a.created_at,
+    requiresAck: !!a.requires_acknowledgement,
+    ackCount: a.acknowledged_count ?? 0,
+    total: a.total_recipients ?? a.recipient_count ?? 0,
+    acknowledgedByMe: !!a.has_player_acknowledged,
+    taskCount: a.task_count ?? 0,
+    completedTaskCount: a.completed_task_count ?? 0,
+    docCount: a.document_count ?? 0,
+    authorId: (a as { created_by?: string | null }).created_by ?? null,
+  };
 }
 
 export interface ChAnnouncementDetail {

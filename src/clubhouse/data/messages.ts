@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getValidTimezone } from '@/lib/calendar/timezone';
 import { chLogServer } from '../lib/track-server';
 import { classYearLabel, fullName } from './season';
-import type { ChPerson } from '../screens/messages/model';
+import type { ChAnnouncement, ChPerson } from '../screens/messages/model';
 
 export interface ChMessagesData {
   role: 'coach' | 'player';
@@ -20,6 +20,13 @@ export interface ChMessagesData {
   directoryError: boolean;
   /** The program's coaches by golf_coaches.id, the viewer among them: who signs an announcement (P007-A1). */
   signers?: Record<string, { name: string; title: string }>;
+  /**
+   * Read with the page so the inbox doesn't wait on them after it lands (Next runs server actions one at a time, and
+   * these two queued ahead of the conversation list: Simulator audit 2026-10-14). Absent: the client reads them itself;
+   * `announcements: null` means the server read failed and the client tries again.
+   */
+  canHide?: boolean;
+  announcements?: ChAnnouncement[] | null;
 }
 
 /**
