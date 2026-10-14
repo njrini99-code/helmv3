@@ -6013,7 +6013,7 @@
           "name": "--ch-au-hb",
           "value": "calc(env(safe-area-inset-top, 0px) + var(--ch-phone-topbar-h))",
           "scope": "@media (max-width: 820px) → .ch-au",
-          "line": 1473
+          "line": 1428
         }
       ]
     },
