@@ -19,8 +19,11 @@ Runtime audit (Playwright WebKit, local stack), both roles.
   with reduced motion), takes focus on its first reaction, ← → Home End move
   along it, and Esc or a pick returns focus to React (CH-7603, CH-7802). The
   "More message actions" menu already returns focus to its trigger on Esc
-  (now tested); the audit's `<body>` came from its twelve Tabs, which close
-  the shared Menu by design before Esc was pressed.
+  (now tested). The audit's `<body>` came from the twelve Tabs it pressed
+  before Esc: the shared Menu closes on Tab (by design), but it is portaled to
+  the end of `.ch-root`, so that Tab drops focus on `<body>` (reproduced in
+  jsdom). A shared `ui/Menu.tsx` defect, likely A-27 too, left for its own
+  change.
 - **A-28** Phone New message: a hardware keyboard's Esc is Cancel, and focus
   returns to New message (CH-7804; the PhoneScreen part is shared). The screen
   already slid in and focused its title; the audit sampled the People list's
