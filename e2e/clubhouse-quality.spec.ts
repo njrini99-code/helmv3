@@ -168,10 +168,16 @@ test('keyboard alternatives reveal without covering their message or priority la
   await action.focus();
   await expect(action).toBeFocused();
   expect(await action.evaluate(element => ({ clip: getComputedStyle(element).clip, position: getComputedStyle(element).position }))).toEqual({ clip: 'auto', position: 'static' });
-  const message = action.locator('..').locator('.ch-ms-msg__stack');
-  const messageBox = await message.boundingBox();
-  const actionBox = await action.boundingBox();
-  expect(actionBox!.y).toBeGreaterThanOrEqual(messageBox!.y + messageBox!.height - 1);
+  // Read both boxes in one frame, and wait for the focus scroll to settle: two separate boundingBox() reads while the
+  // thread was still scrolling compared positions from different frames (flaked once in chromium-reduce, 2026-10-14).
+  await expect
+    .poll(() =>
+      action.evaluate(element => {
+        const message = element.parentElement!.querySelector('.ch-ms-msg__stack')!.getBoundingClientRect();
+        return Math.round(element.getBoundingClientRect().top - (message.top + message.height - 1));
+      }),
+    )
+    .toBeGreaterThanOrEqual(0);
 
   // Opening the thread updates the URL; a fresh page avoids that late navigation racing this one.
   const settings = await page.context().newPage();
