@@ -87,6 +87,8 @@ its own action (140403 to 140405, CH-14303 to CH-14305). A coach on no team gets
 the page that says so and opens Team Settings (140406, CH-14306). A failed list
 is category 06 and never "your list starts here" (141501).
 
+CH-1304, 10405 CH-1305, 10406 CH-1306.
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 140401 | CH-14301 | `FIRST_RUN_NO_PROSPECTS` | First run: no prospects |
@@ -297,6 +299,12 @@ and moves focus to the first (141804, CH-14804). Email and Call are real links,
 `mailto:` and `tel:`, named by what they do (141805, CH-14805). Dialogs and
 sheets are native `<dialog>`s that hold focus and return it on close, and the
 pushed phone screen is named by its title (the shell's 11809).
+
+CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
+CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
+CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819
+CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824
+CH-1842, 11825 CH-1816.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

@@ -37,7 +37,8 @@
 --
 -- App side (done on agent/clubhouse-release in
 -- src/app/golf/actions/round-submit.ts, not yet in production): send
--- `expected_updated_at` in p_round_data, and treat `error = 'conflict'` like the save path does.
+-- `expected_updated_at` in p_round_data, and treat `error = 'conflict'` like
+-- the save path does.
 
 DO $$
 DECLARE

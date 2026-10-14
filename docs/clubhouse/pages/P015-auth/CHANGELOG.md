@@ -2,19 +2,26 @@
 
 ## 2026-10-13 — Sign in on the phone: one ring, a plain notice, the sheet over the keyboard
 
-Owner: the phone sign-in had "weird rings", and the focus, sheet and keyboard did not line up.
+Owner: the phone sign-in had "weird rings", and the focus, sheet and keyboard
+did not line up.
 
-- **Focus and refusals:** the grouped fields take one ring that follows the group's rounded corners (green while
-  typing, red on a refusal), and the row's label takes the colour. A ring per row was a square box inside the
+- **Focus and refusals:** the grouped fields take one ring that follows the
+  group's rounded corners (green while
+  typing, red on a refusal), and the row's label takes the colour. A ring per
+  row was a square box inside the
   rounded group, cut off at its corners.
-- **Notices are flush** (icon and words, no box, no ring), as refusals already were; "Session expired" and "Signed
-  out" are information (the info icon), not a green success check. "Account created" and "Password reset" stay
+- **Notices are flush** (icon and words, no box, no ring), as refusals already
+  were; "Session expired" and "Signed
+  out" are information (the info icon), not a green success check. "Account
+  created" and "Password reset" stay
   positive.
-- **The keyboard:** on a touch phone, the finger landing on a field raises the sheet to just under the status bar
-  (420ms, the auth ease), so the fields and Sign in sit above the keyboard and iOS never pans the page under the
-  sheet; it settles back when the keyboard goes. The course's window closes with it and its line fades. Reduced
+- **The keyboard:** on a touch phone, the finger landing on a field raises the
+  sheet to just under the status bar
+  (420ms, the auth ease), so the fields and Sign in sit above the keyboard and
+  iOS never pans the page under the
+  sheet; it settles back when the keyboard goes. The course's window closes with
+  it and its line fades. Reduced
   motion moves it at once.
-
 
 ## 2026-10-10 — corner radii on the token scale
 

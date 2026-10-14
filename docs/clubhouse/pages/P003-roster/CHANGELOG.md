@@ -483,7 +483,7 @@ Data impact:    none
 Held items:     roster-availability (data)
 ```
 
-### Changed
+### Changed (2026-09-30 V2 page docs)
 
 - The six page docs, the manifest's actions, and the 22 behaviour contracts (core view, deep link, refresh, safe
   export, offline, the coach-only gate, private notes, refused changes, success, note kept, layout kept, note reads
@@ -512,12 +512,12 @@ Held items:     roster-availability (data)
   could be read by a spreadsheet as a formula; it is now written as text.
 - Esc inside the Remove or Invite dialog also closed the player panel behind it. It now closes only the dialog.
 
-### Why
+### Why (2026-09-30 V2 page docs)
 
 - D-62 and D-69: every page gets the Messages contract, and writing the contract against the code found these five
   places where the code did not keep it.
 
-### Verification
+### Verification (2026-09-30 V2 page docs)
 
 - `npx vitest run src/clubhouse` 536/536; each new test fails with the code it guards broken (VERIFY.md).
 - `npx eslint` and `npm run -s typecheck:fast` exit 0.

@@ -60,8 +60,10 @@ Status: DEFINED
 
 The library's route skeleton (CH-11401) is the Clubhouse one inside the shell and Fairway's outside it
 (`rounds/loading.tsx` through `ClubhouseSwitch`); nothing shows for the first 150ms, then a fade (the shell's
-11609). The review loads under its Clubhouse skeleton (CH-11406) inside the shell, at `rounds/[id]` and at the old
-`rounds/[id]/review` address, and under Fairway's outside it (110206). Setup and the shot screen load in place: the
+11609). The review loads under its Clubhouse skeleton (CH-11406) inside the
+shell, at `rounds/[id]` and at the old
+`rounds/[id]/review` address, and under Fairway's outside it (110206). Setup and
+the shot screen load in place: the
 course library (CH-11403), a course's tees (CH-11404), the scorecard (CH-11405), and a hole saving (CH-11402).
 
 | Bridge ID | Code | Name | Meaning |
@@ -285,14 +287,22 @@ Discard round asks again (CH-11507). Nothing is optimistic: the card leaves only
 (111301). There is no Undo after a discard. The catalog's kind map files every confirm-kind row here, so this category
 also holds sheets that are not destructive (Penalty, Exit, Scorecard, Round complete, Browse courses, Add a course).
 
-Change round type (111121, owner 2026-08-31, Q-92b; the dropped Fairway editor rebuilt) opens from a continued
-round's Exit sheet: Practice, Tournament or Qualifier, then for Qualifier only the qualifiers the player is entered in
-(entry creation is coach-only under RLS) and only the rounds their other rounds don't hold (110511). Nothing is
-saved until Save, which waits for a change; shots and scores never move. While it saves it reads "Saving…" (110212).
-A failure is a toast inside the sheet (110638); a permission refusal is said as "be entered in it and an active member
-of the team", the likely reasons for a player. The options didn't load (110639) is never "none" (110417). Offline it
-is refused before anything is sent (CH-1903). Auto-save is held while the sheet is open and until the refreshed round
-arrives, so the old type is not written back. The Fairway continue page is unchanged when the flag is off.
+Change round type (111121, owner 2026-08-31, Q-92b; the dropped Fairway editor
+rebuilt) opens from a continued
+round's Exit sheet: Practice, Tournament or Qualifier, then for Qualifier only
+the qualifiers the player is entered in
+(entry creation is coach-only under RLS) and only the rounds their other rounds
+don't hold (110511). Nothing is
+saved until Save, which waits for a change; shots and scores never move. While
+it saves it reads "Saving…" (110212).
+A failure is a toast inside the sheet (110638); a permission refusal is said as
+"be entered in it and an active member
+of the team", the likely reasons for a player. The options didn't load (110639)
+is never "none" (110417). Offline it
+is refused before anything is sent (CH-1903). Auto-save is held while the sheet
+is open and until the refreshed round
+arrives, so the old type is not written back. The Fairway continue page is
+unchanged when the flag is off.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -434,6 +444,12 @@ CH-11803). The review's card is two captioned tables with a pressed button per h
 the choices, the distance box and the hole map are named in words (CH-11805 to CH-11808). The figures are description lists
 (111811), the shot screen's scorecard scrolls in a focusable region (111810, reserved: no test), and axe over 12 preview pages at
 1280 and 390 was clean on 2026-09-30 (111809, reserved: a script, not a test). Not built: arrow keys inside the radio groups.
+
+CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
+CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
+CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819
+CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824
+CH-1842, 11825 CH-1816.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

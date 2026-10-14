@@ -185,7 +185,14 @@ Status: DEFINED
 
 Remove from team asks first (31101): the dialog says who, that they can rejoin with the team code, and that their account and stats are not deleted. Pressing Remove player fires the warning haptic (31704), and the button reads Removing while it runs. Decline is not destructive: the player can ask again. On the phone the same confirm follows ⋯, then Remove from team, in red (D-42).
 
-Mark inactive / Mark active (31102, coach only; the dropped Fairway "Change status", rebuilt) asks first too, from the row menu or the phone ⋯ sheet, but is not destructive: the confirm is the primary, with no red and no warning haptic. It says what Inactive does (the player stays on the team with their stats, leaves rankings and averages, and sees no team until marked active again). While it saves the button reads Saving (30202); a failure keeps the status and the dialog (30619); offline nothing is sent (30701). `updatePlayerStatus` writes to the coach's active team through the same resolver and cookie as the route.
+Mark inactive / Mark active (31102, coach only; the dropped Fairway "Change
+status", rebuilt) asks first too, from the row menu or the phone ⋯ sheet, but is
+not destructive: the confirm is the primary, with no red and no warning haptic.
+It says what Inactive does (the player stays on the team with their stats,
+leaves rankings and averages, and sees no team until marked active again). While
+it saves the button reads Saving (30202); a failure keeps the status and the
+dialog (30619); offline nothing is sent (30701). `updatePlayerStatus` writes to
+the coach's active team through the same resolver and cookie as the route.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -277,6 +284,12 @@ From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-170
 Status: DEFINED
 
 Roster's own (31801 to 31806): the table roles, a status as a word, Esc, the polite note counter, axe at 1280 and 390, and the phone row as one button. The join requests card is a labelled region, the desktop panel a named complementary landmark, and a pushed phone profile is named by the player. The shell's skip link, landmarks and dialog behaviour (11801 to 11811).
+
+CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
+CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
+CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819
+CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824
+CH-1842, 11825 CH-1816.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

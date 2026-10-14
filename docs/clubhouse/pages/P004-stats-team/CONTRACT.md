@@ -256,6 +256,12 @@ Status: DEFINED
 
 Team stats' own (41801 to 41805): the trend chart has a written summary and its players are buttons, the grid is a table with a header for every value, loss amber on a tinted cell holds 4.5:1, and the phone's scoring line and player rows read as sentences. The shell's skip link, landmarks and focus rules (11801 to 11811). This page has no dialogs, so Esc has nothing to close. Axe runs at 1280 and 390 (`clubhouse:a11y`).
 
+CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
+CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
+CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819
+CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824
+CH-1842, 11825 CH-1816.
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 41801 | CH-4801 | `THE_TREND_CHART_IS_AN_IMAGE_WITH` | The trend chart is an image with a written summary ("Strokes gained by week. The team has gained about 1.0 a round…"); the player list beside it is the chart's values as buttons |

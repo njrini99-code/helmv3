@@ -361,6 +361,12 @@ Status: DEFINED
 
 Calendar's own (61801 to 61804): each event is a button named with its title and time and, when it has one, "schedule overlap"; the detail panel is a polite live region and form errors are tied to their field; changing the people filter is announced; axe runs at 1280 and 390 (`clubhouse:a11y`), with one known exception, the 7-day week at 390px, which the phone build replaces. The shell's skip link, landmarks and dialog behaviour (11801 to 11811).
 
+CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
+CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
+CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819
+CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824
+CH-1842, 11825 CH-1816.
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 61801 | CH-6801 | `EACH_EVENT_IS_A_BUTTON_NAMED_WITH` | Each event is a button named with its title and time, and "schedule overlap" when it has one; each day header opens the day |

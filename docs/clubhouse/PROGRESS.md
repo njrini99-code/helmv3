@@ -1,8 +1,8 @@
 # Clubhouse progress
 
 The from-scratch GolfHelm UI. Code: `src/clubhouse/`. Spec: `design/handoff/`
-(desktop, owner-approved). Flag: `golf_clubhouse_ui` (production off since
-#2188, 2026-10-11; preview and development on). Current state, turn-on,
+(desktop, owner-approved). Flag: `golf_clubhouse_ui` (production off
+since #2188, 2026-10-11; preview and development on). Current state, turn-on,
 rollback and remaining work: [`STATUS.md`](STATUS.md). Rules:
 `.claude/rules/clubhouse.md`. Adding a new design: `README.md`. Enforcement:
 `npm run clubhouse:check`, which also validates this file. Audits and plans,
@@ -15,7 +15,8 @@ plumbing (session, Supabase loaders, the Capacitor haptics bridge) is allowed.
 
 - **2026-10-08 to 2026-10-11:** #2180 turned `golf_clubhouse_ui` on in
   production by mistake; the flag was on in production for about three days
-  (which teams `HELM_CLUBHOUSE_TEAMS` admitted then is not recorded here). The owner turned it off with #2188 (2026-10-11). Per the
+  (which teams `HELM_CLUBHOUSE_TEAMS` admitted then is not recorded here). The
+  owner turned it off with #2188 (2026-10-11). Per the
   2026-10-12 release check, production serves `main` with the flag off.
 - **Owner decisions (2026-10-11/12):**
   - End state is "ready, not on": agents make it ready, the owner flips it.
@@ -781,7 +782,8 @@ check). The turn-on steps and rollback are in [STATUS.md](STATUS.md).
   to every Clubhouse transition) and haptics; theme waits for the dark theme
   (owner). Since 2026-10-08 Appearance (light, dark, system) and distance units
   are shown too; display density, date format and score display are retired
-  (owner, 2026-10-12). Coaching intelligence is the CoachHelm section (owner). Writes keep
+  (owner, 2026-10-12). Coaching intelligence is the CoachHelm section (owner).
+  Writes keep
   the current tables and actions; new: a typed "delete" to delete an account, a
   confirm before a new invite code, and blank organization fields can now be
   cleared.
@@ -3211,7 +3213,7 @@ shows the options as they were put.
   Q-80). coachhelm 112/112; the old hide fails the reworded test.
 - 2026-09-30 · Clickables gap 16 · Roster's row menu (desktop List view) starts
   with View insights, which opens CoachHelm on that player
-  (coachhelm?player=<id>; an id not on the board opens the most pressing
+  (`coachhelm?player=<id>`; an id not on the board opens the most pressing
   player). roster + coachhelm 178/178, 2 of 2 mutations caught.
 - 2026-09-30 · Clickables gap 17 · a class's detail (coach) ends with Compare
   schedules, which opens New event on the class's day with only its player
@@ -3259,7 +3261,7 @@ shows the options as they were put.
   written with updateGolfEvent (explicit adds and removes, never the whole
   team). Publish saves the trip once (kept by id, so a Retry after a failed
   travelers write writes only the travelers) then who travels. New announcement
-  offers the next trip's travelers as an audience ("<trip> travelers · N"). New
+  offers the next trip's travelers as an audience ("`<trip>` travelers · N"). New
   states CH-10210, CH-10211, CH-10312, CH-10313. Not built: the board's
   class-clash line on the Travelers step (Team Hub doesn't read class schedules;
   Q-84). hub 101/101, 6 of 6 mutations caught.

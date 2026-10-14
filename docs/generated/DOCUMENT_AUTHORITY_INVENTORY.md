@@ -50,7 +50,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 6 | 0 | 3 | 2 |
 | `INDEX` | 27 | 2 | 12 | 5 |
 | `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 323 | 13 | 71 | 92 |
+| `UNKNOWN` | 324 | 13 | 71 | 92 |
 
 ## Files
 
@@ -895,6 +895,7 @@ them would bury everything above.
 | `docs/clubhouse/phone/recruiting.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/roster.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/rounds.md` | current | - | - | yes | - |
+| `docs/clubhouse/phone/section-strip.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/settings.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/stats-player.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/stats-team.md` | current | - | - | - | - |

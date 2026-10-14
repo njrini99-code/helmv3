@@ -344,6 +344,12 @@ Status: DEFINED
 
 Settings' own (81801 to 81807): the rail is a navigation with the open section marked current; every switch has a name; save status and errors are announced; the notification grids are tables; dialogs trap focus and close on Esc; fields are labelled and their help or error is read with them. The shell's skip link, landmarks and dialog behaviour (11801 to 11811). Axe (clubhouse:a11y) has eight Settings pages at 1280 and 390.
 
+CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
+CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
+CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819
+CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824
+CH-1842, 11825 CH-1816.
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 81801 | CH-8801 | `THE_SECTION_LIST_IS_A_NAVIGATION_LANDMARK` | The section list is a navigation landmark; the open section is marked current. On the phone the list is the landmark and an open section names itself in the bar ("Back to Settings" and the heading) |

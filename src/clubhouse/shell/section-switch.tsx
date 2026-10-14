@@ -12,7 +12,7 @@ import { useChReducedMotion } from '../lib/reduced-motion';
 import { Icon } from '../ui/Icon';
 import { findLargeTitle } from './large-title';
 import { phoneSectionFor, phoneSectionsFor, type ChNavItem, type ChRole } from './nav';
-import { badgeCount } from './Sidebar';
+import { badgeCount } from './badge-count';
 
 /**
  * The phone's section switcher (docs/clubhouse/phone/section-strip.md, owner 2026-10-12): no tab bar; the section's

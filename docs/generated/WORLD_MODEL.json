@@ -16404,6 +16404,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-partial.ts",
+          "anchor": "src/lib/auth/get-golf-dashboard-role"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-partial.ts",
           "anchor": "src/lib/auth/resilient-get-user"
         },
         {
@@ -16475,6 +16480,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-submit.ts",
           "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-submit.ts",
+          "anchor": "src/lib/auth/get-golf-dashboard-role"
         },
         {
           "kind": "import_graph",
@@ -20640,6 +20650,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/__tests__/qualifier-setup.test.ts",
+          "anchor": "src/lib/auth/session"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/qualifier-actions.ts",
           "anchor": "src/lib/supabase/server"
         },
@@ -20677,6 +20692,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/qualifier-setup.ts",
           "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/qualifier-setup.ts",
+          "anchor": "src/lib/auth/get-golf-dashboard-role"
         },
         {
           "kind": "import_graph",
@@ -23676,6 +23696,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/message-attachments.ts",
           "anchor": "src/lib/auth/session"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/message-attachments.ts",
+          "anchor": "src/lib/auth/golf-dashboard-role"
         },
         {
           "kind": "import_graph",

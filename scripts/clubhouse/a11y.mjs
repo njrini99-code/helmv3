@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global document -- the sideways check runs inside the page (tab.evaluate) */
+/* global document, MutationObserver -- the sideways check and the dark-theme pin run inside the page */
 /**
  * Accessibility scan of every Clubhouse preview screen and state with axe-core
  * (WCAG 2.1 and 2.2 AA, contrast included). Needs the dev server:

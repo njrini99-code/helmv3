@@ -469,7 +469,7 @@ export function Bell() {
                     if (e.target === e.currentTarget || (e.target as Element).classList?.contains('ch-bst-feed')) close();
                   }}
                 >
-                  <BellStacks items={items} failed={listFailed} reduced={reduced} onRetry={() => setAttempt((x) => x + 1)} onOpen={openItem} onClear={clearItems} />
+                  <BellStacks items={items} failed={listFailed} onRetry={() => setAttempt((x) => x + 1)} onOpen={openItem} onClear={clearItems} />
                 </div>
                 <div className="ch-bst__grab" aria-hidden="true" onPointerDown={onSheetDrag} />
               </m.div>

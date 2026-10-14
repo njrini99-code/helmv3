@@ -3,9 +3,12 @@
 ## 2026-10-12 — round entry, recovery and continue follow the dashboard role
 
 No visible change for a single-profile user. `/rounds/new`, `/rounds/recover` and
-`/rounds/continue/[id]` draw Clubhouse only when the gate is on for the player and the
-dashboard layout's role (`getGolfDashboardRole`) is the player's, and the autosave and submit
-traces tag `ui` the same way. Fairway, the page's own access checks and the gate-off path are unchanged.
+`/rounds/continue/[id]` draw Clubhouse only when the gate is on for the player
+and the
+dashboard layout's role (`getGolfDashboardRole`) is the player's, and the
+autosave and submit
+traces tag `ui` the same way. Fairway, the page's own access checks and the
+gate-off path are unchanged.
 
 ## 2026-10-12 — the old review address loads in the review's shape
 
@@ -156,6 +159,7 @@ Held items: none
   play only, 3.2b), so score, putts and
   strokes gained count it like any holed putt. Undo lifts one stroke at a time.
 - Medium on the tap, success once the hole's save lands (D-70).
+
 ## 2026-10-10 — Shotgun start: choose the starting hole
 
 ```text
@@ -1203,7 +1207,7 @@ Data impact:    none
 Held items:     none
 ```
 
-### Changed
+### Changed (2026-09-30 V2 page docs)
 
 - The six page docs, the manifest (`status.docs` current, `status.contract`
   complete, the two actions) and a sidecar of the 44 hand contracts for the
@@ -1244,13 +1248,13 @@ Held items:     none
 - The tracker's row counts for the shot screen (33) and setup (20) do not match
   the catalog diffs (32 and 17).
 
-### Why
+### Why (2026-09-30 V2 page docs)
 
 - The contract pass (D-62, D-69): every category answered, every behaviour
   named, and every claim checked against the code (the review's access rules,
   what `rebuiltHref` hides, what the loaders read and in which order).
 
-### Verification
+### Verification (2026-09-30 V2 page docs)
 
 - See VERIFY.md.
 

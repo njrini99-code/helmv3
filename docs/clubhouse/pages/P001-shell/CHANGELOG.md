@@ -23,6 +23,7 @@ each tab's loading boundary. Comment only in this page's code.
   unchanged.
 - No before/after screenshots were captured for this change (no browser run in
   this session).
+
 ## 2026-10-10 — RSVP only when the coach requires it
 
 - The sidebar's Next event card shows "N of M confirmed" only for an event
@@ -553,6 +554,7 @@ Settings form/list sheets initially focus their labelled heading. Source,
 regression and local browser evidence is in [POPUP_AUDIT](../../POPUP_AUDIT.md).
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Smoothness repair
 
 Shared Menu, TeamSwitch, OfflineBanner and Toast now use zero-duration
@@ -978,6 +980,7 @@ Data impact:    none
   it is not a fix). Found by the Calendar contract pass; it had disabled every
   in-dialog Retry on every page.
 - The More sheet follows v2 `MoreM`; sign-out is shared with Settings (CH-1002).
+
 ## 2026-09-29 — v2 foundation
 
 - v2 motion (D-64), haptics (D-70), the page empty state (D-71) and navigation

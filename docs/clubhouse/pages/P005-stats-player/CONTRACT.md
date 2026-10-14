@@ -289,6 +289,12 @@ Status: DEFINED
 
 The profile's own (51801 to 51807): real tabs with their panels, "Stats › name" in a coach's top bar, the strokes gained route and hero figures as text, the focus-area field's name and description, axe at 1280 and 390, the rounds table as a named scroll region, and the phone's All N rounds and section chips saying which is open. The shell's skip link, landmarks, focus rules and dialog behaviour (11801 to 11811). Not built: arrow-key movement between tabs; each tab is one Tab stop.
 
+CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
+CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
+CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819
+CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824
+CH-1842, 11825 CH-1816.
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 51801 | CH-5801 | `THE_SECTIONS_ARE_REAL_TABS_SELECTED_STATE` | The sections are real tabs: selected state, each controls its panel |

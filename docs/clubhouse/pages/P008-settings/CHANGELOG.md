@@ -2,15 +2,18 @@
 
 ## 2026-10-13 — Sheets rise and leave on the shared spring, over the shared backdrop
 
-The phone's bottom sheets and action sheets rise on the smooth spring (462ms) instead of the 260ms ease-out, leave
-on it too, and sit on the shared `--ch-scrim` (0.36) instead of their own 0.42 and dark 0.55. Shared change:
+The phone's bottom sheets and action sheets rise on the smooth spring (462ms)
+instead of the 260ms ease-out, leave
+on it too, and sit on the shared `--ch-scrim` (0.36) instead of their own 0.42
+and dark 0.55. Shared change:
 docs/clubhouse/CHANGELOG.md (popups).
-
 
 ## 2026-10-12 — A section's push runs on the compositor
 
-CH-8609's slide (a section in from the right over the list, and back) animates a transform string rather than
-framer's `x`, so it runs on the compositor and a section's first render can't stall it. Same spring, same look.
+CH-8609's slide (a section in from the right over the list, and back) animates a
+transform string rather than
+framer's `x`, so it runs on the compositor and a section's first render can't
+stall it. Same spring, same look.
 Shared change: docs/clubhouse/CHANGELOG.md (motion audit).
 
 ## 2026-10-12 — A section root on the phone (no "‹ More")
@@ -23,12 +26,18 @@ has one, is unchanged. Shared change: docs/clubhouse/CHANGELOG.md.
 
 ## 2026-10-12 — phone Settings opens a linked section without a hydration error
 
-`SettingsPhone` read `window.location` inside its first render to decide whether `?section=` (or an old
-`/settings/notifications` address) opens a section pushed. The server rendered the list, the browser rendered
-the section, and React threw "Hydration failed" and rebuilt the tree, which also re-rendered the root layout's
-inline scripts ("Encountered a script tag"). The route now decides on the server (`opened`, passed through
-`Settings` and `SettingsView`), so the first client render matches the HTML. Verified in Safari at 402px on
-`?section=notifications` and the bare page: no overlay issues. No visible change otherwise.
+`SettingsPhone` read `window.location` inside its first render to decide whether
+`?section=` (or an old
+`/settings/notifications` address) opens a section pushed. The server rendered
+the list, the browser rendered
+the section, and React threw "Hydration failed" and rebuilt the tree, which also
+re-rendered the root layout's
+inline scripts ("Encountered a script tag"). The route now decides on the server
+(`opened`, passed through
+`Settings` and `SettingsView`), so the first client render matches the HTML.
+Verified in Safari at 402px on
+`?section=notifications` and the bare page: no overlay issues. No visible change
+otherwise.
 
 ## 2026-10-12 — Settings follows the dashboard layout's role
 

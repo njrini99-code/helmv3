@@ -340,6 +340,12 @@ Status: DEFINED
 
 The page is labelled by its title and each section is a labelled region (CH-13801); a gauge's numbers are in its legend and its track is hidden (CH-13802); an insight or player row is one button named in words, and a player button is a toggle (CH-13803); Why we think this is a disclosure naming what it controls (CH-13804); the focus is a polite live region (CH-13805); priority is a word, never colour alone (CH-13806). Failed-read and crash notices are alerts and toasts are announced by the shell. Axe over the ten preview states the a11y script walks, at 1280 and 390, was run and clean (131807, reserved: it is not a unit test); the six coach and player states it does not walk are listed in `VERIFY.md`. A full keyboard walk and VoiceOver were not done.
 
+CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
+CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
+CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819
+CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824
+CH-1842, 11825 CH-1816.
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 131801 | CH-13801 | `A_SCREEN_READER_MOVES_THROUGH_THE_PAGE` | A screen reader moves through the page |

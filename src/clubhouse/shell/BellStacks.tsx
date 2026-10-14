@@ -6,6 +6,7 @@ import { memo, useMemo, useRef, useState } from 'react';
 import { isUnread, type NotificationCategoryId, type UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
 import { haptic } from '../lib/haptics';
 import { chSpring } from '../lib/motion';
+import { useChReducedMotion } from '../lib/reduced-motion';
 import { Icon } from '../ui/Icon';
 import { InlineNotice } from '../ui/Notices';
 import { ago, moreLabel, notificationKey, openStack, stackFeed, type ChNotificationStack } from './notification-stacks';
@@ -39,27 +40,26 @@ const NARROW = 0.05;
  * with reduced motion or Animations off. No staggers: a fanned stack's cards move as one.
  */
 /**
- * Re-rendered only when the feed, its failure or the motion setting change: opening and closing the drop (the bell's
+ * Re-rendered only when the feed, its failure or the motion setting (read here) change: opening and closing the drop (the bell's
  * own state) never re-renders the cards, so nothing but transforms happens while it moves. The handlers it is given only
  * reach for state setters and the router, so an older one does the same as a newer one.
  */
-export const BellStacks = memo(BellStacksView, (a, b) => a.items === b.items && a.failed === b.failed && a.reduced === b.reduced);
+export const BellStacks = memo(BellStacksView, (a, b) => a.items === b.items && a.failed === b.failed);
 
 function BellStacksView({
   items,
   failed,
-  reduced,
   onRetry,
   onOpen,
   onClear,
 }: {
   items: UnifiedNotificationItem[] | null;
   failed: boolean;
-  reduced: boolean;
   onRetry: () => void;
   onOpen: (item: UnifiedNotificationItem) => void;
   onClear: (items: UnifiedNotificationItem[]) => void;
 }) {
+  const reduced = useChReducedMotion();
   const [chosen, setChosen] = useState<string | null>(null);
   const feed = useMemo(() => stackFeed(items ?? []), [items]);
   const open = openStack(feed, chosen);
