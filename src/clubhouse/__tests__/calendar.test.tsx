@@ -307,6 +307,24 @@ describe('Calendar · saves that fail', () => {
     expect(screen.queryByText(/players notified/)).toBeNull();
   });
 
+  it('a scroll that starts on a free-time lane leaves the time; a tap places it (Simulator, 2026-10-14)', async () => {
+    wrap(cal(), { initialNew: true });
+    const band = await screen.findByRole('slider', { name: 'Event time' });
+    const lane = band.closest('.ch-lane') as HTMLElement;
+    lane.getBoundingClientRect = () => ({ left: 0, width: 300, top: 0, height: 20, right: 300, bottom: 20, x: 0, y: 0, toJSON: () => ({}) });
+    const start = band.getAttribute('aria-valuenow');
+    // A finger lands on a lane and the sheet scrolls: no click follows, so the time stays.
+    fireEvent.pointerDown(lane, { pointerType: 'touch', clientX: 280 });
+    expect(band.getAttribute('aria-valuenow')).toBe(start);
+    // The same finger lifting without a scroll is a tap, and the time moves there.
+    fireEvent.click(lane, { clientX: 280 });
+    const tapped = band.getAttribute('aria-valuenow');
+    expect(tapped).not.toBe(start);
+    // A mouse places it on the press, as before.
+    fireEvent.pointerDown(lane, { pointerType: 'mouse', clientX: 20 });
+    expect(band.getAttribute('aria-valuenow')).not.toBe(tapped);
+  });
+
   it('RSVP: a repeating series sends the toggle too, off unless turned on', async () => {
     const user = userEvent.setup();
     a.createRecurringEvent.mockResolvedValue({ success: true });
