@@ -35,6 +35,14 @@ describe('popup layout and native dialog containment', () => {
     fireEvent.scroll(view.getByRole('textbox'));
     expect(view.getByRole('menu')).toBeInTheDocument();
   });
+  it('A-27 Tab out of an open menu puts focus back on its trigger before the menu closes', () => {
+    const view = render(<Menu label="Actions" items={[{ label: 'Copy link' }]} trigger={trigger} />);
+    fireEvent.click(view.getByRole('button', { name: 'Actions' }));
+    const item = view.getByRole('menuitem', { name: 'Copy link' });
+    item.focus();
+    fireEvent.keyDown(item, { key: 'Tab' });
+    expect(view.getByRole('button', { name: 'Actions' })).toHaveFocus();
+  });
   it('starts a settings form at its reading title', () => {
     const view = render(<FormSheet open title="Profile" onClose={() => {}} onAction={() => {}}>Fields</FormSheet>);
     expect(view.getByRole('heading', { name: 'Profile' })).toHaveFocus();
