@@ -64,6 +64,9 @@ const SAVE_WORDS = {
 export function RoundTracking(props: RoundTrackingProps) {
   const { round, holes, currentHoleIndex, onExit, onNavigateToHole, onOpenScorecard, onAutoSave, statusSlot, holeShots, startHole = 1 } = props;
   const t = useShotTracking(props, PORTS);
+  const editOpen = !!(t.showEditModal && t.editingShot && t.editFormData);
+  const [lastEdit, setLastEdit] = useState<{ shot: NonNullable<typeof t.editingShot>; form: NonNullable<typeof t.editFormData> } | null>(null);
+  if (editOpen && (lastEdit?.shot !== t.editingShot || lastEdit?.form !== t.editFormData)) setLastEdit({ shot: t.editingShot!, form: t.editFormData! });
   // A round is a full-screen flow on the phone (P011-D1): Exit and Scorecard are in its own top bar, so the shell's top
   // bar and bell go (rounds-track.css hides them while this is up) and the tab bar goes.
   usePhoneTabsHidden(true);
@@ -280,11 +283,13 @@ export function RoundTracking(props: RoundTrackingProps) {
           dispatch={t.dispatch}
           onConfirm={t.confirmPenalty}
         />
-        {t.showEditModal && t.editingShot && t.editFormData && (
+        {/* Mounted once a shot has been edited and kept, so closing slides the sheet out (useDialogLifetime) instead of
+            dropping it in one frame (audit A-18); the last shot and form stay while it leaves. */}
+        {lastEdit && (
           <EditShotSheet
-            open
-            shot={t.editingShot}
-            form={t.editFormData}
+            open={editOpen}
+            shot={lastEdit.shot}
+            form={lastEdit.form}
             hole={{ holeNumber: hole.number, par: hole.par, yardage: hole.yardage }}
             shots={t.shotHistory}
             showDeleteConfirm={t.showDeleteConfirm}

@@ -109,3 +109,15 @@ describe('A-25: focus handed back by code does not open a hover card', () => {
     expect(read('screens/calendar/Calendar.tsx')).toMatch(/chFocusQuietly\(el\)/);
   });
 });
+
+describe('A-18: three sheets leave on their exit instead of unmounting', () => {
+  const read = (f: string) => readFileSync(join(__dirname, '..', f), 'utf8');
+  it('Edit shot, the phone Evidence sheet and the submit overlay stay mounted and close through open', () => {
+    expect(read('screens/rounds/track/RoundTracking.tsx')).toMatch(/<EditShotSheet\s+open=\{editOpen\}/);
+    expect(read('screens/rounds/track/RoundTracking.tsx')).not.toMatch(/t\.showEditModal && t\.editingShot && t\.editFormData && \(/);
+    expect(read('screens/coachhelm/chat/Ask.tsx')).toMatch(/<AskEvidencePanel open=\{evidenceOpen\}[^>]*phone /);
+    expect(read('screens/coachhelm/chat/EvidencePanel.tsx')).toMatch(/<Modal open=\{open\}/);
+    expect(read('screens/rounds/entry/RoundRuntime.tsx')).toMatch(/<SubmitOverlay\s+open=\{overlayOpen\}/);
+    expect(read('screens/rounds/track/round-sheets.tsx')).toMatch(/useDialogLifetime\(open, \{ direction: 'center', surfaceSelector: '\.ch-rt-subm' \}\)/);
+  });
+});

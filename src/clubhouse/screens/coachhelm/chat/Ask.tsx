@@ -252,6 +252,9 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
   // The big box sits inside the new-chat page on desktop; everywhere else it docks at the foot.
   const docked = !(showHome && !phone) && !data.threadFailed;
   const evidenceOpen = evidence !== null && !showHome;
+  // The phone sheet's subject, kept after it closes so its exit still has the content it showed.
+  const [sheetEvidence, setSheetEvidence] = useState<EvidenceFocus | null>(null);
+  if (phone && evidenceOpen && evidence !== sheetEvidence) setSheetEvidence(evidence);
 
   return (
     <main className={'ch-ask' + (phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || chatSw.pending || undefined} data-switch={sw.pending ? 'view' : chatSw.pending ? 'chat' : undefined} data-ch-code="CH-13820">
@@ -320,7 +323,8 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
           <HistoryDrawer {...histProps} open={drawer} onClose={() => setDrawer(false)} />
           {/* On the phone the evidence panel is its own sheet (EvidencePanel, CH-13851); wrapping it in a second Modal here
               stacked an empty Evidence sheet in front of the real one. */}
-          {evidenceOpen && evidence && <AskEvidencePanel focus={evidence} messages={chat.messages} phone onClose={() => setEvidence(null)} />}
+          {/* Kept mounted after its first opening, so it slides out when closed rather than vanishing (audit A-18). */}
+          {sheetEvidence && <AskEvidencePanel open={evidenceOpen} focus={sheetEvidence} messages={chat.messages} phone onClose={() => setEvidence(null)} />}
         </>
       )}
     </main>

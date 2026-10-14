@@ -46,8 +46,8 @@ vi.mock('../screens/coachhelm/chat/Thread', () => ({
   },
 }));
 vi.mock('../screens/coachhelm/chat/EvidencePanel', () => ({
-  AskEvidencePanel: (p: { focus: { label: string }; phone: boolean; onClose: () => void }) => (
-    <div data-testid="evidence" data-phone={String(p.phone)}>
+  AskEvidencePanel: (p: { focus: { label: string }; phone: boolean; onClose: () => void; open?: boolean }) => (
+    <div data-testid="evidence" data-phone={String(p.phone)} data-open={String(p.open ?? true)}>
       {p.focus.label}
       <button type="button" onClick={p.onClose}>
         stub close evidence
@@ -822,7 +822,9 @@ describe('the container', () => {
     expect(screen.getByTestId('evidence')).toHaveAttribute('data-phone', 'true');
     expect(document.querySelector('dialog[open]')).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: 'stub close evidence' }));
-    expect(screen.queryByTestId('evidence')).toBeNull();
+    // Closed, the sheet stays mounted with open={false} so it slides out (audit A-18), still showing what it showed.
+    expect(screen.getByTestId('evidence')).toHaveAttribute('data-open', 'false');
+    expect(screen.getByTestId('evidence')).toHaveTextContent('Jonah Okafor');
   });
 });
 
