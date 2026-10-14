@@ -52,6 +52,17 @@ export interface ChBellApi {
 }
 
 const FEED_LIMIT = 30;
+
+/**
+ * The drop's arrival: the reveal spring, ended once it is within 1% of its mark and rescaled so it lands there without a
+ * step. The spring alone spent its last 300ms creeping the final few dozen pixels of the veil (827ms in all, measured on
+ * the Simulator, 2026-10-14); this lands in about 660ms on the same curve.
+ */
+const REVEAL_IN = (() => {
+  const c = chSpringCurve('reveal', { rest: 0.01 });
+  const top = c.ease(0.9999);
+  return { duration: c.ms / 1000, ease: (p: number) => (p >= 1 ? 1 : Math.min(1, c.ease(p) / top)) };
+})();
 const W = 380;
 
 const BellSource = createContext<ChBellApi | null>(null);
@@ -119,7 +130,7 @@ export function Bell() {
   const sheetMotion = {
     // The stacks drop from under the bar and land with the settle spring's slight give, a touch smaller as they come.
     // Transform and opacity only, nothing that re-rasterizes (no scale, no blur), so WebKit keeps it on the compositor.
-    shown: { y: 0, opacity: 1, visibility: 'visible', transition: { ...chSpring('reveal', reduced), opacity: chSpring('smooth', reduced) } },
+    shown: { y: 0, opacity: 1, visibility: 'visible', transition: reduced ? { duration: 0 } : { ...REVEAL_IN, opacity: chSpring('smooth') } },
     gone: () => {
       if (reduced) return { opacity: 0, transition: { duration: 0 }, transitionEnd: { visibility: 'hidden' } };
       // Back up under the bar from where the finger left it, at the speed it was thrown, fading as it goes.
@@ -167,6 +178,36 @@ export function Bell() {
     el.addEventListener('pointerup', up);
     el.addEventListener('pointercancel', up);
   };
+
+  // The phone drop opens on its cards: the feed is read once the page settles, so the first open of a visit doesn't start
+  // on the skeleton and swap the feed in mid-drop, which jumped the cards and stalled the drop (Simulator, 2026-10-14).
+  // Opening still reads it again, and that read wins.
+  const loadRef = useRef(load);
+  loadRef.current = load;
+  useEffect(() => {
+    if (!phone) return;
+    let live = true;
+    const run = () => {
+      loadRef
+        .current()
+        .then((r) => {
+          if (live && r && (r.success || r.ok) && r.data) {
+            const next = r.data.items;
+            setItems((prev) => prev ?? next);
+          }
+        })
+        .catch(() => {
+          // The open reads it again and reports a failure there.
+        });
+    };
+    const idle = typeof window.requestIdleCallback === 'function';
+    const handle = idle ? window.requestIdleCallback(run, { timeout: 3000 }) : window.setTimeout(run, 1500);
+    return () => {
+      live = false;
+      if (idle) window.cancelIdleCallback(handle);
+      else window.clearTimeout(handle);
+    };
+  }, [phone]);
 
   useEffect(() => {
     if (!wanted) return;
@@ -423,7 +464,7 @@ export function Bell() {
                   reduced
                     ? { opacity: open ? 1 : 0, y: '0%', visibility: open ? 'visible' : 'hidden', transition: { duration: 0 } }
                     : open
-                      ? { y: '0%', opacity: 1, visibility: 'visible', transition: chSpring('reveal') }
+                      ? { y: '0%', opacity: 1, visibility: 'visible', transition: REVEAL_IN }
                       : { y: '-100%', opacity: 1, transition: chSpring('smooth'), transitionEnd: { visibility: 'hidden' } }
                 }
                 onClick={() => close()}

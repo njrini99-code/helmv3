@@ -1215,6 +1215,31 @@ describe('Shell · behaviour contracts (P001)', () => {
     await waitFor(() => expect(api.load).toHaveBeenCalledTimes(2));
   });
 
+  it('on the phone the feed is read once the page settles, so the first open lands on its cards, not the skeleton (Simulator, 2026-10-14)', async () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    let opened!: () => void;
+    const first = new Promise<void>((r) => (opened = r));
+    try {
+      // The open's own read never answers here: the cards on screen can only be the settled read's.
+      const load = vi
+        .fn<ChBellApi['load']>()
+        .mockImplementationOnce(() => {
+          opened();
+          return Promise.resolve({ success: true, data: { items: [item()] } });
+        })
+        .mockImplementation(() => new Promise(() => {}));
+      bell({ load });
+      await act(() => first);
+      expect(load).toHaveBeenCalledTimes(1);
+      await userEvent.setup().click(screen.getByRole('button', { name: /Notifications/ }));
+      expect(await screen.findByText('Ava in Varsity team')).toBeTruthy();
+      expect(document.querySelector('.ch-bst-skel')).toBeNull();
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+
   it('11301 Mark all read clears the rows at once, and puts them back when the write fails', async () => {
     const user = userEvent.setup();
     let fail: (v: { success: false; error: string }) => void = () => {};

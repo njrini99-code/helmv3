@@ -1,5 +1,16 @@
 # Clubhouse changelog
 
+## 2026-10-14 — The bell drop lands on its cards, without the creep
+
+Owner: "Notifications motion was trash". Measured on the Simulator: the first
+open of a visit started on the skeleton and swapped the feed in about 400ms
+into the drop (cards jumped 29px, frames of 30-59ms), and every open took
+827ms, the last 300ms creeping the veil's final few dozen pixels.
+- On the phone the feed is read once the page settles (requestIdleCallback),
+  so the first open lands on its cards; opening still reads it again.
+- The drop and veil arrive on the reveal spring cut at 1% and rescaled to land
+  without a step: about 660ms.
+
 ## 2026-10-14 — Bell drop, page intro and settings rows from the Simulator audit
 
 - The bell's drop keeps its list a scroller at every length (`.ch-bst__scroll::before`),
